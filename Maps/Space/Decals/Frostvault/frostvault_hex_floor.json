@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Hex Floor",
+ "category": "Frostvault",
+ "description": "Hexagonal floor tile joints on a 4 m square (darkens the floor).",
+ "author": "Call of Slop",
+ "size": 4,
+ "rotation": 0,
+ "blend": "multiply",
+ "surfaces": "floor",
+ "image": "frostvault_hex_floor.png",
+ "fadeDistance": 60
+}

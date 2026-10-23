@@ -1,0 +1,91 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Cargo Crate Stack",
+ "category": "Vesper",
+ "description": "A big cargo crate with a small one on top: tall cover.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.0,
+    2.6,
+    1.6
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    2.0,
+    1.6,
+    1.6
+   ],
+   "offset": [
+    0.0,
+    0.8,
+    0.0
+   ],
+   "color": "#8e877c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.06,
+    0.12,
+    1.66
+   ],
+   "offset": [
+    0.0,
+    1.46,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    1.2,
+    1.0,
+    1.0
+   ],
+   "offset": [
+    -0.3,
+    2.1,
+    0.1
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.24,
+    0.08,
+    1.04
+   ],
+   "offset": [
+    -0.3,
+    2.56,
+    0.1
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.5,
+    0.4,
+    0.02
+   ],
+   "offset": [
+    0.4,
+    0.9,
+    0.81
+   ],
+   "color": "#ffa040"
+  }
+ ],
+ "author": "Call of Slop"
+}

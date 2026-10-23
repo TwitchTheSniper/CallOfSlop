@@ -1,0 +1,155 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Vault Coolant Manifold",
+ "category": "Frostvault",
+ "description": "A coolant manifold: three pale risers on a steel cabinet, joined by a blue header pipe.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.2,
+    2.1,
+    0.5
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 2
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    0.9,
+    0.5
+   ],
+   "offset": [
+    0.0,
+    0.45,
+    0.0
+   ],
+   "color": "#8a949c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.3,
+    0.1,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.95,
+    0.0
+   ],
+   "color": "#2f353b"
+  },
+  {
+   "size": [
+    0.16,
+    1.6,
+    0.16
+   ],
+   "offset": [
+    -0.4,
+    1.7,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.3,
+    0.1,
+    0.3
+   ],
+   "offset": [
+    -0.4,
+    1.95,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.16,
+    1.6,
+    0.16
+   ],
+   "offset": [
+    0.0,
+    1.7,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.3,
+    0.1,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    1.95,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.16,
+    1.6,
+    0.16
+   ],
+   "offset": [
+    0.4,
+    1.7,
+    0.0
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.3,
+    0.1,
+    0.3
+   ],
+   "offset": [
+    0.4,
+    1.95,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    1.0,
+    0.12,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    2.06,
+    0.0
+   ],
+   "color": "#5fb8ea"
+  },
+  {
+   "size": [
+    0.2,
+    0.18,
+    0.2
+   ],
+   "offset": [
+    0.55,
+    1.19,
+    0.3
+   ],
+   "color": "#ff4a3a"
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,89 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Quarantine Barrier",
+ "category": "Frostvault",
+ "description": "A low glass quarantine barrier between two white posts: cover you can shoot over.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.0,
+    1.15,
+    0.12
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 2
+ },
+ "parts": [
+  {
+   "size": [
+    0.12,
+    1.1,
+    0.12
+   ],
+   "offset": [
+    -0.95,
+    0.55,
+    0.0
+   ],
+   "color": "#e9eef2"
+  },
+  {
+   "size": [
+    0.12,
+    1.1,
+    0.12
+   ],
+   "offset": [
+    0.95,
+    0.55,
+    0.0
+   ],
+   "color": "#e9eef2"
+  },
+  {
+   "size": [
+    1.8,
+    0.95,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    0.595,
+    0.0
+   ],
+   "color": "#b8e4f8"
+  },
+  {
+   "size": [
+    1.9,
+    0.06,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    1.11,
+    0.0
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    1.8,
+    0.1,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    0.08,
+    0.0
+   ],
+   "color": "#2f353b"
+  }
+ ],
+ "author": "Call of Slop"
+}

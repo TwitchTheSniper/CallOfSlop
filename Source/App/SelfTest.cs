@@ -337,6 +337,8 @@ public static partial class SelfTest
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
         // space-b maps
         Section("Space: arboretum and reactor", CheckSpaceArboretumReactor); // SelfTestSpaceArboretumReactor.cs: Space 07 Canopy Deck and 08 Ignition Hall (outline, counts, objectives, nav, fair walks, a short bot match)
+        // space-d maps
+        Section("Space: vault and bazaar", CheckSpaceVaultBazaar); // SelfTestSpaceVaultBazaar.cs: Space 11 Frostvault (hexagon, turned) and 12 Vesper Strip (bean, mirrored): shape, dressing, outline, objectives, twins, levels, fair walks, a short bot match
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

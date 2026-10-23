@@ -1,0 +1,6689 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Frostvault",
+ "description": "A hexagonal cryogenics vault: pod halls, white labs, a sunken specimen pit and a roofed quarantine loop with galleries on top.",
+ "author": "Call of Slop",
+ "order": 611,
+ "destructible": false,
+ "maxPlayers": 16,
+ "flagPool": "none",
+ "skybox": {
+  "preset": "night",
+  "zenith": "#070e1c",
+  "horizon": "#2c4a66",
+  "ground": "#141c26",
+  "stars": 1.7,
+  "moon": {
+   "direction": [
+    0.3,
+    0.55,
+    -0.6
+   ],
+   "size": 16,
+   "color": "#d8ecff",
+   "intensity": 0.55
+  },
+  "sun": {
+   "elevation": -12,
+   "azimuth": 250
+  },
+  "ambient": 1.9,
+  "clouds": false
+ },
+ "boundary": {
+  "shape": "polygon",
+  "points": [
+   [
+    64.0,
+    0.0
+   ],
+   [
+    32.0,
+    55.426
+   ],
+   [
+    -32.0,
+    55.426
+   ],
+   [
+    -64.0,
+    0.0
+   ],
+   [
+    -32.0,
+    -55.426
+   ],
+   [
+    32.0,
+    -55.426
+   ]
+  ],
+  "edge": {
+   "style": "wall",
+   "height": 6,
+   "thickness": 0.8,
+   "color": "#9fb0bd",
+   "material": "Metal"
+  },
+  "groundMargin": 6
+ },
+ "teamSpawns": [
+  [
+   [
+    -55.0,
+    0.0,
+    -7.0
+   ],
+   [
+    -55.0,
+    0.0,
+    7.0
+   ],
+   [
+    -53.0,
+    0.0,
+    -16.0
+   ],
+   [
+    -53.0,
+    0.0,
+    16.0
+   ],
+   [
+    -47.5,
+    0.0,
+    -20.5
+   ],
+   [
+    -47.5,
+    0.0,
+    20.5
+   ],
+   [
+    -44.0,
+    0.0,
+    -12.0
+   ],
+   [
+    -44.0,
+    0.0,
+    12.0
+   ]
+  ],
+  [
+   [
+    55.0,
+    0.0,
+    7.0
+   ],
+   [
+    55.0,
+    0.0,
+    -7.0
+   ],
+   [
+    53.0,
+    0.0,
+    16.0
+   ],
+   [
+    53.0,
+    0.0,
+    -16.0
+   ],
+   [
+    47.5,
+    0.0,
+    20.5
+   ],
+   [
+    47.5,
+    0.0,
+    -20.5
+   ],
+   [
+    44.0,
+    0.0,
+    12.0
+   ],
+   [
+    44.0,
+    0.0,
+    -12.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0,
+   "z": 0,
+   "y": 0,
+   "radius": 6
+  },
+  {
+   "x": 0,
+   "z": -42,
+   "y": 0,
+   "radius": 4.5
+  },
+  {
+   "x": 0,
+   "z": 42,
+   "y": 0,
+   "radius": 4.5
+  }
+ ],
+ "flags": [
+  [
+   -52,
+   0,
+   0
+  ],
+  [
+   52,
+   0,
+   0
+  ]
+ ],
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#c3ccd3"
+  },
+  {
+   "op": "WallX",
+   "x0": -20.4,
+   "x1": 20.4,
+   "z": -20.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 4.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -20.4,
+   "x1": 20.4,
+   "z": 20.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -4.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -20.0,
+   "z1": 20.0,
+   "x": -20.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -4.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -20.0,
+   "z1": 20.0,
+   "x": 20.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 4.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -13.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -15.4,
+   "x1": 15.4,
+   "z": -15.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 3.0,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -15.4,
+   "x1": 15.4,
+   "z": 15.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 3.0,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -15.0,
+   "z1": 15.0,
+   "x": -15.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 3.0,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -15.0,
+   "z1": 15.0,
+   "x": 15.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 3.0,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -9.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "Slab",
+   "x0": -20.4,
+   "z0": -20.4,
+   "x1": 20.4,
+   "z1": -15.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Slab",
+   "x0": -20.4,
+   "z0": 15.0,
+   "x1": 20.4,
+   "z1": 20.4,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Slab",
+   "x0": -20.4,
+   "z0": -15.0,
+   "x1": -15.0,
+   "z1": 15.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Slab",
+   "x0": 15.0,
+   "z0": -15.0,
+   "x1": 20.4,
+   "z1": 15.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Block",
+   "x0": -20.4,
+   "y0": 3.5,
+   "z0": -20.46,
+   "x1": -1.6,
+   "y1": 4.4,
+   "z1": -20.34,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 1.6,
+   "y0": 3.5,
+   "z0": 20.34,
+   "x1": 20.4,
+   "y1": 4.4,
+   "z1": 20.46,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 1.6,
+   "y0": 3.5,
+   "z0": -20.46,
+   "x1": 20.4,
+   "y1": 4.4,
+   "z1": -20.34,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -20.4,
+   "y0": 3.5,
+   "z0": 20.34,
+   "x1": -1.6,
+   "y1": 4.4,
+   "z1": 20.46,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -20.46,
+   "y0": 3.5,
+   "z0": -20.4,
+   "x1": -20.34,
+   "y1": 4.4,
+   "z1": -16.65,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 20.34,
+   "y0": 3.5,
+   "z0": 16.65,
+   "x1": 20.46,
+   "y1": 4.4,
+   "z1": 20.4,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -20.46,
+   "y0": 3.5,
+   "z0": -13.85,
+   "x1": -20.34,
+   "y1": 4.4,
+   "z1": 20.4,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 20.34,
+   "y0": 3.5,
+   "z0": -20.4,
+   "x1": 20.46,
+   "y1": 4.4,
+   "z1": 13.85,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -15.0,
+   "y0": 3.5,
+   "z0": -15.06,
+   "x1": 15.0,
+   "y1": 4.4,
+   "z1": -14.94,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -15.0,
+   "y0": 3.5,
+   "z0": 14.94,
+   "x1": 15.0,
+   "y1": 4.4,
+   "z1": 15.06,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -15.06,
+   "y0": 3.5,
+   "z0": -15.0,
+   "x1": -14.94,
+   "y1": 4.4,
+   "z1": 15.0,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 14.94,
+   "y0": 3.5,
+   "z0": -15.0,
+   "x1": 15.06,
+   "y1": 4.4,
+   "z1": 15.0,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -14.8,
+   "y0": 0.0,
+   "z0": -14.8,
+   "x1": -1.5,
+   "y1": 1.2,
+   "z1": -6.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 0.0,
+   "z0": 6.5,
+   "x1": 14.8,
+   "y1": 1.2,
+   "z1": 14.8,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 0.0,
+   "z0": -14.8,
+   "x1": 14.8,
+   "y1": 1.2,
+   "z1": -6.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -14.8,
+   "y0": 0.0,
+   "z0": 6.5,
+   "x1": -1.5,
+   "y1": 1.2,
+   "z1": 14.8,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -14.8,
+   "y0": 0.0,
+   "z0": -6.5,
+   "x1": -6.5,
+   "y1": 1.2,
+   "z1": -1.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": 6.5,
+   "y0": 0.0,
+   "z0": 1.5,
+   "x1": 14.8,
+   "y1": 1.2,
+   "z1": 6.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -14.8,
+   "y0": 0.0,
+   "z0": 1.5,
+   "x1": -6.5,
+   "y1": 1.2,
+   "z1": 6.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": 6.5,
+   "y0": 0.0,
+   "z0": -6.5,
+   "x1": 14.8,
+   "y1": 1.2,
+   "z1": -1.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsZ",
+   "x0": -1.5,
+   "x1": 1.5,
+   "z": -13.6,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsZ",
+   "x0": -1.5,
+   "x1": 1.5,
+   "z": 13.6,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsZ",
+   "x0": -1.5,
+   "x1": 1.5,
+   "z": -6.5,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsZ",
+   "x0": -1.5,
+   "x1": 1.5,
+   "z": 6.5,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 0.0,
+   "z0": -12.25,
+   "x1": 1.5,
+   "y1": 1.2,
+   "z1": -7.85,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 0.0,
+   "z0": 7.85,
+   "x1": 1.5,
+   "y1": 1.2,
+   "z1": 12.25,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.5,
+   "z1": 1.5,
+   "x": -13.6,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.5,
+   "z1": 1.5,
+   "x": 13.6,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.5,
+   "z1": 1.5,
+   "x": -6.5,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.5,
+   "z1": 1.5,
+   "x": 6.5,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 1.2,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": -12.25,
+   "y0": 0.0,
+   "z0": -1.5,
+   "x1": -7.85,
+   "y1": 1.2,
+   "z1": 1.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Block",
+   "x0": 7.85,
+   "y0": 0.0,
+   "z0": -1.5,
+   "x1": 12.25,
+   "y1": 1.2,
+   "z1": 1.5,
+   "color": "#9aa6b0"
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Vault Ring",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 12.5,
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": -4.6,
+   "z": -4.6
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": 4.6,
+   "z": 4.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": 4.6,
+   "z": -4.6
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": -4.6,
+   "z": 4.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -2.6,
+   "z": -5.4
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 2.6,
+   "z": 5.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 2.6,
+   "z": -5.4
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -2.6,
+   "z": 5.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -5.4,
+   "z": -2.6
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 5.4,
+   "z": 2.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -5.4,
+   "z": 2.6
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 5.4,
+   "z": -2.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 3.4,
+   "z": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -3.4,
+   "z": -3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -3.2,
+   "z": 3.6,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 3.2,
+   "z": -3.6,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -13.2,
+   "z": -13.2,
+   "y": 1.2,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 13.2,
+   "z": 13.2,
+   "y": 1.2,
+   "yaw": 315.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 13.2,
+   "z": -13.2,
+   "y": 1.2,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -13.2,
+   "z": 13.2,
+   "y": 1.2,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -8.5,
+   "z": -11.5,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 8.5,
+   "z": 11.5,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 8.5,
+   "z": -11.5,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -8.5,
+   "z": 11.5,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -11.5,
+   "z": -4.0,
+   "y": 1.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 11.5,
+   "z": 4.0,
+   "y": 1.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -11.5,
+   "z": 8.0,
+   "y": 1.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 11.5,
+   "z": -8.0,
+   "y": 1.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -9.0,
+   "z": -9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 9.0,
+   "z": 9.0,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 9.0,
+   "z": -9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -9.0,
+   "z": 9.0,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -4.0,
+   "z": -13.0,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 4.0,
+   "z": 13.0,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -13.0,
+   "z": -4.0,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 13.0,
+   "z": 4.0,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -12.5,
+   "z": 12.0,
+   "y": 1.2,
+   "yaw": 15.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 12.5,
+   "z": -12.0,
+   "y": 1.2,
+   "yaw": 195.0
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": -4.5,
+   "z": -13.6,
+   "y": 1.2
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": 4.5,
+   "z": 13.6,
+   "y": 1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": -10.0,
+   "z": -10.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 10.0,
+   "z": 10.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 10.0,
+   "z": -10.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": -10.0,
+   "z": 10.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": -10.0,
+   "z": 2.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 10.0,
+   "z": -2.0,
+   "y": 1.2,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 0.0,
+   "z": -16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 0.0,
+   "z": 16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3.6,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": -16.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3.6,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 16.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3.6,
+   "rotation": 270
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -15.0,
+   "z": -17.5,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 15.0,
+   "z": 17.5,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -17.5,
+   "z": -11.5,
+   "y": 2.75,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 17.5,
+   "z": 11.5,
+   "y": 2.75,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -7.5,
+   "z": -17.5,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 7.5,
+   "z": 17.5,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -17.5,
+   "z": -4.0,
+   "y": 2.75,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 17.5,
+   "z": 4.0,
+   "y": 2.75,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 0.0,
+   "z": -17.5,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -0.0,
+   "z": 17.5,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -17.5,
+   "z": 3.5,
+   "y": 2.75,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 17.5,
+   "z": -3.5,
+   "y": 2.75,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 7.5,
+   "z": -17.5,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -7.5,
+   "z": 17.5,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -17.5,
+   "z": 11.0,
+   "y": 2.75,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 17.5,
+   "z": -11.0,
+   "y": 2.75,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 15.0,
+   "z": -17.5,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -15.0,
+   "z": 17.5,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -17.5,
+   "z": 18.5,
+   "y": 2.75,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 17.5,
+   "z": -18.5,
+   "y": 2.75,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -8.5,
+   "z": -17.5
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 8.5,
+   "z": 17.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 9.5,
+   "z": -18.4
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -9.5,
+   "z": 18.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -18.3,
+   "z": -8.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 18.3,
+   "z": 8.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -16.7,
+   "z": 7.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 16.7,
+   "z": -7.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -17.8,
+   "z": -17.8
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 17.8,
+   "z": 17.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 17.8,
+   "z": -17.8
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -17.8,
+   "z": 17.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -2.5,
+   "z": -17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 2.5,
+   "z": 17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -17.2,
+   "z": 2.5
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 17.2,
+   "z": -2.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": -15.9,
+   "z": -11.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": 15.9,
+   "z": 11.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": 11.0,
+   "z": -15.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": -11.0,
+   "z": 15.9
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": -10.0,
+   "z": -19.96,
+   "y": 2.3
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": 10.0,
+   "z": 19.96,
+   "y": 2.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": 7.0,
+   "z": -19.96,
+   "y": 2.3
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": -7.0,
+   "z": 19.96,
+   "y": 2.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": -14.7,
+   "z": -5.0,
+   "y": 1.9,
+   "onto": "wall-x",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": 14.7,
+   "z": 5.0,
+   "y": 1.9,
+   "onto": "wall+x",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": 5.0,
+   "z": -14.7,
+   "y": 1.9,
+   "onto": "wall-z",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": -5.0,
+   "z": 14.7,
+   "y": 1.9,
+   "onto": "wall+z",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": -14.7,
+   "z": 5.0,
+   "y": 1.9,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": 14.7,
+   "z": -5.0,
+   "y": 1.9,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Exit Sign",
+   "x": -17.5,
+   "z": -19.5,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Exit Sign",
+   "x": 17.5,
+   "z": 19.5,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Exit Sign",
+   "x": 8.0,
+   "z": -19.5,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Exit Sign",
+   "x": -8.0,
+   "z": 19.5,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Stencil Arrow",
+   "x": -17.5,
+   "z": -4.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Stencil Arrow",
+   "x": 17.5,
+   "z": 4.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Stencil Arrow",
+   "x": -4.5,
+   "z": -17.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Stencil Arrow",
+   "x": 4.5,
+   "z": 17.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 270
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom"
+   ],
+   "x0": -20.0,
+   "z0": -20.0,
+   "x1": 20.0,
+   "z1": -15.0,
+   "count": 7,
+   "seed": 11,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom"
+   ],
+   "x0": -20.0,
+   "z0": -15.0,
+   "x1": -15.0,
+   "z1": 15.0,
+   "count": 6,
+   "seed": 12,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom"
+   ],
+   "x0": 15.0,
+   "z0": -15.0,
+   "x1": 20.0,
+   "z1": 15.0,
+   "count": 6,
+   "seed": 13,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom"
+   ],
+   "x0": -20.0,
+   "z0": 15.0,
+   "x1": 20.0,
+   "z1": 20.0,
+   "count": 7,
+   "seed": 14,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 2.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 1",
+   "x": -1.833,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 2",
+   "x": -1.1,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 3",
+   "x": -0.367,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 4",
+   "x": 0.367,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 5",
+   "x": 1.1,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 6",
+   "x": 1.833,
+   "z": -14.7,
+   "y": 2.95,
+   "onto": "wall-z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 1",
+   "x": 1.833,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 2",
+   "x": 1.1,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 3",
+   "x": 0.367,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 4",
+   "x": -0.367,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 5",
+   "x": -1.1,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Specimen Vault 6",
+   "x": -1.833,
+   "z": 14.7,
+   "y": 2.95,
+   "onto": "wall+z",
+   "size": 0.733,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 1",
+   "x": 5.667,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 2",
+   "x": 5.0,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 3",
+   "x": 4.333,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 4",
+   "x": 3.667,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 5",
+   "x": 3.0,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 6",
+   "x": 2.333,
+   "z": -20.7,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 1",
+   "x": -5.667,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 2",
+   "x": -5.0,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 3",
+   "x": -4.333,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 4",
+   "x": -3.667,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 5",
+   "x": -3.0,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 6",
+   "x": -2.333,
+   "z": 20.7,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 1",
+   "x": -20.7,
+   "z": -5.667,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 2",
+   "x": -20.7,
+   "z": -5.0,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 3",
+   "x": -20.7,
+   "z": -4.333,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 4",
+   "x": -20.7,
+   "z": -3.667,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 5",
+   "x": -20.7,
+   "z": -3.0,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 6",
+   "x": -20.7,
+   "z": -2.333,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 1",
+   "x": 20.7,
+   "z": 5.667,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 2",
+   "x": 20.7,
+   "z": 5.0,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 3",
+   "x": 20.7,
+   "z": 4.333,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 4",
+   "x": 20.7,
+   "z": 3.667,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 5",
+   "x": 20.7,
+   "z": 3.0,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Quarantine 6",
+   "x": 20.7,
+   "z": 2.333,
+   "y": 3.0,
+   "onto": "wall-x",
+   "size": 0.667,
+   "reach": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -18.0,
+   "z": -18.0,
+   "y": 3.5,
+   "yaw": 135.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 18.0,
+   "z": 18.0,
+   "y": 3.5,
+   "yaw": 315.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 18.0,
+   "z": -18.0,
+   "y": 3.5,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -18.0,
+   "z": 18.0,
+   "y": 3.5,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -17.5,
+   "z": -8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 17.5,
+   "z": 8.0,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -17.5,
+   "z": 8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 17.5,
+   "z": -8.0,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 8.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -8.0,
+   "z": 17.5,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -8.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 8.0,
+   "z": 17.5,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 10.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -10.0,
+   "z": 17.5,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -17.5,
+   "z": -2.0,
+   "y": 3.5,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 17.5,
+   "z": 2.0,
+   "y": 3.5,
+   "yaw": 200.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -20.0,
+   "z0": -20.0,
+   "x1": 20.0,
+   "z1": 20.0,
+   "count": 40,
+   "seed": 21,
+   "onto": "floor",
+   "y": 3.5,
+   "gap": 4.5,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.0,
+   "z": -11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.0,
+   "z": 11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.0,
+   "z": -11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.0,
+   "z": 11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.0,
+   "z": 0.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.0,
+   "z": 0.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": 9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": -9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 11.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -9.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -3.0,
+   "z": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 3.0,
+   "z": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.2,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.2,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.5,
+   "z": 0.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.5,
+   "z": 0.0,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -5.2,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 5.2,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -16.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 16.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -11.5,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 11.5,
+   "y": 1.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -5.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 5.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.1,
+   "z": 0.0,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.1,
+   "z": 0.0,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": 0.0,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": 0.0,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -13.1,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 13.1,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -7.2,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 7.2,
+   "y": 0.6
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.5,
+   "z": -4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.5,
+   "z": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -18.5,
+   "z": -4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.5,
+   "z": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.5,
+   "z": -13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.5,
+   "z": 13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -18.5,
+   "z": -13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.5,
+   "z": 13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.5,
+   "z": 13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 21.5,
+   "z": -13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -18.5,
+   "z": 13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.5,
+   "z": -13.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.0,
+   "z": -21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.0,
+   "z": 21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.0,
+   "z": -18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.0,
+   "z": 18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.0,
+   "z": -21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.0,
+   "z": 21.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.0,
+   "z": -18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.0,
+   "z": 18.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.5,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.5,
+   "z": 17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.5,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.5,
+   "z": 17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.5,
+   "z": -8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.5,
+   "z": 8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.5,
+   "z": 0.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.5,
+   "z": 0.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.5,
+   "z": 8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.5,
+   "z": -8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -17.5,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 17.5,
+   "y": 3.5
+  },
+  {
+   "op": "WallX",
+   "x0": -13.0,
+   "x1": 13.0,
+   "z": -48.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -8.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 8.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -13.0,
+   "x1": 13.0,
+   "z": 47.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 8.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": -8.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -13.0,
+   "x1": 13.0,
+   "z": -36.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -8.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 8.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -13.0,
+   "x1": 13.0,
+   "z": 36.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 8.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": -8.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -47.6,
+   "z1": -36.4,
+   "x": -13.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -42.5,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 36.4,
+   "z1": 47.6,
+   "x": 12.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 42.5,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -47.6,
+   "z1": -36.4,
+   "x": 12.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -40.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -45.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 36.4,
+   "z1": 47.6,
+   "x": -13.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 40.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 45.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "StairsZ",
+   "x0": 11.1,
+   "x1": 12.5,
+   "z": -46.3,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 3.5,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "StairsZ",
+   "x0": -12.5,
+   "x1": -11.1,
+   "z": 46.3,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 3.5,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.8,
+   "z": -47.1
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.8,
+   "z": 47.1
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.8,
+   "z": -45.1,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.8,
+   "z": 45.1,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.8,
+   "z": -43.7,
+   "y": 2.3
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.8,
+   "z": 43.7,
+   "y": 2.3
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.8,
+   "z": -41.25,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.8,
+   "z": 41.25,
+   "y": 3.5
+  },
+  {
+   "op": "Slab",
+   "x0": -13.0,
+   "z0": -48.0,
+   "x1": 13.0,
+   "z1": -36.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2",
+   "hole": {
+    "x0": 10.9,
+    "z0": -46.6,
+    "x1": 12.6,
+    "z1": -42.25
+   }
+  },
+  {
+   "op": "Slab",
+   "x0": -13.0,
+   "z0": 36.0,
+   "x1": 13.0,
+   "z1": 48.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2",
+   "hole": {
+    "x0": -12.6,
+    "z0": 42.25,
+    "x1": -10.9,
+    "z1": 46.6
+   }
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": -48.0,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": -47.6,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": 47.6,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": 48.0,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": -36.4,
+   "x1": -1.6,
+   "y1": 4.0,
+   "z1": -36.0,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": 1.6,
+   "y0": 3.5,
+   "z0": 36.0,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": 36.4,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": 1.6,
+   "y0": 3.5,
+   "z0": -36.4,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": -36.0,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": 36.0,
+   "x1": -1.6,
+   "y1": 4.0,
+   "z1": 36.4,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": -47.6,
+   "x1": -12.6,
+   "y1": 4.0,
+   "z1": -36.4,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": 12.6,
+   "y0": 3.5,
+   "z0": 36.4,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": 47.6,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": 12.6,
+   "y0": 3.5,
+   "z0": -47.6,
+   "x1": 13.0,
+   "y1": 4.0,
+   "z1": -36.4,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Block",
+   "x0": -13.0,
+   "y0": 3.5,
+   "z0": 36.4,
+   "x1": -12.6,
+   "y1": 4.0,
+   "z1": 47.6,
+   "color": "#e4e9ee"
+  },
+  {
+   "op": "Slab",
+   "x0": -1.6,
+   "z0": -36.0,
+   "x1": 1.6,
+   "z1": -20.3,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Slab",
+   "x0": -1.6,
+   "z0": 20.3,
+   "x1": 1.6,
+   "z1": 36.0,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Block",
+   "x0": -1.66,
+   "y0": 3.5,
+   "z0": -36.0,
+   "x1": -1.54,
+   "y1": 4.4,
+   "z1": -20.4,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 1.54,
+   "y0": 3.5,
+   "z0": 20.4,
+   "x1": 1.66,
+   "y1": 4.4,
+   "z1": 36.0,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 1.54,
+   "y0": 3.5,
+   "z0": -36.0,
+   "x1": 1.66,
+   "y1": 4.4,
+   "z1": -20.4,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -1.66,
+   "y0": 3.5,
+   "z0": 20.4,
+   "x1": -1.54,
+   "y1": 4.4,
+   "z1": 36.0,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -0.3,
+   "y0": 0.0,
+   "z0": -28.3,
+   "x1": 0.3,
+   "y1": 3.2,
+   "z1": -27.7,
+   "color": "#8a949c"
+  },
+  {
+   "op": "Block",
+   "x0": -0.3,
+   "y0": 0.0,
+   "z0": 27.7,
+   "x1": 0.3,
+   "y1": 3.2,
+   "z1": 28.3,
+   "color": "#8a949c"
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 0.0,
+   "z": -30.0,
+   "y": 3.5,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 0.0,
+   "z": 30.0,
+   "y": 3.5,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Gallery 1",
+   "x": -1.36,
+   "z": -35.7,
+   "y": 2.9,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Gallery 2",
+   "x": -0.68,
+   "z": -35.7,
+   "y": 2.9,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Gallery 3",
+   "x": 0.0,
+   "z": -35.7,
+   "y": 2.9,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Gallery 4",
+   "x": 0.68,
+   "z": -35.7,
+   "y": 2.9,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Gallery 5",
+   "x": 1.36,
+   "z": -35.7,
+   "y": 2.9,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab North 1",
+   "x": -1.36,
+   "z": -35.7,
+   "y": 1.1,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab North 2",
+   "x": -0.68,
+   "z": -35.7,
+   "y": 1.1,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab North 3",
+   "x": 0.0,
+   "z": -35.7,
+   "y": 1.1,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab North 4",
+   "x": 0.68,
+   "z": -35.7,
+   "y": 1.1,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab North 5",
+   "x": 1.36,
+   "z": -35.7,
+   "y": 1.1,
+   "onto": "wall-z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab South 1",
+   "x": 1.36,
+   "z": 35.7,
+   "y": 1.1,
+   "onto": "wall+z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab South 2",
+   "x": 0.68,
+   "z": 35.7,
+   "y": 1.1,
+   "onto": "wall+z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab South 3",
+   "x": 0.0,
+   "z": 35.7,
+   "y": 1.1,
+   "onto": "wall+z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab South 4",
+   "x": -0.68,
+   "z": 35.7,
+   "y": 1.1,
+   "onto": "wall+z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Lab South 5",
+   "x": -1.36,
+   "z": 35.7,
+   "y": 1.1,
+   "onto": "wall+z",
+   "size": 0.68,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Borealis Logo",
+   "x": -8.0,
+   "z": -35.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Borealis Logo",
+   "x": 8.0,
+   "z": 35.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 2.2
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": -6.0,
+   "z": -40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": 6.0,
+   "z": 40.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": 6.0,
+   "z": -40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": -6.0,
+   "z": 40.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": -6.0,
+   "z": -44.5
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": 6.0,
+   "z": 44.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": 6.0,
+   "z": -44.5
+  },
+  {
+   "op": "Prop",
+   "name": "Lab Bench",
+   "x": -6.0,
+   "z": 44.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": -9.5,
+   "z": -47.25
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": 9.5,
+   "z": 47.25,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": -3.5,
+   "z": -47.25
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": 3.5,
+   "z": 47.25,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": 2.5,
+   "z": -47.25
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": -2.5,
+   "z": 47.25,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": 8.5,
+   "z": -47.25
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": -8.5,
+   "z": 47.25,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": -11.7,
+   "z": -37.8
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Tank",
+   "x": 11.7,
+   "z": 37.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazmat Suit Rack",
+   "x": -12.0,
+   "z": -46.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazmat Suit Rack",
+   "x": 12.0,
+   "z": 46.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Decon Shower Arch",
+   "x": -8.0,
+   "z": -37.4
+  },
+  {
+   "op": "Prop",
+   "name": "Decon Shower Arch",
+   "x": 8.0,
+   "z": 37.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Decon Shower Arch",
+   "x": 8.0,
+   "z": -37.4
+  },
+  {
+   "op": "Prop",
+   "name": "Decon Shower Arch",
+   "x": -8.0,
+   "z": 37.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": -10.5,
+   "z": -38.5
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": 10.5,
+   "z": 38.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 10.5,
+   "z": -43.2,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -10.5,
+   "z": 43.2,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Office Chair",
+   "x": -7.0,
+   "z": -38.6,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Office Chair",
+   "x": 7.0,
+   "z": 38.6,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Whiteboard",
+   "x": 4.0,
+   "z": -45.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Whiteboard",
+   "x": -4.0,
+   "z": 45.8
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -7.5,
+   "z": -42.0,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 7.5,
+   "z": 42.0,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 0.0,
+   "z": -42.0,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -0.0,
+   "z": 42.0,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": 7.5,
+   "z": -42.0,
+   "y": 2.75
+  },
+  {
+   "op": "Prop",
+   "name": "Lamp Strip",
+   "x": -7.5,
+   "z": 42.0,
+   "y": 2.75,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": -10.6,
+   "z": -35.7,
+   "y": 1.9,
+   "onto": "wall-z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": 10.6,
+   "z": 35.7,
+   "y": 1.9,
+   "onto": "wall+z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Vent Grille",
+   "x": 11.0,
+   "z": -47.3,
+   "y": 2.6,
+   "onto": "wall-z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Vent Grille",
+   "x": -11.0,
+   "z": 47.3,
+   "y": 2.6,
+   "onto": "wall+z",
+   "size": 0.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": -12.3,
+   "z": -44.0,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": 12.3,
+   "z": 44.0,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Frost Bloom",
+   "x": -11.0,
+   "z": -39.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Frost Bloom",
+   "x": 11.0,
+   "z": 39.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -13.0,
+   "z0": -48.0,
+   "x1": 13.0,
+   "z1": -36.0,
+   "count": 14,
+   "seed": 31,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -13.0,
+   "z0": -48.0,
+   "x1": 13.0,
+   "z1": -36.0,
+   "count": 14,
+   "seed": 32,
+   "onto": "floor",
+   "y": 3.5,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": -9.0,
+   "z": -46.0,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": 9.0,
+   "z": 46.0,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 9.0,
+   "z": -38.5,
+   "y": 3.5,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -9.0,
+   "z": 38.5,
+   "y": 3.5,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 0.0,
+   "z": -42.0,
+   "y": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 0.0,
+   "z": 42.0,
+   "y": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -42.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 42.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -38.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 38.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -42.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 42.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -40.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 40.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 34.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -28.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 28.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -23.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 23.0,
+   "y": 3.5
+  },
+  {
+   "op": "WallX",
+   "x0": -36.0,
+   "x1": -18.0,
+   "z": -40.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -31.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": -23.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": 18.0,
+   "x1": 36.0,
+   "z": 39.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 31.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    },
+    {
+     "center": 23.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -36.0,
+   "x1": -18.0,
+   "z": -24.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -30.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -23.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": 18.0,
+   "x1": 36.0,
+   "z": 24.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 30.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 23.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -39.6,
+   "z1": -24.4,
+   "x": -36.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -32.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -36.5,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 24.4,
+   "z1": 39.6,
+   "x": 35.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 32.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 36.5,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -39.6,
+   "z1": -24.4,
+   "x": -18.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -32.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -27.5,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 24.4,
+   "z1": 39.6,
+   "x": 18.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 32.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 27.5,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -33.0,
+   "z": -36.3
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 33.0,
+   "z": 36.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -33.0,
+   "z": -27.7
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 33.0,
+   "z": 27.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -29.0,
+   "z": -36.3
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 29.0,
+   "z": 36.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -29.0,
+   "z": -27.7
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 29.0,
+   "z": 27.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -25.0,
+   "z": -36.3
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 25.0,
+   "z": 36.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -25.0,
+   "z": -27.7
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 25.0,
+   "z": 27.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -21.0,
+   "z": -36.3
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 21.0,
+   "z": 36.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -21.0,
+   "z": -27.7
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 21.0,
+   "z": 27.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -33.5,
+   "z": -38.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 33.5,
+   "z": 38.9
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -27.0,
+   "z": -38.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 27.0,
+   "z": 38.9
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -20.5,
+   "z": -38.9,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 20.5,
+   "z": 38.9
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": -35.1,
+   "z": -25.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": 35.1,
+   "z": 25.6,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -25.5,
+   "z": -25.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 25.5,
+   "z": 25.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -26.5,
+   "z": -26.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 26.5,
+   "z": 26.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -22.0,
+   "z": -25.1
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 22.0,
+   "z": 25.1,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -30.5,
+   "z": -32.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 30.5,
+   "z": 32.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -23.5,
+   "z": -32.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 23.5,
+   "z": 32.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": -29.0,
+   "z": -39.56,
+   "y": 2.2
+  },
+  {
+   "op": "Prop",
+   "name": "Frost Vent",
+   "x": 29.0,
+   "z": 39.56,
+   "y": 2.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Number 1",
+   "x": -27.0,
+   "z": -32.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Number 2",
+   "x": 27.0,
+   "z": 32.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": -35.3,
+   "z": -35.0,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Cryo Warning",
+   "x": 35.3,
+   "z": 35.0,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": -18.7,
+   "z": -29.0,
+   "y": 1.8,
+   "onto": "wall+x",
+   "size": 0.9
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Biohazard Sign",
+   "x": 18.7,
+   "z": 29.0,
+   "y": 1.8,
+   "onto": "wall-x",
+   "size": 0.9
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom",
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom Small"
+   ],
+   "x0": -36.0,
+   "z0": -40.0,
+   "x1": -18.0,
+   "z1": -24.0,
+   "count": 14,
+   "seed": 41,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 1.8
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -36.0,
+   "z0": -40.0,
+   "x1": -18.0,
+   "z1": -24.0,
+   "count": 14,
+   "seed": 42,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall A 1",
+   "x": -28.44,
+   "z": -23.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall A 2",
+   "x": -27.72,
+   "z": -23.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall A 3",
+   "x": -27.0,
+   "z": -23.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall A 4",
+   "x": -26.28,
+   "z": -23.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall A 5",
+   "x": -25.56,
+   "z": -23.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall B 1",
+   "x": 28.44,
+   "z": 23.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall B 2",
+   "x": 27.72,
+   "z": 23.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall B 3",
+   "x": 27.0,
+   "z": 23.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall B 4",
+   "x": 26.28,
+   "z": 23.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Pod Hall B 5",
+   "x": 25.56,
+   "z": 23.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -27.0,
+   "z": -32.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 27.0,
+   "z": 32.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -31.0,
+   "z": -34.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 31.0,
+   "z": 34.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.0,
+   "z": -29.8
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.0,
+   "z": 29.8
+  },
+  {
+   "op": "WallX",
+   "x0": 18.0,
+   "x1": 34.0,
+   "z": -40.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 26.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -34.0,
+   "x1": -18.0,
+   "z": 39.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -26.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": 18.0,
+   "x1": 34.0,
+   "z": -26.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 23.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 30.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -34.0,
+   "x1": -18.0,
+   "z": 26.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -23.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -30.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -39.6,
+   "z1": -26.4,
+   "x": 18.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -33.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 26.4,
+   "z1": 39.6,
+   "x": -18.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 33.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -39.6,
+   "z1": -26.4,
+   "x": 33.6,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -31.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -37.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 26.4,
+   "z1": 39.6,
+   "x": -34.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 31.0,
+     "width": 2.2,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 37.0,
+     "width": 1.6,
+     "bottom": 1.0,
+     "top": 2.2
+    }
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 21.5,
+   "z": -36.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -21.5,
+   "z": 36.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 21.5,
+   "z": -29.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -21.5,
+   "z": 29.8
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 24.5,
+   "z": -36.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -24.5,
+   "z": 36.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 24.5,
+   "z": -29.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -24.5,
+   "z": 29.8
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 27.5,
+   "z": -36.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -27.5,
+   "z": 36.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 27.5,
+   "z": -29.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -27.5,
+   "z": 29.8
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 30.5,
+   "z": -36.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -30.5,
+   "z": 36.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": 30.5,
+   "z": -29.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Server Stack",
+   "x": -30.5,
+   "z": 29.8
+  },
+  {
+   "op": "Prop",
+   "name": "Patch Panel Cabinet",
+   "x": 18.9,
+   "z": -37.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Patch Panel Cabinet",
+   "x": -18.9,
+   "z": 37.6,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 26.0,
+   "z": -39.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -26.0,
+   "z": 39.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Server Rack",
+   "x": 33.0,
+   "z": -38.6,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Server Rack",
+   "x": -33.0,
+   "z": 38.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": 26.0,
+   "z": -39.3,
+   "y": 2.5
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": -26.0,
+   "z": 39.3,
+   "y": 2.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 22.0,
+   "z": -33.0,
+   "y": 2.7
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": -22.0,
+   "z": 33.0,
+   "y": 2.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": 30.0,
+   "z": -33.0,
+   "y": 2.7
+  },
+  {
+   "op": "Prop",
+   "name": "Tube Light",
+   "x": -30.0,
+   "z": 33.0,
+   "y": 2.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 32.8,
+   "z": -27.2
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -32.8,
+   "z": 27.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 19.2,
+   "z": -27.4,
+   "yaw": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -19.2,
+   "z": 27.4,
+   "yaw": 220.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Electrical Panel",
+   "x": 20.0,
+   "z": -39.3,
+   "y": 1.6,
+   "onto": "wall-z",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Electrical Panel",
+   "x": -20.0,
+   "z": 39.3,
+   "y": 1.6,
+   "onto": "wall+z",
+   "size": 1.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Hazard Stripes",
+   "x": 26.5,
+   "z": -27.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Hazard Stripes",
+   "x": -26.5,
+   "z": 27.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.0,
+   "rotation": 180
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": 18.0,
+   "z0": -40.0,
+   "x1": 34.0,
+   "z1": -26.0,
+   "count": 10,
+   "seed": 51,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 1",
+   "x": 24.56,
+   "z": -25.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 2",
+   "x": 25.28,
+   "z": -25.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 3",
+   "x": 26.0,
+   "z": -25.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 4",
+   "x": 26.72,
+   "z": -25.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 5",
+   "x": 27.44,
+   "z": -25.7,
+   "y": 2.85,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 1",
+   "x": -24.56,
+   "z": 25.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 2",
+   "x": -25.28,
+   "z": 25.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 3",
+   "x": -26.0,
+   "z": 25.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 4",
+   "x": -26.72,
+   "z": 25.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Server Room 5",
+   "x": -27.44,
+   "z": 25.7,
+   "y": 2.85,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 26.0,
+   "z": -33.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -26.0,
+   "z": 33.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 20.0,
+   "z": -33.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -20.0,
+   "z": 33.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 32.0,
+   "z": -33.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -32.0,
+   "z": 33.0
+  },
+  {
+   "op": "StairsZ",
+   "x0": -24.6,
+   "x1": -23.1,
+   "z": -9.8,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 3.5,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "StairsZ",
+   "x0": 23.1,
+   "x1": 24.6,
+   "z": 9.8,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 3.5,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Slab",
+   "x0": -24.7,
+   "z0": -16.65,
+   "x1": -20.3,
+   "z1": -13.85,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Slab",
+   "x0": 20.3,
+   "z0": 13.85,
+   "x1": 24.7,
+   "z1": 16.65,
+   "yTop": 3.5,
+   "thick": 0.3,
+   "color": "#aeb9c2"
+  },
+  {
+   "op": "Block",
+   "x0": -24.7,
+   "y0": 3.5,
+   "z0": -16.71,
+   "x1": -20.4,
+   "y1": 4.4,
+   "z1": -16.59,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 20.4,
+   "y0": 3.5,
+   "z0": 16.59,
+   "x1": 24.7,
+   "y1": 4.4,
+   "z1": 16.71,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -24.76,
+   "y0": 3.5,
+   "z0": -16.65,
+   "x1": -24.64,
+   "y1": 4.4,
+   "z1": -13.85,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 24.64,
+   "y0": 3.5,
+   "z0": 13.85,
+   "x1": 24.76,
+   "y1": 4.4,
+   "z1": 16.65,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -24.76,
+   "y0": 0.0,
+   "z0": -13.85,
+   "x1": -24.64,
+   "y1": 4.4,
+   "z1": -9.8,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 24.64,
+   "y0": 0.0,
+   "z0": 9.8,
+   "x1": 24.76,
+   "y1": 4.4,
+   "z1": 13.85,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": -23.06,
+   "y0": 0.0,
+   "z0": -13.85,
+   "x1": -22.94,
+   "y1": 4.4,
+   "z1": -9.8,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 22.94,
+   "y0": 0.0,
+   "z0": 9.8,
+   "x1": 23.06,
+   "y1": 4.4,
+   "z1": 13.85,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.85,
+   "z": -9.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.85,
+   "z": 9.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.85,
+   "z": -11.1,
+   "y": 1.1
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.85,
+   "z": 11.1,
+   "y": 1.1
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.85,
+   "z": -12.5,
+   "y": 2.3
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.85,
+   "z": 12.5,
+   "y": 2.3
+  },
+  {
+   "op": "Waypoint",
+   "x": -23.0,
+   "z": -15.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 23.0,
+   "z": 15.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -19.0,
+   "z": -15.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 19.0,
+   "z": 15.0,
+   "y": 3.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": -23.0,
+   "z": -15.0,
+   "y": 3.5,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Floor",
+   "x": 23.0,
+   "z": 15.0,
+   "y": 3.5,
+   "onto": "floor",
+   "size": 4,
+   "rotation": 180
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -12.0,
+   "z": -28.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 12.0,
+   "z": 28.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 12.0,
+   "z": -31.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -12.0,
+   "z": 31.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -5.0,
+   "z": -24.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 5.0,
+   "z": 24.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 6.5,
+   "z": -27.0,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -6.5,
+   "z": 27.0,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -7.0,
+   "z": -32.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 7.0,
+   "z": 32.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 4.0,
+   "z": -23.5
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -4.0,
+   "z": 23.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": -3.0,
+   "z": -33.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": 3.0,
+   "z": 33.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": 15.0,
+   "z": -24.5
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": -15.0,
+   "z": 24.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 14.0,
+   "z": -27.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -14.0,
+   "z": 27.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -16.5,
+   "z": -22.5,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 16.5,
+   "z": 22.5,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 16.5,
+   "z": -34.0,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -16.5,
+   "z": 34.0,
+   "yaw": 45.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 0.0,
+   "z": -22.2,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 0.0,
+   "z": 22.2,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 180
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -18.0,
+   "z0": -36.0,
+   "x1": 18.0,
+   "z1": -20.0,
+   "count": 24,
+   "seed": 61,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "global:Floor Cracks",
+    "Frostvault Frost Bloom"
+   ],
+   "x0": -18.0,
+   "z0": -36.0,
+   "x1": 18.0,
+   "z1": -20.0,
+   "count": 8,
+   "seed": 62,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -15.5,
+   "z": -45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 15.5,
+   "z": 45.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -16.0,
+   "z": -41.0,
+   "yaw": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 16.0,
+   "z": 41.0,
+   "yaw": 190.0
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": -14.5,
+   "z": -37.5
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": 14.5,
+   "z": 37.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 15.5,
+   "z": -44.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -15.5,
+   "z": 44.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": 16.2,
+   "z": -40.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cold Storage Locker",
+   "x": -16.2,
+   "z": 40.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -10.0,
+   "z": -52.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 10.0,
+   "z": 52.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -2.0,
+   "z": -52.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 2.0,
+   "z": 52.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 6.0,
+   "z": -52.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -6.0,
+   "z": 52.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": -26.0,
+   "z": -50.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": 26.0,
+   "z": 50.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": 14.0,
+   "z": -52.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": -14.0,
+   "z": 52.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Cylinders",
+   "x": 2.0,
+   "z": -50.3
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Cylinders",
+   "x": -2.0,
+   "z": 50.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -4.0,
+   "z": -50.5
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 4.0,
+   "z": 50.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -22.0,
+   "z": -46.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 22.0,
+   "z": 46.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 22.0,
+   "z": -47.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -22.0,
+   "z": 47.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom",
+    "Frostvault Frost Bloom Small",
+    "global:Rust Stain"
+   ],
+   "x0": -30.0,
+   "z0": -54.0,
+   "x1": 30.0,
+   "z1": -48.0,
+   "count": 10,
+   "seed": 71,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -40.5,
+   "z": -29.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 40.5,
+   "z": 29.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": -39.0,
+   "z": -36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Dewar",
+   "x": 39.0,
+   "z": 36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": -42.5,
+   "z": -20.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": 42.5,
+   "z": 20.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": -39.5,
+   "z": -24.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Specimen Crate",
+   "x": 39.5,
+   "z": 24.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -37.8,
+   "z": -43.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 37.8,
+   "z": 43.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -27.0,
+   "z": -12.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 27.0,
+   "z": 12.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -27.5,
+   "z": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 27.5,
+   "z": -10.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -33.0,
+   "z": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 33.0,
+   "z": -0.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -30.5,
+   "z": -6.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 30.5,
+   "z": 6.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -24.0,
+   "z": 4.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 24.0,
+   "z": -4.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": -24.0,
+   "z": -4.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Quarantine Barrier",
+   "x": 24.0,
+   "z": 4.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -31.0,
+   "z": 15.0,
+   "yaw": 170.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 31.0,
+   "z": -15.0,
+   "yaw": 350.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": -26.0,
+   "z": -19.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hazard Board",
+   "x": 26.0,
+   "z": 19.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -29.0,
+   "z": -16.5
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 29.0,
+   "z": 16.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -29.0,
+   "z": 17.5
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 29.0,
+   "z": -17.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": -22.5,
+   "z": -15.5
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": 22.5,
+   "z": 15.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -38.0,
+   "z0": -20.0,
+   "x1": -20.5,
+   "z1": 20.0,
+   "count": 22,
+   "seed": 81,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom",
+    "global:Oil Stain"
+   ],
+   "x0": -38.0,
+   "z0": -20.0,
+   "x1": -21.0,
+   "z1": 20.0,
+   "count": 8,
+   "seed": 82,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 3.0
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Specimen Crate",
+    "Specimen Crate",
+    "Biohazard Bin",
+    "Vault Dewar",
+    "Station Supply Case"
+   ],
+   "x0": -44.0,
+   "z0": -54.0,
+   "x1": 44.0,
+   "z1": -20.0,
+   "count": 22,
+   "seed": 3,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Specimen Crate",
+    "Biohazard Bin",
+    "Station Supply Case"
+   ],
+   "x0": -44.0,
+   "z0": -20.0,
+   "x1": -20.5,
+   "z1": 20.0,
+   "count": 8,
+   "seed": 4,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "global:Paint Cans",
+    "global:Toolbox",
+    "global:Bucket",
+    "global:Mop and Bucket"
+   ],
+   "x0": -44.0,
+   "z0": -54.0,
+   "x1": 44.0,
+   "z1": 54.0,
+   "count": 30,
+   "seed": 5,
+   "mirror": true
+  },
+  {
+   "op": "Waypoint",
+   "x": -40.0,
+   "z": -30.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 40.0,
+   "z": 30.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -39.0,
+   "z": -40.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 39.0,
+   "z": 40.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -44.0,
+   "z": -20.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 44.0,
+   "z": 20.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.0,
+   "z": -45.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.0,
+   "z": 45.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -15.5,
+   "z": -39.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 15.5,
+   "z": 39.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.0,
+   "z": -46.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.0,
+   "z": 46.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -20.0,
+   "z": -51.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 20.0,
+   "z": 51.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -52.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 52.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 22.0,
+   "z": -51.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -22.0,
+   "z": 51.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -22.0,
+   "z": -14.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 22.0,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Portal",
+   "x": -58.0,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Portal",
+   "x": 58.0,
+   "z": -0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Leaf",
+   "x": -56.8,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Blast Door Leaf",
+   "x": 56.8,
+   "z": -0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "WallZ",
+   "z0": -9.5,
+   "z1": 9.5,
+   "x": -38.4,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": -5.5,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 5.5,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 0.0,
+     "width": 2.0,
+     "bottom": 1.1,
+     "top": 2.0
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -9.5,
+   "z1": 9.5,
+   "x": 38.0,
+   "t": 0.4,
+   "y0": 0.0,
+   "y1": 3.2,
+   "color": "#e4e9ee",
+   "holes": [
+    {
+     "center": 5.5,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": -5.5,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.4
+    },
+    {
+     "center": 0.0,
+     "width": 2.0,
+     "bottom": 1.1,
+     "top": 2.0
+    }
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -38.6,
+   "y0": 3.2,
+   "z0": -9.7,
+   "x1": -38.2,
+   "y1": 3.6,
+   "z1": 9.7,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Block",
+   "x0": 38.2,
+   "y0": 3.2,
+   "z0": -9.7,
+   "x1": 38.6,
+   "y1": 3.6,
+   "z1": 9.7,
+   "color": "#b9c4cd"
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake West 1",
+   "x": -38.7,
+   "z": -1.68,
+   "y": 2.95,
+   "onto": "wall+x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake West 2",
+   "x": -38.7,
+   "z": -0.84,
+   "y": 2.95,
+   "onto": "wall+x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake West 3",
+   "x": -38.7,
+   "z": 0.0,
+   "y": 2.95,
+   "onto": "wall+x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake West 4",
+   "x": -38.7,
+   "z": 0.84,
+   "y": 2.95,
+   "onto": "wall+x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake West 5",
+   "x": -38.7,
+   "z": 1.68,
+   "y": 2.95,
+   "onto": "wall+x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake East 1",
+   "x": 38.7,
+   "z": 1.68,
+   "y": 2.95,
+   "onto": "wall-x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake East 2",
+   "x": 38.7,
+   "z": 0.84,
+   "y": 2.95,
+   "onto": "wall-x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake East 3",
+   "x": 38.7,
+   "z": 0.0,
+   "y": 2.95,
+   "onto": "wall-x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake East 4",
+   "x": 38.7,
+   "z": -0.84,
+   "y": 2.95,
+   "onto": "wall-x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Sign Intake East 5",
+   "x": 38.7,
+   "z": -1.68,
+   "y": 2.95,
+   "onto": "wall-x",
+   "size": 0.84,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Borealis Logo",
+   "x": -38.7,
+   "z": -7.0,
+   "y": 2.4,
+   "onto": "wall+x",
+   "size": 1.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Borealis Logo",
+   "x": 38.7,
+   "z": 7.0,
+   "y": 2.4,
+   "onto": "wall-x",
+   "size": 1.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -50.0,
+   "z": -14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 50.0,
+   "z": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -50.0,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 50.0,
+   "z": -14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -44.5,
+   "z": -5.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 44.5,
+   "z": 5.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -44.5,
+   "z": 5.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 44.5,
+   "z": -5.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -47.0,
+   "z": -10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 47.0,
+   "z": 10.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -47.0,
+   "z": 10.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 47.0,
+   "z": -10.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -53.0,
+   "z": -8.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 53.0,
+   "z": 8.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -43.5,
+   "z": -25.0,
+   "yaw": 60.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 43.5,
+   "z": 25.0,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": -43.5,
+   "z": 25.0,
+   "yaw": 120.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod",
+   "x": 43.5,
+   "z": -25.0,
+   "yaw": 300.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -41.0,
+   "z": -14.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 41.0,
+   "z": 14.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": -41.0,
+   "z": 14.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cryo Pod Upright",
+   "x": 41.0,
+   "z": -14.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": -56.0,
+   "z": 9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vault Coolant Manifold",
+   "x": 56.0,
+   "z": -9.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -47.0,
+   "z": -17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 47.0,
+   "z": 17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -47.0,
+   "z": 17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 47.0,
+   "z": -17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -42.0,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 42.0,
+   "z": -0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -41.5,
+   "z": -24.0,
+   "yaw": 60.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 41.5,
+   "z": 24.0,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": -40.5,
+   "z": 7.5
+  },
+  {
+   "op": "Prop",
+   "name": "Biohazard Bin",
+   "x": 40.5,
+   "z": -7.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -52.0,
+   "z": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 52.0,
+   "z": -0.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -48.0,
+   "z": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 48.0,
+   "z": 3.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": -48.0,
+   "z": 3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hex Floor Light",
+   "x": 48.0,
+   "z": -3.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Number 3",
+   "x": -54.0,
+   "z": -6.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Hex Number 4",
+   "x": 54.0,
+   "z": 6.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 270
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": -40.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Frostvault Quarantine Stripe",
+   "x": 40.0,
+   "z": -0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 270
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Hex Floor"
+   ],
+   "x0": -58.0,
+   "z0": -24.0,
+   "x1": -39.0,
+   "z1": 24.0,
+   "count": 30,
+   "seed": 91,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 4.0,
+   "minSize": 4,
+   "maxSize": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Frostvault Frost Bloom Small",
+    "Frostvault Frost Bloom",
+    "global:Oil Stain"
+   ],
+   "x0": -58.0,
+   "z0": -24.0,
+   "x1": -39.0,
+   "z1": 24.0,
+   "count": 10,
+   "seed": 92,
+   "onto": "floor",
+   "y": 0.0,
+   "gap": 3.0
+  },
+  {
+   "op": "Spawn",
+   "x": -55.0,
+   "z": -7.0
+  },
+  {
+   "op": "Spawn",
+   "x": 55.0,
+   "z": 7.0
+  },
+  {
+   "op": "Spawn",
+   "x": -55.0,
+   "z": 7.0
+  },
+  {
+   "op": "Spawn",
+   "x": 55.0,
+   "z": -7.0
+  },
+  {
+   "op": "Spawn",
+   "x": -53.0,
+   "z": -16.0
+  },
+  {
+   "op": "Spawn",
+   "x": 53.0,
+   "z": 16.0
+  },
+  {
+   "op": "Spawn",
+   "x": -53.0,
+   "z": 16.0
+  },
+  {
+   "op": "Spawn",
+   "x": 53.0,
+   "z": -16.0
+  },
+  {
+   "op": "Spawn",
+   "x": -47.5,
+   "z": -20.5
+  },
+  {
+   "op": "Spawn",
+   "x": 47.5,
+   "z": 20.5
+  },
+  {
+   "op": "Spawn",
+   "x": -47.5,
+   "z": 20.5
+  },
+  {
+   "op": "Spawn",
+   "x": 47.5,
+   "z": -20.5
+  },
+  {
+   "op": "Spawn",
+   "x": -44.0,
+   "z": -12.0
+  },
+  {
+   "op": "Spawn",
+   "x": 44.0,
+   "z": 12.0
+  },
+  {
+   "op": "Spawn",
+   "x": -44.0,
+   "z": 12.0
+  },
+  {
+   "op": "Spawn",
+   "x": 44.0,
+   "z": -12.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -52.0,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 52.0,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -40.0,
+   "z": -5.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 40.0,
+   "z": 5.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -40.0,
+   "z": 5.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 40.0,
+   "z": -5.5
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 7
+  }
+ ]
+}

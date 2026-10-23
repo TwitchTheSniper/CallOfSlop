@@ -1,0 +1,17 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Frost Bloom",
+ "category": "Frostvault",
+ "description": "A bloom of frost crystals spreading over a cold floor or wall.",
+ "author": "Call of Slop",
+ "size": 1.8,
+ "rotation": "random",
+ "blend": "alpha",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "frostvault_frost_bloom.png",
+ "fadeDistance": 50,
+ "sizeVariation": 0.3
+}

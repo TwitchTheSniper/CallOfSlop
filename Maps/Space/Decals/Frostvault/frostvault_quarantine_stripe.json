@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Quarantine Stripe",
+ "category": "Frostvault",
+ "description": "A blue and white diagonal quarantine line (runs east-west; turn it 90).",
+ "author": "Call of Slop",
+ "size": [
+  4,
+  0.9
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "frostvault_quarantine_stripe.png",
+ "fadeDistance": 70
+}

@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Frostvault Sign Gallery 1",
+ "category": "Frostvault",
+ "description": "Tile 1 of 5 of the cryo vault's 'OBSERVATION' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.68,
+  0.6
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "frostvault_sign_gallery_1.png",
+ "fadeDistance": 80
+}

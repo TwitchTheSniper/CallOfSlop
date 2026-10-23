@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Vesper Neon Bazaar 5",
+ "category": "Vesper",
+ "description": "Tile 5 of 5 of the neon sign 'VESPER BAZAAR' (an invented shop name).",
+ "author": "Call of Slop",
+ "size": [
+  1.04,
+  1.0
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "vesper_neon_bazaar_5.png",
+ "fadeDistance": 90
+}

@@ -1,0 +1,17 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Vesper Scrawl Cyan",
+ "category": "Vesper",
+ "description": "A cyan spray-paint scrawl (abstract, no letters).",
+ "author": "Call of Slop",
+ "size": [
+  2.0,
+  1.2
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "vesper_scrawl_cyan.png",
+ "fadeDistance": 60,
+ "opacity": 0.9
+}

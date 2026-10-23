@@ -1,0 +1,51 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Pad Edge Light",
+ "category": "Vesper",
+ "description": "A flush cyan pad-edge marker light (looks only).",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "fadeDistance": 100,
+ "parts": [
+  {
+   "size": [
+    0.6,
+    0.06,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.03,
+    0.0
+   ],
+   "color": "#2a2c30"
+  },
+  {
+   "size": [
+    0.46,
+    0.04,
+    0.46
+   ],
+   "offset": [
+    0.0,
+    0.08,
+    0.0
+   ],
+   "color": "#4fe3ff",
+   "anim": {
+    "type": "blink",
+    "color": "#4fe3ff",
+    "glow": 1.6,
+    "period": 1.6,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

@@ -1,0 +1,235 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Cold Storage Locker",
+ "category": "Frostvault",
+ "description": "A row of four white cold-storage lockers with blue status lamps. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.2,
+    2.0,
+    0.6
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 2
+ },
+ "breakable": {
+  "health": 240,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.06,
+    0.18
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    2.0,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    1.0,
+    0.0
+   ],
+   "color": "#e9eef2",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.26,
+    1.9,
+    0.02
+   ],
+   "offset": [
+    -0.45,
+    1.0,
+    0.3
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.04,
+    0.2,
+    0.03
+   ],
+   "offset": [
+    -0.35,
+    1.05,
+    0.31
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.53,
+    1.72,
+    0.31
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.8,
+    "period": 2.55,
+    "duty": 0.6
+   }
+  },
+  {
+   "size": [
+    0.26,
+    1.9,
+    0.02
+   ],
+   "offset": [
+    -0.15,
+    1.0,
+    0.3
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.04,
+    0.2,
+    0.03
+   ],
+   "offset": [
+    -0.05,
+    1.05,
+    0.31
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    -0.23,
+    1.72,
+    0.31
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.8,
+    "period": 2.85,
+    "duty": 0.6
+   }
+  },
+  {
+   "size": [
+    0.26,
+    1.9,
+    0.02
+   ],
+   "offset": [
+    0.15,
+    1.0,
+    0.3
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.04,
+    0.2,
+    0.03
+   ],
+   "offset": [
+    0.25,
+    1.05,
+    0.31
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.07,
+    1.72,
+    0.31
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.8,
+    "period": 3.15,
+    "duty": 0.6
+   }
+  },
+  {
+   "size": [
+    0.26,
+    1.9,
+    0.02
+   ],
+   "offset": [
+    0.45,
+    1.0,
+    0.3
+   ],
+   "color": "#cfd8df"
+  },
+  {
+   "size": [
+    0.04,
+    0.2,
+    0.03
+   ],
+   "offset": [
+    0.55,
+    1.05,
+    0.31
+   ],
+   "color": "#8a949c"
+  },
+  {
+   "size": [
+    0.06,
+    0.04,
+    0.02
+   ],
+   "offset": [
+    0.37,
+    1.72,
+    0.31
+   ],
+   "color": "#5fb8ea",
+   "anim": {
+    "type": "blink",
+    "color": "#5fb8ea",
+    "glow": 0.8,
+    "period": 3.45,
+    "duty": 0.6
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}
