@@ -1,0 +1,18 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Gravity Sign Plating Fault 2",
+ "category": "Gravity",
+ "description": "Tile 2 of 6 of the salvage yard's 'GRAVITY PLATING FAULT' sign (an invented place).",
+ "author": "Call of Slop",
+ "size": [
+  0.6,
+  0.6
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "wall"
+ ],
+ "image": "gravity_sign_plating_fault_2.png",
+ "fadeDistance": 80
+}

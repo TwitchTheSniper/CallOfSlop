@@ -1,0 +1,5029 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Keelhaul Yard",
+ "description": "A salvage yard with failing gravity plating: fight on a hull wall, long-jump a low-g hold, walk round a captured rock.",
+ "author": "Call of Slop",
+ "order": 603,
+ "destructible": false,
+ "fallKill": -4.0,
+ "maxPlayers": 16,
+ "skybox": {
+  "preset": "night",
+  "zenith": "#05060c",
+  "horizon": "#07080f",
+  "ground": "#05060c",
+  "sun": {
+   "direction": [
+    -0.7,
+    0.35,
+    0.6
+   ],
+   "intensity": 1.1,
+   "size": 2.0
+  },
+  "moon": {
+   "direction": [
+    0.5,
+    0.3,
+    -0.8
+   ],
+   "size": 24,
+   "color": "#b8a07c",
+   "intensity": 0.4
+  },
+  "stars": 1.8,
+  "clouds": false,
+  "ambient": 1.9
+ },
+ "boundary": {
+  "shape": "smooth",
+  "points": [
+   [
+    -52,
+    0
+   ],
+   [
+    -52,
+    -28
+   ],
+   [
+    -36,
+    -34
+   ],
+   [
+    -20,
+    -40
+   ],
+   [
+    -20,
+    -50
+   ],
+   [
+    0,
+    -52
+   ],
+   [
+    20,
+    -50
+   ],
+   [
+    20,
+    -34
+   ],
+   [
+    34,
+    -42
+   ],
+   [
+    42,
+    -36
+   ],
+   [
+    42,
+    0
+   ],
+   [
+    42,
+    36
+   ],
+   [
+    34,
+    42
+   ],
+   [
+    20,
+    34
+   ],
+   [
+    20,
+    50
+   ],
+   [
+    0,
+    52
+   ],
+   [
+    -20,
+    50
+   ],
+   [
+    -20,
+    40
+   ],
+   [
+    -36,
+    34
+   ],
+   [
+    -52,
+    28
+   ]
+  ],
+  "edge": "none",
+  "barrierHeight": 1.0
+ },
+ "gravity": {
+  "type": "zones",
+  "default": {
+   "type": "uniform"
+  },
+  "zones": [
+   {
+    "shape": "box",
+    "name": "hull",
+    "min": [
+     20,
+     8.3,
+     -12.0
+    ],
+    "max": [
+     30.5,
+     26.5,
+     12.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      1,
+      0,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "hull side",
+    "min": [
+     20,
+     0.5,
+     -36.0
+    ],
+    "max": [
+     30.5,
+     26.5,
+     -12.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      1,
+      0,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "hull side",
+    "min": [
+     20,
+     0.5,
+     12.0
+    ],
+    "max": [
+     30.5,
+     26.5,
+     36.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      1,
+      0,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "bowl 30",
+    "min": [
+     24.071,
+     -1,
+     -12.0
+    ],
+    "max": [
+     27.657,
+     8.3,
+     12.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      0.5,
+      -0.8660254,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "bowl 60",
+    "min": [
+     27.657,
+     -1,
+     -12.0
+    ],
+    "max": [
+     29.727,
+     8.3,
+     12.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      0.8660254,
+      -0.5,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "bowl foot",
+    "min": [
+     29.727,
+     -1,
+     -12.0
+    ],
+    "max": [
+     30.5,
+     8.3,
+     12.0
+    ],
+    "field": {
+     "type": "uniform",
+     "direction": [
+      1,
+      0,
+      0
+     ]
+    }
+   },
+   {
+    "shape": "box",
+    "name": "pier",
+    "min": [
+     -3,
+     12,
+     -9
+    ],
+    "max": [
+     3,
+     19,
+     -1.6
+    ],
+    "field": {
+     "type": "uniform"
+    }
+   },
+   {
+    "shape": "box",
+    "name": "pier",
+    "min": [
+     -3,
+     12,
+     1.6
+    ],
+    "max": [
+     3,
+     19,
+     9
+    ],
+    "field": {
+     "type": "uniform"
+    }
+   },
+   {
+    "shape": "sphere",
+    "name": "rock",
+    "center": [
+     0.0,
+     9.0,
+     0.0
+    ],
+    "radius": 8.0,
+    "field": {
+     "type": "point",
+     "center": [
+      0.0,
+      9.0,
+      0.0
+     ],
+     "strength": 18
+    }
+   },
+   {
+    "shape": "box",
+    "name": "hold",
+    "min": [
+     -48.0,
+     -5.0,
+     -26.0
+    ],
+    "max": [
+     -16.0,
+     30,
+     26.0
+    ],
+    "field": {
+     "type": "uniform",
+     "strength": 7.0
+    }
+   }
+  ]
+ },
+ "teamSpawns": [
+  [
+   [
+    -7.0,
+    0.0,
+    -42.0
+   ],
+   [
+    -3.0,
+    0.0,
+    -43.0
+   ],
+   [
+    3.0,
+    0.0,
+    -43.0
+   ],
+   [
+    7.0,
+    0.0,
+    -42.0
+   ],
+   [
+    -11.0,
+    0.0,
+    -36.0
+   ],
+   [
+    11.0,
+    0.0,
+    -36.0
+   ],
+   [
+    -8.0,
+    0.0,
+    -31.5
+   ],
+   [
+    8.0,
+    0.0,
+    -31.5
+   ]
+  ],
+  [
+   [
+    -7.0,
+    0.0,
+    42.0
+   ],
+   [
+    -3.0,
+    0.0,
+    43.0
+   ],
+   [
+    3.0,
+    0.0,
+    43.0
+   ],
+   [
+    7.0,
+    0.0,
+    42.0
+   ],
+   [
+    -11.0,
+    0.0,
+    36.0
+   ],
+   [
+    11.0,
+    0.0,
+    36.0
+   ],
+   [
+    -8.0,
+    0.0,
+    31.5
+   ],
+   [
+    8.0,
+    0.0,
+    31.5
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0,
+   "z": 0,
+   "y": 0,
+   "radius": 4.5
+  },
+  {
+   "x": -31,
+   "z": 0,
+   "y": -3.0,
+   "radius": 3.5
+  },
+  {
+   "x": 29.95,
+   "z": 0,
+   "y": 16,
+   "radius": 4.5
+  }
+ ],
+ "flags": [
+  [
+   0,
+   0,
+   -42
+  ],
+  [
+   0,
+   0,
+   42
+  ]
+ ],
+ "ops": [
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": -0.6,
+   "z0": -30.0,
+   "x1": 30.0,
+   "y1": 0.0,
+   "z1": 30.0,
+   "color": "#9a9488"
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Gravity Plating Grid"
+   ],
+   "x0": -15,
+   "z0": -29,
+   "x1": 21,
+   "z1": 29,
+   "count": 140,
+   "seed": 31,
+   "gap": 3.2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Scorch Mark",
+    "Oil Drips"
+   ],
+   "x0": -15,
+   "z0": -29,
+   "x1": 21,
+   "z1": 29,
+   "count": 26,
+   "seed": 32,
+   "gap": 4
+  },
+  {
+   "op": "Decal",
+   "decal": "Verrin Salvage Mark",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 7
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": -9.0,
+   "z": -9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": 12.0,
+   "z": -9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Cutter Rig",
+   "x": 6.0,
+   "z": -20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -6.0,
+   "z": -21.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -4.0,
+   "z": -22.6
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": 16.0,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": -12.0,
+   "z": -2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 4.0,
+   "z": -6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -4.0,
+   "z": -6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 10.0,
+   "z": -26.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": 11.2,
+   "z": -27.4
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": 19.0,
+   "z": -13.5
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": 19.0,
+   "z": -29.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -14.0,
+   "z": -28.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 14.0,
+   "z": -12.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -14.0,
+   "z": -20.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -14.0,
+   "z": -24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": 8.0,
+   "z": -13.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -8.0,
+   "z": -16.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 14.0,
+   "z": -4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -9.0,
+   "z": -16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 16.4,
+   "z": -4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -11.4,
+   "z": -16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 18.8,
+   "z": -4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -13.8,
+   "z": -16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Waypoint",
+   "x": -10.0,
+   "z": -10.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -24.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": -9.0,
+   "z": 9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": 12.0,
+   "z": 9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Cutter Rig",
+   "x": 6.0,
+   "z": 20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -6.0,
+   "z": 21.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -4.0,
+   "z": 22.6
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": 16.0,
+   "z": 22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": -12.0,
+   "z": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 4.0,
+   "z": 6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -4.0,
+   "z": 6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 10.0,
+   "z": 26.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": 11.2,
+   "z": 27.4
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": 19.0,
+   "z": 13.5
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": 19.0,
+   "z": 29.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -14.0,
+   "z": 28.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 14.0,
+   "z": 12.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -14.0,
+   "z": 20.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -14.0,
+   "z": 24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": 8.0,
+   "z": 13.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -8.0,
+   "z": 16.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 14.0,
+   "z": 4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -9.0,
+   "z": 16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 16.4,
+   "z": 4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -11.4,
+   "z": 16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 18.8,
+   "z": 4.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Cyan",
+   "x": -13.8,
+   "z": 16.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270,
+   "size": 1.8
+  },
+  {
+   "op": "Waypoint",
+   "x": -10.0,
+   "z": 10.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 24.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -6.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 19.0,
+   "z": 0.0,
+   "y": 0.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 20.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 20.0,
+   "z": 10.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 20.0,
+   "z": -10.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 3,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Stratos Pad Ring",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 10
+  },
+  {
+   "op": "Block",
+   "x0": 30.0,
+   "y0": 0.0,
+   "z0": -37.0,
+   "x1": 34.0,
+   "y1": 26.0,
+   "z1": 37.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": 29.0,
+   "y0": 26.0,
+   "z0": -37.0,
+   "x1": 34.0,
+   "y1": 27.0,
+   "z1": 37.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": 29.0,
+   "y0": 0.0,
+   "z0": -37.0,
+   "x1": 34.0,
+   "y1": 27.0,
+   "z1": -36.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": 29.0,
+   "y0": 0.0,
+   "z0": 36.0,
+   "x1": 34.0,
+   "y1": 27.0,
+   "z1": 37.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 42.0,
+   "z": 0.0,
+   "y": 2.0,
+   "color": "#6a6358",
+   "width": 20,
+   "depth": 78,
+   "height": 20,
+   "roll": 90,
+   "segments": 28,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 42.0,
+   "z": 0.0,
+   "y": 12.0,
+   "color": "#7d7568",
+   "width": 16,
+   "depth": 74,
+   "height": 16,
+   "roll": 90,
+   "segments": 24,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cone",
+   "x": 42.0,
+   "z": -38.0,
+   "y": 10.0,
+   "color": "#6a6358",
+   "width": 18,
+   "depth": 18,
+   "height": 20,
+   "pitch": -90,
+   "segments": 24,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": -30.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": -20.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": -10.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": 0.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": 10.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": 20.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 35.0,
+   "z": 30.0,
+   "y": 0.0,
+   "color": "#3a3c40",
+   "width": 2,
+   "height": 27.0,
+   "depth": 1.2,
+   "material": "Metal"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 11.5,
+   "z0": -20.0,
+   "x1": 30.0,
+   "y1": 12.7,
+   "z1": -8.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 18.0,
+   "z0": -20.0,
+   "x1": 30.0,
+   "y1": 19.2,
+   "z1": -8.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 6.0,
+   "z0": -28.6,
+   "x1": 30.0,
+   "y1": 22.0,
+   "z1": -27.4,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.4,
+   "y0": 14.5,
+   "z0": -25.0,
+   "x1": 30.0,
+   "y1": 15.5,
+   "z1": -23.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 11.5,
+   "z0": 8.0,
+   "x1": 30.0,
+   "y1": 12.7,
+   "z1": 20.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 18.0,
+   "z0": 8.0,
+   "x1": 30.0,
+   "y1": 19.2,
+   "z1": 20.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.2,
+   "y0": 6.0,
+   "z0": 27.4,
+   "x1": 30.0,
+   "y1": 22.0,
+   "z1": 28.6,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 29.4,
+   "y0": 14.5,
+   "z0": 23.0,
+   "x1": 30.0,
+   "y1": 15.5,
+   "z1": 25.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Decal",
+   "decal": "Vent Grille",
+   "x": 28.0,
+   "z": -4.0,
+   "y": 9.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Vent Grille",
+   "x": 28.0,
+   "z": 4.0,
+   "y": 9.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": 28.0,
+   "z": -14.0,
+   "y": 22.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": 28.0,
+   "z": 14.0,
+   "y": 22.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Scorch Mark",
+   "x": 28.0,
+   "z": -30.0,
+   "y": 15.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Scorch Mark",
+   "x": 28.0,
+   "z": 30.0,
+   "y": 15.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Rust Bleed",
+   "x": 28.0,
+   "z": -24.0,
+   "y": 4.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Rust Bleed",
+   "x": 28.0,
+   "z": 24.0,
+   "y": 4.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Scorch Mark",
+   "x": 28.0,
+   "z": 0.0,
+   "y": 20.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 28.0,
+   "z": -32.0,
+   "y": 23.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": 28.0,
+   "z": 32.0,
+   "y": 23.0,
+   "onto": "wall+x",
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Hull Plating 1",
+   "x": 28.0,
+   "z": -1.2,
+   "y": 24.2,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Hull Plating 2",
+   "x": 28.0,
+   "z": -0.6,
+   "y": 24.2,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Hull Plating 3",
+   "x": 28.0,
+   "z": 0.0,
+   "y": 24.2,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Hull Plating 4",
+   "x": 28.0,
+   "z": 0.6,
+   "y": 24.2,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Hull Plating 5",
+   "x": 28.0,
+   "z": 1.2,
+   "y": 24.2,
+   "onto": "wall+x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Verrin Salvage Mark",
+   "x": 28.0,
+   "z": 0.0,
+   "y": 15.5,
+   "onto": "wall+x",
+   "size": 5
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 28.0,
+   "z": -3.0,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 28.0,
+   "z": 3.0,
+   "y": 3.0,
+   "onto": "wall+x",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Stratos Pad Ring",
+   "x": 28.0,
+   "z": 0.0,
+   "y": 16.0,
+   "onto": "wall+x",
+   "size": 9
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 22.741,
+   "z": 0.0,
+   "y": -0.468,
+   "color": "#9a9488",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 5,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 24.2,
+   "z": 0.0,
+   "y": -0.21,
+   "color": "#8a857a",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 15,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 25.592,
+   "z": 0.0,
+   "y": 0.296,
+   "color": "#9a9488",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 25,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 26.875,
+   "z": 0.0,
+   "y": 1.037,
+   "color": "#8a857a",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 35,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 28.01,
+   "z": 0.0,
+   "y": 1.99,
+   "color": "#9a9488",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 45,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 28.963,
+   "z": 0.0,
+   "y": 3.125,
+   "color": "#8a857a",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 55,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 29.704,
+   "z": 0.0,
+   "y": 4.408,
+   "color": "#9a9488",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 65,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 30.21,
+   "z": 0.0,
+   "y": 5.8,
+   "color": "#8a857a",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 75,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 30.468,
+   "z": 0.0,
+   "y": 7.259,
+   "color": "#9a9488",
+   "width": 1.454,
+   "height": 0.5,
+   "depth": 24.0,
+   "roll": 85,
+   "material": "Metal",
+   "solid": true
+  },
+  {
+   "op": "Block",
+   "x0": 22.0,
+   "y0": 0.0,
+   "z0": -13.0,
+   "x1": 30.0,
+   "y1": 8.0,
+   "z1": -12.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": 22.0,
+   "y0": 0.0,
+   "z0": 12.0,
+   "x1": 30.0,
+   "y1": 8.0,
+   "z1": 13.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": 28.0,
+   "y0": 0.0,
+   "z0": -12.0,
+   "x1": 30.0,
+   "y1": 2.3,
+   "z1": 12.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": 29.3,
+   "y0": 0.0,
+   "z0": -12.0,
+   "x1": 30.0,
+   "y1": 4.6,
+   "z1": 12.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": 19.9,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": 20.5,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": 21.1,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": 21.7,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": 22.3,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": 22.9,
+   "z": -12.5,
+   "y": 1.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": 19.9,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": 20.5,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": 21.1,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": 21.7,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": 22.3,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": 22.9,
+   "z": 12.5,
+   "y": 1.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.95,
+   "z": -14.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.95,
+   "z": -30.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": -14.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": -18.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": -22.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": -26.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.95,
+   "z": 14.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.95,
+   "z": 30.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": 14.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": 18.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": 22.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.5,
+   "z": 26.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 29.95,
+   "z": 0.0,
+   "y": 22.0
+  },
+  {
+   "op": "Block",
+   "x0": -46.0,
+   "y0": -3.6,
+   "z0": -24.0,
+   "x1": -40.0,
+   "y1": -3.0,
+   "z1": 24.0,
+   "color": "#6e6a62"
+  },
+  {
+   "op": "Block",
+   "x0": -22.0,
+   "y0": -3.6,
+   "z0": -24.0,
+   "x1": -16.0,
+   "y1": -3.0,
+   "z1": 24.0,
+   "color": "#6e6a62"
+  },
+  {
+   "op": "Block",
+   "x0": -40.0,
+   "y0": -3.6,
+   "z0": -24.0,
+   "x1": -22.0,
+   "y1": -3.0,
+   "z1": -7.0,
+   "color": "#6e6a62"
+  },
+  {
+   "op": "Block",
+   "x0": -40.0,
+   "y0": -3.6,
+   "z0": 7.0,
+   "x1": -22.0,
+   "y1": -3.0,
+   "z1": 24.0,
+   "color": "#6e6a62"
+  },
+  {
+   "op": "Block",
+   "x0": -40.0,
+   "y0": -3.3,
+   "z0": -1.2,
+   "x1": -22.0,
+   "y1": -3.0,
+   "z1": 1.2,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -40.0,
+   "y0": -2.55,
+   "z0": -1.4,
+   "x1": -22.0,
+   "y1": -1.9,
+   "z1": -1.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -40.0,
+   "y0": -2.55,
+   "z0": 1.2,
+   "x1": -22.0,
+   "y1": -1.9,
+   "z1": 1.4,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -47.0,
+   "y0": -3.6,
+   "z0": -25.0,
+   "x1": -46.0,
+   "y1": 9.0,
+   "z1": 25.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -46.0,
+   "y0": -3.6,
+   "z0": -25.0,
+   "x1": -16.0,
+   "y1": 9.0,
+   "z1": -24.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -46.0,
+   "y0": -3.6,
+   "z0": 24.0,
+   "x1": -16.0,
+   "y1": 9.0,
+   "z1": 25.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": 0.0,
+   "z0": -13.5,
+   "x1": -15.6,
+   "y1": 1.0,
+   "z1": -4.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": 0.0,
+   "z0": 4.0,
+   "x1": -15.6,
+   "y1": 1.0,
+   "z1": 13.5,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Ramp",
+   "x": -22.0,
+   "z": -18.0,
+   "width": 4,
+   "height": 3,
+   "alongX": true,
+   "dir": 1,
+   "color": "#6e6a62",
+   "y0": -3.0
+  },
+  {
+   "op": "Ramp",
+   "x": -22.0,
+   "z": 18.0,
+   "width": 4,
+   "height": 3,
+   "alongX": true,
+   "dir": 1,
+   "color": "#6e6a62",
+   "y0": -3.0
+  },
+  {
+   "op": "Block",
+   "x0": -36.0,
+   "y0": -3.0,
+   "z0": -15.0,
+   "x1": -31.0,
+   "y1": -0.9,
+   "z1": -12.0,
+   "color": "#7a6d5c"
+  },
+  {
+   "op": "Block",
+   "x0": -27.0,
+   "y0": -3.0,
+   "z0": -21.0,
+   "x1": -22.0,
+   "y1": -0.9,
+   "z1": -18.0,
+   "color": "#6b7a7a"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -43.0,
+   "z": -10.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -43.0,
+   "z": -13.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -20.0,
+   "z": -10.0,
+   "y": -3.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -34.0,
+   "z": -20.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": -44.0,
+   "z": -20.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Cutter Rig",
+   "x": -19.0,
+   "z": -22.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": -30.0,
+   "z": -10.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": -30.7,
+   "z": -10.4,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": -20.0,
+   "z": -8.5,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -44.0,
+   "z": -2.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -38.0,
+   "z": -18.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -24.0,
+   "z": -2.5,
+   "y": -3.0,
+   "yaw": 40.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -43.0,
+   "z": -16.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -19.0,
+   "z": -13.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -33.0,
+   "z": -8.0,
+   "y": -3.0
+  },
+  {
+   "op": "Block",
+   "x0": -36.0,
+   "y0": -3.0,
+   "z0": 12.0,
+   "x1": -31.0,
+   "y1": -0.9,
+   "z1": 15.0,
+   "color": "#7a6d5c"
+  },
+  {
+   "op": "Block",
+   "x0": -27.0,
+   "y0": -3.0,
+   "z0": 18.0,
+   "x1": -22.0,
+   "y1": -0.9,
+   "z1": 21.0,
+   "color": "#6b7a7a"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -43.0,
+   "z": 10.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -43.0,
+   "z": 13.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -20.0,
+   "z": 10.0,
+   "y": -3.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -34.0,
+   "z": 20.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": -44.0,
+   "z": 20.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Cutter Rig",
+   "x": -19.0,
+   "z": 22.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": -30.0,
+   "z": 10.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": -30.7,
+   "z": 10.4,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": -20.0,
+   "z": 8.5,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -44.0,
+   "z": 2.0,
+   "y": -3.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -38.0,
+   "z": 18.0,
+   "y": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -24.0,
+   "z": 2.5,
+   "y": -3.0,
+   "yaw": 40.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -43.0,
+   "z": 16.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -19.0,
+   "z": 13.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -33.0,
+   "z": 8.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -31.0,
+   "z": 0.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -43.0,
+   "z": 0.0,
+   "y": -3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -19.0,
+   "z": 0.0,
+   "y": -3.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -38.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -38.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -35.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -35.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -32.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -32.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -29.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -29.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -26.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -26.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -23.5,
+   "z": -8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -23.5,
+   "z": 8.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -41.0,
+   "z": -6.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -21.0,
+   "z": -6.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -41.0,
+   "z": -3.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -21.0,
+   "z": -3.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -41.0,
+   "z": 0.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -21.0,
+   "z": 0.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -41.0,
+   "z": 3.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -21.0,
+   "z": 3.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -41.0,
+   "z": 6.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -21.0,
+   "z": 6.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 2.4,
+   "rotation": 90
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Gravity Plating Grid"
+   ],
+   "x0": -45.0,
+   "z0": -23.0,
+   "x1": -17.0,
+   "z1": 23.0,
+   "count": 90,
+   "seed": 41,
+   "gap": 3.2,
+   "y": -3.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Skid Marks"
+   ],
+   "x0": -45.0,
+   "z0": -23.0,
+   "x1": -17.0,
+   "z1": 23.0,
+   "count": 18,
+   "seed": 42,
+   "gap": 4,
+   "y": -3.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Low Gravity 1",
+   "x": -44.0,
+   "z": -1.2,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Low Gravity 2",
+   "x": -44.0,
+   "z": -0.6,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Low Gravity 3",
+   "x": -44.0,
+   "z": 0.0,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Low Gravity 4",
+   "x": -44.0,
+   "z": 0.6,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Low Gravity 5",
+   "x": -44.0,
+   "z": 1.2,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 1",
+   "x": -44.0,
+   "z": 15.1,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 2",
+   "x": -44.0,
+   "z": 15.7,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 3",
+   "x": -44.0,
+   "z": 16.3,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 4",
+   "x": -44.0,
+   "z": 16.9,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 1",
+   "x": -44.0,
+   "z": -16.9,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 2",
+   "x": -44.0,
+   "z": -16.3,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 3",
+   "x": -44.0,
+   "z": -15.7,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Cargo Hold 4",
+   "x": -44.0,
+   "z": -15.1,
+   "y": 0.2,
+   "onto": "wall-x",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": -32.5,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": -31.9,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": -31.3,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": -30.7,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": -30.1,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": -29.5,
+   "z": -22.0,
+   "y": -0.6,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": -44.0,
+   "z": -8.0,
+   "y": -1.4,
+   "onto": "wall-x",
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -44.0,
+   "z": -20.0,
+   "y": 2.0,
+   "onto": "wall-x",
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": -32.5,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": -31.9,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": -31.3,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": -30.7,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": -30.1,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": -29.5,
+   "z": 22.0,
+   "y": -0.6,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": -44.0,
+   "z": 8.0,
+   "y": -1.4,
+   "onto": "wall-x",
+   "size": 1.8
+  },
+  {
+   "op": "Decal",
+   "decal": "Grime Streaks",
+   "x": -44.0,
+   "z": 20.0,
+   "y": 2.0,
+   "onto": "wall-x",
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Stratos Pad Ring",
+   "x": -31.0,
+   "z": 0.0,
+   "y": -3.0,
+   "onto": "floor",
+   "size": 5
+  },
+  {
+   "op": "Planet",
+   "radius": 6.0,
+   "x": 0.0,
+   "y": 9.0,
+   "z": 0.0,
+   "color": [
+    0.46,
+    0.41,
+    0.36
+   ],
+   "detail": 4,
+   "material": "Dirt"
+  },
+  {
+   "op": "Crater",
+   "lat": -90,
+   "lon": 0,
+   "radius": 2.2,
+   "color": "#5c534c",
+   "rim": 0.7,
+   "count": 8,
+   "seed": 3
+  },
+  {
+   "op": "SurfaceScatter",
+   "mesh": "icosphere",
+   "count": 26,
+   "color": "#5c534c",
+   "minSize": 0.5,
+   "maxSize": 1.1,
+   "seed": 7,
+   "latMin": -70,
+   "latMax": 60,
+   "clear": 2
+  },
+  {
+   "op": "SurfaceBlock",
+   "lat": 0,
+   "lon": 90,
+   "w": 1.6,
+   "h": 1.0,
+   "d": 0.5,
+   "color": "#8d7458",
+   "heading": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "SurfaceBlock",
+   "lat": 0,
+   "lon": 270,
+   "w": 1.6,
+   "h": 1.0,
+   "d": 0.5,
+   "color": "#8d7458",
+   "heading": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "SurfaceMesh",
+   "mesh": "cylinder",
+   "lat": -90,
+   "lon": 0,
+   "color": "#e0b030",
+   "width": 0.3,
+   "depth": 0.3,
+   "height": 1.6,
+   "solid": false
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": 0,
+   "lon": 0
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": 0,
+   "lon": 180
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": -60,
+   "lon": 90
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": -60,
+   "lon": 270
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": 60,
+   "lon": 90
+  },
+  {
+   "op": "SurfaceWaypoint",
+   "lat": 60,
+   "lon": 270
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 0.0,
+   "z0": -16.0,
+   "x1": 1.5,
+   "y1": 15.0,
+   "z1": -13.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -2.0,
+   "y0": 0.0,
+   "z0": -16.4,
+   "x1": 2.0,
+   "y1": 0.5,
+   "z1": -12.6,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": -14.0,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -13.1,
+   "y1": 0.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -13.1,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -12.2,
+   "y1": 1.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -12.2,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -11.3,
+   "y1": 1.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -11.3,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -10.4,
+   "y1": 2.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -9.5,
+   "y1": 2.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -9.5,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -8.6,
+   "y1": 3.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -8.6,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -7.7,
+   "y1": 3.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -7.7,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -6.8,
+   "y1": 4.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -6.8,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -5.9,
+   "y1": 4.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.9,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -5.0,
+   "y1": 5.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.0,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -4.1,
+   "y1": 5.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -4.1,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -3.2,
+   "y1": 6.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -3.2,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -2.3,
+   "y1": 6.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.3,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -1.4,
+   "y1": 7.0,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -1.4,
+   "y0": 0.0,
+   "z0": -17.6,
+   "x1": -0.5,
+   "y1": 7.5,
+   "z1": -16.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -0.5,
+   "y0": 0.0,
+   "z0": -19.2,
+   "x1": 2.2,
+   "y1": 7.5,
+   "z1": -16.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": -1.4,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -0.5,
+   "y1": 8.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.3,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -1.4,
+   "y1": 8.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -3.2,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -2.3,
+   "y1": 9.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -4.1,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -3.2,
+   "y1": 9.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.0,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -4.1,
+   "y1": 10.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.9,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -5.0,
+   "y1": 10.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -6.8,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -5.9,
+   "y1": 11.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -7.7,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -6.8,
+   "y1": 11.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -8.6,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -7.7,
+   "y1": 12.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -9.5,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -8.6,
+   "y1": 12.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -9.5,
+   "y1": 13.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -11.3,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -10.4,
+   "y1": 13.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -12.2,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -11.3,
+   "y1": 14.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -13.1,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -12.2,
+   "y1": 14.5,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -14.0,
+   "y0": 7.5,
+   "z0": -19.2,
+   "x1": -13.1,
+   "y1": 15.0,
+   "z1": -17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 14.7,
+   "z0": -20.8,
+   "x1": 2.2,
+   "y1": 15.0,
+   "z1": -19.2,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 14.7,
+   "z0": -20.8,
+   "x1": 3.1,
+   "y1": 15.0,
+   "z1": -13.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 14.7,
+   "z0": -19.2,
+   "x1": -14.0,
+   "y1": 15.0,
+   "z1": -17.6,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": -21.0,
+   "x1": 3.1,
+   "y1": 16.0,
+   "z1": -20.8,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": -21.0,
+   "x1": -15.4,
+   "y1": 16.0,
+   "z1": -17.6,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": -17.6,
+   "x1": -14.0,
+   "y1": 16.0,
+   "z1": -17.4,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 3.1,
+   "y0": 15.0,
+   "z0": -21.0,
+   "x1": 3.3,
+   "y1": 16.0,
+   "z1": -13.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 14.7,
+   "z0": -13.0,
+   "x1": 1.5,
+   "y1": 15.0,
+   "z1": -1.6,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": -3.2,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": -3.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": -3.2,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": -3.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": -6.2,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": -6.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": -6.2,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": -6.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": -9.2,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": -9.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": -9.2,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": -9.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": -12.2,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": -12.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": -12.2,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": -12.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Prop",
+   "name": "Mooring Clamp",
+   "x": 4.5,
+   "z": -14.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -4.0,
+   "z": -13.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -3.0,
+   "z": -13.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 1",
+   "x": -1.2,
+   "z": -12.9,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 2",
+   "x": -0.6,
+   "z": -12.9,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 3",
+   "x": 0.0,
+   "z": -12.9,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 4",
+   "x": 0.6,
+   "z": -12.9,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 5",
+   "x": 1.2,
+   "z": -12.9,
+   "y": 2.2,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 0.0,
+   "z": -11.5,
+   "y": 15.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 0.0,
+   "z": -5.0,
+   "y": 15.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 1",
+   "x": -0.9,
+   "z": -12.9,
+   "y": 13.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 2",
+   "x": -0.3,
+   "z": -12.9,
+   "y": 13.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 3",
+   "x": 0.3,
+   "z": -12.9,
+   "y": 13.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 4",
+   "x": 0.9,
+   "z": -12.9,
+   "y": 13.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.65,
+   "z": -16.8,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -1.85,
+   "z": -18.4,
+   "y": 8.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.05,
+   "z": -16.8,
+   "y": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -5.45,
+   "z": -18.4,
+   "y": 10.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -5.45,
+   "z": -16.8,
+   "y": 5.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.05,
+   "z": -18.4,
+   "y": 12.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -1.85,
+   "z": -16.8,
+   "y": 7.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.65,
+   "z": -18.4,
+   "y": 14.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.9,
+   "z": -17.6,
+   "y": 7.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -14.8,
+   "z": -18.4,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.5,
+   "z": -20.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -3.0,
+   "z": -20.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 2.3,
+   "z": -17.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 2.3,
+   "z": -14.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -14.5,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -9.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -4.0,
+   "y": 15.0
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 0.0,
+   "z0": 13.0,
+   "x1": 1.5,
+   "y1": 15.0,
+   "z1": 16.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -2.0,
+   "y0": 0.0,
+   "z0": 12.6,
+   "x1": 2.0,
+   "y1": 0.5,
+   "z1": 16.4,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": -14.0,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -13.1,
+   "y1": 0.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -13.1,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -12.2,
+   "y1": 1.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -12.2,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -11.3,
+   "y1": 1.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -11.3,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -10.4,
+   "y1": 2.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -9.5,
+   "y1": 2.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -9.5,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -8.6,
+   "y1": 3.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -8.6,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -7.7,
+   "y1": 3.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -7.7,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -6.8,
+   "y1": 4.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -6.8,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -5.9,
+   "y1": 4.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.9,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -5.0,
+   "y1": 5.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.0,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -4.1,
+   "y1": 5.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -4.1,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -3.2,
+   "y1": 6.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -3.2,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -2.3,
+   "y1": 6.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.3,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -1.4,
+   "y1": 7.0,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -1.4,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": -0.5,
+   "y1": 7.5,
+   "z1": 17.6,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -0.5,
+   "y0": 0.0,
+   "z0": 16.0,
+   "x1": 2.2,
+   "y1": 7.5,
+   "z1": 19.2,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Block",
+   "x0": -1.4,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -0.5,
+   "y1": 8.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.3,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -1.4,
+   "y1": 8.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -3.2,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -2.3,
+   "y1": 9.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -4.1,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -3.2,
+   "y1": 9.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.0,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -4.1,
+   "y1": 10.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -5.9,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -5.0,
+   "y1": 10.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -6.8,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -5.9,
+   "y1": 11.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -7.7,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -6.8,
+   "y1": 11.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -8.6,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -7.7,
+   "y1": 12.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -9.5,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -8.6,
+   "y1": 12.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -9.5,
+   "y1": 13.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -11.3,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -10.4,
+   "y1": 13.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -12.2,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -11.3,
+   "y1": 14.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -13.1,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -12.2,
+   "y1": 14.5,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -14.0,
+   "y0": 7.5,
+   "z0": 17.6,
+   "x1": -13.1,
+   "y1": 15.0,
+   "z1": 19.2,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 14.7,
+   "z0": 19.2,
+   "x1": 2.2,
+   "y1": 15.0,
+   "z1": 20.8,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 14.7,
+   "z0": 13.0,
+   "x1": 3.1,
+   "y1": 15.0,
+   "z1": 20.8,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 14.7,
+   "z0": 17.6,
+   "x1": -14.0,
+   "y1": 15.0,
+   "z1": 19.2,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": 20.8,
+   "x1": 3.1,
+   "y1": 16.0,
+   "z1": 21.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": 17.6,
+   "x1": -15.4,
+   "y1": 16.0,
+   "z1": 21.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -15.6,
+   "y0": 15.0,
+   "z0": 17.4,
+   "x1": -14.0,
+   "y1": 16.0,
+   "z1": 17.6,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 3.1,
+   "y0": 15.0,
+   "z0": 13.0,
+   "x1": 3.3,
+   "y1": 16.0,
+   "z1": 21.0,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.5,
+   "y0": 14.7,
+   "z0": 1.6,
+   "x1": 1.5,
+   "y1": 15.0,
+   "z1": 13.0,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": 3.0,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": 3.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": 3.0,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": 3.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": 6.0,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": 6.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": 6.0,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": 6.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": 9.0,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": 9.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": 9.0,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": 9.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": -1.7,
+   "y0": 15.0,
+   "z0": 12.0,
+   "x1": -1.5,
+   "y1": 15.9,
+   "z1": 12.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Block",
+   "x0": 1.5,
+   "y0": 15.0,
+   "z0": 12.0,
+   "x1": 1.7,
+   "y1": 15.9,
+   "z1": 12.2,
+   "color": "#8d7458"
+  },
+  {
+   "op": "Prop",
+   "name": "Mooring Clamp",
+   "x": 4.5,
+   "z": 14.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -4.0,
+   "z": 13.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -3.0,
+   "z": 13.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 1",
+   "x": -1.2,
+   "z": 12.9,
+   "y": 2.2,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 2",
+   "x": -0.6,
+   "z": 12.9,
+   "y": 2.2,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 3",
+   "x": 0.0,
+   "z": 12.9,
+   "y": 2.2,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 4",
+   "x": 0.6,
+   "z": 12.9,
+   "y": 2.2,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Mooring Mast 5",
+   "x": 1.2,
+   "z": 12.9,
+   "y": 2.2,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 0.0,
+   "z": 11.5,
+   "y": 15.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Arrow Amber",
+   "x": 0.0,
+   "z": 5.0,
+   "y": 15.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 1",
+   "x": -0.9,
+   "z": 12.9,
+   "y": 13.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 2",
+   "x": -0.3,
+   "z": 12.9,
+   "y": 13.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 3",
+   "x": 0.3,
+   "z": 12.9,
+   "y": 13.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign The Rock 4",
+   "x": 0.9,
+   "z": 12.9,
+   "y": 13.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.65,
+   "z": 16.8,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -1.85,
+   "z": 18.4,
+   "y": 8.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.05,
+   "z": 16.8,
+   "y": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -5.45,
+   "z": 18.4,
+   "y": 10.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -5.45,
+   "z": 16.8,
+   "y": 5.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.05,
+   "z": 18.4,
+   "y": 12.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -1.85,
+   "z": 16.8,
+   "y": 7.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.65,
+   "z": 18.4,
+   "y": 14.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.9,
+   "z": 17.6,
+   "y": 7.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -14.8,
+   "z": 18.4,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.5,
+   "z": 20.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -3.0,
+   "z": 20.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 2.3,
+   "z": 17.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 2.3,
+   "z": 14.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 14.5,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 9.0,
+   "y": 15.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 4.0,
+   "y": 15.0
+  },
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": -0.6,
+   "z0": -46.0,
+   "x1": 16.0,
+   "y1": 0.0,
+   "z1": -30.0,
+   "color": "#8a857a"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": -45.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": -9.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": 9.0,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": -39.0,
+   "x1": -6.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.0,
+   "y0": 0.0,
+   "z0": -39.0,
+   "x1": 2.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": 6.0,
+   "y0": 0.0,
+   "z0": -39.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 3.6,
+   "z0": -46.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": -38.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -7.0,
+   "z": -44.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 7.0,
+   "z": -44.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Server Cabinet",
+   "x": 0.0,
+   "z": -45.2
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 4.0,
+   "z": -41.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": -13.0,
+   "z": -33.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": 13.0,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 13.5,
+   "z": -40.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 13.5,
+   "z": -43.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -5.0,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 5.0,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -15.0,
+   "z": -45.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 15.0,
+   "z": -45.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -15.0,
+   "z": -31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 15.0,
+   "z": -31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": -12.0,
+   "z": -39.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": 0.0,
+   "z": -33.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -8.0,
+   "z": -31.5
+  },
+  {
+   "op": "Spawn",
+   "x": -7.0,
+   "z": -42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -3.0,
+   "z": -43.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 3.0,
+   "z": -43.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 7.0,
+   "z": -42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -11.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 11.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -8.0,
+   "z": -31.5,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 8.0,
+   "z": -31.5,
+   "y": 0.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Verrin Salvage Mark",
+   "x": 0.0,
+   "z": -36.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Gravity Plating Grid"
+   ],
+   "x0": -15,
+   "z0": -31.0,
+   "x1": 15,
+   "z1": -37.0,
+   "count": 30,
+   "seed": 50,
+   "gap": 3.2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Paper Litter"
+   ],
+   "x0": -15,
+   "z0": -31.0,
+   "x1": 15,
+   "z1": -45.0,
+   "count": 10,
+   "seed": 52,
+   "gap": 4
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": -1.5,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": -0.9,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": -0.3,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": 0.3,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": 0.9,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": 1.5,
+   "z": -37.95,
+   "y": 3.0,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Stencil Arrow",
+   "x": -4.0,
+   "z": -37.95,
+   "y": 1.6,
+   "onto": "wall-z",
+   "size": 1.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Stencil Arrow",
+   "x": 4.0,
+   "z": -37.95,
+   "y": 1.6,
+   "onto": "wall-z",
+   "size": 1.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": -8.95,
+   "z": -42.0,
+   "y": 1.5,
+   "onto": "wall-x",
+   "size": 1.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 12.0,
+   "z": -36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -35.5,
+   "y": 0.0
+  },
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": -0.6,
+   "z0": 30.0,
+   "x1": 16.0,
+   "y1": 0.0,
+   "z1": 46.0,
+   "color": "#8a857a"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": 45.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": 46.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": 38.0,
+   "x1": -9.0,
+   "y1": 4.0,
+   "z1": 46.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": 9.0,
+   "y0": 0.0,
+   "z0": 38.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": 46.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": 38.0,
+   "x1": -6.0,
+   "y1": 4.0,
+   "z1": 39.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -2.0,
+   "y0": 0.0,
+   "z0": 38.0,
+   "x1": 2.0,
+   "y1": 4.0,
+   "z1": 39.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": 6.0,
+   "y0": 0.0,
+   "z0": 38.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": 39.0,
+   "color": "#7d7568"
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 3.6,
+   "z0": 38.0,
+   "x1": 10.0,
+   "y1": 4.0,
+   "z1": 46.0,
+   "color": "#6a6358"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -7.0,
+   "z": 44.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 7.0,
+   "z": 44.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Server Cabinet",
+   "x": 0.0,
+   "z": 45.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 4.0,
+   "z": 41.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": -13.0,
+   "z": 33.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": 13.0,
+   "z": 34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 13.5,
+   "z": 40.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 13.5,
+   "z": 43.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -5.0,
+   "z": 34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 5.0,
+   "z": 34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -15.0,
+   "z": 45.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 15.0,
+   "z": 45.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": -15.0,
+   "z": 31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 15.0,
+   "z": 31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": -12.0,
+   "z": 39.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": 0.0,
+   "z": 33.0
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": -8.0,
+   "z": 31.5
+  },
+  {
+   "op": "Spawn",
+   "x": -7.0,
+   "z": 42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -3.0,
+   "z": 43.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 3.0,
+   "z": 43.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 7.0,
+   "z": 42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -11.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 11.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -8.0,
+   "z": 31.5,
+   "y": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 8.0,
+   "z": 31.5,
+   "y": 0.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Verrin Salvage Mark",
+   "x": 0.0,
+   "z": 36.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Gravity Plating Grid"
+   ],
+   "x0": -15,
+   "z0": 31.0,
+   "x1": 15,
+   "z1": 37.0,
+   "count": 30,
+   "seed": 52,
+   "gap": 3.2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Paper Litter"
+   ],
+   "x0": -15,
+   "z0": 31.0,
+   "x1": 15,
+   "z1": 45.0,
+   "count": 10,
+   "seed": 54,
+   "gap": 4
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 1",
+   "x": -1.5,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 2",
+   "x": -0.9,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 3",
+   "x": -0.3,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 4",
+   "x": 0.3,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 5",
+   "x": 0.9,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Gravity Sign Plating Fault 6",
+   "x": 1.5,
+   "z": 37.95,
+   "y": 3.0,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Stencil Arrow",
+   "x": -4.0,
+   "z": 37.95,
+   "y": 1.6,
+   "onto": "wall+z",
+   "size": 1.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Stencil Arrow",
+   "x": 4.0,
+   "z": 37.95,
+   "y": 1.6,
+   "onto": "wall+z",
+   "size": 1.4
+  },
+  {
+   "op": "Decal",
+   "decal": "Electrical Panel",
+   "x": -8.95,
+   "z": 42.0,
+   "y": 1.5,
+   "onto": "wall-x",
+   "size": 1.6
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 42.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 12.0,
+   "z": 36.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 35.5,
+   "y": 0.0
+  }
+ ]
+}

@@ -1,0 +1,18 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Gravity Sign Mooring Mast 2",
+ "category": "Gravity",
+ "description": "Tile 2 of 5 of the salvage yard's 'MOORING MAST' sign (an invented place).",
+ "author": "Call of Slop",
+ "size": [
+  0.6,
+  0.6
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "wall"
+ ],
+ "image": "gravity_sign_mooring_mast_2.png",
+ "fadeDistance": 80
+}

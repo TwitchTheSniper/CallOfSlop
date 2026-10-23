@@ -1,0 +1,178 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Gravity Props",
+ "description": "The Space pack's gravity-yard props (Props/Space) on their own pads: plating node, cutter rig, mooring clamp, plate stack, beacon, scrap.",
+ "author": "Call of Slop",
+ "order": 970,
+ "halfX": 22,
+ "halfZ": 12,
+ "sky": [
+  0.55,
+  0.5,
+  0.62
+ ],
+ "flagPool": "none",
+ "ops": [
+  {
+   "op": "Ground",
+   "color": [
+    0.4,
+    0.42,
+    0.44
+   ]
+  },
+  {
+   "op": "Perimeter",
+   "height": 4,
+   "color": [
+    0.5,
+    0.5,
+    0.52
+   ]
+  },
+  {
+   "op": "Block",
+   "x0": -17.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": -12.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Plating Node",
+   "x": -15,
+   "z": 0
+  },
+  {
+   "op": "Block",
+   "x0": -11.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": -6.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Cutter Rig",
+   "x": -9,
+   "z": 0
+  },
+  {
+   "op": "Block",
+   "x0": -5.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": -0.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Mooring Clamp",
+   "x": -3,
+   "z": 0
+  },
+  {
+   "op": "Block",
+   "x0": 0.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": 5.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Hull Plate Stack",
+   "x": 3,
+   "z": 0
+  },
+  {
+   "op": "Block",
+   "x0": 6.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": 11.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Gravity Warning Beacon",
+   "x": 9,
+   "z": 0
+  },
+  {
+   "op": "Block",
+   "x0": 12.5,
+   "y0": 0,
+   "z0": -2.5,
+   "x1": 17.5,
+   "y1": 0.05,
+   "z1": 2.5,
+   "color": [
+    0.46,
+    0.47,
+    0.5
+   ]
+  },
+  {
+   "op": "Prop",
+   "name": "Salvage Scrap",
+   "x": 15,
+   "z": 0
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": 8
+  },
+  {
+   "op": "Spawn",
+   "x": -8,
+   "z": 8
+  },
+  {
+   "op": "Spawn",
+   "x": 8,
+   "z": 8
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": -8
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ]
+}
