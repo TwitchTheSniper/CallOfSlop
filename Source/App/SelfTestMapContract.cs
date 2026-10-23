@@ -40,6 +40,9 @@ public static partial class SelfTest
         var stripped = MapFile.Load(text[..start] + text[end..], src.SourceFile!);
         var again = MapFile.Load(text, src.SourceFile!);
         var back = MapFile.Load(MapFile.ToJson(again), src.SourceFile!);
+        stripped.Validate();
+        again.Validate();
+        back.Validate();
         if (stripped.TestSpec != null || again.TestSpec == null || back.TestSpec == null)
             Fail($"{src.Name}: the \"test\" block wasn't read (stripped {stripped.TestSpec != null}, again {again.TestSpec != null}, round trip {back.TestSpec != null})");
         if (stripped.ContentHash != again.ContentHash || again.ContentHash != back.ContentHash || again.ContentHash != src.ContentHash)
