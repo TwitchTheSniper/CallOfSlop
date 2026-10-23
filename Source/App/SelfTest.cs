@@ -330,6 +330,8 @@ public static partial class SelfTest
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
+        // space-b maps
+        Section("Space: arboretum and reactor", CheckSpaceArboretumReactor); // SelfTestSpaceArboretumReactor.cs: Space 07 Canopy Deck and 08 Ignition Hall (outline, counts, objectives, nav, fair walks, a short bot match)
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Halvard Logo",
+ "category": "IgnitionHall",
+ "description": "The invented Halvard Fusion Works logo: an orange sun split by a blue bar.",
+ "author": "Call of Slop",
+ "size": 2.4,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "wall",
+  "floor"
+ ],
+ "image": "halvard_logo.png",
+ "fadeDistance": 110
+}

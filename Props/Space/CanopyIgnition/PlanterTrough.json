@@ -1,0 +1,224 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Planter Trough",
+ "category": "Space",
+ "description": "A long metal planter trough overgrown with shrubs: waist-high cover you can mantle.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    3.0,
+    0.95,
+    1.2
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    3.0,
+    0.9,
+    1.2
+   ],
+   "offset": [
+    0.0,
+    0.45,
+    0.0
+   ],
+   "color": "#7d8189",
+   "material": "metal"
+  },
+  {
+   "size": [
+    3.06,
+    0.08,
+    1.26
+   ],
+   "offset": [
+    0.0,
+    0.9,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    2.8,
+    0.1,
+    1.0
+   ],
+   "offset": [
+    0.0,
+    0.91,
+    0.0
+   ],
+   "color": "#3e3228"
+  },
+  {
+   "size": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "offset": [
+    -1.1,
+    1.17,
+    -0.05
+   ],
+   "color": "#5e8a3a"
+  },
+  {
+   "size": [
+    0.7,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    -1.1,
+    1.4,
+    0.0
+   ],
+   "color": "#4a8a3a"
+  },
+  {
+   "size": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "offset": [
+    -0.37,
+    1.17,
+    0.05
+   ],
+   "rotation": [
+    0.0,
+    25.0,
+    0.0
+   ],
+   "color": "#4f6b2e"
+  },
+  {
+   "size": [
+    0.7,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    -0.37,
+    1.4,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    40.0,
+    0.0
+   ],
+   "color": "#4a8a3a"
+  },
+  {
+   "size": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "offset": [
+    0.36,
+    1.17,
+    -0.05
+   ],
+   "rotation": [
+    0.0,
+    50.0,
+    0.0
+   ],
+   "color": "#5e8a3a"
+  },
+  {
+   "size": [
+    0.7,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    0.36,
+    1.4,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    80.0,
+    0.0
+   ],
+   "color": "#4a8a3a"
+  },
+  {
+   "size": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "offset": [
+    1.09,
+    1.17,
+    0.05
+   ],
+   "rotation": [
+    0.0,
+    75.0,
+    0.0
+   ],
+   "color": "#4f6b2e"
+  },
+  {
+   "size": [
+    0.7,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    1.09,
+    1.4,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    120.0,
+    0.0
+   ],
+   "color": "#4a8a3a"
+  },
+  {
+   "size": [
+    3.1,
+    0.04,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.32,
+    0.62
+   ],
+   "color": "#7a4a30"
+  },
+  {
+   "size": [
+    3.0,
+    0.06,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.05,
+    -0.9
+   ],
+   "color": "#4f6b2e"
+  }
+ ],
+ "author": "Call of Slop"
+}

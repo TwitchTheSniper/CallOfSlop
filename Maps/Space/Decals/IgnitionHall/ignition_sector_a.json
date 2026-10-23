@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Ignition Sector A",
+ "category": "IgnitionHall",
+ "description": "A boxed white sector letter A with an orange frame.",
+ "author": "Call of Slop",
+ "size": 2.2,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "ignition_sector_a.png",
+ "fadeDistance": 120
+}

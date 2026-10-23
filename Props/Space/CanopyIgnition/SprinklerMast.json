@@ -1,0 +1,123 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Sprinkler Mast",
+ "category": "Space",
+ "description": "A tall irrigation mast with a slowly turning cross head, long dry.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.5,
+    3.1,
+    0.5
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.5,
+    0.12,
+    0.5
+   ],
+   "offset": [
+    0.0,
+    0.06,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.14,
+    3.0,
+    0.14
+   ],
+   "offset": [
+    0.0,
+    1.62,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.3,
+    0.2,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    3.2,
+    0.0
+   ],
+   "color": "#7d8189",
+   "anim": {
+    "type": "spin",
+    "axis": "y",
+    "rpm": 6,
+    "jitter": 0.3
+   }
+  },
+  {
+   "size": [
+    1.8,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.0,
+    3.225,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "anim": {
+    "type": "follow",
+    "parent": 3
+   }
+  },
+  {
+   "size": [
+    1.8,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.0,
+    3.225,
+    0.0
+   ],
+   "rotation": [
+    0.0,
+    90.0,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "anim": {
+    "type": "follow",
+    "parent": 3
+   }
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    3.23,
+    0.0
+   ],
+   "color": "#7a4a30"
+  }
+ ],
+ "author": "Call of Slop"
+}

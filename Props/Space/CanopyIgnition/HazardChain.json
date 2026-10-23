@@ -1,0 +1,184 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Hazard Chain",
+ "category": "Space",
+ "description": "Two orange bollards with a sagging chain between them (looks only).",
+ "collision": "cosmetic",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "fadeDistance": 60,
+ "parts": [
+  {
+   "size": [
+    0.14,
+    0.9,
+    0.14
+   ],
+   "offset": [
+    -1.1,
+    0.45,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.3,
+    0.05,
+    0.3
+   ],
+   "offset": [
+    -1.1,
+    0.025,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.14,
+    0.9,
+    0.14
+   ],
+   "offset": [
+    1.1,
+    0.45,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.3,
+    0.05,
+    0.3
+   ],
+   "offset": [
+    1.1,
+    0.025,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    -0.9,
+    0.803,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    -0.675,
+    0.725,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    -0.45,
+    0.67,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    -0.225,
+    0.636,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.0,
+    0.625,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.225,
+    0.636,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.45,
+    0.67,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.675,
+    0.725,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.05,
+    0.05
+   ],
+   "offset": [
+    0.9,
+    0.803,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  }
+ ],
+ "author": "Call of Slop"
+}

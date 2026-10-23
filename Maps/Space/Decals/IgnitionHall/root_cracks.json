@@ -1,0 +1,14 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Root Cracks",
+ "category": "IgnitionHall",
+ "description": "Deck plating cracked and heaved by roots, with moss in the cracks (darkens the surface).",
+ "author": "Call of Slop",
+ "size": 2.6,
+ "rotation": "random",
+ "blend": "multiply",
+ "surfaces": "floor",
+ "image": "root_cracks.png",
+ "fadeDistance": 70,
+ "sizeVariation": 0.3
+}

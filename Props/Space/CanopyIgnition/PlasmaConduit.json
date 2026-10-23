@@ -1,0 +1,333 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Plasma Conduit",
+ "category": "Space",
+ "description": "A 4 m run of coolant conduit with pulsing blue field rings (chain them end to end along X): you can mantle it.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    4.0,
+    1.22,
+    1.1
+   ],
+   "offset": [
+    0.0,
+    0.61,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    4.0,
+    1.0,
+    0.414
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "color": "#9a9ea6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    4.0,
+    1.0,
+    0.414
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    45.0,
+    0.0,
+    0.0
+   ],
+   "color": "#9a9ea6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    4.0,
+    1.0,
+    0.414
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "color": "#9a9ea6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    4.0,
+    1.0,
+    0.414
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    135.0,
+    0.0,
+    0.0
+   ],
+   "color": "#9a9ea6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    -1.9,
+    0.7,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    -1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    45.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    -1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    -1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    135.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    1.9,
+    0.7,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    45.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    90.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    1.2,
+    0.497
+   ],
+   "offset": [
+    1.9,
+    0.7,
+    0.0
+   ],
+   "rotation": [
+    135.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.1,
+    1.08,
+    1.08
+   ],
+   "offset": [
+    -1.0,
+    0.7,
+    0.0
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "pulse",
+    "color": "#4ac8ff",
+    "glow": 1.4,
+    "period": 1.6,
+    "phase": 0.0
+   }
+  },
+  {
+   "size": [
+    0.1,
+    1.08,
+    1.08
+   ],
+   "offset": [
+    0.0,
+    0.7,
+    0.0
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "pulse",
+    "color": "#4ac8ff",
+    "glow": 1.4,
+    "period": 1.6,
+    "phase": 0.33
+   }
+  },
+  {
+   "size": [
+    0.1,
+    1.08,
+    1.08
+   ],
+   "offset": [
+    1.0,
+    0.7,
+    0.0
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "pulse",
+    "color": "#4ac8ff",
+    "glow": 1.4,
+    "period": 1.6,
+    "phase": 0.66
+   }
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    1.0
+   ],
+   "offset": [
+    -1.2,
+    0.1,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    1.0
+   ],
+   "offset": [
+    1.2,
+    0.1,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.6,
+    0.04,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    1.23,
+    0.0
+   ],
+   "color": "#ff8a2a"
+  }
+ ],
+ "author": "Call of Slop"
+}

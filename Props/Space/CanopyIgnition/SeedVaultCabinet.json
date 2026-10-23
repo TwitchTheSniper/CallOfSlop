@@ -1,0 +1,165 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Seed Vault Cabinet",
+ "category": "Space",
+ "description": "A frosted cryo seed cabinet, still humming, with a pulsing blue status lamp.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "breakable": {
+  "health": 320,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 12,
+   "size": [
+    0.08,
+    0.25
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    2.1,
+    0.7
+   ],
+   "offset": [
+    0.0,
+    1.05,
+    0.0
+   ],
+   "color": "#9a9ea6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.26,
+    0.06,
+    0.76
+   ],
+   "offset": [
+    0.0,
+    2.09,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.9,
+    1.3,
+    0.04
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.35
+   ],
+   "color": "#a8c8d8"
+  },
+  {
+   "size": [
+    1.0,
+    0.08,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.89,
+    0.35
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.1,
+    0.5,
+    0.05
+   ],
+   "offset": [
+    0.5,
+    1.15,
+    0.36
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.8,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.71,
+    0.37
+   ],
+   "color": "#d8e8f0"
+  },
+  {
+   "size": [
+    0.8,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.01,
+    0.37
+   ],
+   "color": "#d8e8f0"
+  },
+  {
+   "size": [
+    0.8,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.31,
+    0.37
+   ],
+   "color": "#d8e8f0"
+  },
+  {
+   "size": [
+    0.8,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    1.61,
+    0.37
+   ],
+   "color": "#d8e8f0"
+  },
+  {
+   "size": [
+    0.14,
+    0.14,
+    0.03
+   ],
+   "offset": [
+    -0.4,
+    1.97,
+    0.36
+   ],
+   "color": "#4ac8ff",
+   "anim": {
+    "type": "pulse",
+    "color": "#4ac8ff",
+    "glow": 1.4,
+    "period": 3.2
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

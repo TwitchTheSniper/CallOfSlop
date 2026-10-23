@@ -1,0 +1,5081 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Canopy Deck",
+ "description": "The overgrown arboretum of a derelict generation ship: terraces, dry canals and hull ribs under a torn dome.",
+ "author": "Call of Slop",
+ "order": 607,
+ "destructible": false,
+ "maxPlayers": 16,
+ "skybox": {
+  "preset": "night",
+  "zenith": "#06060f",
+  "horizon": "#141a2a",
+  "ground": "#0a0c14",
+  "stars": 1.8,
+  "sun": {
+   "elevation": 18,
+   "azimuth": 300,
+   "color": "#c8d8ff",
+   "intensity": 0.55
+  },
+  "moon": {
+   "direction": [
+    0.3,
+    0.55,
+    -0.8
+   ],
+   "size": 22,
+   "color": "#d8b090",
+   "intensity": 0.9
+  },
+  "ambient": 2.2,
+  "clouds": false
+ },
+ "boundary": {
+  "shape": "ellipse",
+  "radiusX": 62.0,
+  "radiusZ": 48.0,
+  "noise": {
+   "amplitude": 1.2,
+   "scale": 16,
+   "seed": 7
+  },
+  "edge": {
+   "style": "wall",
+   "height": 10,
+   "thickness": 1.2,
+   "color": "#4a4e56",
+   "material": "Metal"
+  },
+  "groundMargin": 5
+ },
+ "terrain": {
+  "cell": 1,
+  "margin": 14,
+  "base": 0,
+  "surface": {
+   "grass": "#4e6e34",
+   "dirt": "#4a3c30",
+   "rock": "#5e5a54",
+   "sand": "#7a6a4c",
+   "sandBelow": -0.9,
+   "dirtSlope": 22,
+   "variation": 0.1
+  },
+  "features": [
+   {
+    "type": "noise",
+    "amplitude": 0.3,
+    "scale": 11,
+    "seed": 3
+   },
+   {
+    "type": "plateau",
+    "x": 0,
+    "z": 0,
+    "radius": 14,
+    "height": 1.4,
+    "edge": 1.8,
+    "mode": "fill"
+   },
+   {
+    "type": "valley",
+    "points": [
+     [
+      -28,
+      -50
+     ],
+     [
+      -26,
+      -24
+     ],
+     [
+      -25,
+      0
+     ],
+     [
+      -26,
+      24
+     ],
+     [
+      -28,
+      50
+     ]
+    ],
+    "width": 7,
+    "depth": 1.6
+   },
+   {
+    "type": "valley",
+    "points": [
+     [
+      28,
+      50
+     ],
+     [
+      26,
+      24
+     ],
+     [
+      25,
+      0
+     ],
+     [
+      26,
+      -24
+     ],
+     [
+      28,
+      -50
+     ]
+    ],
+    "width": 7,
+    "depth": 1.6
+   },
+   {
+    "type": "plateau",
+    "x": -52,
+    "z": 0,
+    "radius": 10,
+    "height": 0.6,
+    "edge": 1.6,
+    "mode": "fill"
+   },
+   {
+    "type": "plateau",
+    "x": 52,
+    "z": 0,
+    "radius": 10,
+    "height": 0.6,
+    "edge": 1.6,
+    "mode": "fill"
+   },
+   {
+    "type": "flatten",
+    "x": -54,
+    "z": 0,
+    "w": 15,
+    "d": 19,
+    "height": 0.6,
+    "edge": 1.2
+   },
+   {
+    "type": "flatten",
+    "x": 54,
+    "z": 0,
+    "w": 15,
+    "d": 19,
+    "height": 0.6,
+    "edge": 1.2
+   },
+   {
+    "type": "plateau",
+    "x": 0,
+    "z": -37,
+    "w": 44,
+    "d": 12,
+    "height": 2.4,
+    "edge": 2.2,
+    "mode": "fill"
+   },
+   {
+    "type": "plateau",
+    "x": 0,
+    "z": 37,
+    "w": 44,
+    "d": 12,
+    "height": 2.4,
+    "edge": 2.2,
+    "mode": "fill"
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -33,
+      -27
+     ],
+     [
+      -24,
+      -33,
+      2.4
+     ]
+    ],
+    "width": 4,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      33,
+      27
+     ],
+     [
+      24,
+      33,
+      2.4
+     ]
+    ],
+    "width": 4,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      33,
+      -27
+     ],
+     [
+      24,
+      -33,
+      2.4
+     ]
+    ],
+    "width": 4,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -33,
+      27
+     ],
+     [
+      -24,
+      33,
+      2.4
+     ]
+    ],
+    "width": 4,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      0,
+      -25.5
+     ],
+     [
+      0,
+      -32,
+      2.4
+     ]
+    ],
+    "width": 5,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      0,
+      25.5
+     ],
+     [
+      0,
+      32,
+      2.4
+     ]
+    ],
+    "width": 5,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -20,
+      -20
+     ],
+     [
+      -10.5,
+      -10.5,
+      1.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      20,
+      20
+     ],
+     [
+      10.5,
+      10.5,
+      1.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      -20,
+      20
+     ],
+     [
+      -10.5,
+      10.5,
+      1.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2
+   },
+   {
+    "type": "ramp",
+    "points": [
+     [
+      20,
+      -20
+     ],
+     [
+      10.5,
+      -10.5,
+      1.4
+     ]
+    ],
+    "width": 4.5,
+    "edge": 2
+   },
+   {
+    "type": "flatten",
+    "x": -9,
+    "z": -13,
+    "w": 6,
+    "d": 12,
+    "height": 0,
+    "edge": 2
+   },
+   {
+    "type": "flatten",
+    "x": 9,
+    "z": 13,
+    "w": 6,
+    "d": 12,
+    "height": 0,
+    "edge": 2
+   }
+  ]
+ },
+ "teamSpawns": [
+  [
+   [
+    -57.0,
+    -3.0
+   ],
+   [
+    -57.0,
+    3.0
+   ],
+   [
+    -53.0,
+    -2.5
+   ],
+   [
+    -53.0,
+    2.5
+   ],
+   [
+    -50.0,
+    0.0
+   ],
+   [
+    -45.0,
+    -12.0
+   ],
+   [
+    -45.0,
+    12.0
+   ],
+   [
+    -40.0,
+    -18.0
+   ],
+   [
+    -40.0,
+    18.0
+   ],
+   [
+    -50.0,
+    -15.0
+   ],
+   [
+    -50.0,
+    15.0
+   ]
+  ],
+  [
+   [
+    57.0,
+    3.0
+   ],
+   [
+    57.0,
+    -3.0
+   ],
+   [
+    53.0,
+    2.5
+   ],
+   [
+    53.0,
+    -2.5
+   ],
+   [
+    50.0,
+    0.0
+   ],
+   [
+    45.0,
+    12.0
+   ],
+   [
+    45.0,
+    -12.0
+   ],
+   [
+    40.0,
+    18.0
+   ],
+   [
+    40.0,
+    -18.0
+   ],
+   [
+    50.0,
+    15.0
+   ],
+   [
+    50.0,
+    -15.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0,
+   "z": 0,
+   "radius": 6
+  },
+  {
+   "x": 0,
+   "z": -37,
+   "radius": 5
+  },
+  {
+   "x": 0,
+   "z": 37,
+   "radius": 5
+  }
+ ],
+ "flags": [
+  [
+   -55,
+   0
+  ],
+  [
+   55,
+   0
+  ]
+ ],
+ "foliage": {
+  "seed": 7,
+  "surfaces": {
+   "Metal": 0,
+   "Concrete": 0,
+   "Tiles": 0
+  },
+  "exclude": [
+   {
+    "shape": "circle",
+    "center": [
+     -52,
+     0
+    ],
+    "radius": 11,
+    "density": 0.05
+   },
+   {
+    "shape": "circle",
+    "center": [
+     52,
+     0
+    ],
+    "radius": 11,
+    "density": 0.05
+   },
+   {
+    "shape": "circle",
+    "center": [
+     0,
+     0
+    ],
+    "radius": 6.5,
+    "density": 0.3
+   }
+  ],
+  "regions": [
+   {
+    "type": "grass",
+    "density": 2.6,
+    "polygon": [
+     [
+      60.5,
+      0.0
+     ],
+     [
+      59.755,
+      7.274
+     ],
+     [
+      57.539,
+      14.369
+     ],
+     [
+      53.906,
+      21.111
+     ],
+     [
+      48.946,
+      27.332
+     ],
+     [
+      42.78,
+      32.88
+     ],
+     [
+      35.561,
+      37.619
+     ],
+     [
+      27.466,
+      41.432
+     ],
+     [
+      18.696,
+      44.224
+     ],
+     [
+      9.464,
+      45.928
+     ],
+     [
+      0.0,
+      46.5
+     ],
+     [
+      -9.464,
+      45.928
+     ],
+     [
+      -18.696,
+      44.224
+     ],
+     [
+      -27.466,
+      41.432
+     ],
+     [
+      -35.561,
+      37.619
+     ],
+     [
+      -42.78,
+      32.88
+     ],
+     [
+      -48.946,
+      27.332
+     ],
+     [
+      -53.906,
+      21.111
+     ],
+     [
+      -57.539,
+      14.369
+     ],
+     [
+      -59.755,
+      7.274
+     ],
+     [
+      -60.5,
+      0.0
+     ],
+     [
+      -59.755,
+      -7.274
+     ],
+     [
+      -57.539,
+      -14.369
+     ],
+     [
+      -53.906,
+      -21.111
+     ],
+     [
+      -48.946,
+      -27.332
+     ],
+     [
+      -42.78,
+      -32.88
+     ],
+     [
+      -35.561,
+      -37.619
+     ],
+     [
+      -27.466,
+      -41.432
+     ],
+     [
+      -18.696,
+      -44.224
+     ],
+     [
+      -9.464,
+      -45.928
+     ],
+     [
+      -0.0,
+      -46.5
+     ],
+     [
+      9.464,
+      -45.928
+     ],
+     [
+      18.696,
+      -44.224
+     ],
+     [
+      27.466,
+      -41.432
+     ],
+     [
+      35.561,
+      -37.619
+     ],
+     [
+      42.78,
+      -32.88
+     ],
+     [
+      48.946,
+      -27.332
+     ],
+     [
+      53.906,
+      -21.111
+     ],
+     [
+      57.539,
+      -14.369
+     ],
+     [
+      59.755,
+      -7.274
+     ]
+    ],
+    "color": "#5a7a38",
+    "patchiness": 0.45
+   },
+   {
+    "type": "grass",
+    "density": 3.5,
+    "polygon": [
+     [
+      -32,
+      -50
+     ],
+     [
+      -22,
+      -50
+     ],
+     [
+      -20,
+      0
+     ],
+     [
+      -22,
+      50
+     ],
+     [
+      -32,
+      50
+     ],
+     [
+      -30,
+      0
+     ]
+    ],
+    "color": "#6a8a40",
+    "scale": [
+     1.0,
+     1.5
+    ]
+   },
+   {
+    "type": "grass",
+    "density": 3.5,
+    "polygon": [
+     [
+      32,
+      50
+     ],
+     [
+      22,
+      50
+     ],
+     [
+      20,
+      0
+     ],
+     [
+      22,
+      -50
+     ],
+     [
+      32,
+      -50
+     ],
+     [
+      30,
+      0
+     ]
+    ],
+    "color": "#6a8a40",
+    "scale": [
+     1.0,
+     1.5
+    ]
+   },
+   {
+    "type": "shrub",
+    "density": 0.35,
+    "polygon": [
+     [
+      -32,
+      -50
+     ],
+     [
+      -22,
+      -50
+     ],
+     [
+      -20,
+      0
+     ],
+     [
+      -22,
+      50
+     ],
+     [
+      -32,
+      50
+     ],
+     [
+      -30,
+      0
+     ]
+    ],
+    "seed": 3
+   },
+   {
+    "type": "shrub",
+    "density": 0.35,
+    "polygon": [
+     [
+      32,
+      50
+     ],
+     [
+      22,
+      50
+     ],
+     [
+      20,
+      0
+     ],
+     [
+      22,
+      -50
+     ],
+     [
+      32,
+      -50
+     ],
+     [
+      30,
+      0
+     ]
+    ],
+    "seed": 4
+   },
+   {
+    "type": "bush",
+    "density": 0.08,
+    "polygon": [
+     [
+      60.5,
+      0.0
+     ],
+     [
+      59.755,
+      7.274
+     ],
+     [
+      57.539,
+      14.369
+     ],
+     [
+      53.906,
+      21.111
+     ],
+     [
+      48.946,
+      27.332
+     ],
+     [
+      42.78,
+      32.88
+     ],
+     [
+      35.561,
+      37.619
+     ],
+     [
+      27.466,
+      41.432
+     ],
+     [
+      18.696,
+      44.224
+     ],
+     [
+      9.464,
+      45.928
+     ],
+     [
+      0.0,
+      46.5
+     ],
+     [
+      -9.464,
+      45.928
+     ],
+     [
+      -18.696,
+      44.224
+     ],
+     [
+      -27.466,
+      41.432
+     ],
+     [
+      -35.561,
+      37.619
+     ],
+     [
+      -42.78,
+      32.88
+     ],
+     [
+      -48.946,
+      27.332
+     ],
+     [
+      -53.906,
+      21.111
+     ],
+     [
+      -57.539,
+      14.369
+     ],
+     [
+      -59.755,
+      7.274
+     ],
+     [
+      -60.5,
+      0.0
+     ],
+     [
+      -59.755,
+      -7.274
+     ],
+     [
+      -57.539,
+      -14.369
+     ],
+     [
+      -53.906,
+      -21.111
+     ],
+     [
+      -48.946,
+      -27.332
+     ],
+     [
+      -42.78,
+      -32.88
+     ],
+     [
+      -35.561,
+      -37.619
+     ],
+     [
+      -27.466,
+      -41.432
+     ],
+     [
+      -18.696,
+      -44.224
+     ],
+     [
+      -9.464,
+      -45.928
+     ],
+     [
+      -0.0,
+      -46.5
+     ],
+     [
+      9.464,
+      -45.928
+     ],
+     [
+      18.696,
+      -44.224
+     ],
+     [
+      27.466,
+      -41.432
+     ],
+     [
+      35.561,
+      -37.619
+     ],
+     [
+      42.78,
+      -32.88
+     ],
+     [
+      48.946,
+      -27.332
+     ],
+     [
+      53.906,
+      -21.111
+     ],
+     [
+      57.539,
+      -14.369
+     ],
+     [
+      59.755,
+      -7.274
+     ]
+    ],
+    "seed": 5
+   },
+   {
+    "type": "shrub",
+    "density": 0.5,
+    "rect": [
+     -22,
+     -44,
+     22,
+     -31
+    ],
+    "seed": 6
+   },
+   {
+    "type": "shrub",
+    "density": 0.5,
+    "rect": [
+     -22,
+     31,
+     22,
+     44
+    ],
+    "seed": 7
+   },
+   {
+    "type": "bush",
+    "density": 0.25,
+    "rect": [
+     -48,
+     -30,
+     -28,
+     30
+    ],
+    "seed": 8
+   },
+   {
+    "type": "bush",
+    "density": 0.25,
+    "rect": [
+     28,
+     -30,
+     48,
+     30
+    ],
+    "seed": 9
+   }
+  ],
+  "items": [
+   {
+    "type": "tree",
+    "x": -40,
+    "z": -10,
+    "height": 8
+   },
+   {
+    "type": "tree",
+    "x": 40,
+    "z": 10,
+    "height": 8
+   },
+   {
+    "type": "tree",
+    "x": -36,
+    "z": -17,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": 36,
+    "z": 17,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": -44,
+    "z": -22,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": 44,
+    "z": 22,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": -35,
+    "z": 12,
+    "height": 9
+   },
+   {
+    "type": "tree",
+    "x": 35,
+    "z": -12,
+    "height": 9
+   },
+   {
+    "type": "tree",
+    "x": -42,
+    "z": 16,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": 42,
+    "z": -16,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": -30,
+    "z": -8,
+    "height": 6
+   },
+   {
+    "type": "tree",
+    "x": 30,
+    "z": 8,
+    "height": 6
+   },
+   {
+    "type": "tree",
+    "x": -21,
+    "z": -42,
+    "height": 7.5
+   },
+   {
+    "type": "tree",
+    "x": 21,
+    "z": 42,
+    "height": 7.5
+   },
+   {
+    "type": "tree",
+    "x": -28,
+    "z": -36,
+    "height": 8
+   },
+   {
+    "type": "tree",
+    "x": 28,
+    "z": 36,
+    "height": 8
+   },
+   {
+    "type": "tree",
+    "x": -33,
+    "z": 30,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": 33,
+    "z": -30,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": -18,
+    "z": 36,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": 18,
+    "z": -36,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": -6,
+    "z": 38.5,
+    "height": 8.5
+   },
+   {
+    "type": "tree",
+    "x": 6,
+    "z": -38.5,
+    "height": 8.5
+   },
+   {
+    "type": "tree",
+    "x": -46,
+    "z": 6,
+    "height": 6
+   },
+   {
+    "type": "tree",
+    "x": 46,
+    "z": -6,
+    "height": 6
+   },
+   {
+    "type": "tree",
+    "x": -15,
+    "z": 20,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": 15,
+    "z": -20,
+    "height": 7
+   },
+   {
+    "type": "tree",
+    "x": -22,
+    "z": 8,
+    "height": 6.5
+   },
+   {
+    "type": "tree",
+    "x": 22,
+    "z": -8,
+    "height": 6.5
+   }
+  ]
+ },
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#4a3c30"
+  },
+  {
+   "op": "Block",
+   "x0": 37.003,
+   "y0": 0.0,
+   "z0": 33.489,
+   "x1": 38.203,
+   "y1": 7.5,
+   "z1": 34.689,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 37.603,
+   "z": 34.089,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": -132.194,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 33.198,
+   "z": 30.096,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": -132.194,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 37.144,
+   "z": 33.673,
+   "y": 2.3,
+   "yaw": 227.8
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 37.144,
+   "z": 33.673,
+   "y": 4.0,
+   "yaw": 227.8
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": 30.2,
+   "z": 40.184,
+   "y": 1.4,
+   "yaw": 306.9
+  },
+  {
+   "op": "Block",
+   "x0": 19.408,
+   "y0": 0.0,
+   "z0": 41.216,
+   "x1": 20.608,
+   "y1": 7.5,
+   "z1": 42.416,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 20.008,
+   "z": 41.816,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": -154.43,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 17.442,
+   "z": 36.453,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": -154.43,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 19.741,
+   "z": 41.257,
+   "y": 2.3,
+   "yaw": 205.6
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 19.741,
+   "z": 41.257,
+   "y": 4.0,
+   "yaw": 205.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 10.488,
+   "z": 45.695,
+   "y": 2.6,
+   "yaw": 282.9
+  },
+  {
+   "op": "Block",
+   "x0": -0.6,
+   "y0": 0.0,
+   "z0": 43.9,
+   "x1": 0.6,
+   "y1": 7.5,
+   "z1": 45.1,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 44.5,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": -180.0,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 38.555,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": -180.0,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 0.0,
+   "z": 43.88,
+   "y": 2.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 0.0,
+   "z": 43.88,
+   "y": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": -10.488,
+   "z": 45.695,
+   "y": 1.4,
+   "yaw": 257.1
+  },
+  {
+   "op": "Block",
+   "x0": -20.608,
+   "y0": 0.0,
+   "z0": 41.216,
+   "x1": -19.408,
+   "y1": 7.5,
+   "z1": 42.416,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -20.008,
+   "z": 41.816,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": 154.43,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -17.442,
+   "z": 36.453,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": 154.43,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -19.741,
+   "z": 41.257,
+   "y": 2.3,
+   "yaw": 154.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -19.741,
+   "z": 41.257,
+   "y": 4.0,
+   "yaw": 154.4
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": -30.2,
+   "z": 40.184,
+   "y": 2.6,
+   "yaw": 233.1
+  },
+  {
+   "op": "Block",
+   "x0": -38.203,
+   "y0": 0.0,
+   "z0": 33.489,
+   "x1": -37.003,
+   "y1": 7.5,
+   "z1": 34.689,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -37.603,
+   "z": 34.089,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": 132.194,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -33.198,
+   "z": 30.096,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": 132.194,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -37.144,
+   "z": 33.673,
+   "y": 2.3,
+   "yaw": 132.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -37.144,
+   "z": 33.673,
+   "y": 4.0,
+   "yaw": 132.2
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": -46.269,
+   "z": 29.825,
+   "y": 1.4,
+   "yaw": 212.8
+  },
+  {
+   "op": "Block",
+   "x0": -38.203,
+   "y0": 0.0,
+   "z0": -34.689,
+   "x1": -37.003,
+   "y1": 7.5,
+   "z1": -33.489,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -37.603,
+   "z": -34.089,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": 47.806,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -33.198,
+   "z": -30.096,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": 47.806,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -37.144,
+   "z": -33.673,
+   "y": 2.3,
+   "yaw": 47.8
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -37.144,
+   "z": -33.673,
+   "y": 4.0,
+   "yaw": 47.8
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": -30.2,
+   "z": -40.184,
+   "y": 2.6,
+   "yaw": 126.9
+  },
+  {
+   "op": "Block",
+   "x0": -20.608,
+   "y0": 0.0,
+   "z0": -42.416,
+   "x1": -19.408,
+   "y1": 7.5,
+   "z1": -41.216,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -20.008,
+   "z": -41.816,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": 25.57,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -17.442,
+   "z": -36.453,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": 25.57,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -19.741,
+   "z": -41.257,
+   "y": 2.3,
+   "yaw": 25.6
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -19.741,
+   "z": -41.257,
+   "y": 4.0,
+   "yaw": 25.6
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": -10.488,
+   "z": -45.695,
+   "y": 1.4,
+   "yaw": 102.9
+  },
+  {
+   "op": "Block",
+   "x0": -0.6,
+   "y0": 0.0,
+   "z0": -45.1,
+   "x1": 0.6,
+   "y1": 7.5,
+   "z1": -43.9,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -0.0,
+   "z": -44.5,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": 0.0,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -0.0,
+   "z": -38.555,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": 0.0,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -0.0,
+   "z": -43.88,
+   "y": 2.3,
+   "yaw": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -0.0,
+   "z": -43.88,
+   "y": 4.0,
+   "yaw": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 10.488,
+   "z": -45.695,
+   "y": 2.6,
+   "yaw": 77.1
+  },
+  {
+   "op": "Block",
+   "x0": 19.408,
+   "y0": 0.0,
+   "z0": -42.416,
+   "x1": 20.608,
+   "y1": 7.5,
+   "z1": -41.216,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 20.008,
+   "z": -41.816,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": -25.57,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 17.442,
+   "z": -36.453,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": -25.57,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 19.741,
+   "z": -41.257,
+   "y": 2.3,
+   "yaw": 334.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 19.741,
+   "z": -41.257,
+   "y": 4.0,
+   "yaw": 334.4
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Cable Tray",
+   "x": 30.2,
+   "z": -40.184,
+   "y": 1.4,
+   "yaw": 53.1
+  },
+  {
+   "op": "Block",
+   "x0": 37.003,
+   "y0": 0.0,
+   "z0": -34.689,
+   "x1": 38.203,
+   "y1": 7.5,
+   "z1": -33.489,
+   "color": "#6e7278"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 37.603,
+   "z": -34.089,
+   "y": 7.2,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 8.0,
+   "depth": 0.7,
+   "yaw": -47.806,
+   "pitch": 48.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 33.198,
+   "z": -30.096,
+   "y": 12.553,
+   "color": "#6e7278",
+   "anchor": "world",
+   "width": 1.0,
+   "height": 9.0,
+   "depth": 0.7,
+   "yaw": -47.806,
+   "pitch": 76.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 37.144,
+   "z": -33.673,
+   "y": 2.3,
+   "yaw": 312.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 37.144,
+   "z": -33.673,
+   "y": 4.0,
+   "yaw": 312.2
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Pipe Run",
+   "x": 46.269,
+   "z": -29.825,
+   "y": 2.6,
+   "yaw": 32.8
+  },
+  {
+   "op": "Block",
+   "x0": -1.1,
+   "y0": 0.0,
+   "z0": -1.1,
+   "x1": 1.1,
+   "y1": 9.0,
+   "z1": 1.1,
+   "color": "#4a3a2a"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "color": "#4a3a2a",
+   "width": 2.6,
+   "height": 8.5,
+   "depth": 2.6,
+   "segments": 12,
+   "material": "Wood"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cone",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "color": "#4a3a2a",
+   "width": 4.6,
+   "height": 1.2,
+   "depth": 4.6,
+   "segments": 10,
+   "material": "Wood"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 8.2,
+   "color": "#3f6e2e",
+   "anchor": "world",
+   "width": 14,
+   "height": 5,
+   "depth": 14,
+   "detail": 2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 4.0,
+   "z": 2.0,
+   "y": 9.5,
+   "color": "#3f6e2e",
+   "anchor": "world",
+   "width": 9,
+   "height": 4,
+   "depth": 9,
+   "detail": 2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -4.0,
+   "z": -3.0,
+   "y": 10.5,
+   "color": "#2f5a2a",
+   "anchor": "world",
+   "width": 9,
+   "height": 4,
+   "depth": 9,
+   "detail": 2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": 2.0,
+   "z": -5.0,
+   "y": 11.2,
+   "color": "#2f5a2a",
+   "anchor": "world",
+   "width": 7,
+   "height": 3.5,
+   "depth": 7,
+   "detail": 2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "icosphere",
+   "x": -3.0,
+   "z": 4.0,
+   "y": 11.8,
+   "color": "#2f5a2a",
+   "anchor": "world",
+   "width": 7,
+   "height": 3.5,
+   "depth": 7,
+   "detail": 2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 7.6,
+   "color": "#4a3a2a",
+   "anchor": "world",
+   "width": 0.6,
+   "height": 5.0,
+   "depth": 0.6,
+   "yaw": 20,
+   "pitch": 62,
+   "material": "Wood"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 7.6,
+   "color": "#4a3a2a",
+   "anchor": "world",
+   "width": 0.6,
+   "height": 5.0,
+   "depth": 0.6,
+   "yaw": 110,
+   "pitch": 62,
+   "material": "Wood"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 7.6,
+   "color": "#4a3a2a",
+   "anchor": "world",
+   "width": 0.6,
+   "height": 5.0,
+   "depth": 0.6,
+   "yaw": 200,
+   "pitch": 62,
+   "material": "Wood"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 7.6,
+   "color": "#4a3a2a",
+   "anchor": "world",
+   "width": 0.6,
+   "height": 5.0,
+   "depth": 0.6,
+   "yaw": 290,
+   "pitch": 62,
+   "material": "Wood"
+  },
+  {
+   "op": "Decal",
+   "decal": "Root Cracks",
+   "x": 2.5,
+   "z": 2.5,
+   "y": 1.4,
+   "onto": "floor",
+   "size": 3.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Root Cracks",
+   "x": -2.5,
+   "z": -2.5,
+   "y": 1.4,
+   "onto": "floor",
+   "size": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": -9.5,
+   "z": -6.5,
+   "yaw": 35.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": -6.5,
+   "z": 9.5,
+   "yaw": 125.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -11.5,
+   "z": 1.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": -7.5,
+   "z": -9.5
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": -12.5,
+   "z": -5.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -2.5,
+   "z": -11.2
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -8.0,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": -7.2,
+   "z": 6.8
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -11.0,
+   "z": 5.5,
+   "yaw": 30.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Leaf Litter",
+    "global:Moss Patch",
+    "Root Cracks"
+   ],
+   "x0": -13.0,
+   "z0": -13.0,
+   "x1": 0.0,
+   "z1": 13.0,
+   "count": 10,
+   "seed": 81,
+   "y": 1.4,
+   "gap": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": -17.0,
+   "z": -17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 45
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": -17.0,
+   "z": 17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 135
+  },
+  {
+   "op": "Spawn",
+   "x": -24.0,
+   "z": -8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": 9.5,
+   "z": 6.5,
+   "yaw": 215.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": 6.5,
+   "z": -9.5,
+   "yaw": 305.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 11.5,
+   "z": -1.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": 7.5,
+   "z": 9.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": 12.5,
+   "z": 5.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 2.5,
+   "z": 11.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 8.0,
+   "z": 0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": 7.2,
+   "z": -6.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 11.0,
+   "z": -5.5,
+   "yaw": 210.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Leaf Litter",
+    "global:Moss Patch",
+    "Root Cracks"
+   ],
+   "x0": 0.0,
+   "z0": -13.0,
+   "x1": 13.0,
+   "z1": 13.0,
+   "count": 10,
+   "seed": 82,
+   "y": 1.4,
+   "gap": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": 17.0,
+   "z": 17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 45
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": 17.0,
+   "z": -17.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 135
+  },
+  {
+   "op": "Spawn",
+   "x": 24.0,
+   "z": 8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Scaffold Tower",
+   "x": -12.0,
+   "z": 24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -16.0,
+   "z": 27.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -8.0,
+   "z": 27.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": -20.0,
+   "z": -31.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -3.0,
+   "z": -27.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": -5.0,
+   "z": -28.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 4.0,
+   "z": 24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": 8.0,
+   "z": 28.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -14.0,
+   "z": 29.5
+  },
+  {
+   "op": "Prop",
+   "name": "Scaffold Tower",
+   "x": 12.0,
+   "z": -24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 16.0,
+   "z": -27.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 8.0,
+   "z": -27.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": 20.0,
+   "z": 31.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 3.0,
+   "z": 27.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Oil Drum",
+   "x": 5.0,
+   "z": 28.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -4.0,
+   "z": -24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": -8.0,
+   "z": -28.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 14.0,
+   "z": -29.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Hangar",
+   "cx": -54.0,
+   "cz": 0,
+   "w": 12,
+   "d": 16,
+   "h": 6,
+   "wall": "#5c6068",
+   "roof": "#4a4e56",
+   "doorsOnX": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -54.0,
+   "z": 0.0,
+   "y": -0.1,
+   "color": "#7a7e86",
+   "width": 11.8,
+   "height": 0.12,
+   "depth": 15.8,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -44.0,
+   "z": 0.0,
+   "y": -0.1,
+   "color": "#7a7e86",
+   "width": 7.8,
+   "height": 0.12,
+   "depth": 19,
+   "material": "Metal"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock West 1",
+   "x": -47.3,
+   "z": 1.6,
+   "y": 5.3,
+   "onto": "wall-x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock West 2",
+   "x": -47.3,
+   "z": 0.8,
+   "y": 5.3,
+   "onto": "wall-x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock West 3",
+   "x": -47.3,
+   "z": 0.0,
+   "y": 5.3,
+   "onto": "wall-x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock West 4",
+   "x": -47.3,
+   "z": -0.8,
+   "y": 5.3,
+   "onto": "wall-x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock West 5",
+   "x": -47.3,
+   "z": -1.6,
+   "y": 5.3,
+   "onto": "wall-x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 1",
+   "x": -52.5,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 2",
+   "x": -53.1,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 3",
+   "x": -53.7,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 4",
+   "x": -54.3,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 5",
+   "x": -54.9,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 6",
+   "x": -55.5,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 1",
+   "x": -55.5,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 2",
+   "x": -54.9,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 3",
+   "x": -54.3,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 4",
+   "x": -53.7,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 5",
+   "x": -53.1,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 6",
+   "x": -52.5,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Ark Crest",
+   "x": -44.0,
+   "z": 0.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Hull Seams",
+   "x": -54.0,
+   "z": 0.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Canopy Hull Seams"
+   ],
+   "x0": -60.0,
+   "z0": -8.0,
+   "x1": -40.0,
+   "z1": 9.0,
+   "count": 14,
+   "seed": 21,
+   "y": 0.1,
+   "gap": 3.6
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Rust Stain",
+    "global:Oil Stain",
+    "global:Floor Cracks"
+   ],
+   "x0": -60.0,
+   "z0": -8.0,
+   "x1": -41.0,
+   "z1": 8.0,
+   "count": 8,
+   "seed": 31,
+   "y": 0.1
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Section 1",
+   "x": -44.0,
+   "z": -6.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 2.2,
+   "rotation": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -57.0,
+   "z": -6.2
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -53.0,
+   "z": 6.2
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -58.5,
+   "z": 5.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -50.0,
+   "z": -6.5,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -57.5,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": -51.0,
+   "z": 6.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -44.0,
+   "z": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Maintenance Drone Wreck",
+   "x": -43.0,
+   "z": -7.5,
+   "yaw": 35.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -46.5,
+   "z": -3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -46.5,
+   "z": 3.5
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -47.5,
+   "z": -9.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -47.5,
+   "z": 9.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -59.0,
+   "z": -7.2
+  },
+  {
+   "op": "Prop",
+   "name": "Tool Cart",
+   "x": -55.0,
+   "z": -5.5,
+   "yaw": 70.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -48.4,
+   "z": -5.0,
+   "y": 2.8,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -48.4,
+   "z": 5.0,
+   "y": 2.8,
+   "yaw": 90.0
+  },
+  {
+   "op": "Spawn",
+   "x": -57.0,
+   "z": -3.0
+  },
+  {
+   "op": "Spawn",
+   "x": -57.0,
+   "z": 3.0
+  },
+  {
+   "op": "Spawn",
+   "x": -53.0,
+   "z": -2.5
+  },
+  {
+   "op": "Spawn",
+   "x": -53.0,
+   "z": 2.5
+  },
+  {
+   "op": "Spawn",
+   "x": -50.0,
+   "z": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": -45.0,
+   "z": -12.0
+  },
+  {
+   "op": "Spawn",
+   "x": -45.0,
+   "z": 12.0
+  },
+  {
+   "op": "Spawn",
+   "x": -40.0,
+   "z": -18.0
+  },
+  {
+   "op": "Spawn",
+   "x": -40.0,
+   "z": 18.0
+  },
+  {
+   "op": "Spawn",
+   "x": -50.0,
+   "z": -15.0
+  },
+  {
+   "op": "Spawn",
+   "x": -50.0,
+   "z": 15.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": -38.0,
+   "z": -14.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": -34.0,
+   "z": 8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": -42.0,
+   "z": 22.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": -36.0,
+   "z": -4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": -31.0,
+   "z": 17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": -38.0,
+   "z": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": -36.0,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelbarrow",
+   "x": -39.5,
+   "z": -9.0,
+   "yaw": 160.0
+  },
+  {
+   "op": "Prop",
+   "name": "Compost Bags",
+   "x": -41.0,
+   "z": 12.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Raised Bed",
+   "x": -33.0,
+   "z": -18.0
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Tools",
+   "x": -32.5,
+   "z": -16.5
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -31.0,
+   "z": -2.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -30.0,
+   "z": 10.0,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cable Spool",
+   "x": -44.0,
+   "z": -19.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Cylinders",
+   "x": -46.5,
+   "z": 18.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": -30.0,
+   "z": 24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Log",
+   "x": -40.0,
+   "z": 27.0,
+   "yaw": 50.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tree Stump",
+   "x": -46.0,
+   "z": 24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -36.0,
+   "z": 12.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": -33.0,
+   "z": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Watering Can",
+   "x": -37.8,
+   "z": 1.2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Leaf Litter",
+    "global:Moss Patch",
+    "global:Dirt Patch",
+    "global:Mud Patch"
+   ],
+   "x0": -47.0,
+   "z0": -28.0,
+   "x1": -29.0,
+   "z1": 28.0,
+   "count": 26,
+   "seed": 41
+  },
+  {
+   "op": "Prop",
+   "name": "Sluice Gate",
+   "x": -25.8,
+   "z": -14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -25.8,
+   "z": -13.5,
+   "y": -1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Sluice Gate",
+   "x": -26.6,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -26.6,
+   "z": 14.5,
+   "y": -1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Log",
+   "x": -25.5,
+   "z": -32.0,
+   "yaw": 15.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": -26.5,
+   "z": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -25.0,
+   "z": 4.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": -25.5,
+   "z": -3.0
+  },
+  {
+   "op": "Prop",
+   "name": "Brick Pile",
+   "x": -27.0,
+   "z": 22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Plank Pile",
+   "x": -25.0,
+   "z": -24.0,
+   "yaw": 85.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Algae Bloom",
+    "Algae Bloom",
+    "global:Puddle",
+    "global:Water Stain",
+    "global:Rubble Dust"
+   ],
+   "x0": -29.0,
+   "z0": -46.0,
+   "x1": -23.0,
+   "z1": 46.0,
+   "count": 30,
+   "seed": 51
+  },
+  {
+   "op": "Block",
+   "x0": -19.5,
+   "y0": 0.0,
+   "z0": -24.2,
+   "x1": -14.5,
+   "y1": 3.0,
+   "z1": -23.8,
+   "color": "#5c6068"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 1",
+   "x": -18.44,
+   "z": -23.7,
+   "y": 2.3,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 2",
+   "x": -17.72,
+   "z": -23.7,
+   "y": 2.3,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 3",
+   "x": -17.0,
+   "z": -23.7,
+   "y": 2.3,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 4",
+   "x": -16.28,
+   "z": -23.7,
+   "y": 2.3,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 5",
+   "x": -15.56,
+   "z": -23.7,
+   "y": 2.3,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -17.0,
+   "z": -22.2
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -20.2,
+   "z": -22.8
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -22.5,
+   "z": -21.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Valve",
+   "x": -14.2,
+   "z": -22.8
+  },
+  {
+   "op": "Prop",
+   "name": "Junction Box",
+   "x": -19.2,
+   "z": -23.3
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Oil Stain",
+   "x": -17.0,
+   "z": -21.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.8
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": -45.4,
+   "x1": 10.0,
+   "y1": 5.5,
+   "z1": -44.8,
+   "color": "#5c6068"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 1",
+   "x": -2.167,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 2",
+   "x": -1.3,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 3",
+   "x": -0.433,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 4",
+   "x": 0.433,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 5",
+   "x": 1.3,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 6",
+   "x": 2.167,
+   "z": -44.7,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 1",
+   "x": -8.1,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 2",
+   "x": -7.3,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 3",
+   "x": -6.5,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 4",
+   "x": -5.7,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 5",
+   "x": -4.9,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 1",
+   "x": 5.06,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 2",
+   "x": 5.78,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 3",
+   "x": 6.5,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 4",
+   "x": 7.22,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 5",
+   "x": 7.94,
+   "z": -44.7,
+   "y": 1.5,
+   "onto": "wall-z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -8.5,
+   "z": -44.75,
+   "y": 4.6
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 8.5,
+   "z": -44.75,
+   "y": 4.6
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Section 2",
+   "x": 0.0,
+   "z": -41.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.2,
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -9.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": -15.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -20.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": 9.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 15.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": 20.0,
+   "z": -40.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": -12.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -19.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 12.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": 19.0,
+   "z": -33.8
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": -4.5,
+   "z": -42.6
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": 4.5,
+   "z": -42.6
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -7.0,
+   "z": -36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Server Cabinet",
+   "x": 7.0,
+   "z": -36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": -12.0,
+   "z": -37.2
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": 12.0,
+   "z": -37.2
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": -21.5,
+   "z": -37.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": 21.5,
+   "z": -37.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": -16.0,
+   "z": -37.5
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 16.0,
+   "z": -37.3
+  },
+  {
+   "op": "Prop",
+   "name": "Watering Can",
+   "x": -10.0,
+   "z": -38.5
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": 9.0,
+   "z": -38.5
+  },
+  {
+   "op": "Prop",
+   "name": "Tool Cart",
+   "x": -22.0,
+   "z": -41.5,
+   "yaw": 10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": 15.0,
+   "z": -43.6
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": -15.0,
+   "z": -43.6
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -17.0,
+   "z": -31.4
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 17.0,
+   "z": -31.4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Root Cracks",
+    "global:Moss Patch",
+    "global:Leaf Litter",
+    "global:Rust Stain"
+   ],
+   "x0": -21.0,
+   "z0": -43.0,
+   "x1": 21.0,
+   "z1": -32.0,
+   "count": 22,
+   "seed": 61,
+   "gap": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": -23.4,
+   "z": -30.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": 23.4,
+   "z": -30.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 0
+  },
+  {
+   "op": "Spawn",
+   "x": -14.0,
+   "z": -37.0
+  },
+  {
+   "op": "Spawn",
+   "x": 14.0,
+   "z": -37.0
+  },
+  {
+   "op": "StairsZ",
+   "x0": -10.5,
+   "x1": -7.5,
+   "z": -33.25,
+   "dir": 1,
+   "y0": 2.4,
+   "height": 1.8,
+   "color": "#8a8e96",
+   "anchor": "world"
+  },
+  {
+   "op": "Bridge",
+   "x0": -10.5,
+   "z0": -31.0,
+   "x1": -7.5,
+   "z1": -17.0,
+   "h": 4.2,
+   "color": "#8a8e96",
+   "anchor": "world"
+  },
+  {
+   "op": "Ramp",
+   "x": -9.0,
+   "z": -9.0,
+   "width": 3,
+   "height": 4.2,
+   "alongX": false,
+   "dir": -1,
+   "color": "#6a6e76",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -9.0,
+   "z": -13.0,
+   "y": 2.1,
+   "color": "#8a8e96",
+   "anchor": "world",
+   "width": 3.3,
+   "height": 0.35,
+   "depth": 9.6,
+   "pitch": -25,
+   "material": "Metal"
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -30.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -27.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -24.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -21.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -18.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -14.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -11.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.0,
+   "z": -34.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -9.0,
+   "z": -19.5,
+   "y": 4.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": -9.0,
+   "z": -26.0,
+   "y": 4.2,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 180
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Rubble Dust",
+    "global:Rust Stain",
+    "global:Floor Cracks"
+   ],
+   "x0": -12.0,
+   "z0": -18.0,
+   "x1": -6.0,
+   "z1": -8.0,
+   "count": 6,
+   "seed": 71
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": -6.2,
+   "z": -11.0
+  },
+  {
+   "op": "Prop",
+   "name": "Loose Bricks",
+   "x": -11.5,
+   "z": -9.5
+  },
+  {
+   "op": "Prop",
+   "name": "Cinder Blocks",
+   "x": -6.5,
+   "z": -16.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Hangar",
+   "cx": 54.0,
+   "cz": 0,
+   "w": 12,
+   "d": 16,
+   "h": 6,
+   "wall": "#5c6068",
+   "roof": "#4a4e56",
+   "doorsOnX": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 54.0,
+   "z": 0.0,
+   "y": -0.1,
+   "color": "#7a7e86",
+   "width": 11.8,
+   "height": 0.12,
+   "depth": 15.8,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 44.0,
+   "z": 0.0,
+   "y": -0.1,
+   "color": "#7a7e86",
+   "width": 7.8,
+   "height": 0.12,
+   "depth": 19,
+   "material": "Metal"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock East 1",
+   "x": 47.3,
+   "z": -1.6,
+   "y": 5.3,
+   "onto": "wall+x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock East 2",
+   "x": 47.3,
+   "z": -0.8,
+   "y": 5.3,
+   "onto": "wall+x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock East 3",
+   "x": 47.3,
+   "z": 0.0,
+   "y": 5.3,
+   "onto": "wall+x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock East 4",
+   "x": 47.3,
+   "z": 0.8,
+   "y": 5.3,
+   "onto": "wall+x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Airlock East 5",
+   "x": 47.3,
+   "z": 1.6,
+   "y": 5.3,
+   "onto": "wall+x",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 1",
+   "x": 52.5,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 2",
+   "x": 53.1,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 3",
+   "x": 53.7,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 4",
+   "x": 54.3,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 5",
+   "x": 54.9,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hull Breach 6",
+   "x": 55.5,
+   "z": 8.6,
+   "y": 3.4,
+   "onto": "wall-z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 1",
+   "x": 55.5,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 2",
+   "x": 54.9,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 3",
+   "x": 54.3,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 4",
+   "x": 53.7,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 5",
+   "x": 53.1,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Low Oxygen 6",
+   "x": 52.5,
+   "z": -8.6,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.6,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Ark Crest",
+   "x": 44.0,
+   "z": 0.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 4.0,
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Hull Seams",
+   "x": 54.0,
+   "z": 0.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Canopy Hull Seams"
+   ],
+   "x0": 40.0,
+   "z0": -9.0,
+   "x1": 60.0,
+   "z1": 8.0,
+   "count": 14,
+   "seed": 22,
+   "y": 0.1,
+   "gap": 3.6
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Rust Stain",
+    "global:Oil Stain",
+    "global:Floor Cracks"
+   ],
+   "x0": 41.0,
+   "z0": -8.0,
+   "x1": 60.0,
+   "z1": 8.0,
+   "count": 8,
+   "seed": 32,
+   "y": 0.1
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Section 3",
+   "x": 44.0,
+   "z": 6.0,
+   "y": 0.1,
+   "onto": "floor",
+   "size": 2.2,
+   "rotation": 90
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 57.0,
+   "z": 6.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 53.0,
+   "z": -6.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 58.5,
+   "z": -5.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 50.0,
+   "z": 6.5,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 57.5,
+   "z": 0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": 51.0,
+   "z": -6.6
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 44.0,
+   "z": -7.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Maintenance Drone Wreck",
+   "x": 43.0,
+   "z": 7.5,
+   "yaw": 215.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 46.5,
+   "z": 3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 46.5,
+   "z": -3.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 47.5,
+   "z": 9.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": 47.5,
+   "z": -9.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 59.0,
+   "z": 7.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tool Cart",
+   "x": 55.0,
+   "z": 5.5,
+   "yaw": 250.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 48.4,
+   "z": 5.0,
+   "y": 2.8,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 48.4,
+   "z": -5.0,
+   "y": 2.8,
+   "yaw": 270.0
+  },
+  {
+   "op": "Spawn",
+   "x": 57.0,
+   "z": 3.0
+  },
+  {
+   "op": "Spawn",
+   "x": 57.0,
+   "z": -3.0
+  },
+  {
+   "op": "Spawn",
+   "x": 53.0,
+   "z": 2.5
+  },
+  {
+   "op": "Spawn",
+   "x": 53.0,
+   "z": -2.5
+  },
+  {
+   "op": "Spawn",
+   "x": 50.0,
+   "z": 0.0
+  },
+  {
+   "op": "Spawn",
+   "x": 45.0,
+   "z": 12.0
+  },
+  {
+   "op": "Spawn",
+   "x": 45.0,
+   "z": -12.0
+  },
+  {
+   "op": "Spawn",
+   "x": 40.0,
+   "z": 18.0
+  },
+  {
+   "op": "Spawn",
+   "x": 40.0,
+   "z": -18.0
+  },
+  {
+   "op": "Spawn",
+   "x": 50.0,
+   "z": 15.0
+  },
+  {
+   "op": "Spawn",
+   "x": 50.0,
+   "z": -15.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": 38.0,
+   "z": 14.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": 34.0,
+   "z": -8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Planter Trough",
+   "x": 42.0,
+   "z": -22.0,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": 36.0,
+   "z": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": 31.0,
+   "z": -17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": 38.0,
+   "z": -2.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": 36.0,
+   "z": 22.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wheelbarrow",
+   "x": 39.5,
+   "z": 9.0,
+   "yaw": 340.0
+  },
+  {
+   "op": "Prop",
+   "name": "Compost Bags",
+   "x": 41.0,
+   "z": -12.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Raised Bed",
+   "x": 33.0,
+   "z": 18.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Garden Tools",
+   "x": 32.5,
+   "z": 16.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 31.0,
+   "z": 2.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 30.0,
+   "z": -10.0,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cable Spool",
+   "x": 44.0,
+   "z": 19.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Cylinders",
+   "x": 46.5,
+   "z": -18.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": 30.0,
+   "z": -24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Log",
+   "x": 40.0,
+   "z": -27.0,
+   "yaw": 230.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tree Stump",
+   "x": 46.0,
+   "z": -24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 36.0,
+   "z": -12.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": 33.0,
+   "z": -2.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Watering Can",
+   "x": 37.8,
+   "z": -1.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Leaf Litter",
+    "global:Moss Patch",
+    "global:Dirt Patch",
+    "global:Mud Patch"
+   ],
+   "x0": 29.0,
+   "z0": -28.0,
+   "x1": 47.0,
+   "z1": 28.0,
+   "count": 26,
+   "seed": 42
+  },
+  {
+   "op": "Prop",
+   "name": "Sluice Gate",
+   "x": 25.8,
+   "z": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 25.8,
+   "z": 13.5,
+   "y": -1.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sluice Gate",
+   "x": 26.6,
+   "z": -14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 26.6,
+   "z": -14.5,
+   "y": -1.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Log",
+   "x": 25.5,
+   "z": 32.0,
+   "yaw": 195.0
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": 26.5,
+   "z": -30.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 25.0,
+   "z": -4.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": 25.5,
+   "z": 3.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Brick Pile",
+   "x": 27.0,
+   "z": -22.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Plank Pile",
+   "x": 25.0,
+   "z": 24.0,
+   "yaw": 265.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Algae Bloom",
+    "Algae Bloom",
+    "global:Puddle",
+    "global:Water Stain",
+    "global:Rubble Dust"
+   ],
+   "x0": 23.0,
+   "z0": -46.0,
+   "x1": 29.0,
+   "z1": 46.0,
+   "count": 30,
+   "seed": 52
+  },
+  {
+   "op": "Block",
+   "x0": 14.5,
+   "y0": 0.0,
+   "z0": 23.8,
+   "x1": 19.5,
+   "y1": 3.0,
+   "z1": 24.2,
+   "color": "#5c6068"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 1",
+   "x": 18.44,
+   "z": 23.7,
+   "y": 2.3,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 2",
+   "x": 17.72,
+   "z": 23.7,
+   "y": 2.3,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 3",
+   "x": 17.0,
+   "z": 23.7,
+   "y": 2.3,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 4",
+   "x": 16.28,
+   "z": 23.7,
+   "y": 2.3,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Irrigation 5",
+   "x": 15.56,
+   "z": 23.7,
+   "y": 2.3,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 17.0,
+   "z": 22.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 20.2,
+   "z": 22.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": 22.5,
+   "z": 21.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Valve",
+   "x": 14.2,
+   "z": 22.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Junction Box",
+   "x": 19.2,
+   "z": 23.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "global:Oil Stain",
+   "x": 17.0,
+   "z": 21.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.8
+  },
+  {
+   "op": "Block",
+   "x0": -10.0,
+   "y0": 0.0,
+   "z0": 44.8,
+   "x1": 10.0,
+   "y1": 5.5,
+   "z1": 45.4,
+   "color": "#5c6068"
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 1",
+   "x": 2.167,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 2",
+   "x": 1.3,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 3",
+   "x": 0.433,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 4",
+   "x": -0.433,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 5",
+   "x": -1.3,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Arboretum Deck 6",
+   "x": -2.167,
+   "z": 44.7,
+   "y": 3.4,
+   "onto": "wall+z",
+   "size": 0.867,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 1",
+   "x": 8.1,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 2",
+   "x": 7.3,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 3",
+   "x": 6.5,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 4",
+   "x": 5.7,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Hydroponics 5",
+   "x": 4.9,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.8,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 1",
+   "x": -5.06,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 2",
+   "x": -5.78,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 3",
+   "x": -6.5,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 4",
+   "x": -7.22,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Sign Seed Vault 5",
+   "x": -7.94,
+   "z": 44.7,
+   "y": 1.5,
+   "onto": "wall+z",
+   "size": 0.72,
+   "reach": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": 8.5,
+   "z": 44.75,
+   "y": 4.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Emergency Strip Lamp",
+   "x": -8.5,
+   "z": 44.75,
+   "y": 4.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Section 4",
+   "x": 0.0,
+   "z": 41.5,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.2,
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 9.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": 15.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 20.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": -9.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -15.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": -20.0,
+   "z": 40.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": 12.0,
+   "z": 33.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": 19.0,
+   "z": 33.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack Lit",
+   "x": -12.0,
+   "z": 33.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hydroponic Rack",
+   "x": -19.0,
+   "z": 33.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": 4.5,
+   "z": 42.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Seed Vault Cabinet",
+   "x": -4.5,
+   "z": 42.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 7.0,
+   "z": 36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Server Cabinet",
+   "x": -7.0,
+   "z": 36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": 12.0,
+   "z": 37.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Grow Light Pole",
+   "x": -12.0,
+   "z": 37.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": 21.5,
+   "z": 37.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sprinkler Mast",
+   "x": -21.5,
+   "z": 37.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Soil Heap",
+   "x": 16.0,
+   "z": 37.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -16.0,
+   "z": 37.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Watering Can",
+   "x": 10.0,
+   "z": 38.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Flower Pots",
+   "x": -9.0,
+   "z": 38.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tool Cart",
+   "x": 22.0,
+   "z": 41.5,
+   "yaw": 190.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": -15.0,
+   "z": 43.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Ventilation Fan Unit",
+   "x": 15.0,
+   "z": 43.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": 17.0,
+   "z": 31.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Dead Vine Curtain",
+   "x": -17.0,
+   "z": 31.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Root Cracks",
+    "global:Moss Patch",
+    "global:Leaf Litter",
+    "global:Rust Stain"
+   ],
+   "x0": -21.0,
+   "z0": 32.0,
+   "x1": 21.0,
+   "z1": 43.0,
+   "count": 22,
+   "seed": 62,
+   "gap": 2.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": 23.4,
+   "z": 30.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": -23.4,
+   "z": 30.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.6,
+   "rotation": 180
+  },
+  {
+   "op": "Spawn",
+   "x": 14.0,
+   "z": 37.0
+  },
+  {
+   "op": "Spawn",
+   "x": -14.0,
+   "z": 37.0
+  },
+  {
+   "op": "StairsZ",
+   "x0": 7.5,
+   "x1": 10.5,
+   "z": 33.25,
+   "dir": -1,
+   "y0": 2.4,
+   "height": 1.8,
+   "color": "#8a8e96",
+   "anchor": "world"
+  },
+  {
+   "op": "Bridge",
+   "x0": 7.5,
+   "z0": 31.0,
+   "x1": 10.5,
+   "z1": 17.0,
+   "h": 4.2,
+   "color": "#8a8e96",
+   "anchor": "world"
+  },
+  {
+   "op": "Ramp",
+   "x": 9.0,
+   "z": 9.0,
+   "width": 3,
+   "height": 4.2,
+   "alongX": false,
+   "dir": 1,
+   "color": "#6a6e76",
+   "anchor": "world"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 9.0,
+   "z": 13.0,
+   "y": 2.1,
+   "color": "#8a8e96",
+   "anchor": "world",
+   "width": 3.3,
+   "height": 0.35,
+   "depth": 9.6,
+   "pitch": 25,
+   "material": "Metal"
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 30.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 27.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 24.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 21.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 18.0,
+   "y": 4.2
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 14.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 11.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.0,
+   "z": 34.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 9.0,
+   "z": 19.5,
+   "y": 4.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Canopy Deck Arrow",
+   "x": 9.0,
+   "z": 26.0,
+   "y": 4.2,
+   "onto": "floor",
+   "size": 1.4,
+   "rotation": 180
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Rubble Dust",
+    "global:Rust Stain",
+    "global:Floor Cracks"
+   ],
+   "x0": 6.0,
+   "z0": 8.0,
+   "x1": 12.0,
+   "z1": 18.0,
+   "count": 6,
+   "seed": 72
+  },
+  {
+   "op": "Prop",
+   "name": "Rubble Pile",
+   "x": 6.2,
+   "z": 11.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Loose Bricks",
+   "x": 11.5,
+   "z": 9.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cinder Blocks",
+   "x": 6.5,
+   "z": 16.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "global:Leaf Litter",
+    "global:Dry Grass",
+    "global:Dirt Patch",
+    "global:Moss Patch",
+    "global:Rubble Dust"
+   ],
+   "x0": -58.0,
+   "z0": -44.0,
+   "x1": 58.0,
+   "z1": 44.0,
+   "count": 60,
+   "seed": 91,
+   "gap": 3.0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 7
+  },
+  {
+   "op": "Waypoint",
+   "x": -24.0,
+   "z": -37.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 24.0,
+   "z": -37.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -24.0,
+   "z": 37.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 24.0,
+   "z": 37.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -30.0,
+   "z": -30.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 30.0,
+   "z": 30.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -26.0,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 26.0,
+   "z": 0.0
+  }
+ ]
+}

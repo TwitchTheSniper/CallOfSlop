@@ -1,0 +1,174 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Tool Cart",
+ "category": "Space",
+ "description": "A red wheeled tool cart with its drawers shut and tools on top.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 150,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.06,
+    0.2
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    0.8,
+    0.7
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#ff4a3a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.24,
+    0.05,
+    0.74
+   ],
+   "offset": [
+    0.0,
+    0.975,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.0,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.31,
+    0.36
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    1.0,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.53,
+    0.36
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    1.0,
+    0.02,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.75,
+    0.36
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.15,
+    0.12
+   ],
+   "offset": [
+    -0.45,
+    0.075,
+    -0.25
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.12,
+    0.15,
+    0.12
+   ],
+   "offset": [
+    -0.45,
+    0.075,
+    0.25
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.12,
+    0.15,
+    0.12
+   ],
+   "offset": [
+    0.45,
+    0.075,
+    -0.25
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.12,
+    0.15,
+    0.12
+   ],
+   "offset": [
+    0.45,
+    0.075,
+    0.25
+   ],
+   "color": "rubber"
+  },
+  {
+   "size": [
+    0.4,
+    0.1,
+    0.2
+   ],
+   "offset": [
+    -0.2,
+    1.05,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    0.3,
+    1.03,
+    0.1
+   ],
+   "color": "#ffb24a"
+  }
+ ],
+ "author": "Call of Slop"
+}
