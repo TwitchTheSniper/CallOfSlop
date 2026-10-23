@@ -52,8 +52,10 @@ public static class BuildModel
         var root = new SceneNode("weapon");
         var map = new Dictionary<BuildNode, SceneNode>();
         var hasOptic = b.Root != null && b.Root.Part.Frame?.Ads != false && b.Nodes.Any(n => n.Part.Category == PartCategory.Optic);
+        // A grip's iron sights stand on its receiver: on an empty grip (or under an optic) they would hang in the air.
+        var irons = !hasOptic && b.Receivers.Count > 0;
         if (b.Root != null)
-            AddPart(root, b.Root, accent, hasOptic, map, tints);
+            AddPart(root, b.Root, accent, irons, map, tints);
         root.UpdateWorld();
 
         // Muzzles: one socket per barrel muzzle, after any muzzle device on that barrel.
@@ -136,7 +138,7 @@ public static class BuildModel
         return new BuiltModel { Root = root, Mesh = mesh, Muzzles = muzzles, Grip = grip, Support = support, MagWell = magWell, Nodes = map };
     }
 
-    private static void AddPart(SceneNode parent, BuildNode node, Vector3 accent, bool hasOptic, Dictionary<BuildNode, SceneNode> map,
+    private static void AddPart(SceneNode parent, BuildNode node, Vector3 accent, bool irons, Dictionary<BuildNode, SceneNode> map,
         IReadOnlyDictionary<BuildNode, Vector4>? tints)
     {
         var p = node.Part;
@@ -158,7 +160,7 @@ public static class BuildModel
         for (var i = 0; i < p.Boxes.Length; i++)
         {
             var bx = p.Boxes[i];
-            if (bx.Tag == "irons" && hasOptic)
+            if (!Shown(bx, node, irons))
                 continue;
             var color = bx.Color.Resolve(accent);
             var mode = bx.Tag == "glow" ? 2 : 0;
@@ -185,9 +187,16 @@ public static class BuildModel
         {
             var sn = pn.AddSocket(SceneName(s), scaled ? s.Pos * scale : s.Pos, s.Rotation);
             if (node.Child(s.Name) is { } child)
-                AddPart(sn, child, accent, hasOptic, map, tints);
+                AddPart(sn, child, accent, irons, map, tints);
         }
     }
+
+    /// <summary>
+    /// Whether box <paramref name="bx"/> of <paramref name="node"/>'s part is drawn: "irons" only when
+    /// <paramref name="irons"/> (a receiver fitted, no optic), "with:SOCKET" only while that socket holds a part.
+    /// </summary>
+    public static bool Shown(PartBox bx, BuildNode node, bool irons) =>
+        bx.Tag == "irons" ? irons : !bx.Tag.StartsWith("with:", StringComparison.Ordinal) || node.Child(bx.Tag[5..]) != null;
 
     /// <summary>
     /// The boxes of <paramref name="node"/> and everything plugged into it, as a range of <see cref="GunMesh.Parts"/>

@@ -36,6 +36,8 @@
     {"use": "Muzzle Ring", "pos": [0, 0, -0.22]}
     // colours: accent (the build's tier colour), black, gunmetal, steel, chrome, brass, copper, polymer, tan, olive,
     // wood, darkwood, lightwood, white, rust, orange, yellow, [r, g, b] or "#rrggbb"; "alpha": 0.5; "tag": "glow"/"irons"
+    // ("irons": a grip's iron sights, drawn only with a receiver fitted and no optic) or "with:SOCKET" (drawn only while
+    // that socket of this part holds something: a hopper chute, a stock mount)
   ],
   "stats": [                                  // what it does to the weapon (any attachment stat: Attachments/README.md)
     {"stat": "rangeM", "mul": 1.1},

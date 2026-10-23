@@ -112,7 +112,11 @@ public sealed class PartBox
     public GunColor Color = new("gunmetal", default);
     public float Alpha = 1f;
 
-    /// <summary>"irons" = iron sights, removed when an optic is fitted; "glow" = drawn unlit-ish (mode 2).</summary>
+    /// <summary>
+    /// "irons" = a grip's iron sights: drawn only when a receiver is fitted (they sit on it) and no optic; "glow" = drawn
+    /// unlit-ish (mode 2); "with:SOCKET" = drawn only while this part's socket SOCKET holds a part (a hopper chute, a stock
+    /// mount: a piece that only holds something up).
+    /// </summary>
     public string Tag = "";
 }
 
