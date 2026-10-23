@@ -932,5 +932,7 @@ A map with a `"zombies"` section can be played in the Zombies mode (and only tho
 areas, doors and debris, boarded windows, zombie spawners, wall buys, mystery box spots, workbenches, perk machines,
 the weapon-slot upgrade, the power switch and salvage piles. The format is in
 [docs/zombies/ZOMBIES-MODE.md](../docs/zombies/ZOMBIES-MODE.md) ("Map format"); `Dev/ZombiesTest.json` is a worked
-example. Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
+example and `Zombies/01-BlackmoorAsylum.json` (the **Zombies** pack, written by `tools/zombies/make_blackmoor.py`) a
+full map. With `"machineProps": true` in the section every machine stands as a solid prop from `Props/Zombies`, placed
+by the section itself (leave room for each: see the doc). Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
 unchanged when a map is saved, and opening doors never changes the map's fingerprint.
