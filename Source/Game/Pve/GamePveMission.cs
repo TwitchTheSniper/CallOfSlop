@@ -617,6 +617,27 @@ public sealed partial class Game
     /// <summary>Self-test: play <paramref name="m"/> (built in code) from its first stage now.</summary>
     public void SelfTestStartMission(Mission m, double now) => StartCoopRun(now, m);
 
+    /// <summary>Self-test and the smoke run: skip to stage <paramref name="index"/> (its checkpoint, everyone on the mission respawned there).</summary>
+    public void SelfTestJumpToStage(int index, double now)
+    {
+        if (Coop.MissionDef is not { } m || index < 0 || index >= m.Stages.Count || !IsServer)
+            return;
+        ClearEnemies();
+        _coopCheckpointStage = -1;
+        for (var i = index; i >= 0 && _coopCheckpointStage < 0; i--)
+            if (m.Stages[i].Checkpoint.Count > 0)
+                _coopCheckpointStage = i;
+        StartStage(index, now, restart: false);
+        foreach (var p in Players.Values)
+        {
+            if (p.Bot == null && !_coopDeployed.Contains(p.Id))
+                continue;
+            Spawn(p, ServerTick, now);
+            if (p.Id == LocalId)
+                OnLocalSpawn(p);
+        }
+    }
+
     /// <summary>Self-test: the enemies' difficulty (the lobby's bot difficulty).</summary>
     public void SelfTestSetSkill(BotDifficulty d) => _botSkill = d;
 

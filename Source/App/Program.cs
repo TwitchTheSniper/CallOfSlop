@@ -224,6 +224,17 @@ public static unsafe partial class Program
         {
             ZombiesSmokeTick(now); // Program.Zombies.cs
             if (!ZombiesSmokeActive)
+            {
+                StartCoopSmoke(now); // a co-op defend wave on Silo (Program.Pve.cs), then the usual chain carries on
+                if (!CoopSmokeActive)
+                    StartMoversSmoke(now);
+            }
+            return;
+        }
+        if (CoopSmokeActive)
+        {
+            CoopSmokeTick(now); // Program.Pve.cs
+            if (!CoopSmokeActive)
                 StartMoversSmoke(now); // the usual chain carries on
             return;
         }
