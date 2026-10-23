@@ -2,15 +2,17 @@
   "format": "call-of-slop-part/1",
   "name": "Panic Button",
   "category": "action",
+  "placement": "under",
   "rarity": "wonder",
   "flavor": "A big red button where the trigger used to be. Press it and everything happens at once.",
   "weight": 0.15,
   "action": {"kind": "auto", "rpm": 2400},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"},
-    {"size": [0.022, 0.01, 0.012], "pos": [0.016, -0.004, -0.012], "color": "steel"},
-    {"size": [0.016, 0.016, 0.016], "pos": [0.016, 0.0, 0.0], "color": [0.9, 0.12, 0.1]}
+    {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
+    {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
+    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.029, -0.008], "color": "black"},
+    {"size": [0.006, 0.004, 0.022], "pos": [0, -0.04, 0], "color": "black"},
+    {"size": [0.014, 0.014, 0.014], "pos": [0.023, -0.011, 0.0], "color": [0.9, 0.12, 0.1]}
   ],
   "stats": [
     {"stat": "recoilDeg", "mul": 1.3},

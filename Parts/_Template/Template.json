@@ -21,6 +21,7 @@
   // "mount": "barrel",                       // the socket type it plugs into (default: the category's, Parts/_Registry.json)
   // "bores": ["rifle"],                     // feeds and ammo: the calibres they hold (empty = any; bores are listed in the registry).
                                               // Barrels and muzzle devices fit every receiver: no bores.
+  // "placement": "under",                  // which of its socket's "points" it is drawn at (actions: under, front; default: the socket's pos)
   // "sizedFor": "rifle",                     // barrels: the bore class the model is drawn for (default rifle); the receiver resizes it
   "weight": 0.45,                             // kg
   "hand": [0, -0.03, -0.1],                   // where the off hand holds it when there's no foregrip
@@ -28,6 +29,7 @@
   "sockets": [                                // where other parts plug into this one
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.24]}
     // {"name": "...", "type": "...", "pos": [x, y, z], "rot": [x, y, z], "accepts": ["barrel"], "required": true}
+    // "points": {"under": [x, y, z]} names other spots for what plugs in, picked by that part's "placement"
   ],
   "model": [                                  // boxes: "shape" box (default), rod (octagonal, along Z) or plate
     {"shape": "rod", "size": [0.022, 0.022, 0.24], "pos": [0, 0, -0.12], "color": "black"},

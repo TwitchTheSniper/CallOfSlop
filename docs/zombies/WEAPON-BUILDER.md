@@ -148,8 +148,9 @@ be caliber selection, basically. So single, semi, burst, muzzle load is determin
   to actions. Shotgun receivers keep their pellets (that's calibre). The rotary clusters (Hellwheel, Pepperbox) are
   receivers with six barrel sockets; the autocannon is a heavy receiver with fat barrels; the energy receivers fire
   `energy` rounds. What they fire *like* is the action.
-- **Actions (new category, `Parts/Action`).** Every receiver has one required `action` socket (on its right side, towards
-  the back: the trigger group and its handle, bolt or crank show there). The action part's `action` block is the fire
+- **Actions (new category, `Parts/Action`).** Every receiver has one required `action` socket (trigger groups and sears
+  are drawn under the receiver in front of the grip, the pump and ramrod at its front, bolts, levers, cranks and drives
+  on its right side towards the back: see "Where actions sit"). The action part's `action` block is the fire
   type (`kind`: single, semi, burst, pump, lever, bolt, auto, rotary, chain, muzzleLoad), the rate (`rpm`, or
   `rpmPerBarrel` for rotary), `burstCount` and `burstDelay`, `spoolTime` and `spoolStart` (rotary, chain), and
   `chamber` (rounds it holds whatever the feed holds: single shot and muzzle-loaded hold 1, so every shot is a reload).
@@ -212,6 +213,45 @@ Railspike 50 -> 45, Sparkplug 700 -> 720 (each within 10% of its old DPS). Actio
 tier tables); common actions from round 1, and no receiver's stock action is rarer than the receiver. The self-test
 section "Workbench actions" (`SelfTestActions.cs`) checks all of this, rebuilding every standard build with its
 receivers' old numbers to compare, and fires every fire type through the real trigger loop.
+
+### Where actions sit (2026-10-23)
+
+The user: "Mix where the actions sit on the gun." Only the model moves: build texts, sockets, stats, fire behaviour,
+saves and the network are unchanged (the action still plugs into the receiver's one `action` socket).
+
+- **Data.** A socket can carry named `"points"` besides its `"pos"`, and a part can say `"placement"`: the part is
+  drawn at that point of its socket, in that point's space (no point of that name, `"side"` or no placement: at `pos`).
+  Every receiver's action socket has `pos` on its right side towards the back (as before) and
+  `"points": {"under": [0, 0, 0.017], "front": [0, y, z]}`. `BuildModel`, the workbench's socket spots and
+  `tools/parts/floaters.py` all place parts this way.
+- **Under** (trigger groups and sears, 17 actions): Semi-Auto Trigger, Full-Auto Sear, Carbine Sear, Blowback SMG Sear,
+  Buzzsaw Sear, Heavy Auto Sear, Overdrive Sear, Panic Button, Riot Trigger, Marksman Trigger, Hair Trigger, Lob
+  Trigger, Revolver Hammer (a double-action trigger: it reads as the trigger mechanism), Three-Round Burst, Ratchet
+  Burst, Binary Trigger, Hyperburst Group. The point is on the receiver's bottom centre line, 1.7 cm behind the receiver
+  socket: on every grip with a pistol handle (all the standard grips put receiver_1 over the same handle) the group
+  sits just in front of the handle, where the grip's own trigger is. Each group is a housing (3.2 cm wide, 2.2 cm deep
+  from the receiver's bottom, 2.2 cm long), a trigger blade, and a guard (front post and bar, 4.2 cm below the
+  receiver's bottom); what tells them apart is on the right face: a selector (all but the Panic Button and Revolver
+  Hammer), a sear block (the sears; a bigger one on the Heavy Auto Sear, a second pin on the Buzzsaw, a glowing strip on
+  the Overdrive), one dot per round of the burst (Binary 2, Three-Round and Ratchet 3, Hyperburst 5), a cross-bolt
+  safety (Riot), a thin brass blade (Marksman), a yellow blade and wire (Hair), a fat blade (Lob), a brass blade and
+  an accent catch (Revolver Hammer), the big red button (Panic Button).
+- **Front** (2 actions): the Pump Slide (a grooved wooden forend, 7 cm) and the Muzzleloader Ramrod (a wooden rod with
+  brass pipes and tip, 13 cm) reach forward from the receiver's front face, just under the barrel. Each receiver's
+  `front` point is on its front face (its barrel socket's z) just under its lowest barrel at the receiver's bore size,
+  and under the cooling fins on the Bastille and Hammerfall; at least 1.1 cm above the receiver's bottom so it stays
+  clear of the grips' rail and plate (the Hellwheel's and Pepperbox's bottom barrel and the Sawmill's lowest fin plates
+  overlap the forend by a few mm; the Sawmill's point sits up at 1.7 cm to clear a Shell Tube under it).
+- **Side** (9 actions, as before): Turn Bolt, Straight-Pull Bolt, Lever Action, Break Action, Hand-Crank Rotary,
+  Electric Rotary Drive, Chain Drive Motor, Autocannon Drive, Bicycle Chain Drive.
+- **Checks.** The self-test section **Action placement** (`SelfTestActionPlacement.cs`) holds the table above (a new
+  action must be added to it), checks every receiver has both points and every action is drawn at its point, and that
+  no under or front action cuts more than 1 mm into the grip's handle, a foregrip hanging under the gun (Vertical,
+  Angled; the Chaingun Handle's posts rise through the barrel line anyway) or any magazine of the receiver's bore, on
+  the Rifle Grip and the Service Pistol Grip. A feed that reaches back to within the trigger group's length of the
+  handle leaves no room in front of it and may overlap the group: the drum mags on pistol receivers, belt boxes and
+  backpack hoppers on some, the Farmhand's shell drum. **Workbench actions** checks every receiver x action pair for
+  floating boxes, and `python3 tools/parts/floaters.py` (sections 3 and 3b) does both.
 
 ### Graph rules (BuildRules.cs)
 
@@ -532,7 +572,8 @@ support, reloadPerReceiver; an older `fireStyles` list reads as its first style)
 `outputMult` is refused: splitters always conserve), `shared` for shared feeds (feeds; with `"mount": "hopper"`),
 `carry` (weight relief, kg), `hilt` for melee roots (damage, swing, reach, cleave, stun, hands), `melee` for heads and
 mods (damage, damageMult, swingMult, reach, cleave, stun), `hand`, `gripAngle`, `muzzles`, `optic`, `sight`,
-`feedStyle`, `flags`, `requiresAction`, `mount`, `scrap`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
+`feedStyle`, `flags`, `requiresAction`, `mount`, `placement` (which of its socket's `points` the part is drawn at), `scrap`; sockets
+take `name`, `type`, `pos`, `points` (named other positions: `{"under": [x, y, z]}`), `rot`, `accepts`, `required`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
 the problem; the self-test loads every part file and feeds it broken ones.
 
 Builds save as one line in `workbench.txt` (a new file next to the game; nothing older changes):

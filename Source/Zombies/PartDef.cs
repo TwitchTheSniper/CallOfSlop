@@ -141,6 +141,17 @@ public sealed class PartSocket
 
     public Vector3 Pos;
 
+    /// <summary>
+    /// Other named points for what plugs in here, chosen by the part's <see cref="PartDef.Placement"/> (purely visual):
+    /// a receiver's action socket has "under" (the trigger group spot under the receiver, in front of the grip) and
+    /// "front" (under the barrel at the receiver's front face) besides its own <see cref="Pos"/> on the right side.
+    /// </summary>
+    public Dictionary<string, Vector3> Points = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>Where <paramref name="part"/> sits in this socket: its placement's point, or <see cref="Pos"/> ("side", none, or a point this socket doesn't have).</summary>
+    public Vector3 PosFor(PartDef? part) =>
+        part?.Placement is { } p && Points.TryGetValue(p, out var at) ? at : Pos;
+
     /// <summary>Rotation of what plugs in, in degrees about X, Y, Z (applied Z, X, Y like gun boxes).</summary>
     public Vector3 RotDeg;
 
@@ -348,6 +359,13 @@ public sealed class PartDef
 
     /// <summary>Feeds can require particular fire types of their receiver's action part (a belt needs something automatic to pull it).</summary>
     public ActionKind[] RequiresAction = [];
+
+    /// <summary>
+    /// Which of its socket's points the part is drawn at (<see cref="PartSocket.Points"/>; null or "side" = the socket's
+    /// own position). Purely visual: actions say "under" (trigger groups and sears), "front" (pump slide, ramrod) or
+    /// nothing (bolts, levers, cranks and drives on the side). The part's model is drawn in that point's space.
+    /// </summary>
+    public string? Placement;
 
     public float Weight = 0.3f;
 

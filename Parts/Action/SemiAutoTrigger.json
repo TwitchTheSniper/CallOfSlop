@@ -2,13 +2,17 @@
   "format": "call-of-slop-part/1",
   "name": "Semi-Auto Trigger",
   "category": "action",
+  "placement": "under",
   "rarity": "common",
   "flavor": "One pull, one shot, as fast as you can pull. The trigger every pistol is born with.",
   "weight": 0.1,
   "action": {"kind": "semi", "rpm": 400},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"}
+    {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
+    {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
+    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.029, -0.008], "color": "black"},
+    {"size": [0.006, 0.004, 0.022], "pos": [0, -0.04, 0], "color": "black"},
+    {"size": [0.004, 0.006, 0.01], "pos": [0.018, -0.007, -0.003], "color": "accent"}
   ],
   "stats": []
 }

@@ -2,14 +2,18 @@
   "format": "call-of-slop-part/1",
   "name": "Hair Trigger",
   "category": "action",
+  "placement": "under",
   "rarity": "rare",
   "flavor": "Goes off if you think about it too hard. Fast, and a little wild.",
   "weight": 0.1,
   "action": {"kind": "semi", "rpm": 650},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.006, 0.008, 0.014], "pos": [0.011, 0.007, 0.014], "color": "accent"},
-    {"size": [0.002, 0.002, 0.03], "pos": [0.01, 0.014, 0.0], "color": "yellow"}
+    {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
+    {"size": [0.004, 0.012, 0.004], "pos": [0, -0.028, 0.006], "color": "yellow"},
+    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.029, -0.008], "color": "black"},
+    {"size": [0.006, 0.004, 0.022], "pos": [0, -0.04, 0], "color": "black"},
+    {"size": [0.004, 0.006, 0.01], "pos": [0.018, -0.007, -0.003], "color": "accent"},
+    {"size": [0.002, 0.002, 0.02], "pos": [0.017, -0.017, 0.0], "color": "yellow"}
   ],
   "stats": [
     {"stat": "hipSpreadDeg", "mul": 1.15}

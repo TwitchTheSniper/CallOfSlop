@@ -2,13 +2,16 @@
   "format": "call-of-slop-part/1",
   "name": "Pump Slide",
   "category": "action",
+  "placement": "front",
   "rarity": "common",
   "flavor": "Rack it. Every shot. That's the deal.",
   "weight": 0.2,
   "action": {"kind": "pump", "rpm": 70},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.008, 0.036, 0.01], "pos": [0.012, -0.016, -0.005], "color": "wood"}
+    {"size": [0.03, 0.016, 0.07], "pos": [0, -0.008, -0.035], "color": "wood"},
+    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.02], "color": "black"},
+    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.035], "color": "black"},
+    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.05], "color": "black"}
   ],
   "stats": []
 }

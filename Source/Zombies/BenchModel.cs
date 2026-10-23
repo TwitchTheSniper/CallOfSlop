@@ -537,7 +537,7 @@ public sealed class BenchModel
                 var child = n.Child(s.Name);
                 Spots.Add(new SocketSpot
                 {
-                    Parent = n, Socket = s, ParentPath = path, Child = child, Pos = sn.ToWorld(s.Pos),
+                    Parent = n, Socket = s, ParentPath = path, Child = child, Pos = sn.ToWorld(s.PosFor(child?.Part)),
                     Needed = child == null && (BuildRules.NeedsFilling(Build, n, s, fed) || (s.Type == "receiver" && n == root && Build.Receivers.Count == 0 && !Build.IsMelee)),
                     Missing = child != null && Missing.Nodes.Contains(child),
                 });
