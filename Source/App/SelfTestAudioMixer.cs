@@ -194,7 +194,7 @@ public static partial class SelfTest
         var src = new AudioMix();
         for (var i = 0; i < levels; i++)
         {
-            src.SetDb((MixBus)i, MathF.Round((float)(rng.NextDouble() * 52 - 40), 1));
+            src.SetDb((MixBus)i, MathF.Round((float)(AudioMixDefaults.MinDb + rng.NextDouble() * (AudioMixDefaults.MaxDb - AudioMixDefaults.MinDb)), 1));
             src.SetMuted((MixBus)i, rng.Next(5) == 0);
         }
         for (var i = 0; i < shape; i++)
@@ -369,6 +369,131 @@ public static partial class SelfTest
             Line($"no allocations: window closed {closedBytes} B, meters on {meterBytes} B over 20000 frames each; meter readings {(okRead ? "OK" : "WRONG")} (sink {sink:0})");
             audio.Dispose();
         }
+
+        CheckAudioMixerRange();
+    }
+
+    /// <summary>
+    /// The level range (-50..+50 dB): every level row uses it, old and new saved values load unclamped, a boost really
+    /// reaches the voices (AL_MAX_GAIN lifted with it: +20 dB = 10x, not capped at 1) and the music trims, and a boosted
+    /// music bus stays under the limiter's safety ceiling at no real CPU cost.
+    /// </summary>
+    private static void CheckAudioMixerRange()
+    {
+        const int levels = (int)MixBus.COUNT;
+        float min = AudioMixDefaults.MinDb, max = AudioMixDefaults.MaxDb;
+        if (min != -50f || max != 50f)
+            Fail($"audio mixer range: {min}..{max} dB (want -50..+50)");
+        var badRows = AudioMixDefaults.Entries.Take(levels).Where(e => e.Min != min || e.Max != max).Select(e => e.Key).ToArray();
+        if (badRows.Length > 0)
+            Fail($"audio mixer range: level rows not on {min}..{max} dB: {string.Join(", ", badRows)}");
+
+        // Saved values: the old range's ends and the new range's ends load exactly, nothing counted as clamped.
+        var inRange = new AudioMix();
+        var rep = inRange.LoadJson("""
+            {"version": 1, "levels": {"explosion": {"db": 12, "mute": false}, "melee": {"db": -40}, "ui": {"db": 50}, "notify": {"db": -50},
+             "streaks": 35.5, "gun.own": {"db": -47.3}}}
+            """);
+        if (!rep.Ok || rep.Clamped != 0 || inRange.Db(MixBus.Explosion) != 12f || inRange.Db(MixBus.Melee) != -40f || inRange.Db(MixBus.Ui) != 50f
+            || inRange.Db(MixBus.Notify) != -50f || inRange.Db(MixBus.Streaks) != 35.5f || inRange.Db(MixBus.GunOwn) != -47.3f)
+            Fail($"audio mixer range: saved values inside -50..+50 should load unclamped: {rep}; explosion {inRange.Db(MixBus.Explosion)}, ui {inRange.Db(MixBus.Ui)}, notify {inRange.Db(MixBus.Notify)}");
+        var outRep = new AudioMix().LoadJson("""{"levels": {"ui": 50.5, "notify": -51}}""");
+        if (outRep.Clamped != 2)
+            Fail($"audio mixer range: values past +-50 dB should load clamped and be counted: {outRep}");
+
+        // Gains: +50 dB is about 316x, and a +20 dB bus gives a voice 10x its 0 dB gain (AL_MAX_GAIN lifted with it).
+        var g50 = inRange.Gain(MixBus.Ui);
+        var g20 = AudioMix.DbToGain(20f);
+        if (MathF.Abs(g50 - 316.2278f) > 0.01f || g50 != AudioMixDefaults.MaxLevelGain || MathF.Abs(inRange.Gain(MixBus.Notify) - 0.0031623f) > 1e-6f)
+            Fail($"audio mixer range: +50 dB gain {g50} (want 316.23 = MaxLevelGain {AudioMixDefaults.MaxLevelGain}), -50 dB gain {inRange.Gain(MixBus.Notify)}");
+        var voiceBad = new List<string>();
+        foreach (var pre in new[] { 0.3f, 1f, 1.3f }) // a quiet voice, one at the cap, one over it (your own gun plays at the cap)
+        {
+            var at0 = Audio.VoiceEffectiveGain(pre, 1f);
+            var at20 = Audio.VoiceEffectiveGain(pre, g20);
+            var at50 = Audio.VoiceEffectiveGain(pre, g50);
+            var (_, cap20) = Audio.VoiceGain(pre, g20);
+            if (MathF.Abs(at20 / at0 - 10f) > 0.01f || cap20 <= 1f || MathF.Abs(at50 / at0 - g50) > 0.05f)
+                voiceBad.Add($"gain {pre}: 0 dB {at0}, +20 dB {at20} (x{at20 / at0:0.00}, cap {cap20}), +50 dB x{at50 / at0:0.0}");
+        }
+        var (g0, c0) = Audio.VoiceGain(0.7f, 1f);
+        if (g0 != 0.7f || c0 != 1f)
+            voiceBad.Add($"0 dB changed the voice ({g0}, cap {c0}; want 0.7, cap 1)");
+        if (voiceBad.Count > 0)
+            Fail("audio mixer range: voice gains through the mix: " + string.Join("; ", voiceBad));
+
+        // The music trims take the whole range (they were capped at 4x = +12 dB).
+        var audio = new Audio();
+        audio.Mix.SetDb(MixBus.MusicMenu, 50f);
+        audio.Mix.SetDb(MixBus.MusicLobby, 20f);
+        audio.Mix.SetDb(MixBus.Frenzy6, 50f);
+        audio.Mix.SetDb(MixBus.Frenzy1, -50f);
+        audio.SyncMix();
+        var mu = audio.Music;
+        if (mu.MenuTrim != g50 || MathF.Abs(mu.LobbyTrim - 10f) > 1e-4f || mu.Frenzy.LevelTrim(6) != g50 || MathF.Abs(mu.Frenzy.LevelTrim(1) - 0.0031623f) > 1e-6f)
+            Fail($"audio mixer range: music trims menu {mu.MenuTrim}, lobby {mu.LobbyTrim}, frenzy 6 {mu.Frenzy.LevelTrim(6)}, frenzy 1 {mu.Frenzy.LevelTrim(1)} (want 316.2, 10, 316.2, 0.0032)");
+        audio.Dispose();
+
+        // A boosted music bus: louder, every sample finite and under the limiter's safety ceiling; the built-in mix
+        // never runs the limiter. CPU: the boosted mix (limiter on) against the default one, interleaved, medians.
+        const int sr = Audio.SampleRate;
+        var block = new float[sr / 10 * 2];
+        double Rms(MusicPlayer p, out float peak, out bool finite)
+        {
+            double sum = 0;
+            peak = 0;
+            finite = true;
+            for (var b = 0; b < 15; b++) // 1.5 s after a 1.5 s fade-in
+            {
+                p.Mix(block);
+                foreach (var x in block)
+                {
+                    finite &= float.IsFinite(x);
+                    peak = MathF.Max(peak, MathF.Abs(x));
+                    sum += x * (double)x;
+                }
+            }
+            return Math.Sqrt(sum / (15.0 * block.Length));
+        }
+        MusicPlayer Player(float trim)
+        {
+            var p = new MusicPlayer(7) { Volume = 0.5f, MenuTrim = trim };
+            p.SetMood(MusicMood.Menu);
+            for (var b = 0; b < 15; b++)
+                p.Mix(block);
+            return p;
+        }
+        var plain = Player(1f);
+        var rmsPlain = Rms(plain, out var peakPlain, out var finPlain);
+        var loud = Player(g50);
+        var rmsLoud = Rms(loud, out var peakLoud, out var finLoud);
+        var plus6 = Player(AudioMix.DbToGain(6f));
+        var rms6 = Rms(plus6, out _, out _);
+        if (plain.Limiting || !loud.Limiting || !finPlain || !finLoud || peakLoud > MasterLimiter.SafetyCeiling + 1e-6f || !(rmsLoud > rmsPlain * 1.5) || !(rms6 > rmsPlain * 1.3))
+            Fail($"audio mixer range: boosted menu music: limiter {(loud.Limiting ? "on" : "OFF")} (default {(plain.Limiting ? "ON" : "off")}), peak {peakLoud:0.000} (ceiling {MasterLimiter.SafetyCeiling}), "
+                 + $"RMS {rmsPlain:0.000} -> +6 dB {rms6:0.000} -> +50 dB {rmsLoud:0.000}, finite {finPlain && finLoud}");
+        var tPlain = new List<double>();
+        var tLoud = new List<double>();
+        for (var r = 0; r < 5; r++)
+        {
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            for (var b = 0; b < 5; b++)
+                plain.Mix(block);
+            var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            for (var b = 0; b < 5; b++)
+                loud.Mix(block);
+            var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
+            tPlain.Add(t1 - t0);
+            tLoud.Add(t2 - t1);
+        }
+        tPlain.Sort();
+        tLoud.Sort();
+        var cpu = tLoud[2] / Math.Max(1.0, tPlain[2]);
+        if (cpu > 1.5)
+            Fail($"audio mixer range: boosted music costs {cpu:0.00}x the default mix (budget 1.5x)");
+        Line($"range: {min:+0;-0}..{max:+0;-0} dB on all {levels} level rows; old/new saved values load unclamped ({rep.Clamped} clamped), past the range clamped ({outRep.Clamped}); "
+             + $"+20 dB voice x{Audio.VoiceEffectiveGain(1f, g20) / Audio.VoiceEffectiveGain(1f, 1f):0.00} (AL_MAX_GAIN {g20:0.0}), +50 dB x{g50:0.0}; music trims to x{g50:0}; "
+             + $"menu music RMS {rmsPlain:0.000} -> +6 dB {rms6:0.000} -> +50 dB {rmsLoud:0.000} (peak {peakPlain:0.000} -> {peakLoud:0.000}, limited, ceiling {MasterLimiter.SafetyCeiling}); boosted music CPU {cpu:0.00}x the default");
     }
 
     /// <summary>The shot plan as it was before the mixer (Audio.GunMix.cs at caf39f9), for the identity check.</summary>

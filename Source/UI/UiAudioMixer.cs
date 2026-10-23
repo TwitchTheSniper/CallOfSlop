@@ -39,7 +39,9 @@ public sealed partial class Ui
     private static readonly string[] MixTooltips = AudioMixDefaults.Entries.Select(e => $"{e.Help}\nKey: {e.Key}  (default {(e.IsLevel ? e.Default.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture) + " dB" : e.Default.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))})").ToArray();
     private static readonly string[] SmallNumbers = Enumerable.Range(0, 100).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
 
-    private const float MeterMinDb = -60f, MeterMaxDb = 6f;
+    // Up to +12 dBFS: with level rows up to +50 dB the estimate can go well over full scale (the clip light and the red
+    // peak show it), and the extra room shows how far over it is.
+    private const float MeterMinDb = -60f, MeterMaxDb = 12f;
 
     /// <summary>The frenzy level the mixer is previewing (0-6), or -1 when it isn't.</summary>
     public int FrenzyPreviewLevel(double now) => AudioMixerOpen && now < _mixFrenzyUntil ? _mixFrenzyLevel : -1;
@@ -180,7 +182,7 @@ public sealed partial class Ui
         if (_mixMsg.Length > 0 && now - _mixMsgAt < 8)
             ImGuiSafe.TextColored(Orange, _mixMsg);
         else
-            ImGuiSafe.TextColored(Dim, $"Drag a slider (Ctrl+click to type a value). {Keybinds.Name(_mixBind)} or Esc closes the window (in a match the mouse comes back to the game).");
+            ImGuiSafe.TextColored(Dim, $"Drag a slider (Ctrl+click to type a value, Ctrl+wheel for 0.5 dB steps, Ctrl+Shift+wheel for 0.1 dB). {Keybinds.Name(_mixBind)} or Esc closes the window (in a match the mouse comes back to the game).");
     }
 
     private void DrawMixMaster(Audio audio, AudioMeters m, double now)
@@ -332,7 +334,7 @@ public sealed partial class Ui
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
         var db = mix.Db(bus);
-        if (ImGui.SliderFloat(MixSliderIds[k], ref db, AudioMixDefaults.MinDb, AudioMixDefaults.MaxDb, "%+.1f dB"u8))
+        if (ImGui.SliderFloat(MixSliderIds[k], ref db, AudioMixDefaults.MinDb, AudioMixDefaults.MaxDb, "%+.1f dB"u8) || FineWheel(ref db))
             mix.SetDb(bus, db);
         ImGui.TableNextColumn();
         var mute = mix.Muted(bus);
@@ -357,6 +359,26 @@ public sealed partial class Ui
         var voices = bus == MixBus.Master ? m.ActiveVoices : m.VoiceCount[k];
         if (voices > 0)
             ImGui.Text(SmallNumbers[Math.Min(voices, SmallNumbers.Length - 1)]);
+    }
+
+    /// <summary>
+    /// Ctrl + mouse wheel over the level slider just drawn: 0.5 dB a notch, 0.1 dB with Shift too, so the wide
+    /// -50..+50 dB range stays precise around 0 dB (Ctrl+click still types a value). The window doesn't scroll meanwhile.
+    /// </summary>
+    private static bool FineWheel(ref float db)
+    {
+        if (!ImGui.IsItemHovered())
+            return false;
+        var io = ImGui.GetIO();
+        bool ctrl = io.KeyCtrl, shift = io.KeyShift;
+        if (!ctrl)
+            return false;
+        ImGui.SetItemKeyOwner(ImGuiKey.MouseWheelY);
+        var wheel = io.MouseWheel;
+        if (wheel == 0f)
+            return false;
+        db = MathF.Round((db + MathF.Sign(wheel) * (shift ? 0.1f : 0.5f)) * 10f) / 10f;
+        return true;
     }
 
     private void DrawMixShape(Audio audio, AudioMix mix)
@@ -428,7 +450,7 @@ public sealed partial class Ui
 
     private static float Db(float linear) => MathF.Max(-99f, AudioMix.GainToDb(linear));
 
-    /// <summary>A horizontal meter (-60..+6 dBFS): the RMS bar, the peak line and the hold tick; 0 dB marked.</summary>
+    /// <summary>A horizontal meter (-60..+12 dBFS): the RMS bar, the peak line and the hold tick; 0 dB marked.</summary>
     private void MeterBar(float peak, float rms, float hold, float width)
     {
         var h = ImGui.GetFrameHeight() * 0.7f;
