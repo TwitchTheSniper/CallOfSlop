@@ -100,6 +100,7 @@ public static partial class SelfTest
         // and again (all but Zombies) when the kill streaks grew from 7 to 15: bots draw their three random streaks from the bigger pool.
         // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
+        // FFA, TDM, KotH and CTF re-recorded when launcher blasts got harder and wider against players (fix/launcher-buff: bots carry launchers).
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB89C7675810F9015),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x607E5D0DD4962EFF),
         (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xB8F46D77BE74E52D),

@@ -237,13 +237,13 @@ Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30
 
 A weapon of class `Launcher` fires a real projectile instead of a hitscan bullet (Source/Game/Launchers): a rocket, a grenade or a sticky charge that flies, drops and goes off with a blast. Launchers are secondaries, carry a few spare rounds instead of endless reloads, only take attachments made for launchers (an attachment's `fits` must name `"Launcher"` in `classes`, or the weapon in `weapons`), and sit out Gun Game. The shipped ones are in `Weapons/Launchers/`.
 
-For a launcher some of the usual fields mean something a little different: `damage` is the blast's damage at its centre (it falls off to nothing at `radius`), `rangeM` is the range bots and the stat bars use, `hipSpreadDeg` / `adsSpreadMult` are the launch cone, `headMult` and `pellets` aren't used. Everything else lives in a `launcher` block (every key optional; the defaults are a dumb-fire rocket):
+For a launcher some of the usual fields mean something a little different: `damage` is the blast's damage at its centre against props, buildings, structures and kill streak machines (it falls off to nothing at `radius`; players take it times `playerMult`, over `playerRadius`), `rangeM` is the range bots and the stat bars use, `hipSpreadDeg` / `adsSpreadMult` are the launch cone, `headMult` and `pellets` aren't used. Everything else lives in a `launcher` block (every key optional; the defaults are a dumb-fire rocket):
 
 ```
 "launcher": {
   "projectile": "Rocket", "guidance": "None", "speed": 22, "maxSpeed": 46, "thrust": 40, "gravity": 0.15,
-  "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "selfDamage": 0.6,
-  "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
+  "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "playerMult": 1.35, "playerRadius": 8.5,
+  "selfDamage": 0.6, "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
   "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
 }
 ```
@@ -261,7 +261,9 @@ For a launcher some of the usual fields mean something a little different: `dama
 | `falloff` | Damage is `damage x (1 - distance / radius) ^ falloff`. | `1.2` | 0.3-4 |
 | `direct` | Extra damage to a player hit straight on. | `50` | 0-1000 |
 | `vehicleMult` | Multiplier on everything it does to kill streak machines (before their own explosive multiplier: the sentry takes 1.5x). | `1` | 0-10 |
-| `selfDamage` | Share of the blast its owner takes. | `0.6` | 0-1 |
+| `playerMult` | Multiplier on what the blast and an armed direct hit do to players (the owner's own share too). Objects and machines keep `damage`. A dud's `direct` bonk isn't multiplied. | `1` | 0-5 |
+| `playerRadius` | Blast radius against players, and for the push, the flash and ragdolls (0 = `radius`). | `0` | 0-25 |
+| `selfDamage` | Share of the blast (against players) its owner takes. | `0.6` | 0-1 |
 | `armDistance` | Metres of flight before it arms; an unarmed hit is a dud (only `direct` damage, no blast). | `6` | 0-60 |
 | `proximity` | Goes off this close to an enemy's flying streak (0 = no proximity fuse). | `0` | 0-12 |
 | `fuse` | Seconds before it goes off on its own (rockets self-destruct, stickies wait at most this long). | `8` | 0.1-40 |
@@ -274,16 +276,16 @@ For a launcher some of the usual fields mean something a little different: `dama
 
 Attachments change these by their field names with a `launcher` prefix, e.g. `{ "stat": "launcherLockTime", "mul": 0.7 }` or `{ "stat": "launcherReserve", "add": 1 }`. Kitted launchers keep at least 70% of their lock time, launch speeds within 70-140% and at most double the reserve.
 
-| Shipped launcher | Type | Damage / radius / direct | Rounds | Unlock |
-| --- | --- | --- | --- | --- |
-| Mule RPG | dumb-fire rocket | 150 / 6.5 m / +60 | 1 + 2 | 6 |
-| Clover Break-Action | single-shot grenade launcher | 130 / 5 m / +40 | 1 + 5 | 9 |
-| Carousel Drum Launcher | 6-round revolving grenade launcher | 100 / 4.2 m / +30 | 6 + 6 | 14 |
-| Skylance AA | lock-on anti-air rocket | 110 / 3.5 m / +140 | 1 + 3 | 18 |
-| Gluepot Sticky Launcher | sticky charges | 125 / 4.5 m / - | 3 + 3 | 22 |
-| Wireline TOW | wire-guided rocket | 140 / 5 m / +80 | 1 + 2 | 27 |
-| Hailcrack Cluster | cluster rocket (6 bomblets) | 90 / 4 m / +40 | 1 + 2 | 33 |
-| Furnace Thermobaric | thermobaric rocket | 120 / 8 m / +40 | 1 + 1 | 39 |
+| Shipped launcher | Type | Damage / radius / direct (objects, machines) | Players: x playerMult / playerRadius | Rounds | Unlock |
+| --- | --- | --- | --- | --- | --- |
+| Mule RPG | dumb-fire rocket | 150 / 6.5 m / +60 | x1.35 / 8.5 m | 1 + 2 | 6 |
+| Clover Break-Action | single-shot grenade launcher | 130 / 5 m / +40 | x1.35 / 6.6 m | 1 + 5 | 9 |
+| Carousel Drum Launcher | 6-round revolving grenade launcher | 100 / 4.2 m / +30 | x1.3 / 5.5 m | 6 + 6 | 14 |
+| Skylance AA | lock-on anti-air rocket | 110 / 3.5 m / +140 | x1.3 / 4.6 m | 1 + 3 | 18 |
+| Gluepot Sticky Launcher | sticky charges | 125 / 4.5 m / - | x1.35 / 6 m | 3 + 3 | 22 |
+| Wireline TOW | wire-guided rocket | 140 / 5 m / +80 | x1.35 / 6.6 m | 1 + 2 | 27 |
+| Hailcrack Cluster | cluster rocket (6 bomblets) | 90 / 4 m / +40 | x1.4 / 5.3 m | 1 + 2 | 33 |
+| Furnace Thermobaric | thermobaric rocket | 120 / 8 m / +40 | x1.3 / 10.5 m | 1 + 1 | 39 |
 
 ## Ids and order
 
