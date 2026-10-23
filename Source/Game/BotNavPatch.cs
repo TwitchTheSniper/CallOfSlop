@@ -223,6 +223,7 @@ public sealed partial class NavGraph
             _cellsDirty = false;
         }
         var links = new List<(int, int, float, byte, Vector3)>();
+        var failed = new List<(int, int, float, byte, Vector3)>(); // (no last resorts for blasted holes: those are extra ways)
         foreach (var k in added)
         {
             near.Clear();
@@ -231,7 +232,7 @@ public sealed partial class NavGraph
             {
                 if (j == k || NodeOff[j] || (added.Contains(j) && j < k))
                     continue; // each pair of new nodes once
-                if (TryLink(this, c, k, j, links))
+                if (TryLink(this, c, k, j, links, failed))
                     yield return false;
             }
         }
