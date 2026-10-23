@@ -48,8 +48,24 @@ public static class Knockback
         var dist = to.Length();
         if (!(dist < radius))
             return Vector3.Zero;
+        if (GravityFrames.Curved)
+            return ImpulseCurved(to, dist, radius, strength, target, prone, flak);
         var dir = dist > 0.05f ? to / dist : Vector3.UnitY;
         var push = Vector3.Normalize(dir + new Vector3(0, Lift, 0) + new Vector3(0, 1e-4f, 0));
+        var mag = strength * (1f - dist / radius);
+        if (prone)
+            mag *= ProneMult;
+        if (flak)
+            mag *= Perks.FlakKnockMult;
+        return push * MathF.Min(mag, MaxImpulse);
+    }
+
+    /// <summary><see cref="Impulse"/> on a planet: the "lift a little" is along the local up at the target.</summary>
+    private static Vector3 ImpulseCurved(Vector3 to, float dist, float radius, float strength, Vector3 target, bool prone, bool flak)
+    {
+        var up = GravityFrames.UpAt(target);
+        var dir = dist > 0.05f ? to / dist : up;
+        var push = Vector3.Normalize(dir + up * (Lift + 1e-4f));
         var mag = strength * (1f - dist / radius);
         if (prone)
             mag *= ProneMult;
@@ -74,6 +90,11 @@ public static class Knockback
     {
         if (s.MantleTicks > 0 || !float.IsFinite(impulse.X + impulse.Y + impulse.Z))
             return;
+        if (GravityFrames.Curved)
+        {
+            ApplyCurved(ref s, impulse);
+            return;
+        }
         var v = s.Velocity + impulse;
         var flat = MathF.Sqrt(v.X * v.X + v.Z * v.Z);
         if (flat > MaxHorizontal)
@@ -84,6 +105,21 @@ public static class Knockback
         v.Y = MathF.Min(v.Y, MaxUp);
         s.Velocity = v;
         if (impulse.Y > 1f)
+            s.Grounded = false;
+    }
+
+    /// <summary><see cref="Apply"/> on a planet: the same caps, across and along the local up.</summary>
+    private static void ApplyCurved(ref MoveState s, Vector3 impulse)
+    {
+        var up = GravityFrames.UpAt(s.Position);
+        var v = s.Velocity + impulse;
+        var vUp = Vector3.Dot(v, up);
+        var across = v - up * vUp;
+        var flat = across.Length();
+        if (flat > MaxHorizontal)
+            across *= MaxHorizontal / flat;
+        s.Velocity = across + up * MathF.Min(vUp, MaxUp);
+        if (Vector3.Dot(impulse, up) > 1f)
             s.Grounded = false;
     }
 

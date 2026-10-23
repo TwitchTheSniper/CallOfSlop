@@ -1415,7 +1415,7 @@ public static unsafe partial class Program
             _deathMenuAt = now + (_game.Local != null ? DeathCam.Duration : 1.2);
             if (_game.SkipsLoadout && _game.Local is not { Deaths: > 0 })
                 _deathMenuAt = now; // Gun Game, just joined: no death to show, straight in
-            if (_game.Local is { } me)
+            if (_game.Local is { } me && !GravityFrames.Curved) // (a planet: the plain view from above, below)
                 _deathCam.Begin(me.RenderEye, _game.LookYaw, _game.LookPitch, now, (o, d, max) => World.Query.Raycast(o, d, max, QueryFilter.All));
         }
         if (!deadNow)
@@ -1707,8 +1707,8 @@ public static unsafe partial class Program
         Vector3 eye, fwd;
         if (local != null)
         {
-            eye = local.Alive ? _game.MannedEye ?? local.RenderEye : local.RenderPosition + new Vector3(0, 4f, 0); // (manning a cart: behind its gun)
-            fwd = local.Alive ? World.Forward(_game.LookYaw, _game.LookPitch) : World.Forward(_game.LookYaw, -1.2f);
+            eye = local.Alive ? _game.MannedEye ?? local.RenderEye : GravityFrames.Above(local.RenderPosition, 4f); // (manning a cart: behind its gun)
+            fwd = _game.LookDir(_game.LookYaw, local.Alive ? _game.LookPitch : -1.2f);
             if (!local.Alive && _deathCam.Active)
             {
                 _deathCam.Track(_game, now, (float)FrameDt); // eases round to face your killer (DeathCam.cs)
@@ -1734,22 +1734,22 @@ public static unsafe partial class Program
             // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
             _headBob.Update(new HeadBobInput
             {
-                Dt = (float)FrameDt, Velocity = local.RenderVelocity, Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
+                Dt = (float)FrameDt, Velocity = GravityFrames.ToLocal(local.RenderPosition, local.RenderVelocity), Grounded = local.RenderGrounded, Mantling = local.RenderMantling, Stance = local.RenderStance,
                 Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
             });
-            eye = _headBob.Apply(eye, _game.LookYaw);
+            eye = GravityFrames.Curved ? _headBob.Apply(eye, _game.LookFrame, _game.LookYaw) : _headBob.Apply(eye, _game.LookYaw);
         }
         else
             _headBob.Reset();
 
         var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
-        var camUp = Vector3.UnitY;
+        var camUp = GravityFrames.UpAt(eye); // straight up, or on a planet away from its centre (the horizon rolls with the ground)
         if (local is { Alive: true })
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.
             var rk = _game.RecoilCamera;
-            fwd = World.Forward(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
-            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + _headBob.Roll)));
+            fwd = _game.LookDir(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
+            camUp = Vector3.Transform(camUp, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
         var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);

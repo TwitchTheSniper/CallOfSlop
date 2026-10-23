@@ -83,7 +83,7 @@ public struct MoveState
 }
 
 /// <summary>Shared rules: tick rate, player physics, movement and ray casts against the current map.</summary>
-public static class World
+public static partial class World
 {
     // ---- Simulation clock ---------------------------------------------------
     public const int TickRate = 60; // fixed simulation ticks per second (client and server)
@@ -100,6 +100,7 @@ public static class World
         map.RestoreProps(); // a map always starts with its breakable props whole
         map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
+        GravityFrames.Use(map.PointGravity); // which way is up (Source/Physics/GravityFrames.cs): straight up except on planet maps
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
         Gibs.Clear(); // and so do the gibs (Source/Props/Gibs.cs)
@@ -210,7 +211,7 @@ public static class World
     /// Advances one player by exactly one tick of input, with the current <see cref="Mover"/>. This must stay
     /// deterministic: the client predicts with it and replays it during reconciliation, and the server runs it authoritatively.
     /// </summary>
-    public static void Simulate(ref MoveState s, in InputCmd cmd) => Mover.Simulate(ref s, cmd);
+    public static void Simulate(ref MoveState s, in InputCmd cmd) => (GravityFrames.Curved ? SweptMover.Instance : Mover).Simulate(ref s, cmd); // a planet always uses the capsule mover (any "up")
 
     public const float MantleReach = 1.7f; // highest ledge you can climb, above your feet
 
@@ -230,9 +231,41 @@ public static class World
         return new(feet + f * 0.1f + new Vector3(0, 0.3f, 0), half);
     }
 
+    /// <summary>
+    /// Where a ray first hits a player's hit box (<see cref="Hitbox(Vector3, Stance, float)"/>), or null. On a planet the box
+    /// stands along the local up, so the ray is turned into the body's frame first; elsewhere this is exactly the box test.
+    /// </summary>
+    public static float? RayHitsBody(Vector3 feet, Stance stance, float yaw, Vector3 origin, Vector3 dir, float maxDist)
+    {
+        GravityFrames.RayToLocal(feet, ref origin, ref dir);
+        return Hitbox(feet, stance, yaw).Raycast(origin, dir, maxDist);
+    }
+
+    /// <summary>
+    /// A world box round a player's body: their hit box, or on a planet the axis-aligned box round the hit box standing
+    /// along the local up (a little bigger; for HUD tags and effects, never for damage).
+    /// </summary>
+    public static Box BodyBounds(Vector3 feet, Stance stance, float yaw)
+    {
+        var hb = Hitbox(feet, stance, yaw);
+        if (!GravityFrames.Curved)
+            return hb;
+        var lo = new Vector3(float.MaxValue);
+        var hi = new Vector3(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var corner = hb.Center + new Vector3((i & 1) != 0 ? hb.Half.X : -hb.Half.X, (i & 2) != 0 ? hb.Half.Y : -hb.Half.Y, (i & 4) != 0 ? hb.Half.Z : -hb.Half.Z);
+            var w = GravityFrames.PointToWorld(feet, corner);
+            lo = Vector3.Min(lo, w);
+            hi = Vector3.Max(hi, w);
+        }
+        return new Box((lo + hi) * 0.5f, (hi - lo) * 0.5f);
+    }
+
     /// <summary>Did a hit at <paramref name="point"/> land on the head?</summary>
     public static bool IsHeadshot(Vector3 feet, Stance stance, float yaw, Vector3 point)
     {
+        point = GravityFrames.PointToLocal(feet, point); // (a planet: in the body's upright frame)
         var rel = point - feet;
         return stance switch
         {
@@ -263,6 +296,8 @@ public static class World
     /// </summary>
     public static bool CanWalkStraight(Vector3 from, Vector3 to)
     {
+        if (GravityFrames.Curved)
+            return CanWalkCurved(from, to); // a planet: along the surface (NavSphere.cs)
         var knee = new Vector3(0, 0.5f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         var terrain = Map.TerrainCollision?.Layer(from.Y); // in a cave: its floor
@@ -339,6 +374,8 @@ public static class World
 
     public static Vector3 ClampToArena(Vector3 feet)
     {
+        if (GravityFrames.Point is { } planet)
+            return ClampToSky(feet, planet);
         feet.X = Math.Clamp(feet.X, -Map.HalfX + PlayerRadius, Map.HalfX - PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -Map.HalfZ + PlayerRadius, Map.HalfZ - PlayerRadius);
         if (Map.Boundary is { } boundary)
@@ -351,6 +388,20 @@ public static class World
         }
         else
             feet.Y = Math.Clamp(feet.Y, -5, 60);
+        return feet;
+    }
+
+    /// <summary>
+    /// On a planet: never further from the centre than the map's half size (the sky above the planet ends there). The
+    /// ground keeps players up; nothing else to clamp.
+    /// </summary>
+    public static Vector3 ClampToSky(Vector3 feet, PointGravity planet)
+    {
+        var d = feet - planet.Center;
+        var len = d.Length();
+        var max = MathF.Max(Map.HalfX, Map.HalfZ);
+        if (len > max)
+            feet = planet.Center + d / len * max;
         return feet;
     }
 
@@ -524,9 +575,9 @@ public sealed class Player
     public Stance RenderStance; // stance being drawn (interpolated for remote players)
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera
 
-    public Vector3 Eye => Position + new Vector3(0, World.EyeOf(Sim.Stance), 0);
-    public Vector3 RenderEye => RenderPosition + new Vector3(0, RenderEyeHeight, 0);
-    public Vector3 Chest => Position + new Vector3(0, World.HeightOf(Sim.Stance) * 0.65f, 0);
+    public Vector3 Eye => GravityFrames.Above(Position, World.EyeOf(Sim.Stance)); // (along "up": straight up except on a planet)
+    public Vector3 RenderEye => GravityFrames.Above(RenderPosition, RenderEyeHeight);
+    public Vector3 Chest => GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);
 
     public void Teleport(Vector3 feet)
     {

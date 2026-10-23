@@ -18,7 +18,7 @@ public static partial class SelfTest
             if (m.Boundary is not { } b)
             {
                 // No boundary (every Classic, Collision Point and High Ground map): exactly the fog maps always had.
-                var (start, end) = m.Size switch
+                var (start, end) = m.PointGravity != null ? (400f, 0f) : m.Size switch // (a planet: no fog in space, MapPlanet.cs)
                 {
                     MapSize.Large => (70f, m.FarPlane * 0.9f),
                     MapSize.Medium => (90f, 260f),

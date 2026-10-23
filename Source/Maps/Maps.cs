@@ -40,10 +40,10 @@ public sealed partial class Map
     /// and fades the darker far ground beyond the outline into the sky's horizon (without it, that ground ran unfogged to
     /// the far plane and read as a black void under the horizon on a dark sky such as "dusk").
     /// </summary>
-    public float FogStart => Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
+    public float FogStart => PointGravity != null ? 400f : Size == MapSize.Large ? 70f : Size == MapSize.Medium ? 90f : Boundary != null ? SmallBoundaryFogStart : 400f;
 
     /// <inheritdoc cref="FogStart"/>
-    public float FogEnd => Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
+    public float FogEnd => PointGravity != null ? 0f : Size == MapSize.Large ? FarPlane * 0.9f : Size == MapSize.Medium ? 260f : Boundary != null ? FarPlane * 0.9f : 0f; // small rectangles: no fog
 
     /// <summary>A small shaped map's fog start: past the widest view across the playable area (at least the medium maps' 90 m).</summary>
     private float SmallBoundaryFogStart => MathF.Min(MathF.Max(90f, ViewRadius * 2f + 10f), FarPlane * 0.6f);
@@ -364,6 +364,8 @@ public sealed partial class Map
     /// <summary>Moves any spawn or waypoint that ended up inside geometry to the nearest free spot.</summary>
     public void Validate()
     {
+        if (PointGravity != null)
+            return; // a planet: its Surface* ops put spawns and waypoints on the ground; the flat-floor fixes below don't apply
         SnapToGround(Spawns);
         SnapToGround(Waypoints);
         Fix(Spawns, "spawn");

@@ -255,8 +255,27 @@ public sealed partial class Game : IDisposable
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
     }
 
+    /// <summary>
+    /// Where <see cref="LookYaw"/> and <see cref="LookPitch"/> are measured: on a planet map they're relative to the tangent
+    /// frame at this point (the local player's position, carried along every tick; GravityFrames.cs). Unused elsewhere.
+    /// </summary>
+    public Vector3 LookFrame;
+
+    /// <summary>The world direction of a local look (yaw and pitch at <see cref="LookFrame"/>).</summary>
+    public Vector3 LookDir(float yaw, float pitch) => GravityFrames.Curved ? GravityFrames.Forward(LookFrame, yaw, pitch) : World.Forward(yaw, pitch);
+
+    /// <summary>A planet: carry the local look to the frame at the local player's position (no turn when walking round it).</summary>
+    public void TransportLook()
+    {
+        if (!GravityFrames.Curved || Local is not { } me)
+            return;
+        GravityFrames.Transport(ref LookYaw, ref LookPitch, LookFrame, me.Position);
+        LookFrame = me.Position;
+    }
+
     private InputCmd SampleLocalInput(uint seq)
     {
+        TransportLook();
         var def = Active.Def;
         var speed = Perks.MoveSpeed(Local?.Perks ?? PerkSet.Empty, FrenzyBuffs.Mobility(Local, def), Aiming) * LocalStunMove() * LocalStreakMove(); // Lightweight, Stalker; the LMG frenzy buff; a stun slows you (GameTactical.cs)
         return new InputCmd
@@ -467,7 +486,7 @@ public sealed partial class Game : IDisposable
         Audio.Shot(def, null);
 
         var origin = MannedEye ?? me.RenderEye; // manning a push cart: the view sits behind its gun (GameZombies.cs)
-        var dir = World.Forward(LookYaw, LookPitch);
+        var dir = LookDir(LookYaw, LookPitch);
         var spread = CurrentSpread();
         var seed = _shotSeed++;
 
@@ -502,7 +521,7 @@ public sealed partial class Game : IDisposable
             {
                 if (other.Id == LocalId || !other.Alive)
                     continue;
-                if (World.Hitbox(other.RenderPosition, other.RenderStance, other.RenderYaw).Raycast(o, d, dist) is { } t)
+                if (World.RayHitsBody(other.RenderPosition, other.RenderStance, other.RenderYaw, o, d, dist) is { } t)
                 {
                     dist = t;
                     predictedHit |= AreEnemies(me, other); // a teammate waits for the server's friendly marker (FriendlyHits.cs)
@@ -688,7 +707,7 @@ public sealed partial class Game : IDisposable
 
     public static Vector3 MuzzleWorld(Player p)
     {
-        var fwd = World.Forward(p.RenderYaw, p.RenderPitch);
+        var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
         var right = World.FlatRight(p.RenderYaw);
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
@@ -717,6 +736,7 @@ public sealed partial class Game : IDisposable
         _lastHealth = p.Health;
         LookYaw = p.Yaw;
         LookPitch = p.Pitch;
+        LookFrame = p.Position;
         _correction = Vector3.Zero;
         SyncLocalSlots(p, refill: true);
         RefillThrowables();
@@ -1057,7 +1077,7 @@ public sealed partial class Game : IDisposable
 
         best = TacticalSpawnPoint(p, best, now); // a Tactical Insertion waiting for them (GameTactical.cs)
         p.Teleport(best);
-        p.Yaw = MathF.Atan2(-best.X, best.Z);
+        p.Yaw = GravityFrames.Point is { } planet ? SpawnYawOnPlanet(best, planet) : MathF.Atan2(-best.X, best.Z);
         p.Pitch = 0;
         p.RenderYaw = p.Yaw;
         p.RenderPitch = 0;
@@ -1089,6 +1109,13 @@ public sealed partial class Game : IDisposable
         }
         for (var i = 0; i < Player.HistorySize; i++)
             p.History[i] = new HistoryEntry { Position = best, Yaw = p.Yaw };
+    }
+
+    /// <summary>A planet: spawn facing round the planet, away from the nearer pole (over the horizon towards the action).</summary>
+    private static float SpawnYawOnPlanet(Vector3 at, PointGravity planet)
+    {
+        var away = at.Y >= planet.Center.Y ? -Vector3.UnitY : Vector3.UnitY;
+        return GravityFrames.YawOf(at, away);
     }
 
     /// <summary>A player asked for a new loadout: apply now if out of combat, otherwise on next spawn.</summary>
@@ -1301,7 +1328,7 @@ public sealed partial class Game : IDisposable
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
-                if (t.Hitbox.Raycast(o, d, dist) is { } td && td < dist)
+                if ((GravityFrames.Curved ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist) : t.Hitbox.Raycast(o, d, dist)) is { } td && td < dist)
                 {
                     dist = td;
                     hit = t;
@@ -1343,7 +1370,7 @@ public sealed partial class Game : IDisposable
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
-                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, end)); // the first pellet's body part (BodyBlood.cs)
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }

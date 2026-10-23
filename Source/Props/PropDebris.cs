@@ -183,8 +183,37 @@ public static class PropDebris
     }
 
     /// <summary>The ground, terrain or box top under a point (a short ray down), or far below if there's nothing.</summary>
+    /// <summary>A planet: falls towards the centre, bounces, slides to a stop and lies flat on the curved ground (cosmetic).</summary>
+    private static void StepCurved(ref Piece p, int i, float dt)
+    {
+        if ((i + _frame) % 12 == 0)
+            p.Floor = FloorUnder(p.Pos);
+        var low = MathF.Min(p.Size.X, MathF.Min(p.Size.Y, p.Size.Z)) * 0.5f;
+        p.Rot = Quaternion.Normalize(Quaternion.CreateFromAxisAngle(p.SpinAxis, p.Spin * dt) * p.Rot);
+        if (!CurvedFall.Step(ref p.Pos, ref p.Vel, p.Floor, low, 1f, dt, out var up, out var into))
+            return;
+        var tangent = p.Vel + up * into;
+        if (into > 2f)
+        {
+            p.Vel = tangent * 0.6f + up * (into * 0.25f); // a bounce
+            p.Spin *= 0.5f;
+            return;
+        }
+        p.Vel = tangent * MathF.Exp(-6f * dt);
+        p.Spin *= MathF.Exp(-6f * dt);
+        if (p.Vel.LengthSquared() < 0.04f)
+        {
+            p.Vel = Vector3.Zero;
+            p.Spin = 0;
+            p.Resting = true;
+            p.Rot = CurvedFall.LieFlat(p.Rot, up);
+        }
+    }
+
     private static float FloorUnder(Vector3 p)
     {
+        if (GravityFrames.Curved)
+            return CurvedFall.FloorUnder(p); // a planet: a height above its centre (GravityFrames.cs)
         var d = World.Query.Raycast(p + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 12f, QueryFilter.All);
         return d >= 12f ? p.Y - 50f : p.Y + 0.3f - d;
     }
@@ -232,6 +261,11 @@ public static class PropDebris
             }
             if (p.Resting)
                 continue;
+            if (GravityFrames.Curved)
+            {
+                StepCurved(ref p, i, dt);
+                continue;
+            }
             if ((i + _frame) % 12 == 0)
                 p.Floor = FloorUnder(p.Pos); // flew over a kerb or off a ledge
             p.Vel.Y -= World.Gravity * dt;

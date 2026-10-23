@@ -128,7 +128,8 @@ public sealed class SweptMover : IMover
         }
 
         // Steering: the same input response as the classic mover, in the plane across "up".
-        var wish = Flatten(MoveInput.Wish(b, cmd.Yaw), up);
+        // On a planet the keys are read in the local tangent frame (yaw is measured from its north, GravityFrames.cs).
+        var wish = GravityFrames.Curved ? GravityFrames.ToWorld(s.Position, MoveInput.Wish(b, cmd.Yaw)) : Flatten(MoveInput.Wish(b, cmd.Yaw), up);
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.Grounded ? 14f : 3f;
         var target = wish * speed;
@@ -152,7 +153,7 @@ public sealed class SweptMover : IMover
         vFlat += (target - vFlat) * blend;
         s.Velocity = vFlat + up * vUp;
 
-        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone
+        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && !GravityFrames.Curved // (the ledge search is Y-up only)
             && ClassicMover.FindLedge(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge))
         {
             ClassicMover.StartMantle(ref s, ledgeStance, ledgeTarget, ledgeTop);
@@ -463,6 +464,8 @@ public sealed class SweptMover : IMover
     /// <summary>The arena bounds, and never far under the terrain (a safety net; casts keep players on top of it).</summary>
     private static Vector3 Clamp(PhysicsWorld phys, Vector3 feet)
     {
+        if (phys.Gravity is PointGravity planet)
+            return World.ClampToSky(feet, planet); // a planet: only a ceiling far above (the ground holds players up)
         feet.X = Math.Clamp(feet.X, -phys.HalfX + World.PlayerRadius, phys.HalfX - World.PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.PlayerRadius, phys.HalfZ - World.PlayerRadius);
         if (phys.Map?.Boundary is { } boundary)

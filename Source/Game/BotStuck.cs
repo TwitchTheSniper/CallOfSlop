@@ -200,8 +200,7 @@ public sealed partial class Game
         }
         else if (now < b.RescueUntil)
         {
-            var to = b.RescueAt - pos;
-            to.Y = 0;
+            var to = FlatVec(b.RescueAt - pos);
             var len = to.Length();
             if (len < 0.6f)
                 b.RescueUntil = 0;
@@ -238,9 +237,9 @@ public sealed partial class Game
     /// <summary>Stage 1 and 3: hop, and step back from the way we were pushing, angled to the strafe side, for 0.7 s.</summary>
     private static void StuckBackOff(BotBrain b, Vector3 wish, double now)
     {
-        var w = new Vector3(wish.X, 0, wish.Z);
-        w = w.LengthSquared() > 1e-4f ? Vector3.Normalize(w) : Vector3.UnitZ;
-        var side = new Vector3(-w.Z, 0, w.X) * b.StrafeDir;
+        var w = FlatVec(wish);
+        w = w.LengthSquared() > 1e-4f ? Vector3.Normalize(w) : GravityFrames.Curved ? FlatVec(Vector3.UnitZ + Vector3.UnitX * 0.3f) : Vector3.UnitZ;
+        var side = Across(w) * b.StrafeDir;
         b.BackOffDir = Vector3.Normalize(-w + side);
         b.BackOffUntil = now + 0.7;
         b.JumpNext = true;

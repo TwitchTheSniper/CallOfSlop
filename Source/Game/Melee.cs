@@ -77,7 +77,7 @@ public sealed partial class Game
         attacker.LastCombatTime = now;
 
         var origin = attacker.Eye;
-        var dir = World.Forward(yaw, pitch);
+        var dir = GravityFrames.Forward(attacker.Position, yaw, pitch);
         var reach = MeleeRange + Attachments.MeleeReachBonus(attacker.WeaponDef); // a bayonet reaches further (Attachments/Muzzle/14-Bayonet.json)
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         Player? victim = null;
@@ -89,15 +89,18 @@ public sealed partial class Game
                 continue;
             var at = HistoricState(p, rewindTo);
             var box = World.Hitbox(at.Position, at.Stance, at.Yaw);
+            var (o, d) = (origin, dir);
+            GravityFrames.RayToLocal(at.Position, ref o, ref d); // a planet: in their upright frame (no change elsewhere)
             // Closest point of their body to our eyes: within reach and roughly where we're looking.
-            var closest = Vector3.Clamp(origin, box.Min, box.Max);
-            var to = closest - origin;
+            var closest = Vector3.Clamp(o, box.Min, box.Max);
+            var to = closest - o;
             var dist = to.Length();
             if (dist > reach)
                 continue;
-            var toCenter = box.Center - origin;
-            var aimed = box.Raycast(origin, dir, reach) != null
-                        || (toCenter.LengthSquared() > 1e-4f && Vector3.Dot(Vector3.Normalize(toCenter), dir) >= MeleeConeCos);
+            var toCenter = box.Center - o;
+            var aimed = box.Raycast(o, d, reach) != null
+                        || (toCenter.LengthSquared() > 1e-4f && Vector3.Dot(Vector3.Normalize(toCenter), d) >= MeleeConeCos);
+            toCenter = GravityFrames.PointToWorld(at.Position, box.Center) - origin;
             if (!aimed)
                 continue;
             // No hitting through walls.

@@ -145,7 +145,7 @@ public sealed partial class Game
         // Fire: the bot's aim error, skill-scaled, as the shot's direction.
         var h = (uint)(p.Id * 7919 + (int)(now * 1000));
         var err = b.AimError * 0.5f;
-        var dir = World.Forward(aim.Yaw + ((float)TacticalGear.Roll(h, 1, 0x1A3) - 0.5f) * err, aim.Pitch + ((float)TacticalGear.Roll(h, 2, 0x1A3) - 0.5f) * err);
+        var dir = GravityFrames.Forward(p.Position, aim.Yaw + ((float)TacticalGear.Roll(h, 1, 0x1A3) - 0.5f) * err, aim.Pitch + ((float)TacticalGear.Roll(h, 2, 0x1A3) - 0.5f) * err);
         var lockOn = def.LauncherGuidance == LauncherGuidance.LockOn && b.LauncherEntity != byte.MaxValue ? b.LauncherEntity : byte.MaxValue;
         _botLauncherShot = true;
         var fired = ServerFireLauncher(p, def, p.Eye, dir, def.MinSpreadRad, h | 1, lockOn, now);

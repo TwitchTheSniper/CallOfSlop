@@ -14,7 +14,7 @@ public sealed partial class Game
         if (Local is not { Alive: true } me)
             return 0;
         var n = 0;
-        var aim = World.Forward(LookYaw, LookPitch);
+        var aim = LookDir(LookYaw, LookPitch);
         var dist = World.Query.Raycast(me.RenderEye, aim, World.Range, QueryFilter.Shots);
         AddTracer(MuzzleWorld(me), me.RenderEye + aim * dist, me.WeaponDef, now, -1, me);
         n++;

@@ -87,6 +87,10 @@ public sealed class PhysicsWorld : IWorldQuery
     public PhysicsWorld(Map map)
         : this(map.Solid, map.TerrainCollision, map.HalfX, map.HalfZ, map)
     {
+        // Planet maps (MapPlanet.cs): their gravity field and solid meshes. Ordinary maps have neither.
+        Gravity = GravityFrames.FieldOf(map);
+        foreach (var mesh in map.SolidColliders)
+            AddMesh(mesh);
     }
 
     /// <summary>A world from a list of boxes (self-tests: shuffled copies, hand-built scenes). No movers, no props.</summary>

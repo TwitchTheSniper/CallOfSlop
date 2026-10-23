@@ -161,6 +161,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (PlanetHash is var planet and not 0) // point gravity and solid meshes (MapPlanet.cs); ordinary maps keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (planet >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (DestructionHash is var destruction and not 0) // destructible maps only (MapDestruction.Map.cs): host and clients must cut and break the same
             {
                 for (var i = 0; i < 4; i++)
@@ -221,6 +229,8 @@ public static partial class MapFile
             sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
+        if (m.PointGravity is { } pointGravity)
+            sb.Append("  \"gravity\": ").Append(GravityToJson(pointGravity)).Append(",\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         MapObjectiveJson.Write(sb, m);
@@ -352,6 +362,8 @@ public static partial class MapFile
                     throw new MapFileException($"{source}: boundary: {ex.Message}");
                 }
             }
+            if (Prop(root, "gravity") is { ValueKind: not JsonValueKind.Null } gravity)
+                map.PointGravity = ReadGravity(gravity, source); // a planet: gravity towards a point (MapFile.Gravity.cs)
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             try

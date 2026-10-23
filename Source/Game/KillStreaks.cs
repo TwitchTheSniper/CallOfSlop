@@ -640,11 +640,17 @@ public sealed partial class Game
     }
 
     /// <summary>Server: someone uses an earned streak. Everything is checked here; the client only asks.</summary>
+    /// <summary>Kill streaks that don't fly anything over the map, so they work the same on a planet (point gravity).</summary>
+    public static bool WorksOnPlanet(StreakId id) =>
+        id is StreakId.ReconSweep or StreakId.CounterSweep or StreakId.Overdrive or StreakId.BallisticVests or StreakId.EmpBlast or StreakId.Juggernaut;
+
     private bool ServerUseStreak(Player p, StreakId id, Vector3 target, float yaw, double now)
     {
         var s = p.Streak;
         if (!StreaksEnabled || !p.Alive || Phase != MatchPhase.Playing || !KillStreaks.IsValid(id) || !s.Slots.Has(id) || !s.IsReady(id))
             return false;
+        if (GravityFrames.Curved && !WorksOnPlanet(id))
+            return false; // a planet: strikes, drones, turrets and drops fly and fall on flat-world paths (kept for later), so they wait
         if (!float.IsFinite(yaw))
             yaw = p.Yaw;
         var def = KillStreaks.Get(id);
@@ -909,7 +915,7 @@ public sealed partial class Game
         {
             if (!local.Alive || !local.Streak.IsReady(StreakTargeting) || Phase != MatchPhase.Playing)
                 StreakTargeting = StreakId.None;
-            var dir = World.Forward(LookYaw, LookPitch);
+            var dir = LookDir(LookYaw, LookPitch);
             var d = World.Query.Raycast(local.RenderEye, dir, KillStreaks.MaxCallRange, QueryFilter.All);
             StreakAimValid = d < KillStreaks.MaxCallRange - 0.01f;
             StreakAimPoint = local.RenderEye + dir * d;
