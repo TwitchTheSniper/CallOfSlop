@@ -219,7 +219,7 @@ public static class BuildModel
                 alpha = MathF.Min(alpha, t.W);
                 mode = 2; // flat and bright: reads as a marker, not as a real part
             }
-            var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (bx.Tag == "irons" ? GunPartFlags.Top : 0);
+            var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (IsIrons(bx.Tag) ? GunPartFlags.Top : 0);
             var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos) * post;
             var n = pn.Add($"box{i}", m, Renderable.Box(color, alpha, mode));
             n.Tag = f;
@@ -245,10 +245,15 @@ public static class BuildModel
 
     /// <summary>
     /// Whether box <paramref name="bx"/> of <paramref name="node"/>'s part is drawn: "irons" only when
-    /// <paramref name="irons"/> (a receiver fitted, no optic), "with:SOCKET" only while that socket holds a part.
+    /// <paramref name="irons"/> (a receiver fitted, no optic), "irons:SOCKET" also needs that socket filled, "with:SOCKET" only while that socket holds a part.
     /// </summary>
     public static bool Shown(PartBox bx, BuildNode node, bool irons) =>
-        bx.Tag == "irons" ? irons : !bx.Tag.StartsWith("with:", StringComparison.Ordinal) || node.Child(bx.Tag[5..]) != null;
+        bx.Tag == "irons" ? irons
+        : bx.Tag.StartsWith("irons:", StringComparison.Ordinal) ? irons && node.Child(bx.Tag[6..]) != null
+        : !bx.Tag.StartsWith("with:", StringComparison.Ordinal) || node.Child(bx.Tag[5..]) != null;
+
+    /// <summary>An iron-sight box: "irons", or "irons:SOCKET" (also needs that socket of its part filled).</summary>
+    private static bool IsIrons(string tag) => tag == "irons" || tag.StartsWith("irons:", StringComparison.Ordinal);
 
     /// <summary>
     /// The boxes of <paramref name="node"/> and everything plugged into it, as a range of <see cref="GunMesh.Parts"/>

@@ -157,6 +157,8 @@ class Lib:
             tag = str(tag or "").lower()
             if tag == "irons" and not irons:
                 continue
+            if tag.startswith("irons:") and not (irons and tag[6:] in [f.lower() for f in filled]):
+                continue
             if tag.startswith("with:") and tag[5:] not in [f.lower() for f in filled]:
                 continue
             m = mmul(M, mmul(m_scale(scale), mmul(m_trans(pos), mmul(m_rot(R), m_scale(size)))))

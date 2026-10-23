@@ -79,7 +79,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 17 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 19 |
 | Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
@@ -336,13 +336,19 @@ heavier and slower to handle than the last:
 | --- | --- | --- | --- | --- | --- | --- |
 | 1 | Service Pistol / Service Rifle / Sport Rifle Grip | common / uncommon | 4 / 8 / 10 kg | | | first tier |
 | 2 | **Double-Tap Grip** | rare | 4.5 kg | 0.42 kg | | one-handed, side by side |
+| 2 | **Twin Rifle Grip** | rare | 5.5 kg | 0.55 kg | x0.99 | two-handed, side by side; stock, foregrip; hip spread x0.95 |
 | 3 | Pistol Grip | rare | 5 kg | 0.4 kg | | one-handed |
+| 3 | **Triple Rifle Grip** | rare | 6.5 kg | 0.62 kg | x0.99 | two-handed, three abreast; stock, foregrip; hip spread x0.96, aim time +0.01 s |
 | 4 | **Quad Rack Grip** | rare | 7 kg | 0.7 kg | x0.99 | 2 over 2, stock and foregrip |
 | 5 | **Penta Rack Grip** | rare | 8 kg | 0.8 kg | x0.98 | 3 below, 2 above |
 | 6 | **Hex Rack Grip** (also Mule Frame, Chainsaw Grip) | rare | 9 kg | 0.85 kg | x0.98 | shared-feed socket |
 | 7 | **Septet Rack Grip** | epic | 10 kg | 0.9 kg | x0.97 | third tier, shared feed |
 | 8 | **Octet Rack Grip** (also Steering Wheel) | epic | 11 kg | 0.95 kg | x0.97 | shared feed |
 | 9 | Rifle Grip | epic | 12 kg | 1.0 kg | | shared feed |
+
+The two-handed **Twin** and **Triple Rifle Grips** (2026-10-23) are the rifle-style twins of the one-handed Double-Tap and
+Pistol Grips: a pistol handle, a rail for the other hand, a stock socket and a foregrip socket. Like every multi-slot grip
+they have the Chain fire checkbox.
 
 The grip picker lists grips by slot count.
 
@@ -522,7 +528,7 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   wrap bar, the cart's push bar, the wheel's rim), else the lead barrel. The reload hand goes to the lead receiver's
   feed.
 - **Sight line:** the optic sits on the grip's `optic` socket; the sight lens uses the mount height and position from
-  it. Iron-sight boxes (`"tag": "irons"`, only grips have them) stand on the receiver: they are drawn only when a
+  it. Iron-sight boxes (`"tag": "irons"`, or `"irons:SOCKET"` which also needs that socket filled, as on the rack grips; only grips have them) stand on the receiver: they are drawn only when a
   receiver is fitted and no optic is. Grips with `"ads": false` (cart, briefcase) are hip fire only and drop the optic's
   zoom.
 - **Optic mount height (2026-10-23).** The user: "large receivers need to have the optic mount location adjusted
@@ -538,8 +544,9 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   intentional and just there to support the optics". Every part's boxes form one connected piece (within 1 cm), and
   every part of an assembled weapon touches the rest. The pass fixed: the grips' iron sights (hovering over an empty
   plate; now only with a receiver, front post moved back over the receiver and both reaching down to it); the rack
-  grips' cage posts (Quad to Rifle Grip: they stood 4.4 cm behind the plate, so the crossbar, optic rail and irons hung
-  in the air; now on the plate's back corners); the Gantry Rig's optic mount (a box and post hanging between the
+  rack grips' frame (Quad to Rifle Grip: posts and a crossbar round the receiver slots; **removed entirely**, user 2026-10-23:
+  "remove entirely"; each upper row of receivers now has its own thin plate and spine, drawn only while that slot holds a
+  receiver, and the iron sights hang on a short sight rail over the top row); the Gantry Rig's optic mount (a box and post hanging between the
   crossbars; now on a spine between them); the Chainsaw Grip's receiver plate (3 cm off the body); the Steering Wheel's
   rim (gaps between segments; diagonal spokes now carry the diagonal receivers); the Exo Harness, Gantry Rig and Mule
   Frame plates (1.7 cm under the receivers; shelf bars under each upper row); hopper chutes and stock mounts on the
