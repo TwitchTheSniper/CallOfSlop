@@ -123,6 +123,15 @@ public static class BuildModel
         var opticMount = root.Find("optic_mount");
         if (opticMount != null)
         {
+            // The optic sits ON the highest thing under its rail: a grip's socket height suits a small receiver, but a big
+            // one (an LMG, an autocannon, a launcher) rises past it, so the mount is raised to that receiver's top (with
+            // its rail). The sight line, the rail and the aim point all come from this one height.
+            var dy = MathF.Max(0f, MountSeat(mesh, opticMount.WorldPosition, opticMount.WorldPosition.Y) - opticMount.WorldPosition.Y);
+            if (dy > 0f)
+            {
+                opticMount.LocalPosition += new Vector3(0, dy, 0);
+                root.UpdateWorld();
+            }
             mesh.Mount = opticMount.WorldPosition.Y;
             mesh.OpticZ = opticMount.WorldPosition.Z;
         }
@@ -137,6 +146,44 @@ public static class BuildModel
         mesh.RailBack = mesh.OpticZ + 0.06f;
         mesh.StockPoint = root.Find("stock")?.WorldPosition ?? new Vector3(0, 0, mesh.Back);
         return new BuiltModel { Root = root, Mesh = mesh, Muzzles = muzzles, Grip = grip, Support = support, MagWell = magWell, Nodes = map };
+    }
+
+    /// <summary>Half the width of the strip under an optic that it must clear (its rail and base).</summary>
+    public const float OpticHalfWidth = 0.025f;
+
+    /// <summary>Half the length of the strip under an optic that it must clear (the rail is 0.12 long).</summary>
+    public const float OpticHalfLength = 0.06f;
+
+    /// <summary>
+    /// The height an optic at <paramref name="at"/> (gun space) has to sit at to clear the gun: the top of the highest
+    /// drawn box under its rail strip, never below <paramref name="floor"/> (the grip's own socket height). Iron sights ("irons") and see-through
+    /// boxes don't count.
+    /// </summary>
+    public static float MountSeat(GunMesh mesh, Vector3 at, float floor)
+    {
+        var seat = floor;
+        for (var i = 0; i < mesh.Parts.Length; i++)
+        {
+            if ((mesh.Parts[i].Flags & (GunPartFlags.Top | GunPartFlags.Blend)) != 0)
+                continue;
+            var (lo, hi) = BoxBounds(mesh.Matrices[i]);
+            if (hi.X > at.X - OpticHalfWidth && lo.X < at.X + OpticHalfWidth && hi.Z > at.Z - OpticHalfLength && lo.Z < at.Z + OpticHalfLength)
+                seat = MathF.Max(seat, hi.Y);
+        }
+        return seat;
+    }
+
+    private static (Vector3 Min, Vector3 Max) BoxBounds(in Matrix4x4 m)
+    {
+        var min = new Vector3(float.MaxValue);
+        var max = new Vector3(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var p = Vector3.Transform(new Vector3((i & 1) - 0.5f, ((i >> 1) & 1) - 0.5f, ((i >> 2) & 1) - 0.5f), m);
+            min = Vector3.Min(min, p);
+            max = Vector3.Max(max, p);
+        }
+        return (min, max);
     }
 
     private static void AddPart(SceneNode parent, BuildNode node, Vector3 accent, bool irons, Dictionary<BuildNode, SceneNode> map,
