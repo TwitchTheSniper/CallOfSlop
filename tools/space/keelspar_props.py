@@ -148,7 +148,7 @@ def yard():
     p.append(At([0.12, 3.0, 0.12], 0.5, color=STEEL))
     p.append(At([0.9, 0.3, 0.2], 3.4, color=DARK))
     for x in (-0.3, 0, 0.3):
-        p.append(lit(At([0.22, 0.22, 0.04], 3.44, x, 0.11, color="#fff0c8"), glow("flicker", "#fff0c8", rate=2, duty=0.97, glow_=1.8, off="#b8a888")))
+        p.append(lit(At([0.22, 0.22, 0.04], 3.44, x, 0.11, color="#fff0c8"), glow("pulse", "#fff0c8", 3.0, glow_=1.8, off="#c8b898")))
     prop("Work Light Mast", "A tripod floodlight mast with three warm lamps facing +Z.", p, collider=[C([0.3, 3.7, 0.3])], scatter=ANY)
     # Hazard bollard: a short post with a blinking amber top.
     p = [At([0.3, 0.1, 0.3], 0, color=DARK), At([0.16, 0.8, 0.16], 0.1, color=HAZARD), At([0.16, 0.12, 0.16], 0.45, color=DARK),

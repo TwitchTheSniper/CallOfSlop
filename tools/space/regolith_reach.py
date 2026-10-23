@@ -287,36 +287,6 @@ def midfield():
 
 
 # ================================================================================================ turning the half
-def rotated(ops):
-    out = []
-    flip = {"wall+x": "wall-x", "wall-x": "wall+x", "wall+z": "wall-z", "wall-z": "wall+z"}
-    for o in ops:
-        d = dict(o)
-        k = d["op"]
-        if k in ("Block", "Collider"):
-            d["x0"], d["x1"] = K.r(-o["x1"]), K.r(-o["x0"])
-            d["z0"], d["z1"] = K.r(-o["z1"]), K.r(-o["z0"])
-        elif k in ("Mesh", "Prop", "Decal", "Waypoint", "Spawn"):
-            d["x"], d["z"] = K.r(-o["x"]), K.r(-o["z"])
-            if k in ("Mesh", "Prop"):
-                d["yaw"] = K.r((o.get("yaw", 0) + 180) % 360, 1)
-            if k == "Decal":
-                if "rotation" in o:
-                    d["rotation"] = K.r((o["rotation"] + 180) % 360, 1)
-                if o.get("onto") in flip:
-                    d["onto"] = flip[o["onto"]]
-        elif k in ("DecalScatter", "Clutter"):
-            d["x0"], d["x1"] = K.r(-o["x1"]), K.r(-o["x0"])
-            d["z0"], d["z1"] = K.r(-o["z1"]), K.r(-o["z0"])
-            d["seed"] = o.get("seed", 0) + 100
-        elif k == "Building":
-            at = o["at"]
-            d["at"] = [K.r(-at[0]), at[1], K.r(-at[2])] if len(at) == 3 else [K.r(-at[0]), K.r(-at[1])]
-            d["yaw"] = (o.get("yaw", 0) + 180) % 360
-        out.append(d)
-    return out
-
-
 def boundary_points():
     # The west half of the outline, north to south (a little irregular); the east half is it turned.
     half = [(0, -60), (-16, -58), (-32, -57), (-48, -51), (-60, -42), (-68, -30), (-73, -16), (-75, 0), (-73, 14), (-70, 27),
@@ -334,7 +304,7 @@ def build():
     pit_half()
     midfield()
     half = list(K.OPS)
-    other = rotated(half)
+    other = K.rotated(half)
     K.OPS.clear()
     K.OPS.extend(half + other)
     K.SPAWNS[1] = [[K.r(-x), y, K.r(-z)] for (x, y, z) in K.SPAWNS[0]]

@@ -127,12 +127,11 @@
    ],
    "color": "#fff0c8",
    "anim": {
-    "type": "flicker",
+    "type": "pulse",
     "color": "#fff0c8",
     "glow": 1.8,
-    "rate": 2,
-    "duty": 0.97,
-    "off": "#b8a888"
+    "period": 3.0,
+    "off": "#c8b898"
    }
   },
   {
@@ -148,12 +147,11 @@
    ],
    "color": "#fff0c8",
    "anim": {
-    "type": "flicker",
+    "type": "pulse",
     "color": "#fff0c8",
     "glow": 1.8,
-    "rate": 2,
-    "duty": 0.97,
-    "off": "#b8a888"
+    "period": 3.0,
+    "off": "#c8b898"
    }
   },
   {
@@ -169,12 +167,11 @@
    ],
    "color": "#fff0c8",
    "anim": {
-    "type": "flicker",
+    "type": "pulse",
     "color": "#fff0c8",
     "glow": 1.8,
-    "rate": 2,
-    "duty": 0.97,
-    "off": "#b8a888"
+    "period": 3.0,
+    "off": "#c8b898"
    }
   }
  ],

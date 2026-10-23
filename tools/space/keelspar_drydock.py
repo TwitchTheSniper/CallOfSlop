@@ -361,37 +361,6 @@ def interior_stair():
 
 
 # ================================================================================================ turning the half
-def rotated(ops):
-    out = []
-    flip = {"wall+x": "wall-x", "wall-x": "wall+x", "wall+z": "wall-z", "wall-z": "wall+z"}
-    for o in ops:
-        d = dict(o)
-        k = d["op"]
-        if k in ("Block", "Collider"):
-            d["x0"], d["x1"] = K.r(-o["x1"]), K.r(-o["x0"])
-            d["z0"], d["z1"] = K.r(-o["z1"]), K.r(-o["z0"])
-        elif k in ("Mesh", "Prop", "Decal", "Waypoint", "Spawn"):
-            d["x"], d["z"] = K.r(-o["x"]), K.r(-o["z"])
-            if k in ("Mesh", "Prop"):
-                d["yaw"] = K.r((o.get("yaw", 0) + 180) % 360, 1)
-            if k == "Decal":
-                if "rotation" in o:
-                    d["rotation"] = K.r((o["rotation"] + 180) % 360, 1)
-                if o.get("onto") in flip:
-                    d["onto"] = flip[o["onto"]]
-        elif k in ("DecalScatter", "Clutter"):
-            d["x0"], d["x1"] = K.r(-o["x1"]), K.r(-o["x0"])
-            d["z0"], d["z1"] = K.r(-o["z1"]), K.r(-o["z0"])
-            d["seed"] = o.get("seed", 0) + 100
-        elif k == "Building":
-            at = o["at"]
-            d["at"] = [K.r(-at[0]), at[1], K.r(-at[2])] if len(at) == 3 else [K.r(-at[0]), K.r(-at[1])]
-            d["yaw"] = (o.get("yaw", 0) + 180) % 360
-            d["seed"] = o.get("seed", 1)  # the same furniture, turned with the building
-        out.append(d)
-    return out
-
-
 def boundary_points():
     half = [(-77, 0), (-76, -16), (-73, -30), (-66, -38), (-54, -37), (-40, -34), (-20, -33), (0, -33), (20, -33), (40, -34),
             (54, -37), (66, -38), (73, -30), (76, -16), (77, 0)]
@@ -409,7 +378,7 @@ def build():
     bow_dock()
     interior_stair()
     half = list(K.OPS)
-    other = rotated(half)
+    other = K.rotated(half)
     K.OPS.clear()
     K.OPS.extend(shared + half + other)
     # Red's spawns and flag are Blue's turned.

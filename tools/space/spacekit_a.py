@@ -329,6 +329,42 @@ def rot180(x, z):
     return -x, -z
 
 
+def rotated(ops, reseed=True):
+    """The ops turned 180 degrees about the map's centre (x, z -> -x, -z; yaws and decal turns + 180; wall sides swapped;
+    scatter and clutter rectangles turned; buildings keep their seed so their furniture is the same, turned). With
+    `reseed`, scatters get a new seed so the two halves' litter isn't a copy."""
+    out = []
+    flip = {"wall+x": "wall-x", "wall-x": "wall+x", "wall+z": "wall-z", "wall-z": "wall+z"}
+    for o in ops:
+        d = dict(o)
+        k = d["op"]
+        if k in ("Block", "Collider"):
+            d["x0"], d["x1"] = r(-o["x1"]), r(-o["x0"])
+            d["z0"], d["z1"] = r(-o["z1"]), r(-o["z0"])
+        elif k in ("Mesh", "Prop", "Decal", "Waypoint", "Spawn"):
+            d["x"], d["z"] = r(-o["x"]), r(-o["z"])
+            if k in ("Mesh", "Prop"):
+                d["yaw"] = r((o.get("yaw", 0) + 180) % 360, 1)
+            if k == "Decal":
+                if "rotation" in o:
+                    d["rotation"] = r((o["rotation"] + 180) % 360, 1)
+                if o.get("onto") in flip:
+                    d["onto"] = flip[o["onto"]]
+        elif k in ("DecalScatter", "Clutter"):
+            d["x0"], d["x1"] = r(-o["x1"]), r(-o["x0"])
+            d["z0"], d["z1"] = r(-o["z1"]), r(-o["z0"])
+            if reseed:
+                d["seed"] = o.get("seed", 0) + 100
+        elif k == "Building":
+            at = o["at"]
+            d["at"] = [r(-at[0]), at[1], r(-at[2])] if len(at) == 3 else [r(-at[0]), r(-at[1])]
+            d["yaw"] = (o.get("yaw", 0) + 180) % 360
+        else:
+            raise ValueError(f"rotated: don't know how to turn a {k} op")
+        out.append(d)
+    return out
+
+
 def write_map(path, m):
     with open(path, "w") as f:
         json.dump(m, f, indent=1)
