@@ -103,7 +103,16 @@ public static partial class SelfTest
             if (w.Class != WeaponClass.Pistol && !(mesh.MuzzleZ < mesh.Support.Z && mesh.Support.Z < mesh.Grip.Z))
                 Fail($"{w.Name}: muzzle {mesh.MuzzleZ:0.000}, support {mesh.Support.Z:0.000}, grip {mesh.Grip.Z:0.000} aren't in order front to back");
 
-            // The design reference.
+            // The design reference. A sniper's references were designed with its built-in scope on (the plain gun before
+            // snipers started with a scope attachment and got iron sights): build it that way for the comparison.
+            if (Attachments.StartsScoped(w) && !GunModel.HasBuiltInScope(w))
+            {
+                var designed = w.Clone();
+                designed.AdsZoom = GunModel.FullScopeZoom;
+                parts = GunModel.RecordParts(designed, 0f);
+                lo = parts.Aggregate(new Vector3(float.MaxValue), (a, p) => Vector3.Min(a, p.Min));
+                hi = parts.Aggregate(new Vector3(float.MinValue), (a, p) => Vector3.Max(a, p.Max));
+            }
             var r = GunModelReference.FirstOrDefault(x => x.Name == w.Name);
             if (r.Name == null)
                 Line($"  {w.Name}: no design reference (a new weapon file)");

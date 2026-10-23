@@ -305,6 +305,11 @@ public static unsafe partial class Program
             SmokeNameTags(now); // Program.NameTags.cs
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeScoreStep < 3)
+        {
+            SmokeScoreboard(now); // Program.Scoreboard.cs: the scoreboard with its Level column
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
             SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
@@ -942,6 +947,7 @@ public static unsafe partial class Program
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
+            _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
@@ -1751,6 +1757,7 @@ public static unsafe partial class Program
                 Aim = _game.AimT, Strength = _settings.HeadBob / 100f, GaitPhase = LegAnimator.GaitPhase(local.Id, Glfw.Time), // last frame's first-person legs, if drawn
             });
             eye = _headBob.Apply(eye, _game.LookYaw);
+            eye.Y -= _game.KnockDrop; // stumbling from a blast push (Knockback.cs)
         }
         else
             _headBob.Reset();
@@ -1761,8 +1768,9 @@ public static unsafe partial class Program
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.
             var rk = _game.RecoilCamera;
-            fwd = World.Forward(_game.LookYaw + rk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch, -1.56f, 1.56f));
-            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + _headBob.Roll)));
+            var kk = _game.KnockCamera; // a blast push's view kick (Knockback.cs)
+            fwd = World.Forward(_game.LookYaw + rk.Yaw + kk.Yaw, Math.Clamp(_game.LookPitch + rk.Pitch + kk.Pitch, -1.56f, 1.56f));
+            camUp = Vector3.Transform(Vector3.UnitY, Quaternion.CreateFromAxisAngle(fwd, -(rk.Roll + kk.Roll + _headBob.Roll)));
             fov *= 1f + rk.Fov;
         }
         var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);

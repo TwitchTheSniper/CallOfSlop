@@ -209,7 +209,7 @@ public sealed partial class Game
         {
             case RocketEnd.Explode:
             {
-                var radius = def.LauncherRadius * (Players.TryGetValue(owner, out var shooter) ? Perks.BlastRadiusMult(shooter.Perks) : 1f);
+                var radius = def.PlayerBlastRadius * (Players.TryGetValue(owner, out var shooter) ? Perks.BlastRadiusMult(shooter.Perks) : 1f);
                 BlastFx(pos, radius, MathF.Min(1f, 0.55f + def.Damage / 300f), owner, now);
                 Ragdolls.Blast(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def), now); // corpses fly (Source/Render/Ragdolls.cs)
                 PropDebris.Push(pos + new Vector3(0, 0.15f, 0), radius, Knockback.LauncherStrength(def)); // and loose debris

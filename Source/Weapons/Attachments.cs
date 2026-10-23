@@ -11,7 +11,7 @@ public enum AttachSlot : byte
 }
 
 /// <summary>
-/// What you look through when aiming. Iron = the gun's own sights (or built-in scope on snipers).
+/// What you look through when aiming. Iron = the gun's own sights (or the built-in scope of a long gun without an optic).
 /// New kinds go at the end: optic files name them, and the order here is never relied on elsewhere.
 /// </summary>
 public enum OpticKind : byte
@@ -231,6 +231,8 @@ public static class Attachments
                 var f = MathF.Pow((i + 1f) / list.Count, 1.3f);
                 xp = Math.Min(MaxXp(w), (int)(MathF.Round(MaxXp(w) * f / 50f) * 50f)); // round to 50 XP; the last one = max
                 xp = Math.Min(xp, LegacyUnlockXp(w, a));
+                if (a == DefaultOptic(w))
+                    xp = 0; // the scope a sniper starts with comes with the gun
                 break;
             }
         _unlockCache[(w.Id, a)] = xp;
@@ -267,6 +269,64 @@ public static class Attachments
         return Math.Min(max, (int)(MathF.Round(max * f / 50f) * 50f));
     }
 
+    // ---- Default optic and iron sights ---------------------------------------------------
+    //
+    // Snipers (and any weapon whose file names a "defaultOptic") start with a scope: it is in their default kit, it needs
+    // no weapon XP, and bots always run it. Their iron sights are the empty optic slot, which unlocks part-way through the
+    // gun's attachment XP (IronSightsShare). The optic slot is full (15), so iron sights are not an attachment of their own:
+    // on such a gun an empty optic slot simply means "iron sights" and stays locked until then (see Sanitize).
+
+    /// <summary>Iron sights on a gun that starts scoped unlock at this share of its max weapon XP (half-way).</summary>
+    public const float IronSightsShare = 0.5f;
+
+    /// <summary>
+    /// The name iron sights are saved as in loadout.txt kits (on a gun that starts scoped, where an empty optic slot is a
+    /// choice; older files without it get the default scope, which is what their "no optic" looked through then).
+    /// </summary>
+    public const string IronSightsName = "Iron Sights";
+
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<byte, AttachmentDef?> _defaultOptic = new();
+
+    /// <summary>
+    /// The optic a weapon starts with (null: iron sights, the empty slot). The file's "defaultOptic" if it names an optic
+    /// that fits; otherwise, for a sniper, its first full scope (4x and up) in unlock order. Cached per weapon id.
+    /// </summary>
+    public static AttachmentDef? DefaultOptic(WeaponDef w) => _defaultOptic.GetOrAdd(w.Id, id => ResolveDefaultOptic(Weapons.Get(id)));
+
+    /// <summary><see cref="DefaultOptic"/> worked out for any weapon definition (uncached; --check-weapon uses it on a file).</summary>
+    public static AttachmentDef? ResolveDefaultOptic(WeaponDef baseDef)
+    {
+        var optics = BySlot[(int)AttachSlot.Optic].Where(a => a.Fits(baseDef)).ToArray();
+        if (baseDef.DefaultOptic is { } name && optics.FirstOrDefault(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase)) is { } named)
+            return named;
+        if (baseDef.Class != WeaponClass.Sniper || optics.Length == 0)
+            return null;
+        float Zoom(AttachmentDef a)
+        {
+            var d = baseDef.Clone();
+            a.Apply(d);
+            return d.AdsZoom;
+        }
+        return optics.Where(a => Zoom(a) >= GunModel.FullScopeZoom).OrderBy(a => a.UnlockOrder).ThenBy(a => a.Name, StringComparer.OrdinalIgnoreCase).FirstOrDefault()
+               ?? optics.OrderByDescending(Zoom).First();
+    }
+
+    /// <summary>Does the weapon start with a scope (so its iron sights are an unlock)?</summary>
+    public static bool StartsScoped(WeaponDef w) => DefaultOptic(w) != null;
+
+    /// <summary>The kit a weapon starts with: its default optic, or nothing.</summary>
+    public static uint DefaultKit(WeaponDef w) => DefaultOptic(w) is { } o ? With(0, AttachSlot.Optic, o.Index) : 0;
+
+    /// <summary>Weapon XP that unlocks iron sights (the empty optic slot) on a gun that starts scoped; 0 on any other gun.</summary>
+    public static int IronSightsXp(WeaponDef w) =>
+        StartsScoped(w) ? Math.Clamp((int)(MathF.Round(MaxXp(w) * IronSightsShare / 50f) * 50f), 50, Math.Max(50, MaxXp(w))) : 0;
+
+    /// <summary>Can the gun be run without an optic at this much weapon XP?</summary>
+    public static bool IronSightsUnlocked(WeaponDef w, int weaponXp) => weaponXp >= IronSightsXp(w);
+
+    /// <summary>What an empty optic slot is called on this gun: its iron sights, or the scope built into it.</summary>
+    public static string NoOpticName(WeaponDef w) => GunModel.HasBuiltInScope(Weapons.Get(w.Id)) ? "Built-in scope" : "Iron sights";
+
     // ---- Kits ---------------------------------------------------------------------------
 
     public static int Slot(uint kit, AttachSlot slot) => (int)((kit >> ((int)slot * 4)) & 15);
@@ -281,7 +341,10 @@ public static class Attachments
                 yield return a;
     }
 
-    /// <summary>Drops anything that doesn't fit the weapon (and, if progress is given, anything still locked).</summary>
+    /// <summary>
+    /// Drops anything that doesn't fit the weapon (and, if progress is given, anything still locked: on a gun that starts
+    /// scoped, an empty optic slot is its iron sights, so while those are locked the default scope goes back on).
+    /// </summary>
     public static uint Sanitize(WeaponDef w, uint kit, Progress? progress = null)
     {
         var baseDef = Weapons.Get(w.Id);
@@ -295,6 +358,8 @@ public static class Attachments
                 continue;
             clean = With(clean, (AttachSlot)s, a.Index);
         }
+        if (progress != null && Slot(clean, AttachSlot.Optic) == 0 && DefaultOptic(baseDef) is { } scope && !IronSightsUnlocked(baseDef, progress.WeaponXp(w.Id)))
+            clean = With(clean, AttachSlot.Optic, scope.Index);
         return clean;
     }
 

@@ -620,6 +620,7 @@ public sealed partial class Game : IDisposable
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
             .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
+        WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -767,6 +768,7 @@ public sealed partial class Game : IDisposable
     {
         _pendingInputs.RemoveAll(c => c.Seq <= ackSeq);
         DropAckedKnocks(ackSeq); // blast pushes the server's state already includes (Knockback.cs)
+        server = WithStagger(server, ackSeq, alive, respawned); // and the stagger they left in it (snapshots don't carry it)
         (_lastServerMove, _lastAckSeq, _haveServerMove) = (server, ackSeq, alive);
 
         var predicted = me.Position;
