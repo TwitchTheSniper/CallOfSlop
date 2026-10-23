@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Barrel Shroud",
+  "about": "A 20 cm vented shroud along -Z from z = 0 to z = -0.2, centred on the bore.",
+  "model": [
+    {"shape": "rod", "size": [0.036, 0.036, 0.2], "pos": [0, 0, -0.1], "color": "gunmetal"},
+    {"size": [0.038, 0.006, 0.03], "pos": [0, 0, -0.04], "color": "black"},
+    {"size": [0.038, 0.006, 0.03], "pos": [0, 0, -0.1], "color": "black"},
+    {"size": [0.038, 0.006, 0.03], "pos": [0, 0, -0.16], "color": "black"}
+  ]
+}

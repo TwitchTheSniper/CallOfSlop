@@ -157,6 +157,7 @@ public static partial class SelfTest
             Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
+            Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
             Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker

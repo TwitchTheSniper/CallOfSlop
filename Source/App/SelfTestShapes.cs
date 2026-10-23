@@ -757,9 +757,11 @@ public static partial class SelfTest
 
     private static void ShapeBotMatch(Map map)
     {
+        Game.SeedNextGame = 5300 + map.Id * 31; // seeded: the same match every run (a flaky check is no check)
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: Math.Min(map.MaxPlayers, Game.ClassicPlayers) - 1, botSkill: BotDifficulty.Normal, mapId: map.Id);
         game.MapVoteEnabled = false;
+        NavGraph.Pump(double.MaxValue); // the nav graph whole now, not after a wall-clock-budgeted build that varies by machine
         const double dt = 1.0 / World.TickRate;
         var now = 0.0;
         var moved = new Dictionary<byte, float>();

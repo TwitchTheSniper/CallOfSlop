@@ -1,0 +1,50 @@
+// The weapon builder's registry (format call-of-slop-part-registry/1; see docs/zombies/WEAPON-BUILDER.md, "Making parts").
+// Socket types: what a part's "mount" and a socket's "type" may be. Add one here and it works in part files straight
+// away (a new utility rail, a bayonet lug...). The core types the rules in code use can't be removed.
+// Bores: the calibre classes receivers fire and bore-bound parts list.
+// Categories: fixed in code; here each one gets its default mount (used when a part file has no "mount") and the name
+// the workbench shows.
+{
+  "format": "call-of-slop-part-registry/1",
+  "socketTypes": [
+    {"name": "receiver", "about": "A grip's receiver slots (its receiver capacity)."},
+    {"name": "barrel", "about": "Where a receiver's (or a splitter's) barrels go; splitters plug in here too."},
+    {"name": "feed", "about": "A receiver's magazine, belt, tube or cell."},
+    {"name": "ammo", "about": "A receiver's (or shared feed's) ammo type."},
+    {"name": "stock", "about": "Behind the grip."},
+    {"name": "foregrip", "about": "The off hand's grip under the barrel."},
+    {"name": "optic", "about": "The sight rail on top of the grip."},
+    {"name": "muzzle", "about": "The end of a barrel: flash hiders, brakes, suppressors."},
+    {"name": "utility", "about": "Side rails: lasers, slings, cup holders."},
+    {"name": "upgrade", "about": "A receiver's upgrade sockets (fire rate, damage)."},
+    {"name": "amp", "about": "A receiver's damage multiplier socket (one per receiver)."},
+    {"name": "hopper", "about": "A grip's shared feed socket (hoppers and manifolds)."},
+    {"name": "head", "about": "Melee: where a hilt's blade or head goes."},
+    {"name": "mod", "about": "Melee: a hilt's modifier sockets (nails, wraps, weights)."}
+  ],
+  "bores": [
+    {"name": "pistol", "about": "9 mm and friends."},
+    {"name": "rifle", "about": "5.56 and up to battle-rifle rounds."},
+    {"name": "heavy", "about": ".50 BMG and the chain guns."},
+    {"name": "shell", "about": "Shotgun shells."},
+    {"name": "launcher", "about": "Grenades, rockets, anything round that fits."},
+    {"name": "energy", "about": "Plasma cells and coil guns."}
+  ],
+  "categories": [
+    {"name": "receiver", "mount": "receiver", "display": "Receiver"},
+    {"name": "barrel", "mount": "barrel", "display": "Barrel"},
+    {"name": "splitter", "mount": "barrel", "display": "Splitter"},
+    {"name": "feed", "mount": "feed", "display": "Feed"},
+    {"name": "ammo", "mount": "ammo", "display": "Ammo"},
+    {"name": "stock", "mount": "stock", "display": "Stock"},
+    {"name": "grip", "mount": "", "display": "Grip", "about": "Root grips have no mount; foregrips say \"mount\": \"foregrip\"."},
+    {"name": "optic", "mount": "optic", "display": "Optic"},
+    {"name": "muzzle", "mount": "muzzle", "display": "Muzzle"},
+    {"name": "utility", "mount": "utility", "display": "Utility"},
+    {"name": "upgrade", "mount": "upgrade", "display": "Receiver Upgrade"},
+    {"name": "multiplier", "mount": "amp", "display": "Damage Multiplier"},
+    {"name": "hilt", "mount": "", "display": "Hilt"},
+    {"name": "head", "mount": "head", "display": "Head"},
+    {"name": "meleemod", "mount": "mod", "display": "Melee Mod"}
+  ]
+}

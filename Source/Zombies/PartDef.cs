@@ -2,7 +2,11 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>What kind of weapon part a part file describes (Zombies weapon builder; see docs/zombies/WEAPON-BUILDER.md).</summary>
+/// <summary>
+/// What kind of weapon part a part file describes (Zombies weapon builder; see docs/zombies/WEAPON-BUILDER.md). The set
+/// is fixed in code (stats, rules and the workbench treat each one differently); each one's default mount and display
+/// name come from Parts/_Registry.json (<see cref="PartRegistry"/>).
+/// </summary>
 public enum PartCategory : byte
 {
     Receiver,
@@ -95,6 +99,16 @@ public sealed class PartBox
     public Vector3 Size = new(0.02f);
     public Vector3 Pos;
     public Vector3 RotDeg;
+
+    /// <summary>
+    /// The box's turn when it came from a model fragment (the fragment box's own turn, then the "use" entry's), which
+    /// Euler angles can't always add up to; null = <see cref="RotDeg"/>. See <see cref="PartLibrary"/>.
+    /// </summary>
+    public Quaternion? Orient;
+
+    /// <summary>The box's rotation: <see cref="Orient"/> if set, else <see cref="RotDeg"/> (applied Z, X, Y).</summary>
+    public Quaternion Rotation => Orient ?? PartDef.Rot(RotDeg);
+
     public GunColor Color = new("gunmetal", default);
     public float Alpha = 1f;
 
@@ -340,8 +354,11 @@ public sealed class PartDef
                * Quaternion.CreateFromAxisAngle(Vector3.UnitY, deg.Y * k);
     }
 
-    /// <summary>Display name of a category ("Receiver", "Barrel"...).</summary>
-    public static string CategoryName(PartCategory c) => c switch
+    /// <summary>Display name of a category ("Receiver", "Barrel"...): the registry's "display" (Parts/_Registry.json).</summary>
+    public static string CategoryName(PartCategory c) => Parts.Registry.DisplayOf(c);
+
+    /// <summary>The built-in display names (used when there is no registry file).</summary>
+    public static string BuiltInCategoryName(PartCategory c) => c switch
     {
         PartCategory.Multiplier => "Damage Multiplier",
         PartCategory.Upgrade => "Receiver Upgrade",

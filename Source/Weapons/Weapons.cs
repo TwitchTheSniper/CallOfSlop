@@ -191,6 +191,9 @@ public sealed partial class WeaponDef
     /// <summary>Special-effect flags from a built weapon's parts (incendiary, explosive...): carried, gameplay later.</summary>
     public string[] BuildFlags { get; set; } = [];
 
+    /// <summary>A built weapon's build, as text (<see cref="WeaponBuild.ToText"/>), so a part hot reload can rebuild it in place; null for standard weapons.</summary>
+    public string? BuildText { get; set; }
+
     /// <summary>Barrels in all (1 for standard weapons).</summary>
     public int BarrelCount => MuzzlePoints?.Length ?? 1;
 
