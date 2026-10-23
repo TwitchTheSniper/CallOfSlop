@@ -175,6 +175,7 @@ public sealed partial class Ui : IDisposable
         DrawModeHud(game, now, pos, size, settings); // warmup panel, hill / flag / gun indicators (UiModes.cs)
         if (game.Phase == MatchPhase.Playing)
             DrawZombiesHud(game, now, pos, size, settings); // round, points, prompts, downs (UiZombies.cs)
+        DrawCoopBanner(game, now, pos, size); // co-op: OBJECTIVE 2/4, SQUAD WIPED (UiCoop.cs)
         if (game.Phase == MatchPhase.Ended)
         {
             DrawResults(game, pos, size);

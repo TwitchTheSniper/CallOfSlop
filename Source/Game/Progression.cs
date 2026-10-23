@@ -301,6 +301,20 @@ public sealed class Progress
         return CheckLevelUp(before, now);
     }
 
+    /// <summary>
+    /// Co-op XP (docs/pve/DESIGN.md "Progression"): <paramref name="xp"/> account XP with a popup, and 40% of it as weapon
+    /// XP for <paramref name="weaponId"/> (an enemy kill; 255: none). Returns the new level if it changed.
+    /// </summary>
+    public int? AwardCoop(int xp, string label, double now, byte weaponId = 255)
+    {
+        var before = Level;
+        if (weaponId < Weapons.All.Length)
+            AddWeaponXp(weaponId, Math.Max(1, xp * 2 / 5), now);
+        Add(xp, label, now);
+        Save();
+        return CheckLevelUp(before, now);
+    }
+
     private void AddWeaponXp(byte weaponId, int amount, double now)
     {
         if (weaponId >= Weapons.All.Length)

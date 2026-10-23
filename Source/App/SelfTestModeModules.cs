@@ -148,6 +148,7 @@ public static partial class SelfTest
             (GameMode.FreeForAll, 0, typeof(FreeForAllModule)), (GameMode.TeamDeathmatch, 1, typeof(TeamDeathmatchModule)),
             (GameMode.KingOfTheHill, 2, typeof(KingOfTheHillModule)), (GameMode.CaptureTheFlag, 3, typeof(CaptureTheFlagModule)),
             (GameMode.GunGame, 4, typeof(GunGameModule)), (GameMode.Zombies, 5, typeof(ZombiesModule)), (GameMode.LastManStanding, 6, typeof(LastManStandingModule)),
+            (GameMode.Coop, 7, typeof(CoopModule)),
         };
         foreach (var (id, wire, type) in expected)
         {
@@ -158,7 +159,7 @@ public static partial class SelfTest
         }
         if (all.Select(m => m.Id).Distinct().Count() != all.Count)
             Fail("two modules share a mode id");
-        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies }))
+        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop }))
             Fail($"GameModes.Every changed: {string.Join(",", GameModes.Every)}");
         if (GameModeRegistry.Get((GameMode)200).Id != GameMode.FreeForAll || GameModeRegistry.IsKnown((GameMode)200))
             Fail("an unknown mode byte didn't fall back to free-for-all");
@@ -198,6 +199,7 @@ public static partial class SelfTest
             (GameMode.GunGame, false, false, false, GunGame.Perks, false, true, true, 0, "kills"),
             (GameMode.Zombies, false, false, false, null, true, false, false, 0, "kills"),
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
+            (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {
@@ -356,6 +358,11 @@ public static partial class SelfTest
             var now = 0.0;
             if (zombies)
                 game = ZGame(2, ref now, hostIn: false);
+            else if (mode == GameMode.Coop && Maps.Find("Silo") is { } silo)
+            {
+                ClutteredLargeNav(silo); // co-op plays on a map with a mission (Silo Breach): 3 co-op bots against the director's squads
+                game = ModeGame(3, mode, silo.Id);
+            }
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
             using (game)

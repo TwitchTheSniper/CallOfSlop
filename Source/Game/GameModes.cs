@@ -17,6 +17,7 @@ public enum GameMode : byte
     GunGame, // everyone climbs the same weapon ladder; first kill with the last gun wins
     Zombies, // co-op (1-4) against rounds of zombies, World at War style; only on maps with a "zombies" section (ZombiesMode.cs)
     LastManStanding, // one life each (the template mode, Dev-only: Source/Game/Modes/README.md)
+    Coop, // co-op PvE missions against waves of enemy soldiers; only on maps with a mission (docs/pve/DESIGN.md)
 }
 
 /// <summary>Names, limits and colours for the game modes: a thin front for <see cref="GameModeRegistry"/>, plus the shared team names and colours.</summary>

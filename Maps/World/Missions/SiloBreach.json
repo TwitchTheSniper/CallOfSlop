@@ -1,0 +1,81 @@
+{
+  "format": "call-of-slop-mission/1",
+  "name": "Silo Breach",
+  "map": "Silo",
+  "description": "Break into the Cold War missile complex: clear the woods over the west portal, blow the cableway power, hold launch control against the counter-attack, then ride the lift up and extract at the silo pad.",
+  "enemies": {
+    "budget": 26,
+    "perPlayer": 9,
+    "max": 80,
+    "mix": { "rifleman": 6, "rusher": 2, "heavy": 1, "grenadier": 1, "sniper": 1 }
+  },
+  "start": [[-90, -8], [-90, 0], [-90, 8], [-86, -4], [-86, 4], [-90, 16]],
+  "respawnScale": 1,
+  "stages": [
+    {
+      "type": "eliminate",
+      "text": "Breach the perimeter: clear the west portal",
+      "count": 18,
+      "countPerPlayer": 5,
+      "focus": [-62, 0],
+      "intensity": 0.7,
+      "mix": { "rifleman": 6, "rusher": 2, "sniper": 1, "grenadier": 1 },
+      "spawnZones": [
+        { "name": "north woods", "at": [-52, -28], "radius": 14 },
+        { "name": "south woods", "at": [-52, 28], "radius": 14 },
+        { "name": "ridge", "at": [-36, 0], "radius": 12 },
+        { "name": "blast lock", "at": [-44, -4, 0], "radius": 5 }
+      ]
+    },
+    {
+      "type": "destroy",
+      "text": "Plant charges on the cableway power",
+      "targets": [
+        { "name": "Cableway transformer", "at": [-33, -4, 1.2] },
+        { "name": "Junction fan", "at": [-26, -4, -3.5] },
+        { "name": "Crew relay", "at": [-27.4, -4, -11] }
+      ],
+      "plantSeconds": 3.5,
+      "fuseSeconds": 6,
+      "intensity": 0.75,
+      "mix": { "rifleman": 5, "rusher": 3, "heavy": 1, "grenadier": 1 },
+      "checkpoint": [[-80, -3], [-80, 0], [-80, 3], [-82, -1.5], [-82, 1.5], [-84, 0]],
+      "spawnZones": [
+        { "name": "crew quarters", "at": [-32, -4, -26], "radius": 6 },
+        { "name": "armoury", "at": [-32, -8, 26], "radius": 6 },
+        { "name": "east cableway", "at": [-12, -4, 0], "radius": 5 },
+        { "name": "launch control tunnel", "at": [-18, -4, -34], "radius": 4 }
+      ]
+    },
+    {
+      "type": "defend",
+      "text": "Hold launch control",
+      "at": [0, -4, -46],
+      "radius": 9,
+      "seconds": 180,
+      "loseSeconds": 25,
+      "intensity": 0.95,
+      "mix": { "rifleman": 5, "rusher": 3, "heavy": 2, "grenadier": 2, "officer": 1 },
+      "checkpoint": [[-26, -4, -1.5], [-26, -4, 1.5], [-24, -4, 0], [-28, -4, 0], [-25, -4, -3], [-25, -4, 3]],
+      "spawnZones": [
+        { "name": "maintenance bay", "at": [32, -4, -26], "radius": 6 },
+        { "name": "east junction", "at": [26, -4, 0], "radius": 5 },
+        { "name": "silo gantry tunnel", "at": [0, -4, -14], "radius": 4 },
+        { "name": "crew quarters", "at": [-32, -4, -26], "radius": 6 }
+      ]
+    },
+    {
+      "type": "reach",
+      "text": "Take the lift up and extract at the silo pad",
+      "at": [0, -25],
+      "radius": 7,
+      "intensity": 0.4,
+      "mix": { "rifleman": 5, "rusher": 2, "sniper": 2 },
+      "spawnZones": [
+        { "name": "north pass", "at": [-20, -60], "radius": 14 },
+        { "name": "east ridge", "at": [30, -20], "radius": 12 },
+        { "name": "south ridge", "at": [0, 30], "radius": 12 }
+      ]
+    }
+  ]
+}

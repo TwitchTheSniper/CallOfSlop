@@ -607,6 +607,7 @@ public sealed partial class Game
         BlastStructures(owner, center, radius, maxDamage, StructureHit.Launcher, killId, now); // destructible buildings (GameDestruction.cs)
         if (Horde.Count > 0)
             BlastZombies(owner, center, radius, maxDamage * 3f, now); // Zombies (ZombieAI.cs)
+        BlastPve(owner, center, radius, maxDamage * 3f, now, killId); // co-op enemies (GamePve.cs)
         BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
         BlastKnockback(owner, center, playerRadius, Knockback.LauncherStrength(d) * damageMult); // pushes the living (Knockback.cs)
         OnLauncherBlast(center, playerRadius, maxDamage, owner.Id);

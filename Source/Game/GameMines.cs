@@ -142,6 +142,7 @@ public sealed partial class Game
     /// </summary>
     private void BlastZombiesNeutral(Player? credit, Vector3 center, float radius, float maxDamage, double now)
     {
+        BlastPve(credit, center, radius, maxDamage, now, LandmineKillId); // co-op enemies too (GamePve.cs)
         if (Horde.Count == 0)
             return;
         for (var k = 0; k < Horde.Count; k++)

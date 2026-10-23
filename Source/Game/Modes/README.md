@@ -16,6 +16,7 @@ Source/Game/Modes/
   GunGame/                     GunGameModule + GunGame  id 4  the ladder, fixed perks, no loadout
   Zombies/                     ZombiesModule            id 5  routes into the Zombies subsystems (ZombiesMode.cs, ZombieAI.cs...)
   LastManStanding/             LastManStandingModule    id 6  the TEMPLATE (Dev-only): copy this
+  Coop/                        CoopModule               id 7  co-op PvE missions; routes into Source/Game/Pve (enemies, director, objectives)
 ```
 
 What stays shared, in `Game` (GameModes.cs and friends): the `GameMode` enum, team assignment / autobalance / team

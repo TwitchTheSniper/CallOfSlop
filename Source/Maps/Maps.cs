@@ -617,7 +617,8 @@ public static partial class Maps
     {
         var rel = Path.GetRelativePath(packDir, file).Replace('\\', '/');
         return rel.StartsWith(Props.PackFolderName + "/", StringComparison.OrdinalIgnoreCase)
-               || rel.StartsWith(Decals.PackFolderName + "/", StringComparison.OrdinalIgnoreCase);
+               || rel.StartsWith(Decals.PackFolderName + "/", StringComparison.OrdinalIgnoreCase)
+               || rel.StartsWith(Missions.PackFolderName + "/", StringComparison.OrdinalIgnoreCase); // co-op missions (Source/Game/Pve/Mission.cs)
     }
 
     /// <summary>The only map defined in code: used when the Maps folder is missing or empty.</summary>

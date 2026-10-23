@@ -250,6 +250,7 @@ public sealed partial class Game : IDisposable
         UpdateRenderStates((float)frameDt);
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
+        UpdatePveFrame(now, (float)frameDt); // Co-op: where enemies are drawn (GamePveNet.cs)
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
@@ -532,6 +533,11 @@ public sealed partial class Game : IDisposable
             {
                 dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
                 predictedHit |= zHit;
+            }
+            if (Enemies.Count > 0)
+            {
+                dist = PveRayDrawn(o, d, dist, out var eHit); // Co-op enemies, as you see them (GamePve.cs)
+                predictedHit |= eHit;
             }
             AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through);
         }
@@ -1351,6 +1357,13 @@ public sealed partial class Game : IDisposable
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f) * PenFactor(dist), zHead);
             }
+            if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead) is { } enemy) // Co-op enemies (GamePve.cs)
+            {
+                hit = null;
+                turret = null;
+                zombie = null;
+                PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
+            }
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
@@ -1398,6 +1411,8 @@ public sealed partial class Game : IDisposable
 
         if (Horde.Count > 0)
             flags |= ZombieShotApply(shooter, now); // one damage event per zombie per trigger pull
+        if (_pveShotCount > 0)
+            flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 
         if (_shotPenetrated)
             flags |= ShotPenetrated; // the origin follows the ends: every client marks both sides of the walls
@@ -1790,6 +1805,11 @@ public sealed partial class Game : IDisposable
     private void LogKill(byte killer, byte victim, bool headshot, byte killId)
     {
         string Name(byte id) => id == LocalId ? "You" : NameOf(id);
+        if (killId == PveKillId && killer == victim)
+        {
+            Log($"{Name(victim)} {(victim == LocalId ? "were" : "was")} killed by the enemy", victim == LocalId); // co-op (GamePveAi.cs): no player gets the kill
+            return;
+        }
         Log($"{Name(killer)}  [{Throwables.KillName(killId)}{(headshot ? " - HEADSHOT" : "")}]  {Name(victim)}", killer == LocalId || victim == LocalId);
 
         // Progression: the local player earns XP for every kill, in single player and multiplayer.
