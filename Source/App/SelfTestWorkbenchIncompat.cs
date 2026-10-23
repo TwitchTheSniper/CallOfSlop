@@ -4,8 +4,8 @@ public static partial class SelfTest
 {
     /// <summary>
     /// The workbench's "Show incompatible parts" checkbox (BenchInventory in BenchModel.cs): with it off only parts that
-    /// fit somewhere on the build are listed, with it on every owned part is (incompatible ones not draggable, with a
-    /// short reason); category counts follow; the short reasons agree with the full socket rules; the setting saves to
+    /// fit somewhere on the build and have a spare copy are listed, with it on every owned part is (the rest not
+    /// draggable, with a short reason: incompatible or "none spare"); category counts follow; the short reasons agree with the full socket rules; the setting saves to
     /// settings.txt (old files: off); refreshing with unchanged inputs allocates nothing.
     /// </summary>
     private static void CheckWorkbenchIncompat()
@@ -23,7 +23,7 @@ public static partial class SelfTest
         var onCount = inv.Items.Count;
         var bad = 0;
         for (var i = 0; i < inv.Items.Count; i++)
-            if (inv.Compatible[i] == (inv.Why[i] != null) || (!inv.Compatible[i] && inv.Fits[i]) || inv.Compatible[i] != full.FitsAnywhere(inv.Items[i]))
+            if (inv.Fits[i] != (inv.Why[i] == null) || (!inv.Compatible[i] && inv.Fits[i]) || inv.Compatible[i] != full.FitsAnywhere(inv.Items[i]))
                 bad++;
         Line($"every part on a rifle: toggle off {offCount} listed ({hidden} hidden, chips sum {offTotal}), on {onCount} listed (chips sum {inv.CatCounts.Sum()}, {inv.Hidden} hidden), {bad} inconsistent rows; labels: {inv.AllLabel}, {string.Join(", ", inv.CatLabels.Take(4))}");
         if (!offOk || hidden == 0 || onCount != offCount + hidden || inv.Hidden != 0 || inv.CatCounts.Sum() != onCount || bad > 0)
@@ -55,6 +55,23 @@ public static partial class SelfTest
             Fail("workbench incompatible: the shell Scattermouth should be hidden (off) / dimmed with 'needs a shell bore barrel socket' (on) on a rifle, the Standard Barrel listed");
         if (sample.Items.IndexOf(std) is var sj and >= 0 && (!sample.Fits[sj] || sample.Free[sj] != 1))
             Fail("workbench incompatible: the spare Standard Barrel should be listed as fitting with 1 free");
+        // Parts with none spare (every copy on the build): hidden with the toggle off, dimmed "none spare" with it on.
+        var hider = P("Flash Hider");
+        var hi = sample.Items.IndexOf(hider);
+        var hiderWhy = hi >= 0 ? sample.Why[hi] : null;
+        var zeroOn = sample.Items.Where((p, i) => sample.Free[i] <= 0).Count();
+        var badSpare = 0;
+        for (var i = 0; i < sample.Items.Count; i++)
+            if (sample.Compatible[i] && sample.Free[i] <= 0 && (sample.Fits[i] || sample.Why[i] != BenchInventory.NoneSpare))
+                badSpare++;
+        sample.Refresh(m, Parts.All, -1, "", false, false);
+        var offHidden = sample.Hidden;
+        var expectHidden = Parts.All.Count(p => !p.IsRoot && !p.IsMeleePart && stock.Owned(p) > 0 && (!m.FitsAnywhere(p) || stock.Free(p, m.Build) <= 0));
+        Line($"none spare: Flash Hider on the build -> toggle on '{hiderWhy}', {zeroOn} parts with none spare when shown, {badSpare} bad rows; toggle off hides {offHidden} (expected {expectHidden}), lists {sample.Items.Count} all with a spare");
+        if (hiderWhy != BenchInventory.NoneSpare || zeroOn == 0 || badSpare > 0 || sample.Items.Contains(hider) || offHidden != expectHidden || sample.Free.Any(f => f <= 0) || sample.Fits.Any(f => !f))
+            Fail("workbench incompatible: with the toggle off, parts with none spare should be hidden (counted in the hint); with it on, dimmed with 'none spare'");
+        if (sample.AllLabel != $"All {sample.Items.Count}" || sample.CatCounts.Sum() != sample.Items.Count)
+            Fail($"workbench incompatible: the chip counts should leave out hidden parts ({sample.AllLabel}, chips sum {sample.CatCounts.Sum()}, {sample.Items.Count} listed)");
         // It can't be dropped anywhere: no valid socket, and double-click (auto-place) refuses with the reason.
         var valid = new bool[64];
         var nValid = m.ValidSpots(scatter, valid);
