@@ -140,7 +140,7 @@ public sealed partial class Audio
         Music.MenuTrim = Mix.Gain(MixBus.MusicMenu);
         Music.LobbyTrim = Mix.Gain(MixBus.MusicLobby);
         for (var l = 1; l <= 6; l++)
-            Music.Frenzy.SetLevelTrim(l, Mix.Gain(MixBus.Frenzy1 + (l - 1)));
+            Music.Frenzy.SetLevelTrim(l, Mix.Gain((MixBus)((int)MixBus.Frenzy1 + l - 1)));
         Music.LimiterCeiling = Mix.LimiterCeiling;
     }
 
@@ -172,7 +172,7 @@ public sealed partial class Audio
         Meters.AddExternal(MixBus.MusicLobby, lobbyPeak * music, lobbyMs * music * music, toMaster: false);
         var level = Music.Frenzy.Level;
         if (level >= 1)
-            Meters.AddExternal(MixBus.Frenzy1 + (Math.Min(level, 6) - 1), frenzyPeak * music, frenzyMs * music * music, toMaster: false);
+            Meters.AddExternal((MixBus)((int)MixBus.Frenzy1 + Math.Min(level, 6) - 1), frenzyPeak * music, frenzyMs * music * music, toMaster: false);
         Meters.AddMusicOutput(outPeak * ListenerGain, outMs * ListenerGain * ListenerGain);
         var talkers = 0;
         foreach (var v in _voiceOut)

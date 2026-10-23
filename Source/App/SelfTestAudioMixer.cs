@@ -274,23 +274,23 @@ public static partial class SelfTest
         var ktmp = Path.Combine(Path.GetTempPath(), "callofslop-mixkey-" + Guid.NewGuid().ToString("N") + ".txt");
         try
         {
-            if (d[(int)GameAction.AudioMixer] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8) || Duplicates(d).Length > 0)
-                Fail($"audio mixer key: default {Code(d[(int)GameAction.AudioMixer])} (want F8, unshared)");
+            if (kd[(int)GameAction.AudioMixer] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8) || Duplicates(d).Length > 0)
+                Fail($"audio mixer key: default {Code(kd[(int)GameAction.AudioMixer])} (want F8, unshared)");
             List<string> V3(int melee)
             {
                 var l = new List<string> { "binds_version=3" };
                 for (var i = 0; i < (int)GameAction.AudioMixer; i++)
-                    l.Add($"bind_{(GameAction)i}={(i == (int)GameAction.Melee ? melee : d[i])}");
+                    l.Add($"bind_{(GameAction)i}={(i == (int)GameAction.Melee ? melee : kd[i])}");
                 return l;
             }
-            File.WriteAllLines(ktmp, V3(d[(int)GameAction.Melee]));
+            File.WriteAllLines(ktmp, V3(kd[(int)GameAction.Melee]));
             var a = Settings.Load(ktmp).Binds;
             File.WriteAllLines(ktmp, V3(Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8)));
             var b = Settings.Load(ktmp).Binds;
-            if (a[(int)GameAction.AudioMixer] != d[(int)GameAction.AudioMixer] || b[(int)GameAction.AudioMixer] != Keybinds.Unbound
+            if (a[(int)GameAction.AudioMixer] != kd[(int)GameAction.AudioMixer] || b[(int)GameAction.AudioMixer] != Keybinds.Unbound
                 || b[(int)GameAction.Melee] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8) || Duplicates(b).Length > 0)
                 Fail($"audio mixer key migration: a v3 file gets {Code(a[(int)GameAction.AudioMixer])}; with Melee on F8 it gets {Code(b[(int)GameAction.AudioMixer])} (want F8, then unbound)");
-            Line($"key: Audio mixer {Code(d[(int)GameAction.AudioMixer])}; an old (binds v3) settings.txt gets it, one with F8 already used keeps that and leaves the mixer unbound");
+            Line($"key: Audio mixer {Code(kd[(int)GameAction.AudioMixer])}; an old (binds v3) settings.txt gets it, one with F8 already used keeps that and leaves the mixer unbound");
         }
         finally
         {
