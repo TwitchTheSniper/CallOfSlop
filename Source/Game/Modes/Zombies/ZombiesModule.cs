@@ -80,5 +80,15 @@ public sealed class ZombiesModule : GameModeModule
         }
     }
 
+    /// <summary>Ready-up between rounds: who's ready on the scoreboard (bots always are; the dead don't count).</summary>
+    public override string ScoreboardTag(Game game, Player p)
+    {
+        if (!game.ZWaitingReady || game.ZPhase != ZRoundPhase.Break || !p.Alive)
+            return "";
+        if (game.ZPlayers.TryGetValue(p.Id, out var zp) && zp.ReadyVoter)
+            return zp.RoundReady ? " [READY]" : " [not ready]";
+        return game.ZPlayers.ContainsKey(p.Id) ? " [READY]" : ""; // a bot
+    }
+
     public override string? SelfTestVerify(Game game) => game.ZPlayers.Count == 0 ? "no run started (nobody has a Zombies run)" : null;
 }

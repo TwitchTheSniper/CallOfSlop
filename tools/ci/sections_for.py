@@ -19,7 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 ALL_MAPS = ["Maps", "Map files", "Pack assets", "Map horizons", "Map objectives", "Props", "Animated props",
             "Nav determinism", "Nav edge walks", "Stairs", "Map contract"]
 PARTS = ["Part library", "Part coverage", "Model connectivity", "Optic mounts", "Workbench UI",
-         "Workbench barrels and grips", "Workbench actions", "Action placement", "Weapon builder", "Zombies mode"]
+         "Workbench barrels and grips", "Workbench actions", "Action placement", "Weapon builder", "Zombies mode",
+         "Zombies flow"]
 
 # (regex on the repo-relative path, sections)
 RULES = [
@@ -40,7 +41,7 @@ RULES = [
                         "Bot gear level", "Loudener", "Mode modules"]),
     (r"^Parts/", PARTS),
     (r"^Source/Zombies/", PARTS),
-    (r"^Source/Game/Zombies|^Source/Game/ZombieAI", ["Zombies mode", "Zombie animation", "Co-op"]),
+    (r"^Source/Game/Zombies|^Source/Game/ZombieAI|^Source/Game/ZombieBots", ["Zombies mode", "Zombies flow", "Zombie animation", "Co-op"]),
     (r"^Source/Game/Modes/", ["Mode modules", "Mode state and matches", "Test Range", "Team Deathmatch", "King of the Hill",
                               "Capture the Flag", "Gun Game", "Map vote", "Pre-match lobby"]),
     (r"^Source/Game/Bot|^Source/Game/Bots", ["Bots", "Nav determinism", "Nav edge walks", "Bot stuck watch", "Bot doors",

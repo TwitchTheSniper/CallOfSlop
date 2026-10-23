@@ -24,9 +24,38 @@ public sealed partial class Ui
         ImGui.PushFont(default, 24);
         ImGuiSafe.TextColored(ZRed, game.ZRound > 0 ? $"ROUND {game.ZRound}" : "GET READY");
         ImGui.PopFont();
-        var left = game.ZPhase == ZRoundPhase.Round ? $"{game.ZRemaining} zombies left this round" : $"Next round in {Math.Ceiling(game.ZPhaseLeft):0} s";
+        var left = game.ZPhase == ZRoundPhase.Round ? $"{game.ZRemaining} zombies left this round"
+            : game.ZWaitingReady ? ReadyBarText(game)
+            : $"Next round in {Math.Ceiling(game.ZPhaseLeft):0} s";
         ImGuiSafe.TextColored(Dim, $"{left}   {(game.ZPower ? "Power: ON" : "Power: off")}");
         return true;
+    }
+
+    /// <summary>The match bar during a ready-up break: "Break: 1/2 ready" (and the fallback's clock).</summary>
+    private static string ReadyBarText(Game game)
+    {
+        var (r, n) = game.ZReadyCount;
+        var left = game.ZPhaseLeft;
+        return left > 0 ? $"Break: {r}/{n} ready (starts anyway in {(int)left / 60}:{(int)left % 60:00})" : $"Break: {r}/{n} ready";
+    }
+
+    /// <summary>The ready-up line in the middle of the screen (both sides; the host also gets the force start).</summary>
+    public static string ReadyPromptText(Game game, string key)
+    {
+        var (r, n) = game.ZReadyCount;
+        var mine = game.Local is { } me && game.ZPlayers.TryGetValue(me.Id, out var zp) && zp.RoundReady;
+        if (!mine)
+            return $"Press [{key}] when ready - {r}/{n} ready";
+        return game.IsServer && r < n ? $"You're ready - {r}/{n} ready (host: press [{key}] again to start now)" : $"You're ready - {r}/{n} ready";
+    }
+
+    /// <summary>The spectator line: who you watch and the keys to change.</summary>
+    public static string SpectateText(Game game, Settings settings)
+    {
+        var name = game.NameOf(game.ZSpectateId);
+        var next = $"{Keybinds.Name(settings.Bind(GameAction.Fire))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectateNext))}";
+        var prev = $"{Keybinds.Name(settings.Bind(GameAction.Aim))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectatePrev))}";
+        return $"Spectating {name} - [{next}] next / [{prev}] previous";
     }
 
     /// <summary>Everything else of the Zombies HUD (called from DrawHud while a Zombies match is on).</summary>
@@ -144,12 +173,17 @@ public sealed partial class Ui
                 ImGui.PushFont(default, 28);
                 ImGuiSafe.TextColored(Red, me2.SelfReviveAt > 0 ? $"DOWN - {game.ZRules.Perks.FirstOrDefault(d => d.SelfRevive)?.Name ?? "your perk"} is getting you up" : "YOU ARE DOWN - a teammate can revive you");
                 ImGui.PopFont();
+                ImGuiSafe.TextColored(Dim, "Crawl with the move keys and keep shooting; stay near whoever revives you."u8);
                 ImGui.ProgressBar(me2.BleedFraction, new float2(320 * _scale, 10 * _scale), "bleeding out"u8);
                 if (me2.BeingRevived > 0)
                     ImGui.ProgressBar(me2.BeingRevived, new float2(320 * _scale, 10 * _scale), "being revived"u8);
             }
             else if (!me.Alive && game.Phase == MatchPhase.Playing)
-                ImGuiSafe.TextColored(Red, "You bled out. You'll be back at the start of the next round."u8);
+            {
+                ImGuiSafe.TextColored(Red, game.ZPhase == ZRoundPhase.Round ? "You bled out. You'll be back when this round ends."u8 : "You bled out. You'll be back when the next round starts."u8);
+                if (game.ZSpectateId != byte.MaxValue)
+                    ImGuiSafe.TextColored(new float4(1, 1, 1, 1), SpectateText(game, settings));
+            }
             else if (game.FindZUse(me) is { } use)
             {
                 var text = use.Text.Replace("[E]", key);
@@ -158,6 +192,8 @@ public sealed partial class Ui
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
+            if (me.Alive && game.ZWaitingReady && game.ZPhase == ZRoundPhase.Break && game.Phase == MatchPhase.Playing)
+                ImGuiSafe.TextColored(game.ZP(me).RoundReady ? Green : ZGold, ReadyPromptText(game, Keybinds.Name(settings.Bind(GameAction.Ready))));
             // Dropped builds near you: what they are and how long they stay (blinking red in their last seconds). Labelled in the
             // world over the weapon when it's on screen (Hud.WorldLabel, within 15 m); listed here when it's near (8 m) but off screen.
             if (me.Alive)

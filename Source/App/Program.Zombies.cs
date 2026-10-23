@@ -440,6 +440,7 @@ public static unsafe partial class Program
     /// <summary>Every frame of input in a match: the interact key's hold state (Zombies), and E at a workbench opens it.</summary>
     private static void ZombiesInput(double now, bool interactPressed)
     {
+        ZombiesSpectateInput(); // out after bleeding out: watch a living teammate
         if (_game.Mode != GameMode.Zombies)
             return;
         _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
@@ -448,6 +449,42 @@ public static unsafe partial class Program
             Ui.OpenBench(_game);
             SetMouseCaptured(false);
         }
+    }
+
+    /// <summary>
+    /// Zombies, bled out (2026-10-23): once the death cam's timed part is over (or clicked away), watch a living teammate
+    /// over the shoulder (<see cref="ZSpectate"/>). Spectate next / previous (Right / Left by default) or Fire / Aim cycle
+    /// through the living, by id. It ends when you're back (the round's end) or the run does.
+    /// </summary>
+    private static void ZombiesSpectateInput()
+    {
+        if (_game.Mode != GameMode.Zombies || _game.Local is not { Alive: false } || _game.Phase != MatchPhase.Playing || _deathMenuAt > 0)
+        {
+            _game.ZSpectateId = byte.MaxValue;
+            return;
+        }
+        var step = 0;
+        if (_mouseCaptured && !Ui.ChatOpen && !Ui.PauseOpen)
+        {
+            if (Pressed(GameAction.SpectateNext) || (Pressed(GameAction.Fire) && !_swallowClick))
+                step = 1;
+            else if (Pressed(GameAction.SpectatePrev) || Pressed(GameAction.Aim))
+                step = -1;
+        }
+        _game.ZSpectateId = ZSpectate.Pick(_game, _game.ZSpectateId, step);
+    }
+
+    /// <summary>The camera while spectating in Zombies (Render): over the watched player's shoulder, looking their way. False when not spectating.</summary>
+    private static bool ZombiesSpectateCamera(out Vector3 eye, out Vector3 fwd)
+    {
+        eye = fwd = default;
+        if (_game.ZSpectateId == byte.MaxValue || _game.Local is not { Alive: false } || !_game.Players.TryGetValue(_game.ZSpectateId, out var t) || !t.Alive)
+            return false;
+        if (_deathCam.Active)
+            _deathCam.Stop(); // (the death cam is over: the spectator camera takes over)
+        eye = ZSpectate.ShoulderEye(t.RenderEye, t.RenderYaw, t.RenderPitch, (o, d, max) => World.Query.Raycast(o, d, max, QueryFilter.All));
+        fwd = World.Forward(t.RenderYaw, Math.Clamp(t.RenderPitch, -1.2f, 1.2f));
+        return true;
     }
 
     /// <summary>The workbench in a run, over the match (Esc or Close goes back to it).</summary>

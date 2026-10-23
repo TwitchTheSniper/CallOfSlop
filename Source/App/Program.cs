@@ -1819,7 +1819,12 @@ public static unsafe partial class Program
             }
             eye = local.Alive ? _game.MannedEye ?? local.RenderEye : GravityFrames.Above(local.RenderPosition, 4f); // (manning a cart: behind its gun)
             fwd = _game.LookDir(_game.LookYaw, local.Alive ? _game.LookPitch : -1.2f);
-            if (!local.Alive && _deathCam.Active)
+            if (!local.Alive && ZombiesSpectateCamera(out var spEye, out var spFwd))
+            {
+                eye = spEye; // Zombies, bled out: watching a living teammate (Program.Zombies.cs)
+                fwd = spFwd;
+            }
+            else if (!local.Alive && _deathCam.Active)
             {
                 _deathCam.Track(_game, now, (float)FrameDt); // eases round to face your killer (DeathCam.cs)
                 eye = _deathCam.Eye;

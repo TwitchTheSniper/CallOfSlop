@@ -12,7 +12,7 @@ public enum ZRoundPhase : byte
     /// <summary>Zombies are coming (the round ends when every one of them is dead).</summary>
     Round,
 
-    /// <summary>The short break between rounds.</summary>
+    /// <summary>The break between rounds: ready-up (<see cref="Game.ZWaitingReady"/>), then a short countdown (ZombiesFlow.cs).</summary>
     Break,
 }
 
@@ -89,8 +89,14 @@ public sealed class ZPlayer
     /// <summary>The build in each slot (0-3 guns, 4 the melee weapon), in text form: what the workbench edits and clients assemble.</summary>
     public readonly WeaponBuild?[] Slots = new WeaponBuild?[5];
 
-    /// <summary>Bled out: comes back with the start gear next round.</summary>
+    /// <summary>Bled out: comes back with the start gear when the round ends.</summary>
     public bool NeedsStartGear = true;
+
+    /// <summary>
+    /// Ready-up between rounds (ZombiesFlow.cs): this player pressed Ready for the next round; and whether they're one of
+    /// the people the break waits for (alive, not a bot). Server-owned, mirrored to clients in <see cref="Msg.ZWorld"/>.
+    /// </summary>
+    public bool RoundReady, ReadyVoter;
 
     public bool Spawned;
     public int Kills, Headshots, Downs, Revives;
@@ -245,6 +251,8 @@ public sealed partial class Game
         ZPhase = ZRoundPhase.Waiting;
         ZPhaseLeft = 0;
         ZRemaining = 0;
+        ZWaitingReady = false;
+        _zForceRound = false;
         ZPower = false;
         BoxState = ZBoxState.Idle;
         BoxBuild = -1;
@@ -294,6 +302,9 @@ public sealed partial class Game
 
         switch (ZPhase)
         {
+            case ZRoundPhase.Break when ZWaitingReady:
+                TickReadyUp(now); // everyone ready (or the fallback, or the host's force start): the short countdown (ZombiesFlow.cs)
+                break;
             case ZRoundPhase.Waiting or ZRoundPhase.Break when now >= _zPhaseUntil:
                 BeginRound(ZRound + 1, now);
                 break;
@@ -303,10 +314,12 @@ public sealed partial class Game
                     EndRound(now);
                 break;
         }
-        ZPhaseLeft = ZPhase == ZRoundPhase.Round ? 0 : Math.Max(0, _zPhaseUntil - now);
+        ZPhaseLeft = ZPhase == ZRoundPhase.Round ? 0 : ZWaitingReady ? ReadyFallbackLeft(now) : Math.Max(0, _zPhaseUntil - now);
         ZRemaining = _zToSpawn + AliveZombies;
 
         TickHorde(zm, now); // ZombieAI.cs
+        foreach (var zpl in ZPlayers.Values)
+            zpl.BeingRevived = 0; // set again by whoever is reviving them this tick: crawling out of reach, or the reviver letting go, clears it
         foreach (var p in Players.Values.OrderBy(p => p.Id))
             TickZPlayer(p, ZP(p), zm, now);
         TickBox(zm, now);
@@ -330,6 +343,8 @@ public sealed partial class Game
     {
         ZRound = round;
         ZPhase = ZRoundPhase.Round;
+        ZWaitingReady = false;
+        _zForceRound = false;
         _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0)));
         _zNextSpawn = now + 1.0;
         _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
@@ -338,7 +353,7 @@ public sealed partial class Game
             ZP(p).RepairPointsThisRound = 0;
             if (!p.Alive && !(ZHostSitsOut && p.Id == LocalId))
             {
-                p.RespawnAt = now; // bled out last round (or joined late): back in with the start gear
+                p.RespawnAt = now; // bled out during the break (or joined late): back in with the start gear (bleeding out in a round: back at its end, EndRound)
                 p.WantsRespawn = true;
             }
         }
@@ -349,7 +364,10 @@ public sealed partial class Game
     private void EndRound(double now)
     {
         ZPhase = ZRoundPhase.Break;
-        _zPhaseUntil = now + ZRules.BreakSeconds;
+        RespawnAtRoundEnd(now); // the dead come back now, with the whole break to rebuild (ZombiesFlow.cs)
+        if (BeginReadyUp(now)) // the next round waits for everyone's Ready (ZombiesFlow.cs)
+            return;
+        _zPhaseUntil = now + ZRules.BreakSeconds; // ready-up off, or nobody to wait for (a bots-only run)
         ModeEvent($"Round {ZRound} survived. Next round in {ZRules.BreakSeconds:0} seconds.", Sfx.ReconBeep);
     }
 
@@ -559,6 +577,8 @@ public sealed partial class Game
                 break;
             }
             case ZUseKind.Repair:
+                zp.Reviving = byte.MaxValue; // (moved off a revive: it starts again from nothing)
+                zp.ReviveProgress = 0;
                 if (now >= zp.RepairNext && ZBoards[u.Index] < zm.Windows[u.Index].Boards)
                 {
                     zp.RepairNext = now + ZRules.RepairSeconds;
@@ -572,8 +592,12 @@ public sealed partial class Game
                 }
                 break;
             case ZUseKind.Workbench:
+                zp.Reviving = byte.MaxValue;
+                zp.ReviveProgress = 0;
                 break; // the client opens the workbench itself; its changes come back in ZBench
             default:
+                zp.Reviving = byte.MaxValue; // the downed player crawled out of reach: the revive is interrupted
+                zp.ReviveProgress = 0;
                 if (!zp.UseDone && now - zp.UseSince >= ZRules.BuyHoldSeconds)
                 {
                     zp.UseDone = true;
@@ -687,11 +711,13 @@ public sealed partial class Game
         p.Alive = false;
         p.Health = 0;
         p.Deaths++;
-        p.RespawnAt = double.MaxValue; // back at the start of the next round (BeginRound)
+        p.RespawnAt = double.MaxValue; // back when the round ends (EndRound; during the break: when the next one starts)
         p.WantsRespawn = false;
+        zp.RoundReady = false;
+        var when = ZPhase == ZRoundPhase.Round ? "when this round ends" : "when the next round starts";
         ModeEvent(dropped > 0
-            ? $"{p.Name} bled out. They'll be back next round; their {(dropped == 1 ? "weapon is" : $"{dropped} weapons are")} on the floor where they went down for {ZRules.BuildDropSeconds / 60:0.#} minutes."
-            : $"{p.Name} bled out. They'll be back next round.", Sfx.Death);
+            ? $"{p.Name} bled out. They'll be back {when}; their {(dropped == 1 ? "weapon is" : $"{dropped} weapons are")} on the floor where they went down for {ZRules.BuildDropSeconds / 60:0.#} minutes."
+            : $"{p.Name} bled out. They'll be back {when}.", Sfx.Death);
     }
 
     // ---- The interact key ----------------------------------------------------------------------------
