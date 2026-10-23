@@ -48,7 +48,17 @@ public static partial class SelfTest
                 {
                     // TEMP diagnostics: building nav points near the rooms bots can't reach, and what blocks a body there.
                     var at = m.Name == "Paris Street" ? new Vector3(10.8f, 0.1f, -13.1f) : new Vector3(-39.9f, 0.1f, -18.2f);
-                    foreach (var w in m.BuildingNavPoints.Where(w => MathF.Abs(w.Y - at.Y) < 0.5f && SlopeFlat(w - at) < 3.5f).Take(8))
+                    if (m.Name == "Commercial Street")
+                        foreach (var (la, lb) in m.NavLinks.Where(l => SlopeFlat(l.B - new Vector3(30f, 3.3f, 13f)) < 5f))
+                        {
+                            var ia = Array.FindIndex(nav.Nodes, q => Vector3.Distance(q, la) < 0.3f);
+                            string Edges(int n) => n < 0 ? "-" : string.Join(" ", Enumerable.Range(nav.EdgeStart[n], nav.EdgeStart[n + 1] - nav.EdgeStart[n]).Select(e => FormattableString.Invariant($"({nav.Nodes[nav.EdgeTo[e]].X:0.0},{nav.Nodes[nav.EdgeTo[e]].Y:0.0},{nav.Nodes[nav.EdgeTo[e]].Z:0.0})f{nav.EdgeFlags[e]}")));
+                            var into = ia < 0 ? "-" : string.Join(" ", Enumerable.Range(0, nav.Nodes.Length).Where(q => Enumerable.Range(nav.EdgeStart[q], nav.EdgeStart[q + 1] - nav.EdgeStart[q]).Any(e => nav.EdgeTo[e] == ia)).Select(q => FormattableString.Invariant($"({nav.Nodes[q].X:0.0},{nav.Nodes[q].Y:0.0},{nav.Nodes[q].Z:0.0})")));
+                            stairNotes.Add(FormattableString.Invariant($"Pub10 stair foot ({la.X:0.00},{la.Y:0.00},{la.Z:0.00}) node {ia} out {Edges(ia)} in {into}"));
+                            foreach (var r in rejects.Where(r => r.Map == m.Name && (Vector3.Distance(r.From, la) < 0.5f || Vector3.Distance(r.To, la) < 0.5f)).Take(6))
+                                stairNotes.Add(FormattableString.Invariant($"  dropped ({r.From.X:0.00},{r.From.Y:0.00},{r.From.Z:0.00}) -> ({r.To.X:0.00},{r.To.Y:0.00},{r.To.Z:0.00}) f{r.Flags} {(r.Sprint ? "sprint" : "walk")} ended ({r.End.X:0.00},{r.End.Y:0.00},{r.End.Z:0.00})"));
+                        }
+                    foreach (var w in m.BuildingNavPoints.Where(w => MathF.Abs(w.Y - at.Y) < 0.5f && SlopeFlat(w - at) < 6f).Take(10))
                     {
                         var hasNode = nav.Nodes.Any(q => Vector3.Distance(q, w) < 0.3f);
                         stairNotes.Add(FormattableString.Invariant($"{m.Name} nav point ({w.X:0.00},{w.Y:0.00},{w.Z:0.00}) node {hasNode} listed {m.Waypoints.Contains(w)}: {NavGraph.DebugBlock(m, w)}"));
