@@ -48,7 +48,7 @@ public sealed partial class Map
             foreach (var (look, foundation) in boxes)
             {
                 _splitScratch.Clear();
-                total += foundation ? 1 : StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch);
+                total += foundation ? 1 : StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch, !plan.StairBoxes.Contains(look.Box));
             }
             if (total <= r.MaxPerBuilding)
                 break;
@@ -58,7 +58,7 @@ public sealed partial class Map
         foreach (var (look, foundation) in boxes)
         {
             _splitScratch.Clear();
-            count += foundation ? 1 : StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch);
+            count += foundation ? 1 : StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch, !plan.StairBoxes.Contains(look.Box));
         }
         if (PendingChunks + count > r.MaxPerMap)
         {
@@ -78,7 +78,7 @@ public sealed partial class Map
             if (foundation)
                 _splitScratch.Add(look.Box);
             else
-                StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch);
+                StructureChunker.Split(look.Box, r, baseY, scale, _splitScratch, !plan.StairBoxes.Contains(look.Box)); // steps: never in layers
             var shape = StructureChunker.Classify(look.Box);
             foreach (var piece in _splitScratch)
             {

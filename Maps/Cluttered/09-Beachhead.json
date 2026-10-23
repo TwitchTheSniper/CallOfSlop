@@ -613,7 +613,7 @@
     {"op": "Container", "x": -13.0, "z": -2.5, "alongX": true, "color": [0.45, 0.3, 0.18], "open": true},
     {"op": "Container", "x": -21.0, "z": -2.0, "alongX": true, "color": [0.3, 0.34, 0.38], "y": 2.6},
     {"op": "Container", "x": -5.5, "z": -1.0, "alongX": false, "color": [0.52, 0.48, 0.34]},
-    {"op": "Container", "x": -27.0, "z": -4.0, "alongX": false, "color": [0.45, 0.3, 0.18]},
+    {"op": "Container", "x": -26.0, "z": -4.0, "alongX": false, "color": [0.45, 0.3, 0.18]},
     {"op": "Tank", "x": 48.0, "z": -15.0, "r": 2.3, "h": 4.2, "color": [0.55, 0.58, 0.5]},
     {"op": "Tank", "x": 55.0, "z": -15.5, "r": 2.3, "h": 4.2, "color": [0.55, 0.58, 0.5]},
     {"op": "Prop", "name": "Old Town Fuel Pump", "x": 51.5, "z": -19.4},
