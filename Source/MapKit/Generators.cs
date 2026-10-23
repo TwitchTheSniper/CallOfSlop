@@ -160,7 +160,8 @@ public static class MapKitCli
     {
         if (!File.Exists(committedPath))
             return "new (no committed file)";
-        var committed = File.ReadAllText(committedPath);
+        // Git may check the file out with CRLF (Windows, `* text=auto`); the kit writes LF, as git stores it.
+        var committed = File.ReadAllText(committedPath).Replace("\r\n", "\n");
         if (committed == generated)
             return "identical";
         try

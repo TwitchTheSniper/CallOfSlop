@@ -36,7 +36,7 @@ public static partial class SelfTest
             if (!File.Exists(path))
                 continue;
             files++;
-            var text = File.ReadAllText(path);
+            var text = File.ReadAllText(path).Replace("\r\n", "\n"); // a CRLF checkout (Windows) is the same file to git
             JNode tree;
             try
             {
