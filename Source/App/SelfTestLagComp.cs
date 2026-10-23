@@ -124,7 +124,7 @@ public static partial class SelfTest
         game.SelfTestPlace(bot, home, 0);
         game.SelfTestPlace(target, centre, MathF.PI);
 
-        int shots = 0, hits = 0, dHold = 0, dReload = 0, dNoTarget = 0, dMode = 0, dMulti = 0, dSide = 0;
+        int shots = 0, hits = 0, dHold = 0, dReload = 0, dNoTarget = 0, dMode = 0, dMulti = 0, dSide = 0, dNone = 0;
         const int warm = World.TickRate, run = 3 * World.TickRate;
         for (var i = 0; i < warm + run; i++)
         {
@@ -137,6 +137,13 @@ public static partial class SelfTest
             target.ImmuneUntil = 0;
             if (Vector3.Distance(bot.Position, home) > 0.5f)
                 bot.Teleport(home); // the bot holds its spot (fixed range)
+            foreach (var other in game.Players.Values)
+                if (other != bot && other != target && other.Alive)
+                {
+                    other.Alive = false; // only these two: the host's own player (wherever it spawned) stays out of it
+                    other.Health = 0;
+                    other.WantsRespawn = false;
+                }
             var ammo = bot.Bot!.Ammo;
             now += World.TickDt;
             game.Update(now, World.TickDt);
@@ -145,6 +152,7 @@ public static partial class SelfTest
             if (bot.Bot.HoldFire) dHold++;
             if (bot.Bot.ReloadUntil > 0) dReload++;
             if (bot.Bot.Target != target.Id) dNoTarget++;
+            if (bot.Bot.Target == byte.MaxValue) dNone++;
             if (bot.Bot.Mode != BotMode.Engage) dMode++;
             if (bot.Bot.Ammo < ammo - 1) dMulti++;
             if (bot.Weapon != bot.Primary) dSide++;
@@ -155,7 +163,7 @@ public static partial class SelfTest
                     hits++;
             }
         }
-        DuelInfo += $" | ticks: hold fire {dHold}, reloading {dReload}, other target {dNoTarget}, not engaging {dMode}, multi-shot {dMulti}, off primary {dSide}; mode {bot.Bot!.Mode}, weapon {bot.Weapon}, deaths {bot.Deaths}, stuck kills {game.BotStuckKills}, ammo {bot.Bot.Ammo}, alive {bot.Alive}, log {game.LastStuckLog}";
+        DuelInfo += $" | ticks: hold fire {dHold}, reloading {dReload}, other target {dNoTarget} (none {dNone}), not engaging {dMode}, multi-shot {dMulti}, off primary {dSide}; mode {bot.Bot!.Mode}, weapon {bot.Weapon}, deaths {bot.Deaths}, stuck kills {game.BotStuckKills}, ammo {bot.Bot.Ammo}, alive {bot.Alive}, log {game.LastStuckLog}";
         return (shots, hits);
     }
 
