@@ -82,7 +82,7 @@ When you **host or join** a game you land in the **lobby room** first, a menu in
 
 ### Game modes
 
-Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode but Zombies has the same 10-minute limit.
+Pick the mode on the Single player or Host screen. It stays the same from match to match (the map vote only changes the map), and the server browser, the match bar and the results screen show it. Every mode but Zombies, Co-op and Test Range has the same 10-minute limit.
 
 | Mode | Rules |
 | --- | --- |
@@ -93,6 +93,7 @@ Pick the mode on the Single player or Host screen. It stays the same from match 
 | **Gun Game** | Everyone starts with the same gun, the first one in the unlock order, whatever they've unlocked. Each kill moves you to the next gun; a **melee kill also sets the victim back one gun**. The first kill with the last gun wins (a melee kill on the last gun doesn't count). Loadouts, grenades, perks and kill streaks are off. The ladder is 20 guns, evenly spaced through the 50-odd weapons in unlock order. |
 | **Zombies** | Co-op for 1-4 against endless rounds of zombies (World at War style), only on maps with a Zombies layout (today the dev map **Zombies Test**). No time limit: the run ends when everyone is down. See "Zombies" below. |
 | **Co-op** | A squad of 1-4 (up to 6 with bots) plays a **mission** against waves of enemy soldiers, only on maps with a mission (today **World Tour: Silo**, mission *Silo Breach*). Objectives in order (kill, blow things up, hold a point, extract); a wipe restarts the objective at its checkpoint. No time limit. See "Co-op (PvE)" below. |
+| **Test Range** | Free-for-all with **no win condition**: no score limit, no time limit, no results screen, no map vote. Bots respawn forever and you keep shooting them on the same map until the host changes it from the menu (or leaves). The scoreboard still counts kills and deaths; the match bar says **TEST RANGE**. Your loadout, perks, grenades and kill streaks apply, and kill XP and unlocks count as usual (there's no end-of-match XP, since the match never ends). Plays on every normal map, single player or hosted. |
 
 Team modes colour everyone blue or red (players, scoreboard, kill card). King of the Hill is played by teams. The HUD shows the hill's holder, its distance and direction and when it moves; the state of both flags; or your Gun Game weapon, the next one and the leader. The scoreboard groups players by team (or by gun level). If a player leaves and the teams end up two apart, a bot switches sides.
 

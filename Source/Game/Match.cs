@@ -153,6 +153,8 @@ public sealed partial class Game
 
     internal void EndMatch(Player? winner, string result, double now, byte? winnerCode = null)
     {
+        if (Module.Endless)
+            return; // Test Range: nothing ends the match (no results, no map vote, no return to the lobby, no map change)
         Phase = MatchPhase.Ended;
         Winner = winnerCode ?? winner?.Id ?? NoWinner; // winnerCode: TeamWinBase + team for a team win
         MatchResult = result;

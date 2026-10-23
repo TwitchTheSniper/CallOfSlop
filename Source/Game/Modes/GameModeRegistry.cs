@@ -17,6 +17,7 @@ public static class GameModeRegistry
         () => new GunGameModule(),
         () => new ZombiesModule(),
         () => new CoopModule(), // co-op PvE missions (docs/pve/DESIGN.md)
+        () => new TestRangeModule(), // free-for-all with no win condition: the match never ends
         () => new LastManStandingModule(), // the template mode (Dev-only): Source/Game/Modes/README.md
     ];
 

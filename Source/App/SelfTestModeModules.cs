@@ -148,7 +148,7 @@ public static partial class SelfTest
             (GameMode.FreeForAll, 0, typeof(FreeForAllModule)), (GameMode.TeamDeathmatch, 1, typeof(TeamDeathmatchModule)),
             (GameMode.KingOfTheHill, 2, typeof(KingOfTheHillModule)), (GameMode.CaptureTheFlag, 3, typeof(CaptureTheFlagModule)),
             (GameMode.GunGame, 4, typeof(GunGameModule)), (GameMode.Zombies, 5, typeof(ZombiesModule)), (GameMode.LastManStanding, 6, typeof(LastManStandingModule)),
-            (GameMode.Coop, 7, typeof(CoopModule)),
+            (GameMode.Coop, 7, typeof(CoopModule)), (GameMode.TestRange, 8, typeof(TestRangeModule)),
         };
         foreach (var (id, wire, type) in expected)
         {
@@ -159,7 +159,7 @@ public static partial class SelfTest
         }
         if (all.Select(m => m.Id).Distinct().Count() != all.Count)
             Fail("two modules share a mode id");
-        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop }))
+        if (!GameModes.Every.SequenceEqual(new[] { GameMode.FreeForAll, GameMode.TeamDeathmatch, GameMode.KingOfTheHill, GameMode.CaptureTheFlag, GameMode.GunGame, GameMode.Zombies, GameMode.Coop, GameMode.TestRange }))
             Fail($"GameModes.Every changed: {string.Join(",", GameModes.Every)}");
         if (GameModeRegistry.Get((GameMode)200).Id != GameMode.FreeForAll || GameModeRegistry.IsKnown((GameMode)200))
             Fail("an unknown mode byte didn't fall back to free-for-all");
@@ -168,14 +168,15 @@ public static partial class SelfTest
             foreach (var text in new[] { m.Name, m.Short, m.Rules(), m.Rules(17), m.Description, m.MapWarning, m.ScoreUnit, m.ScoreboardColumns.First, m.ScoreboardColumns.Second })
                 if (text.Any(c => c > 126 || c < 32))
                     Fail($"{m.Name}: non-ASCII text '{text}'");
-        // Where modes show up: random map / a plain map -> the five PvP modes; Zombies Test -> Zombies and the Dev template too.
+        // Where modes show up: random map / a plain map -> the five PvP modes and Test Range; Zombies Test -> Zombies and the Dev template too.
         var plain = GameModes.ForMap(null);
         var courtyard = GameModes.ForMap(Maps.All[0]);
         var ztest = ZTestMap != null ? GameModes.ForMap(ZTestMap) : Array.Empty<GameMode>();
         ModeNote($"random map: {string.Join(",", plain.Select(GameModes.Short))}; {Maps.All[0].Name}: {string.Join(",", courtyard.Select(GameModes.Short))}; Zombies Test: {string.Join(",", ztest.Select(GameModes.Short))}");
-        if (!plain.SequenceEqual(GameModes.All) || !courtyard.SequenceEqual(GameModes.All))
-            Fail("a plain map should offer exactly the five PvP modes");
-        if (ZTestMap != null && (!ztest.Contains(GameMode.Zombies) || !ztest.Contains(GameMode.LastManStanding) || ztest.Length != GameModes.All.Length + 2))
+        var plainWant = GameModes.All.Append(GameMode.TestRange).ToArray();
+        if (!plain.SequenceEqual(plainWant) || !courtyard.SequenceEqual(plainWant))
+            Fail("a plain map should offer exactly the five PvP modes and Test Range");
+        if (ZTestMap != null && (!ztest.Contains(GameMode.Zombies) || !ztest.Contains(GameMode.LastManStanding) || ztest.Length != plainWant.Length + 2))
             Fail("Zombies Test should offer Zombies and the Dev-only template on top of the PvP modes");
         if (!GameModes.Fits(GameMode.LastManStanding, Maps.All[0]) || GameModes.Fits(GameMode.Zombies, Maps.All[0]) || (ZTestMap != null && !GameModes.Fits(GameMode.Zombies, ZTestMap)))
             Fail("Fits is wrong for Zombies or the template");
@@ -200,6 +201,7 @@ public static partial class SelfTest
             (GameMode.Zombies, false, false, false, null, true, false, false, 0, "kills"),
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
             (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
+            (GameMode.TestRange, false, true, true, null, false, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {

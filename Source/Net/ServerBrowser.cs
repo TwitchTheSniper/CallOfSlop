@@ -74,7 +74,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 38: the weapon workbench's barrels and Chain fire (docs/zombies/WEAPON-BUILDER.md): barrels fit every receiver (the
     //     receiver sizes them), and a build text's style field is honoured again (volley / rotate = the Chain fire box).
     //     The text format is unchanged, but servers and clients must agree on what a build fires like and what fits.
-    public const byte ProtocolVersion = 38;
+    // 39: the Test Range mode (Source/Game/Modes/TestRange): game mode 8, free-for-all that never ends (an older build would
+    //     show it as free-for-all with a score limit and a clock that never apply).
+    public const byte ProtocolVersion = 39;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
