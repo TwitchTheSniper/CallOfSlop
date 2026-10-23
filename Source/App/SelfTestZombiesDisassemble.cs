@@ -48,6 +48,20 @@ public static partial class SelfTest
 
     private static void CheckZombieDisassemble(ZombiesMap zm, ref double now)
     {
+        var first = ZNotes.Count;
+        try
+        {
+            CheckZombieDisassembleBody(zm, ref now);
+        }
+        finally
+        {
+            // Its own annotation (the Zombies results one is too long to show these).
+            Line("::warning title=Zombies disassemble (results)::" + string.Join("%0A", ZNotes.Skip(first).Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+        }
+    }
+
+    private static void CheckZombieDisassembleBody(ZombiesMap zm, ref double now)
+    {
         var guns = StandardBuilds.All.Where(s => !s.IsMelee).ToList();
         var multi = guns.OrderByDescending(s => s.Build().Receivers.Count).ThenBy(s => s.Name).First();
         var wall = guns.FirstOrDefault(s => s.Sources.Contains("wall") && s != multi);
@@ -200,10 +214,8 @@ public static partial class SelfTest
                   + $"hands on slot {c.ActiveSlot + 1} like the server {handsOk}, melee cleared {meleeOk}; joiner: {sync.Count} message(s), slot 1 empty {joinerOk}; protocol {ServerInfo.ProtocolVersion}");
             if (!held || why != null || !slotOk || !partsOk || !handsOk || !meleeOk)
                 Fail("disassembling in co-op should leave the client with the server's slots (empty), loose parts and weapon in hand");
-            if (!joinerOk)
-                Fail("a joiner should see a disassembled slot as empty");
-            if (ServerInfo.ProtocolVersion < 41)
-                Fail("disassembly changed the Zombies messages: the protocol should be 41 or later");
+            if (!joinerOk || ServerInfo.ProtocolVersion < 41)
+                Fail("a joiner should see a disassembled slot as empty (protocol 41 or later)");
         }
     }
 }
