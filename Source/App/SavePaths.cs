@@ -29,6 +29,9 @@ public static class SavePaths
     /// <summary>The player's own files (copied over by the migration). Everything else next to the game is game data.</summary>
     public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", "audio_mix.json", AppearanceStore.FileName];
 
+    // Also in the save folder but not save files (never migrated; safe to delete): update_check.txt (UpdateCache.cs) and
+    // update.log (what the updater's cleanup removed, UpdateCleanup.cs). The package script still strips them.
+
     /// <summary>The player's own folders (copied over file by file).</summary>
     public static readonly string[] SaveFolders = ["AudioMixes"];
 

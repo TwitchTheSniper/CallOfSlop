@@ -53,6 +53,12 @@ Use this if the automatic copy didn't find your old build, for example because i
 
 > Do this before playing much on the new build. Whatever you copy in replaces the new build's progress.
 
+Not save files (you don't need to copy them): `update_check.txt` (when the game last asked GitHub for updates) and `update.log` (what the updater removed). Both live in the save folder and are safe to delete.
+
+### Old versions
+
+Each update unzips into its own folder (`CallOfSlop-<version>`) with a small `.callofslop-build` marker in it. Once the new build reaches its main menu it removes older versions **that the updater installed**, keeping the previous one for rollback (**Settings > Player > Updates** to change that, or **Clean up old versions now** to see the list first). Folders you unzipped yourself, folders with `portable.txt` or save files in them, and anything else are never deleted. If you kept saves in an old portable build, copy them out before you delete that folder.
+
 ### The Legacy map pack
 
 The **Classic**, **Collision Point** and **High Ground** map packs are now one pack called **Legacy** (`Maps/Legacy`, 36 maps, same maps and same names: Proto Box to Military Base, then Blueprint to Confluence, then Gravel Pit to Alpine Pass). A `settings.txt` that still picks random maps from one of the old packs switches to Legacy on its own the first time it loads. If you unzipped the new build **over** an old one, the leftover `Maps\Classic`, `Maps\CollisionPoint` and `Maps\HighGround` folders are harmless: the game sees that their maps are the same as Legacy's and ignores them (`callofslop.log` says so), but you can delete them. A map you edited in one of those folders still loads, as its own pack. Online, these maps are the same maps as before: hosts and joiners on either layout can play together.

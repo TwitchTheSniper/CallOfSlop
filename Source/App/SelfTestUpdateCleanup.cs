@@ -43,8 +43,12 @@ public static partial class SelfTest
         var game = Path.Combine(dir, "CallOfSlop");
         Directory.CreateDirectory(Path.Combine(game, "Maps", "Legacy"));
         if (exe)
+        {
             File.WriteAllText(Path.Combine(game, "CallOfSlop.exe"), "fake exe " + name);
-        File.WriteAllText(Path.Combine(game, "CallOfSlop.dll"), new string('x', 3000));
+            File.WriteAllText(Path.Combine(game, "CallOfSlop.dll"), new string('x', 3000)); // (a dll alone counts as a game off Windows)
+        }
+        else
+            File.WriteAllText(Path.Combine(game, "data.bin"), new string('x', 3000));
         File.WriteAllText(Path.Combine(game, "Maps", "Legacy", "a.json"), "{}");
         if (version != null)
             BuildMarker.Write(dir, BuildInfo.ParseRelease(version)!, markerFolder ?? (partial ? name[..^UpdateCleanup.PartialSuffix.Length] : name), partial, UcInstalled,
