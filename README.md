@@ -173,9 +173,11 @@ Movement perks run inside the shared movement code (client prediction and the se
 
 **Last Stand in detail.** Once per life, the first bullet or blast that would kill you leaves you on 1 HP and raises a shield that blocks the **next 3 bullet hits** completely. One shot counts as one hit, so a shotgun blast uses a single charge however many pellets land, and every turret or drone bullet is a hit. **Melee and explosions go straight through the shield** and don't use charges: a knife or a grenade finishes off someone on Last Stand. Last Stand never saves you from a melee hit at all: melee kills in one hit. The shield lasts until its 3 charges are used or **8 seconds** pass, whichever comes first (so it can't carry over once health regeneration has refilled you). Three pips next to your health bar show the charges left. Everyone else sees a faint blue shell around a shielded player that flares each time it blocks a hit, with its own zap sound. Bots with Last Stand get exactly the same thing.
 
-### Health regeneration
+### Health and regeneration
 
-Health comes back on its own once you're out of the fight: **5 seconds** after you last took or dealt damage, you regenerate **8 HP a second** up to full (about 12 s from 1 HP to 100). Taking a hit, or landing one (a hit a Last Stand shield blocks counts too), restarts the 5 seconds; firing and missing doesn't. The health bar pulses and glows green while you regenerate. The server runs it, so it's the same for people and bots, in every game mode (including Gun Game and solo test matches), and dead players don't regenerate.
+Players and bots have **120 health** (it was 100; the bump makes most guns take one more body shot, so fights last a little longer). Shots to kill at full damage range, body / head: BR-1 Prototype 5 / 3 (was 4 / 2), Vanguard AR 5 / 3 (unchanged), Bulldog 4 / 2 (was 3 / 2), Hornet SMG 6 / 3 (was 5 / 3), Marksman M14 3 / 2 (unchanged), Longbow DMR 3 / 2 (was 2 / 1), Needle Bolt-Action 2 / 1 (unchanged). The weapon select shows the numbers for every gun. Things that were built to kill in one go still do: melee (150), the Old Faithful Musket (204 now, one body shot out to about 75 m as before), the Breacher Pump up close (14 damage a pellet now, 9 pellets), the Leviathan .50 and Railspike, and the Frag and Impact grenades (their damage against players went up by the same 20%, so the kill radius is unchanged: about 4.5 m and 2.5 m; against props, machines, zombies and doors they hit exactly as before). Stim Shot scales too (48 back, then 18 a second for 4 s). Bot retreat thresholds and the HUD's red low-health number are percentages of max health.
+
+Health comes back on its own once you're out of the fight: **5 seconds** after you last took or dealt damage (2.5 s with Quick Fix), you start regenerating at **12 HP a second**, speeding up by 4 HP/s every second to **24 HP a second** after 3 s, up to full: about **5.7 s from 1 HP to 120** once it starts (it used to be 8 HP a second flat, about 12 s from 1 to 100). Taking a hit, or landing one (a hit a Last Stand shield blocks counts too), restarts the 5 seconds; firing and missing doesn't. The health bar pulses and glows green while you regenerate. The server runs it, so it's the same for people and bots, in every game mode (including Gun Game and solo test matches), and dead players don't regenerate.
 
 ### Blood
 
@@ -277,7 +279,7 @@ So a building's plaster interior walls (25 cm + linings) stop pistols and SMGs b
 
 ### Melee
 
-Press **V** for a quick rifle-butt. It reaches about 2.4 m and **kills in one hit** (150 damage against 100 health), from the front or behind. Entrenched (bullets only) and Flak Jacket (explosions only) don't reduce it, and Last Stand doesn't save you from it. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Zombies and breakable props still take 55 damage from it (a built Zombies melee weapon has its own stats). Bots use it when you stay right up close to them: they need a moment in reach first (0.6 s on Easy, 0.35 s on Normal, 0.2 s on Hard, 0.18 s on Insane), so running past one isn't instant death.
+Press **V** for a quick rifle-butt. It reaches about 2.4 m and **kills in one hit** (150 damage against 120 health), from the front or behind. Entrenched (bullets only) and Flak Jacket (explosions only) don't reduce it, and Last Stand doesn't save you from it. It cancels a reload, has a 0.8 s cooldown, and you can't fire for a moment after swinging. It's resolved on the server with the same lag compensation as shots. Zombies and breakable props still take 55 damage from it (a built Zombies melee weapon has its own stats). Bots use it when you stay right up close to them: they need a moment in reach first (0.6 s on Easy, 0.35 s on Normal, 0.2 s on Hard, 0.18 s on Insane), so running past one isn't instant death.
 
 ### Bots
 
@@ -563,8 +565,8 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 
 | Item | Unlock | What it does |
 | --- | --- | --- |
-| Frag Grenade | Level 3 | 2.5 s fuse, bounces. Up to 200 damage, kills within about 4 m, hurts out to 9 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
-| Impact Grenade | Level 8 | Explodes on first contact. Up to 110 damage within 4.5 m. |
+| Frag Grenade | Level 3 | 2.5 s fuse, bounces. Up to 240 damage to players, kills within about 4.5 m, hurts out to 9 m. Your own frag hurts you at half damage, and going prone cuts blast damage by 30%. |
+| Impact Grenade | Level 8 | Explodes on first contact. Up to 204 damage to players, kills within about 2.5 m, hurts out to 6 m. |
 | Smoke Grenade | Level 13 | Pops a 5 m cloud for 14 s where it lands (1.2 s after the throw, or on landing if it's still in the air then). Blocks vision, and bots can't see through it. |
 | **Recon Pulse** (equipment) | Level 5 | Throw it anywhere; it sticks where it lands. For 12 s, every enemy within 18 m of it shows to you through walls as a silhouette in their team colour (orange in free-for-all modes); teammates are never revealed. It beeps once a second, so enemies can hear where it is. |
 | **Flashbang** (equipment, 2) | Level 10 | Goes off 1.4 s after the throw. Anyone facing it within 14 m is whited out for up to 1.6 s and deafened (sounds muffled, a soft ring), then sight fades back over up to 2.6 s. Looking away cuts it to a fifth, walls block it, your own flash hits you at half. The white never flickers and you can always move and shoot. Flashed bots lose their target. |
@@ -574,7 +576,7 @@ The loadout has a **Grenade** slot (2 per life) and an **Equipment** slot (1 per
 | **Trophy System** (equipment) | Level 24 | Put it down in front of you. It shoots down up to 3 enemy grenades or thrown gadgets within 7 m (lamps show the charges left), then breaks. 60 health; streaks and exploding props aren't stopped. |
 | **Deployable Cover** (equipment) | Level 28 | An energy wall 2 m wide and 1.2 m tall, 1.4 m in front of you, for 40 s: crouch behind it, stand to shoot over it. Stops bullets from both sides and grenade blasts until it takes 350 damage (explosives do double). People walk through it. |
 | **Tactical Insertion** (equipment) | Level 32 | Drop a flare at your feet: your next spawn is right there (one at a time; a new one replaces it). Its glow gives it away and enemies can shoot it out (40 health). |
-| **Stim Shot** (equipment) | Level 5 | Inject it at once: 40 health back, then 15 health a second for 4 s with no wait. It also shakes off a stun. |
+| **Stim Shot** (equipment) | Level 5 | Inject it at once: 48 health back, then 18 health a second for 4 s with no wait (a full heal from 10 HP). It also shakes off a stun. |
 
 Counters to the tactical gear: Flak Jacket halves flashes and stuns; turn away from a flash you hear land; shoot devices (enemy devices stop your bullets and take the damage, and their lamps are red, yours green); a grenade or streak blast tears them down; a Trophy System eats Flashbangs, Stuns, Decoys and Motion Sensors too. Devices vanish when the match ends or their owner leaves. Modes without equipment (Gun Game) hand out none. In Zombies, a flash or stun staggers the zombies it catches.
 
@@ -593,6 +595,19 @@ When anyone dies (a player, a bot or a zombie) their blocky body goes limp as a 
 **Close blast kills burst too.** A player, bot or zombie killed by a blast right next to it (the killing hit did 80 damage or more, or 60 more than the health they had left: about the inner quarter of a frag grenade, the inner two fifths of a landmine, a rocket's direct hit) is blown apart instead of falling as a ragdoll: meat and bone plus their torso, head, arms, a hand, legs and boots in their own uniform colours, flung by the blast; a prestige hat flies off on its own and lands on its side. Napalm fire never gibs; a blast at the edge of its reach gives a normal ragdoll. The death camera follows the torso chunk.
 
 Gibs bounce, slide to a stop, lie there for about 15 s and dither out; meat that lands leaves a small blood splat (it counts as a bullet impact, so the **Bullet impacts** setting has to be on). Later blasts throw them about again. Everything is built on every PC from the break or kill message it already gets (the same burst on every screen, no extra traffic), at most 320 pieces exist at once (the oldest go first), and they're drawn in the same instanced call as prop debris and ragdolls. **Settings > Video > Gore:** **Full** (everything), **Reduced** (about half the gibs, no blood), **Off** (animals just poof into feathers or dust; blast kills are ragdolls).
+
+### Destructible buildings
+
+On the **World Tour** maps (and the Dev pack's **Destruction Test**) buildings can be blown apart. Every wall is made of panels about 1 x 1.25 m (door and window openings kept), every floor and roof of 2 x 2 m slabs, and each panel has health by its material (`Materials/destruction.json`):
+
+- **Explosives do the work.** Frag and impact grenades, launcher rockets, kill-streak strikes (mortars, strafe runs, napalm), exploding props (barrels, gas bottles, shell crates) and landmines break the panels in reach that the blast can see (a wall in front shields the one behind). A frag next to a plastered or wooden wall blows a hole in it; brick needs a rocket (or a few frags); concrete takes several rockets or a strike.
+- **Bullets** only chip the weak stuff: wood and plaster give way after a magazine or so, tiles barely notice, brick, concrete and metal don't care. **Melee** knocks through wood and plaster in a few blows.
+- **What's left has to stand on something.** Support runs up from the ground through the panels, and a little way sideways (each material has a reach: plaster about 2.5 m, brick 3.5 m, concrete 4.5 m). Take out the wall under a floor and the floor sags and drops in slabs; take out a storey and what's above comes down. The ground-floor corners of every building are load-bearing (they never break), so a building is never wiped off the map.
+- **Falling slabs hurt.** A piece that comes down on you lands with its weight: a concrete floor slab from a storey up kills, a plaster panel stings. The kill goes to whoever brought it down.
+- Holes are real: bullets, grenades and sight go through them, you can walk and mantle through, decals on broken panels vanish, doors and glass set in a broken wall go with it, and furniture on a fallen floor is gone. Bots find the new ways through holes (and stop walking on floors that fell).
+- Everything is whole again at the start of every match. The host decides what breaks (online it's the same for everyone; a player joining mid-match sees the damage done so far). The host's **Destruction** checkbox (Host page) turns it off; Zombies never breaks buildings.
+
+Map makers switch it on per map (`"destructible": true`, or per building) and can add `DestructibleBox` blocks: see [Maps/README.md](Maps/README.md#buildings) and [Buildings/README.md](Buildings/README.md#destruction).
 
 ### Loadouts and weapons
 

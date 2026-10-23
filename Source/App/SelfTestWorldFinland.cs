@@ -169,7 +169,7 @@ public static partial class SelfTest
         var props = m.PropInstances;
         var solid = props.Count(p => p.Def.IsSolid);
         var buildings = m.PlacedBuildings.Count;
-        var shell = m.PlacedBuildings.Sum(b => b.ShellCount);
+        var shell = m.PlacedBuildings.Sum(b => b.Plan.Shell.Count); // as built (destructible buildings are cut into more chunks: "Destruction")
         var explosive = props.Where(p => p.Def.Breakable is { ExplodeRadius: > 0 }).ToList();
         var o = m.Objectives;
         var line = $"{m.Name}: {bd.Area:0} m2 ({m.Size}), {bd.SegmentCount} outline segments, max {m.MaxPlayers}; terrain {terrain.CountX}x{terrain.CountZ}, "

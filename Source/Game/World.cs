@@ -98,6 +98,7 @@ public static class World
     public static void SetMap(Map map)
     {
         map.RestoreProps(); // a map always starts with its breakable props whole
+        map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
@@ -172,7 +173,26 @@ public static class World
     public const float SprintSpeed = 13.5f; // 2.25x walking (was 9 m/s before protocol 10)
     public const float JumpSpeed = 6f;
     public const float Gravity = 18f;
-    public const int MaxHealth = 100;
+    /// <summary>
+    /// Full health for players and bots (was 100; raised to 120 so fights last a little longer). It rides in the
+    /// snapshot as one byte, so keep it at 255 or less. Zombies have their own health (ZombiesRules).
+    /// </summary>
+    public const int MaxHealth = 120;
+
+    /// <summary>
+    /// One-shot blasts tuned against the old 100 health (explosive props and mines, kill-streak strikes, the Hunter
+    /// Drone and gunship rounds) do this much more to players, so their kill radius stays the same at
+    /// <see cref="MaxHealth"/>. Machines, props, doors and zombies still take the tuned damage. (Frag and Impact grenades
+    /// have their own player and object damage in Throwables.)
+    /// </summary>
+    public const float BlastPlayerScale = MaxHealth / 100f;
+
+    /// <summary>
+    /// <paramref name="percent"/>% of <see cref="MaxHealth"/>, rounded. Health thresholds (bots retreating, the HUD's
+    /// low-health colour) are written as percentages so they follow <see cref="MaxHealth"/>.
+    /// </summary>
+    public static int HealthAt(int percent) => (percent * MaxHealth + 50) / 100;
+
     public const float RespawnDelay = 3f;
 
     // ---- Shooting (per-weapon stats live in Weapons.cs) -------------------------

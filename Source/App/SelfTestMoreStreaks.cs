@@ -136,7 +136,7 @@ public static partial class SelfTest
         game.SelfTestHit(b1, me, 50, false, now, DamageKind.Bullet); // 30 left on the vest: 20 goes through
         var afterBreak = (me.Health, me.Streak.Armor);
         Line($"Ballistic Vests: armour {vest} (enemy {enemyVest}); body shot 30 -> {afterBody}, headshot 20 -> {afterHead}, blast 20 -> {afterBlast}, body 50 -> {afterBreak}");
-        if (vest != KillStreaks.VestArmor || enemyVest != 0 || afterBody != (100, 30) || afterHead != (80, 30) || afterBlast != (60, 30) || afterBreak != (40, 0))
+        if (vest != KillStreaks.VestArmor || enemyVest != 0 || afterBody != (World.MaxHealth, 30) || afterHead != (World.MaxHealth - 20, 30) || afterBlast != (World.MaxHealth - 40, 30) || afterBreak != (World.MaxHealth - 60, 0))
             Fail("Ballistic Vests should soak body-shot bullets only, for the caller (and teammates), not enemies");
 
         // Juggernaut: soaks bullets and blasts (blasts 1.5x), slows you, melee still goes through, breaks and ends.
@@ -158,8 +158,8 @@ public static partial class SelfTest
         game.SelfTestKill(me, b1, Weapons.DefaultPrimary.Id, now); // 1000 damage: the suit soaks 400 of it, the rest kills (and the suit is gone)
         var diedOrHeld = (b1.Alive, b1.Streak.Armor);
         Line($"Juggernaut: shown {jugShown}, bot speed 100 -> {slow} (others {meNormal}); headshot 100 -> {jHead}, blast 100 -> {jBlast}, bullets 200 -> {jBreak}; melee 60 -> {jMelee}; 1000 dmg -> alive/armour {diedOrHeld}");
-        if (!jugShown || slow != (byte)MathF.Round(100 * KillStreaks.JuggernautMove) || meNormal != 100 || jHead != (100, 300) || jBlast != (100, 150)
-            || jBreak != (50, 0, false, false) || jMelee != (40, KillStreaks.JuggernautArmor) || diedOrHeld.Alive || diedOrHeld.Armor != 0)
+        if (!jugShown || slow != (byte)MathF.Round(100 * KillStreaks.JuggernautMove) || meNormal != 100 || jHead != (World.MaxHealth, 300) || jBlast != (World.MaxHealth, 150)
+            || jBreak != (World.MaxHealth - 50, 0, false, false) || jMelee != (World.MaxHealth - 60, KillStreaks.JuggernautArmor) || diedOrHeld.Alive || diedOrHeld.Armor != 0)
             Fail("Juggernaut armour, slowdown or ending is wrong");
 
         // Hunter Drone: finds the nearest enemy, dives and kills; Flak Jacket survives; Cold Blooded hides; shot down.

@@ -65,6 +65,7 @@ public static partial class SelfTest
             Section("Movers", CheckMovers); // moving platforms (SelfTestMovers.cs)
             Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
             Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
+            Section("Destruction", CheckDestruction); // SelfTestDestruction.cs: materials, chunks, damage per material, holes, collapse, falling pieces, replication, reset, budgets, nav
             Section("World: Paris Quarter", CheckWorldParis); // SelfTestWorldParis.cs: the World Tour Paris map (symmetry, building rooms, routes, cost)
             Section("Animated props", CheckAnimatedProps); // SelfTestAnimProps.cs: the "anim" block, Props/Animated and their gallery
             Section("Military props", CheckMilitaryProps); // SelfTestPropsMilitary.cs: Props/Military (fortifications, guns, ammo, tanks, planes, trucks) and the Military Props map
@@ -1028,7 +1029,7 @@ public static partial class SelfTest
         if (Perks.AttackMult(flank, 10, -Vector3.UnitZ, 0, 100, false) < 1.5f || Perks.AttackMult(flank, 10, Vector3.UnitZ, 0, 100, false) != 1f)
             Fail("Flanker back/front check is wrong");
         var opener = new PerkSet(PerkId.None, PerkId.None, PerkId.Opener);
-        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 100, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, 99, false) != 1f)
+        if (Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth, false) < 1.4f || Perks.AttackMult(opener, 10, Vector3.UnitX, 0, World.MaxHealth - 1, false) != 1f)
             Fail("Opener full-health check is wrong");
 
         // ---- Survival perks on the server ----

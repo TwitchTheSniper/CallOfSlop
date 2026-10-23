@@ -701,7 +701,7 @@ public sealed partial class Game
             {
                 if (!victim.Alive || !StreakIsEnemy(owner, victim))
                     continue;
-                var amount = BlastDamage(center, victim.Chest, radius, maxDamage);
+                var amount = BlastDamage(center, victim.Chest, radius, maxDamage) * World.BlastPlayerScale; // same kill radius at 120 health
                 if (victim.Sim.Stance == Stance.Prone)
                     amount *= 0.7f;
                 if ((int)MathF.Round(amount) <= 0)
@@ -716,6 +716,7 @@ public sealed partial class Game
         }
         BlastProps(owner, center, radius, maxDamage, PropDamage.Streak, now); // breakable props (GameProps.cs)
         BlastBuildings(owner, center, radius, maxDamage, PropDamage.Streak, now); // building doors and windows (GameBuildings.cs)
+        BlastStructures(owner, center, radius, maxDamage, StructureHit.Streak, killId, now); // destructible buildings (GameDestruction.cs)
         if (ownerId == LocalId && flags != 0)
             OnOwnShotConfirmed(flags, now);
     }
