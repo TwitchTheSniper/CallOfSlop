@@ -7,6 +7,9 @@ shelters...), plus the Dev map that shows them all (Maps/Dev/PropGallery2.json, 
 Uses the box helpers of gen.py (the starter library's generator). Health values follow the material health guide in
 Props/README.md: glass/paper 5-20, plastic 25-60, wood 40-150, thin metal 60-180, heavy metal 200-400, concrete,
 vehicles and structures unbreakable.
+NOTE (2026-10): the gallery map this script writes is superseded. tools/props/gallery.py now generates every prop gallery map
+from the Props folders, and the "Props" self-test rejects a hand-written one: after running this script, run
+`python3 -I tools/props/gallery.py` to rebuild the map.
 """
 import json, math, os, sys
 
