@@ -341,6 +341,9 @@ public static partial class SelfTest
         Section("Space: vault and bazaar", CheckSpaceVaultBazaar); // SelfTestSpaceVaultBazaar.cs: Space 11 Frostvault (hexagon, turned) and 12 Vesper Strip (bean, mirrored): shape, dressing, outline, objectives, twins, levels, fair walks, a short bot match
         // space-a maps
         Section("Space: shipyard and outpost", CheckSpaceYardAndOutpost); // SelfTestSpaceYard.cs: Space 05 Keelspar Drydock and 06 Regolith Reach: outline, dressing floors, objectives, symmetry, nav reach and fair walks, void links, a short bot match
+        // gravity-maps
+        Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
+        Section("Space: gravity maps", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard (gravity-zone void maps: areas on the nav, fair walks, stands in every gravity, a 12 s bot match)
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

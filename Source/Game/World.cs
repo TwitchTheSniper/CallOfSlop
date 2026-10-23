@@ -101,7 +101,7 @@ public static partial class World
         map.RestoreProps(); // a map always starts with its breakable props whole
         map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
-        GravityFrames.Use(map.PointGravity); // which way is up (Source/Physics/GravityFrames.cs): straight up except on planet maps
+        GravityFrames.Use(map.Gravity); // which way is up (Source/Physics/GravityFrames.cs): straight up except on planet and gravity-zone maps
         _physics = null;
         Ragdolls.Clear(); // bodies belong to the old map (Source/Render/Ragdolls.cs)
         Gibs.Clear(); // and so do the gibs (Source/Props/Gibs.cs)
@@ -316,7 +316,14 @@ public static partial class World
     public static bool CanWalkStraight(Vector3 from, Vector3 to)
     {
         if (GravityFrames.Curved)
-            return CanWalkCurved(from, to); // a planet: along the surface (NavSphere.cs)
+        {
+            if (GravityFrames.Point != null)
+                return CanWalkCurved(from, to); // a planet: along the surface (NavSphere.cs)
+            if (!GravityFrames.PlainUpAt(from) || !GravityFrames.PlainUpAt(to))
+                return CanWalkField(from, to); // a gravity zone with its own up: along the ground there (NavSphere.cs)
+            if (!GravityFrames.PlainUpAlong(from, to))
+                return false; // the line crosses a zone where down is another way: no walking through it
+        }
         var knee = new Vector3(0, 0.5f, 0);
         var chest = new Vector3(0, 1.3f, 0);
         var terrain = Map.TerrainCollision?.Layer(from.Y); // in a cave: its floor

@@ -243,21 +243,73 @@ public readonly struct Obb
 }
 
 /// <summary>
-/// A per-body gravity source. Today one uniform field (straight down, <see cref="World.Gravity"/>); a later gravity system can
-/// return a different vector per zone, and the swept mover takes "up" as the opposite of whatever this returns.
+/// A gravity field: the acceleration, the local "up" and the tangent frame's reference axis at any world position. One
+/// uniform field on ordinary maps (<see cref="UniformGravity.Down"/>), a <see cref="PointGravity"/> on a planet, or a
+/// <see cref="ZonedGravity"/> with several regions (GravityFrames.cs). A field is a pure function of position and the map
+/// data, so host and clients agree on it without anything on the wire.
 /// </summary>
 public interface IGravityField
 {
     /// <summary>Gravity acceleration (m/s²) at a world position.</summary>
     Vector3 GravityAt(Vector3 position);
+
+    /// <summary>The local up at a position (unit length).</summary>
+    Vector3 UpAt(Vector3 position);
+
+    /// <summary>The reference direction the local frame's "north" (yaw 0) is projected from at a position (unit length).</summary>
+    Vector3 AxisAt(Vector3 position);
+
+    /// <summary>How high a position is along its local up: y under plain gravity, the distance from the centre of a point field.</summary>
+    float HeightOf(Vector3 position);
+
+    /// <summary>Fingerprint data: everything that changes where things fall.</summary>
+    void Mix(Action<float> mix);
 }
 
-/// <summary>The same gravity everywhere.</summary>
-public sealed class UniformGravity(Vector3 gravity) : IGravityField
+/// <summary>The same gravity everywhere: <paramref name="gravity"/> is the acceleration vector (strength along its length).</summary>
+public sealed class UniformGravity : IGravityField
 {
-    public Vector3 Gravity { get; } = gravity;
+    public Vector3 Gravity { get; }
+
+    /// <summary>The opposite of the pull (unit length).</summary>
+    public Vector3 Up { get; }
+
+    /// <summary>Acceleration in m/s².</summary>
+    public float Strength { get; }
+
+    /// <summary>The frame's reference axis (unit length; see <see cref="PointGravity.Axis"/>).</summary>
+    public Vector3 Axis { get; }
+
+    public UniformGravity(Vector3 gravity) : this(gravity, default) { }
+
+    /// <summary><paramref name="axis"/> zero: -Z, or +X when the pull runs along Z (so the frame always has a north).</summary>
+    public UniformGravity(Vector3 gravity, Vector3 axis)
+    {
+        Gravity = gravity;
+        Strength = gravity.Length();
+        Up = Strength > 1e-6f ? -gravity / Strength : Vector3.UnitY;
+        if (axis.LengthSquared() < 1e-8f)
+            axis = MathF.Abs(Up.Z) > 0.99f ? Vector3.UnitX : -Vector3.UnitZ;
+        Axis = Vector3.Normalize(axis);
+    }
+
+    /// <summary>Straight down (the game's usual direction), whatever the strength.</summary>
+    public bool StraightDown => Up == Vector3.UnitY;
 
     public Vector3 GravityAt(Vector3 position) => Gravity;
+
+    public Vector3 UpAt(Vector3 position) => Up;
+
+    public Vector3 AxisAt(Vector3 position) => Axis;
+
+    public float HeightOf(Vector3 position) => Vector3.Dot(position, Up); // (exactly position.Y when up is +Y)
+
+    public void Mix(Action<float> mix)
+    {
+        mix(1f); // the kind
+        mix(Gravity.X); mix(Gravity.Y); mix(Gravity.Z);
+        mix(Axis.X); mix(Axis.Y); mix(Axis.Z);
+    }
 
     /// <summary>The game's standard gravity: <see cref="World.Gravity"/> straight down.</summary>
     public static readonly UniformGravity Down = new(new Vector3(0, -World.Gravity, 0));

@@ -1,0 +1,74 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Gravity Warning Beacon",
+ "category": "Space",
+ "description": "A post with an amber beacon marking a gravity change (post only is solid).",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.2,
+    2.7,
+    0.2
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false
+ },
+ "parts": [
+  {
+   "size": [
+    0.5,
+    0.15,
+    0.5
+   ],
+   "offset": [
+    0,
+    0.075,
+    0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    2.2,
+    0.12
+   ],
+   "offset": [
+    0,
+    1.25,
+    0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0,
+    2.5,
+    0
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.36,
+    0.08,
+    0.36
+   ],
+   "offset": [
+    0,
+    2.7,
+    0
+   ],
+   "color": "#34363a"
+  }
+ ]
+}

@@ -29,7 +29,13 @@ public sealed class PointGravity : IGravityField
 
     public Vector3 GravityAt(Vector3 position) => -GravityFrames.UpOf(this, position) * Strength;
 
-    /// <summary>Fingerprint data: centre, strength and axis.</summary>
+    public Vector3 UpAt(Vector3 position) => GravityFrames.UpOf(this, position);
+
+    public Vector3 AxisAt(Vector3 position) => Axis;
+
+    public float HeightOf(Vector3 position) => Vector3.Distance(position, Center);
+
+    /// <summary>Fingerprint data: centre, strength and axis (planet maps keep the fingerprint they had: no kind tag).</summary>
     public void Mix(Action<float> mix)
     {
         mix(Center.X); mix(Center.Y); mix(Center.Z);
@@ -44,7 +50,8 @@ public sealed class PointGravity : IGravityField
 /// On every ordinary map gravity is uniform and the frame is the world itself (right +X, up +Y, yaw 0 facing -Z), and
 /// every function here takes an exact shortcut that returns the same numbers the Y-up code always did, so existing maps
 /// behave bit for bit as before. On a map with point gravity (a planet), up is away from the centre and the frame's
-/// "north" (yaw 0) is the map's reference axis projected onto the ground plane there. Yaw and pitch on the wire, in input
+/// "north" (yaw 0) is the map's reference axis projected onto the ground plane there. On a map with gravity zones
+/// (<see cref="ZonedGravity"/>) each position's field decides: a wall zone's up is sideways, a rock's is away from it. Yaw and pitch on the wire, in input
 /// commands and in snapshots are relative to that frame, so nothing new is sent: host and clients derive the frame from
 /// the position and the map. The local player's look is carried from frame to frame by <see cref="Transport"/> each
 /// tick, so walking round the planet never turns the view.
@@ -53,19 +60,32 @@ public sealed class PointGravity : IGravityField
 /// </summary>
 public static class GravityFrames
 {
+    private static IGravityField? _field;
     private static PointGravity? _point;
+    private static ZonedGravity? _zoned;
 
-    /// <summary>The current map's point gravity, or null on a uniform-gravity map (set by <see cref="World.SetMap"/>).</summary>
+    /// <summary>The current map's gravity field, or null on an ordinary map (plain straight-down gravity; set by <see cref="World.SetMap"/>).</summary>
+    public static IGravityField? Field => _field;
+
+    /// <summary>The current map's point gravity when the whole map is a planet, else null (a zoned map's rocks don't count).</summary>
     public static PointGravity? Point => _point;
 
-    /// <summary>Is gravity on the current map anything but straight down?</summary>
-    public static bool Curved => _point != null;
+    /// <summary>The current map's gravity zones, or null (GravityZones.cs).</summary>
+    public static ZonedGravity? Zoned => _zoned;
+
+    /// <summary>Is gravity on the current map anything but the plain straight-down field (so "up" must be asked for per position)?</summary>
+    public static bool Curved => _field != null;
 
     /// <summary>Called when the map changes.</summary>
-    public static void Use(PointGravity? point) => _point = point;
+    public static void Use(IGravityField? field)
+    {
+        _field = field;
+        _point = field as PointGravity;
+        _zoned = field as ZonedGravity;
+    }
 
     /// <summary>The gravity field for a map (uniform straight down unless it declares one).</summary>
-    public static IGravityField FieldOf(Map map) => map.PointGravity ?? (IGravityField)UniformGravity.Down;
+    public static IGravityField FieldOf(Map map) => map.Gravity ?? UniformGravity.Down;
 
     /// <summary>Up at a position for a given point field (world +Y at the centre itself).</summary>
     public static Vector3 UpOf(PointGravity g, Vector3 p)
@@ -76,35 +96,53 @@ public static class GravityFrames
     }
 
     /// <summary>Up at a position on the current map.</summary>
-    public static Vector3 UpAt(Vector3 p) => _point is { } g ? UpOf(g, p) : Vector3.UnitY;
+    public static Vector3 UpAt(Vector3 p) => _field is { } f ? f.UpAt(p) : Vector3.UnitY;
+
+    /// <summary>Is up exactly world +Y at a position (the plain Y-up code paths apply there)?</summary>
+    public static bool PlainUpAt(Vector3 p) => _field == null || _field.UpAt(p) == Vector3.UnitY;
+
+    /// <summary>Is up exactly world +Y all along the line from <paramref name="a"/> to <paramref name="b"/> (sampled every 0.6 m)?</summary>
+    public static bool PlainUpAlong(Vector3 a, Vector3 b)
+    {
+        if (_field == null)
+            return true;
+        if (_zoned == null)
+            return _field.UpAt(a) == Vector3.UnitY && _field.UpAt(b) == Vector3.UnitY;
+        var n = Math.Clamp((int)MathF.Ceiling(Vector3.Distance(a, b) / 0.6f), 1, 256);
+        for (var k = 0; k <= n; k++)
+            if (!_zoned.PlainUpAt(Vector3.Lerp(a, b, k / (float)n)))
+                return false;
+        return true;
+    }
 
     /// <summary>Gravity acceleration at a position (m/s², pointing down).</summary>
-    public static Vector3 GravityAt(Vector3 p) => _point is { } g ? -UpOf(g, p) * g.Strength : new Vector3(0, -World.Gravity, 0);
+    public static Vector3 GravityAt(Vector3 p) => _field is { } f ? f.GravityAt(p) : new Vector3(0, -World.Gravity, 0);
 
     /// <summary>
     /// How high a point is: its distance from the centre on a planet map, its y elsewhere. (Clamps and "is it above this"
-    /// checks compare heights.)
+    /// checks compare heights.) In a zone, the height along the zone's up.
     /// </summary>
-    public static float HeightOf(Vector3 p) => _point is { } g ? Vector3.Distance(p, g.Center) : p.Y;
+    public static float HeightOf(Vector3 p) => _field is { } f ? f.HeightOf(p) : p.Y;
 
     /// <summary>The tangent frame at a position: right, up and north (the direction yaw 0 faces), all unit length.</summary>
     public static void Frame(Vector3 p, out Vector3 right, out Vector3 up, out Vector3 north)
     {
-        if (_point is not { } g)
+        if (_field is not { } f)
         {
             right = Vector3.UnitX;
             up = Vector3.UnitY;
             north = -Vector3.UnitZ;
             return;
         }
-        FrameOf(g, p, out right, out up, out north);
+        FrameOf(f, p, out right, out up, out north);
     }
 
-    /// <summary>The tangent frame at a position in a given point field (see <see cref="Frame"/>).</summary>
-    public static void FrameOf(PointGravity g, Vector3 p, out Vector3 right, out Vector3 up, out Vector3 north)
+    /// <summary>The tangent frame at a position in a given field (see <see cref="Frame"/>).</summary>
+    public static void FrameOf(IGravityField f, Vector3 p, out Vector3 right, out Vector3 up, out Vector3 north)
     {
-        up = UpOf(g, p);
-        var n = g.Axis - up * Vector3.Dot(g.Axis, up);
+        up = f.UpAt(p);
+        var axis = f.AxisAt(p);
+        var n = axis - up * Vector3.Dot(axis, up);
         var len = n.Length();
         if (len < 1e-4f)
         {
@@ -120,7 +158,7 @@ public static class GravityFrames
     /// <summary>A local direction (x right, y up, -z north) at <paramref name="p"/> in world space.</summary>
     public static Vector3 ToWorld(Vector3 p, Vector3 local)
     {
-        if (_point == null)
+        if (_field == null)
             return local;
         Frame(p, out var r, out var u, out var n);
         return r * local.X + u * local.Y - n * local.Z;
@@ -129,7 +167,7 @@ public static class GravityFrames
     /// <summary>A world direction in the local frame at <paramref name="p"/>.</summary>
     public static Vector3 ToLocal(Vector3 p, Vector3 world)
     {
-        if (_point == null)
+        if (_field == null)
             return world;
         Frame(p, out var r, out var u, out var n);
         return new Vector3(Vector3.Dot(world, r), Vector3.Dot(world, u), -Vector3.Dot(world, n));
@@ -137,16 +175,16 @@ public static class GravityFrames
 
     /// <summary>The look direction for a yaw and pitch at a position (<see cref="World.Forward"/> on uniform maps).</summary>
     public static Vector3 Forward(Vector3 p, float yaw, float pitch) =>
-        _point == null ? World.Forward(yaw, pitch) : ToWorld(p, World.Forward(yaw, pitch));
+        _field == null ? World.Forward(yaw, pitch) : ToWorld(p, World.Forward(yaw, pitch));
 
     /// <summary>The ground-plane facing for a yaw at a position (<see cref="World.FlatForward"/> on uniform maps).</summary>
-    public static Vector3 FlatForward(Vector3 p, float yaw) => _point == null ? World.FlatForward(yaw) : ToWorld(p, World.FlatForward(yaw));
+    public static Vector3 FlatForward(Vector3 p, float yaw) => _field == null ? World.FlatForward(yaw) : ToWorld(p, World.FlatForward(yaw));
 
     /// <summary>The ground-plane right for a yaw at a position (<see cref="World.FlatRight"/> on uniform maps).</summary>
-    public static Vector3 FlatRight(Vector3 p, float yaw) => _point == null ? World.FlatRight(yaw) : ToWorld(p, World.FlatRight(yaw));
+    public static Vector3 FlatRight(Vector3 p, float yaw) => _field == null ? World.FlatRight(yaw) : ToWorld(p, World.FlatRight(yaw));
 
     /// <summary>A point <paramref name="height"/> metres above <paramref name="p"/> (along up).</summary>
-    public static Vector3 Above(Vector3 p, float height) => _point == null ? p + new Vector3(0, height, 0) : p + UpOf(_point, p) * height;
+    public static Vector3 Above(Vector3 p, float height) => _field is { } f ? p + f.UpAt(p) * height : p + new Vector3(0, height, 0);
 
     /// <summary>
     /// The yaw and pitch at <paramref name="p"/> that look along <paramref name="dir"/> (any length). The same formulas the
@@ -172,19 +210,41 @@ public static class GravityFrames
     /// Carries a look (yaw, pitch measured at <paramref name="from"/>) to <paramref name="to"/>: the look direction is turned
     /// by the smallest rotation taking up at one to up at the other (parallel transport along the short way), then measured
     /// in the new frame. Walking round a planet then never turns the view, and the frame's own twist near its axis points
-    /// is cancelled. Uniform maps: nothing changes.
+    /// is cancelled. Across a zone boundary the world look direction is kept exactly (the frame under it changes, the view
+    /// doesn't). Uniform maps: nothing changes.
     /// </summary>
     public static void Transport(ref float yaw, ref float pitch, Vector3 from, Vector3 to)
     {
-        if (_point is not { } g || from == to)
+        if (_field is not { } f || from == to)
             return;
-        var u0 = UpOf(g, from);
-        var u1 = UpOf(g, to);
+        var u0 = f.UpAt(from);
+        var u1 = f.UpAt(to);
         var dir = Forward(from, yaw, pitch);
-        dir = Rotate(dir, u0, u1);
+        if (_zoned == null)
+            dir = Rotate(dir, u0, u1); // a planet: the look rolls with the ground as it curves away
+        else if (u0 == u1)
+            return;
         var (y, p) = Angles(to, dir);
         yaw = y;
         pitch = Math.Clamp(p, -1.55f, 1.55f);
+    }
+
+    /// <summary>
+    /// Eases a camera up towards the local up at <paramref name="eye"/>: on a zoned map the field is a step function of
+    /// position, so the horizon rolls round over about a quarter of a second instead of snapping (looks only: nothing in the
+    /// simulation uses it). Elsewhere it's the local up, exactly.
+    /// </summary>
+    public static Vector3 SmoothUp(ref Vector3 state, Vector3 eye, float dt)
+    {
+        var target = UpAt(eye);
+        if (_zoned == null || state.LengthSquared() < 0.5f)
+            return state = target;
+        var dot = Vector3.Dot(state, target);
+        if (dot > 0.99999f)
+            return state = target;
+        var t = 1f - MathF.Exp(-dt * 10f);
+        state = World.Slerp(state, target, t);
+        return state;
     }
 
     /// <summary>Turns <paramref name="v"/> by the smallest rotation taking unit <paramref name="a"/> to unit <paramref name="b"/>.</summary>
@@ -207,7 +267,7 @@ public static class GravityFrames
     /// </summary>
     public static Matrix4x4 Basis(Vector3 p)
     {
-        if (_point == null)
+        if (_field == null)
             return Matrix4x4.Identity;
         Frame(p, out var r, out var u, out var n);
         return new Matrix4x4(
@@ -222,7 +282,7 @@ public static class GravityFrames
     /// ground there: about <paramref name="p"/>, local axes become the frame's. Identity on uniform maps.
     /// </summary>
     public static Matrix4x4 StandAt(Vector3 p) =>
-        _point == null ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-p) * Basis(p) * Matrix4x4.CreateTranslation(p);
+        _field == null ? Matrix4x4.Identity : Matrix4x4.CreateTranslation(-p) * Basis(p) * Matrix4x4.CreateTranslation(p);
 
     /// <summary>
     /// A world ray in the local frame of a body standing at <paramref name="feet"/>, re-centred so the body stands at
@@ -230,17 +290,17 @@ public static class GravityFrames
     /// </summary>
     public static void RayToLocal(Vector3 feet, ref Vector3 origin, ref Vector3 dir)
     {
-        if (_point == null)
+        if (_field == null)
             return;
         origin = feet + ToLocal(feet, origin - feet);
         dir = ToLocal(feet, dir);
     }
 
     /// <summary>A world point re-expressed as if the body standing at <paramref name="feet"/> were upright (see <see cref="RayToLocal"/>).</summary>
-    public static Vector3 PointToLocal(Vector3 feet, Vector3 point) => _point == null ? point : feet + ToLocal(feet, point - feet);
+    public static Vector3 PointToLocal(Vector3 feet, Vector3 point) => _field == null ? point : feet + ToLocal(feet, point - feet);
 
     /// <summary>The inverse of <see cref="PointToLocal"/>.</summary>
-    public static Vector3 PointToWorld(Vector3 feet, Vector3 local) => _point == null ? local : feet + ToWorld(feet, local - feet);
+    public static Vector3 PointToWorld(Vector3 feet, Vector3 local) => _field == null ? local : feet + ToWorld(feet, local - feet);
 }
 
 /// <summary>
@@ -271,16 +331,16 @@ public static class CurvedFall
         into = -Vector3.Dot(vel, up);
         if (GravityFrames.HeightOf(pos) - low > floor)
             return false;
-        pos = (GravityFrames.Point?.Center ?? Vector3.Zero) + up * (floor + low);
+        pos += up * (floor + low - GravityFrames.HeightOf(pos)); // onto the floor along the local up (a planet: centre + up * height)
         return true;
     }
 
-    /// <summary>The rotation that lays a piece flat on the ground with local up <paramref name="up"/>, keeping its turn about up.</summary>
-    public static Quaternion LieFlat(Quaternion rot, Vector3 up)
+    /// <summary>The rotation that lays a piece resting at <paramref name="at"/> flat on the ground there, keeping its turn about the local up.</summary>
+    public static Quaternion LieFlat(Quaternion rot, Vector3 at)
     {
         var fwd = Vector3.Transform(Vector3.UnitX, rot);
-        var l = GravityFrames.ToLocal(GravityFrames.Point!.Center + up, fwd);
-        var m = Matrix4x4.CreateRotationY(MathF.Atan2(-l.Z, l.X)) * GravityFrames.Basis(GravityFrames.Point!.Center + up); // turn, then onto the ground
+        var l = GravityFrames.ToLocal(at, fwd);
+        var m = Matrix4x4.CreateRotationY(MathF.Atan2(-l.Z, l.X)) * GravityFrames.Basis(at); // turn, then onto the ground
         return Quaternion.Normalize(Quaternion.CreateFromRotationMatrix(m));
     }
 }

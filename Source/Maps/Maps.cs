@@ -328,11 +328,29 @@ public sealed partial class Map
             return true;
         if (HasTerrain && TerrainCollision!.CeilingAbove(feet.X, feet.Z, feet.Y) < feet.Y + World.PlayerHeight - 0.05f)
             return true; // a cave's ceiling too low to stand under
+        if (Gravity is { } field && field.UpAt(feet) is var up && up != Vector3.UnitY)
+            return BlockedAlongUp(feet, up, r); // in a gravity zone with its own up (a wall you stand on): the body stands along that up
         foreach (var b in Solid)
         {
             if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
                 && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
                 return true;
+        }
+        return false;
+    }
+
+    /// <summary>Would a body standing along <paramref name="up"/> at <paramref name="feet"/> overlap a box? Spheres of radius <paramref name="r"/> along its axis.</summary>
+    private bool BlockedAlongUp(Vector3 feet, Vector3 up, float r)
+    {
+        for (var h = r + 0.02f; h <= World.PlayerHeight - r; h += 0.2f)
+        {
+            var c = feet + up * h;
+            foreach (var b in Solid)
+            {
+                var q = Vector3.Clamp(c, b.Min, b.Max);
+                if (Vector3.DistanceSquared(q, c) < r * r)
+                    return true;
+            }
         }
         return false;
     }
@@ -398,8 +416,8 @@ public sealed partial class Map
         {
             for (var i = 0; i < points.Count; i++)
             {
-                if (!BadSpot(points[i]))
-                    continue;
+                if (!BadSpot(points[i]) || (Gravity != null && !PlainUpAtPoint(points[i])))
+                    continue; // (a gravity zone with its own up: the flat checks don't apply; its nav nodes are probed along that up)
                 // A building's own nav points (doorways, stair ends) are where the nav graph's stair links start and end, and
                 // the nav ignores doors (bots open them): a shut door next to one must not move it away (that left stairs with
                 // no link, so bots reached the floor above only over railings, or not at all).

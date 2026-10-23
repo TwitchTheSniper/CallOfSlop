@@ -61,7 +61,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `fallKill` | no | A world height: anyone whose feet drop below it dies (they fell off into the void). For maps that float in the air, like the Space pack's sky station: see [Void maps](#void-maps-falling-off). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
-| `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity). |
+| `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. `{ "type": "zones", ... }` gives the map several gravity regions (low gravity, walls you fight on, rocks). `{ "type": "uniform", "strength": 6 }` is low gravity everywhere. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity) and [Gravity zones](#gravity-zones). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
@@ -639,11 +639,11 @@ Everything a building makes counts towards the map's fingerprint: its boxes, its
 
 Maps aren't limited to boxes: the `Mesh` op places procedural shapes (cylinders, cones, spheres, capsules, rings, ramps, pipes, rounded boxes) and the `Model` op places glTF 2.0 models (`.glb` or `.gltf` files in the `Models` folder; see [Models/README.md](../Models/README.md)). The **Mesh Test** map in the Dev pack shows every shape, a LOD line and the test models.
 
-**They are cosmetic for now:** players, bullets, grenades and bots pass through them, and they don't count towards the map's fingerprint (except a model from the map's own pack folder, see [Where assets go](#where-assets-go)). Where players need cover, put a `Block` or a solid `Prop` under or inside the mesh (a `Block` the size of a pillar inside a `cylinder`, say). Collision for meshes comes with the physics work.
+**They are cosmetic by default:** players, bullets, grenades and bots pass through them, and they don't count towards the map's fingerprint (except a model from the map's own pack folder, see [Where assets go](#where-assets-go)). Where players need cover, put a `Block` or a solid `Prop` under or inside the mesh (a `Block` the size of a pillar inside a `cylinder`, say), or give a `Mesh` `"solid": true`: its exact triangles then collide (a tilted slab is a ramp at any angle, a sphere is a rock) and it counts towards the fingerprint, like a planet's surface meshes. Models stay cosmetic.
 
 | Op | Parameters | What it makes |
 | --- | --- | --- |
-| `Mesh` | mesh, x, z, color, y = 0, width = 1, height = 1, depth = 1, radius = 0, inner = 0, segments = 0, detail = 0, yaw = 0, pitch = 0, roll = 0, scale = 1, material = "" | A procedural shape standing at (x, z), on the ground (or terrain) raised by `y`. |
+| `Mesh` | mesh, x, z, color, y = 0, width = 1, height = 1, depth = 1, radius = 0, inner = 0, segments = 0, detail = 0, yaw = 0, pitch = 0, roll = 0, scale = 1, material = "", solid = false | A procedural shape standing at (x, z), on the ground (or terrain) raised by `y`. `solid` makes it collide. |
 | `Model` | file, x, z, y = 0, yaw = 0, pitch = 0, roll = 0, scale = 1 | A glTF model (`"Models/barrel.glb"`) standing at (x, z), with its own materials. A map in a pack finds `Maps/<Pack>/Models/barrel.glb` first; `"global:Models/barrel.glb"` skips the pack (see [Where assets go](#where-assets-go)). |
 
 Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (x, z). `yaw` turns it about the vertical axis like a prop's yaw, `pitch` tips it forward about x and `roll` about z (degrees, applied roll, then pitch, then yaw), and `scale` grows it evenly. Zero for `radius`, `inner`, `segments` and `detail` means "the default":
@@ -734,6 +734,68 @@ like a prop's yaw. Every surface shape stands upright on the ground where it is.
   big `moon` (`"size": 26` makes a gas giant) and `ambient` raised to about 2 works well; the sun lights one side of the
   planet, so pick its direction so both bases get some light.
 - **Fingerprint:** the gravity field and the solid meshes are part of it.
+
+## Gravity zones
+
+One map can hold **several gravity regions**: a normal deck, a low-gravity hall, a wall or ceiling you fight on, and a
+rock with a pull of its own you walk all the way round. Give `"gravity"` the type `zones`: the field at any position is
+the **first zone in the list that contains it**, else the `default`. The field is worked out from the position and the
+map file on every PC, so nothing new goes over the network. The **Gravity lab** in the "Gravity zones" self-test is a
+small worked example; the Space pack's **Keelhaul Yard** (`03-KeelhaulYard.json`) and **Twin Shard** (`04-TwinShard.json`)
+are full maps.
+
+```json
+  "gravity": { "type": "zones",
+    "default": { "type": "uniform" },
+    "zones": [
+      { "shape": "box", "name": "cargo hall", "min": [-40, -1, -20], "max": [-10, 30, 20],
+        "field": { "type": "uniform", "strength": 6 } },
+      { "shape": "box", "name": "the wall", "min": [9, 8.3, -24], "max": [18.5, 24, 24],
+        "field": { "type": "uniform", "direction": [1, 0, 0] } },
+      { "shape": "sphere", "name": "the rock", "center": [0, 12, -14], "radius": 9.5,
+        "field": { "type": "point", "center": [0, 12, -14], "strength": 18 } }
+    ] },
+```
+
+| Field | Meaning |
+| --- | --- |
+| `default` | The field outside every zone: `{ "type": "uniform", "strength": 18 }` (straight down; leave it out for the usual gravity) or a `point` field. A map-wide uniform field always points straight down. |
+| `zones` | 1 to 32 zones, checked in order. `name` is optional (for messages). |
+| `shape: "box"` | `min` and `max` corners `[x, y, z]`, at least 0.5 m apart on every axis. |
+| `shape: "sphere"` | `center` `[x, y, z]` and `radius` (1 to 400 m). |
+| `field` | The zone's gravity: `{ "type": "uniform", "direction": [x, y, z], "strength": 18, "axis": [...] }` (any direction: `[1, 0, 0]` makes the +X face of a wall the floor, `[0, 1, 0]` turns a ceiling into one) or `{ "type": "point", "center": [...], "strength": 18, "axis": [...] }` (a rock). `strength` is 1 to 60 m/s². `axis` is the frame's north (see Planets; by default -Z, or +X when the pull runs along Z). |
+
+A `"gravity": { "type": "uniform", "strength": 6 }` without zones makes the whole map low-gravity.
+
+**How it plays.** A zone map uses the capsule movement everywhere (like a planet). Where the field is the plain
+straight-down one, everything is as on a flat map: mantling, props, buildings, boundaries, terrain-free decks. In a zone
+with its own up, players walk, jump, crouch and shoot in that frame; grenades, launcher rounds, ragdolls, gibs and debris
+fall the zone's way; the hit boxes and the drawn bodies stand along the local up; and when you cross a zone's edge your
+view keeps pointing where it did while the horizon rolls round over about a quarter of a second. A jump at 6 m/s² goes
+about three times as far and as high as at 18 m/s², so a low-gravity gap can be 10-15 m.
+
+**Rules of thumb.**
+- **Zones cover bodies, not just feet.** A player's field is read at their feet, but a grenade is thrown from their eyes:
+  make a wall zone reach at least 2 m out from the wall, and don't let another zone (listed earlier) poke into it.
+- **Transitions bots can walk.** The bots' graph gets nodes in every zone whose up isn't straight down (probed along the
+  zone's own up, over its bounds: a grid for a uniform zone, a sphere round the centre for a point zone) and links any two
+  nodes a player could walk between along the local ground, which must be continuous: a surface within a step (0.55 m),
+  never steeper than 42 degrees from the local up on either side of the edge. So turn gravity round in **steps of at most
+  30 degrees**: a quarter pipe of solid slabs (`Mesh` with `"solid": true` and `roll`) under three zones whose
+  directions are 30, 60 and 90 degrees round, each zone's edge where the pipe's slope is halfway between its neighbours'
+  (the lab does this: nine slabs 10 degrees apart, zone edges at 15, 45 and 75 degrees). A rock is reached by a pier
+  ending just short of its top, with the pier in a plain-gravity box zone listed **before** the rock's sphere, so the pier
+  stays level right up to the step off. A plain wall between two frames is not walkable: players can jump or fall across
+  it, bots won't try.
+- **Spawns, hills and flags** go in plain-gravity areas: spawns are checked and generated the flat way, and the automatic
+  objectives are worked out for flat ground. Give `teamSpawns`, `hills` and `flags` yourself.
+- **Solid meshes** (`"solid": true` on `Mesh`, the `Planet` op and the Surface ops) collide exactly, so a tilted slab is a
+  ramp at any angle. A `Planet` op makes the rock and lets the Surface ops dress it by latitude and longitude, whatever the
+  map's gravity.
+- **Not yet, in a zone with its own up:** mantling (fine on the plain parts), the death camera, Insane bots' squads (they
+  play as Hard) and the kill streaks that fly over the map, as on a planet. The "Stairs" self-test walks every flight of
+  steps the straight-down way, so keep runs of three or more steps out of sideways zones.
+- **Fingerprint:** the default field and every zone's shape, bounds and field are part of it.
 
 ## Decals
 

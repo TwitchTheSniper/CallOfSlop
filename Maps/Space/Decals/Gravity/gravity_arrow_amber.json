@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Gravity Arrow Amber",
+ "category": "Gravity",
+ "description": "An amber arrow: this way to the gravity change (floors and walls; points up before turning).",
+ "author": "Call of Slop",
+ "size": 1.8,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "gravity_arrow_amber.png",
+ "fadeDistance": 70
+}

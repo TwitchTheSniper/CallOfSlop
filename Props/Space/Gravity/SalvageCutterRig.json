@@ -1,0 +1,146 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Salvage Cutter Rig",
+ "category": "Space",
+ "description": "A plasma cutting rig on a skid: a mast with a swung-out torch arm over a generator box (head-high cover).",
+ "author": "Call of Slop",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.6,
+    1.4,
+    1.4
+   ],
+   "offset": [
+    0,
+    0.7,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.5,
+    2.8,
+    0.5
+   ],
+   "offset": [
+    -0.9,
+    1.4,
+    0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true
+ },
+ "parts": [
+  {
+   "size": [
+    2.6,
+    0.3,
+    1.4
+   ],
+   "offset": [
+    0,
+    0.15,
+    0
+   ],
+   "color": "#34363a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.5,
+    2.6,
+    0.5
+   ],
+   "offset": [
+    -0.9,
+    1.45,
+    0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.2,
+    0.25,
+    0.25
+   ],
+   "offset": [
+    0.2,
+    2.6,
+    0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.3,
+    0.9,
+    0.3
+   ],
+   "offset": [
+    1.2,
+    2.1,
+    0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    0.2
+   ],
+   "offset": [
+    1.2,
+    1.55,
+    0
+   ],
+   "color": "#d84a3a"
+  },
+  {
+   "size": [
+    0.9,
+    0.9,
+    0.9
+   ],
+   "offset": [
+    0.4,
+    0.75,
+    0.1
+   ],
+   "color": "#8f8a7c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.6,
+    0.4,
+    0.3
+   ],
+   "offset": [
+    0.4,
+    1.4,
+    0.1
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.05,
+    0.3
+   ],
+   "offset": [
+    0.4,
+    1.63,
+    0.1
+   ],
+   "color": "#ffb24a"
+  }
+ ]
+}

@@ -255,6 +255,56 @@ public static partial class World
         return MathF.Abs(prevH - rb) < 0.6f;
     }
 
+    /// <summary>
+    /// The gravity-zone version of <see cref="CanWalkCurved"/>: could a player walk the straight line from <paramref name="from"/>
+    /// to <paramref name="to"/> (feet) when up may differ from +Y, or change, along it? Every ~0.6 m: the local up there, ground
+    /// below the previous feet's level within a step (probed along that up), rising or falling no more than the step height
+    /// measured along it, walkable against it, and room for the body. Where the up changes between two samples (a zone
+    /// boundary) the same rule applies in the new frame, so a 45-degree stair reads as a floor on both sides and a plain wall
+    /// doesn't. Deterministic: a pure function of the two points and the map.
+    /// </summary>
+    public static bool CanWalkField(Vector3 from, Vector3 to)
+    {
+        if (!GravityFrames.Curved)
+            return false;
+        var len = Vector3.Distance(from, to);
+        var n = Math.Clamp((int)MathF.Ceiling(len / NavGraph.SampleStep), 1, 128);
+        var prevFeet = from;
+        for (var k = 1; k <= n; k++)
+        {
+            var guess = Vector3.Lerp(from, to, k / (float)n);
+            var up = GravityFrames.UpAt(guess);
+            var lift = MathF.Max(0f, Vector3.Dot(prevFeet - guess, up)); // the last feet above the chord, along this up
+            var start = guess + up * (lift + StepHeight + 0.05f);
+            var depth = lift + StepHeight * 2 + 0.6f;
+            if (!Physics.Raycast(start, -up, depth, QueryFilter.Navigation, out var hit))
+                return false; // nothing underfoot: a hole or a cliff
+            if (hit.Distance < 0.001f)
+                return false; // the probe started inside something: a wall
+            var feet = hit.Point;
+            var upAtFeet = GravityFrames.UpAt(feet);
+            if (upAtFeet != up)
+            {
+                // The ground found lies in another zone than the probe's start: measure it in its own frame.
+                up = upAtFeet;
+                if (Vector3.Dot(hit.Normal, up) < MinWalkNormalY)
+                    return false;
+            }
+            else if (Vector3.Dot(hit.Normal, up) < MinWalkNormalY)
+                return false;
+            if (MathF.Abs(Vector3.Dot(feet - prevFeet, up)) > StepHeight)
+                return false;
+            feet += up * 0.02f;
+            // Room for the body above the step height.
+            var body = SweptMover.CapsuleAt(feet + up * (StepHeight + 0.02f), Stance.Crouch, up);
+            if (Physics.OverlapCapsule(new Capsule(body.A, feet + up * (PlayerHeight - PlayerRadius), body.Radius), new QueryFilter(QueryLayers.Nav & ~QueryLayers.Doors)))
+                return false;
+            prevFeet = feet;
+        }
+        var upEnd = GravityFrames.UpAt(to);
+        return MathF.Abs(Vector3.Dot(prevFeet - to, upEnd)) < 0.6f;
+    }
+
     /// <summary>Spherical interpolation between unit vectors.</summary>
     public static Vector3 Slerp(Vector3 a, Vector3 b, float t)
     {
