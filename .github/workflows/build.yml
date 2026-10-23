@@ -51,6 +51,51 @@ jobs:
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo
 
+      # A plan PNG of every map this push changed (artifact "map-plans"), so a reviewer sees the layout without running
+      # the game. The game's own plan (`--gen-plan`, the map kit) when the build has it, else tools/mapkit/plan_min.py
+      # (plain Python, no libraries). Skipped when no map changed. Well under 30 s: a plan takes about 0.1 s.
+      - name: Map plans
+        id: plans
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set +e
+          if [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            base="$BEFORE"; git fetch -q --no-tags --depth=50 origin "$base" 2>/dev/null || base=""
+          else
+            git fetch -q --no-tags --depth=200 origin main 2>/dev/null && base=$(git merge-base HEAD origin/main 2>/dev/null || echo origin/main)
+          fi
+          [ -z "$base" ] && { echo "no base commit to compare with: no plans"; exit 0; }
+          maps=$(git diff --name-only "$base" HEAD -- 'Maps/*/*.json' | grep -v '/pack.json$' | while read -r f; do [ -f "$f" ] && echo "$f"; done)
+          [ -z "$maps" ] && { echo "no maps changed since ${base:0:8}: no plans"; exit 0; }
+          mkdir -p map-plans
+          dir=bin/Release/net10.0
+          game=0; grep -rqs -- '"--gen-plan"' Source/ && game=1   # the map kit's own plan, when this build has it
+          n=0
+          for f in $maps; do
+            out="map-plans/$(echo "$f" | sed 's#^Maps/##; s#/#_#g; s#\.json$#.png#')"
+            if [ $game = 1 ] && timeout 20 dotnet "$dir/CallOfSlop.dll" --gen-plan "$f" "$out" >/dev/null 2>&1 && [ -s "$out" ]; then
+              echo "$f -> $out (game)"
+            elif timeout 20 python3 -I tools/mapkit/plan_min.py "$f" "$out" >/dev/null 2>&1 && [ -s "$out" ]; then
+              echo "$f -> $out (plan_min.py)"
+            else
+              echo "::warning title=Map plans::no plan for $f"; continue
+            fi
+            n=$((n+1))
+          done
+          echo "::notice title=Map plans::$n plan(s) in the map-plans artifact"
+          echo "count=$n" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload map plans
+        if: steps.plans.outputs.count != '' && steps.plans.outputs.count != '0'
+        uses: actions/upload-artifact@v6
+        with:
+          name: map-plans
+          path: map-plans/*.png
+          if-no-files-found: ignore
+
       - name: Pick self-test sections
         id: pick
         shell: bash

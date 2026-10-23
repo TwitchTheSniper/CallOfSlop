@@ -69,6 +69,7 @@ AISLE = 4.5      # between rows (a 4 m waypoint grid always lands in it)
 SIDE = 5.0       # open ground between the rows and the perimeter wall
 WAYPOINTS = 4
 MAX_SPAWNS = 18
+MIN_SPAWNS = 12
 SKY = [0.56, 0.62, 0.7]
 PAD_COLOR = [0.48, 0.48, 0.5]
 GROUND_COLOR = [0.34, 0.36, 0.36]
@@ -263,6 +264,10 @@ def layout(gallery, groups, props, shadowed):
     for sz in spots:
         spawns.append((-sx, sz))
         spawns.append((sx, sz))
+    if len(spawns) < MIN_SPAWNS:  # a short gallery: more along the open strips before the first row and after the last
+        for x in (-width / 4, 0.0, width / 4):
+            spawns.append((x, spots[0]))
+            spawns.append((x, spots[-1]))
     if len(spawns) > MAX_SPAWNS:
         step = len(spawns) / MAX_SPAWNS
         spawns = [spawns[int(i * step)] for i in range(MAX_SPAWNS)]

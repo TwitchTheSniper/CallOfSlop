@@ -64,7 +64,9 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md
 tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the zip's READ ME FIRST), MIGRATING.md,
-                    parts/floaters.py (connectivity checker), zombies/make_blackmoor.py and other map/prop generators
+                    parts/floaters.py (connectivity checker), props/gallery.py (the generated Dev prop galleries),
+                    mapkit/ (new_map.py scaffold, check_branch.py pre-push checklist, plan_min.py plan PNGs),
+                    zombies/make_blackmoor.py and other map/prop generators
 ```
 
 ## Conventions
@@ -88,6 +90,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`).
   - Use short, seeded, scripted scenarios. No long bot matches.
   - Remove temporary or diagnostic test code before finishing.
+  - Map branches: `python3 -I tools/mapkit/check_branch.py` before pushing prints the `[tests: ...]` sections (always Map horizons, Map objectives, Props, Animated props, Pack assets, Maps, Map files, Nav determinism, Stairs plus the pack's own) and checks the maps, props and galleries. New props: `python3 -I tools/props/gallery.py` regenerates the Dev galleries ("Props" checks they are current).
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.
 - **Commits.**
   - Commit as TwitchTheSniper <twitchthesniper@gmail.com>.

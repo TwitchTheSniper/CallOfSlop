@@ -18,7 +18,8 @@ public static partial class SelfTest
         var root = FindRepoRoot();
         if (root == null)
         {
-            Line($"generated galleries: {GalleryTool} not found above {AppContext.BaseDirectory} (a packaged build), check skipped");
+            Line($"generated galleries: {GalleryTool} not found above {AppContext.BaseDirectory} or the working directory (a packaged build, or a build with "
+                 + "--artifacts-path: set CALLOFSLOP_SOURCE to the checkout), check skipped");
             return;
         }
         string? output = null;
@@ -71,13 +72,24 @@ public static partial class SelfTest
                  + "(then re-pin their fingerprints in SelfTestPackAssets.cs from this log)");
     }
 
-    /// <summary>The checkout holding this build: the folder above the exe that has <see cref="GalleryTool"/>, or null.</summary>
+    /// <summary>
+    /// The checkout holding this build: CALLOFSLOP_SOURCE when set (a build with --artifacts-path puts the exe elsewhere),
+    /// else the folder above the exe or the working directory that has <see cref="GalleryTool"/>; null when none does.
+    /// </summary>
     private static string? FindRepoRoot()
     {
-        var dir = new DirectoryInfo(AppContext.BaseDirectory);
-        for (var i = 0; i < 6 && dir != null; i++, dir = dir.Parent)
-            if (File.Exists(Path.Combine(dir.FullName, GalleryTool)) && Directory.Exists(Path.Combine(dir.FullName, "Props")))
-                return dir.FullName;
+        var starts = new List<string>();
+        if (Environment.GetEnvironmentVariable("CALLOFSLOP_SOURCE") is { Length: > 0 } env)
+            starts.Add(env);
+        starts.Add(AppContext.BaseDirectory);
+        starts.Add(Environment.CurrentDirectory);
+        foreach (var start in starts)
+        {
+            var dir = new DirectoryInfo(start);
+            for (var i = 0; i < 6 && dir != null; i++, dir = dir.Parent)
+                if (File.Exists(Path.Combine(dir.FullName, GalleryTool)) && Directory.Exists(Path.Combine(dir.FullName, "Props")))
+                    return dir.FullName;
+        }
         return null;
     }
 }
