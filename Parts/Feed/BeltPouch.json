@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Belt Pouch",
+  "category": "feed",
+  "rarity": "common",
+  "flavor": "Twenty-five heavy rounds on a short belt in a canvas pouch. Something automatic has to pull it.",
+  "bores": ["heavy"],
+  "requiresAction": ["auto", "chain", "rotary"],
+  "weight": 0.9,
+  "hand": [0, -0.045, 0],
+  "feed": "belt",
+  "model": [
+    {"size": [0.06, 0.09, 0.1], "pos": [0, -0.045, 0], "color": "tan"},
+    {"size": [0.064, 0.012, 0.104], "pos": [0, -0.012, 0], "color": "olive"},
+    {"size": [0.02, 0.03, 0.012], "pos": [0.025, 0.01, 0.035], "color": "brass"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 25},
+    {"stat": "reload", "set": 3.6}
+  ]
+}

@@ -58,7 +58,7 @@ Grip (root: the part you hold; it fixes the fire style)
  |    |- barrel                 <- a barrel, or a SPLITTER whose outputs take barrels (or another splitter)
  |    |    \- muzzle            <- muzzle device
  |    |- feed                   <- box / drum / belt / tube / cell (or none: fed by the shared feed)
- |    |- ammo                   <- calibre / special rounds (or none: the shared feed's ammo)
+ |    |- ammo                   <- the ROUND TYPE (FMJ, hollow point, buckshot, slug, frag...; any ammo on any receiver), or none: the shared feed's ammo
  |    |- amp                    <- DAMAGE MULTIPLIER
  |    |- upgrade_rear           <- RECEIVER UPGRADE behind the receiver
  |    |- upgrade_side           <- RECEIVER UPGRADE on its side
@@ -84,8 +84,8 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
 | Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
-| Feed | Magazine size and reload (box, stick, extended, drum, belt, hopper, tube, shell drum, cell, breech, toaster) and 5 shared feeds | 17 |
-| Ammo | Damage, pellets, range, special flags | 10 |
+| Feed | Magazine size and reload (box, stick, extended, drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 5 shared feeds; 3+ per bore | 25 |
+| Ammo | The round type on the receiver's calibre: relative damage, range, pellets, fall-off and flags; fits every receiver | 14 |
 | Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
 | Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
 | Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
@@ -96,9 +96,10 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
 | Melee Mod | Nails, grip tape, counterweight, barbed wire, shock coil, rocket booster, whoopee cushion | 7 |
 
-**Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`). Feeds and
-ammo list the bores they hold. **Barrels, splitters and muzzle devices fit every receiver**: the receiver adapts the
-barrel (see "Barrels and receivers").
+**Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`), and the
+registry gives each class its **calibre** (base damage, range, pellets, fall-off, headshot multiplier). Feeds list the
+bores they hold. **Barrels, splitters, muzzle devices and ammo fit every receiver**: the receiver adapts the barrel (see
+"Barrels and receivers") and the ammo only changes the calibre's numbers relatively (see "Universal ammo").
 
 ### Barrels and receivers (2026-10-23)
 
@@ -108,10 +109,9 @@ receiver, it'll be smaller than if it's attached to a rifle receiver or an autoc
 friction in matches."
 
 - **Fit.** Every barrel fits every receiver's barrel socket and every splitter output; every muzzle device fits every
-  barrel. Only the parts that hold the rounds stay typed: **feeds and ammo** (the ammo *is* the receiver's calibre, and a
-  magazine's size is tuned to its rounds; shared feeds keep their bores and actions). Belts and hoppers still need an
-  action that pulls them. So a refusal in a match is now about what really can't work (a 9 mm round in a .50 action),
-  not about a tube.
+  barrel. Only the **feeds** stay typed (a magazine's size is tuned to its rounds; shared feeds keep their bores and
+  actions); ammo was typed too until "Universal ammo" below. Belts and hoppers still need an action that pulls them. So
+  a refusal in a match is now about what really can't work (a 9 mm magazine in a .50 action), not about a tube.
 - **Size.** The receiver's bore class sizes the barrel's model, from a table in `Parts/_Registry.json` (each bore's
   `"barrelScale": [width, height, length]`, relative to a rifle): pistol `[0.8, 0.8, 0.7]` (thinner, shorter), rifle
   `[1, 1, 1]` (as drawn), heavy `[1.35, 1.35, 1.3]`, shell `[1.5, 1.5, 1]`, launcher `[2.7, 2.7, 1.3]`, energy
@@ -214,6 +214,66 @@ tier tables); common actions from round 1, and no receiver's stock action is rar
 section "Workbench actions" (`SelfTestActions.cs`) checks all of this, rebuilding every standard build with its
 receivers' old numbers to compare, and fires every fire type through the real trigger loop.
 
+### Universal ammo (user, 2026-10-23)
+
+The user: ammo is universal and selects the **shell type and effect, not the calibre**; the calibre is dictated by the
+receiver. Also: more feed options for heavy, and no part category may have fewer than 3 parts.
+
+- **Fit.** Every ammo part fits every receiver's ammo socket and every shared feed (`BuildRules.BoreBound` is the feed
+  alone). An ammo file with `"bores"`, or one that `set`s damage, range or pellets, is refused with the reason: ammo is a
+  **round type** applied on top of the receiver's calibre, never a calibre.
+- **The calibre comes from the bore.** `Parts/_Registry.json` gives each bore a `"calibre"` (`BoreClass.Calibre`):
+  damage per projectile, full-damage range, projectiles per round, damage left at long range and the headshot
+  multiplier. `BuildStats.BaseDef` starts every receiver from its bore's calibre, then the receiver's own stats (a
+  revolver's headshot multiplier, a shotgun's spread), then the ammo's relative changes. Pistol 20 dmg / 15 m, rifle
+  26 / 28, heavy 85 / 120 (fall-off to 0.8), shell 14 x 8 pellets / 9 m (fall-off to 0.2), launcher 120 / 40 (headshots
+  x1), energy 30 / 40: exactly what the old calibre-named common ammo set, so the standard builds keep their numbers.
+- **Round types** (`Parts/Ammo`, 14): the calibre names went. 5.56 FMJ and 9mm Ball are **FMJ** (the baseline: changes
+  nothing), 00 Buckshot is **Buckshot**, 40mm Frag is **Frag**, .50 BMG is **Armour Piercing**, Plasma Charge is
+  **Plasma**, Rubber Duck Rounds are **Rubber Duck**; Slug, Explosive Tip and Dragon's Breath kept their names and
+  became relative. New: **Hollow Point**, **Match Grade**, **Subsonic**, **Shock**, **Sabot**. Old build texts load
+  through `WeaponBuild.Renamed` (an old build names the calibre its receiver fires anyway, so it loads with the same
+  numbers; a .50 build keeps its penetrating rounds).
+- **The round block.** `"round": {"pellets": N}` splits the round into N projectiles **sharing the calibre's damage**
+  (the damage per projectile is rounded to a whole number, so a split loses a few percent at low calibres): Buckshot on
+  a shotgun is what it fires anyway (8 of 14); on a rifle it's eight pellets of 3 (24 of the 26); on a heavy receiver
+  eight of 11. A Slug or Sabot (`pellets: 1`) turns a shotgun's eight pellets into one of 112, and is just the bullet on
+  a rifle. A pellet *stat* (Dragon's Breath's +2) counts on shotgun bores only, like a barrel's. Everything else is a
+  `mul`/`add`, so a Plasma round on a pistol and on an autocannon both read as "that calibre, plus the plasma effect".
+  Flags are unchanged and keep their Zombies effects (ZOMBIES-MODE.md, "Special ammo effects").
+
+| Round type | Tier | Change on the calibre | Flags |
+| --- | --- | --- | --- |
+| FMJ | common | none | |
+| Hollow Point | common | damage x1.15, headshots x1.1, range x0.85, fall-off x0.75 | |
+| Buckshot | common | split into 8 pellets | |
+| Slug | uncommon | one projectile, range +15 m, fall-off x2 (to 1 at most), hip spread x0.5 | |
+| Armour Piercing | uncommon | range x1.15, fall-off x1.25, wall penetration x1.5 | penetrating |
+| Frag | uncommon | damage x1.1, headshots x0.5 (a blast doesn't care) | explosive |
+| Match Grade | rare | range x1.2, hip spread x0.8, ADS spread x0.8, headshots x1.15 | |
+| Plasma | rare | fall-off x1.25, hip spread x0.9 | plasma |
+| Subsonic | rare | damage x0.9, range x0.8, recoil x0.85, the gun is quiet | suppressed |
+| Explosive Tip | epic | damage x1.4, range x1.07, fire rate x0.9 | explosive |
+| Dragon's Breath | epic | damage x0.85, +2 pellets (shotguns), range x1.1 | incendiary |
+| Shock | epic | damage x0.9 | shock |
+| Sabot | legendary | one projectile, damage x1.25, range x1.5, fall-off x1.5, fire rate x0.85, penetration x2 | penetrating |
+| Rubber Duck | wonder | damage x0.75, range x1.25, headshots x3 (6 at most) | bouncy, squeaky |
+
+- **Standard builds.** The 46 that name ammo were rewritten to the new names. Their numbers are unchanged except: the
+  heavy builds' range (Armour Piercing's x1.15: Belt-Fed Chaingun 203 -> 233 m), and Grenade Organ (480 -> 528 DPS) and
+  Party Cannon (180 -> 198) from Frag's x1.1.
+- **Feeds per bore.** Every bore has at least 3 per-receiver feeds, 2 of them common or uncommon: heavy got the Belt
+  Pouch (common, 25, needs an automatic action), Heavy Drum (uncommon, 30) and Link Chute (rare, 60, belt); shell the
+  Shell Box (uncommon, 10); energy the Battery Clip (common, 24) and Capacitor Pack (uncommon, 32); launchers the
+  Three-Round Tube (common, 3) and Revolver Cylinder (uncommon, 6). Every category already had 3 or more parts.
+- **Workbench.** Ammo lists as "any calibre" and its tooltip says what the round does on the calibre (and how it's
+  split); the Ammo chip shows for any receiver (the hide-categories rule is the same per-part fit check), and a
+  receiver swap keeps the ammo like it keeps the barrel.
+- **Checks.** The self-test section **Part coverage** (`SelfTestPartCoverage.cs`) pins the rules: 3+ feeds per bore with
+  2 cheap ones, no bore-bound ammo and 3+ common/uncommon round types, 3+ parts in every category, and assembles the
+  commonest receiver of every bore with each of its feeds and every ammo (each round type within x0.5 to x1.6 of the
+  calibre's damage per shot and x0.5 to x3 of its range, and its split as the round block says).
+
 ### Where actions sit (2026-10-23)
 
 The user: "Mix where the actions sit on the gun." Only the model moves: build texts, sockets, stats, fire behaviour,
@@ -266,13 +326,12 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | A socket can limit what it takes | "Hellwheel Rotary Receiver's barrel_1 socket takes barrels only, not splitters." |
 | A build starts from a grip (or a hilt) | "Rifle Grip is a grip you build on: start a new build with it instead." |
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
-| Feeds and ammo must match the receiver's bore (barrels, splitters and muzzles fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
+| Feeds must match the receiver's bore (barrels, splitters, muzzles and ammo fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
 | Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Triad Burst Receiver's Three-Round Burst Group is 3-round burst." |
 | Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
 | Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 10.8 kg; the Pistol Grip can't carry more than 10 kg." |
-| Shared feed ammo must fit the feed | "00 Buckshot is made for shell rounds; the Manifold Hopper feeds pistol or rifle rounds." |
 | Shared feed capacity and bores | "Workhorse Receiver needs a feed (the Manifold Hopper can't feed it: it feeds 3 receivers at most)." |
 | Melee and gun parts don't mix | "Wooden Handle is a hilt you build a melee weapon on: start a melee build with it instead." |
 | A melee weapon weighs 14 kg at most | "Too heavy: 15.2 kg; a melee weapon can't be more than 14 kg." |
@@ -286,8 +345,9 @@ The output is an ordinary `WeaponDef`, the same type every weapon file makes, so
 sound, HUD and bots all work unchanged. The pipeline is **deterministic**: the same tree always gives the same numbers
 and the same muzzle positions, and the self-test checks this by assembling every example twice.
 
-1. **Each receiver on its own.** Start from the receiver's base numbers (class defaults, and its action part's fire
-   type and rate), then apply its parts in stages: receiver, ammo, feed, action, damage multiplier, receiver upgrades, splitters. A receiver fed by
+1. **Each receiver on its own.** Start from the receiver's base numbers (its bore's calibre from the registry, the
+   class defaults, and its action part's fire type and rate), then apply its parts in stages: receiver, ammo (the
+   round block, then its relative stats), feed, action, damage multiplier, receiver upgrades, splitters. A receiver fed by
    the shared feed takes the shared feed as its feed (and its ammo, if it has none). Then each barrel path (barrel plus
    muzzle device) is applied to its own copy, so a long barrel and a stub barrel on one splitter really differ.
    Upgrades change the fire rate as a ratio, so a minigun's rate per barrel scales the same way.
@@ -440,7 +500,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   With the toggle off, **whole categories hide** (no chip, no group header) when nothing you own in them could go on
   the build right now: the same per-part check as the list (a free *or occupied* socket whose rules take it, since a
   swap counts, plus a spare copy). An empty grip shows no Feed, Ammo, Barrel or Splitter until a receiver is fitted
-  (barrels, splitters and muzzles fit every receiver but still hang off one; feeds and ammo must match its bore), and a
+  (barrels, splitters, muzzles and ammo fit every receiver but still hang off one; feeds must match its bore), and a
   grip without a stock socket (Pistol Grip) shows no Stock. They come back the moment the build changes. A chosen chip
   whose category hides falls back to All, and clicking an empty socket row whose category is hidden says so instead of
   opening an empty list. With the toggle on every category you own a part of is shown; categories you own none of
@@ -589,13 +649,15 @@ support, reloadPerReceiver; an older `fireStyles` list reads as its first style)
 `outputMult` is refused: splitters always conserve), `shared` for shared feeds (feeds; with `"mount": "hopper"`),
 `carry` (weight relief, kg), `hilt` for melee roots (damage, swing, reach, cleave, stun, hands), `melee` for heads and
 mods (damage, damageMult, swingMult, reach, cleave, stun), `hand`, `gripAngle`, `muzzles`, `optic`, `sight`,
-`feedStyle`, `flags`, `requiresAction`, `mount`, `placement` (which of its socket's `points` the part is drawn at), `scrap`; sockets
+`round` for ammo (`pellets`: the projectiles the round is split into, sharing its damage), `feedStyle`, `flags`,
+`requiresAction`, `mount`, `placement` (which of its socket's `points` the part is drawn at), `scrap`; sockets
 take `name`, `type`, `pos`, `points` (named other positions: `{"under": [x, y, z]}`), `rot`, `accepts`, `required`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
 the problem; the self-test loads every part file and feeds it broken ones.
 
 Builds save as one line in `workbench.txt` (a new file next to the game; nothing older changes):
-`Name|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}`.
-A save naming a part that no longer exists, or a receiver past a grip's capacity, loads with that part dropped. The
+`Name|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ}}`.
+A save naming a part that no longer exists, or a receiver past a grip's capacity, loads with that part dropped; a part
+that was renamed or merged (`WeaponBuild.Renamed`: the chain-fire grips, the calibre-named ammo) loads as the new one. The
 style field is the grip's (an older save's own choice is ignored). Milestone 2 adds `melee=` (the melee slot),
 `slots4=` and `dummies=` lines; files without them load as before.
 
@@ -681,9 +743,10 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 142 parts
+## The part set: 174 parts
 
-Milestone 1's 75 parts, 48 from milestone 2 and the three one-receiver grips of the workbench rework. By tier, all
+Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, and the
+universal-ammo pass's 4 extra round types and 8 feeds (2026-10-23). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
@@ -692,8 +755,8 @@ categories (first-tier grips, common and uncommon, hold exactly **one receiver**
 | Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
-| Feed (17) | Box, Stick, Shell Tube, Single Breech | Extended, Heavy Box | Drum, Shell Drum, Energy Cell, **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
-| Ammo (10) | 5.56 FMJ, 9mm Ball, 00 Buckshot, 40mm Frag | Slug | .50 BMG, Plasma Charge | Explosive Tip, Dragon's Breath | | Rubber Duck Rounds |
+| Feed (25) | Box, Stick, Shell Tube, Single Breech, **Belt Pouch** (heavy, 25, belt), **Battery Clip** (energy, 24), **Three-Round Tube** (launcher) | Extended, Heavy Box, **Heavy Drum** (30), **Shell Box** (10), **Capacitor Pack** (energy, 32), **Revolver Cylinder** (launcher, 6) | Drum, Shell Drum, Energy Cell, **Link Chute** (heavy, 60, belt), **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
+| Ammo (14, universal) | FMJ, Hollow Point, Buckshot | Slug, Armour Piercing, Frag | Match Grade, Plasma, Subsonic | Explosive Tip, Dragon's Breath, Shock | Sabot | Rubber Duck |
 | Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
 | Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
 | Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
@@ -738,7 +801,7 @@ The mystery box gives **complete builds only** (decided). They live in `Parts/Bu
   "tier": "uncommon",
   "source": ["box"],
   "flavor": "A pump shotgun through a Y-splitter: twice the pellets, half the damage each, the same total.",
-  "build": "Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot},stock:Wire Stock}"
+  "build": "Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:Buckshot},stock:Wire Stock}"
 }
 ```
 
@@ -778,10 +841,10 @@ every tier. Approximate numbers (CI's log lists them all as `box ...` lines):
 | Street Sweeper / Bastille Squad LMG / Elephant Gun | rare | 112 / 26 / 138 | 200 / 650 / 45 | 373 / 282 / 104 | 20 / 75 / 10 |
 | Buzzbox Akimbo / Four-by-Three / High Five / Executive Decision | rare | 20 / 104 / 100 / 40 | 2200 / 800 burst / 420 / 900 | 733 / 657 / 700 / 600 | 40 / 20 / 20 / 60 |
 | Firing Squad / Dragon's Choir / Road Rage / Twin Thumpers | epic | 182 / 480 / 26 / 170 | 380 / 70 / 3000 / 450 | 1153 / 560 / 1300 / 1275 | 20 / 12 / 160 / 150 |
-| Demolition Marksman / Grenade Organ / Rail Battery | epic | 49 / 120 / 204 | 270 / 240 / 50 | 220 / 480 / 170 | 30 / 4 / 40 |
+| Demolition Marksman / Grenade Organ / Rail Battery | epic | 49 / 132 / 204 | 270 / 240 / 50 | 220 / 528 / 170 | 30 / 4 / 40 |
 | Power Grid / Siege Battery / Hellfire Minigun / Suppressing Fire | legendary | 272 / 306 / 40 / 156 | 700 / 200 / 3000 / 650 | 3173 / 1020 / 2000 / 1690 | 50 / 150 / 400 / 150 |
 | Kitchen Sink / Last Word | legendary | 457 / 202 | 70 / 72 | 533 / 242 | 6 / 10 |
-| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 120 / 147 / 360 / 20 | 90 / 150 / 360 / 3000 | 180 / 368 / 2160 / 1000 | 2 / 10 / 20 / 900 |
+| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 132 / 147 / 360 / 20 | 90 / 150 / 360 / 3000 | 198 / 368 / 2160 / 1000 | 2 / 10 / 20 / 900 |
 
 New melee: Barbed Slugger 69 dmg, 0.72 s, cleave 2; Shock Katana 68, 0.40 s; Big Bonk 75, 1.14 s, stun 1.8 s; Lawnmower
 85, 0.61 s, cleave 5; Rocket Hammer 125, 1.07 s, stun 1.6 s; Flying Fish 58, 0.35 s, stun 2.5 s.
@@ -878,16 +941,16 @@ range; DPS = damage per shot x shots per second, every projectile landing).
 
 | Build | Grip | Receivers / barrels | Damage per shot | RPM | Mag | Reload | Mobility | DPS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| **Plain Rifle**: Workhorse, standard barrel, flash hider, box mag, 5.56, fixed stock, red dot | Rifle Grip | 1 / 1 | 26 | 600 auto | 30 | 2.2 s | 0.95 | 260 |
-| **Triple Pistol**: three Plinkers, stick mags, 9mm (volley) | Pistol Grip | 3 / 3 | 60 (3 x 20) | 420 semi | 20 | 2.4 s | 0.99 | 420 |
+| **Plain Rifle**: Workhorse, standard barrel, flash hider, box mag, FMJ, fixed stock, red dot | Rifle Grip | 1 / 1 | 26 | 600 auto | 30 | 2.2 s | 0.95 | 260 |
+| **Triple Pistol**: three Plinkers, stick mags, FMJ (volley) | Pistol Grip | 3 / 3 | 60 (3 x 20) | 420 semi | 20 | 2.4 s | 0.99 | 420 |
 | **Nine Lives**: nine Workhorses with stub barrels, fixed stock | Rifle Grip | 9 / 9 | 234 (9 x 26) | 600 auto | 20 | 3.9 s | 0.67 | 2340 |
 | **Twin Splitter Shotgun**: Farmhand Pump, Y-Splitter, two Scattermouths, buckshot | Rifle Grip | 1 / 2 | 112 (2 x 8 x 7) | 70 pump | 6 | 3.0 s | 0.95 | 131 |
-| **Belt-Fed Chaingun**: Thumper, Big Iron, Belt Box, .50 BMG, chaingun handle | Rifle Grip | 1 / 1 | 85 | 450 (0.4 s spool) | 150 | 6.0 s | 0.86 | 637 |
-| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, 5.56 | Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
+| **Belt-Fed Chaingun**: Thumper, Big Iron, Belt Box, Armour Piercing, chaingun handle | Rifle Grip | 1 / 1 | 85 | 450 (0.4 s spool) | 150 | 6.0 s | 0.86 | 637 |
+| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, FMJ | Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
 | **Lumberjack**: six Gravedigger auto shotguns, shell drums, buckshot | Chainsaw Grip | 6 / 6 | 672 (6 x 8 x 14) | 260 auto | 20 | 5.6 s | 0.40 | 2912 |
 | **Shopping Spree**: sixteen Stampede SMG receivers (hip fire only) | Push Cart | 16 / 16 | 320 (16 x 20) | 900 auto | 20 | 4.9 s | 0.40 | 4800 |
 | **Party Platter**: Workhorse, Party Tray of four Tridents, twelve stub barrels | Rifle Grip | 1 / 12 | 26 (12 x 2.2: conserved) | 335 auto | 75 | 3.4 s | 0.87 | 145 |
-| **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck Rounds | Pistol Grip | 1 / 1 | 90 | 90 semi | 2 | 1.0 s | 0.96 | 135 |
+| **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck | Pistol Grip | 1 / 1 | 90 | 90 semi | 2 | 1.0 s | 0.96 | 135 |
 
 The big multi-receiver numbers (Lumberjack, Shopping Spree) are deliberately silly in this sandbox; in Zombies they
 are gated by weight (both sit at the 0.40 mobility floor), part rarity and scrap cost, and by zombie health scaling with
@@ -940,6 +1003,10 @@ Milestone 2 (the user's decisions):
 2. **Special ammo effects** (incendiary, explosive, penetrating, plasma, squeaking ducks; and now chainsaw, fish,
    shock, nails on melee) are flagged but have no effect yet: which matter most for Zombies, and do they **stack**
    across receivers (two incendiary receivers = twice the burn, or the same burn)?
+   **Universal ammo balance** (2026-10-23): the Frag's x1.1 made the two Frag launchers 10% stronger (keep, or x1.0?);
+   Buckshot on a pistol loses a fifth to rounding (2 x 8 = 16 of 20): raise the pistol calibre to 24 or accept it; the
+   Slug's +15 m and Armour Piercing's x1.15 range on a heavy receiver (138-240 m) are far beyond any map; and the
+   Hollow Point / Match Grade / Subsonic numbers are first guesses.
 3. **The manned cart:** are the traverse limits right (60 degrees either side, 15 down, 30 up)? Should it ever fire
    while pushed (hip fire with heavy spread), or stay "park it, then man it"?
 4. **The numbers marked proposed:** the drop tables and prices, the weight penalties, melee stun

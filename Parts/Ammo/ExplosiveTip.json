@@ -3,13 +3,12 @@
   "name": "Explosive Tip",
   "category": "ammo",
   "rarity": "epic",
-  "flavor": "Rifle rounds with a tiny charge in the tip. Hits harder, cycles a bit slower.",
-  "bores": ["rifle"],
+  "flavor": "A tiny charge in the tip. Hits much harder and splashes, cycles a bit slower.",
   "weight": 0.0,
   "flags": ["explosive"],
   "stats": [
-    {"stat": "damage", "set": 36},
-    {"stat": "rangeM", "set": 30},
+    {"stat": "damage", "mul": 1.4},
+    {"stat": "rangeM", "mul": 1.07},
     {"stat": "rpm", "mul": 0.9}
   ]
 }

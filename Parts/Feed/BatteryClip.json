@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Battery Clip",
+  "category": "feed",
+  "rarity": "common",
+  "flavor": "A clip of flat cells. Twenty-four shots, quick to swap, nothing fancy.",
+  "bores": ["energy"],
+  "weight": 0.25,
+  "hand": [0, -0.035, 0],
+  "feed": "cell",
+  "model": [
+    {"size": [0.026, 0.07, 0.05], "pos": [0, -0.035, 0], "color": "polymer"},
+    {"size": [0.028, 0.01, 0.052], "pos": [0, -0.02, 0], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 24},
+    {"stat": "reload", "set": 1.8}
+  ]
+}

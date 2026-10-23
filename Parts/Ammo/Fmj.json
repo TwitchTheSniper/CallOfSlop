@@ -1,0 +1,9 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "FMJ",
+  "category": "ammo",
+  "rarity": "common",
+  "flavor": "Full metal jacket, ball, whatever the calibre calls its plain round. The baseline: fits every receiver and changes nothing.",
+  "weight": 0.0,
+  "stats": []
+}

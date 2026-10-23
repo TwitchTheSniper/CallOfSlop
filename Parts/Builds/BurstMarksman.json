@@ -7,5 +7,5 @@
     "wall"
   ],
   "flavor": "A three-round burst rifle with a long barrel and a holo sight.",
-  "build": "Sport Rifle Grip{receiver_1:Triad Burst Receiver{barrel:Long Barrel,feed:Extended Mag,ammo:5.56 FMJ,action:Three-Round Burst Group},stock:Fixed Stock,optic:Holographic}"
+  "build": "Sport Rifle Grip{receiver_1:Triad Burst Receiver{barrel:Long Barrel,feed:Extended Mag,ammo:FMJ,action:Three-Round Burst Group},stock:Fixed Stock,optic:Holographic}"
 }

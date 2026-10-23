@@ -312,6 +312,21 @@ public sealed class MeleeEffects
     public float Stun;
 }
 
+/// <summary>
+/// Ammo-only data: how the round is cut up. Ammo is universal (every ammo part fits every receiver; the receiver sets
+/// the calibre), so an ammo part only changes the calibre's numbers relatively (its "stats": mul / add) and, with this
+/// block, how many projectiles the round is split into.
+/// </summary>
+public sealed class RoundInfo
+{
+    /// <summary>
+    /// Projectiles the round is split into, sharing the calibre's damage (8 = buckshot: a rifle round becomes eight
+    /// pellets of an eighth each; 1 = a slug: a shell's eight pellets become one of eight times the damage). 0 = as the
+    /// calibre fires it.
+    /// </summary>
+    public int Pellets;
+}
+
 /// <summary>Splitter-only data: the documented damage rule for each output.</summary>
 public sealed class SplitInfo
 {
@@ -403,6 +418,9 @@ public sealed class PartDef
     public ActionInfo? Action;
 
     public SplitInfo? Split;
+
+    /// <summary>Ammo only: how the round is split into projectiles (null = as the calibre fires it).</summary>
+    public RoundInfo? Round;
 
     /// <summary>Root grips only (a grip with no mount): receiver capacity, fire style, handling.</summary>
     public FrameInfo? Frame;

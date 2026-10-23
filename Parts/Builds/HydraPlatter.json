@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "One rifle receiver through a six-headed splitter. Same damage, everywhere at once.",
-  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Hydra Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Drum Mag,ammo:5.56 FMJ,action:Full-Auto Sear,amp:Overpressure Chamber}}"
+  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Hydra Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear,amp:Overpressure Chamber}}"
 }

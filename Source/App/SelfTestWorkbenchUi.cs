@@ -36,17 +36,17 @@ public static partial class SelfTest
         var old = WeaponBuild.Parse(oldSave, Parts.Find, droppedOld);
         Line($"old save on the Pistol Grip: {old.Receivers.Count} receivers, dropped {droppedOld.Count}, complete {BuildRules.IsComplete(old)}, stock actions added {old.ActionsAdded}");
         // Written before actions were parts: each Plinker gets its stock action, and nothing else changes.
-        var migratedSave = oldSave.Replace("ammo:9mm Ball}", "ammo:9mm Ball,action:Semi-Auto Trigger}");
+        var migratedSave = oldSave.Replace("ammo:9mm Ball}", "ammo:FMJ,action:Semi-Auto Trigger}"); // 9mm Ball -> FMJ (universal ammo)
         if (droppedOld.Count > 0 || old.Receivers.Count != 2 || !BuildRules.IsComplete(old) || old.ActionsAdded != 2 || old.ToText() != migratedSave)
             Fail($"workbench: a saved build on a multi-receiver grip should load whole (with its stock actions) and stay valid: {old.ToText()}");
 
         // ---- The linear list ---------------------------------------------------------------------------------
-        var rifle = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:5.56 FMJ},stock:Fixed Stock,optic:Red Dot}"), BenchStock.Unlimited);
+        var rifle = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:FMJ},stock:Fixed Stock,optic:Red Dot}"), BenchStock.Unlimited);
         var order = string.Join(" > ", rifle.Rows.Select(r => r.Socket?.Type ?? "grip"));
         Line($"linear list: {order}");
         if (order != "grip > receiver > action > feed > ammo > barrel > muzzle > stock > optic" || !rifle.CanFinalize)
             Fail($"workbench: the linear list should read grip > receiver > action > feed > ammo > barrel > muzzle > stock > optic (got {order})");
-        var split = new BenchModel(BuildOf("Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:00 Buckshot}}"), BenchStock.Unlimited);
+        var split = new BenchModel(BuildOf("Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Y-Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel},feed:Shell Tube,ammo:Buckshot}}"), BenchStock.Unlimited);
         var depths = string.Join(",", split.Rows.Select(r => r.Depth));
         Line($"splitter indent: {string.Join(", ", split.Rows.Select(r => $"{r.Depth}:{r.Node?.Part.Name}"))}");
         if (depths != "0,1,2,2,2,2,3,3")
@@ -91,10 +91,12 @@ public static partial class SelfTest
         Array.Clear(valid);
         m.ValidSpots(P("Box Mag"), valid);
         var onlyFeed = feedSpot >= 0 && valid[feedSpot] && valid.Count(v => v) == 1;
-        var why9 = m.WhyNot(m.SpotOf("receiver_1", "ammo"), P("9mm Ball"));
-        Line($"snap: Box Mag fits only the feed: {onlyFeed}; 9mm Ball in the rifle receiver: {why9}");
-        if (!onlyFeed || why9 == null || !why9.Contains("pistol"))
-            Fail("workbench: the Box Mag should fit only the receiver's feed, and 9mm into a rifle receiver should be refused with the bore");
+        // Ammo is universal: every round type fits the rifle receiver's ammo socket (the receiver sets the calibre).
+        var ammoSpot = m.SpotOf("receiver_1", "ammo");
+        var ammoRefused = Parts.All.Where(p => p.Category == PartCategory.Ammo).Select(p => (p.Name, Why: m.WhyNot(ammoSpot, p))).Where(x => x.Why != null).ToList();
+        Line($"snap: Box Mag fits only the feed: {onlyFeed}; ammo refused by the rifle receiver: {(ammoRefused.Count == 0 ? "none" : string.Join("; ", ammoRefused.Select(x => $"{x.Name}: {x.Why}")))}");
+        if (!onlyFeed || ammoRefused.Count > 0)
+            Fail("workbench: the Box Mag should fit only the receiver's feed, and every ammo should fit the rifle receiver (ammo is universal)");
         // The ray: straight at a socket picks it; a valid flag off or a ray well wide picks nothing; the nearer of two wins.
         var spots = m.Spots;
         var target = feedSpot;
@@ -131,7 +133,7 @@ public static partial class SelfTest
             Fail("workbench: a ray through a socket's projected pixel should pass through the socket");
 
         // ---- Swap / replace semantics -------------------------------------------------------------------------
-        var s = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:5.56 FMJ}}"), BenchStock.Unlimited);
+        var s = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel{muzzle:Flash Hider},feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         var oldBarrel = s.Build.At("receiver_1/barrel")!;
         var err = s.Place(s.SpotOf("receiver_1", "barrel"), P("Long Barrel"), out var nb);
         var keptMuzzle = nb?.Child("muzzle")?.Part.Name;
@@ -149,23 +151,24 @@ public static partial class SelfTest
         first.Detach();
         if (first.Path() != "" || gn.Child("receiver_1") != second || second.Path() != "receiver_1")
             Fail("workbench: BuildNode.Attach replacing a part should orphan the old node cleanly");
-        // A receiver swapped for one of the same bore keeps everything; another bore keeps only what fits.
-        var r1 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ}}"), BenchStock.Unlimited);
+        // A receiver swapped for one of the same bore keeps everything; another bore keeps only what fits (the barrel and
+        // the ammo fit any receiver, the magazine is bore-bound).
+        var r1 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         r1.Place(r1.SpotOf("", "receiver_1"), P("Triad Burst Receiver"), out _);
-        var r2 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ}}"), BenchStock.Unlimited);
+        var r2 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         r2.Place(r2.SpotOf("", "receiver_1"), P("Plinker Receiver"), out _);
         Line($"swap receiver: rifle -> rifle {r1.Build.ToText()}; rifle -> pistol {r2.Build.ToText()}");
         if (r1.Build.At("receiver_1/feed") == null || r1.Build.At("receiver_1/ammo") == null || r1.Build.At("receiver_1/barrel") == null
-            || r2.Build.At("receiver_1/barrel")?.Part.Name != "Standard Barrel" || r2.Build.At("receiver_1/feed") != null || r2.Build.At("receiver_1/ammo") != null
+            || r2.Build.At("receiver_1/barrel")?.Part.Name != "Standard Barrel" || r2.Build.At("receiver_1/feed") != null || r2.Build.At("receiver_1/ammo")?.Part.Name != "FMJ"
             || BuildRules.Check(r2.Build).Any(p => !p.Incomplete))
-            Fail("workbench: a swapped receiver should keep the parts that fit its bore and drop the rest");
+            Fail("workbench: a swapped receiver should keep the parts that fit its bore (barrel, ammo) and drop the rest (the magazine)");
 
         // ---- Tree click: a part row jumps the parts list to its category ----
         if (Ui.TreeRowFilter(PartCategory.Feed, true, -1) != (int)PartCategory.Feed || Ui.TreeRowFilter(PartCategory.Feed, false, 3) != 3)
             Fail("workbench: a tree row click should select the part's category chip when the list shows it, else leave the filter");
 
         // ---- Move, remove, undo / redo, auto-place, auto-complete ---------------------------------------------
-        var mv = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);
+        var mv = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         var before = mv.Build.ToText();
         var moveWhy = mv.Move(mv.Build.At("receiver_1")!, mv.SpotOf("", "receiver_2"));
         var moved = mv.Build.At("receiver_2/feed")?.Part.Name;
@@ -197,7 +200,7 @@ public static partial class SelfTest
             Fail("workbench: undoing auto-complete should take every part it fitted off again");
 
         // ---- Copy receiver assembly -------------------------------------------------------------------------
-        const string copySrc = "Pistol Grip{receiver_1:Plinker Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Extended Mag,ammo:9mm Ball}}";
+        const string copySrc = "Pistol Grip{receiver_1:Plinker Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Extended Mag,ammo:FMJ}}";
         var full = new BenchModel(BuildOf(copySrc), BenchStock.Unlimited);
         var fullWhy = full.CopyReceiver(full.Build.At("receiver_1")!, out var fullTarget);
         var a = full.Build.At("receiver_1")!;
@@ -206,7 +209,7 @@ public static partial class SelfTest
         Line($"copy (all parts): {fullWhy ?? "ok"} to {fullTarget?.Name}; same assembly {same}; missing {full.Missing.Total}; can finalise {full.CanFinalize}");
         if (fullWhy != null || fullTarget?.Name != "receiver_2" || !same || full.Missing.Total != 0 || !full.CanFinalize)
             Fail("workbench: copying a receiver assembly with every part should duplicate it whole onto the next free receiver slot");
-        var stock = BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 1), (P("Compensator"), 1), (P("Extended Mag"), 1), (P("9mm Ball"), 2), (P("Semi-Auto Trigger"), 2)]);
+        var stock = BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 1), (P("Compensator"), 1), (P("Extended Mag"), 1), (P("FMJ"), 2), (P("Semi-Auto Trigger"), 2)]);
         var cp = new BenchModel(BuildOf(copySrc), stock);
         var cpWhy = cp.CopyReceiver(cp.Build.At("receiver_1")!, out _);
         var text = cp.Missing.Text();
@@ -225,10 +228,10 @@ public static partial class SelfTest
         Line($"craft the missing parts: {craft} scrap (round cap uncommon), cap common: {craftCommon}");
         if (craft != 3 * (P("Long Barrel").Scrap + P("Compensator").Scrap + P("Extended Mag").Scrap) || craftCommon != -1)
             Fail("workbench: crafting the missing parts should cost 3x their scrap, and be refused above the round's tier");
-        cp.SetStock(BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 2), (P("Compensator"), 2), (P("Extended Mag"), 2), (P("9mm Ball"), 2), (P("Semi-Auto Trigger"), 2)]));
+        cp.SetStock(BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 2), (P("Compensator"), 2), (P("Extended Mag"), 2), (P("FMJ"), 2), (P("Semi-Auto Trigger"), 2)]));
         if (cp.Missing.Total != 0 || !cp.CanFinalize)
             Fail("workbench: once the missing parts are owned the copied build should finalise");
-        var one = new BenchModel(BuildOf("Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);
+        var one = new BenchModel(BuildOf("Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         var oneWhy = one.CopyReceiver(one.Build.At("receiver_1")!, out _);
         Line($"copy on a one-receiver grip: {oneWhy}");
         if (oneWhy == null || !oneWhy.Contains("no free receiver slot"))

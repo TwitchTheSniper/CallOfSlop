@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Plasma",
+  "category": "ammo",
+  "rarity": "rare",
+  "flavor": "A charge of something hot instead of lead. Doesn't drop off, slows what it hits.",
+  "weight": 0.0,
+  "flags": ["plasma"],
+  "stats": [
+    {"stat": "minDamageMult", "mul": 1.25, "max": 1},
+    {"stat": "hipSpreadDeg", "mul": 0.9}
+  ]
+}

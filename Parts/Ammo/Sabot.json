@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Sabot",
+  "category": "ammo",
+  "rarity": "legendary",
+  "flavor": "A tungsten dart in a shoe. One projectile however the calibre fires, going very far, very fast, through things.",
+  "weight": 0.0,
+  "flags": ["penetrating"],
+  "round": {"pellets": 1},
+  "stats": [
+    {"stat": "damage", "mul": 1.25},
+    {"stat": "rangeM", "mul": 1.5},
+    {"stat": "minDamageMult", "mul": 1.5, "max": 1},
+    {"stat": "rpm", "mul": 0.85},
+    {"stat": "penetrationMult", "mul": 2}
+  ]
+}

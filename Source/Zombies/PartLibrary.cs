@@ -36,15 +36,19 @@ public sealed class PartRegistry
     public BoreClass ClassOf(string bore) =>
         Classes.TryGetValue(bore, out var c) ? c : BuiltInClasses.TryGetValue(bore, out var b) ? b : BoreClass.Default;
 
-    /// <summary>The barrel adaptation table the game ships (also in Parts/_Registry.json): pistol smaller, heavy bigger.</summary>
+    /// <summary>
+    /// The bore table the game ships (also in Parts/_Registry.json): how each bore adapts a barrel (pistol smaller, heavy
+    /// bigger) and the calibre it fires (base damage, range, pellets, fall-off and headshot multiplier: what the receiver
+    /// gives a round before the ammo part's own modifiers; docs/zombies/WEAPON-BUILDER.md, "Universal ammo").
+    /// </summary>
     public static readonly Dictionary<string, BoreClass> BuiltInClasses = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["pistol"] = new(new Vector3(0.8f, 0.8f, 0.7f), 0.85f, false),
-        ["rifle"] = new(Vector3.One, 1f, false),
-        ["heavy"] = new(new Vector3(1.35f, 1.35f, 1.3f), 1.15f, false),
-        ["shell"] = new(new Vector3(1.5f, 1.5f, 1f), 1f, true),
-        ["launcher"] = new(new Vector3(2.7f, 2.7f, 1.3f), 0.5f, false),
-        ["energy"] = new(new Vector3(1f, 1f, 1.2f), 1f, false),
+        ["pistol"] = new(new Vector3(0.8f, 0.8f, 0.7f), 0.85f, false, new(20, 15f, 1, 0.6f, 2f)),
+        ["rifle"] = new(Vector3.One, 1f, false, new(26, 28f, 1, 0.6f, 2f)),
+        ["heavy"] = new(new Vector3(1.35f, 1.35f, 1.3f), 1.15f, false, new(85, 120f, 1, 0.8f, 2f)),
+        ["shell"] = new(new Vector3(1.5f, 1.5f, 1f), 1f, true, new(14, 9f, 8, 0.2f, 2f)),
+        ["launcher"] = new(new Vector3(2.7f, 2.7f, 1.3f), 0.5f, false, new(120, 40f, 1, 0.6f, 1f)),
+        ["energy"] = new(new Vector3(1f, 1f, 1.2f), 1f, false, new(30, 40f, 1, 0.6f, 2f)),
     };
 
     /// <summary>A line about each socket type and bore (for --check-parts, the docs and tools); may be empty.</summary>
@@ -156,7 +160,8 @@ public sealed class PartRegistry
     /// <summary>
     /// A list of names: "name" strings or {"name", "about"} objects (lower-case letters, digits and _). Bores
     /// (<paramref name="classes"/> given) may also say how they adapt barrels: "barrelScale" [width, height, length],
-    /// "barrelStrength" (how much a barrel's modifiers count) and "barrelPellets" (whether barrels may change pellets).
+    /// "barrelStrength" (how much a barrel's modifiers count) and "barrelPellets" (whether barrels may change pellets),
+    /// and the calibre they fire: "calibre" {damage, range, pellets, minDamageMult, headMult}.
     /// </summary>
     private static string[] Names(JsonElement e, string where, Dictionary<string, string> about, Dictionary<string, BoreClass>? classes = null)
     {
@@ -172,6 +177,7 @@ public sealed class PartRegistry
                 Vector3? scale = null;
                 float? strength = null;
                 bool? pellets = null;
+                CalibreInfo? calibre = null;
                 foreach (var p in x.EnumerateObject())
                     switch (p.Name.ToLowerInvariant())
                     {
@@ -191,15 +197,16 @@ public sealed class PartRegistry
                                 _ => throw new WeaponFileException($"{where}: \"barrelPellets\" is true or false"),
                             };
                             break;
+                        case "calibre" when classes != null: calibre = CalibreInfo.Read(p.Value, $"{where}: \"calibre\""); break;
                         default:
-                            throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" (known: name, about{(classes != null ? ", barrelScale, barrelStrength, barrelPellets" : "")})");
+                            throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" (known: name, about{(classes != null ? ", barrelScale, barrelStrength, barrelPellets, calibre" : "")})");
                     }
                 name = n ?? throw new WeaponFileException($"{where}: an entry needs a \"name\"");
                 about[name] = a;
-                if (classes != null && (scale != null || strength != null || pellets != null))
+                if (classes != null && (scale != null || strength != null || pellets != null || calibre != null))
                 {
                     var d = PartRegistry.BuiltInClasses.TryGetValue(name, out var bi) ? bi : BoreClass.Default;
-                    classes[name] = new BoreClass(scale ?? d.Scale, strength ?? d.Strength, pellets ?? d.Pellets);
+                    classes[name] = new BoreClass(scale ?? d.Scale, strength ?? d.Strength, pellets ?? d.Pellets, calibre ?? d.Calibre);
                 }
             }
             else
@@ -219,11 +226,12 @@ public sealed class PartRegistry
 /// receivers"): <see cref="Scale"/> sizes the barrel's model (width, height, length; 1 = as drawn for a rifle),
 /// <see cref="Strength"/> scales the barrel's own stat modifiers (a x1.4 range barrel at strength 0.5 gives x1.2), and
 /// <see cref="Pellets"/> says whether barrels may change the pellet count (only shotguns: a choke on a rifle shouldn't
-/// double its bullets).
+/// double its bullets), and <see cref="Calibre"/> is the round a receiver of that bore fires before its ammo part's
+/// modifiers (ammo is universal: it picks the round type, the receiver the calibre).
 /// </summary>
-public readonly record struct BoreClass(Vector3 Scale, float Strength, bool Pellets)
+public readonly record struct BoreClass(Vector3 Scale, float Strength, bool Pellets, CalibreInfo Calibre)
 {
-    public static readonly BoreClass Default = new(Vector3.One, 1f, false);
+    public static readonly BoreClass Default = new(Vector3.One, 1f, false, CalibreInfo.Default);
 
     /// <summary>Reads a [width, height, length] barrel scale (each 0.2 to 4).</summary>
     public static Vector3 ReadScale(JsonElement e, string where)
@@ -235,6 +243,42 @@ public readonly record struct BoreClass(Vector3 Scale, float Strength, bool Pell
             throw new WeaponFileException($"{where}: each scale must be between 0.2 and 4");
         return v;
     }
+}
+
+/// <summary>
+/// What a bore's rounds do before the ammo part changes them (docs/zombies/WEAPON-BUILDER.md, "Universal ammo"): the
+/// damage per projectile, full-damage range, projectiles per round (shells fire 8 pellets), damage left at long range
+/// and the headshot multiplier. A receiver's own stats apply on top (a revolver's headMult), then the ammo's relative
+/// modifiers.
+/// </summary>
+public readonly record struct CalibreInfo(int Damage, float RangeM, int Pellets, float MinDamageMult, float HeadMult)
+{
+    public static readonly CalibreInfo Default = new(20, 25f, 1, 0.6f, 2f);
+
+    /// <summary>Reads {"damage": 26, "range": 28, "pellets": 1, "minDamageMult": 0.6, "headMult": 2} (every key optional, defaults as <see cref="Default"/>).</summary>
+    public static CalibreInfo Read(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new WeaponFileException($"{where}: expected {{ \"damage\": 26, \"range\": 28, \"pellets\": 1, \"minDamageMult\": 0.6, \"headMult\": 2 }}");
+        var c = Default;
+        foreach (var p in e.EnumerateObject())
+        {
+            var at = $"{where}.{p.Name}";
+            switch (p.Name.ToLowerInvariant())
+            {
+                case "damage": c = c with { Damage = (int)Check(WeaponFile.Int(p.Value, at), 1, 1000, at) }; break;
+                case "range": c = c with { RangeM = Check(WeaponFile.Number(p.Value, at), 0.5f, 1000, at) }; break;
+                case "pellets": c = c with { Pellets = (int)Check(WeaponFile.Int(p.Value, at), 1, 30, at) }; break;
+                case "mindamagemult": c = c with { MinDamageMult = Check(WeaponFile.Number(p.Value, at), 0, 1, at) }; break;
+                case "headmult": c = c with { HeadMult = Check(WeaponFile.Number(p.Value, at), 0.5f, 10, at) }; break;
+                default: throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" (known: damage, range, pellets, minDamageMult, headMult)");
+            }
+        }
+        return c;
+    }
+
+    private static float Check(float v, float min, float max, string where) =>
+        v < min || v > max ? throw new WeaponFileException($"{where}: must be between {WeaponFile.Num(min)} and {WeaponFile.Num(max)}") : v;
 }
 
 /// <summary>A reusable model piece from Parts/_Fragments (format "call-of-slop-fragment/1"): a name and a list of boxes.</summary>

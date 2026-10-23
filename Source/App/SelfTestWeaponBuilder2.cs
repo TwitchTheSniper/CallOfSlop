@@ -59,7 +59,7 @@ public static partial class SelfTest
             if (Parts.Find(name)?.Frame?.Style != want)
                 Fail($"fire style: the {name} should default to {want}");
         // The same receivers on the same grip: the build's Chain fire choice decides (the old twin grips are gone).
-        var tree = "receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}";
+        var tree = "receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ}";
         var volley = WeaponBuilder.Assemble(BuildOf($"Pistol Grip{{{tree}}}")).Def;
         var chained = BuildOf($"Pistol Grip{{{tree}}}");
         chained.StyleChoice = FireStyle.Rotate;
@@ -70,7 +70,7 @@ public static partial class SelfTest
 
     private static void CheckSplittersConserve()
     {
-        const string rx = "Rifle Grip{receiver_1:Workhorse Receiver{barrel:%B%,feed:Box Mag,ammo:5.56 FMJ}}";
+        const string rx = "Rifle Grip{receiver_1:Workhorse Receiver{barrel:%B%,feed:Box Mag,ammo:FMJ}}";
         var single = WeaponBuilder.Assemble(BuildOf(rx.Replace("%B%", "Stub Barrel"))).Def!;
         var splitters = Parts.InCategory(PartCategory.Splitter).OrderBy(p => p.Rarity).ToList();
         var lastSpread = float.MaxValue;
@@ -105,7 +105,7 @@ public static partial class SelfTest
 
     private static void CheckMultipliersAndUpgrades()
     {
-        const string rx = "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ%X%}}";
+        const string rx = "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ%X%}}";
         var baseDef = WeaponBuilder.Assemble(BuildOf(rx.Replace("%X%", ""))).Def!;
         foreach (var m in Parts.InCategory(PartCategory.Multiplier))
         {
@@ -135,7 +135,7 @@ public static partial class SelfTest
         var both = WeaponBuilder.Assemble(BuildOf(rx.Replace("%X%", ",upgrade_rear:Gas Overclock,upgrade_side:Lightweight Bolt"))).Def!;
         if (MathF.Abs(both.Rpm / (float)baseDef.Rpm - 1.25f * 1.08f) > 0.02f)
             Fail($"receiver upgrades: rear + side should stack (rpm {both.Rpm} vs {baseDef.Rpm})");
-        var mg = "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{" + string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel")) + ",feed:Backpack Hopper,ammo:5.56 FMJ%X%}}";
+        var mg = "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{" + string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel")) + ",feed:Backpack Hopper,ammo:FMJ%X%}}";
         var mg0 = WeaponBuilder.Assemble(BuildOf(mg.Replace("%X%", ""))).Def!;
         var mg1 = WeaponBuilder.Assemble(BuildOf(mg.Replace("%X%", ",upgrade_rear:Lightweight Bolt"))).Def!;
         Line($"receiver upgrades: Workhorse {baseDef.Rpm} -> {both.Rpm} rpm (Gas Overclock + Lightweight Bolt); minigun {mg0.Rpm} -> {mg1.Rpm} rpm (Lightweight Bolt)");
@@ -149,28 +149,31 @@ public static partial class SelfTest
 
     private static void CheckSharedFeed()
     {
-        var triplets = WeaponBuilder.Assemble(BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},hopper:Manifold Hopper{ammo:5.56 FMJ}}"));
+        var triplets = WeaponBuilder.Assemble(BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},hopper:Manifold Hopper{ammo:FMJ}}"));
         var fed = triplets.Build.HopperFed().Count;
         Line($"shared feed: Manifold Hopper feeds {fed} receivers, volley mag {triplets.Def?.Mag} (pool 120 / 3), problems: {string.Join("; ", triplets.Problems.Select(p => p.Message))}");
         if (triplets.Def == null || fed != 3 || triplets.Def.Mag != 40)
             Fail("shared feed: three receivers on a Manifold Hopper should be complete with a volley magazine of 120 / 3 = 40");
         // Capacity: a fourth receiver needs its own feed.
-        var four = BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},receiver_4:Workhorse Receiver{barrel:Standard Barrel,ammo:5.56 FMJ},hopper:Manifold Hopper{ammo:5.56 FMJ}}");
+        var four = BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},receiver_4:Workhorse Receiver{barrel:Standard Barrel,ammo:FMJ},hopper:Manifold Hopper{ammo:FMJ}}");
         var p4 = BuildRules.Check(four);
         if (four.HopperFed().Count != 3 || !p4.Any(p => p.Message.Contains("needs a feed") && p.Message.Contains("at most")))
             Fail($"shared feed: a fourth receiver past the hopper's capacity should need a feed ({string.Join("; ", p4.Select(p => p.Message))})");
         // Bores: a shell receiver can't drink from a rifle hopper.
-        var shell = BuildOf("Mule Frame{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,ammo:00 Buckshot},hopper:Manifold Hopper{ammo:5.56 FMJ}}");
+        var shell = BuildOf("Mule Frame{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,ammo:Buckshot},hopper:Manifold Hopper{ammo:FMJ}}");
         var ps = BuildRules.Check(shell);
         if (shell.HopperFed().Count != 0 || !ps.Any(p => p.Message.Contains("can't feed it")))
             Fail($"shared feed: a shell receiver shouldn't be fed by a rifle hopper ({string.Join("; ", ps.Select(p => p.Message))})");
-        ExpectWhyNot(BuildOf("Mule Frame{hopper:Manifold Hopper}"), "hopper", "ammo", "00 Buckshot", "feeds pistol or rifle rounds");
+        // Ammo is universal: a hopper takes any round type (Buckshot in a rifle hopper: every fed rifle fires a spread).
+        var hopperBuck = BuildOf("Mule Frame{hopper:Manifold Hopper}");
+        if (Parts.Find("Buckshot") is { } buck && BuildRules.WhyNot(hopperBuck, "hopper", "ammo", buck) is { } whyBuck)
+            Fail($"shared feed: Buckshot should load into the Manifold Hopper (ammo fits every receiver), got: {whyBuck}");
         // An empty hopper: its receivers need ammo.
         var dry = BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},hopper:Manifold Hopper}");
         if (!BuildRules.Check(dry).Any(p => p.Message.Contains("needs ammo")))
             Fail("shared feed: receivers on an unloaded hopper should need ammo");
         // Rotating: the pool counts once next to the receivers' own magazines.
-        var stick = WeaponBuilder.Assemble(BuildOf("Rifle Grip{receiver_1:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ}}")).Def!.Mag;
+        var stick = WeaponBuilder.Assemble(BuildOf("Rifle Grip{receiver_1:Workhorse Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:FMJ}}")).Def!.Mag;
         var exo = StandardBuilds.Find("Exo Twelve") is { } eb ? WeaponBuilder.Assemble(eb.Build()).Def : null;
         Line($"shared feed: Exo Twelve (rotate, 6 on the manifold, 6 on stick mags of {stick}): mag {exo?.Mag} (expected {Math.Min(1000, 6 * stick + 300)})");
         if (exo == null || exo.Mag != Math.Min(1000, 6 * stick + 300))

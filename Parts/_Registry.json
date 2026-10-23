@@ -1,8 +1,9 @@
 // The weapon builder's registry (format call-of-slop-part-registry/1; see docs/zombies/WEAPON-BUILDER.md, "Making parts").
 // Socket types: what a part's "mount" and a socket's "type" may be. Add one here and it works in part files straight
 // away (a new utility rail, a bayonet lug...). The core types the rules in code use can't be removed.
-// Bores: the calibre classes receivers fire; feeds and ammo list the bores they hold. Barrels fit EVERY receiver: the
-// receiver's bore adapts them. "barrelScale" [width, height, length] sizes a barrel's model relative to how it is drawn
+// Bores: the calibre classes receivers fire; feeds list the bores they hold. Barrels and ammo fit EVERY receiver: the
+// receiver's bore adapts them. "calibre" is the round a receiver of that bore fires before its ammo part's relative
+// modifiers (damage per projectile, full-damage range in m, projectiles per round, damage left far away, headshot x). "barrelScale" [width, height, length] sizes a barrel's model relative to how it is drawn
 // (barrels are drawn for rifles unless their file says "sizedFor"), "barrelStrength" scales the barrel's own stat
 // modifiers (1 = as written), "barrelPellets" lets barrels change the pellet count (shotguns only). A receiver file may
 // override the size with "barrelScale" in its "receiver" block (an autocannon's barrels are fatter still).
@@ -28,12 +29,18 @@
     {"name": "action", "about": "A receiver's fire-control group: the action part decides the fire type and rate."}
   ],
   "bores": [
-    {"name": "pistol", "about": "9 mm and friends.", "barrelScale": [0.8, 0.8, 0.7], "barrelStrength": 0.85},
-    {"name": "rifle", "about": "5.56 and up to battle-rifle rounds.", "barrelScale": [1, 1, 1], "barrelStrength": 1},
-    {"name": "heavy", "about": ".50 BMG and the chain guns.", "barrelScale": [1.35, 1.35, 1.3], "barrelStrength": 1.15},
-    {"name": "shell", "about": "Shotgun shells.", "barrelScale": [1.5, 1.5, 1], "barrelStrength": 1, "barrelPellets": true},
-    {"name": "launcher", "about": "Grenades, rockets, anything round that fits.", "barrelScale": [2.7, 2.7, 1.3], "barrelStrength": 0.5},
-    {"name": "energy", "about": "Plasma cells and coil guns.", "barrelScale": [1, 1, 1.2], "barrelStrength": 1}
+    {"name": "pistol", "about": "9 mm and friends.", "barrelScale": [0.8, 0.8, 0.7], "barrelStrength": 0.85,
+     "calibre": {"damage": 20, "range": 15, "pellets": 1, "minDamageMult": 0.6, "headMult": 2}},
+    {"name": "rifle", "about": "5.56 and up to battle-rifle rounds.", "barrelScale": [1, 1, 1], "barrelStrength": 1,
+     "calibre": {"damage": 26, "range": 28, "pellets": 1, "minDamageMult": 0.6, "headMult": 2}},
+    {"name": "heavy", "about": ".50 BMG and the chain guns.", "barrelScale": [1.35, 1.35, 1.3], "barrelStrength": 1.15,
+     "calibre": {"damage": 85, "range": 120, "pellets": 1, "minDamageMult": 0.8, "headMult": 2}},
+    {"name": "shell", "about": "Shotgun shells: eight pellets a round.", "barrelScale": [1.5, 1.5, 1], "barrelStrength": 1, "barrelPellets": true,
+     "calibre": {"damage": 14, "range": 9, "pellets": 8, "minDamageMult": 0.2, "headMult": 2}},
+    {"name": "launcher", "about": "Grenades, rockets, anything round that fits.", "barrelScale": [2.7, 2.7, 1.3], "barrelStrength": 0.5,
+     "calibre": {"damage": 120, "range": 40, "pellets": 1, "minDamageMult": 0.6, "headMult": 1}},
+    {"name": "energy", "about": "Plasma cells and coil guns.", "barrelScale": [1, 1, 1.2], "barrelStrength": 1,
+     "calibre": {"damage": 30, "range": 40, "pellets": 1, "minDamageMult": 0.6, "headMult": 2}}
   ],
   "categories": [
     {"name": "receiver", "mount": "receiver", "display": "Receiver"},

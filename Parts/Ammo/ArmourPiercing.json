@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Armour Piercing",
+  "category": "ammo",
+  "rarity": "uncommon",
+  "flavor": "A hard core that goes through things (and keeps its punch at range).",
+  "weight": 0.0,
+  "flags": ["penetrating"],
+  "stats": [
+    {"stat": "rangeM", "mul": 1.15},
+    {"stat": "minDamageMult", "mul": 1.25, "max": 1},
+    {"stat": "penetrationMult", "mul": 1.5}
+  ]
+}

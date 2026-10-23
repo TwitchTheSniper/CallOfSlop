@@ -7,5 +7,5 @@
   ],
   "flavor": "Two machine pistols side by side on chain fire: left, right, left, right, very fast.",
   "chainFire": true,
-  "build": "Double-Tap Grip{receiver_1:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Buzzsaw Sear},receiver_2:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball,action:Buzzsaw Sear}}"
+  "build": "Double-Tap Grip{receiver_1:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:FMJ,action:Buzzsaw Sear},receiver_2:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:FMJ,action:Buzzsaw Sear}}"
 }

@@ -300,12 +300,12 @@ only the kill), and works with Insta-Kill and Double Points.
 | Flag (parts) | Effect on zombies |
 | --- | --- |
 | `incendiary` (Dragon's Breath) | Burn: 60 percent of the hit (at least 40) over 3 s, ticking 4 times a second; the zombie glows with flames |
-| `explosive` (Explosive Tip, 40mm Frag) | Splash: the zombies within 2.2 m of the one hit take half the hit, less further out; walls shield |
-| `shock` (Shock Coil) | Chain: arcs to the 3 nearest other zombies within 3.5 m (not through walls) for 40 percent, stunning them 0.4 s |
-| `penetrating` (.50 BMG) | Pierce: goes on along the ray through the next 2 zombies within 8 m behind (until a wall), at 60 percent |
-| `plasma` (Plasma Charge) | Slow: half speed for 2 s, crackling blue |
-| `bouncy` (Rubber Duck Rounds) | Bounce: on to the nearest other zombie within 4 m, at half |
-| `squeaky` (Rubber Duck Rounds, Whoopee Cushion) | A squeak and a 0.3 s stun |
+| `explosive` (Explosive Tip, Frag) | Splash: the zombies within 2.2 m of the one hit take half the hit, less further out; walls shield |
+| `shock` (Shock Coil, Shock rounds) | Chain: arcs to the 3 nearest other zombies within 3.5 m (not through walls) for 40 percent, stunning them 0.4 s |
+| `penetrating` (Armour Piercing, Sabot) | Pierce: goes on along the ray through the next 2 zombies within 8 m behind (until a wall), at 60 percent |
+| `plasma` (Plasma) | Slow: half speed for 2 s, crackling blue |
+| `bouncy` (Rubber Duck) | Bounce: on to the nearest other zombie within 4 m, at half |
+| `squeaky` (Rubber Duck, Whoopee Cushion) | A squeak and a 0.3 s stun |
 | `toasty` (Toaster Feed) | A half-strength burn, and the toaster **pops the zombie up** off the floor |
 | `nails` (Nail Ring), `chainsaw` | Bleed: 30 percent of the hit over 3 s (the chainsaw also stuns 0.3 s) |
 | `bonk` (Frying Pan) | A 1 s stun with a cartoon bonk |

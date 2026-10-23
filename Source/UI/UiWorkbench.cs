@@ -635,7 +635,8 @@ public sealed partial class Ui
             DlText(dl, new float2(p0.X + 70 * _scale, p0.Y + 23 * _scale), fits ? Dim8 : new ImColor8(105, 106, 114, 255),
                 p.Bores.Length > 0 && BuildRules.BoreBound(p.Category) ? $"{PartDef.RarityName(p.Rarity)} - {p.Bores[0]}{(p.Bores.Length > 1 ? "+" : "")}"
                 : p.Receiver is { } pr ? $"{PartDef.RarityName(p.Rarity)} - {pr.Bore} calibre"
-                : p.Action is { } pa ? $"{PartDef.RarityName(p.Rarity)} - {pa.FireType}" : PartDef.RarityName(p.Rarity));
+                : p.Action is { } pa ? $"{PartDef.RarityName(p.Rarity)} - {pa.FireType}"
+                : p.Category == PartCategory.Ammo ? $"{PartDef.RarityName(p.Rarity)} - any calibre" : PartDef.RarityName(p.Rarity));
             if (!Bm.Stock.IsUnlimited)
             {
                 var txt = free >= 0 && free < WbCountText.Length ? WbCountText[free] : $"x{free}";
@@ -1639,6 +1640,9 @@ public sealed partial class Ui
             bits.Add("holds " + string.Join(", ", p.Bores) + " rounds");
         if (p.Category is PartCategory.Barrel)
             bits.Add("fits every receiver: the receiver sizes it (pistol smaller, heavy bigger) and fires its own calibre through it");
+        else if (p.Category is PartCategory.Ammo)
+            bits.Add("fits every receiver: a round type on the receiver's calibre"
+                     + (p.Round is { Pellets: > 1 } rp ? $", split into {rp.Pellets} pellets sharing the round's damage" : p.Round is { Pellets: 1 } ? ", one solid projectile whatever the calibre fires" : ""));
         else if (p.Category is PartCategory.Splitter or PartCategory.Muzzle)
             bits.Add("fits every receiver");
         if (p.RequiresAction.Length > 0)

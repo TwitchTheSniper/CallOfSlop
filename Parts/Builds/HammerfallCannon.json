@@ -6,5 +6,5 @@
     "box"
   ],
   "flavor": "An autocannon on a rifle rack. Even the stub barrel comes out the size of a drainpipe.",
-  "build": "Rifle Grip{receiver_1:Hammerfall Autocannon Receiver{barrel:Stub Barrel,feed:Heavy Box,ammo:.50 BMG,action:Autocannon Drive},foregrip:Chaingun Handle}"
+  "build": "Rifle Grip{receiver_1:Hammerfall Autocannon Receiver{barrel:Stub Barrel,feed:Heavy Box,ammo:Armour Piercing,action:Autocannon Drive},foregrip:Chaingun Handle}"
 }

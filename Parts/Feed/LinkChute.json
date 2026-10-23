@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Link Chute",
+  "category": "feed",
+  "rarity": "rare",
+  "flavor": "Sixty linked heavy rounds down a steel chute. Needs an action that pulls a belt.",
+  "bores": ["heavy"],
+  "requiresAction": ["auto", "chain", "rotary"],
+  "weight": 2.2,
+  "hand": [0, -0.05, 0],
+  "feed": "belt",
+  "model": [
+    {"size": [0.07, 0.1, 0.12], "pos": [0, -0.05, 0], "color": "gunmetal"},
+    {"size": [0.03, 0.04, 0.014], "pos": [0.02, 0.02, 0.04], "color": "brass"},
+    {"size": [0.02, 0.06, 0.06], "pos": [0.044, -0.03, -0.02], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 60},
+    {"stat": "reload", "set": 4.6},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}
