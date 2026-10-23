@@ -19,11 +19,12 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
+| Sections for a change | `python3 -I tools/ci/sections_for.py [BASE]` prints the `[tests: ...]` line for the files changed vs BASE (default origin/main); `tools/ci/merge_check.sh` builds and runs them (what the coordinator runs before committing a merge) |
 
 **Local build in the agent container (Linux):** `. /home/claude/dotnet-env.sh` (adds the SDK to PATH and sets `XDG_RUNTIME_DIR`, which the game needs even headless), then `dotnet build -c Release --no-restore` (incremental: ~2 s) and `dotnet bin/Release/net10.0/CallOfSlop.dll --selftest-only "..."` (a couple of sections: ~1 s). The run prints nothing; read `bin/Release/net10.0/selftest.log`. If the SDK is missing, install it with the dot.net install script (`--channel 10.0 --install-dir /home/claude/.dotnet`) and restore once; `dot.net`, `builds.dotnet.microsoft.com` and `api.nuget.org` are allowed through the proxy.
 
 **CI** (`.github/workflows/build.yml`):
-- Every push builds and runs the self-test on Linux.
+- Every push builds and runs the self-test on Linux. A newer push to the same BRANCH cancels the older run; on `main` every run finishes (a burst of merges must still end with a full green result), and manual runs never cancel anything.
 - Windows runs only when the commit message contains `[windows ci]`, or on a manual run.
 - On non-main branches, `[tests: A, B]` in the head commit message runs only those sections. `main` always runs everything, and fails if the log says `FILTERED`.
 - NuGet packages come from the Actions cache.
@@ -64,7 +65,9 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md
 tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the zip's READ ME FIRST), MIGRATING.md,
-                    parts/floaters.py (connectivity checker), zombies/make_blackmoor.py and other map/prop generators
+                    parts/floaters.py (connectivity checker), props/gallery.py (the generated Dev prop galleries),
+                    mapkit/ (new_map.py scaffold, check_branch.py pre-push checklist, plan_min.py plan PNGs),
+                    zombies/make_blackmoor.py and other map/prop generators
 ```
 
 ## Conventions
@@ -88,6 +91,15 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - Every feature adds a section in `SelfTest.cs` (`Section("Name", CheckX)`). A new **map** adds no section: it gets a `test` block in its JSON (Maps/README.md, "Testing a map"), which the "Map contract" section and `--check-map` run; only checks the block can't express get a small section.
   - Use short, seeded, scripted scenarios. No long bot matches.
   - Remove temporary or diagnostic test code before finishing.
+  - **A branch that adds or edits a map, prop or decal always runs the all-maps sections** before its final push and
+    names them in its `[tests: ...]` tag: `Map horizons, Map objectives, Props, Animated props, Pack assets, Maps,
+    Map files, Nav determinism, Nav edge walks, Stairs` plus the pack's own section. These only run on main's full
+    suite otherwise, and in the 2026-10-23 session three branches passed their own tags and then failed them on main.
+  - **Agents in parallel:** at most three agents build at once on the 2-core cloud box (their builds slow each other
+    and wall-clock timing checks flake under load); use the user's PC runner when it is online. WIP pushes carry
+    `[skip ci]`; the final push never does. The coordinator keeps launch replies short, since an interrupted reply
+    stops the agents it is launching.
+  - Map branches: `python3 -I tools/mapkit/check_branch.py` before pushing prints the `[tests: ...]` sections (always Map horizons, Map objectives, Props, Animated props, Pack assets, Maps, Map files, Nav determinism, Stairs plus the pack's own) and checks the maps, props and galleries. New props: `python3 -I tools/props/gallery.py` regenerates the Dev galleries ("Props" checks they are current).
 - **Text.** Player-visible text is ASCII. Docs and comments use British spelling, as the existing code does.
 - **Commits.**
   - Commit as TwitchTheSniper <twitchthesniper@gmail.com>.

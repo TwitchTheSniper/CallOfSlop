@@ -6,6 +6,10 @@ plus the Dev map "Prop Gallery 3" (Maps/Dev/PropGallery3.json) that shows all of
 Uses the box helpers from gen.py (the starter library's generator). Breakable health follows the material health guide
 in Props/README.md: glass, paper and cardboard very low, plastic low, upholstery and wood medium, thin metal higher, heavy
 metal, stone and porcelain-on-steel left unbreakable.
+
+NOTE (2026-10): the gallery map this script writes is superseded. tools/props/gallery.py now generates every prop gallery map
+from the Props folders, and the "Props" self-test rejects a hand-written one: after running this script, run
+`python3 -I tools/props/gallery.py` to rebuild the map.
 """
 import json, math, os, random, sys
 

@@ -20,6 +20,7 @@ public static partial class SelfTest
         CheckPropLibrary();
         CheckIndoorProps(); // the Household, Office, Kitchen, Garden and Misc folders (SelfTestPropsIndoor.cs)
         CheckOutdoorProps(); // the outdoor folders and Prop Gallery 2 (SelfTestPropsOutdoor.cs)
+        CheckGeneratedGalleries(); // the gallery maps match tools/props/gallery.py (SelfTestPropGallery.cs)
         CheckPropFileErrors();
         CheckPropCollision();
         CheckClutter();

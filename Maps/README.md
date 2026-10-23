@@ -984,6 +984,34 @@ Servers hold up to 32 players, but every map has its own limit: the lobby's bot 
 
 A map needs **one spawn per player**. If it has fewer, the game adds spawns when it loads the map (your file isn't changed): free spots on rings 3-11 m around your spawns, on the same floor, in sight of the spawn they grow from, clear of walls, other spawns and moving platforms. The result is the same on every PC and doesn't change the map's fingerprint. If even that can't fit enough, the limit drops to the spawn count. `--check-map` prints how many were generated; place your own `Spawn` ops if you'd rather choose the spots.
 
+## Making a map on a branch (the tools)
+
+Three scripts in `tools/mapkit/` take the chores out of a new map. Run them from the repository root with `python3 -I`.
+
+**Scaffold:** `python3 -I tools/mapkit/new_map.py <Pack> <NN> "<Name>" [--theme "a few words"]` writes the generator
+(`Source/MapKit/Generators/<Slug>.cs`, an `IMapGenerator` for the C# map kit in `Source/MapKit`; `--python` writes a
+self-contained `tools/<pack>/<slug>.py` instead), the doc stub `Maps/<Pack>/NN-<Slug>.md` with the standard sections
+(theme, shape, layout, lanes, fairness, counts, what to check), and the decal folder `Maps/<Pack>/Decals/<Slug>/`. It
+prints the registry line to add, the `order` the pack's convention gives the map (Space 600 + NN, World 500 + NN,
+Cluttered 400 + NN), a reminder to fill the map's test block, and the `[tests: ...]` line for the branch's commits.
+Nothing existing is overwritten (`--force`).
+
+**Pre-push checklist:** `python3 -I tools/mapkit/check_branch.py [--base origin/main] [--fix]` lists what the branch
+changed (maps, props, decals, tools), runs `--check-map` on every changed map, checks every new global prop is on a
+Dev gallery (the generated galleries current: `tools/props/gallery.py --check`, see Props/README.md; `--fix`
+regenerates them), finds prop-name clashes (in the tree, and against props `origin/main` gained since the branch
+started), warns about files the branch adds that already exist on `origin/main`, and prints the `[tests: ...]`
+sections to put in every commit message: always Map horizons, Map objectives, Props, Animated props, Pack assets,
+Maps, Map files, Nav determinism and Stairs, plus the pack's own sections and those for whatever else changed. The
+exit code is the number of problems. The all-maps rules it names (Map horizons: fog within 22 m of the floor; Map
+objectives: hills clear of geometry; Stairs; Nav determinism) run only in the full suite on main, which is why a branch
+lists them.
+
+**Plans:** `python3 -I tools/mapkit/plan_min.py Maps/<Pack>/<file>.json plan.png` draws a plan of a map file without
+the game or any library: boxes shaded by height, props, clutter rectangles, spawns, hills, flags, the outline. CI's
+Linux job draws one for every map a push changed and uploads them as the **map-plans** artifact (the map kit's own
+`CallOfSlop --gen-plan` when the build has it), so a reviewer can see a layout without running the game.
+
 ## Tips
 
 - Start from the shipped map closest to what you want: copy its file into your pack folder, rename it, and change `name` and `order`.

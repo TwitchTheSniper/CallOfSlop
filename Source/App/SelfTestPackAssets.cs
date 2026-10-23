@@ -11,7 +11,8 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     /// <summary>Every shipped map's fingerprint on origin/main before pack-local assets (commit 431f4e0); maps whose stairs were rebuilt
-    /// for 2.1 m headroom (fix/stair-headroom) carry their new Windows values.</summary>
+    /// for 2.1 m headroom (fix/stair-headroom) carry their new Windows values, and the generated galleries (tools/props/gallery.py) the
+    /// values from their last regeneration.</summary>
     private static readonly (string File, uint Hash)[] PrePackAssetFingerprints =
     [
         ("Legacy/01-ProtoBox.json", 0xa83dd7a5u), ("Legacy/02-Courtyard.json", 0x9b62bfadu), ("Legacy/03-Crossroads.json", 0x04fab23au),
@@ -28,8 +29,8 @@ public static partial class SelfTest
         ("Legacy/34-AdobeMesa.json", 0xb9ca18aau), ("Legacy/35-Ridgeline.json", 0xb945fc4au), ("Legacy/36-AlpinePass.json", 0x61c5781cu),
         ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x8a64c7d3u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ad80326u), ("Dev/PhysicsTest.json", 0x476984bcu),
-        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0xf6e903c4u),
-        ("Dev/PropGallery3.json", 0x9cf4b336u), ("Dev/AnimatedProps.json", 0x507e7352u), ("Dev/MeshTest.json", 0xb7a01a63u),
+        ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0x59b1babcu), ("Dev/PropGallery2.json", 0x71ea278bu),
+        ("Dev/PropGallery3.json", 0xd5277ab0u), ("Dev/AnimatedProps.json", 0x6833679du), ("Dev/MeshTest.json", 0xb7a01a63u),
         ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x5fbf936fu), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 

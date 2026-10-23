@@ -3,6 +3,10 @@
 Usage: python3 tools/propviz/gen_animated.py [Props folder] [Maps/Dev folder]
 Every moving or lit part carries an "anim" block (see Props/README.md "Animation"); colliders are listed by hand and
 only cover still parts, so animation never changes collision.
+
+NOTE (2026-10): the gallery map this script writes is superseded. tools/props/gallery.py now generates every prop gallery map
+from the Props folders, and the "Props" self-test rejects a hand-written one: after running this script, run
+`python3 -I tools/props/gallery.py` to rebuild the map.
 """
 import json, math, os, sys
 
