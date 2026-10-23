@@ -2,9 +2,9 @@
   "format": "call-of-slop-prop/1",
   "name": "Fire Escape Landing",
   "category": "Utility",
-  "description": "A fire escape landing 3 m up on iron posts, railed on the front and the -X side.",
+  "description": "A fire escape landing 3 m up on iron posts, railed on the front and the +X side (its stairs arrive at the -X end).",
   "collision": "solid",
-  "collider": [{"size": [2.4, 0.1, 1.2], "offset": [0.0, 2.95, 0.0]}, {"size": [0.08, 3.0, 0.08], "offset": [-1.15, 1.5, 0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [1.15, 1.5, 0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [-1.15, 1.5, -0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [1.15, 1.5, -0.55]}, {"size": [2.4, 1.0, 0.06], "offset": [0.0, 3.5, 0.58]}, {"size": [0.06, 1.0, 1.2], "offset": [-1.18, 3.5, 0.0]}],
+  "collider": [{"size": [2.4, 0.1, 1.2], "offset": [0.0, 2.95, 0.0]}, {"size": [0.08, 3.0, 0.08], "offset": [-1.15, 1.5, 0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [1.15, 1.5, 0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [-1.15, 1.5, -0.55]}, {"size": [0.08, 3.0, 0.08], "offset": [1.15, 1.5, -0.55]}, {"size": [2.4, 1.0, 0.06], "offset": [0.0, 3.5, 0.58]}, {"size": [0.06, 1.0, 1.2], "offset": [1.18, 3.5, 0.0]}],
   "scatter": {"randomYaw": false, "yawStep": 90},
   "parts": [
     {"size": [2.4, 0.05, 1.2], "offset": [0.0, 2.975, 0.0], "color": "#3a3c3e", "material": "grid", "texScale": 4},
@@ -18,8 +18,8 @@
     {"size": [0.07, 2.95, 0.07], "offset": [1.15, 1.475, -0.55], "color": "#2a2c2e"},
     {"size": [2.4, 0.04, 0.04], "offset": [0.0, 3.97, 0.58], "color": "#2a2c2e"},
     {"size": [2.4, 0.03, 0.03], "offset": [0.0, 3.465, 0.58], "color": "#2a2c2e"},
-    {"size": [0.04, 0.04, 1.2], "offset": [-1.18, 3.97, 0.0], "color": "#2a2c2e"},
-    {"size": [0.03, 0.03, 1.2], "offset": [-1.18, 3.465, 0.0], "color": "#2a2c2e"},
+    {"size": [0.04, 0.04, 1.2], "offset": [1.18, 3.97, 0.0], "color": "#2a2c2e"},
+    {"size": [0.03, 0.03, 1.2], "offset": [1.18, 3.465, 0.0], "color": "#2a2c2e"},
     {"size": [0.03, 0.95, 0.03], "offset": [-1.18, 3.475, 0.58], "color": "#2a2c2e"},
     {"size": [0.03, 0.95, 0.03], "offset": [-0.787, 3.475, 0.58], "color": "#2a2c2e"},
     {"size": [0.03, 0.95, 0.03], "offset": [-0.393, 3.475, 0.58], "color": "#2a2c2e"},
@@ -27,8 +27,8 @@
     {"size": [0.03, 0.95, 0.03], "offset": [0.393, 3.475, 0.58], "color": "#2a2c2e"},
     {"size": [0.03, 0.95, 0.03], "offset": [0.787, 3.475, 0.58], "color": "#2a2c2e"},
     {"size": [0.03, 0.95, 0.03], "offset": [1.18, 3.475, 0.58], "color": "#2a2c2e"},
-    {"size": [0.03, 0.95, 0.03], "offset": [-1.18, 3.475, -0.3], "color": "#2a2c2e"},
-    {"size": [0.03, 0.95, 0.03], "offset": [-1.18, 3.475, 0.0], "color": "#2a2c2e"},
-    {"size": [0.03, 0.95, 0.03], "offset": [-1.18, 3.475, 0.3], "color": "#2a2c2e"}
+    {"size": [0.03, 0.95, 0.03], "offset": [1.18, 3.475, -0.3], "color": "#2a2c2e"},
+    {"size": [0.03, 0.95, 0.03], "offset": [1.18, 3.475, 0.0], "color": "#2a2c2e"},
+    {"size": [0.03, 0.95, 0.03], "offset": [1.18, 3.475, 0.3], "color": "#2a2c2e"}
   ]
 }

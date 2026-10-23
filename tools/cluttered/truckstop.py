@@ -324,6 +324,8 @@ STAIRS.append((-22.0, -25.9, -17.9, -24.5))
 for r in STAIRS:
     t.mark(t.occ, r); t.mark(t.walk, (r[0], r[1], r[2], r[3])); t.mark(t.tall, r)
     t.boxes.append((r[0], r[1], r[2], r[3], 0, SLAB, (0.55, 0.54, 0.5)))
+# the foot of the north wing's flight stays clear: 1.3 m in front of its first step (the west wing's: see the car park)
+t.mark(t.occ, (-17.9, -25.9, -16.6, -24.5)); t.mark(t.walk, (-17.9, -25.9, -16.6, -24.5))
 # cosmetic windows on the back walls (curtains)
 for z in [WZ0 + 2.25 + k * WROOM for k in range(8)]:
     for y in ((4.6,) if abs(z - (BZ[0] + BZ[1]) / 2) < 1 else (1.2, 4.6)):
@@ -498,7 +500,7 @@ for nm, u, v in (("Computer Monitor", 2.0, 2.4), ("Desk Phone", 2.6, 2.3)):
     OFFICE.put(nm, u, v, "front", y=0.76, rng=rng, tag="interior")
 WAYPOINTS += [(22.5, -29.0), (22.5, -35.0), (30.5, -34.0), (36.5, -34.0), (42.0, -32.0)]
 # fire escape up the east wall to the roof (high ground over the truck lot), a landing at 3 m, a 1.5 m mantle up
-P("Fire Escape Stairs", 45.0, -32.2, 270, check=False, tag="lane"); P("Fire Escape Landing", 44.9, -28.6, 270, check=False, tag="lane")
+P("Fire Escape Stairs", 45.0, -32.2, 270, check=False, tag="lane"); P("Fire Escape Landing", 44.9, -29.2, 270, check=False, tag="lane")
 for rr in ((44.0, -34.1, 46.0, -27.3),):
     t.mark(t.occ, rr); t.mark(t.walk, rr)
 tk.bins_by_door(t, (44.0, -36.0), (0, 1), (1, 0), rng, side=-1, dumpster=False, seed=230)
@@ -558,6 +560,10 @@ P("Box Trailer", 31.0, 21.6, 0, gap=0.05, tag="trucks"); P("Semi Tractor Blue", 
 # ================================================================ the motel car park, its sign; the highway
 tk.car_park(t, -55.0, 16.5, -26.0, 21.5, rng, along_x=True, fill=0.7, bay_d=5.0, aisle=6.0,
             cars=("Sedan", "Hatchback", "SUV", "Van", "Pickup Truck", "Burnt Out Car", "Car On Bricks"), tag="carpark")
+# The car in the bay in front of the west wing's stairs sits at the back of its bay: 1.3 m clear in front of the first step.
+for o in t.ops:
+    if o.get("op") == "Prop" and abs(o.get("x", 99.0) + 44.55) < 0.6 and abs(o.get("z", 99.0) - 19.0) < 0.3:
+        o["z"] = 19.9
 tk.car_park(t, -16.0, -21.4, 10.0, -16.6, rng, along_x=True, fill=0.65, bay_d=4.8,
             cars=("Sedan", "Hatchback", "Pickup Truck", "Police Car", "Taxi", "SUV"), tag="carpark")
 P("Motel Neon Sign", -36.0, 26.3, 0, tag="sign")
