@@ -171,8 +171,14 @@ public static class ZombieAnim
     /// <summary>The share of a board's cycle the yank takes (the board leaves with the hands), then the throw.</summary>
     public const float YankShare = 0.12f, ThrowShare = 0.28f;
 
-    /// <summary>How far the body may step towards a board it can't reach from where it stands (metres; presentation only).</summary>
+    /// <summary>
+    /// How far the body may step towards a board it can't reach from where it stands (metres). The step moves the drawn
+    /// body, and the hit box goes with it (<see cref="BodyShift"/>): the AI's position and collision don't move.
+    /// </summary>
     public const float MaxStep = 1.05f;
+
+    /// <summary>The cranium's centre in the head frame and the shirt's in the upper frame (BodyModel.ZombieParts), for <see cref="BodyShift"/>.</summary>
+    public static readonly Vector3 HeadCenter = new(0, 0.87f, -0.04f), TorsoCenter = new(0, 0.41f, 0);
 
     /// <summary>Half a step's length by speed class (the walk cycle covers four of these, so <see cref="Game"/> keys the cycle to the speed).</summary>
     public static float StrideHalf(ZSpeed s) => s switch { ZSpeed.Sprint => 0.46f, ZSpeed.Run => 0.33f, _ => 0.24f };
@@ -293,6 +299,24 @@ public static class ZombieAnim
     }
 
     // ---- Targets ------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// How far (world, flat) the hit box moves to sit on the drawn body at a window (tearing, clawing, swiping through
+    /// it): the step in towards the boards plus half the lean, so the box is centred between the feet and the head.
+    /// Zero in every other mode. Deterministic in the input, no allocations: the server shifts the lag-compensated
+    /// history entry by it (ZombieAI.cs) and the client its hit prediction, so what you see is what you hit.
+    /// </summary>
+    public static Vector3 BodyShift(in ZombieAnimInput a)
+    {
+        if (a.Mode != ZAnimMode.Tearing && a.Mode != ZAnimMode.WindowIdle)
+            return Vector3.Zero;
+        var look = new ZombieLook(a.Id);
+        WindowTargets(a, look, out var t);
+        var head = Vector3.Transform(HeadCenter, UpperLocal(t));
+        var feet = (t.FootR.Z + t.FootL.Z) * 0.5f;
+        var forward = -(head.Z + feet) * 0.5f; // local -Z is forward
+        return new Vector3(MathF.Sin(a.Yaw) * forward, 0, -MathF.Cos(a.Yaw) * forward);
+    }
 
     /// <summary>The targets for one frame (pure; no allocations).</summary>
     public static void Targets(in ZombieAnimInput a, out ZombieTargets t)

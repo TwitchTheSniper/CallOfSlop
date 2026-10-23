@@ -327,13 +327,14 @@ eyes) but its arms and legs are now two bones each (upper arm 0.38 m + forearm 0
 placed by an analytic two-bone IK from a handful of targets per frame (pelvis, torso lean / roll / twist, head roll /
 nod, both hands, both feet). `Source/Render/ZombieAnim.cs` works the targets out from the zombie's state and clocks
 (`ZombieAnim.Targets`), blends them for a third of a second after a change of state, solves the IK (`ZombieAnim.Solve`)
-and draws the boxes (`ZombieAnim.Draw`). Presentation only: hit boxes, movement, collision and the nav graph are unchanged.
+and draws the boxes (`ZombieAnim.Draw`). Movement, collision and the nav graph are unchanged. Hit boxes are too, except at a
+window: there the box follows the drawn body (see "Tearing boards" below).
 
 | State | What the body does |
 | --- | --- |
 | Walking to the window, chasing | A **shamble** (walkers: short heavy steps, arms out in front or hanging), a **jog** (runners: arms pumping low) or a **sprint** (sprinters: hunched, big strides). The walk cycle is keyed to how fast it really moves, so the feet don't slide; standing still it sways in place. |
 | Per zombie (seeded by its id, the same on every PC) | Arm pose (both reaching, one reaching and one hanging, or both hanging), a limp on one leg (about half of them, mild to bad: shorter steps and a hip drop), the head hanging to one side and forward, a bit more or less lean, arm height. |
-| Tearing boards | It steps up to the window (up to 1.05 m forward of where it stands, so the hands reach; up on its toes for the top boards) and reaches both hands to the **top remaining board**. Hands on it, it tugs (the board wobbles), braces, and on the tick the board comes off it **jerks back with the board in its hands**: the torn board follows the same yank as the hands, then is flung aside, tumbles to the ground outside, lies there and shrinks away (1.5 s) instead of popping. Then it reaches for the next one. With no boards left it claws at the opening. |
+| Tearing boards | It steps up to the window (up to 1.05 m forward of where it stands, so the hands reach; up on its toes for the top boards) and reaches both hands to the **top remaining board**. Hands on it, it tugs (the board wobbles), braces, and on the tick the board comes off it **jerks back with the board in its hands**: the torn board follows the same yank as the hands, then is flung aside, tumbles to the ground outside, lies there and shrinks away (1.5 s) instead of popping. Then it reaches for the next one. With no boards left it claws at the opening. **The hit box goes with the body:** `ZombieAnim.BodyShift` gives the flat offset (the step plus half the lean, so the box is centred between the feet and the head) from the same input both sides draw from; the server writes the zombie's lag-compensated history entry with it (`ZombieHitShift`, ZombieAI.cs) and the client's hit prediction uses it, so what you see is what you hit, from the side and head-on. Its own position (the AI, collision, the climb) doesn't move. |
 | Climbing in | Hands go onto the **sill** and stay there while the body tips forward over it with the legs tucked up; then it lets go, the legs reach down for the floor inside, it lands with bent knees and **staggers** for 0.7 s. Driven by the climb's progress on the server's own climb path (`climbSeconds`): the timing, collision and nav are unchanged. |
 | Rising (ground spawners) | Deep in the ground, the arms burst up first, clawing; the hands plant on the ground and push, the torso and head come out, then the right leg steps up and the left. Dirt is thrown up round the hole. |
 | Swiping | The swiping arm (left or right, per zombie) winds up behind during the windup and strikes across the front **right as the damage lands** (the windup, `zombie.windup`), then recovers; the other arm reaches. At a window it swipes through the opening. |
@@ -359,14 +360,16 @@ seven zombie looks; the yanked board within 7 cm of the hands; both hands within
 path; bones that keep their lengths and finite poses in every mode; walking feet on the ground; rising arms first;
 the swipe behind at the end of the windup and across the front after it; the variety over 200 ids; a host and a
 client giving the same pose input for tearing, climbing, rising, swiping and chasing zombies (and the same flinch
-tick); no allocations and the cost.
+tick); no allocations and the cost. The hit box at the window: rays through the drawn head, chest and hips of a zombie
+at every window of both maps (from the side, head-on from the inside spot, from behind and from above, for every board
+count, while clawing and swiping, and while the step is still blending in) all hit the shifted hit box, and the drawn
+points sit at least 3 cm inside it. "Zombies mode" shoots a real tearing zombie through the server's shot path at its
+drawn head and chest from the side and from the inside spot and expects every shot to land.
 
 **What to check by eye** (nothing graphical runs in CI): a zombie's hands on the top board while tearing and the board
 coming away with them; the body leaning over the sill with the hands planted while climbing in, then the stagger;
-ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit. The
-zombie is drawn up to about a metre forward of its hit box while it tears (stepping up to the window): shots aimed at
-it straight through the window still hit, steep side angles may not (say if that matters; the fix would be moving the
-outside spot closer to the window in the maps).
+ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit; shots
+at a zombie tearing boards landing from a steep side angle (the hit box follows the step in).
 
 ## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
 

@@ -217,18 +217,21 @@ public sealed partial class Game
         foreach (var z in Horde)
         {
             if (z.State == ZState.Dead)
+            {
+                ZombieAnimTick(z, now); // the death's clock
                 continue;
+            }
             z.PrevPos = z.Sim.Position;
             ThinkZombie(zm, z, now);
             ZombieBashDoors(z, now); // a shut building door in the way: swipe it down (Bots/Doors/BotDoors.cs)
-            z.History[ServerTick % z.History.Length] = z.Sim.Position;
             if (z.BurnUntil > 0)
                 BurnTick(z, now); // a burn or bleed ticking (ZombiesAmmoEffects.cs)
             z.FxBurning = z.BurnUntil > now;
             z.FxZapped = z.ZapUntil > now;
+            ZombieAnimTick(z, now); // the animation byte and clocks (ZombieAnimNet.cs)
+            // The hit box for lag-compensated shots: at a window it sits on the drawn body (the step in to the boards).
+            z.History[ServerTick % z.History.Length] = z.Sim.Position + ZombieHitShift(z, ServerTick, z.Sim.Position);
         }
-        foreach (var z in Horde)
-            ZombieAnimTick(z, now); // the animation byte and clocks (ZombieAnimNet.cs; drawing only)
         if (alive > 0)
         {
             ZAiMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -561,7 +564,10 @@ public sealed partial class Game
 
     // ---- Getting hurt --------------------------------------------------------------------------------
 
-    /// <summary>The zombie's hitbox (a standing player's) at its position <paramref name="ticksAgo"/> server ticks ago (lag compensation).</summary>
+    /// <summary>
+    /// The feet of the zombie's hit box (a standing player's) at server tick <paramref name="tick"/> (lag compensation).
+    /// At a window the box sits on the drawn body, up to a metre ahead of the zombie's own position (<see cref="ZombieHitShift"/>).
+    /// </summary>
     private Vector3 ZombieAt(Zombie z, double tick)
     {
         tick = Math.Clamp(tick, Math.Max((double)z.SpawnTick, ServerTick - (double)World.MaxRewindTicks), ServerTick);
@@ -751,7 +757,8 @@ public sealed partial class Game
         {
             if (z.State == ZState.Dead)
                 continue;
-            if (World.Hitbox(z.RenderPos, Stance.Stand, z.RenderYaw).Raycast(o, d, dist) is { } t && t < dist)
+            var feet = z.RenderPos + ZombieHitShift(z, ZAnimTick, z.RenderPos); // at a window: on the drawn body
+            if (World.Hitbox(feet, Stance.Stand, z.RenderYaw).Raycast(o, d, dist) is { } t && t < dist)
             {
                 dist = t;
                 hit = true;
