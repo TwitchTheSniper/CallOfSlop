@@ -173,6 +173,7 @@ public static partial class SelfTest
             Section("Bullet penetration", CheckPenetration); // SelfTestPenetration.cs: materials, weapon powers, walls passed or not, cap, exits, server shots, lag comp, decals, bots, map override, no allocations
             Section("Bot lag compensation", CheckBotLagComp); // SelfTestLagComp.cs: shots at the current tick rewind later-updated players right (no join-order bias)
             Section("Ragdolls and knockback", CheckRagdolls); // SelfTestRagdoll.cs: ragdoll falls (flat, stairs, slope, wall, terrain), determinism, pushes, hats, cost; blast knockback, Flak Jacket, walls, teams, knock message, client prediction
+            Section("Blast push", CheckBlastPush); // SelfTestBlastPush.cs: every blast throws survivors (frag, impact, each launcher, landmine, barrel, mortar), stagger, Flak/prone, floor, teammates, bots, feedback, no allocations
             Section("Blood overlay", CheckBloodOverlay); // SelfTestBlood.cs: screen splatters by health: steps, hit direction, regen / Stim fade, death, Subtle / Off, masks, no allocations, settings
             Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
             Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
