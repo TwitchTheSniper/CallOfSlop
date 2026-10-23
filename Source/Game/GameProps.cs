@@ -268,7 +268,7 @@ public sealed partial class Game
                 var dist = to.Length();
                 if (dist > br.ExplodeRadius || (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.All) < dist - 0.05f))
                     continue;
-                var dmg = br.ExplodeDamage * MathF.Pow(1f - dist / br.ExplodeRadius, 1.4f);
+                var dmg = br.ExplodeDamage * World.BlastPlayerScale * MathF.Pow(1f - dist / br.ExplodeRadius, 1.4f);
                 if (victim.Sim.Stance == Stance.Prone)
                     dmg *= 0.7f;
                 var amount = (int)MathF.Round(dmg);
