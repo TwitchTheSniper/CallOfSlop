@@ -65,11 +65,12 @@
 - Invite codes, STUN, UPnP, and an automatic server list started by hosts.
 - F8 audio mixer, -50 to +50 dB, with a limiter on boosted music.
 - Self-test section filter, and the `[tests: ...]` tag on branch CI.
-- "Map contract" (`Source/App/SelfTestMapContract.cs`): one data-driven self-test of every map against its file's optional `test` block (Maps/README.md, "Testing a map"), replacing the Space pack's six bespoke sections (Space: Stratos Station, refinery and processor, arboretum and reactor, vault and bazaar, shipyard and outpost, gravity maps; only "Space: gravity physics" remains). A new map gets a `test` block, not a section; `--check-map FILE` / `--check-maps DIR` run the same checks on files and print each result.
 
 ## In progress
 
-Nothing. All agents finished and every branch is merged. A weekly scheduled task (Mondays, 8:51 Chicago time) reminds the user about the Foxhole-style sandbox idea; see the project doc `claude/ideas-backlog.md`.
+- **feat/mapkit-tests** (map development tooling, to merge after the release): the "Map contract" section (`Source/App/SelfTestMapContract.cs`) checks every map against its file's optional `test` block (Maps/README.md, "Testing a map") and replaced the Space pack's six bespoke sections (Space: Stratos Station, refinery and processor, arboretum and reactor, vault and bazaar, shipyard and outpost, gravity maps; those names are gone from `--selftest-list`, only "Space: gravity physics" remains). A new map gets a `test` block, not a section; `--check-map FILE` / `--check-maps DIR` run the same checks on files and print each result. The Space generators (`tools/space/*.py`) don't write the `test` block yet: re-generating a map drops it until they do (the block is inserted after `"maxPlayers"`, json indent 1).
+
+Otherwise nothing. All agents finished and every branch is merged. A weekly scheduled task (Mondays, 8:51 Chicago time) reminds the user about the Foxhole-style sandbox idea; see the project doc `claude/ideas-backlog.md`.
 
 ## Open bugs and loose ends
 
