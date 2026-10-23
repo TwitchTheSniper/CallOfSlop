@@ -77,6 +77,15 @@ public sealed partial class WeaponDef
     /// <summary>Multiplier on everything a hit does to a kill streak machine (turret, drone, gunship...): launchers are the anti-streak tool.</summary>
     [LauncherKey("vehicleMult", 0, 10)] public float LauncherVehicleMult = 1f;
 
+    /// <summary>
+    /// Multiplier on everything the blast and the direct hit do to players (the owner's own share too), like a grenade's
+    /// split between player and object damage: "damage" stays what props, buildings, structures and machines take.
+    /// </summary>
+    [LauncherKey("playerMult", 0, 5)] public float LauncherPlayerMult = 1f;
+
+    /// <summary>Blast radius against players and for the blast's push, flash and ragdolls (m); 0 = the same as "radius" (which props, buildings, structures and machines keep).</summary>
+    [LauncherKey("playerRadius", 0, 25)] public float LauncherPlayerRadius;
+
     /// <summary>Fraction of the blast its owner takes when caught in it.</summary>
     [LauncherKey("selfDamage", 0, 1)] public float LauncherSelfDamage = 0.6f;
 
@@ -112,6 +121,9 @@ public sealed partial class WeaponDef
 
     /// <summary>Thermobaric: fraction of the blast that still gets through walls (0 = walls stop it, like a grenade).</summary>
     [LauncherKey("wallPierce", 0, 1)] public float LauncherWallPierce;
+
+    /// <summary>The blast radius against players (<see cref="LauncherPlayerRadius"/>, or <see cref="LauncherRadius"/> when that is 0).</summary>
+    public float PlayerBlastRadius => LauncherPlayerRadius > 0 ? LauncherPlayerRadius : LauncherRadius;
 
     /// <summary>True for launchers (they fire projectiles from Source/Game/Launchers instead of hitscan bullets).</summary>
     public bool IsLauncher => Class == WeaponClass.Launcher;

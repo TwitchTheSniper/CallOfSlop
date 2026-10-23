@@ -125,7 +125,7 @@ public static partial class SelfTest
             foreach (var a in list)
             {
                 var xp = Attachments.UnlockXp(w, a);
-                if (xp < 50 || xp > Attachments.MaxXp(w))
+                if (xp < (a == Attachments.DefaultOptic(w) ? 0 : 50) || xp > Attachments.MaxXp(w)) // a sniper's starting scope comes with the gun
                     Fail($"{w.Name} + {a.Name}: unlocks at {xp} weapon XP (max {Attachments.MaxXp(w)})");
                 // Saves keep working: what a player unlocked under the old rules stays unlocked.
                 if (xp > Attachments.LegacyUnlockXp(w, a))

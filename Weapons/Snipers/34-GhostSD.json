@@ -2,6 +2,7 @@
   "format": "call-of-slop-weapon/1",
   "name": "Ghost SD",
   "order": 34,
+  "defaultOptic": "4x Scope",
   "class": "Sniper",
   "blurb": "Suppressed sniper. Nobody hears it coming.",
   "damage": 88,
@@ -27,7 +28,7 @@
     "kickBack": 0.12, "kickUp": 9, "kickRoll": 5, "kickSide": 0.006, "kickTime": 0.16
   },
   "mobility": 0.92,
-  "adsZoom": 4,
+  "adsZoom": 1.5,
   "equipTime": 0.7,
   "adsTime": 0.16,
   "length": 0.86,
@@ -38,7 +39,7 @@
   "bright": 0.3,
   "tail": 0.3,
   "model": {
-    "base": "bolt_sniper", "receiver": "box", "receiverLength": 0.26, "barrelLength": 0.62, "shroud": "suppressor",
+    "base": "bolt_sniper", "sights": "ghost", "receiver": "box", "receiverLength": 0.26, "barrelLength": 0.62, "shroud": "suppressor",
     "shroudLength": 0.45, "barrelWidth": 0.026, "handguard": "tube", "handguardLength": 0.28,
     "handguardHeight": 0.06, "stock": "folding", "stockLength": 0.26, "mag": "box", "magLength": 0.07,
     "finish": "black", "furniture": "olive", "bipod": "folded", "accentStyle": "none"

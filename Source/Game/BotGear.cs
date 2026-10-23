@@ -99,6 +99,11 @@ public static class BotGear
             _weaponSource = all;
             _attachXp = new int[all.Length][];
             _attachLists = new AttachmentDef[all.Length][];
+            var kits = new uint[all.Length];
+            foreach (var x in all)
+                if (x.Id < kits.Length)
+                    kits[x.Id] = Attachments.DefaultKit(x);
+            _defaultKits = kits;
         }
         return w.Id < levels.Length && ReferenceEquals(all[w.Id], w) ? levels[w.Id] : Progress.UnlockLevel(w);
     }
@@ -107,6 +112,15 @@ public static class BotGear
     private static int[]? _weaponLevels;
     private static int[]?[] _attachXp = [];
     private static AttachmentDef[]?[] _attachLists = [];
+    private static uint[] _defaultKits = [];
+
+    /// <summary><see cref="Attachments.DefaultKit"/> (a sniper's starting scope: free at every level), cached per weapon list.</summary>
+    public static uint DefaultKit(WeaponDef w)
+    {
+        UnlockLevel(w); // (re)builds the per-weapon caches for this weapon list
+        var kits = _defaultKits;
+        return w.Id < kits.Length && ReferenceEquals(Weapons.All[w.Id], w) ? kits[w.Id] : Attachments.DefaultKit(w);
+    }
 
     /// <summary>
     /// <see cref="Attachments.For"/> as a plain array, cached per weapon list (a bot looks at these every life, and the

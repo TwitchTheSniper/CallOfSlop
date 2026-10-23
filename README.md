@@ -116,6 +116,7 @@ Every weapon has up to six attachment slots: **Optic, Muzzle, Barrel, Underbarre
 
 - **Optics:** Pinhole Reflex (1.4x), Red Dot (1.5x), Holographic (1.6x), Brick 2x Prism, 2.5x ACOG, Tandem 3x Hybrid, 4x Scope, Variant 6x LPVO, 8x Sniper Scope and Longshot 12x (snipers only). Each has its own model, reticle and zoom, and the bigger the optic, the slower you aim.
 - **Seeing through optics:** every optic is a physical sight on top of the gun. When you hold right click the gun comes up and the sight moves to your eye, housing and all, and you look through its lens: inside it you see only the world and a crisp reticle (no rail, receiver or tube insides), with a faint glass tint. The higher the magnification, the more of the screen the lens fills: reflex sights (Pinhole, Red Dot, Holographic) stay a small window on the gun, the 2x-3x prisms fill a good part of the screen, the 4x and 6x most of it, and the 8x and 12x all of it but a thin eyepiece rim in the corners. It's one continuous motion from the hip to full aim, with no switch to a flat overlay. Guns with a built-in scope work the same way. Each optic's look (reticle, how much of the screen its lens fills, rim, tint) is in its file's `sight` block ([Attachments/README.md](Attachments/README.md#sight-block)). Fitting an optic removes iron sights and LMG carry handles that would be in its way.
+- **Snipers start scoped; iron sights are an unlock.** Every sniper rifle comes with a magnified scope fitted and unlocked from the start (Needle Bolt-Action, Leviathan .50 and Railspike the 8x Sniper Scope; Kite Semi-Sniper and Ghost SD the 4x Scope), so aiming zooms right away. Its **iron sights** (the empty optic slot: 1.5x, quicker to aim and lighter than any scope) unlock half-way through that gun's attachment XP (3,300-3,450 weapon XP, depending on how many attachments the gun takes), shown locked in the Optic list until then. Bots' snipers always use the scope. Older saves: a sniper kit with no optic (which used to look through a built-in scope) now gets the gun's starting scope; `loadout.txt` saves a chosen iron sight as `Iron Sights` in the kit. Other classes still start with iron sights.
 - **Muzzle:** Suppressor (much quieter shots, faint tracers, -15% range), Compensator (cuts the climb), Muzzle Brake (cuts sideways recoil and shake), Choke (shotguns).
 - **Barrel:** Long, Short, Heavy. **Underbarrel:** Vertical Grip (cuts the climb), Angled Grip (faster aim, softer first shot), Laser.
 - **Magazine:** Extended, Fast, Drum. **Stock:** Light, Heavy (less recoil, faster recovery), No Stock.
@@ -226,18 +227,20 @@ Use an earned streak with its key: **4**, **5** and **6** by default, cheapest s
 
 **Launchers are secondaries** (you carry one instead of a pistol) that fire real projectiles: rockets and grenades fly, drop, can be dodged and go off on contact, with a blast that works like a grenade's (walls shield you, Flak Jacket and going prone help, your own blast hurts you, Demolitions widens it, blasts push people and throw ragdolls). They're the counter to kill streaks: every launcher hits turrets, drones, the Gunship and other streak machines hard, and the **Skylance AA locks on**: aim down its sights at an enemy's flying streak and hold it in the sight; a tone ticks faster as the lock builds, goes solid and a red **LOCKED** bracket closes on the target; fire and the rocket homes in. Ground streaks (the sentry) never lock and take dumb fire. Ammo is limited: the magazine plus a few spare rounds per life (shown as `magazine | spare`), refilled when you respawn.
 
-| Launcher | Type | Damage (centre) / blast radius / direct-hit bonus | Rounds (mag + spare) | vs streaks | Unlock |
-| --- | --- | --- | --- | --- | --- |
-| Mule RPG | dumb-fire rocket, slow, big blast | 150 / 6.5 m / +60 | 1 + 2 | sentry in 2 direct hits, drone in 1 (if you hit it) | level 6 |
-| Clover Break-Action | single-shot grenade launcher, arcing | 130 / 5 m / +40 | 1 + 5 | sentry in 3 | level 9 |
-| Carousel Drum Launcher | 6-round revolving grenade launcher (bounces once) | 100 / 4.2 m / +30 | 6 + 6 | sentry in 3 | level 14 |
-| Skylance AA | lock-on anti-air rocket, proximity fuse | 110 / 3.5 m / +140, x1.3 vs machines | 1 + 3 | Attack / Hunter Drone in 1 lock-on hit, Gunship in 2 (3 rockets with its flare); sentry in 2 dumb-fire hits | level 18 |
-| Gluepot Sticky Launcher | sticky charges (stick to walls and people), remote detonated | 125 / 4.5 m / - | 3 + 3 | sentry in 3 | level 22 |
-| Wireline TOW | wire-guided rocket: it flies where you look while you hold it | 140 / 5 m / +80 | 1 + 2 | sentry in 2 | level 27 |
-| Hailcrack Cluster | rocket that throws 6 bomblets (45% radius, 40% damage each) | 90 / 4 m / +40 | 1 + 2 | sentry in 3 | level 33 |
-| Furnace Thermobaric | wide blast, slow falloff, half of it gets round walls | 120 / 8 m / +40 | 1 + 1 | sentry in 3 | level 39 |
+| Launcher | Type | vs players: damage (centre) / blast radius / direct-hit bonus, kills within | vs objects and machines: damage / radius | Rounds (mag + spare) | vs streaks | Unlock |
+| --- | --- | --- | --- | --- | --- | --- |
+| Mule RPG | dumb-fire rocket, slow, big blast | 202 / 8.5 m / +81, 3.2 m | 150 / 6.5 m | 1 + 2 | sentry in 2 direct hits, drone in 1 (if you hit it) | level 6 |
+| Clover Break-Action | single-shot grenade launcher, arcing | 176 / 6.6 m / +54, 1.8 m | 130 / 5 m | 1 + 5 | sentry in 3 | level 9 |
+| Carousel Drum Launcher | 6-round revolving grenade launcher (bounces once) | 130 / 5.5 m / +39, 0.3 m | 100 / 4.2 m | 6 + 6 | sentry in 3 | level 14 |
+| Skylance AA | lock-on anti-air rocket, proximity fuse | 143 / 4.6 m / +182, 0.5 m | 110 / 3.5 m, x1.3 vs machines | 1 + 3 | Attack / Hunter Drone in 1 lock-on hit, Gunship in 2 (3 rockets with its flare); sentry in 2 dumb-fire hits | level 18 |
+| Gluepot Sticky Launcher | sticky charges (stick to walls and people), remote detonated | 169 / 6 m / -, 1.4 m | 125 / 4.5 m | 3 + 3 | sentry in 3 | level 22 |
+| Wireline TOW | wire-guided rocket: it flies where you look while you hold it | 189 / 6.6 m / +108, 2.1 m | 140 / 5 m | 1 + 2 | sentry in 2 | level 27 |
+| Hailcrack Cluster | rocket that throws 6 bomblets (45% radius, 40% damage each) | 126 / 5.3 m / +56, 0.2 m (plus the bomblets) | 90 / 4 m | 1 + 2 | sentry in 3 | level 33 |
+| Furnace Thermobaric | wide blast, slow falloff, half of it gets round walls | 156 / 10.5 m / +52, 2.9 m | 120 / 8 m | 1 + 1 | sentry in 3 | level 39 |
 
-- **Arming**: a round flies a few metres before it arms (the Mule RPG 8 m); an unarmed hit is a dud that only does its direct-hit damage. Rockets self-destruct after their fuse, grenades go off at theirs.
+Launcher blasts hit players about a third harder and wider than they hit things: every launcher's centre kills a 120 HP player, and "kills within" is how close the blast alone (in the open, standing) is lethal. Props, buildings, destructible structures and kill streak machines take the second column, so lock-on hit counts and how many rockets a wall takes are unchanged. Your own blast hurts you by the same player numbers (60% of them), so every round arms far enough out that one going off at its arming distance takes under half your health.
+
+- **Arming**: a round flies a few metres before it arms (the Mule RPG 8 m, the Clover 5 m, the Carousel 4 m, a Gluepot charge 3 m); an unarmed hit is a dud that only does its (unbuffed) direct-hit damage. Rockets self-destruct after their fuse, grenades go off at theirs.
 - **Sticky launcher**: hip-fire sticks a charge to whatever it hits (up to the magazine's three out at once); **aim and pull the trigger** to set them all off. The HUD shows how many you have out.
 - **Wire guidance**: the rocket turns towards whatever is under your crosshair for as long as you keep the launcher in hand (switch away and the wire is cut); a "GUIDING" ring shows while one is on the wire.
 - **Flares**: the Gunship carries one flare: it pops it when the first locked rocket closes in (45 m), and that rocket chases the flare instead, so a Gunship takes 2 locked Skylance hits (3 rockets with the flare). Attack and Hunter Drones have none.
@@ -469,7 +472,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | WASD | Move |
 | Mouse | Look |
 | Left mouse | Fire (semi, burst or full auto depending on the gun) |
-| Right mouse (hold) | Aim down sights (zoom, tighter spread, slower movement; snipers get a scope) |
+| Right mouse (hold) | Aim down sights (zoom, tighter spread, slower movement; snipers look through their scope) |
 | R | Reload |
 | 1 / 2, Q, mouse wheel | Switch between primary and secondary |
 | Space | Jump (if you're crouched or prone, it stands you up first) |

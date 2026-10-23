@@ -212,17 +212,22 @@ public sealed partial class Game
     private void PickBotLoadout(Player bot) => PickBotLoadout(bot, bot.Bot?.Profile ?? BotPersonalities.Get(BotPersonality.Chaotic));
 
     /// <summary>
-    /// Bots run a couple of random attachments too (no optics: they don't need them), only ones their weapon XP at the
-    /// gear level has unlocked (BotGear.cs; the draws are the same at every level, a locked one is just left off).
+    /// Bots run a couple of random attachments too. No optics (they don't need them), except the scope a sniper starts
+    /// with: bot snipers always aim through it (it takes no random roll, so the shared random sequence is untouched).
+    /// Only attachments their weapon XP at the gear level has unlocked (BotGear.cs; the draws are the same at every
+    /// level, a locked one is just left off).
     /// </summary>
-    private uint RandomKit(WeaponDef w, int level)
+    private uint RandomKit(WeaponDef w, int level) => BotKit(w, _rng, level);
+
+    /// <summary>A bot's random kit for a gun from <paramref name="rng"/> (see <see cref="RandomKit"/>; the self-test rolls it too).</summary>
+    internal static uint BotKit(WeaponDef w, Random rng, int level = int.MaxValue)
     {
-        uint kit = 0;
+        var kit = BotGear.DefaultKit(w);
         var list = BotGear.AttachmentsFor(w); // a cached array: nothing to allocate every life
         for (var i = 0; i < list.Length; i++)
         {
             var a = list[i];
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))
                 kit = Attachments.With(kit, a.Slot, a.Index);
         }
         return kit;

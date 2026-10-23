@@ -111,7 +111,7 @@ public static partial class SelfTest
         {
             var w = Weapons.Get(id);
             foreach (var a in Attachments.For(w))
-                if (a.Index != 0 && Attachments.Slot(kit, a.Slot) == a.Index && level < BotGear.Full && Attachments.UnlockXp(w, a) > BotGear.WeaponXp(w, level))
+                if (a.Index != 0 && a != Attachments.DefaultOptic(w) && Attachments.Slot(kit, a.Slot) == a.Index && level < BotGear.Full && Attachments.UnlockXp(w, a) > BotGear.WeaponXp(w, level))
                     return $"{a.Name} on the {w.Name} needs {Attachments.UnlockXp(w, a)} weapon XP";
         }
         foreach (var k in new[] { bot.WantGrenade, bot.WantEquipment })

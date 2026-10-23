@@ -2,6 +2,7 @@
   "format": "call-of-slop-weapon/1",
   "name": "Needle Bolt-Action",
   "order": 31,
+  "defaultOptic": "8x Sniper Scope",
   "class": "Sniper",
   "blurb": "Classic bolt gun. One to the head, scope required.",
   "damage": 95,
@@ -27,7 +28,7 @@
     "kickBack": 0.12, "kickUp": 12, "kickRoll": 5, "kickSide": 0.006, "kickTime": 0.16
   },
   "mobility": 0.9,
-  "adsZoom": 4,
+  "adsZoom": 1.5,
   "equipTime": 0.7,
   "adsTime": 0.16,
   "length": 0.72,
@@ -38,6 +39,6 @@
   "bright": 0.5,
   "tail": 1,
   "model": {
-    "base": "bolt_sniper"
+    "base": "bolt_sniper", "sights": "post"
   }
 }

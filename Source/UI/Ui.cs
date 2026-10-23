@@ -550,8 +550,15 @@ public sealed partial class Ui : IDisposable
                 continue;
             ImGui.SeparatorText(Attachments.SlotName(slot));
             var current = Attachments.Slot(kit, slot);
-            if (ImGui.Selectable($"{(slot == AttachSlot.Optic ? "Iron sights" : "None")}##none{si}", current == 0))
+            // On a gun that starts scoped (snipers) the empty optic slot is its iron sights, an unlock of their own.
+            var ironsNeed = slot == AttachSlot.Optic ? Attachments.IronSightsXp(w) : 0;
+            var noneName = slot == AttachSlot.Optic ? Attachments.NoOpticName(w) : "None";
+            if (wxp < ironsNeed)
+                ImGui.PushStyleColor(ImGuiCol.Text, Dim);
+            if (ImGui.Selectable(wxp >= ironsNeed ? $"{noneName}##none{si}" : $"[LOCKED] {noneName}  -  {ironsNeed:N0} weapon XP##none{si}", current == 0) && wxp >= ironsNeed)
                 SetKitOf(audio, w, Attachments.With(kit, slot, 0));
+            if (wxp < ironsNeed)
+                ImGui.PopStyleColor();
             foreach (var a in inSlot)
             {
                 var need = Attachments.UnlockXp(w, a);
