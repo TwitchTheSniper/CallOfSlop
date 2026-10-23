@@ -17,7 +17,7 @@ namespace CallOfSlop;
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
-/// Modding helpers: --check-map FILE, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
+/// Modding helpers: --check-map FILE, --check-maps DIR, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
 public static unsafe partial class Program
@@ -82,7 +82,9 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
             return Maps.Export(exportDir); // writes the loaded maps back out as map files
         if (args.SkipWhile(a => !a.Equals("--check-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkFile)
-            return Maps.Check(checkFile); // for map makers: does this file load?
+            return Maps.Check(checkFile); // for map makers: does this file load, and does it pass the "Map contract" checks?
+        if (args.SkipWhile(a => !a.Equals("--check-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkDir)
+            return Maps.CheckAll(checkDir); // the same for every map file in a folder (a pack)
         if (args.Any(a => a.Equals("--map-ops", StringComparison.OrdinalIgnoreCase)))
             return Maps.PrintOps(); // for map makers: every op and its parameters
         if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)

@@ -7,6 +7,131 @@
  "destructible": false,
  "fallKill": 15.0,
  "maxPlayers": 20,
+ "test": {
+  "shape": "non-rectangular",
+  "minDecalShare": 80,
+  "maxDrawnBoxes": 60,
+  "symmetry": "mirrorZ",
+  "walkFairness": 0.1,
+  "probes": [
+   [
+    "North Dock",
+    0,
+    -86,
+    30.0
+   ],
+   [
+    "South Dock",
+    0,
+    86,
+    30.0
+   ],
+   [
+    "Refinery N",
+    0,
+    -56,
+    28.0
+   ],
+   [
+    "Refinery S",
+    0,
+    56,
+    28.0
+   ],
+   [
+    "Quarters N",
+    -40,
+    -70,
+    29.0
+   ],
+   [
+    "Quarters S",
+    -40,
+    70,
+    29.0
+   ],
+   [
+    "Tank Farm N",
+    -52,
+    -40,
+    27.5
+   ],
+   [
+    "Tank Farm S",
+    -52,
+    40,
+    27.5
+   ],
+   [
+    "Hangar N",
+    42,
+    -72,
+    29.5
+   ],
+   [
+    "Hangar S",
+    42,
+    72,
+    29.5
+   ],
+   [
+    "Comms N",
+    50.6,
+    -48.5,
+    27.5
+   ],
+   [
+    "Comms S",
+    50.6,
+    48.5,
+    27.5
+   ],
+   [
+    "Hub ring",
+    0,
+    -15.5,
+    26.0
+   ],
+   [
+    "Hub core",
+    3,
+    0,
+    26.0
+   ],
+   [
+    "West Pad",
+    -47.5,
+    0,
+    25.0
+   ],
+   [
+    "East Pad",
+    47.5,
+    0,
+    25.0
+   ]
+  ],
+  "voidAt": [
+   [
+    6.5,
+    6.5
+   ]
+  ],
+  "fallKill": {
+   "drop": [
+    6.5,
+    27.0,
+    6.5
+   ],
+   "safe": [
+    3.0,
+    26.0,
+    0.0
+   ]
+  },
+  "botMatchSeconds": 0,
+  "propsClear": false
+ },
  "skybox": {
   "image": "Skies/stratos_dusk.png",
   "exposure": 1.0,

@@ -7,6 +7,136 @@
  "destructible": false,
  "fallKill": 6.0,
  "maxPlayers": 16,
+ "test": {
+  "shape": "non-rectangular",
+  "area": [
+   8000,
+   14000
+  ],
+  "maxPlayers": 16,
+  "minProps": 180,
+  "minSolidProps": 120,
+  "minDecals": 150,
+  "minDecalShare": 80,
+  "minMeshes": 1200,
+  "maxDrawnBoxes": 120,
+  "symmetry": "turn",
+  "minTeamSpawns": 8,
+  "walkFairness": 0.1,
+  "probes": [
+   [
+    "bow dock",
+    -60,
+    -4,
+    20.0
+   ],
+   [
+    "stern dock",
+    60,
+    4,
+    20.0
+   ],
+   [
+    "north quay west",
+    -40,
+    -20,
+    20.0
+   ],
+   [
+    "north quay east",
+    40,
+    -20,
+    20.0
+   ],
+   [
+    "south quay",
+    0,
+    20,
+    20.0
+   ],
+   [
+    "keel deck west ribs",
+    -32,
+    0,
+    18.0
+   ],
+   [
+    "keel deck inside",
+    0,
+    -2,
+    18.0
+   ],
+   [
+    "keel deck east ribs",
+    32,
+    0,
+    18.0
+   ],
+   [
+    "north scaffold",
+    -10,
+    -8,
+    24.0
+   ],
+   [
+    "south scaffold",
+    10,
+    8,
+    24.0
+   ],
+   [
+    "spine west",
+    -30,
+    0,
+    28.0
+   ],
+   [
+    "crown deck",
+    0,
+    0,
+    28.0
+   ],
+   [
+    "spine east",
+    30,
+    0,
+    28.0
+   ],
+   [
+    "west gantry north end",
+    -20,
+    -26,
+    28.0
+   ],
+   [
+    "west gantry south end",
+    -20,
+    26,
+    28.0
+   ],
+   [
+    "east gantry",
+    20,
+    10,
+    28.0
+   ],
+   [
+    "west hatch landing",
+    -12.7,
+    3,
+    23.0
+   ],
+   [
+    "east hatch landing",
+    12.7,
+    -3,
+    23.0
+   ]
+  ],
+  "botMatchSeconds": 20,
+  "botMatchPlayers": 12,
+  "explosivesClear": 10
+ },
  "skybox": {
   "preset": "night",
   "zenith": "#03040c",

@@ -6,6 +6,166 @@
  "order": 611,
  "destructible": false,
  "maxPlayers": 16,
+ "test": {
+  "shape": "polygon",
+  "area": [
+   10000,
+   11200
+  ],
+  "size": "medium",
+  "maxPlayers": 16,
+  "minSolidProps": 180,
+  "minCosmeticProps": 60,
+  "minDecals": 300,
+  "maxDrawnBoxes": 400,
+  "minPackProps": 100,
+  "requireProps": [
+   "Cryo Pod"
+  ],
+  "requireDecals": [
+   "Frostvault Sign",
+   "Frostvault Vault Ring"
+  ],
+  "symmetry": "turn",
+  "symmetricProps": true,
+  "walkFairness": 0.1,
+  "minMainNavPct": 90,
+  "probes": [
+   [
+    "pit",
+    0,
+    -3,
+    0.0
+   ],
+   [
+    "podium NW",
+    -11,
+    -11,
+    1.2
+   ],
+   [
+    "podium SE",
+    11,
+    11,
+    1.2
+   ],
+   [
+    "corridor N",
+    0,
+    -17.5,
+    0.0
+   ],
+   [
+    "corridor E",
+    17.5,
+    5,
+    0.0
+   ],
+   [
+    "gallery W",
+    -17.5,
+    0,
+    3.5
+   ],
+   [
+    "gallery S",
+    0,
+    17.5,
+    3.5
+   ],
+   [
+    "gallery NE corner",
+    16.5,
+    -17.5,
+    3.5
+   ],
+   [
+    "lab N roof",
+    0,
+    -42,
+    3.5
+   ],
+   [
+    "lab S roof",
+    0,
+    42,
+    3.5
+   ],
+   [
+    "lab bridge N",
+    0,
+    -28,
+    3.5
+   ],
+   [
+    "stair landing NW",
+    -23,
+    -15,
+    3.5
+   ],
+   [
+    "stair landing SE",
+    23,
+    15,
+    3.5
+   ],
+   [
+    "lab N",
+    0,
+    -42,
+    0.0
+   ],
+   [
+    "pod hall A",
+    -27,
+    -32,
+    0.0
+   ],
+   [
+    "pod hall B",
+    27,
+    32,
+    0.0
+   ],
+   [
+    "server room NE",
+    26,
+    -33,
+    0.0
+   ],
+   [
+    "server room SW",
+    -26,
+    33,
+    0.0
+   ],
+   [
+    "intake W",
+    -52,
+    0,
+    0.0
+   ],
+   [
+    "intake E",
+    52,
+    0,
+    0.0
+   ],
+   [
+    "north passage",
+    -6,
+    -52,
+    0.0
+   ],
+   [
+    "west alley",
+    -40,
+    -30,
+    0.0
+   ]
+  ],
+  "botMatchSeconds": 8
+ },
  "flagPool": "none",
  "skybox": {
   "preset": "night",

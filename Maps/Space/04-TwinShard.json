@@ -7,6 +7,19 @@
  "destructible": false,
  "fallKill": -4.0,
  "maxPlayers": 16,
+ "test": {
+  "shape": "non-rectangular",
+  "minProps": 18,
+  "minDecals": 60,
+  "minDecalShare": 0,
+  "symmetry": "mirrorX",
+  "walkFairness": 0.12,
+  "void": false,
+  "botMatchSeconds": 12,
+  "botMatchMode": "koth",
+  "spawnsStand": true,
+  "maxStuckBots": 4
+ },
  "skybox": {
   "preset": "night",
   "zenith": "#05060c",

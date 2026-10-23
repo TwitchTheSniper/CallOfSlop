@@ -39,7 +39,7 @@ Check a file without starting the game:
 CallOfSlop.exe --check-map Maps\MyPack\Bunker.json
 ```
 
-This prints `OK` with the box, spawn and waypoint counts, or the exact problem, for example `op #4: Building needs "doors"`. Files that fail to load are skipped, and the lobby shows a red line naming the file. Fix the file and refresh. `CallOfSlop.exe --map-ops` lists every op with its parameters, straight from the game.
+This prints `OK` with the box, spawn and waypoint counts, or the exact problem, for example `op #4: Building needs "doors"`, then runs the same checks the game's self-test runs on every shipped map (see [Testing a map](#testing-a-map)) and prints each one's result. Files that fail to load are skipped, and the lobby shows a red line naming the file. Fix the file and refresh. `CallOfSlop.exe --check-maps Maps\MyPack` checks every map in a folder. `CallOfSlop.exe --map-ops` lists every op with its parameters, straight from the game.
 
 ## Top-level fields
 
@@ -65,6 +65,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
+| `test` | no | What the self-test (and `--check-map`) must find true of this map: shape, dressing floors, symmetry, fair walks, deck probes, a short bot match. Not part of the fingerprint. See [Testing a map](#testing-a-map). |
 
 Trash cans, crates, litter and other props are placed with ops; see [Props](#props).
 
@@ -1018,6 +1019,68 @@ Linux job draws one for every map a push changed and uploads them as the **map-p
 - Keep cover near spawns, and leave sightlines under ~60 m on Small maps.
 - Ops run in order, so `TreeIfClear` and `AutoWaypoints` only see what was built before them. Put them last.
 - **Stairs must give 2.1 m headroom** and be walkable standing: nothing (a roof slab, a beam, a lintel, a railing's top rail, terrain) within 2.1 m over any step a player can stand on, steps of at most 0.55 m, at least 1.0 m clear between the sides, 1.2 m clear at the top and the foot (or room to turn off sideways), and nothing parked across the foot. The self-test's "Stairs" section finds every flight on every map (any run of three or more step-shaped boxes, whatever op or prop built it) and walks it standing with both movers; it names the flight and the clearance in cm when one fails. On terrain, keep the ground below the treads: a plateau or bank edge that rises over the upper steps makes them a wall.
+
+## Testing a map
+
+Every shipped map is checked by the game's self-test ("Map contract", `Source/App/SelfTestMapContract.cs`), and
+`CallOfSlop.exe --check-map FILE` runs exactly the same checks on one file in seconds, printing each check's result
+(`ok` or `FAIL`) with its numbers: the fairness walks, the nav graph, the bot match. `--check-maps DIR` does a whole
+pack. Run it before pushing a map; main's full self-test takes twenty minutes to tell you the same thing.
+
+Every map gets the **universal checks**: a hill and the flags that aren't inside geometry, no spawn inside geometry, one
+spawn per player, and (with a `boundary`) every spawn, waypoint and objective inside the outline. The rest is driven by
+an optional top-level **`test`** block, which says what must be true of this map. Every key is optional; without the
+block only the universal checks run. The block is not part of the map's fingerprint, so adding or changing it never
+stops anyone joining.
+
+```json
+"test": {
+  "shape": "non-rectangular", "area": [8000, 14000], "size": "medium", "maxPlayers": 16,
+  "minProps": 180, "minSolidProps": 120, "minDecals": 150, "minDecalShare": 80, "minMeshes": 1200, "maxDrawnBoxes": 120,
+  "symmetry": "turn", "minTeamSpawns": 8, "walkFairness": 0.10,
+  "probes": [["bow dock", -60, -4, 20.0], ["crown deck", 0, 0, 28.0]],
+  "botMatchSeconds": 20, "botMatchPlayers": 12, "explosivesClear": 10
+}
+```
+
+| Key | Default | Check |
+|---|---|---|
+| `shape` | `"any"` | `"non-rectangular"` (any `boundary` but a rect), or the exact shape: `"rect"`, `"circle"`, `"ellipse"`, `"smooth"`, `"polygon"`. |
+| `area` | – | `[min, max]`: the play area inside the outline, in square metres. |
+| `size`, `maxPlayers` | – | The size class (`"small"`, `"medium"`, `"large"`) and the player limit the map must have. |
+| `minProps`, `minSolidProps`, `minCosmeticProps`, `minBreakableProps`, `minDecals`, `minMeshes`, `minPlants`, `minTrees`, `minPackProps` | 0 | Dressing floors: at least this many props (solid, cosmetic, breakable), decals placed, meshes (not counting the boundary's), plants, trees, pack-local props. |
+| `minDecalShare` | 75 | At least this percentage of the requested decals must find a surface (0: not checked). |
+| `maxDrawnBoxes` | – | At most this many boxes drawn one by one (each is a draw call; use props, meshes and hidden colliders). |
+| `requireProps`, `requireDecals` | `[]` | Prop names that must be placed; decal name prefixes that must be placed. |
+| `symmetry` | `"none"` | `"turn"` (Red's spawns, the flags and the hills are Blue's turned 180 degrees about the centre: twins at (-x, -z)), `"mirrorX"` (twins at (-x, z)) or `"mirrorZ"` (twins at (x, -z)). Both teams get the same number of spawns. A hill on the symmetry line is its own twin. |
+| `symmetryTolerance` | 0.3 | How far (metres) a twin may be from its mirrored spot. |
+| `unpairedSpawns` | 0 | How many Blue spawns may lack a Red twin (one nudged off a slope). |
+| `symmetricHills` | true | With a `symmetry`: the hills are twinned too. |
+| `symmetricProps` | false | With a `symmetry`: every hand-placed solid prop has its twin (same prop, mirrored position and yaw; Clutter mirrors its own). |
+| `minHills` | 3 | At least this many hill zones. |
+| `minTeamSpawns` | half the player limit | At least this many spawns per team. |
+| `handPlaced` | true | Team spawns, hills and flags are hand-placed (`teamSpawns`, `hills`, `flags`), and there is a placed spawn per player. |
+| `walkFairness` | 0.10 | The average walk from each team's spawns to every hill, and to the enemy flag, must be within this share of each other (0: only that routes exist). The numbers are printed. |
+| `hillWalks` | `"centre"` | `"zone"`: the walk to a hill ends at the nearest nav node anywhere in the zone at the hill's height (hills on raised decks). |
+| `maxNavBuildMs` | 3000 | The nav graph must build within this (0: not checked). |
+| `minMainNavPct` | 75 | At least this percentage of nav nodes in the main area (pockets bots can't leave fail it). |
+| `minNavNodesAbove` | – | `[height, count]`: at least `count` main-area nodes above `height` (the raised floors are on the graph). |
+| `void` | fallKill set, no `Ground`, no terrain | A void map: no nav link crosses the void (floor under every half metre of every link), no nav node below the fall-kill height. Any map with `fallKill` also fails if a nav link leads below it. |
+| `voidAt` | `[]` | `[[x, z], ...]`: open to the void there (no floor from the top of the map down to the fall-kill height). |
+| `probes` | `[]` | `[["name", x, z, y], ...]`: the floor at (x, z), found from 1.2 m above y, is at y (within 0.1 m), and the nav graph's main area reaches it. Name every deck, roof and pit. |
+| `fallKill` | – | `{ "drop": [x, y, z], "safe": [x, y, z] }`: a player dropped at `drop` dies within 4 s; one put at `safe` stands and lives. |
+| `botMatchSeconds` | 8 | A seeded bot match of this many simulated seconds (0: none): no crash, nobody outside the outline or below the floor at any tick, no server tick over 8 ms of work. |
+| `botMatchMode`, `botMatchPlayers` | `"ffa"`, the player limit | `"ffa"`, `"tdm"` or `"koth"`; how many players (bots plus the host). |
+| `maxStuckBots` | – | At most this many bots may move under 8 m in the match (a match under 12 s is too short to judge). |
+| `spawnsStand` | false | Every spawn settles where it is, standing, with the body clear (on gravity-zone maps: not in a zone with a sideways up). |
+| `propsInside` | true | With a `boundary`: every prop and drawn box is inside the outline too (set false when you dress the view past the edge). |
+| `propsClear` | true | No solid prop box within 0.8 m of a spawn or 1.5 m of a hill's centre or a flag, at body height. |
+| `explosivesClear` | 0 | No explosive prop within this many metres of a spawn. |
+
+The self-test prints one summary line per map and the usual `FAIL:` lines; `--check-map` prints every check. Keep the
+block honest: thresholds are what the map has with a margin, not aspirations, so a change that quietly strips a map
+fails the build. A map that needs a check the block can't express gets a small section of its own (the Space pack's
+gravity maps have "Space: gravity physics" for standing on walls and the Pebble drop loop).
 
 ## Zombies maps
 

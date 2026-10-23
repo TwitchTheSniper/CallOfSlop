@@ -6,6 +6,94 @@
  "order": 606,
  "destructible": false,
  "maxPlayers": 16,
+ "test": {
+  "shape": "non-rectangular",
+  "area": [
+   9000,
+   16000
+  ],
+  "maxPlayers": 16,
+  "minProps": 260,
+  "minSolidProps": 140,
+  "minDecals": 120,
+  "minDecalShare": 80,
+  "minMeshes": 80,
+  "maxDrawnBoxes": 80,
+  "symmetry": "turn",
+  "minTeamSpawns": 8,
+  "walkFairness": 0.1,
+  "probes": [
+   [
+    "pit floor",
+    0,
+    0,
+    -3.5
+   ],
+   [
+    "west base pad",
+    -50,
+    -4,
+    1.2
+   ],
+   [
+    "east base pad",
+    50,
+    4,
+    1.2
+   ],
+   [
+    "west tunnel",
+    -40,
+    -10,
+    1.2
+   ],
+   [
+    "east tunnel",
+    40,
+    10,
+    1.2
+   ],
+   [
+    "north ore dock",
+    0,
+    -33,
+    0.4
+   ],
+   [
+    "south ore dock",
+    0,
+    33,
+    0.4
+   ],
+   [
+    "west landing pad",
+    -26,
+    30,
+    0.6
+   ],
+   [
+    "east landing pad",
+    26,
+    -30,
+    0.6
+   ],
+   [
+    "west solar farm",
+    -26,
+    -43,
+    0.5
+   ],
+   [
+    "east solar farm",
+    26,
+    43,
+    0.5
+   ]
+  ],
+  "botMatchSeconds": 20,
+  "botMatchPlayers": 12,
+  "explosivesClear": 10
+ },
  "skybox": {
   "preset": "night",
   "zenith": "#020308",

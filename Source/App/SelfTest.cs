@@ -37,8 +37,16 @@ public static partial class SelfTest
     private static StreamWriter _log = null!;
     private static int _failures;
 
+    /// <summary>Where Line and Fail go when no self-test is running (the "--check-map" tool borrows the map checks; SelfTestMapContract.cs).</summary>
+    private static Action<string>? _lineSink, _failSink;
+
     private static void Line(string s)
     {
+        if (_log == null)
+        {
+            _lineSink?.Invoke(s);
+            return;
+        }
         _log.WriteLine(s);
         _log.Flush();
     }
@@ -46,6 +54,11 @@ public static partial class SelfTest
     private static void Fail(string s)
     {
         _failures++;
+        if (_log == null)
+        {
+            _failSink?.Invoke(s);
+            return;
+        }
         Line("  FAIL: " + s);
     }
 
@@ -236,7 +249,7 @@ public static partial class SelfTest
         Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
         Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
         Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
-        Section("Space: Stratos Station", CheckSpaceStation); // SelfTestSpaceStation.cs: Space 01 (void map: fall kill, nav never over the void, every platform reached, fair walks, cost; no bot matches)
+        Section("Map contract", CheckMapContract); // SelfTestMapContract.cs: every map against its file's "test" block (shape, dressing, objectives, symmetry, nav reach and fair walks, void links, probes, fall kill, a short bot match, horizon)
         Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
         Section("Server browser", CheckServerBrowser);
         Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
@@ -331,19 +344,15 @@ public static partial class SelfTest
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
-        Section("Space: refinery and processor", CheckSpaceIndustrial); // SelfTestSpaceIndustrial.cs: Space 09 Hollowrock Refinery and 10 Redvane Processor (shaped outlines, symmetric spawns, dressing, fair walks, a short bot match, the fall kill)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
         // space-b maps
-        Section("Space: arboretum and reactor", CheckSpaceArboretumReactor); // SelfTestSpaceArboretumReactor.cs: Space 07 Canopy Deck and 08 Ignition Hall (outline, counts, objectives, nav, fair walks, a short bot match)
         // space-d maps
-        Section("Space: vault and bazaar", CheckSpaceVaultBazaar); // SelfTestSpaceVaultBazaar.cs: Space 11 Frostvault (hexagon, turned) and 12 Vesper Strip (bean, mirrored): shape, dressing, outline, objectives, twins, levels, fair walks, a short bot match
         // space-a maps
-        Section("Space: shipyard and outpost", CheckSpaceYardAndOutpost); // SelfTestSpaceYard.cs: Space 05 Keelspar Drydock and 06 Regolith Reach: outline, dressing floors, objectives, symmetry, nav reach and fair walks, void links, a short bot match
         // gravity-maps
         Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
-        Section("Space: gravity maps", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard (gravity-zone void maps: areas on the nav, fair walks, stands in every gravity, a 12 s bot match)
+        Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,
