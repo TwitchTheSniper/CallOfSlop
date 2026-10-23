@@ -1,0 +1,17 @@
+// A variant in a few lines: start from a base (Parts/_Bases) or any part, then change only what differs.
+//   own keys replace the base's; objects ("receiver", "frame"...) merge key by key; null removes a key;
+//   "+model" / "+sockets" / "+stats" / "+muzzles" / "+flags" / "+bores" add to the base's lists
+//   ("+sockets" replaces a base socket with the same name); "-sockets" / "-stats" / "-flags" / "-bores" remove by name.
+{
+  "extends": "Base Barrel",
+  "name": "Template Shrouded Barrel",
+  "rarity": "rare",
+  "flavor": "The standard barrel in a vented jacket.",
+  "weight": 0.55,
+  "+model": [
+    {"use": "Barrel Shroud", "pos": [0, 0, -0.01], "scale": [1, 1, 0.9]}
+  ],
+  "+stats": [
+    {"stat": "hipSpreadDeg", "mul": 0.9}
+  ]
+}

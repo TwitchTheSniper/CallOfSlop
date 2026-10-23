@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Magazine Body",
+  "about": "A 12 cm box magazine hanging below y = 0 (the mag well), with a base plate. Scale Y for longer mags.",
+  "model": [
+    {"size": [0.024, 0.12, 0.05], "pos": [0, -0.06, 0], "color": "black"},
+    {"size": [0.028, 0.008, 0.054], "pos": [0, -0.122, 0], "color": "gunmetal"},
+    {"size": [0.025, 0.06, 0.004], "pos": [0, -0.05, 0.024], "color": "black"}
+  ]
+}
