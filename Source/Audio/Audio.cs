@@ -580,9 +580,11 @@ public sealed partial class Audio : IDisposable
 
     public void Dispose()
     {
+        Mic.Dispose(); // voice chat's microphone (Audio.Voice.cs): capture doesn't need the context
         if (_context == null)
             return; // never initialised (no audio device): nothing to release
         Music.Dispose(); // stops the streaming thread before the context goes
+        DisposeVoice(); // voice chat's streaming sources (Audio.Voice.cs)
         foreach (var set in new[] { _sources, _stepSources })
         {
             if (set.Length == 0)

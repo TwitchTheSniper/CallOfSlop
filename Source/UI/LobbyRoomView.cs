@@ -65,7 +65,7 @@ public sealed class LobbyRoomView
             _chatVersion = game.ChatVersion;
             ChatText.Clear();
             foreach (var c in game.Chat)
-                ChatText.Add($"{c.Name}: {c.Text}");
+                ChatText.Add(ChatRules.Format(c)); // "[TEAM] Name: text", or a system line (LobbyChat.cs)
         }
     }
 
