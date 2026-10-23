@@ -4,7 +4,8 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test section "Nav edge walks": on every map, the real mover (<see cref="World.Simulate"/>, classic movement) walks the
+/// Self-test section "Nav edge walks": on every map, the real mover (<see cref="World.Simulate"/>, classic movement; on a
+/// gravity-zone map the capsule mover in the local field, NavGraph.MoverWalk) walks the
 /// bots' nav edges one at a time, the way a bot follows them (face the next node, Forward, Jump + Forward at a mantle edge's
 /// ledge), for a few seconds each. An edge the walker can't finish is a spot where bots get stuck (a slope it slides back
 /// down, a ledge it can't climb, a wall in the way). No bots, no matches: deterministic, a couple of seconds for all maps.

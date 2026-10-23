@@ -155,6 +155,8 @@ public sealed partial class NavGraph
     /// </summary>
     public static WalkResult MoverWalk(Vector3 a, Vector3 b, byte flags, Vector3 ledge, bool sprint)
     {
+        if (GravityFrames.Curved)
+            return MoverWalkField(a, b, flags, ledge, sprint); // a gravity-zone (or planet) map: the game's own mover, in the local frame
         var len = Vector3.Distance(a, b);
         var mantleEdge = (flags & FlagMantle) != 0;
         var limit = (int)((len / (World.WalkSpeed * SlopeRules.SlowAtLimit * 0.8f) + 1f + (mantleEdge ? 1f : 0f)) * World.TickRate);
@@ -203,6 +205,68 @@ public sealed partial class NavGraph
             }
             var yaw = MathF.Atan2(aim.X - pos.X, -(aim.Z - pos.Z));
             mover.Simulate(ref s, new InputCmd { Buttons = keys, Yaw = yaw, SpeedPct = 100, Tick = 1 });
+            if (s.MantleTicks > 0)
+                r.Mantled = true;
+            if (!s.Grounded && s.MantleTicks == 0)
+                r.Airborne++;
+        }
+        r.End = s.Position;
+        return r;
+    }
+
+    /// <summary>
+    /// <see cref="MoverWalk"/> on a map whose gravity isn't plain straight down (GravityZones.cs): the mover the game runs
+    /// there (<see cref="World.Simulate"/>: the capsule mover with the local field, so low gravity, walls and rocks behave
+    /// as in play), steering and measuring in the local ground plane at each step, the way bots do. The same rules otherwise
+    /// (reach within 0.8 m across the ground and a little along up, give up after 1.2 s without getting closer, one hop at
+    /// 0.8 s). Plain maps never come here, so their graphs are unchanged.
+    /// </summary>
+    private static WalkResult MoverWalkField(Vector3 a, Vector3 b, byte flags, Vector3 ledge, bool sprint)
+    {
+        var len = Vector3.Distance(a, b);
+        var mantleEdge = (flags & FlagMantle) != 0;
+        var limit = (int)((len / (World.WalkSpeed * SlopeRules.SlowAtLimit * 0.8f) + 1f + (mantleEdge ? 1f : 0f)) * World.TickRate);
+        var s = new MoveState { Position = a, Grounded = true };
+        var r = new WalkResult { Closest = float.MaxValue };
+        var lastGain = 0;
+        var gainAt = float.MaxValue;
+        var hopPending = false;
+        for (var t = 0; t < limit; t++)
+        {
+            var pos = s.Position;
+            var up = GravityFrames.UpAt(pos);
+            var rel = b - pos;
+            var dy = Vector3.Dot(rel, up);
+            var dist = (rel - up * dy).Length();
+            if (dist < gainAt - 0.2f || (MathF.Abs(dy) > 0.5f && s.MantleTicks > 0))
+            {
+                gainAt = dist;
+                lastGain = t;
+            }
+            else if (t - lastGain > World.TickRate * 6 / 5)
+                break;
+            r.Closest = MathF.Min(r.Closest, dist);
+            if (dist < 0.8f && dy < 1.0f && dy > -2.5f)
+            {
+                r.Reached = true;
+                r.End = pos;
+                return r;
+            }
+            var aim = b;
+            var keys = Buttons.Forward | (sprint ? Buttons.Sprint : Buttons.None);
+            if (mantleEdge && up == Vector3.UnitY && ledge.Y > pos.Y + World.StepHeight
+                && (ledge.X - pos.X) * (ledge.X - pos.X) + (ledge.Z - pos.Z) * (ledge.Z - pos.Z) < 1.4f * 1.4f)
+            {
+                keys |= Buttons.Jump;
+                aim = ledge;
+            }
+            if (t - lastGain == World.TickRate * 4 / 5 || (hopPending && s.Grounded))
+            {
+                hopPending = !s.Grounded;
+                if (s.Grounded)
+                    keys |= Buttons.Jump;
+            }
+            World.Simulate(ref s, new InputCmd { Buttons = keys, Yaw = GravityFrames.YawOf(pos, aim - pos), SpeedPct = 100, Tick = 1 });
             if (s.MantleTicks > 0)
                 r.Mantled = true;
             if (!s.Grounded && s.MantleTicks == 0)

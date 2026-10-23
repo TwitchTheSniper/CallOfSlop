@@ -449,7 +449,9 @@ def zones():
               "field": {"type": "uniform", "direction": [1, 0, 0]}})
     # The piers stay level up to the step onto the rock.
     for s in (-1, 1):
-        z.append({"shape": "box", "name": "pier", "min": [-3, 12, min(s * 1.6, s * 9)], "max": [3, 19, max(s * 1.6, s * 9)],
+        # Only the deck's own footprint, from just under its top (15.0): beside the deck the rock keeps its pull, so
+        # nobody stands in plain gravity on the rock's curve next to it.
+        z.append({"shape": "box", "name": "pier", "min": [-1.6, 14.9, min(s * 1.6, s * 9)], "max": [1.6, 19, max(s * 1.6, s * 9)],
                   "field": {"type": "uniform"}})
     # The rock.
     z.append({"shape": "sphere", "name": "rock", "center": list(ROCK_C), "radius": ROCK_ZONE_R,
