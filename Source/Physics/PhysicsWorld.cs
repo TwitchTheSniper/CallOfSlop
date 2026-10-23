@@ -93,6 +93,18 @@ public sealed class PhysicsWorld : IWorldQuery
             AddMesh(mesh, closed: true);
     }
 
+    /// <summary>
+    /// A world of <paramref name="map"/> as at the start of a match (<see cref="Map.AsBuiltSolid"/>: nothing broken, doors as
+    /// they start), for the nav graph build. Never updated afterwards, so it stays that way whatever happens in the match.
+    /// </summary>
+    public static PhysicsWorld AsBuilt(Map map)
+    {
+        var w = new PhysicsWorld(map.AsBuiltSolid(), map.TerrainCollision, map.HalfX, map.HalfZ, map) { Gravity = GravityFrames.FieldOf(map) };
+        foreach (var mesh in map.SolidColliders)
+            w.AddMesh(mesh, closed: true);
+        return w;
+    }
+
     /// <summary>A world from a list of boxes (self-tests: shuffled copies, hand-built scenes). No movers, no props.</summary>
     public PhysicsWorld(IReadOnlyList<Box> boxes, ITerrainCollision? terrain, float halfX, float halfZ)
         : this(boxes, terrain, halfX, halfZ, null)

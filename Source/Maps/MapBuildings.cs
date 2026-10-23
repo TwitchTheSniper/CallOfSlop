@@ -101,6 +101,33 @@ public sealed partial class Map
     /// <summary>The box the fingerprint uses for a door or window: as built (opening or breaking never changes it).</summary>
     internal bool BuildingHashBox(int i, out Box b) => _buildingOriginal.TryGetValue(i, out b) || DestructionHashBox(i, out b); // a broken chunk: as built too (MapDestruction.Map.cs)
 
+    /// <summary>
+    /// Does anything in a match change this map's boxes (breakable props, building doors and windows, destructible chunks)?
+    /// Zombies doors don't count: each mode sets those at the start of a run.
+    /// </summary>
+    public bool HasChangingBoxes => _propOriginal.Count > 0 || BuildingDoors.Count > 0 || BuildingWindows.Count > 0 || Destruction != null;
+
+    /// <summary>
+    /// Every box as at the start of a match: broken props and blasted chunks whole, building doors as they start (open or
+    /// shut), window glass in place. Zombies doors stay as they are now. The nav graph is built from these
+    /// (<see cref="NavGraph"/>, BotNav.cs), so what broke or opened while it was being built never changes it.
+    /// </summary>
+    public Box[] AsBuiltSolid()
+    {
+        var boxes = Solid.ToArray();
+        foreach (var (k, b) in _propOriginal)
+            if ((uint)k < (uint)boxes.Length)
+                boxes[k] = b;
+        foreach (var d in BuildingDoors)
+            boxes[d.SolidIndex] = d.Plan.StartOpen ? ParkedBox(d.Plan.Closed) : d.Plan.Closed;
+        foreach (var w in BuildingWindows)
+            boxes[w.SolidIndex] = w.Plan.Glass;
+        if (Destruction is { } dest)
+            for (var c = 0; c < dest.Count; c++)
+                boxes[dest.Solid[c]] = dest.Original[c];
+        return boxes;
+    }
+
     /// <summary>The prop renderer's library: the pack's (or global) props, plus building-local props this map uses.</summary>
     public PropDef[] PropLibrary => _buildingLocalProps.Count == 0
         ? Props.ForPack(PackDir).Library

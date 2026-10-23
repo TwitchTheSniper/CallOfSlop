@@ -50,6 +50,7 @@ public static partial class SelfTest
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
             Section("Rooftops diag (temporary)", CheckRooftopsDiag); // TEMP (fix/rooftops-flake)
+            Section("Nav determinism", CheckNavDeterminism);
             if (sw.Elapsed.TotalSeconds >= 0)
             {
                 Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -98,6 +99,7 @@ public static partial class SelfTest
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
+            Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
             Section("Bots", CheckBots);
             Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)

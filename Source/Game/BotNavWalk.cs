@@ -246,6 +246,27 @@ public sealed partial class NavGraph
         return steepest < WalkCheckNormalY;
     }
 
+    /// <summary>
+    /// A squeezed climb (Walk's "tight": a window sill under its lintel) a -> b over <paramref name="ledge"/>: does a crouched
+    /// body fit on the ledge where the line crosses it (or 0.1 m to either side)? A line that clips a window's frame (a
+    /// diagonal between two grid nodes either side of a narrow window) fails: the mover can sometimes slide along the frame
+    /// into the opening from the exact node, but a bot arriving a little off the line pins against the wall beside the
+    /// window, out of reach of the ledge, and never climbs (the Rooftops far walk's old flake).
+    /// </summary>
+    private static bool LedgeRoom(PhysicsWorld c, Vector3 a, Vector3 b, Vector3 ledge)
+    {
+        var h = World.HeightOf(Stance.Crouch);
+        var p = ledge + new Vector3(0, 0.01f, 0);
+        if (!c.BlockedNav(p, h))
+            return true;
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        if (d.LengthSquared() < 1e-4f)
+            return false;
+        d = Vector2.Normalize(d);
+        var side = new Vector3(-d.Y, 0, d.X) * 0.1f;
+        return !c.BlockedNav(p + side, h) || !c.BlockedNav(p - side, h);
+    }
+
     /// <summary>cos(40 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
     private const float WalkCheckNormalY = 0.76604444f;
 
@@ -263,11 +284,12 @@ public sealed partial class NavGraph
             return false;
         const float r = World.PlayerRadius + 0.05f;
         float y0 = MathF.Min(a.Y, b.Y), y1 = MathF.Max(a.Y, b.Y) + World.PlayerHeight;
+        var asBuilt = World.NavBuildAsBuilt; // building the graph: doors as they start the match, not as they are now (PumpGraph)
         foreach (var d in map.BuildingDoors)
         {
-            if (d.Open || d.Broken)
+            if (asBuilt ? d.Plan.StartOpen : d.Open || d.Broken)
                 continue;
-            var box = map.Solid[d.SolidIndex];
+            var box = asBuilt ? d.Plan.Closed : map.Solid[d.SolidIndex];
             if (box.Max.Y < y0 || box.Min.Y > y1)
                 continue;
             // Segment against the box grown by the body radius (XZ slabs).

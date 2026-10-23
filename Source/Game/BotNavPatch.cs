@@ -97,7 +97,8 @@ public sealed partial class NavGraph
         ExtraHead = new int[Nodes.Length];
         Array.Fill(ExtraHead, -1);
         _cellMap = map;
-        Tainted = DestructionAtStart != DestructionStamp(map) || map.Destruction.Structures.Any(s => s.BrokenCount > 0);
+        // Built from the map as built (PumpGraph, always on a destructible map): no holes in it, whatever is broken now.
+        Tainted = !World.NavBuildAsBuilt && (DestructionAtStart != DestructionStamp(map) || map.Destruction.Structures.Any(s => s.BrokenCount > 0));
     }
 
     /// <summary>Forgets the cached graph of <paramref name="map"/> (it's built again the next time bots need it).</summary>

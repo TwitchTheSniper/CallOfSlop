@@ -101,6 +101,20 @@ public sealed partial class Game
             NavGraph.Forget(map); // built with holes in it: build it again from the whole map
             return false;
         }
+        // A graph that arrived mid-match is built from the map as built (NavGraph.PumpGraph): patch in what's already broken.
+        if (map.Destruction is { } dest && dest.Structures.Any(s => s.BrokenCount > 0))
+        {
+            var min = new Vector3(float.MaxValue);
+            var max = new Vector3(float.MinValue);
+            for (var c = 0; c < dest.Count; c++)
+                if (dest.Broken[c])
+                {
+                    min = Vector3.Min(min, dest.Original[c].Min);
+                    max = Vector3.Max(max, dest.Original[c].Max);
+                }
+            if (min.X <= max.X)
+                _navPatches.Enqueue((new Box((min + max) / 2, (max - min) / 2), []));
+        }
         return true;
     }
 
