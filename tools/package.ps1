@@ -98,6 +98,8 @@ if ($Step -ne "zip") {
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
     Copy-Item -Force "tools/TESTERS.txt" (Join-Path $folder "READ ME FIRST.txt")
+    Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") # a server list for friends (README, Playing with friends)
+    Copy-Item -Force "tools/masters.txt" (Join-Path $folder "masters.txt") # server lists shipped with the zip (Settings.ShippedMasters)
     if (-not (Test-Path (Join-Path $folder "CallOfSlop.exe")) -and $Runtime -like "win-*") { Fail "CallOfSlop.exe wasn't published" }
 }
 

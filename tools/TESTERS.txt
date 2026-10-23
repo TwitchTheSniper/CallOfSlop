@@ -19,8 +19,15 @@ Updates
 Playing together
 - Everyone should use the SAME build. The server browser says "Your build is older - update to join"
   when a game needs a newer build than yours.
-- One person hosts from the Multiplayer screen; others join from the server browser or by address.
-  The host may need to allow the game through the Windows firewall when asked.
+- One person hosts from the Multiplayer screen. Their lobby shows an INVITE CODE (like ABCD-EFGH-JKMN-PQRS)
+  with "Copy invite link" / "Copy code" buttons: send it to your friends.
+- Friends: Multiplayer > "Join by code or address", paste the code, Join.
+- After you've played together once, everyone's games show up in the server browser by themselves (the host's
+  game runs a small server list and joining adds it to your settings). Nothing to install or pay for.
+- The host may need to allow the game through the Windows firewall when asked, and needs UPnP on their router
+  (or UDP port 27015 forwarded) for friends outside their home to connect.
+- Want an always-on list for your group? Run RunServerList.bat on a PC that stays on; friends add that PC's
+  public address in Settings > Multiplayer > Server lists. (Optional: hosts run one anyway.)
 - Single player against bots works offline.
 
 Your saves

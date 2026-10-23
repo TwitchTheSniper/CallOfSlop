@@ -112,6 +112,10 @@ public static partial class SelfTest
             Section("Space: Stratos Station", CheckSpaceStation); // SelfTestSpaceStation.cs: Space 01 (void map: fall kill, nav never over the void, every platform reached, fair walks, cost; no bot matches)
             Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
             Section("Server browser", CheckServerBrowser);
+            Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
+            Section("STUN", CheckStun); // SelfTestListing.cs: canned answers, fuzz, a loopback fake server
+            Section("Server lists", CheckServerListBasics); // SelfTestListing.cs: info/list extensions, addresses, settings, browser merge
+            Section("Automatic server list", CheckAutoServerList); // SelfTestListing.cs: host starts a list, second host joins it, learning, hand-over (loopback)
             Section("HUD layout", CheckHudLayout);
             Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
             Section("Weapon select", CheckWeaponSelect);

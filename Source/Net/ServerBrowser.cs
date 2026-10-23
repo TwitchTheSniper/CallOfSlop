@@ -9,10 +9,11 @@ namespace CallOfSlop;
 /// (the "offline ping response"). Starts with a magic tag so it can be found inside RakNet's pong.
 /// </summary>
 public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
-    GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic, string Rotation = "", string Build = "")
+    GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic, string Rotation = "",
+    uint InstanceId = 0, string ListHost = "", ushort ListPort = 0, string Build = "")
 {
     // (Build, the host's release version such as "0.2026.1022.5" (BuildInfo.cs; "" for dev builds and older hosts), rides
-    // after the rotation as 'B', a length and ASCII. With a build and no rotation, a 0 rotation length comes first.
+    // after the rotation as the tagged extension 'B', a length and ASCII (after 'I' and 'L', see Encode).
     // Older builds stop reading after the rotation, so it needs no version bump either; the browser uses it to say
     // "your build is older / newer" next to a game.)
     // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome);
@@ -83,11 +84,25 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         b.Add((byte)Physics);
         var rotation = Encoding.ASCII.GetBytes(Rotation.Length > 24 ? Rotation[..24] : Rotation);
         var build = Encoding.ASCII.GetBytes(Build.Length > 23 ? Build[..23] : Build);
-        if (rotation.Length > 0 || build.Length > 0)
+        var extensions = InstanceId != 0 || ListPort != 0 || build.Length > 0;
+        if (rotation.Length > 0 || extensions)
         {
             b.Add((byte)rotation.Length);
             b.AddRange(rotation);
         }
+        // Optional tagged extensions after the rotation (discovery only, so no protocol bump: older builds stop
+        // reading after the rotation). 'I': this hosting's random id, so the browser shows a game found on the LAN and
+        // through a server list once. 'L': the server list this host is on (port, then the host name; an empty name
+        // means "on this host's own address"), so players who find the game learn the list (ListLearner).
+        if (InstanceId != 0)
+            b.AddRange([(byte)'I', (byte)InstanceId, (byte)(InstanceId >> 8), (byte)(InstanceId >> 16), (byte)(InstanceId >> 24)]);
+        if (ListPort != 0)
+        {
+            var host = Encoding.ASCII.GetBytes(ListHost.Length > 64 ? ListHost[..64] : ListHost);
+            b.AddRange([(byte)'L', (byte)ListPort, (byte)(ListPort >> 8), (byte)host.Length]);
+            b.AddRange(host);
+        }
+        // 'B': the host's release version (BuildInfo.cs), for "your build is older" in the browser.
         if (build.Length > 0)
         {
             b.Add((byte)'B');
@@ -112,20 +127,42 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var physics = rest.Length >= 1 && rest.Length >= 2 + rest[0] && rest[1 + rest[0]] == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic;
         var rotation = "";
         var build = "";
+        uint instance = 0;
+        var listHost = "";
+        ushort listPort = 0;
         if (rest.Length >= 1 && rest.Length >= 3 + rest[0])
         {
             var tail = rest[(2 + rest[0])..]; // after the map name and the physics byte
             if (tail.Length >= 1 + tail[0])
             {
                 rotation = Encoding.ASCII.GetString(tail.Slice(1, tail[0]));
-                var after = tail[(1 + tail[0])..];
-                if (after.Length >= 2 && after[0] == (byte)'B' && after.Length >= 2 + after[1])
-                    build = BuildInfo.ParseRelease(Encoding.ASCII.GetString(after.Slice(2, after[1])))?.ToString() ?? "";
+                var ext = tail[(1 + tail[0])..];
+                while (ext.Length > 0)
+                {
+                    if (ext[0] == (byte)'I' && ext.Length >= 5)
+                    {
+                        instance = (uint)(ext[1] | (ext[2] << 8) | (ext[3] << 16) | (ext[4] << 24));
+                        ext = ext[5..];
+                    }
+                    else if (ext[0] == (byte)'L' && ext.Length >= 4 && ext.Length >= 4 + ext[3])
+                    {
+                        listPort = (ushort)(ext[1] | (ext[2] << 8));
+                        listHost = Encoding.ASCII.GetString(ext.Slice(4, ext[3]));
+                        ext = ext[(4 + ext[3])..];
+                    }
+                    else if (ext[0] == (byte)'B' && ext.Length >= 2 && ext.Length >= 2 + ext[1])
+                    {
+                        build = BuildInfo.ParseRelease(Encoding.ASCII.GetString(ext.Slice(2, ext[1])))?.ToString() ?? "";
+                        ext = ext[(2 + ext[1])..];
+                    }
+                    else
+                        break; // an unknown (newer) or cut-off extension: stop here
+                }
             }
         }
         // Anyone can answer a ping: names are capped printable ASCII before the browser shows them.
         return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0],
-            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), build);
+            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort, build);
     }
 }
 
@@ -163,11 +200,22 @@ public static class BuildCompatText
     };
 }
 
+/// <summary>Where the server browser heard about a game (a game can be found several ways; the row shows them all).</summary>
+[Flags]
+public enum ServerSource : byte
+{
+    None = 0,
+    Lan = 1, // answered the LAN broadcast
+    List = 2, // listed by a server list (master server)
+}
+
 /// <summary>
 /// Finds games to join:
 ///   - on your network, by broadcasting an unconnected ping to the usual game ports;
-///   - on the internet, by asking a master server (if one is set in Settings) for its list of
-///     advertised games, then pinging each of them directly for live details and latency.
+///   - on the internet, by asking every server list (master server) in Settings, any shipped in masters.txt and any
+///     running in this game, for their advertised games, then pinging each of them directly for live details and latency.
+/// The same game found several ways (LAN and a list, or two lists) is shown once (<see cref="Merge"/>). Games from a
+/// different build are shown greyed with their protocol version instead of being hidden.
 /// </summary>
 public sealed class ServerBrowser : IDisposable
 {
@@ -177,7 +225,15 @@ public sealed class ServerBrowser : IDisposable
         public required ServerInfo Info;
         public int PingMs;
         public double LastSeen;
-        public bool FromMaster;
+        public ServerSource Sources;
+
+        public bool FromMaster => (Sources & ServerSource.List) != 0;
+        public bool FromLan => (Sources & ServerSource.Lan) != 0;
+
+        /// <summary>Same build (protocol version) as this game: only these can be joined.</summary>
+        public bool VersionOk => Info.Version == ServerInfo.ProtocolVersion;
+
+        public string Key => $"{Address}:{Info.Port}";
     }
 
     private readonly NetPeer _net = NetPeer.Discovery();
@@ -186,13 +242,46 @@ public sealed class ServerBrowser : IDisposable
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private double _nextRefresh;
     private readonly HashSet<string> _fromMaster = new();
+    private readonly HashSet<string> _listsReplied = new();
+    private int _listsAsked, _listedGames;
+    private List<Entry> _merged = new();
+    private bool _dirty;
 
-    public IEnumerable<Entry> Servers => _servers.Values.OrderBy(e => e.PingMs);
+    /// <summary>Every game found, one row per game (see <see cref="Merge"/>): joinable ones first, then by ping.</summary>
+    public IReadOnlyList<Entry> Servers
+    {
+        get
+        {
+            if (_dirty)
+            {
+                _merged = Merge(_servers.Values);
+                _dirty = false;
+            }
+            return _merged;
+        }
+    }
+
     public string MasterStatus { get; private set; } = "";
     public bool Searching => Now - _lastRefresh < 1.5;
     private double _lastRefresh = -10;
 
     private double Now => _clock.Elapsed.TotalSeconds;
+
+    /// <summary>
+    /// One row per game: entries with the same hosting id (<see cref="ServerInfo.InstanceId"/>) are one game reached by
+    /// different addresses (LAN and internet, loopback); the row keeps the lowest-ping address and every source.
+    /// </summary>
+    public static List<Entry> Merge(IEnumerable<Entry> entries)
+    {
+        var rows = new List<Entry>();
+        foreach (var g in entries.GroupBy(e => e.Info.InstanceId != 0 ? $"#{e.Info.InstanceId:x8}" : e.Key))
+        {
+            var best = g.OrderBy(e => e.PingMs).First();
+            var sources = g.Aggregate(ServerSource.None, (a, e) => a | e.Sources);
+            rows.Add(sources == best.Sources ? best : new Entry { Address = best.Address, Info = best.Info, PingMs = best.PingMs, LastSeen = best.LastSeen, Sources = sources });
+        }
+        return rows.OrderByDescending(e => e.VersionOk).ThenBy(e => e.PingMs).ToList();
+    }
 
     /// <summary>Ask again now (also happens every few seconds on its own).</summary>
     public void Refresh(Settings s)
@@ -205,27 +294,30 @@ public sealed class ServerBrowser : IDisposable
             _pingSent[$":{port}"] = Now;
             _net.PingHost("255.255.255.255", port);
         }
-        // Internet: master server list
-        if (s.Master is { } m)
-        {
-            _net.Advertise(m.Host, m.Port, MasterServerApp.ListQuery);
-            if (MasterStatus.Length == 0)
-                MasterStatus = $"Asking {m.Host}:{m.Port} for public games...";
-        }
-        else
-        {
-            MasterStatus = "";
-        }
+        // Internet: every server list we know (names are looked up in the background, never on this thread)
+        var lists = s.AllMasters;
+        _listsAsked = lists.Count;
+        _listsReplied.Clear();
+        _listedGames = 0;
+        foreach (var (host, port) in lists)
+            if (HostNames.TryResolve(host) is { } ip)
+                _net.Advertise(ip, port, MasterServerApp.ListQuery);
+        MasterStatus = lists.Count == 0 ? "" : $"Asking {lists.Count} server list(s) for games...";
         // Re-ping everything we already know so pings and player counts stay fresh
         foreach (var e in _servers.Values.ToList())
             PingServer(e.Address, e.Info.Port);
         // Forget games that stopped answering
         foreach (var gone in _servers.Where(kv => Now - kv.Value.LastSeen > 15).Select(kv => kv.Key).ToList())
+        {
             _servers.Remove(gone);
+            _dirty = true;
+        }
     }
 
     private void PingServer(string ip, ushort port)
     {
+        if (_pingSent.Count > 512)
+            _pingSent.Clear(); // a hostile list can't make this grow without bound
         _pingSent[$"{ip}:{port}"] = Now;
         _net.PingHost(ip, port);
     }
@@ -252,29 +344,38 @@ public sealed class ServerBrowser : IDisposable
         var ip = from.ToString(false, '|');
         switch ((DefaultMessageIDTypes)data[0])
         {
-            // Games on other protocol versions are listed too (greyed out, "update to join"), not hidden: BuildCompat says why.
             case DefaultMessageIDTypes.UnconnectedPong when ServerInfo.Find(data) is { } info:
             {
                 var key = $"{ip}:{info.Port}";
+                var lan = !_pingSent.ContainsKey(key) && _pingSent.ContainsKey($":{info.Port}");
                 var sent = _pingSent.TryGetValue(key, out var t) ? t : _pingSent.GetValueOrDefault($":{info.Port}", _lastRefresh);
                 var ping = (int)Math.Clamp((Now - sent) * 1000, 1, 9999);
-                if (_servers.TryGetValue(key, out var e))
+                if (!_servers.TryGetValue(key, out var e))
                 {
-                    e.Info = info;
-                    e.PingMs = ping;
-                    e.LastSeen = Now;
+                    if (_servers.Count >= 256)
+                        break;
+                    _servers[key] = e = new Entry { Address = ip, Info = info };
                 }
-                else
-                {
-                    _servers[key] = new Entry { Address = ip, Info = info, PingMs = ping, LastSeen = Now, FromMaster = _fromMaster.Contains(key) };
-                }
+                e.Info = info;
+                e.PingMs = ping;
+                e.LastSeen = Now;
+                e.Sources |= (lan ? ServerSource.Lan : ServerSource.None) | (_fromMaster.Contains(key) ? ServerSource.List : ServerSource.None);
+                if (e.Sources == ServerSource.None)
+                    e.Sources = NetAddr.IsLocal(ip) ? ServerSource.Lan : ServerSource.List;
+                _dirty = true;
                 break;
             }
             case DefaultMessageIDTypes.AdvertiseSystem when MasterServerApp.ParseList(data) is { } list:
             {
-                MasterStatus = list.Count == 0 ? "No public games right now." : $"{list.Count} public game(s) listed.";
-                foreach (var (addr, port) in list)
+                if (_listsReplied.Add($"{ip}:{from.DebugPort}"))
+                    _listedGames += list.Count;
+                MasterStatus = _listedGames == 0
+                    ? $"No games on your server list(s) right now ({_listsReplied.Count} of {_listsAsked} answered)."
+                    : $"{_listedGames} game(s) on {_listsReplied.Count} of {_listsAsked} server list(s).";
+                foreach (var (addr, port) in list.Take(64))
                 {
+                    if (_fromMaster.Count > 512)
+                        _fromMaster.Clear();
                     _fromMaster.Add($"{addr}:{port}");
                     PingServer(addr, port);
                 }
@@ -286,12 +387,80 @@ public sealed class ServerBrowser : IDisposable
     public void Dispose() => _net.Dispose();
 }
 
+/// <summary>Address helpers for discovery: what kind of address an IPv4 string is.</summary>
+public static class NetAddr
+{
+    public enum Kind
+    {
+        Public,
+        Private, // 10/8, 172.16/12, 192.168/16, 169.254/16 and carrier-grade NAT 100.64/10
+        Loopback,
+        Invalid,
+    }
+
+    public static Kind KindOf(string? ip)
+    {
+        if (!System.Net.IPAddress.TryParse(ip, out var a) || a.AddressFamily != System.Net.Sockets.AddressFamily.InterNetwork)
+            return Kind.Invalid;
+        var b = a.GetAddressBytes();
+        if (b[0] == 127)
+            return Kind.Loopback;
+        if (b[0] == 10 || (b[0] == 172 && b[1] >= 16 && b[1] <= 31) || (b[0] == 192 && b[1] == 168) || (b[0] == 169 && b[1] == 254)
+            || (b[0] == 100 && b[1] >= 64 && b[1] <= 127))
+            return Kind.Private;
+        return Kind.Public;
+    }
+
+    /// <summary>Loopback or a private (LAN) address.</summary>
+    public static bool IsLocal(string? ip) => KindOf(ip) is Kind.Loopback or Kind.Private;
+}
+
 /// <summary>
-/// The master server: a tiny headless program ("CallOfSlop.exe --master [port]") that keeps the
-/// public game list. Hosts that tick "Advertise" send it a heartbeat every 20 s from their game
-/// socket; browsers ask it for the list. It only stores addresses: everything else (name, map,
-/// players, ping) comes straight from each game when the browser pings it.
-/// Run it on any always-on PC with its UDP port reachable (it tries UPnP itself).
+/// Host names (server lists typed as names, e.g. "mylist.example.com") looked up in the background, so the UI and the
+/// game loop never wait on DNS. <see cref="TryResolve"/> returns the IPv4 address once known (literal addresses at once).
+/// </summary>
+public static class HostNames
+{
+    private static readonly Dictionary<string, (string? Ip, DateTime Until)> Cache = new(StringComparer.OrdinalIgnoreCase);
+
+    public static string? TryResolve(string host)
+    {
+        if (System.Net.IPAddress.TryParse(host, out var lit))
+            return lit.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork ? lit.ToString() : null;
+        lock (Cache)
+        {
+            if (Cache.TryGetValue(host, out var c) && DateTime.UtcNow < c.Until)
+                return c.Ip;
+            if (Cache.Count > 64)
+                Cache.Clear();
+            Cache[host] = (c.Ip, DateTime.UtcNow.AddSeconds(30)); // one lookup at a time per name
+        }
+        _ = Task.Run(async () =>
+        {
+            string? ip = null;
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(4));
+                ip = (await System.Net.Dns.GetHostAddressesAsync(host, System.Net.Sockets.AddressFamily.InterNetwork, cts.Token)).FirstOrDefault()?.ToString();
+            }
+            catch (Exception)
+            {
+                // unknown name or no network: try again later
+            }
+            lock (Cache)
+                Cache[host] = (ip, DateTime.UtcNow.AddSeconds(ip != null ? 300 : 30));
+        });
+        return null;
+    }
+}
+
+/// <summary>
+/// The master server (a "server list"): keeps the list of advertised games. Hosts send it a heartbeat every 20 s from
+/// their game socket; browsers ask it for the list. It only stores addresses: everything else (name, map, players,
+/// ping) comes straight from each game when the browser pings it.
+/// It runs three ways: the dedicated "CallOfSlop.exe --master [port]" (tools\RunServerList.bat in the release), the
+/// in-game "Run a server list for friends" option, or automatically inside a host's game when none of its lists answers
+/// (<see cref="ListServer"/>, <see cref="HostListing"/>).
 /// </summary>
 public static class MasterServerApp
 {
@@ -299,12 +468,42 @@ public static class MasterServerApp
     public static readonly byte[] ListQuery = "COLQ"u8.ToArray();
     private static readonly byte[] HeartbeatTag = "COHB"u8.ToArray();
     private static readonly byte[] ListTag = "COLS"u8.ToArray();
+    private static readonly byte[] IdTag = "LSID"u8.ToArray();
+
+    /// <summary>The most games one list keeps (heartbeats from new addresses beyond this are ignored).</summary>
+    public const int MaxGames = 512;
+
+    /// <summary>List queries answered per second for one address (more are ignored: a reply is bigger than the query).</summary>
+    public const int MaxQueriesPerSecond = 4;
+
+    /// <summary>How a list server describes itself in its replies, and what it knows about its own addresses.</summary>
+    public sealed class Options
+    {
+        /// <summary>0: dedicated or started by hand (preferred); 1: started automatically by a host (hands over to a 0, or to a lower id).</summary>
+        public byte Rank;
+
+        /// <summary>A random id, so a host can tell its own list from others and lists can agree which one stays.</summary>
+        public uint Id = (uint)Random.Shared.Next(1, int.MaxValue);
+
+        /// <summary>This PC's public IPv4 (STUN / UPnP), used for games that registered from this PC or its LAN.</summary>
+        public volatile string? PublicIp;
+
+        /// <summary>This PC's LAN IPv4, used for games that registered from this PC (loopback) when a LAN browser asks.</summary>
+        public volatile string? LanIp;
+
+        internal readonly Dictionary<string, (long Second, int Count)> Queries = new();
+    }
 
     /// <summary>Heartbeat payload a host sends (its game port).</summary>
     public static byte[] Heartbeat(ushort gamePort) => [.. HeartbeatTag, (byte)gamePort, (byte)(gamePort >> 8)];
 
-    public static List<(string Address, ushort Port)>? ParseList(ReadOnlySpan<byte> packet)
+    public static List<(string Address, ushort Port)>? ParseList(ReadOnlySpan<byte> packet) => ParseListFull(packet, out _, out _);
+
+    /// <summary>The list in a reply, plus the list server's rank and id (0, 0 from an older list server).</summary>
+    public static List<(string Address, ushort Port)>? ParseListFull(ReadOnlySpan<byte> packet, out byte rank, out uint id)
     {
+        rank = 0;
+        id = 0;
         var at = packet.IndexOf(ListTag);
         if (at < 0)
             return null;
@@ -314,28 +513,59 @@ public static class MasterServerApp
         var list = new List<(string, ushort)>();
         var count = d[0];
         var p = 1;
-        for (var i = 0; i < count && p < d.Length; i++)
+        var complete = true;
+        for (var i = 0; i < count; i++)
         {
+            if (p >= d.Length)
+            {
+                complete = false;
+                break;
+            }
             int len = d[p++];
             if (p + len + 2 > d.Length)
+            {
+                complete = false;
                 break;
+            }
             var addr = NetSafety.CleanText(Encoding.ASCII.GetString(d.Slice(p, len)), 64);
             p += len;
             var port = (ushort)(d[p] | (d[p + 1] << 8));
             p += 2;
             list.Add((addr, port));
         }
+        if (complete && d.Length >= p + IdTag.Length + 5 && d.Slice(p, IdTag.Length).SequenceEqual(IdTag))
+        {
+            rank = d[p + 4];
+            id = (uint)(d[p + 5] | (d[p + 6] << 8) | (d[p + 7] << 16) | (d[p + 8] << 24));
+        }
         return list;
     }
 
-    /// <summary>Handles everything waiting on the master's socket: heartbeats from hosts and list queries from browsers.</summary>
-    public static void Pump(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games)
+    /// <summary>
+    /// The address to hand a browser at <paramref name="querierIp"/> for a game that registered from <paramref name="entryIp"/>:
+    /// a game on the list's own PC (loopback) or its LAN can't be reached at that address from outside, so outsiders get
+    /// the list PC's public address (and LAN browsers its LAN address for a loopback game). Unknown addresses: unchanged.
+    /// </summary>
+    public static string AddressFor(string entryIp, string querierIp, string? publicIp, string? lanIp)
     {
+        var entry = NetAddr.KindOf(entryIp);
+        var q = NetAddr.KindOf(querierIp);
+        if (entry == NetAddr.Kind.Loopback)
+            return q == NetAddr.Kind.Loopback ? entryIp : q == NetAddr.Kind.Private ? lanIp ?? entryIp : publicIp ?? entryIp;
+        if (entry == NetAddr.Kind.Private && q == NetAddr.Kind.Public)
+            return publicIp ?? entryIp;
+        return entryIp;
+    }
+
+    /// <summary>Handles everything waiting on the master's socket: heartbeats from hosts and list queries from browsers.</summary>
+    public static void Pump(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, Options? options = null)
+    {
+        options ??= new Options();
         net.PollRaw((from, data) =>
         {
             try
             {
-                OnMasterPacket(net, games, from, data);
+                OnMasterPacket(net, games, options, from, data);
             }
             catch (Exception ex)
             {
@@ -344,7 +574,7 @@ public static class MasterServerApp
         });
     }
 
-    private static void OnMasterPacket(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, SystemAddress from, ReadOnlySpan<byte> data)
+    private static void OnMasterPacket(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, Options options, SystemAddress from, ReadOnlySpan<byte> data)
     {
         if ((DefaultMessageIDTypes)data[0] != DefaultMessageIDTypes.AdvertiseSystem)
             return;
@@ -353,27 +583,53 @@ public static class MasterServerApp
         if (hb >= 0 && data.Length >= hb + 6)
         {
             var gamePort = (ushort)(data[hb + 4] | (data[hb + 5] << 8));
+            if (gamePort == 0)
+                return;
             var key = $"{ip}:{gamePort}";
             if (!games.ContainsKey(key))
+            {
+                if (games.Count >= MaxGames)
+                    return;
                 Console.WriteLine($"[master] + {key}");
+            }
             games[key] = (ip, gamePort, DateTime.UtcNow);
             return;
         }
         if (data.IndexOf(ListQuery) >= 0)
         {
+            var second = Environment.TickCount64 / 1000;
+            var q = options.Queries.GetValueOrDefault(ip);
+            q = q.Second == second ? (second, q.Count + 1) : (second, 1);
+            if (options.Queries.Count > 1024)
+                options.Queries.Clear();
+            options.Queries[ip] = q;
+            if (q.Count > MaxQueriesPerSecond)
+                return;
             var reply = new List<byte>(ListTag);
             var live = games.Values.Where(g => DateTime.UtcNow - g.Seen < TimeSpan.FromSeconds(60)).Take(60).ToList();
             reply.Add((byte)live.Count);
             foreach (var g in live)
             {
-                var a = Encoding.ASCII.GetBytes(g.Ip);
+                var a = Encoding.ASCII.GetBytes(AddressFor(g.Ip, ip, options.PublicIp, options.LanIp));
                 reply.Add((byte)a.Length);
                 reply.AddRange(a);
                 reply.Add((byte)g.Port);
                 reply.Add((byte)(g.Port >> 8));
             }
+            reply.AddRange(IdTag);
+            reply.Add(options.Rank);
+            reply.AddRange([(byte)options.Id, (byte)(options.Id >> 8), (byte)(options.Id >> 16), (byte)(options.Id >> 24)]);
             net.Advertise(ip, from.DebugPort, reply.ToArray());
         }
+    }
+
+    /// <summary>Drops games whose last heartbeat is over a minute old; returns their keys.</summary>
+    public static List<string> Expire(Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games)
+    {
+        var dead = games.Where(kv => DateTime.UtcNow - kv.Value.Seen > TimeSpan.FromSeconds(60)).Select(kv => kv.Key).ToList();
+        foreach (var k in dead)
+            games.Remove(k);
+        return dead;
     }
 
     public static int Run(string[] args)
@@ -381,19 +637,30 @@ public static class MasterServerApp
         var port = args.SkipWhile(a => a != "--master").Skip(1).Select(a => ushort.TryParse(a, out var p) ? p : (ushort)0).FirstOrDefault(p => p > 0);
         if (port == 0)
             port = DefaultPort;
-        Console.WriteLine($"[master] Call of Slop master server on UDP {port}. Close the window/process to stop.");
+        MasterConsole.Attach(); // a console window to watch it in (tools\RunServerList.bat); the log is serverlist.log
+        Console.WriteLine($"[master] Call of Slop server list on UDP {port}. Close this window to stop it.");
+        Console.WriteLine("[master] Friends add this PC's public address (shown below once known) in Settings > Multiplayer > Server lists.");
         using var upnp = UpnpMapping.TryCreate(port, Console.WriteLine);
         using var net = NetPeer.Host(port, 1);
+        var options = new Options { Rank = 0, LanIp = UpnpMapping.GetLocalIPv4()?.ToString() };
+        if (upnp is { ExternalIp: { } ext, BehindSecondNat: false })
+            options.PublicIp = ext;
+        if (!args.Any(a => a.Equals("--no-stun", StringComparison.OrdinalIgnoreCase)))
+            _ = Task.Run(async () =>
+            {
+                if (await Stun.QueryAsync(Stun.DefaultServers, TimeSpan.FromSeconds(3)) is { } ep)
+                {
+                    options.PublicIp = ep.Address.ToString();
+                    Console.WriteLine($"[master] public address {ep.Address} (STUN): tell friends to add {ep.Address}{(port == DefaultPort ? "" : $":{port}")} as a server list");
+                }
+            });
         var games = new Dictionary<string, (string Ip, ushort Port, DateTime Seen)>();
         var lastLog = DateTime.MinValue;
         while (true)
         {
-            Pump(net, games);
-            foreach (var dead in games.Where(kv => DateTime.UtcNow - kv.Value.Seen > TimeSpan.FromSeconds(60)).Select(kv => kv.Key).ToList())
-            {
-                games.Remove(dead);
+            Pump(net, games, options);
+            foreach (var dead in Expire(games))
                 Console.WriteLine($"[master] - {dead}");
-            }
             if (DateTime.UtcNow - lastLog > TimeSpan.FromMinutes(5))
             {
                 lastLog = DateTime.UtcNow;

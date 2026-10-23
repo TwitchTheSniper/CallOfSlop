@@ -95,11 +95,14 @@ public sealed class Settings
     public string MapName = "Proto Box"; // map for single player and hosting (when not random)
     public bool MapRandom = true; // default: a random map each time you start
     public string MapPack = "Classic"; // the map pack "random" picks from (and the lobby lists); "*all" = True Random (MapPack.TrueRandomKey)
-    public bool Advertise; // list my hosted game on the public server list
+    public bool ShareOnLists = true; // hosting: register my game on my server lists (friends who have one see it); files with only the old advertise=0 get on
+    public bool AutoListServer = true; // hosting: if none of my server lists answers, run one in this game (HostListing)
+    public bool RunListServer; // "Run a server list for friends": keep one running in this game while it's open (ListServer)
+    public bool UseStun = true; // find my public address for invite codes by asking a public STUN server (Stun.cs)
     public bool FrenzyBuffs = true; // host setting: per-class gameplay buffs during a kill frenzy (Source/Game/Frenzy/FrenzyBuffs.cs)
     public bool Destruction = true; // host setting: destructible buildings on maps that have them (Source/Game/GameDestruction.cs)
     public string ServerName = ""; // empty: "<name>'s game"
-    public string MasterServer = ""; // host[:port] of a master server for the public list (empty: LAN only)
+    public string MasterServer = ""; // server lists (master servers), "host[:port], host[:port]...", typed or learned from invites (empty: none)
 
     // Updates (Source/Updates): check GitHub for a newer release at startup; a version the player chose to skip
     public bool UpdateCheck = true; // files without it get On
@@ -119,18 +122,102 @@ public sealed class Settings
 
     public string ServerNameOrDefault => ServerName.Length > 0 ? ServerName : $"{Name}'s game";
 
-    /// <summary>The master server as (host, port), or null if none is set.</summary>
-    public (string Host, ushort Port)? Master
+    /// <summary>The first server list as (host, port), or null if none is set.</summary>
+    public (string Host, ushort Port)? Master => Masters.Count > 0 ? Masters[0] : null;
+
+    /// <summary>The most server lists kept in settings (the oldest go first when a new one is learned).</summary>
+    public const int MaxMasters = 8;
+
+    /// <summary>The server lists typed or learned (<see cref="MasterServer"/>, comma separated), deduplicated.</summary>
+    public IReadOnlyList<(string Host, ushort Port)> Masters => ParseMasters(MasterServer);
+
+    /// <summary>"a, b:27051; c" -> (host, port) pairs (default port 27050), duplicates and unusable entries dropped.</summary>
+    public static List<(string Host, ushort Port)> ParseMasters(string? text)
+    {
+        var list = new List<(string Host, ushort Port)>();
+        foreach (var raw in (text ?? "").Split([',', ';', ' ', '\t', '\n', '\r'], StringSplitOptions.RemoveEmptyEntries))
+        {
+            var m = raw.Trim();
+            var host = m;
+            var port = MasterServerApp.DefaultPort;
+            var colon = m.LastIndexOf(':');
+            if (colon >= 0)
+            {
+                if (colon == 0 || m.IndexOf(':') != colon || !ushort.TryParse(m[(colon + 1)..], out port) || port == 0)
+                    continue; // ":27050", IPv6 or a bad port
+                host = m[..colon];
+            }
+            if (!list.Any(e => e.Port == port && e.Host.Equals(host, StringComparison.OrdinalIgnoreCase)))
+                list.Add((host, port));
+            if (list.Count >= MaxMasters)
+                break;
+        }
+        return list;
+    }
+
+    private static string JoinMasters(IEnumerable<(string Host, ushort Port)> list) =>
+        string.Join(", ", list.Select(m => m.Port == MasterServerApp.DefaultPort ? m.Host : $"{m.Host}:{m.Port}"));
+
+    /// <summary>
+    /// Adds a server list learned from an invite or a host ("host:port"); true if it was new. Keeps at most
+    /// <see cref="MaxMasters"/> (dropping the oldest).
+    /// </summary>
+    public bool LearnMaster(string? address)
+    {
+        var add = ParseMasters(CleanAddress(address ?? ""));
+        if (add.Count != 1)
+            return false;
+        var list = ParseMasters(MasterServer);
+        if (list.Any(e => e.Port == add[0].Port && e.Host.Equals(add[0].Host, StringComparison.OrdinalIgnoreCase)))
+            return false;
+        list.Add(add[0]);
+        while (list.Count > MaxMasters)
+            list.RemoveAt(0);
+        MasterServer = CleanMasterList(JoinMasters(list));
+        return true;
+    }
+
+    /// <summary>Where the release's shipped server lists are read from (masters.txt next to the game; the self-test points it elsewhere).</summary>
+    public static string ShippedMastersPath = Path.Combine(AppContext.BaseDirectory, "masters.txt");
+
+    private static (string Path, DateTime Stamp, List<(string Host, ushort Port)> List)? _shipped;
+
+    /// <summary>
+    /// Community server lists shipped with the release in masters.txt (one "host[:port]" per line, # comments), so a
+    /// group can bake its list into the zip it shares. Missing or unreadable: none.
+    /// </summary>
+    public static IReadOnlyList<(string Host, ushort Port)> ShippedMasters
     {
         get
         {
-            var m = MasterServer.Trim();
-            if (m.Length == 0)
-                return null;
-            var colon = m.LastIndexOf(':');
-            if (colon > 0 && ushort.TryParse(m[(colon + 1)..], out var p))
-                return (m[..colon], p);
-            return (m, MasterServerApp.DefaultPort);
+            try
+            {
+                var path = ShippedMastersPath;
+                var stamp = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+                if (_shipped is { } c && c.Path == path && c.Stamp == stamp)
+                    return c.List;
+                var list = stamp == DateTime.MinValue ? new List<(string, ushort)>()
+                    : ParseMasters(string.Join(",", File.ReadLines(path).Take(64).Select(l => l.Split('#')[0]).Select(l => CleanAddress(l.Trim())).Where(l => l.Length > 0)));
+                _shipped = (path, stamp, list);
+                return list;
+            }
+            catch (Exception)
+            {
+                return [];
+            }
+        }
+    }
+
+    /// <summary>Every server list to use: the typed / learned ones, the shipped ones, and any running inside this game.</summary>
+    public IReadOnlyList<(string Host, ushort Port)> AllMasters
+    {
+        get
+        {
+            var all = new List<(string Host, ushort Port)>(Masters);
+            foreach (var m in ShippedMasters.Concat(ListServer.Running.Select(l => ("127.0.0.1", l.Port))))
+                if (!all.Any(e => e.Port == m.Item2 && e.Host.Equals(m.Item1, StringComparison.OrdinalIgnoreCase)))
+                    all.Add(m);
+            return all;
         }
     }
 
@@ -190,6 +277,9 @@ public sealed class Settings
     /// <summary>Addresses (join address, master server): printable ASCII without spaces, up to 127 characters (fits the lobby's text box).</summary>
     public static string CleanAddress(string address) => new string(address.Where(c => c > 32 && c < 127).Take(127).ToArray());
 
+    /// <summary>Server list text (several comma separated addresses): printable ASCII, up to 255 characters.</summary>
+    public static string CleanMasterList(string list) => new string(list.Where(c => c >= 32 && c < 127).Take(255).ToArray()).Trim();
+
     public static Settings Load() => Load(FilePath);
 
     /// <summary>Loads a settings file from <paramref name="path"/> (the self-test uses a temporary one).</summary>
@@ -245,11 +335,15 @@ public sealed class Settings
                     case "map" when Maps.Find(v) != null: s.MapName = v; break;
                     case "map_random": s.MapRandom = v == "1"; break;
                     case "map_pack" when v.Length > 0: s.MapPack = v; break; // kept even if the pack is missing now (it may come back)
-                    case "advertise": s.Advertise = v == "1"; break;
+                    case "advertise" when v == "1": s.ShareOnLists = true; break; // the old opt-in (before share_on_lists)
+                    case "share_on_lists": s.ShareOnLists = v != "0"; break;
+                    case "auto_list": s.AutoListServer = v != "0"; break;
+                    case "run_list": s.RunListServer = v == "1"; break;
+                    case "stun": s.UseStun = v != "0"; break;
                     case "frenzy_buffs": s.FrenzyBuffs = v == "1"; break;
                     case "destruction": s.Destruction = v != "0"; break;
                     case "server_name": s.ServerName = CleanServerName(v); break;
-                    case "master": s.MasterServer = CleanAddress(v); break;
+                    case "master": s.MasterServer = CleanMasterList(v); break;
                     case "update_check": s.UpdateCheck = v != "0"; break;
                     case "update_skip": s.UpdateSkip = BuildInfo.ParseRelease(v)?.ToString() ?? ""; break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
@@ -340,7 +434,10 @@ public sealed class Settings
                     $"map={MapName}",
                     $"map_random={(MapRandom ? 1 : 0)}",
                     $"map_pack={MapPack}",
-                    $"advertise={(Advertise ? 1 : 0)}",
+                    $"share_on_lists={(ShareOnLists ? 1 : 0)}",
+                    $"auto_list={(AutoListServer ? 1 : 0)}",
+                    $"run_list={(RunListServer ? 1 : 0)}",
+                    $"stun={(UseStun ? 1 : 0)}",
                     $"frenzy_buffs={(FrenzyBuffs ? 1 : 0)}",
                     $"destruction={(Destruction ? 1 : 0)}",
                     $"server_name={ServerName}",
