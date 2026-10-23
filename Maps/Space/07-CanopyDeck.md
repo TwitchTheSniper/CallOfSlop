@@ -30,7 +30,7 @@ low lines; the upper terraces don't see into the bays.
 
 ## Objectives
 
-- Hills: the centre (0, 0) radius 6 round the great tree; the north and south terraces (0, -+37) radius 5. All on the
+- Hills: the centre (0, 3.5) radius 6, beside the great tree's trunk (on the mirror line x = 0, clear of the trunk); the north and south terraces (0, -+37) radius 5. All on the
   mirror line x = 0, so the walks are equal (the self-test measures Blue/Red 56/52, 68/66, 68/68 m).
 - Flags: inside the bays, (-+55, 0).
 - Team spawns: 11 per team (inside and behind the bay, on the apron and in the orchard), plus 6 free-for-all spawns on

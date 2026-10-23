@@ -30,6 +30,7 @@ R = 53.0                     # the octagon's circumradius; its flat sides are at
 FLAT = R * math.cos(math.radians(22.5))
 WING_X = 74.0
 WING_Z = 13.0
+CHAMFER = 4.5                # the wings' far corners are cut off, so the horizon fade (Map.OuterStartsFor) starts close past the hall's floor
 FLOOR = "#3a3d44"
 STEEL = "#6c7078"
 DARK = "#2c2e34"
@@ -51,9 +52,9 @@ def outline():
     for i, (x, z) in enumerate(oct_pts):
         pts.append((x, z))
         if i == 3:   # after (-FLAT, +19.1): the west wing, going round clockwise (z decreasing on the far side)
-            pts += [(-FLAT, WING_Z), (-WING_X, WING_Z), (-WING_X, -WING_Z), (-FLAT, -WING_Z)]
+            pts += [(-FLAT, WING_Z), (-WING_X + CHAMFER, WING_Z), (-WING_X, WING_Z - CHAMFER), (-WING_X, -WING_Z + CHAMFER), (-WING_X + CHAMFER, -WING_Z), (-FLAT, -WING_Z)]
         if i == 7:   # after (FLAT, -19.1): the east wing
-            pts += [(FLAT, -WING_Z), (WING_X, -WING_Z), (WING_X, WING_Z), (FLAT, WING_Z)]
+            pts += [(FLAT, -WING_Z), (WING_X - CHAMFER, -WING_Z), (WING_X, -WING_Z + CHAMFER), (WING_X, WING_Z - CHAMFER), (WING_X - CHAMFER, WING_Z), (FLAT, WING_Z)]
     return [[r(x), r(z)] for x, z in pts]
 
 
@@ -151,8 +152,13 @@ def gallery(s):
     B.block(-16.2, 3.5, -40.3, -16.0, 4.5, z1, DARK, s=s)
     B.block(16.0, 3.5, -40.3, 16.2, 4.5, z1, DARK, s=s)
     # The catwalk from level 2 south over the torus to the walkway round the column.
-    B.op({"op": "Bridge", "x0": r(-1.0 * s), "z0": r(-40.0 * s), "x1": r(1.0 * s), "z1": r(-5.0 * s), "h": 6.6, "color": SLAB})
-    B.stats["boxes"] += 6
+    # Built from blocks (the Bridge op would stand a pillar in the middle of the gallery's hill): a deck, two rails, and
+    # two thin supports that stand on the north coolant main's conduits.
+    B.block(-1.0, 6.2, -40.0, 1.0, 6.6, -5.0, SLAB, s=s)
+    B.block(-1.0, 6.6, -40.0, -0.85, 7.6, -5.0, RAIL, s=s)
+    B.block(0.85, 6.6, -40.0, 1.0, 7.6, -5.0, RAIL, s=s)
+    for z in (-31.0, -19.0):
+        B.block(-0.2, 0, z - 0.2, 0.2, 6.2, z + 0.2, STEEL, s=s)
     for z in (-37, -33, -29, -25, -21, -17, -13, -9, -6):
         B.waypoint(0, z, 6.6, s=s)
     B.waypoint(0, -42, 6.7, s=s)
@@ -226,8 +232,8 @@ def wing(s):
     B.decal("Ignition Sector D" if s > 0 else "Ignition Sector B", xm + 7, -5, 0, s=s, size=2.2, rotation=90 if s > 0 else 270)
     # Inside the wing.
     B.props([("Turbine Generator", -60, -6.5, 0), ("Turbine Generator", -68.5, -6.5, 0), ("Coolant Pump", -58, 7, 0), ("Coolant Pump", -66, 7, 0),
-             ("Cryo Dewar", -71.5, 9, 0), ("Propellant Tank", -62, 10.6, 0), ("Station Pipe Run", -54, 10.5, 0), ("Station Pipe Riser", -52, 11.5, 0),
-             ("Ventilation Fan Unit", -72.8, -8, 90), ("Coolant Manifold", -53.5, -9, 90), ("Gas Cylinders", -55.5, -11.5, 0),
+             ("Cryo Dewar", -69.5, 9.5, 0), ("Propellant Tank", -62, 10.6, 0), ("Station Pipe Run", -54, 10.5, 0), ("Station Pipe Riser", -52, 11.5, 0),
+             ("Ventilation Fan Unit", -72.8, -5.5, 90), ("Coolant Manifold", -53.5, -9, 90), ("Gas Cylinders", -55.5, -11.5, 0),
              ("Supply Case Stack", -64, -11.2, 0), ("Tool Cart", -56, 3, 40), ("Warning Beacon Post", -52, 5.5, 0), ("Warning Beacon Post", -52, -5.5, 0),
              ("Hazard Chain", -64, -2.8, 0), ("Oil Drum", -70, -11, 0), ("Rusty Drum", -70.8, -10.4, 0), ("Cable Spool", -72.5, 2, 0),
              ("Station Console", -73, -2, 90), ("Station Server Cabinet", -73.2, 5, 90)], s=s)
@@ -236,9 +242,9 @@ def wing(s):
     for z in (-12.6, 12.6):
         B.prop("Emergency Strip Lamp", -62, z, yaw=0 if z < 0 else 180, s=s, y=3.0)
     # The crane: a beam across the wing on two gantry legs at the far end (cosmetic beam, solid legs), a hook.
-    B.mesh("box", -62, 0, 7.6, STEEL, s=s, width=22, height=0.6, depth=0.8, material="Metal")
-    B.mesh("box", -62, -12.2, 7.4, STEEL, s=s, width=22, height=0.4, depth=0.5, material="Metal")
-    B.mesh("box", -62, 12.2, 7.4, STEEL, s=s, width=22, height=0.4, depth=0.5, material="Metal")
+    B.mesh("box", -61, 0, 7.6, STEEL, s=s, width=22, height=0.6, depth=0.8, material="Metal")
+    B.mesh("box", -60, -12.2, 7.4, STEEL, s=s, width=18, height=0.4, depth=0.5, material="Metal")
+    B.mesh("box", -60, 12.2, 7.4, STEEL, s=s, width=18, height=0.4, depth=0.5, material="Metal")
     B.prop("Gantry Hook", -57, 0, yaw=0, s=s, y=4.4)
     B.scatter(["Ignition Floor Grating", "global:Oil Stain", "global:Oil Drips", "global:Rust Stain", "global:Tyre Tracks"], -73, -12, -50, 12, 20, 111 if s > 0 else 112, s=s, gap=2.2)
     B.scatter(["global:Hazard Stripes", "global:Hazard Chevrons"], -72, -12, -50, 12, 6, 113 if s > 0 else 114, s=s, gap=4)
@@ -324,7 +330,7 @@ def main():
         "boundary": {"shape": "polygon", "points": outline(), "edge": {"style": "wall", "height": 12, "thickness": 1.0, "color": HULL, "material": "Metal"},
                      "groundMargin": 4},
         "teamSpawns": [B.spawns["blue"], B.spawns["red"]],
-        "hills": [{"x": 0, "z": 0, "y": 0.5, "radius": 6}, {"x": 0, "z": -39, "y": 3.5, "radius": 4.5}, {"x": 0, "z": 39, "y": 3.5, "radius": 4.5}],
+        "hills": [{"x": 0, "z": 3.5, "y": 0.5, "radius": 5}, {"x": 0, "z": -39, "y": 3.5, "radius": 4.5}, {"x": 0, "z": 39, "y": 3.5, "radius": 4.5}],
         "flags": [[-70, 0, 0], [70, 0, 0]],
         "ops": B.ops,
     }
