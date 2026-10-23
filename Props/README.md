@@ -2,7 +2,7 @@
 
 Props are the small things that make a map look lived in: trash cans, crates, bricks, newspapers, benches, litter. Every prop is one `.json` file in this `Props` folder, sorted into category folders: the starter library (`Street`, `Industrial`, `Debris`, `Furniture`, `Nature`), the outdoor set (`Vehicles`, `Rooftop`, `Utility`, `Signage`, `Urban`; see [Categories](#categories)), and `Animated` for props with moving or lit parts (see [Animation](#animation)). Maps place them with the `Prop` and `Clutter` ops (see [Maps/README.md](../Maps/README.md#props)).
 
-To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. A prop that only one map pack needs goes in that pack's own `Props` folder instead (see [Pack props](#pack-props)). The Dev pack's **Prop Gallery** shows the starter props on their own pads, in rows by category, and **Prop Gallery 2** the outdoor set, so you can check them by eye.
+To add a prop, drop a file into a category folder (or make a new folder: the folder name is the category), then press **Reload map files** in the pause menu, or **Refresh maps** in the lobby. A prop that only one map pack needs goes in that pack's own `Props` folder instead (see [Pack props](#pack-props)). Every prop is shown on a Dev pack gallery map so you can check it by eye: the **Prop Gallery** shows the starter props, and the other galleries are generated from the folders by `tools/props/gallery.py` (see [Gallery maps](#gallery-maps)): after adding a prop, run `python3 -I tools/props/gallery.py`.
 
 A prop is a model made of boxes, the same style as everything else in the game. It's drawn instanced (one copy of the model on the graphics card, hundreds of props in a handful of draw calls), so a map can have hundreds of them for very little cost.
 
@@ -379,17 +379,43 @@ The random pick hashes the flag's position (rounded to 1/8 m, measured from the 
 
 Things that face a way (signs, traffic lights, AC units, shop fronts) face **+Z**. Things meant for a wall (Window AC Unit, Vent Grille, Shop Sign, Neon Sign, Electric Meter) are modelled standing on y = 0 with their back at -Z: put them against a wall and lift them with the `Prop` op's `y` (for example `"y": 2.5`). Fire Escape Stairs climb 3 m along +X and meet a Fire Escape Landing (deck at 3 m) placed at the top.
 
+## Gallery maps
+
+Every global prop must appear on a map in the Dev pack (the "Props" self-test fails otherwise, naming the props shown nowhere). The gallery maps that do this are **generated**, so nobody places props on them by hand and parallel branches adding props no longer collide editing the same map file:
+
+```
+python3 -I tools/props/gallery.py            # rewrite the generated galleries in Maps/Dev
+python3 -I tools/props/gallery.py --check    # what the "Props" self-test runs: exit 1 and the stale files
+python3 -I tools/props/gallery.py --list     # which gallery shows which categories
+```
+
+| Map (file) | Shows |
+|---|---|
+| **Prop Gallery 2** (`PropGallery2.json`) | `Vehicles`, `Rooftop`, `Utility`, `Signage`, `Urban` |
+| **Prop Gallery 3** (`PropGallery3.json`) | `Household`, `Office`, `Kitchen`, `Garden`, `Misc` |
+| **Animated Props** (`AnimatedProps.json`) | every prop with an `anim` part, whatever its category (so an animated shop sign is also on its own gallery) |
+| **Military Props** (`MilitaryProps.json`) | `Military` and `Military Vehicles` |
+| **Prop Gallery Retail** (`PropGalleryRetail.json`) | `Retail` |
+| **Space Props** (`SpaceProps.json`) | `Space` (all its subfolders) |
+| **Prop Gallery More** (`PropGalleryMore.json`) | anything left: a prop no gallery claims and no hand-made Dev map places with a `Prop` op (`Clutter` doesn't count). Only written when there is something to show; today there isn't. |
+
+The manifest at the top of `tools/props/gallery.py` says which categories go where; a new category needs no entry (it lands on Prop Gallery More) unless you want it on a gallery of its own, which is one line. Hand-made Dev maps (**Prop Gallery**, **Prop Yard**, **Volatile Props**, **Farm and Rail Props**, **Gravity Props**, the **Buildings...** maps) are never touched, and props they place count as shown.
+
+Layout: one pad per prop (a 5 cm slab the footprint plus 0.6 m on each side), packed into rows of a fixed width per map, a new row for each category, 4.5 m aisles, spawns at both ends of every aisle, `AutoWaypoints` last. Props are placed at yaw 0 with their footprint centred on the pad. Categories come in manifest order and props in name order, so adding one shifts only its own category's pads; the output never depends on the clock or the file system's order. The footprint comes from the parts (boxes with their rotation), the same maths as `PropFile`.
+
+The "Props" self-test runs the tool with `--check` when it finds the source tree above the exe and a Python 3 (CI and a developer checkout do; a packaged build skips it) and fails with the stale file names if a committed gallery differs from what the tool writes. The gallery maps' fingerprints are pinned in `Source/App/SelfTestPackAssets.cs`: re-pin them from the failure message after a regeneration, and mention in the commit which changed. Regenerating never changes the seeded match digests (they use the first maps, not Dev).
+
 ## Tips
 
 - Keep the part count sensible: most starter props use 10 to 40 boxes. A box is 12 triangles; the renderer draws hundreds of props in a few draw calls, so detail is cheap, but very fiddly props are hard to read in the game's chunky style anyway.
 - Give a prop a few details that read from a distance (a lid, a band, a handle, a label) and sensible colours rather than lots of tiny parts.
 - Overlapping parts with the same top height and different colours flicker. Lift one a millimetre or two.
-- Check a new prop on the Prop Gallery: add it to `Maps/Dev/PropGallery.json` with `{ "op": "Prop", "name": "My Prop", "x": 0, "z": 0 }` (or put it on any map) and reload.
-- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from, and `tools/propviz/gen_outdoor.py` writes the outdoor folders and `Maps/Dev/PropGallery2.json` (run it from the repository root).
+- Check a new prop on its gallery: run `python3 -I tools/props/gallery.py` (see [Gallery maps](#gallery-maps)) and reload; or put it on any map with `{ "op": "Prop", "name": "My Prop", "x": 0, "z": 0 }`.
+- `tools/propviz/viz.py` renders prop files to a PNG contact sheet without the game (Python with numpy and Pillow): `python3 tools/propviz/viz.py Source/Props/PropFile.cs Props sheet.png [name filter...]`. `tools/propviz/gen.py` is the script the starter library was generated from, and `tools/propviz/gen_outdoor.py` writes the outdoor folders (run it from the repository root, then `tools/props/gallery.py` for the map).
 
 ## The indoor and everyday set
 
-The `Household`, `Office`, `Kitchen`, `Garden` and `Misc` folders hold 123 props for houses, offices, shops and back gardens, generated by `tools/propviz/gen_indoor.py` (run `python3 tools/propviz/gen_indoor.py Props Maps/Dev`; it rewrites those five folders and the **Prop Gallery 3** map in the Dev pack, which shows every one of them in rows by category).
+The `Household`, `Office`, `Kitchen`, `Garden` and `Misc` folders hold 123 props for houses, offices, shops and back gardens, generated by `tools/propviz/gen_indoor.py` (run `python3 tools/propviz/gen_indoor.py Props Maps/Dev`; it rewrites those five folders; the **Prop Gallery 3** map that shows them comes from `tools/props/gallery.py`).
 
 - **Household** (34): beds (double, single, bunk, baby cot), wardrobe, chest of drawers, bookshelf, bedside table, sofa, armchair, coffee table, TV stand, CRT TV, lamps, rugs, dining table and chair, washing machine, tumble dryer, ironing board, toilet, sink, bathtub, shower, laundry basket, radiator, coat stand, mirror, piano, fireplace, vacuum cleaner, fish tank.
 - **Office** (20): desk, swivel chair, monitor, PC tower, laptop, photocopier, printer, water cooler, whiteboard, server rack, lockers, partition, archive boxes, conference table, pot plant, shredder, desk phone, metal shelving, safe, reception desk.
