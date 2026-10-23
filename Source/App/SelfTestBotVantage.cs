@@ -363,7 +363,8 @@ public static partial class SelfTest
         }
         PlaceHost(game, hostAt, spot.Pos);
         var relocations = game.VantageRelocations;
-        var hit = game.SelfTestDamageWith(game.Players[0], sniper, 15, game.Players[0].Weapon, now);
+        game.Players[0].LastShotTime = now; // the shot is heard (where it came from), the shooter isn't seen
+        game.SelfTestDamageWith(game.Players[0], sniper, 15, game.Players[0].Weapon, now);
         var healthAfter = sniper.Health;
         Tick(game, ref now, 0.3);
         var moved = b.VantageSpot != spotIndex;

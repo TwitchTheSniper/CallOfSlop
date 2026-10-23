@@ -228,8 +228,8 @@ public sealed partial class Game
     private static bool BotHolding(Player p, BotBrain b, double now)
     {
         var pos = p.Position;
-        if (b.IsHoldingPosition)
-            return true; // a vantage point (and the other deliberate holds BotSteer flags; BotVantage.cs)
+        if (b.IsHoldingPosition && b.Mode == BotMode.Overwatch)
+            return true; // holding a vantage point (BotVantage.cs)
         if (b.HoldUntil > now && Flat(b.HoldAnchor - pos) < 5f)
             return true;
         if (b.Mode == BotMode.Objective && b.Objective is { } o && Flat(o - pos) < 5f)
