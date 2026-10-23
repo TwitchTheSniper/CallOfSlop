@@ -160,6 +160,10 @@ public static partial class SelfTest
             || BuildRules.Check(r2.Build).Any(p => !p.Incomplete))
             Fail("workbench: a swapped receiver should keep the parts that fit its bore and drop the rest");
 
+        // ---- Tree click: a part row jumps the parts list to its category ----
+        if (Ui.TreeRowFilter(PartCategory.Feed, true, -1) != (int)PartCategory.Feed || Ui.TreeRowFilter(PartCategory.Feed, false, 3) != 3)
+            Fail("workbench: a tree row click should select the part's category chip when the list shows it, else leave the filter");
+
         // ---- Move, remove, undo / redo, auto-place, auto-complete ---------------------------------------------
         var mv = new BenchModel(BuildOf("Pistol Grip{receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}}"), BenchStock.Unlimited);
         var before = mv.Build.ToText();

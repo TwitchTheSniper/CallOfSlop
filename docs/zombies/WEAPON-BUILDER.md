@@ -459,6 +459,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   the whole assembly back: re-homing the children elsewhere would move parts you didn't touch. The grip can't come off
   (Change grip); double-click on an empty socket row does nothing. Double-click in the parts inventory still auto-places,
   and double-click on empty space in the view resets the camera.
+- **Tree click (2026-10-23).** A single click on a part row in the build tree (e.g. "Feed: Box Mag") sets the parts list's category chip to that part's category and scrolls the list to its top, when the list shows that category; clicking an empty socket row did this already. Double-click and right-click on the row are unchanged.
 - **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (the A key; in the sandbox also a button in the top row) fills every
   empty needed socket with parts you have (the rarest that leads to a complete build first), as one undo step.
   Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) undo and redo (64 steps), Del takes the selected part off, C copies the selected
