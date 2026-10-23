@@ -1,7 +1,7 @@
 # HANDOFF: state of Call of Slop (2026-10-23)
 
 **Current state:**
-- `main` is at the commit that adds this file, on top of `225cf2e`.
+- `main` is at `723cd91` (three fix branches merged on 2026-10-23: readme-dedupe, socket-marker, floating-parts).
 - Protocol 45.
 - CI on main: the full Linux suite passed on `e6828e2` (run 39932715846, 156 sections, 0 failures). The last Windows run passed on `814ffbf`, the release build; Windows hasn't run since the Appearance, action placement and test-filter merges, so push with `[windows ci]` before the next release.
 - The first public release is **v0.2026.1023.7**, built from `814ffbf`. The appearance screen, action placement and test filter came after it, so they are not in a release yet.
@@ -72,16 +72,10 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 
 **Gameplay and visual**
 - **Zombie hit box at windows:** the zombie is drawn up to about 1 m ahead of its hit box while it reaches for the boards. Side-angle shots can miss. Proposed fix, not yet answered by the user: move the outside stand spots closer to the windows in the maps.
-- **Parts that still float:**
-  - Frying Pan on the Motor Hilt (1.2 cm gap);
-  - Recoil Buffer Stock on the Quad and Hex Rack grips;
-  - Helium Balloons on the Pistol Grip's utility rail.
-
-  None is used by a standard build.
+- **Parts that still float** (found 2026-10-23 while fixing the first three; `tools/parts/floaters.py` does not cover grip combinations, so check with a script that reuses its box logic): Wire Stock, Shoulder Harness, Bayonet and Cup Holder on some grips. None is used by a standard build.
 - **Action placement overlaps (accepted):**
   - drum mags, belts and hoppers can overlap the under-receiver trigger group;
   - the pump forend clips the bottom barrel on the Hellwheel and Pepperbox.
-- **Empty action socket marker:** an empty socket still marks the old side position.
 - **Empty hands in third person:** another player with an empty slot may hold an invisible gun.
 - **Menu and lobby music:** can click once when the slider crosses 0 dB (the limiter switches on).
 - **Test Range:**
@@ -102,8 +96,8 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 - "Test Range": a killed bot didn't respawn. Once, on Proto Box.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once.
 
-**Repo**
-- README "Testing without playing" has the long `--selftest` paragraph twice; it should be folded into one.
+**Environment**
+- The cloud agent container has no .NET SDK, and the proxy blocks dot.net, builds.dotnet.microsoft.com and packages.microsoft.com, so agents cannot build or run the self-test locally. They verify with `floaters.py` and branch CI (`[tests: ...]`) instead. Allowing those hosts under Settings > Capabilities would let agents build locally; restoring the Ahwoo packages would still need the NuGet API, which the user's rule forbids.
 
 ## Key decisions and why
 
@@ -142,8 +136,8 @@ Defaults are in place for all of them.
 1. Play-test on the PC what has never been seen on screen: Blackmoor, the zombie animations, Appearance, the action models. Fix what looks wrong.
 2. Cut the next release so testers get Appearance and the action placement: Actions → Release, or ask the agent.
 3. Get answers to the open questions above, one at a time, then tune `Parts/Tables/ZombiesRules.json`.
-4. Fix the window hit-box offset and the three floating parts.
-5. Fold the README duplicate paragraph. Look into the four flaky tests if they recur.
+4. Fix the window hit-box offset and the four remaining floating parts.
+5. Look into the four flaky tests if they recur.
 6. Backlog:
    - Zombies: more maps, perk machine visuals, bots buying things;
    - co-op phases 2–4;

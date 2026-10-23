@@ -116,4 +116,3 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **The map list order matters to tests.** Many self-tests use the first map. New packs and dev maps get a high `order`.
 - **`[tests: ...]` in a commit message is parsed literally**, so don't quote it in prose on a branch.
 - **Known flaky checks** are listed in `HANDOFF.md`. Re-run once before chasing them.
-- **README duplicate.** The "Testing without playing" section has the long `--selftest` paragraph twice, left over from a merge. Fold it into one.
