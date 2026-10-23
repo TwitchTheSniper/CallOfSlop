@@ -184,6 +184,8 @@ public sealed partial class Game
         Vector3 aimAt;
         if (b.PathIdx >= b.PathLen)
         {
+            if (b.GoalTrapped && b.PathGraph == nav && !b.NeedPath)
+                return Vector3.Zero; // the goal is down a pit we couldn't climb out of: stop at its edge
             aimAt = goal;
             if (Flat(goal - pos) < 0.7f)
                 return Vector3.Zero;
@@ -271,7 +273,8 @@ public sealed partial class Game
         var end = nav.Nearest(goal, needSight: false);
         if (start < 0 || end < 0)
             return;
-        if (nav.IsTrapped(end) && !nav.IsTrapped(start))
+        b.GoalTrapped = nav.IsTrapped(end) && !nav.IsTrapped(start);
+        if (b.GoalTrapped)
             end = NearestOpen(nav, goal); // a goal in a one-way spot (a pit): go as near as the main area gets, never in
         b.SearchGraph = nav;
         b.SearchNow = now;
