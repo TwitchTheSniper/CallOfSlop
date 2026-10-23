@@ -339,6 +339,8 @@ public static partial class SelfTest
         Section("Space: arboretum and reactor", CheckSpaceArboretumReactor); // SelfTestSpaceArboretumReactor.cs: Space 07 Canopy Deck and 08 Ignition Hall (outline, counts, objectives, nav, fair walks, a short bot match)
         // space-d maps
         Section("Space: vault and bazaar", CheckSpaceVaultBazaar); // SelfTestSpaceVaultBazaar.cs: Space 11 Frostvault (hexagon, turned) and 12 Vesper Strip (bean, mirrored): shape, dressing, outline, objectives, twins, levels, fair walks, a short bot match
+        // space-a maps
+        Section("Space: shipyard and outpost", CheckSpaceYardAndOutpost); // SelfTestSpaceYard.cs: Space 05 Keelspar Drydock and 06 Regolith Reach: outline, dressing floors, objectives, symmetry, nav reach and fair walks, void links, a short bot match
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

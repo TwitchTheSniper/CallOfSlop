@@ -1,0 +1,148 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Yard Tool Chest",
+ "category": "Space",
+ "description": "A red rolling tool chest: waist-high cover, breaks.",
+ "collision": "solid",
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "breakable": {
+  "health": 220,
+  "breakBy": "all",
+  "sound": "metal",
+  "debris": {
+   "count": 10,
+   "size": [
+    0.05,
+    0.2
+   ],
+   "speed": 4
+  }
+ },
+ "parts": [
+  {
+   "size": [
+    1.2,
+    0.9,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#b03a2a",
+   "material": "metal"
+  },
+  {
+   "size": [
+    1.24,
+    0.05,
+    0.64
+   ],
+   "offset": [
+    0.0,
+    1.025,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    0.32,
+    0.31
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    1.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    0.57,
+    0.31
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    1.0,
+    0.04,
+    0.03
+   ],
+   "offset": [
+    0.0,
+    0.82,
+    0.31
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.1,
+    0.12
+   ],
+   "offset": [
+    -0.45,
+    0.05,
+    -0.2
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    0.1,
+    0.12
+   ],
+   "offset": [
+    -0.45,
+    0.05,
+    0.2
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    0.1,
+    0.12
+   ],
+   "offset": [
+    0.45,
+    0.05,
+    -0.2
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    0.1,
+    0.12
+   ],
+   "offset": [
+    0.45,
+    0.05,
+    0.2
+   ],
+   "color": "#34363a"
+  }
+ ],
+ "author": "Call of Slop"
+}

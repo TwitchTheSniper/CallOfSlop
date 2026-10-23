@@ -1,0 +1,259 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Welder Bot",
+ "category": "Space",
+ "description": "A squat four-legged yard robot with a sweeping welding arm: knee-high cover.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.0,
+    0.85,
+    1.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    1.0,
+    0.5,
+    1.0
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.6,
+    0.2,
+    0.6
+   ],
+   "offset": [
+    0.0,
+    0.9,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.12,
+    0.4,
+    0.12
+   ],
+   "offset": [
+    -0.5,
+    0.2,
+    -0.5
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    -0.5,
+    0.03,
+    -0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.4,
+    0.12
+   ],
+   "offset": [
+    -0.5,
+    0.2,
+    0.5
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    -0.5,
+    0.03,
+    0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.4,
+    0.12
+   ],
+   "offset": [
+    0.5,
+    0.2,
+    -0.5
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    0.5,
+    0.03,
+    -0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.12,
+    0.4,
+    0.12
+   ],
+   "offset": [
+    0.5,
+    0.2,
+    0.5
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.06,
+    0.3
+   ],
+   "offset": [
+    0.5,
+    0.03,
+    0.5
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.2,
+    0.2,
+    0.2
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.0
+   ],
+   "color": "#34363a",
+   "anim": {
+    "type": "swing",
+    "axis": "y",
+    "pivot": [
+     0,
+     1.1,
+     0
+    ],
+    "angle": 40,
+    "period": 6
+   }
+  },
+  {
+   "size": [
+    0.08,
+    0.08,
+    0.9
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    0.5
+   ],
+   "color": "#6c6f73",
+   "anim": {
+    "type": "follow",
+    "parent": 11
+   }
+  },
+  {
+   "size": [
+    0.14,
+    0.14,
+    0.14
+   ],
+   "offset": [
+    0.0,
+    1.1,
+    1.0
+   ],
+   "color": "#cfe8ff",
+   "anim": {
+    "type": "flicker",
+    "color": "#cfe8ff",
+    "glow": 2.2,
+    "rate": 11,
+    "duty": 0.5,
+    "off": "#405060"
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.03
+   ],
+   "offset": [
+    0.3,
+    0.645,
+    -0.504
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 1.0,
+    "period": 1.2,
+    "duty": 0.5
+   }
+  },
+  {
+   "size": [
+    0.1,
+    0.05,
+    0.03
+   ],
+   "offset": [
+    0.3,
+    0.645,
+    0.504
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "blink",
+    "color": "#6fe0e8",
+    "glow": 1.0,
+    "period": 1.2,
+    "duty": 0.5
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

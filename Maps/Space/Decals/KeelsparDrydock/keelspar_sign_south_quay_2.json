@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Keelspar Sign South Quay 2",
+ "category": "KeelsparDrydock",
+ "description": "Tile 2 of 6 of the 'SOUTH QUAY' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.8,
+  0.8
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "keelspar_sign_south_quay_2.png",
+ "fadeDistance": 80
+}

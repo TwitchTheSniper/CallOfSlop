@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Regolith Hab Number 1",
+ "category": "RegolithReach",
+ "description": "A ringed white stencil, hab module H1.",
+ "author": "Call of Slop",
+ "size": 1.6,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "wall",
+  "floor"
+ ],
+ "image": "regolith_hab_number_1.png",
+ "fadeDistance": 100
+}

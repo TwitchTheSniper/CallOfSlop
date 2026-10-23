@@ -1,0 +1,198 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Hull Plate Rack",
+ "category": "Space",
+ "description": "An A-frame rack with hull plates leaning on both sides: head-high cover (long along X).",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    3.0,
+    2.3,
+    1.5
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    3.0,
+    0.12,
+    1.6
+   ],
+   "offset": [
+    0.0,
+    0.06,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.1,
+    2.4,
+    0.1
+   ],
+   "offset": [
+    -1.3,
+    1.2,
+    0.3
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.1,
+    2.4,
+    0.1
+   ],
+   "offset": [
+    -1.3,
+    1.2,
+    -0.3
+   ],
+   "rotation": [
+    18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.1,
+    2.4,
+    0.1
+   ],
+   "offset": [
+    1.3,
+    1.2,
+    0.3
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    0.1,
+    2.4,
+    0.1
+   ],
+   "offset": [
+    1.3,
+    1.2,
+    -0.3
+   ],
+   "rotation": [
+    18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    2.8,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    0.0,
+    2.31,
+    0.0
+   ],
+   "color": "#6c6f73"
+  },
+  {
+   "size": [
+    2.6,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.05,
+    0.42
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.6,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    0.1,
+    1.05,
+    0.56
+   ],
+   "rotation": [
+    -18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#cdbfa8",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.6,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.05,
+    -0.42
+   ],
+   "rotation": [
+    18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.6,
+    2.0,
+    0.06
+   ],
+   "offset": [
+    0.1,
+    1.05,
+    -0.56
+   ],
+   "rotation": [
+    18.0,
+    0.0,
+    0.0
+   ],
+   "color": "#cdbfa8",
+   "material": "metal"
+  }
+ ],
+ "author": "Call of Slop"
+}
