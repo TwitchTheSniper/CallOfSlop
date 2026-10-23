@@ -294,6 +294,7 @@ public static partial class SelfTest
         Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
         Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
         Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
+        Section("Optic mounts", CheckOpticMounts); // SelfTestOpticMounts.cs: every optic sits on top of every receiver on every grip, never inside it; the aim point follows
         Section("Workbench actions", CheckWorkbenchActions); // SelfTestActions.cs: the fire type is an Action part: sockets, migration, fire timing per type, old builds' feel kept
         Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
         Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations

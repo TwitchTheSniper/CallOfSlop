@@ -524,6 +524,12 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   it. Iron-sight boxes (`"tag": "irons"`, only grips have them) stand on the receiver: they are drawn only when a
   receiver is fitted and no optic is. Grips with `"ads": false` (cart, briefcase) are hip fire only and drop the optic's
   zoom.
+- **Optic mount height (2026-10-23).** The user: "large receivers need to have the optic mount location adjusted
+  accordingly". The grip's `optic` socket height suits a small receiver; `BuildModel.MountSeat` raises the mount to the
+  top of the highest drawn box under the optic's rail strip (2.5 cm each side, 6 cm along), so a big receiver (LMG,
+  autocannon, launcher) or its top rail never pokes into the optic. It only raises: iron sights and see-through boxes
+  don't count. The mount height is what the rail, the optic, the sight line and the aim point are built from, so ADS
+  moves with it. Self-test "Optic mounts" checks every grip x receiver x optic that nothing rises into the optic.
 - **Conditional boxes:** `"tag": "with:SOCKET"` draws a box only while that socket of the same part holds something (the
   hopper chute under the rifle and rack grips, the big frames' stock mounts). A part file naming a socket it doesn't
   have is refused.

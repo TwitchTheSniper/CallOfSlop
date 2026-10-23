@@ -135,7 +135,8 @@ public static partial class SelfTest
                 Fail("connectivity: a grip's iron sights should show only with a receiver fitted and no optic");
             // The optic still sits on the grip's optic socket (the sight lens height comes from it).
             var want = pg.Sockets.First(s => s.Type == "optic").Pos + BuildModel.GripAnchor - (pg.Hand ?? Vector3.Zero);
-            if (MathF.Abs(m.Mount - want.Y) > 1e-4f || MathF.Abs(m.OpticZ - want.Z) > 1e-4f)
+            // (A receiver taller than the socket raises it to the receiver's top: see "Optic mounts".)
+            if (m.Mount < want.Y - 1e-4f || m.Mount > want.Y + 0.01f || MathF.Abs(m.OpticZ - want.Z) > 1e-4f)
                 Fail($"connectivity: the optic mount moved (y {m.Mount:0.000} z {m.OpticZ:0.000}, want {want.Y:0.000} {want.Z:0.000})");
         }
         if (P("Rifle Grip") is { } rg && P("Workhorse Receiver") is { } wh && fill["hopper"] is { } hop)
