@@ -48,7 +48,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Bocage", 6.6f, -34.3f), ("London", 41.9f, 7.9f), ("Slopview Mall", -59.0f, -7.0f),
+        ("Bocage", 6.6f, -34.3f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -66,7 +66,9 @@ public static partial class SelfTest
             var o = m.Solid[j];
             if (o.Max.Y < f.Y0 - 0.3f || o.Min.Y > f.Y1 + 2.3f || o.Max.Y < -100)
                 continue;
-            var k = f.Treads.Contains(j) ? "T" : m.IsPropCollider(j) ? "P" : m.IsBuildingBox(j) ? "B" : "M";
+            if (AcrossHi(o, f.Axis) < f.C0 - 0.45f || AcrossLo(o, f.Axis) > f.C1 + 0.45f)
+                continue;
+            var k = (f.Treads.Contains(j) ? "T" : m.IsPropCollider(j) ? "P" : m.IsBuildingDoorBox(j) ? "D" : m.IsBuildingGlass(j) ? "G" : m.IsBuildingBox(j) ? "B" : "M") + (m.Destruction is { } dd && dd.IsChunk(j, out _) ? "c" : "");
             sb.Append($" {k}[{o.Min.X:0.00},{o.Min.Y:0.00},{o.Min.Z:0.00}/{o.Max.X:0.00},{o.Max.Y:0.00},{o.Max.Z:0.00}]");
         }
         StairDevDump.Add(sb.ToString());
