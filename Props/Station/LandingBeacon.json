@@ -1,0 +1,72 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Landing Beacon",
+ "category": "Station",
+ "description": "A short post with a blinking red beacon for landing pads and deck edges.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.3,
+    1.52,
+    0.3
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": true,
+  "scale": [
+   0.95,
+   1.05
+  ]
+ },
+ "parts": [
+  {
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.15,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.12,
+    1.0,
+    0.12
+   ],
+   "offset": [
+    0.0,
+    0.8,
+    0.0
+   ],
+   "color": "#b3a48c"
+  },
+  {
+   "size": [
+    0.24,
+    0.22,
+    0.24
+   ],
+   "offset": [
+    0.0,
+    1.41,
+    0.0
+   ],
+   "color": "#ff4a3a",
+   "anim": {
+    "type": "blink",
+    "color": "#ff4a3a",
+    "glow": 2.0,
+    "period": 1.4,
+    "duty": 0.35
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

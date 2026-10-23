@@ -1,0 +1,39 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationbunks",
+ "description": "A station bunk room: bunk beds and lockers along the walls, kit bags on the floor.",
+ "items": [
+  {
+   "props": [
+    "Bunk Bed"
+   ],
+   "place": "wall",
+   "count": [
+    2,
+    3
+   ]
+  },
+  {
+   "props": [
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Duffel Bag",
+    "Backpack",
+    "Station Supply Case"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}

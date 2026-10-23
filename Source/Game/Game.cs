@@ -932,6 +932,7 @@ public sealed partial class Game : IDisposable
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
+        ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
         foreach (var p in Players.Values)

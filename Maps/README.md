@@ -58,6 +58,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `prototypeGrid` | no | `true` draws the dev-grid texture on everything (as in Proto Box). |
 | `penetration` | no | `false` stops bullets going through thin walls on this map (on by default; see the main README, "Bullet penetration"). |
 | `destructible` | no | `true`: the map's buildings (named Building ops) can be blown apart; `false`: they can't. Without it, the pack's `pack.json` decides (the World Tour has `"destructible": true`; every other pack is off). See [Buildings/README.md](../Buildings/README.md#destruction). |
+| `fallKill` | no | A world height: anyone whose feet drop below it dies (they fell off into the void). For maps that float in the air, like the Space pack's sky station: see [Void maps](#void-maps-falling-off). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
 | `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity). |
@@ -109,6 +110,7 @@ Parameters marked `= value` are optional. Parameter names are case-insensitive, 
 | `Ground` | color | The floor slab under the whole map. |
 | `Perimeter` | height, color, t = 1 | Boundary walls around the edge. |
 | `Block` | x0, y0, z0, x1, y1, z1, color | A box from one corner to the opposite corner. Everything else is built from these. |
+| `Collider` | x0, y0, z0, x1, y1, z1 | A hidden box: it collides like a `Block` (players, bullets, grenades, bots) but is never drawn. Put a cosmetic `Mesh` over it to make round or curved things solid (see [Void maps](#void-maps-falling-off)). |
 | `Prop` | x, z, w, h, d, color, y = 0 | A box w × h × d standing at (x, z), on the ground or on height `y`. With a `name` instead of a size it places a prop from the Props folder: see [Props](#props). |
 | `WallX` | x0, x1, z, t, y0, y1, color, holes = [] | A wall running along X from x0 to x1, filling z to z+t, with openings. |
 | `WallZ` | z0, z1, x, t, y0, y1, color, holes = [] | The same wall running along Z. |
@@ -145,7 +147,7 @@ Wall openings are written as `"holes": [ { "center": 4, "width": 1.5, "bottom": 
 |---|---|---|
 | `Spawn` | x, z, y = 0 | A spawn point. Use 8 or more. Spawns inside geometry are moved to the nearest free spot. |
 | `RingSpawns` | count, frac, phase = 0 | Spawns spread around an ellipse at `frac` of the map size. |
-| `Waypoint` | x, z | A point bots roam between. |
+| `Waypoint` | x, z, y = 0 | A point bots roam between, `y` above the ground (a bridge, a raised deck). |
 | `AutoWaypoints` | spacing | Waypoints on a grid over all open ground. This is the easy option. |
 
 A map must have at least one spawn.
@@ -544,6 +546,28 @@ Without a `boundary` section a map is the classic rectangle `-halfX..halfX` by `
 ### For tools
 
 The outline is generated in single precision from the spec, deterministically (same file, same outline on every PC). Maps with a boundary mix a fingerprint of the outline and barrier into the map's fingerprint; maps without one keep theirs. The `cliff` edge isn't part of the Python terrain port (`terrain.py`): a map with a cliff boundary gets its terrain fingerprint from the game.
+
+## Void maps (falling off)
+
+A map can float in the air: give it a top-level `"fallKill"` height and leave out the `Ground` op. With no ground there is
+nothing under the decks, and anyone whose feet drop below `fallKill` dies: the server kills them like the pause menu's
+"Kill yourself" (a death, no kill for anyone, "Suicide" in the feed, the usual respawn). The Space pack's **Stratos
+Station** (`Maps/Space/01-SkyStation.json`, written by `tools/space/skystation.py`) is the example.
+
+- **Decks:** round platforms are cosmetic `Mesh` cylinders over hidden `Collider` strips just inside them (collision only,
+  never drawn, so they cost no draw calls: map boxes are drawn one by one). Put the mesh's top 2 cm above the colliders.
+  Bridges are box meshes turned with `yaw` and tilted with `roll`, over colliders that step up a few centimetres at a time.
+- **Railings:** a collider band from 0.45 to 1.1 m above the deck holds people in while bullets, grenades and prone
+  shots go under it; draw the railing with meshes. Leave a gap only where a bridge joins.
+- **Bots:** the nav graph only links where there's floor under every step (a gap with nothing within a few metres below
+  is never crossed), and on a map with `fallKill` a node needs floor under all four sides of a player's footprint, so
+  none sits on a railing top or a deck's very edge. The grid can miss a narrow bridge: put `Waypoint` ops (with `y`)
+  every few metres along each bridge.
+- **The outline:** use a `boundary` with `"edge": "none"` round the whole station; the air between the platforms is
+  inside it (you can fall there), the barrier stops anyone leaving the map at any height.
+- **Looks:** a sky can't draw anything below the horizon except its ground colour, so a cloud sea belongs in an image
+  sky (`tools/space/make_stratos_sky.py` paints one) and, for depth, a few big flattened cosmetic spheres below the decks.
+- `fallKill` is from -4 to 55 m. Maps without it are unchanged: nobody falls out.
 
 ## Props
 

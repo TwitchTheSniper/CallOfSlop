@@ -1,0 +1,253 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Station Buildings",
+ "description": "The sky-station set: the control hub, hangar bay, crew quarters and pump house, and the Station props.",
+ "author": "Call of Slop",
+ "order": 969,
+ "halfX": 50,
+ "halfZ": 34,
+ "sky": [
+  0.55,
+  0.5,
+  0.62
+ ],
+ "flagPool": "none",
+ "ops": [
+  {
+   "op": "Ground",
+   "color": [
+    0.42,
+    0.42,
+    0.45
+   ]
+  },
+  {
+   "op": "Perimeter",
+   "height": 3,
+   "color": [
+    0.6,
+    0.58,
+    0.55
+   ]
+  },
+  {
+   "op": "Building",
+   "name": "Station Control Hub",
+   "at": [
+    -26,
+    -16
+   ],
+   "yaw": 0,
+   "spawns": true,
+   "seed": 1
+  },
+  {
+   "op": "Building",
+   "name": "Station Hangar Bay",
+   "at": [
+    2,
+    -16
+   ],
+   "yaw": 0,
+   "spawns": true,
+   "seed": 2
+  },
+  {
+   "op": "Building",
+   "name": "Station Crew Quarters",
+   "at": [
+    26,
+    -16
+   ],
+   "yaw": 0,
+   "spawns": true,
+   "seed": 3,
+   "variant": {
+    "palette": "white hull"
+   }
+  },
+  {
+   "op": "Building",
+   "name": "Refinery Pump House",
+   "at": [
+    40,
+    -16
+   ],
+   "yaw": 0,
+   "seed": 4,
+   "variant": {
+    "palette": "bronze hull"
+   }
+  },
+  {
+   "op": "Prop",
+   "name": "Antenna Mast",
+   "x": -40,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Floor Light",
+   "x": -32,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Deck Light Post",
+   "x": -24,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Coupling",
+   "x": -16,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": -8,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 0,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Landing Beacon",
+   "x": 8,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Parked Cloud Skimmer",
+   "x": 16,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Sensor Dish",
+   "x": 24,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": 32,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 40,
+   "z": 8
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": -40,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -32,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -24,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Run",
+   "x": -16,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Station Server Cabinet",
+   "x": -8,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 0,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 8,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": 16,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Vent Stack",
+   "x": 24,
+   "z": 18
+  },
+  {
+   "op": "Prop",
+   "name": "Volatile Gas Canister Rack",
+   "x": 32,
+   "z": 18
+  },
+  {
+   "op": "Spawn",
+   "x": -40,
+   "z": 26
+  },
+  {
+   "op": "Spawn",
+   "x": -20,
+   "z": 26
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": 26
+  },
+  {
+   "op": "Spawn",
+   "x": 20,
+   "z": 26
+  },
+  {
+   "op": "Spawn",
+   "x": 40,
+   "z": 26
+  },
+  {
+   "op": "Spawn",
+   "x": -40,
+   "z": 0
+  },
+  {
+   "op": "Spawn",
+   "x": 40,
+   "z": 0
+  },
+  {
+   "op": "Spawn",
+   "x": 0,
+   "z": 2
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ]
+}

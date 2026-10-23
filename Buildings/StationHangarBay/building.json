@@ -1,0 +1,194 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Station Hangar Bay",
+ "theme": "A sky-station hangar: a tall open bay for skimmers and cargo, a mezzanine, a workshop and a parts store",
+ "category": "special",
+ "description": "One tall storey, 20 x 14 m: a vehicle bay with 5 m arches at both ends, a mezzanine on the west wall, a workshop and a store.",
+ "author": "Call of Slop",
+ "seed": 612,
+ "wallThickness": 0.3,
+ "storeyHeight": 6.6,
+ "exterior": {
+  "color": "$wall",
+  "material": "metal"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "metal"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "grid"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "metal"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "cream hull": {
+   "wall": "#cdbfa8",
+   "interior": "#a4aaae",
+   "floor": "#4c5054",
+   "ceiling": "#868b90",
+   "trim": "#8d7458",
+   "door": "#6c6f73",
+   "roof": "#b3a48c"
+  },
+  "white hull": {
+   "wall": "#d8d8d2",
+   "interior": "#9ea6ac",
+   "floor": "#45494e",
+   "ceiling": "#80868c",
+   "trim": "#5a6a78",
+   "door": "#5a6066",
+   "roof": "#bfc0bc"
+  },
+  "bronze hull": {
+   "wall": "#a88e70",
+   "interior": "#a39a8e",
+   "floor": "#4a4640",
+   "ceiling": "#857d72",
+   "trim": "#5c4a38",
+   "door": "#6a5a48",
+   "roof": "#8d7458"
+  }
+ },
+ "floors": [
+  {
+   "autoWindows": {
+    "spacing": 3.0,
+    "width": 1.8,
+    "sill": 3.8,
+    "head": 5.6
+   },
+   "rooms": [
+    {
+     "id": "bay",
+     "type": "stationhangar",
+     "rect": [
+      -10,
+      -7,
+      6,
+      7
+     ]
+    },
+    {
+     "id": "workshop",
+     "type": "stationworkshop",
+     "rect": [
+      6,
+      -7,
+      10,
+      0
+     ]
+    },
+    {
+     "id": "parts store",
+     "type": "stationstore",
+     "rect": [
+      6,
+      0,
+      10,
+      7
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      -1,
+      7
+     ],
+     "width": 5.0,
+     "front": true,
+     "head": 4.6
+    },
+    {
+     "type": "arch",
+     "at": [
+      -1,
+      -7
+     ],
+     "width": 5.0,
+     "head": 4.6
+    },
+    {
+     "type": "door",
+     "at": [
+      6,
+      -3.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      6,
+      3.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      8,
+      -7
+     ],
+     "width": 1.1,
+     "material": "metal"
+    }
+   ]
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 0.8,
+  "color": {
+   "color": "$roof",
+   "material": "metal"
+  }
+ },
+ "extras": [
+  {
+   "type": "platform",
+   "rect": [
+    -9.6,
+    -6.6,
+    -6.4,
+    6.6
+   ],
+   "height": 3.4,
+   "railing": 1,
+   "color": {
+    "color": "$floor",
+    "material": "grid"
+   },
+   "stairs": {
+    "rect": [
+     -6.4,
+     4.0,
+     -4.0,
+     5.2
+    ],
+    "dir": "-x"
+   }
+  }
+ ],
+ "anchors": [
+  {
+   "type": "spawn",
+   "name": "bay",
+   "floor": 0,
+   "at": [
+    0,
+    0
+   ]
+  }
+ ]
+}

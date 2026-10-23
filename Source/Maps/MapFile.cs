@@ -215,6 +215,8 @@ public static partial class MapFile
             sb.Append("  \"prototypeGrid\": true,\n");
         if (!m.Penetration)
             sb.Append("  \"penetration\": false,\n");
+        if (m.FallKillY is { } fallKill)
+            sb.Append($"  \"fallKill\": {Num(fallKill)},\n");
         if (m.DestructibleSetting is { } destructible)
             sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
@@ -335,6 +337,9 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
                 map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
+            if (Prop(root, "fallKill") is { ValueKind: not JsonValueKind.Null } fallKillEl) // a void map: falling below this height kills (GameFallKill.cs)
+                map.FallKillY = fallKillEl.ValueKind == JsonValueKind.Number && fallKillEl.GetSingle() is >= -4f and <= 55f
+                    ? fallKillEl.GetSingle() : throw new MapFileException($"{source}: \"fallKill\" is a height from -4 to 55 (metres)");
             if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
                 map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");
@@ -343,7 +348,9 @@ public static partial class MapFile
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
-            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)
+            // Sky images are found next to the map file; a map read from text (a round trip) looks in its pack folder.
+            var skySource = (Path.GetDirectoryName(source) ?? "").Length > 0 || map.PackDir == null ? source : Path.GetFileName(map.PackDir) + "/" + source;
+            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, skySource) is { } parsedSky)
             {
                 map.Skybox = parsedSky;
                 map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)

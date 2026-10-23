@@ -215,6 +215,19 @@
     {"op": "Spawn", "x": 24, "z": 36},
     {"op": "Spawn", "x": 36, "z": -36},
     {"op": "Spawn", "x": 36, "z": 36},
+    {"op": "Prop", "name": "Antenna Mast", "x": -36.0, "z": 14.0},
+    {"op": "Prop", "name": "Deck Floor Light", "x": -31.0, "z": 14.0},
+    {"op": "Prop", "name": "Deck Light Post", "x": -26.0, "z": 14.0},
+    {"op": "Prop", "name": "Fuel Coupling", "x": -21.0, "z": 14.0},
+    {"op": "Prop", "name": "Hover Cargo Sled", "x": -16.0, "z": 14.0},
+    {"op": "Prop", "name": "Landing Beacon", "x": -11.0, "z": 14.0},
+    {"op": "Prop", "name": "Sensor Dish", "x": -6.0, "z": 14.0},
+    {"op": "Prop", "name": "Station Cargo Pod", "x": -1.0, "z": 14.0},
+    {"op": "Prop", "name": "Station Console", "x": 4.0, "z": 14.0},
+    {"op": "Prop", "name": "Station Server Cabinet", "x": 9.0, "z": 14.0},
+    {"op": "Prop", "name": "Twin Gas Tanks", "x": 14.0, "z": 14.0},
+    {"op": "Prop", "name": "Vent Stack", "x": 19.0, "z": 14.0},
+    {"op": "Prop", "name": "Parked Cloud Skimmer", "x": 31.0, "z": 14.0},
     {"op": "AutoWaypoints", "spacing": 6}
   ]
 }
