@@ -26,8 +26,11 @@ jobs:
         run: |
           set +e
           dir=bin/Release/net10.0
-          dotnet "$dir/CallOfSlop.dll" --selftest-list > names.txt
-          echo "::notice title=List::$(wc -l < names.txt) sections; first: $(head -1 names.txt); last: $(tail -1 names.txt)"
+          dotnet "$dir/CallOfSlop.dll" --selftest-list > all.txt
+          printf '%s\n' "Scene graph" "Gun samples" "Bots" > names.txt
+          dotnet "$dir/CallOfSlop.dll" --selftest-only "frenzy" < /dev/null; echo "::notice title=Prefix frenzy::exit $?; $(grep -m1 '^FILTERED' "$dir/selftest.log")"
+          dotnet "$dir/CallOfSlop.dll" --selftest-only < /dev/null; echo "::notice title=No names::exit $?; $(grep -m1 'FAIL' "$dir/selftest.log" | cut -c1-120)"
+          echo "::notice title=List::$(wc -l < all.txt) sections; first: $(head -1 all.txt); last: $(tail -1 all.txt)"
           bad=""; times=""
           dotnet "$dir/CallOfSlop.dll" --selftest-only "Nope section" ; c=$?
           echo "::notice title=Unknown name::exit $c; $(grep -m1 FAIL "$dir/selftest.log" | cut -c1-300)"

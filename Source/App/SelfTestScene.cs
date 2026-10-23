@@ -803,6 +803,9 @@ public static partial class SelfTest
             return (samples[samples.Length / 2], samples[0], updTicks * 1000.0 / Stopwatch.Frequency / n, flatTicks * 1000.0 / Stopwatch.Frequency / n);
         }
 
+        // Warm the measuring code too: run alone (--selftest-only), the first sort of a double[] creates the runtime's
+        // sort helper (24 bytes) inside the measured window; in the full suite an earlier section had already made it.
+        Median(false, true);
         var bigBefore = GC.GetAllocatedBytesForCurrentThread();
         var separate = Median(true, false);
         var sepUpdated = updated;
