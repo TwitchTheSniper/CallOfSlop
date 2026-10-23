@@ -119,11 +119,11 @@ public static partial class SelfTest
         if (s.Build.At("receiver_1/barrel")?.Part.Name != "Long Barrel")
             Fail("workbench: detaching a replaced part took the new one off (Attach-replace regression)");
         // The raw regression: attach twice into one socket, then use the first node.
-        var g = new BuildNode(P("Service Rifle Grip"));
-        var first = g.Attach("receiver_1", P("Workhorse Receiver"));
-        var second = g.Attach("receiver_1", P("Triad Burst Receiver"));
+        var gn = new BuildNode(P("Service Rifle Grip"));
+        var first = gn.Attach("receiver_1", P("Workhorse Receiver"));
+        var second = gn.Attach("receiver_1", P("Triad Burst Receiver"));
         first.Detach();
-        if (first.Path() != "" || g.Child("receiver_1") != second || second.Path() != "receiver_1")
+        if (first.Path() != "" || gn.Child("receiver_1") != second || second.Path() != "receiver_1")
             Fail("workbench: BuildNode.Attach replacing a part should orphan the old node cleanly");
         // A receiver swapped for one of the same bore keeps everything; another bore keeps only what fits.
         var r1 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:5.56 FMJ}}"), BenchStock.Unlimited);

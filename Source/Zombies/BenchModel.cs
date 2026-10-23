@@ -889,7 +889,7 @@ public sealed class BenchModel
         target = CopyTarget(receiver);
         if (target == null)
             return $"The {Build.Root!.Part.Name} has no free receiver slot ({Build.Root.Part.ReceiverCapacity} in all, every one in use).";
-        if (BuildRules.SocketWhy(Build.Root, target, receiver.Part) is { } why)
+        if (BuildRules.SocketWhy(Build.Root!, target, receiver.Part) is { } why)
             return why;
         var before = Build.ToText();
         PushUndo();
