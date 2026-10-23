@@ -150,7 +150,7 @@ public sealed partial class Ui : IDisposable
             else if (showNetStats)
                 ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
-            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)");
+            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             ImGui.PopTextWrapPos();
         }
         ImGui.End();
@@ -419,7 +419,7 @@ public sealed partial class Ui : IDisposable
                     ImGui.TableNextColumn();
                     ImGui.Text($"{rank++}");
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
+                    ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
@@ -497,7 +497,7 @@ public sealed partial class Ui : IDisposable
                     var col = new float4(c.X, c.Y, c.Z, 1);
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p));
+                    ImGuiSafe.TextColored(col, (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                     ImGui.TableNextColumn();
                     ImGui.Text($"{p.Kills}");
                     ImGui.TableNextColumn();
