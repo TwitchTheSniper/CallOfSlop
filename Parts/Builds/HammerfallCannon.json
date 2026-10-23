@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Hammerfall Cannon",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "An autocannon on a rifle rack. Even the stub barrel comes out the size of a drainpipe.",
+  "build": "Rifle Grip{receiver_1:Hammerfall Autocannon Receiver{barrel:Stub Barrel,feed:Heavy Box,ammo:.50 BMG},foregrip:Chaingun Handle}"
+}

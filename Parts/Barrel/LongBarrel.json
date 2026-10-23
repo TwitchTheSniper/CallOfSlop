@@ -4,7 +4,6 @@
   "category": "barrel",
   "rarity": "uncommon",
   "flavor": "More barrel, more reach, slower to swing.",
-  "bores": ["pistol", "rifle", "heavy"],
   "weight": 0.6,
   "hand": [0, -0.03, -0.144],
   "muzzles": [[0, 0, -0.36]],

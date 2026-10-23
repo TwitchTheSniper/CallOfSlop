@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Railspike Coil Receiver",
+  "category": "receiver",
+  "rarity": "epic",
+  "flavor": "Magnets charge the shot, then let go all at once. One crack, one hole straight through.",
+  "weight": 1.6,
+  "receiver": {"action": "bolt", "class": "Sniper", "bore": "energy", "soundOf": "Railspike", "rpm": 50},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.0434, -0.18], "accepts": ["barrel", "splitter"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.081], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.035, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.032, 0.035, -0.108]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.1]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0497, 0.02]},
+    {"name": "amp", "type": "amp", "pos": [-0.031, 0.0497, 0.02]}
+  ],
+  "model": [
+    {"size": [0.06, 0.07, 0.28], "pos": [0, 0.035, -0.04], "color": "white"},
+    {"size": [0.03, 0.014, 0.14], "pos": [0, 0.074, -0.036], "color": "black"},
+    {"size": [0.062, 0.01, 0.04], "pos": [0, 0.042, 0.07], "color": "accent"},
+    {"size": [0.064, 0.012, 0.012], "pos": [0, 0.035, -0.12], "color": "accent", "tag": "glow"},
+    {"size": [0.064, 0.012, 0.012], "pos": [0, 0.035, -0.06], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 4.0},
+    {"stat": "adsSpreadMult", "set": 0.0},
+    {"stat": "reload", "set": 3.2},
+    {"stat": "headMult", "set": 2.6}
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ratchet Burst SMG Receiver",
+  "category": "receiver",
+  "rarity": "uncommon",
+  "flavor": "Three pistol rounds per pull, faster than you can say it. Tidy in a corridor.",
+  "weight": 0.75,
+  "receiver": {"action": "burst", "class": "SMG", "bore": "pistol", "soundOf": "Ratchet Burst SMG", "rpm": 1000, "burstCount": 3, "burstDelay": 0.18},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.0397, -0.095], "accepts": ["barrel", "splitter"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.0428], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.032, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.027, 0.032, -0.057]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0454, 0.1]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.026, 0.0454, 0.02]},
+    {"name": "amp", "type": "amp", "pos": [-0.026, 0.0454, 0.02]}
+  ],
+  "model": [
+    {"size": [0.05, 0.064, 0.19], "pos": [0, 0.032, 0.0], "color": "black"},
+    {"size": [0.025, 0.014, 0.095], "pos": [0, 0.068, 0.004], "color": "black"},
+    {"size": [0.052, 0.01, 0.04], "pos": [0, 0.0384, 0.07], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 2.0},
+    {"stat": "reload", "set": 1.8},
+    {"stat": "mobility", "add": 0.03}
+  ]
+}

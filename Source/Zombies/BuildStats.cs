@@ -48,7 +48,8 @@ public static class BuildStats
     public static int PelletsOf(BuildNode receiver)
     {
         var w = new WeaponDef { Name = "", Class = WeaponClass.AssaultRifle, Damage = 1, RangeM = 1, Rpm = 1, Mag = 1, Reload = 1, HipSpreadDeg = 1 };
-        foreach (var n in receiver.Walk().Where(n => n.Part.Category is PartCategory.Receiver or PartCategory.Ammo or PartCategory.Feed or PartCategory.Barrel))
+        var barrelPellets = receiver.Part.Receiver is { } r && Parts.Registry.ClassOf(r.Bore).Pellets; // only shotguns let a barrel change the pellets
+        foreach (var n in receiver.Walk().Where(n => n.Part.Category is PartCategory.Receiver or PartCategory.Ammo or PartCategory.Feed || (barrelPellets && n.Part.Category == PartCategory.Barrel)))
             foreach (var e in n.Part.Effects.Where(e => e.Field.Name == nameof(WeaponDef.Pellets)))
                 e.ApplyTo(w);
         return Math.Clamp(w.Pellets, 1, 30);
@@ -166,10 +167,11 @@ public static class BuildStats
         var rateMult = w.Rpm / (float)Math.Max(1, r.Rpm);
         var res = new ReceiverResult { Node = receiver, Def = w };
         var copies = new List<WeaponDef>();
+        var cls = Parts.Registry.ClassOf(r.Bore);
         foreach (var leaf in Leaves(receiver))
         {
             var c = w.Clone();
-            Apply(leaf.Barrel.Part, c);
+            ApplyBarrel(leaf.Barrel.Part, c, cls);
             foreach (var (s, dev) in leaf.Barrel.Children())
                 if (s.Type == "muzzle")
                     Apply(dev.Part, c);
@@ -318,6 +320,30 @@ public static class BuildStats
     {
         foreach (var e in p.Effects)
             e.ApplyTo(w);
+    }
+
+    /// <summary>
+    /// A barrel's modifiers on top of its receiver's calibre (docs/zombies/WEAPON-BUILDER.md, "Barrels and receivers"):
+    /// barrels only scale what the receiver and its ammo set (a Long Barrel's x1.4 range is x1.4 of a pistol's range on a
+    /// pistol, of an autocannon's on an autocannon). The bore class's strength scales each relative change (x m becomes
+    /// x (1 + (m - 1) k), + a becomes + a k; "set" is applied as written), and pellet changes count only where the class
+    /// allows them (shotguns).
+    /// </summary>
+    public static void ApplyBarrel(PartDef barrel, WeaponDef w, BoreClass cls)
+    {
+        foreach (var e in barrel.Effects)
+        {
+            if (e.Field.Name == nameof(WeaponDef.Pellets) && !cls.Pellets)
+                continue;
+            if (MathF.Abs(cls.Strength - 1f) < 1e-4f || e.Op == "set" || e.Value is not float v)
+            {
+                e.ApplyTo(w);
+                continue;
+            }
+            var k = cls.Strength;
+            var scaled = e.Op == "add" ? v * k : 1f + (v - 1f) * k;
+            new AttachmentEffect { Field = e.Field, Op = e.Op, Value = scaled, Min = e.Min, Max = e.Max }.ApplyTo(w);
+        }
     }
 
     /// <summary>Keeps every number inside the ranges weapon files allow (and recoil fields inside theirs).</summary>

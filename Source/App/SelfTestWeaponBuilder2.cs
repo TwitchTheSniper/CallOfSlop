@@ -34,7 +34,7 @@ public static partial class SelfTest
     private static WeaponBuild BuildOf(string tree, string name = "Test")
     {
         var dropped = new List<string>();
-        var b = WeaponBuild.Parse($"{name}|volley|{tree}", Parts.Find, dropped);
+        var b = WeaponBuild.Parse($"{name}|grip|{tree}", Parts.Find, dropped); // "grip": the grip's default fire style
         if (dropped.Count > 0)
             Fail($"test build '{name}': dropped {string.Join("; ", dropped)}");
         return b;
@@ -55,15 +55,17 @@ public static partial class SelfTest
             if (new WeaponBuild("x", g).Style != g.Frame!.Style)
                 Fail($"fire style: a build on the {g.Name} doesn't use the grip's style");
         Line("fire styles: " + string.Join(", ", grips.Select(g => $"{g.Name} {g.Frame!.Style.ToString().ToLowerInvariant()}")));
-        foreach (var (name, want) in new[] { ("Pistol Grip", FireStyle.Volley), ("Competition Pistol Grip", FireStyle.Rotate), ("Rifle Grip", FireStyle.Volley), ("Exo Harness", FireStyle.Rotate) })
+        foreach (var (name, want) in new[] { ("Pistol Grip", FireStyle.Volley), ("Rifle Grip", FireStyle.Volley), ("Exo Harness", FireStyle.Rotate) })
             if (Parts.Find(name)?.Frame?.Style != want)
-                Fail($"fire style: the {name} should fire {want}");
-        // Moving three pistol receivers from a volley grip to a rotate grip changes how they fire (the grip decides).
+                Fail($"fire style: the {name} should default to {want}");
+        // The same receivers on the same grip: the build's Chain fire choice decides (the old twin grips are gone).
         var tree = "receiver_1:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Plinker Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:9mm Ball}";
         var volley = WeaponBuilder.Assemble(BuildOf($"Pistol Grip{{{tree}}}")).Def;
-        var rotate = WeaponBuilder.Assemble(BuildOf($"Competition Pistol Grip{{{tree}}}")).Def;
-        if (volley == null || rotate == null || volley.RotateGroups || !rotate.RotateGroups || rotate.Rpm <= volley.Rpm)
-            Fail("fire style: the same receivers should volley on the Pistol Grip and rotate (faster) on the Competition Pistol Grip");
+        var chained = BuildOf($"Pistol Grip{{{tree}}}");
+        chained.StyleChoice = FireStyle.Rotate;
+        var rotate = WeaponBuilder.Assemble(chained).Def;
+        if (volley == null || rotate == null || volley.RotateGroups || !rotate.RotateGroups || rotate.Rpm <= volley.Rpm || !chained.ChainFire)
+            Fail("fire style: the same receivers should volley with Chain fire off and take turns (faster) with it on");
     }
 
     private static void CheckSplittersConserve()
@@ -133,7 +135,7 @@ public static partial class SelfTest
         var both = WeaponBuilder.Assemble(BuildOf(rx.Replace("%X%", ",upgrade_rear:Gas Overclock,upgrade_side:Lightweight Bolt"))).Def!;
         if (MathF.Abs(both.Rpm / (float)baseDef.Rpm - 1.25f * 1.08f) > 0.02f)
             Fail($"receiver upgrades: rear + side should stack (rpm {both.Rpm} vs {baseDef.Rpm})");
-        var mg = "Tactical Rifle Grip{receiver_1:Hellwheel Rotary Receiver{" + string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel")) + ",feed:Backpack Hopper,ammo:5.56 FMJ%X%}}";
+        var mg = "Rifle Grip{receiver_1:Hellwheel Rotary Receiver{" + string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel")) + ",feed:Backpack Hopper,ammo:5.56 FMJ%X%}}";
         var mg0 = WeaponBuilder.Assemble(BuildOf(mg.Replace("%X%", ""))).Def!;
         var mg1 = WeaponBuilder.Assemble(BuildOf(mg.Replace("%X%", ",upgrade_rear:Lightweight Bolt"))).Def!;
         Line($"receiver upgrades: Workhorse {baseDef.Rpm} -> {both.Rpm} rpm (Gas Overclock + Lightweight Bolt); minigun {mg0.Rpm} -> {mg1.Rpm} rpm (Lightweight Bolt)");

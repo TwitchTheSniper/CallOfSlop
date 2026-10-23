@@ -4,7 +4,7 @@
   "category": "barrel",
   "rarity": "common",
   "flavor": "A short fat tube. Point it up a bit.",
-  "bores": ["launcher"],
+  "sizedFor": "launcher",
   "weight": 0.7,
   "hand": [0, -0.03, -0.104],
   "muzzles": [[0, 0, -0.26]],

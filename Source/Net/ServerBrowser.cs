@@ -71,7 +71,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     flags (team / dead / system) and the sender's team; Msg.VoiceUp / VoiceDown / VoiceCtl / VoiceInfo at the end of Msg.
     // 37: the Co-op mode (Source/Game/Pve, docs/pve/DESIGN.md): game mode 7, Msg.PEnts / PEvent at the end of Msg (enemy
     //     soldiers and co-op events), the Co-op module's mode-state tail (the objective panel), kill id 253 (killed by an enemy).
-    public const byte ProtocolVersion = 37;
+    // 38: the weapon workbench's barrels and Chain fire (docs/zombies/WEAPON-BUILDER.md): barrels fit every receiver (the
+    //     receiver sizes them), and a build text's style field is honoured again (volley / rotate = the Chain fire box).
+    //     The text format is unchanged, but servers and clients must agree on what a build fires like and what fits.
+    public const byte ProtocolVersion = 38;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -4,7 +4,6 @@
   "category": "barrel",
   "rarity": "rare",
   "flavor": "Cut grooves, tight tolerances, smug owner.",
-  "bores": ["pistol", "rifle"],
   "weight": 0.45,
   "hand": [0, -0.03, -0.136],
   "muzzles": [[0, 0, -0.34]],

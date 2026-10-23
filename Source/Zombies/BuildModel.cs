@@ -63,7 +63,7 @@ public static class BuildModel
         {
             var leaf = leaves[i].Leaf;
             var bn = map[leaf.Barrel];
-            var world = bn.ToWorld(leaf.Barrel.Part.Muzzles[leaf.Muzzle]);
+            var world = bn.ToWorld(leaf.Barrel.Part.Muzzles[leaf.Muzzle] * BuildRules.BarrelScale(leaf.Barrel)); // the receiver sized the barrel
             foreach (var (s, dev) in leaf.Barrel.Children())
                 if (s.Type == "muzzle" && dev.Part.Muzzles.Length > 0 && map.TryGetValue(dev, out var dn))
                     world += dn.ToWorld(dev.Part.Muzzles[0]) - dn.WorldPosition;
@@ -94,7 +94,7 @@ public static class BuildModel
         else if (b.Root?.Part.Frame?.Support is { } sp)
             support = sp + root.LocalPosition;
         else if (lead != null && BuildStats.Leaves(lead).FirstOrDefault() is { Barrel: not null } l && map.TryGetValue(l.Barrel, out var lbn))
-            support = lbn.ToWorld(l.Barrel.Part.Hand ?? new Vector3(0, -0.03f, -0.1f));
+            support = lbn.ToWorld((l.Barrel.Part.Hand ?? new Vector3(0, -0.03f, -0.1f)) * BuildRules.BarrelScale(l.Barrel));
         else
             support = grip + new Vector3(0, 0.03f, -0.2f);
         var magWell = grip + new Vector3(0, -0.02f, -0.1f);
@@ -150,6 +150,11 @@ public static class BuildModel
             _ => GunPartFlags.None,
         };
         Vector4? tint = tints != null && tints.TryGetValue(node, out var tv) ? tv : null;
+        // A barrel takes the size of the receiver it hangs under (pistol: thinner and shorter, heavy: fatter and longer):
+        // its boxes and socket points scale in its own space; what plugs into it (a muzzle device) keeps its own size.
+        var scale = BuildRules.BarrelScale(node);
+        var scaled = scale != Vector3.One;
+        var post = scaled ? Matrix4x4.CreateScale(scale) : Matrix4x4.Identity;
         for (var i = 0; i < p.Boxes.Length; i++)
         {
             var bx = p.Boxes[i];
@@ -165,20 +170,20 @@ public static class BuildModel
                 mode = 2; // flat and bright: reads as a marker, not as a real part
             }
             var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (bx.Tag == "irons" ? GunPartFlags.Top : 0);
-            var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos);
+            var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos) * post;
             var n = pn.Add($"box{i}", m, Renderable.Box(color, alpha, mode));
             n.Tag = f;
             if (bx.Shape == "rod")
             {
                 // An octagonal rod: a second box turned 45 degrees about the rod's own axis (Z).
                 var m2 = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateRotationZ(MathF.PI / 4) * Matrix4x4.CreateFromQuaternion(bx.Rotation)
-                         * Matrix4x4.CreateTranslation(bx.Pos);
+                         * Matrix4x4.CreateTranslation(bx.Pos) * post;
                 pn.Add($"box{i}r", m2, Renderable.Box(color * 0.93f, alpha, mode)).Tag = f;
             }
         }
         foreach (var s in p.Sockets)
         {
-            var sn = pn.AddSocket(SceneName(s), s.Pos, s.Rotation);
+            var sn = pn.AddSocket(SceneName(s), scaled ? s.Pos * scale : s.Pos, s.Rotation);
             if (node.Child(s.Name) is { } child)
                 AddPart(sn, child, accent, hasOptic, map, tints);
         }
