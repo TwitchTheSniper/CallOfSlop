@@ -134,6 +134,7 @@ public static partial class SelfTest
         Game.SeedNextGame = 4242;
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 3);
         game.MapVoteEnabled = false;
+        NavGraph.Pump(double.MaxValue); // finish this map's waypoint graph now, so no half-built graph is left for the next section
         game.AddBot(BotDifficulty.Hard, BotPersonality.Marksman, quiet: true);
         game.AddBot(BotDifficulty.Hard, BotPersonality.Rusher, quiet: true);
         var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
@@ -295,6 +296,7 @@ public static partial class SelfTest
         Game.SeedNextGame = 777;
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 5);
         game.MapVoteEnabled = false;
+        NavGraph.Pump(double.MaxValue); // finish this map's waypoint graph now, so no half-built graph is left for the next section
         game.Progress = new Progress { ReadOnly = true, Xp = Progress.TotalFor(level) };
         var sb = new System.Text.StringBuilder();
         uint tick = 50;
