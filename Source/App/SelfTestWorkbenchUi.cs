@@ -52,6 +52,28 @@ public static partial class SelfTest
         if (depths != "0,1,2,2,2,2,3,3")
             Fail($"workbench: a splitter's barrels should be indented under it (depths {depths})");
 
+        // ---- An empty action socket's marker sits where the receiver's stock action would go ----------------------
+        var checkedMarkers = 0;
+        foreach (var rp in Parts.InCategory(PartCategory.Receiver).Where(r => r.Sockets.Any(x => x.Type == "action")).Take(40))
+        {
+            if (ActionMigration.StockActionOf(rp, Parts.Find) is not { } stockAct)
+                continue;
+            var emptyB = new WeaponBuild("Marker", P("Service Rifle Grip"));
+            emptyB.Root!.Attach("receiver_1", rp);
+            var fullB = new WeaponBuild("Marker", P("Service Rifle Grip"));
+            fullB.Root!.Attach("receiver_1", rp).Attach("action", stockAct);
+            var em = new BenchModel(emptyB, BenchStock.Unlimited);
+            var fm = new BenchModel(fullB, BenchStock.Unlimited);
+            var es = em.SpotOf("receiver_1", "action");
+            var fs = fm.SpotOf("receiver_1", "action");
+            checkedMarkers++;
+            if (es < 0 || fs < 0 || System.Numerics.Vector3.Distance(em.Spots[es].Pos, fm.Spots[fs].Pos) > 1e-4f)
+                Fail($"workbench: the empty action marker on the {rp.Name} should sit where its stock action ({stockAct.Name}, {stockAct.Placement ?? "side"}) goes");
+        }
+        Line($"empty action markers: {checkedMarkers} receivers match their stock action's placement");
+        if (checkedMarkers == 0)
+            Fail("workbench: no receiver checked for the empty action marker position");
+
         // ---- Snapping: compatibility, nearest valid socket under a ray ----------------------------------------
         var m = new BenchModel(new WeaponBuild("Snap", P("Service Rifle Grip")), BenchStock.Unlimited);
         var valid = new bool[64];

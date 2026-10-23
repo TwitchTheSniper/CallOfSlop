@@ -245,6 +245,8 @@ saves and the network are unchanged (the action still plugs into the receiver's 
   sits up at 1.7 cm to clear a Shell Tube under it).
 - **Side** (9 actions, as before): Turn Bolt, Straight-Pull Bolt, Lever Action, Break Action, Hand-Crank Rotary,
   Electric Rotary Drive, Chain Drive Motor, Autocannon Drive, Bicycle Chain Drive.
+- **Empty socket marker.** An empty action socket has no action to ask, so its workbench marker sits where the
+  receiver's stock action would go (`BenchModel.EmptyPos`), else at the "under" point. Checked in **Workbench UI**.
 - **Checks.** The self-test section **Action placement** (`SelfTestActionPlacement.cs`) holds the table above (a new
   action must be added to it), checks every receiver has both points and every action is drawn at its point, and that
   no under or front action cuts more than 1 mm into the grip's handle, a foregrip hanging under the gun (Vertical,
