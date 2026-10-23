@@ -35,7 +35,8 @@ public static partial class SelfTest
     {
         public int Axis; // 0: climbs along X, 2: along Z
         public int Dir; // +1 or -1 along that axis
-        public readonly List<int> Treads = new(); // Solid indices, foot to top
+        public readonly List<int> Treads = new(); // Solid indices, foot to top (a destructible building's tread cut into chunks: one of its pieces)
+        public readonly List<Box> Boxes = new(); // the treads' boxes (chunks joined back into the whole tread)
         public float U0, U1; // along the climb (u = coordinate * Dir): the first tread's near face, the last tread's far face
         public float C0, C1; // the across span every tread shares
         public float Y0, Y1; // the floor at the foot, the last tread's top
@@ -47,7 +48,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Train Yard", 20.0f, -27.8f), ("Carousel", 5.2f, -23.6f), ("Sprawl", -65.0f, -42.3f), ("Adobe Mesa", -11.4f, -1.7f),
+        ("Old Town", -26.5f, -24.9f), ("Main Street", 18.3f, -17.6f), ("Main Street", 21.7f, -17.4f), ("Slopview Mall", -58.8f, -7.2f), ("Silo", -5.3f, 49.6f), ("Sprawl", -65.0f, -42.3f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -234,18 +235,19 @@ public static partial class SelfTest
     /// </summary>
     private static List<StairFlight> FindStairFlights(Map m, PhysicsWorld phys)
     {
-        var solid = m.Solid;
-        var n = solid.Count;
+        var raw = m.Solid;
+        var n = raw.Count;
+        var group = StairChunkGroups(m, phys, out var solid); // solid[i]: box i, or the whole tread its chunk was cut from
         var tread = new bool[n];
         for (var i = 0; i < n; i++)
         {
             var b = solid[i];
-            if (StairIgnored(m, i, b) || m.IsBuildingGlass(i) || i == m.GroundIndex || b.Max.Y - b.Min.Y < 0.03f)
+            if (group[i] != i || StairIgnored(m, i, raw[i]) || m.IsBuildingGlass(i) || i == m.GroundIndex || b.Max.Y - b.Min.Y < 0.03f)
                 continue;
             float sx = b.Max.X - b.Min.X, sz = b.Max.Z - b.Min.Z;
             if (!(sx is >= TreadMinRun and <= TreadMaxRun && sz >= TreadMinWidth || sz is >= TreadMinRun and <= TreadMaxRun && sx >= TreadMinWidth))
                 continue;
-            tread[i] = FreeAbove(m, phys, i, b);
+            tread[i] = FreeAbove(m, phys, i, b, group);
         }
         // next[i * 4 + slot]: the tread a step up from i along slot (0 +X, 1 -X, 2 +Z, 3 -Z); -1 none.
         var next = new int[n * 4];
@@ -268,9 +270,10 @@ public static partial class SelfTest
                 var p1 = StairPoint(new StairFlight { Axis = axis, Dir = dir }, far + 0.07f, a1, 0);
                 var best = -1;
                 var bestOverlap = 0f;
-                foreach (var j in phys.CollectBoxes(MathF.Min(p0.X, p1.X), MathF.Min(p0.Z, p1.Z), MathF.Max(p0.X, p1.X), MathF.Max(p0.Z, p1.Z)))
+                foreach (var jr in phys.CollectBoxes(MathF.Min(p0.X, p1.X), MathF.Min(p0.Z, p1.Z), MathF.Max(p0.X, p1.X), MathF.Max(p0.Z, p1.Z)))
                 {
-                    if (j == i || j >= n || !tread[j])
+                    var j = jr < n ? group[jr] : -1;
+                    if (j < 0 || j == i || !tread[j])
                         continue;
                     var b = solid[j];
                     var rise = b.Max.Y - a.Max.Y;
@@ -308,20 +311,23 @@ public static partial class SelfTest
                     if (c1 - c0 < TreadMinWidth)
                         break;
                     if (f.Treads.Count > 0)
-                        f.MaxRise = MathF.Max(f.MaxRise, b.Max.Y - solid[f.Treads[^1]].Max.Y);
+                        f.MaxRise = MathF.Max(f.MaxRise, b.Max.Y - f.Boxes[^1].Max.Y);
                     (f.C0, f.C1) = (c0, c1);
                     f.Treads.Add(k);
+                    f.Boxes.Add(b);
                 }
                 // The foot: leading treads a body can stand on whole (0.8 m deep or more) are the landing in front of the
                 // flight, and one flush with the floor in front of it isn't a step.
                 while (f.Treads.Count >= 3)
                 {
-                    var b = solid[f.Treads[0]];
+                    var b = f.Boxes[0];
                     var front = StairPoint(f, AlongLo(b, f.Axis, f.Dir) - 0.45f, (f.C0 + f.C1) / 2, 0);
                     if (AlongHi(b, f.Axis, f.Dir) - AlongLo(b, f.Axis, f.Dir) < 2 * World.PlayerRadius
-                        && SupportAt(m, phys, front.X, front.Z, b.Max.Y + World.StepHeight, b.Max.Y - 3f, 0.1f) < b.Max.Y - 0.04f)
+                        && SupportAt(m, phys, front.X, front.Z, b.Max.Y + World.StepHeight, b.Max.Y - 3f, 0.1f) < b.Max.Y - 0.04f
+                        && !(m.TerrainCollision is { } tg && tg.GroundBelow(front.X, front.Z, b.Max.Y + 3f) >= b.Max.Y - 0.04f))
                         break; // (a tread level with the ground in front of it, or under it, isn't a step)
                     f.Treads.RemoveAt(0);
+                    f.Boxes.RemoveAt(0);
                 }
                 if (f.Treads.Count < 3)
                     continue;
@@ -329,14 +335,14 @@ public static partial class SelfTest
                 f.MaxRise = 0;
                 for (var k = 0; k < f.Treads.Count; k++)
                 {
-                    var b = solid[f.Treads[k]];
+                    var b = f.Boxes[k];
                     f.C0 = MathF.Max(f.C0, AcrossLo(b, f.Axis));
                     f.C1 = MathF.Min(f.C1, AcrossHi(b, f.Axis));
                     if (k > 0)
-                        f.MaxRise = MathF.Max(f.MaxRise, b.Max.Y - solid[f.Treads[k - 1]].Max.Y);
+                        f.MaxRise = MathF.Max(f.MaxRise, b.Max.Y - f.Boxes[k - 1].Max.Y);
                 }
-                var first = solid[f.Treads[0]];
-                var last = solid[f.Treads[^1]];
+                var first = f.Boxes[0];
+                var last = f.Boxes[^1];
                 if (last.Max.Y - first.Max.Y < 0.6f)
                     continue;
                 f.U0 = AlongLo(first, f.Axis, f.Dir);
@@ -358,8 +364,81 @@ public static partial class SelfTest
         return list;
     }
 
+    /// <summary>
+    /// Destructible buildings' shells are cut into chunks (MapDestruction.cs): a tread can be several boxes side by side.
+    /// Chunks with the same height range that share a whole face are joined back: group[i] is the lowest Solid index of
+    /// box i's piece group (i itself for an ordinary box), boxes[group] the whole tread's box.
+    /// </summary>
+    private static int[] StairChunkGroups(Map m, PhysicsWorld phys, out Box[] boxes)
+    {
+        var solid = m.Solid;
+        var n = solid.Count;
+        var parent = new int[n];
+        for (var i = 0; i < n; i++)
+            parent[i] = i;
+        int Find(int i)
+        {
+            while (parent[i] != i)
+                i = parent[i] = parent[parent[i]];
+            return i;
+        }
+        static bool Same(float a, float b) => MathF.Abs(a - b) < 0.003f;
+        if (m.Destruction is { } d)
+        {
+            var near = new List<int>();
+            for (var i = 0; i < n; i++)
+            {
+                if (!d.IsChunk(i, out _))
+                    continue;
+                var a = solid[i];
+                near.Clear();
+                foreach (var j in phys.CollectBoxes(a.Min - new Vector3(0.01f), a.Max + new Vector3(0.01f)))
+                    if (j > i && j < n)
+                        near.Add(j);
+                foreach (var j in near)
+                {
+                    var b = solid[j];
+                    if (!d.IsChunk(j, out _) || !Same(a.Min.Y, b.Min.Y) || !Same(a.Max.Y, b.Max.Y))
+                        continue;
+                    var alongZ = Same(a.Min.X, b.Min.X) && Same(a.Max.X, b.Max.X) && (Same(a.Max.Z, b.Min.Z) || Same(b.Max.Z, a.Min.Z));
+                    var alongX = Same(a.Min.Z, b.Min.Z) && Same(a.Max.Z, b.Max.Z) && (Same(a.Max.X, b.Min.X) || Same(b.Max.X, a.Min.X));
+                    if (alongX || alongZ)
+                    {
+                        int ra = Find(i), rb = Find(j);
+                        if (ra != rb)
+                            parent[Math.Max(ra, rb)] = Math.Min(ra, rb);
+                    }
+                }
+            }
+        }
+        var group = new int[n];
+        boxes = new Box[n];
+        var lo = new Vector3[n];
+        var hi = new Vector3[n];
+        for (var i = 0; i < n; i++)
+        {
+            group[i] = Find(i);
+            lo[i] = solid[i].Min;
+            hi[i] = solid[i].Max;
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var g = group[i];
+            if (g == i)
+                continue;
+            lo[g] = Vector3.Min(lo[g], solid[i].Min);
+            hi[g] = Vector3.Max(hi[g], solid[i].Max);
+        }
+        for (var i = 0; i < n; i++)
+        {
+            var g = group[i];
+            boxes[i] = new Box((lo[g] + hi[g]) / 2, (hi[g] - lo[g]) / 2);
+        }
+        return group;
+    }
+
     /// <summary>Is there room to stand on a tread (nothing within 1 m over its top at its middle, or at a third along its length either side)?</summary>
-    private static bool FreeAbove(Map m, PhysicsWorld phys, int i, in Box b)
+    private static bool FreeAbove(Map m, PhysicsWorld phys, int i, in Box b, int[] group)
     {
         var alongX = b.Max.X - b.Min.X >= b.Max.Z - b.Min.Z;
         for (var s = -1; s <= 1; s++)
@@ -369,7 +448,7 @@ public static partial class SelfTest
             var free = true;
             foreach (var j in phys.CollectBoxes(x - 0.01f, z - 0.01f, x + 0.01f, z + 0.01f))
             {
-                if (j == i || j >= m.Solid.Count)
+                if (j >= m.Solid.Count || group[j] == i)
                     continue;
                 var o = m.Solid[j];
                 if (StairIgnored(m, j, o))
@@ -492,7 +571,7 @@ public static partial class SelfTest
     /// </summary>
     private static (Vector3 At, bool Sideways)? StairFootEntry(Map m, PhysicsWorld phys, StairFlight f, float c)
     {
-        var first = m.Solid[f.Treads[0]];
+        var first = f.Boxes[0];
         float top = first.Max.Y, lowest = top - World.StepHeight - 0.005f;
         foreach (var u in (ReadOnlySpan<float>)[f.U0 - 0.5f, f.U0 - World.PlayerRadius - 0.03f])
         {
@@ -504,14 +583,26 @@ public static partial class SelfTest
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
             var edge = side < 0 ? f.C0 : f.C1;
-            // Beside the first tread only (a body reaching the second as it steps on can't climb onto the first), with a
+            // Beside the first treads, on a floor a step below them or level with the first (a plinth at its side), where
+            // stepping on sideways climbs one tread at most (a body that would reach two higher ones at once can't), with a
             // clear way across the treads to the lane.
-            var run = AlongHi(first, f.Axis, f.Dir) - AlongLo(first, f.Axis, f.Dir);
-            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + run - World.PlayerRadius - 0.01f; u += 0.02f)
+            for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.02f)
             {
                 var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
-                var floor = SupportAt(m, phys, p.X, p.Z, top - StepMinRise + 0.01f, lowest, 0.15f); // firm footing under the middle
-                if (float.IsFinite(floor) && StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f) && StairAcrossClear(m, phys, f, u, edge, c))
+                var floor = SupportAt(m, phys, p.X, p.Z, top + 0.005f, lowest, 0.15f); // firm footing under the middle
+                if (!float.IsFinite(floor))
+                    continue;
+                int higher = 0;
+                var reach = 0f;
+                foreach (var b in f.Boxes)
+                    if (AlongLo(b, f.Axis, f.Dir) < u + World.PlayerRadius - 0.005f && AlongHi(b, f.Axis, f.Dir) > u - World.PlayerRadius + 0.005f && b.Max.Y > floor + 0.003f)
+                    {
+                        higher++;
+                        reach = MathF.Max(reach, b.Max.Y - floor);
+                    }
+                if (higher is < 1 or > 1 || reach > World.StepHeight)
+                    continue;
+                if (StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f) && StairAcrossClear(m, phys, f, u, edge, c))
                     return (p with { Y = floor + 0.002f }, true);
             }
         }
@@ -520,20 +611,22 @@ public static partial class SelfTest
 
     private static void CheckStairFlight(Map m, PhysicsWorld phys, StairFlight f, string label, List<string> problems, HashSet<ulong> seen, ref int walked, ref float worst)
     {
-        var solid = m.Solid;
         var name = $"{label}: {f.Where}";
         StairDump(m, phys, f); // TEMP
         var issues = new List<string>();
         // Width: the widest clear span over the treads (every tread's side obstacles at its middle, standing on it)...
         var spans = new List<(float, float)>();
-        foreach (var k in f.Treads)
+        foreach (var b in f.Boxes)
         {
-            var b = solid[k];
             StairObstacles(m, phys, f, (AlongLo(b, f.Axis, f.Dir) + AlongHi(b, f.Axis, f.Dir)) / 2, b.Max.Y, spans);
         }
         // ... and just off both ends, where a body steps off the flight (a catwalk's railings, a narrower doorway).
-        StairObstacles(m, phys, f, f.U1 + World.PlayerRadius + 0.05f, f.Y1, spans);
-        StairObstacles(m, phys, f, f.U0 - World.PlayerRadius - 0.05f, f.Y0, spans);
+        var topFree = !phys.Blocked(StairPoint(f, f.U1 + World.PlayerRadius + 0.05f, (f.C0 + f.C1) / 2, f.Y1 + 0.002f), World.PlayerHeight);
+        var footFree = !phys.Blocked(StairPoint(f, f.U0 - World.PlayerRadius - 0.05f, (f.C0 + f.C1) / 2, f.Y0 + 0.002f), World.PlayerHeight);
+        if (topFree)
+            StairObstacles(m, phys, f, f.U1 + World.PlayerRadius + 0.05f, f.Y1, spans);
+        if (footFree)
+            StairObstacles(m, phys, f, f.U0 - World.PlayerRadius - 0.05f, f.Y0, spans);
         var (lo, hi) = StairWidestGap(f, spans);
         var width = MathF.Max(0, hi - lo);
         if (width < StairWidthMin - 0.005f)
@@ -541,7 +634,7 @@ public static partial class SelfTest
         var centre = width > 0 ? (lo + hi) / 2 : (f.C0 + f.C1) / 2;
 
         // The foot: a floor a step below the first tread, straight in front of it or beside it.
-        var firstTop = solid[f.Treads[0]].Max.Y;
+        var firstTop = f.Boxes[0].Max.Y;
         var entry = StairFootEntry(m, phys, f, centre);
         if (entry is { } e)
             f.Y0 = e.At.Y - 0.002f;
@@ -691,9 +784,8 @@ public static partial class SelfTest
     private static bool StairAcrossClear(Map m, PhysicsWorld phys, StairFlight f, float u, float edge, float c)
     {
         var y = float.NegativeInfinity;
-        foreach (var k in f.Treads)
+        foreach (var b in f.Boxes)
         {
-            var b = m.Solid[k];
             if (AlongLo(b, f.Axis, f.Dir) < u + World.PlayerRadius && AlongHi(b, f.Axis, f.Dir) > u - World.PlayerRadius)
                 y = MathF.Max(y, b.Max.Y);
         }
@@ -788,8 +880,8 @@ public static partial class SelfTest
     {
         var stall = 0;
         var lastU = Along(f, s.Position);
-        var lastLo = AlongLo(m.Solid[f.Treads[^1]], f.Axis, f.Dir); // up: done once standing on the last tread
-        var firstTop = m.Solid[f.Treads[0]].Max.Y; // down: done once on the first tread or below it, at the foot
+        var lastLo = AlongLo(f.Boxes[^1], f.Axis, f.Dir); // up: done once standing on the last tread
+        var firstTop = f.Boxes[0].Max.Y; // down: done once on the first tread or below it, at the foot
         var right = World.FlatRight(yaw);
         var rightAcross = f.Axis == 0 ? right.Z : right.X; // + if "right" points towards +across
         for (var t = 0; t < ticks; t++)
@@ -822,9 +914,8 @@ public static partial class SelfTest
         if (up)
         {
             // The next tread the body hasn't climbed yet.
-            foreach (var k in f.Treads)
+            foreach (var b in f.Boxes)
             {
-                var b = m.Solid[k];
                 if (b.Max.Y <= p.Y + 0.02f || AlongLo(b, f.Axis, f.Dir) < u - World.PlayerRadius - 0.05f)
                     continue;
                 var rise = b.Max.Y - p.Y;
