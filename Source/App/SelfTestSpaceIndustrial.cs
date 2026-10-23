@@ -84,12 +84,24 @@ public static partial class SelfTest
                 len += Vector3.Distance(g.Nodes[path[i - 1]], g.Nodes[path[i]]);
             return len;
         }
-        float Average(List<Vector3> from, Vector3 to)
+        // A hill is a zone, not a point: the walk to it is the shortest walk to any of five spots across it.
+        float WalkTo(Vector3 s, Vector3 to, float radius)
+        {
+            var best = Walk(s, to);
+            foreach (var (dx, dz) in new[] { (0.7f, 0f), (-0.7f, 0f), (0f, 0.7f), (0f, -0.7f) })
+            {
+                var w = Walk(s, to + new Vector3(dx * radius, 0, dz * radius));
+                if (!float.IsNaN(w) && (float.IsNaN(best) || w < best))
+                    best = w;
+            }
+            return best;
+        }
+        float Average(List<Vector3> from, Vector3 to, float radius = 0f)
         {
             var sum = 0f;
             foreach (var s in from)
             {
-                var w = Walk(s, to);
+                var w = radius > 0 ? WalkTo(s, to, radius) : Walk(s, to);
                 if (float.IsNaN(w))
                     return float.NaN;
                 sum += w;
@@ -97,11 +109,11 @@ public static partial class SelfTest
             return sum / Math.Max(1, from.Count);
         }
         var walks = new List<string>();
-        var targets = o.Hills.Select((h, i) => ($"hill {i + 1}", h.Center, h.Center)).ToList();
-        targets.Add(("enemy flag", o.Flags[1], o.Flags[0]));
-        foreach (var (label, forBlue, forRed) in targets)
+        var targets = o.Hills.Select((h, i) => ($"hill {i + 1}", h.Center, h.Center, h.Radius)).ToList();
+        targets.Add(("enemy flag", o.Flags[1], o.Flags[0], 0f));
+        foreach (var (label, forBlue, forRed, radius) in targets)
         {
-            float blue = Average(o.TeamSpawns[0], forBlue), red = Average(o.TeamSpawns[1], forRed);
+            float blue = Average(o.TeamSpawns[0], forBlue, radius), red = Average(o.TeamSpawns[1], forRed, radius);
             walks.Add($"{label} {blue:0}/{red:0} m");
             if (float.IsNaN(blue) || float.IsNaN(red))
                 Fail($"{name}: no route from a team's spawns to {label}: " + string.Join(", ",

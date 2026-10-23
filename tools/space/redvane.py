@@ -38,8 +38,8 @@ sys.path.insert(0, HERE)
 import hollowrock_redvane_decals as sdec  # noqa: E402
 
 RX, RZ = 68.0, 54.0
-BUNKER = (-54.0, 2.0)
-TOWER = (-4.0, -34.0)
+BUNKER = (-54.0, 0.0)
+TOWER = (0.0, -34.0)
 RING1_Y, RING1_R, RING1_IN = 4.0, 10.5, 5.6
 RING2_Y, RING2_R = 8.0, 8.7
 STACK_R = 6.0
@@ -275,7 +275,7 @@ def bunkers():
     prop("Fuel Drum Rack", bx - 3, bz + 9.5, 0)
     scatter(["Tyre Tracks", "Oil Stain", "Redvane Dust Ring", "Sand Drift", "Footprints", "Rust Stain"], bx - 12, bz - 14, bx + 16, bz + 14, 22, 11, gap=2)
     clutter(["Station Supply Case", "Steel Ammo Can", "Oil Drum", "Gas Cylinders", "Toolbox", "Cable Spool"], bx - 12, bz - 14, bx + 16, bz + 14, 12, 21)
-    for x, z in [(-64, -3), (-64, 7), (-59, 13), (-50, 15), (-59, -9), (-50, -11), (-44, -5), (-44, 9), (-46, 20), (-46, -20)]:
+    for x, z in [(-64, -5), (-64, 5), (-59, 11), (-50, 13), (-59, -11), (-50, -13), (-44, -7), (-44, 7), (-46, 20), (-46, -20)]:
         spawn(x, z)
 
 
