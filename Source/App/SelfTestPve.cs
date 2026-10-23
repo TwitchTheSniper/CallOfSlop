@@ -429,25 +429,31 @@ public static partial class SelfTest
         // visuals, not the server's tick), the bots fight on.
         me.Teleport(me.Position + new Vector3(0, 400, 0));
         CoopTicks(g, ref now, 1);
+        AllocProfile.Reset();
+        AllocProfile.On = true; // where the bytes go (each section of the co-op tick, the enemies' physics apart)
         var before = GC.GetAllocatedBytesForCurrentThread();
         CoopTicks(g, ref now, 2);
         var perTickBytes = (GC.GetAllocatedBytesForCurrentThread() - before) / 120.0;
-        // The shared player physics allocates on cave maps (HeightfieldCollision.Layer makes a TerrainLayer per call, for
-        // every player too): measure that share with the same bodies stepping, and hold the co-op code itself to zero.
+        AllocProfile.On = false;
+        var where = AllocProfile.Top(6, 120);
+        // The shared player physics on a cave map on its own (it used to make a TerrainLayer per terrain query, for every
+        // player too): the same bodies stepping, which must allocate nothing at all.
         var bodies = g.Enemies.Where(x => x.Alive && x.NearPhysics).Select(x => x.Sim).ToArray();
         var step = new InputCmd { Buttons = Buttons.Forward, SpeedPct = 60 };
         for (var i = 0; i < bodies.Length; i++)
             World.Simulate(ref bodies[i], step);
-        var physBefore = GC.GetAllocatedBytesForCurrentThread();
-        for (var k = 0; k < 120; k++)
-            for (var i = 0; i < bodies.Length; i++)
-                World.Simulate(ref bodies[i], step);
-        var physPerTick = (GC.GetAllocatedBytesForCurrentThread() - physBefore) / 120.0;
-        var own = Math.Max(0, perTickBytes - physPerTick);
-        CoopLine($"allocations: {perTickBytes:0} bytes per tick with {g.AliveEnemies} enemies alive (steady state, host away), of which the shared player physics "
-                 + $"{physPerTick:0} ({bodies.Length} bodies stepping on a cave map: a TerrainLayer per terrain query, as for players); the co-op code {own:0}");
-        if (own > 64)
-            Fail($"co-op: the enemy tick allocates {own:0} bytes per tick (apart from the shared physics)");
+        var physPerTick = SteadyAllocBytes(() =>
+        {
+            for (var k = 0; k < 40; k++)
+                for (var i = 0; i < bodies.Length; i++)
+                    World.Simulate(ref bodies[i], step);
+        }) / 40.0;
+        CoopLine($"allocations: {perTickBytes:0} bytes per tick with {g.AliveEnemies} enemies alive (steady state, host away; by section: {where}); "
+                 + $"the shared player physics alone {physPerTick:0} ({bodies.Length} bodies stepping on a cave map)");
+        if (physPerTick > 0)
+            Fail($"co-op: the shared player physics allocates {physPerTick:0} bytes per tick for {bodies.Length} bodies on a cave map");
+        if (perTickBytes > 64)
+            Fail($"co-op: the enemy tick allocates {perTickBytes:0} bytes per tick (by section: {where})");
     }
 
     // ---- Enemy fire: spread, damage, the kill ------------------------------------------------------------------------

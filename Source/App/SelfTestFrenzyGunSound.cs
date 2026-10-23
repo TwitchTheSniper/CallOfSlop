@@ -219,22 +219,26 @@ public static partial class SelfTest
     {
         var classes = Enum.GetValues<WeaponClass>();
         var sum = 0f;
-        for (var i = 0; i < 2000; i++) // warm-up
-            sum += FrenzyGunSound.Gains(FrenzyGunSound.Plan(i % 7, classes[i % classes.Length], FrenzyGunSoundMode.Full), 0.75f, 0.3f, 0.4f, 0.2f, false).Layer;
+        void Shots(int calls)
+        {
+            for (var i = 0; i < calls; i++)
+            {
+                var p = FrenzyGunSound.Plan(i % 7, classes[i % classes.Length], (FrenzyGunSoundMode)(i % 3));
+                var g = FrenzyGunSound.Gains(p, 0.75f, 0.3f, 0.4f, 0.2f, (i & 8) != 0);
+                sum += g.Base + g.Drive + g.Layer + p.Pitch;
+            }
+        }
+        Shots(4000); // warm-up with the same arguments as the measured rounds (every level, class, mode and flag)
         const int calls = 200_000;
         var sw = Stopwatch.StartNew();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < calls; i++)
-        {
-            var p = FrenzyGunSound.Plan(i % 7, classes[i % classes.Length], (FrenzyGunSoundMode)(i % 3));
-            var g = FrenzyGunSound.Gains(p, 0.75f, 0.3f, 0.4f, 0.2f, (i & 8) != 0);
-            sum += g.Base + g.Drive + g.Layer + p.Pitch;
-        }
+        Shots(calls);
         var us = sw.Elapsed.TotalMilliseconds * 1000 / calls;
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-        FrenzyGunLine($"per shot: {us:0.000} us to plan, {bytes} bytes allocated over {calls} shots (checksum {sum:0})");
+        // Allocations: the least of several identical rounds (a one-off runtime allocation, such as a JIT tier-up, lands
+        // in one round at most; a real per-shot allocation shows in all of them).
+        var bytes = SteadyAllocBytes(() => Shots(calls / 4));
+        FrenzyGunLine($"per shot: {us:0.000} us to plan, {bytes} bytes allocated over {calls / 4} shots (least of 3 rounds; checksum {sum:0})");
         if (bytes > 0)
-            Fail($"frenzy gun sound: planning a shot allocates ({bytes} bytes over {calls})");
+            Fail($"frenzy gun sound: planning a shot allocates ({bytes} bytes over {calls / 4})");
         if (us > 5)
             Fail($"frenzy gun sound: planning a shot takes {us:0.00} us (budget 5)");
     }

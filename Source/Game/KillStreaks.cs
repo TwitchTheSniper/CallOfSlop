@@ -923,7 +923,7 @@ public sealed partial class Game
         var fresh = (ushort)(ready & ~_lastReady);
         if (fresh != 0 && StreaksEnabled)
         {
-            var id = local.Streak.Slots.Ids.LastOrDefault(x => (fresh & StreakState.Bit(x)) != 0);
+            var id = FreshStreak(local.Streak.Slots.Ids, fresh);
             if (id != StreakId.None)
             {
                 StreakBanner = $"{KillStreaks.Get(id).Name.ToUpperInvariant()} READY";
@@ -934,6 +934,13 @@ public sealed partial class Game
         }
         _lastReady = ready;
     }
+
+    /// <summary>
+    /// The last of <paramref name="ids"/> that just became ready. (Its own method: a lambda over <c>fresh</c> in
+    /// UpdateStreakEffects made the compiler allocate a closure at the top of that method, every frame.)
+    /// </summary>
+    private static StreakId FreshStreak(IEnumerable<StreakId> ids, ushort fresh) =>
+        ids.LastOrDefault(x => (fresh & StreakState.Bit(x)) != 0);
 
     // =====================================================================
     // Local player: keys and targeting

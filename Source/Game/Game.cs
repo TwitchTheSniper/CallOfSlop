@@ -217,11 +217,19 @@ public sealed partial class Game : IDisposable
 
     public void Update(double now, double frameDt)
     {
-        Net.Poll((sender, data) => OnPacketSafe(sender, data, now)); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        AllocProfile.Mark("poll");
+        if (!Net.IsOffline)
+        {
+            _pollNow = now;
+            Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+        }
 
+        AllocProfile.Mark("frame: weapon state");
         UpdateWeaponState(now, (float)frameDt);
+        AllocProfile.Mark("frame: carts, throwables");
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
         UpdateThrowableEffects(now, (float)frameDt);
+        AllocProfile.Mark("frame: tactical, streaks, advert");
         UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
@@ -240,6 +248,7 @@ public sealed partial class Game : IDisposable
             _accumulator = 0;
         _alpha = (float)(_accumulator / World.TickDt);
 
+        AllocProfile.Mark("frame after ticks");
         if (!IsServer)
         {
             AdvanceInterpolationClock(now, frameDt);
@@ -247,14 +256,24 @@ public sealed partial class Game : IDisposable
         }
 
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
+        AllocProfile.Mark("render states");
         UpdateRenderStates((float)frameDt);
+        AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
         UpdatePveFrame(now, (float)frameDt); // Co-op: where enemies are drawn (GamePveNet.cs)
+        AllocProfile.Mark("feedback");
         UpdateFeedback(now);
         UpdatePerkFeedback(now);
+        AllocProfile.Mark("sounds");
         UpdateSounds(now); // footsteps, reverb (GameSounds.cs)
+        AllocProfile.Stop();
     }
+
+    /// <summary>The packet handler for <see cref="NetPeer.Poll"/>, made once (a lambda per frame would allocate), and its clock.</summary>
+    private NetPeer.PacketHandler? _onPacket;
+
+    private double _pollNow;
 
     /// <summary>
     /// Where <see cref="LookYaw"/> and <see cref="LookPitch"/> are measured: on a planet map they're relative to the tangent
@@ -352,8 +371,13 @@ public sealed partial class Game : IDisposable
             _wasAlive = local.Alive;
         }
 
-        Tracers.RemoveAll(t => now - t.Born > 0.25);
-        Feed.RemoveAll(f => now - f.Time > 8);
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = Tracers.Count - 1; i >= 0; i--)
+            if (now - Tracers[i].Born > 0.25)
+                Tracers.RemoveAt(i);
+        for (var i = Feed.Count - 1; i >= 0; i--)
+            if (now - Feed[i].Time > 8)
+                Feed.RemoveAt(i);
         while (Feed.Count > 6)
             Feed.RemoveAt(0);
     }
@@ -929,14 +953,21 @@ public sealed partial class Game : IDisposable
     {
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
+        AllocProfile.Mark("match and mode");
         ServerTickMatch(now);
+        AllocProfile.Mark("projectiles");
         ServerTickProjectiles(now);
+        AllocProfile.Mark("rockets");
         ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
+        AllocProfile.Mark("tactical");
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
+        AllocProfile.Mark("streaks");
         ServerTickStreaks(now);
+        AllocProfile.Mark("props, mines, destruction");
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
+        AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
@@ -954,6 +985,7 @@ public sealed partial class Game : IDisposable
 
             if (p.Id == LocalId)
             {
+                AllocProfile.Mark("local player");
                 var cmd = FreezeFilter(SampleLocalInput(0));
                 p.Yaw = cmd.Yaw;
                 p.Pitch = cmd.Pitch;
@@ -968,9 +1000,11 @@ public sealed partial class Game : IDisposable
             }
             else
             {
+                AllocProfile.Mark("client input");
                 ConsumeClientInput(p);
             }
 
+            AllocProfile.Mark("respawn, history");
             // Bots respawn on their own; people respawn when they click Respawn (never forced).
             if (!p.Alive && (p.Bot != null || p.WantsRespawn) && now >= p.RespawnAt && Module.CanRespawn(this, p, now)) // (Zombies: bled out = back next round, see ZombiesMode.cs)
             {
@@ -982,6 +1016,7 @@ public sealed partial class Game : IDisposable
             p.History[ServerTick % Player.HistorySize] = new HistoryEntry { Position = p.Position, Stance = p.Sim.Stance, Yaw = p.Yaw, Tick = ServerTick };
         }
 
+        AllocProfile.Mark("carts, snapshots");
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
@@ -1305,7 +1340,11 @@ public sealed partial class Game : IDisposable
         spread = Math.Clamp(spread, SprintSpread.ServerFloor(shooter, def) * FrenzyAllowedConeMult(shooter, def), SprintSpread.ServerMax(def));
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
-        var targets = new List<(Player P, Box Hitbox, HistoryEntry At)>();
+        // Reused per shot (every trigger pull of every bot: new lists here were most of a bot's garbage).
+        var nested = _resolveBusy; // (never in practice: a shot resolving inside another gets its own lists)
+        _resolveBusy = true;
+        var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _resolveTargets;
+        targets.Clear();
         foreach (var p in Players.Values)
         {
             if (p == shooter || !p.Alive || p.SpawnTick > rewindTo)
@@ -1315,15 +1354,19 @@ public sealed partial class Game : IDisposable
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
-        var damage = new Dictionary<Player, float>();
-        var headshotOn = new HashSet<Player>();
+        var damage = nested ? new List<(Player Victim, float Damage)>() : _resolveDamage;
+        damage.Clear();
+        var headshotOn = nested ? new HashSet<Player>() : _resolveHeads;
+        headshotOn.Clear();
         _bloodShotPart.Clear();
         byte flags = 0;
-        var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
-        var ends = new List<Vector3>(rays.Count);
-        var laterals = new List<Vector2>(rays.Count);
+        var ends = nested ? new List<Vector3>() : _resolveEnds;
+        ends.Clear();
+        var laterals = nested ? new List<Vector2>() : _resolveLaterals;
+        laterals.Clear();
         var zHead = false;
         _shotPenetrated = false;
 
@@ -1385,15 +1428,16 @@ public sealed partial class Game : IDisposable
                 var head = World.IsHeadshot(h.At.Position, h.At.Stance, h.At.Yaw, end);
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
-                damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
+                AddShotDamage(damage, h.P, dmg);
                 _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
         }
 
-        foreach (var (victim, dmg) in damage)
+        for (var di = 0; di < damage.Count; di++)
         {
+            var (victim, dmg) = damage[di];
             if (IsFriendlyHit(shooter, victim))
             {
                 flags |= ShotHitFriendly; // a teammate: no damage, a friendly marker for the shooter (FriendlyHits.cs)
@@ -1430,6 +1474,28 @@ public sealed partial class Game : IDisposable
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        _resolveBusy = nested;
+    }
+
+    // ServerResolveShot's scratch lists (the game thread only; a shot never fires another shot while it resolves).
+    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _resolveTargets = new(Map.HardMaxPlayers);
+    private readonly List<(Player Victim, float Damage)> _resolveDamage = new(Map.HardMaxPlayers);
+    private readonly HashSet<Player> _resolveHeads = new();
+    private readonly List<ShotRay> _resolveRays = new(16);
+    private readonly List<Vector3> _resolveEnds = new(16);
+    private readonly List<Vector2> _resolveLaterals = new(16);
+    private bool _resolveBusy;
+
+    /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
+    private static void AddShotDamage(List<(Player Victim, float Damage)> damage, Player victim, float dmg)
+    {
+        for (var i = 0; i < damage.Count; i++)
+            if (damage[i].Victim == victim)
+            {
+                damage[i] = (victim, damage[i].Damage + dmg);
+                return;
+            }
+        damage.Add((victim, dmg));
     }
 
     private void OnOwnShotConfirmed(byte flags, double now)

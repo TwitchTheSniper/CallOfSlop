@@ -19,7 +19,7 @@ public struct SnapPlayer
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
-public struct SnapSlow
+public struct SnapSlow : IEquatable<SnapSlow>
 {
     public byte Id;
     public ushort Kills, Deaths;
@@ -28,6 +28,19 @@ public struct SnapSlow
     public PerkSet Perks;
     public byte FrenzyLevel; // kill frenzy 0-6 (protocol 26)
     public byte FrenzyClass; // WeaponClass of the most recent kill (low 7 bits); bit 7: the host's frenzy buffs are on (protocol 26)
+
+    // The server compares every player's slow fields with the last ones sent, each snapshot. Without this, Equals is
+    // ValueType.Equals(object): it boxes both sides and reads the fields through reflection (about 300 bytes of garbage
+    // per player per snapshot, most of a server tick's allocations).
+    public readonly bool Equals(SnapSlow o) =>
+        Id == o.Id && Kills == o.Kills && Deaths == o.Deaths && Primary == o.Primary && Secondary == o.Secondary
+        && PrimaryKit == o.PrimaryKit && SecondaryKit == o.SecondaryKit && Perks == o.Perks && FrenzyLevel == o.FrenzyLevel
+        && FrenzyClass == o.FrenzyClass;
+
+    public override readonly bool Equals(object? obj) => obj is SnapSlow o && Equals(o);
+
+    public override readonly int GetHashCode() =>
+        HashCode.Combine(HashCode.Combine(Id, Kills, Deaths, Primary, Secondary), PrimaryKit, SecondaryKit, Perks, FrenzyLevel, FrenzyClass);
 }
 
 /// <summary>The recipient's own movement at full precision (prediction reconciles against it exactly), plus its slow fields.</summary>

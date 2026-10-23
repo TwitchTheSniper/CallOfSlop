@@ -55,11 +55,15 @@ public sealed partial class Game
             e.LastSeenByPlayer = now; // close to someone: as good as seen (never recycled from under their nose)
         if (now >= e.NextThink)
         {
+            AllocProfile.Mark("coop: think");
             ThinkEnemy(e, now);
             e.NextThink = now + (nearSq < 50f * 50f ? 0.1 : nearSq < 100f * 100f ? 0.33 : 1.0) + PveRand() * 0.03;
         }
+        AllocProfile.Mark("coop: move");
         MoveEnemy(e, now);
+        AllocProfile.Mark("coop: fire");
         FireEnemy(e, now);
+        AllocProfile.Mark("coop: enemies");
     }
 
     // ---- Thinking ----------------------------------------------------------------------------------------------
@@ -271,7 +275,9 @@ public sealed partial class Game
                 cmd.Buttons |= Buttons.Jump; // a ledge: mantle up
             if (e.NearPhysics || e.Sim.Velocity.LengthSquared() > 0.01f || !e.Sim.Grounded)
             {
+                AllocProfile.Mark("coop: physics");
                 World.Simulate(ref e.Sim, cmd);
+                AllocProfile.Mark("coop: move");
                 if (!float.IsFinite(e.Sim.Position.X + e.Sim.Position.Y + e.Sim.Position.Z))
                     e.Sim = new MoveState { Position = e.PrevPos, Grounded = true };
             }
@@ -317,6 +323,7 @@ public sealed partial class Game
             }
         }
         var nav = NavGraph.Current;
+        AllocProfile.Mark("coop: path");
         if ((e.PathLen == 0 || now >= e.NextPath || Vector3.DistanceSquared(goal, e.PathGoal) > 16f) && _pvePathBudget > 0 && nav.Nodes.Length > 0)
         {
             _pvePathBudget--;
@@ -327,6 +334,7 @@ public sealed partial class Game
             e.PathLen = a >= 0 && b >= 0 ? _pveSearch.Find(nav, a, b, e.Path, null, 4000) : 0;
             e.PathIdx = e.PathLen > 1 ? 1 : 0;
         }
+        AllocProfile.Mark("coop: move");
         while (e.PathLen > 0 && e.PathIdx < e.PathLen && (uint)e.Path[e.PathIdx] < (uint)nav.Nodes.Length)
         {
             var n = nav.Nodes[e.Path[e.PathIdx]];
