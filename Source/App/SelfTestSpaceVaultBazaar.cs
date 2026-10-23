@@ -9,7 +9,8 @@ namespace CallOfSlop;
 /// about x = 0). For each: the outline's shape, size and player limit; prop, decal and mesh counts above a floor and
 /// the drawn box count under a ceiling; nothing outside the outline; hand-placed objectives on the symmetry line and
 /// on level floor; every solid prop with its symmetric twin; the levels (the vault's pit, podium and gallery; the
-/// strip's rooftops) really there and reachable by bots; equal walks for both teams; a short seeded bot match.
+/// strip's rooftops) really there and reachable by bots; equal walks for both teams; a short seeded bot match. Both maps
+/// use pack-local props (Maps/Space/Props) and decals (Maps/Space/Decals), so nothing new is needed on the Dev galleries.
 /// </summary>
 public static partial class SelfTest
 {
