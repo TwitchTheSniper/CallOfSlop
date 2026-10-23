@@ -37,6 +37,9 @@ public sealed partial class BotBrain
     internal int VantageKills; // kills since the hold began
     internal int VantageLast = -1; // the spot just left (not picked again for a while)
     internal double VantageLastUntil;
+    internal Vector3 VantageThreat; // where a relocation fled from (a pick on a later tick still keeps away from it)
+    internal int VantageThreatFrom = -1;
+    internal double VantageThreatUntil;
     internal double VantageNextLook;
     internal float VantageLookYaw;
     internal bool VantagePeek; // standing up to look (else ducked behind the spot's cover)
@@ -248,6 +251,12 @@ public sealed partial class Game
                 b.VantageNextPick = now;
                 // A new spot away from the shooter (where it was heard or seen), right away if this tick's pick is free.
                 var threat = flanked ? (visible ? target!.Position : now - b.HeardTime < 2 ? b.HeardAt : p.Position) : (Vector3?)null;
+                if (threat is { } th)
+                {
+                    b.VantageThreat = th; // if this tick's pick is taken, the next one still flees it
+                    b.VantageThreatFrom = from;
+                    b.VantageThreatUntil = now + 5;
+                }
                 if (TakeVantagePick() && VantagePick(p, b, vm, bnd, VantageFocus(p, b, airTarget, now), threat, from, now) is { } next)
                 {
                     VantageBegin(p, b, next, now);
@@ -312,7 +321,8 @@ public sealed partial class Game
             return false;
         }
         b.VantageNextPick = now + 3;
-        if (VantagePick(p, b, vm, bnd, VantageFocus(p, b, airTarget, now), null, -1, now) is not { } pick)
+        var fleeing = now < b.VantageThreatUntil;
+        if (VantagePick(p, b, vm, bnd, VantageFocus(p, b, airTarget, now), fleeing ? b.VantageThreat : null, fleeing ? b.VantageThreatFrom : -1, now) is not { } pick)
         {
             b.VantageNextPick = now + 8;
             return false;
@@ -408,6 +418,8 @@ public sealed partial class Game
             if (threat is { } t)
             {
                 var dt = Flat(s.Pos - t);
+                if (exclude >= 0 && exclude < vm.Spots.Length && dt < Flat(vm.Spots[exclude].Pos - t) - 8f)
+                    continue; // relocating from a threat: never to a spot well closer to it than the one being left
                 if (dt < 25f)
                     score -= (25f - dt) * 0.3f;
             }

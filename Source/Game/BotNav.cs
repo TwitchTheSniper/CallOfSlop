@@ -22,6 +22,18 @@ public sealed partial class NavGraph
     public const float MaxDrop = 6f; // bots won't plan jumps down from higher than this
     public const byte FlagMantle = 1, FlagDrop = 2;
 
+    /// <summary>Runs over a slope past the full-speed angle (BotNavWalk.cs): bots follow it node to node, no shortcuts across it.</summary>
+    public const byte FlagSlope = 4;
+
+    /// <summary>
+    /// A last resort (BotNavWalk.cs): the mover couldn't walk it, but without it some spot would have no way in or out, so it's
+    /// kept at a high cost (bots take it only when there's no other way).
+    /// </summary>
+    public const byte FlagLastResort = 8;
+
+    /// <summary>Extra route cost of a <see cref="FlagLastResort"/> edge (metres).</summary>
+    public const float LastResortCost = 500f;
+
     public string MapName = "";
     public uint MapHash;
     public float Spacing;
@@ -160,7 +172,7 @@ public sealed partial class NavGraph
     {
         Cache[(map.Name, map.ContentHash)] = g;
         Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
-            + $"{g.MainNodes.Length} in the main area, {g.BuildMs:0} ms of work");
+            + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped, {g.LastResorts} kept as last resorts), {g.BuildMs:0} ms of work");
     }
 
     /// <summary>Builds the whole graph for <paramref name="map"/> right now (it must be <see cref="World.Map"/>).</summary>
@@ -239,6 +251,8 @@ public sealed partial class NavGraph
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
         var edges = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(nodes.Count * 11); // one big allocation, not a series
+        var failed = new List<(int From, int To, float Cost, byte Flags, Vector3 Ledge)>(); // directions the mover couldn't walk
+        var pending = new List<PendingWalk>(); // directions waiting for their mover walk (BotNavWalk.cs)
         var radius = s * 1.5f;
         var near = new List<int>();
         for (var i = 0; i < g.Nodes.Length; i++)
@@ -251,7 +265,7 @@ public sealed partial class NavGraph
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
                 var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
-                if (!link || !TryLink(g, c, i, j, edges))
+                if (!link || !TryLink(g, c, i, j, edges, failed, pending))
                     continue;
                 // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -260,16 +274,58 @@ public sealed partial class NavGraph
             }
         }
 
+        // The mover walks, one per slice (a slice can't hold many: a few milliseconds each on a big terrain map).
+        foreach (var pw in pending)
+        {
+            var w0 = Stopwatch.GetTimestamp();
+            var ok = true;
+            foreach (var (from, sprint) in WalkStarts(pw))
+            {
+                ok = MoverWalk(from, pw.B, pw.Flags, pw.Ledge, sprint).Reached;
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                g.WalkTicks += Stopwatch.GetTimestamp() - w0;
+                yield return null;
+                t0 = w0 = Stopwatch.GetTimestamp();
+                if (!ok)
+                    break;
+            }
+            if (ok)
+                continue;
+            var e = edges[pw.Slot];
+            g.WalkRejected++;
+            failed.Add((e.From, e.To, e.Cost + LastResortCost, (byte)(e.Flags | FlagLastResort), e.Ledge));
+            edges[pw.Slot] = (-1, -1, 0f, (byte)0, Vector3.Zero);
+        }
+        edges.RemoveAll(e => e.From < 0);
+
         // Declared links (building stairs, Map.NavLinks): between the waypoint nodes at either end, without a walk.
         foreach (var (la, lb) in map.NavLinks)
         {
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
+            // No node right on a stair end (its spot is a squeeze): the nearest node in plain view of it on the same floor,
+            // so the stairs still join the floors (else the floor above is only reached over railings, if at all).
+            if (ia < 0)
+                ia = NearLinkEnd(g.Nodes, la);
+            if (ib < 0)
+                ib = NearLinkEnd(g.Nodes, lb);
             if (ia < 0 || ib < 0 || ia == ib)
                 continue;
             var len = Vector3.Distance(g.Nodes[ia], g.Nodes[ib]);
             edges.Add((ia, ib, len, (byte)0, Vector3.Zero));
             edges.Add((ib, ia, len, (byte)0, Vector3.Zero));
         }
+
+        // Directions the mover couldn't walk come back only where they're the only way in or out of somewhere: kept at a high
+        // cost, so a room or a floor never drops out of the graph because its one way in is awkward (BotNavWalk.cs).
+        foreach (var _ in KeepLastResorts(g, g.Nodes.Length, edges, failed))
+        {
+            work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            yield return null;
+            t0 = Stopwatch.GetTimestamp();
+        }
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
 
         // ---- Drop nodes nobody can reach or leave, then pack into CSR ----
         var degree = new int[g.Nodes.Length];
@@ -326,8 +382,10 @@ public sealed partial class NavGraph
         t0 = Stopwatch.GetTimestamp();
 
         g.BuildComponents();
-        if (map.Terrain?.Voids != null)
-            g.DropTraps(map.Terrain);
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null; // (each of these looks at every edge: a slice apiece)
+        t0 = Stopwatch.GetTimestamp();
+        g.DropTraps();
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return null;
         t0 = Stopwatch.GetTimestamp();
@@ -389,6 +447,26 @@ public sealed partial class NavGraph
         return best;
     }
 
+    /// <summary>The node within 1.2 m of a stair end <paramref name="p"/> (and level with it) nearest to it in plain view, or -1.</summary>
+    private static int NearLinkEnd(Vector3[] nodes, Vector3 p)
+    {
+        var best = -1;
+        var bestD = 1.2f * 1.2f;
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            var n = nodes[i];
+            if (MathF.Abs(n.Y - p.Y) > 0.4f)
+                continue;
+            var d = (n.X - p.X) * (n.X - p.X) + (n.Z - p.Z) * (n.Z - p.Z);
+            if (d < bestD && Clear(n, p))
+            {
+                bestD = d;
+                best = i;
+            }
+        }
+        return best;
+    }
+
     private static bool NearExisting(List<Vector3> nodes, Vector3 p, int from, float within = 0.5f)
     {
         for (var i = Math.Max(0, from); i < nodes.Count; i++)
@@ -396,6 +474,20 @@ public sealed partial class NavGraph
                 return true;
         return false;
     }
+
+    /// <summary>
+    /// Does the real mover hold a standing player at <paramref name="feet"/>? (A few idle ticks without sinking: a surface the
+    /// nav's ray casts see but the movement doesn't stand on is no place for a node.)
+    /// </summary>
+    private static bool CanStand(Vector3 feet)
+    {
+        var s = new MoveState { Position = feet, Grounded = true };
+        for (var t = 0; t < 4; t++)
+            ClassicMover.Instance.Simulate(ref s, new InputCmd { Tick = 1, SpeedPct = 100 });
+        return s.Position.Y > feet.Y - 0.1f;
+    }
+
+    private static readonly QueryFilter NoSweeps = new((QueryLayers.Static | QueryLayers.Boundary) & ~QueryLayers.Doors);
 
     /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
     private static Vector3? Place(Map map, PhysicsWorld col, Vector3 p, float spread)
@@ -413,6 +505,9 @@ public sealed partial class NavGraph
             if (!float.IsFinite(y) || MathF.Abs(y - p.Y) > 0.05f)
                 continue;
             c.Y = y;
+            // Not on top of a moving platform's sweep (the nav treats a sweep as a solid pillar): nothing real to stand on there.
+            if (map.Movers.Count > 0 && col.Raycast(new Vector3(c.X, p.Y + 0.3f, c.Z), -Vector3.UnitY, 0.6f, NoSweeps) is var st && st < 0.6f && p.Y + 0.3f - st < y - 0.05f)
+                continue;
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
@@ -421,7 +516,8 @@ public sealed partial class NavGraph
             // Void maps build their sloped bridges from colliders that step up a few cm at a time: the body check starts
             // above those steps, so the bridges get nodes (other maps keep the classic check).
             var lift = map.FallKillY != null ? 0.3f : 0.01f;
-            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift)) // (building doors don't count: bots open them)
+            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift) // (building doors don't count: bots open them)
+                && CanStand(c))
                 return c;
         }
         return null;
@@ -454,7 +550,8 @@ public sealed partial class NavGraph
     }
 
     /// <summary>Links nodes i and j where a player can walk between them. False if they were rejected without a walk (cheap).</summary>
-    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges)
+    private static bool TryLink(NavGraph g, PhysicsWorld c, int i, int j, List<(int, int, float, byte, Vector3)> edges, List<(int, int, float, byte, Vector3)> failed,
+        List<PendingWalk>? pending = null)
     {
         var a = g.Nodes[i];
         var b = g.Nodes[j];
@@ -462,8 +559,54 @@ public sealed partial class NavGraph
             return false;
         if (TooSteep(a, b) || LeavesBoundary(a, b))
             return true;
-        Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge);
+        Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);
+        // The mover has the last word where the samples can't tell (BotNavWalk.cs): a direction it can't walk gets no edge.
+        var prep = Stopwatch.GetTimestamp();
+        var steepest = SteepestNormalY(a, b);
+        if (steepest < SlopeRules.FullSpeedNormalY)
+        {
+            fFlags |= FlagSlope;
+            bFlags |= FlagSlope;
+        }
         var len = Vector3.Distance(a, b);
+        var needs = (fwd || back) && NeedsMoverWalk(a, b, (byte)(fFlags | bFlags), tight, steepest);
+        var walkStart = Stopwatch.GetTimestamp();
+        g.PrepTicks += walkStart - prep;
+        if (needs && pending != null)
+        {
+            // The build walks these later, a walk per slice (BuildSteps), into the slots kept for them here (so the edge
+            // order, and every route, is the same as walking them right away).
+            g.WalkChecked++;
+            if (fwd)
+            {
+                pending.Add(new PendingWalk(edges.Count, a, b, fFlags, fLedge, steepest));
+                edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
+            }
+            if (back)
+            {
+                pending.Add(new PendingWalk(edges.Count, b, a, bFlags, bLedge, steepest));
+                edges.Add((j, i, SlopeCost(b, a, len) + ((bFlags & FlagMantle) != 0 ? 2f : 0f), bFlags, bLedge));
+            }
+            g.WalkTicks += Stopwatch.GetTimestamp() - walkStart;
+            return true;
+        }
+        if (needs)
+        {
+            g.WalkChecked++;
+            if (fwd && !MoverWalks(a, b, fFlags, fLedge, steepest))
+            {
+                fwd = false;
+                g.WalkRejected++;
+                failed.Add((i, j, SlopeCost(a, b, len) + LastResortCost, (byte)(fFlags | FlagLastResort), fLedge));
+            }
+            if (back && !MoverWalks(b, a, bFlags, bLedge, steepest))
+            {
+                back = false;
+                g.WalkRejected++;
+                failed.Add((j, i, SlopeCost(b, a, len) + LastResortCost, (byte)(bFlags | FlagLastResort), bLedge));
+            }
+            g.WalkTicks += Stopwatch.GetTimestamp() - walkStart;
+        }
         if (fwd)
             edges.Add((i, j, SlopeCost(a, b, len) + ((fFlags & FlagMantle) != 0 ? 2f : 0f), fFlags, fLedge));
         if (back)
@@ -517,7 +660,7 @@ public sealed partial class NavGraph
         for (var k = 0; k <= steps; k++)
         {
             var p = Vector3.Lerp(a, b, k / (float)steps);
-            if (!boundary.Inside(p.X, p.Z, 0.3f))
+            if (!boundary.Inside(p.X, p.Z, World.PlayerRadius + 0.05f)) // the body's half width: the outline holds the body, not its middle
                 return true;
         }
         return false;
@@ -540,8 +683,9 @@ public sealed partial class NavGraph
     /// allowing steps, mantles and drops, and checks there's room for the body above the step height.
     /// </summary>
     private static void Walk(PhysicsWorld c, Vector3 a, Vector3 b, out bool forward, out bool backward, out byte fFlags, out byte bFlags,
-        out Vector3 fLedge, out Vector3 bLedge)
+        out Vector3 fLedge, out Vector3 bLedge, out bool tight)
     {
+        tight = false;
         forward = backward = false;
         fFlags = bFlags = 0;
         fLedge = bLedge = Vector3.Zero;
@@ -560,6 +704,9 @@ public sealed partial class NavGraph
             var g = Ground(c, x, z, from, World.MantleReach + 0.05f + MaxDrop);
             if (!float.IsFinite(g))
                 return; // a wall too tall to climb, or a hole
+            if (World.Map.Movers.Count > 0 && c.Raycast(new Vector3(x, from, z), -Vector3.UnitY, World.MantleReach + 0.05f + MaxDrop, NoSweeps) is var st
+                && MathF.Abs(from - st - g) > 0.05f)
+                return; // the "ground" there is a moving platform's sweep (a pillar to the nav), not a floor to walk on
             h[k] = g;
             y = g;
             blocked[k] = c.BlockedNav(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
@@ -576,6 +723,7 @@ public sealed partial class NavGraph
             var nearLedge = MathF.Abs(h[k] - h[k - 1]) > World.StepHeight || (k < n && MathF.Abs(h[k + 1] - h[k]) > World.StepHeight);
             if (!nearLedge)
                 return;
+            tight = true; // squeezed past a ledge: the mover gets the last word (BotNavWalk.cs)
         }
 
         forward = true;
@@ -766,72 +914,115 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
-    /// Terrain with holes (TerrainVoids.cs): a pit you can drop into but not climb out of joins the main area through its
-    /// one-way drop edges. Bots must never pick a goal in one, so the main area keeps only nodes that can both be reached
-    /// from and get back to a node on open ground (the main area's middle). Maps without holes are left exactly as they were.
+    /// One-way spots: a pit (terrain hole) or a yard you can drop or slide into but not climb out of joins the main area through
+    /// its one-way edges (drops, and directions the mover couldn't walk, BotNavWalk.cs). Bots must never pick a goal in one or
+    /// plan into one, so the main area keeps only the biggest group of nodes that can all reach each other (strongly
+    /// connected); nodes that can be reached from it but have no way back are trapped (<see cref="IsTrapped"/>).
     /// </summary>
-    private void DropTraps(TerrainData terrain)
+    private void DropTraps()
     {
         if (MainNodes.Length == 0)
             return;
-        var seed = -1;
-        var best = float.MaxValue;
-        foreach (var i in MainNodes)
-        {
-            var p = Nodes[i];
-            if (terrain.KindAt(p.X, p.Z) != TerrainVoids.Solid)
-                continue;
-            var d = p.X * p.X + p.Z * p.Z;
-            if (d < best)
-                (best, seed) = (d, i);
-        }
-        if (seed < 0)
-            return;
         var n = Nodes.Length;
-        var forward = new bool[n];
-        var backward = new bool[n];
-        var stack = new Stack<int>();
-        forward[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
-        {
-            var i = stack.Pop();
-            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
-                if (!forward[EdgeTo[e]])
-                {
-                    forward[EdgeTo[e]] = true;
-                    stack.Push(EdgeTo[e]);
-                }
-        }
-        // Reverse edges as a CSR too.
+        // Reverse edges as a CSR.
         var rstart = new int[n + 1];
-        foreach (var to in EdgeTo)
-            rstart[to + 1]++;
+        for (var e = 0; e < EdgeTo.Length; e++)
+            if ((EdgeFlags[e] & FlagLastResort) == 0)
+                rstart[EdgeTo[e] + 1]++;
         for (var i = 0; i < n; i++)
             rstart[i + 1] += rstart[i];
         var rfrom = new int[EdgeTo.Length];
         var fill = (int[])rstart.Clone();
         for (var i = 0; i < n; i++)
             for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
-                rfrom[fill[EdgeTo[e]]++] = i;
-        backward[seed] = true;
-        stack.Push(seed);
-        while (stack.Count > 0)
+                if ((EdgeFlags[e] & FlagLastResort) == 0)
+                    rfrom[fill[EdgeTo[e]]++] = i;
+
+        // Kosaraju over the main component: finishing order on the edges, then groups on the reversed edges.
+        var order = new List<int>(MainNodes.Length);
+        var seen = new bool[n];
+        var stack = new Stack<(int Node, int Next)>();
+        foreach (var root in MainNodes)
         {
-            var i = stack.Pop();
-            for (var e = rstart[i]; e < rstart[i + 1]; e++)
-                if (!backward[rfrom[e]])
+            if (seen[root])
+                continue;
+            seen[root] = true;
+            stack.Push((root, EdgeStart[root]));
+            while (stack.Count > 0)
+            {
+                var (i, next) = stack.Pop();
+                if (next < EdgeStart[i + 1])
                 {
-                    backward[rfrom[e]] = true;
-                    stack.Push(rfrom[e]);
+                    stack.Push((i, next + 1));
+                    var to = EdgeTo[next];
+                    if (!seen[to] && (EdgeFlags[next] & FlagLastResort) == 0)
+                    {
+                        seen[to] = true;
+                        stack.Push((to, EdgeStart[to]));
+                    }
+                }
+                else
+                    order.Add(i);
+            }
+        }
+        var group = new int[n];
+        Array.Fill(group, -1);
+        var sizes = new List<int>();
+        var flat = new Stack<int>();
+        for (var k = order.Count - 1; k >= 0; k--)
+        {
+            var root = order[k];
+            if (group[root] >= 0)
+                continue;
+            var id = sizes.Count;
+            var size = 0;
+            group[root] = id;
+            flat.Push(root);
+            while (flat.Count > 0)
+            {
+                var i = flat.Pop();
+                size++;
+                for (var e = rstart[i]; e < rstart[i + 1]; e++)
+                {
+                    var from = rfrom[e];
+                    if (group[from] < 0 && Component[from] == MainComponent)
+                    {
+                        group[from] = id;
+                        flat.Push(from);
+                    }
+                }
+            }
+            sizes.Add(size);
+        }
+        var main = 0;
+        for (var k = 1; k < sizes.Count; k++)
+            if (sizes[k] > sizes[main])
+                main = k;
+
+        // Trapped: reachable from the main group, not in it (so no way back).
+        var reach = new bool[n];
+        foreach (var i in MainNodes)
+            if (group[i] == main)
+            {
+                reach[i] = true;
+                flat.Push(i);
+            }
+        while (flat.Count > 0)
+        {
+            var i = flat.Pop();
+            for (var e = EdgeStart[i]; e < EdgeStart[i + 1]; e++)
+                if (!reach[EdgeTo[e]])
+                {
+                    reach[EdgeTo[e]] = true;
+                    flat.Push(EdgeTo[e]);
                 }
         }
         var before = MainNodes.Length;
-        MainNodes = MainNodes.Where(i => forward[i] && backward[i]).ToArray();
+        MainNodes = MainNodes.Where(i => group[i] == main).ToArray();
         TrapNodes = before - MainNodes.Length;
         _trapped = new bool[n];
         for (var i = 0; i < n; i++)
-            _trapped[i] = forward[i] && !backward[i] && Component[i] == MainComponent;
+            _trapped[i] = reach[i] && group[i] != main && Component[i] == MainComponent;
     }
 
     private bool[] _trapped = [];

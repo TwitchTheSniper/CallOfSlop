@@ -173,7 +173,7 @@ public sealed partial class Game
 
         var limit = MathF.Max(1f, BotStuckSuicideSeconds);
         if (b.StuckSecs >= limit)
-            return StuckGiveUp(p, b, nav, StuckCauseHere(b, nav), b.StuckSecs, now);
+            return StuckGiveUp(p, b, nav, StuckCauseHere(b, nav, now - b.StuckSecs), b.StuckSecs, now);
         if (b.StuckStage == 0 && b.StuckSecs >= limit * 0.2f)
         {
             b.StuckStage = 1;
@@ -288,13 +288,13 @@ public sealed partial class Game
     }
 
     /// <summary>The best guess at what's holding the bot, for the log.</summary>
-    private static BotStuckCause StuckCauseHere(BotBrain b, NavGraph nav)
+    private static BotStuckCause StuckCauseHere(BotBrain b, NavGraph nav, double since)
     {
         if (b.CurEdge >= 0 && (nav.EdgeFlags[b.CurEdge] & NavGraph.FlagMantle) != 0)
             return BotStuckCause.Ledge;
         if (nav.Nodes.Length > 0 && b.PathLen == 0 && !b.NeedPath)
             return BotStuckCause.NoRoute;
-        if (World.Map.HasTerrain && b.SlopeStalls > 0)
+        if (World.Map.HasTerrain && b.SlopeStallAt >= since) // a slide back down a slope during this stuck spell (not some earlier one)
             return BotStuckCause.Slope;
         return BotStuckCause.Blocked;
     }

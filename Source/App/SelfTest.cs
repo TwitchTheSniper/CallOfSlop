@@ -92,6 +92,7 @@ public static partial class SelfTest
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
             Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
             Section("Collision parity", CheckCollisionParity); // SelfTestNav.cs: old collision code vs the physics world
@@ -680,7 +681,7 @@ public static partial class SelfTest
             if (unreachable.Count > pairs / 4)
                 Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
             if (g.BuildMs > 3000)
-                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build");
+                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build (mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms)");
         }
         Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
 
@@ -743,7 +744,7 @@ public static partial class SelfTest
                 + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
                 + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
-                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s (from {from} to {to}: ended at {bot.Position}, mode {bot.Bot.Mode}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, target {bot.Bot.Target}, deaths {bot.Deaths}; last stuck log: {game.LastStuckLog})");
             if (game.BotStuckKills > 0)
                 Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }
