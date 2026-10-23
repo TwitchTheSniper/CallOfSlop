@@ -129,6 +129,8 @@ public sealed class Settings
     // Updates (Source/Updates): check GitHub for a newer release at startup; a version the player chose to skip
     public bool UpdateCheck = true; // files without it get On
     public string UpdateSkip = ""; // "0.2026.1022.5": no banner for this release (a newer one shows again)
+    public bool UpdateCleanup = true; // "Remove old versions after updating" (UpdateCleanup.cs); files without it get On
+    public bool UpdateKeepPrevious = true; // "Keep previous version for rollback": the cleanup keeps one older build
 
     // Matches (single player and hosting)
     public GameMode Mode = GameMode.FreeForAll;
@@ -372,6 +374,8 @@ public sealed class Settings
                     case "master": s.MasterServer = CleanMasterList(v); break;
                     case "update_check": s.UpdateCheck = v != "0"; break;
                     case "update_skip": s.UpdateSkip = BuildInfo.ParseRelease(v)?.ToString() ?? ""; break;
+                    case "update_cleanup": s.UpdateCleanup = v != "0"; break;
+                    case "update_keep_previous": s.UpdateKeepPrevious = v != "0"; break;
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;
@@ -471,6 +475,8 @@ public sealed class Settings
                     $"master={MasterServer}",
                     $"update_check={(UpdateCheck ? 1 : 0)}",
                     $"update_skip={UpdateSkip}",
+                    $"update_cleanup={(UpdateCleanup ? 1 : 0)}",
+                    $"update_keep_previous={(UpdateKeepPrevious ? 1 : 0)}",
                     $"mode={Mode}",
                     $"auto_start={AutoStart}",
                     $"team_select={(TeamSelect == TeamSelection.AutoOnly ? "auto" : "manual")}",

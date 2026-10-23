@@ -118,6 +118,8 @@ public static unsafe partial class Program
             Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
             if (_settings.UpdateCheck && BuildInfo.IsRelease)
                 Updater.Shared.Check(manual: false);
+            // Old versions the updater installed are removed once this build reaches its menu (UpdateCleanup.cs).
+            UpdateCleaner.Shared = new UpdateCleaner(SavePaths.ExeFolder, BuildInfo.ReleaseVersion, SavePaths.PathOf(UpdateCleanup.LogFileName), SavePaths.Folder);
         }
         _lagMs = FlagValue(args, "--lag");
         _lossPct = FlagValue(args, "--loss");
