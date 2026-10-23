@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Elephant Gun",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A bolt action on .50 rounds with a tungsten core and a coil hammer. Slow, loud, and it goes through three of them.",
+  "build": "Service Rifle Grip{receiver_1:Longreach Bolt Receiver{barrel:Big Iron Barrel,feed:Heavy Box,ammo:.50 BMG,amp:Tungsten Core Injector,upgrade_rear:Coil Hammer},stock:Recoil Buffer Stock,optic:2.5x ACOG}"
+}

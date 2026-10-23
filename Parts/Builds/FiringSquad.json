@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Firing Squad",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Seven battle rifles on a septet rack, firing as one. Ready, aim, everybody.",
+  "build": "Septet Rack Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_2:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_3:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_4:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_5:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_6:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_7:Reaper Battle Rifle Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:5.56 FMJ},stock:Fixed Stock,optic:Red Dot}"
+}

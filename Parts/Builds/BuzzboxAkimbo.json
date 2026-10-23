@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Buzzbox Akimbo",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two machine pistols side by side on chain fire: left, right, left, right, very fast.",
+  "chainFire": true,
+  "build": "Double-Tap Grip{receiver_1:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_2:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+}

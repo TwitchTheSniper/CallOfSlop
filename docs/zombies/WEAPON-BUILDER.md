@@ -27,7 +27,7 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 | 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, F parks it, tap F at its bar to man its gun (aim within traverse limits, fire it by hand), hold F to push it again. No auto turret. Replicated (protocol 17). |
 | 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
 | 5 | A **shared feed** that feeds several receivers; per-receiver feeds still allowed | Five shared feeds on a grip's `hopper` socket, with rules for which receivers they feed, a pooled magazine and shared ammo. |
-| 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 25 standard builds by tier with where they come from (box, wall, start); the workbench loads them as presets. |
+| 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 64 standard builds by tier (59 in the box) with where they come from (box, wall, start); the workbench loads them as presets. |
 | 7 | Weapon slots **2 -> 4** via an on-map upgrade, per run; the mode is a **roguelite** | Slots 3-4 exist in the game (keys 3 / 4, the swap key and wheel cycle them), unlocked per player per run (a flag the server owns); the range has a station (F) and the workbench a toggle. Drop tables by round are proposed data. |
 | 8 | The chainsaw grip is just a grip; add a **melee slot** built from melee-only parts | Hilts, heads and mods (21 parts) build melee weapons with damage, swing time, reach, cleave and stun; the melee key swings them (in the range / Zombies only), with their own workbench section. |
 
@@ -595,16 +595,49 @@ The mystery box gives **complete builds only** (decided). They live in `Parts/Bu
 `source` says where it shows up: `box` (mystery box), `wall` (wall weapon), `start` (a run's starting gear). Every file
 must assemble into a complete, legal build with today's parts, or it's refused with the reason (self-test). The
 workbench lists them under **Standard builds** and loads one as a preset into the editor. An optional `"chainFire": true`
-(or false) sets the Chain fire checkbox; without it the build uses the grip's default. The 30 shipped:
+(or false) sets the Chain fire checkbox; without it the build uses the grip's default. The 64 shipped (2026-10-23: 34
+new box builds from the workbench rework's receivers and 2-8 slot grips):
 
 | Tier | Guns | Melee |
 | --- | --- | --- |
 | Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall): all on the one-receiver Service grips | Machete (start, box) |
-| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip; Kingpin Hand Cannon (a heavy-round revolver, its Long Barrel sized down) | Nail Bat, Fire Axe |
-| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip), Double-Tap Twins (chain fire), Longbow Marksman | Sledgehammer, Frying Pan |
-| Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, chain fire, ammo can manifold) | Chainsaw Sword |
-| Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack, Hammerfall Cannon (autocannon) | Rocket Katana |
-| Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol | The Codfather (a frozen fish on a rod) |
+| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip; Kingpin Hand Cannon (a heavy-round revolver, its Long Barrel sized down); **Reaper Marksman** (semi battle-rifle DMR, holo), **Ratchet PDW** (pistol-calibre burst carbine), **Buzzbox Machine Pistol** (1265 rpm, laser), **Courier Carbine** (light auto carbine, long barrel) | Nail Bat, Fire Axe, **Barbed Slugger** (barbed wire and nails: cleave 2, bleed) |
+| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip), Double-Tap Twins (chain fire), Longbow Marksman; **Street Sweeper** (semi shotgun on a shell drum), **Bastille Squad LMG** (drum, ACOG), **Buzzbox Akimbo** (two machine pistols, chain fire), **Four-by-Three** (four burst rifles on the Quad Rack), **High Five** (five pistols on the Penta Rack), **Executive Decision** (two SMGs in the Briefcase on a Manifold Hopper, hip fire), **Elephant Gun** (.50 bolt action, tungsten core) | Sledgehammer, Frying Pan, **Shock Katana** (shock arcs), **Big Bonk** (a frying pan on a long haft: bonk and shock) |
+| Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, chain fire, ammo can manifold); **Firing Squad** (seven battle rifles, Septet Rack), **Dragon's Choir** (four pumps on a Shell Hopper of Dragon's Breath), **Road Rage** (eight carbines round the Steering Wheel, chain fire), **Demolition Marksman** (DMR on explosive tips, 4x), **Twin Thumpers** (two belt-fed chain guns, Mule Frame), **Grenade Organ** (four launchers on the Quad Rack, chain fire), **Rail Battery** (six coil rifles on plasma, Hex Rack) | Chainsaw Sword, **Lawnmower** (a chainsaw bar on a long haft with wire and nails: cleave 5, bleed) |
+| Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack, Hammerfall Cannon (autocannon); **Power Grid** (eight Sparkplugs on a Power Bus, Octet Rack), **Siege Battery** (two autocannons with singularity chambers on an ammo can), **Hellfire Minigun** (long barrels, explosive tips, overclock core), **Kitchen Sink** (nine different receivers on one Rifle Grip), **Last Word** (suppressed .50 bolt action, 8x), **Suppressing Fire** (six LMGs on a bottomless bucket) | Rocket Katana, **Rocket Hammer** (sledgehammer, rocket booster, shock coil) |
+| Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol; **Party Cannon** (a toaster-fed launcher through a Peacock splitter, balloons on: explosive, toasty, party), **Seven Shooter** (a revolver behind the Barrel of Barrels), **Sawmill Inferno** (two shotgun chain guns on the Chainsaw Grip, Dragon's Breath), **Drive-Thru** (eight SMGs round the Steering Wheel on a bottomless bucket, with a cup holder: refreshing) | The Codfather (a frozen fish on a rod), **Flying Fish** (a frozen fish with a rocket booster and a whoopee cushion: knockback, stun) |
+
+**The box pool.** The box rolls uncommon to wonder (`boxTiers`), and every one of those tiers has 10 to 16 builds,
+guns and melee: uncommon 10 (3 melee), rare 16 (4), epic 12 (2), legendary 11 (2), wonder 10 (2). Common box builds
+(the Machete) only come up as the nearest-tier fallback, so new low-end box builds are uncommon. The roll picks a build of
+the rolled tier that you **don't already carry**: none of your gun slots, and (2026-10-23) not the melee weapon in your
+melee slot either. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
+is rare; a wonder part makes it legendary or wonder), placed by what it does next to the others of that tier.
+
+**Self-test** (section "Weapon builder", `CheckBoxBuilds` in SelfTestWeaponBuilder2.cs): every box build is complete and legal and its model has no
+floating boxes (section "Model connectivity"); its tier is within one of its rarest part's; every box tier has 6 or more
+builds, 3 of them guns; and its numbers stay in the tier's band: a gun does 60 DPS or more (body, close range), and at
+most 250 / 250 / 450 / 900 / 2000 / 2000 body damage per trigger pull and 600 / 600 / 1200 / 2500 / 6000 / 8000 DPS
+(common to wonder); a melee build does 30 DPS or more and at most 150 / 150 / 200 / 250 / 400 / 400 damage a hit. The
+Zombies section checks the box never offers a build you carry (gun or melee) and offers 6 or more different builds of
+every tier. Approximate numbers (CI's log lists them all as `box ...` lines):
+
+| Build | Tier | Per pull | RPM | DPS | Mag |
+| --- | --- | --- | --- | --- | --- |
+| Reaper Marksman / Courier Carbine / Ratchet PDW / Buzzbox Machine Pistol | uncommon | 26 / 26 / 20 x3 burst / 20 | 380 / 720 / 1000 / 1265 | 165 / 312 / 167 / 422 | 45 |
+| Street Sweeper / Bastille Squad LMG / Elephant Gun | rare | 112 / 26 / 138 | 200 / 650 / 45 | 373 / 282 / 104 | 20 / 75 / 10 |
+| Buzzbox Akimbo / Four-by-Three / High Five / Executive Decision | rare | 20 / 104 / 100 / 40 | 2200 / 800 burst / 420 / 900 | 733 / 657 / 700 / 600 | 40 / 20 / 20 / 60 |
+| Firing Squad / Dragon's Choir / Road Rage / Twin Thumpers | epic | 182 / 480 / 26 / 170 | 380 / 70 / 3000 / 450 | 1153 / 560 / 1300 / 1275 | 20 / 12 / 160 / 150 |
+| Demolition Marksman / Grenade Organ / Rail Battery | epic | 49 / 120 / 204 | 270 / 240 / 50 | 220 / 480 / 170 | 30 / 4 / 40 |
+| Power Grid / Siege Battery / Hellfire Minigun / Suppressing Fire | legendary | 272 / 306 / 40 / 156 | 700 / 200 / 3000 / 650 | 3173 / 1020 / 2000 / 1690 | 50 / 150 / 400 / 150 |
+| Kitchen Sink / Last Word | legendary | 457 / 202 | 70 / 72 | 533 / 242 | 6 / 10 |
+| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 120 / 147 / 360 / 20 | 90 / 150 / 360 / 3000 | 180 / 368 / 2160 / 1000 | 2 / 10 / 20 / 900 |
+
+New melee: Barbed Slugger 69 dmg, 0.72 s, cleave 2; Shock Katana 68, 0.40 s; Big Bonk 75, 1.14 s, stun 1.8 s; Lawnmower
+85, 0.61 s, cleave 5; Rocket Hammer 125, 1.07 s, stun 1.6 s; Flying Fish 58, 0.35 s, stun 2.5 s.
+
+The build files are plain data in today's format (receivers carry their own fire type), so a later migration that
+moves fire types into parts can rewrite them like any other build.
 
 ## Weapon slots: 2 -> 4 (decided: an on-map upgrade, per run)
 

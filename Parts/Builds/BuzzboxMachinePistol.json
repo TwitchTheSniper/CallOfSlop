@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Buzzbox Machine Pistol",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A machine pistol with a buffer spring and a laser. Empties the mag before you finish saying 'spray'.",
+  "build": "Service Pistol Grip{receiver_1:Buzzbox Machine Pistol Receiver{barrel:Stub Barrel,feed:Extended Mag,ammo:9mm Ball,upgrade_rear:Buffer Spring Kit},utility:Laser Sight}"
+}

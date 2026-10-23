@@ -225,6 +225,7 @@ public static partial class SelfTest
         foreach (var name in (string[])["Wall Rifle", "Shopping Spree", "Gantry Sixteen", "Hopper Triplets", "Machete", "Chainsaw Sword"])
             if (StandardBuilds.Find(name) == null)
                 Fail($"standard builds: missing '{name}'");
+        CheckBoxBuilds();
         try
         {
             StandardBuilds.Load("""{ "format": "call-of-slop-build/1", "name": "Half", "tier": "common", "build": "Rifle Grip{receiver_1:Workhorse Receiver}" }""", "half.json", Parts.Find);
@@ -233,6 +234,54 @@ public static partial class SelfTest
         catch (WeaponFileException ex) when (ex.Message.Contains("complete"))
         {
         }
+    }
+
+    /// <summary>
+    /// The mystery box pool (docs/zombies/WEAPON-BUILDER.md, "Standard builds"): every box build's tier is within one of
+    /// its rarest part's (common parts don't make a legendary, a wonder part doesn't come in an uncommon), every tier the
+    /// box rolls has a healthy pool with guns in it, and the numbers stay sane for the tier: no zero-DPS duds, and nothing
+    /// at the low tiers that wipes a room in one pull (body damage per trigger pull and body DPS caps per tier).
+    /// </summary>
+    private static void CheckBoxBuilds()
+    {
+        var box = StandardBuilds.From("box").ToList();
+        // Per tier, common .. wonder: most body damage per trigger pull and body DPS for a gun, most damage for a melee hit.
+        float[] maxPull = [250, 250, 450, 900, 2000, 2000];
+        float[] maxDps = [600, 600, 1200, 2500, 6000, 8000];
+        float[] maxMelee = [150, 150, 200, 250, 400, 400];
+        foreach (var b in box)
+        {
+            var build = b.Build();
+            var t = (int)b.Tier;
+            var rarest = build.Nodes.Max(n => n.Part.Rarity);
+            if (Math.Abs(t - (int)rarest) > 1)
+                Fail($"box build '{b.Name}' is {b.Tier} but its rarest part is {rarest} (a build sits within one tier of its rarest part)");
+            var a = WeaponBuilder.Assemble(build);
+            if (a.Melee is { } m)
+            {
+                Line($"box {b.Tier} '{b.Name}': melee {F(m.Damage)} dmg, {F(m.Swing)} s, cleave {m.Cleave}, stun {F(m.Stun)} s, {F(m.Dps)} DPS [{string.Join(",", m.Flags)}]");
+                if (m.Dps < 30 || m.Damage > maxMelee[t])
+                    Fail($"box build '{b.Name}' ({b.Tier} melee): {F(m.Damage)} damage, {F(m.Dps)} DPS is outside the tier's band (30 DPS or more, {maxMelee[t]} damage at most)");
+            }
+            else if (a.Def is { } d)
+            {
+                Line($"box {b.Tier} '{b.Name}': {build.Receivers.Count} receiver(s){(build.ChainFire && build.Receivers.Count > 1 ? " chain fire" : "")}, {F(d.ShotDamage)} per pull, {d.Rpm} rpm {d.Mode}, {F(d.Dps)} DPS, mag {d.Mag}, reload {F(d.Reload)} s, mobility {F(d.Mobility)}, {F(build.Weight)}/{F(build.CarryWeight * 2)} kg [{string.Join(",", d.BuildFlags)}]");
+                if (d.Dps < 60 || d.ShotDamage < 1)
+                    Fail($"box build '{b.Name}' ({b.Tier}): {F(d.Dps)} DPS is a dud (60 or more)");
+                if (d.ShotDamage > maxPull[t] || d.Dps > maxDps[t])
+                    Fail($"box build '{b.Name}' ({b.Tier}): {F(d.ShotDamage)} per pull, {F(d.Dps)} DPS is too much for the tier (at most {maxPull[t]} per pull, {maxDps[t]} DPS)");
+            }
+            else
+                Fail($"box build '{b.Name}' doesn't assemble");
+        }
+        for (var t = Rarity.Uncommon; t <= Rarity.Wonder; t++)
+        {
+            var pool = box.Where(b => b.Tier == t).ToList();
+            var guns = pool.Count(b => !b.IsMelee);
+            if (pool.Count < 6 || guns < 3)
+                Fail($"the mystery box has only {pool.Count} {t} builds ({guns} guns); every tier it rolls wants 6 or more, 3 of them guns");
+        }
+        Line($"box pool: {box.Count} builds, " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {box.Count(b => b.Tier == r)} ({box.Count(b => b.Tier == r && b.IsMelee)} melee)")));
     }
 
     private static void CheckDropTables()

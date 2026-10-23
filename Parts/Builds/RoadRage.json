@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Road Rage",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Eight carbines bolted round a steering wheel, chain firing as fast as the wheel turns.",
+  "chainFire": true,
+  "build": "Steering Wheel{receiver_1:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_2:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_3:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_4:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_5:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_6:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_7:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_8:Courier Carbine Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ}}"
+}
