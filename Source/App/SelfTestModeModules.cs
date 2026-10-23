@@ -101,10 +101,10 @@ public static partial class SelfTest
         // All six re-recorded when max health went from 100 to 120 with the faster ramping regen (feature/health-tune),
         // on top of bullet penetration (KotH/CTF had been re-recorded for it on main, SelfTestPenetration.cs) and the grenade-throw fix.
         // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs).
-        (GameMode.FreeForAll, 7, 0, 4101, 20, 0),
+        (GameMode.FreeForAll, 7, 0, 4101, 20, 0xE94EC0EC9CA4D0B3),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0xE7013AE460DCA8F0),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xF60CA489383CBA49),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x49DCC4EDB724C97E),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
         (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
