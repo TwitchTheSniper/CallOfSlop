@@ -442,6 +442,18 @@ public sealed partial class NavGraph
         return false;
     }
 
+    /// <summary>
+    /// Does the real mover hold a standing player at <paramref name="feet"/>? (A few idle ticks without sinking: a surface the
+    /// nav's ray casts see but the movement doesn't stand on is no place for a node.)
+    /// </summary>
+    private static bool CanStand(Vector3 feet)
+    {
+        var s = new MoveState { Position = feet, Grounded = true };
+        for (var t = 0; t < 4; t++)
+            ClassicMover.Instance.Simulate(ref s, new InputCmd { Tick = 1, SpeedPct = 100 });
+        return s.Position.Y > feet.Y - 0.1f;
+    }
+
     private static readonly QueryFilter NoSweeps = new((QueryLayers.Static | QueryLayers.Boundary) & ~QueryLayers.Doors);
 
     /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
@@ -461,7 +473,7 @@ public sealed partial class NavGraph
                 continue;
             c.Y = y;
             // Not on top of a moving platform's sweep (the nav treats a sweep as a solid pillar): nothing real to stand on there.
-            if (map.Movers.Count > 0 && col.Raycast(new Vector3(c.X, p.Y + 0.3f, c.Z), -Vector3.UnitY, 0.6f, NoSweeps) is var st && (st >= 0.6f || MathF.Abs(p.Y + 0.3f - st - y) > 0.05f))
+            if (map.Movers.Count > 0 && col.Raycast(new Vector3(c.X, p.Y + 0.3f, c.Z), -Vector3.UnitY, 0.6f, NoSweeps) is var st && st < 0.6f && p.Y + 0.3f - st < y - 0.05f)
                 continue;
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
@@ -471,7 +483,8 @@ public sealed partial class NavGraph
             // Void maps build their sloped bridges from colliders that step up a few cm at a time: the body check starts
             // above those steps, so the bridges get nodes (other maps keep the classic check).
             var lift = map.FallKillY != null ? 0.3f : 0.01f;
-            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift)) // (building doors don't count: bots open them)
+            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift) // (building doors don't count: bots open them)
+                && CanStand(c))
                 return c;
         }
         return null;
