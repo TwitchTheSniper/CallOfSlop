@@ -18,8 +18,7 @@ public enum LoadoutPage : byte
     Progression,
     /// <summary>The kill streak picker.</summary>
     Streaks,
-    /// <summary>The cosmetics page: the hat you wear (one choice for every loadout, UiCosmetics.cs).</summary>
-    Cosmetics,
+    // (The hat page moved to the main menu's APPEARANCE screen, UiAppearance.cs.)
 }
 
 /// <summary>One page on the loadout screen's stack, with an optional argument (the weapon id for <see cref="LoadoutPage.Attachments"/>).</summary>

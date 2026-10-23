@@ -88,7 +88,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     part category (network part ids of the older categories are unchanged; actions sort last), every receiver has
     //     an "action" socket and its fire type and rate come from the action in it. Build texts carry the actions; the
     //     server takes them as sent (no stock actions added), so both ends must agree on the part set and the rules.
-    public const byte ProtocolVersion = 44;
+    // 45: the APPEARANCE screen's look (Source/Cosmetics/Appearance.cs): 3 bytes after the profile in Msg.Loadout, and
+    //     3 more per player after the hat in Msg.Roster (a nibble per axis, 0 = Auto; bots always Auto).
+    public const byte ProtocolVersion = 45;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -345,7 +345,7 @@ public static class Ragdolls
         body.Look = RagdollLook.Soldier;
         body.Owner = p.Id;
         body.Hat = HatRender.HatFor(p);
-        BuildSoldierLook(body, p.Name, p.Id, p.Color);
+        BuildSoldierLook(body, p.Name, p.Id, p.Color, p.Look);
         SetBlood(body, p.Id, p.Blood); // the body keeps its final blood marks (Source/Render/BodyBloodRender.cs)
         Spawn(body, d, now, PlayerLife);
     }
@@ -425,7 +425,7 @@ public static class Ragdolls
     {
         if (Gibs.Mode == GoreMode.Off)
             return false;
-        var v = BodyModel.VariantFor(p.Name, p.Id);
+        var v = BodyModel.VariantFor(p);
         var bc = BodyColors.For(p.Color, v);
         var lc = LegColors.For(p.Color);
         var ac = ArmColors.For(p.Color * 0.75f);
@@ -438,19 +438,19 @@ public static class Ragdolls
         });
         GibbedBodies++;
         if (HatRender.HatFor(p) is { } hat)
-            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color);
+            SpawnHatGib(hat, d, now, p.Id, p.Name, p.Color, p.Look);
         return true;
     }
 
     /// <summary>A gibbed player's hat: a body slot that only draws the hat, knocked off by the blast (the ragdoll's hat physics).</summary>
-    public static RagdollBody SpawnHatGib(HatDef hat, in RagdollDeath d, double now, byte owner, string name, Vector3 color)
+    public static RagdollBody SpawnHatGib(HatDef hat, in RagdollDeath d, double now, byte owner, string name, Vector3 color, PlayerLook look = default)
     {
         _now = now;
         var body = Alloc(false);
         body.Look = RagdollLook.Soldier;
         body.Owner = owner;
         body.Hat = hat;
-        BuildSoldierLook(body, name, owner, color);
+        BuildSoldierLook(body, name, owner, color, look);
         Spawn(body, d, now, PlayerLife);
         body.Gibbed = true;
         if (!body.HatOff)
@@ -494,9 +494,9 @@ public static class Ragdolls
     }
 
     /// <summary>The soldier's torso, head, leg and arm colours for a player (the same look as the living body).</summary>
-    public static void BuildSoldierLook(RagdollBody body, string name, byte id, Vector3 color)
+    public static void BuildSoldierLook(RagdollBody body, string name, byte id, Vector3 color, PlayerLook look = default)
     {
-        var v = BodyModel.VariantFor(name, id);
+        var v = BodyModel.VariantFor(name, id, look); // the player's APPEARANCE picks (Auto: the name's look)
         BodyModel.Build(body.Torso, body.Head, 0, v, BodyColors.For(color, v), body.Hat != null);
         body.Torso.ShowDetail = body.Head.ShowDetail = true;
         body.Legs = LegColors.For(color);

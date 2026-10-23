@@ -4,9 +4,9 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// Self-test for the cosmetic loadout (the hat slot): loadout.txt round trip (old files have no hat), the server's hat
-/// check (locked hats and bots get none), the hat replicating to a client in the roster, the cosmetics page layout at the
-/// user's resolutions, and determinism.
+/// Self-test for the hat (now on the APPEARANCE screen): appearance.txt round trip and the migration from loadout.txt's old
+/// hat line, the server's hat check (locked hats and bots get none), the hat replicating to a client in the roster, the
+/// APPEARANCE screen layout at the user's resolutions, and determinism. (The look itself: SelfTestAppearance.cs.)
 /// </summary>
 public static partial class SelfTest
 {
@@ -20,64 +20,75 @@ public static partial class SelfTest
         CosmeticDeterminismCheck();
     }
 
-    // ---- loadout.txt -------------------------------------------------------------------------
+    // ---- appearance.txt (the hat moved there from loadout.txt) ------------------------------------
 
     private static void CosmeticSaveCheck()
     {
-        var backup = LoadoutStore.SaveLines().ToArray();
+        var backup = AppearanceStore.SaveLines().ToArray();
+        var loadoutBackup = LoadoutStore.SaveLines().ToArray();
         try
         {
-            LoadoutStore.LoadLines(["selected=0", "loadout1.name=Old", "loadout1.primary=Hornet SMG"]); // from before hats
-            var oldHat = LoadoutStore.Hat;
-            LoadoutStore.LoadLines(["primary=Hornet SMG", "grenade=Frag"]); // the single-loadout format
-            var veryOldHat = LoadoutStore.Hat;
-            LoadoutStore.LoadLines(null); // brand-new player
-            var freshHat = LoadoutStore.Hat;
+            AppearanceStore.LoadLines(null, ["selected=0", "loadout1.name=Old", "loadout1.primary=Hornet SMG"]); // loadout.txt from before hats
+            var oldHat = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(null, ["primary=Hornet SMG", "grenade=Frag"]); // the single-loadout format
+            var veryOldHat = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(null); // brand-new player
+            var freshHat = AppearanceStore.Hat;
             if (oldHat != HatId.None || veryOldHat != HatId.None || freshHat != HatId.None)
                 Fail($"cosmetic save: files without a hat line should load as no hat, got {oldHat} / {veryOldHat} / {freshHat}");
 
             var rounds = new List<string>();
             foreach (var h in UiHats())
             {
-                LoadoutStore.Hat = h;
-                var lines = LoadoutStore.SaveLines();
+                AppearanceStore.Hat = h;
+                var lines = AppearanceStore.SaveLines();
                 var hatLines = lines.Where(x => x.StartsWith("hat=", StringComparison.Ordinal)).ToList();
-                LoadoutStore.LoadLines(lines.ToArray());
-                rounds.Add($"{Cosmetics.KeyOf(h)}->{LoadoutStore.Hat}");
-                if (hatLines.Count != 1 || hatLines[0] != $"hat={Cosmetics.KeyOf(h)}" || LoadoutStore.Hat != h)
-                    Fail($"cosmetic save: {h} saved as [{string.Join(", ", hatLines)}] and came back as {LoadoutStore.Hat}");
+                AppearanceStore.LoadLines(lines.ToArray());
+                rounds.Add($"{Cosmetics.KeyOf(h)}->{AppearanceStore.Hat}");
+                if (hatLines.Count != 1 || hatLines[0] != $"hat={Cosmetics.KeyOf(h)}" || AppearanceStore.Hat != h)
+                    Fail($"cosmetic save: {h} saved as [{string.Join(", ", hatLines)}] and came back as {AppearanceStore.Hat}");
                 if (lines.Any(x => x.Any(c => c is < ' ' or > '~')))
-                    Fail("cosmetic save: loadout.txt has a non-ASCII line");
+                    Fail("cosmetic save: appearance.txt has a non-ASCII line");
             }
-            Line($"save: old files -> {oldHat}, single-loadout file -> {veryOldHat}, new player -> {freshHat}; round trips {string.Join(", ", rounds)}");
+            Line($"save: old loadout files -> {oldHat}, single-loadout file -> {veryOldHat}, new player -> {freshHat}; round trips {string.Join(", ", rounds)}");
 
-            LoadoutStore.LoadLines(["hat=sombrero", "loadout1.name=X"]);
-            var unknown = LoadoutStore.Hat;
-            LoadoutStore.LoadLines(["hat=NONE"]);
-            var none = LoadoutStore.Hat;
-            LoadoutStore.LoadLines(["hat= Top_Hat "]);
-            var loose = LoadoutStore.Hat;
-            var slot1Name = LoadoutStore.Slots[0].Name;
-            if (unknown != HatId.None || none != HatId.None || loose != HatId.TopHat || slot1Name != LoadoutStore.DefaultName(0))
-                Fail($"cosmetic save: hat=sombrero -> {unknown}, hat=NONE -> {none}, ' Top_Hat ' -> {loose}, slot 1 name '{slot1Name}' (the hat line mustn't touch slot 1)");
+            AppearanceStore.LoadLines(["hat=sombrero"]);
+            var unknown = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(["hat=NONE"]);
+            var none = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(["hat= Top_Hat "]);
+            var loose = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(null, ["selected=0", "hat=fedora", "loadout1.name=X"]); // migration: the old loadout.txt line
+            var migrated = AppearanceStore.Hat;
+            AppearanceStore.LoadLines(["hat=beanie"], ["hat=fedora"]); // appearance.txt exists: it wins, loadout.txt's line is ignored
+            var kept = AppearanceStore.Hat;
+            if (unknown != HatId.None || none != HatId.None || loose != HatId.TopHat || migrated != HatId.Fedora || kept != HatId.Beanie)
+                Fail($"cosmetic save: hat=sombrero -> {unknown}, hat=NONE -> {none}, ' Top_Hat ' -> {loose}, migrated fedora -> {migrated}, existing beanie -> {kept}");
 
-            // One choice for the profile: every slot wears it, and a locked hat is kept but worn as none.
-            LoadoutStore.LoadLines(["hat=fedora"]);
+            // An old loadout.txt with a hat line still loads its slots, and the line isn't written back (it moved).
+            LoadoutStore.LoadLines(["hat=fedora", "loadout1.name=Kept"]);
+            var slot1 = LoadoutStore.Slots[0].Name;
+            var rewritten = LoadoutStore.SaveLines();
+            Line($"loadout.txt: an old hat=fedora line leaves slot 1 \"{slot1}\" and isn't written back ({rewritten.Count(x => x.StartsWith("hat=", StringComparison.Ordinal))} hat lines)");
+            if (slot1 != "Kept" || rewritten.Any(x => x.StartsWith("hat=", StringComparison.Ordinal)))
+                Fail($"cosmetic save: the loadout still has a hat (slot 1 '{slot1}', save lines {string.Join("|", rewritten)})");
+
+            // One choice for the profile: a locked hat is kept but worn as none.
+            AppearanceStore.LoadLines(["hat=fedora"]);
             foreach (var prestige in new[] { 0, 2, 3, 5 })
             {
                 var progress = new Progress { ReadOnly = true, Prestige = prestige };
-                var worn = LoadoutStore.Slots.Select(l => LoadoutStore.Effective(l, progress).Hat).Distinct().ToList();
+                var worn = AppearanceStore.EffectiveHat(progress);
                 var want = prestige >= 3 ? HatId.Fedora : HatId.None;
-                Line($"profile hat Fedora at prestige {prestige}: every slot wears {string.Join("/", worn)}, kept in the file as {Cosmetics.KeyOf(LoadoutStore.Hat)}");
-                if (worn.Count != 1 || worn[0] != want || LoadoutStore.Hat != HatId.Fedora)
-                    Fail($"cosmetic save: at prestige {prestige} the profile hat should apply to every slot as {want} (kept as Fedora), got {string.Join("/", worn)}, kept {LoadoutStore.Hat}");
+                Line($"profile hat Fedora at prestige {prestige}: worn as {worn}, kept in the file as {Cosmetics.KeyOf(AppearanceStore.Hat)}");
+                if (worn != want || AppearanceStore.Hat != HatId.Fedora)
+                    Fail($"cosmetic save: at prestige {prestige} the profile hat should be worn as {want} (kept as Fedora), got {worn}, kept {AppearanceStore.Hat}");
             }
-            if (LoadoutStore.Slots.Any(l => l.Hat != HatId.None))
-                Fail("cosmetic save: a loadout slot stores a hat of its own (hats are one choice for the profile)");
         }
         finally
         {
-            LoadoutStore.LoadLines(backup);
+            AppearanceStore.LoadLines(backup);
+            LoadoutStore.LoadLines(loadoutBackup);
         }
     }
 
@@ -191,16 +202,16 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>Where a player's hat byte is in a roster packet (id, bot flag, name length, name, prestige, level, hat per player).</summary>
+    /// <summary>Where a player's hat byte is in a roster packet (id, bot flag, name length, name, prestige, level, hat, 3 look bytes per player).</summary>
     private static int? RosterHatOffset(byte[] roster, byte id)
     {
         var at = 2;
         for (var i = 0; i < roster[1] && at + 3 <= roster.Length; i++)
         {
             var pid = roster[at];
-            var end = at + 3 + roster[at + 2] + 3;
+            var end = at + 3 + roster[at + 2] + 3 + PlayerLook.WireBytes;
             if (pid == id && end <= roster.Length)
-                return end - 1;
+                return end - 1 - PlayerLook.WireBytes;
             at = end;
         }
         return null;
@@ -209,61 +220,50 @@ public static partial class SelfTest
     // ---- Layout --------------------------------------------------------------------------------
 
     /// <summary>
-    /// The cosmetics page and the overview's hat card at the smoke window and the user's monitors: the window as the loadout
-    /// screen sizes it (at the default UI scale), the body under the title bar, breadcrumb and footer, the page heading, then
-    /// six cards that stay inside, don't overlap and are at least the minimum size.
+    /// The APPEARANCE screen at the smoke window and the user's monitors (the window as the screen sizes it, at the default
+    /// UI scale): the model view and the picker panel inside the window, side by side without overlapping, the view big enough
+    /// to see the model; and the loadout overview's Lethal / Tactical row (two cards now the hat has gone) fits.
     /// </summary>
     private static void CosmeticLayoutCheck()
     {
         foreach (var (w, h) in new[] { (2679f, 1786f), (5120f, 1440f), (3440f, 1440f), (1920f, 1080f) })
         {
-            var (rects, area, origin, third, cardsW) = CosmeticLayoutAt(w, h);
+            var (view, panel, half, cardsW, win) = CosmeticLayoutAt(w, h);
             var s = Math.Clamp(h / 900f, 0.8f, 3f);
             var problems = new List<string>();
-            for (var i = 0; i < rects.Length; i++)
-            {
-                var (a, b) = rects[i];
-                if (a.X < origin.X - 0.5f || a.Y < origin.Y - 0.5f || b.X > origin.X + area.X + 0.5f || b.Y > origin.Y + area.Y + 0.5f)
-                    problems.Add($"card {i} ({a.X:0},{a.Y:0})-({b.X:0},{b.Y:0}) leaves the area");
-                if (b.X - a.X < Ui.HatCardMinW * s || b.Y - a.Y < Ui.HatCardMinH * s)
-                    problems.Add($"card {i} is {b.X - a.X:0}x{b.Y - a.Y:0}, under {Ui.HatCardMinW * s:0}x{Ui.HatCardMinH * s:0}");
-                for (var j = i + 1; j < rects.Length; j++)
-                {
-                    var (c, d) = rects[j];
-                    if (MathF.Min(b.X, d.X) - MathF.Max(a.X, c.X) > 0.01f && MathF.Min(b.Y, d.Y) - MathF.Max(a.Y, c.Y) > 0.01f)
-                        problems.Add($"cards {i} and {j} overlap");
-                }
-            }
+            bool Inside((float2 Min, float2 Max) r) => r.Min.X >= win.Min.X - 0.5f && r.Min.Y >= win.Min.Y - 0.5f && r.Max.X <= win.Max.X + 0.5f && r.Max.Y <= win.Max.Y + 0.5f;
+            if (!Inside(view) || !Inside(panel))
+                problems.Add("the view or the panel leaves the window");
+            if (view.Max.X > panel.Min.X + 0.01f)
+                problems.Add("the view and the panel overlap");
+            if (view.Max.X - view.Min.X < 300 * s || view.Max.Y - view.Min.Y < 400 * s)
+                problems.Add($"the model view is only {view.Max.X - view.Min.X:0}x{view.Max.Y - view.Min.Y:0}");
+            if (panel.Max.X - panel.Min.X < 560 * s)
+                problems.Add($"the picker panel is only {panel.Max.X - panel.Min.X:0} px wide");
             var gap = 8 * s;
-            if (3 * third + 2 * gap > cardsW + 0.5f || third < 180 * s)
-                problems.Add($"overview row: three {third:0} px cards don't fit {cardsW:0} px or are too narrow");
-            if (rects.Length != UiHats().Length)
-                problems.Add($"{rects.Length} card slots for {UiHats().Length} choices");
-            Line($"{w}x{h}: cosmetics area {area.X:0}x{area.Y:0}, cards {rects[0].Max.X - rects[0].Min.X:0}x{rects[0].Max.Y - rects[0].Min.Y:0}, overview hat card {third:0} px wide"
+            if (2 * half + gap > cardsW + 0.5f || half < 180 * s)
+                problems.Add($"overview row: two {half:0} px cards don't fit {cardsW:0} px or are too narrow");
+            Line($"{w}x{h}: appearance view {view.Max.X - view.Min.X:0}x{view.Max.Y - view.Min.Y:0}, panel {panel.Max.X - panel.Min.X:0}x{panel.Max.Y - panel.Min.Y:0} "
+                 + $"(content needs {Ui.AppearancePanelContentH() * s:0} px; it scrolls if short), overview cards {half:0} px"
                  + (problems.Count == 0 ? "" : $"; {problems.Count} problem(s)"));
             foreach (var p in problems)
-                Fail($"cosmetics layout at {w}x{h}: {p}");
+                Fail($"appearance layout at {w}x{h}: {p}");
         }
     }
 
-    /// <summary>The cosmetics page's card rectangles at a window size (the same sums as Ui.DrawLoadoutScreen / DrawCosmeticsPicker).</summary>
-    private static ((float2 Min, float2 Max)[] Rects, float2 Area, float2 Origin, float Third, float CardsW) CosmeticLayoutAt(float w, float h)
+    /// <summary>The APPEARANCE screen's view and panel at a window size (the same sums as Ui.DrawAppearance), and the overview row.</summary>
+    private static ((float2 Min, float2 Max) View, (float2 Min, float2 Max) Panel, float Half, float CardsW, (float2 Min, float2 Max) Win) CosmeticLayoutAt(float w, float h)
     {
         var s = Math.Clamp(h / 900f, 0.8f, 3f); // Ui.TargetScale at the default UI scale
         var size = new float2(MathF.Min(1150 * s, w - 40), MathF.Min(760 * s, h - 40));
         var win = new float2((w - size.X) / 2, (h - size.Y) / 2);
         var pad = 8 * s; // ImGui's window padding, scaled
         var title = 19 * s; // title bar (13 px font + frame padding)
-        var crumb = 25 * s; // breadcrumb line + spacing
-        var footer = 46 * s;
-        var bodyTop = win.Y + title + pad + crumb;
-        var bodyH = win.Y + size.Y - pad - footer - 8 * s - bodyTop;
-        var origin = new float2(win.X + pad, bodyTop + Ui.HatHeaderH * s);
-        var area = new float2(size.X - 2 * pad, bodyH - Ui.HatHeaderH * s);
-        var rects = Ui.HatCardRects(origin, area, s, 8 * s);
-        // Overview: the cards column is what's left beside the 30% slot list.
-        var cardsW = (size.X - 2 * pad) * 0.7f - 8 * s;
-        return (rects, area, origin, Ui.OverviewThirdWidth(cardsW, 8 * s), cardsW);
+        var contentMin = new float2(win.X + pad, win.Y + title + pad);
+        var contentMax = new float2(win.X + size.X - pad, win.Y + size.Y - pad);
+        var (vMin, vMax, pMin, pMax) = Ui.AppearanceRects(contentMin, contentMax, s);
+        var cardsW = (size.X - 2 * pad) * 0.7f - 8 * s; // the loadout overview's cards column beside the 30% slot list
+        return ((vMin, vMax), (pMin, pMax), Ui.OverviewHalfWidth(cardsW, 8 * s), cardsW, (contentMin, contentMax));
     }
 
     // ---- Determinism ---------------------------------------------------------------------------
@@ -274,15 +274,17 @@ public static partial class SelfTest
         {
             var sb = new System.Text.StringBuilder();
             foreach (var (w, h) in new[] { (2679f, 1786f), (5120f, 1440f), (3440f, 1440f) })
-                foreach (var (a, b) in CosmeticLayoutAt(w, h).Rects)
-                    sb.Append($"{a.X:R},{a.Y:R},{b.X:R},{b.Y:R};");
+            {
+                var (view, panel, _, _, _) = CosmeticLayoutAt(w, h);
+                sb.Append($"{view.Min.X:R},{view.Min.Y:R},{view.Max.X:R},{view.Max.Y:R},{panel.Min.X:R},{panel.Max.Y:R};");
+            }
             for (var p = 0; p <= Cosmetics.MaxPrestige; p++)
                 foreach (var hat in UiHats())
                     sb.Append((int)Game.ValidHat(hat, false, p)).Append((int)Game.ValidHat(hat, true, p));
-            var backup = LoadoutStore.SaveLines().ToArray();
-            LoadoutStore.LoadLines(["hat=top_hat", "loadout2.name=Two"]);
-            sb.Append(string.Join("|", LoadoutStore.SaveLines()));
-            LoadoutStore.LoadLines(backup);
+            var backup = AppearanceStore.SaveLines().ToArray();
+            AppearanceStore.LoadLines(["hat=top_hat", "skin=tan", "headwear=helmet"]);
+            sb.Append(string.Join("|", AppearanceStore.SaveLines()));
+            AppearanceStore.LoadLines(backup);
             return sb.ToString();
         }
         var first = Run();

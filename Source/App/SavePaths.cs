@@ -27,7 +27,7 @@ public static class SavePaths
     public const string SaveDirFlag = "--save-dir";
 
     /// <summary>The player's own files (copied over by the migration). Everything else next to the game is game data.</summary>
-    public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", "audio_mix.json"];
+    public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", "audio_mix.json", AppearanceStore.FileName];
 
     /// <summary>The player's own folders (copied over file by file).</summary>
     public static readonly string[] SaveFolders = ["AudioMixes"];

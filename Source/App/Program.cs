@@ -104,6 +104,7 @@ public static unsafe partial class Program
         _settings = Settings.Load();
         Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
+        AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
         LoadoutStore.Load();
         Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
         if (!args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
@@ -264,6 +265,7 @@ public static unsafe partial class Program
                 Console.WriteLine("[smoke] lobby");
                 LoadoutStore.SmokeKit = id => SmokeFullKit(Weapons.Get(id), _smokeMap + 1);
                 LoadoutStore.ReadOnly = true; // the smoke test must never write your loadout.txt
+                AppearanceStore.ReadOnly = true; // nor your appearance.txt
                 _smokeGallery = 1;
                 return;
             }
@@ -294,10 +296,22 @@ public static unsafe partial class Program
                 SmokeShot("lobby_loadouts");
                 _shotTaken = true;
             }
+            else if (_smokeGallery == 3 && t > 2.5 && Ui.LobbyLoadouts)
+            {
+                Ui.LobbyLoadouts = false;
+                Ui.OpenAppearance(); // main menu > Appearance (UiAppearance.cs)
+            }
+            else if (_smokeGallery == 3 && t > 2.7 && !_smokeAppearanceShot)
+            {
+                SmokeShot("appearance"); // the pickers and the turning 3D model with its hat
+                _smokeAppearanceShot = true;
+                Console.WriteLine($"[smoke] appearance: preview {(Ui.LookPreview != null ? "on" : "OFF")}, look {AppearanceStore.Look}, hat {Cosmetics.KeyOf(AppearanceStore.Hat)}");
+            }
             else if (_smokeGallery == 3 && t > 2.8)
             {
                 _smokeGallery = 4; // the map select screen (Program.MapSelect.cs)
                 Ui.LobbyLoadouts = false;
+                Ui.AppearanceOpen = false;
                 _shotTaken = false;
             }
             else if (_smokeGallery == 4 && SmokeMapSelectTick(now, t - 2.8))
@@ -439,13 +453,10 @@ public static unsafe partial class Program
                 if (_smokeMap == 0)
                 {
                     SmokeShot("perks_0");
-                    Ui.SmokeTab(9); // the cosmetics page (hats; UiCosmetics.cs)
                 }
                 _smokeStage++;
                 break;
             case 6 when t > 3.4:
-                if (_smokeMap == 0)
-                    SmokeShot("cosmetics_0");
                 Ui.SmokeTab(0);
                 if (game != null)
                 {
@@ -933,7 +944,7 @@ public static unsafe partial class Program
         EndSession("");
         _lobbyMessage = "";
         if (_smoke)
-            LoadoutStore.ReadOnly = true;
+            LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = true;
         var loadout = LoadoutStore.Active(_smoke ? SmokeProgress() : _progress);
         try
         {
@@ -964,7 +975,11 @@ public static unsafe partial class Program
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
             _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
-                { Progress = _smoke ? SmokeProgress() : _progress, ChosenHat = loadout.Hat }; // the smoke test must never touch your real save (hat: GameCosmeticLoadout.cs)
+                {
+                    Progress = _smoke ? SmokeProgress() : _progress, // the smoke test must never touch your real save
+                    ChosenHat = AppearanceStore.EffectiveHat(_smoke ? SmokeProgress() : _progress), // hat and look: the APPEARANCE screen (GameCosmeticLoadout.cs)
+                    ChosenLook = AppearanceStore.Look,
+                };
             _session.WarmupEnabled = true; // ready-up before every match (single player: Ready or Deploy starts it)
             _session.AutoStartSeconds = kind == LobbyAction.Host ? _settings.AutoStart : 0;
             _session.ScoreLimitMode = _settings.ScoreLimit; // Auto or Fixed (ScoreLimits.cs); clients get the limit itself in the mode state
@@ -1108,6 +1123,8 @@ public static unsafe partial class Program
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
                 DrawGunsmithPreview(showcase, now);
+            if (Ui.AppearanceOpen && _session == null && Ui.LookPreview is { } lookPreview)
+                DrawAppearancePreview(lookPreview, now); // the APPEARANCE screen's turning model (Program.Appearance.cs)
 
             Ui.BeginFrame();
             if (_settings.ShowFps)
@@ -1161,6 +1178,10 @@ public static unsafe partial class Program
                 if (Ui.LobbyLoadouts)
                 {
                     Ui.DrawLobbyLoadouts(AudioSystem, now);
+                }
+                else if (Ui.AppearanceOpen)
+                {
+                    Ui.DrawAppearance(AudioSystem, now, _settings.Name); // main menu > Appearance (UiAppearance.cs)
                 }
                 else if (DrawWorkbenchLobby(now))
                 {
@@ -1314,6 +1335,11 @@ public static unsafe partial class Program
         if ((_session == null || InLobbyRoom) && key == GlfwKey.Escape && Ui.LobbyLoadouts)
         {
             Ui.LoadoutBack();
+            return;
+        }
+        if (_session == null && key == GlfwKey.Escape && Ui.AppearanceOpen)
+        {
+            Ui.CloseAppearance(); // main menu > Appearance: Esc is its Back (UiAppearance.cs)
             return;
         }
 

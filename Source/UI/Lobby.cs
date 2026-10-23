@@ -168,6 +168,8 @@ public sealed partial class Ui
                         _page = Page.Multiplayer;
                     if (BigButton("LOADOUTS"))
                         OpenLobbyLoadouts();
+                    if (BigButton("APPEARANCE"))
+                        OpenAppearance(); // your look and your hat (UiAppearance.cs)
                     if (BigButton("WORKBENCH (ZOMBIES PREVIEW)"))
                         OpenWorkbench(); // the Weapon Workbench (UiWorkbench.cs)
                     if (ImGui.IsItemHovered())

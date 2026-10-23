@@ -436,8 +436,8 @@ public static partial class SelfTest
                 Line($"garbage Hello name -> \"{joined.Name}\"");
 
             // Roster names, a match result, a feed line and a banner from a (hostile) host.
-            w.Begin(Msg.Roster).U8(2).U8(1).U8(0).U8((byte)junk.Length).Bytes(junk).U8(5).U8(48).U8(255) // + prestige, level, hat (protocol 24)
-                .U8(2).U8(1).U8((byte)junk.Length).Bytes(junk).U8(0).U8(0).U8(0);
+            w.Begin(Msg.Roster).U8(2).U8(1).U8(0).U8((byte)junk.Length).Bytes(junk).U8(5).U8(48).U8(255).U8(0xFF).U8(0xFF).U8(0xFF) // + prestige, level, hat (protocol 24), look (45)
+                .U8(2).U8(1).U8((byte)junk.Length).Bytes(junk).U8(0).U8(0).U8(0).U8(0).U8(0).U8(0);
             c.SelfTestPacket(default, w.Span, 0);
             w.Begin(Msg.MatchEnd).U8(1).U8((byte)junk.Length).Bytes(junk);
             c.SelfTestPacket(default, w.Span, 0);

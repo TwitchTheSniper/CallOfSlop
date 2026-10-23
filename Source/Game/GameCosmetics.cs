@@ -1,13 +1,14 @@
 namespace CallOfSlop;
 
-/// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level and hat.</summary>
-public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat);
+/// <summary>A player's cosmetic profile as it travels in the roster: prestige, account level, hat and look (Appearance.cs).</summary>
+public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId Hat, PlayerLook Look = default);
 
 /// <summary>
 /// Prestige and hats on the network (Source/Cosmetics/Cosmetics.cs). Cosmetic only: nothing here touches gameplay.
 /// A client reports its prestige and level after its name in <see cref="Msg.Hello"/>; the server believes it only for
 /// what it shows (the scoreboard's "P2 L13") and to check which hats that player may wear. The roster carries
-/// prestige, level and hat for everyone (3 bytes a player). Bots never have a prestige, a level tag or a hat.
+/// prestige, level, hat and look for everyone (3 + <see cref="PlayerLook.WireBytes"/> bytes a player, protocol 45), so a
+/// joiner sees everyone's APPEARANCE picks from the roster it gets on joining. Bots never have a prestige, a level tag or a hat.
 /// Clients also append their prestige and level now to <see cref="Msg.Loadout"/> (sent on joining and every respawn);
 /// the server rebroadcasts the roster only when they changed (<see cref="ServerUpdateProfile"/>), never per snapshot.
 /// </summary>
@@ -36,6 +37,7 @@ public sealed partial class Game
         {
             p.Prestige = p.Level = 0;
             p.Hat = HatId.None;
+            p.Look = default;
             return;
         }
         p.Prestige = (byte)Math.Clamp(prestige, 0, Cosmetics.MaxPrestige);
@@ -74,6 +76,7 @@ public sealed partial class Game
             w.U8(0).U8(0).U8(0);
         else
             w.U8(p.Prestige).U8(p.Level).U8((byte)p.Hat);
+        (p.Bot != null ? default : p.Look).Pack(w); // protocol 45: the look (Appearance.cs; bots: Auto)
     }
 
     private static PlayerCosmetics ReadRosterCosmetics(ref PacketReader r, bool isBot)
@@ -81,12 +84,13 @@ public sealed partial class Game
         var prestige = r.Has(1) ? r.U8() : (byte)0;
         var level = r.Has(1) ? r.U8() : (byte)0;
         var hat = r.Has(1) ? (HatId)r.U8() : HatId.None;
+        var look = PlayerLook.Unpack(ref r); // sanitised: an unknown variant draws as Auto
         if (isBot)
             return default;
         prestige = (byte)Math.Min((int)prestige, Cosmetics.MaxPrestige);
         if (!Cosmetics.IsUnlocked(hat, prestige))
             hat = HatId.None; // unknown id or not earned: draw nothing
-        return new PlayerCosmetics(prestige, level, hat);
+        return new PlayerCosmetics(prestige, level, hat, look);
     }
 
     private static void ApplyCosmetics(Player p, in PlayerCosmetics c)
@@ -96,6 +100,7 @@ public sealed partial class Game
         p.Prestige = c.Prestige;
         p.Level = c.Level;
         p.Hat = c.Hat;
+        p.Look = c.Look;
     }
 
     /// <summary>
@@ -112,6 +117,23 @@ public sealed partial class Game
         if (worn != p.Hat || levelChanged)
         {
             p.Hat = worn;
+            BroadcastRoster();
+        }
+        return worn;
+    }
+
+    /// <summary>
+    /// Server: puts a look on a player (people only; bots keep the name's look). Values this build doesn't know become Auto.
+    /// Tells everyone (the roster) when it changes. Returns the look actually worn.
+    /// </summary>
+    public PlayerLook ServerSetLook(Player p, PlayerLook look)
+    {
+        if (!IsServer)
+            return p.Look;
+        var worn = p.Bot == null ? look.Sanitized() : default;
+        if (worn != p.Look)
+        {
+            p.Look = worn;
             BroadcastRoster();
         }
         return worn;

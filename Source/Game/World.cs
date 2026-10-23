@@ -503,6 +503,7 @@ public sealed class Player
     // Cosmetics (prestige + hats, Source/Cosmetics/Cosmetics.cs): never used for gameplay. Bots: always 0 / None.
     public byte Prestige, Level; // as the player reported them in their Hello (untrusted, only shown and used to validate the hat); in the roster
     public HatId Hat; // the hat they wear (set from the loadout once Cosmetics.IsUnlocked(hat, Prestige) and human); in the roster
+    public PlayerLook Look; // the look picked on the APPEARANCE screen (Source/Cosmetics/Appearance.cs; bots: Auto); in the roster
 
     // Throwables (server-authoritative counts, refilled on spawn)
     public ThrowableKind Grenade, Equipment, WantGrenade, WantEquipment;
@@ -619,5 +620,10 @@ public sealed class Player
         new(1.00f, 1.00f, 1.00f), // white
     ];
 
-    public Vector3 Color => Team < 2 ? GameModes.TeamColors[Team] : Palette[Id % Palette.Length];
+    /// <summary>
+    /// The outfit colour: the team colour in team modes (team readability always wins over the chosen look), otherwise (no
+    /// teams: free-for-all, co-op, Zombies) the outfit colour picked on the APPEARANCE screen, or the player slot's palette
+    /// colour on Auto (and for bots).
+    /// </summary>
+    public Vector3 Color => Team < 2 ? GameModes.TeamColors[Team] : Look.OutfitColor(Palette[Id % Palette.Length]);
 }
