@@ -5,9 +5,11 @@ namespace CallOfSlop;
 /// <summary>
 /// Self-test section "Audio mixer" (Source/Audio/AudioMix.cs, AudioMixDefaults.cs, Audio.Mixer.cs, UiAudioMixer.cs):
 /// the defaults table (keys unique and stable, levels in <see cref="MixBus"/> order, groups together, every sound on a
-/// bus); with no audio_mix.json every value is today's behaviour exactly (every gain 1, the gun-mix falloff, crossfade
-/// and distance filter equal the pre-mixer formulas, every shot plan unchanged, the music trims 1, the limiter ceiling);
-/// the JSON round trip, unknown and missing keys, clamping and bad files; each level slider changes only its own
+/// bus); the baked default mix (SeabMix2: the expected table below); with no audio_mix.json every value is the
+/// pre-mixer behaviour times the default levels exactly (each gain 10^(default/20), the gun-mix falloff, crossfade and
+/// distance filter equal the pre-mixer formulas, every shot plan's layer gains unchanged, the music trims, the limiter
+/// ceiling); the JSON round trip, unknown and missing keys, clamping and bad files, an old save's untouched levels moving
+/// to the new defaults; each level slider changes only its own
 /// category's planned gain; mute; the F8 key's binds migration; and no allocations while the window is closed or in the
 /// meters. Headless, temp files only.
 /// </summary>
@@ -55,13 +57,30 @@ public static partial class SelfTest
         Line($"table: {levels} levels in {seenGroups.Count - 1} groups + {shape} distance/limiter values; keys unique; every sound effect on a bus; factory values {(AudioMixDefaults.IsFactory ? "yes" : "no (a mix is baked in)")}");
         Line("levels: " + string.Join(", ", entries.Take(levels).Select(e => e.Key)));
 
-        // ---- Identity: no audio_mix.json = today's game ------------------------------------------------------
-        var mix = new AudioMix();
-        if (AudioMixDefaults.IsFactory)
+        // ---- The baked mix: SeabMix2 (2026-10-23) --------------------------------------------------------------
+        var bakedBad = new List<string>();
+        for (var i = 0; i < levels; i++)
         {
-            var badGain = Enumerable.Range(0, levels).Where(i => mix.Gain((MixBus)i) != 1f || AudioMix.Defaults.Gain((MixBus)i) != 1f).Select(i => entries[i].Key).ToArray();
+            var want = BakedLevels.TryGetValue(entries[i].Key, out var w) ? w : 0f;
+            if (entries[i].Default != want)
+                bakedBad.Add($"{entries[i].Key} {entries[i].Default:+0.0;-0.0;0} (want {want:+0.0;-0.0;0})");
+        }
+        if (bakedBad.Count > 0 || AudioMixDefaults.BakedMix != "SeabMix2" || !AudioMixDefaults.ShapeIsFactory || AudioMixDefaults.IsFactory)
+            Fail($"audio mixer: the baked default mix ({AudioMixDefaults.BakedMix}) isn't SeabMix2 (shape factory {AudioMixDefaults.ShapeIsFactory}): {string.Join(", ", bakedBad)}");
+        Line($"baked mix: {AudioMixDefaults.BakedMix}, {BakedLevels.Count} levels off 0 dB (" + string.Join(", ", BakedLevels.Select(kv => $"{kv.Key} {kv.Value:+0.0;-0.0}")) + $"), shape factory: {(bakedBad.Count == 0 ? "OK" : "WRONG")}");
+
+        // ---- Identity: no audio_mix.json = the pre-mixer game times the default levels -------------------------
+        var mix = new AudioMix();
+        {
+            var badGain = Enumerable.Range(0, levels).Where(i => mix.Gain((MixBus)i) != AudioMix.DbToGain(entries[i].Default) || AudioMix.Defaults.Gain((MixBus)i) != mix.Gain((MixBus)i)
+                                                                 || entries[i].Default == 0f && mix.Gain((MixBus)i) != 1f).Select(i => entries[i].Key).ToArray();
             if (badGain.Length > 0)
-                Fail($"audio mixer identity: gain not exactly 1 for {string.Join(", ", badGain)}");
+                Fail($"audio mixer identity: gain not exactly 10^(default/20) for {string.Join(", ", badGain)}");
+            if (!mix.IsDefault || mix.Changed != 0 || !AudioMix.Defaults.IsDefault)
+                Fail($"audio mixer identity: a fresh mix isn't the defaults ({mix.Changed} changed)");
+        }
+        if (AudioMixDefaults.ShapeIsFactory)
+        {
             if (mix.ShotFalloff != new Audio.Falloff(5f, 0.8f, 250f, Thin: true) || Audio.ShotFalloff != mix.ShotFalloff)
                 Fail($"audio mixer identity: the gunshot falloff is {mix.ShotFalloff}, not 5 m / 0.8 / 250 m");
             var mism = 0;
@@ -80,24 +99,28 @@ public static partial class SelfTest
                 {
                     var p = Audio.PlanShot(mix, own, sup, hasFar, d, launcher);
                     var (nearL, farL, fallL) = LegacyPlan(own, sup, hasFar, d);
-                    if (p.NearMixed != nearL || p.FarMixed != farL || p.Near != nearL || p.Far != farL || p.NearFalloff != fallL || p.FarFalloff != fallL
-                        || p.NearBusGain != 1f || p.FarBusGain != 1f)
+                    float gn = mix.Gain(p.NearBus), gf = mix.Gain(p.FarBus);
+                    if (p.Near != nearL || p.Far != farL || p.NearFalloff != fallL || p.FarFalloff != fallL || p.NearBusGain != gn || p.FarBusGain != gf
+                        || p.NearMixed != nearL * gn || p.FarMixed != farL * gf)
                         mism++;
                 }
             }
             if (mism > 0)
-                Fail($"audio mixer identity: {mism} distance/plan value(s) differ from the pre-mixer formulas");
+                Fail($"audio mixer identity: {mism} distance/plan value(s) differ from the pre-mixer formulas times the default levels");
             var audio = new Audio();
             audio.SyncMix();
             var music = audio.Music;
             var trims = Enumerable.Range(1, 6).Select(l => music.Frenzy.LevelTrim(l)).ToArray();
-            if (music.MenuTrim != 1f || music.LobbyTrim != 1f || trims.Any(t => t != 1f) || music.LimiterCeiling != FrenzyLayer.LimiterCeiling)
-                Fail($"audio mixer identity: music trims menu {music.MenuTrim}, lobby {music.LobbyTrim}, frenzy {string.Join("/", trims)}, limiter {music.LimiterCeiling} (want 1s and {FrenzyLayer.LimiterCeiling})");
-            Line($"identity: every gain exactly 1, falloff 5 m/0.8/250 m, crossfade/bass/air equal to the old formulas at 1601 distances x 16 shot kinds, music trims 1, limiter {music.LimiterCeiling}: {(mism == 0 ? "OK" : "DIFFERENT")}");
+            var wantTrims = Enumerable.Range(1, 6).Select(l => mix.Gain((MixBus)((int)MixBus.Frenzy1 + l - 1))).ToArray();
+            if (music.MenuTrim != mix.Gain(MixBus.MusicMenu) || music.LobbyTrim != mix.Gain(MixBus.MusicLobby) || !trims.SequenceEqual(wantTrims) || music.LimiterCeiling != FrenzyLayer.LimiterCeiling)
+                Fail($"audio mixer identity: music trims menu {music.MenuTrim}, lobby {music.LobbyTrim}, frenzy {string.Join("/", trims)}, limiter {music.LimiterCeiling} (want the default levels' gains and {FrenzyLayer.LimiterCeiling})");
+            Line($"identity: every gain 10^(default/20) (1 at 0 dB), falloff 5 m/0.8/250 m, crossfade/bass/air equal to the old formulas at 1601 distances x 16 shot kinds, "
+                 + $"shot layers unchanged with the default bus gains (own {AudioMix.GainToDb(mix.Gain(MixBus.GunOwn)):+0.0} dB, near {AudioMix.GainToDb(mix.Gain(MixBus.GunOtherNear)):+0.0} dB, far {AudioMix.GainToDb(mix.Gain(MixBus.GunOtherFar)):+0.0} dB), "
+                 + $"music trims {music.MenuTrim:0.##}/{music.LobbyTrim:0.##}/{string.Join("/", trims.Select(t => t.ToString("0.##")))}, limiter {music.LimiterCeiling}: {(mism == 0 ? "OK" : "DIFFERENT")}");
             audio.Dispose();
         }
         else
-            Line("identity: skipped (the defaults table holds a baked-in mix)");
+            Line("identity: shape part skipped (the defaults table holds a baked-in shape)");
 
         // ---- A slider changes only its category --------------------------------------------------------------
         var leaks = new List<string>();
@@ -106,7 +129,7 @@ public static partial class SelfTest
             var m = new AudioMix();
             m.SetDb((MixBus)b, 6f);
             for (var o = 0; o < levels; o++)
-                if (o != b && m.Gain((MixBus)o) != 1f)
+                if (o != b && m.Gain((MixBus)o) != AudioMix.Defaults.Gain((MixBus)o))
                     leaks.Add($"{entries[b].Key}->{entries[o].Key}");
             if (MathF.Abs(m.Gain((MixBus)b) - MathF.Pow(10f, 0.3f)) > 1e-5f)
                 leaks.Add($"{entries[b].Key} +6 dB gain {m.Gain((MixBus)b)}");
@@ -116,8 +139,8 @@ public static partial class SelfTest
             foreach (var d in new[] { 5f, 50f, 120f })
             {
                 var p = Audio.PlanShot(m, own, sup, true, d, launcher);
-                var expectNear = p.NearBus == (MixBus)b ? m.Gain((MixBus)b) : 1f;
-                var expectFar = p.FarBus == (MixBus)b ? m.Gain((MixBus)b) : 1f;
+                var expectNear = p.NearBus == (MixBus)b ? m.Gain((MixBus)b) : AudioMix.Defaults.Gain(p.NearBus);
+                var expectFar = p.FarBus == (MixBus)b ? m.Gain((MixBus)b) : AudioMix.Defaults.Gain(p.FarBus);
                 if (p.NearBusGain != expectNear || p.FarBusGain != expectFar)
                     leaks.Add($"{entries[b].Key}: shot plan own={own} sup={sup} launcher={launcher} {d} m");
             }
@@ -131,7 +154,7 @@ public static partial class SelfTest
             || Audio.PlanShot(bm, true, true, true, 0f).NearBus != MixBus.GunOwnSuppressed || Audio.PlanShot(bm, false, true, true, 30f).NearBus != MixBus.GunOtherSuppressed
             || Audio.PlanShot(bm, true, false, false, 0f, true).NearBus != MixBus.LauncherOwn || Audio.PlanShot(bm, false, false, false, 30f, true).NearBus != MixBus.LauncherOther)
             leaks.Add("shot plans on the wrong buses");
-        if (Math.Abs(far120.FarMixed / far120.Far - AudioMix.DbToGain(-12f)) > 1e-5f || own0.NearMixed != own0.Near)
+        if (Math.Abs(far120.FarMixed / far120.Far - AudioMix.DbToGain(-12f)) > 1e-5f || own0.NearMixed != own0.Near * AudioMix.Defaults.Gain(MixBus.GunOwn))
             leaks.Add("distant layer -12 dB doesn't scale only the far layer");
         if (Audio.BusFor(StepKind.Run, true) != MixBus.StepOwn || Audio.BusFor(StepKind.Walk, false) != MixBus.StepOther
             || Audio.BusFor(StepKind.Land, true) != MixBus.FoleyOwn || Audio.BusFor(StepKind.Jump, false) != MixBus.FoleyOther)
@@ -147,8 +170,8 @@ public static partial class SelfTest
             audio.Mix.SetParam(MixParam.LimiterCeiling, 0.9f);
             audio.SyncMix();
             var mu = audio.Music;
-            if (MathF.Abs(mu.Frenzy.LevelTrim(5) - AudioMix.DbToGain(-6f)) > 1e-6f || mu.Frenzy.LevelTrim(4) != 1f || mu.Frenzy.LevelTrim(6) != 1f
-                || MathF.Abs(mu.MenuTrim - AudioMix.DbToGain(3f)) > 1e-6f || mu.LobbyTrim != 1f || MathF.Abs(mu.LimiterCeiling - 0.9f) > 1e-6f)
+            if (MathF.Abs(mu.Frenzy.LevelTrim(5) - AudioMix.DbToGain(-6f)) > 1e-6f || mu.Frenzy.LevelTrim(4) != AudioMix.Defaults.Gain(MixBus.Frenzy4) || mu.Frenzy.LevelTrim(6) != AudioMix.Defaults.Gain(MixBus.Frenzy6)
+                || MathF.Abs(mu.MenuTrim - AudioMix.DbToGain(3f)) > 1e-6f || mu.LobbyTrim != AudioMix.Defaults.Gain(MixBus.MusicLobby) || MathF.Abs(mu.LimiterCeiling - 0.9f) > 1e-6f)
                 leaks.Add("music rows: frenzy level 5 / menu / limiter didn't reach only their own trims");
             audio.Dispose();
         }
@@ -235,7 +258,7 @@ public static partial class SelfTest
               "shape": { "dist.rolloff": 1.0, "dist.unknown": 3, "dist.air": "x" },
             }
             """);
-        var others = Enumerable.Range(0, levels).Where(i => (MixBus)i is not (MixBus.Explosion or MixBus.Melee)).All(i => partial.Gain((MixBus)i) == 1f || !AudioMixDefaults.IsFactory);
+        var others = Enumerable.Range(0, levels).Where(i => (MixBus)i is not (MixBus.Explosion or MixBus.Melee)).All(i => partial.Gain((MixBus)i) == AudioMix.Defaults.Gain((MixBus)i));
         if (!pr.Ok || pr.Unknown != 3 || partial.Db(MixBus.Explosion) != -3.5f || !partial.Muted(MixBus.Explosion) || partial.Db(MixBus.Melee) != 4f
             || partial.Param(MixParam.ShotRolloff) != 1f || partial.Param(MixParam.AirAbsorption) != AudioMixDefaults.Of(MixParam.AirAbsorption).Default || !others)
             Fail($"audio mixer: a partial file with unknown keys loaded wrong: {pr}");
@@ -248,6 +271,8 @@ public static partial class SelfTest
             if (keep.LoadJson(bad).Ok || keep.Db(MixBus.Streaks) != -7f)
                 Fail($"audio mixer: a broken file ({(bad.Length == 0 ? "empty" : bad)}) should load nothing and change nothing");
         Line($"hand-edited file: {pr}; out of range: {clampRep}; broken files change nothing");
+
+        CheckAudioMixerOldSaves();
 
         // Files: save and load through a temp folder, preset names, a missing file.
         var tmp = Path.Combine(Path.GetTempPath(), "callofslop-audiomix-" + Guid.NewGuid().ToString("N"));
@@ -419,8 +444,28 @@ public static partial class SelfTest
         var (g0, c0) = Audio.VoiceGain(0.7f, 1f);
         if (g0 != 0.7f || c0 != 1f)
             voiceBad.Add($"0 dB changed the voice ({g0}, cap {c0}; want 0.7, cap 1)");
+        // The default mix's boosts (own gun +20 dB, explosions +20.1, headshot +15.7, ...) are heard in full through the
+        // per-voice cap: a voice at the cap (your own gun) and one over it play exactly the bus gain louder.
+        var boosted = new List<string>();
+        for (var i = 0; i < levels; i++)
+        {
+            var bg = AudioMix.Defaults.Gain((MixBus)i);
+            if (bg <= 1f)
+                continue;
+            boosted.Add($"{AudioMixDefaults.Entries[i].Key} x{bg:0.00}");
+            foreach (var pre in new[] { 0.3f, 1f, 1.3f })
+            {
+                var ratio = Audio.VoiceEffectiveGain(pre, bg) / Audio.VoiceEffectiveGain(pre, 1f);
+                if (MathF.Abs(ratio / bg - 1f) > 1e-5f)
+                    voiceBad.Add($"default {AudioMixDefaults.Entries[i].Key} ({AudioMix.GainToDb(bg):+0.0} dB) gives a voice at {pre} x{ratio:0.00} (want x{bg:0.00}: clipped by the cap)");
+            }
+        }
+        var ownCap = Audio.VoiceGain(Audio.OwnShotGain, AudioMix.Defaults.Gain(MixBus.GunOwn));
+        if (MathF.Abs(ownCap.MaxGain - 10f) > 1e-4f || MathF.Abs(Audio.VoiceEffectiveGain(Audio.OwnShotGain, ownCap.MaxGain) - 10f * Audio.OwnShotGain) > 1e-4f)
+            voiceBad.Add($"your own gun at the default +20 dB: AL_GAIN {ownCap.Gain}, AL_MAX_GAIN {ownCap.MaxGain} (want 10x the cap)");
         if (voiceBad.Count > 0)
             Fail("audio mixer range: voice gains through the mix: " + string.Join("; ", voiceBad));
+        Line($"default boosts through the per-voice cap, heard in full ({boosted.Count}): {string.Join(", ", boosted)}; own gun AL_MAX_GAIN {ownCap.MaxGain:0.0}");
 
         // The music trims take the whole range (they were capped at 4x = +12 dB).
         var audio = new Audio();
@@ -494,6 +539,88 @@ public static partial class SelfTest
         Line($"range: {min:+0;-0}..{max:+0;-0} dB on all {levels} level rows; old/new saved values load unclamped ({rep.Clamped} clamped), past the range clamped ({outRep.Clamped}); "
              + $"+20 dB voice x{Audio.VoiceEffectiveGain(1f, g20) / Audio.VoiceEffectiveGain(1f, 1f):0.00} (AL_MAX_GAIN {g20:0.0}), +50 dB x{g50:0.0}; music trims to x{g50:0}; "
              + $"menu music RMS {rmsPlain:0.000} -> +6 dB {rms6:0.000} -> +50 dB {rmsLoud:0.000} (peak {peakPlain:0.000} -> {peakLoud:0.000}, limited, ceiling {MasterLimiter.SafetyCeiling}); boosted music CPU {cpu:0.00}x the default");
+    }
+
+    /// <summary>
+    /// The levels the baked default mix (the user's SeabMix2, saved 2026-10-23 by the F8 mixer's "Save as...") sets off
+    /// 0 dB; every other level is 0 dB and every shape value the factory one.
+    /// </summary>
+    private static readonly Dictionary<string, float> BakedLevels = new()
+    {
+        ["gun.own"] = 20f, ["gun.other_near"] = 14.1f, ["gun.other_far"] = 10f, ["explosion"] = 20.1f, ["impact.whizz"] = 12.3f,
+        ["props.break"] = 5f, ["gore.gibs"] = 7.3f, ["hit.world"] = 3.9f, ["hit.marker"] = 8.4f, ["hit.headshot"] = 15.7f,
+        ["hit.kill"] = 13f, ["player.hurt"] = 10f, ["step.own"] = -8f, ["step.other"] = -4.1f,
+    };
+
+    /// <summary>
+    /// An audio_mix.json as builds before the baked mix wrote it: every level {"db", "mute", "default": 0} (the old
+    /// defaults), the factory shape; <paramref name="set"/> gives the player's changes by key.
+    /// </summary>
+    private static string OldAudioMixJson(Dictionary<string, (float Db, bool Mute)> set, string name = "")
+    {
+        var sb = new System.Text.StringBuilder("{\"format\": \"callofslop-audio-mix\", \"version\": 1, \"game\": \"dev build (bdaae14)\", ");
+        if (name.Length > 0)
+            sb.Append($"\"name\": \"{name}\", ");
+        sb.Append("\"levels\": {");
+        for (var i = 0; i < (int)MixBus.COUNT; i++)
+        {
+            var key = AudioMixDefaults.Entries[i].Key;
+            var (db, mute) = set.TryGetValue(key, out var v) ? v : (0f, false);
+            sb.Append(System.FormattableString.Invariant($"{(i > 0 ? ", " : "")}\"{key}\": {{\"db\": {db}, \"mute\": {(mute ? "true" : "false")}, \"default\": 0}}"));
+        }
+        sb.Append("}, \"shape\": {");
+        for (var i = 0; i < (int)MixParam.COUNT; i++)
+            sb.Append(System.FormattableString.Invariant($"{(i > 0 ? ", " : "")}\"{AudioMixDefaults.Of((MixParam)i).Key}\": {AudioMixDefaults.FactoryShape[i]}"));
+        return sb.Append("}}").ToString();
+    }
+
+    /// <summary>
+    /// Saves from before the baked mix: a level left at its old default (the "default" saved with it) moves to the new
+    /// default, a level the player set keeps their value (mute too), the user's own SeabMix2 file loads as exactly the
+    /// defaults, and a file saved by this build keeps a level turned back to 0 dB.
+    /// </summary>
+    private static void CheckAudioMixerOldSaves()
+    {
+        var bad = new List<string>();
+        var none = new Dictionary<string, (float, bool)>();
+
+        // Untouched: every level at its old default -> the new defaults.
+        var untouched = new AudioMix();
+        var r1 = untouched.LoadJson(OldAudioMixJson(none));
+        if (!r1.Ok || !untouched.IsDefault || r1.Updated != BakedLevels.Count)
+            bad.Add($"an untouched old save loads with {untouched.Changed} value(s) off the new defaults ({r1}; want 0 and {BakedLevels.Count} moved)");
+
+        // The player's own choices stay: a boosted own gun, a cut explosion, a muted kill chime (its level untouched).
+        var chosen = new AudioMix();
+        var r2 = chosen.LoadJson(OldAudioMixJson(new() { ["gun.own"] = (6f, false), ["explosion"] = (-3f, false), ["hit.kill"] = (0f, true), ["ui"] = (2f, false) }));
+        if (!r2.Ok || chosen.Db(MixBus.GunOwn) != 6f || chosen.Db(MixBus.Explosion) != -3f || chosen.Db(MixBus.KillConfirm) != 13f || !chosen.Muted(MixBus.KillConfirm)
+            || chosen.Db(MixBus.Ui) != 2f || chosen.Db(MixBus.StepOwn) != -8f || chosen.Db(MixBus.GunOtherNear) != 14.1f || r2.Updated != BakedLevels.Count - 2)
+            bad.Add($"an old save with choices: own gun {chosen.Db(MixBus.GunOwn)} (want 6), explosion {chosen.Db(MixBus.Explosion)} (-3), kill {chosen.Db(MixBus.KillConfirm)} muted {chosen.Muted(MixBus.KillConfirm)} (13, muted), "
+                    + $"ui {chosen.Db(MixBus.Ui)} (2), own steps {chosen.Db(MixBus.StepOwn)} (-8); {r2}");
+
+        // The user's SeabMix2 file (saved with the old defaults) is exactly the new defaults.
+        var seab = new AudioMix();
+        var r3 = seab.LoadJson(OldAudioMixJson(BakedLevels.ToDictionary(kv => kv.Key, kv => (kv.Value, false)), "SeabMix2"));
+        if (!r3.Ok || !seab.IsDefault || r3.Updated != 0 || r3.Name != "SeabMix2")
+            bad.Add($"the SeabMix2 file loads {seab.Changed} value(s) off the defaults ({r3})");
+
+        // Saved by this build: a level turned back down to 0 dB stays 0 (its saved default is the new one).
+        var down = new AudioMix();
+        down.SetDb(MixBus.GunOwn, 0f);
+        var back = new AudioMix();
+        var r4 = back.LoadJson(down.ToJson(null, "test-build", new DateTime(2026, 10, 23, 12, 0, 0, DateTimeKind.Utc)));
+        if (!r4.Ok || back.Db(MixBus.GunOwn) != 0f || back.Changed != 1 || r4.Updated != 0)
+            bad.Add($"a new save with own gun at 0 dB loads {back.Db(MixBus.GunOwn)} ({r4})");
+
+        // No saved default (hand-edited, bare number): the value as written.
+        var bare = new AudioMix();
+        bare.LoadJson("""{"levels": {"gun.own": 0, "explosion": {"db": 0}}}""");
+        if (bare.Db(MixBus.GunOwn) != 0f || bare.Db(MixBus.Explosion) != 0f)
+            bad.Add($"a hand-edited 0 dB (no saved default) loads own gun {bare.Db(MixBus.GunOwn)}, explosion {bare.Db(MixBus.Explosion)} (want 0, 0)");
+
+        if (bad.Count > 0)
+            Fail("audio mixer old saves: " + string.Join("; ", bad));
+        Line($"old saves: untouched -> the new defaults ({r1.Updated} moved); player choices kept ({r2.Updated} moved); SeabMix2 file = the defaults; a new save's 0 dB stays; hand-edited values as written: {(bad.Count == 0 ? "OK" : "WRONG")}");
     }
 
     /// <summary>The shot plan as it was before the mixer (Audio.GunMix.cs at caf39f9), for the identity check.</summary>
