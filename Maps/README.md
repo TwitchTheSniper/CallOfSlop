@@ -60,6 +60,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `destructible` | no | `true`: the map's buildings (named Building ops) can be blown apart; `false`: they can't. Without it, the pack's `pack.json` decides (the World Tour has `"destructible": true`; every other pack is off). See [Buildings/README.md](../Buildings/README.md#destruction). |
 | `flagPool` | no | The national flags that decorative flag props pick from at random: a list of flag ids like `["uk", "us"]`, `"none"` (flags keep their own striped cloth) or `"all"` (the default: every flag in `Props/Flags/flags.json`). See [Flags](#flags). |
 | `terrain` | no | Hills, cliffs and valleys instead of a flat floor. See [Terrain](#terrain). |
+| `gravity` | no | `{ "type": "point", "center": [x, y, z] }` makes a planet: everything falls towards that point. Leave it out (or `"uniform"`) for ordinary straight-down gravity. See [Planets](#planets-point-gravity). |
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
@@ -651,6 +652,63 @@ Every shape stands on its lowest point (y = 0 is its bottom) and is centred on (
 - **Turned meshes:** a shape is turned about its own base point, so tipping one over (`"pitch": 90`) puts half of it under the ground: raise it with `y` (by its radius for a lying capsule or pipe, by `radius + inner` for a standing ring).
 - **Mistakes** give a readable message: an unknown shape suggests the closest name (`"cilinder"`: did you mean "cylinder"?), a missing model file lists the models that exist, and a broken model file says what's wrong with it.
 - **Cost:** every copy of the same shape (same name and parameters) shares one mesh and is drawn instanced, culled outside the view and simplified with distance. Thousands of meshes cost a handful of draw calls; the game log shows a `[mesh]` line every 5 seconds on maps with meshes (parts drawn, draw calls, LODs, CPU and GPU time).
+
+## Planets (point gravity)
+
+A map can be a small world you walk all the way round: give it a `"gravity"` field that pulls towards a point, put a
+`Planet` op there, and place everything else by **latitude and longitude** with the Surface ops. The **Pocket Planet**
+map in the Space pack (`Maps/Space/02-Planet.json`, written by `tools/planet/make_pocket_planet.py`) is the example.
+
+```json
+  "halfX": 90, "halfZ": 90,
+  "gravity": { "type": "point", "center": [0, 0, 0], "strength": 18, "axis": [0, 0, -1] },
+  "ops": [
+    { "op": "Planet", "radius": 56, "color": [0.55, 0.47, 0.4], "material": "Dirt" },
+    { "op": "SurfaceBlock", "lat": 0, "lon": 45, "w": 5, "h": 0.5, "d": 5, "color": "#4d4d57", "material": "Tiles" },
+    { "op": "SurfaceMesh", "mesh": "cylinder", "lat": 50, "lon": 90, "color": "#9ea3ad", "width": 0.4, "depth": 0.4, "height": 11 },
+    { "op": "Crater", "lat": 35, "lon": 0, "radius": 7, "color": "#6b615c" },
+    { "op": "SurfaceScatter", "mesh": "icosphere", "count": 110, "color": "#6b615c", "latMin": -72, "latMax": 72 },
+    { "op": "SurfaceSpawn", "lat": 72, "lon": 0 },
+    { "op": "PlanetWaypoints", "spacing": 12 }
+  ]
+```
+
+**`gravity`** fields: `type` (`"point"` or `"uniform"`), `center` (default `[0, 0, 0]`), `strength` (m/s², 1 to 60, default
+18, the game's usual) and `axis` (default `[0, 0, -1]`). Players' yaw is measured from "north" in each spot's ground plane,
+and that north is the `axis` laid flat on the ground; it has no direction on the two points of the planet the axis passes
+through, so **put something solid on both** (Pocket Planet has a monolith on each, at latitude 0, longitude 0 and 180).
+Players never notice the frame: the game carries your view along as you walk, so going all the way round never turns it.
+`halfX` and `halfZ` must reach past the planet: the distance `max(halfX, halfZ)` from the centre is the top of the sky.
+
+**Latitude and longitude** (degrees): latitude 90 is the +Y pole, -90 the -Y pole; longitude 0 is the +Z side of the
+planet and 90 the +X side. Headings are degrees from geographic north (towards latitude 90; at the poles, -Z), turning
+like a prop's yaw. Every surface shape stands upright on the ground where it is.
+
+| Op | Parameters | What it makes |
+| --- | --- | --- |
+| `Planet` | radius, color, x = 0, y = 0, z = 0, detail = 5, material = "Dirt" | The planet: a solid geodesic ball (detail 5 is about 20,000 triangles). One per map; place it first. |
+| `SurfaceMesh` | mesh, lat, lon, color, y = 0, width, height, depth, radius, inner, segments, detail, heading = 0, pitch = 0, roll = 0, scale = 1, material = "", solid = true | Any `Mesh` shape standing on the surface, raised by `y` (negative sinks it). **Solid** unless `"solid": false`. |
+| `SurfaceBlock` | lat, lon, w, h, d, color, y = 0, heading = 0, sink = 0.3, material = "" | A solid box `w` x `h` x `d` on the surface, sunk `sink` m so its flat bottom never floats over the curve. Walls, cover, steps (0.5 m steps climb), platforms. |
+| `Crater` | lat, lon, radius, color, rim = 1.4, count = 0, seed = 1, material = "Dirt" | A ring of leaning rock slabs round a spot. |
+| `SurfaceScatter` | mesh, count, color, minSize = 0.8, maxSize = 2.5, seed = 1, latMin = -90, latMax = 90, clear = 4, material = "", solid = true | Random rocks (any shape) over a band of latitudes, kept `clear` m from spawns. |
+| `SurfaceSpawn` | lat, lon | A spawn point (and a waypoint) on the ground. Place one per player: planet maps don't generate extra spawns. |
+| `SurfaceWaypoint` | lat, lon | A waypoint. |
+| `PlanetWaypoints` | spacing = 8 | Waypoints all over the planet, about `spacing` m apart. |
+
+- **Objectives** (`teamSpawns`, `hills`, `flags`) are world points `[x, y, z]`, as usual; give all three (the automatic ones
+  are worked out for flat maps). `tools/planet/make_pocket_planet.py` shows how to turn a latitude and longitude into a
+  point. A hill zone is a disc across the ground at its point and up to 3 m above it.
+- **What works on a planet:** walking, sprinting, jumping, crouching and going prone (always with the capsule movement,
+  whatever the server's physics setting), shooting and hit boxes, melee, grenades and launcher rounds, blast pushes,
+  ragdolls, gibs and debris, bots (their graph covers the sphere; the horizon hides people from them as from you), every
+  game mode. **Not yet:** mantling, the death camera, Insane bots' squads (they play as Hard), and kill streaks that fly
+  over the map (strikes, drones, turrets, supply drops; Recon/Counter Sweep, Overdrive, Ballistic Vests, EMP and the
+  Juggernaut suit work). Terrain, movers, buildings, props and boundaries are for flat maps.
+- **Sky:** in space there's no horizon: on a planet map the procedural sky draws stars, the sun and the moon all the way
+  round, and there's no distance fog. A `night` preset with the same dark colour for `zenith`, `horizon` and `ground`, a
+  big `moon` (`"size": 26` makes a gas giant) and `ambient` raised to about 2 works well; the sun lights one side of the
+  planet, so pick its direction so both bases get some light.
+- **Fingerprint:** the gravity field and the solid meshes are part of it.
 
 ## Decals
 

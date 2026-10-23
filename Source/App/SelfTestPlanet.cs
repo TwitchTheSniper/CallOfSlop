@@ -30,7 +30,7 @@ public static partial class SelfTest
         }
         """;
 
-    private static void PLine(string s)
+    private static void PlanetLine(string s)
     {
         Line(s);
         PlanetNotes.Add(s);
@@ -77,7 +77,7 @@ public static partial class SelfTest
         var pitch = 0.2f;
         GravityFrames.Transport(ref yaw, ref pitch, p, p + new Vector3(30, 0, 0));
         same &= yaw == 0.4f && pitch == 0.2f;
-        PLine($"ordinary maps: identity frames, uniform gravity, no solid meshes, fingerprints unchanged: {same}");
+        PlanetLine($"ordinary maps: identity frames, uniform gravity, no solid meshes, fingerprints unchanged: {same}");
         if (!same)
             Fail("planet gravity: an ordinary map's frames or gravity aren't the plain world ones");
     }
@@ -93,7 +93,7 @@ public static partial class SelfTest
     private static void PlanetLabChecks(Map lab)
     {
         var ok = World.Physics.Gravity is PointGravity && GravityFrames.Curved && World.Physics.MeshCount == 1;
-        PLine($"planet lab: point gravity {GravityFrames.Curved}, {World.Physics.MeshCount} solid mesh ({lab.MeshPlacements[0].Mesh!.Lods[0].Indices.Length / 3} triangles), fingerprint {lab.ContentHash:x8}");
+        PlanetLine($"planet lab: point gravity {GravityFrames.Curved}, {World.Physics.MeshCount} solid mesh ({lab.MeshPlacements[0].Mesh!.Lods[0].Indices.Length / 3} triangles), fingerprint {lab.ContentHash:x8}");
         if (!ok)
             Fail("planet gravity: the lab planet has no point gravity or no collider");
 
@@ -101,7 +101,7 @@ public static partial class SelfTest
         var start = Map.SurfaceDir(0, 0) * TestR;
         var s = Settle(Map.SurfaceDir(0, 0) * (TestR + 0.5f));
         var standR = s.Position.Length();
-        PLine($"standing: grounded {s.Grounded}, feet {standR - TestR:+0.000;-0.000} m from the sphere");
+        PlanetLine($"standing: grounded {s.Grounded}, feet {standR - TestR:+0.000;-0.000} m from the sphere");
         if (!s.Grounded || MathF.Abs(standR - TestR) > 0.08f)
             Fail($"planet gravity: a player doesn't stand on the planet (grounded {s.Grounded}, {standR - TestR:0.000} m off)");
 
@@ -133,7 +133,7 @@ public static partial class SelfTest
         var back = Vector3.Distance(s.Position, origin);
         var turn = MathF.Acos(Math.Clamp(Vector3.Dot(look0, look1), -1f, 1f)) * 180f / MathF.PI;
         var circ = MathF.Tau * TestR;
-        PLine($"great circle: {circ:0} m in {ticks * World.TickDt:0.0} s ({circ / (ticks * World.TickDt):0.00} m/s), back {back:0.00} m from the start, "
+        PlanetLine($"great circle: {circ:0} m in {ticks * World.TickDt:0.0} s ({circ / (ticks * World.TickDt):0.00} m/s), back {back:0.00} m from the start, "
               + $"off the plane {maxOff:0.000} m, look turned {turn:0.00} deg, feet {minR - TestR:+0.00;-0.00}..{maxR - TestR:+0.00;-0.00} m from the sphere");
         if (ticks >= 4000 || back > 1.0f || maxOff > 0.05f || turn > 1.5f || minR < TestR - 0.1f || maxR > TestR + 0.2f || !s.Grounded)
             Fail($"planet gravity: the walk round the planet drifted (back {back:0.00} m, off {maxOff:0.000} m, turned {turn:0.0} deg, {ticks} ticks, feet {minR - TestR:0.00}..{maxR - TestR:0.00}, grounded {s.Grounded})");
@@ -151,7 +151,7 @@ public static partial class SelfTest
             air++;
         }
         var landedOff = Vector3.Distance(j.Position, takeoff);
-        PLine($"jump: {air * World.TickDt:0.00} s in the air (flat ground: {2 * World.JumpSpeed / World.Gravity:0.00} s), {top:0.00} m up, landed {landedOff * 100:0.0} cm from the take-off");
+        PlanetLine($"jump: {air * World.TickDt:0.00} s in the air (flat ground: {2 * World.JumpSpeed / World.Gravity:0.00} s), {top:0.00} m up, landed {landedOff * 100:0.0} cm from the take-off");
         if (air >= 200 || landedOff > 0.05f || MathF.Abs(air * World.TickDt - 2 * World.JumpSpeed / World.Gravity) > 0.08f)
             Fail($"planet gravity: a jump didn't come back down where it left ({air} ticks, {top:0.00} m up, landed {landedOff:0.000} m away)");
 
@@ -172,7 +172,7 @@ public static partial class SelfTest
         }
         var thrown = Vector3.Distance(frag.Pos, takeoff);
         var restR = frag.Pos.Length() - TestR;
-        PLine($"grenade: up to {highest:0.0} m, first bounce after {firstTouch * World.TickDt:0.00} s, at rest {thrown:0.0} m away, {restR * 100:0.0} cm over the ground "
+        PlanetLine($"grenade: up to {highest:0.0} m, first bounce after {firstTouch * World.TickDt:0.00} s, at rest {thrown:0.0} m away, {restR * 100:0.0} cm over the ground "
               + $"(lowest {lowest * 100:0.0} cm), speed {frag.Vel.Length():0.00} m/s");
         if (firstTouch < 0 || thrown < 6f || restR < 0.0f || restR > 0.3f || lowest < 0.0f || frag.Vel.Length() > 0.5f)
             Fail($"planet gravity: a grenade didn't arc down onto the planet and stop on it (first touch tick {firstTouch}, up {highest:0.0} m, rest {thrown:0.0} m away at {restR:0.00} m, lowest {lowest:0.00} m, speed {frag.Vel.Length():0.00})");
@@ -200,7 +200,7 @@ public static partial class SelfTest
         for (var i = 150; i < cmds.Length; i++)
             World.Simulate(ref c, cmds[i]);
         var exact = a.Position == c.Position && a.Velocity == c.Velocity && a.Grounded == c.Grounded && a.Stance == c.Stance;
-        PLine($"replay: 300 random commands, replayed from tick 150: exact {exact} (moved {Vector3.Distance(r0.Position, a.Position):0.0} m)");
+        PlanetLine($"replay: 300 random commands, replayed from tick 150: exact {exact} (moved {Vector3.Distance(r0.Position, a.Position):0.0} m)");
         if (!exact)
             Fail("planet gravity: a replay of the same commands gave a different state (prediction would jitter)");
 
@@ -216,7 +216,7 @@ public static partial class SelfTest
         var far = Sees(e1, e2);
         var near = Sees(e1, e3);
         var horizon = MathF.Sqrt(2 * TestR * World.EyeHeight) * 2;
-        PLine($"horizon: 60 deg round the planet seen {far} (blocked), 8 m apart seen {near}; two standing players lose sight at about {horizon:0} m");
+        PlanetLine($"horizon: 60 deg round the planet seen {far} (blocked), 8 m apart seen {near}; two standing players lose sight at about {horizon:0} m");
         if (far || !near)
             Fail("planet gravity: line of sight doesn't follow the planet's curve (the horizon)");
 
@@ -235,7 +235,7 @@ public static partial class SelfTest
         }
         var pelvisR = body.Sim.Pelvis.Length() - TestR;
         var drift = Vector3.Distance(body.Sim.Pelvis, feet);
-        PLine($"ragdoll: {(body.Sim.Broken ? "BROKEN" : "ok")}, asleep {body.Sim.Asleep} after {steps * Ragdoll.Step:0.0} s, pelvis {pelvisR:0.00} m over the ground {drift:0.0} m from the feet, deepest {under * 100:0.0} cm into it");
+        PlanetLine($"ragdoll: {(body.Sim.Broken ? "BROKEN" : "ok")}, asleep {body.Sim.Asleep} after {steps * Ragdoll.Step:0.0} s, pelvis {pelvisR:0.00} m over the ground {drift:0.0} m from the feet, deepest {under * 100:0.0} cm into it");
         if (body.Sim.Broken || !body.Sim.Asleep || pelvisR > 0.6f || pelvisR < 0f || under < -0.08f || drift > 3f)
             Fail($"planet gravity: a ragdoll didn't settle on the planet's surface (broken {body.Sim.Broken}, live {body.Live}, asleep {body.Sim.Asleep} after {steps} steps, pelvis {pelvisR:0.00} m up, {drift:0.0} m away, deepest {under:0.000})");
         Ragdolls.Clear();
@@ -255,7 +255,7 @@ public static partial class SelfTest
                 World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (t % 50 == i ? Buttons.Jump : 0), Yaw = i + t * 0.01f, SpeedPct = 100 });
         var us = sw.Elapsed.TotalMilliseconds * 1000 / costTicks;
         var alloc = GC.GetAllocatedBytesForCurrentThread() - alloc0;
-        PLine($"cost: 16 players moving on the planet: {us:0} us per tick, {alloc} bytes allocated in {costTicks} ticks");
+        PlanetLine($"cost: 16 players moving on the planet: {us:0} us per tick, {alloc} bytes allocated in {costTicks} ticks");
         if (alloc != 0)
             Fail($"planet gravity: movement on the planet allocated {alloc} bytes");
         if (us > 4000)
@@ -275,7 +275,7 @@ public static partial class SelfTest
         var hillsOk = o.Hills.Count == 4 && o.Hills.All(h => MathF.Abs(h.Center.Y) < 1f);
         var flagsOk = o.Flags.Length == 2 && o.Flags[0].Y > map.PlanetRadius - 0.5f && o.Flags[1].Y < -map.PlanetRadius + 0.5f;
         var teamsOk = o.TeamSpawns[0].Count == 8 && o.TeamSpawns[1].Count == 8 && o.TeamSpawns[0].All(p => p.Y > 0) && o.TeamSpawns[1].All(p => p.Y < 0);
-        PLine($"Pocket Planet: radius {map.PlanetRadius} m, gravity {g?.Strength ?? 0} m/s2 to {g?.Center}, {map.SolidMeshes.Count} solid meshes, {map.MeshPlacements.Count} meshes, "
+        PlanetLine($"Pocket Planet: radius {map.PlanetRadius} m, gravity {g?.Strength ?? 0} m/s2 to {g?.Center}, {map.SolidMeshes.Count} solid meshes, {map.MeshPlacements.Count} meshes, "
               + $"{map.Spawns.Count} spawns, max {map.MaxPlayers} players, hills {o.Hills.Count} on the equator {hillsOk}, flags at the poles {flagsOk}, team spawns by pole {teamsOk}, fingerprint {map.ContentHash:x8}");
         if (g == null || map.PlanetRadius < 40 || map.MaxPlayers < 12 || !hillsOk || !flagsOk || !teamsOk)
             Fail($"planet gravity: Pocket Planet's gravity, spawns or objectives are wrong (hills {hillsOk}, flags {flagsOk}, teams {teamsOk}, players {map.MaxPlayers})");
@@ -289,7 +289,7 @@ public static partial class SelfTest
             if (!s.Grounded || Vector3.Distance(s.Position, sp) > 0.4f || !World.BodyFits(s.Position, GravityFrames.UpAt(s.Position)))
                 badSpawns++;
         }
-        PLine($"Pocket Planet spawns: {map.Spawns.Count - badSpawns} of {map.Spawns.Count} stand clear on the ground");
+        PlanetLine($"Pocket Planet spawns: {map.Spawns.Count - badSpawns} of {map.Spawns.Count} stand clear on the ground");
         if (badSpawns > 0)
             Fail($"planet gravity: {badSpawns} Pocket Planet spawns aren't on clear ground");
 
@@ -306,7 +306,7 @@ public static partial class SelfTest
         for (var i = 1; i < len; i++)
             pathM += Vector3.Distance(nav.Nodes[path[i - 1]], nav.Nodes[path[i]]);
         var hemis = nav.MainNodes.Count(i => nav.Nodes[i].Y > 20) > 50 && nav.MainNodes.Count(i => nav.Nodes[i].Y < -20) > 50;
-        PLine($"Pocket Planet nav: {nav.Nodes.Length} nodes, {nav.EdgeCount} edges, {nav.MainNodes.Length} in the main area, built in {buildMs:0} ms; "
+        PlanetLine($"Pocket Planet nav: {nav.Nodes.Length} nodes, {nav.EdgeCount} edges, {nav.MainNodes.Length} in the main area, built in {buildMs:0} ms; "
               + $"pole to pole {len} nodes, {pathM:0} m (half the circumference: {MathF.PI * map.PlanetRadius:0} m), both hemispheres {hemis}");
         if (nav.Nodes.Length < 500 || nav.MainNodes.Length < nav.Nodes.Length * 0.8f || len < 2 || !hemis || pathM > MathF.PI * map.PlanetRadius * 1.5f)
             Fail($"planet gravity: the bots' graph doesn't cover Pocket Planet pole to pole ({nav.Nodes.Length} nodes, {nav.MainNodes.Length} main, path {len} nodes {pathM:0} m, hemispheres {hemis})");
@@ -344,7 +344,7 @@ public static partial class SelfTest
             if (d < 4f)
                 reachedAt = t;
         }
-        PLine($"bot pole to pole: {(reachedAt >= 0 ? $"reached the south pole in {reachedAt:0.0} s" : $"closest {minDist:0.0} m in 40 s")}, alive {bot.Alive}, "
+        PlanetLine($"bot pole to pole: {(reachedAt >= 0 ? $"reached the south pole in {reachedAt:0.0} s" : $"closest {minDist:0.0} m in 40 s")}, alive {bot.Alive}, "
               + $"lowest {lowestR:0.00} m from the ground, stuck kills {game.BotStuckKills}");
         if (reachedAt < 0 || lowestR < -0.15f)
             Fail($"planet gravity: a bot couldn't walk from the north pole to the south pole (closest {minDist:0.0} m, alive {bot.Alive}, lowest {lowestR:0.00} m, stuck kills {game.BotStuckKills}, ended at {bot.Position})");
@@ -357,7 +357,7 @@ public static partial class SelfTest
         const double secs = 2.0;
         Run(game, ref now, secs);
         var msPerTick = sw2.Elapsed.TotalMilliseconds / (secs * World.TickRate);
-        PLine($"16 on the planet (15 bots): {msPerTick:0.00} ms per server tick");
+        PlanetLine($"16 on the planet (15 bots): {msPerTick:0.00} ms per server tick");
         if (msPerTick > 6)
             Fail($"planet gravity: 15 bots on Pocket Planet cost {msPerTick:0.00} ms per tick");
     }
