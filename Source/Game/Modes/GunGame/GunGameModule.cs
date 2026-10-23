@@ -164,7 +164,7 @@ public sealed class GunGameModule : GameModeModule
 
     public override (string First, string Second) ScoreboardColumnsShort => ("Gun", "K");
 
-    public override (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.GunLevel + 1}/{GunGame.Ladder.Length}", $"{p.Kills}");
+    public override (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Fraction(p.GunLevel + 1, GunGame.Ladder.Length), ScoreboardModel.Num(p.Kills));
 
     public override int RankScore(Player p) => p.GunLevel;
 
