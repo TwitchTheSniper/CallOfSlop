@@ -6,7 +6,7 @@
   "unlockOrder": 173,
   "blurb": "The opposite of a suppressor: a brass horn the size of a bucket that makes every shot a public announcement. Hits a little harder, kicks a lot harder, and the whole map hears it.",
   "pros": ["2.5x louder: bots hear it 2.5x further", "Enormous muzzle flash", "+6% damage", "+10% range"],
-  "cons": ["+25% recoil", "+15% hip spread", "-4% speed", "Everyone knows where you are"],
+  "cons": ["+25% recoil", "+60% camera shake", "+15% hip spread", "-4% speed", "Everyone knows where you are"],
   "fits": { "sounds": ["Gun", "Boom"] },
   "model": "loudener",
   "effects": [
