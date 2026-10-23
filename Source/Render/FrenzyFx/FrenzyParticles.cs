@@ -96,7 +96,10 @@ public static class FrenzyParticles
             }
             if (!p.Fixed)
             {
-                p.Vel.Y -= p.Gravity * dt;
+                if (GravityFrames.Curved)
+                    p.Vel -= GravityFrames.UpAt(p.Pos) * (p.Gravity * dt); // a planet: sparks fall towards its centre
+                else
+                    p.Vel.Y -= p.Gravity * dt;
                 p.Vel *= MathF.Max(0f, 1f - p.Drag * dt);
                 p.Pos += p.Vel * dt;
             }

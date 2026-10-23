@@ -71,7 +71,7 @@ public static partial class SelfTest
         var nodes = 0;
         var depth = 0;
         double buildMs = 0;
-        foreach (var m in Maps.All)
+        foreach (var m in Maps.All.Where(m => m.SolidMeshes.Count == 0)) // (solid meshes, a planet: not in the box brute force below; "Planet gravity" checks them)
         {
             World.SetMap(m);
             var phys = World.Physics;

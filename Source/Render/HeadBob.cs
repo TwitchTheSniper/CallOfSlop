@@ -166,5 +166,9 @@ public sealed class HeadBob
     /// <summary>The bobbed camera position for an unbobbed eye looking along <paramref name="yaw"/> (the look direction itself never changes).</summary>
     public Vector3 Apply(Vector3 eye, float yaw) => eye + World.FlatRight(yaw) * Offset.X + Vector3.UnitY * Offset.Y;
 
+    /// <summary><see cref="Apply(Vector3, float)"/> with the yaw measured in the tangent frame at <paramref name="frame"/> (a planet).</summary>
+    public Vector3 Apply(Vector3 eye, Vector3 frame, float yaw) =>
+        eye + GravityFrames.FlatRight(frame, yaw) * Offset.X + GravityFrames.UpAt(frame) * Offset.Y;
+
     private static float Approach(float v, float target, float step) => v < target ? MathF.Min(v + step, target) : MathF.Max(v - step, target);
 }

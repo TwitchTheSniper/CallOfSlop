@@ -60,6 +60,11 @@ public sealed class CaptureTheFlagModule : GameModeModule
 
     private static bool Touches(Vector3 feet, Vector3 at)
     {
+        if (GravityFrames.Curved)
+        {
+            var rel = GravityFrames.ToLocal(at, feet - at); // a planet: in the flag's own frame
+            return rel.X * rel.X + rel.Z * rel.Z <= FlagTouchRadius * FlagTouchRadius && MathF.Abs(rel.Y) < 2f;
+        }
         var d = new Vector2(feet.X - at.X, feet.Z - at.Z);
         return d.LengthSquared() <= FlagTouchRadius * FlagTouchRadius && MathF.Abs(feet.Y - at.Y) < 2f;
     }

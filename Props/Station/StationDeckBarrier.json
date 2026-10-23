@@ -1,0 +1,90 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Station Deck Barrier",
+ "category": "Station",
+ "description": "A 2 m metal deck barrier, waist high: solid cover (runs along X).",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    2.0,
+    1.2,
+    0.3
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    2.0,
+    1.1,
+    0.3
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    2.04,
+    0.1,
+    0.34
+   ],
+   "offset": [
+    0.0,
+    1.15,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    2.04,
+    0.12,
+    0.34
+   ],
+   "offset": [
+    0.0,
+    0.16,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.02
+   ],
+   "offset": [
+    -0.5,
+    0.73,
+    0.16
+   ],
+   "color": "#ffb24a"
+  },
+  {
+   "size": [
+    0.4,
+    0.06,
+    0.02
+   ],
+   "offset": [
+    0.5,
+    0.73,
+    0.16
+   ],
+   "color": "#ffb24a"
+  }
+ ],
+ "author": "Call of Slop"
+}

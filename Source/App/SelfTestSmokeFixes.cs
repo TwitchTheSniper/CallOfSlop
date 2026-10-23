@@ -18,7 +18,7 @@ public static partial class SelfTest
             if (m.Boundary is not { } b)
             {
                 // No boundary (every Classic, Collision Point and High Ground map): exactly the fog maps always had.
-                var (start, end) = m.Size switch
+                var (start, end) = m.PointGravity != null ? (400f, 0f) : m.Size switch // (a planet: no fog in space, MapPlanet.cs)
                 {
                     MapSize.Large => (70f, m.FarPlane * 0.9f),
                     MapSize.Medium => (90f, 260f),
@@ -44,6 +44,8 @@ public static partial class SelfTest
                 Fail($"{m.Name}: fog starts at {m.FogStart:0} m, inside the {across:0} m wide playable area");
             if (m.HasTerrain)
                 continue; // terrain maps: the land itself runs past the outline (shaded darker)
+            if (m.FallKillY != null)
+                continue; // void maps (Space pack): no ground on purpose, the sky image is the view below
             // Flat shaped maps: the floor plus a far ground covering the far plane's reach from anywhere inside the outline.
             var floor = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary floor");
             var far = m.MeshPlacements.FirstOrDefault(p => p.Source == "boundary far ground");

@@ -68,7 +68,7 @@ public static unsafe partial class Program
             var flash = Math.Clamp((float)(1 - (now - p.ShieldFlashTime) / 0.35), 0f, 1f);
             if (p.ShieldCharges == 0 && flash <= 0)
                 continue;
-            var hb = World.Hitbox(p.RenderPosition, p.RenderStance, p.RenderYaw);
+            var hb = World.BodyBounds(p.RenderPosition, p.RenderStance, p.RenderYaw);
             var flicker = 0.5f + 0.5f * MathF.Sin((float)now * 9f + p.Id);
             var alpha = (p.ShieldCharges > 0 ? 0.07f + 0.05f * flicker : 0f) + 0.45f * flash;
             var grow = 1.15f + 0.12f * flash;

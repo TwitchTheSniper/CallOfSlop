@@ -1,0 +1,275 @@
+{
+ "format": "call-of-slop-building/1",
+ "name": "Station Control Hub",
+ "theme": "A sky-station control hub: consoles and status walls, a crew mess, a command deck above and a fighting roof",
+ "category": "special",
+ "description": "Two storeys, 16 x 12 m: the operations room and a crew mess below, the command deck above, stairs onto a railed roof.",
+ "author": "Call of Slop",
+ "seed": 611,
+ "wallThickness": 0.3,
+ "storeyHeight": 3.4,
+ "exterior": {
+  "color": "$wall",
+  "material": "metal"
+ },
+ "interior": {
+  "color": "$interior",
+  "material": "metal"
+ },
+ "floor": {
+  "color": "$floor",
+  "material": "grid"
+ },
+ "ceiling": {
+  "color": "$ceiling",
+  "material": "metal"
+ },
+ "trim": "$trim",
+ "door": "$door",
+ "palettes": {
+  "cream hull": {
+   "wall": "#cdbfa8",
+   "interior": "#a4aaae",
+   "floor": "#4c5054",
+   "ceiling": "#868b90",
+   "trim": "#8d7458",
+   "door": "#6c6f73",
+   "roof": "#b3a48c"
+  },
+  "white hull": {
+   "wall": "#d8d8d2",
+   "interior": "#9ea6ac",
+   "floor": "#45494e",
+   "ceiling": "#80868c",
+   "trim": "#5a6a78",
+   "door": "#5a6066",
+   "roof": "#bfc0bc"
+  },
+  "bronze hull": {
+   "wall": "#a88e70",
+   "interior": "#a39a8e",
+   "floor": "#4a4640",
+   "ceiling": "#857d72",
+   "trim": "#5c4a38",
+   "door": "#6a5a48",
+   "roof": "#8d7458"
+  }
+ },
+ "floors": [
+  {
+   "autoWindows": {
+    "spacing": 2.6,
+    "width": 1.5,
+    "sill": 1.0,
+    "head": 2.4
+   },
+   "rooms": [
+    {
+     "id": "operations",
+     "type": "stationcontrol",
+     "rect": [
+      -8,
+      -6,
+      3,
+      6
+     ]
+    },
+    {
+     "id": "stair hall",
+     "type": "stationhall",
+     "rect": [
+      3,
+      -6,
+      8,
+      0
+     ],
+     "windows": false
+    },
+    {
+     "id": "crew mess",
+     "type": "stationcommon",
+     "rect": [
+      3,
+      0,
+      8,
+      6
+     ]
+    }
+   ],
+   "openings": [
+    {
+     "type": "arch",
+     "at": [
+      -2.5,
+      6
+     ],
+     "width": 2.0,
+     "front": true
+    },
+    {
+     "type": "arch",
+     "at": [
+      -2.5,
+      -6
+     ],
+     "width": 2.0
+    },
+    {
+     "type": "door",
+     "at": [
+      3,
+      -3
+     ],
+     "width": 1.1,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      3,
+      3
+     ],
+     "width": 1.1,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      5.5,
+      0
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      8,
+      3
+     ],
+     "width": 1.1,
+     "material": "metal"
+    }
+   ]
+  },
+  {
+   "autoWindows": {
+    "spacing": 2.6,
+    "width": 1.5,
+    "sill": 1.0,
+    "head": 2.4
+   },
+   "rooms": [
+    {
+     "id": "command deck",
+     "type": "stationcontrol",
+     "rect": [
+      -8,
+      -6,
+      3,
+      6
+     ]
+    },
+    {
+     "id": "upper hall",
+     "type": "stationhall",
+     "rect": [
+      3,
+      -6,
+      8,
+      6
+     ],
+     "windows": false
+    }
+   ],
+   "openings": [
+    {
+     "type": "door",
+     "at": [
+      3,
+      -2.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    },
+    {
+     "type": "door",
+     "at": [
+      3,
+      2.5
+     ],
+     "width": 1.2,
+     "material": "metal"
+    }
+   ]
+  }
+ ],
+ "stairs": [
+  {
+   "floor": 0,
+   "rect": [
+    6.4,
+    -4.85,
+    7.5,
+    -1.55
+   ],
+   "dir": "+z"
+  },
+  {
+   "floor": 1,
+   "rect": [
+    6.4,
+    1.2,
+    7.5,
+    4.5
+   ],
+   "dir": "+z"
+  }
+ ],
+ "roof": {
+  "type": "flat",
+  "parapet": 1.0,
+  "color": {
+   "color": "$roof",
+   "material": "metal"
+  }
+ },
+ "anchors": [
+  {
+   "type": "spawn",
+   "name": "operations west",
+   "floor": 0,
+   "at": [
+    -6,
+    0
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "operations east",
+   "floor": 0,
+   "at": [
+    1,
+    -3.5
+   ]
+  },
+  {
+   "type": "spawn",
+   "name": "mess",
+   "floor": 0,
+   "at": [
+    5.5,
+    3
+   ]
+  },
+  {
+   "type": "point",
+   "name": "roof",
+   "floor": 1,
+   "at": [
+    -2.5,
+    0
+   ]
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationworkshop",
+ "description": "A station workshop: shelving, a console, cabinets, tool boxes.",
+ "items": [
+  {
+   "props": [
+    "Metal Shelving"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Console"
+   ],
+   "place": "wall"
+  },
+  {
+   "props": [
+    "Station Server Cabinet"
+   ],
+   "place": "corner",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Toolbox",
+    "Station Supply Case"
+   ],
+   "place": "floor",
+   "count": [
+    1,
+    3
+   ]
+  }
+ ]
+}

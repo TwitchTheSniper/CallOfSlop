@@ -24,6 +24,10 @@ public static unsafe partial class Program
         // The Dev pack's bean-shaped map (a map boundary): its wall is instanced meshes, its floor a mesh following the outline.
         ("shape_inside", new Vector3(30f, 1.7f, -3f), new Vector3(-30f, 1.4f, 3f), "Shape Test"),
         ("shape_overview", new Vector3(0f, 52f, 48f), new Vector3(0f, 0f, -2f), "Shape Test"),
+        // The Space pack's planet (point gravity, MapPlanet.cs): from orbit, and at eye height near the north pole looking
+        // south along the ground (the horizon about 13 m away, the ground dropping away beyond it).
+        ("planet_orbit", new Vector3(60f, 70f, 130f), Vector3.Zero, "Pocket Planet"),
+        ("planet_eye", new Vector3(0f, 54.22f, 19.73f), new Vector3(0f, 43.96f, 47.92f), "Pocket Planet"),
     ];
 
     private static int _meshSmoke = -1; // view index; -1 = not running

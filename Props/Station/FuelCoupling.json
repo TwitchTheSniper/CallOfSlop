@@ -1,0 +1,96 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Fuel Coupling",
+ "category": "Station",
+ "description": "A refuelling pedestal with a coiled hose and a cyan status strip. Faces +Z.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.6,
+    1.2,
+    0.5
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    0.6,
+    1.1,
+    0.5
+   ],
+   "offset": [
+    0.0,
+    0.55,
+    0.0
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.64,
+    0.12,
+    0.54
+   ],
+   "offset": [
+    0.0,
+    1.16,
+    0.0
+   ],
+   "color": "#8d7458"
+  },
+  {
+   "size": [
+    0.12,
+    0.5,
+    0.12
+   ],
+   "offset": [
+    0.38,
+    0.65,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.5,
+    0.1,
+    0.1
+   ],
+   "offset": [
+    0.62,
+    0.25,
+    0.15
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.3,
+    0.12,
+    0.02
+   ],
+   "offset": [
+    0.0,
+    0.86,
+    0.26
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "pulse",
+    "color": "#6fe0e8",
+    "glow": 1.0,
+    "period": 2.6
+   }
+  }
+ ],
+ "author": "Call of Slop"
+}

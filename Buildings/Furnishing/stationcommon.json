@@ -1,0 +1,58 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationcommon",
+ "description": "A station crew mess: a table and chairs, a fridge, a water cooler, cases.",
+ "items": [
+  {
+   "id": "table",
+   "props": [
+    "Dining Table"
+   ],
+   "place": "centre"
+  },
+  {
+   "props": [
+    "Dining Chair"
+   ],
+   "place": "around",
+   "of": "table",
+   "count": [
+    2,
+    4
+   ]
+  },
+  {
+   "props": [
+    "Fridge",
+    "Water Cooler"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Metal Lockers"
+   ],
+   "place": "wall",
+   "count": [
+    0,
+    1
+   ]
+  },
+  {
+   "props": [
+    "Duffel Bag",
+    "Backpack",
+    "Station Supply Case"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  }
+ ]
+}

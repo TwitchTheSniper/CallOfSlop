@@ -182,7 +182,7 @@ public sealed partial class Game
         SquadStats.SuppressLosTicks++;
         if (b.ReloadUntil != 0 || b.Ammo <= Math.Max(1, def.Mag / 4) || now < b.NextFire || !DamageEnabled)
             return;
-        var d = b.SuppressAim - p.Eye;
+        var d = GravityFrames.ToLocal(p.Position, b.SuppressAim - p.Eye);
         var dist = d.Length();
         if (dist < 1f || (dist > def.RangeM * 2.5f && def.Class != WeaponClass.Sniper))
             return;
@@ -191,7 +191,7 @@ public sealed partial class Game
         if (MathF.Abs(World.WrapAngle(wantYaw - aim.Yaw)) > 0.08f || MathF.Abs(wantPitch - aim.Pitch) > 0.08f)
             return;
         var spread = def.HipSpreadRad * (aim.Ads ? def.AdsSpreadMult : 1f) + 0.025f;
-        var shotDir = b.SuppressBlind ? BlindSuppressDir(p, b, def, aim, dist, now, out spread) : World.Forward(aim.Yaw, aim.Pitch); // into cover: not aimed
+        var shotDir = b.SuppressBlind ? BlindSuppressDir(p, b, def, aim, dist, now, out spread) : GravityFrames.Forward(p.Position, aim.Yaw, aim.Pitch); // into cover: not aimed
         ServerResolveShot(p, def, p.Eye, shotDir, spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.NextFire = now + def.FireInterval * 2.5 + (def.Mode == FireMode.Semi ? 0.15 : 0) + _rng.NextDouble() * 0.1;

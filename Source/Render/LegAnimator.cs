@@ -211,7 +211,7 @@ public static class LegAnimator
         var pos = p.RenderPosition;
         var yaw = p.RenderYaw;
         var stance = p.RenderStance;
-        var vel = p.RenderVelocity;
+        var vel = GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
 
         var dt = (float)(now - st.Last);
         var fresh = !st.Init || dt > 0.5f || dt < 0;
@@ -294,7 +294,7 @@ public static class LegAnimator
         st.PelvisH = fresh ? baseH : float.Lerp(st.PelvisH, baseH, 1f - MathF.Exp(-12f * dt));
 
         var rays = 0;
-        var near = float.IsNaN(Viewer.X) || Vector3.DistanceSquared(Viewer, pos) <= IkRange * IkRange;
+        var near = (float.IsNaN(Viewer.X) || Vector3.DistanceSquared(Viewer, pos) <= IkRange * IkRange) && !GravityFrames.Curved; // (foot rays are Y-down: none on a planet)
         pose.GroundIk = false;
 
         if (prone)

@@ -251,6 +251,7 @@ public sealed partial class Game
     private void BotTick(Player p, double now)
     {
         var b = p.Bot!;
+        _botUp = GravityFrames.UpAt(p.Position); // the bot's ground plane for the flat-ground maths (BotTactics.cs; world up on ordinary maps)
         if (BotHeld(p, b, now))
             return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
         if (Module.BotTick(this, p, b, now))

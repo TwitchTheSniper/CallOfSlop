@@ -118,6 +118,9 @@ public static class Throwables
         var flat = !float.IsNaN(flatGround);
         if (p.Stuck)
             return false;
+        if (!flat && GravityFrames.Curved)
+            return StepCurved(p, dt); // a planet: falls towards its centre, bounces off any surface
+
         var touched = false;
         const int sub = 3;
         var h = dt / sub;
@@ -167,6 +170,54 @@ public static class Throwables
             if (World.Map.TerrainCollision is { } terrain && TerrainContact(p, ref pos, terrain, h))
                 touched = true;
             p.Pos = pos;
+        }
+        return touched;
+    }
+
+    /// <summary>
+    /// <see cref="Step(Projectile, float)"/> on a planet (point gravity): gravity towards the centre, a swept ray per sub-step
+    /// and a bounce off whatever surface it meets (the same restitution and ground friction as the flat code, with "ground"
+    /// meaning any surface facing up), rolling to a stop on the ground.
+    /// </summary>
+    private static bool StepCurved(Projectile p, float dt)
+    {
+        var touched = false;
+        const int sub = 3;
+        var h = dt / sub;
+        var filter = new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary);
+        for (var i = 0; i < sub; i++)
+        {
+            var up = GravityFrames.UpAt(p.Pos);
+            p.Vel += GravityFrames.GravityAt(p.Pos) * h;
+            var move = p.Vel * h;
+            var len = move.Length();
+            var pos = p.Pos;
+            if (len > 1e-6f && World.Query.Raycast(p.Pos, move / len, len + ProjectileRadius, filter, out var hit))
+            {
+                pos = p.Pos + move / len * MathF.Max(0f, hit.Distance - ProjectileRadius);
+                var n = hit.Normal;
+                var vn = Vector3.Dot(p.Vel, n);
+                if (vn < 0)
+                {
+                    var tangent = p.Vel - vn * n;
+                    var ground = Vector3.Dot(n, up) > 0.5f;
+                    if (ground && vn > -1.2f)
+                    {
+                        // Resting on the ground: roll, slowing down.
+                        var speed = tangent.Length();
+                        var slow = RollFriction * World.Gravity * Vector3.Dot(n, up) * h;
+                        p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
+                    }
+                    else
+                        p.Vel = tangent * (ground ? 0.7f : 1f) - vn * Restitution * n;
+                }
+                touched = true;
+            }
+            else
+                pos += move;
+            if (World.Query.PointInside(pos, ProjectileRadius * 0.5f, filter))
+                pos = p.Pos; // never into something (a corner the ray slipped past)
+            p.Pos = World.ClampToArena(pos);
         }
         return touched;
     }
@@ -397,7 +448,7 @@ public sealed partial class Game
         _nextThrow = now + 0.8;
         Audio.Effect(Sfx.Throw, 0.6f);
 
-        var dir = World.Forward(LookYaw, LookPitch);
+        var dir = LookDir(LookYaw, LookPitch);
         var origin = Throwables.LaunchPoint(me.RenderEye, dir);
         if (IsServer)
         {
@@ -435,7 +486,7 @@ public sealed partial class Game
             origin = p.Eye;
         if (World.Query.OverlapBody(origin - new Vector3(0, 0.05f, 0), 0.1f, QueryFilter.StaticOnly))
             origin = p.Eye; // don't spawn it inside a wall
-        dir = dir.LengthSquared() > 0.5f ? Vector3.Normalize(dir) : World.Forward(p.Yaw, p.Pitch);
+        dir = dir.LengthSquared() > 0.5f ? Vector3.Normalize(dir) : GravityFrames.Forward(p.Position, p.Yaw, p.Pitch);
 
         var proj = new Projectile
         {

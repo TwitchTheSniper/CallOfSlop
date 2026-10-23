@@ -1,0 +1,52 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationlounge",
+ "description": "A station lounge: a sofa, armchairs, a coffee table and a wall display.",
+ "items": [
+  {
+   "id": "sofa",
+   "props": [
+    "Fabric Sofa"
+   ],
+   "place": "wall",
+   "prefer": "far"
+  },
+  {
+   "props": [
+    "Coffee Table"
+   ],
+   "place": "front",
+   "of": "sofa",
+   "distance": 0.4
+  },
+  {
+   "props": [
+    "Armchair"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Big Wall Display",
+    "Status Board"
+   ],
+   "place": "wall",
+   "chance": 0.7
+  },
+  {
+   "props": [
+    "Duffel Bag",
+    "Backpack"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  }
+ ]
+}

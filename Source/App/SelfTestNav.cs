@@ -27,7 +27,7 @@ public static partial class SelfTest
         var sectionTime = Stopwatch.StartNew();
         try
         {
-            foreach (var m in Maps.All.Where(m => m.Boundary == null && m.Terrain?.Voids == null && m.PlacedBuildings.Count == 0)) // shaped maps have a barrier the old code never had ("Map shapes" checks them); caves have ceilings it never had ("Terrain holes" checks them); building doors are on a layer bot navigation ignores, which it never had ("Buildings" checks them)
+            foreach (var m in Maps.All.Where(m => m.Boundary == null && m.Terrain?.Voids == null && m.PlacedBuildings.Count == 0 && m.SolidMeshes.Count == 0)) // (solid meshes, a planet: the old code never had them; "Planet gravity" checks them) // shaped maps have a barrier the old code never had ("Map shapes" checks them); caves have ceilings it never had ("Terrain holes" checks them); building doors are on a layer bot navigation ignores, which it never had ("Buildings" checks them)
             {
                 World.SetMap(m);
                 var phys = World.Physics;

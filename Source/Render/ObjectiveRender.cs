@@ -28,6 +28,7 @@ public static class ObjectiveRender
     /// <summary>A ring of thin glowing boxes lying on the ground (following it on terrain).</summary>
     internal static void Ring(Renderer gfx, Vector3 center, float radius, Vector3 color, float alpha, float height, float width = 0.14f)
     {
+        using var _ = gfx.StandAt(center); // (a planet: on its curve)
         var seg = MathF.Tau * radius / RingSegments * 1.08f;
         for (var i = 0; i < RingSegments; i++)
         {
@@ -48,6 +49,7 @@ public static class ObjectiveRender
     /// </summary>
     internal static void Halo(Renderer gfx, Vector3 center, float radius, float height, Vector3 color, float alpha)
     {
+        using var _ = gfx.StandAt(center); // (a planet: on its curve)
         var seg = MathF.Tau * radius / HaloSegments * 1.04f;
         for (var i = 0; i < HaloSegments; i++)
         {
@@ -68,12 +70,16 @@ public static class ObjectiveRender
         }
     }
 
-    internal static void Beam(Renderer gfx, Vector3 foot, float width, float height, Vector3 color, float alpha) =>
+    internal static void Beam(Renderer gfx, Vector3 foot, float width, float height, Vector3 color, float alpha)
+    {
+        using var _ = gfx.StandAt(foot); // (a planet: on its curve)
         gfx.Draw(Matrix4x4.CreateScale(width, height, width) * Matrix4x4.CreateTranslation(foot + new Vector3(0, height / 2, 0)), color, alpha, mode: 2);
+    }
 
     /// <summary>A pole and a waving cloth.</summary>
     internal static void Flag(Renderer gfx, Vector3 foot, Vector3 color, double now)
     {
+        using var _ = gfx.StandAt(foot); // (a planet: on its curve)
         gfx.Draw(Matrix4x4.CreateScale(0.06f, 2.2f, 0.06f) * Matrix4x4.CreateTranslation(foot + new Vector3(0, 1.1f, 0)), new Vector3(0.75f, 0.75f, 0.78f), 1f, mode: 2);
         var wave = MathF.Sin((float)now * 3f) * 0.15f;
         gfx.Draw(Matrix4x4.CreateScale(0.75f, 0.45f, 0.04f) * Matrix4x4.CreateRotationY(wave) * Matrix4x4.CreateTranslation(foot + new Vector3(0.4f, 1.9f, 0)), color, 1f, mode: 2);

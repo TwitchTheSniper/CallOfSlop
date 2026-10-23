@@ -268,7 +268,7 @@ public static partial class FrenzyFx
                 var look = FrenzyLooks.Get(ClassOf(g, p));
                 var glow = FrenzyLooks.Intensity(level) * (Mode == FrenzyVisualMode.Subtle ? 0.6f : 1f);
                 var col = look.Rainbow ? FrenzyLooks.Hue((float)(now * 0.2 % 1.0) + p.Id * 0.17f) : look.Color;
-                var fwd = World.Forward(p.RenderYaw, p.RenderPitch);
+                var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
                 var muzzle = Game.MuzzleWorld(p);
                 var gunLen = 0.45f + p.WeaponDef.Length;
                 var center = muzzle - fwd * (gunLen * 0.5f);
