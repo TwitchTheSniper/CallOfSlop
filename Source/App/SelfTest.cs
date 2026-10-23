@@ -59,7 +59,7 @@ public static partial class SelfTest
         string? filterError = null;
         if (only != null)
         {
-            (picked, filterError) = ResolveFilter(only, _names);
+            (picked, filterError) = ResolveFilter(only, _names, _needs);
             _plan = picked.ToHashSet(StringComparer.Ordinal);
         }
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
@@ -81,6 +81,9 @@ public static partial class SelfTest
                     Line($"FILTERED run (--selftest-only \"{only}\"): {picked.Length} of {_names.Count} sections: {string.Join(", ", picked)}");
                 foreach (var dup in _names.GroupBy(n => n, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1))
                     Fail($"section name \"{dup.Key}\" is used {dup.Count()} times (each name must pick one section for --selftest-only)");
+                foreach (var (name, before) in _needs)
+                    foreach (var b in before.Where(b => !_names.Contains(b)))
+                        Fail($"section \"{name}\" needs \"{b}\", which isn't a section");
                 Sections();
                 Line("");
                 var slowest = _times.OrderByDescending(t => t.Seconds).Take(10).Select(t => $"{t.Name} {t.Seconds:0.0} s");
@@ -113,9 +116,10 @@ public static partial class SelfTest
     /// <summary>
     /// Matches each comma-separated term against the section names, ignoring case: a term that is a whole section
     /// name picks that section; otherwise it picks every section whose name starts with it. A term that matches
-    /// nothing is an error that lists the valid names, so a typo never passes as an empty run.
+    /// nothing is an error that lists the valid names, so a typo never passes as an empty run. A picked section also
+    /// brings the sections it needs (<paramref name="needs"/>: what an earlier section leaves behind for it).
     /// </summary>
-    internal static (string[] Picked, string? Error) ResolveFilter(string only, IReadOnlyList<string> names)
+    internal static (string[] Picked, string? Error) ResolveFilter(string only, IReadOnlyList<string> names, IReadOnlyDictionary<string, string[]> needs)
     {
         var terms = only.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
         if (terms.Length == 0)
@@ -132,11 +136,20 @@ public static partial class SelfTest
         }
         if (unknown.Count > 0)
             return ([], $"--selftest-only: unknown section(s) {string.Join(", ", unknown.Select(u => $"\"{u}\""))}. Valid names: {string.Join(", ", names)}");
+        for (var grew = true; grew;)
+        {
+            grew = false;
+            foreach (var n in picked.ToArray())
+                if (needs.TryGetValue(n, out var before))
+                    foreach (var b in before)
+                        grew |= picked.Add(b);
+        }
         return (names.Where(picked.Contains).ToArray(), null); // suite order, whatever order the terms came in
     }
 
     private static HashSet<string>? _plan; // sections to run; null = all
     private static readonly List<string> _names = new(); // every section name, filled by the collecting pass
+    private static readonly Dictionary<string, string[]> _needs = new(); // section -> earlier sections whose results it uses
     private static readonly List<(string Name, double Seconds)> _times = new();
     private static bool _collecting;
 
@@ -144,6 +157,7 @@ public static partial class SelfTest
     {
         _plan = null;
         _names.Clear();
+        _needs.Clear();
         _collecting = true;
         try
         {
@@ -200,7 +214,7 @@ public static partial class SelfTest
         Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
         Section("Matches", CheckMatches);
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
-        Section("Bots", CheckBots);
+        Section("Bots", CheckBots, "Matches"); // judges the bot stats of the Matches section's games
         Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
         Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
         Section("Bot doors", CheckBotDoors); // SelfTestBotDoors.cs: bots open doors ahead, shut them behind / when holding, no spam; co-op enemies and zombies at doors
@@ -314,11 +328,15 @@ public static partial class SelfTest
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
     }
 
-    private static void Section(string name, Action body)
+    /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,
+    /// so a filtered run (--selftest-only) of this section runs them first.</summary>
+    private static void Section(string name, Action body, params string[] needs)
     {
         if (_collecting)
         {
             _names.Add(name);
+            if (needs.Length > 0)
+                _needs[name] = needs;
             return;
         }
         if (_plan != null && !_plan.Contains(name))
