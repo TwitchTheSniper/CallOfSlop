@@ -45,9 +45,26 @@ public static unsafe class PartThumbs
         return 0;
     }
 
+    private static readonly List<uint> DeleteLater = new();
+
+    /// <summary>Forgets every picture (part files were reloaded in place): they're drawn again when next asked for.</summary>
+    public static void Invalidate()
+    {
+        DeleteLater.AddRange(Ready.Values);
+        Ready.Clear();
+        Queued.Clear();
+        Queue.Clear();
+    }
+
     /// <summary>Draws up to <see cref="PerFrame"/> queued pictures (call before the scene: it changes framebuffer, viewport and shader state).</summary>
     public static void Pump(Renderer gfx)
     {
+        foreach (var t in DeleteLater)
+        {
+            var tex = new GlTexture(t);
+            Native.glDeleteTextures(1, &tex);
+        }
+        DeleteLater.Clear();
         if (Queue.Count == 0)
             return;
         if (!_glReady && !_glBroken)

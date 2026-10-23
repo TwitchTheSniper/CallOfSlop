@@ -1,30 +1,16 @@
 {
-  "format": "call-of-slop-part/1",
+  "extends": "Service Rifle Grip",
   "name": "Sport Rifle Grip",
-  "category": "grip",
   "rarity": "uncommon",
   "flavor": "A skeletonised one-receiver rifle frame with a side rail. Lighter in the hands, steadier on target.",
   "weight": 0.6,
-  "hand": [0, -0.055, 0.05626278954320295],
-  "gripAngle": 8,
-  "frame": {"fireStyle": "volley", "hands": "two", "carry": 10, "ironHeight": 0.105, "support": [0, -0.01, -0.21]},
-  "sockets": [
-    {"name": "receiver_1", "type": "receiver", "pos": [0, 0.012, 0]},
-    {"name": "optic", "type": "optic", "pos": [0, 0.082, -0.02]},
-    {"name": "stock", "type": "stock", "pos": [0, 0.03, 0.12]},
+  "frame": {"carry": 10, "support": [0, -0.01, -0.21]},
+  "+sockets": [
     {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.21]},
     {"name": "utility", "type": "utility", "pos": [0.045, 0.0, -0.08]}
   ],
-  "model": [
-    {"size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0563], "color": "tan", "rot": [-8, 0, 0]},
-    {"size": [0.03, 0.01, 0.05], "pos": [0, -0.012, 0.01], "color": "black"},
-    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.012, 0.025], "color": "steel"},
-    {"size": [0.07, 0.012, 0.14], "pos": [0, 0.006, -0.02], "color": "black"},
-    {"size": [0.072, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"},
-    {"size": [0.028, 0.018, 0.32], "pos": [0, -0.004, -0.14], "color": "gunmetal"},
-    {"size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black"},
-    {"size": [0.006, 0.016, 0.006], "pos": [0, 0.098, -0.12], "color": "black", "tag": "irons"},
-    {"size": [0.022, 0.014, 0.006], "pos": [0, 0.098, 0.08], "color": "black", "tag": "irons"}
+  "+model": [
+    {"size": [0.072, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"}
   ],
   "stats": [
     {"stat": "adsTime", "add": -0.02},

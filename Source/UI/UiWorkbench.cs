@@ -208,6 +208,28 @@ public sealed partial class Ui
         ResetView();
     }
 
+    /// <summary>
+    /// Re-assembles what the workbench shows after the part files changed in place (part hot reload,
+    /// <see cref="OnPartsReloaded"/>): new models and numbers, fresh part pictures, every cache rebuilt.
+    /// </summary>
+    private void WorkbenchChanged()
+    {
+        PartThumbs.Invalidate();
+        _wbPracticeStock = null;
+        _runStockKey = int.MinValue;
+        _invKey = (-1, 0, 0, "", false);
+        _rowVersion = -1;
+        _badgeKey = (int.MinValue, -1, false);
+        _trialKey = (-1, -1, null, null);
+        _hoverTrialKey = (-1, null);
+        _animRest = _animPart = null;
+        CancelDrag();
+        if (_bm == null)
+            return;
+        _bm.SetStock(WbStock());
+        _bm.Changed();
+    }
+
     /// <summary>The parts this workbench builds with: a run's (UiWorkbenchRun.cs), the sandbox's practice stock, or everything.</summary>
     private BenchStock WbStock()
     {
@@ -1029,7 +1051,7 @@ public sealed partial class Ui
                 if (r.Kind == BenchRowKind.Part)
                     ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nRight-click: options. Drag it off to take it off.");
                 else
-                    ImGuiSafe.SetTooltip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here. Drag one from your parts onto it (or onto the yellow ring on the gun).");
+                    ImGuiSafe.SetTooltip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here ({SocketAbout(r.Socket.Type)}). Drag one from your parts onto it (or onto the yellow ring on the gun).");
             }
             if (clicked && !_dragging)
             {
@@ -1060,23 +1082,22 @@ public sealed partial class Ui
         ImGui.EndChild();
     }
 
-    private static PartCategory CategoryFor(PartSocket s) => s.Accepts.Length > 0 ? s.Accepts[0] : s.Type switch
+    /// <summary>
+    /// The part category a socket takes, for the inventory filter: what the socket accepts, else the category whose
+    /// mount is the socket's type in the part registry (Parts/_Registry.json), else a part that mounts there.
+    /// </summary>
+    private static PartCategory CategoryFor(PartSocket s)
     {
-        "receiver" => PartCategory.Receiver,
-        "barrel" => PartCategory.Barrel,
-        "feed" => PartCategory.Feed,
-        "ammo" => PartCategory.Ammo,
-        "stock" => PartCategory.Stock,
-        "foregrip" => PartCategory.Grip,
-        "optic" => PartCategory.Optic,
-        "muzzle" => PartCategory.Muzzle,
-        "upgrade" => PartCategory.Upgrade,
-        "amp" => PartCategory.Multiplier,
-        "hopper" => PartCategory.Feed,
-        "head" => PartCategory.Head,
-        "mod" => PartCategory.MeleeMod,
-        _ => PartCategory.Utility,
-    };
+        if (s.Accepts.Length > 0)
+            return s.Accepts[0];
+        foreach (var c in Enum.GetValues<PartCategory>())
+            if (Parts.Registry.MountOf(c) == s.Type)
+                return c;
+        return Parts.All.FirstOrDefault(p => p.Mount == s.Type)?.Category ?? PartCategory.Utility; // foregrips, shared feeds: their files name the mount
+    }
+
+    /// <summary>What a socket type is for, from the part registry ("" if it says nothing).</summary>
+    private static string SocketAbout(string type) => Parts.Registry.About.TryGetValue(type, out var a) ? a : "";
 
     /// <summary>The build with the dragged part (or part being moved) in spot <paramref name="spot"/>, cached per hovered spot.</summary>
     private AssembledWeapon? TrialFor(int spot)

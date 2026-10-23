@@ -464,7 +464,8 @@ public sealed class BenchModel
         "optic" => 8,
         "foregrip" => 9,
         "mod" => 10,
-        _ => 11, // utility
+        "utility" => 11,
+        _ => 12 + Math.Max(0, Array.IndexOf(PartFile.SocketTypes, type)), // a socket type added in Parts/_Registry.json: after the built-in ones, in registry order
     };
 
     /// <summary>A part's sockets in list order (by type rank, then the part's own order).</summary>

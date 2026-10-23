@@ -359,7 +359,7 @@ network and the fingerprint can't tell the difference. Top-level entries in `Par
 | --- | --- |
 | `Parts/_Template/` | `Template.json`: every key, commented, to copy into a category folder. Two more examples show `extends`. Checked by the self-test, never in the game. |
 | `Parts/_Fragments/*.json` | Reusable model pieces (format `call-of-slop-fragment/1`: `name`, `about`, `model`): Picatinny Rail, Screw Head, Cooling Fins, Drum Shell, Scope Tube, Magazine Body, Barrel Shroud, Muzzle Ring, Trigger Guard. |
-| `Parts/_Bases/*.json` | Templates to `extends` (Base Barrel, Base Box Mag, Base Auto Receiver). Never in the game; may leave things out. |
+| `Parts/_Bases/*.json` | Templates to `extends` (Base Barrel, Base Box Mag, Base Auto Receiver, Base One-Receiver Grip: the first-tier grips extend it). Never in the game; may leave things out. |
 | `Parts/_Registry.json` | Socket types, bores and each category's default mount and display name (format `call-of-slop-part-registry/1`). |
 
 **Fragments.** In a `model` list, `{"use": "Picatinny Rail", "pos": [0, 0.07, -0.02], "rot": [0, 0, 0], "scale": 1.5,
