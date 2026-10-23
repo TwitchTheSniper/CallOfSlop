@@ -1140,19 +1140,27 @@ public static unsafe partial class Program
             }
             else if (_session is { } g)
             {
-                DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
-                TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
-                LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
-                DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
-                Ui.DrawHud(g, now, _joinAddress, _settings);
+                // While the weapon workbench is open over the match the player HUD is not drawn at all (the match keeps running).
+                var benchCovers = Ui.WorkbenchOpen;
+                if (!benchCovers)
+                {
+                    DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
+                    TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
+                    LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
+                    DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
+                    Ui.DrawHud(g, now, _joinAddress, _settings);
+                }
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
                     _swallowClick = true; // the Deploy click mustn't also fire the gun
                 }
-                Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
-                DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs)
+                if (!benchCovers)
+                {
+                    Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
+                    DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs); chat can't open with the bench up
+                }
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -1962,7 +1970,8 @@ public static unsafe partial class Program
         _frenzyFx.EndFrame(now);
 
         // ---- HUD ------------------------------------------------------------
-        DrawHud(now, w, h, local, fov);
+        if (!Ui.WorkbenchOpen)
+            DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }
 
     /// <summary>Box gun model shared by the viewmodel and other players. Origin = grip, -Z = muzzle.</summary>

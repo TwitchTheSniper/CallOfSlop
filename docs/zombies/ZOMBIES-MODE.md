@@ -138,7 +138,7 @@ The user asked: "In the zombie game mode, allow for the user to completely disas
 the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the empty slot), `Source/UI/UiWorkbenchRun.cs`
 (the button); self-test `Source/App/SelfTestZombiesDisassemble.cs` (in the "Zombies mode" section).
 
-- **What.** At a workbench, **Disassemble [D]** (click twice, or D twice, within 4 s) takes the build in the slot being
+- **What.** At a workbench, **Disassemble slot N** (top button row; key D; click twice, or D twice, within 4 s) takes the build in the slot being
   edited apart: **every part, the grip too**, goes to your loose parts (counts add up: a build with two Box Mags gives
   two), and the slot is **empty**. It works on any build: guns in slots 1-4 (wall-buy and box builds too, they're builds
   like any other) and the **melee slot** (hilt, head and mods). One **Undo** puts the same build back from your loose

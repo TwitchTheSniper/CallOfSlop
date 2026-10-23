@@ -22,7 +22,7 @@ public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary, Wea
 /// Right-click (or drag off) a part to take it off; right-click a receiver to copy its whole assembly onto a free
 /// receiver slot, even without the parts: what you're missing shows red on the gun, in the list and on the saved builds,
 /// and the build can't be saved or applied until you have them (in a run, missing parts can be crafted with scrap).
-/// Double-click a part to put it on its best free socket; Auto-complete fills every empty needed socket; Ctrl+Z undoes.
+/// Double-click a part to put it on its best free socket; the A key auto-completes every empty needed socket (the top row has Disassemble for the selected slot at a run's bench, Auto-complete in the sandbox); Ctrl+Z undoes.
 /// The editing model is <see cref="BenchModel"/> (headless, self-tested); this file only draws it and feeds it input.
 /// </summary>
 public sealed partial class Ui
@@ -407,7 +407,7 @@ public sealed partial class Ui
         else
             ImGuiSafe.TextColored(Dim, _wbPicking
                 ? "Click a grip to start. The grip sets how many receivers the weapon holds and how they fire."
-                : "Drag parts onto the gun - double-click: best free socket - right-click a part: remove / copy receiver - Ctrl+Z undo, Ctrl+Y redo - A auto-complete - Del remove - N new - G grip - R view");
+                : $"Drag parts onto the gun - click a build row: its category in your parts - double-click: best free socket - right-click a part: remove / copy receiver - Ctrl+Z undo, Ctrl+Y redo - A auto-complete{(BenchRun != null ? " - D disassemble slot" : "")} - Del remove - N new - G grip - R view");
     }
 
     // ---- Step 1: the grip picker -------------------------------------------------------------------------------
@@ -600,6 +600,11 @@ public sealed partial class Ui
             ImGui.EndChild();
             return;
         }
+        if (_wbInvScrollTop)
+        {
+            _wbInvScrollTop = false;
+            ImGui.SetScrollY(0);
+        }
         var dl = ImGui.GetWindowDrawList();
         var rowH = 46 * _scale;
         var rowW = ImGui.GetContentRegionAvail().X;
@@ -737,10 +742,15 @@ public sealed partial class Ui
             WbUndo(true);
         ImGui.EndDisabled();
         ImGui.SameLine();
-        if (ImGui.Button("Auto-complete"u8))
-            WbAutoComplete();
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
+        if (BenchRun is { } benchRun)
+            DrawBenchDisassemble(benchRun, BenchPlayer); // a run's bench: takes the selected slot's build apart (D); Auto-complete is the A key
+        else
+        {
+            if (ImGui.Button("Auto-complete"u8))
+                WbAutoComplete();
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
+        }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(MathF.Max(80 * _scale, ImGui.GetContentRegionAvail().X));
         try
@@ -1059,7 +1069,7 @@ public sealed partial class Ui
             if (hot && !_dragging)
             {
                 if (r.Kind == BenchRowKind.Part)
-                    ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nDouble-click (or drag it off) to take it off, with what's on it. Right-click: options.");
+                    ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nClick: show this category in your parts. Double-click (or drag it off) to take it off, with what's on it. Right-click: options.");
                 else
                     ImGuiSafe.SetTooltip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here ({SocketAbout(r.Socket.Type)}). Drag one from your parts onto it (or onto the yellow ring on the gun).");
             }
@@ -1075,6 +1085,13 @@ public sealed partial class Ui
                 if (r.Node != null)
                 {
                     _wbSel = r.Node;
+                    var shownCat = _inv.Shows(r.Node.Part.Category);
+                    var nf = TreeRowFilter(r.Node.Part.Category, shownCat, _wbFilter);
+                    if (nf != _wbFilter || shownCat)
+                    {
+                        _wbFilter = nf; // a click on a part row jumps the parts list to that part's category, at its top
+                        _wbInvScrollTop = true;
+                    }
                     if (r.Parent != null)
                     {
                         _dragArmed = true; // rows can be dragged off too
@@ -1109,6 +1126,12 @@ public sealed partial class Ui
     /// The part category a socket takes, for the inventory filter: what the socket accepts, else the category whose
     /// mount is the socket's type in the part registry (Parts/_Registry.json), else a part that mounts there.
     /// </summary>
+    /// <summary>The parts-list filter after a single click on a tree row holding a part of <paramref name="cat"/>: that category's chip
+    /// when the list shows it, else unchanged (headless-testable).</summary>
+    internal static int TreeRowFilter(PartCategory cat, bool listShowsIt, int current) => listShowsIt ? (int)cat : current;
+
+    private bool _wbInvScrollTop;
+
     private static PartCategory CategoryFor(PartSocket s)
     {
         if (s.Accepts.Length > 0)
