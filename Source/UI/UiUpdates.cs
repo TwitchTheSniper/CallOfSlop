@@ -16,6 +16,7 @@ public sealed partial class Ui
     /// <summary>The banner on the main menu. Nothing when there's no update (or it was skipped / put off).</summary>
     private void UpdateBanner(Settings s)
     {
+        UpdateCleaner.Shared?.MenuReached(s); // this build works: mark it, then remove old versions (UpdateCleanup.cs)
         if (Updater.Shared is not { } up)
             return;
         var v = up.Snapshot();
@@ -143,9 +144,88 @@ public sealed partial class Ui
                 s.UpdateSkip = "";
         }
         if (v.InstalledTo != null)
-            ImGuiSafe.TextColored(Dim, $"Installed to {v.InstalledTo}. Your old build's folder is left as it is: delete it yourself when you no longer need it.");
+            ImGuiSafe.TextColored(Dim, $"Installed to {v.InstalledTo}.");
         ImGui.TextColored(Dim, "Updates install into a new folder next to this one; your saves carry over."u8);
+        CleanupSettings(s);
     }
+
+    private const string CleanupPopup = "Clean up old versions##cleanup";
+
+    /// <summary>Settings > Player > Updates: the cleanup options and "Clean up old versions now" with its confirmation.</summary>
+    private void CleanupSettings(Settings s)
+    {
+        ImGui.Checkbox("Remove old versions after updating"u8, ref s.UpdateCleanup);
+        ImGui.SameLine();
+        ImGui.TextColored(Dim, "(only folders the updater installed; never ones with saves)"u8);
+        ImGui.Checkbox("Keep previous version for rollback"u8, ref s.UpdateKeepPrevious);
+        if (UpdateCleaner.Shared is not { } c)
+            return;
+        var (preview, message) = c.Snapshot();
+        ImGui.BeginDisabled(c.Busy);
+        if (ImGui.Button("Clean up old versions now"u8))
+        {
+            c.Preview(s.UpdateKeepPrevious);
+            _cleanupOpen = true;
+        }
+        ImGui.EndDisabled();
+        if (message.Length > 0)
+        {
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, message);
+        }
+        if (_cleanupOpen && preview != null)
+        {
+            ImGui.OpenPopup(CleanupPopup);
+            _cleanupOpen = false;
+        }
+        ImGui.SetNextWindowSize(new float2(760 * _scale, 0));
+        if (ImGui.BeginPopupModal(CleanupPopup, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoResize))
+        {
+            var plan = c.Snapshot().Preview;
+            if (plan == null)
+            {
+                ImGui.CloseCurrentPopup();
+                ImGui.EndPopup();
+                return;
+            }
+            ImGui.PushTextWrapPos(0);
+            ImGuiSafe.TextColored(Dim, $"In {plan.Root}:");
+            if (plan.Remove.Count == 0)
+                ImGui.TextColored(Green, "Nothing to remove."u8);
+            else
+            {
+                ImGuiSafe.TextColored(Orange, $"This removes {plan.Remove.Count} item(s), {UpdateCleanup.Mb(plan.Bytes)}:");
+                foreach (var r in plan.Remove.Take(30))
+                    ImGuiSafe.TextWrapped($"  {Path.GetFileName(r.Path)}  ({UpdateCleanup.Mb(r.Bytes)}): {r.Why}");
+                if (plan.Remove.Count > 30)
+                    ImGuiSafe.TextColored(Dim, $"  ...and {plan.Remove.Count - 30} more");
+            }
+            if (plan.Kept.Count > 0)
+            {
+                ImGui.Spacing();
+                ImGui.TextColored(Dim, "Kept:"u8);
+                foreach (var k in plan.Kept.Take(30))
+                    ImGuiSafe.TextColored(Dim, $"  {Path.GetFileName(k.Path)}: {k.Why}");
+            }
+            ImGui.PopTextWrapPos();
+            ImGui.Spacing();
+            if (plan.Remove.Count > 0 && ImGui.Button($"Remove {plan.Remove.Count} item(s)", new float2(200 * _scale, 30 * _scale)))
+            {
+                c.RemovePreview(s.UpdateKeepPrevious);
+                ImGui.CloseCurrentPopup();
+            }
+            if (plan.Remove.Count > 0)
+                ImGui.SameLine();
+            if (ImGui.Button(plan.Remove.Count > 0 ? "Cancel"u8 : "Close"u8, new float2(120 * _scale, 30 * _scale)))
+            {
+                c.ClosePreview();
+                ImGui.CloseCurrentPopup();
+            }
+            ImGui.EndPopup();
+        }
+    }
+
+    private bool _cleanupOpen; // "Clean up old versions now" was pressed: open the dialog when the preview is ready
 
     /// <summary>This build's version in the bottom-right corner of the menus.</summary>
     private void BuildCorner()

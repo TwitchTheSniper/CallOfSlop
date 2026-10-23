@@ -9,7 +9,9 @@ namespace CallOfSlop;
 /// <summary>
 /// Installing an update: download the zip (resuming a partial download), check its size and SHA-256 against the
 /// manifest, unzip it into a NEW folder next to the current build (e.g. <c>CallOfSlop-0.2026.1022.5</c>), then start the
-/// new CallOfSlop.exe. The running build is never overwritten and the old folder is never deleted. Saves live in
+/// new CallOfSlop.exe. The running build is never overwritten. Every folder unzipped here gets a
+/// <see cref="BuildMarker"/> (<c>.callofslop-build</c>), the proof <see cref="UpdateCleanup"/> needs before it may remove an
+/// old version once the new build has reached its main menu; nothing else is ever deleted. Saves live in
 /// %APPDATA%\CallOfSlop (SavePaths.cs), so the new build sees them straight away.
 /// <para>
 /// Mark of the Web: files the game writes itself (an HttpClient download, files unzipped here) get no Zone.Identifier
@@ -171,13 +173,22 @@ public static class UpdateInstaller
     /// Unzips into <paramref name="target"/> (via a ".partial" folder renamed at the end, so a half-unzipped build never
     /// looks finished). Refuses entries that would land outside the folder. Returns the new CallOfSlop.exe (or, on a
     /// build without one, the folder holding CallOfSlop.dll).
+    /// <para>
+    /// The <see cref="BuildMarker"/> goes in first (state=partial, so an interrupted install's ".partial" folder is provably
+    /// ours too) and is finished just before the rename. A marker file inside the zip itself is never unzipped.
+    /// </para>
     /// </summary>
-    public static string Extract(string zipPath, string target)
+    public static string Extract(string zipPath, string target, Version? version = null)
     {
         var staging = target + ".partial";
         if (Directory.Exists(staging))
             Directory.Delete(staging, recursive: true); // our own leftover from an interrupted install
         Directory.CreateDirectory(staging);
+        version ??= UpdateCleanup.ParseFolderName(Path.GetFileName(Path.TrimEndingDirectorySeparator(target)))?.Version;
+        var finalName = Path.GetFileName(Path.TrimEndingDirectorySeparator(target));
+        var installed = DateTime.UtcNow;
+        if (version != null)
+            BuildMarker.Write(staging, version, finalName, partial: true, installed);
         var root = Path.GetFullPath(staging) + Path.DirectorySeparatorChar;
         using (var zip = ZipFile.OpenRead(zipPath))
         {
@@ -194,10 +205,14 @@ public static class UpdateInstaller
                     Directory.CreateDirectory(dest);
                     continue;
                 }
+                if (rel.Split('/')[^1].StartsWith(BuildMarker.FileName, StringComparison.OrdinalIgnoreCase))
+                    continue; // only the updater writes markers
                 Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                 e.ExtractToFile(dest, overwrite: false);
             }
         }
+        if (version != null)
+            BuildMarker.Write(staging, version, finalName, partial: false, installed);
         Directory.Move(staging, target);
         RemoveMarkOfTheWeb(target);
         return FindGame(target) ?? throw new IOException($"the update has no {ExeName}");

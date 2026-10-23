@@ -12,7 +12,11 @@ Running it
 Updates
 - The game tells you when there's an update (a banner on the main menu); click Install.
   It downloads the new build, checks it, unzips it into a new folder next to this one and starts it.
-  Your saves carry over. This folder is left alone; delete it yourself once the new build works.
+  Your saves carry over. Once the new build reaches its menu it removes older versions the updater
+  installed, keeping the previous one so you can go back. Folders you unzipped yourself (like this one,
+  if you unzipped it from a zip) and folders with saves in them are never deleted: delete them yourself.
+- Settings > Player > Updates: "Remove old versions after updating", "Keep previous version for rollback",
+  and "Clean up old versions now" (it shows what it would remove and asks first).
 - Settings > Player > Updates: "Check for updates" now, or turn the check at startup off.
 - Your version is in the bottom-right corner of the menu.
 

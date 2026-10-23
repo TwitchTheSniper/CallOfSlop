@@ -564,7 +564,8 @@ public static partial class Maps
                     {
                         // A loose copy identical to a map in a pack, or the same map in a retired pack folder (Classic,
                         // CollisionPoint, HighGround: their maps moved to Legacy): most likely files left over from
-                        // before the maps moved (builds don't delete old files). Skip it quietly.
+                        // before the maps moved. Updates unzip into a new folder, so only a build unzipped over an older one or a reused dev
+                        // bin folder (dotnet build never deletes outputs) has them; keep this. Skip it quietly.
                         if ((loose || MapPack.IsRetiredFolder(pack.Folder)) && MapFile.ToJson(other) == MapFile.ToJson(m))
                         {
                             Console.WriteLine($"[maps] ignored {rel}: same map as {other.SourceFile}");

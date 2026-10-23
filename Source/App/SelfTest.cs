@@ -332,6 +332,7 @@ public static partial class SelfTest
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Space: refinery and processor", CheckSpaceIndustrial); // SelfTestSpaceIndustrial.cs: Space 09 Hollowrock Refinery and 10 Redvane Processor (shaped outlines, symmetric spawns, dressing, fair walks, a short bot match, the fall kill)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
+        Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
         // space-b maps
         Section("Space: arboretum and reactor", CheckSpaceArboretumReactor); // SelfTestSpaceArboretumReactor.cs: Space 07 Canopy Deck and 08 Ignition Hall (outline, counts, objectives, nav, fair walks, a short bot match)

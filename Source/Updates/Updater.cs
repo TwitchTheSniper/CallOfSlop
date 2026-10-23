@@ -286,7 +286,7 @@ public sealed class Updater
             }
             var target = UpdateInstaller.TargetFolder(root, m.Version);
             Set(UpdateState.Installing, $"Unzipping to {target}...");
-            var game = UpdateInstaller.Extract(zip, target);
+            var game = UpdateInstaller.Extract(zip, target, m.Version);
             File.Delete(zip); // our own download, now unzipped
             lock (_gate)
                 _installedTo = target;
@@ -325,7 +325,7 @@ public sealed class Updater
             Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)} but couldn't start it. Start CallOfSlop.exe there yourself.");
             return;
         }
-        Console.WriteLine($"[update] started {game}; this build quits now (its folder is left as it is)");
+        Console.WriteLine($"[update] started {game}; this build quits now (the new build removes old versions once it reaches its menu, see UpdateCleanup.cs)");
         QuitRequested = true;
     }
 

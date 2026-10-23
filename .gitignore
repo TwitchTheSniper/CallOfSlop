@@ -16,6 +16,9 @@ appearance.txt
 audio_mix.json
 AudioMixes/
 portable.txt
+update_check.txt
+update.log
+.callofslop-build
 *.txt.bak
 *.txt.tmp
 *.corrupt
