@@ -41,7 +41,7 @@ public static partial class SelfTest
         // ---- Every launcher loads, secondary only ----------------------------------------------------
         var launchers = Weapons.All.Where(w => w.IsLauncher).ToArray();
         LLine($"launchers ({launchers.Length}): " + string.Join("; ", launchers.Select(w =>
-            $"{w.Name} {w.LauncherProjectile}/{w.LauncherGuidance} {w.Damage} dmg r{w.LauncherRadius} +{w.LauncherDirect} direct, {w.Mag}+{w.LauncherReserve} rounds, lvl {Progress.UnlockLevel(w)}")));
+            $"{w.Name} {w.LauncherProjectile}/{w.LauncherGuidance} {w.Damage} dmg r{w.LauncherRadius} (players x{w.LauncherPlayerMult} r{w.PlayerBlastRadius}) +{w.LauncherDirect} direct, {w.Mag}+{w.LauncherReserve} rounds, lvl {Progress.UnlockLevel(w)}")));
         if (launchers.Length is < 6 or > 8)
             Fail($"{launchers.Length} launchers (want 6-8)");
         foreach (var w in launchers)
@@ -223,11 +223,37 @@ public static partial class SelfTest
         Run(10);
 
         // ---- Splash: falloff, walls, thermobaric, self damage, arming -------------------------------------
-        var falloff = new[] { 0f, 1f, 2f, 3f, 4f, 5f, 6f }.Select(d => Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(d, 1, 20), mule.LauncherRadius)).ToArray();
-        LLine($"Mule RPG blast by distance 0-6 m: {string.Join(", ", falloff.Select(f => f.ToString("0")))} (radius {mule.LauncherRadius} m)");
+        var falloff = new[] { 0f, 1f, 2f, 3f, 4f, 5f, 6f, 7f, 8f }.Select(d => RocketFlight.PlayerBlastDamage(mule, d)).ToArray();
+        LLine($"Mule RPG blast on players by distance 0-8 m: {string.Join(", ", falloff.Select(f => f.ToString("0")))} (player radius {mule.PlayerBlastRadius} m, x{mule.LauncherPlayerMult}; "
+             + $"objects {mule.Damage} over {mule.LauncherRadius} m)");
         for (var i = 1; i < falloff.Length; i++)
-            if (falloff[i] > falloff[i - 1] || falloff[0] < mule.Damage - 0.5f || Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(mule.LauncherRadius + 0.1f, 1, 20), mule.LauncherRadius) != 0)
-                Fail("launcher blast damage must fall off with distance from the full damage at the centre to nothing at the radius");
+            if (falloff[i] > falloff[i - 1] || MathF.Abs(falloff[0] - mule.Damage * mule.LauncherPlayerMult) > 0.5f || RocketFlight.PlayerBlastDamage(mule, mule.PlayerBlastRadius + 0.1f) != 0
+                || Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(mule.LauncherRadius + 0.1f, 1, 20), mule.LauncherRadius) != 0
+                || MathF.Abs(Game.LauncherBlastAt(mule, new Vector3(0, 1, 20), new Vector3(0, 1, 20), mule.LauncherRadius) - mule.Damage) > 0.5f)
+                Fail("launcher blast damage must fall off with distance from the full damage at the centre to nothing at the radius (players: x playerMult over the player radius)");
+
+        // Every launcher's blast is deadlier against players than before the buff (the old numbers: "damage" over
+        // "radius", no player multiplier), while what objects and machines take stays on "damage" and "radius".
+        var lethalRows = new List<string>();
+        foreach (var w in launchers)
+        {
+            var oldLethal = w.Damage < World.MaxHealth ? 0f : w.LauncherRadius * (1f - MathF.Pow(World.MaxHealth / w.Damage, 1f / w.LauncherFalloff));
+            var lethal = RocketFlight.PlayerLethalRadius(w, World.MaxHealth);
+            var selfAtArm = RocketFlight.PlayerBlastDamage(w, w.LauncherArmDistance) * w.LauncherSelfDamage;
+            lethalRows.Add($"{w.Name} {w.Damage * w.LauncherPlayerMult:0}/{w.PlayerBlastRadius} m kills within {lethal:0.00} m (was {oldLethal:0.00}), own blast at {w.LauncherArmDistance} m {selfAtArm:0}");
+            if (w.LauncherPlayerMult is < 1.2f or > 1.5f || w.PlayerBlastRadius < w.LauncherRadius * 1.2f || w.PlayerBlastRadius > w.LauncherRadius * 1.45f)
+                Fail($"{w.Name}: the player buff should be about +30-40% damage and radius (x{w.LauncherPlayerMult}, {w.PlayerBlastRadius} m over {w.LauncherRadius} m)");
+            if (lethal <= oldLethal || w.Damage * w.LauncherPlayerMult < World.MaxHealth)
+                Fail($"{w.Name}: the blast's lethal radius against a {World.MaxHealth} HP player must grow ({lethal:0.00} m, was {oldLethal:0.00}) and its centre must kill");
+            if (selfAtArm >= World.MaxHealth / 2f)
+                Fail($"{w.Name}: an armed round going off at its arming distance ({w.LauncherArmDistance} m) does {selfAtArm:0} to its owner (want under half their health)");
+        }
+        LLine($"lethal radius vs {World.MaxHealth} HP (blast alone, in the open): {string.Join("; ", lethalRows)}");
+        var singles = launchers.Where(w => w.LauncherCluster == 0).ToArray();
+        var drum = launchers.First(w => w.Mag >= 6);
+        if (launchers.Any(w => w != furnace && w.PlayerBlastRadius >= furnace.PlayerBlastRadius) || launchers.Any(w => w != sky && w.PlayerBlastRadius <= sky.PlayerBlastRadius)
+            || singles.Any(w => w != drum && w.Damage * w.LauncherPlayerMult <= drum.Damage * drum.LauncherPlayerMult))
+            Fail("launcher identities: the thermobaric blast must stay the widest, the Skylance's the smallest, the drum's the lightest single blast");
         game.SelfTestPlace(me, new Vector3(-30, 0, -20), 0);
         game.SelfTestPlace(b1, new Vector3(3, 0, 0), 0); // in the open, 3 m away
         game.SelfTestPlace(b2, new Vector3(0, 0, 3), 0); // 3 m away behind the wall
@@ -247,6 +273,17 @@ public static partial class SelfTest
             Fail("a thermobaric blast should get part of its damage round a wall (less than in the open)");
         if (self <= 0)
             Fail("your own launcher blast must hurt you");
+
+        // A near miss now kills: 2.6 m to the side of a Mule RPG blast (2.8 m to the chest) used to leave a 120 HP
+        // player on about 40 health.
+        game.SelfTestPlace(me, new Vector3(-30, 0, -20), 0);
+        game.SelfTestPlace(b1, new Vector3(-20 + 2.6f, 0, -10), 0);
+        var nearDist = Vector3.Distance(new Vector3(-20, 0.25f, -10), b1.Chest);
+        game.SelfTestLauncherBlast(me, mule, new Vector3(-20, 0.1f, -10), now);
+        var oldNear = mule.Damage * MathF.Pow(1f - nearDist / mule.LauncherRadius, mule.LauncherFalloff);
+        LLine($"Mule RPG near miss ({nearDist:0.0} m to the chest): the target {(b1.Alive ? $"took {World.MaxHealth - b1.Health}" : "died")} (before the buff: {oldNear:0})");
+        if (b1.Alive)
+            Fail("a Mule RPG blast 2.8 m from a player should kill them now");
 
         // Arming: a hit before the arming distance is a dud (the direct hit's damage only, no blast).
         game.SelfTestPlace(me, new Vector3(-20, 0, 30), MathF.PI / 2); // facing +X
