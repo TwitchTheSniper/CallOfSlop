@@ -94,6 +94,7 @@ public sealed partial class Ui
         if (ImGui.Begin("##credits"u8, Overlay))
             ImGui.TextColored(Dim, "Built with the BRUTAL framework - Copyright (c) 2024 Ahwoo Limited - www.ahwoo.com/brutal"u8);
         ImGui.End();
+        BuildCorner(); // this build's version, bottom-right (UiUpdates.cs)
     }
 
     private string? _nowPlayingName, _nowPlayingText;
@@ -147,6 +148,7 @@ public sealed partial class Ui
             {
                 case Page.Main:
                     Title($"{Weapons.All.Length} weapons. {Maps.All.Length} maps. No mercy.");
+                    UpdateBanner(s); // "Update available" (UiUpdates.cs)
                     if (message.Length > 0)
                     {
                         ImGuiSafe.TextColored(Red, message);
@@ -371,8 +373,11 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(e.VersionOk ? new float4(1, 1, 1, 1) : Dim, i.Name.Length > 0 ? i.Name : "(unnamed)");
                 ImGui.SameLine();
                 ImGuiSafe.TextColored(Dim, SourceLabel(e));
+                var compat = BuildCompatText.Compare(i.Version, i.Build, ServerInfo.ProtocolVersion, BuildInfo.ReleaseVersion); // ServerBrowser.cs
                 if (!e.VersionOk)
-                    ImGuiSafe.TextColored(Orange, $"Different version (protocol {i.Version}, yours {ServerInfo.ProtocolVersion}): everyone needs the same build");
+                    ImGuiSafe.TextColored(Red, $"{BuildCompatText.Describe(compat, i.Build)} (protocol {i.Version}, yours {ServerInfo.ProtocolVersion})");
+                else if (compat == BuildCompat.OtherBuild)
+                    ImGuiSafe.TextColored(Dim, BuildCompatText.Describe(compat, i.Build));
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(Maps.Find(i.MapName) != null ? new float4(1, 1, 1, 1) : Orange, i.MapName); // orange: you don't have this map
                 ImGui.SameLine();
@@ -627,6 +632,7 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Progress, loadouts and settings carry over to new builds."u8);
             if (SavePaths.Warning is { } saveWarning)
                 ImGuiSafe.TextColored(Red, saveWarning);
+            UpdateSettings(s); // Updates: check at startup, Check for updates (UiUpdates.cs)
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

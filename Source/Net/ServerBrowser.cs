@@ -10,8 +10,12 @@ namespace CallOfSlop;
 /// </summary>
 public readonly record struct ServerInfo(string Name, string MapName, byte Players, byte MaxPlayers, byte Bots, MatchPhase Phase, ushort Port, byte Version,
     GameMode Mode = GameMode.FreeForAll, PhysicsMode Physics = PhysicsMode.Classic, string Rotation = "",
-    uint InstanceId = 0, string ListHost = "", ushort ListPort = 0)
+    uint InstanceId = 0, string ListHost = "", ushort ListPort = 0, string Build = "")
 {
+    // (Build, the host's release version such as "0.2026.1022.5" (BuildInfo.cs; "" for dev builds and older hosts), rides
+    // after the rotation as the tagged extension 'B', a length and ASCII (after 'I' and 'L', see Encode).
+    // Older builds stop reading after the rotation, so it needs no version bump either; the browser uses it to say
+    // "your build is older / newer" next to a game.)
     // 3: perks and melee (loadout and snapshot packets changed); 4: weapon files (weapon-set fingerprint in the Welcome);
     // 5: kill packet carries the weapon kit, killer HP and damage source; 6: kill streaks (loadout packet + streak messages);
     // 7: game modes and ready-up (mode state, ready and mode event packets, warmup phase, mode in the server info);
@@ -81,7 +85,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         b.AddRange(map);
         b.Add((byte)Physics);
         var rotation = Encoding.ASCII.GetBytes(Rotation.Length > 24 ? Rotation[..24] : Rotation);
-        var extensions = InstanceId != 0 || ListPort != 0;
+        var build = Encoding.ASCII.GetBytes(Build.Length > 23 ? Build[..23] : Build);
+        var extensions = InstanceId != 0 || ListPort != 0 || build.Length > 0;
         if (rotation.Length > 0 || extensions)
         {
             b.Add((byte)rotation.Length);
@@ -98,6 +103,13 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
             var host = Encoding.ASCII.GetBytes(ListHost.Length > 64 ? ListHost[..64] : ListHost);
             b.AddRange([(byte)'L', (byte)ListPort, (byte)(ListPort >> 8), (byte)host.Length]);
             b.AddRange(host);
+        }
+        // 'B': the host's release version (BuildInfo.cs), for "your build is older" in the browser.
+        if (build.Length > 0)
+        {
+            b.Add((byte)'B');
+            b.Add((byte)build.Length);
+            b.AddRange(build);
         }
         return b.ToArray();
     }
@@ -116,6 +128,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         var map = rest.Length >= 1 && rest.Length >= 1 + rest[0] ? Encoding.UTF8.GetString(rest.Slice(1, rest[0])) : "?";
         var physics = rest.Length >= 1 && rest.Length >= 2 + rest[0] && rest[1 + rest[0]] == (byte)PhysicsMode.Swept ? PhysicsMode.Swept : PhysicsMode.Classic;
         var rotation = "";
+        var build = "";
         uint instance = 0;
         var listHost = "";
         ushort listPort = 0;
@@ -139,6 +152,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
                         listHost = Encoding.ASCII.GetString(ext.Slice(4, ext[3]));
                         ext = ext[(4 + ext[3])..];
                     }
+                    else if (ext[0] == (byte)'B' && ext.Length >= 2 && ext.Length >= 2 + ext[1])
+                    {
+                        build = BuildInfo.ParseRelease(Encoding.ASCII.GetString(ext.Slice(2, ext[1])))?.ToString() ?? "";
+                        ext = ext[(2 + ext[1])..];
+                    }
                     else
                         break; // an unknown (newer) or cut-off extension: stop here
                 }
@@ -146,8 +164,42 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
         }
         // Anyone can answer a ping: names are capped printable ASCII before the browser shows them.
         return new ServerInfo(NetSafety.CleanText(name, 32), NetSafety.CleanText(map, 40), d[2], d[3], d[4], (MatchPhase)d[5], (ushort)(d[6] | (d[7] << 8)), d[0],
-            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort);
+            (GameMode)d[1], physics, NetSafety.CleanText(rotation, 24), instance, Settings.CleanAddress(NetSafety.CleanText(listHost, 64)), listPort, build);
     }
+}
+
+/// <summary>How a listed game's build compares with ours (the server browser shows it and only lets compatible ones join).</summary>
+public enum BuildCompat
+{
+    Same, // same protocol and the same (or an unknown) release
+    OtherBuild, // same protocol, a different release: joinable
+    ServerNewer, // newer protocol: update to join
+    ServerOlder, // older protocol: the host must update
+}
+
+public static class BuildCompatText
+{
+    /// <summary>Compares a game's protocol and release (<see cref="ServerInfo.Build"/>, "" when unknown) with ours.</summary>
+    public static BuildCompat Compare(byte protocol, string build, byte ourProtocol, Version? ourRelease)
+    {
+        var theirs = BuildInfo.ParseRelease(build);
+        if (protocol != ourProtocol)
+        {
+            if (theirs != null && ourRelease != null && theirs != ourRelease)
+                return theirs > ourRelease ? BuildCompat.ServerNewer : BuildCompat.ServerOlder;
+            return protocol > ourProtocol ? BuildCompat.ServerNewer : BuildCompat.ServerOlder;
+        }
+        return theirs != null && ourRelease != null && theirs != ourRelease ? BuildCompat.OtherBuild : BuildCompat.Same;
+    }
+
+    /// <summary>The line under a game in the browser ("" for a game on our build).</summary>
+    public static string Describe(BuildCompat c, string build) => c switch
+    {
+        BuildCompat.ServerNewer => $"Your build is older - update to join{(build.Length > 0 ? $" (host has v{build})" : "")}",
+        BuildCompat.ServerOlder => $"The host's build is older{(build.Length > 0 ? $" (v{build})" : "")} - they must update before you can join",
+        BuildCompat.OtherBuild => $"Host has v{build}, you have v{BuildInfo.Version} (compatible)",
+        _ => "",
+    };
 }
 
 /// <summary>Where the server browser heard about a game (a game can be found several ways; the row shows them all).</summary>
