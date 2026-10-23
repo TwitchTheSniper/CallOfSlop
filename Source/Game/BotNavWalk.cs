@@ -153,6 +153,7 @@ public sealed partial class NavGraph
         var s = new MoveState { Position = a, Grounded = true };
         var r = new WalkResult { Closest = float.MaxValue };
         var mover = ClassicMover.Instance;
+        var lastGain = 0;
         for (var t = 0; t < limit; t++)
         {
             var pos = s.Position;
@@ -160,6 +161,10 @@ public sealed partial class NavGraph
             var dx = b.X - pos.X;
             var dz = b.Z - pos.Z;
             var dist = MathF.Sqrt(dx * dx + dz * dz);
+            if (dist < r.Closest - 0.2f || (MathF.Abs(dy) > 0.5f && s.MantleTicks > 0))
+                lastGain = t; // getting closer (or climbing): still going
+            else if (t - lastGain > World.TickRate * 3 / 4)
+                break; // no closer for 0.75 s: stuck or sliding back (fail early, the build walks thousands of these)
             r.Closest = MathF.Min(r.Closest, dist);
             if (dist < 0.8f && dy < 1.0f && dy > -2.5f)
             {
@@ -191,6 +196,8 @@ public sealed partial class NavGraph
     /// step, a body sample squeezed past a ledge (<paramref name="tight"/>) and, on terrain, slopes past the full-speed
     /// angle near the line. Plain level walks are left to the sampled checks.
     /// </summary>
+    private static readonly QueryFilter ShinFilter = new(QueryLayers.StaticShapes & ~QueryLayers.Doors); // boxes, props, meshes (not the terrain's own bumps)
+
     private static bool NeedsMoverWalk(Vector3 a, Vector3 b, byte flags, bool tight)
     {
         if (CrossesDoor(World.Map, a, b))
@@ -207,11 +214,14 @@ public sealed partial class NavGraph
             var dir = d / dist;
             var side = Vector3.Normalize(new Vector3(-dir.Z, 0, dir.X) + new Vector3(0, 1e-6f, 0)) * (World.PlayerRadius - 0.05f);
             foreach (var o in (ReadOnlySpan<float>)[0f, 1f, -1f]) // the middle and both sides of the body
-                if (World.Physics.Raycast(a + shin + side * o, dir, dist, QueryFilter.Navigation) < dist - 0.05f)
+                if (World.Physics.Raycast(a + shin + side * o, dir, dist, ShinFilter) < dist - 0.05f)
                     return true;
         }
-        return SlopedLink(a, b);
+        return SlopedLink(a, b, WalkCheckNormalY);
     }
+
+    /// <summary>cos(33 degrees): terrain links steeper than this near the line get the mover walk (gentler ones can't slide).</summary>
+    private const float WalkCheckNormalY = 0.83867057f;
 
     /// <summary>
     /// Does a body walking a -> b run into a shut building door? Bots open doors by walking into them (GameBuildings.cs) and the
@@ -253,14 +263,18 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
-    /// Walking and sprinting both get there (bots do either). A mantle is also tried from half a body width to either side of
-    /// the start (bots seldom arrive dead on the node), so a ledge that only works from one exact spot isn't an edge.
+    /// Walking gets there, and sprinting too on slopes and at ledges (bots do either). A ledge is also tried from half a body
+    /// width to either side of the start (bots seldom arrive dead on the node), so one that only works from one exact spot isn't an edge.
     /// </summary>
     private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
     {
-        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached || !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached)
             return false;
-        if ((flags & FlagMantle) == 0)
+        // Sprinting changes things on slopes (more speed into a slide) and at ledges; drops, steps and squeezes walk the same.
+        if ((flags & (FlagMantle | FlagSlope)) != 0 && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+            return false;
+        // Side starts only for a real ledge (one climb of most of a mantle's reach), not for stairs sampled as small mantles.
+        if ((flags & FlagMantle) == 0 || ledge.Y - a.Y < 0.9f || b.Y - ledge.Y > 0.3f)
             return true;
         var d = new Vector2(b.X - a.X, b.Z - a.Z);
         if (d.LengthSquared() < 1e-4f)
@@ -282,7 +296,7 @@ public sealed partial class NavGraph
     }
 
     /// <summary>Does a -> b run over terrain steeper than the full-speed angle (near the line)? Such edges get <see cref="FlagSlope"/>.</summary>
-    private static bool SlopedLink(Vector3 a, Vector3 b)
+    private static bool SlopedLink(Vector3 a, Vector3 b, float normalY = SlopeRules.FullSpeedNormalY)
     {
         if (World.Map.TerrainCollision is not { } ground)
             return false;
@@ -292,7 +306,7 @@ public sealed partial class NavGraph
         for (var k = 0; k <= n; k++)
         {
             var p = Vector3.Lerp(a, b, k / (float)n);
-            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < SlopeRules.FullSpeedNormalY)
+            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < normalY)
                 return true;
         }
         return false;
