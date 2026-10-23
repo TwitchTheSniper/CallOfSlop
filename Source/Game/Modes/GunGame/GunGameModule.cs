@@ -89,7 +89,7 @@ public sealed class GunGameModule : GameModeModule
     {
         var w = GunGame.At(p.GunLevel);
         p.Primary = p.Secondary = w.Id;
-        p.PrimaryKit = p.SecondaryKit = 0;
+        p.PrimaryKit = p.SecondaryKit = Attachments.DefaultKit(w); // a sniper rung comes with its scope
         p.Weapon = w.Id;
     }
 
@@ -164,7 +164,7 @@ public sealed class GunGameModule : GameModeModule
 
     public override (string First, string Second) ScoreboardColumnsShort => ("Gun", "K");
 
-    public override (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.GunLevel + 1}/{GunGame.Ladder.Length}", $"{p.Kills}");
+    public override (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Fraction(p.GunLevel + 1, GunGame.Ladder.Length), ScoreboardModel.Num(p.Kills));
 
     public override int RankScore(Player p) => p.GunLevel;
 

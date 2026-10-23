@@ -32,8 +32,8 @@
   "tail": 0.4,
   "launcher": {
     "projectile": "Grenade", "guidance": "None", "speed": 36, "maxSpeed": 36, "thrust": 0, "gravity": 1,
-    "drag": 0.05, "radius": 5, "falloff": 1.2, "direct": 40, "vehicleMult": 1, "selfDamage": 0.6,
-    "armDistance": 4, "proximity": 0, "fuse": 5, "bounces": 0, "reserve": 5, "lockTime": 1.2,
+    "drag": 0.05, "radius": 5, "falloff": 1.2, "direct": 40, "vehicleMult": 1, "playerMult": 1.35, "playerRadius": 6.6, "selfDamage": 0.6,
+    "armDistance": 5, "proximity": 0, "fuse": 5, "bounces": 0, "reserve": 5, "lockTime": 1.2,
     "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
   },
   "model": {

@@ -224,10 +224,12 @@ public sealed partial class Game
         b.RescueUntil = 0;
     }
 
-    /// <summary>Holding a spot on purpose: a marksman's or anchor's perch, the objective (the hill), a squad hold or suppression.</summary>
+    /// <summary>Holding a spot on purpose: a vantage point, a marksman's or anchor's perch, the objective (the hill), a squad hold or suppression.</summary>
     private static bool BotHolding(Player p, BotBrain b, double now)
     {
         var pos = p.Position;
+        if (b.IsHoldingPosition && b.Mode == BotMode.Overwatch)
+            return true; // holding a vantage point (BotVantage.cs)
         if (b.HoldUntil > now && Flat(b.HoldAnchor - pos) < 5f)
             return true;
         if (b.Mode == BotMode.Objective && b.Objective is { } o && Flat(o - pos) < 5f)

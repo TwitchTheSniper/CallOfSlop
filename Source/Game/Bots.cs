@@ -12,6 +12,7 @@ public enum BotMode : byte
     Investigate, // checking a last-seen spot or gunfire it heard
     Objective, // the game mode's objective
     Squad, // Insane: following its squad's order (Source/Game/Bots/Squads)
+    Overwatch, // a long gun: going to or holding a vantage point (Source/Game/Bots/Vantage)
 }
 
 /// <summary>Per-bot AI state. Bots live only on the server and play through the same input commands as people.</summary>
@@ -211,12 +212,18 @@ public sealed partial class Game
 
     private void PickBotLoadout(Player bot) => PickBotLoadout(bot, bot.Bot?.Profile ?? BotPersonalities.Get(BotPersonality.Chaotic));
 
-    /// <summary>Bots run a couple of random attachments too (no optics: they don't need them).</summary>
-    private uint RandomKit(WeaponDef w)
+    /// <summary>
+    /// Bots run a couple of random attachments too. No optics (they don't need them), except the scope a sniper starts
+    /// with: bot snipers always aim through it (it takes no random roll, so the shared random sequence is untouched).
+    /// </summary>
+    private uint RandomKit(WeaponDef w) => BotKit(w, _rng);
+
+    /// <summary>A bot's random kit for a gun from <paramref name="rng"/> (see <see cref="RandomKit"/>; the self-test rolls it too).</summary>
+    internal static uint BotKit(WeaponDef w, Random rng)
     {
-        uint kit = 0;
+        var kit = Attachments.DefaultKit(w);
         foreach (var a in Attachments.For(w))
-            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25)
+            if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && rng.NextDouble() < 0.25)
                 kit = Attachments.With(kit, a.Slot, a.Index);
         return kit;
     }
@@ -249,6 +256,7 @@ public sealed partial class Game
         }
 
         BotUseStreaks(p, now); // kill streaks (BotStreaks.cs)
+        BotSidearm(p, b, now); // a bolt action with an enemy up close: the sidearm (BotVantage.cs)
         var def = p.WeaponDef;
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
         {
@@ -315,6 +323,7 @@ public sealed partial class Game
         SquadNoteKill(killer, victim, now); // Insane squads: callouts and trades (SquadPlanner.cs)
         if (killer.Bot is not { } b || killer == victim)
             return;
+        VantageNoteKill(b); // a couple of kills from a vantage point and it's time to move (BotVantage.cs)
         // Marksmen move on after a kill instead of sitting on a spot everyone now knows about.
         if (b.Personality == BotPersonality.Marksman)
         {

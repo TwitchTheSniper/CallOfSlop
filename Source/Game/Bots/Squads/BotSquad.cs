@@ -53,6 +53,7 @@ public struct SquadOrder
     public bool Fire; // Suppress: shoot at Look even without seeing anyone
     public bool FlankRoute; // plan the route around the target's line of fire
     public Vector3 FlankFrom, FlankTo;
+    public bool Overwatch; // Hold: the squad's long gun at a vantage point over the squad's goal (BotVantage.cs)
 }
 
 /// <summary>Something a squad member saw or heard. Only what members really perceived goes in (no wallhacks).</summary>
@@ -268,5 +269,6 @@ public sealed class SquadStats
     public int Plans, Assaults, Executes, Regroups, Retreats, Trades, TradedKills, SuppressShots, Frags, Smokes, ExposureRays;
     public double PlanMs; // wall-clock time spent planning (not used for any decision)
     public int FlankKills;
+    public int OverwatchOrders; // plans that put the long-range member on a vantage point (BotVantage.cs)
     public long HeldFireTicks, SuppressTicks, SuppressFireTicks, SuppressLosTicks; // diagnostics: flankers holding fire; bases of fire with a Suppress order (with Fire set, with a line)
 }
