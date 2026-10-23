@@ -325,12 +325,16 @@ public static partial class SelfTest
             {
                 if (shutAt < 0 && !lab.D.Open)
                     shutAt = lab.Now - start;
+                lab.Sample(bot, lab.Now - start);
                 return shutAt >= 0 && lab.Now - start > shutAt + 2;
             });
+            DoorNote("  trace: " + string.Join(" | ", lab.Trace));
             DoorNote($"holding the room {FlatDistance(anchor, lab.D.Center):0.0} m from its open door: shut it at {(shutAt < 0 ? "NEVER" : $"{shutAt:0.00} s")}, "
                      + $"still shut {!lab.D.Open}, back {FlatDistance(bot.Position, anchor):0.0} m from its spot; toggles {b.DoorToggles}");
             if (shutAt < 0 || lab.D.Open)
                 Fail("a bot holding a room didn't shut the room's door within 8 s (or opened it again)");
+            if (b.DoorToggles > 3)
+                Fail($"a bot holding a room moved doors {b.DoorToggles} times in a few seconds (it should shut its room's door, not go round them all)");
             spam = Math.Max(spam, lab.MaxToggles);
             clientOk &= lab.ClientMatches;
         }

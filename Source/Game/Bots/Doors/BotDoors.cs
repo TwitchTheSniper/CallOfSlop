@@ -559,20 +559,27 @@ public sealed partial class Game
         var inst = map.PlacedBuildings[building];
         var best = -1;
         var bestD = 7f;
+        var look = GravityFrames.Above(anchor, 1.2f);
         for (var i = inst.DoorStart; i < inst.DoorStart + inst.DoorCount; i++)
         {
             var d = map.BuildingDoors[i];
             if (!d.Open || d.Broken || MathF.Abs(d.Plan.Closed.Min.Y - anchor.Y) > 1.2f)
                 continue;
             var fd = FlatDist(d.Center, anchor);
-            if (fd < bestD)
-            {
-                bestD = fd;
-                best = i;
-            }
+            if (fd >= bestD)
+                continue;
+            // The room's own door: in plain view from the spot (another room's door is behind a wall).
+            var to = d.Center - look;
+            var len = to.Length();
+            if (len > 1e-3f && World.Query.Raycast(look, to / len, len, QueryFilter.All.Without(QueryLayers.Doors | QueryLayers.Clip)) < len - 0.25f)
+                continue;
+            bestD = fd;
+            best = i;
         }
         if (best < 0)
             return;
+        if (b.HoldDoor >= 0 && b.HoldDoor != best && now - b.HoldDoorAt < 30)
+            return; // one door per hold: not every door in the building
         var door = map.BuildingDoors[best];
         if (b.DoorTogglesIn(best, now, 10) >= 2 || DoorMovedByOther(best, p.Id, now, 4))
             return;
