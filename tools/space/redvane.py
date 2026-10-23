@@ -48,7 +48,7 @@ GROUND = "#8a5a3c"
 DUST = "#9a6a48"
 STEEL = "#6c6f73"
 STEEL2 = "#85888c"
-DARK = "#34363a"
+DARK = "#3c414e"
 RUST = "#7a5238"
 OCHRE = "#b0804a"
 HULL = "#c9bda6"
@@ -58,7 +58,7 @@ AMBER = "#ffb24a"
 TEAL = "#6fe0e8"
 WATER = "#3f7f8a"
 SAFETY = "#e0b030"
-DECK = "#7a7268"
+DECK = "#767a82"
 
 OPS = []
 STATS = {"boxes": 0, "colliders": 0, "meshes": 0, "props": 0, "decals": 0, "waypoints": 0, "spawns": 0}
