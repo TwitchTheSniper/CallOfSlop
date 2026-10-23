@@ -185,10 +185,17 @@ public sealed class SweptMover : IMover
                 if (SlopeRules.Walkable(n))
                     disp.Y = -(n.X * disp.X + n.Z * disp.Z) / n.Y;
             }
-            else if (GravityFrames.Curved)
-                disp = AlongGround(s.Position, s.Stance, disp);
+            var hover = 0f;
+            if (GravityFrames.Curved)
+            {
+                // A planet: the ground is flat triangles tilted a little from the sphere's tangent plane, so a move across
+                // "up" would scrape the faces it starts on and catch on the ridges between them. Lift the capsule a few
+                // centimetres for the move (less under a ceiling), then the snap puts it back on the ground.
+                hover = Cast(s.Position, s.Stance, up, PlanetHover, out var room, out _) ? MathF.Max(0f, room) : PlanetHover;
+                s.Position += up * hover;
+            }
             s.Position = Walk(s.Position, disp, s.Stance, ref s.Velocity);
-            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown, s.Velocity, true);
+            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown + hover, s.Velocity, true);
         }
         else
         {
@@ -218,20 +225,8 @@ public sealed class SweptMover : IMover
             MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
     }
 
-    /// <summary>
-    /// A planet: the walk turned into the plane of the ground under the feet (same length). "Across up" is the sphere's
-    /// tangent plane, but the ground is flat triangles tilted a little from it; walking into the tilt would scrape the
-    /// capsule along the faces and catch on the ridges between them, so the move follows the face it stands on instead.
-    /// </summary>
-    private Vector3 AlongGround(Vector3 feet, Stance stance, Vector3 disp)
-    {
-        var len = disp.Length();
-        if (len < 1e-6f || !Cast(feet, stance, -_up, Skin * 4 + 0.02f, out _, out var n) || Vector3.Dot(n, _up) < World.MinWalkNormalY)
-            return disp;
-        var along = disp - n * Vector3.Dot(disp, n);
-        var l = along.Length();
-        return l > 1e-6f ? along * (len / l) : disp;
-    }
+    /// <summary>How far a walking player's capsule is lifted for the move across the ground on a planet (see Simulate).</summary>
+    public const float PlanetHover = 0.04f;
 
     /// <summary>The vector without its component along up (zero stays zero).</summary>
     private static Vector3 Flatten(Vector3 v, Vector3 up)
