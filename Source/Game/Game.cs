@@ -1341,9 +1341,9 @@ public sealed partial class Game : IDisposable
 
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         // Reused per shot (every trigger pull of every bot: new lists here were most of a bot's garbage).
-        var nested = _shotBusy; // (never in practice: a shot resolving inside another gets its own lists)
-        _shotBusy = true;
-        var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _shotTargets;
+        var nested = _resolveBusy; // (never in practice: a shot resolving inside another gets its own lists)
+        _resolveBusy = true;
+        var targets = nested ? new List<(Player P, Box Hitbox, HistoryEntry At)>() : _resolveTargets;
         targets.Clear();
         foreach (var p in Players.Values)
         {
@@ -1354,18 +1354,18 @@ public sealed partial class Game : IDisposable
             targets.Add((p, World.Hitbox(at.Position, at.Stance, at.Yaw), at));
         }
 
-        var damage = nested ? new List<(Player Victim, float Damage)>() : _shotDamage;
+        var damage = nested ? new List<(Player Victim, float Damage)>() : _resolveDamage;
         damage.Clear();
-        var headshotOn = nested ? new HashSet<Player>() : _shotHeads;
+        var headshotOn = nested ? new HashSet<Player>() : _resolveHeads;
         headshotOn.Clear();
         _bloodShotPart.Clear();
         byte flags = 0;
-        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _shotRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
-        var ends = nested ? new List<Vector3>() : _shotEnds;
+        var ends = nested ? new List<Vector3>() : _resolveEnds;
         ends.Clear();
-        var laterals = nested ? new List<Vector2>() : _shotLaterals;
+        var laterals = nested ? new List<Vector2>() : _resolveLaterals;
         laterals.Clear();
         var zHead = false;
         _shotPenetrated = false;
@@ -1474,17 +1474,17 @@ public sealed partial class Game : IDisposable
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
-        _shotBusy = nested;
+        _resolveBusy = nested;
     }
 
     // ServerResolveShot's scratch lists (the game thread only; a shot never fires another shot while it resolves).
-    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _shotTargets = new(Map.HardMaxPlayers);
-    private readonly List<(Player Victim, float Damage)> _shotDamage = new(Map.HardMaxPlayers);
-    private readonly HashSet<Player> _shotHeads = new();
-    private readonly List<ShotRay> _shotRays = new(16);
-    private readonly List<Vector3> _shotEnds = new(16);
-    private readonly List<Vector2> _shotLaterals = new(16);
-    private bool _shotBusy;
+    private readonly List<(Player P, Box Hitbox, HistoryEntry At)> _resolveTargets = new(Map.HardMaxPlayers);
+    private readonly List<(Player Victim, float Damage)> _resolveDamage = new(Map.HardMaxPlayers);
+    private readonly HashSet<Player> _resolveHeads = new();
+    private readonly List<ShotRay> _resolveRays = new(16);
+    private readonly List<Vector3> _resolveEnds = new(16);
+    private readonly List<Vector2> _resolveLaterals = new(16);
+    private bool _resolveBusy;
 
     /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
     private static void AddShotDamage(List<(Player Victim, float Damage)> damage, Player victim, float dmg)
