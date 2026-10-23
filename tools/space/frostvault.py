@@ -110,10 +110,11 @@ def vault():
     K.block(1.5, 0, -p, p, PODIUM_Y, -PIT, PODIUM)                                                      # NE (twin: SW)
     K.block(-p, 0, -PIT, -PIT, PODIUM_Y, -1.5, PODIUM)                                                  # west strip north half (twin: east south)
     K.block(-p, 0, 1.5, -PIT, PODIUM_Y, PIT, PODIUM)                                                    # west strip south half
-    up_n = K.stairs_z(-1.5, 1.5, -p, 1, 0, PODIUM_Y, PODIUM)                                            # from the inner north door up onto the podium
+    ps = p - 1.2                                                                                       # the flights start 1.2 m clear of the inner wall
+    up_n = K.stairs_z(-1.5, 1.5, -ps, 1, 0, PODIUM_Y, PODIUM)                                           # from the inner north door up onto the podium
     dn_n = K.stairs_z(-1.5, 1.5, -PIT, -1, 0, PODIUM_Y, PODIUM)                                         # from the pit up onto the podium
     K.block(-1.5, 0, up_n, 1.5, PODIUM_Y, dn_n, PODIUM)                                                 # the walkway between the two flights
-    up_w = K.stairs_x(-1.5, 1.5, -p, 1, 0, PODIUM_Y, PODIUM)
+    up_w = K.stairs_x(-1.5, 1.5, -ps, 1, 0, PODIUM_Y, PODIUM)
     dn_w = K.stairs_x(-1.5, 1.5, -PIT, -1, 0, PODIUM_Y, PODIUM)
     K.block(up_w, 0, -1.5, dn_w, PODIUM_Y, 1.5, PODIUM)
     # Pit dressing: specimen tanks in the corners, the hex ring, floor lights.
@@ -184,8 +185,10 @@ def vault():
     K.waypoint(0, -3, 0)
     K.waypoint(-3, 3, 0)
     # The axis routes: outside and inside each inner door, the podium walkway, the foot of the pit stairs.
-    for (x, z) in [(-16.2, 0), (-13.0, 0), (-5.2, 0), (0, -16.2), (0, -13.0), (0, -5.2)]:
+    for (x, z) in [(-16.2, 0), (-11.5, 0), (-5.2, 0), (0, -16.2), (0, -11.5), (0, -5.2)]:
         K.waypoint(x, z, PODIUM_Y if 6 < abs(x) + abs(z) < 14 else 0)
+    for (x, z, y) in [(-13.1, 0, 0.6), (-7.2, 0, 0.6), (0, -13.1, 0.6), (0, -7.2, 0.6)]:
+        K.waypoint(x, z, y)
     for (x, z) in [(-21.5, -4), (-18.5, -4), (-21.5, -13), (-18.5, -13), (-21.5, 13), (-18.5, 13),
                    (4, -21.5), (4, -18.5), (-13, -21.5), (-13, -18.5), (13, -21.5), (13, -18.5)]:
         K.waypoint(x, z, 0)
@@ -206,8 +209,13 @@ def lab():
     K.wall_z(z0 + T, z1 - T, x0, T, 0, GAL_TOP, WALL, holes=[door(-42.5)])                              # west door
     K.wall_z(z0 + T, z1 - T, x1 - T, T, 0, GAL_TOP, WALL, holes=[door(-40.0), window(-45.0)])           # east door
     sx0, sx1 = x1 - T - 1.5, x1 - T - 0.1
-    zs = z0 + T + 0.6
+    zs = z0 + T + 1.3
     zend = K.stairs_z(sx0, sx1, zs, 1, 0, GAL_TOP, TRIM)
+    sxm = (sx0 + sx1) / 2
+    K.waypoint(sxm, zs - 0.8, 0)
+    K.waypoint(sxm, zs + 1.2, 1.0)
+    K.waypoint(sxm, zs + 2.6, 2.3)
+    K.waypoint(sxm, zend + 1.0, GAL_TOP)
     K.slab(x0, z0, x1, z1, GAL_TOP, 0.3, GALLERY, hole=(sx0 - 0.2, zs - 0.3, sx1 + 0.1, zend))
     # Parapet (0.5 m: steppable) with a gap where the bridge leaves.
     K.block(x0, GAL_TOP, z0, x1, GAL_TOP + 0.5, z0 + T, WALL)
@@ -345,8 +353,11 @@ def corner_stairs():
     rail(sx0 - 0.1, STAIR_LAND_Z0, sx0 - 0.1, zend, GAL_TOP)
     rail(sx0 - 0.1, STAIR_Z, sx0 - 0.1, zend, 0, h=GAL_TOP + 0.9, t=0.12)  # solid cheek walls beside the flight
     rail(sx1 + 0.1, STAIR_Z, sx1 + 0.1, zend, 0, h=GAL_TOP + 0.9, t=0.12)
-    K.waypoint(-23.8, -11.5, 1.6)
+    K.waypoint(-23.85, STAIR_Z + 0.8, 0)
+    K.waypoint(-23.85, STAIR_Z - 1.3, 1.1)
+    K.waypoint(-23.85, STAIR_Z - 2.7, 2.3)
     K.waypoint(-23.0, -15.0, GAL_TOP)
+    K.waypoint(-19.0, -15.0, GAL_TOP)
     K.decal("Frostvault Hex Floor", -23.0, -15.0, GAL_TOP, size=4, rotation=0)
 
 
