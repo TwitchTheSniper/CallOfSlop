@@ -392,7 +392,7 @@ public static class PropFile
                 case "sound":
                     var s = Text(p.Value, w);
                     if (!Enum.TryParse(s, true, out b.Sound) || !Enum.IsDefined(b.Sound))
-                        throw new PropFileException($"{w}: \"wood\", \"glass\", \"metal\" or \"soft\", got \"{s}\"");
+                        throw new PropFileException($"{w}: \"wood\", \"glass\", \"metal\", \"soft\" or \"meat\", got \"{s}\"");
                     break;
                 case "debris":
                     ReadDebris(p.Value, b, w);
@@ -421,11 +421,43 @@ public static class PropFile
                     if (b.IsMine && b.ExplodeFuse <= 0)
                         b.ExplodeFuse = DefaultTriggerFuse; // a pressure plate always clicks first: the reaction window
                     break;
+                case "gibs":
+                    ReadGibs(p.Value, b, w);
+                    break;
                 default:
-                    throw new PropFileException($"{w}: unknown key. \"breakable\" uses: health, breakBy, debris, sound, explode");
+                    throw new PropFileException($"{w}: unknown key. \"breakable\" uses: health, breakBy, debris, sound, explode, gibs");
             }
         }
+        if (b.GibCount > 0 && b.ExplodeRadius > 0)
+            throw new PropFileException($"{where}: an animal (\"gibs\") can't also explode");
+        if (b.GibCount > 0)
+            b.Sound = PropBreakSound.Meat; // animals squelch
         return b;
+    }
+
+    /// <summary>The "gibs" block of an animal: <c>{ "count": 8, "style": "bird" }</c> (see <see cref="Gibs"/>).</summary>
+    private static void ReadGibs(JsonElement e, PropBreakable b, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new PropFileException($"{where}: an object like {{ \"count\": 8, \"style\": \"bird\" }}");
+        b.GibCount = 8;
+        foreach (var p in e.EnumerateObject())
+        {
+            var w = $"{where} (\"{p.Name}\")";
+            switch (p.Name.ToLowerInvariant())
+            {
+                case "count":
+                    b.GibCount = (int)Range(Num(p.Value, w), 1, Gibs.MaxPerBurst, w);
+                    break;
+                case "style":
+                    var s = Text(p.Value, w);
+                    if (!Enum.TryParse(s, true, out b.GibStyle) || !Enum.IsDefined(b.GibStyle))
+                        throw new PropFileException($"{w}: \"fur\", \"bird\" or \"wool\", got \"{s}\"");
+                    break;
+                default:
+                    throw new PropFileException($"{w}: unknown key. \"gibs\" uses: count, style");
+            }
+        }
     }
 
     /// <summary>The click-to-blast delay (s) of a pressure plate whose "explode" block gives no "fuse".</summary>

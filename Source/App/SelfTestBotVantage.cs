@@ -55,6 +55,9 @@ public static partial class SelfTest
 
     private static WeaponDef VPistol => Weapons.All.Where(w => w.Class == WeaponClass.Pistol && w.Slot == Slot.Secondary).OrderBy(w => w.Id).First();
 
+    /// <summary>The scenario map: Hillfort (a hill with a fort on it: vantage points a bot can walk up to).</summary>
+    private static Map VMap => Maps.Find("Hillfort") ?? Maps.All[0];
+
     /// <summary>Places a bot like <see cref="Game.SelfTestPlace"/> and starts it on a fresh life's bot state (nothing left over from the countdown).</summary>
     private static void VPlace(Game game, Player p, Vector3 feet, float yaw)
     {
@@ -147,7 +150,9 @@ public static partial class SelfTest
 
     private static void CheckVantageScoring()
     {
-        foreach (var name in new[] { "Rooftops", "Hillfort", "Downtown" })
+        // Rooftops and Downtown: roofs you can't walk up to (spawn on them or drop off them) give no sniper spots, by design.
+        var withLong = 0;
+        foreach (var name in new[] { "Hillfort", "Adobe Mesa", "Main Street", "London", "Rooftops", "Downtown" })
         {
             var map = Maps.Find(name);
             if (map == null)
@@ -174,6 +179,8 @@ public static partial class SelfTest
                     continue;
                 }
                 var best = spots[0];
+                if (band == VantageBand.Long)
+                    withLong++;
                 var street = LowestMainNode(g);
                 var ref0 = VantageMap.Evaluate(map, g, street);
                 var line = $"{name} {band}: {spots.Count} spots; best at ({best.Pos.X:0},{best.Pos.Y:0.0},{best.Pos.Z:0}) +{best.Height:0.0} m over its surroundings, "
@@ -205,6 +212,8 @@ public static partial class SelfTest
             if (vm.Spots.Any(s => g.Component[s.Node] != g.MainComponent || !g.MainNodes.Contains(s.Node)))
                 Fail($"{name}: a vantage spot isn't in the main walkable area (unreachable)");
         }
+        if (withLong < 3)
+            Fail($"only {withLong} of the scoring maps have sniper vantage points (want 3+)");
     }
 
     // ---- 2. A sniper goes to a spot first, an SMG goes straight in ------------------------------------------------
@@ -236,12 +245,12 @@ public static partial class SelfTest
 
     private static void CheckVantageSniperVsSmg()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var now = 0.0;
         var (game, blue) = VScenario(map, 7301, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman, BotPersonality.Rusher);
         using var _ = game;
         var g = NavGraph.Current;
-        if (!VDuelNodes(g, 34f, 55f, out var start, out var hostAt))
+        if (!VDuelNodes(g, 34f, 55f, out var start, out var hostAt) && !VDuelNodes(g, 30f, 60f, out start, out hostAt))
         {
             Fail($"{map.Name}: no street spot 34-55 m from another with a clear line (sniper scenario)");
             return;
@@ -304,7 +313,7 @@ public static partial class SelfTest
 
     private static void CheckVantageHoldAndRelocate()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var now = 0.0;
         var (game, blue) = VScenario(map, 7302, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman);
         using var _ = game;
@@ -374,7 +383,7 @@ public static partial class SelfTest
 
     private static void CheckVantageSidearm()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var now = 0.0;
         var (game, blue) = VScenario(map, 7303, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman);
         using var _ = game;
@@ -425,7 +434,7 @@ public static partial class SelfTest
 
     private static void CheckVantageTwoSnipers()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var now = 0.0;
         var (game, blue) = VScenario(map, 7304, GameMode.TeamDeathmatch, ref now, BotPersonality.Marksman, BotPersonality.Marksman);
         using var _ = game;
@@ -472,7 +481,7 @@ public static partial class SelfTest
 
     private static void CheckVantageKingOfTheHill()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var now = 0.0;
         var (game, blue) = VScenario(map, 7305, GameMode.KingOfTheHill, ref now, BotPersonality.Marksman);
         using var _ = game;
@@ -505,7 +514,7 @@ public static partial class SelfTest
 
     private static void CheckVantageSquadOverwatch()
     {
-        var map = Maps.Find("Rooftops") ?? Maps.All[0];
+        var map = VMap;
         var (game, squad) = SquadScenario(map, 7306);
         using var _ = game;
         var now = 0.0;

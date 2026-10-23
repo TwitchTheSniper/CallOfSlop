@@ -116,6 +116,30 @@ public static class PropDebris
     }
 
     /// <summary>
+    /// A chunk of a destroyed building coming down whole (Source/Game/GameDestruction.cs): one piece the size of
+    /// <paramref name="b"/>, in its colour, that drops from where the chunk was with a slight drift and tumble, lands, and
+    /// lies there a little longer than other debris before it fades. Same pool and rules as <see cref="Spawn"/>.
+    /// </summary>
+    public static void SpawnSlab(Box b, Vector3 color, int seed)
+    {
+        var rng = new Foliage.Rng((uint)seed * 2654435761u ^ 0x51abu);
+        var slot = _count < Capacity ? _count++ : Oldest();
+        ref var p = ref Pool[slot];
+        p.Pos = b.Center;
+        p.Size = b.Half * 2 * 0.97f;
+        p.Color = color * (0.8f + rng.Next() * 0.15f);
+        p.Vel = new Vector3((rng.Next() - 0.5f) * 1.2f, -0.5f - rng.Next(), (rng.Next() - 0.5f) * 1.2f);
+        p.SpinAxis = Vector3.Normalize(new Vector3(rng.Next() - 0.5f, 0.1f, rng.Next() - 0.5f) + new Vector3(0.01f));
+        p.Spin = 0.4f + rng.Next() * 1.4f;
+        p.Rot = Quaternion.Identity;
+        p.Age = 0;
+        p.Life = MinLife + 2.5f + rng.Next() * 1.5f;
+        p.Floor = FloorUnder(p.Pos - new Vector3(0, b.Half.Y, 0));
+        p.Resting = false;
+        Spawned++;
+    }
+
+    /// <summary>
     /// A spurt of sparks from <paramref name="at"/> (a lit explosive prop): small bright pieces flung up and out that
     /// fall and die within about a second. Shares the pool with the debris.
     /// </summary>
@@ -171,6 +195,7 @@ public static class PropDebris
     /// </summary>
     public static void Push(Vector3 center, float radius, float strength)
     {
+        Gibs.Push(center, radius, strength); // the gibs lying about fly too (Gibs.cs)
         if (_count == 0 || !(strength > 0) || !(radius > 0))
             return;
         for (var i = 0; i < _count; i++)

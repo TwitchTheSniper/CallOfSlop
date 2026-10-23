@@ -161,6 +161,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (DestructionHash is var destruction and not 0) // destructible maps only (MapDestruction.Map.cs): host and clients must cut and break the same
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (destruction >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             return h;
         }
     }
@@ -181,7 +189,7 @@ public static partial class MapFile
             $"{m.Name}({string.Join(", ", m.GetParameters().Select(p => $"{TypeName(p.ParameterType)} {p.Name}{(p.HasDefaultValue ? $" = {Fmt(p.DefaultValue)}" : p.IsDefined(typeof(ParamArrayAttribute)) ? " = []" : "")}"))})");
 
     private static string TypeName(Type t) => t == typeof(float) ? "number" : t == typeof(int) ? "integer" : t == typeof(bool) ? "true/false"
-        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : t == typeof(float[]) ? "list of numbers" : t == typeof(MapJson?) ? "object" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
+        : t == typeof(string) ? "text" : t == typeof(string[]) ? "list of text" : t == typeof(Vector3) ? "colour" : t == typeof(Map.Hole[]) ? "holes" : t == typeof(float[]) ? "list of numbers" : t == typeof(MapJson?) ? "object" : t == typeof(bool?) ? "true/false (or leave out)" : Nullable.GetUnderlyingType(t) != null ? "rect or null" : t.Name;
 
     // ---- Writing --------------------------------------------------------------------------
 
@@ -199,6 +207,8 @@ public static partial class MapFile
             sb.Append("  \"prototypeGrid\": true,\n");
         if (!m.Penetration)
             sb.Append("  \"penetration\": false,\n");
+        if (m.DestructibleSetting is { } destructible)
+            sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
             sb.Append("  \"flagPool\": ").Append(flagPool).Append(",\n");
         sb.Append($"  \"halfX\": {Num(m.HalfX)},\n");
@@ -315,6 +325,10 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
                 map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
+            if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
+                map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
+                    ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");
+            map.Destructible = map.DestructibleSetting ?? MapPack.DestructibleDefault(map.PackDir);
             if (Prop(root, "flagPool") is { ValueKind: not JsonValueKind.Null } flagPool)
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
@@ -410,6 +424,7 @@ public static partial class MapFile
                 map.Zombies = ZombiesMap.Read(zombies, map, source); // the Zombies mode: areas, doors, windows, buyables (MapZombies.cs)
             MapObjectiveJson.Read(root, map, source);
             map.CheckInsideBoundary(source);
+            map.FinishDestruction(); // the destructible chunks' support graph (MapDestruction.Map.cs; no-op without)
             map.FinishProps(); // last: Clutter keeps clear of the spawns, waypoints, objectives and movers above
             return map;
         }
@@ -436,6 +451,8 @@ public static partial class MapFile
             return e.ValueKind == JsonValueKind.Number && e.TryGetInt32(out var i) ? i : throw new MapFileException($"{where}: expected a whole number, got {e}");
         if (t == typeof(bool))
             return e.ValueKind is JsonValueKind.True or JsonValueKind.False ? e.GetBoolean() : throw new MapFileException($"{where}: expected true or false, got {e}");
+        if (t == typeof(bool?))
+            return e.ValueKind is JsonValueKind.True or JsonValueKind.False ? (object?)e.GetBoolean() : e.ValueKind == JsonValueKind.Null ? (object?)null : throw new MapFileException($"{where}: expected true or false, got {e}");
         if (t == typeof(string))
             return e.ValueKind == JsonValueKind.String ? e.GetString() : throw new MapFileException($"{where}: expected text, got {e}");
         if (t == typeof(string[]))

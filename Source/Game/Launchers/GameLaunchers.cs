@@ -601,6 +601,7 @@ public sealed partial class Game
         var maxDamage = d.Damage * damageMult;
         BlastProps(owner, center, radius, maxDamage, PropDamage.Explosion, now); // breakable props (GameProps.cs)
         BlastBuildings(owner, center, radius, maxDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
+        BlastStructures(owner, center, radius, maxDamage, StructureHit.Launcher, killId, now); // destructible buildings (GameDestruction.cs)
         if (Horde.Count > 0)
             BlastZombies(owner, center, radius, maxDamage * 3f, now); // Zombies (ZombieAI.cs)
         BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)

@@ -605,6 +605,11 @@ public sealed partial class Game : IDisposable
         {
             SendLoadout();
             LoadoutNotice = "Loadout sent...";
+            // The server swaps the loadout in place before play (ServerRequestLoadout's "instant"), and the snapshot only
+            // refills the throwables when a gun changed: refill them here too, or a grenade-only change leaves the HUD
+            // (and the key) on the old kind, which the server then refuses, so the throw spawns nothing.
+            if (Local is { Alive: true } && Phase is MatchPhase.Countdown or MatchPhase.Warmup && !Module.ServerPicksWeapons)
+                RefillThrowables();
         }
     }
 
@@ -903,6 +908,7 @@ public sealed partial class Game : IDisposable
         ServerTickStreaks(now);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
+        ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
@@ -1191,7 +1197,9 @@ public sealed partial class Game : IDisposable
         amount = StreakArmorAbsorb(victim, amount, head, kind, now); // Ballistic Vests and the Juggernaut suit (KillStreaksMore.cs)
         if (amount <= 0)
             return false;
+        var healthBefore = victim.Health;
         victim.Health -= amount;
+        BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
             return false;
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
@@ -1219,7 +1227,8 @@ public sealed partial class Game : IDisposable
             ScavengeOnKill(attacker); // Scavenger (PerksMore.cs)
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
-            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye);
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye) { Gibbed = ShouldGib(kind, killId, amount, healthBefore) }; // blown apart (GameGibs.cs)
+        LastKill = kill;
         kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         LogKill(attacker.Id, victim.Id, head, killId);
@@ -1272,6 +1281,7 @@ public sealed partial class Game : IDisposable
 
         var damage = new Dictionary<Player, float>();
         var headshotOn = new HashSet<Player>();
+        _bloodShotPart.Clear();
         byte flags = 0;
         var rays = ShotRays(def, origin, dir, spread, seed); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
@@ -1315,6 +1325,7 @@ public sealed partial class Game : IDisposable
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
             PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
+            ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
             laterals.Add(ray.Lateral);
@@ -1332,6 +1343,7 @@ public sealed partial class Game : IDisposable
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 damage[h.P] = damage.GetValueOrDefault(h.P) + dmg;
+                _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, end)); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
@@ -1348,8 +1360,10 @@ public sealed partial class Game : IDisposable
             var head = headshotOn.Contains(victim);
             if (head)
                 flags |= 2;
+            _bloodPending = _bloodShotPart.GetValueOrDefault(victim);
             if (DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet))
                 flags |= 4;
+            _bloodPending = BloodPart.None;
         }
 
         if (Horde.Count > 0)
@@ -1430,6 +1444,7 @@ public sealed partial class Game : IDisposable
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
+                SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
@@ -1647,6 +1662,10 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.BuildingEvent:
             case (byte)Msg.BuildingState:
                 OnBuildingPacket(id, ref r, sender, now); // building doors and windows (GameBuildings.cs)
+                break;
+            case (byte)Msg.StructBreak:
+            case (byte)Msg.StructState:
+                OnStructurePacket(id, ref r); // destructible buildings (GameDestruction.cs)
                 break;
             case (byte)Msg.ShieldHit when !IsServer && r.Has(2):
                 OnShieldHitPacket(ref r, now); // Last Stand's shield blocked a hit (Health.cs)

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-decal/1",
+  "name": "Gib Spatter",
+  "description": "A spray of blood drops round a small splat, where something burst (Source/Props/Gibs.cs).",
+  "author": "Call of Slop",
+  "size": 0.55,
+  "sizeVariation": 0.3,
+  "rotation": "random",
+  "tintVariation": 0.12,
+  "impact": {"materials": ["Gore"], "weight": 1},
+  "layers": [
+    {"shape": "splat", "radius": 0.14, "count": 8, "jag": 0.5, "seed": 831, "color": [0.4, 0.04, 0.04], "alpha": 0.85, "softness": 0.03},
+    {"shape": "speckle", "radius": 0.47, "count": 26, "width": 0.035, "seed": 832, "color": [0.33, 0.03, 0.03], "alpha": 0.85},
+    {"shape": "speckle", "radius": 0.3, "count": 12, "width": 0.05, "seed": 833, "color": [0.45, 0.05, 0.05], "alpha": 0.75}
+  ]
+}

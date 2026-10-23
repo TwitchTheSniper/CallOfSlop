@@ -46,6 +46,7 @@ public sealed partial class Game
             b.StuckCount = 0;
             b.LastHealth = p.Health;
             b.LastSeenTime = b.HeardTime = b.HurtTime = -100;
+            b.BlindBurst = 0; // no blind fire carried over from the last life (BotFoliage.cs)
             b.ObjectiveMinded = _rng.NextDouble() < b.Profile.ObjectiveWeight;
             b.ClearPath();
         }
@@ -95,8 +96,15 @@ public sealed partial class Game
                 }
                 var flat = Vector3.Normalize(new Vector3(to.X, 0, to.Z) + new Vector3(1e-4f, 0, 0));
                 var inView = alert || Vector3.Dot(flat, fwd) > -0.2f || dist < Perks.BotSenseRange(o.Perks); // ~200 deg vision, plus "hearing" up close (Dead Silence: closer)
-                if (!inView || !HasLineOfSight(p.Eye, o.Chest))
+                if (!inView)
                     continue;
+                var sight = BotSees(p.Eye, o); // chest, or the head when only foliage hides the chest (BotFoliage.cs)
+                if (sight != BotSightLine.Clear)
+                {
+                    if (sight == BotSightLine.Covered)
+                        BotNoticeHidden(b, o, dist, now); // hidden in cover, but running gives it away (roughly)
+                    continue;
+                }
                 var score = dist + (o.Id == b.Target ? -5f : 0f); // stick with the current target a little
                 if (score < bestScore)
                 {
@@ -115,10 +123,11 @@ public sealed partial class Game
             target = best;
         }
 
-        visible = target != null && HasLineOfSight(p.Eye, target.Chest);
+        visible = target != null && BotSees(p.Eye, target) == BotSightLine.Clear;
         if (visible)
         {
             b.LastSeenAt = target!.Position;
+            b.LastSeenVel = target.Sim.Velocity;
             b.LastSeenTime = now;
         }
         return target;
@@ -145,6 +154,17 @@ public sealed partial class Game
             var wobble = b.AimError * 0.15f;
             wantYaw = MathF.Atan2(d.X, -d.Z) + b.AimErrYaw + ((float)_rng.NextDouble() - 0.5f) * wobble;
             wantPitch = MathF.Asin(Math.Clamp(d.Y, -1f, 1f)) + b.AimErrPitch;
+        }
+        else if (b.BlindOn)
+        {
+            // Firing blind into cover: face the burst's spot (BotFoliage.cs).
+            var d = b.BlindAim - p.Eye;
+            var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+            if (flat > 0.3f)
+            {
+                wantYaw = MathF.Atan2(d.X, -d.Z);
+                wantPitch = Math.Clamp(MathF.Atan2(d.Y, flat), -0.6f, 0.6f);
+            }
         }
         else if (steer.HasLook)
         {
@@ -178,7 +198,7 @@ public sealed partial class Game
             BotReload(p, def, now);
             b.CoverReload = visible && _rng.NextDouble() < b.Profile.CoverUse;
         }
-        else if (!visible && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0)
+        else if (!visible && !b.BlindOn && now - b.LastSeenTime > 2 && b.Ammo < def.Mag * 0.4f && b.ReloadUntil == 0) // not mid blind fire (BotFoliage.cs)
         {
             BotReload(p, def, now);
         }

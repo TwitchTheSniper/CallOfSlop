@@ -39,6 +39,7 @@ public sealed partial class Game
         _botScanBudget = Math.Max(BotScansPerTick, Players.Count / 5); // see TakeBotScan
         NavGraph.Pump(BotNavBuildMs);
         VantageMap.Ensure(World.Map, NavGraph.Current); // the map's vantage points, on a worker thread (once per nav graph)
+        World.Map.PrepareFoliageCover(); // bot sight through foliage: built once per map on a worker thread (FoliageCover.cs)
         SquadTickShared(now); // Insane squads: roster and one squad's plan (SquadPlanner.cs)
     }
 
@@ -57,7 +58,7 @@ public sealed partial class Game
                 var dist = to.Length();
                 var dir = dist > 0.01f ? to / dist : Vector3.Zero;
                 var pref = MathF.Max(3f, PreferredRange(def) * prof.RangeMult);
-                var hurt = p.Health <= prof.RetreatHealth && prof.Aggression < 0.9f;
+                var hurt = p.Health <= World.HealthAt(prof.RetreatHealth) && prof.Aggression < 0.9f;
                 var holdBack = (prof.Holds ? dist < pref * 2f : prof.Kind == BotPersonality.Marksman && dist < 60f) || b.Order.HoldBack;
                 if (dist > pref + 3 && !hurt && !holdBack)
                     s.Wish += BotFollow(p, b, nav, target.Position, now, ref s); // close in along the path (around cover)
@@ -145,6 +146,12 @@ public sealed partial class Game
             }
         }
 
+        if (b.SelfTestHold)
+        {
+            s.Wish = Vector3.Zero; // self-test: stay on the spot (BotFoliage.cs)
+            s.Sprint = false;
+            s.Stationary = true;
+        }
         BotSeparate(p, ref s.Wish);
         BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);
@@ -238,6 +245,9 @@ public sealed partial class Game
         for (var e = nav.EdgeStart[from]; e < nav.EdgeStart[from + 1]; e++)
             if (nav.EdgeTo[e] == to)
                 return e;
+        for (var e = nav.ExtraHead.Length != 0 ? nav.ExtraHead[from] : -1; e >= 0; e = nav.ExtraNext[e - nav.BuiltEdges])
+            if (nav.EdgeTo[e] == to)
+                return e; // a way destruction opened (BotNavPatch.cs)
         return -1;
     }
 

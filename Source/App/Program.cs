@@ -330,6 +330,11 @@ public static unsafe partial class Program
             SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeBloodStep < 9)
+        {
+            SmokeBlood(now); // Program.Blood.cs: the blood overlay at 30% health, a bot's body blood at 20%
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
         {
             SmokeDeathCam(now, t);
@@ -938,6 +943,7 @@ public static unsafe partial class Program
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
+            _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             _session.Mode = GameModes.Fits(_settings.Mode, map) ? _settings.Mode : GameMode.FreeForAll; // clients learn the host's mode from the server; Zombies needs a Zombies map
             _session.TrueRandom = kind != LobbyAction.Join && _settings.MapRandom && MapPack.IsTrueRandom(_settings.MapPack); // the map vote draws from every pack
             World.PhysicsMode = kind == LobbyAction.Join ? PhysicsMode.Classic : _settings.Physics; // joiners: the host's, from the Welcome
@@ -2052,6 +2058,7 @@ public static unsafe partial class Program
         var black = Vector3.Zero;
         float cx = w / 2, cy = h / 2;
         var k = Ui.Scale / 1.2f; // HUD drawn here follows the UI scale setting (1.0 at 1080p)
+        DrawBloodOverlay(now, w, h, local); // blood splatters by your health, under the HUD (Program.Blood.cs)
 
         if (local is { Alive: true })
         {

@@ -22,7 +22,7 @@ public sealed partial class Game
         if (VantageDecide(p, b, target, visible, now))
             return; // a long gun: to a vantage point, or holding one (Source/Game/Bots/Vantage)
 
-        var low = p.Health <= prof.RetreatHealth;
+        var low = p.Health <= World.HealthAt(prof.RetreatHealth);
         if (visible)
         {
             var wantCover = (low && prof.Aggression < 0.9f) || (b.CoverReload && b.ReloadUntil > 0);
