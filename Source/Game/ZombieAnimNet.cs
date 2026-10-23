@@ -147,13 +147,27 @@ public sealed partial class Game
     /// The pose input for drawing zombie <paramref name="z"/> now (<paramref name="now"/>: the local clock, for idle sway):
     /// its state, clocks and window from what this side knows. Both sides give the same input for the same server state.
     /// </summary>
-    public void ZombieAnimInputFor(Zombie z, double now, out ZombieAnimInput a)
+    public void ZombieAnimInputFor(Zombie z, double now, out ZombieAnimInput a) => ZombieAnimInputAt(z, ZAnimTick, z.RenderPos, z.RenderYaw, now, out a);
+
+    /// <summary>
+    /// Where the hit box of zombie <paramref name="z"/> sits relative to <paramref name="pos"/> at server tick
+    /// <paramref name="tick"/>: at a window it follows the drawn body (<see cref="ZombieAnim.BodyShift"/>), elsewhere zero.
+    /// </summary>
+    public Vector3 ZombieHitShift(Zombie z, double tick, Vector3 pos)
+    {
+        if (z.Window < 0 || (z.State != ZState.Tearing && z.State != ZState.Attack))
+            return Vector3.Zero;
+        ZombieAnimInputAt(z, tick, pos, z.Yaw, 0, out var a);
+        return ZombieAnim.BodyShift(a);
+    }
+
+    /// <summary>The pose input at server tick <paramref name="rt"/> for a zombie at <paramref name="pos"/> (see <see cref="ZombieAnimInputFor"/>).</summary>
+    private void ZombieAnimInputAt(Zombie z, double rt, Vector3 pos, float yaw, double now, out ZombieAnimInput a)
     {
         a = default;
-        var rt = ZAnimTick;
         const float dt = World.TickDt;
-        a.Pos = z.RenderPos;
-        a.Yaw = z.RenderYaw;
+        a.Pos = pos;
+        a.Yaw = yaw;
         a.Id = z.Id;
         a.Speed = z.Speed;
         a.Gait = z.Gait;

@@ -392,6 +392,52 @@ public static partial class SelfTest
                 Fail("a zombie should tear every board off and climb in, and a player should rebuild them for points");
         }
 
+        // ---- A zombie tearing boards is hit where it's drawn: from the side and head-on through the opening ----
+        // It steps up to a metre in towards the boards as drawn (ZombieAnim.BodyShift); the server's hit box follows.
+        using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            var me = g.Local!;
+            me.ImmuneUntil = 1e9;
+            var win = zm.Windows[0];
+            var outward = Vector3.Normalize(new Vector3(win.Outside.X - win.Inside.X, 0, win.Outside.Z - win.Inside.Z));
+            var lateral = new Vector3(-outward.Z, 0, outward.X);
+            var z = g.SelfTestSpawnZombie(zm.Spawners.FindIndex(s => s.Window == 0), now);
+            for (var i = 0; i < 60 * 20 && z.State != ZState.Tearing; i++)
+            {
+                now += World.TickDt;
+                g.SelfTestZombiesTick(now);
+            }
+            ZTicks(g, ref now, 0.6); // the step in has blended in (0.35 s)
+            var tearing = z.State == ZState.Tearing;
+            g.SelfTestAnimTick = g.ServerTick;
+            z.RenderPos = z.Position;
+            z.RenderYaw = z.Yaw;
+            g.ZombieAnimInputFor(z, now, out var a);
+            g.SelfTestAnimTick = null;
+            ZombieAnim.Evaluate(a, out var pose);
+            var head = Vector3.Transform(ZombieAnim.HeadCenter, pose.Head);
+            var chest = Vector3.Transform(ZombieAnim.TorsoCenter, pose.Upper);
+            var drawnAhead = Vector3.Dot(chest - z.Position, -outward);
+            var hits = 0;
+            var tries = 0;
+            foreach (var (from, at) in new[] { (head + lateral * 3f, head), (chest - lateral * 3f, chest), (win.Inside + new Vector3(0, World.EyeHeight, 0), head), (win.Inside + new Vector3(0, World.EyeHeight, 0), chest) })
+            {
+                me.Teleport(from - new Vector3(0, World.EyeHeight, 0));
+                for (var i = 0; i < me.History.Length; i++)
+                    me.History[i] = new HistoryEntry { Position = me.Position, Yaw = me.Yaw, Tick = g.ServerTick };
+                var h0 = z.Health;
+                g.SelfTestServerShot(me, from, Vector3.Normalize(at - from), now);
+                tries++;
+                if (z.Health < h0)
+                    hits++;
+                else
+                    Line($"  missed: a shot from {from} at the drawn {(at == head ? "head" : "chest")} {at} (zombie at {z.Position}, hit box feet {z.History[g.ServerTick % z.History.Length]})");
+            }
+            ZLine($"window hit box: tearing zombie drawn {drawnAhead:0.00} m ahead of its position; {hits} of {tries} shots at its drawn head / chest from the side and head-on hit it");
+            if (!tearing || hits != tries)
+                Fail("shots through the drawn body of a zombie tearing boards should hit it from every angle");
+        }
+
         // ---- Points per action ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
         {

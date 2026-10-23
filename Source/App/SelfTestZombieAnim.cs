@@ -119,6 +119,79 @@ public static partial class SelfTest
         if (vaultWorst > 0.03f)
             Fail($"climbing zombies' hands miss the sill by {vaultWorst * 100:0.0} cm (at most 3)");
 
+        // ---- The hit box follows the drawn body at the window: a ray through the drawn head or torso hits it ----
+        // From the side, head-on through the opening (from the inside spot), from behind and from above, at every
+        // window of both maps, from where a tearing zombie stands, for every board count, while clawing and swiping,
+        // and while the step is still blending in (ZombieAnim.BodyShift; the server shifts the history entry by it).
+        {
+            int rays = 0, misses = 0;
+            float maxShift = 0, worstInside = 0;
+            foreach (var (map, zm) in maps)
+                for (var w = 0; w < zm.Windows.Count; w++)
+                {
+                    var win = zm.Windows[w];
+                    var outward = win.Outside - win.Inside;
+                    outward.Y = 0;
+                    outward = Vector3.Normalize(outward);
+                    var lateral = new Vector3(-outward.Z, 0, outward.X);
+                    Vector3[] spots = [win.Outside, win.Outside + outward * 0.3f, win.Outside + outward * 0.2f + lateral * 0.2f, win.Outside - lateral * 0.25f];
+                    var eye = win.Inside + new Vector3(0, World.EyeHeight, 0);
+                    foreach (var spot in spots)
+                        foreach (var id in new ushort[] { 1, 8, 21 })
+                            for (var boards = 0; boards <= win.Boards; boards++)
+                                foreach (var phase in new[] { 0.05f, 0.55f, 0.98f })
+                                    foreach (var since in new[] { 0.15f, 5f })
+                                        foreach (var attack in since < 1f ? [-1f] : new[] { -1f, 0.2f })
+                                        {
+                                            var a = Base(boards == 0 && phase > 0.5f ? ZAnimMode.WindowIdle : ZAnimMode.Tearing, spot, win.Yaw, id);
+                                            a.SetWindow(win, boards);
+                                            a.Phase = phase;
+                                            a.SinceState = since;
+                                            a.Attack = attack;
+                                            ZombieAnim.Evaluate(a, out var p);
+                                            var shift = ZombieAnim.BodyShift(a);
+                                            maxShift = MathF.Max(maxShift, shift.Length());
+                                            var box = World.Hitbox(spot + shift, Stance.Stand, win.Yaw);
+                                            Vector3[] points =
+                                            [
+                                                Vector3.Transform(ZombieAnim.HeadCenter, p.Head),
+                                                Vector3.Transform(ZombieAnim.TorsoCenter, p.Upper),
+                                                (p.HipR + p.HipL) * 0.5f,
+                                            ];
+                                            foreach (var pt in points)
+                                            {
+                                                // How far the drawn point sits inside the box (negative: outside).
+                                                var d = box.Half - Vector3.Abs(pt - box.Center);
+                                                worstInside = rays == 0 ? MathF.Min(MathF.Min(d.X, d.Y), d.Z) : MathF.Min(worstInside, MathF.Min(MathF.Min(d.X, d.Y), d.Z));
+                                                Vector3[] froms =
+                                                [
+                                                    pt + lateral * 4f, pt - lateral * 4f, pt + outward * 4f, eye,
+                                                    pt + outward * 2f + new Vector3(0, 3f, 0), pt + lateral * 3f + outward * 1.5f,
+                                                ];
+                                                foreach (var from in froms)
+                                                {
+                                                    var dir = pt - from;
+                                                    var dist = dir.Length();
+                                                    dir /= dist;
+                                                    rays++;
+                                                    if (box.Raycast(from, dir, dist + 0.01f) == null)
+                                                    {
+                                                        misses++;
+                                                        if (misses <= 12)
+                                                            Line($"  hit box miss: {map.Name} window {w} boards {boards} phase {phase} since {since} id {id} attack {attack}: ray from {from} to {pt} misses the box at {box.Center} (shift {shift.Length():0.00} m)");
+                                                    }
+                                                }
+                                            }
+                                        }
+                }
+            Line($"window hit box: {rays} rays through the drawn head, chest and hips of zombies at every window (side, head-on, behind, above), {misses} missed the hit box; "
+                 + $"drawn points at least {worstInside * 100:0.0} cm inside it; the box moves up to {maxShift:0.00} m with the body");
+            if (misses > 0)
+                Fail($"{misses} of {rays} rays through a drawn zombie at a window miss its hit box");
+            if (worstInside < 0.03f)
+                Fail($"a drawn zombie's head, chest or hips come within {worstInside * 100:0.0} cm of its hit box's edge at a window (at least 3)");
+        }
+
         // ---- Bones keep their lengths, everything finite, feet on the ground when walking ----
         var badBones = 0;
         var feetOff = 0f;

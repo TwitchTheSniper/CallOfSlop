@@ -20,7 +20,9 @@
   - special ammo effects for every part flag;
   - solid machine props;
   - the first real map, **Blackmoor Asylum** (`Maps/Zombies/01-BlackmoorAsylum.json`, 7 areas);
-  - procedural zombie animation (tearing boards, vaulting, rising from the ground, gaits, swipes);
+  - procedural zombie animation (tearing boards, vaulting, rising from the ground, gaits, swipes); at a window the hit
+    box follows the drawn body (`ZombieAnim.BodyShift`: the server shifts the lag-compensated history entry, the
+    client its hit prediction), so shots at what you see land from every angle (fixed 2026-10-23);
   - Disassemble at the workbench (empty-hands slots);
   - slower health scaling: +60 a round to round 9, then ×1.06 a round.
 
@@ -71,7 +73,6 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 ## Open bugs and loose ends
 
 **Gameplay and visual**
-- **Zombie hit box at windows:** the zombie is drawn up to about 1 m ahead of its hit box while it reaches for the boards. Side-angle shots can miss. Proposed fix, not yet answered by the user: move the outside stand spots closer to the windows in the maps.
 - **Parts that still float** (found 2026-10-23 while fixing the first three; `tools/parts/floaters.py` does not cover grip combinations, so check with a script that reuses its box logic): Wire Stock, Shoulder Harness, Bayonet and Cup Holder on some grips. None is used by a standard build.
 - **Action placement overlaps (accepted):**
   - drum mags, belts and hoppers can overlap the under-receiver trigger group;
@@ -130,15 +131,14 @@ Defaults are in place for all of them.
    - Second Wind's price (1500) and whether it counts toward the perk limit;
    - Blackmoor's layout and prices, and more maps.
 2. **Actions:** should the Break Action and Muzzleloader (slow novelties) be tuned?
-3. **Zombies at windows:** move the stand spots closer, so the hit box matches the drawing?
-4. **Test Range:** keep kill XP?
+3. **Test Range:** keep kill XP?
 
 ## Recommended next steps
 
 1. Play-test on the PC what has never been seen on screen: Blackmoor, the zombie animations, Appearance, the action models. Fix what looks wrong.
 2. Cut the next release so testers get Appearance and the action placement: Actions → Release, or ask the agent.
 3. Get answers to the open questions above, one at a time, then tune `Parts/Tables/ZombiesRules.json`.
-4. Fix the window hit-box offset and the four remaining floating parts.
+4. Fix the four remaining floating parts.
 5. Look into the four flaky tests if they recur.
 6. Backlog:
    - Zombies: more maps, perk machine visuals, bots buying things;
