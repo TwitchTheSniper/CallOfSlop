@@ -10,10 +10,11 @@ Anything marked **proposed** is a working default the code implements so it can 
 change. The "Open creative questions" at the end list the calls that are the user's to make.
 
 Code: `Source/Zombies/` (PartDef, PartFile, WeaponBuild, BuildRules, BuildStats, BuildModel, BuildStore, MeleeStats,
-StandardBuilds, RunTables, PushCart), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart,
-slots, melee builds, practice dummies) in `Source/Game/GameZombies.cs`, UI in `Source/UI/UiWorkbench.cs`, the range
+StandardBuilds, RunTables, PushCart, BenchModel), firing in `Source/Game/GameBuilder.cs`, the match-side systems (cart,
+slots, melee builds, practice dummies) in `Source/Game/GameZombies.cs`, UI in `Source/UI/UiWorkbench.cs` (the editing
+model it draws is `Source/Zombies/BenchModel.cs`; part pictures `Source/Render/PartThumbnails.cs`), the range
 session and cart drawing in `Source/App/Program.Workbench.cs`, self-test section "Weapon builder" in
-`Source/App/SelfTestWeaponBuilder.cs` and `SelfTestWeaponBuilder2.cs`. Data: `Parts/<Category>/*.json`, standard
+`Source/App/SelfTestWeaponBuilder.cs` and `SelfTestWeaponBuilder2.cs` (and "Workbench UI" in `SelfTestWorkbenchUi.cs`). Data: `Parts/<Category>/*.json`, standard
 builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, the range map
 `Maps/Dev/WorkbenchRange.json`.
 
@@ -52,7 +53,7 @@ effects attachments use).
 
 ```
 Grip (root: the part you hold; it fixes the fire style)
- |- receiver_1 .. receiver_N    <- the grip decides N (pistol grip 3, rifle grip 9, Gantry Rig and push cart 16)
+ |- receiver_1 .. receiver_N    <- the grip decides N (first-tier grips 1, pistol grip 3, rifle grip 9, Gantry Rig and push cart 16)
  |    |- barrel                 <- a barrel, or a SPLITTER whose outputs take barrels (or another splitter)
  |    |    \- muzzle            <- muzzle device
  |    |- feed                   <- box / drum / belt / tube / cell (or none: fed by the shared feed)
@@ -77,7 +78,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 14 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand) | 17 |
 | Receiver | The action: semi, auto, burst, pump, bolt, rotary (minigun, spools up, barrels take turns), chain (spool-up). Sets the bore (calibre class) and base fire rate | 11 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
 | Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
@@ -229,6 +230,54 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
   weapon (see ZOMBIES-MODE.md). Until then, clients draw other players' carts as a bare
   Push Cart, and a remote pusher's own movement isn't predicted against the cart (the server corrects it).
 
+## The workbench (the UI, 2026-10-22)
+
+The user asked for "a nicer, cleaner UI so that your gun builds are presented in a nice linear fashion", a grip first,
+drag and drop from an inventory on the left that only snaps to the right spots, faster and more fun, copying a whole
+receiver assembly when you're missing the parts, and a way to see which parts are missing. What's built:
+
+- **Step 1: the grip.** "New weapon" (key N, and any empty slot) opens the grip picker: a card per grip with its 3D
+  picture, receiver slots ("1 RECEIVER SLOT" for the first tiers), fire style, hands, carry weight and how many you own
+  (in a run). A grip you don't own can still be picked to plan a build: it shows as missing. "Change grip" (G) moves the
+  current build onto another grip (receivers into the same-numbered slots).
+- **Step 2: assembly.** Left: your parts, grouped by category with counts (a run: loose parts plus the slot's own), a
+  search box and category chips, 3D icons (rendered once into textures and cached, `PartThumbs`), a tooltip with what
+  the part does, and parts that fit nowhere on the build dimmed (with the reason in the tooltip). Middle: the gun large
+  (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
+  build needs, red on missing parts, orange on the selection. Right: the build as a **linear list** (Grip > Receiver(s) >
+  Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's
+  barrels indented under it, empty needed sockets as yellow "+ Feed: needs feed" rows) and **stat bars** (damage, fire
+  rate, recoil, magazine, DPS, reload, mobility, weight against the grip's carry) that show the change in green and red
+  while you hover a part or drag it over a socket.
+- **Drag and drop.** Drag a part from the list: every socket it fits glows green (cyan: it would swap out the part
+  there), the one under the mouse previews the part snapped in place (highlighted) with the stat changes, and releasing
+  snaps it in with a click, a little camera nudge and the part sliding into its socket. Rows of the linear list are drop
+  targets too. A refused drop bounces back to the list with the reason ("Box Mag is made for rifle rounds; the Plinker
+  Receiver fires pistol rounds."). **Swap semantics:** a part dropped on an occupied socket replaces it, and what was
+  plugged into the old part moves onto the new one where it has the same socket and still fits (a swapped barrel keeps
+  its muzzle device; a swapped receiver keeps barrel, feed and ammo of its bore); the rest goes back to your parts.
+  Drag a part off the gun (or a row off the list) to take it off, or onto another socket to move it with its parts.
+- **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (A) fills every
+  empty needed socket with parts you have (the rarest that leads to a complete build first), as one undo step.
+  Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) undo and redo (64 steps), Del takes the selected part off, C copies the selected
+  receiver, Esc cancels a drag, leaves the picker, then closes.
+- **Copy receiver assembly.** Right-click a receiver (on the gun or in the list) > "Copy receiver assembly" duplicates
+  it and everything under it onto the next free receiver slot (refused only when the grip is full or the build's limits,
+  like weight, say no). Without the parts it still goes on: the copy's parts you don't own are drawn as red ghosts on
+  the gun, red rows with a MISSING tag in the list, and the strip under the view says "Missing: 1x Long Barrel, 1x
+  Compensator, 1x Extended Mag". The build can't be saved or applied until they're owned.
+- **Missing parts everywhere.** Saved builds and presets (standard builds load as plans) carry a red "[N missing]"
+  badge, the Save / Apply button's tooltip lists what's missing and what's still needed, and the run's workbench offers
+  **CRAFT MISSING & APPLY (N scrap)** when every missing part can be crafted this round (3x its scrap value; never wonder
+  parts, nor tiers above what the round's drop table rolls). The sandbox's **Practice parts** toggle (two of every
+  common part, one of every uncommon) lets you try all of this without a run.
+- **Server authority is unchanged**: Apply sends the build's text in `ZBench` and the server checks the parts again;
+  crafting the missing parts is the existing craft request, sent once per part before the build (reliable, ordered).
+  No new messages, no protocol change. The workbench is a menu for the cursor rule (`CursorPolicy`): the mouse stays free.
+- **Cost.** The editing model (`BenchModel`) does its allocating work only when the build changes (assembling, the
+  list, the sockets, what's missing); the per-frame calls (camera, projection, the ray pick, the stock fingerprint)
+  allocate nothing (self-test). Part pictures render 8 per frame at most, once per part per session.
+
 ## Rarity tiers and scrap hooks
 
 | Tier | Colour | Scrap value | Craft cost (3x) | Where it comes from (proposed) |
@@ -310,7 +359,7 @@ network and the fingerprint can't tell the difference. Top-level entries in `Par
 | --- | --- |
 | `Parts/_Template/` | `Template.json`: every key, commented, to copy into a category folder. Two more examples show `extends`. Checked by the self-test, never in the game. |
 | `Parts/_Fragments/*.json` | Reusable model pieces (format `call-of-slop-fragment/1`: `name`, `about`, `model`): Picatinny Rail, Screw Head, Cooling Fins, Drum Shell, Scope Tube, Magazine Body, Barrel Shroud, Muzzle Ring, Trigger Guard. |
-| `Parts/_Bases/*.json` | Templates to `extends` (Base Barrel, Base Box Mag, Base Auto Receiver). Never in the game; may leave things out. |
+| `Parts/_Bases/*.json` | Templates to `extends` (Base Barrel, Base Box Mag, Base Auto Receiver, Base One-Receiver Grip: the first-tier grips extend it). Never in the game; may leave things out. |
 | `Parts/_Registry.json` | Socket types, bores and each category's default mount and display name (format `call-of-slop-part-registry/1`). |
 
 **Fragments.** In a `model` list, `{"use": "Picatinny Rail", "pos": [0, 0.07, -0.02], "rot": [0, 0, 0], "scale": 1.5,
@@ -379,13 +428,14 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 123 parts
+## The part set: 126 parts
 
-Milestone 1's 75 parts plus 48 new ones (milestone 2). By tier, all categories:
+Milestone 1's 75 parts, 48 from milestone 2 and the three one-receiver grips of the workbench rework. By tier, all
+categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (14) | Pistol Grip (3, volley), Vertical Foregrip | Rifle Grip (9, volley), Angled Foregrip | Competition Pistol Grip (3, rotate), Briefcase (4, volley, hip fire), Chaingun Handle, **Mule Frame (6, volley, 16 kg)** | Tactical Rifle Grip (9, rotate), Steering Wheel (8, rotate), **Exo Harness (12, rotate, 30 kg)** | Chainsaw Grip (6, volley), **Gantry Rig (16, volley, 48 kg)** | Push Cart (16, volley, a real cart) |
+| Grip (17) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip | Pistol Grip (3, volley), Competition Pistol Grip (3, rotate), Briefcase (4, volley, hip fire), Chaingun Handle, **Mule Frame (6, volley, 16 kg)** | Rifle Grip (9, volley), Tactical Rifle Grip (9, rotate), Steering Wheel (8, rotate), **Exo Harness (12, rotate, 30 kg)** | Chainsaw Grip (6, volley), **Gantry Rig (16, volley, 48 kg)** | Push Cart (16, volley, a real cart) |
 | Receiver (11) | Plinker, Stampede, Workhorse, Farmhand Pump | Longreach Bolt, Triad Burst | Bucket Launcher, Gravedigger Auto | Hellwheel Rotary, Thumper Chain Gun | Sparkplug Energy | |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
@@ -412,10 +462,10 @@ weight-relief parts (`"carry"`) raise what any grip carries, so the huge guns ar
 
 | Rounds (proposed) | What drops (part tiers) | Frames you can expect | What a build looks like |
 | --- | --- | --- | --- |
-| 1-2 | common 85%, uncommon 15% | Pistol Grip (4 kg, 3), Rifle Grip (9 kg, 9) | the start builds: Wall Rifle, Wall Pistol, a Machete |
-| 3-7 | + rare 8% | + Competition Pistol Grip, Briefcase | two or three receivers, a Y-splitter shotgun, first upgrades |
+| 1-2 | common 85%, uncommon 15% | Service Pistol Grip (4 kg), Service Rifle Grip (8 kg), Sport Rifle Grip (10 kg): **one receiver each** | the start builds: Wall Rifle, Wall Pistol, a Machete |
+| 3-7 | + rare 8% | + Pistol Grip (3 receivers), Competition Pistol Grip, Briefcase | the first two- and three-receiver guns, a Y-splitter shotgun, first upgrades |
 | 8-14 | rare 24%, epic 6% | + **Mule Frame (16 kg, 6)**, Shoulder Harness | three to six receivers, a Manifold Hopper, Gas Overclock |
-| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Tactical Rifle Grip, Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
+| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Rifle Grip and Tactical Rifle Grip (9), Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
 | 25+ | legendary 17-28%, wonder 5-12% | + **Gantry Rig (48 kg, 16)**, Anti-Grav Coil, the Push Cart | broken, silly, sixteen receivers (Gantry Sixteen, Shopping Spree) |
 
 The numbers live in `Parts/Tables/DropTables.json` (format `call-of-slop-drops/1`): part tiers by round, the chance a
@@ -445,9 +495,9 @@ workbench lists them under **Standard builds** and loads one as a preset into th
 
 | Tier | Guns | Melee |
 | --- | --- | --- |
-| Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall) | Machete (start, box) |
-| Uncommon | Twin Splitter Shotgun, Triple Pistol, Burst Marksman (box, wall) | Nail Bat, Fire Axe |
-| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun | Sledgehammer, Frying Pan |
+| Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall): all on the one-receiver Service grips | Machete (start, box) |
+| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip | Nail Bat, Fire Axe |
+| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip) | Sledgehammer, Frying Pan |
 | Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, rotate, ammo can manifold) | Chainsaw Sword |
 | Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack | Rocket Katana |
 | Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter | The Codfather (a frozen fish on a rod) |
@@ -565,7 +615,7 @@ Milestone 1:
 - [x] Multi-barrel and multi-receiver firing from each muzzle socket; standard weapons unchanged; Last Stand rule.
 - [x] Model from part models at sockets via the scene graph; hand anchors; optic sight line.
 - [x] Workbench UI (parts inventory, live 3D preview, receiver slots, stat deltas, errors, 4 build slots, test fire
-      in the Workbench Range).
+      in the Workbench Range). Reworked 2026-10-22: grip first, drag and drop, linear list, copy assembly, missing parts.
 - [x] Self-test section "Weapon builder" and a smoke step.
 
 Milestone 2 (the user's decisions):

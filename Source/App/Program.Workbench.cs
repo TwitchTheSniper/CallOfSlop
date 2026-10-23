@@ -248,9 +248,41 @@ public static unsafe partial class Program
                 break;
             case 32 when t > 3.3:
                 SmokeShot("workbench_melee");
+                _wbSmokeStage = 33;
+                break;
+            // The workbench UI (Source/UI/UiWorkbench.cs): step 1 (the grip picker), the assembly screen, and a receiver
+            // assembly copied without the parts (missing parts red). Pictures of parts render a few per frame meanwhile.
+            case 33 when t > 3.6:
+                Ui.SmokeWorkbenchPicker(false);
+                _wbSmokeStage = 34;
+                break;
+            case 34 when t > 4.6:
+                SmokeShot("workbench_grips");
+                _wbSmokeStage = 35;
+                break;
+            case 35 when t > 4.9:
+                if (StandardBuilds.Find("Burst Marksman") is { } bm)
+                    Ui.SmokeWorkbenchBuild(bm.Build());
+                _wbSmokeStage = 36;
+                break;
+            case 36 when t > 5.9:
+                SmokeShot("workbench_assembly");
+                _wbSmokeStage = 37;
+                break;
+            case 37 when t > 6.2:
+            {
+                var src = WeaponBuild.Parse("Copy Demo|volley|Pistol Grip{receiver_1:Plinker Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Extended Mag,ammo:9mm Ball}}", Parts.Find);
+                var stock = BenchStock.Of(src.Nodes.GroupBy(n => n.Part).Select(gp => (gp.Key, gp.Key.Category is PartCategory.Receiver or PartCategory.Ammo ? 2 : 1)));
+                var missing = Ui.SmokeWorkbenchCopy(src, stock);
+                Console.WriteLine($"[smoke] workbench UI: grip picker and assembly shown, {PartThumbs.Rendered} part picture(s) cached{(PartThumbs.Broken ? " (pictures OFF)" : "")}; copy without parts: {missing}");
+                _wbSmokeStage = 38;
+                break;
+            }
+            case 38 when t > 7.2:
+                SmokeShot("workbench_copy_missing");
                 _wbSmokeStage = 4;
                 break;
-            case 4 when t > 3.6:
+            case 4 when t > 7.5:
             {
                 // The range: the Shopping Spree cart in hand, the minigun second, the triple pistol in slot 3 (unlocked),
                 // the chainsaw sword on the melee key and four practice dummies down range.
@@ -268,7 +300,7 @@ public static unsafe partial class Program
                 _wbSmokeStage = 5;
                 break;
             }
-            case 5 when g is { Phase: MatchPhase.Playing, Local.Alive: true } || t > 18:
+            case 5 when g is { Phase: MatchPhase.Playing, Local.Alive: true } || t > 22:
                 _smokeButtons = Buttons.Forward; // push the cart down the range
                 _wbSmokeFrames = _smokeFrames;
                 _wbSmokeStart = now; // own clock from here

@@ -2,7 +2,7 @@
   "format": "call-of-slop-part/1",
   "name": "Rifle Grip",
   "category": "grip",
-  "rarity": "uncommon",
+  "rarity": "epic",
   "flavor": "A rifle handle bolted to a rack. Nine receiver slots and a firm belief in more.",
   "weight": 1.0,
   "hand": [0, -0.055, 0.05935602608679917],

@@ -1,0 +1,16 @@
+{
+  "extends": "Base One-Receiver Grip",
+  "name": "Service Rifle Grip",
+  "rarity": "common",
+  "flavor": "A rifle handle on a short rail: one receiver, a stock and a place for your other hand.",
+  "weight": 0.7,
+  "frame": {"hands": "two", "carry": 8, "support": [0, -0.01, -0.2]},
+  "+sockets": [
+    {"name": "stock", "type": "stock", "pos": [0, 0.03, 0.12]},
+    {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.2]}
+  ],
+  "+model": [
+    {"size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
+    {"size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black"}
+  ]
+}

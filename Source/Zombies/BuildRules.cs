@@ -310,6 +310,26 @@ public static class BuildRules
         return null;
     }
 
+    /// <summary>
+    /// The socket-level rules alone (mount type, what the socket accepts, bores, actions, splitter depth), without the
+    /// whole-build limits: cheap, so the workbench can ask it for every part and socket (null = the part fits there).
+    /// </summary>
+    public static string? SocketWhy(BuildNode parent, PartSocket socket, PartDef part) => SocketProblem(parent, socket, part);
+
+    /// <summary>
+    /// Whether the empty socket <paramref name="s"/> of <paramref name="n"/> must be filled before the build is complete
+    /// (required sockets and splitter outputs; a receiver the shared feed feeds needs no feed of its own, nor ammo when
+    /// the shared feed is loaded). <paramref name="fed"/> is <see cref="WeaponBuild.HopperFed"/>.
+    /// </summary>
+    public static bool NeedsFilling(WeaponBuild b, BuildNode n, PartSocket s, List<BuildNode> fed)
+    {
+        if (n.Child(s.Name) != null || !(s.Required || (n.Part.Category == PartCategory.Splitter && s.Type == "barrel")))
+            return false;
+        if (b.IsMelee)
+            return s.Required;
+        return !(fed.Contains(n) && (s.Type == "feed" || (s.Type == "ammo" && b.Hopper?.Child("ammo") != null)));
+    }
+
     private static BuildNode? HopperAbove(BuildNode n)
     {
         for (var x = n; x != null; x = x.Parent)
@@ -429,10 +449,8 @@ public static class BuildRules
         foreach (var n in b.Nodes)
             foreach (var s in n.Part.Sockets)
             {
-                if (n.Child(s.Name) != null || !(s.Required || (n.Part.Category == PartCategory.Splitter && s.Type == "barrel")))
-                    continue;
                 // A receiver the shared feed feeds needs no feed of its own (nor ammo, when the shared feed is loaded).
-                if (fed.Contains(n) && (s.Type == "feed" || (s.Type == "ammo" && hopper!.Child("ammo") != null)))
+                if (!NeedsFilling(b, n, s, fed))
                     continue;
                 var extra = s.Type == "feed" && hopper != null && n.Part.Receiver != null && !fed.Contains(n)
                     ? $" (the {hopper.Part.Name} can't feed it: {WeaponBuild.WhyNotShared(hopper, n) ?? $"it feeds {hopper.Part.Shared!.Feeds} receivers at most"})"
