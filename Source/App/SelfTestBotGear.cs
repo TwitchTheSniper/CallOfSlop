@@ -279,11 +279,11 @@ public static partial class SelfTest
             var w0 = Weapons.Get(b0.WantPrimary);
             Fail($"bot gear allocations x100: refresh {Cost(game.SelfTestRefreshBotGear)}, level {Cost(() => game.BotGearLevel(b0))}, "
                  + $"weapons {Cost(() => { foreach (var w in Weapons.All) BotGear.Weapon(w, 20); })}, "
-                 + $"attachments {Cost(() => { for (var i = 0; i < Attachments.For(w0).Count; i++) BotGear.Attachment(w0, i, 20); })}, "
+                 + $"attachments {Cost(() => { for (var i = 0; i < BotGear.AttachmentsFor(w0).Length; i++) BotGear.Attachment(w0, i, 20); })}, "
                  + $"perks {Cost(() => { foreach (var p in Perks.All) BotGear.Perk(p.Id, 20); })}, "
                  + $"equipment {Cost(() => BotGear.Equipment(BotPersonality.Tactician, 0.3, 20))}, "
                  + $"streak pick {Cost(() => game.SelfTestStreakPick(b0))}, draw {Cost(() => game.SelfTestDrawOnly(b0))}, "
-                 + $"perks only {Cost(() => game.SelfTestBotPerks(b0))}, kit only {Cost(() => game.SelfTestBotKit(b0))}, launcher only {Cost(() => game.SelfTestBotLauncher(b0))}");
+                 + $"For() {Cost(() => Attachments.For(w0))}, perks only {Cost(() => game.SelfTestBotPerks(b0))}, kit only {Cost(() => game.SelfTestBotKit(b0))}, launcher only {Cost(() => game.SelfTestBotLauncher(b0))}");
             Fail($"bot gear: a bot's loadout draw allocates ({bytes} bytes over {100 * bots.Count} lives)");
         }
     }

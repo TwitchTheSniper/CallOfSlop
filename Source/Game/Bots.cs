@@ -218,8 +218,8 @@ public sealed partial class Game
     private uint RandomKit(WeaponDef w, int level)
     {
         uint kit = 0;
-        var list = Attachments.For(w);
-        for (var i = 0; i < list.Count; i++) // indexed: no enumerator to allocate every life
+        var list = BotGear.AttachmentsFor(w); // a cached array: nothing to allocate every life
+        for (var i = 0; i < list.Length; i++)
         {
             var a = list[i];
             if (a.Slot != AttachSlot.Optic && Attachments.Slot(kit, a.Slot) == 0 && _rng.NextDouble() < 0.25 && BotGear.Attachment(w, i, level))

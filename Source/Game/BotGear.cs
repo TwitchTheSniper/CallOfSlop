@@ -98,6 +98,7 @@ public static class BotGear
             _weaponLevels = levels;
             _weaponSource = all;
             _attachXp = new int[all.Length][];
+            _attachLists = new AttachmentDef[all.Length][];
         }
         return w.Id < levels.Length && ReferenceEquals(all[w.Id], w) ? levels[w.Id] : Progress.UnlockLevel(w);
     }
@@ -105,6 +106,20 @@ public static class BotGear
     private static WeaponDef[]? _weaponSource;
     private static int[]? _weaponLevels;
     private static int[]?[] _attachXp = [];
+    private static AttachmentDef[]?[] _attachLists = [];
+
+    /// <summary>
+    /// <see cref="Attachments.For"/> as a plain array, cached per weapon list (a bot looks at these every life, and the
+    /// interface lookup showed up as a small allocation per call in the self-test).
+    /// </summary>
+    public static AttachmentDef[] AttachmentsFor(WeaponDef w)
+    {
+        UnlockLevel(w); // (re)builds the per-weapon caches for this weapon list
+        var lists = _attachLists;
+        if (w.Id >= lists.Length || !ReferenceEquals(Weapons.All[w.Id], w))
+            return Attachments.For(w).ToArray();
+        return lists[w.Id] ??= Attachments.For(w).ToArray();
+    }
 
     /// <summary>The weapon XP a bot of this gear level has on the gun (see the class notes).</summary>
     public static int WeaponXp(WeaponDef w, int level)
@@ -141,12 +156,12 @@ public static class BotGear
         UnlockLevel(w); // (re)builds the per-weapon caches for this weapon list
         var cache = _attachXp;
         if (w.Id >= cache.Length || !ReferenceEquals(Weapons.All[w.Id], w))
-            return Attachment(w, Attachments.For(w)[index], level);
+            return Attachment(w, AttachmentsFor(w)[index], level);
         var xps = cache[w.Id];
         if (xps == null)
         {
-            var list = Attachments.For(w);
-            xps = new int[list.Count];
+            var list = AttachmentsFor(w);
+            xps = new int[list.Length];
             for (var i = 0; i < xps.Length; i++)
                 xps[i] = Attachments.UnlockXp(w, list[i]);
             cache[w.Id] = xps;
@@ -280,6 +295,9 @@ public sealed partial class Game
         if (BotGearMode == BotGearMode.MatchPlayers && WantedBots > 0)
             Console.WriteLine(avg > 0 ? $"[bots] gear matches the players' average level {avg}" : "[bots] gear: everything (no player level known)");
     }
+
+    /// <summary>For the scoreboard: a bot's current gear level (the level its loadout matches), or null for people and on clients (server only).</summary>
+    public int? BotShownLevel(Player p) => IsServer && p.Bot is { } b ? b.GearLevel : null;
 
     /// <summary>The gear level a bot draws its next loadout at.</summary>
     public int BotGearLevel(Player bot) => BotGear.BotLevel(BotGearMode, BotGearAverage, bot.Bot?.Seed ?? bot.Id);
