@@ -2102,6 +2102,8 @@ public static unsafe partial class Program
             HeadBob = _headBob.Weight, HeadBobPhase = _headBob.DipPhase,
         });
         var pose = _vmAnim.GunPose;
+        if (Game.IsEmptyGun(def))
+            return; // an empty slot (taken apart at a workbench): nothing in your hands (the melee swing above still draws)
         // The view through the optic's lens: the world behind it is copied now, the lens is drawn over the gun below.
         var lens = SightLens.Begin(def, _game.AimT, pose, vmProj, fb.X, fb.Y);
 

@@ -79,6 +79,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 40: Zombies milestone 3 (ZombiesPowerUps.cs, ZombiesAmmoEffects.cs): Msg.ZWorld ends with the floating power-ups
     //     and the Insta-Kill / Double Points timers; ZEventKind MaxAmmo and Fx (a position after the text); bits 6-7 of a
     //     zombie's state byte in Msg.ZEnts (burning, zapped).
+    // 41: Zombies disassembly (ZombiesDisassemble.cs): Msg.ZBench kind 3 takes a slot's build apart; Msg.ZBuild flag 4 says
+    //     the slot is empty (no text; an empty gun slot 1-2 holds "Empty hands"), also sent to joiners for empty slots.
     // 42: the weapon workbench's Action parts (docs/zombies/WEAPON-BUILDER.md, "Actions: the fire type is a part"): a new
     //     part category (network part ids of the older categories are unchanged; actions sort last), every receiver has
     //     an "action" socket and its fire type and rate come from the action in it. Build texts carry the actions; the

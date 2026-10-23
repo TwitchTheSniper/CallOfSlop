@@ -419,7 +419,8 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
 - **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (A) fills every
   empty needed socket with parts you have (the rarest that leads to a complete build first), as one undo step.
   Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) undo and redo (64 steps), Del takes the selected part off, C copies the selected
-  receiver, Esc cancels a drag, leaves the picker, then closes.
+  receiver, D (twice) disassembles the slot's build at a run's workbench, Esc cancels a drag, leaves the picker, then
+  closes.
 - **Copy receiver assembly.** Right-click a receiver (on the gun or in the list) > "Copy receiver assembly" duplicates
   it and everything under it onto the next free receiver slot (refused only when the grip is full or the build's limits,
   like weight, say no). Without the parts it still goes on: the copy's parts you don't own are drawn as red ghosts on
@@ -430,9 +431,22 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   **CRAFT MISSING & APPLY (N scrap)** when every missing part can be crafted this round (3x its scrap value; never wonder
   parts, nor tiers above what the round's drop table rolls). The sandbox's **Practice parts** toggle (two of every
   common part, one of every uncommon) lets you try all of this without a run.
+- **Disassemble (a run's workbench, 2026-10-23).** The user asked: "allow for the user to completely disassemble a gun
+  into inventory items from the workbench". **Disassemble [D]** beside Revert takes the selected slot's whole build
+  apart, the grip or hilt included: every part goes to your loose parts and the slot is left empty (the editor goes to
+  the grip picker, ready for a new build from your parts). It's destructive-ish, so it needs **two clicks** (or D twice)
+  within 4 s: the first arms it (the button turns red and the strip says how many parts will come off). One **Undo**
+  (the footer's "Undo disassemble" button, or Ctrl+Z once the new build has nothing left to undo) puts the same build
+  back from your loose parts while the bench is open (it's an ordinary Apply: the server checks the parts again). The
+  footer also shows the slot buttons while the grip picker is up, so an empty slot isn't a dead end. Breaking parts
+  down for scrap stays a separate action (the Loose parts list). The rules, the network and the empty slot are in
+  ZOMBIES-MODE.md, "Disassembling a build". **The main menu's sandbox has no Disassemble**: its stock is every part
+  without limit (or the fixed practice stock), there's no inventory for parts to go back to, so taking a build apart
+  would change nothing; "New weapon" (N) already starts from an empty grip there.
 - **Server authority is unchanged**: Apply sends the build's text in `ZBench` and the server checks the parts again;
   crafting the missing parts is the existing craft request, sent once per part before the build (reliable, ordered).
-  No new messages, no protocol change. The workbench is a menu for the cursor rule (`CursorPolicy`): the mouse stays free.
+  No new messages for these (Disassemble is a new `ZBench` kind, protocol 41). The workbench is a menu for the cursor
+  rule (`CursorPolicy`): the mouse stays free.
 - **Cost.** The editing model (`BenchModel`) does its allocating work only when the build changes (assembling, the
   list, the sockets, what's missing); the per-frame calls (camera, projection, the ray pick, the stock fingerprint)
   allocate nothing (self-test). Part pictures render 8 per frame at most, once per part per session.

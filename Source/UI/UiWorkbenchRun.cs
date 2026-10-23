@@ -30,6 +30,8 @@ public sealed partial class Ui
     public void OpenBench(Game game)
     {
         BenchRun = new ZBenchSession { Game = game, Slot = Math.Clamp(game.ActiveSlot, 0, 3) };
+        _disUndo = null;
+        _disArmedSlot = -1;
         WorkbenchOpen = true;
         BenchLoad(BenchRun.Slot);
     }
@@ -38,6 +40,8 @@ public sealed partial class Ui
     public void CloseBench()
     {
         BenchRun = null;
+        _disUndo = null; // Undo disassemble only lasts while the bench is open
+        _disArmedSlot = -1;
         WorkbenchOpen = false;
         Preview = null;
         CancelDrag();
@@ -92,7 +96,8 @@ public sealed partial class Ui
         {
             if (i >= slots && i < 4)
                 continue;
-            var label = i == 4 ? $"Melee: {zp?.Slots[4]?.Name ?? "(none)"}##bslot4" : $"{i + 1}. {zp?.Slots[i]?.Name ?? "(a stock gun)"}##bslot{i}";
+            var none = i < 4 && game.Local != null && !Game.HasGunIn(game.Local, i) ? "(empty)" : "(a stock gun)"; // empty: taken apart
+            var label = i == 4 ? $"Melee: {zp?.Slots[4]?.Name ?? "(none)"}##bslot4" : $"{i + 1}. {zp?.Slots[i]?.Name ?? none}##bslot{i}";
             if (ImGui.Selectable(label, run.Slot == i))
                 BenchLoad(i);
             if (run.Slot == i)
@@ -133,6 +138,7 @@ public sealed partial class Ui
             ImGuiSafe.SetTooltip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
         if (ImGui.Button("Revert"u8))
             BenchLoad(run.Slot);
+        DrawBenchDisassemble(run, zp); // take the slot's whole build apart (below)
         DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
         ImGui.Separator();
 
@@ -167,5 +173,122 @@ public sealed partial class Ui
         }
         ImGui.TextColored(Dim, "The zombies don't wait while you work."u8);
         return null;
+    }
+
+    // ---- Disassemble: the slot's whole build into your loose parts (docs/zombies/ZOMBIES-MODE.md) ----------------
+
+    /// <summary>How long the first click (or D) on Disassemble stays armed waiting for the confirming second one.</summary>
+    private const double DisarmSeconds = 4;
+
+    private int _disArmedSlot = -1;
+    private double _disArmedAt = -100;
+
+    /// <summary>The build taken apart last (its slot and a copy), for one Undo while the bench stays open.</summary>
+    private (int Slot, WeaponBuild Build)? _disUndo;
+
+    private bool DisassembleArmed(int slot) => _disArmedSlot == slot && _wbNow - _disArmedAt < DisarmSeconds;
+
+    private static string SlotName(int slot) => slot == 4 ? "the melee slot" : $"slot {slot + 1}";
+
+    /// <summary>The DISASSEMBLE button (click twice: it takes the whole build apart) under Apply / Revert.</summary>
+    private void DrawBenchDisassemble(ZBenchSession run, ZPlayer? zp)
+    {
+        var current = zp?.Slots[run.Slot];
+        var armed = current != null && DisassembleArmed(run.Slot);
+        ImGui.SameLine();
+        ImGui.BeginDisabled(current == null);
+        if (armed)
+            ImGui.PushStyleColor(ImGuiCol.Button, new float4(0.62f, 0.12f, 0.1f, 1f));
+        var label = current == null ? "Disassemble" : armed ? "CLICK AGAIN: TAKE IT APART" : "Disassemble [D]";
+        var clicked = ImGui.Button($"{label}##wbdisasm");
+        if (armed)
+            ImGui.PopStyleColor();
+        ImGui.EndDisabled();
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGuiSafe.SetTooltip(current == null
+                ? $"Nothing in {SlotName(run.Slot)} to take apart."
+                : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
+                  + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : " (another gun goes in your hands, or nothing: the melee key still works).")
+                  + "\nClick twice (or press D twice) to confirm. Undo puts it back while the bench is open. Scrap is separate: break loose parts down below.");
+        if (clicked && current != null)
+            BenchDisassemble(run, current);
+    }
+
+    /// <summary>The D key at a Zombies workbench: arms Disassemble, a second press within a few seconds confirms it.</summary>
+    private void BenchDisassembleKey()
+    {
+        if (BenchRun is { } run && BenchPlayer?.Slots[run.Slot] is { } current)
+            BenchDisassemble(run, current);
+    }
+
+    /// <summary>First call arms it (says what will happen); the second, within <see cref="DisarmSeconds"/>, sends it to the server.</summary>
+    private void BenchDisassemble(ZBenchSession run, WeaponBuild current)
+    {
+        var n = current.Nodes.Count();
+        if (!DisassembleArmed(run.Slot))
+        {
+            _disArmedSlot = run.Slot;
+            _disArmedAt = _wbNow;
+            WbSay($"Take the {current.Name} apart? Click Disassemble again (or press D) to put all {n} of its parts in your loose parts and leave {SlotName(run.Slot)} empty.", true);
+            return;
+        }
+        _disArmedSlot = -1;
+        _disUndo = (run.Slot, current.Clone());
+        run.Game.BenchRequest(Game.BenchDisassemble, run.Slot, ""); // the server checks the bench and the slot, and moves the parts
+        _runStockKey = int.MinValue;
+        if (run.Game.IsServer && BenchPlayer?.Slots[run.Slot] != null)
+        {
+            _disUndo = null; // refused (the host hears why at once; a client gets a feed line)
+            BenchLoad(run.Slot);
+            return;
+        }
+        StartEditing(null, run.Slot == 4 ? "Melee" : $"Slot {run.Slot + 1}"); // the slot is empty now: start a new build from your parts
+        WbSay($"Took the {current.Name} apart: {n} part{(n == 1 ? "" : "s")} went to your loose parts. Undo (Ctrl+Z) puts it back.");
+    }
+
+    /// <summary>Is there a disassembly Undo can put back (the bench is still open and the slot is still empty)?</summary>
+    private bool CanUndoDisassemble => BenchRun != null && _disUndo is { } u && BenchPlayer is { } zp && zp.Slots[u.Slot] == null;
+
+    /// <summary>Undo the last disassembly: the same build goes back in the slot from your loose parts (the server checks them as for any Apply).</summary>
+    private bool UndoDisassemble()
+    {
+        if (!CanUndoDisassemble || BenchRun is not { } run || _disUndo is not { } u)
+            return false;
+        _disUndo = null;
+        run.Game.BenchRequest(0, u.Slot, u.Build.ToText());
+        _runStockKey = int.MinValue;
+        if (run.Slot != u.Slot)
+            run.Slot = u.Slot;
+        _wbMelee = u.Slot == 4;
+        StartEditing(u.Build.Clone(), u.Build.Name);
+        WbSay($"Put the {u.Build.Name} back together in {SlotName(u.Slot)}.");
+        return true;
+    }
+
+    /// <summary>
+    /// The run's bar beside CLOSE, on every workbench screen: Undo disassemble while it can, and (at the grip picker,
+    /// where the slot list isn't shown) the slots to move to.
+    /// </summary>
+    private void DrawBenchRunFooter()
+    {
+        if (BenchRun is not { } run)
+            return;
+        if (CanUndoDisassemble && _disUndo is { } u)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button($"Undo disassemble ({u.Build.Name})##wbundodis", new float2(0, 32 * _scale)))
+                UndoDisassemble();
+        }
+        if (!_wbPicking)
+            return;
+        var slots = run.Game.Local is { ExtraSlots: true } ? 4 : 2;
+        for (var i = 0; i < 5; i++)
+        {
+            if (i >= slots && i < 4)
+                continue;
+            ImGui.SameLine();
+            if (ImGui.Button(i == 4 ? $"Melee##wbfslot4" : $"Slot {i + 1}##wbfslot{i}", new float2(0, 32 * _scale)) && i != run.Slot)
+                BenchLoad(i);
+        }
     }
 }
