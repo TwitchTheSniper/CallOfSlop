@@ -51,7 +51,7 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 | | Formula | Solo | 4 players |
 | --- | --- | --- | --- |
 | Zombies in a round | `(24 + 6 x (players - 1)) x f`; f = 0.25, 0.3, 0.5, 0.7, 0.9 for rounds 1-5, then round / 5; from round 10 also x round x 0.15 | 6, 7, 12, 17, 22, 29, 34, 38, 43, 72 ... | 10, 13, 21, 29, 38 ... |
-| Zombie health | 150, +100 a round to round 9 (950), then x 1.1 a round | r10 1045, r20 2711 | the same |
+| Zombie health | 150, +60 a round to round 9 (630), then x 1.06 a round (slowed 2026-10-23, was +100 and x 1.1) | r10 668, r20 1196, r30 2142 | the same |
 | Speed | walk 1.3 m/s; runners (3.2 m/s) from round 3 (+15 percent a round, max 90); sprinters (5.2 m/s) from round 5 (+10 percent a round, max 75) | | |
 | Spawn delay | 2 s x 0.95 a round, at least 0.25 s | | |
 | Most alive at once | 24 (performance cap, `maxAlive`) | | |

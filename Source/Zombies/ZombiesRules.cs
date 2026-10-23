@@ -59,9 +59,9 @@ public sealed class ZombiesRules
     public float LatePerRound = 0.15f;
 
     /// <summary>Zombie health: start, plus this much each round up to <see cref="HealthLinearUntil"/>, then x <see cref="HealthGrowth"/> per round.</summary>
-    public int HealthStart = 150, HealthPerRound = 100, HealthLinearUntil = 9;
+    public int HealthStart = 150, HealthPerRound = 60, HealthLinearUntil = 9;
 
-    public float HealthGrowth = 1.1f;
+    public float HealthGrowth = 1.06f;
 
     /// <summary>Speeds (m/s): shamblers walk, then runners from a round, then sprinters (fractions grow per round, capped).</summary>
     public float WalkSpeed = 1.3f, RunSpeed = 3.2f, SprintSpeed = 5.2f;

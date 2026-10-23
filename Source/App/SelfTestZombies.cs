@@ -79,7 +79,7 @@ public static partial class SelfTest
         var health = Enumerable.Range(1, 30).Select(rules.ZombieHealth).ToArray();
         ZLine($"round curve (solo): zombies {string.Join(" ", counts.Take(12))} ... r20 {counts[19]} r30 {counts[29]}; health r1 {health[0]} r5 {health[4]} r9 {health[8]} r10 {health[9]} r20 {health[19]}");
         ZLine($"  4 players: r1 {rules.ZombieCount(1, 4)} r5 {rules.ZombieCount(5, 4)} r10 {rules.ZombieCount(10, 4)}; sprinters r4 {rules.SpeedMix(4).Sprint:0.00} r5 {rules.SpeedMix(5).Sprint:0.00} r10 {rules.SpeedMix(10).Sprint:0.00}; runners r2 {rules.SpeedMix(2).Run:0.00} r3 {rules.SpeedMix(3).Run:0.00}; spawn delay r1 {rules.SpawnDelayFor(1):0.00} s r20 {rules.SpawnDelayFor(20):0.00} s");
-        if (counts[0] is < 4 or > 8 || health[0] != 150 || health[8] != 950 || health[9] <= health[8])
+        if (counts[0] is < 4 or > 8 || health[0] != 150 || health[8] != 630 || health[9] <= health[8])
             Fail("the round curve isn't World at War like (round 1: a handful at 150 health, +100 a round to round 9, then growing)");
         for (var i = 1; i < 30; i++)
             if (counts[i] < counts[i - 1] || health[i] < health[i - 1])
