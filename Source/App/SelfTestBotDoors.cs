@@ -214,7 +214,7 @@ public static partial class SelfTest
                 lab.Sample(bot, lab.Now - start);
                 return crossedAt >= 0 && lab.Now - start > crossedAt + 0.5;
             });
-            DoorNote($"  trace (goal {Vector3.Dot((bot.Bot!.ForcedGoal ?? bot.Position) - lab.D.Center, lab.Across):0.0} m in): " + string.Join(" | ", lab.Trace));
+            Line($"  trace (goal {Vector3.Dot((bot.Bot!.ForcedGoal ?? bot.Position) - lab.D.Center, lab.Across):0.0} m in): " + string.Join(" | ", lab.Trace));
             DoorNote($"through a shut door: opened at {openedAt:0.00} s from {openedFrom:0.00} m before the doorway, through at {(crossedAt < 0 ? "NEVER" : $"{crossedAt:0.00} s")}, "
                      + $"stood still {stopped:0.00} s near it (first at {stallAt:0.00} m from the doorway, {stallMode}, stuck count {bot.Bot!.StuckCount}, door waits {bot.Bot.DoorWaitTicks} ticks, mantling {bot.Sim.MantleTicks}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, "
                      + $"at {FlatDistance(bot.Position, lab.D.Center):0.00} m from the door); bot opens {lab.Game.BotDoorOpens}");
@@ -249,7 +249,7 @@ public static partial class SelfTest
             });
             DoorNote($"two teammates, one door: first through at {aAt:0.00} s, second at {bAt:0.00} s (ended {lab.Side(a):0.0} / {lab.Side(b):0.0} m in, {FlatDistance(a.Position, b.Position):0.0} m apart, waits {a.Bot!.DoorWaitTicks}/{b.Bot!.DoorWaitTicks} ticks, door open {lab.D.Open}); shut on the second {shutOnB}; "
                      + $"afterwards open {lab.D.Open} (the last one through, alone, may shut it); opens {lab.Game.BotDoorOpens}, shuts {lab.Game.BotDoorCloses}");
-            DoorNote("  trace of the first: " + string.Join(" | ", lab.Trace));
+            Line("  trace of the first: " + string.Join(" | ", lab.Trace));
             if (aAt < 0 || bAt < 0 || bAt > 6)
                 Fail("two teammates didn't both get through one door within 6 s");
             if (shutOnB)
@@ -335,7 +335,7 @@ public static partial class SelfTest
                 lab.Sample(bot, lab.Now - start);
                 return shutAt >= 0 && lab.Now - start > shutAt + 2;
             });
-            DoorNote("  trace: " + string.Join(" | ", lab.Trace));
+            Line("  trace: " + string.Join(" | ", lab.Trace));
             DoorNote($"holding the room {FlatDistance(anchor, lab.D.Center):0.0} m from its open door: shut it at {(shutAt < 0 ? "NEVER" : $"{shutAt:0.00} s")}, "
                      + $"still shut {!lab.D.Open}, back {FlatDistance(bot.Position, anchor):0.0} m from its spot; toggles {b.DoorToggles}, doors shut [{string.Join(", ", lab.Shut)}] (the room's is {lab.Door})");
             if (shutAt < 0 || lab.D.Open)
