@@ -85,6 +85,8 @@ public static unsafe partial class Program
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
+        if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
+            return UpdateVerifyCli.Run(manifestFile, zipFile); // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
@@ -95,6 +97,14 @@ public static unsafe partial class Program
         _settings = Settings.Load();
         _progress = Progress.Load();
         LoadoutStore.Load();
+        Console.WriteLine($"[update] this build: {BuildInfo.Label} (protocol {ServerInfo.ProtocolVersion})");
+        if (!args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        {
+            // Update check (Source/Updates): in the background, never blocking startup; release builds only, at most every 6 h.
+            Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
+            if (_settings.UpdateCheck && BuildInfo.IsRelease)
+                Updater.Shared.Check(manual: false);
+        }
         _lagMs = FlagValue(args, "--lag");
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
@@ -1144,7 +1154,7 @@ public static unsafe partial class Program
                     if (SavePaths.TakeWarningOnce() is { } saveWarning)
                         _lobbyMessage = saveWarning; // a save from a newer build that this one won't overwrite (shown once)
                     var action = Ui.DrawLobby(_settings, _lobbyMessage, AudioSystem);
-                    if (action == LobbyAction.Quit)
+                    if (action == LobbyAction.Quit || Updater.Shared?.QuitRequested == true) // the installed update has started (UiUpdates.cs)
                         _quit = true;
                     else if (action != LobbyAction.None)
                         StartSession(action);

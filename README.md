@@ -375,7 +375,7 @@ Up to **32 players** (people and bots), but every map has its own limit: **8-10*
 
 **Multiplayer** has three tabs:
 
-- **Server browser:** lists games to join with name, map (with an orange **True Random** tag when the host plays True Random), players / the map's limit (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds.
+- **Server browser:** lists games to join with name, map (with an orange **True Random** tag when the host plays True Random), players / the map's limit (and bots) and ping. Click Join. Games on your network show up automatically: the browser broadcasts on the local network and every hosted game answers. Public internet games show up when a master server is set (see below). The list refreshes every few seconds. Games running a different build are listed too, with a note: *Your build is older - update to join* (the host has a newer protocol), *The host's build is older* (they must update), or, for a different but compatible release, both version numbers. Different protocol versions can't join each other, so those rows have no Join button (see [Updates](#updates)).
 - **Host a game:** the map (**Change map...** opens the [map select screen](#map-select): random from a pack by default, one map, or True Random), port, UPnP, bots, **server name**, and **Advertise server**, which lists the game publicly through the master server.
 - **Join by address:** type an IP and port directly.
 
@@ -816,6 +816,30 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 - It's a **roguelite run**: you start with the Wall Rifle, the Wall Pistol and a Machete; zombies drop **parts**, salvage piles give **scrap**, and a **workbench** (F) lets you rebuild your guns with the parts you own this run, break parts down and craft new ones.
 - **Downed** at 0 health: a teammate revives you by holding F on you; you lose your perks; after 30 s you bleed out and come back next round with the start gear, and your **built weapons drop where you went down**: anyone can pick them up (hold F) for 5 minutes. **Second Wind** (start room) gets you back up on your own once, solo or co-op. Guns have **reserve ammo** in Zombies (magazine | reserve).
 - Co-op: built guns and dropped builds replicate to every player (protocol 19). The design, every number and the map format are in [docs/zombies/ZOMBIES-MODE.md](docs/zombies/ZOMBIES-MODE.md).
+
+## Updates
+
+Release builds check GitHub for a newer release and can install it from inside the game.
+
+- **Your version** is in the bottom-right corner of the menus (e.g. `v0.2026.1022.5 (abc1234)`; a `dotnet build` / `Start.bat` copy says `dev build`). Versions are `0.YYYY.MDD.N`: year, month * 100 + day, and the release number.
+- **Checking:** at startup the game asks GitHub in the background (it never delays startup; offline is fine), at most once every 6 hours (the answer is cached in `update_check.txt` in the save folder). **Settings > Player > Updates** has **Check for updates** (at most once a minute), **Release page**, and **Check for updates when the game starts** to turn the startup check off. Dev builds only check when you press the button.
+- **Update available:** a banner on the main menu shows the new version and its notes with **Install**, **Later** (hide it until next launch) and **Skip this version** (no banner until a newer release; undo it in Settings > Player).
+- **Install** downloads the zip with a progress bar (**Pause** keeps the partial download; Install resumes it), checks its size and SHA-256 against the release's `update.json`, unzips it into a **new folder next to your current build** (`CallOfSlop-<version>`, next to the folder you unzipped the old build into), starts the new `CallOfSlop.exe` and closes the old one. Your saves live in `%APPDATA%\CallOfSlop` (see below), so progress, loadouts and settings carry straight over. The running build is never overwritten and the old folder is never deleted: delete it yourself when you no longer need it. If the game's folder can't be written to, the new build goes to `%LOCALAPPDATA%\CallOfSlop\Builds`. Failures (no disk space, a damaged download, no connection) show a message with **Retry** and a link to the release page.
+- **Security:** the game only downloads this repository's own GitHub release files over HTTPS (`https://github.com/TwitchTheSniper/CallOfSlop/releases/download/...`; any other URL in a manifest is refused), checks the SHA-256 before using anything, refuses zips with paths outside their folder, and runs nothing from the download except the new `CallOfSlop.exe` after it passed those checks. No GitHub token is used.
+- **SmartScreen:** builds aren't code-signed yet, so Windows SmartScreen may warn the first time you run a zip you downloaded with a browser ("More info" > "Run anyway"). Updates installed from inside the game don't carry the browser's "Mark of the Web" (the game downloads and unzips the files itself and removes any `Zone.Identifier` stream), so SmartScreen doesn't stop them. The Release workflow has an optional code-signing step (Azure Artifact Signing) for later.
+- **Playing together:** everyone needs a build with the same protocol version; the server browser says when yours is older (above).
+
+### Cutting a release (for the maintainer)
+
+1. Make sure `main` is green.
+2. **Actions > Release > Run workflow** on `main`. Leave *version* empty for `0.YYYY.MDD.<run number>` (or type one in that form), and write one line of *notes* (testers see it in the banner). *Dry run* does everything except publishing.
+   Or push a tag: `git tag v0.2026.1022.1 && git push origin v0.2026.1022.1`.
+3. The workflow (`.github/workflows/release.yml`, Windows) builds with the version stamped in, runs the self-test, packages with `tools/package.ps1` (the same script `tools/Package.bat` runs locally), optionally signs the exe, checks the package with the game's own updater (`CallOfSlop.exe --verify-update update.json <zip>`), and publishes the release with `CallOfSlop-<version>.zip` and `update.json` using the built-in `GITHUB_TOKEN`.
+4. Every tester's game offers the update within 6 hours of its next launch (or straight away with *Check for updates*).
+
+Code signing (optional, off): set the repository variable `SIGNING_ENABLED=true`, the variables `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE` and the secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` (details in the workflow's comments).
+
+`update.json` fields: `version`, `build`, `sha` (git commit), `protocol` (ServerInfo.ProtocolVersion), `url` (the zip's release URL), `size`, `sha256`, `notes`, `minUpdater` (a release that needs a newer updater than the player's game is offered as a manual download), `published`.
 
 ## Where your saves live
 

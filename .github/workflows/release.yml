@@ -1,0 +1,181 @@
+# Cuts a GitHub release that testers' games can install from inside the game (Source/Updates, README "Updates").
+#
+# How to release (the lead):
+#   - Actions > Release > Run workflow (on main). Leave "version" empty for 0.YYYY.MDD.<run number>, or type one;
+#     write a line of release notes (the game shows them in its "Update available" banner).
+#   - Or push a tag:  git tag v0.2026.1022.1 && git push origin v0.2026.1022.1   (the version comes from the tag).
+#   - "dry_run" builds, tests, packages and verifies everything without publishing a release.
+#
+# What it does (Windows runner): build with the version stamped into the exe, run the headless self-test, package with
+# tools/package.ps1 (self-contained win-x64 zip, no personal files, READ ME FIRST.txt), optionally code-sign the exe,
+# check the package with the game's own updater (CallOfSlop.exe --verify-update), then publish a GitHub Release with
+# the zip and update.json (version, build, git sha, protocol, zip URL, size, SHA-256, notes, minimum updater version).
+# Uses only the built-in GITHUB_TOKEN. NuGet packages come from the Actions cache (same approach as build.yml); a cold
+# Windows cache restores once from nuget.org. Nothing here contacts the BRUTAL author's own servers.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version 0.YYYY.MDD.N (e.g. 0.2026.1022.3; month*100+day, no leading zero). Empty: today + this run's number."
+        required: false
+        default: ""
+      notes:
+        description: "Release notes (one short paragraph; shown in the game)"
+        required: false
+        default: ""
+      dry_run:
+        description: "Dry run: build, test, package and verify, but don't publish a release"
+        type: boolean
+        default: false
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write # create the release and upload its files
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      # A dry run when asked, or when this ran from a branch push rather than a tag.
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) }}
+      INPUT_VERSION: ${{ inputs.version }}
+      INPUT_NOTES: ${{ inputs.notes }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # NuGet packages from the Actions cache (the BRUTAL packages and the rest), like build.yml. Its own key, because
+      # publishing adds the win-x64 runtime packs; on a miss it starts from the Windows build cache (restore-keys).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-publish-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      - name: Version
+        id: ver
+        shell: pwsh
+        run: |
+          if ("${{ github.ref_type }}" -eq "tag") { $v = "${{ github.ref_name }}".TrimStart("v", "V") }
+          elseif ("$env:INPUT_VERSION".Trim() -ne "") { $v = "$env:INPUT_VERSION".Trim().TrimStart("v", "V") }
+          else { $d = (Get-Date).ToUniversalTime(); $v = "0.$($d.Year).$($d.Month * 100 + $d.Day).${{ github.run_number }}" }
+          $p = $null
+          if (-not [System.Version]::TryParse($v, [ref]$p) -or $p.ToString() -ne $v -or $p.Major -ne 0 -or $p.Minor -lt 2020 -or $p.Build -lt 101 -or $p.Build -gt 1231 -or $p.Revision -lt 0) {
+            Write-Output "::error title=Version::'$v' isn't 0.YYYY.MDD.N (e.g. 0.2026.1022.3, month*100+day without a leading zero)"
+            exit 1
+          }
+          if ($env:DRY_RUN -ne "true") {
+            $exists = $false
+            try { $null = gh release view "v$v" -R "${{ github.repository }}" --json tagName 2>&1; $exists = ($LASTEXITCODE -eq 0) } catch { }
+            if ($exists) { Write-Output "::error title=Version::release v$v already exists"; exit 1 }
+          }
+          "version=$v" >> $env:GITHUB_OUTPUT
+          "tag=v$v" >> $env:GITHUB_OUTPUT
+          Write-Output "::notice title=Version::v$v (dry run: $env:DRY_RUN)"
+
+      - name: Build
+        run: dotnet build CallOfSlop.csproj -c Release -nologo -p:Version=${{ steps.ver.outputs.version }} -p:InformationalVersion=${{ steps.ver.outputs.version }}
+
+      - name: Self-test
+        shell: pwsh
+        run: |
+          # CallOfSlop.exe is a windowed app, so wait for it explicitly and read its exit code (= failure count).
+          $dir = "bin/Release/net10.0"
+          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--selftest" -Wait -PassThru -NoNewWindow
+          $code = $p.ExitCode
+          $log = "$dir/selftest.log"
+          if (Test-Path $log) {
+            Select-String -Path $log -Pattern "FAIL:" | ForEach-Object { Write-Output "::error title=Self-test::$($_.Line.Trim())" }
+            $done = Select-String -Path $log -Pattern "^DONE" | Select-Object -Last 1
+            if ($done) { Write-Output "::notice title=Self-test::$($done.Line.Trim())" }
+          } else {
+            Write-Output "::error title=Self-test::selftest.log was not written"
+          }
+          if ($code -ne 0) { Write-Output "::error title=Self-test::exit code $code, no release"; exit 1 }
+
+      - name: Package (publish)
+        shell: pwsh
+        run: ./tools/package.ps1 -Version "${{ steps.ver.outputs.version }}" -Sha "${{ github.sha }}" -Tag "${{ steps.ver.outputs.tag }}" -Step publish
+
+      # Optional code signing with Azure Artifact Signing (formerly Trusted Signing), so Windows SmartScreen trusts the
+      # exe. SKIPPED unless the repository variable SIGNING_ENABLED is 'true'. To turn it on, set up an Artifact Signing
+      # account + certificate profile in Azure and an app registration allowed to sign ("Artifact Signing Certificate
+      # Profile Signer" role), then add:
+      #   Repository variables: SIGNING_ENABLED = true
+      #                         AZURE_SIGNING_ENDPOINT      (e.g. https://eus.codesigning.azure.net/)
+      #                         AZURE_SIGNING_ACCOUNT       (the signing account name)
+      #                         AZURE_SIGNING_PROFILE       (the certificate profile name)
+      #   Repository secrets:   AZURE_TENANT_ID, AZURE_CLIENT_ID, AZURE_CLIENT_SECRET (the app registration)
+      - name: Sign CallOfSlop.exe (optional)
+        if: ${{ vars.SIGNING_ENABLED == 'true' }}
+        uses: azure/trusted-signing-action@v0
+        with:
+          azure-tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          azure-client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          azure-client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
+          endpoint: ${{ vars.AZURE_SIGNING_ENDPOINT }}
+          trusted-signing-account-name: ${{ vars.AZURE_SIGNING_ACCOUNT }}
+          certificate-profile-name: ${{ vars.AZURE_SIGNING_PROFILE }}
+          files-folder: bin/package/CallOfSlop
+          files-folder-filter: CallOfSlop.exe
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Package (zip + update.json)
+        shell: pwsh
+        run: ./tools/package.ps1 -Version "${{ steps.ver.outputs.version }}" -Sha "${{ github.sha }}" -Tag "${{ steps.ver.outputs.tag }}" -Notes "$env:INPUT_NOTES" -Step zip
+
+      - name: Verify with the game's updater
+        shell: pwsh
+        run: |
+          # The game itself checks the package: manifest, URL, size, SHA-256, a safe unzip with CallOfSlop.exe, no personal files.
+          $dir = "bin/Release/net10.0"
+          $zip = "bin/package/CallOfSlop-${{ steps.ver.outputs.version }}.zip"
+          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--verify-update", "bin/package/update.json", $zip -Wait -PassThru -NoNewWindow
+          Select-String -Path "$dir/callofslop.log" -Pattern "\[verify-update\]" | ForEach-Object {
+            $l = $_.Line.Trim()
+            if ($l -match "PROBLEM") { Write-Output "::error title=Verify::$l" } else { Write-Output "::notice title=Verify::$l" }
+          }
+          Write-Output "::notice title=update.json::$((Get-Content bin/package/update.json -Raw) -replace '\s+', ' ')"
+          if ($p.ExitCode -ne 0) { exit 1 }
+
+      - name: Upload package
+        uses: actions/upload-artifact@v6
+        with:
+          name: CallOfSlop-${{ steps.ver.outputs.version }}
+          path: |
+            bin/package/CallOfSlop-${{ steps.ver.outputs.version }}.zip
+            bin/package/update.json
+
+      - name: Publish the GitHub release
+        if: ${{ env.DRY_RUN != 'true' }}
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $notes = if ("$env:INPUT_NOTES".Trim() -ne "") { "$env:INPUT_NOTES".Trim() } else { "Build $v." }
+          $body = @"
+          $notes
+
+          **Testers:** the game tells you when there's an update (main menu); click **Install**. It downloads this zip, checks it, unzips it next to your current build and starts it. Your saves carry over.
+          Or download CallOfSlop-$v.zip below, unzip it anywhere and run CallOfSlop.exe. Everyone playing together needs the same build.
+
+          Commit ${{ github.sha }}
+          "@
+          $body | Set-Content -Path release-notes.md -Encoding utf8
+          gh release create "${{ steps.ver.outputs.tag }}" "bin/package/CallOfSlop-$v.zip" "bin/package/update.json" `
+            -R "${{ github.repository }}" --title "Call of Slop v$v" --notes-file release-notes.md --target "${{ github.sha }}" --latest
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+          Write-Output "::notice title=Released::https://github.com/${{ github.repository }}/releases/tag/${{ steps.ver.outputs.tag }}"

@@ -9,8 +9,16 @@ Running it
 - Windows 10/11, 64-bit, with a graphics card that supports OpenGL 4.1.
 - If Windows SmartScreen warns about an unknown app, click "More info" > "Run anyway".
 
+Updates
+- The game tells you when there's an update (a banner on the main menu); click Install.
+  It downloads the new build, checks it, unzips it into a new folder next to this one and starts it.
+  Your saves carry over. This folder is left alone; delete it yourself once the new build works.
+- Settings > Player > Updates: "Check for updates" now, or turn the check at startup off.
+- Your version is in the bottom-right corner of the menu.
+
 Playing together
-- Everyone must use the SAME build (the same zip). Different builds can't join each other.
+- Everyone should use the SAME build. The server browser says "Your build is older - update to join"
+  when a game needs a newer build than yours.
 - One person hosts from the Multiplayer screen; others join from the server browser or by address.
   The host may need to allow the game through the Windows firewall when asked.
 - Single player against bots works offline.
