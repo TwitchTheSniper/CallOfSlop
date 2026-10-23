@@ -48,6 +48,7 @@ public static partial class SelfTest
         public double Now;
         public int MaxToggles; // the most any bot moved this door within 10 s
         public int Events;
+        public readonly List<int> Shut = new(); // doors shut (server events), in order
 
         public DoorLab(Map yard, GameMode mode, int seed)
         {
@@ -67,6 +68,8 @@ public static partial class SelfTest
             Game.BuildingEventTap = (kind, i, health) =>
             {
                 Events++;
+                if (kind == BuildingEventKind.DoorClose)
+                    Shut.Add(i);
                 Game.ApplyBuildingEvent(Client, kind, i, health, Vector3.Zero);
             };
             Step(Game.CountdownSeconds + 0.3); // past the countdown (play starting respawns everyone)
@@ -334,7 +337,7 @@ public static partial class SelfTest
             });
             DoorNote("  trace: " + string.Join(" | ", lab.Trace));
             DoorNote($"holding the room {FlatDistance(anchor, lab.D.Center):0.0} m from its open door: shut it at {(shutAt < 0 ? "NEVER" : $"{shutAt:0.00} s")}, "
-                     + $"still shut {!lab.D.Open}, back {FlatDistance(bot.Position, anchor):0.0} m from its spot; toggles {b.DoorToggles}");
+                     + $"still shut {!lab.D.Open}, back {FlatDistance(bot.Position, anchor):0.0} m from its spot; toggles {b.DoorToggles}, doors shut [{string.Join(", ", lab.Shut)}] (the room's is {lab.Door})");
             if (shutAt < 0 || lab.D.Open)
                 Fail("a bot holding a room didn't shut the room's door within 8 s (or opened it again)");
             if (b.DoorToggles > 3)

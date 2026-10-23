@@ -11,9 +11,28 @@ public sealed partial class BotBrain
     internal int PassDoor = -1; // the door it just walked through (a candidate to shut behind it), -1: none
     internal double PassAt;
     internal int Passes; // doorways walked through this session (varies the close roll)
-    internal int HoldDoor = -1; // the door a holding bot went to shut (or shut), and when
+    internal int HoldDoor = -1; // the door a holding bot last went over to shut, and when
     internal double HoldDoorAt = -100;
-    internal double HoldShutUntil; // keeps that door shut while the hold lasts: no wandering back out through it
+    internal double HoldShutUntil; // keeps the doors it shut for its hold shut while the hold lasts: no wandering back out
+    private readonly int[] _holdShut = [-1, -1, -1];
+    private int _holdShutNext;
+
+    /// <summary>Did this bot shut door <paramref name="i"/> for the hold it is in now?</summary>
+    internal bool HoldsShut(int i, double now) => now < HoldShutUntil && Array.IndexOf(_holdShut, i) >= 0;
+
+    /// <summary>It shut door <paramref name="i"/> for its hold, which lasts until <paramref name="until"/>.</summary>
+    internal void NoteHoldShut(int i, double now, double until)
+    {
+        if (now >= HoldShutUntil)
+            Array.Fill(_holdShut, -1); // a new hold: the last one's doors are nothing to it now
+        if (Array.IndexOf(_holdShut, i) < 0)
+        {
+            _holdShut[_holdShutNext] = i;
+            _holdShutNext = (_holdShutNext + 1) % _holdShut.Length;
+        }
+        HoldShutUntil = until;
+    }
+
     internal double NextHoldDoorCheck;
     private readonly int[] _doorLogDoor = [-1, -1, -1, -1, -1, -1, -1, -1];
     private readonly double[] _doorLogTime = new double[8];
@@ -381,7 +400,7 @@ public sealed partial class Game
             if (!d.Open) // (a broken door is open)
             {
                 // A holding bot's shuffle doesn't take it back out through the door it shut for the hold.
-                if (b.HoldDoor == i && now < b.HoldShutUntil && b.Mode == BotMode.Roam && b.HoldUntil > now)
+                if (b.HoldsShut(i, now) && b.Mode == BotMode.Roam && b.HoldUntil > now)
                 {
                     b.Waypoint = b.HoldAnchor;
                     b.ShuffleAt = now + 4;
@@ -591,8 +610,6 @@ public sealed partial class Game
         }
         if (best < 0)
             return;
-        if (b.HoldDoor >= 0 && b.HoldDoor != best && now - b.HoldDoorAt < 30)
-            return; // one door per hold: not every door in the building
         var door = map.BuildingDoors[best];
         if (b.DoorTogglesIn(best, now, 10) >= 2 || DoorMovedByOther(best, p.Id, now, 4))
             return;
@@ -611,9 +628,7 @@ public sealed partial class Game
         {
             if (BotUseDoor(p, b, best, false, now))
             {
-                b.HoldDoor = best;
-                b.HoldDoorAt = now;
-                b.HoldShutUntil = roamHold ? b.HoldUntil : now + 10;
+                b.NoteHoldShut(best, now, roamHold ? b.HoldUntil : now + 10);
             }
             return;
         }
