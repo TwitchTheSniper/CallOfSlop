@@ -23,10 +23,22 @@ public static partial class SelfTest
             Fail($"Maps/Zombies/01-BlackmoorAsylum.json ('{BlackmoorName}') is missing or has no \"zombies\" section");
             return;
         }
-        CheckBlackmoorLayout(map, zm);
-        CheckBlackmoorZombies(map, zm, ref now);
-        CheckZombiePowerUps(ref now);
-        CheckZombieAmmoEffects(ref now);
+        // Its own GitHub notice (the section's one is long enough to be cut off).
+        var saved = ZNotes.ToList();
+        ZNotes.Clear();
+        try
+        {
+            CheckBlackmoorLayout(map, zm);
+            CheckBlackmoorZombies(map, zm, ref now);
+            CheckZombiePowerUps(ref now);
+            CheckZombieAmmoEffects(ref now);
+        }
+        finally
+        {
+            Line("::warning title=Zombies milestone 3 (results)::" + string.Join("%0A", ZNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+            ZNotes.Clear();
+            ZNotes.AddRange(saved);
+        }
     }
 
     // ---- The map: loads, validates, areas through doors, spawners, machines ------------------------------------
@@ -134,7 +146,22 @@ public static partial class SelfTest
         if (ZTestMap?.Zombies?.MachineProps != false)
             Fail("Zombies Test should keep its machines without props");
         var copy = MapFile.Load(MapFile.ToJson(map), "blackmoor round trip", map.PackDir ?? "");
-        if (copy.ContentHash != map.ContentHash || copy.PropInstances.Count != map.PropInstances.Count || !copy.Solid.SequenceEqual(map.Solid))
+        copy.Validate();
+        int FirstDiff<T>(IReadOnlyList<T> x, IReadOnlyList<T> y)
+        {
+            for (var i = 0; i < Math.Min(x.Count, y.Count); i++)
+                if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
+                    return i;
+            return x.Count == y.Count ? -1 : Math.Min(x.Count, y.Count);
+        }
+        var dSolid = FirstDiff(map.Solid, copy.Solid);
+        var dColor = FirstDiff(map.Colors, copy.Colors);
+        var dSpawn = FirstDiff(map.Spawns, copy.Spawns);
+        var dWay = FirstDiff(map.Waypoints, copy.Waypoints);
+        ZLine($"  round trip: hash {copy.ContentHash == map.ContentHash}, first difference: box {dSolid}, colour {dColor}{(dColor >= 0 && dColor < map.Colors.Count && dColor < copy.Colors.Count ? $" ({map.Colors[dColor]} vs {copy.Colors[dColor]})" : "")}, "
+             + $"spawn {dSpawn}{(dSpawn >= 0 && dSpawn < map.Spawns.Count && dSpawn < copy.Spawns.Count ? $" ({map.Spawns[dSpawn]} vs {copy.Spawns[dSpawn]})" : "")}, waypoint {dWay} ({map.Waypoints.Count} vs {copy.Waypoints.Count}), "
+             + $"half {map.HalfX}x{map.HalfZ} vs {copy.HalfX}x{copy.HalfZ}, sky {map.Sky == copy.Sky}");
+        if (copy.ContentHash != map.ContentHash || copy.PropInstances.Count != map.PropInstances.Count || dSolid >= 0 || dColor >= 0 || dSpawn >= 0 || dWay >= 0)
             Fail($"{map.Name}: the map (with its machine props) didn't survive a map file round trip");
     }
 

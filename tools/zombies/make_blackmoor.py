@@ -528,7 +528,7 @@ the_map = {
     "name": "Blackmoor Asylum",
     "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, the power in the generator house.",
     "author": "Call of Slop",
-    "order": 1,
+    "order": 960,
     "maxPlayers": 8,
     "boundary": {
         "shape": "polygon",
