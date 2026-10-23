@@ -3,7 +3,7 @@
 **Current state:**
 - `main` holds everything from the 2026-10-23 coordinator session: README dedupe, empty action socket marker, floating parts, workbench UI (HUD hidden, Disassemble button, tree click), optic mounts, Legacy map pack, rack grips without frames + Twin/Triple Rifle Grips, universal ammo + feed coverage, SeabMix2 default audio mix, more optics/muzzles (the Loudener)/grips in both systems, updater cleanup, the Test Range flake fix, gravity zones, and ten new Space maps (03-12).
 - **Protocol 46** (feat/attachments widened loadout kits).
-- CI on main: the last fully green Linux run was before these merges; the merges were each checked with their own and the all-maps sections, and the full suite runs on the push of this file. Windows hasn't run since `814ffbf`: run it (`[windows ci]` or a manual run) before the next release. Known Windows-only item: the `Dev/AnimatedProps.json` fingerprint pin in `SelfTestPackAssets.cs` is stale (four map branches added props to that map) and must be re-pinned from the Windows failure message.
+- CI on main: **green on Linux and Windows** on `763445c` (run 40012259653; Windows after one rerun of a one-off tick-time check). Ready for a release.
 - The first public release is **v0.2026.1023.7**, built from `814ffbf`. Nothing above is in a release yet.
 - No agents or branches are in progress. Build/test fast path on the user's PC: `Agent Copies\_tools\pcrun.sh` (see the project doc `claude/agent-rules.md`); the PC was offline at the end of the session, so the VM may need its .NET and seed repo again.
 
@@ -93,6 +93,7 @@ Nothing. All agents finished and every branch is merged. A weekly scheduled task
 **Flaky tests (passed on rerun; root cause unknown)**
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
+- "Maps" tick work on Main Street: one 9.6 ms server tick (limit 8 ms; no JIT, no GC) on Windows CI, run 40012259653 on 763445c (2026-10-23); passed on rerun. If it recurs, suspect the attachments branch's bot hearing (loudness) or the gravity-zone field lookup.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
 
 Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).
