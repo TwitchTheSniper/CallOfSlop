@@ -13,9 +13,9 @@ the west, Red the east:
     it and the CTF flag at its door.
   - Intake Fans (-+38, -+17) and (-+38, +-17): four 10 m intake fans (solid, blades turning) standing across each
     team's front, with a 25 m gap between them: the main lane, dressed with containers and machines.
-  - The Main Stack (0, 0): a 12 m thick, 34 m tall stack with two square gantries round it: the Gallery (4 m up,
-    hill 1) reached by a stepped ramp from each team's side, and the Crown (8 m up) above it by a narrower ramp from
-    the Gallery; railed, so you fall only by jumping.
+  - The Main Stack (0, 0): a 12 m thick, 34 m tall stack standing on the Gallery, a 21 m square slab 4 m up on
+    legs; under it an open plenum (hill 1), round it the Gallery's balcony reached by a stepped ramp from each team's
+    side, and the Crown (8 m up) above it by a narrower ramp from the Gallery; railed, so you fall only by jumping.
   - Cooling Towers (-+4, -+34): a walk-in square plinth with a doorway on every side (hills 2 and 3 inside) under a
     20 m cooling cylinder, with condensation pools (knee-high rims, water inside) beside each.
   - Pipe Fields (-+19, +-24): a maze of pipe runs at waist height (mantle over them) and head-high pipe racks (walls),
@@ -248,14 +248,15 @@ def pipe(x0, z0, x1, z1, radius=0.45, y=0.0, color=STEEL, solid=True, supports=T
 
 def bunkers():
     bx, bz = BUNKER
-    op({"op": "Building", "cx": r(bx), "cz": r(bz), "w": 14, "d": 12, "stories": 1, "wall": CONCRETE, "floor": DECK, "doors": "EN", "roofAccess": True})
-    op({"op": "Building", "cx": r(-bx), "cz": r(-bz), "w": 14, "d": 12, "stories": 1, "wall": CONCRETE, "floor": DECK, "doors": "WS", "roofAccess": True})
+    op({"op": "Building", "cx": r(bx), "cz": r(bz), "w": 14, "d": 12, "stories": 1, "wall": CONCRETE, "floor": DECK, "doors": "N", "roofAccess": True})
+    op({"op": "Building", "cx": r(-bx), "cz": r(-bz), "w": 14, "d": 12, "stories": 1, "wall": CONCRETE, "floor": DECK, "doors": "S", "roofAccess": True})
     STATS["boxes"] += 50
     # Roof: a searchlight, sandbags, an antenna, a sensor pole.
-    prop("Field Searchlight", bx + 4, bz - 3, 90, y=3.3)
-    prop("Sandbag Wall Short", bx + 5.5, bz + 1, 90, y=3.3)
-    prop("Antenna Mast", bx - 4, bz + 3, 0, y=3.3)
-    prop("Atmos Sensor Pole", bx - 4, bz - 3, 0, y=3.3)
+    # (The blocky building's stairs climb its west wall, so the roof dressing keeps to the middle.)
+    prop("Field Searchlight", bx + 2.5, bz - 3, 90, y=3.3)
+    prop("Sandbag Wall Short", bx + 3, bz + 1.5, 90, y=3.3)
+    prop("Antenna Mast", bx - 2.5, bz + 3, 0, y=3.3)
+    prop("Atmos Sensor Pole", bx - 2.5, bz - 3, 0, y=3.3)
     # Round it: generators, tanks, a hab container row, supply cases, the sign and the logo.
     sign("bunker1", bx + 7.2, bz - 4.2, "+x", y=2.4, mirror=False)
     sign("bunker2", -bx - 7.2, -bz + 4.2, "-x", y=2.4, mirror=False)
@@ -312,24 +313,32 @@ def intakes():
 # ------------------------------------------------------------------ the main stack and its gantries
 
 def stack():
-    # The stack: a 12 m octagonal drum, a waist band, a flared crown; a box core (a cross and a square) for collision.
-    mesh("cylinder", 0, 0, 0, HULL2, width=12, depth=12, height=34, segments=8, yaw=22.5, material="Metal", mirror=False)
-    mesh("cylinder", 0, 0, 34, DARK, width=13.5, depth=13.5, height=2.5, segments=8, yaw=22.5, mirror=False)
-    mesh("torus", 0, 0, 3.5, RUST, radius=6.1, inner=0.25, mirror=False)
+    # The stack: a 12 m octagonal drum standing on the Gallery's slab, a waist band, a flared crown; under the slab an
+    # open plenum on twelve legs (hill 1, on the ground), the gallery above it as a balcony.
+    y1 = RING1_Y
+    R, I = RING1_R, RING1_IN
+    mesh("cylinder", 0, 0, y1, HULL2, width=12, depth=12, height=30, segments=8, yaw=22.5, material="Metal", mirror=False)
+    mesh("cylinder", 0, 0, y1 + 30, DARK, width=13.5, depth=13.5, height=2.5, segments=8, yaw=22.5, mirror=False)
     mesh("torus", 0, 0, 7.5, RUST, radius=6.1, inner=0.25, mirror=False)
     mesh("torus", 0, 0, 20, AMBER, radius=6.15, inner=0.2, mirror=False)
     s = STACK_R * math.cos(math.radians(45))
-    collider(-s, 0, -s, s, 36, s, mirror=False)
-    collider(-5.55, 0, -2.3, 5.55, 36, 2.3, mirror=False)
-    collider(-2.3, 0, -5.55, 2.3, 36, 5.55, mirror=False)
+    collider(-s, y1, -s, s, 36, s, mirror=False)
+    collider(-5.55, y1, -2.3, 5.55, 36, 2.3, mirror=False)
+    collider(-2.3, y1, -5.55, 2.3, 36, 5.55, mirror=False)
     decal("Redvane Stack Ring", 0, 0, 0, mirror=False, rotation=0, size=16)
-    # The Gallery (ring 1): four deck strips round the stack, railed on the outside, a stepped ramp from each side.
-    y1 = RING1_Y
-    R, I = RING1_R, RING1_IN
-    block(-R, y1 - 0.3, -R, R, y1, -I, DECK, mirror=False)
-    block(-R, y1 - 0.3, I, R, y1, R, DECK, mirror=False)
-    block(-R, y1 - 0.3, -I, -I, y1, I, DECK, mirror=False)
-    block(I, y1 - 0.3, -I, R, y1, I, DECK, mirror=False)
+    # The Gallery (ring 1): one square slab round (and under) the stack, on legs, railed on the outside, a stepped ramp
+    # from each side. The plenum under it: legs, lamps, a few machines, the hill.
+    block(-R, y1 - 0.3, -R, R, y1, R, DECK, mirror=False)
+    for a in range(0, 360, 45):
+        lx, lz = 7.2 * math.cos(math.radians(a)), 7.2 * math.sin(math.radians(a))
+        block(lx - 0.4, 0, lz - 0.4, lx + 0.4, y1 - 0.3, lz + 0.4, DARK, mirror=False)
+    for a in (45, 135, 225, 315):
+        prop("Caged Bulkhead Lamp", 4.5 * math.cos(math.radians(a)), 4.5 * math.sin(math.radians(a)), 0, y=y1 - 0.9, mirror=False)
+    prop("Coolant Pump", -4.5, 0, 90)
+    prop("Station Deck Barrier", 0, -4.2, 0)
+    decal("Hazard Chevrons", -9.5, 0, 0, rotation=0)
+    decal("Hazard Chevrons", 0, -9.5, 0, rotation=90)
+    scatter(["Oil Stain", "Rust Stain", "Footprints", "Redvane Dust Ring"], -9, -9, 9, 9, 8, 59, gap=2, mirror=False)
     # The Crown (ring 2).
     y2 = RING2_Y
     R2 = RING2_R
@@ -413,6 +422,8 @@ def stack():
         waypoint(-18.5 + k - 0.5, 8, k * 0.5)
     for k in range(1, 9):
         waypoint(-9.6, 10.5 - k + 0.5, y1 + k * 0.5)
+    for (x, z) in [(-4, -4), (4, -4), (-4, 4), (4, 4), (0, -8.5), (0, 8.5), (-8.5, 0), (8.5, 0)]:
+        waypoint(x, z, mirror=False)
     for a in (-8, -4, 0, 4, 8):
         waypoint(a, -8, y1, mirror=False)
         waypoint(a, 8, y1, mirror=False)
@@ -613,7 +624,7 @@ def main():
                      "edge": {"style": "fence", "height": 1.8, "spacing": 3, "thickness": 0.12, "color": "#4a4440", "material": "Metal"},
                      "groundMargin": 30, "barrierHeight": 2.5},
         "teamSpawns": [SPAWNS["b"], SPAWNS["r"]],
-        "hills": [{"x": 0, "z": 0, "y": RING1_Y, "radius": 9}, {"x": TOWER[0], "z": TOWER[1], "radius": 4.5}, {"x": -TOWER[0], "z": -TOWER[1], "radius": 4.5}],
+        "hills": [{"x": 0, "z": 0, "radius": 8}, {"x": TOWER[0], "z": TOWER[1], "radius": 4.5}, {"x": -TOWER[0], "z": -TOWER[1], "radius": 4.5}],
         "flags": [[bx + 9.5, 0, bz], [-bx - 9.5, 0, -bz]],
         "ops": OPS,
     }

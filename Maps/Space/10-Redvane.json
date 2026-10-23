@@ -147,8 +147,7 @@
   {
    "x": 0,
    "z": 0,
-   "y": 4.0,
-   "radius": 9
+   "radius": 8
   },
   {
    "x": 0.0,
@@ -187,7 +186,7 @@
    "stories": 1,
    "wall": "#8c8275",
    "floor": "#767a82",
-   "doors": "EN",
+   "doors": "N",
    "roofAccess": true
   },
   {
@@ -199,13 +198,13 @@
    "stories": 1,
    "wall": "#8c8275",
    "floor": "#767a82",
-   "doors": "WS",
+   "doors": "S",
    "roofAccess": true
   },
   {
    "op": "Prop",
    "name": "Field Searchlight",
-   "x": -50.0,
+   "x": -51.5,
    "z": -3.0,
    "y": 3.3,
    "yaw": 90.0
@@ -213,7 +212,7 @@
   {
    "op": "Prop",
    "name": "Field Searchlight",
-   "x": 50.0,
+   "x": 51.5,
    "z": 3.0,
    "y": 3.3,
    "yaw": 270.0
@@ -221,30 +220,30 @@
   {
    "op": "Prop",
    "name": "Sandbag Wall Short",
-   "x": -48.5,
-   "z": 1.0,
+   "x": -51.0,
+   "z": 1.5,
    "y": 3.3,
    "yaw": 90.0
   },
   {
    "op": "Prop",
    "name": "Sandbag Wall Short",
-   "x": 48.5,
-   "z": -1.0,
+   "x": 51.0,
+   "z": -1.5,
    "y": 3.3,
    "yaw": 270.0
   },
   {
    "op": "Prop",
    "name": "Antenna Mast",
-   "x": -58.0,
+   "x": -56.5,
    "z": 3.0,
    "y": 3.3
   },
   {
    "op": "Prop",
    "name": "Antenna Mast",
-   "x": 58.0,
+   "x": 56.5,
    "z": -3.0,
    "y": 3.3,
    "yaw": 180.0
@@ -252,14 +251,14 @@
   {
    "op": "Prop",
    "name": "Atmos Sensor Pole",
-   "x": -58.0,
+   "x": -56.5,
    "z": -3.0,
    "y": 3.3
   },
   {
    "op": "Prop",
    "name": "Atmos Sensor Pole",
-   "x": 58.0,
+   "x": 56.5,
    "z": 3.0,
    "y": 3.3,
    "yaw": 180.0
@@ -1505,11 +1504,11 @@
    "mesh": "cylinder",
    "x": 0.0,
    "z": 0.0,
-   "y": 0.0,
+   "y": 4.0,
    "color": "#a89b84",
    "width": 12,
    "depth": 12,
-   "height": 34,
+   "height": 30,
    "segments": 8,
    "yaw": 22.5,
    "material": "Metal"
@@ -1526,16 +1525,6 @@
    "height": 2.5,
    "segments": 8,
    "yaw": 22.5
-  },
-  {
-   "op": "Mesh",
-   "mesh": "torus",
-   "x": 0.0,
-   "z": 0.0,
-   "y": 3.5,
-   "color": "#7a5238",
-   "radius": 6.1,
-   "inner": 0.25
   },
   {
    "op": "Mesh",
@@ -1560,7 +1549,7 @@
   {
    "op": "Collider",
    "x0": -4.243,
-   "y0": 0.0,
+   "y0": 4.0,
    "z0": -4.243,
    "x1": 4.243,
    "y1": 36.0,
@@ -1569,7 +1558,7 @@
   {
    "op": "Collider",
    "x0": -5.55,
-   "y0": 0.0,
+   "y0": 4.0,
    "z0": -2.3,
    "x1": 5.55,
    "y1": 36.0,
@@ -1578,7 +1567,7 @@
   {
    "op": "Collider",
    "x0": -2.3,
-   "y0": 0.0,
+   "y0": 4.0,
    "z0": -5.55,
    "x1": 2.3,
    "y1": 36.0,
@@ -1601,38 +1590,195 @@
    "z0": -10.5,
    "x1": 10.5,
    "y1": 4.0,
-   "z1": -5.6,
-   "color": "#767a82"
-  },
-  {
-   "op": "Block",
-   "x0": -10.5,
-   "y0": 3.7,
-   "z0": 5.6,
-   "x1": 10.5,
-   "y1": 4.0,
    "z1": 10.5,
    "color": "#767a82"
   },
   {
    "op": "Block",
-   "x0": -10.5,
-   "y0": 3.7,
-   "z0": -5.6,
-   "x1": -5.6,
-   "y1": 4.0,
-   "z1": 5.6,
-   "color": "#767a82"
+   "x0": 6.8,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": 7.6,
+   "y1": 3.7,
+   "z1": 0.4,
+   "color": "#3c414e"
   },
   {
    "op": "Block",
-   "x0": 5.6,
-   "y0": 3.7,
-   "z0": -5.6,
-   "x1": 10.5,
-   "y1": 4.0,
-   "z1": 5.6,
-   "color": "#767a82"
+   "x0": 4.691,
+   "y0": 0.0,
+   "z0": 4.691,
+   "x1": 5.491,
+   "y1": 3.7,
+   "z1": 5.491,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.4,
+   "y0": 0.0,
+   "z0": 6.8,
+   "x1": 0.4,
+   "y1": 3.7,
+   "z1": 7.6,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -5.491,
+   "y0": 0.0,
+   "z0": 4.691,
+   "x1": -4.691,
+   "y1": 3.7,
+   "z1": 5.491,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -7.6,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": -6.8,
+   "y1": 3.7,
+   "z1": 0.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -5.491,
+   "y0": 0.0,
+   "z0": -5.491,
+   "x1": -4.691,
+   "y1": 3.7,
+   "z1": -4.691,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.4,
+   "y0": 0.0,
+   "z0": -7.6,
+   "x1": 0.4,
+   "y1": 3.7,
+   "z1": -6.8,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 4.691,
+   "y0": 0.0,
+   "z0": -5.491,
+   "x1": 5.491,
+   "y1": 3.7,
+   "z1": -4.691,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.182,
+   "z": 3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.182,
+   "z": 3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.182,
+   "z": -3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.182,
+   "z": -3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -4.5,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 4.5,
+   "z": 0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 0.0,
+   "z": -4.2
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 0.0,
+   "z": 4.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": -9.5,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 9.5,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": -9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": 9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Footprints",
+    "Redvane Dust Ring"
+   ],
+   "x0": -9.0,
+   "z0": -9.0,
+   "x1": 9.0,
+   "z1": 9.0,
+   "count": 8,
+   "seed": 59,
+   "gap": 2
   },
   {
    "op": "Block",
@@ -3377,6 +3523,54 @@
    "x": 9.6,
    "z": -3.0,
    "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": -4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": 4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -8.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 8.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.5,
+   "z": 0.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.5,
+   "z": 0.0,
+   "y": 0.0
   },
   {
    "op": "Waypoint",

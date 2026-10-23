@@ -15,24 +15,24 @@ shots fly out over it (barrier height 2.5 m). Flat ground (a `Ground` op), so ev
 
 | Area | Where (Blue; Red is -x, -z) | What's there |
 |---|---|---|
-| Bunker 1 / Bunker 2 | (-54, 0), 14 x 12 m | A blocky one-storey control bunker with roof access (a searchlight, sandbags, an antenna and a sensor pole on the roof), doors east and north; generators, a reagent sphere, hab containers, a condenser, barriers and a sandbag nest round it; 10 spawns; the CTF flag at the door |
+| Bunker 1 / Bunker 2 | (-54, 0), 14 x 12 m | A blocky one-storey control bunker with roof access (a searchlight, sandbags, an antenna and a sensor pole on the roof), its door on the north side (Red's on the south); generators, a reagent sphere, hab containers, a condenser, barriers and a sandbag nest round it; 10 spawns; the CTF flag at the door |
 | Intake Fans | (-38, -17) and (-38, 17) | Two 10 m intake fans (solid, blades turning, beacons) standing across the team's front with a 25 m gap between them: the main lane, dressed with containers, a sphere, a generator, sandbags and tank traps; numbered keep-clear rings on the ground in front of each fan |
-| The Main Stack | (0, 0) | A 12 m thick, 34 m tall octagonal stack (box core inside the mesh) with two square gantries round it: the Gallery (4 m up, 21 m square, hill 1) reached by an 8 m stepped ramp from each team's side, and the Crown (8 m up, 17 m square) above it by a narrower ramp from the Gallery's outer edge. Railed (a hidden band 0.45-1.1 m, posts and rails as meshes), gaps only where the ramps join |
+| The Main Stack | (0, 0) | A 12 m thick, 34 m tall octagonal stack (box core inside the mesh) standing on the Gallery, a 21 m square slab 4 m up on twelve legs. Under it the plenum: an open arena between the legs (hill 1), lit by caged lamps. The Gallery's balcony round the stack is reached by an 8 m stepped ramp from each team's side, and the Crown (8 m up, 17 m square) above it by a narrower ramp from the Gallery's outer edge. Railed (a hidden band 0.45-1.1 m, posts and rails as meshes), gaps only where the ramps join |
 | Cooling Towers | (0, -34) and (0, 34) | A 12 m square walk-in plinth with a 2.4 m doorway on every side (hills 2 and 3 inside, lamps, a grate, a valve stack) under a 20 m waisted cooling cylinder; two condensation pools beside each (knee-high concrete rims, water inside, tide marks round them) fed by pipes, a condenser at each pool |
 | Pipe Fields | (-19, 24) and (19, -24) | A maze of three long waist-high pipe runs with staggered gaps (mantle over them), two head-high pipe racks (walls), overhead cross-links you walk under, valve stacks at the junctions, white and amber lane markings and vapour warnings on the ground: each team's covered flank |
 | Tank farm / vehicle yard | (-44, 32) and (-44, -32) (and mirrors) | The corners: refined-gas tanks and a pump shed (an open hangar with a turbine and a pump) on one side, a haul truck, an excavator, two containers (one open) and tyres on the other |
 
-Lanes for Blue (mirrored for Red): the main lane between the fans to the Gallery ramp and the stack; north round the
+Lanes for Blue (mirrored for Red): the main lane between the fans to the plenum under the stack and the Gallery ramp; north round the
 fan to the vehicle yard and on to the near cooling tower (hill 2) and its pools; south round the other fan through the
-pipe field to the far tower (hill 3) and the enemy's pools. Both towers open on all four sides and the Gallery is
-reached from both teams' sides, so every objective can be attacked two ways; the Crown looks down on everything but has
+pipe field to the far tower (hill 3) and the enemy's pools. Both towers open on all four sides and the plenum is open
+between its legs all round, with the Gallery above it reached from both teams' sides, so every objective can be attacked two ways; the Crown looks down on everything but has
 only the two narrow ramps.
 
 ## Objectives
 
-- Hills: the Gallery (0, 0, y 4, radius 9) and the two cooling towers (0, -34) and (0, 34) (radius 4.5). The
-  self-test measures the walks on the game's nav graph to nodes at each hill's own height: Gallery 57/58 m, towers
-  65/70 and 73/65 m, the enemy flag 103/102 m (Blue/Red).
+- Hills: the plenum under the stack (0, 0, radius 8) and the two cooling towers (0, -34) and (0, 34) (radius 4.5).
+  The self-test measures the walks on the game's nav graph to nodes at each hill's own height (see the summary line
+  it prints for the current numbers; all within 12% Blue/Red).
 - Flags: (-44.5, 0) and (44.5, 0), at the bunkers' doors.
 - Team spawns: 10 per team round the bunker.
 

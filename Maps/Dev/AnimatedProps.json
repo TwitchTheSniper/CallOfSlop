@@ -228,6 +228,19 @@
     {"op": "Prop", "name": "Twin Gas Tanks", "x": 14.0, "z": 14.0},
     {"op": "Prop", "name": "Vent Stack", "x": 19.0, "z": 14.0},
     {"op": "Prop", "name": "Parked Cloud Skimmer", "x": 31.0, "z": 14.0},
+    {"op": "Prop", "name": "Intake Fan", "x": -31.0, "z": 37.0},
+    {"op": "Prop", "name": "Ore Crusher", "x": -22.0, "z": 37.0},
+    {"op": "Prop", "name": "Hab Container", "x": -15.0, "z": 37.0},
+    {"op": "Prop", "name": "Conveyor Belt Run", "x": -9.0, "z": 37.0},
+    {"op": "Prop", "name": "Rock Drill Rig", "x": -4.0, "z": 37.0},
+    {"op": "Prop", "name": "Reagent Sphere", "x": 0.5, "z": 37.0},
+    {"op": "Prop", "name": "Condenser Unit", "x": 4.5, "z": 37.0},
+    {"op": "Prop", "name": "Docking Clamp", "x": 8.0, "z": 37.0},
+    {"op": "Prop", "name": "Ore Heap", "x": 11.5, "z": 37.0},
+    {"op": "Prop", "name": "Slag Pot", "x": 14.5, "z": 37.0},
+    {"op": "Prop", "name": "Pipe Valve Stack", "x": 17.5, "z": 37.0},
+    {"op": "Prop", "name": "Atmos Sensor Pole", "x": 20.0, "z": 37.0},
+    {"op": "Prop", "name": "Warning Light Mast", "x": 23.0, "z": 37.0},
     {"op": "AutoWaypoints", "spacing": 6}
   ]
 }

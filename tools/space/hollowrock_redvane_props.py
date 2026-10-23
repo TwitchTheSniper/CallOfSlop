@@ -7,7 +7,8 @@ game ships, names or insignia).
 
     python3 tools/space/hollowrock_redvane_props.py            (run from the repository root)
 
-Uses the box helpers of tools/propviz/gen.py. Health follows the material health guide in Props/README.md: machines and
+Every one of them is animated, so they're all shown on the Dev pack's Animated Props map (a row at z = 37, added by hand
+to Maps/Dev/AnimatedProps.json). Uses the box helpers of tools/propviz/gen.py. Health follows the material health guide in Props/README.md: machines and
 structures are unbreakable cover; the few small things that break are heavy metal.
 """
 import json
