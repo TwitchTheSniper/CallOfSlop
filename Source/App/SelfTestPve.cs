@@ -115,7 +115,7 @@ public static partial class SelfTest
         CheckCoopSilo(mission, ref now);
         CheckCoopCost(ref now);
         CheckCoopFire(ref now);
-        CheckCoopObjectives(ref now);
+        CheckCoopObjectives(now);
     }
 
     // ---- The director: plain maths --------------------------------------------------------------------------------
@@ -513,8 +513,9 @@ public static partial class SelfTest
         return Mission.Load(json, "test mission");
     }
 
-    private static void CheckCoopObjectives(ref double now)
+    private static void CheckCoopObjectives(double startTime)
     {
+        var now = startTime; // (a local: the helpers below capture it)
         using var g = CoopGame(0, ref now);
         g.PveNoSpawns = true;
         var me = g.Local!;

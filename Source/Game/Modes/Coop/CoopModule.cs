@@ -154,8 +154,8 @@ public sealed class CoopModule : GameModeModule
         c.Mission = r.U8() - 1;
         c.StageCount = c.MissionDef?.Stages.Count ?? 0;
         c.Stage = r.U8();
-        c.Kind = (StageKind)Math.Min(r.U8(), (int)StageKind.Collect);
-        c.Status = (CoopStatus)Math.Min(r.U8(), (int)CoopStatus.Failed);
+        c.Kind = (StageKind)Math.Min((int)r.U8(), (int)StageKind.Collect);
+        c.Status = (CoopStatus)Math.Min((int)r.U8(), (int)CoopStatus.Failed);
         c.Progress = r.U16();
         c.Goal = r.U16();
         c.Timer = r.U16() / 10f;
@@ -170,14 +170,14 @@ public sealed class CoopModule : GameModeModule
         c.Phase = (DirectorPhase)Math.Min(pw & 3, 2);
         c.Wave = pw >> 2;
         c.RespawnSeconds = r.U8();
-        c.Difficulty = (BotDifficulty)Math.Min(r.U8(), (int)BotDifficulty.Insane);
+        c.Difficulty = (BotDifficulty)Math.Min((int)r.U8(), (int)BotDifficulty.Insane);
         var zone = r.U8();
         c.InZone = zone & 15;
         c.NeedInZone = zone >> 4;
-        c.TargetCount = Math.Min(r.U8(), CoopObjective.MaxTargets);
+        c.TargetCount = Math.Min((int)r.U8(), CoopObjective.MaxTargets);
         for (var i = 0; i < c.TargetCount && r.Has(2); i++)
         {
-            c.Targets[i] = (CoopTarget)Math.Min(r.U8(), 2);
+            c.Targets[i] = (CoopTarget)Math.Min((int)r.U8(), 2);
             var v = r.U8();
             c.TargetValue[i] = c.Targets[i] == CoopTarget.Planted ? v / 4f : v / 255f;
         }
