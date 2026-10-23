@@ -924,6 +924,11 @@ public sealed partial class Ui
                 audio.Footstep(new StepEvent(0, StepKind.Run, FootSurface.Concrete, default, 1f), self: true);
             ImGui.TextColored(Dim, "Generated hardbass, hardstyle, industrial, drum & bass and darksynth in the menus and lobbies; silent while a match is live."u8);
             DrawVoiceSettings(s, audio); // voice chat (UiChat.cs)
+            ImGui.Spacing();
+            if (ImGui.Button("Open audio mixer"u8))
+                AudioMixerOpen = true; // UiAudioMixer.cs
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, $"Debug window: a level slider per sound category, meters and test sounds ({Keybinds.Name(s.Bind(GameAction.AudioMixer))} opens it anywhere).");
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

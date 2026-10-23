@@ -24,14 +24,16 @@ public static unsafe partial class Program
     private static void UpdateFrenzy(double now)
     {
         var layer = AudioSystem.Music.Frenzy;
-        layer.Enabled = _settings.FrenzyMusic;
+        var preview = Ui.FrenzyPreviewLevel(now); // the Audio mixer's "Preview frenzy" (UiAudioMixer.cs), -1 when off
+        layer.Preview = preview >= 0;
+        layer.Enabled = _settings.FrenzyMusic || preview >= 0;
         layer.Volume = _settings.FrenzyVolume;
         var game = _session;
         if (game == null || game.Phase != MatchPhase.Playing || game.Local is not { } me)
         {
             _frenzy.Reset();
             _frenzyGame = null;
-            layer.Target = 0;
+            layer.Target = Math.Max(preview, 0);
             return;
         }
         var zombies = game.Mode == GameMode.Zombies;
@@ -74,7 +76,7 @@ public static unsafe partial class Program
         _frenzyKills = kills;
         _frenzyHeads = heads;
         _frenzy.Update(now);
-        layer.Target = alive ? _frenzy.Level : 0;
+        layer.Target = preview >= 0 ? preview : alive ? _frenzy.Level : 0;
         if (_frenzy.Level > _frenzyBannerLevel && alive && FrenzyBanner(_frenzy.Level) is { Length: > 0 } banner)
         {
             game.PerkBanner = banner;

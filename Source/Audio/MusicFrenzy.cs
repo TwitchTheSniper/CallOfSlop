@@ -372,21 +372,85 @@ public sealed partial class FrenzyLayer
         var dd1 = Approach(dd0, _duckDepthTo, _duckDepthStep * frames);
         _duckDepth = dd1;
         var vol = Volume * BusLevel;
-        var m0 = g0 * (1f - dd0 * d0) * vol;
-        var m1 = g1 * (1f - dd1 * d1) * vol;
+        // The mixer's level for the level playing (1 with the built-in mix: unchanged), ramped over the segment.
+        var tr0 = _trim;
+        var tr1 = Approach(tr0, LevelTrim(_level > 0 ? _level : _trimLevel), frames / (0.05f * Sr));
+        _trim = tr1;
+        if (_level > 0)
+            _trimLevel = _level;
+        var m0 = g0 * (1f - dd0 * d0) * (tr0 == 1f ? vol : vol * tr0);
+        var m1 = g1 * (1f - dd1 * d1) * (tr1 == 1f ? vol : vol * tr1);
         var dm = (m1 - m0) / frames;
         var m = m0;
+        if (Metering)
+        {
+            MeterSegment(output, buf, frames, k, a1, a2, a3, m, dm);
+        }
+        else
+        {
+            for (var i = 0; i < frames; i++)
+            {
+                _l1.Process(buf[i * 2], k, a1, a2, a3);
+                _l2.Process(_l1.Low, k, a1, a2, a3);
+                _r1.Process(buf[i * 2 + 1], k, a1, a2, a3);
+                _r2.Process(_r1.Low, k, a1, a2, a3);
+                output[i * 2] += _l2.Low * m;
+                output[i * 2 + 1] += _r2.Low * m;
+                m += dm;
+            }
+        }
+        _frames += frames;
+    }
+
+    // ---- The audio mixer (Audio.Mixer.cs) --------------------------------------------------------
+
+    private readonly float[] _levelTrim = [1f, 1f, 1f, 1f, 1f, 1f, 1f];
+    private float _trim = 1f;
+    private int _trimLevel = 1, _preview;
+
+    /// <summary>The mixer's level for frenzy level <paramref name="level"/> (1-6; linear, 1 = as tuned). Game thread.</summary>
+    public void SetLevelTrim(int level, float gain)
+    {
+        if (level is >= 1 and <= 6)
+            Volatile.Write(ref _levelTrim[level], float.IsFinite(gain) ? Math.Clamp(gain, 0f, 4f) : 1f);
+    }
+
+    internal float LevelTrim(int level) => Volatile.Read(ref _levelTrim[Math.Clamp(level, 1, 6)]);
+
+    /// <summary>The mixer's frenzy preview: the layer may play outside a live match (the lobby) while this is on.</summary>
+    public bool Preview
+    {
+        get => Volatile.Read(ref _preview) != 0;
+        set => Volatile.Write(ref _preview, value ? 1 : 0);
+    }
+
+    /// <summary>Set by the music player while the mixer window is open: measure the layer's output.</summary>
+    internal bool Metering;
+
+    /// <summary>The layer's output level (after its gains, before the music volume): a slowly falling peak and the latest segment's mean square.</summary>
+    internal float MeterPeak, MeterMs;
+
+    /// <summary>The segment's filter-and-gain loop of <see cref="Segment"/>, also measuring what it adds.</summary>
+    private void MeterSegment(Span<float> output, Span<float> buf, int frames, float k, float a1, float a2, float a3, float m, float dm)
+    {
+        float pk = 0;
+        double sum = 0;
         for (var i = 0; i < frames; i++)
         {
             _l1.Process(buf[i * 2], k, a1, a2, a3);
             _l2.Process(_l1.Low, k, a1, a2, a3);
             _r1.Process(buf[i * 2 + 1], k, a1, a2, a3);
             _r2.Process(_r1.Low, k, a1, a2, a3);
-            output[i * 2] += _l2.Low * m;
-            output[i * 2 + 1] += _r2.Low * m;
+            var l = _l2.Low * m;
+            var r = _r2.Low * m;
+            output[i * 2] += l;
+            output[i * 2 + 1] += r;
+            pk = MathF.Max(pk, MathF.Max(MathF.Abs(l), MathF.Abs(r)));
+            sum += l * (double)l + r * (double)r;
             m += dm;
         }
-        _frames += frames;
+        MeterPeak = MathF.Max(pk, MeterPeak * 0.7f);
+        MeterMs = (float)(sum / Math.Max(1, frames * 2));
     }
 
     /// <summary>

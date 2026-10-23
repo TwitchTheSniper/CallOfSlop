@@ -563,7 +563,7 @@ public sealed partial class Game
                         zp.RepairPointsThisRound += ZRules.RepairPoints;
                         AddPoints(p, ZRules.RepairPoints);
                     }
-                    Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f);
+                    Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
                 }
                 break;
             case ZUseKind.Workbench:

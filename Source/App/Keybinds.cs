@@ -36,6 +36,7 @@ public enum GameAction
     ChatAll, // binds version 3: chat (Source/UI/UiChat.cs) and voice (Source/Audio/Voice)
     ChatTeam,
     PushToTalk,
+    AudioMixer, // the Audio mixer debug window (UiAudioMixer.cs)
     COUNT,
 }
 
@@ -83,14 +84,16 @@ public static class Keybinds
         Key(GlfwKey.Enter), // Chat (all): binds version 3
         Key(GlfwKey.Y), // Chat (team)
         Key(GlfwKey.X), // Push to talk
+        Key(GlfwKey.F8), // Audio mixer: binds version 4
     ];
 
     /// <summary>
     /// Version of <see cref="Defaults"/>, saved as <c>binds_version</c> in settings.txt. Files from before a change get
     /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
+    /// 4: Audio mixer F8 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 3;
+    public const int DefaultsVersion = 4;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -102,6 +105,7 @@ public static class Keybinds
         (3, GameAction.ChatAll, Unbound, Key(GlfwKey.Enter)),
         (3, GameAction.ChatTeam, Unbound, Key(GlfwKey.Y)),
         (3, GameAction.PushToTalk, Unbound, Key(GlfwKey.X)),
+        (4, GameAction.AudioMixer, Unbound, Key(GlfwKey.F8)),
     ];
 
     /// <summary>
@@ -181,6 +185,7 @@ public static class Keybinds
             GameAction.ChatAll => "Chat (all)",
             GameAction.ChatTeam => "Chat (team)",
             GameAction.PushToTalk => "Push to talk (voice chat)",
+            GameAction.AudioMixer => "Audio mixer (debug window)",
             _ => a.ToString(),
         };
 

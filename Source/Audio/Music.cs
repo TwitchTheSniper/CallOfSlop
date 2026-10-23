@@ -77,6 +77,7 @@ public sealed class MusicPlayer : IDisposable
         public readonly MusicRenderer R = new();
         public readonly float[] Buf = new float[BlockFrames * 2];
         public float Gain, Target, Step;
+        public float Trim = 1f; // the mixer's menu/lobby level, as applied on the last block
         public bool Active;
         public MusicSet Set;
     }
@@ -176,6 +177,10 @@ public sealed class MusicPlayer : IDisposable
     {
         UpdateDirector();
         output.Clear();
+        _meter = MeterEnabled; // the mixer window is open (Audio.Mixer.cs)
+        Frenzy.Metering = _meter;
+        if (_meter)
+            MeterBegin();
         var frames = output.Length / 2;
         for (var d = 0; d < _decks.Length; d++)
         {
@@ -186,14 +191,22 @@ public sealed class MusicPlayer : IDisposable
             deck.R.Render(buf);
             var g0 = deck.Gain;
             var g1 = Approach(g0, deck.Target, deck.Step * frames);
-            var dg = (g1 - g0) / frames;
-            var g = g0;
+            // The mixer's level for this deck's set, ramped over the block (1 and 1 with the built-in mix: unchanged).
+            var t0 = deck.Trim;
+            var t1 = deck.Set == MusicSet.Menu ? MenuTrim : LobbyTrim;
+            deck.Trim = t1;
+            var s0 = g0 * t0;
+            var s1 = g1 * t1;
+            var dg = (s1 - s0) / frames;
+            var g = s0;
             for (var i = 0; i < output.Length; i += 2)
             {
                 output[i] += buf[i] * g;
                 output[i + 1] += buf[i + 1] * g;
                 g += dg;
             }
+            if (_meter)
+                MeterDeck(buf, MathF.Max(s0, s1), 0.5f * (s0 + s1), deck.Set == MusicSet.Menu);
             deck.Gain = g1;
             if ((g1 <= 0f && deck.Target <= 0f) || deck.R.Finished)
             {
@@ -204,7 +217,7 @@ public sealed class MusicPlayer : IDisposable
             }
         }
 
-        Frenzy.MixInto(output, Volatile.Read(ref _mood) == (int)MusicMood.Off); // the kill-frenzy layer (MusicFrenzy.cs)
+        Frenzy.MixInto(output, Volatile.Read(ref _mood) == (int)MusicMood.Off || Frenzy.Preview); // the kill-frenzy layer (MusicFrenzy.cs); the mixer can preview it anywhere
 
         // Music volume with a perceptual (squared) curve, ramped per block so slider moves don't click.
         var v = Volume;
@@ -232,6 +245,8 @@ public sealed class MusicPlayer : IDisposable
         {
             _limiting = false;
         }
+        if (_meter)
+            MeterOutput(output);
         var name = _lead is { Active: true } l ? l.R.Track.Name : null;
         if (!ReferenceEquals(name, _nowPlaying))
             Volatile.Write(ref _nowPlaying, name);
@@ -239,6 +254,97 @@ public sealed class MusicPlayer : IDisposable
 
     private static float Approach(float from, float to, float maxStep) =>
         from < to ? MathF.Min(to, from + maxStep) : MathF.Max(to, from - maxStep);
+
+    // ---- The audio mixer (Audio.Mixer.cs): levels and meters -----------------------------------
+
+    private float _menuTrim = 1f, _lobbyTrim = 1f;
+    private bool _meter;
+    private float _mMenuPeak, _mMenuMs, _mLobbyPeak, _mLobbyMs, _mOutPeak, _mOutMs;
+
+    /// <summary>The mixer's menu-music level (linear; 1 = as tuned).</summary>
+    public float MenuTrim
+    {
+        get => Volatile.Read(ref _menuTrim);
+        set => Volatile.Write(ref _menuTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, 4f) : 1f);
+    }
+
+    /// <summary>The mixer's lobby-music level (linear; 1 = as tuned).</summary>
+    public float LobbyTrim
+    {
+        get => Volatile.Read(ref _lobbyTrim);
+        set => Volatile.Write(ref _lobbyTrim, float.IsFinite(value) ? Math.Clamp(value, 0f, 4f) : 1f);
+    }
+
+    /// <summary>The frenzy limiter's ceiling (the mixer's "Music limiter ceiling"; default <see cref="FrenzyLayer.LimiterCeiling"/>).</summary>
+    public float LimiterCeiling
+    {
+        get => _frenzyLimiter.Ceiling;
+        set => _frenzyLimiter.Ceiling = float.IsFinite(value) ? Math.Clamp(value, 0.1f, MasterLimiter.SafetyCeiling) : FrenzyLayer.LimiterCeiling;
+    }
+
+    /// <summary>The mixer window is open: measure the decks, the frenzy and the output (else nothing extra is done).</summary>
+    public volatile bool MeterEnabled;
+
+    private void MeterDeck(Span<float> buf, float peakGain, float meanGain, bool menu)
+    {
+        float pk = 0;
+        double sum = 0;
+        foreach (var x in buf)
+        {
+            pk = MathF.Max(pk, MathF.Abs(x));
+            sum += x * (double)x;
+        }
+        var ms = (float)(sum / Math.Max(1, buf.Length)) * meanGain * meanGain;
+        pk *= peakGain;
+        if (menu)
+        {
+            _mMenuPeak = MathF.Max(_mMenuPeak, pk);
+            _mMenuMs += ms;
+        }
+        else
+        {
+            _mLobbyPeak = MathF.Max(_mLobbyPeak, pk);
+            _mLobbyMs += ms;
+        }
+    }
+
+    /// <summary>Starts a block's readings (the last block's stay readable until this block's are done).</summary>
+    private void MeterBegin()
+    {
+        _mMenuPeak = _mMenuMs = _mLobbyPeak = _mLobbyMs = 0;
+    }
+
+    /// <summary>Publishes a block's readings: peaks fall back slowly (about 70% a block), so the UI sees every transient.</summary>
+    private void MeterPublish()
+    {
+        _pMenuPeak = MathF.Max(_mMenuPeak, _pMenuPeak * 0.7f);
+        _pLobbyPeak = MathF.Max(_mLobbyPeak, _pLobbyPeak * 0.7f);
+        _pMenuMs = _mMenuMs;
+        _pLobbyMs = _mLobbyMs;
+    }
+
+    private float _pMenuPeak, _pMenuMs, _pLobbyPeak, _pLobbyMs;
+
+    private void MeterOutput(Span<float> output)
+    {
+        float pk = 0;
+        double sum = 0;
+        foreach (var x in output)
+        {
+            pk = MathF.Max(pk, MathF.Abs(x));
+            sum += x * (double)x;
+        }
+        _mOutPeak = MathF.Max(pk, _mOutPeak * 0.7f);
+        _mOutMs = (float)(sum / Math.Max(1, output.Length));
+        MeterPublish();
+    }
+
+    /// <summary>
+    /// The music's latest levels (before the music volume, except the output which is after it and the limiter):
+    /// slowly falling peaks and the latest block's mean squares. Read on the UI thread; benign races (floats).
+    /// </summary>
+    public (float MenuPeak, float MenuMs, float LobbyPeak, float LobbyMs, float FrenzyPeak, float FrenzyMs, float OutPeak, float OutMs) TakeMeters() =>
+        (_pMenuPeak, _pMenuMs, _pLobbyPeak, _pLobbyMs, Frenzy.MeterPeak, Frenzy.MeterMs, _mOutPeak, _mOutMs);
 
     private void UpdateDirector()
     {

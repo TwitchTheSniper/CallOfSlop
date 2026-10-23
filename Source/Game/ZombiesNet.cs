@@ -198,7 +198,7 @@ public sealed partial class Game
         if (p.Id == LocalId)
         {
             Log(text, true);
-            Audio.Effect(sound, 0.6f);
+            Audio.Effect(sound, 0.6f, MixBus.Notify);
         }
         else if (p.Bot == null)
             SendZEvent(p, ZEventKind.Feed, 0, text, sound);
@@ -290,7 +290,7 @@ public sealed partial class Game
                     case ZEventKind.Feed:
                         Log(text, true);
                         if (sound < Sfx.COUNT)
-                            Audio.Effect(sound, 0.6f);
+                            Audio.Effect(sound, 0.6f, MixBus.Notify);
                         break;
                     case ZEventKind.Refill:
                         LocalRefill(arg);
@@ -401,7 +401,7 @@ public sealed partial class Game
             if (state == ZState.Dead && z.State != ZState.Dead)
             {
                 z.DiedAt = now;
-                Audio.Effect3D(Sfx.FleshHit3D, pos + new Vector3(0, 1.2f, 0), 0.8f);
+                Audio.Effect3D(Sfx.FleshHit3D, pos + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
             }
             z.State = state;
             z.Speed = (ZSpeed)Math.Min(sb >> 4, (int)ZSpeed.Sprint);
@@ -443,7 +443,7 @@ public sealed partial class Game
                     if (open)
                     {
                         ZDoorOpenedAt[d] = now;
-                        Audio.Effect3D(zm.Doors[d].Debris ? Sfx.BreakWood : Sfx.BreakMetal, zm.Doors[d].Box.Center, 1f);
+                        Audio.Effect3D(zm.Doors[d].Debris ? Sfx.BreakWood : Sfx.BreakMetal, zm.Doors[d].Box.Center, 1f, MixBus.Zombies);
                     }
                 }
             }
@@ -454,7 +454,7 @@ public sealed partial class Game
         {
             var b = r.U8();
             if (b < ZBoards[i] && World.Map.Zombies is { } zw && i < zw.Windows.Count)
-                Audio.Effect3D(Sfx.BreakWood, zw.Windows[i].Opening.Center, 0.8f);
+                Audio.Effect3D(Sfx.BreakWood, zw.Windows[i].Opening.Center, 0.8f, MixBus.Zombies);
             ZBoards[i] = b;
         }
         if (!r.Has(9))
