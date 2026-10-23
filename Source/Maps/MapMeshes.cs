@@ -39,16 +39,18 @@ public sealed partial class Map
     /// is box, roundedbox, cylinder, cone, sphere, icosphere, capsule, torus, wedge (ramp) or tube (pipe); width, height,
     /// depth, radius, inner, segments and detail shape it (see Maps/README.md), yaw/pitch/roll turn it (degrees) and
     /// scale grows it. <paramref name="material"/> picks a surface texture (Concrete, Brick, Wood, Metal, Tiles, Dirt,
-    /// Grid) like the boxes'; empty is plain colour. Cosmetic: players and bullets pass through.
+    /// Grid) like the boxes'; empty is plain colour. Cosmetic (players and bullets pass through) unless <paramref name="solid"/>:
+    /// then its exact triangles collide like a planet's surface meshes (<see cref="SolidMeshes"/>; a tilted slab is a ramp
+    /// at any angle) and it counts towards the fingerprint.
     /// </summary>
     [MapOp]
     public void Mesh(string mesh, float x, float z, Vector3 color, float y = 0, float width = 1, float height = 1, float depth = 1, float radius = 0,
-        float inner = 0, int segments = 0, int detail = 0, float yaw = 0, float pitch = 0, float roll = 0, float scale = 1, string material = "")
+        float inner = 0, int segments = 0, int detail = 0, float yaw = 0, float pitch = 0, float roll = 0, float scale = 1, string material = "", bool solid = false)
     {
-        using var __ = Op([mesh, x, z, color, y, width, height, depth, radius, inner, segments, detail, yaw, pitch, roll, scale, material]);
+        using var __ = Op([mesh, x, z, color, y, width, height, depth, radius, inner, segments, detail, yaw, pitch, roll, scale, material, solid]);
         var spec = new PrimitiveSpec(PrimitiveSpec.ParseKind(mesh), width, height, depth, radius, inner, segments, detail);
         var asset = MeshLibrary.Primitive(spec);
-        AddMeshPlacement(new MeshPlacement(mesh, asset, null, PlacementTransform(x, y, z, yaw, pitch, roll, scale), new Vector4(color, 1), ParseMeshMaterial(material)));
+        AddSolidMesh(new MeshPlacement(mesh, asset, null, PlacementTransform(x, y, z, yaw, pitch, roll, scale), new Vector4(color, 1), ParseMeshMaterial(material)), solid);
     }
 
     /// <summary>

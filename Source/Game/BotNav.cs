@@ -263,6 +263,8 @@ public sealed partial class NavGraph
         // grid misses them.
         foreach (var w in map.Waypoints.Concat(map.Spawns).Concat(map.Terrain?.Voids?.NavPoints ?? Array.Empty<Vector3>()))
         {
+            if (!GravityFrames.PlainUpAt(w))
+                continue; // inside a gravity zone with its own up: placed by the zone pass below (NavZones.cs)
             var y = Ground(World.Physics, w.X, w.Z, w.Y + 1f, 3f);
             // Building waypoints (doorways, stairs): placed tight and kept apart from grid nodes only by other waypoints.
             var exact = map.BuildingNavPoints.Count > 0 && map.BuildingNavPoints.Contains(w);
@@ -270,6 +272,18 @@ public sealed partial class NavGraph
                 && !NearExisting(nodes, p, exact ? gridCount : 0, exact ? 0.1f : 0.8f))
                 nodes.Add(p);
             if (++extra % 4 == 0)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null;
+                t0 = Stopwatch.GetTimestamp();
+            }
+        }
+
+        // Gravity zones whose up isn't +Y (walls, ceilings, rocks): nodes found along each zone's own up (NavZones.cs).
+        var zoneStart = nodes.Count;
+        if (map.GravityZones is { } zoned)
+        {
+            foreach (var _ in AddZoneNodes(map, World.Physics, zoned, nodes, s))
             {
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 yield return null;
@@ -285,7 +299,7 @@ public sealed partial class NavGraph
         var pending = new List<PendingWalk>(); // directions waiting for their mover walk (BotNavWalk.cs)
         var radius = s * 1.5f;
         var near = new List<int>();
-        for (var i = 0; i < g.Nodes.Length; i++)
+        for (var i = 0; i < zoneStart; i++)
         {
             var a = g.Nodes[i];
             var r = i < gridCount ? radius : s * 2.1f;
@@ -294,7 +308,8 @@ public sealed partial class NavGraph
             foreach (var j in near)
             {
                 // Grid nodes link to later grid nodes; waypoint nodes (a wider reach) link to every grid node and later waypoints.
-                var link = i < gridCount ? j > i && j < gridCount : j < gridCount || j > i;
+                // Zone nodes (from zoneStart on) link themselves, below.
+                var link = j < zoneStart && (i < gridCount ? j > i && j < gridCount : j < gridCount || j > i);
                 if (!link || !TryLink(g, World.Physics, i, j, edges, failed, pending))
                     continue;
                 // A slice per link walked, not per node: a node on a busy spot can have dozens of neighbours.
@@ -302,6 +317,20 @@ public sealed partial class NavGraph
                 yield return null;
                 t0 = Stopwatch.GetTimestamp();
             }
+        }
+
+        // Zone nodes: to any node within reach, walked along the local ground (NavZones.cs).
+        for (var i = zoneStart; i < g.Nodes.Length; i++)
+        {
+            near.Clear();
+            g.Within(g.Nodes[i], s * 1.6f, near);
+            foreach (var j in near)
+                if ((j < zoneStart || j > i) && TryLinkZone(g, i, j, s * 1.6f, edges))
+                {
+                    work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    yield return null;
+                    t0 = Stopwatch.GetTimestamp();
+                }
         }
 
         // The mover walks, one per slice (a slice can't hold many: a few milliseconds each on a big terrain map).
@@ -453,7 +482,8 @@ public sealed partial class NavGraph
             && data.Column(x, z, out var caveFloor, out _, out _, out var hollow) == TerrainVoids.Cave && hollow)
             heights[n++] = caveFloor;
         for (var i = 0; i < n; i++)
-            if (Place(map, c, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f))
+            if (Place(map, c, new Vector3(x, heights[i], z), s) is { } p && !NearExisting(nodes, p, columnStart, s * 0.6f)
+                && GravityFrames.PlainUpAt(p)) // (a gravity zone whose up isn't +Y gets its own nodes: NavZones.cs)
                 nodes.Add(p);
     }
 
@@ -587,6 +617,8 @@ public sealed partial class NavGraph
         var b = g.Nodes[j];
         if (MathF.Abs(a.Y - b.Y) > MaxDrop)
             return false;
+        if (GravityFrames.Zoned != null && !GravityFrames.PlainUpAlong(a, b))
+            return false; // the line crosses a gravity zone where down is another way (NavZones.cs links those)
         if (TooSteep(a, b) || LeavesBoundary(a, b))
             return true;
         Walk(c, a, b, out var fwd, out var back, out var fFlags, out var bFlags, out var fLedge, out var bLedge, out var tight);

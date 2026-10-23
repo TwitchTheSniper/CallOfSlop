@@ -157,7 +157,7 @@ public sealed class SweptMover : IMover
         vFlat += (target - vFlat) * blend;
         s.Velocity = vFlat + up * vUp;
 
-        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && !GravityFrames.Curved // (the ledge search is Y-up only)
+        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && up == Vector3.UnitY // (the ledge search is Y-up only: never on a planet, fine on a zoned map's decks)
             && ClassicMover.FindLedge(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge))
         {
             ClassicMover.StartMantle(ref s, ledgeStance, ledgeTarget, ledgeTop);

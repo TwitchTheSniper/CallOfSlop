@@ -407,7 +407,7 @@ public static class Gibs
             p.Vel = Vector3.Zero;
             p.Spin = 0;
             p.Resting = true;
-            p.Rot = CurvedFall.LieFlat(p.Rot, up);
+            p.Rot = CurvedFall.LieFlat(p.Rot, p.Pos);
         }
     }
 

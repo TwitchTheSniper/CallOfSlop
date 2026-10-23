@@ -1798,6 +1798,12 @@ public static unsafe partial class Program
         Vector3 eye, fwd;
         if (local != null)
         {
+            if (local.Alive != _camUpAlive || !ReferenceEquals(World.Map, _camUpMap))
+            {
+                _camUp = Vector3.Zero; // a spawn or a new map: the camera takes the local up at once, no roll from the old spot
+                _camUpAlive = local.Alive;
+                _camUpMap = World.Map;
+            }
             eye = local.Alive ? _game.MannedEye ?? local.RenderEye : GravityFrames.Above(local.RenderPosition, 4f); // (manning a cart: behind its gun)
             fwd = _game.LookDir(_game.LookYaw, local.Alive ? _game.LookPitch : -1.2f);
             if (!local.Alive && _deathCam.Active)
@@ -1835,7 +1841,7 @@ public static unsafe partial class Program
             _headBob.Reset();
 
         var fov = local is { Alive: true } ? CurrentFov() : BaseFov * (_deathCam.Active ? _deathCam.FovMul : 1f);
-        var camUp = GravityFrames.UpAt(eye); // straight up, or on a planet away from its centre (the horizon rolls with the ground)
+        var camUp = GravityFrames.SmoothUp(ref _camUp, eye, (float)FrameDt); // straight up, or on a planet away from its centre (the horizon rolls with the ground; eased across a gravity zone's edge)
         if (local is { Alive: true })
         {
             // Recoil shake and view punch move only the rendered camera, never the aim.
@@ -2120,6 +2126,11 @@ public static unsafe partial class Program
 
     private static readonly ViewModelAnimator _vmAnim = new();
     private static readonly HeadBob _headBob = new();
+
+    // The camera's eased up on gravity-zone maps (GravityFrames.SmoothUp), and what it was last reset for.
+    private static Vector3 _camUp;
+    private static bool _camUpAlive;
+    private static Map? _camUpMap;
 
     private static void DrawViewModel(double now, Matrix4x4 proj)
     {

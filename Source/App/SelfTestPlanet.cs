@@ -72,7 +72,8 @@ public static partial class SelfTest
                    && GravityFrames.ToLocal(p, new Vector3(1, 2, 3)) == new Vector3(1, 2, 3)
                    && GravityFrames.Basis(p) == Matrix4x4.Identity
                    && World.Physics.Gravity is UniformGravity
-                   && Maps.All.Where(m => m.Name != "Pocket Planet").All(m => m.PointGravity == null && m.SolidMeshes.Count == 0 && m.PlanetHash == 0);
+                   && Maps.All.Where(m => m.Gravity == null).All(m => m.SolidMeshes.Count == 0 && m.PlanetHash == 0)
+                   && Maps.All.Count(m => m.PointGravity != null) == 1; // (Pocket Planet; the gravity-zone maps are checked by "Gravity zones")
         var yaw = 0.4f;
         var pitch = 0.2f;
         GravityFrames.Transport(ref yaw, ref pitch, p, p + new Vector3(30, 0, 0));

@@ -398,8 +398,8 @@ public sealed partial class Map
         {
             for (var i = 0; i < points.Count; i++)
             {
-                if (!BadSpot(points[i]))
-                    continue;
+                if (!BadSpot(points[i]) || (Gravity != null && !PlainUpAtPoint(points[i])))
+                    continue; // (a gravity zone with its own up: the flat checks don't apply; its nav nodes are probed along that up)
                 // A building's own nav points (doorways, stair ends) are where the nav graph's stair links start and end, and
                 // the nav ignores doors (bots open them): a shut door next to one must not move it away (that left stairs with
                 // no link, so bots reached the floor above only over railings, or not at all).

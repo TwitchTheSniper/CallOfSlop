@@ -15,8 +15,14 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Map
 {
-    /// <summary>The map's point gravity (null: the usual straight-down gravity).</summary>
-    public PointGravity? PointGravity;
+    /// <summary>The map's gravity field (null: the usual straight-down gravity): a planet's point field, or gravity zones.</summary>
+    public IGravityField? Gravity;
+
+    /// <summary>The map's point gravity when the whole map is a planet (null otherwise, zones included: their rocks are local).</summary>
+    public PointGravity? PointGravity => Gravity as PointGravity;
+
+    /// <summary>The map's gravity zones (GravityZones.cs), or null.</summary>
+    public ZonedGravity? GravityZones => Gravity as ZonedGravity;
 
     /// <summary>The planet's centre and radius (from the <see cref="Planet"/> op; radius 0 = none).</summary>
     public Vector3 PlanetCenter;
@@ -42,15 +48,18 @@ public sealed partial class Map
         }
     }
 
-    /// <summary>Does this map's gravity pull anywhere but straight down?</summary>
-    public bool CurvedGravity => PointGravity != null;
+    /// <summary>Is up exactly world +Y at a point of this map (outside every gravity zone with an up of its own)?</summary>
+    public bool PlainUpAtPoint(Vector3 p) => Gravity == null || Gravity.UpAt(p) == Vector3.UnitY;
+
+    /// <summary>Does this map's gravity pull anywhere but straight down (or with a strength of its own)?</summary>
+    public bool CurvedGravity => Gravity != null;
 
     /// <summary>Fingerprint of the gravity field and the solid meshes (0 for ordinary maps, which keep their fingerprint).</summary>
     public uint PlanetHash
     {
         get
         {
-            if (PointGravity == null && SolidMeshes.Count == 0)
+            if (Gravity == null && SolidMeshes.Count == 0)
                 return 0;
             var h = 2166136261u;
             void Mix(float f)
@@ -62,7 +71,7 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
-            PointGravity?.Mix(Mix);
+            Gravity?.Mix(Mix);
             foreach (var i in SolidMeshes)
             {
                 var p = MeshPlacements[i];
