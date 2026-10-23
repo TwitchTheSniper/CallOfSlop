@@ -56,6 +56,7 @@ public static partial class SelfTest
             ClutteredLargeNav(yard);
             Game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
             Game.Mode = mode;
+            Game.TeamBalance = TeamBalance.Off; // the scenarios pick the teams (autobalance would move a bot over and respawn it)
             Door = FindDoor(yard, "Small House", DoorMaterial.Wood, front: true);
             D = yard.BuildingDoors[Math.Max(0, Door)];
             Out = D.Plan.OtherSide;
@@ -75,6 +76,7 @@ public static partial class SelfTest
             Game.AddBot(BotDifficulty.Normal, kind, quiet: true);
             var bot = Game.Players.Values.Where(p => p.Bot != null).OrderBy(p => p.Id).Last();
             bot.Team = team;
+            bot.TeamChoice = team;
             Game.SelfTestPlace(bot, at, MathF.Atan2(goal.X - at.X, -(goal.Z - at.Z)));
             bot.Bot!.ForcedGoal = goal;
             bot.Bot.SelfTestDoorCloseChance = closeChance;
@@ -100,6 +102,30 @@ public static partial class SelfTest
                 if (each?.Invoke() == true)
                     break;
             }
+        }
+
+        /// <summary>
+        /// A nav node about <paramref name="along"/> m from the door's plane (+ inside) and <paramref name="sideways"/> m off its
+        /// axis, with a clear line to the doorway on its side (or that spot itself if there's none).
+        /// </summary>
+        public Vector3 Spot(float along, float sideways = 0)
+        {
+            var perp = new Vector3(-Across.Z, 0, Across.X);
+            var want = new Vector3(D.Center.X, D.Plan.Closed.Min.Y, D.Center.Z) + Across * along + perp * sideways;
+            var door = along > 0 ? In : Out;
+            var nav = NavGraph.Current;
+            var best = want;
+            var bestD = 1.6f;
+            for (var k = 0; k < nav.Nodes.Length; k++)
+            {
+                var q = nav.Nodes[k];
+                var dist = FlatDistance(q, want);
+                if (dist >= bestD || MathF.Abs(q.Y - want.Y) > 0.6f || MathF.Abs(Vector3.Dot(q - D.Center, Across) - along) > 0.9f || !NavGraph.Clear(q, door))
+                    continue;
+                best = q;
+                bestD = dist;
+            }
+            return best;
         }
 
         public float Side(Player p) => Vector3.Dot(p.Position - D.Center, Across);
@@ -137,10 +163,12 @@ public static partial class SelfTest
         // ---- 1. Through a shut door: opened ahead of time, no stopping at it ----
         using (var lab = new DoorLab(yard, GameMode.FreeForAll))
         {
-            var bot = lab.AddBot(BotPersonality.Rusher, Game.NoTeam, lab.Out - lab.Across * 5f, lab.In + lab.Across * 1.2f, 0f);
+            var bot = lab.AddBot(BotPersonality.Rusher, Game.NoTeam, lab.Spot(-5.5f), lab.Spot(2.2f), 0f);
             var start = lab.Now;
             double openedAt = -1, crossedAt = -1, stopped = 0;
             var openedFrom = 0f;
+            var stallAt = float.NaN;
+            var stallMode = BotMode.Roam;
             lab.Step(6, () =>
             {
                 if (openedAt < 0 && lab.D.Open)
@@ -150,13 +178,20 @@ public static partial class SelfTest
                 }
                 var near = FlatDistance(bot.Position, lab.D.Center) < 3f;
                 if (near && crossedAt < 0 && new Vector2(bot.Sim.Velocity.X, bot.Sim.Velocity.Z).Length() < 0.5f)
+                {
                     stopped += World.TickDt;
+                    if (float.IsNaN(stallAt))
+                    {
+                        stallAt = lab.Side(bot);
+                        stallMode = bot.Bot!.Mode;
+                    }
+                }
                 if (crossedAt < 0 && lab.Side(bot) > 0.5f)
                     crossedAt = lab.Now - start;
                 return crossedAt >= 0 && lab.Now - start > crossedAt + 0.5;
             });
             DoorNote($"through a shut door: opened at {openedAt:0.00} s from {openedFrom:0.00} m before the doorway, through at {(crossedAt < 0 ? "NEVER" : $"{crossedAt:0.00} s")}, "
-                     + $"stood still {stopped:0.00} s near it; bot opens {lab.Game.BotDoorOpens}");
+                     + $"stood still {stopped:0.00} s near it (first at {stallAt:0.00} m from the doorway, {stallMode}, stuck count {bot.Bot!.StuckCount}); bot opens {lab.Game.BotDoorOpens}");
             if (openedAt < 0 || crossedAt < 0)
                 Fail("a bot routed through a shut door didn't open it and get through within 6 s");
             else if (openedFrom < 1.0f)
@@ -170,9 +205,8 @@ public static partial class SelfTest
         // ---- 2. Two teammates through one door: both get through, the first leaves it open for the second ----
         using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
         {
-            var side = Vector3.Cross(lab.Across, Vector3.UnitY) * 0.4f;
-            var a = lab.AddBot(BotPersonality.Anchor, 0, lab.Out - lab.Across * 3.5f + side, lab.In + lab.Across * 1.2f, 1f);
-            var b = lab.AddBot(BotPersonality.Anchor, 0, lab.Out - lab.Across * 6.5f - side, lab.In + lab.Across * 1.2f - side, 1f);
+            var a = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-4f, 0.4f), lab.Spot(2.2f, 0.5f), 1f);
+            var b = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-7f, -0.4f), lab.Spot(2.2f, -0.5f), 1f);
             var start = lab.Now;
             double aAt = -1, bAt = -1;
             var shutOnB = false;
@@ -200,8 +234,8 @@ public static partial class SelfTest
         using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
         {
             lab.Game.ServerSetDoor(lab.Door, true, lab.Now);
-            var a = lab.AddBot(BotPersonality.Tactician, 0, lab.Out - lab.Across * 3.5f, lab.In + lab.Across * 1.2f, 0f);
-            var b = lab.AddBot(BotPersonality.Tactician, 0, lab.In + lab.Across * 1.2f, lab.Out - lab.Across * 3.5f, 0f);
+            var a = lab.AddBot(BotPersonality.Tactician, 0, lab.Spot(-4.4f), lab.Spot(2.2f), 0f);
+            var b = lab.AddBot(BotPersonality.Tactician, 0, lab.Spot(2.2f), lab.Spot(-4.4f), 0f);
             var start = lab.Now;
             double aAt = -1, bAt = -1;
             lab.Step(8, () =>
@@ -222,7 +256,7 @@ public static partial class SelfTest
         // ---- 4. Alone: shuts the door behind it ----
         using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
         {
-            var bot = lab.AddBot(BotPersonality.Anchor, 0, lab.Out - lab.Across * 4f, lab.In + lab.Across * 1.4f, 1f);
+            var bot = lab.AddBot(BotPersonality.Anchor, 0, lab.Spot(-4.9f), lab.Spot(2.3f), 1f);
             var start = lab.Now;
             double crossedAt = -1, shutAt = -1;
             lab.Step(7, () =>
@@ -253,12 +287,7 @@ public static partial class SelfTest
         using (var lab = new DoorLab(yard, GameMode.TeamDeathmatch))
         {
             lab.Game.ServerSetDoor(lab.Door, true, lab.Now - 10);
-            var anchor = lab.In + lab.Across * 2.6f;
-            var node = NavGraph.Current.Nearest(anchor, needSight: false);
-            if (node >= 0 && FlatDistance(NavGraph.Current.Nodes[node], anchor) < 1.2f)
-                anchor = NavGraph.Current.Nodes[node];
-            else
-                anchor = lab.In + lab.Across * 0.6f;
+            var anchor = lab.Spot(3.5f);
             var bot = lab.AddBot(BotPersonality.Anchor, 0, anchor, anchor, null);
             var b = bot.Bot!;
             b.ForcedGoal = null;
