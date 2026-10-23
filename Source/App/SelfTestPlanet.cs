@@ -56,7 +56,7 @@ public static partial class SelfTest
             World.SetMap(before);
             Ragdolls.Clear();
             if (PlanetNotes.Count > 0)
-                Line("::notice title=Planet gravity (results)::" + string.Join("%0A", PlanetNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
+                Line("::warning title=Planet gravity (results)::" + string.Join("%0A", PlanetNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
         }
     }
 
