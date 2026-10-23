@@ -459,7 +459,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   the whole assembly back: re-homing the children elsewhere would move parts you didn't touch. The grip can't come off
   (Change grip); double-click on an empty socket row does nothing. Double-click in the parts inventory still auto-places,
   and double-click on empty space in the view resets the camera.
-- **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (A) fills every
+- **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (the A key; in the sandbox also a button in the top row) fills every
   empty needed socket with parts you have (the rarest that leads to a complete build first), as one undo step.
   Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) undo and redo (64 steps), Del takes the selected part off, C copies the selected
   receiver, D (twice) disassembles the slot's build at a run's workbench, Esc cancels a drag, leaves the picker, then
@@ -475,7 +475,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   parts, nor tiers above what the round's drop table rolls). The sandbox's **Practice parts** toggle (two of every
   common part, one of every uncommon) lets you try all of this without a run.
 - **Disassemble (a run's workbench, 2026-10-23).** The user asked: "allow for the user to completely disassemble a gun
-  into inventory items from the workbench". **Disassemble [D]** beside Revert takes the selected slot's whole build
+  into inventory items from the workbench". **Disassemble slot N** (D), the button that replaced Auto-complete in the top row (New weapon, Change grip, Undo, Redo, Disassemble) takes the selected slot's whole build
   apart, the grip or hilt included: every part goes to your loose parts and the slot is left empty (the editor goes to
   the grip picker, ready for a new build from your parts). It's destructive-ish, so it needs **two clicks** (or D twice)
   within 4 s: the first arms it (the button turns red and the strip says how many parts will come off). One **Undo**

@@ -22,7 +22,7 @@ public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary, Wea
 /// Right-click (or drag off) a part to take it off; right-click a receiver to copy its whole assembly onto a free
 /// receiver slot, even without the parts: what you're missing shows red on the gun, in the list and on the saved builds,
 /// and the build can't be saved or applied until you have them (in a run, missing parts can be crafted with scrap).
-/// Double-click a part to put it on its best free socket; Auto-complete fills every empty needed socket; Ctrl+Z undoes.
+/// Double-click a part to put it on its best free socket; the A key auto-completes every empty needed socket (the top row has Disassemble for the selected slot at a run's bench, Auto-complete in the sandbox); Ctrl+Z undoes.
 /// The editing model is <see cref="BenchModel"/> (headless, self-tested); this file only draws it and feeds it input.
 /// </summary>
 public sealed partial class Ui
@@ -407,7 +407,7 @@ public sealed partial class Ui
         else
             ImGuiSafe.TextColored(Dim, _wbPicking
                 ? "Click a grip to start. The grip sets how many receivers the weapon holds and how they fire."
-                : "Drag parts onto the gun - double-click: best free socket - right-click a part: remove / copy receiver - Ctrl+Z undo, Ctrl+Y redo - A auto-complete - Del remove - N new - G grip - R view");
+                : $"Drag parts onto the gun - double-click: best free socket - right-click a part: remove / copy receiver - Ctrl+Z undo, Ctrl+Y redo - A auto-complete{(BenchRun != null ? " - D disassemble slot" : "")} - Del remove - N new - G grip - R view");
     }
 
     // ---- Step 1: the grip picker -------------------------------------------------------------------------------
@@ -737,10 +737,15 @@ public sealed partial class Ui
             WbUndo(true);
         ImGui.EndDisabled();
         ImGui.SameLine();
-        if (ImGui.Button("Auto-complete"u8))
-            WbAutoComplete();
-        if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
+        if (BenchRun is { } benchRun)
+            DrawBenchDisassemble(benchRun, BenchPlayer); // a run's bench: takes the selected slot's build apart (D); Auto-complete is the A key
+        else
+        {
+            if (ImGui.Button("Auto-complete"u8))
+                WbAutoComplete();
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
+        }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(MathF.Max(80 * _scale, ImGui.GetContentRegionAvail().X));
         try

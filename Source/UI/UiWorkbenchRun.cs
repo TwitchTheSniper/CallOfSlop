@@ -138,8 +138,7 @@ public sealed partial class Ui
             ImGuiSafe.SetTooltip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
         if (ImGui.Button("Revert"u8))
             BenchLoad(run.Slot);
-        DrawBenchDisassemble(run, zp); // take the slot's whole build apart (below)
-        DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
+                DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
         ImGui.Separator();
 
         ImGuiSafe.TextColored(Orange, $"SCRAP: {scrap}");
@@ -190,16 +189,16 @@ public sealed partial class Ui
 
     private static string SlotName(int slot) => slot == 4 ? "the melee slot" : $"slot {slot + 1}";
 
-    /// <summary>The DISASSEMBLE button (click twice: it takes the whole build apart) under Apply / Revert.</summary>
+    /// <summary>The DISASSEMBLE button (click twice: it takes the whole build apart) in the workbench's top button row (where Auto-complete is in the sandbox), for the selected slot.</summary>
     private void DrawBenchDisassemble(ZBenchSession run, ZPlayer? zp)
     {
         var current = zp?.Slots[run.Slot];
         var armed = current != null && DisassembleArmed(run.Slot);
-        ImGui.SameLine();
         ImGui.BeginDisabled(current == null);
         if (armed)
             ImGui.PushStyleColor(ImGuiCol.Button, new float4(0.62f, 0.12f, 0.1f, 1f));
-        var label = current == null ? "Disassemble" : armed ? "CLICK AGAIN: TAKE IT APART" : "Disassemble [D]";
+        var slotLabel = run.Slot == 4 ? "melee" : $"slot {run.Slot + 1}";
+        var label = current == null ? $"Disassemble {slotLabel}" : armed ? $"CLICK AGAIN: take {slotLabel} apart" : $"Disassemble {slotLabel}";
         var clicked = ImGui.Button($"{label}##wbdisasm");
         if (armed)
             ImGui.PopStyleColor();
@@ -209,7 +208,7 @@ public sealed partial class Ui
                 ? $"Nothing in {SlotName(run.Slot)} to take apart."
                 : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
                   + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : " (another gun goes in your hands, or nothing: the melee key still works).")
-                  + "\nClick twice (or press D twice) to confirm. Undo puts it back while the bench is open. Scrap is separate: break loose parts down below.");
+                  + "\nKey: D. Click twice (or press D twice) to confirm. Undo puts it back while the bench is open. Scrap is separate: break loose parts down below.");
         if (clicked && current != null)
             BenchDisassemble(run, current);
     }
