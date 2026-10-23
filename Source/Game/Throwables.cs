@@ -99,7 +99,7 @@ public static class Throwables
     public static IEnumerable<ThrowableDef> Grenades => All.Where(d => d.Kind is ThrowableKind.Frag or ThrowableKind.Impact or ThrowableKind.Smoke);
 
     public static string KillName(byte killId) =>
-        killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId == Game.LandmineKillId ? "Landmine" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
+        killId == Game.MeleeKillId ? "Melee" : killId == Game.SuicideKillId ? "Suicide" : killId == Game.LandmineKillId ? "Landmine" : killId == Game.PveKillId ? "Enemy fire" : killId >= KillIdBase ? Get((ThrowableKind)(killId - KillIdBase)).Name
         : KillStreaks.IsStreakKill(killId) ? KillStreaks.Get(KillStreaks.FromKillId(killId)).Name : Weapons.Get(killId).Name;
 
     /// <summary>Point-vs-box test for a small projectile: static colliders, then movers at their current pose (the terrain is handled by <see cref="TerrainContact"/>).</summary>
@@ -118,6 +118,9 @@ public static class Throwables
         var flat = !float.IsNaN(flatGround);
         if (p.Stuck)
             return false;
+        if (!flat && GravityFrames.Curved)
+            return StepCurved(p, dt); // a planet: falls towards its centre, bounces off any surface
+
         var touched = false;
         const int sub = 3;
         var h = dt / sub;
@@ -167,6 +170,54 @@ public static class Throwables
             if (World.Map.TerrainCollision is { } terrain && TerrainContact(p, ref pos, terrain, h))
                 touched = true;
             p.Pos = pos;
+        }
+        return touched;
+    }
+
+    /// <summary>
+    /// <see cref="Step(Projectile, float)"/> on a planet (point gravity): gravity towards the centre, a swept ray per sub-step
+    /// and a bounce off whatever surface it meets (the same restitution and ground friction as the flat code, with "ground"
+    /// meaning any surface facing up), rolling to a stop on the ground.
+    /// </summary>
+    private static bool StepCurved(Projectile p, float dt)
+    {
+        var touched = false;
+        const int sub = 3;
+        var h = dt / sub;
+        var filter = new QueryFilter(QueryLayers.StaticShapes | QueryLayers.Movers | QueryLayers.Boundary);
+        for (var i = 0; i < sub; i++)
+        {
+            var up = GravityFrames.UpAt(p.Pos);
+            p.Vel += GravityFrames.GravityAt(p.Pos) * h;
+            var move = p.Vel * h;
+            var len = move.Length();
+            var pos = p.Pos;
+            if (len > 1e-6f && World.Query.Raycast(p.Pos, move / len, len + ProjectileRadius, filter, out var hit))
+            {
+                pos = p.Pos + move / len * MathF.Max(0f, hit.Distance - ProjectileRadius);
+                var n = hit.Normal;
+                var vn = Vector3.Dot(p.Vel, n);
+                if (vn < 0)
+                {
+                    var tangent = p.Vel - vn * n;
+                    var ground = Vector3.Dot(n, up) > 0.5f;
+                    if (ground && vn > -1.2f)
+                    {
+                        // Resting on the ground: roll, slowing down.
+                        var speed = tangent.Length();
+                        var slow = RollFriction * World.Gravity * Vector3.Dot(n, up) * h;
+                        p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
+                    }
+                    else
+                        p.Vel = tangent * (ground ? 0.7f : 1f) - vn * Restitution * n;
+                }
+                touched = true;
+            }
+            else
+                pos += move;
+            if (World.Query.PointInside(pos, ProjectileRadius * 0.5f, filter))
+                pos = p.Pos; // never into something (a corner the ray slipped past)
+            p.Pos = World.ClampToArena(pos);
         }
         return touched;
     }
@@ -397,7 +448,7 @@ public sealed partial class Game
         _nextThrow = now + 0.8;
         Audio.Effect(Sfx.Throw, 0.6f);
 
-        var dir = World.Forward(LookYaw, LookPitch);
+        var dir = LookDir(LookYaw, LookPitch);
         var origin = Throwables.LaunchPoint(me.RenderEye, dir);
         if (IsServer)
         {
@@ -435,7 +486,7 @@ public sealed partial class Game
             origin = p.Eye;
         if (World.Query.OverlapBody(origin - new Vector3(0, 0.05f, 0), 0.1f, QueryFilter.StaticOnly))
             origin = p.Eye; // don't spawn it inside a wall
-        dir = dir.LengthSquared() > 0.5f ? Vector3.Normalize(dir) : World.Forward(p.Yaw, p.Pitch);
+        dir = dir.LengthSquared() > 0.5f ? Vector3.Normalize(dir) : GravityFrames.Forward(p.Position, p.Yaw, p.Pitch);
 
         var proj = new Projectile
         {
@@ -486,7 +537,9 @@ public sealed partial class Game
         byte flags = 0;
         Players.TryGetValue(proj.Owner, out var owner);
 
-        if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
+        if (proj.Owner == PveGrenadeOwner && owner == null && proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact)
+            flags |= PveGrenadeBlast(proj, now); // a co-op enemy's grenade: hurts players only (GamePveAi.cs)
+        else if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
         {
             var center = proj.Pos + new Vector3(0, 0.15f, 0);
             var radius = def.Radius * Perks.BlastRadiusMult(owner.Perks); // Demolitions: wider, the falloff curve stretched with it
@@ -526,6 +579,7 @@ public sealed partial class Game
             BlastBuildings(owner, center, radius, def.ObjectDamage, PropDamage.Explosion, now); // building doors and windows (GameBuildings.cs)
             BlastStructures(owner, center, radius, def.ObjectDamage, StructureHit.Grenade, (byte)(Throwables.KillIdBase + (byte)proj.Kind), now); // destructible buildings (GameDestruction.cs)
             BlastZombies(owner, center, radius, def.ObjectDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
+            BlastPve(owner, center, radius, def.ObjectDamage * 3f, now, (byte)(Throwables.KillIdBase + (byte)proj.Kind)); // co-op enemies too (GamePve.cs)
             BlastTactical(owner, center, radius, def.ObjectDamage, now); // enemy tactical devices (GameTactical.cs)
         }
         else if (TacticalGear.UseOf(proj.Kind) == TacticalUse.Thrown)
@@ -605,8 +659,13 @@ public sealed partial class Game
     /// <summary>Expire old smoke, sensors and blast flashes; recon beeps.</summary>
     private void UpdateThrowableEffects(double now, float dt)
     {
-        Smokes.RemoveAll(s => now > s.Until);
-        Blasts.RemoveAll(b => now - b.Born > 0.6);
+        // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
+        for (var i = Smokes.Count - 1; i >= 0; i--)
+            if (now > Smokes[i].Until)
+                Smokes.RemoveAt(i);
+        for (var i = Blasts.Count - 1; i >= 0; i--)
+            if (now - Blasts[i].Born > 0.6)
+                Blasts.RemoveAt(i);
         for (var i = Sensors.Count - 1; i >= 0; i--)
         {
             var s = Sensors[i];

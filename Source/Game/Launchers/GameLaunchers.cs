@@ -129,7 +129,7 @@ public sealed partial class Game
         if (!float.IsFinite(origin.X + origin.Y + origin.Z) || Vector3.Distance(origin, p.Eye) > 3f)
             origin = p.Eye;
         if (!float.IsFinite(dir.X + dir.Y + dir.Z) || dir.LengthSquared() < 0.5f)
-            dir = World.Forward(p.Yaw, p.Pitch);
+            dir = GravityFrames.Forward(p.Position, p.Yaw, p.Pitch);
         dir = Vector3.Normalize(dir);
         a.Fired++;
         a.InMag--;
@@ -280,11 +280,11 @@ public sealed partial class Game
         {
             if (Active.Def.Id != r.WeaponId)
                 return null; // put away: the wire is cut
-            return AimPoint(owner.RenderEye, World.Forward(LookYaw, LookPitch));
+            return AimPoint(owner.RenderEye, LookDir(LookYaw, LookPitch));
         }
         if (owner.Weapon != r.WeaponId)
             return null;
-        return server ? AimPoint(owner.Eye, World.Forward(owner.Yaw, owner.Pitch)) : AimPoint(owner.RenderEye, World.Forward(owner.RenderYaw, owner.RenderPitch));
+        return server ? AimPoint(owner.Eye, GravityFrames.Forward(owner.Position, owner.Yaw, owner.Pitch)) : AimPoint(owner.RenderEye, GravityFrames.Forward(owner.RenderPosition, owner.RenderYaw, owner.RenderPitch));
     }
 
     /// <summary>The point a player looks at (where a wire-guided rocket goes): the first thing along their view, 400 m at most.</summary>
@@ -607,6 +607,7 @@ public sealed partial class Game
         BlastStructures(owner, center, radius, maxDamage, StructureHit.Launcher, killId, now); // destructible buildings (GameDestruction.cs)
         if (Horde.Count > 0)
             BlastZombies(owner, center, radius, maxDamage * 3f, now); // Zombies (ZombieAI.cs)
+        BlastPve(owner, center, radius, maxDamage * 3f, now, killId); // co-op enemies (GamePve.cs)
         BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
         BlastKnockback(owner, center, playerRadius, Knockback.LauncherStrength(d) * damageMult); // pushes the living (Knockback.cs)
         OnLauncherBlast(center, playerRadius, maxDamage, owner.Id);

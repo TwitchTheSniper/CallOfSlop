@@ -111,8 +111,13 @@ public static partial class SelfTest
             Section("World: Slopview Mall", CheckWorldMall); // SelfTestWorldMall.cs: World Tour map 02 (branding, decals, mall building nav, escalators)
             Section("World Tour: Village", CheckWorldVillage); // SelfTestWorld.Village.cs: 07 Cotswold Village (England, small)
             Section("World: London", CheckWorldLondon); // SelfTestWorldLondon.cs: 08 London (terrain, symmetry, objectives, building rooms and the deck, fair walks, cost; no bot matches)
+            Section("Space: Stratos Station", CheckSpaceStation); // SelfTestSpaceStation.cs: Space 01 (void map: fall kill, nav never over the void, every platform reached, fair walks, cost; no bot matches)
             Section("Bot vantage points", CheckBotVantage); // SelfTestBotVantage.cs: long-range bots find vantage points (scoring, sniper vs SMG, hold, relocation, sidearm, squads, cost; short scenarios only)
             Section("Server browser", CheckServerBrowser);
+            Section("Invite codes", CheckInviteCodes); // SelfTestListing.cs: round trip, typos, versions, the Join box
+            Section("STUN", CheckStun); // SelfTestListing.cs: canned answers, fuzz, a loopback fake server
+            Section("Server lists", CheckServerListBasics); // SelfTestListing.cs: info/list extensions, addresses, settings, browser merge
+            Section("Automatic server list", CheckAutoServerList); // SelfTestListing.cs: host starts a list, second host joins it, learning, hand-over (loopback)
             Section("HUD layout", CheckHudLayout);
             Section("Keybinds", CheckKeybinds); // SelfTestKeybinds.cs: default binds (Interact F, equipment E, no shared keys) and the settings.txt migration
             Section("Weapon select", CheckWeaponSelect);
@@ -158,7 +163,11 @@ public static partial class SelfTest
             Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
+            Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
+            Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
+            Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
+            Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
             Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
             Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
             Section("Prestige", CheckPrestige); // SelfTestPrestige.cs: prestige rules and saves, hat catalog, bots never wear hats, hat models, no gameplay effect
@@ -182,8 +191,10 @@ public static partial class SelfTest
             Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
             Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
             Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
+            Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
+            Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
             Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
             Line("");
             Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
@@ -512,17 +523,32 @@ public static partial class SelfTest
             var killsDone = 0;
             var lastKillSum = 0;
             var lastMatch = game.MatchNumber;
+            var tick = 0;
+            // Made once (a lambda per tick would allocate in the measured window, and could set off a GC there).
+            Func<string> context = () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}";
+            AllocProfile.Reset();
+            long allocBytes = 0;
+            var gcs = 0;
             try
             {
                 for (var i = 0; i < 90 * World.TickRate; i++)
                 {
                     now += dt;
+                    tick = i;
+                    AllocProfile.On = i > 60; // where the game allocates (after the first second's warm-up)
+                    var gc0 = GC.CollectionCount(0);
+                    var a0 = GC.GetAllocatedBytesForCurrentThread();
                     cpu.Start();
                     var t0 = Stopwatch.GetTimestamp();
                     game.Update(now, dt);
                     var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
-                    var tick = i;
-                    cpu.Stop(ms, count: i > 60, () => $"t={tick / 60.0:0.00} s, {game.Phase} match {game.MatchNumber}, nav {(NavGraph.Current.Nodes.Length > 0 ? "ready" : "building")}, last feed line: {game.Feed.LastOrDefault().Text}"); // said only if the check fails
+                    cpu.Stop(ms, count: i > 60, context); // said only if the check fails
+                    AllocProfile.On = false;
+                    if (i > 60)
+                    {
+                        allocBytes += GC.GetAllocatedBytesForCurrentThread() - a0;
+                        gcs += GC.CollectionCount(0) - gc0;
+                    }
                     if (i > 60)
                     {
                         maxTickMs = Math.Max(maxTickMs, ms);
@@ -535,7 +561,9 @@ public static partial class SelfTest
                         killsDone += lastKillSum; // scores reset at a new match
                         lastMatch = game.MatchNumber;
                     }
-                    lastKillSum = game.Players.Values.Sum(p => (int)p.Kills);
+                    lastKillSum = 0;
+                    foreach (var p in game.Players.Values)
+                        lastKillSum += p.Kills;
                     if (i % 60 == 0)
                     {
                         foreach (var p in game.Players.Values.Where(p => p.Bot != null && p.Alive))
@@ -559,11 +587,22 @@ public static partial class SelfTest
             botStats.Add(game.BotStats);
             var bots = game.Players.Values.Where(p => p.Bot != null).ToList();
             var kills = killsDone + game.Players.Values.Sum(p => (int)p.Kills);
-            var fallen = game.Players.Values.Count(p => p.Alive && (p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
+            var fallen = game.Players.Values.Count(p => p.Alive && (m.PointGravity is { } planet ? Vector3.Distance(p.Position, planet.Center) < m.PlanetRadius - 0.5f // a planet: inside the ball
+                : p.Position.Y < m.GroundHeight(p.Position.X, p.Position.Z, p.Position.Y) - 0.5f
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
             Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            var measuredTicks = 90 * World.TickRate - 61;
+            // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
+            // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a
+            // nav build); a steady per-tick allocation (once: the snapshot's slow-field compare boxing, ~2.6 KB a tick on
+            // every map) shows up here long before it fails the 8 ms rule by chance.
+            var perTickAlloc = allocBytes / (double)measuredTicks;
+            var allocText = $"{perTickAlloc:0} B/tick, {gcs} GC(s) in the match (by section: {AllocProfile.Top(6, measuredTicks)})";
+            Line($"  allocations: {allocText}");
+            if (perTickAlloc > MaxMatchAllocPerTick)
+                Fail($"{m.Name}: a bot match allocates {allocText}, over {MaxMatchAllocPerTick} B/tick");
             if (bots.Count != Game.ClassicPlayers - 1)
                 Fail($"{m.Name}: expected {Game.ClassicPlayers - 1} bots, got {bots.Count}");
             if (kills == 0 && m.Size != MapSize.Large)
@@ -592,6 +631,9 @@ public static partial class SelfTest
     }
 
     private static BotStats _matchBotStats = new();
+
+    /// <summary>Most bytes a bot match tick may allocate on average (see CheckMatches; the busiest map today is about 560).</summary>
+    private const double MaxMatchAllocPerTick = 1500;
 
     // ---- 2a. Bots ---------------------------------------------------------------------------
 

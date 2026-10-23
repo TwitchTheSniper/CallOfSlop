@@ -253,6 +253,8 @@ public sealed partial class Game
     private void BotTick(Player p, double now)
     {
         var b = p.Bot!;
+        AllocProfile.Mark("bot: mode, streaks");
+        _botUp = GravityFrames.UpAt(p.Position); // the bot's ground plane for the flat-ground maths (BotTactics.cs; world up on ordinary maps)
         if (BotHeld(p, b, now))
             return; // Workbench Range practice dummies and stunned bots (GameZombies.cs)
         if (Module.BotTick(this, p, b, now))
@@ -272,6 +274,7 @@ public sealed partial class Game
             b.ReloadUntil = 0;
             b.CoverReload = false;
         }
+        AllocProfile.Mark("bot: shared");
         BotTickShared(now);
         var nav = NavGraph.Current;
         if (b.PathGraph != nav)
@@ -281,24 +284,35 @@ public sealed partial class Game
             b.Waypoint = Vector3.Zero;
         }
 
+        AllocProfile.Mark("bot: perceive");
         var target = BotPerceive(p, b, now, out var visible);
+        AllocProfile.Mark("bot: squad");
         SquadPerceive(p, b, target, visible, now); // Insane squads: report to the blackboard (Source/Game/Bots/Squads)
+        AllocProfile.Mark("bot: decide");
         BotDecide(p, b, target, visible, def, now);
+        AllocProfile.Mark("bot: steer");
         var steer = BotSteer(p, b, target, visible, def, now);
+        AllocProfile.Mark("bot: stuck watch");
         if (BotStuckWatch(p, b, ref steer, visible, now))
             return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
+        AllocProfile.Mark("bot: doors, blind");
         BotOpenDoors(p, now); // walking into a shut building door opens it (GameBuildings.cs)
         BotBlindPlan(p, b, visible, def, now); // fire blind into foliage at an estimate? (BotFoliage.cs)
+        AllocProfile.Mark("bot: aim");
         var aim = BotAim(p, b, target, visible, def, steer, now);
+        AllocProfile.Mark("bot: shoot");
         if (!BotLauncherTick(p, b, target, visible, ref aim, now)) // a launcher at an enemy kill streak or a group (BotLaunchers.cs)
         {
             BotShoot(p, b, target, visible, def, aim, now);
             BotBlindFire(p, b, def, aim, now);
         }
         SquadSuppress(p, b, visible, def, aim, now); // Insane bases of fire: suppressive fire at a last known spot
+        AllocProfile.Mark("bot: grenade, tactical");
         BotGrenade(p, b, target, visible, aim.Distance, now);
         BotTactical(p, b, target, visible, aim.Distance, now); // tactical equipment (GameTactical.cs)
+        AllocProfile.Mark("bot: buttons");
         var buttons = BotButtons(p, b, visible, def, steer, aim, now);
+        AllocProfile.Mark("bot: movement");
 
         var cmd = new InputCmd
         {

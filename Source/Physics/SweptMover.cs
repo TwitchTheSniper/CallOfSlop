@@ -130,7 +130,8 @@ public sealed class SweptMover : IMover
         }
 
         // Steering: the same input response as the classic mover, in the plane across "up".
-        var wish = Flatten(MoveInput.Wish(b, cmd.Yaw), up);
+        // On a planet the keys are read in the local tangent frame (yaw is measured from its north, GravityFrames.cs).
+        var wish = GravityFrames.Curved ? GravityFrames.ToWorld(s.Position, MoveInput.Wish(b, cmd.Yaw)) : Flatten(MoveInput.Wish(b, cmd.Yaw), up);
         var speed = MoveInput.Speed(s, b, cmd.SpeedPct);
         var control = s.KnockTicks > 0
             ? (s.Grounded ? Knockback.StaggerGroundControl : Knockback.StaggerAirControl) // staggered by a blast: the push carries you
@@ -156,7 +157,7 @@ public sealed class SweptMover : IMover
         vFlat += (target - vFlat) * blend;
         s.Velocity = vFlat + up * vUp;
 
-        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone
+        if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && !GravityFrames.Curved // (the ledge search is Y-up only)
             && ClassicMover.FindLedge(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge))
         {
             ClassicMover.StartMantle(ref s, ledgeStance, ledgeTarget, ledgeTop);
@@ -184,8 +185,17 @@ public sealed class SweptMover : IMover
                 if (SlopeRules.Walkable(n))
                     disp.Y = -(n.X * disp.X + n.Z * disp.Z) / n.Y;
             }
+            var hover = 0f;
+            if (GravityFrames.Curved)
+            {
+                // A planet: the ground is flat triangles tilted a little from the sphere's tangent plane, so a move across
+                // "up" would scrape the faces it starts on and catch on the ridges between them. Lift the capsule a few
+                // centimetres for the move (less under a ceiling), then the snap puts it back on the ground.
+                hover = Cast(s.Position, s.Stance, up, PlanetHover, out var room, out _) ? MathF.Max(0f, room) : PlanetHover;
+                s.Position += up * hover;
+            }
             s.Position = Walk(s.Position, disp, s.Stance, ref s.Velocity);
-            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown, s.Velocity, true);
+            s.Grounded = Snap(ref s.Position, s.Stance, SnapDown + hover, s.Velocity, true);
         }
         else
         {
@@ -214,6 +224,9 @@ public sealed class SweptMover : IMover
         if (movers)
             MoverPhysics.EndTick(ref s, _tick, carried, platformVel);
     }
+
+    /// <summary>How far a walking player's capsule is lifted for the move across the ground on a planet (see Simulate).</summary>
+    public const float PlanetHover = 0.04f;
 
     /// <summary>The vector without its component along up (zero stays zero).</summary>
     private static Vector3 Flatten(Vector3 v, Vector3 up)
@@ -467,6 +480,8 @@ public sealed class SweptMover : IMover
     /// <summary>The arena bounds, and never far under the terrain (a safety net; casts keep players on top of it).</summary>
     private static Vector3 Clamp(PhysicsWorld phys, Vector3 feet)
     {
+        if (phys.Gravity is PointGravity planet)
+            return World.ClampToSky(feet, planet); // a planet: only a ceiling far above (the ground holds players up)
         feet.X = Math.Clamp(feet.X, -phys.HalfX + World.PlayerRadius, phys.HalfX - World.PlayerRadius);
         feet.Z = Math.Clamp(feet.Z, -phys.HalfZ + World.PlayerRadius, phys.HalfZ - World.PlayerRadius);
         if (phys.Map?.Boundary is { } boundary)

@@ -73,6 +73,8 @@ public enum Msg : byte
     VoiceDown, // server -> each listener it reaches: talker X's voice frame (talker, sequence, route, frame) (unreliable; never back to the talker)
     VoiceCtl, // client -> server: my voice preferences (bit 0: I listen to voice) (reliable)
     VoiceInfo, // server -> one client: the host's voice settings (bit 0: voice chat allowed) (reliable)
+    PEnts, // server -> each client: Co-op: the enemies near that client (interest-managed, 13 bytes each, 20 Hz) (unreliable sequenced; GamePveNet.cs)
+    PEvent, // server -> one client or all: Co-op: a banner, kill / objective / mission XP, enemies cleared (reliable)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

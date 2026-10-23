@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Cooling Fins",
+  "about": "Four square fins round a barrel, 2 cm apart, from z = 0 to z = -0.06 (scale Z to spread them).",
+  "model": [
+    {"size": [0.04, 0.04, 0.006], "pos": [0, 0, 0], "color": "gunmetal"},
+    {"size": [0.04, 0.04, 0.006], "pos": [0, 0, -0.02], "color": "gunmetal"},
+    {"size": [0.04, 0.04, 0.006], "pos": [0, 0, -0.04], "color": "gunmetal"},
+    {"size": [0.04, 0.04, 0.006], "pos": [0, 0, -0.06], "color": "gunmetal"}
+  ]
+}

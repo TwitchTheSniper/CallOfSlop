@@ -1,0 +1,18 @@
+// A rifle box magazine to start feeds from: "extends": "Base Box Mag", then "stats" (mag, reload) and a "flavor".
+{
+  "format": "call-of-slop-part/1",
+  "name": "Base Box Mag",
+  "category": "feed",
+  "rarity": "common",
+  "bores": ["rifle"],
+  "weight": 0.3,
+  "hand": [0, -0.06, 0],
+  "feed": "box",
+  "model": [
+    {"use": "Magazine Body"}
+  ],
+  "stats": [
+    {"stat": "mag", "set": 30},
+    {"stat": "reload", "set": 2.2}
+  ]
+}

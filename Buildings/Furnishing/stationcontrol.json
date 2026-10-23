@@ -1,0 +1,59 @@
+{
+ "format": "call-of-slop-furnishing/1",
+ "type": "stationcontrol",
+ "description": "A station control room: consoles round the walls, chairs at them, server cabinets and a status wall.",
+ "items": [
+  {
+   "id": "console",
+   "props": [
+    "Station Console"
+   ],
+   "place": "wall",
+   "count": [
+    3,
+    5
+   ]
+  },
+  {
+   "props": [
+    "Office Chair"
+   ],
+   "place": "front",
+   "of": "console",
+   "distance": 0.1,
+   "chance": 0.8
+  },
+  {
+   "props": [
+    "Big Wall Display",
+    "Status Board"
+   ],
+   "place": "wall",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Server Cabinet"
+   ],
+   "place": "corner",
+   "count": [
+    1,
+    2
+   ]
+  },
+  {
+   "props": [
+    "Station Supply Case",
+    "Toolbox"
+   ],
+   "place": "floor",
+   "count": [
+    0,
+    2
+   ]
+  }
+ ]
+}

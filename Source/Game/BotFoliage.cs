@@ -189,7 +189,7 @@ public sealed partial class Game
     {
         if (!b.BlindOn || b.BlindBurst <= 0 || now < b.NextFire || b.Ammo <= 0 || b.ReloadUntil != 0)
             return;
-        var d = b.BlindAim - p.Eye;
+        var d = GravityFrames.ToLocal(p.Position, b.BlindAim - p.Eye);
         var dist = d.Length();
         if (dist < 1f)
             return;
@@ -198,7 +198,7 @@ public sealed partial class Game
         if (MathF.Abs(World.WrapAngle(wantYaw - aim.Yaw)) > 0.1f || MathF.Abs(wantPitch - aim.Pitch) > 0.1f)
             return;
         var spread = MathF.Max(BotShotSpread(p, def, false, b.Skill) * BlindSpreadMult, BlindMinSpread);
-        ServerResolveShot(p, def, p.Eye, World.Forward(aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
+        ServerResolveShot(p, def, p.Eye, GravityFrames.Forward(p.Position, aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
         b.Ammo--;
         b.BlindBurst--;
         b.BlindShots++;
@@ -223,7 +223,7 @@ public sealed partial class Game
         var pitch = aim.Pitch + ((float)_rng.NextDouble() - 0.5f) * ang;
         BotStats.BlindShots++;
         b.BlindShots++;
-        return World.Forward(yaw, pitch);
+        return GravityFrames.Forward(p.Position, yaw, pitch);
     }
 
     /// <summary>Self-test: what's on the line from one point to another for a bot (<see cref="SightLine"/>).</summary>

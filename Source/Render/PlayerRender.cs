@@ -13,6 +13,8 @@ public static class PlayerRender
     public static void DrawImmediate(Renderer g, Player p, double time)
     {
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
+        if (GravityFrames.Curved)
+            rot *= GravityFrames.Basis(p.RenderPosition); // a planet: standing on its curve
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
         var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)

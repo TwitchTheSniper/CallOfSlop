@@ -87,7 +87,7 @@ public sealed partial class Game
         var m = MuzzleWorld(p);
         if (lateral == Vector2.Zero)
             return m;
-        var fwd = World.Forward(p.RenderYaw, p.RenderPitch);
+        var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
         var right = Vector3.Normalize(Vector3.Cross(fwd, MathF.Abs(fwd.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY));
         var up = Vector3.Cross(right, fwd);
         return m + right * lateral.X + up * lateral.Y;

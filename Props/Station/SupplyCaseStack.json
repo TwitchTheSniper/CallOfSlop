@@ -1,0 +1,79 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Supply Case Stack",
+ "category": "Station",
+ "description": "Three metal supply cases stacked on a low dark skid.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    1.6,
+    1.4,
+    1.1
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 3
+ },
+ "parts": [
+  {
+   "size": [
+    1.6,
+    0.25,
+    1.1
+   ],
+   "offset": [
+    0.0,
+    0.125,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.9,
+    0.62,
+    0.62
+   ],
+   "offset": [
+    -0.4,
+    0.56,
+    0.0
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.9,
+    0.6,
+    0.62
+   ],
+   "offset": [
+    0.4,
+    0.55,
+    0.05
+   ],
+   "color": "#b3a48c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.9,
+    0.56,
+    0.62
+   ],
+   "offset": [
+    0.0,
+    1.13,
+    0.02
+   ],
+   "color": "#6c6f73",
+   "material": "metal"
+  }
+ ],
+ "author": "Call of Slop"
+}

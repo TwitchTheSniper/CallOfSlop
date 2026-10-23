@@ -398,7 +398,27 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
 
     public float CeilingAbove(float x, float z, float y) => Data.CeilingAbove(x, z, y);
 
-    public ITerrainCollision Layer(float y) => Data.Voids == null ? this : new TerrainLayer(this, y);
+    public ITerrainCollision Layer(float y)
+    {
+        if (Data.Voids == null)
+            return this;
+        // A view per call would allocate for every body, every tick, on every cave map: reuse a small per-thread ring of
+        // them instead. Callers only hold a view for the length of one query or one movement step (at most two at once),
+        // far fewer than the ring's size, so a view is never reused while someone still reads it.
+        var ring = _layers ??= new TerrainLayer[LayerRing];
+        var i = _nextLayer = (_nextLayer + 1) & (LayerRing - 1);
+        var view = ring[i] ??= new TerrainLayer();
+        view.Set(this, y);
+        return view;
+    }
+
+    private const int LayerRing = 16;
+
+    [ThreadStatic]
+    private static TerrainLayer[]? _layers;
+
+    [ThreadStatic]
+    private static int _nextLayer;
 
     public Vector3 HitNormal(Vector3 point, Vector3 dir)
     {
@@ -607,26 +627,43 @@ public sealed class HeightfieldCollision(TerrainData data) : ITerrainCollision
 /// the floor in a cave and the surface on top of it, so code that samples the ground round a body (the slope rules, the
 /// movers) works the same in a tunnel as on a hillside.
 /// </summary>
-public sealed class TerrainLayer(HeightfieldCollision ground, float y) : ITerrainCollision
+public sealed class TerrainLayer : ITerrainCollision
 {
+    private HeightfieldCollision _ground = null!;
+
+    /// <summary>A view of <paramref name="ground"/> from height <paramref name="y"/>.</summary>
+    public TerrainLayer(HeightfieldCollision ground, float y) => Set(ground, y);
+
+    /// <summary>An empty view for <see cref="HeightfieldCollision.Layer"/>'s ring (set before use).</summary>
+    internal TerrainLayer()
+    {
+    }
+
+    /// <summary>Points this (reused) view at <paramref name="ground"/> from height <paramref name="y"/>.</summary>
+    internal void Set(HeightfieldCollision ground, float y)
+    {
+        _ground = ground;
+        Y = y;
+    }
+
     /// <summary>The height this view looks from.</summary>
-    public float Y { get; } = y;
+    public float Y { get; private set; }
 
-    public TerrainData Data => ground.Data;
+    public TerrainData Data => _ground.Data;
 
-    public float HeightAt(float x, float z) => ground.Data.GroundBelow(x, z, Y);
+    public float HeightAt(float x, float z) => _ground.Data.GroundBelow(x, z, Y);
 
-    public Vector3 NormalAt(float x, float z) => ground.Data.NormalBelow(x, z, Y);
+    public Vector3 NormalAt(float x, float z) => _ground.Data.NormalBelow(x, z, Y);
 
-    public float Raycast(Vector3 origin, Vector3 dir, float maxDist) => ground.Raycast(origin, dir, maxDist);
+    public float Raycast(Vector3 origin, Vector3 dir, float maxDist) => _ground.Raycast(origin, dir, maxDist);
 
     public bool HasVoids => true;
 
-    public float GroundBelow(float x, float z, float y) => ground.Data.GroundBelow(x, z, y);
+    public float GroundBelow(float x, float z, float y) => _ground.Data.GroundBelow(x, z, y);
 
-    public float CeilingAbove(float x, float z, float y) => ground.Data.CeilingAbove(x, z, y);
+    public float CeilingAbove(float x, float z, float y) => _ground.Data.CeilingAbove(x, z, y);
 
-    public ITerrainCollision Layer(float y) => ground.Layer(y);
+    public ITerrainCollision Layer(float y) => _ground.Layer(y);
 
-    public Vector3 HitNormal(Vector3 point, Vector3 dir) => ground.HitNormal(point, dir);
+    public Vector3 HitNormal(Vector3 point, Vector3 dir) => _ground.HitNormal(point, dir);
 }

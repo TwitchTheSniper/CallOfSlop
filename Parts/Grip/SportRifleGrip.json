@@ -1,0 +1,19 @@
+{
+  "extends": "Service Rifle Grip",
+  "name": "Sport Rifle Grip",
+  "rarity": "uncommon",
+  "flavor": "A skeletonised one-receiver rifle frame with a side rail. Lighter in the hands, steadier on target.",
+  "weight": 0.6,
+  "frame": {"carry": 10, "support": [0, -0.01, -0.21]},
+  "+sockets": [
+    {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.21]},
+    {"name": "utility", "type": "utility", "pos": [0.045, 0.0, -0.08]}
+  ],
+  "+model": [
+    {"size": [0.072, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "adsTime", "add": -0.02},
+    {"stat": "hipSpreadDeg", "mul": 0.92}
+  ]
+}

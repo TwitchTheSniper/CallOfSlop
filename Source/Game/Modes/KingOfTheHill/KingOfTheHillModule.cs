@@ -42,6 +42,12 @@ public sealed class KingOfTheHillModule : GameModeModule
 
     public static bool InHill(Vector3 feet, HillZone hill)
     {
+        if (GravityFrames.Curved)
+        {
+            // A planet: across the ground at the hill and up to 3 m above it (along its up).
+            var rel = GravityFrames.ToLocal(hill.Center, feet - hill.Center);
+            return rel.X * rel.X + rel.Z * rel.Z <= hill.Radius * hill.Radius && rel.Y > -1f && rel.Y < 3f;
+        }
         var d = new Vector2(feet.X - hill.Center.X, feet.Z - hill.Center.Z);
         // Height window measured from the ground, so a zone on a slope covers the whole slope (flat maps: ground = 0).
         var m = World.Map;

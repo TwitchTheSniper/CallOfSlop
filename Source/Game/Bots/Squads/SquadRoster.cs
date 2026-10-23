@@ -33,7 +33,7 @@ public sealed partial class Game
         if (now < _nextSquadRoster)
             return;
         _nextSquadRoster = now + 1;
-        var teamPlay = IsTeamMode && !Module.CoOp && !SquadsDisabled;
+        var teamPlay = IsTeamMode && !Module.CoOp && !SquadsDisabled && !GravityFrames.Curved; // (squad tactics plan on flat ground: not on a planet)
         // A key over (team, id) of every Insane bot: unchanged key, unchanged squads.
         var key = teamPlay ? 1469598103934665603UL : 0;
         if (teamPlay)

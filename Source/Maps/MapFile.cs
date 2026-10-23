@@ -161,6 +161,14 @@ public sealed partial class Map
                     h *= 16777619u;
                 }
             }
+            if (PlanetHash is var planet and not 0) // point gravity and solid meshes (MapPlanet.cs); ordinary maps keep their old fingerprint
+            {
+                for (var i = 0; i < 4; i++)
+                {
+                    h ^= (planet >> (i * 8)) & 0xFF;
+                    h *= 16777619u;
+                }
+            }
             if (DestructionHash is var destruction and not 0) // destructible maps only (MapDestruction.Map.cs): host and clients must cut and break the same
             {
                 for (var i = 0; i < 4; i++)
@@ -207,6 +215,8 @@ public static partial class MapFile
             sb.Append("  \"prototypeGrid\": true,\n");
         if (!m.Penetration)
             sb.Append("  \"penetration\": false,\n");
+        if (m.FallKillY is { } fallKill)
+            sb.Append($"  \"fallKill\": {Num(fallKill)},\n");
         if (m.DestructibleSetting is { } destructible)
             sb.Append($"  \"destructible\": {(destructible ? "true" : "false")},\n");
         if (m.FlagPoolJson is { } flagPool)
@@ -221,6 +231,8 @@ public static partial class MapFile
             sb.Append($"  \"sky\": {Col(m.Sky)},\n");
         if (m.Boundary != null)
             sb.Append("  \"boundary\": ").Append(BoundaryToJson(m.Boundary.Spec)).Append(",\n");
+        if (m.PointGravity is { } pointGravity)
+            sb.Append("  \"gravity\": ").Append(GravityToJson(pointGravity)).Append(",\n");
         if (m.TerrainSpec != null)
             sb.Append("  \"terrain\": ").Append(m.TerrainSpec.ToJson("  ")).Append(",\n");
         MapObjectiveJson.Write(sb, m);
@@ -325,6 +337,9 @@ public static partial class MapFile
                 map.PrototypeGrid = true;
             if (Prop(root, "penetration") is { ValueKind: JsonValueKind.False })
                 map.Penetration = false; // bullets never go through walls here (GamePenetration.cs)
+            if (Prop(root, "fallKill") is { ValueKind: not JsonValueKind.Null } fallKillEl) // a void map: falling below this height kills (GameFallKill.cs)
+                map.FallKillY = fallKillEl.ValueKind == JsonValueKind.Number && fallKillEl.GetSingle() is >= -4f and <= 55f
+                    ? fallKillEl.GetSingle() : throw new MapFileException($"{source}: \"fallKill\" is a height from -4 to 55 (metres)");
             if (Prop(root, "destructible") is { } destructibleEl) // destructible buildings (MapDestruction.Map.cs); without it, the pack's default
                 map.DestructibleSetting = destructibleEl.ValueKind is JsonValueKind.True or JsonValueKind.False
                     ? destructibleEl.GetBoolean() : throw new MapFileException($"{source}: \"destructible\" is true or false");
@@ -333,7 +348,9 @@ public static partial class MapFile
                 map.FlagPoolIds = Map.ReadFlagPool(flagPool, source); // the designs random flag props pick from (MapFlags.cs)
             if (Prop(root, "sky") is { } sky)
                 map.Sky = ToColour(sky, "sky", source);
-            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, source) is { } parsedSky)
+            // Sky images are found next to the map file; a map read from text (a round trip) looks in its pack folder.
+            var skySource = (Path.GetDirectoryName(source) ?? "").Length > 0 || map.PackDir == null ? source : Path.GetFileName(map.PackDir) + "/" + source;
+            if (Prop(root, "skybox") is { } skybox && SkyFile.Parse(skybox, skySource) is { } parsedSky)
             {
                 map.Skybox = parsedSky;
                 map.Sky = parsedSky.Horizon; // background, fog and UI colour follow the sky's horizon (Source/Render/Sky)
@@ -352,6 +369,8 @@ public static partial class MapFile
                     throw new MapFileException($"{source}: boundary: {ex.Message}");
                 }
             }
+            if (Prop(root, "gravity") is { ValueKind: not JsonValueKind.Null } gravity)
+                map.PointGravity = ReadGravity(gravity, source); // a planet: gravity towards a point (MapFile.Gravity.cs)
             if (Prop(root, "terrain") is { ValueKind: not JsonValueKind.Null } terrain)
                 map.SetTerrain(TerrainSpec.Parse(terrain, source)); // before the ops: they're placed on the ground as they run
             try

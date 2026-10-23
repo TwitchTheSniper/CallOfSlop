@@ -301,7 +301,7 @@ public sealed class Ragdoll
             for (var i = 0; i < RagdollRig.Count; i++)
             {
                 var p = Pos[i];
-                Pos[i] = p + (p - Prev[i]) * AirDamping + g;
+                Pos[i] = p + (p - Prev[i]) * AirDamping + (GravityFrames.Curved ? GravityFrames.GravityAt(p) * (h * h) : g); // (a planet: towards its centre)
                 Prev[i] = p;
             }
             EnsureShapes(world, terrain);

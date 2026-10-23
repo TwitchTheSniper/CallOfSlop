@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-fragment/1",
+  "name": "Scope Tube",
+  "about": "A 20 cm scope body along -Z, centred on the origin: tube, objective and eyepiece bells, turrets and a lens.",
+  "model": [
+    {"shape": "rod", "size": [0.026, 0.026, 0.2], "pos": [0, 0, 0], "color": "black"},
+    {"shape": "rod", "size": [0.038, 0.038, 0.045], "pos": [0, 0, -0.08], "color": "black"},
+    {"shape": "rod", "size": [0.032, 0.032, 0.035], "pos": [0, 0, 0.085], "color": "black"},
+    {"size": [0.012, 0.018, 0.012], "pos": [0, 0.018, 0], "color": "gunmetal"},
+    {"size": [0.018, 0.012, 0.012], "pos": [0.018, 0, 0], "color": "gunmetal"},
+    {"size": [0.03, 0.03, 0.002], "pos": [0, 0, -0.103], "color": [0.35, 0.55, 0.75], "alpha": 0.45}
+  ]
+}

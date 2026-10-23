@@ -64,7 +64,7 @@ public static class ThirdPersonArms
         var pos = p.RenderPosition;
         if (dt > 0.0005f)
         {
-            var dv = pos - st.LastPos;
+            var dv = GravityFrames.ToLocal(pos, pos - st.LastPos); // (a planet: across its ground)
             var flat = MathF.Sqrt(dv.X * dv.X + dv.Z * dv.Z) / dt;
             if (dt > 0.5f || flat > 40f)
                 flat = 0; // first sight or a teleport
