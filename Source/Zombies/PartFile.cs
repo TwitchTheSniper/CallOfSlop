@@ -293,8 +293,11 @@ public static class PartFile
             if (!names.Add(s.Name))
                 throw new WeaponFileException($"{where}: two sockets are called \"{s.Name}\"");
         foreach (var b in p.Boxes)
-            if (b.Tag.StartsWith("with:", StringComparison.Ordinal) && !names.Contains(b.Tag[5..]))
-                throw new WeaponFileException($"{where}: a box is tagged \"{b.Tag}\" but the part has no socket called \"{b.Tag[5..]}\"");
+        {
+            var tagSocket = b.Tag.StartsWith("with:", StringComparison.Ordinal) ? b.Tag[5..] : b.Tag.StartsWith("irons:", StringComparison.Ordinal) ? b.Tag[6..] : null;
+            if (tagSocket != null && !names.Contains(tagSocket))
+                throw new WeaponFileException($"{where}: a box is tagged \"{b.Tag}\" but the part has no socket called \"{tagSocket}\"");
+        }
         if (p.Boxes.Length > MaxBoxes)
             throw new WeaponFileException($"{where}: {p.Boxes.Length} model boxes, at most {MaxBoxes} per part (fragments count with every box they bring)");
         if (p.Sockets.Length > 24)
@@ -590,13 +593,13 @@ public static class PartFile
     /// <summary>A number between <paramref name="min"/> and <paramref name="max"/>.</summary>
     internal static float ReadRange(JsonElement e, float min, float max, string where) => Range(WeaponFile.Number(e, where), min, max, where);
 
-    /// <summary>A box tag ("", "irons", "glow" or "with:SOCKET"; the socket is checked against the part in <see cref="Validate"/>).</summary>
+    /// <summary>A box tag ("", "irons", "irons:SOCKET", "glow" or "with:SOCKET"; the socket is checked against the part in <see cref="Validate"/>).</summary>
     internal static string ReadTag(JsonElement v, string at)
     {
         var t = WeaponFile.Text(v, at).ToLowerInvariant();
-        return t is "" or "irons" or "glow" || (t.StartsWith("with:", StringComparison.Ordinal) && t.Length > 5)
+        return t is "" or "irons" or "glow" || (t.StartsWith("with:", StringComparison.Ordinal) && t.Length > 5) || (t.StartsWith("irons:", StringComparison.Ordinal) && t.Length > 6)
             ? t
-            : throw new WeaponFileException($"{at}: \"{t}\" isn't a tag (irons, glow, with:SOCKET)");
+            : throw new WeaponFileException($"{at}: \"{t}\" isn't a tag (irons, irons:SOCKET, glow, with:SOCKET)");
     }
 
     private static PartBox ReadBox(JsonElement e, string where)

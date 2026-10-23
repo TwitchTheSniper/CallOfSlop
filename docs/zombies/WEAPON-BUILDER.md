@@ -521,7 +521,7 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   wrap bar, the cart's push bar, the wheel's rim), else the lead barrel. The reload hand goes to the lead receiver's
   feed.
 - **Sight line:** the optic sits on the grip's `optic` socket; the sight lens uses the mount height and position from
-  it. Iron-sight boxes (`"tag": "irons"`, only grips have them) stand on the receiver: they are drawn only when a
+  it. Iron-sight boxes (`"tag": "irons"`, or `"irons:SOCKET"` which also needs that socket filled, as on the rack grips; only grips have them) stand on the receiver: they are drawn only when a
   receiver is fitted and no optic is. Grips with `"ads": false` (cart, briefcase) are hip fire only and drop the optic's
   zoom.
 - **Conditional boxes:** `"tag": "with:SOCKET"` draws a box only while that socket of the same part holds something (the
@@ -531,8 +531,9 @@ value). A part file can override its value with `"scrap"`. A build's scrap value
   intentional and just there to support the optics". Every part's boxes form one connected piece (within 1 cm), and
   every part of an assembled weapon touches the rest. The pass fixed: the grips' iron sights (hovering over an empty
   plate; now only with a receiver, front post moved back over the receiver and both reaching down to it); the rack
-  grips' cage posts (Quad to Rifle Grip: they stood 4.4 cm behind the plate, so the crossbar, optic rail and irons hung
-  in the air; now on the plate's back corners); the Gantry Rig's optic mount (a box and post hanging between the
+  rack grips' frame (Quad to Rifle Grip: posts and a crossbar round the receiver slots; **removed entirely**, user 2026-10-23:
+  "remove entirely"; each upper row of receivers now has its own thin plate and spine, drawn only while that slot holds a
+  receiver, and the iron sights hang on a short sight rail over the top row); the Gantry Rig's optic mount (a box and post hanging between the
   crossbars; now on a spine between them); the Chainsaw Grip's receiver plate (3 cm off the body); the Steering Wheel's
   rim (gaps between segments; diagonal spokes now carry the diagonal receivers); the Exo Harness, Gantry Rig and Mule
   Frame plates (1.7 cm under the receivers; shelf bars under each upper row); hopper chutes and stock mounts on the
