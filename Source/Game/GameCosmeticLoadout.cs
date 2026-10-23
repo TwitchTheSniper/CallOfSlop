@@ -42,12 +42,30 @@ public sealed partial class Game
     public static HatId ValidHat(HatId requested, bool isBot, int prestige) =>
         isBot || !Cosmetics.IsUnlocked(requested, prestige) ? HatId.None : requested;
 
-    /// <summary>Server: reads the hat byte a client appends to its loadout packet (older clients send none: no hat).</summary>
-    private void ReadLoadoutHat(Player p, ref PacketReader r) => ServerSetHat(p, r.Has(1) ? (HatId)r.U8() : HatId.None);
+    /// <summary>
+    /// Server: reads the hat byte a client appends to its loadout packet (older clients send none: no hat), then the
+    /// client's prestige and level now (two bytes; older clients send none and keep the ones from their Hello), so a
+    /// level-up mid-match reaches everyone's scoreboard at the next respawn. The roster goes out only when they change.
+    /// </summary>
+    private void ReadLoadoutHat(Player p, ref PacketReader r)
+    {
+        var hat = r.Has(1) ? (HatId)r.U8() : HatId.None;
+        if (r.Has(2))
+        {
+            var prestige = r.U8();
+            var level = r.U8();
+            ServerUpdateProfile(p, prestige, level); // before the hat: a new prestige may unlock it
+        }
+        ServerSetHat(p, hat);
+    }
 
     /// <summary>The hat player <paramref name="id"/> wears, as far as this side knows (None if unknown).</summary>
     public HatId HatOf(byte id) =>
         Players.TryGetValue(id, out var p) ? p.Hat : _cosmetics.TryGetValue(id, out var c) ? c.Hat : HatId.None;
+
+    /// <summary>The prestige and level of player <paramref name="id"/> as far as this side knows (the roster; 0 / 0 if unknown).</summary>
+    public (byte Prestige, byte Level) ProfileOf(byte id) =>
+        Players.TryGetValue(id, out var p) ? (p.Prestige, p.Level) : _cosmetics.TryGetValue(id, out var c) ? (c.Prestige, c.Level) : ((byte)0, (byte)0);
 
     // ---- Self-test hooks ---------------------------------------------------------------------
 

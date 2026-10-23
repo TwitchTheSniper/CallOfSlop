@@ -124,6 +124,7 @@ public static partial class SelfTest
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Hidden loadout slots", CheckHiddenSlots); // SelfTestHiddenSlots.cs: only unlocked slots listed, locked pick fallback, locked slots kept
             Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
+            Section("Scoreboard level", CheckScoreboardLevel); // SelfTestScoreboard.cs: no HP column, Level for people and bots, prestige label, replication, no allocation
             Section("Recoil", CheckRecoil);
             Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
             Section("Death cam", CheckDeathCam);
@@ -183,6 +184,7 @@ public static partial class SelfTest
             Section("Blood overlay", CheckBloodOverlay); // SelfTestBlood.cs: screen splatters by health: steps, hit direction, regen / Stim fade, death, Subtle / Off, masks, no allocations, settings
             Section("Body blood", CheckBodyBlood); // SelfTestBlood.cs: marks by health on bodies: counts, parts, server recording, armour, two clients alike, packet, ragdolls, CPU for 32
             Section("Gibs", CheckGibs); // SelfTestGibs.cs: animal props (health, toys), gib bursts by size and gore setting, settle/fade/cap/splats, in-game breaks, respawn, two-client determinism, blast-kill gibs vs ragdolls, hats, zombies
+            Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
             Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
             Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
             Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)

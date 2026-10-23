@@ -94,7 +94,7 @@ public sealed class LastManStandingModule : GameModeModule
 
     public override (string First, string Second) ScoreboardColumnsShort => ("K", "St");
 
-    public override (string First, string Second) ScoreboardCells(Game game, Player p) => ($"{p.Kills}", p.Alive ? "standing" : "out");
+    public override (string First, string Second) ScoreboardCells(Game game, Player p) => (ScoreboardModel.Num(p.Kills), p.Alive ? "standing" : "out");
 
     public override string? SelfTestVerify(Game game)
     {

@@ -33,6 +33,9 @@ public enum GameAction
     Interact,
     Weapon3,
     Weapon4,
+    ChatAll, // binds version 3: chat (Source/UI/UiChat.cs) and voice (Source/Audio/Voice)
+    ChatTeam,
+    PushToTalk,
     COUNT,
 }
 
@@ -77,19 +80,28 @@ public static class Keybinds
         Key(GlfwKey.F), // Interact: E until binds version 2
         Key(GlfwKey.Number3),
         Unbound,
+        Key(GlfwKey.Enter), // Chat (all): binds version 3
+        Key(GlfwKey.Y), // Chat (team)
+        Key(GlfwKey.X), // Push to talk
     ];
 
     /// <summary>
     /// Version of <see cref="Defaults"/>, saved as <c>binds_version</c> in settings.txt. Files from before a change get
     /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
+    /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
     /// </summary>
-    public const int DefaultsVersion = 2;
+    public const int DefaultsVersion = 3;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
     [
         (2, GameAction.Interact, Key(GlfwKey.E), Key(GlfwKey.F)),
         (2, GameAction.Equipment, Key(GlfwKey.F), Key(GlfwKey.E)),
+        // Added actions (old default Unbound): an old file has no line for them, so they start on the new default; they are
+        // put through the same clash check, so a key the player already uses elsewhere is never taken (the action stays unbound).
+        (3, GameAction.ChatAll, Unbound, Key(GlfwKey.Enter)),
+        (3, GameAction.ChatTeam, Unbound, Key(GlfwKey.Y)),
+        (3, GameAction.PushToTalk, Unbound, Key(GlfwKey.X)),
     ];
 
     /// <summary>
@@ -105,6 +117,9 @@ public static class Keybinds
         {
             if (version <= fromVersion)
                 continue;
+            foreach (var c in Changes)
+                if (c.Version == version && c.Old == Unbound && binds[(int)c.Action] == c.New)
+                    binds[(int)c.Action] = Unbound; // an added action on its new default: check it like a move
             var step = Changes.Where(c => c.Version == version && binds[(int)c.Action] == c.Old).ToList();
             var before = (int[])binds.Clone();
             foreach (var c in step)
@@ -163,6 +178,9 @@ public static class Keybinds
             GameAction.Interact => "Interact (doors; Zombies: cart, slot upgrade)",
             GameAction.Weapon3 => "Weapon slot 3 (Zombies)",
             GameAction.Weapon4 => "Weapon slot 4 (Zombies)",
+            GameAction.ChatAll => "Chat (all)",
+            GameAction.ChatTeam => "Chat (team)",
+            GameAction.PushToTalk => "Push to talk (voice chat)",
             _ => a.ToString(),
         };
 

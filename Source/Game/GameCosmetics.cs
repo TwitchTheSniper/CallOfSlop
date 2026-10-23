@@ -8,6 +8,8 @@ public readonly record struct PlayerCosmetics(byte Prestige, byte Level, HatId H
 /// A client reports its prestige and level after its name in <see cref="Msg.Hello"/>; the server believes it only for
 /// what it shows (the scoreboard's "P2 L13") and to check which hats that player may wear. The roster carries
 /// prestige, level and hat for everyone (3 bytes a player). Bots never have a prestige, a level tag or a hat.
+/// Clients also append their prestige and level now to <see cref="Msg.Loadout"/> (sent on joining and every respawn);
+/// the server rebroadcasts the roster only when they changed (<see cref="ServerUpdateProfile"/>), never per snapshot.
 /// </summary>
 public sealed partial class Game
 {
@@ -42,11 +44,28 @@ public sealed partial class Game
             p.Hat = HatId.None;
     }
 
-    /// <summary>Server: the host's own player takes its prestige and level from the local progression.</summary>
-    private void RefreshHostProfile()
+    /// <summary>Server: the host's own player takes its prestige and level from the local progression. True if they changed.</summary>
+    private bool RefreshHostProfile()
     {
-        if (IsServer && Players.TryGetValue(LocalId, out var me) && me.Bot == null && Progress is { } prog)
-            SetProfile(me, prog.Prestige, prog.Level);
+        if (!IsServer || !Players.TryGetValue(LocalId, out var me) || me.Bot != null || Progress is not { } prog)
+            return false;
+        var (prestige, level) = (me.Prestige, me.Level);
+        SetProfile(me, prog.Prestige, prog.Level);
+        return me.Prestige != prestige || me.Level != level;
+    }
+
+    /// <summary>
+    /// Server: a client's prestige and level now (from its loadout packet). Tells everyone (the roster) only when they
+    /// changed, so a level-up shows on every scoreboard; nothing is sent per snapshot. Bots are ignored.
+    /// </summary>
+    public void ServerUpdateProfile(Player p, int prestige, int level)
+    {
+        if (!IsServer || p.Bot != null)
+            return;
+        var (oldPrestige, oldLevel) = (p.Prestige, p.Level);
+        SetProfile(p, prestige, level);
+        if (p.Prestige != oldPrestige || p.Level != oldLevel)
+            BroadcastRoster();
     }
 
     private static void WriteRosterCosmetics(PacketWriter w, Player p)
@@ -88,10 +107,9 @@ public sealed partial class Game
     {
         if (!IsServer)
             return p.Hat;
-        if (p.Id == LocalId)
-            RefreshHostProfile();
+        var levelChanged = p.Id == LocalId && RefreshHostProfile(); // the host's level-up shows on everyone's scoreboard
         var worn = p.Bot == null && Cosmetics.IsUnlocked(hat, p.Prestige) ? hat : HatId.None;
-        if (worn != p.Hat)
+        if (worn != p.Hat || levelChanged)
         {
             p.Hat = worn;
             BroadcastRoster();
