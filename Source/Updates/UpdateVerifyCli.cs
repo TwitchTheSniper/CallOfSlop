@@ -49,6 +49,14 @@ public static class UpdateVerifyCli
             var game = UpdateInstaller.Extract(zipFile, target);
             Console.WriteLine($"[verify-update] unzipped to {target}; game at {Path.GetRelativePath(root, game)}");
             var dir = Path.GetDirectoryName(game)!;
+            if (OperatingSystem.IsWindows())
+            {
+                // The packaged exe must carry the manifest's version (it's what the game compares after updating).
+                var stamped = System.Diagnostics.FileVersionInfo.GetVersionInfo(game).ProductVersion ?? "";
+                Console.WriteLine($"[verify-update] packaged exe version '{stamped}' (verifier: {BuildInfo.Label})");
+                if (BuildInfo.Parse(stamped).Version != m.Version)
+                    Problem($"the packaged exe says '{stamped}', the manifest v{m.Version}");
+            }
             foreach (var need in new[] { "NOTICE.txt", "READ ME FIRST.txt", "CallOfSlop.dll" })
                 if (!File.Exists(Path.Combine(dir, need)))
                     Problem($"{need} missing next to the exe");

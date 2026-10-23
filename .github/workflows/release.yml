@@ -150,7 +150,7 @@ jobs:
           $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--verify-update", "bin/package/update.json", $zip -Wait -PassThru -NoNewWindow
           Select-String -Path "$dir/callofslop.log" -Pattern "\[verify-update\]" | ForEach-Object {
             $l = $_.Line.Trim()
-            if ($l -match "PROBLEM") { Write-Output "::error title=Verify::$l" } else { Write-Output "::notice title=Verify::$l" }
+            if ($l -cmatch "PROBLEM:") { Write-Output "::error title=Verify::$l" } else { Write-Output "::notice title=Verify::$l" }
           }
           Write-Output "::notice title=update.json::$((Get-Content bin/package/update.json -Raw) -replace '\s+', ' ')"
           if ($p.ExitCode -ne 0) { exit 1 }
