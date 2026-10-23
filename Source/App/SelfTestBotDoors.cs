@@ -128,6 +128,22 @@ public static partial class SelfTest
             return best;
         }
 
+        /// <summary>A short trace of a bot every 0.3 s: across (m from the door's plane, + in) / along its width, wish, speed, path, to the goal.</summary>
+        public readonly List<string> Trace = new();
+
+        public void Sample(Player p, double t)
+        {
+            if (Trace.Count >= 24 || (int)(t / 0.3) == (int)((t - World.TickDt) / 0.3))
+                return;
+            var b = p.Bot!;
+            var perp = new Vector3(-Across.Z, 0, Across.X);
+            var lat = Vector3.Dot(p.Position - D.Center, perp);
+            var w = new Vector2(b.LastDoorWish.X, b.LastDoorWish.Z).Length();
+            var v = new Vector2(p.Sim.Velocity.X, p.Sim.Velocity.Z).Length();
+            var g = b.ForcedGoal is { } fg ? FlatDistance(fg, p.Position) : -1;
+            Trace.Add($"{t:0.0}:{Side(p):0.00}/{lat:0.00} w{w:0.0} v{v:0.0} p{b.PathIdx}/{b.PathLen} g{g:0.0}{(p.Sim.Grounded ? "" : " air")}");
+        }
+
         public float Side(Player p) => Vector3.Dot(p.Position - D.Center, Across);
 
         public bool ClientMatches => Client.BuildingDoors[Door].Open == D.Open && Client.BuildingDoors[Door].Broken == D.Broken;
@@ -188,8 +204,10 @@ public static partial class SelfTest
                 }
                 if (crossedAt < 0 && lab.Side(bot) > 0.5f)
                     crossedAt = lab.Now - start;
+                lab.Sample(bot, lab.Now - start);
                 return crossedAt >= 0 && lab.Now - start > crossedAt + 0.5;
             });
+            DoorNote($"  trace (goal {Vector3.Dot((bot.Bot!.ForcedGoal ?? bot.Position) - lab.D.Center, lab.Across):0.0} m in): " + string.Join(" | ", lab.Trace));
             DoorNote($"through a shut door: opened at {openedAt:0.00} s from {openedFrom:0.00} m before the doorway, through at {(crossedAt < 0 ? "NEVER" : $"{crossedAt:0.00} s")}, "
                      + $"stood still {stopped:0.00} s near it (first at {stallAt:0.00} m from the doorway, {stallMode}, stuck count {bot.Bot!.StuckCount}, door waits {bot.Bot.DoorWaitTicks} ticks, mantling {bot.Sim.MantleTicks}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, "
                      + $"at {FlatDistance(bot.Position, lab.D.Center):0.00} m from the door); bot opens {lab.Game.BotDoorOpens}");
@@ -219,10 +237,12 @@ public static partial class SelfTest
                     bAt = lab.Now - start;
                 if (bAt < 0 && aAt >= 0 && !lab.D.Open)
                     shutOnB = true;
+                lab.Sample(a, lab.Now - start);
                 return aAt >= 0 && bAt >= 0 && lab.Now - start > bAt + 2.5;
             });
             DoorNote($"two teammates, one door: first through at {aAt:0.00} s, second at {bAt:0.00} s (ended {lab.Side(a):0.0} / {lab.Side(b):0.0} m in, {FlatDistance(a.Position, b.Position):0.0} m apart, waits {a.Bot!.DoorWaitTicks}/{b.Bot!.DoorWaitTicks} ticks, door open {lab.D.Open}); shut on the second {shutOnB}; "
                      + $"afterwards open {lab.D.Open} (the last one through, alone, may shut it); opens {lab.Game.BotDoorOpens}, shuts {lab.Game.BotDoorCloses}");
+            DoorNote("  trace of the first: " + string.Join(" | ", lab.Trace));
             if (aAt < 0 || bAt < 0 || bAt > 6)
                 Fail("two teammates didn't both get through one door within 6 s");
             if (shutOnB)

@@ -22,6 +22,9 @@ public sealed partial class BotBrain
     /// <summary>Self-test: the chance of shutting a door behind it, instead of the personality's (null: the personality's).</summary>
     public float? SelfTestDoorCloseChance;
 
+    /// <summary>The steering wish after the door code (self-test traces).</summary>
+    public Vector3 LastDoorWish;
+
     /// <summary>Ticks this bot waited at a doorway for someone else (whole session).</summary>
     public int DoorWaitTicks;
 
@@ -376,6 +379,7 @@ public sealed partial class Game
         BotTrackPass(p, b, nearest, fleeing, now);
         BotCloseBehind(p, b, pts, fleeing, now);
         BotHoldDoor(p, b, now);
+        b.LastDoorWish = steer.Wish;
     }
 
     /// <summary>
