@@ -22,7 +22,7 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 
 | # | Decision | Built in milestone 2 |
 | --- | --- | --- |
-| 1 | Fire style across receivers is **fixed by the grip** | Each grip file has one `"fireStyle"`; builds have no choice; the workbench shows it ("Fire style: VOLLEY (fixed by the Rifle Grip)"). Old saves that chose a style load with the grip's. |
+| 1 | Fire style across receivers ~~is fixed by the grip~~ is a **per-build "Chain fire" checkbox** (user, 2026-10-23: "change the grips to have volley fire versus chain fire modes be a toggle with a checkbox instead of two separate groups of grips") | Each grip file's `"fireStyle"` is only its default; the build's choice is saved in its text's style field. The chain-fire twin grips (Competition Pistol Grip, Tactical Rifle Grip) merged into the Pistol Grip and Rifle Grip; old builds on them load there with Chain fire on. See "Grips and Chain fire". |
 | 2 | **Weight** stays the main limiter; huge multi-receiver guns must be reachable late in a run | Rarer frames carry more (Mule Frame 16 kg / 6 receivers, Exo Harness 30 kg / 12, Gantry Rig 48 kg / 16), weight-relief parts raise the carry weight, and the drop tables put those tiers late (see "Run progression"). |
 | 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, F parks it, tap F at its bar to man its gun (aim within traverse limits, fire it by hand), hold F to push it again. No auto turret. Replicated (protocol 17). |
 | 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
@@ -94,8 +94,46 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
 | Melee Mod | Nails, grip tape, counterweight, barbed wire, shock coil, rocket booster, whoopee cushion | 7 |
 
-**Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`). Barrels,
-splitters, feeds, ammo and muzzles list the bores they fit.
+**Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`). Feeds and
+ammo list the bores they hold. **Barrels, splitters and muzzle devices fit every receiver**: the receiver adapts the
+barrel (see "Barrels and receivers").
+
+### Barrels and receivers (2026-10-23)
+
+The user: "remove typing from weapon workbench weapons so that all barrels are compatible with all receivers. The
+receiver will determine what type of modifications happen to the barrel ... if a barrel is attached to a pistol
+receiver, it'll be smaller than if it's attached to a rifle receiver or an autocannon receiver. But this should remove
+friction in matches."
+
+- **Fit.** Every barrel fits every receiver's barrel socket and every splitter output; every muzzle device fits every
+  barrel. Only the parts that hold the rounds stay typed: **feeds and ammo** (the ammo *is* the receiver's calibre, and a
+  magazine's size is tuned to its rounds; shared feeds keep their bores and actions). Belts and hoppers still need an
+  action that pulls them. So a refusal in a match is now about what really can't work (a 9 mm round in a .50 action),
+  not about a tube.
+- **Size.** The receiver's bore class sizes the barrel's model, from a table in `Parts/_Registry.json` (each bore's
+  `"barrelScale": [width, height, length]`, relative to a rifle): pistol `[0.8, 0.8, 0.7]` (thinner, shorter), rifle
+  `[1, 1, 1]` (as drawn), heavy `[1.35, 1.35, 1.3]`, shell `[1.5, 1.5, 1]`, launcher `[2.7, 2.7, 1.3]`, energy
+  `[1, 1, 1.2]`. A receiver file can override its own size with `"barrelScale"` in its `receiver` block (the Hammerfall
+  Autocannon: `[1.9, 1.9, 1.5]`). A barrel is drawn for one class (`"sizedFor"`, default `rifle`: Big Iron is drawn for
+  `heavy`, Scattermouth and Blunderbuss Bell for `shell`, Launcher Tube for `launcher`, Coil for `energy`), so the scale is
+  receiver size / drawn-for size: a Big Iron on a heavy receiver looks exactly as before, on a pistol it shrinks. The
+  barrel's boxes, socket points, muzzle points and hand point all scale; a muzzle device on it sits on the scaled muzzle
+  point and keeps its own size, and the shot leaves from the device's end. The receiver a barrel belongs to is always the
+  nearest one up the tree (through splitters), never the build's first receiver.
+- **Stats.** A barrel's stat changes are relative (`mul`, `add`, `grow`), so they apply on top of what the receiver and
+  its ammo set: a Long Barrel's x1.4 range is 1.4 x a pistol's range on a pistol (a longer-range pistol, still a pistol)
+  and 1.4 x the autocannon's on an autocannon. Each bore class's `"barrelStrength"` scales those changes (x m becomes
+  x (1 + (m - 1) k), + a becomes + a k): pistol 0.85 (a short action gets less out of a long barrel), heavy 1.15,
+  launcher 0.5, the rest 1. `"barrelPellets"` (shell only) says whether a barrel may change the pellet count: a
+  Blunderbuss Bell on a rifle doesn't double its bullets.
+- **The "fits nowhere" message** explains the real reason: if a socket's own rules take the part, it's the build's limit
+  ("Too heavy: 10.8 kg; the Pistol Grip can't carry more than 10 kg."); otherwise the refusal of an empty socket of its
+  type first, judged against the receiver that socket hangs under. (The bug report's screenshot: a Standard Barrel
+  dropped on a Stampede under a Thumper chain gun on a Pistol Grip was refused with the Thumper's bore. The real
+  refusal was the weight, 7.9 + 0.35 kg over the old 8 kg cap; the message blamed the first barrel socket it looked at.
+  Now barrels aren't typed, the merged Pistol Grip carries 5 kg (10 at most) and the barrels go on.)
+- **Saves.** Builds only gain options: every old build loads unchanged (old part files' barrel `"bores"` only say what
+  the barrel is drawn for). Servers validate with the same rules (protocol 38).
 
 ### Graph rules (BuildRules.cs)
 
@@ -107,12 +145,12 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | A socket can limit what it takes | "Hellwheel Rotary Receiver's barrel_1 socket takes barrels only, not splitters." |
 | A build starts from a grip (or a hilt) | "Rifle Grip is a grip you build on: start a new build with it instead." |
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
-| Bores must match the receiver | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
+| Feeds and ammo must match the receiver's bore (barrels, splitters and muzzles fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
 | Actions: belts and hoppers need something that pulls them | "Belt Box needs auto, chain or rotary action; the Triad Burst Receiver is burst." |
 | Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
-| Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 9.1 kg; the Pistol Grip can't carry more than 8 kg." |
+| Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 10.8 kg; the Pistol Grip can't carry more than 10 kg." |
 | Shared feed ammo must fit the feed | "00 Buckshot is made for shell rounds; the Manifold Hopper feeds pistol or rifle rounds." |
 | Shared feed capacity and bores | "Workhorse Receiver needs a feed (the Manifold Hopper can't feed it: it feeds 3 receivers at most)." |
 | Melee and gun parts don't mix | "Wooden Handle is a hilt you build a melee weapon on: start a melee build with it instead." |
@@ -138,7 +176,7 @@ and the same muzzle positions, and the self-test checks this by assembling every
    splitter's `spreadMult` multiplies its outputs' spread (Y 1.0, Over-Under 0.85, Trident 0.8, Peacock 0.75, Party
    Tray 0.7, Hydra 0.6). Pellets are per barrel, so a split shotgun really fires twice the pellets at half the damage
    each. Damage comes from **damage multipliers** and **receiver upgrades** instead.
-3. **Combine the receivers** by the grip's fire style (**fixed by the grip**, see below).
+3. **Combine the receivers** by the build's fire style (the Chain fire checkbox, see below).
 4. **The grip and what's on it:** grip, stock, foregrip, optic and utility parts, applied once to the whole weapon.
 5. **Weight against the grip's carry weight** (**proposed**; the carry weight is the grip's plus every weight-relief
    part's `"carry"`): mobility `-0.012/kg`, and `-0.03/kg` over the carry weight; ADS time `+0.008 s/kg` (+0.02 over); draw time `+0.03 s/kg` (+0.05 over); recoil times
@@ -146,9 +184,9 @@ and the same muzzle positions, and the self-test checks this by assembling every
    is slow however light it is).
 6. **Clamp** everything into the ranges weapon files allow (mobility 0.4-1.2 for builds).
 
-### Several receivers (the grip decides)
+### Several receivers: volley or chain fire
 
-| | Volley (default) | Rotate |
+| | Volley (Chain fire off) | Chain fire (on; "rotate" in files and saves) |
 | --- | --- | --- |
 | A trigger pull | Fires every receiver at once | Fires the next receiver in turn |
 | Fire rate | The slowest receiver's (they are linked) | The receivers' rates add up (max 3000 rpm) |
@@ -157,9 +195,35 @@ and the same muzzle positions, and the self-test checks this by assembling every
 | Trigger | The strictest: semi beats burst beats auto | Same |
 | Reload | The longest feed, plus 0.2-0.35 s per extra receiver (the grip sets it); every feed is swapped at once | Same |
 
-**Grips (decided: one fixed style each).** Volley: Pistol Grip, Rifle Grip, Briefcase, Chainsaw Grip, Mule Frame,
-Gantry Rig, Push Cart. Rotate: Competition Pistol Grip, Tactical Rifle Grip, Steering Wheel, Exo Harness. The workbench
-shows the style next to the grip and in the stats panel; picking another grip picks its style.
+### Grips and Chain fire (2026-10-23)
+
+**One grip per slot count, and a checkbox.** Every multi-receiver build has a **Chain fire** checkbox in the build
+panel (off = volley, all together; on = the receivers take turns, one per shot). It is saved with the build (the style
+field of its text: `Name|volley|...` or `Name|rotate|...`; `grip` or anything else = the grip's default), one undo step,
+kept when you change grip, and validated by the server like the rest of the build. A grip file's `"fireStyle"` is only
+the default for a new build (Steering Wheel and Exo Harness default to chain fire, the rest to volley); standard build
+files may say `"chainFire": true/false`.
+
+The chain-fire twins merged: **Competition Pistol Grip -> Pistol Grip**, **Tactical Rifle Grip -> Rifle Grip**
+(`WeaponBuild.Renamed`). The merged grips keep the larger carry weight (Pistol Grip 5 kg, Rifle Grip 12 kg) and gained the
+twins' utility socket, so every old build on them loads complete, with Chain fire on (their saves say `rotate`).
+
+**Slot counts 1 to 9.** The gap between the 3-slot Pistol Grip and the 9-slot Rifle Grip is filled, each a little
+heavier and slower to handle than the last:
+
+| Slots | Grip | Tier | Carry | Weight | Mobility | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | Service Pistol / Service Rifle / Sport Rifle Grip | common / uncommon | 4 / 8 / 10 kg | | | first tier |
+| 2 | **Double-Tap Grip** | rare | 4.5 kg | 0.42 kg | | one-handed, side by side |
+| 3 | Pistol Grip | rare | 5 kg | 0.4 kg | | one-handed |
+| 4 | **Quad Rack Grip** | rare | 7 kg | 0.7 kg | x0.99 | 2 over 2, stock and foregrip |
+| 5 | **Penta Rack Grip** | rare | 8 kg | 0.8 kg | x0.98 | 3 below, 2 above |
+| 6 | **Hex Rack Grip** (also Mule Frame, Chainsaw Grip) | rare | 9 kg | 0.85 kg | x0.98 | shared-feed socket |
+| 7 | **Septet Rack Grip** | epic | 10 kg | 0.9 kg | x0.97 | third tier, shared feed |
+| 8 | **Octet Rack Grip** (also Steering Wheel) | epic | 11 kg | 0.95 kg | x0.97 | shared feed |
+| 9 | Rifle Grip | epic | 12 kg | 1.0 kg | | shared feed |
+
+The grip picker lists grips by slot count.
 
 ### Damage multipliers and receiver upgrades
 
@@ -244,8 +308,17 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   search box and category chips, 3D icons (rendered once into textures and cached, `PartThumbs`), a tooltip with what
   the part does. A **Show incompatible parts** checkbox (saved in `settings.txt` as `wb_show_incompatible`, off by
   default) decides what's listed: off, only parts that fit somewhere on the build and have a spare copy (a "(N hidden)"
-  hint); on, every part you own, the rest dimmed with a short reason in the tooltip ("needs a shell bore barrel socket",
-  or "none spare" when every copy is already on the build) and bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`). Middle: the gun large
+  hint); on, every part you own, the rest dimmed with a short reason in the tooltip ("needs a shell bore feed socket",
+  or "none spare" when every copy is already on the build) and bouncing back if dropped. The chip counts follow the toggle and the search (`BenchInventory`).
+  With the toggle off, **whole categories hide** (no chip, no group header) when nothing you own in them could go on
+  the build right now: the same per-part check as the list (a free *or occupied* socket whose rules take it, since a
+  swap counts, plus a spare copy). An empty grip shows no Feed, Ammo, Barrel or Splitter until a receiver is fitted
+  (barrels, splitters and muzzles fit every receiver but still hang off one; feeds and ammo must match its bore), and a
+  grip without a stock socket (Pistol Grip) shows no Stock. They come back the moment the build changes. A chosen chip
+  whose category hides falls back to All, and clicking an empty socket row whose category is hidden says so instead of
+  opening an empty list. With the toggle on every category you own a part of is shown; categories you own none of
+  (a run's stock) stay hidden either way. Visibility is worked out once per build/stock/toggle change, each part's fit
+  checked once (self-test section "Workbench hidden categories"). Middle: the gun large
   (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
   build needs, red on missing parts, orange on the selection. Right: the build as a **linear list** (Grip > Receiver(s) >
   Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's
@@ -260,6 +333,11 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   plugged into the old part moves onto the new one where it has the same socket and still fits (a swapped barrel keeps
   its muzzle device; a swapped receiver keeps barrel, feed and ammo of its bore); the rest goes back to your parts.
   Drag a part off the gun (or a row off the list) to take it off, or onto another socket to move it with its parts.
+  **Double-click** a part in the build list or on the gun to take it off, back to your parts (2026-10-23). What's plugged
+  into it comes off with it (a receiver brings its barrel, feed and ammo), the same as dragging it off, and one Undo puts
+  the whole assembly back: re-homing the children elsewhere would move parts you didn't touch. The grip can't come off
+  (Change grip); double-click on an empty socket row does nothing. Double-click in the parts inventory still auto-places,
+  and double-click on empty space in the view resets the camera.
 - **Fast.** Double-click a part: it goes to its best free socket (needed ones first). **Auto-complete** (A) fills every
   empty needed socket with parts you have (the rarest that leads to a complete build first), as one undo step.
   Ctrl+Z / Ctrl+Y (or Ctrl+Shift+Z) undo and redo (64 steps), Del takes the selected part off, C copies the selected
@@ -431,15 +509,15 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 126 parts
+## The part set: 142 parts
 
 Milestone 1's 75 parts, 48 from milestone 2 and the three one-receiver grips of the workbench rework. By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (17) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip | Pistol Grip (3, volley), Competition Pistol Grip (3, rotate), Briefcase (4, volley, hip fire), Chaingun Handle, **Mule Frame (6, volley, 16 kg)** | Rifle Grip (9, volley), Tactical Rifle Grip (9, rotate), Steering Wheel (8, rotate), **Exo Harness (12, rotate, 30 kg)** | Chainsaw Grip (6, volley), **Gantry Rig (16, volley, 48 kg)** | Push Cart (16, volley, a real cart) |
-| Receiver (11) | Plinker, Stampede, Workhorse, Farmhand Pump | Longreach Bolt, Triad Burst | Bucket Launcher, Gravedigger Auto | Hellwheel Rotary, Thumper Chain Gun | Sparkplug Energy | |
+| Grip (21) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
+| Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
 | Feed (17) | Box, Stick, Shell Tube, Single Breech | Extended, Heavy Box | Drum, Shell Drum, Energy Cell, **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
@@ -466,9 +544,9 @@ weight-relief parts (`"carry"`) raise what any grip carries, so the huge guns ar
 | Rounds (proposed) | What drops (part tiers) | Frames you can expect | What a build looks like |
 | --- | --- | --- | --- |
 | 1-2 | common 85%, uncommon 15% | Service Pistol Grip (4 kg), Service Rifle Grip (8 kg), Sport Rifle Grip (10 kg): **one receiver each** | the start builds: Wall Rifle, Wall Pistol, a Machete |
-| 3-7 | + rare 8% | + Pistol Grip (3 receivers), Competition Pistol Grip, Briefcase | the first two- and three-receiver guns, a Y-splitter shotgun, first upgrades |
+| 3-7 | + rare 8% | + Double-Tap (2), Pistol Grip (3), Quad / Penta / Hex Rack (4-6), Briefcase | the first two- to six-receiver guns, a Y-splitter shotgun, first upgrades |
 | 8-14 | rare 24%, epic 6% | + **Mule Frame (16 kg, 6)**, Shoulder Harness | three to six receivers, a Manifold Hopper, Gas Overclock |
-| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Rifle Grip and Tactical Rifle Grip (9), Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
+| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Septet / Octet Rack (7, 8), Rifle Grip (9), Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
 | 25+ | legendary 17-28%, wonder 5-12% | + **Gantry Rig (48 kg, 16)**, Anti-Grav Coil, the Push Cart | broken, silly, sixteen receivers (Gantry Sixteen, Shopping Spree) |
 
 The numbers live in `Parts/Tables/DropTables.json` (format `call-of-slop-drops/1`): part tiers by round, the chance a
@@ -494,16 +572,17 @@ The mystery box gives **complete builds only** (decided). They live in `Parts/Bu
 
 `source` says where it shows up: `box` (mystery box), `wall` (wall weapon), `start` (a run's starting gear). Every file
 must assemble into a complete, legal build with today's parts, or it's refused with the reason (self-test). The
-workbench lists them under **Standard builds** and loads one as a preset into the editor. The 25 shipped:
+workbench lists them under **Standard builds** and loads one as a preset into the editor. An optional `"chainFire": true`
+(or false) sets the Chain fire checkbox; without it the build uses the grip's default. The 30 shipped:
 
 | Tier | Guns | Melee |
 | --- | --- | --- |
 | Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall): all on the one-receiver Service grips | Machete (start, box) |
-| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip | Nail Bat, Fire Axe |
-| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip) | Sledgehammer, Frying Pan |
-| Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, rotate, ammo can manifold) | Chainsaw Sword |
-| Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack | Rocket Katana |
-| Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter | The Codfather (a frozen fish on a rod) |
+| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip; Kingpin Hand Cannon (a heavy-round revolver, its Long Barrel sized down) | Nail Bat, Fire Axe |
+| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip), Double-Tap Twins (chain fire), Longbow Marksman | Sledgehammer, Frying Pan |
+| Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, chain fire, ammo can manifold) | Chainsaw Sword |
+| Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack, Hammerfall Cannon (autocannon) | Rocket Katana |
+| Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol | The Codfather (a frozen fish on a rod) |
 
 ## Weapon slots: 2 -> 4 (decided: an on-map upgrade, per run)
 
@@ -599,7 +678,7 @@ range; DPS = damage per shot x shots per second, every projectile landing).
 | **Nine Lives**: nine Workhorses with stub barrels, fixed stock | Rifle Grip | 9 / 9 | 234 (9 x 26) | 600 auto | 20 | 3.9 s | 0.67 | 2340 |
 | **Twin Splitter Shotgun**: Farmhand Pump, Y-Splitter, two Scattermouths, buckshot | Rifle Grip | 1 / 2 | 112 (2 x 8 x 7) | 70 pump | 6 | 3.0 s | 0.95 | 131 |
 | **Belt-Fed Chaingun**: Thumper, Big Iron, Belt Box, .50 BMG, chaingun handle | Rifle Grip | 1 / 1 | 85 | 450 (0.4 s spool) | 150 | 6.0 s | 0.86 | 637 |
-| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, 5.56 | Tactical Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
+| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, 5.56 | Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
 | **Lumberjack**: six Gravedigger auto shotguns, shell drums, buckshot | Chainsaw Grip | 6 / 6 | 672 (6 x 8 x 14) | 260 auto | 20 | 5.6 s | 0.40 | 2912 |
 | **Shopping Spree**: sixteen Stampede SMG receivers (hip fire only) | Push Cart | 16 / 16 | 320 (16 x 20) | 900 auto | 20 | 4.9 s | 0.40 | 4800 |
 | **Party Platter**: Workhorse, Party Tray of four Tridents, twelve stub barrels | Rifle Grip | 1 / 12 | 26 (12 x 2.2: conserved) | 335 auto | 75 | 3.4 s | 0.87 | 145 |

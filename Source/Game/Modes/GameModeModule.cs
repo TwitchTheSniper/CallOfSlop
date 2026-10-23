@@ -77,6 +77,12 @@ public abstract class GameModeModule
     /// <summary>The 10-minute clock applies ("... minutes max" in the goal text).</summary>
     public virtual bool HasTimeLimit => true;
 
+    /// <summary>
+    /// The match never ends (Test Range): <see cref="Game.EndMatch"/> refuses, so there is no results screen, map vote,
+    /// return to the lobby or map change; the HUD shows no clock. Combine with no <see cref="ScoreRule"/> and no time limit.
+    /// </summary>
+    public virtual bool Endless => false;
+
     /// <summary>How the score limit scales with the player count (ScoreLimits.cs), or null for a mode without a score limit.</summary>
     public virtual ScoreLimits.Rule? ScoreRule => null;
 

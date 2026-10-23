@@ -391,6 +391,21 @@ public sealed class BenchModel
         Changed();
     }
 
+    /// <summary>
+    /// The "Chain fire" checkbox: on = the receivers fire in sequence, one per shot; off = a volley, all together. Stored
+    /// on the build (saved in its text), one undo step. False when nothing changed.
+    /// </summary>
+    public bool SetChainFire(bool on)
+    {
+        var want = on ? FireStyle.Rotate : FireStyle.Volley;
+        if (Build.Style == want && Build.StyleChoice != null)
+            return false;
+        PushUndo();
+        Build.StyleChoice = want;
+        Changed();
+        return true;
+    }
+
     /// <summary>A new stock (a run's parts changed): recomputes what's missing.</summary>
     public void SetStock(BenchStock stock)
     {
@@ -590,28 +605,52 @@ public sealed class BenchModel
         return false;
     }
 
-    /// <summary>The reason <paramref name="part"/> fits nowhere: the first socket of its type's refusal, or a generic line.</summary>
+    /// <summary>
+    /// The reason <paramref name="part"/> fits nowhere. When a socket's own rules take it, the reason is what the whole
+    /// build says (weight, barrel or part limits; you have none left), not a socket elsewhere. Otherwise the refusal of the
+    /// best socket of its type: empty ones first, each judged against the receiver it hangs under. Or a generic line.
+    /// </summary>
     public string WhyNowhere(PartDef part)
     {
         if (part.IsRoot)
             return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : "A grip starts a new weapon (New weapon, or Change grip).";
-        foreach (var s in Spots)
-            if (s.Socket.Type == part.Mount && BuildRules.SocketWhy(s.Parent, s.Socket, part) is { } why)
-                return why;
+        if (NowhereSpot(part, out var socketOk) is var i and >= 0)
+            return socketOk ? WhyNot(i, part) ?? "It doesn't fit there." : BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) ?? "It doesn't fit there.";
         return $"This build has no {part.Mount} socket for it.";
     }
 
     /// <summary>
-    /// <see cref="WhyNowhere"/> as a short phrase for the inventory tooltip ("needs a 9mm bore barrel socket",
+    /// The spot that best explains why <paramref name="part"/> can't go on: one whose socket rules take it (empty first:
+    /// <paramref name="socketOk"/> true, so the build's limits are the reason), else one of its mount type that refuses it
+    /// (empty first). -1 if the build has no socket of its type.
+    /// </summary>
+    private int NowhereSpot(PartDef part, out bool socketOk)
+    {
+        socketOk = false;
+        for (var pass = 0; pass < 2; pass++)
+            for (var i = 0; i < Spots.Count; i++)
+                if (Spots[i].Socket.Type == part.Mount && (pass == 1 || Spots[i].Child == null) && BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) == null)
+                {
+                    socketOk = true;
+                    return i;
+                }
+        for (var pass = 0; pass < 2; pass++)
+            for (var i = 0; i < Spots.Count; i++)
+                if (Spots[i].Socket.Type == part.Mount && (pass == 1 || Spots[i].Child == null))
+                    return i;
+        return -1;
+    }
+
+    /// <summary>
+    /// <see cref="WhyNowhere"/> as a short phrase for the inventory tooltip ("needs a shell bore feed socket",
     /// "no muzzle socket on this build"). Allocates: cache it (see <see cref="BenchInventory"/>).
     /// </summary>
     public string WhyNowhereShort(PartDef part)
     {
         if (part.IsRoot)
             return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
-        foreach (var s in Spots)
-            if (s.Socket.Type == part.Mount && BuildRules.SocketWhyShort(s.Parent, s.Socket, part) is { } why)
-                return why;
+        if (NowhereSpot(part, out var socketOk) is var i and >= 0)
+            return socketOk ? "fits a socket, but not on this build as it is" : BuildRules.SocketWhyShort(Spots[i].Parent, Spots[i].Socket, part) ?? "doesn't fit";
         return $"no {part.Mount} socket on this build";
     }
 
@@ -760,6 +799,33 @@ public sealed class BenchModel
         node.Detach();
         Changed();
         return null;
+    }
+
+    /// <summary>
+    /// Double-click on a part in the build list (row <paramref name="row"/> of <see cref="Rows"/>): it comes off, back to
+    /// your parts, with everything plugged into it (a receiver brings its barrel, feed and ammo: the same as dragging it
+    /// off, and one undo step puts the whole assembly back). Returns why not (the grip, an empty socket row), or null.
+    /// <paramref name="removed"/> is the part that came off.
+    /// </summary>
+    public string? DoubleClickRow(int row, out BuildNode? removed)
+    {
+        removed = null;
+        if ((uint)row >= (uint)Rows.Count || Rows[row] is not { Kind: BenchRowKind.Part, Node: { } node })
+            return "That's an empty socket: drag a part onto it.";
+        var why = Remove(node);
+        removed = why == null ? node : null;
+        return why;
+    }
+
+    /// <summary>Double-click on a part on the gun (spot <paramref name="spot"/>, its socket): as <see cref="DoubleClickRow"/>.</summary>
+    public string? DoubleClickSpot(int spot, out BuildNode? removed)
+    {
+        removed = null;
+        if ((uint)spot >= (uint)Spots.Count || Spots[spot].Child is not { } node)
+            return "That socket is empty: drag a part onto it.";
+        var why = Remove(node);
+        removed = why == null ? node : null;
+        return why;
     }
 
     /// <summary>Moves <paramref name="node"/> (with its parts) into spot <paramref name="spot"/>, swapping out what's there. Returns why not, or null.</summary>
@@ -939,8 +1005,11 @@ public sealed class BenchModel
 /// <summary>
 /// The workbench's part inventory as a filtered list (left panel): owned parts of the editing kind, narrowed by the
 /// category chip and the search, and, unless "Show incompatible parts" is on, only the parts that fit somewhere on the
-/// build and have a spare copy. Parts shown that can't be fitted carry a short reason (incompatible, or "none spare"). Rebuilt only when its inputs change: calling
-/// <see cref="Refresh"/> every frame with the same inputs allocates nothing.
+/// build and have a spare copy. Parts shown that can't be fitted carry a short reason (incompatible, or "none spare").
+/// With the toggle off a whole category disappears (no chip, no group) when none of its parts could go on the build now
+/// (a stock on a grip without a stock socket, feeds before a receiver is fitted); a chosen chip that disappears falls
+/// back to All (<see cref="Filter"/>). Rebuilt only when its inputs change: calling <see cref="Refresh"/> every frame
+/// with the same inputs allocates nothing, and each part's fit is checked once per rebuild.
 /// </summary>
 public sealed class BenchInventory
 {
@@ -973,14 +1042,34 @@ public sealed class BenchInventory
     /// <summary>Parts left out by the toggle (search applied): incompatible ones and ones with none spare. "N hidden" hint.</summary>
     public int Hidden { get; private set; }
 
+    /// <summary>
+    /// The category actually listed (-1 = all): the requested one, or -1 when that category is hidden on this build.
+    /// The workbench writes it back to its chip so a hidden choice falls back to All.
+    /// </summary>
+    public int Filter { get; private set; } = -1;
+
     /// <summary>The reason for a compatible part with no spare copy (every one owned is already on the build).</summary>
     public const string NoneSpare = "none spare";
 
     private BenchModel? _model;
     private (int Version, int Stock, int Filter, string Search, bool Melee, bool ShowAll) _key = (-1, 0, 0, "", false, false);
 
+    // Per category: something in it can be listed with the toggle as it is (search and chip ignored).
+    private readonly bool[] _shown = new bool[Enum.GetValues<PartCategory>().Length];
+
+    // The owned parts of the editing kind with their fit, worked out once per rebuild.
+    private readonly List<(PartDef Part, bool Compatible, int Free)> _pool = new();
+
     /// <summary>Forgets the cached inputs (part files reloaded in place).</summary>
     public void Invalidate() => _model = null;
+
+    /// <summary>
+    /// Whether category <paramref name="c"/> has a chip and a group at all as of the last <see cref="Refresh"/>: with
+    /// "Show incompatible parts" off, some part you own in it fits a free or occupied socket of the build (swapping
+    /// counts, the same check as the parts themselves) and has a spare copy; with it on, you own one. The search doesn't
+    /// hide a category.
+    /// </summary>
+    public bool Shows(PartCategory c) => (uint)c < (uint)_shown.Length && _shown[(int)c];
 
     /// <summary>
     /// Rebuilds the list from <paramref name="all"/> if the build, stock, filter (-1 = all), search, kind or toggle
@@ -1001,17 +1090,29 @@ public sealed class BenchInventory
         Cats.Clear();
         CatCounts.Clear();
         CatLabels.Clear();
+        _pool.Clear();
+        Array.Clear(_shown);
         Hidden = 0;
-        var total = 0;
+        // Each part's fit once; the categories that keep a chip follow from it.
         foreach (var p in bm.Stock.Parts(all))
         {
             if (p.IsRoot || p.IsMeleePart != melee)
                 continue;
+            var compatible = bm.FitsAnywhere(p);
+            var free = bm.Stock.Free(p, bm.Build);
+            _pool.Add((p, compatible, free));
+            if (showIncompatible || (compatible && free > 0))
+                _shown[(int)p.Category] = true;
+        }
+        if (filter >= 0 && !Shows((PartCategory)filter))
+            filter = -1; // the chosen category is hidden on this build: show them all
+        Filter = filter;
+        var total = 0;
+        foreach (var (p, compatible, free) in _pool)
+        {
             if (search.Length > 0 && !p.Name.Contains(search, StringComparison.OrdinalIgnoreCase)
                 && !PartDef.CategoryName(p.Category).Contains(search, StringComparison.OrdinalIgnoreCase))
                 continue;
-            var compatible = bm.FitsAnywhere(p);
-            var free = bm.Stock.Free(p, bm.Build);
             if ((!compatible || free <= 0) && !showIncompatible)
             {
                 Hidden++;
@@ -1034,7 +1135,7 @@ public sealed class BenchInventory
             Fits.Add(compatible && free > 0);
             Why.Add(!compatible ? bm.WhyNowhereShort(p) : free <= 0 ? NoneSpare : null);
         }
-        // The chosen chip stays visible even when nothing in it is listed now (so it can be switched off).
+        // The chosen chip stays visible when only the search empties it (so it can be switched off).
         if (filter >= 0 && !Cats.Contains((PartCategory)filter))
         {
             Cats.Add((PartCategory)filter);

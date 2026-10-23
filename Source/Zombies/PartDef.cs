@@ -145,6 +145,9 @@ public sealed class ReceiverInfo
     /// <summary>Rotary receivers: fire rate per fitted barrel (rpm = this x barrels). 0 = use <see cref="Rpm"/>.</summary>
     public int RpmPerBarrel;
 
+    /// <summary>This receiver's own barrel size [width, height, length] in place of its bore class's (null = the class's; Parts/_Registry.json).</summary>
+    public System.Numerics.Vector3? BarrelScale;
+
 }
 
 /// <summary>How a grip with several receivers fires them (proposed, open for the user; see the design doc).</summary>
@@ -275,8 +278,17 @@ public sealed class PartDef
     /// <summary>The socket type this part plugs into ("" for root grips: the weapon is built on them).</summary>
     public string Mount = "";
 
-    /// <summary>Calibre classes it works with (empty = any). Barrels, splitters, feeds, ammo and muzzles must match the receiver's bore.</summary>
+    /// <summary>
+    /// Calibre classes it works with (empty = any). Feeds and ammo must match the receiver's bore; barrels, splitters and
+    /// muzzle devices fit every receiver (on a barrel an old "bores" list only says what it was drawn for, see <see cref="SizedFor"/>).
+    /// </summary>
     public string[] Bores = [];
+
+    /// <summary>
+    /// Barrels: the bore class its model is drawn for ("rifle" unless the file says "sizedFor"). Under a receiver of
+    /// another bore the model is scaled by the ratio of the two classes' barrel scales (see <see cref="BuildRules.BarrelScale"/>).
+    /// </summary>
+    public string SizedFor = "rifle";
 
     /// <summary>Feeds and splitters can require particular actions of their receiver (a belt needs something automatic to pull it).</summary>
     public ActionKind[] RequiresAction = [];

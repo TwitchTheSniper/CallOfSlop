@@ -25,6 +25,28 @@ public sealed class PartRegistry
     /// <summary>Every calibre class, in registry order.</summary>
     public required string[] Bores;
 
+    /// <summary>
+    /// How each calibre class adapts a barrel fitted under a receiver of that bore (barrels fit every receiver; the
+    /// receiver decides the size and how much the barrel's own modifiers count). Bores the file says nothing about get
+    /// <see cref="BoreClass.Default"/>.
+    /// </summary>
+    public readonly Dictionary<string, BoreClass> Classes = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>The barrel adaptation of <paramref name="bore"/> (the built-in table's, else <see cref="BoreClass.Default"/>).</summary>
+    public BoreClass ClassOf(string bore) =>
+        Classes.TryGetValue(bore, out var c) ? c : BuiltInClasses.TryGetValue(bore, out var b) ? b : BoreClass.Default;
+
+    /// <summary>The barrel adaptation table the game ships (also in Parts/_Registry.json): pistol smaller, heavy bigger.</summary>
+    public static readonly Dictionary<string, BoreClass> BuiltInClasses = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["pistol"] = new(new Vector3(0.8f, 0.8f, 0.7f), 0.85f, false),
+        ["rifle"] = new(Vector3.One, 1f, false),
+        ["heavy"] = new(new Vector3(1.35f, 1.35f, 1.3f), 1.15f, false),
+        ["shell"] = new(new Vector3(1.5f, 1.5f, 1f), 1f, true),
+        ["launcher"] = new(new Vector3(2.7f, 2.7f, 1.3f), 0.5f, false),
+        ["energy"] = new(new Vector3(1f, 1f, 1.2f), 1f, false),
+    };
+
     /// <summary>A line about each socket type and bore (for --check-parts, the docs and tools); may be empty.</summary>
     public readonly Dictionary<string, string> About = new(StringComparer.OrdinalIgnoreCase);
 
@@ -51,6 +73,8 @@ public sealed class PartRegistry
         };
         foreach (var c in Enum.GetValues<PartCategory>())
             r._categories[c] = (PartFile.BuiltInMount(c), PartDef.BuiltInCategoryName(c));
+        foreach (var (k, v) in BuiltInClasses)
+            r.Classes[k] = v;
         return r;
     }
 
@@ -63,6 +87,7 @@ public sealed class PartRegistry
             throw new WeaponFileException($"{source}: the registry is one JSON object {{ \"socketTypes\": [...], \"bores\": [...], \"categories\": [...] }}");
         string[]? sockets = null, bores = null;
         var about = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var classes = new Dictionary<string, BoreClass>(StringComparer.OrdinalIgnoreCase);
         var cats = new Dictionary<PartCategory, (string Mount, string Display)>();
         JsonElement? catList = null;
         foreach (var p in root.EnumerateObject())
@@ -71,7 +96,7 @@ public sealed class PartRegistry
                 case "format": WeaponFile.CheckFormat(p.Value, "call-of-slop-part-registry/", Format, $"{source}: \"format\""); break;
                 case "about": WeaponFile.Text(p.Value, $"{source}: \"about\""); break;
                 case "sockettypes": sockets = Names(p.Value, $"{source}: \"socketTypes\"", about); break;
-                case "bores": bores = Names(p.Value, $"{source}: \"bores\"", about); break;
+                case "bores": bores = Names(p.Value, $"{source}: \"bores\"", about, classes); break;
                 case "categories": catList = p.Value.Clone(); break;
                 default: throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" (a registry has format, about, socketTypes, bores, categories)");
             }
@@ -121,13 +146,19 @@ public sealed class PartRegistry
         var r = new PartRegistry { SocketTypes = sockets, Bores = bores, Source = source };
         foreach (var (k, v) in about)
             r.About[k] = v;
+        foreach (var (k, v) in classes)
+            r.Classes[k] = v;
         foreach (var (k, v) in cats)
             r._categories[k] = v;
         return r;
     }
 
-    /// <summary>A list of names: "name" strings or {"name", "about"} objects (lower-case letters, digits and _).</summary>
-    private static string[] Names(JsonElement e, string where, Dictionary<string, string> about)
+    /// <summary>
+    /// A list of names: "name" strings or {"name", "about"} objects (lower-case letters, digits and _). Bores
+    /// (<paramref name="classes"/> given) may also say how they adapt barrels: "barrelScale" [width, height, length],
+    /// "barrelStrength" (how much a barrel's modifiers count) and "barrelPellets" (whether barrels may change pellets).
+    /// </summary>
+    private static string[] Names(JsonElement e, string where, Dictionary<string, string> about, Dictionary<string, BoreClass>? classes = null)
     {
         if (e.ValueKind != JsonValueKind.Array)
             throw new WeaponFileException($"{where}: expected a list like [\"barrel\", {{ \"name\": \"bayonet\", \"about\": \"...\" }}]");
@@ -138,15 +169,38 @@ public sealed class PartRegistry
             if (x.ValueKind == JsonValueKind.Object)
             {
                 string? n = null, a = "";
+                Vector3? scale = null;
+                float? strength = null;
+                bool? pellets = null;
                 foreach (var p in x.EnumerateObject())
                     switch (p.Name.ToLowerInvariant())
                     {
                         case "name": n = WeaponFile.Text(p.Value, where); break;
                         case "about": a = WeaponFile.Text(p.Value, where); break;
-                        default: throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" (known: name, about)");
+                        case "barrelscale" when classes != null: scale = BoreClass.ReadScale(p.Value, $"{where}: \"barrelScale\""); break;
+                        case "barrelstrength" when classes != null:
+                            strength = WeaponFile.Number(p.Value, $"{where}: \"barrelStrength\"");
+                            if (strength is < 0 or > 3)
+                                throw new WeaponFileException($"{where}: \"barrelStrength\" must be between 0 and 3 (1 = the barrel's modifiers as written)");
+                            break;
+                        case "barrelpellets" when classes != null:
+                            pellets = p.Value.ValueKind switch
+                            {
+                                JsonValueKind.True => true,
+                                JsonValueKind.False => false,
+                                _ => throw new WeaponFileException($"{where}: \"barrelPellets\" is true or false"),
+                            };
+                            break;
+                        default:
+                            throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" (known: name, about{(classes != null ? ", barrelScale, barrelStrength, barrelPellets" : "")})");
                     }
                 name = n ?? throw new WeaponFileException($"{where}: an entry needs a \"name\"");
                 about[name] = a;
+                if (classes != null && (scale != null || strength != null || pellets != null))
+                {
+                    var d = PartRegistry.BuiltInClasses.TryGetValue(name, out var bi) ? bi : BoreClass.Default;
+                    classes[name] = new BoreClass(scale ?? d.Scale, strength ?? d.Strength, pellets ?? d.Pellets);
+                }
             }
             else
                 name = WeaponFile.Text(x, where);
@@ -157,6 +211,29 @@ public sealed class PartRegistry
             names.Add(name);
         }
         return names.ToArray();
+    }
+}
+
+/// <summary>
+/// How a calibre class adapts a barrel hung under a receiver of that bore (docs/zombies/WEAPON-BUILDER.md, "Barrels and
+/// receivers"): <see cref="Scale"/> sizes the barrel's model (width, height, length; 1 = as drawn for a rifle),
+/// <see cref="Strength"/> scales the barrel's own stat modifiers (a x1.4 range barrel at strength 0.5 gives x1.2), and
+/// <see cref="Pellets"/> says whether barrels may change the pellet count (only shotguns: a choke on a rifle shouldn't
+/// double its bullets).
+/// </summary>
+public readonly record struct BoreClass(Vector3 Scale, float Strength, bool Pellets)
+{
+    public static readonly BoreClass Default = new(Vector3.One, 1f, false);
+
+    /// <summary>Reads a [width, height, length] barrel scale (each 0.2 to 4).</summary>
+    public static Vector3 ReadScale(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() != 3)
+            throw new WeaponFileException($"{where}: expected [width, height, length], e.g. [0.8, 0.8, 0.7]");
+        var v = new Vector3(WeaponFile.Number(e[0], where), WeaponFile.Number(e[1], where), WeaponFile.Number(e[2], where));
+        if (v.X is < 0.2f or > 4f || v.Y is < 0.2f or > 4f || v.Z is < 0.2f or > 4f)
+            throw new WeaponFileException($"{where}: each scale must be between 0.2 and 4");
+        return v;
     }
 }
 

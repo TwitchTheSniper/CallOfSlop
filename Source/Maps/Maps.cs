@@ -362,6 +362,22 @@ public sealed partial class Map
         return null;
     }
 
+    /// <summary>Like <see cref="IsBlocked"/>, but building doors don't count (the nav graph ignores them: bots open doors).</summary>
+    private bool BlockedButForDoors(Vector3 feet)
+    {
+        const float r = World.PlayerRadius + 0.05f;
+        if (MathF.Abs(feet.X) > HalfX - r || MathF.Abs(feet.Z) > HalfZ - r || OnSteepGround(feet))
+            return true;
+        for (var i = 0; i < Solid.Count; i++)
+        {
+            var b = Solid[i];
+            if (!IsBuildingDoorBox(i) && feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
+                && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>Moves any spawn or waypoint that ended up inside geometry to the nearest free spot.</summary>
     public void Validate()
     {
@@ -383,6 +399,11 @@ public sealed partial class Map
             for (var i = 0; i < points.Count; i++)
             {
                 if (!BadSpot(points[i]))
+                    continue;
+                // A building's own nav points (doorways, stair ends) are where the nav graph's stair links start and end, and
+                // the nav ignores doors (bots open them): a shut door next to one must not move it away (that left stairs with
+                // no link, so bots reached the floor above only over railings, or not at all).
+                if (ReferenceEquals(points, Waypoints) && BuildingNavPoints.Contains(points[i]) && !BlockedButForDoors(points[i]))
                     continue;
                 var original = points[i];
                 var fixedPoint = NearestFree(original);

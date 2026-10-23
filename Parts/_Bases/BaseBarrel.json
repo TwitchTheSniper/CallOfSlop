@@ -5,7 +5,6 @@
   "name": "Base Barrel",
   "category": "barrel",
   "rarity": "common",
-  "bores": ["pistol", "rifle"],
   "weight": 0.35,
   "hand": [0, -0.03, -0.08],
   "muzzles": [[0, 0, -0.2]],

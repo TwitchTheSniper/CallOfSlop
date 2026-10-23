@@ -92,6 +92,7 @@ public static partial class SelfTest
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
             Section("Bots", CheckBots);
+            Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
             Section("Bot doors", CheckBotDoors); // SelfTestBotDoors.cs: bots open doors ahead, shut them behind / when holding, no spam; co-op enemies and zombies at doors
             Section("Bot stuck watch", CheckBotStuck); // SelfTestBotStuck.cs: stuck bots recover, then kill themselves (pit, wedge, holds, phases, log, Zombies, allocations)
@@ -136,6 +137,7 @@ public static partial class SelfTest
             Section("Mode state and matches", CheckModeMatches);
             Section("Mode modules", CheckModeModules); // SelfTestModeModules.cs: the mode registry, each module's rules and state, seeded bot matches per mode
             Section("Test tools", CheckTestTools); // SelfTestTestTools.cs: 0-bot matches and Kill yourself
+            Section("Test Range", CheckTestRange); // SelfTestTestRange.cs: the endless mode registers, and nothing ends its match or changes its map
             Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
             Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
             Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
@@ -164,7 +166,9 @@ public static partial class SelfTest
             Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
             Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
             Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
+            Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
             Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
+            Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
             Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
             Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
             Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
@@ -679,7 +683,7 @@ public static partial class SelfTest
             if (unreachable.Count > pairs / 4)
                 Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
             if (g.BuildMs > 3000)
-                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build");
+                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build (mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms)");
         }
         Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
 
@@ -742,7 +746,7 @@ public static partial class SelfTest
                 + (took >= 0 ? $"arrived in {took:0.0} s" : $"NOT there after {limit:0} s (ended {Vector3.Distance(bot.Position, to):0.0} m away)")
                 + $", stuck clock at the end {bot.Bot.StuckSecs:0.0} s, stuck self-kills {game.BotStuckKills}");
             if (took < 0)
-                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s");
+                Fail($"{name}: bot didn't reach a goal {route:0} m away within {limit:0} s (from {from} to {to}: ended at {bot.Position}, mode {bot.Bot.Mode}, path {bot.Bot.PathIdx}/{bot.Bot.PathLen}, target {bot.Bot.Target}, deaths {bot.Deaths}; last stuck log: {game.LastStuckLog})");
             if (game.BotStuckKills > 0)
                 Fail($"{name}: a bot walking a clear route killed itself as stuck ({game.LastStuckLog})");
         }

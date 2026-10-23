@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Quad Rack Grip",
+  "category": "grip",
+  "rarity": "rare",
+  "flavor": "Two over two on a short rifle rack. Four receivers, room for a stock.",
+  "weight": 0.7,
+  "hand": [0, -0.055, 0.05935602608679917],
+  "gripAngle": 12,
+  "frame": {"fireStyle": "volley", "hands": "two", "carry": 7, "mobility": 0.99, "ironHeight": 0.182, "support": [0, -0.01, -0.2]},
+  "sockets": [
+    {"name": "receiver_1", "type": "receiver", "pos": [-0.034, 0.012, 0]},
+    {"name": "receiver_2", "type": "receiver", "pos": [0.034, 0.012, 0]},
+    {"name": "receiver_3", "type": "receiver", "pos": [-0.034, 0.087, 0]},
+    {"name": "receiver_4", "type": "receiver", "pos": [0.034, 0.087, 0]},
+    {"name": "optic", "type": "optic", "pos": [0, 0.17, -0.02]},
+    {"name": "stock", "type": "stock", "pos": [0, 0.06, 0.12]},
+    {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.2]},
+    {"name": "utility", "type": "utility", "pos": [0.073, 0.03, -0.12]}
+  ],
+  "model": [
+    {"size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0594], "color": "polymer", "rot": [-12, 0, 0]},
+    {"size": [0.03, 0.01, 0.05], "pos": [0, -0.012, 0.01], "color": "black"},
+    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.012, 0.025], "color": "steel"},
+    {"size": [0.14, 0.012, 0.14], "pos": [0, 0.006, -0.02], "color": "gunmetal"},
+    {"size": [0.012, 0.162, 0.012], "pos": [-0.075, 0.081, 0.1], "color": "gunmetal"},
+    {"size": [0.012, 0.162, 0.012], "pos": [0.075, 0.081, 0.1], "color": "gunmetal"},
+    {"size": [0.16, 0.012, 0.03], "pos": [0, 0.164, 0.06], "color": "gunmetal"},
+    {"size": [0.04, 0.012, 0.16], "pos": [0, 0.164, -0.02], "color": "black"},
+    {"size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
+    {"size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black"},
+    {"size": [0.145, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"},
+    {"size": [0.006, 0.016, 0.006], "pos": [0, 0.178, -0.1], "color": "black", "tag": "irons"},
+    {"size": [0.022, 0.014, 0.006], "pos": [0, 0.178, 0.06], "color": "black", "tag": "irons"}
+  ]
+}

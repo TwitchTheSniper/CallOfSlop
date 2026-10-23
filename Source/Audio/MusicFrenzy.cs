@@ -412,7 +412,7 @@ public sealed partial class FrenzyLayer
     public void SetLevelTrim(int level, float gain)
     {
         if (level is >= 1 and <= 6)
-            Volatile.Write(ref _levelTrim[level], float.IsFinite(gain) ? Math.Clamp(gain, 0f, 4f) : 1f);
+            Volatile.Write(ref _levelTrim[level], float.IsFinite(gain) ? Math.Clamp(gain, 0f, AudioMixDefaults.MaxLevelGain) : 1f); // up to +50 dB: the music limiter holds it
     }
 
     internal float LevelTrim(int level) => Volatile.Read(ref _levelTrim[Math.Clamp(level, 1, 6)]);

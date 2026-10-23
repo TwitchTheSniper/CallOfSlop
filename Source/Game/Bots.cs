@@ -88,6 +88,8 @@ public sealed partial class BotBrain
     public int FollowNode = -1;
     public double FollowTime = -100;
     public int SlopeStalls; // times this bot made no progress up a slope while moving (self-test statistics)
+    public double SlopeStallAt = -100; // when that last happened (the stuck watch's cause, BotStuck.cs)
+    public bool GoalTrapped; // the planned goal is in a one-way spot (a pit): the path stops at its edge (BotMove.cs)
     public bool JumpNext;
     public double CrouchUntil;
     public double NextGlance, GlanceUntil;

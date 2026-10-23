@@ -4,7 +4,7 @@
   "category": "barrel",
   "rarity": "epic",
   "flavor": "Magnetic coils wrapped round an energy channel. Hits harder, reaches further.",
-  "bores": ["energy"],
+  "sizedFor": "energy",
   "weight": 0.8,
   "hand": [0, -0.03, -0.128],
   "muzzles": [[0, 0, -0.32]],

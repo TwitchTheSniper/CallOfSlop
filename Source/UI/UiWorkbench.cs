@@ -282,7 +282,7 @@ public sealed partial class Ui
     /// <summary>The build moved onto another grip (or hilt): receivers go into the same-numbered slots, the rest by socket name where it fits.</summary>
     private static WeaponBuild Regrip(WeaponBuild b, PartDef grip)
     {
-        var nb = new WeaponBuild(b.Name, grip); // the fire style comes with the grip
+        var nb = new WeaponBuild(b.Name, grip) { StyleChoice = b.StyleChoice }; // the Chain fire choice stays with the build
         if (b.Root != null)
             foreach (var (s, c) in b.Root.Children())
                 if (grip.Sockets.FirstOrDefault(x => x.Name == s.Name && x.Type == s.Type) is { } ns)
@@ -413,14 +413,14 @@ public sealed partial class Ui
 
     private void DrawGripPicker(float width, float height, float2 winPos, float2 winSize)
     {
-        var grips = Parts.All.Where(p => _wbMelee ? p.Hilt != null : p.Frame != null);
+        var grips = Parts.All.Where(p => _wbMelee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity); // by slot count: 1, 2, 3 ... 9 and the big frames
         ImGui.PushFont(default, 18);
         ImGuiSafe.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT" : "CHANGE THE GRIP") : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON" : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"));
         ImGui.PopFont();
         ImGuiSafe.TextColored(Dim, _wbPickKeep
             ? "Your parts move onto the new grip: receivers into the same-numbered slots, the rest where the new grip has the socket."
             : _wbMelee ? "The hilt is the handle: it sets the base damage, swing and reach. Heads and mods go on it next."
-            : "The grip is the root of the weapon: it sets how many receivers it holds, how they fire and how much it carries. First-tier grips hold one receiver; multi-receiver frames come later in a run.");
+            : "The grip is the root of the weapon: it sets how many receivers it holds and how much it carries (the build's Chain fire box picks volley or taking turns). First-tier grips hold one receiver; multi-receiver frames come later in a run.");
         if (Bm.Build.Root != null)
         {
             ImGui.SameLine();
@@ -468,7 +468,7 @@ public sealed partial class Ui
                 DlText(dl, new float2(x, y), cap == 1 ? White8 : Orange8, cap == 1 ? "1 RECEIVER SLOT" : $"{cap} RECEIVER SLOTS");
                 ImGui.PopFont();
                 y += 26 * _scale;
-                DlText(dl, new float2(x, y), Dim8, $"{(cap > 1 ? f.Style == FireStyle.Volley ? "Volley (all at once)" : "Rotate (taking turns)" : "Single receiver")}, {f.Hands}-handed");
+                DlText(dl, new float2(x, y), Dim8, $"{(cap > 1 ? f.Style == FireStyle.Volley ? "Volley or chain fire (checkbox)" : "Chain fire or volley (checkbox)" : "Single receiver")}, {f.Hands}-handed");
                 y += 18 * _scale;
                 DlText(dl, new float2(x, y), Dim8, $"Carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}{(g.Sockets.Any(s => s.Type == "hopper") ? ", shared feed" : "")}");
             }
@@ -572,6 +572,7 @@ public sealed partial class Ui
             ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build, or have none spare, are dimmed (hover one for why)."
                 : "Showing only parts that fit somewhere on this build and have a spare copy. Tick to see all your parts.");
         RefreshInventory();
+        _wbFilter = _inv.Filter; // a chosen category that just became hidden falls back to All
         if (!showAll && _inv.Hidden > 0)
         {
             ImGui.SameLine();
@@ -626,7 +627,8 @@ public sealed partial class Ui
             var rc = PartDef.RarityColor(p.Rarity);
             DlText(dl, new float2(p0.X + 70 * _scale, p0.Y + 4 * _scale), fits ? WbC8(rc) : WbC8(rc * 0.55f + new Vector3(0.2f)), p.Name);
             DlText(dl, new float2(p0.X + 70 * _scale, p0.Y + 23 * _scale), fits ? Dim8 : new ImColor8(105, 106, 114, 255),
-                p.Bores.Length > 0 ? $"{PartDef.RarityName(p.Rarity)} - {p.Bores[0]}{(p.Bores.Length > 1 ? "+" : "")}" : PartDef.RarityName(p.Rarity));
+                p.Bores.Length > 0 && BuildRules.BoreBound(p.Category) ? $"{PartDef.RarityName(p.Rarity)} - {p.Bores[0]}{(p.Bores.Length > 1 ? "+" : "")}"
+                : p.Receiver is { } pr ? $"{PartDef.RarityName(p.Rarity)} - {pr.Bore}" : PartDef.RarityName(p.Rarity));
             if (!Bm.Stock.IsUnlimited)
             {
                 var txt = free >= 0 && free < WbCountText.Length ? WbCountText[free] : $"x{free}";
@@ -795,7 +797,9 @@ public sealed partial class Ui
         if (_viewHovered && !_dragging && !_dragArmed)
         {
             var spot = _hoverSpot >= 0 ? Bm.Spots[_hoverSpot] : default;
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && _hoverSpot >= 0 && spot.Child != null)
+                WbDoubleClickOff(Bm.DoubleClickSpot(_hoverSpot, out var offSpot), offSpot, spot.Child.Part.Name); // double-click a part on the gun: it comes off
+            else if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
             {
                 if (_hoverSpot >= 0 && spot.Child != null)
                 {
@@ -838,9 +842,9 @@ public sealed partial class Ui
             var grip = b.Root.Part;
             DlText(dl, _viewMin + new float2(10 * _scale, 8 * _scale), WbC8(PartDef.RarityColor(grip.Rarity)), grip.Name);
             DlText(dl, _viewMin + new float2(10 * _scale, 26 * _scale), Dim8, b.IsMelee ? "melee weapon"
-                : $"{b.Receivers.Count}/{grip.ReceiverCapacity} receiver slot{(grip.ReceiverCapacity == 1 ? "" : "s")} - fires {b.Style.ToString().ToLowerInvariant()}");
+                : $"{b.Receivers.Count}/{grip.ReceiverCapacity} receiver slot{(grip.ReceiverCapacity == 1 ? "" : "s")}{(grip.ReceiverCapacity > 1 ? b.ChainFire ? " - chain fire" : " - volley" : "")}");
         }
-        DlText(dl, new float2(_viewMin.X + 10 * _scale, _viewMax.Y - 22 * _scale), new ImColor8(120, 122, 132, 255), "drag: turn - wheel: zoom - double-click: reset");
+        DlText(dl, new float2(_viewMin.X + 10 * _scale, _viewMax.Y - 22 * _scale), new ImColor8(120, 122, 132, 255), "drag: turn - wheel: zoom - double-click a part: take it off - double-click elsewhere: reset");
         if (!_dragging && _hoverSpot >= 0 && Bm.Spots[_hoverSpot] is var hs)
         {
             var label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
@@ -974,6 +978,18 @@ public sealed partial class Ui
         ImGui.TextColored(Orange, "THE BUILD"u8);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"  {Bm.Build.PartCount} parts, {Bm.Build.Weight:0.0} kg");
+        if (!Bm.Build.IsMelee && Bm.Build.Root is { Part.ReceiverCapacity: > 1 })
+        {
+            ImGui.SameLine();
+            var chain = Bm.Build.ChainFire;
+            if (ImGui.Checkbox("Chain fire"u8, ref chain) && Bm.SetChainFire(chain))
+            {
+                _wbAudio?.Effect(Sfx.HitTick, 0.35f);
+                WbSay(chain ? "Chain fire: the receivers fire in turn, one per shot (fire rates add up, recoil averages)." : "Volley: every receiver fires at once (the slowest sets the rate, recoil adds up).");
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetTooltip("Off: a volley, every receiver fires together. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
+        }
         if (!ImGui.BeginChild("##wblinear"u8, new float2(0, height), ImGuiChildFlags.Borders))
         {
             ImGui.EndChild();
@@ -1041,11 +1057,18 @@ public sealed partial class Ui
             if (hot && !_dragging)
             {
                 if (r.Kind == BenchRowKind.Part)
-                    ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nRight-click: options. Drag it off to take it off.");
+                    ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nDouble-click (or drag it off) to take it off, with what's on it. Right-click: options.");
                 else
                     ImGuiSafe.SetTooltip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here ({SocketAbout(r.Socket.Type)}). Drag one from your parts onto it (or onto the yellow ring on the gun).");
             }
-            if (clicked && !_dragging)
+            if (clicked && !_dragging && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && r.Node != null)
+            {
+                CancelDrag(); // the first click armed a drag
+                WbDoubleClickOff(Bm.DoubleClickRow(i, out var offRow), offRow, r.Node.Part.Name);
+                if (offRow != null)
+                    break; // the rows changed: draw the new list next frame
+            }
+            else if (clicked && !_dragging)
             {
                 if (r.Node != null)
                 {
@@ -1061,8 +1084,14 @@ public sealed partial class Ui
                 }
                 else if (r.Socket != null)
                 {
-                    _wbFilter = (int)CategoryFor(r.Socket);
-                    WbSay($"Showing {PartDef.CategoryName(CategoryFor(r.Socket)).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
+                    var cat = CategoryFor(r.Socket);
+                    if (_inv.Shows(cat))
+                    {
+                        _wbFilter = (int)cat;
+                        WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
+                    }
+                    else // the category is hidden (nothing spare fits): picking it would only fall back to All
+                        WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(r.Socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
                 }
             }
             if (rclicked && r.Node != null)
@@ -1303,6 +1332,21 @@ public sealed partial class Ui
         WbSay($"Took off the {name} (and what was on it): back to your parts.");
     }
 
+    /// <summary>After a double-click on a part of the build: it came off (with what was on it), or why not.</summary>
+    private void WbDoubleClickOff(string? why, BuildNode? removed, string name)
+    {
+        if (why != null || removed == null)
+        {
+            WbSay(why ?? "Nothing to take off there.", true);
+            return;
+        }
+        if (_wbSel != null && !Bm.Build.Nodes.Contains(_wbSel))
+            _wbSel = null;
+        _wbAudio?.Effect(Sfx.HitTick, 0.45f);
+        var extra = removed.Walk().Count() - 1;
+        WbSay(extra > 0 ? $"Took off the {name} and the {extra} part{(extra == 1 ? "" : "s")} on it: back to your parts (Undo puts them back)." : $"Took off the {name}: back to your parts (Undo puts it back).");
+    }
+
     private void WbCopy(BuildNode receiver)
     {
         if (Bm.CopyReceiver(receiver, out var target) is { } why)
@@ -1528,7 +1572,7 @@ public sealed partial class Ui
     {
         var bits = new List<string>();
         if (p.Frame is { } f)
-            bits.Add($"Holds {p.ReceiverCapacity} receiver{(p.ReceiverCapacity == 1 ? "" : "s")}" + (p.ReceiverCapacity > 1 ? $", always fires {f.Style.ToString().ToLowerInvariant()} ({(f.Style == FireStyle.Volley ? "all at once" : "taking turns")})" : "")
+            bits.Add($"Holds {p.ReceiverCapacity} receiver{(p.ReceiverCapacity == 1 ? "" : "s")}" + (p.ReceiverCapacity > 1 ? $", fires {(f.Style == FireStyle.Volley ? "a volley (all at once)" : "in a chain (taking turns)")} unless the build's Chain fire box says otherwise" : "")
                      + $", carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}" + (p.Sockets.Any(s => s.Type == "hopper") ? ", takes a shared feed" : ""));
         if (p.Shared is { } sh)
             bits.Add($"shared feed: feeds up to {sh.Feeds} receivers with no feed of their own (pooled)");
@@ -1548,11 +1592,15 @@ public sealed partial class Ui
             bits.Add(string.Join(", ", mb));
         }
         if (p.Receiver is { } r)
-            bits.Add($"{r.Action.ToString().ToLowerInvariant()} action, {r.Bore} rounds, {(r.RpmPerBarrel > 0 ? $"{r.RpmPerBarrel} rpm per barrel" : $"{r.Rpm} rpm")}");
+            bits.Add($"{r.Action.ToString().ToLowerInvariant()} action, {r.Bore} rounds, {(r.RpmPerBarrel > 0 ? $"{r.RpmPerBarrel} rpm per barrel" : $"{r.Rpm} rpm")}, takes any barrel (sized for {r.Bore})");
         if (p.Split is { } s)
             bits.Add($"{p.Sockets.Count(x => x.Type == "barrel")} outputs at {SplitInfo.OutputMult(p) * 100:0}% damage each (the same total){(s.SpreadMult != 1 ? $", spread x{s.SpreadMult:0.##}" : "")}");
-        if (p.Bores.Length > 0)
-            bits.Add("for " + string.Join(", ", p.Bores) + " rounds");
+        if (p.Bores.Length > 0 && BuildRules.BoreBound(p.Category))
+            bits.Add("holds " + string.Join(", ", p.Bores) + " rounds");
+        if (p.Category is PartCategory.Barrel)
+            bits.Add("fits every receiver: the receiver sizes it (pistol smaller, heavy bigger) and fires its own calibre through it");
+        else if (p.Category is PartCategory.Splitter or PartCategory.Muzzle)
+            bits.Add("fits every receiver");
         if (p.RequiresAction.Length > 0)
             bits.Add("needs " + string.Join("/", p.RequiresAction.Select(a => a.ToString().ToLowerInvariant())) + " action");
         bits.Add($"{p.Weight:0.0#} kg, {p.Scrap} scrap");

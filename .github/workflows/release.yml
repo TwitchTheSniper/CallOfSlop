@@ -84,6 +84,9 @@ jobs:
           "version=$v" >> $env:GITHUB_OUTPUT
           "tag=v$v" >> $env:GITHUB_OUTPUT
           Write-Output "::notice title=Version::v$v (dry run: $env:DRY_RUN)"
+          # "gh release view" exits 1 when the release doesn't exist yet (the normal case); Actions' pwsh wrapper would
+          # otherwise turn that leftover $LASTEXITCODE into this step's result.
+          exit 0
 
       - name: Build
         run: dotnet build CallOfSlop.csproj -c Release -nologo -p:Version=${{ steps.ver.outputs.version }} -p:InformationalVersion=${{ steps.ver.outputs.version }}
@@ -174,6 +177,7 @@ jobs:
 
           Commit ${{ github.sha }}
           "@
+          if (Test-Path tools/MIGRATING.md) { $body += "`n`n" + (Get-Content -Raw tools/MIGRATING.md) }
           $body | Set-Content -Path release-notes.md -Encoding utf8
           gh release create "${{ steps.ver.outputs.tag }}" "bin/package/CallOfSlop-$v.zip" "bin/package/update.json" `
             -R "${{ github.repository }}" --title "Call of Slop v$v" --notes-file release-notes.md --target "${{ github.sha }}" --latest

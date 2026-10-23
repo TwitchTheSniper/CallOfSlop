@@ -30,7 +30,7 @@ Playing together
   public address in Settings > Multiplayer > Server lists. (Optional: hosts run one anyway.)
 - Single player against bots works offline.
 
-Your saves
+Your saves (see also MOVING YOUR SAVES.txt)
 - Your progress carries over to new builds automatically: settings, progression, loadouts and
   workbench builds are saved in %APPDATA%\CallOfSlop (paste that into Explorer's address bar, or use
   Settings > Player > Open save folder). Just unzip the new build anywhere and play.

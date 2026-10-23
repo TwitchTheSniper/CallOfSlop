@@ -495,7 +495,7 @@ public static class PartJson
     /// <summary>The order keys are written in; anything else follows in the file's own order.</summary>
     public static readonly string[] KeyOrder =
     [
-        "format", "extends", "name", "category", "rarity", "flavor", "author", "about", "mount", "bores", "requiresAction", "weight", "scrap", "carry", "flags", "hand",
+        "format", "extends", "name", "category", "rarity", "flavor", "author", "about", "mount", "bores", "sizedFor", "requiresAction", "weight", "scrap", "carry", "flags", "hand",
         "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "frame", "split", "shared", "hilt", "melee", "sockets", "model", "stats",
     ];
 

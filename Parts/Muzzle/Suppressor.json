@@ -4,7 +4,6 @@
   "category": "muzzle",
   "rarity": "rare",
   "flavor": "A can on the end. Quiet shots, dim flash, slightly less reach.",
-  "bores": ["pistol", "rifle", "heavy", "shell"],
   "weight": 0.35,
   "flags": ["suppressed"],
   "muzzles": [[0, 0, -0.18]],

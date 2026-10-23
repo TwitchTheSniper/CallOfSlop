@@ -340,16 +340,17 @@ public static partial class SelfTest
         if (!BuildRules.Check(rifle).Any(p => p.Message.Contains("at least 3 barrels")))
             Fail("rules: a Hellwheel with one barrel should need at least 3");
 
-        // Weight: a pistol grip carries 4 kg (8 at most).
+        // Weight: a pistol grip carries 5 kg (10 at most).
         var heavy = new WeaponBuild("Too Heavy", pistol);
         heavy.Root!.Attach("receiver_1", Parts.Find("Hellwheel Rotary Receiver")!);
         heavy.Root.Attach("receiver_2", Parts.Find("Hellwheel Rotary Receiver")!);
         ExpectWhyNot(heavy, "", "receiver_3", "Hellwheel Rotary Receiver", "too heavy");
 
-        // The fire style is the grip's: an old save that chose another style loads with the grip's.
+        // The fire style is the build's Chain fire choice, saved in the style field ("grip" or anything else: the grip's default).
         var oldStyle = WeaponBuild.Parse("Old|rotate|Pistol Grip{receiver_1:Plinker Receiver}", Parts.Find);
-        if (oldStyle.Style != FireStyle.Volley || !oldStyle.ToText().StartsWith("Old|volley|", StringComparison.Ordinal))
-            Fail("rules: a saved style should give way to the grip's fixed fire style");
+        var gripStyle = WeaponBuild.Parse("Old|grip|Pistol Grip{receiver_1:Plinker Receiver}", Parts.Find);
+        if (oldStyle.Style != FireStyle.Rotate || !oldStyle.ToText().StartsWith("Old|rotate|", StringComparison.Ordinal) || gripStyle.Style != FireStyle.Volley || gripStyle.StyleChoice != null)
+            Fail("rules: a saved style field should be the build's fire style (\"grip\" = the grip's default)");
         // A build must start from a grip.
         var dropped = new List<string>();
         var parsed = WeaponBuild.Parse("Odd|volley|Workhorse Receiver{barrel:Standard Barrel}", Parts.Find, dropped);
@@ -412,7 +413,7 @@ public static partial class SelfTest
 
         // A rotating grip: the receivers take turns.
         var comp = BuilderExamples.All().First(e => e.Build.Name == "Triple Pistol").Build.Clone();
-        var turns = new WeaponBuild("Turns", Parts.Find("Competition Pistol Grip")!); // a rotate grip
+        var turns = new WeaponBuild("Turns", Parts.Find("Pistol Grip")!) { StyleChoice = FireStyle.Rotate }; // Chain fire on
         foreach (var (s, n) in comp.Root!.Children())
             turns.Root!.Attach(s.Name, n.Clone());
         if (WeaponBuilder.Assemble(turns).Def is not { } td)

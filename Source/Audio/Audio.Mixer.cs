@@ -88,12 +88,28 @@ public sealed partial class Audio
     /// </summary>
     private void ApplyVoiceGain(int slot, AlSource src, float gain, float mix)
     {
-        if ((uint)slot < (uint)_voiceMaxGain.Length && _voiceMaxGain[slot] != mix)
+        var (g, cap) = VoiceGain(gain, mix);
+        if ((uint)slot < (uint)_voiceMaxGain.Length && _voiceMaxGain[slot] != cap)
         {
-            src.MaxGain = mix;
-            _voiceMaxGain[slot] = mix;
+            src.MaxGain = cap;
+            _voiceMaxGain[slot] = cap;
         }
-        src.Gain = mix == 1f ? gain : gain * mix;
+        src.Gain = g;
+    }
+
+    /// <summary>
+    /// A voice's AL_GAIN and AL_MAX_GAIN for a gain before the mix and a bus gain: the gain times the bus gain, and the
+    /// cap (OpenAL's default 1) times the bus gain, so a +20 dB bus plays 10x louder, capped sounds included, up to
+    /// +50 dB (about 316x; OpenAL Soft accepts any AL_MAX_GAIN and only limits the total at AL_GAIN_LIMIT_SOFT, +60 dB).
+    /// With a bus gain of exactly 1 both are untouched.
+    /// </summary>
+    internal static (float Gain, float MaxGain) VoiceGain(float gain, float mix) => (mix == 1f ? gain : gain * mix, mix);
+
+    /// <summary>What OpenAL plays for <see cref="VoiceGain"/> before distance and the listener: the gain, capped at the cap.</summary>
+    internal static float VoiceEffectiveGain(float gain, float mix)
+    {
+        var (g, cap) = VoiceGain(gain, mix);
+        return MathF.Min(g, cap);
     }
 
     /// <summary>Records a started voice for the meters (only while they're on).</summary>
@@ -129,6 +145,22 @@ public sealed partial class Audio
             _envByBuffer[pending[i].Buffer.Name] = first + i;
         Console.WriteLine($"[audiomix] meter envelopes for {pending.Count} buffers ({Meters.EnvelopeBlocks * 8 / 1024} KB) in {sw.Elapsed.TotalMilliseconds:0} ms; "
                           + $"mix {(Mix.IsDefault ? "built-in defaults" : $"{Mix.Changed} value(s) changed")}");
+        LogGainLimit();
+    }
+
+    /// <summary>Logs OpenAL's total gain limit (AL_GAIN_LIMIT_SOFT): a level row can ask for up to +50 dB.</summary>
+    private static void LogGainLimit()
+    {
+        try
+        {
+            var limit = Al.GainLimit;
+            var note = limit >= AudioMixDefaults.MaxLevelGain * 0.999f ? "covers" : "BELOW";
+            Console.WriteLine($"[audiomix] OpenAL gain limit {limit:0.#}x ({AudioMix.GainToDb(limit):+0.0} dB): {note} the mixer's +{AudioMixDefaults.MaxDb:0} dB ({AudioMixDefaults.MaxLevelGain:0}x)");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[audiomix] OpenAL gain limit unknown ({ex.Message})");
+        }
     }
 
     /// <summary>Pushes the mix to the music thread when it changed (called with the listener, once a frame).</summary>

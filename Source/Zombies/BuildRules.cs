@@ -13,8 +13,18 @@ public sealed class WeaponBuild
     public string Name = "Custom Build";
     public BuildNode? Root;
 
-    /// <summary>How the grip fires several receivers: fixed by the grip (a build has no choice of its own).</summary>
-    public FireStyle Style => Frame?.Style ?? FireStyle.Volley;
+    /// <summary>
+    /// The build's own choice of how several receivers fire (the workbench's "Chain fire" checkbox: Volley = all at
+    /// once, Rotate = chain fire, taking turns), or null for the grip's default ("fireStyle" in its file). Saved in the
+    /// build text's style field.
+    /// </summary>
+    public FireStyle? StyleChoice;
+
+    /// <summary>How the receivers fire: the build's choice, else the grip's default.</summary>
+    public FireStyle Style => StyleChoice ?? Frame?.Style ?? FireStyle.Volley;
+
+    /// <summary>Chain fire: the receivers fire in sequence (one per shot) rather than together.</summary>
+    public bool ChainFire => Style == FireStyle.Rotate;
 
     public WeaponBuild()
     {
@@ -100,7 +110,7 @@ public sealed class WeaponBuild
 
     public int ScrapValue => Nodes.Sum(n => n.Part.Scrap);
 
-    public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone() };
+    public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone(), StyleChoice = StyleChoice };
 
     // ---- Text form (saves) ---------------------------------------------------------------
 
@@ -140,8 +150,9 @@ public sealed class WeaponBuild
         var fields = text.Split('|', 3);
         if (fields.Length != 3)
             throw new FormatException("a build is \"Name|style|Grip{...}\"");
-        var b = new WeaponBuild { Name = CleanName(fields[0]) };
-        // fields[1] is the fire style: older saves chose one per build; the grip fixes it now, so it's ignored on load.
+        var b = new WeaponBuild { Name = CleanName(fields[0]), StyleChoice = StyleOf(fields[1]) };
+        // fields[1] is the fire style (the "Chain fire" checkbox): "volley", or "rotate"/"chain"; anything else (an
+        // empty field, "grip") means the grip's default. Saves always wrote the style the build fired with.
         var tree = fields[2];
         var pos = 0;
         if (tree.Length == 0)
@@ -156,6 +167,24 @@ public sealed class WeaponBuild
         return b;
     }
 
+    /// <summary>The fire style a build text's style field names, or null for the grip's default.</summary>
+    public static FireStyle? StyleOf(string field) => field.Trim().ToLowerInvariant() switch
+    {
+        "volley" => FireStyle.Volley,
+        "rotate" or "chain" => FireStyle.Rotate,
+        _ => null,
+    };
+
+    /// <summary>
+    /// Parts that were merged into others, old name to new. The chain-fire twin grips became the "Chain fire" checkbox:
+    /// a build on one loads on the merged grip, and its saved style field ("rotate") keeps it chain firing.
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, string> Renamed = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Competition Pistol Grip"] = "Pistol Grip",
+        ["Tactical Rifle Grip"] = "Rifle Grip",
+    };
+
     /// <summary>How deep <see cref="Parse"/> nests before calling the text garbage (far past <see cref="BuildRules.MaxParts"/>), so a hostile build can't overflow the stack.</summary>
     public const int MaxParseDepth = 256;
 
@@ -169,7 +198,7 @@ public sealed class WeaponBuild
         var name = s[start..pos].Trim();
         if (name.Length == 0)
             throw new FormatException($"missing part name at {start}");
-        var part = find(name);
+        var part = find(name) ?? (Renamed.TryGetValue(name, out var now) ? find(now) : null);
         var node = part != null ? new BuildNode(part) : null;
         if (part == null)
             dropped?.Add($"{name} (no such part)");
@@ -247,8 +276,31 @@ public static class BuildRules
     /// <summary>Most projectiles one trigger pull may fire (barrels x pellets; a shot packet carries a byte count).</summary>
     public const int MaxProjectiles = 240;
 
-    /// <summary>Categories that must match their receiver's bore.</summary>
-    public static bool BoreBound(PartCategory c) => c is PartCategory.Barrel or PartCategory.Splitter or PartCategory.Feed or PartCategory.Ammo or PartCategory.Muzzle;
+    /// <summary>
+    /// Categories that must match their receiver's bore: only what holds the rounds (feeds and ammo, the receiver's
+    /// calibre). Barrels, splitters and muzzle devices fit every receiver; the receiver adapts the barrel instead
+    /// (<see cref="BarrelScale"/>, <see cref="BarrelClass"/>).
+    /// </summary>
+    public static bool BoreBound(PartCategory c) => c is PartCategory.Feed or PartCategory.Ammo;
+
+    /// <summary>The bore class that adapts <paramref name="node"/> (a barrel): its nearest receiver's (walking up the tree), or null when it hangs under none.</summary>
+    public static BoreClass? BarrelClass(BuildNode node) =>
+        node.ReceiverNode() is { Part.Receiver: { } r } ? Parts.Registry.ClassOf(r.Bore) : null;
+
+    /// <summary>
+    /// How much <paramref name="barrel"/>'s model is scaled (width, height, length) under the receiver it hangs from (the
+    /// nearest one up the tree): that receiver's barrel size (its own "barrelScale", else its bore class's) over the size
+    /// of the class the barrel is drawn for (<see cref="PartDef.SizedFor"/>). One for a non-barrel or a barrel under no receiver.
+    /// </summary>
+    public static System.Numerics.Vector3 BarrelScale(BuildNode barrel)
+    {
+        if (barrel.Part.Category != PartCategory.Barrel || barrel.ReceiverNode() is not { Part.Receiver: { } r })
+            return System.Numerics.Vector3.One;
+        var reg = Parts.Registry;
+        var want = r.BarrelScale ?? reg.ClassOf(r.Bore).Scale;
+        var drawn = reg.ClassOf(barrel.Part.SizedFor).Scale;
+        return want / drawn;
+    }
 
     /// <summary>Heaviest melee weapon (a melee build has no grip carry weight).</summary>
     public const float MaxMeleeWeight = 14f;
@@ -291,6 +343,7 @@ public static class BuildRules
             return $"{parent.Part.Name}'s {socket.Name} socket takes {ListOr(socket.Accepts.Select(Plural))} only, not {Plural(part.Category)}.";
         if (parent.ReceiverNode() is { Part: var rp } && rp.Receiver is { } r)
         {
+            // The receiver this socket hangs under (walking up the tree), not the build's first one.
             if (BoreBound(part.Category) && !part.FitsBore(r.Bore))
                 return $"{part.Name} is made for {ListOr(part.Bores)} rounds; the {rp.Name} fires {r.Bore} rounds.";
             if (part.RequiresAction.Length > 0 && !part.RequiresAction.Contains(r.Action))

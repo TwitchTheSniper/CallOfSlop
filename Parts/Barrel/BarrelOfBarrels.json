@@ -4,7 +4,6 @@
   "category": "barrel",
   "rarity": "wonder",
   "flavor": "Seven barrels taped into one. Each tube fires a third of the shot, so you get more than you paid for.",
-  "bores": ["pistol", "rifle"],
   "weight": 2.2,
   "hand": [0, -0.03, -0.12],
   "muzzles": [[0, 0, -0.3], [0.026, 0.0, -0.3], [0.013, 0.0225, -0.3], [-0.013, 0.0225, -0.3], [-0.026, 0.0, -0.3], [-0.013, -0.0225, -0.3], [0.013, -0.0225, -0.3]],

@@ -32,7 +32,7 @@ public static class PartFile
 
     private static readonly string[] Keys =
     [
-        "format", "name", "category", "rarity", "flavor", "author", "mount", "bores", "requiresAction", "weight", "scrap", "flags", "hand",
+        "format", "name", "category", "rarity", "flavor", "author", "mount", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
         "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "split", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
     ];
 
@@ -118,6 +118,10 @@ public static class PartFile
             part.Mount = WeaponFile.Text(mo, $"{where}: \"mount\"").ToLowerInvariant();
         if (Get("bores") is { } bo)
             part.Bores = WeaponFile.TextList(bo, $"{where}: \"bores\"").Select(x => x.ToLowerInvariant()).ToArray();
+        if (Get("sizedFor") is { } sf)
+            part.SizedFor = WeaponFile.Text(sf, $"{where}: \"sizedFor\"").ToLowerInvariant();
+        else if (cat == PartCategory.Barrel && part.Bores.Length > 0)
+            part.SizedFor = part.Bores.Contains("rifle") ? "rifle" : part.Bores[0]; // an older barrel file: its bores only say what it was drawn for
         if (Get("requiresAction") is { } ra)
             part.RequiresAction = ra.ValueKind == JsonValueKind.Array
                 ? ra.EnumerateArray().Select(x => WeaponFile.EnumValue<ActionKind>(x, $"{where}: \"requiresAction\"")).ToArray()
@@ -260,6 +264,10 @@ public static class PartFile
         foreach (var b in p.Bores)
             if (!BoreNames.Contains(b))
                 throw new WeaponFileException($"{where}: bore \"{b}\" isn't one of {string.Join(", ", BoreNames)}");
+        if (p.Category != PartCategory.Barrel && p.SizedFor != "rifle")
+            throw new WeaponFileException($"{where}: \"sizedFor\" is for barrels (the bore class its model is drawn for)");
+        if (!BoreNames.Contains(p.SizedFor))
+            throw new WeaponFileException($"{where}: \"sizedFor\" \"{p.SizedFor}\" isn't a bore, one of {string.Join(", ", BoreNames)}");
         var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var s in p.Sockets)
             if (!names.Add(s.Name))
@@ -322,7 +330,7 @@ public static class PartFile
         var r = new ReceiverInfo();
         var hasAction = false;
         foreach (var (k, v) in Props(e, where, "action", "class", "bore", "soundOf", "rpm", "burstCount", "burstDelay", "spoolTime", "spoolStart", "minBarrels", "maxBarrels",
-                     "rpmPerBarrel"))
+                     "rpmPerBarrel", "barrelScale"))
         {
             var at = $"{where}.{k}";
             switch (k)
@@ -343,6 +351,7 @@ public static class PartFile
                 case "minBarrels": r.MinBarrels = (int)Range(WeaponFile.Int(v, at), 1, 8, at); break;
                 case "maxBarrels": r.MaxBarrels = (int)Range(WeaponFile.Int(v, at), 1, 16, at); break;
                 case "rpmPerBarrel": r.RpmPerBarrel = (int)Range(WeaponFile.Int(v, at), 0, 1000, at); break;
+                case "barrelScale": r.BarrelScale = BoreClass.ReadScale(v, at); break;
             }
         }
         if (!hasAction)
