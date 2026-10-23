@@ -11,11 +11,12 @@ mystery box, wall buys, part drops and the workbench (the weapon builder: `WEAPO
 Everything marked **proposed** is a working default for the user to change; the numbers live in data files.
 
 Code: `Source/Game/ZombiesMode.cs` (run state, rounds, points, players, downs, the interact key, buyables, box, parts,
-workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups), `ZombiesAmmoEffects.cs` (special ammo), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror), `ZombieBots.cs` (co-op
+workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups), `ZombiesAmmoEffects.cs` (special ammo), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror),
+`ZombieAnimNet.cs` (animation clocks and sync), `Source/Render/ZombieAnim.cs` (the zombie poses, see "Animation"), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
-`Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-tests `Source/App/SelfTestZombies.cs` and
-`SelfTestZombiesMap.cs` (milestone 3).
+`Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-tests `Source/App/SelfTestZombies.cs`,
+`SelfTestZombiesMap.cs` (milestone 3) and `SelfTestZombieAnim.cs` (animation).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
 `Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by
 `tools/zombies/make_blackmoor.py`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
@@ -31,7 +32,7 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   and what's left of it at the top.
 - **Zombies** come from spawners behind **windows**: they walk to the window, tear the boards off one at a time,
   climb in, then go after the nearest player standing, through open doors. Some spawners are in the ground of an area
-  (they rise out of it). A zombie swipes at you when it's close (a windup you can back out of). Zombies at a window
+  (they climb out of it, arms first, in `zombie.riseSeconds`: 1.4 s, 0.9 s before the animations). A zombie swipes at you when it's close (a windup you can back out of). Zombies at a window
   swipe through it at players standing right at it.
 - **Downs.** Zombie hits take health (it regenerates as usual). At 0 you're **downed**: you lie there (no walking, you
   can still shoot), lose **every perk** (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the
@@ -319,7 +320,58 @@ The self-test fails if a part ever carries a flag that's in neither list. Effect
 effect goes off (an orange burst for a splash, blue sparks for a chain, pink for party balloons...) and its sound;
 burning and zapped zombies glow.
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly)
+## Animation (zombie bodies)
+
+Procedural and data-light: no skeletal assets. The zombie keeps its blocky box body (torn shirt, green skin, glowing
+eyes) but its arms and legs are now two bones each (upper arm 0.38 m + forearm 0.42 m, thigh 0.45 m + shin 0.43 m),
+placed by an analytic two-bone IK from a handful of targets per frame (pelvis, torso lean / roll / twist, head roll /
+nod, both hands, both feet). `Source/Render/ZombieAnim.cs` works the targets out from the zombie's state and clocks
+(`ZombieAnim.Targets`), blends them for a third of a second after a change of state, solves the IK (`ZombieAnim.Solve`)
+and draws the boxes (`ZombieAnim.Draw`). Presentation only: hit boxes, movement, collision and the nav graph are unchanged.
+
+| State | What the body does |
+| --- | --- |
+| Walking to the window, chasing | A **shamble** (walkers: short heavy steps, arms out in front or hanging), a **jog** (runners: arms pumping low) or a **sprint** (sprinters: hunched, big strides). The walk cycle is keyed to how fast it really moves, so the feet don't slide; standing still it sways in place. |
+| Per zombie (seeded by its id, the same on every PC) | Arm pose (both reaching, one reaching and one hanging, or both hanging), a limp on one leg (about half of them, mild to bad: shorter steps and a hip drop), the head hanging to one side and forward, a bit more or less lean, arm height. |
+| Tearing boards | It steps up to the window (up to 1.05 m forward of where it stands, so the hands reach; up on its toes for the top boards) and reaches both hands to the **top remaining board**. Hands on it, it tugs (the board wobbles), braces, and on the tick the board comes off it **jerks back with the board in its hands**: the torn board follows the same yank as the hands, then is flung aside, tumbles to the ground outside, lies there and shrinks away (1.5 s) instead of popping. Then it reaches for the next one. With no boards left it claws at the opening. |
+| Climbing in | Hands go onto the **sill** and stay there while the body tips forward over it with the legs tucked up; then it lets go, the legs reach down for the floor inside, it lands with bent knees and **staggers** for 0.7 s. Driven by the climb's progress on the server's own climb path (`climbSeconds`): the timing, collision and nav are unchanged. |
+| Rising (ground spawners) | Deep in the ground, the arms burst up first, clawing; the hands plant on the ground and push, the torso and head come out, then the right leg steps up and the left. Dirt is thrown up round the hole. |
+| Swiping | The swiping arm (left or right, per zombie) winds up behind during the windup and strikes across the front **right as the damage lands** (the windup, `zombie.windup`), then recovers; the other arm reaches. At a window it swipes through the opening. |
+| Shot | A flinch: the torso snaps back and the head jerks (stronger for bigger hits; at a window the hands stay on the board). |
+| Dead (ragdolls off) | Tips over backwards with the arms flying up, then sinks away (as before). |
+
+**Network (protocol 43).** Clients see the same thing: every clock is the server's and read at the same interpolation
+tick as the positions. A zombie's `ZEnts` entry stays **12 bytes**: while it tears or climbs (it faces its window
+then, so the yaw is known from the map) the yaw byte carries the **animation byte** instead: the board cycle (0-255, the
+board comes off at 255) or the climb's progress. The state byte's changes give the state, swipe and landing clocks (at
+the snapshot's tick), and a drop of the health byte gives the flinch. Clients extrapolate the animation byte between
+snapshots from the rules file's `boardTearSeconds` / `climbSeconds`.
+
+**Cost.** Zombies outside the view frustum aren't posed at all; beyond 28 m each limb is one box (the old box count).
+Up close a zombie is about 22 boxes (thighs, shins, feet, torso and head, eyes, upper arms, forearms, hands). Posing
+allocates nothing. The self-test poses and draws 24 zombies headlessly (a recorded renderer) for 300 frames and
+fails on any allocation or more than 60 us a zombie; the server's per-tick animation update is part of the "AI cost"
+line. The smoke step's barrier line logs `zombie anim: N posed, N culled, N boxes per frame, CPU N us/frame`.
+
+**Self-test** (`SelfTestZombieAnim.cs`, section "Zombie animation"): both hands within 3 cm of the board at every
+window of Blackmoor Asylum and Zombies Test, from four places a tearing zombie can stand, for every board count and
+seven zombie looks; the yanked board within 7 cm of the hands; both hands within 3 cm of the sill along the server's climb
+path; bones that keep their lengths and finite poses in every mode; walking feet on the ground; rising arms first;
+the swipe behind at the end of the windup and across the front after it; the variety over 200 ids; a host and a
+client giving the same pose input for tearing, climbing, rising, swiping and chasing zombies (and the same flinch
+tick); no allocations and the cost.
+
+**What to check by eye** (nothing graphical runs in CI): a zombie's hands on the top board while tearing and the board
+coming away with them; the body leaning over the sill with the hands planted while climbing in, then the stagger;
+ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit. The
+zombie is drawn up to about a metre forward of its hit box while it tears (stepping up to the window): shots aimed at
+it straight through the window still hit, steep side angles may not (say if that matters; the fix would be moving the
+outside spot closer to the window in the maps).
+
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
+
+Protocol 43 (animations, see "Animation"): a tearing or climbing zombie's yaw byte in `ZEnts` is its animation byte
+(the board cycle / the climb's progress); still 12 bytes a zombie.
 
 Protocol 41: `ZBench` kind 3 takes a slot's build apart; `ZBuild` flag 4 = the slot is now empty (no text), also sent to
 joiners for empty slots 1-2 (see "Disassembling a build").
@@ -347,7 +399,8 @@ get every dropped build on the floor when they connect. Clients keep the time le
 
 Zombies move with the shared player physics (the same mover as players), pick targets twice a second, and share at
 most 2 nav graph searches per tick (the rest steer straight until their turn). The self-test measures the cost with
-24 zombies chasing inside the start room (see the report line "AI cost").
+24 zombies chasing inside the start room (see the report line "AI cost"); it includes the per-tick animation update
+(the animation byte and clocks, a few comparisons a zombie). Drawing cost: see "Animation".
 
 ## Controls
 

@@ -81,7 +81,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     zombie's state byte in Msg.ZEnts (burning, zapped).
     // 41: Zombies disassembly (ZombiesDisassemble.cs): Msg.ZBench kind 3 takes a slot's build apart; Msg.ZBuild flag 4 says
     //     the slot is empty (no text; an empty gun slot 1-2 holds "Empty hands"), also sent to joiners for empty slots.
-    public const byte ProtocolVersion = 41;
+    // 43: zombie animations (ZombieAnimNet.cs): in Msg.ZEnts a tearing or climbing zombie's yaw byte carries its animation
+    //     byte (the board cycle / the climb's progress; it faces its window anyway), still 12 bytes a zombie.
+    //     (42 is another feature's number.)
+    public const byte ProtocolVersion = 43;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

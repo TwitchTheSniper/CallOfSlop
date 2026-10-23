@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using Brutal.GlfwApi;
 
@@ -21,6 +22,10 @@ public static unsafe partial class Program
             return;
         var live = _game.Mode == GameMode.Zombies;
         var t = (float)now;
+        var animDt = (float)Math.Clamp(now - _zAnimLast, 0, 0.1);
+        _zAnimLast = now;
+        ZombieAnim.SetFrustum(Gfx.ViewProj); // zombies off screen aren't posed (Source/Render/ZombieAnim.cs)
+        ZombieAnim.NoteFrame();
 
         // Doors and debris: solid until bought, then they sink into the floor.
         for (var d = 0; d < zm.Doors.Count; d++)
@@ -51,24 +56,42 @@ public static unsafe partial class Program
             }
         }
 
-        // Windows: a frame round the opening and the boards still on it.
+        // Windows: a frame round the opening and the boards still on it. The top board wobbles while a zombie tugs at it.
+        if (_zTug.Length < zm.Windows.Count)
+            _zTug = new float[zm.Windows.Count];
+        Array.Clear(_zTug);
+        if (live)
+            foreach (var z in _game.Horde)
+                if (_game.ZombieTearPhase(z) is >= 0.5f and < 0.95f && z.Window < _zTug.Length)
+                    _zTug[z.Window] = 1f;
         for (var w = 0; w < zm.Windows.Count; w++)
         {
             var win = zm.Windows[w];
             var o = win.Opening;
             var thinX = o.Half.X <= o.Half.Z;
             var boards = live && w < _game.ZBoards.Length ? _game.ZBoards[w] : win.Boards;
+            var outward = win.Outside - win.Inside;
+            outward.Y = 0;
+            outward = outward.LengthSquared() > 1e-6f ? Vector3.Normalize(outward) : Vector3.Zero;
             for (var k = 0; k < win.Boards; k++)
             {
                 if (k >= boards)
                     continue;
                 var y = o.Min.Y + (k + 0.5f) * (o.Half.Y * 2) / win.Boards;
                 var tilt = MathF.Sin(k * 2.3f + w) * 0.12f;
+                var at = new Vector3(o.Center.X, y, o.Center.Z);
+                if (k == boards - 1 && _zTug[w] > 0)
+                {
+                    tilt += MathF.Sin(t * 31f + w) * 0.06f; // being tugged at (ZombieAnim: the hands are on it)
+                    at += outward * (0.025f * (0.5f + 0.5f * MathF.Sin(t * 38f + w)));
+                }
                 var size = thinX ? new Vector3(0.05f, 0.11f, o.Half.Z * 2.1f) : new Vector3(o.Half.X * 2.1f, 0.11f, 0.05f);
                 var rot = thinX ? Matrix4x4.CreateRotationX(tilt) : Matrix4x4.CreateRotationZ(tilt);
-                Gfx.Draw(Matrix4x4.CreateScale(size) * rot * Matrix4x4.CreateTranslation(new Vector3(o.Center.X, y, o.Center.Z)), k % 2 == 0 ? new Vector3(0.55f, 0.4f, 0.24f) : new Vector3(0.48f, 0.34f, 0.2f));
+                Gfx.Draw(Matrix4x4.CreateScale(size) * rot * Matrix4x4.CreateTranslation(at), BoardColor(k));
             }
         }
+        if (live)
+            DrawTornBoards(zm, now); // boards a zombie tore off: yanked with its hands, flung aside, then gone
 
         // Wall buys: a chalk outline with the gun drawn on it.
         foreach (var wb in zm.WallBuys)
@@ -219,69 +242,132 @@ public static unsafe partial class Program
 
         // The zombies.
         foreach (var z in _game.Horde)
-            DrawZombie(z, now);
+            DrawZombie(z, now, animDt);
     }
 
-    /// <summary>A zombie: legs that shuffle (or run), a hunched torso, arms out in front (swiping when it attacks), green skin, glowing eyes; dead, it tips over.</summary>
-    private static void DrawZombie(Zombie z, double now)
+    /// <summary>
+    /// A zombie, posed by <see cref="ZombieAnim"/> (Source/Render/ZombieAnim.cs): a shamble, jog or sprint keyed to its speed,
+    /// hands on the boards while it tears them off, on the sill as it climbs in, clawing out of the ground at a ground
+    /// spawner, a swipe timed to the damage and a flinch when shot; green skin, glowing eyes; dead, it tips over. Off
+    /// screen it isn't posed at all; far away each limb is one box.
+    /// </summary>
+    private static void DrawZombie(Zombie z, double now, float dt)
     {
         if (z.Ragdolled && Ragdolls.Enabled)
             return; // dead: its body is a ragdoll (Source/Render/Ragdolls.cs)
-        if (z.State != z.SeenState)
+        var t0 = Stopwatch.GetTimestamp();
+        _game.ZombieAnimInputFor(z, now, out var a);
+        var radius = a.Mode is ZAnimMode.Tearing or ZAnimMode.WindowIdle ? 2.3f : 1.7f;
+        if (!ZombieAnim.Visible(a.Pos + new Vector3(0, 0.9f, 0), radius))
         {
-            z.SeenState = z.State;
-            z.SeenStateAt = now;
+            ZombieAnim.NoteCulled();
+            return;
         }
-        var since = (float)(now - z.SeenStateAt);
-        var pos = z.RenderPos;
-        var body = Matrix4x4.CreateRotationY(-z.RenderYaw);
-        if (z.State == ZState.Dead)
-        {
-            var fall = Math.Clamp(since / 0.45f, 0, 1);
-            body = Matrix4x4.CreateRotationX(fall * 1.45f) * body; // backwards
-            pos.Y -= Math.Clamp(since - 0.9f, 0, 1) * 0.6f; // then it sinks away
-        }
-        else if (z.State == ZState.Rising)
-            pos.Y -= (1 - Math.Clamp(since / 0.9f, 0, 1)) * 1.6f;
-        var at = body * Matrix4x4.CreateTranslation(pos);
-        var swing = MathF.Sin(z.Gait) * (z.Speed == ZSpeed.Walk ? 0.35f : 0.7f);
-        var hunch = z.Speed == ZSpeed.Sprint ? 0.35f : 0.15f;
-        var upper = Matrix4x4.CreateRotationX(-hunch) * Matrix4x4.CreateTranslation(0, 0.86f, 0) * at;
-        BodyBloodRender.PlaceZombie(z, at, upper, swing); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
+        ZombieAnim.Targets(a, out var target);
+        // A change of state blends over a third of a second; settled, the pose is exact (hands right on the board or sill).
+        var settled = (float)((_game.ZAnimTick - z.AnimStateTick) * World.TickDt);
+        if (now - z.AnimSmoothAt > 0.25 || settled > 0.35f)
+            z.AnimTargets = target;
+        else
+            ZombieAnim.Smooth(ref z.AnimTargets, target, 1f - MathF.Exp(-dt * 14f));
+        z.AnimSmoothAt = now;
+        ZombieAnim.Solve(a, z.AnimTargets, out var pose);
+        var detail = BodyModel.WantsDetail(a.Pos);
+        var cam = LegAnimator.Viewer;
+        var lod = !float.IsNaN(cam.X) && Vector3.DistanceSquared(cam, a.Pos) > ZombieAnim.LodRange * ZombieAnim.LodRange;
+        BodyBloodRender.PlaceZombie(z, pose, a.Yaw); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
         BodyBloodRender.Bind(Gfx);
-        // Legs (about the hips).
-        for (var side = -1; side <= 1; side += 2)
-        {
-            var a = side * swing;
-            Gfx.Draw(Matrix4x4.CreateScale(0.22f, 0.85f, 0.24f) * Matrix4x4.CreateTranslation(0, -0.42f, 0) * Matrix4x4.CreateRotationX(a) * Matrix4x4.CreateTranslation(side * 0.15f, 0.86f, 0) * at, ZPants);
-        }
-        // Torso and head, leaning forward.
-        BodyModel.DrawZombieUpper(Gfx, upper, ZShirt, ZSkin, BodyModel.WantsDetail(pos)); // torn shirt, belly, head (Source/Render/BodyModel.cs)
-        if (z.State != ZState.Dead)
-            for (var side = -1; side <= 1; side += 2)
-                Gfx.Draw(Matrix4x4.CreateScale(0.07f, 0.05f, 0.02f) * Matrix4x4.CreateTranslation(side * 0.09f, 0.84f, -0.23f) * upper, new Vector3(1f, 0.55f, 0.1f), 1f, mode: 2);
-        // Arms out in front (a swipe brings them down and across).
-        var attack = z.State == ZState.Attack ? MathF.Sin(Math.Clamp(since / 0.5f, 0, 1) * MathF.PI) : 0f;
-        var tear = z.State == ZState.Tearing ? MathF.Sin((float)now * 5f + z.Id) * 0.4f : 0f;
-        for (var side = -1; side <= 1; side += 2)
-        {
-            var raise = 1.45f - attack * 0.9f + tear * side + (z.State == ZState.Dead ? 1f : 0f) + MathF.Sin(z.Gait * 0.5f + side) * 0.08f;
-            Gfx.Draw(Matrix4x4.CreateScale(0.13f, 0.66f, 0.13f) * Matrix4x4.CreateTranslation(0, -0.33f, 0) * Matrix4x4.CreateRotationX(raise) * Matrix4x4.CreateRotationY(attack * side * 0.5f)
-                     * Matrix4x4.CreateTranslation(side * 0.38f, 0.55f, 0) * upper, ZSkin * 0.92f);
-        }
+        var boxes = ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead);
         BodyBloodRender.Unbind(Gfx);
+        if (a.Mode == ZAnimMode.Rising && a.Phase < 0.9f)
+        {
+            // Dirt thrown up round the hole.
+            var k = a.Phase / 0.9f;
+            for (var i = 0; i < 5; i++)
+            {
+                var ang = i * 1.257f + z.Id;
+                var r = 0.3f + 0.25f * k + 0.05f * (i & 1);
+                var up = MathF.Max(0, MathF.Sin(MathF.Min(1, k * 1.4f + i * 0.08f) * MathF.PI)) * (0.18f + 0.04f * i);
+                Gfx.Draw(Matrix4x4.CreateScale(0.16f * (1 - k * 0.5f)) * Matrix4x4.CreateRotationY(ang) * Matrix4x4.CreateTranslation(a.Pos + new Vector3(MathF.Sin(ang) * r, 0.05f + up, MathF.Cos(ang) * r)),
+                    new Vector3(0.24f, 0.18f, 0.11f));
+                boxes++;
+            }
+        }
         if (z.State != ZState.Dead && (z.FxBurning || z.FxZapped))
         {
             // Burning: orange licks of flame round the body; zapped: blue sparks (special ammo, ZombiesAmmoEffects.cs).
             var ft = (float)now * (z.FxBurning ? 9f : 23f) + z.Id;
+            var centre = Vector3.Transform(new Vector3(0, 0.1f, 0), pose.Upper) - new Vector3(0, 0.96f, 0); // follows the body (stepping in, climbing)
             for (var k = 0; k < 4; k++)
             {
-                var a = ft * 0.7f + k * 1.7f;
-                var o = new Vector3(MathF.Sin(a) * 0.25f, 0.5f + 0.35f * k + 0.1f * MathF.Sin(ft + k), MathF.Cos(a) * 0.2f);
+                var ang = ft * 0.7f + k * 1.7f;
+                var o = new Vector3(MathF.Sin(ang) * 0.25f, 0.5f + 0.35f * k + 0.1f * MathF.Sin(ft + k), MathF.Cos(ang) * 0.2f);
                 var c = z.FxBurning ? new Vector3(1f, 0.45f + 0.25f * (k & 1), 0.08f) : new Vector3(0.45f, 0.75f, 1f);
                 var sz = z.FxBurning ? new Vector3(0.12f, 0.22f, 0.12f) : new Vector3(0.06f, 0.18f, 0.06f);
-                Gfx.Draw(Matrix4x4.CreateScale(sz) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(z.RenderPos + o), c, 0.85f, mode: 2);
+                Gfx.Draw(Matrix4x4.CreateScale(sz) * Matrix4x4.CreateRotationY(ang) * Matrix4x4.CreateTranslation(centre + o), c, 0.85f, mode: 2);
+                boxes++;
             }
+        }
+        ZombieAnim.Note(t0, boxes);
+    }
+
+    private static double _zAnimLast;
+    private static float[] _zTug = [];
+
+    private static Vector3 BoardColor(int k) => k % 2 == 0 ? new Vector3(0.55f, 0.4f, 0.24f) : new Vector3(0.48f, 0.34f, 0.2f);
+
+    /// <summary>A board torn off a window (drawn for <see cref="ZombieAnim.BoardFlySeconds"/>).</summary>
+    private struct TornBoard
+    {
+        public int Window, K, Seed;
+        public double At;
+    }
+
+    private static readonly TornBoard[] _zTorn = new TornBoard[24];
+    private static byte[] _zSeenBoards = [];
+    private static Map? _zSeenMap;
+    private static int _zTornSeed;
+
+    /// <summary>
+    /// Boards that just came off (the count went down since the last frame) fly off, following the zombie's yank
+    /// (<see cref="ZombieAnim.BoardFlight"/>), tumble to the ground outside and shrink away instead of popping.
+    /// </summary>
+    private static void DrawTornBoards(ZombiesMap zm, double now)
+    {
+        var boards = _game.ZBoards;
+        if (!ReferenceEquals(_zSeenMap, World.Map) || _zSeenBoards.Length != boards.Length)
+        {
+            _zSeenMap = World.Map;
+            _zSeenBoards = (byte[])boards.Clone(); // (only when the map or the run changes)
+            for (var i = 0; i < _zTorn.Length; i++)
+                _zTorn[i].At = -1e9;
+        }
+        for (var w = 0; w < boards.Length && w < zm.Windows.Count; w++)
+        {
+            for (int k = boards[w]; k < _zSeenBoards[w] && k < zm.Windows[w].Boards; k++)
+            {
+                var slot = 0;
+                for (var i = 1; i < _zTorn.Length; i++)
+                    if (_zTorn[i].At < _zTorn[slot].At)
+                        slot = i;
+                _zTorn[slot] = new TornBoard { Window = w, K = k, Seed = _zTornSeed++ * 7 + w, At = now };
+            }
+            _zSeenBoards[w] = boards[w];
+        }
+        for (var i = 0; i < _zTorn.Length; i++)
+        {
+            var tb = _zTorn[i];
+            var age = (float)(now - tb.At);
+            if (age < 0 || age > ZombieAnim.BoardFlySeconds || tb.Window >= zm.Windows.Count)
+                continue;
+            var win = zm.Windows[tb.Window];
+            var a = default(ZombieAnimInput);
+            a.SetWindow(win, 0);
+            a.TearSeconds = _game.ZRules.BoardTearSeconds;
+            var m = ZombieAnim.BoardFlight(a, tb.K, age, tb.Seed, win.Outside.Y, out var scale);
+            if (scale <= 0.01f)
+                continue;
+            Gfx.Draw(Matrix4x4.CreateScale(new Vector3(a.WinHalfWidth * 2.1f, 0.11f, 0.05f) * scale) * m, BoardColor(tb.K));
         }
     }
 
@@ -482,7 +568,7 @@ public static unsafe partial class Program
                     var torn = SmokeTearingZombie(g);
                     SmokeShot("zombies_barrier");
                     Console.WriteLine($"[smoke] zombies at a barrier: {g.AliveZombies} alive, {(torn != null ? $"one tearing at window {torn.Window} {Vector3.Distance(torn.Position, g.Local?.Position ?? torn.Position):0.0} m away" : "none tearing now")}, "
-                                      + $"boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / t:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick");
+                                      + $"boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / t:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick; {ZombieAnim.Stats}");
                     _zSmokeStart = now;
                     _zSmokeStage = 6;
                 }
