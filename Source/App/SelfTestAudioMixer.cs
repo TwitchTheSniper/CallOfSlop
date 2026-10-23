@@ -274,7 +274,7 @@ public static partial class SelfTest
         var ktmp = Path.Combine(Path.GetTempPath(), "callofslop-mixkey-" + Guid.NewGuid().ToString("N") + ".txt");
         try
         {
-            if (kd[(int)GameAction.AudioMixer] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8) || Duplicates(d).Length > 0)
+            if (kd[(int)GameAction.AudioMixer] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F8) || Duplicates(kd).Length > 0)
                 Fail($"audio mixer key: default {Code(kd[(int)GameAction.AudioMixer])} (want F8, unshared)");
             List<string> V3(int melee)
             {
