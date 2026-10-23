@@ -39,8 +39,8 @@ public static partial class SelfTest
 
         // ---- A sample Zombies stock -----------------------------------------------------------------------------
         var std = P("Standard Barrel");
-        var scatter = P("Scattermouth Barrel");
-        var stock = BenchStock.FromRun([new("Standard Barrel", 1), new("Scattermouth Barrel", 2)], BuildOf(tree), Parts.Find);
+        var scatter = P("Shell Tube"); // a shell feed: barrels fit every receiver now, feeds still hold one calibre
+        var stock = BenchStock.FromRun([new("Standard Barrel", 1), new("Shell Tube", 2)], BuildOf(tree), Parts.Find);
         var m = new BenchModel(BuildOf(tree), stock);
         var sample = new BenchInventory();
         sample.Refresh(m, Parts.All, -1, "", false, false);
@@ -50,9 +50,9 @@ public static partial class SelfTest
         sample.Refresh(m, Parts.All, -1, "", false, true);
         var si = sample.Items.IndexOf(scatter);
         var why = si >= 0 ? sample.Why[si] : null;
-        Line($"sample stock off: {offNames}; on adds: {string.Join(", ", sample.Items.Where((p, i) => !sample.Compatible[i]).Select(p => p.Name))}; Scattermouth reason: '{why}'");
-        if (scatterOff || stdIdx < 0 || si < 0 || sample.Fits[si] || why != "needs a shell bore barrel socket")
-            Fail("workbench incompatible: the shell Scattermouth should be hidden (off) / dimmed with 'needs a shell bore barrel socket' (on) on a rifle, the Standard Barrel listed");
+        Line($"sample stock off: {offNames}; on adds: {string.Join(", ", sample.Items.Where((p, i) => !sample.Compatible[i]).Select(p => p.Name))}; Shell Tube reason: '{why}'");
+        if (scatterOff || stdIdx < 0 || si < 0 || sample.Fits[si] || why != "needs a shell bore feed socket")
+            Fail("workbench incompatible: the Shell Tube should be hidden (off) / dimmed with 'needs a shell bore feed socket' (on) on a rifle, the Standard Barrel listed");
         if (sample.Items.IndexOf(std) is var sj and >= 0 && (!sample.Fits[sj] || sample.Free[sj] != 1))
             Fail("workbench incompatible: the spare Standard Barrel should be listed as fitting with 1 free");
         // Parts with none spare (every copy on the build): hidden with the toggle off, dimmed "none spare" with it on.
@@ -76,13 +76,13 @@ public static partial class SelfTest
         var valid = new bool[64];
         var nValid = m.ValidSpots(scatter, valid);
         var refusal = m.AutoPlace(scatter, out var placed);
-        Line($"dropping the Scattermouth: {nValid} valid sockets, auto-place says '{refusal}'");
+        Line($"dropping the Shell Tube: {nValid} valid sockets, auto-place says '{refusal}'");
         if (nValid != 0 || refusal == null || placed != null)
             Fail("workbench incompatible: an incompatible part should have no valid socket and bounce back with a reason");
         // Search with everything matching hidden.
-        sample.Refresh(m, Parts.All, -1, "scatter", false, false);
+        sample.Refresh(m, Parts.All, -1, "shell tube", false, false);
         if (sample.Items.Count != 0 || sample.Hidden != 1)
-            Fail($"workbench incompatible: searching 'scatter' with the toggle off should list nothing and count 1 hidden (got {sample.Items.Count}, {sample.Hidden})");
+            Fail($"workbench incompatible: searching 'shell tube' with the toggle off should list nothing and count 1 hidden (got {sample.Items.Count}, {sample.Hidden})");
         // A part whose socket type isn't on the build at all.
         var types = m.Spots.Select(s => s.Socket.Type).ToHashSet();
         if (Parts.All.FirstOrDefault(p => !p.IsRoot && !p.IsMeleePart && p.Mount.Length > 0 && !types.Contains(p.Mount)) is { } stray)

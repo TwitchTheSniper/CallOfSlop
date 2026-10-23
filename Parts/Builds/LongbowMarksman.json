@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Longbow Marksman",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A match rifle action behind a fluted barrel. Pick your shots.",
+  "build": "Service Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Fluted Match Barrel,feed:Box Mag,ammo:5.56 FMJ},stock:Fixed Stock}"
+}

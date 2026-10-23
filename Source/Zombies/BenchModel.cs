@@ -391,6 +391,21 @@ public sealed class BenchModel
         Changed();
     }
 
+    /// <summary>
+    /// The "Chain fire" checkbox: on = the receivers fire in sequence, one per shot; off = a volley, all together. Stored
+    /// on the build (saved in its text), one undo step. False when nothing changed.
+    /// </summary>
+    public bool SetChainFire(bool on)
+    {
+        var want = on ? FireStyle.Rotate : FireStyle.Volley;
+        if (Build.Style == want && Build.StyleChoice != null)
+            return false;
+        PushUndo();
+        Build.StyleChoice = want;
+        Changed();
+        return true;
+    }
+
     /// <summary>A new stock (a run's parts changed): recomputes what's missing.</summary>
     public void SetStock(BenchStock stock)
     {
@@ -590,28 +605,52 @@ public sealed class BenchModel
         return false;
     }
 
-    /// <summary>The reason <paramref name="part"/> fits nowhere: the first socket of its type's refusal, or a generic line.</summary>
+    /// <summary>
+    /// The reason <paramref name="part"/> fits nowhere. When a socket's own rules take it, the reason is what the whole
+    /// build says (weight, barrel or part limits; you have none left), not a socket elsewhere. Otherwise the refusal of the
+    /// best socket of its type: empty ones first, each judged against the receiver it hangs under. Or a generic line.
+    /// </summary>
     public string WhyNowhere(PartDef part)
     {
         if (part.IsRoot)
             return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : "A grip starts a new weapon (New weapon, or Change grip).";
-        foreach (var s in Spots)
-            if (s.Socket.Type == part.Mount && BuildRules.SocketWhy(s.Parent, s.Socket, part) is { } why)
-                return why;
+        if (NowhereSpot(part, out var socketOk) is var i and >= 0)
+            return socketOk ? WhyNot(i, part) ?? "It doesn't fit there." : BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) ?? "It doesn't fit there.";
         return $"This build has no {part.Mount} socket for it.";
     }
 
     /// <summary>
-    /// <see cref="WhyNowhere"/> as a short phrase for the inventory tooltip ("needs a 9mm bore barrel socket",
+    /// The spot that best explains why <paramref name="part"/> can't go on: one whose socket rules take it (empty first:
+    /// <paramref name="socketOk"/> true, so the build's limits are the reason), else one of its mount type that refuses it
+    /// (empty first). -1 if the build has no socket of its type.
+    /// </summary>
+    private int NowhereSpot(PartDef part, out bool socketOk)
+    {
+        socketOk = false;
+        for (var pass = 0; pass < 2; pass++)
+            for (var i = 0; i < Spots.Count; i++)
+                if (Spots[i].Socket.Type == part.Mount && (pass == 1 || Spots[i].Child == null) && BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) == null)
+                {
+                    socketOk = true;
+                    return i;
+                }
+        for (var pass = 0; pass < 2; pass++)
+            for (var i = 0; i < Spots.Count; i++)
+                if (Spots[i].Socket.Type == part.Mount && (pass == 1 || Spots[i].Child == null))
+                    return i;
+        return -1;
+    }
+
+    /// <summary>
+    /// <see cref="WhyNowhere"/> as a short phrase for the inventory tooltip ("needs a shell bore feed socket",
     /// "no muzzle socket on this build"). Allocates: cache it (see <see cref="BenchInventory"/>).
     /// </summary>
     public string WhyNowhereShort(PartDef part)
     {
         if (part.IsRoot)
             return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
-        foreach (var s in Spots)
-            if (s.Socket.Type == part.Mount && BuildRules.SocketWhyShort(s.Parent, s.Socket, part) is { } why)
-                return why;
+        if (NowhereSpot(part, out var socketOk) is var i and >= 0)
+            return socketOk ? "fits a socket, but not on this build as it is" : BuildRules.SocketWhyShort(Spots[i].Parent, Spots[i].Socket, part) ?? "doesn't fit";
         return $"no {part.Mount} socket on this build";
     }
 
@@ -760,6 +799,33 @@ public sealed class BenchModel
         node.Detach();
         Changed();
         return null;
+    }
+
+    /// <summary>
+    /// Double-click on a part in the build list (row <paramref name="row"/> of <see cref="Rows"/>): it comes off, back to
+    /// your parts, with everything plugged into it (a receiver brings its barrel, feed and ammo: the same as dragging it
+    /// off, and one undo step puts the whole assembly back). Returns why not (the grip, an empty socket row), or null.
+    /// <paramref name="removed"/> is the part that came off.
+    /// </summary>
+    public string? DoubleClickRow(int row, out BuildNode? removed)
+    {
+        removed = null;
+        if ((uint)row >= (uint)Rows.Count || Rows[row] is not { Kind: BenchRowKind.Part, Node: { } node })
+            return "That's an empty socket: drag a part onto it.";
+        var why = Remove(node);
+        removed = why == null ? node : null;
+        return why;
+    }
+
+    /// <summary>Double-click on a part on the gun (spot <paramref name="spot"/>, its socket): as <see cref="DoubleClickRow"/>.</summary>
+    public string? DoubleClickSpot(int spot, out BuildNode? removed)
+    {
+        removed = null;
+        if ((uint)spot >= (uint)Spots.Count || Spots[spot].Child is not { } node)
+            return "That socket is empty: drag a part onto it.";
+        var why = Remove(node);
+        removed = why == null ? node : null;
+        return why;
     }
 
     /// <summary>Moves <paramref name="node"/> (with its parts) into spot <paramref name="spot"/>, swapping out what's there. Returns why not, or null.</summary>

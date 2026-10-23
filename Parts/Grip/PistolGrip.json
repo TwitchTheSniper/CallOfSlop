@@ -3,16 +3,17 @@
   "name": "Pistol Grip",
   "category": "grip",
   "rarity": "rare",
-  "flavor": "A wide plate on a pistol handle. Holds three receivers, if you've got the wrists for it (the one-receiver Service Pistol Grip comes first).",
+  "flavor": "A wide plate on a pistol handle. Holds three receivers, if you've got the wrists for it: all at once, or in turn with Chain fire (the one-receiver Service Pistol Grip comes first).",
   "weight": 0.4,
   "hand": [0, -0.055, 0.05935602608679917],
   "gripAngle": 12,
-  "frame": {"fireStyle": "volley", "hands": "one", "carry": 4, "ironHeight": 0.105},
+  "frame": {"fireStyle": "volley", "hands": "one", "carry": 5, "ironHeight": 0.105},
   "sockets": [
     {"name": "receiver_1", "type": "receiver", "pos": [0, 0.012, 0]},
     {"name": "receiver_2", "type": "receiver", "pos": [-0.068, 0.012, 0]},
     {"name": "receiver_3", "type": "receiver", "pos": [0.068, 0.012, 0]},
-    {"name": "optic", "type": "optic", "pos": [0, 0.082, -0.02]}
+    {"name": "optic", "type": "optic", "pos": [0, 0.082, -0.02]},
+    {"name": "utility", "type": "utility", "pos": [0.108, 0.0, -0.06]}
   ],
   "model": [
     {"size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0594], "color": "polymer", "rot": [-12, 0, 0]},

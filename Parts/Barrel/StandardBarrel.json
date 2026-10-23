@@ -4,7 +4,6 @@
   "category": "barrel",
   "rarity": "common",
   "flavor": "A tube of the right length. Does what it says.",
-  "bores": ["pistol", "rifle"],
   "weight": 0.35,
   "hand": [0, -0.03, -0.08],
   "muzzles": [[0, 0, -0.2]],

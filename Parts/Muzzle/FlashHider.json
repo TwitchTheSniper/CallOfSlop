@@ -4,7 +4,6 @@
   "category": "muzzle",
   "rarity": "common",
   "flavor": "Prongs on the end. Slightly steadier, much cooler looking.",
-  "bores": ["pistol", "rifle", "heavy", "shell"],
   "weight": 0.2,
   "muzzles": [[0, 0, -0.05]],
   "model": [

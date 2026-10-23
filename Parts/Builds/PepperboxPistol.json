@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Pepperbox Pistol",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Four stub barrels on a turning pistol action. It spins, it clicks, it empties.",
+  "build": "Service Pistol Grip{receiver_1:Pepperbox Receiver{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,feed:Stick Mag,ammo:9mm Ball}}"
+}

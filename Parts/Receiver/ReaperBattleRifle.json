@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Reaper Battle Rifle Receiver",
+  "category": "receiver",
+  "rarity": "uncommon",
+  "flavor": "A semi-auto battle rifle action. Hits like a truck, one pull at a time.",
+  "weight": 1.2,
+  "receiver": {"action": "semi", "class": "DMR", "bore": "rifle", "soundOf": "Reaper Battle Rifle", "rpm": 380},
+  "sockets": [
+    {"name": "barrel", "type": "barrel", "pos": [0, 0.0446, -0.16], "accepts": ["barrel", "splitter"], "required": true},
+    {"name": "feed", "type": "feed", "pos": [0, 0.0, -0.072], "required": true},
+    {"name": "ammo", "type": "ammo", "pos": [0, 0.036, 0], "required": true},
+    {"name": "utility", "type": "utility", "pos": [0.032, 0.036, -0.096]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0511, 0.1]},
+    {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0511, 0.02]},
+    {"name": "amp", "type": "amp", "pos": [-0.031, 0.0511, 0.02]}
+  ],
+  "model": [
+    {"size": [0.06, 0.072, 0.26], "pos": [0, 0.036, -0.03], "color": "olive"},
+    {"size": [0.03, 0.014, 0.13], "pos": [0, 0.076, -0.026], "color": "black"},
+    {"size": [0.062, 0.01, 0.04], "pos": [0, 0.0432, 0.07], "color": "accent"},
+    {"use": "Picatinny Rail", "pos": [0, 0.076, -0.04]}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "set": 2.0},
+    {"stat": "adsSpreadMult", "set": 0.3},
+    {"stat": "reload", "set": 2.4},
+    {"stat": "headMult", "set": 1.8}
+  ]
+}
