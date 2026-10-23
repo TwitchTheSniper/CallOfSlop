@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Rocket Hammer",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A sledgehammer with a rocket booster and a shock coil on a long haft. Zombies leave at speed.",
+  "build": "Long Haft{head:Sledgehammer Head,mod_1:Rocket Booster,mod_2:Shock Coil}"
+}

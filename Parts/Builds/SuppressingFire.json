@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Suppressing Fire",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Six LMG actions on a mule frame, all fed from a bottomless bucket. Hold the trigger, hold the line.",
+  "build": "Mule Frame{receiver_1:Bastille LMG Receiver{barrel:Stub Barrel},receiver_2:Bastille LMG Receiver{barrel:Stub Barrel},receiver_3:Bastille LMG Receiver{barrel:Stub Barrel},receiver_4:Bastille LMG Receiver{barrel:Stub Barrel},receiver_5:Bastille LMG Receiver{barrel:Stub Barrel},receiver_6:Bastille LMG Receiver{barrel:Stub Barrel},hopper:Bottomless Bucket{ammo:5.56 FMJ},stock:Shoulder Harness}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Flying Fish",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A frozen fish on a sword hilt with a rocket booster and a whoopee cushion. Slap, squeak, and off they go.",
+  "build": "Sword Hilt{head:Frozen Fish,mod_1:Rocket Booster,mod_2:Whoopee Cushion}"
+}

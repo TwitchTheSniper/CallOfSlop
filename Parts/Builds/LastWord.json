@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Last Word",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A suppressed .50 bolt action with a singularity chamber, an overclock core and an 8x scope. One shot, three bodies.",
+  "build": "Sport Rifle Grip{receiver_1:Longreach Bolt Receiver{barrel:Big Iron Barrel{muzzle:Suppressor},feed:Heavy Box,ammo:.50 BMG,amp:Singularity Chamber,upgrade_rear:Coil Hammer,upgrade_side:Overclock Core},stock:Gyro Stock,optic:8x Sniper Scope}"
+}

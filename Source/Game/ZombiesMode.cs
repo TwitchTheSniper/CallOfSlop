@@ -1125,7 +1125,9 @@ public sealed partial class Game
         if (box.Count == 0)
             return -1;
         var tier = RunTables.Roll(RunTables.Current.BoxTiers, Math.Max(1, round), seed);
-        var notOwned = box.Where(i => p == null || OwnsBuild(p, all[i].Name) < 0).ToList();
+        // "Already carry" covers the melee slot too: the box never offers the melee build in your hand.
+        var notOwned = box.Where(i => p == null || (OwnsBuild(p, all[i].Name) < 0
+            && !(p.MeleeBuild != null && p.MeleeBuild.Name.Equals(all[i].Name, StringComparison.OrdinalIgnoreCase)))).ToList();
         if (notOwned.Count == 0)
             notOwned = box;
         for (var step = 0; step < 6; step++)

@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Grenade Organ",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Four grenade launchers on a quad rack, taking turns. Four booms, then a long, careful reload.",
+  "chainFire": true,
+  "build": "Quad Rack Grip{receiver_1:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag},receiver_2:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag},receiver_3:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag},receiver_4:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Single Breech,ammo:40mm Frag},stock:Fixed Stock}"
+}

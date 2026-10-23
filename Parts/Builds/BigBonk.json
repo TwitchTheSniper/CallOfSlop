@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Big Bonk",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A frying pan on a long haft with a counterweight and a shock coil. Bonk, buzz, stand still.",
+  "build": "Long Haft{head:Frying Pan,mod_1:Counterweight,mod_2:Shock Coil}"
+}

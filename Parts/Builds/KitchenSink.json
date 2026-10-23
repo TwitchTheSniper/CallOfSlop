@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Kitchen Sink",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Nine different receivers on one rifle grip: rifle, SMG, pistol, pump, auto shotgun, revolver, battle rifle, DMR and plasma. All at once.",
+  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Stub Barrel,feed:Box Mag,ammo:5.56 FMJ},receiver_2:Stampede Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_3:Plinker Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:9mm Ball},receiver_4:Farmhand Pump Receiver{barrel:Stub Barrel,feed:Shell Tube,ammo:00 Buckshot},receiver_5:Kingpin Revolver Receiver{barrel:Stub Barrel,feed:Heavy Box,ammo:.50 BMG},receiver_6:Reaper Battle Rifle Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:5.56 FMJ},receiver_7:Longbow DMR Receiver{barrel:Stub Barrel,feed:Box Mag,ammo:5.56 FMJ},receiver_8:Gravedigger Auto Receiver{barrel:Stub Barrel,feed:Shell Drum,ammo:00 Buckshot},receiver_9:Sparkplug Energy Receiver{barrel:Stub Barrel,feed:Energy Cell,ammo:Plasma Charge}}"
+}
