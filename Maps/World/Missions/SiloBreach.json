@@ -39,7 +39,7 @@
       "fuseSeconds": 6,
       "intensity": 0.75,
       "mix": { "rifleman": 5, "rusher": 3, "heavy": 1, "grenadier": 1 },
-      "checkpoint": [[-80, -3], [-80, 0], [-80, 3], [-82, -1.5], [-82, 1.5], [-84, 0]],
+      "checkpoint": [[-80, -3], [-80, 0], [-80, 3], [-82, -1.5], [-82, 1.5], [-78, 0]],
       "spawnZones": [
         { "name": "crew quarters", "at": [-32, -4, -26], "radius": 6 },
         { "name": "armoury", "at": [-32, -8, 26], "radius": 6 },

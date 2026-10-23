@@ -141,7 +141,7 @@ public sealed class SpawnDirector
         // Squads of 2-6 (bigger at the peak), one every 1.5-4 s.
         var heat = Phase == DirectorPhase.Peak ? 1f : Phase == DirectorPhase.BuildUp ? 0.5f : 0f;
         var size = Math.Clamp(2 + (int)MathF.Round(heat * 3 + Rand() * 1.5f), 2, 6);
-        _nextSquad = now + (Phase == DirectorPhase.Peak ? 1.5 : 2.5) + Rand() * 1.5;
+        _nextSquad = now + (alive < TargetAlive(now) / 2 ? 0.8 : Phase == DirectorPhase.Peak ? 1.5 : 2.5) + Rand() * 1.5; // well under the target (a stage starts): fill up faster
         return Math.Min(size, room);
     }
 

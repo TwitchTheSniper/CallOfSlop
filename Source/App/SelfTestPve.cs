@@ -425,8 +425,9 @@ public static partial class SelfTest
         if (g.PveShotsFired == 0)
             Fail("co-op: 40 enemies near the squad never fired");
 
-        // Steady state allocates nothing: the host stands far off (its tracers and sounds are visuals), the bots fight on.
-        me.Teleport(me.Position + new Vector3(170, 0, 0));
+        // Steady state allocates nothing: the host is lifted far out of everyone's range (its tracers and sounds are client
+        // visuals, not the server's tick), the bots fight on.
+        me.Teleport(me.Position + new Vector3(0, 400, 0));
         CoopTicks(g, ref now, 1);
         var before = GC.GetAllocatedBytesForCurrentThread();
         CoopTicks(g, ref now, 2);
