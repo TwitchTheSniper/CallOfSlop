@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Sign West Drift 5",
+ "category": "Hollowrock",
+ "description": "Tile 5 of 5 of the 'WEST DRIFT' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.76,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "hollowrock_sign_west_drift_5.png",
+ "fadeDistance": 80
+}

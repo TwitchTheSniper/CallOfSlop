@@ -1,0 +1,8255 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Redvane Processor",
+ "description": "A terraforming atmosphere processor on a red dust plain: giant intake fans, a pipe maze, cooling towers and gantries round the main stack.",
+ "author": "Call of Slop",
+ "order": 610,
+ "destructible": false,
+ "maxPlayers": 16,
+ "flagPool": "none",
+ "skybox": {
+  "preset": "desert",
+  "zenith": "#9a5a3c",
+  "horizon": "#d49a66",
+  "ground": "#8a5a3c",
+  "sun": {
+   "time": 16.2,
+   "latitude": 20,
+   "color": "#ffd0a0",
+   "intensity": 0.95,
+   "size": 2.2,
+   "glow": 0.6
+  },
+  "clouds": {
+   "coverage": 0.55,
+   "density": 0.5,
+   "color": "#e0b090",
+   "shade": "#a0684a",
+   "speed": 9,
+   "altitude": 1400
+  },
+  "haze": {
+   "color": "#d8905a",
+   "strength": 0.85
+  },
+  "ambient": 1.2,
+  "fog": {
+   "max": 0.9
+  }
+ },
+ "boundary": {
+  "shape": "ellipse",
+  "radiusX": 68.0,
+  "radiusZ": 54.0,
+  "noise": {
+   "amplitude": 1.2,
+   "scale": 16,
+   "seed": 5
+  },
+  "edge": {
+   "style": "fence",
+   "height": 1.8,
+   "spacing": 3,
+   "thickness": 0.12,
+   "color": "#4a4440",
+   "material": "Metal"
+  },
+  "groundMargin": 30,
+  "barrierHeight": 2.5
+ },
+ "teamSpawns": [
+  [
+   [
+    -64.0,
+    -5.0
+   ],
+   [
+    -64.0,
+    5.0
+   ],
+   [
+    -59.0,
+    11.0
+   ],
+   [
+    -50.0,
+    13.0
+   ],
+   [
+    -59.0,
+    -11.0
+   ],
+   [
+    -50.0,
+    -13.0
+   ],
+   [
+    -44.0,
+    -7.0
+   ],
+   [
+    -44.0,
+    7.0
+   ],
+   [
+    -46.0,
+    20.0
+   ],
+   [
+    -46.0,
+    -20.0
+   ]
+  ],
+  [
+   [
+    64.0,
+    5.0
+   ],
+   [
+    64.0,
+    -5.0
+   ],
+   [
+    59.0,
+    -11.0
+   ],
+   [
+    50.0,
+    -13.0
+   ],
+   [
+    59.0,
+    11.0
+   ],
+   [
+    50.0,
+    13.0
+   ],
+   [
+    44.0,
+    7.0
+   ],
+   [
+    44.0,
+    -7.0
+   ],
+   [
+    46.0,
+    -20.0
+   ],
+   [
+    46.0,
+    20.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0,
+   "z": 0,
+   "radius": 8
+  },
+  {
+   "x": 0.0,
+   "z": -34.0,
+   "radius": 4.5
+  },
+  {
+   "x": -0.0,
+   "z": 34.0,
+   "radius": 4.5
+  }
+ ],
+ "flags": [
+  [
+   -44.5,
+   0,
+   0.0
+  ],
+  [
+   44.5,
+   0,
+   -0.0
+  ]
+ ],
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#8a5a3c"
+  },
+  {
+   "op": "Building",
+   "cx": -54.0,
+   "cz": 0.0,
+   "w": 14,
+   "d": 12,
+   "stories": 1,
+   "wall": "#8c8275",
+   "floor": "#767a82",
+   "doors": "N",
+   "roofAccess": true
+  },
+  {
+   "op": "Building",
+   "cx": 54.0,
+   "cz": -0.0,
+   "w": 14,
+   "d": 12,
+   "stories": 1,
+   "wall": "#8c8275",
+   "floor": "#767a82",
+   "doors": "S",
+   "roofAccess": true
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": -51.5,
+   "z": -3.0,
+   "y": 3.3,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Field Searchlight",
+   "x": 51.5,
+   "z": 3.0,
+   "y": 3.3,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": -51.0,
+   "z": 1.5,
+   "y": 3.3,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Short",
+   "x": 51.0,
+   "z": -1.5,
+   "y": 3.3,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Antenna Mast",
+   "x": -56.5,
+   "z": 3.0,
+   "y": 3.3
+  },
+  {
+   "op": "Prop",
+   "name": "Antenna Mast",
+   "x": 56.5,
+   "z": -3.0,
+   "y": 3.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -56.5,
+   "z": -3.0,
+   "y": 3.3
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 56.5,
+   "z": 3.0,
+   "y": 3.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -46.8,
+   "y0": 2.2,
+   "z0": -6.15,
+   "x1": -46.66,
+   "y1": 3.4,
+   "z1": -2.25,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -46.8,
+   "y0": 0.0,
+   "z0": -4.28,
+   "x1": -46.66,
+   "y1": 2.2,
+   "z1": -4.12,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 1 1",
+   "x": -46.06,
+   "z": -2.85,
+   "y": 2.8,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 1 2",
+   "x": -46.06,
+   "z": -3.75,
+   "y": 2.8,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 1 3",
+   "x": -46.06,
+   "z": -4.65,
+   "y": 2.8,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 1 4",
+   "x": -46.06,
+   "z": -5.55,
+   "y": 2.8,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": 46.66,
+   "y0": 2.2,
+   "z0": 2.25,
+   "x1": 46.8,
+   "y1": 3.4,
+   "z1": 6.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 46.66,
+   "y0": 0.0,
+   "z0": 4.12,
+   "x1": 46.8,
+   "y1": 2.2,
+   "z1": 4.28,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 2 1",
+   "x": 46.06,
+   "z": 2.85,
+   "y": 2.8,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 2 2",
+   "x": 46.06,
+   "z": 3.75,
+   "y": 2.8,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 2 3",
+   "x": 46.06,
+   "z": 4.65,
+   "y": 2.8,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Bunker 2 4",
+   "x": 46.06,
+   "z": 5.55,
+   "y": 2.8,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Meridian Logo",
+   "x": -46.9,
+   "z": 4.0,
+   "y": 2.0,
+   "onto": "wall-x",
+   "size": 1.8,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Meridian Logo",
+   "x": 46.9,
+   "z": -4.0,
+   "y": 2.0,
+   "onto": "wall+x",
+   "size": 1.8,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -46.9,
+   "z": -1.0,
+   "y": 1.3,
+   "onto": "wall-x",
+   "size": 0.9,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 46.9,
+   "z": 1.0,
+   "y": 1.3,
+   "onto": "wall+x",
+   "size": 0.9,
+   "rotation": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Generator",
+   "x": -56.0,
+   "z": -10.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Generator",
+   "x": 56.0,
+   "z": 10.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -50.0,
+   "z": 10.5
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 50.0,
+   "z": -10.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -64.0,
+   "z": -9.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 64.0,
+   "z": 9.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -64.0,
+   "z": 12.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 64.0,
+   "z": -12.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -43.0,
+   "z": -8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 43.0,
+   "z": 8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -44.0,
+   "z": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 44.0,
+   "z": -7.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -45.0,
+   "z": 2.5,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 45.0,
+   "z": -2.5,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -42.0,
+   "z": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 42.0,
+   "z": -12.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -42.0,
+   "z": -2.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 42.0,
+   "z": 2.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -42.0,
+   "z": 1.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 42.0,
+   "z": -1.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": -39.0,
+   "z": -11.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": 39.0,
+   "z": 11.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Drum Rack",
+   "x": -57.0,
+   "z": 9.5
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Drum Rack",
+   "x": 57.0,
+   "z": -9.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Oil Stain",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Footprints",
+    "Rust Stain"
+   ],
+   "x0": -66.0,
+   "z0": -14.0,
+   "x1": -38.0,
+   "z1": 14.0,
+   "count": 22,
+   "seed": 11,
+   "gap": 2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Oil Stain",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Footprints",
+    "Rust Stain"
+   ],
+   "x0": 38.0,
+   "z0": -14.0,
+   "x1": 66.0,
+   "z1": 14.0,
+   "count": 22,
+   "seed": 12,
+   "gap": 2
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Station Supply Case",
+    "Steel Ammo Can",
+    "Oil Drum",
+    "Gas Cylinders",
+    "Toolbox",
+    "Cable Spool"
+   ],
+   "x0": -66.0,
+   "z0": -14.0,
+   "x1": -38.0,
+   "z1": 14.0,
+   "count": 12,
+   "seed": 21,
+   "mirror": true
+  },
+  {
+   "op": "Spawn",
+   "x": -64.0,
+   "z": -5.0
+  },
+  {
+   "op": "Spawn",
+   "x": 64.0,
+   "z": 5.0
+  },
+  {
+   "op": "Spawn",
+   "x": -64.0,
+   "z": 5.0
+  },
+  {
+   "op": "Spawn",
+   "x": 64.0,
+   "z": -5.0
+  },
+  {
+   "op": "Spawn",
+   "x": -59.0,
+   "z": 11.0
+  },
+  {
+   "op": "Spawn",
+   "x": 59.0,
+   "z": -11.0
+  },
+  {
+   "op": "Spawn",
+   "x": -50.0,
+   "z": 13.0
+  },
+  {
+   "op": "Spawn",
+   "x": 50.0,
+   "z": -13.0
+  },
+  {
+   "op": "Spawn",
+   "x": -59.0,
+   "z": -11.0
+  },
+  {
+   "op": "Spawn",
+   "x": 59.0,
+   "z": 11.0
+  },
+  {
+   "op": "Spawn",
+   "x": -50.0,
+   "z": -13.0
+  },
+  {
+   "op": "Spawn",
+   "x": 50.0,
+   "z": 13.0
+  },
+  {
+   "op": "Spawn",
+   "x": -44.0,
+   "z": -7.0
+  },
+  {
+   "op": "Spawn",
+   "x": 44.0,
+   "z": 7.0
+  },
+  {
+   "op": "Spawn",
+   "x": -44.0,
+   "z": 7.0
+  },
+  {
+   "op": "Spawn",
+   "x": 44.0,
+   "z": -7.0
+  },
+  {
+   "op": "Spawn",
+   "x": -46.0,
+   "z": 20.0
+  },
+  {
+   "op": "Spawn",
+   "x": 46.0,
+   "z": -20.0
+  },
+  {
+   "op": "Spawn",
+   "x": -46.0,
+   "z": -20.0
+  },
+  {
+   "op": "Spawn",
+   "x": 46.0,
+   "z": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Intake Fan",
+   "x": -38.0,
+   "z": -17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Intake Fan",
+   "x": 38.0,
+   "z": 17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Intake Ring 1",
+   "x": -38.0,
+   "z": -26.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Intake Ring 3",
+   "x": 38.0,
+   "z": 26.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -44.5,
+   "z": -17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 44.5,
+   "z": 17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -37.0,
+   "z": -20.5
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 37.0,
+   "z": 20.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -33.5,
+   "z": -20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 33.5,
+   "z": 20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Redvane Dust Ring",
+    "Sand Drift"
+   ],
+   "x0": -44.0,
+   "z0": -25.0,
+   "x1": -32.0,
+   "z1": -9.0,
+   "count": 8,
+   "seed": 31,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Redvane Dust Ring",
+    "Sand Drift"
+   ],
+   "x0": 32.0,
+   "z0": 9.0,
+   "x1": 44.0,
+   "z1": 25.0,
+   "count": 8,
+   "seed": 32,
+   "gap": 2.5
+  },
+  {
+   "op": "Prop",
+   "name": "Intake Fan",
+   "x": -38.0,
+   "z": 17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Intake Fan",
+   "x": 38.0,
+   "z": -17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Intake Ring 2",
+   "x": -38.0,
+   "z": 26.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Intake Ring 4",
+   "x": 38.0,
+   "z": -26.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -44.5,
+   "z": 17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 44.5,
+   "z": -17.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -37.0,
+   "z": 20.5
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 37.0,
+   "z": -20.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -33.5,
+   "z": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 33.5,
+   "z": -20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Redvane Dust Ring",
+    "Sand Drift"
+   ],
+   "x0": -44.0,
+   "z0": 9.0,
+   "x1": -32.0,
+   "z1": 25.0,
+   "count": 8,
+   "seed": 32,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Redvane Dust Ring",
+    "Sand Drift"
+   ],
+   "x0": 32.0,
+   "z0": -25.0,
+   "x1": 44.0,
+   "z1": -9.0,
+   "count": 8,
+   "seed": 33,
+   "gap": 2.5
+  },
+  {
+   "op": "Block",
+   "x0": -39.85,
+   "y0": 2.2,
+   "z0": -22.5,
+   "x1": -36.15,
+   "y1": 3.3,
+   "z1": -22.36,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 36.15,
+   "y0": 2.2,
+   "z0": 22.36,
+   "x1": 39.85,
+   "y1": 3.3,
+   "z1": 22.5,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -38.08,
+   "y0": 0.0,
+   "z0": -22.5,
+   "x1": -37.92,
+   "y1": 2.2,
+   "z1": -22.36,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 37.92,
+   "y0": 0.0,
+   "z0": 22.36,
+   "x1": 38.08,
+   "y1": 2.2,
+   "z1": 22.5,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 1",
+   "x": -39.36,
+   "z": -21.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 1",
+   "x": 39.36,
+   "z": 21.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 2",
+   "x": -38.68,
+   "z": -21.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 2",
+   "x": 38.68,
+   "z": 21.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 3",
+   "x": -38.0,
+   "z": -21.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 3",
+   "x": 38.0,
+   "z": 21.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 4",
+   "x": -37.32,
+   "z": -21.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 4",
+   "x": 37.32,
+   "z": 21.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 5",
+   "x": -36.64,
+   "z": -21.76,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.68,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Intake 5",
+   "x": 36.64,
+   "z": 21.76,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.68,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": -40.25,
+   "y0": 1.3,
+   "z0": 22.36,
+   "x1": -35.75,
+   "y1": 2.3,
+   "z1": 22.5,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 35.75,
+   "y0": 1.3,
+   "z0": -22.5,
+   "x1": 40.25,
+   "y1": 2.3,
+   "z1": -22.36,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -38.08,
+   "y0": 0.0,
+   "z0": 22.36,
+   "x1": -37.92,
+   "y1": 1.3,
+   "z1": 22.5,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 37.92,
+   "y0": 0.0,
+   "z0": -22.5,
+   "x1": 38.08,
+   "y1": 1.3,
+   "z1": -22.36,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 1",
+   "x": -39.8,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 1",
+   "x": 39.8,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 2",
+   "x": -39.2,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 2",
+   "x": 39.2,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 3",
+   "x": -38.6,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 3",
+   "x": 38.6,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 4",
+   "x": -38.0,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 4",
+   "x": 38.0,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 5",
+   "x": -37.4,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 5",
+   "x": 37.4,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 6",
+   "x": -36.8,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 6",
+   "x": 36.8,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 7",
+   "x": -36.2,
+   "z": 21.76,
+   "y": 1.8,
+   "onto": "wall+z",
+   "size": 0.6,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Dust Hazard 7",
+   "x": 36.2,
+   "z": -21.76,
+   "y": 1.8,
+   "onto": "wall-z",
+   "size": 0.6,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -30.0,
+   "z": -6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 30.0,
+   "z": 6.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -24.0,
+   "z": 7.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 24.0,
+   "z": -7.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -33.0,
+   "z": 4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 33.0,
+   "z": -4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Generator",
+   "x": -20.0,
+   "z": -8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Generator",
+   "x": 20.0,
+   "z": 8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -27.0,
+   "z": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 27.0,
+   "z": 0.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": -16.0,
+   "z": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Corner",
+   "x": 16.0,
+   "z": -2.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -16.0,
+   "z": -3.5,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 16.0,
+   "z": 3.5,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -21.0,
+   "z": 11.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 21.0,
+   "z": -11.0,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": -25.0,
+   "z": -11.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": 25.0,
+   "z": 11.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": -22.0,
+   "z": -13.0,
+   "yaw": 50.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": 22.0,
+   "z": 13.0,
+   "yaw": 230.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -30.0,
+   "z": -9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 30.0,
+   "z": 9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0,
+   "size": 3
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Oil Stain",
+    "Dirt Patch",
+    "Footprints"
+   ],
+   "x0": -36.0,
+   "z0": -12.0,
+   "x1": -12.0,
+   "z1": 12.0,
+   "count": 18,
+   "seed": 41,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Oil Stain",
+    "Dirt Patch",
+    "Footprints"
+   ],
+   "x0": 12.0,
+   "z0": -12.0,
+   "x1": 36.0,
+   "z1": 12.0,
+   "count": 18,
+   "seed": 42,
+   "gap": 2.5
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Rusty Drum",
+    "Station Supply Case",
+    "Pallet",
+    "Small Crate",
+    "Cinder Blocks"
+   ],
+   "x0": -36.0,
+   "z0": -12.0,
+   "x1": -12.0,
+   "z1": 12.0,
+   "count": 10,
+   "seed": 51,
+   "mirror": true
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 4.0,
+   "color": "#a89b84",
+   "width": 12,
+   "depth": 12,
+   "height": 30,
+   "segments": 8,
+   "yaw": 22.5,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 34.0,
+   "color": "#3c414e",
+   "width": 13.5,
+   "depth": 13.5,
+   "height": 2.5,
+   "segments": 8,
+   "yaw": 22.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 7.5,
+   "color": "#7a5238",
+   "radius": 6.1,
+   "inner": 0.25
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 20.0,
+   "color": "#ffb24a",
+   "radius": 6.15,
+   "inner": 0.2
+  },
+  {
+   "op": "Collider",
+   "x0": -4.243,
+   "y0": 4.0,
+   "z0": -4.243,
+   "x1": 4.243,
+   "y1": 36.0,
+   "z1": 4.243
+  },
+  {
+   "op": "Collider",
+   "x0": -5.55,
+   "y0": 4.0,
+   "z0": -2.3,
+   "x1": 5.55,
+   "y1": 36.0,
+   "z1": 2.3
+  },
+  {
+   "op": "Collider",
+   "x0": -2.3,
+   "y0": 4.0,
+   "z0": -5.55,
+   "x1": 2.3,
+   "y1": 36.0,
+   "z1": 5.55
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Stack Ring",
+   "x": 0.0,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 16
+  },
+  {
+   "op": "Block",
+   "x0": -10.5,
+   "y0": 3.7,
+   "z0": -10.5,
+   "x1": 10.5,
+   "y1": 4.0,
+   "z1": 10.5,
+   "color": "#767a82"
+  },
+  {
+   "op": "Block",
+   "x0": 6.8,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": 7.6,
+   "y1": 3.7,
+   "z1": 0.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 4.691,
+   "y0": 0.0,
+   "z0": 4.691,
+   "x1": 5.491,
+   "y1": 3.7,
+   "z1": 5.491,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.4,
+   "y0": 0.0,
+   "z0": 6.8,
+   "x1": 0.4,
+   "y1": 3.7,
+   "z1": 7.6,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -5.491,
+   "y0": 0.0,
+   "z0": 4.691,
+   "x1": -4.691,
+   "y1": 3.7,
+   "z1": 5.491,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -7.6,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": -6.8,
+   "y1": 3.7,
+   "z1": 0.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -5.491,
+   "y0": 0.0,
+   "z0": -5.491,
+   "x1": -4.691,
+   "y1": 3.7,
+   "z1": -4.691,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.4,
+   "y0": 0.0,
+   "z0": -7.6,
+   "x1": 0.4,
+   "y1": 3.7,
+   "z1": -6.8,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 4.691,
+   "y0": 0.0,
+   "z0": -5.491,
+   "x1": 5.491,
+   "y1": 3.7,
+   "z1": -4.691,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.182,
+   "z": 3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.182,
+   "z": 3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.182,
+   "z": -3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.182,
+   "z": -3.182,
+   "y": 3.1
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -4.5,
+   "z": 0.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 4.5,
+   "z": 0.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 0.0,
+   "z": -4.2
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 0.0,
+   "z": 4.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": -9.5,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 9.5,
+   "z": 0.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": -9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": 9.5,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Oil Stain",
+    "Rust Stain",
+    "Footprints",
+    "Redvane Dust Ring"
+   ],
+   "x0": -9.0,
+   "z0": -9.0,
+   "x1": 9.0,
+   "z1": 9.0,
+   "count": 8,
+   "seed": 59,
+   "gap": 2
+  },
+  {
+   "op": "Block",
+   "x0": -8.7,
+   "y0": 7.7,
+   "z0": -8.7,
+   "x1": 8.7,
+   "y1": 8.0,
+   "z1": -5.6,
+   "color": "#767a82"
+  },
+  {
+   "op": "Block",
+   "x0": -8.7,
+   "y0": 7.7,
+   "z0": 5.6,
+   "x1": 8.7,
+   "y1": 8.0,
+   "z1": 8.7,
+   "color": "#767a82"
+  },
+  {
+   "op": "Block",
+   "x0": -8.7,
+   "y0": 7.7,
+   "z0": -5.6,
+   "x1": -5.6,
+   "y1": 8.0,
+   "z1": 5.6,
+   "color": "#767a82"
+  },
+  {
+   "op": "Block",
+   "x0": 5.6,
+   "y0": 7.7,
+   "z0": -5.6,
+   "x1": 8.7,
+   "y1": 8.0,
+   "z1": 5.6,
+   "color": "#767a82"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 0.0,
+   "z0": -10.4,
+   "x1": -9.8,
+   "y1": 3.7,
+   "z1": -9.8,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.8,
+   "y0": 0.0,
+   "z0": -10.4,
+   "x1": 10.4,
+   "y1": 3.7,
+   "z1": -9.8,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -10.4,
+   "y0": 0.0,
+   "z0": 9.8,
+   "x1": -9.8,
+   "y1": 3.7,
+   "z1": 10.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.8,
+   "y0": 0.0,
+   "z0": 9.8,
+   "x1": 10.4,
+   "y1": 3.7,
+   "z1": 10.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -8.55,
+   "y0": 4.0,
+   "z0": -8.55,
+   "x1": -8.05,
+   "y1": 7.7,
+   "z1": -8.05,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 8.05,
+   "y0": 4.0,
+   "z0": -8.55,
+   "x1": 8.55,
+   "y1": 7.7,
+   "z1": -8.05,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -8.55,
+   "y0": 4.0,
+   "z0": 8.05,
+   "x1": -8.05,
+   "y1": 7.7,
+   "z1": 8.55,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 8.05,
+   "y0": 4.0,
+   "z0": 8.05,
+   "x1": 8.55,
+   "y1": 7.7,
+   "z1": 8.55,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Ramp",
+   "x": -18.5,
+   "z": 8.0,
+   "width": 3.0,
+   "height": 4.0,
+   "alongX": true,
+   "dir": 1,
+   "color": "#767a82",
+   "y0": 0.0
+  },
+  {
+   "op": "Ramp",
+   "x": 18.5,
+   "z": -8.0,
+   "width": 3.0,
+   "height": 4.0,
+   "alongX": true,
+   "dir": -1,
+   "color": "#767a82",
+   "y0": 0.0
+  },
+  {
+   "op": "Ramp",
+   "x": -9.6,
+   "z": 10.5,
+   "width": 1.8,
+   "height": 4.0,
+   "alongX": false,
+   "dir": -1,
+   "color": "#767a82",
+   "y0": 4.0
+  },
+  {
+   "op": "Ramp",
+   "x": 9.6,
+   "z": -10.5,
+   "width": 1.8,
+   "height": 4.0,
+   "alongX": false,
+   "dir": 1,
+   "color": "#767a82",
+   "y0": 4.0
+  },
+  {
+   "op": "Collider",
+   "x0": -10.5,
+   "y0": 4.45,
+   "z0": -10.45,
+   "x1": 10.5,
+   "y1": 5.1,
+   "z1": -10.25
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": -10.35,
+   "y": 5.02,
+   "color": "#85888c",
+   "width": 21.0,
+   "height": 0.08,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": -10.35,
+   "y": 4.55,
+   "color": "#85888c",
+   "width": 21.0,
+   "height": 0.05,
+   "depth": 0.05
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.3,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.1,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -5.9,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -3.7,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -1.5,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.7,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 2.9,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 5.1,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 7.3,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 9.5,
+   "z": -10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -10.5,
+   "y0": 4.45,
+   "z0": 10.25,
+   "x1": 10.5,
+   "y1": 5.1,
+   "z1": 10.45
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 10.35,
+   "y": 5.02,
+   "color": "#85888c",
+   "width": 21.0,
+   "height": 0.08,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 10.35,
+   "y": 4.55,
+   "color": "#85888c",
+   "width": 21.0,
+   "height": 0.05,
+   "depth": 0.05
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.3,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.1,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -5.9,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -3.7,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -1.5,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.7,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 2.9,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 5.1,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 7.3,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 9.5,
+   "z": 10.35,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -10.45,
+   "y0": 4.45,
+   "z0": -10.5,
+   "x1": -10.25,
+   "y1": 5.1,
+   "z1": 2.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -4.0,
+   "y": 5.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 13.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -4.0,
+   "y": 4.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 13.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -10.3,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -8.1,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -5.9,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -3.7,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": -1.5,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -10.35,
+   "z": 0.7,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": 10.25,
+   "y0": 4.45,
+   "z0": -2.5,
+   "x1": 10.45,
+   "y1": 5.1,
+   "z1": 10.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 4.0,
+   "y": 5.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 13.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 4.0,
+   "y": 4.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 13.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": -2.3,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": -0.1,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 2.1,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 4.3,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 6.5,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 10.35,
+   "z": 8.7,
+   "y": 4.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -8.7,
+   "y0": 8.45,
+   "z0": -8.65,
+   "x1": 8.7,
+   "y1": 9.1,
+   "z1": -8.45
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": -8.55,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 17.4,
+   "height": 0.08,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": -8.55,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 17.4,
+   "height": 0.05,
+   "depth": 0.05
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.5,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -6.3,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -4.1,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -1.9,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.3,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 2.5,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 4.7,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 6.9,
+   "z": -8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -8.7,
+   "y0": 8.45,
+   "z0": 8.45,
+   "x1": 8.7,
+   "y1": 9.1,
+   "z1": 8.65
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 8.55,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 17.4,
+   "height": 0.08,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.0,
+   "z": 8.55,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 17.4,
+   "height": 0.05,
+   "depth": 0.05
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.5,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -6.3,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -4.1,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -1.9,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 0.3,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 2.5,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 4.7,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 6.9,
+   "z": 8.55,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -8.65,
+   "y0": 8.45,
+   "z0": -8.7,
+   "x1": -8.45,
+   "y1": 9.1,
+   "z1": 2.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -3.1,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 11.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -3.1,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 11.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -8.5,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -6.3,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -4.1,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": -1.9,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": 0.3,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": -8.65,
+   "y0": 8.45,
+   "z0": 4.5,
+   "x1": -8.45,
+   "y1": 9.1,
+   "z1": 8.7
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": 6.6,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 4.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": 6.6,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 4.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": 4.7,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -8.55,
+   "z": 6.9,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": 8.45,
+   "y0": 8.45,
+   "z0": -8.7,
+   "x1": 8.65,
+   "y1": 9.1,
+   "z1": -4.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -6.6,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 4.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -6.6,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 4.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -8.5,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -6.3,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Collider",
+   "x0": 8.45,
+   "y0": 8.45,
+   "z0": -2.5,
+   "x1": 8.65,
+   "y1": 9.1,
+   "z1": 8.7
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": 3.1,
+   "y": 9.02,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 0.08,
+   "depth": 11.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": 3.1,
+   "y": 8.55,
+   "color": "#85888c",
+   "width": 0.05,
+   "height": 0.05,
+   "depth": 11.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -2.3,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": -0.1,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": 2.1,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": 4.3,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 8.55,
+   "z": 6.5,
+   "y": 8.0,
+   "color": "#85888c",
+   "width": 0.08,
+   "height": 1.1,
+   "depth": 0.08
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 0.0,
+   "z": -8.5,
+   "y": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Console",
+   "x": 0.0,
+   "z": 8.5,
+   "y": 4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": 8.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Supply Case Stack",
+   "x": -8.0,
+   "z": 8.0,
+   "y": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -8.0,
+   "z": 2.0,
+   "y": 4.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 8.0,
+   "z": -2.0,
+   "y": 4.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 7.5,
+   "z": 7.0,
+   "y": 4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -7.5,
+   "z": -7.0,
+   "y": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 0.0,
+   "z": -5.8,
+   "y": 6.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 0.0,
+   "z": 5.8,
+   "y": 6.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -5.8,
+   "z": 0.0,
+   "y": 10.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 5.8,
+   "z": 0.0,
+   "y": 10.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 7.0,
+   "z": 0.0,
+   "y": 8.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -7.0,
+   "z": 0.0,
+   "y": 8.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -2.15,
+   "y0": 5.2,
+   "z0": -6.44,
+   "x1": 2.15,
+   "y1": 6.3,
+   "z1": -6.3,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.08,
+   "y0": 0.0,
+   "z0": -6.44,
+   "x1": 0.08,
+   "y1": 5.2,
+   "z1": -6.3,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 1",
+   "x": -1.6,
+   "z": -7.04,
+   "y": 5.75,
+   "onto": "wall+z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 2",
+   "x": -0.8,
+   "z": -7.04,
+   "y": 5.75,
+   "onto": "wall+z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 3",
+   "x": 0.0,
+   "z": -7.04,
+   "y": 5.75,
+   "onto": "wall+z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 4",
+   "x": 0.8,
+   "z": -7.04,
+   "y": 5.75,
+   "onto": "wall+z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 5",
+   "x": 1.6,
+   "z": -7.04,
+   "y": 5.75,
+   "onto": "wall+z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Block",
+   "x0": -2.15,
+   "y0": 5.2,
+   "z0": 6.3,
+   "x1": 2.15,
+   "y1": 6.3,
+   "z1": 6.44,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -0.08,
+   "y0": 0.0,
+   "z0": 6.3,
+   "x1": 0.08,
+   "y1": 5.2,
+   "z1": 6.44,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 1",
+   "x": -1.6,
+   "z": 7.04,
+   "y": 5.75,
+   "onto": "wall-z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 2",
+   "x": -0.8,
+   "z": 7.04,
+   "y": 5.75,
+   "onto": "wall-z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 3",
+   "x": 0.0,
+   "z": 7.04,
+   "y": 5.75,
+   "onto": "wall-z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 4",
+   "x": 0.8,
+   "z": 7.04,
+   "y": 5.75,
+   "onto": "wall-z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Main Stack 5",
+   "x": 1.6,
+   "z": 7.04,
+   "y": 5.75,
+   "onto": "wall-z",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Meridian Logo",
+   "x": -6.4,
+   "z": 0.0,
+   "y": 2.2,
+   "onto": "wall+x",
+   "size": 2.2,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Meridian Logo",
+   "x": 6.4,
+   "z": 0.0,
+   "y": 2.2,
+   "onto": "wall-x",
+   "size": 2.2,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": -16.0,
+   "z": 8.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Stripes",
+   "x": 16.0,
+   "z": -8.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0,
+   "size": 3
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": -8.0,
+   "z": -8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": -8.0,
+   "z": 8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": -2.7,
+   "z": -8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": -2.7,
+   "z": 8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": 2.6,
+   "z": -8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": 2.6,
+   "z": 8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": 7.9,
+   "z": -8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Trench Grate",
+   "x": 7.9,
+   "z": 8.0,
+   "y": 4.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Rust Stain",
+    "Oil Drips",
+    "Footprints",
+    "Scorch Mark"
+   ],
+   "x0": -10.5,
+   "z0": -10.5,
+   "x1": 10.5,
+   "z1": 10.5,
+   "count": 10,
+   "seed": 61,
+   "y": 4.0,
+   "gap": 2
+  },
+  {
+   "op": "Waypoint",
+   "x": -20.0,
+   "z": 8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 20.0,
+   "z": -8.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -18.0,
+   "z": 8.0,
+   "y": 0.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 18.0,
+   "z": -8.0,
+   "y": 0.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -17.0,
+   "z": 8.0,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.0,
+   "z": -8.0,
+   "y": 1.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.0,
+   "z": 8.0,
+   "y": 1.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.0,
+   "z": -8.0,
+   "y": 1.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -15.0,
+   "z": 8.0,
+   "y": 2.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 15.0,
+   "z": -8.0,
+   "y": 2.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -14.0,
+   "z": 8.0,
+   "y": 2.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 14.0,
+   "z": -8.0,
+   "y": 2.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -13.0,
+   "z": 8.0,
+   "y": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 13.0,
+   "z": -8.0,
+   "y": 3.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -12.0,
+   "z": 8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 12.0,
+   "z": -8.0,
+   "y": 3.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -11.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 11.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 10.0,
+   "y": 4.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -10.0,
+   "y": 4.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 9.0,
+   "y": 5.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -9.0,
+   "y": 5.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 8.0,
+   "y": 5.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -8.0,
+   "y": 5.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 7.0,
+   "y": 6.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -7.0,
+   "y": 6.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 6.0,
+   "y": 6.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -6.0,
+   "y": 6.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 5.0,
+   "y": 7.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -5.0,
+   "y": 7.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 4.0,
+   "y": 7.5
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -4.0,
+   "y": 7.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -9.6,
+   "z": 3.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 9.6,
+   "z": -3.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": -4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": 4.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -8.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 8.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.5,
+   "z": 0.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.5,
+   "z": 0.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -4.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": -4.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -4.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 0.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 0.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 4.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 4.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 4.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": -8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -8.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 8.0,
+   "z": 8.0,
+   "y": 4.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.0,
+   "z": -7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.0,
+   "z": 7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": -7.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": -7.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -3.5,
+   "z": -7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -3.5,
+   "z": 7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": -3.5,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": -3.5,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": 0.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": 0.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 3.5,
+   "z": -7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 3.5,
+   "z": 7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": 3.5,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": 3.5,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.0,
+   "z": -7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.0,
+   "z": 7.2,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.2,
+   "z": 7.0,
+   "y": 8.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.2,
+   "z": 7.0,
+   "y": 8.0
+  },
+  {
+   "op": "WallX",
+   "x0": -6.0,
+   "x1": 6.0,
+   "z": -40.0,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": 0.0
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -6.0,
+   "x1": 6.0,
+   "z": 39.5,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": -0.0
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -6.0,
+   "x1": 6.0,
+   "z": -28.5,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": 0.0
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -6.0,
+   "x1": 6.0,
+   "z": 28.0,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": -0.0
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -40.0,
+   "z1": -28.0,
+   "x": -6.0,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": -34.0
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 28.0,
+   "z1": 40.0,
+   "x": 5.5,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": 34.0
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -40.0,
+   "z1": -28.0,
+   "x": 5.5,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": -34.0
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 28.0,
+   "z1": 40.0,
+   "x": -6.0,
+   "t": 0.5,
+   "y0": 0.0,
+   "y1": 4.0,
+   "color": "#8c8275",
+   "holes": [
+    {
+     "width": 2.4,
+     "bottom": 0,
+     "top": 2.7,
+     "center": 34.0
+    }
+   ]
+  },
+  {
+   "op": "Slab",
+   "x0": -6.2,
+   "z0": -40.2,
+   "x1": 6.2,
+   "z1": -27.8,
+   "yTop": 4.3,
+   "thick": 0.3,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Slab",
+   "x0": -6.2,
+   "z0": 27.8,
+   "x1": 6.2,
+   "z1": 40.2,
+   "yTop": 4.3,
+   "thick": 0.3,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 4.3,
+   "color": "#c9bda6",
+   "width": 12.5,
+   "depth": 12.5,
+   "height": 5,
+   "segments": 16,
+   "material": "Concrete"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 4.3,
+   "color": "#c9bda6",
+   "width": 12.5,
+   "depth": 12.5,
+   "height": 5,
+   "segments": 16,
+   "material": "Concrete",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 9.3,
+   "color": "#a89b84",
+   "width": 10.5,
+   "depth": 10.5,
+   "height": 9,
+   "segments": 16,
+   "material": "Concrete"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 9.3,
+   "color": "#a89b84",
+   "width": 10.5,
+   "depth": 10.5,
+   "height": 9,
+   "segments": 16,
+   "material": "Concrete",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 18.3,
+   "color": "#c9bda6",
+   "width": 12,
+   "depth": 12,
+   "height": 5,
+   "segments": 16,
+   "material": "Concrete"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 18.3,
+   "color": "#c9bda6",
+   "width": 12,
+   "depth": 12,
+   "height": 5,
+   "segments": 16,
+   "material": "Concrete",
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 23.3,
+   "color": "#3c414e",
+   "radius": 6.3,
+   "inner": 0.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "torus",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 23.3,
+   "color": "#3c414e",
+   "radius": 6.3,
+   "inner": 0.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -4.4,
+   "y0": 4.3,
+   "z0": -38.4,
+   "x1": 4.4,
+   "y1": 24.0,
+   "z1": -29.6
+  },
+  {
+   "op": "Collider",
+   "x0": -4.4,
+   "y0": 4.3,
+   "z0": 29.6,
+   "x1": 4.4,
+   "y1": 24.0,
+   "z1": 38.4
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.5,
+   "z": -37.5,
+   "y": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.5,
+   "z": 37.5,
+   "y": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.5,
+   "z": -37.5,
+   "y": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.5,
+   "z": 37.5,
+   "y": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.5,
+   "z": -30.5,
+   "y": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.5,
+   "z": 30.5,
+   "y": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 3.5,
+   "z": -30.5,
+   "y": 3.2
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -3.5,
+   "z": 30.5,
+   "y": 3.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 4.2,
+   "z": -29.8,
+   "yaw": 45.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -4.2,
+   "z": 29.8,
+   "yaw": 225.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": -4.4,
+   "z": -38.4,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Supply Case",
+   "x": 4.4,
+   "z": 38.4,
+   "yaw": 210.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Round Sewer Grate",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.6,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Round Sewer Grate",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 2.6,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 8,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 8,
+   "rotation": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Water Stain",
+    "Rust Stain",
+    "Puddle"
+   ],
+   "x0": -5.0,
+   "z0": -39.0,
+   "x1": 5.0,
+   "z1": -29.0,
+   "count": 6,
+   "seed": 71,
+   "gap": 1.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Water Stain",
+    "Rust Stain",
+    "Puddle"
+   ],
+   "x0": -5.0,
+   "z0": 29.0,
+   "x1": 5.0,
+   "z1": 39.0,
+   "count": 6,
+   "seed": 72,
+   "gap": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": -41.3,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": -0.0,
+   "z": 41.3,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": 0.0,
+   "z": -26.7,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 180
+  },
+  {
+   "op": "Decal",
+   "decal": "Hazard Chevrons",
+   "x": -0.0,
+   "z": 26.7,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 0.0
+  },
+  {
+   "op": "Block",
+   "x0": -7.74,
+   "y0": 2.3,
+   "z0": -39.55,
+   "x1": -7.6,
+   "y1": 3.4,
+   "z1": -34.45,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 7.6,
+   "y0": 2.3,
+   "z0": 34.45,
+   "x1": 7.74,
+   "y1": 3.4,
+   "z1": 39.55,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -7.74,
+   "y0": 0.0,
+   "z0": -37.08,
+   "x1": -7.6,
+   "y1": 2.3,
+   "z1": -36.92,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 7.6,
+   "y0": 0.0,
+   "z0": 36.92,
+   "x1": 7.74,
+   "y1": 2.3,
+   "z1": 37.08,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 1",
+   "x": -8.34,
+   "z": -39.0,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 1",
+   "x": 8.34,
+   "z": 39.0,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 2",
+   "x": -8.34,
+   "z": -38.2,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 2",
+   "x": 8.34,
+   "z": 38.2,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 3",
+   "x": -8.34,
+   "z": -37.4,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 3",
+   "x": 8.34,
+   "z": 37.4,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 4",
+   "x": -8.34,
+   "z": -36.6,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 4",
+   "x": 8.34,
+   "z": 36.6,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 5",
+   "x": -8.34,
+   "z": -35.8,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 5",
+   "x": 8.34,
+   "z": 35.8,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 6",
+   "x": -8.34,
+   "z": -35.0,
+   "y": 2.85,
+   "onto": "wall+x",
+   "size": 0.8,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Cooling Tower 6",
+   "x": 8.34,
+   "z": 35.0,
+   "y": 2.85,
+   "onto": "wall-x",
+   "size": 0.8,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.5,
+   "z": -34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.5,
+   "z": 34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 7.5,
+   "z": -34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -7.5,
+   "z": 34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -41.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -0.0,
+   "z": 41.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -26.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -0.0,
+   "z": 26.5,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": -34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -0.0,
+   "z": 34.0,
+   "y": 0.0
+  },
+  {
+   "op": "Block",
+   "x0": -18.0,
+   "y0": 0.0,
+   "z0": -28.0,
+   "x1": -8.0,
+   "y1": 0.55,
+   "z1": -27.6,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 8.0,
+   "y0": 0.0,
+   "z0": 27.6,
+   "x1": 18.0,
+   "y1": 0.55,
+   "z1": 28.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -18.0,
+   "y0": 0.0,
+   "z0": -22.4,
+   "x1": -8.0,
+   "y1": 0.55,
+   "z1": -22.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 8.0,
+   "y0": 0.0,
+   "z0": 22.0,
+   "x1": 18.0,
+   "y1": 0.55,
+   "z1": 22.4,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -18.0,
+   "y0": 0.0,
+   "z0": -28.0,
+   "x1": -17.6,
+   "y1": 0.55,
+   "z1": -22.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 17.6,
+   "y0": 0.0,
+   "z0": 22.0,
+   "x1": 18.0,
+   "y1": 0.55,
+   "z1": 28.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -8.4,
+   "y0": 0.0,
+   "z0": -28.0,
+   "x1": -8.0,
+   "y1": 0.55,
+   "z1": -22.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 8.0,
+   "y0": 0.0,
+   "z0": 22.0,
+   "x1": 8.4,
+   "y1": 0.55,
+   "z1": 28.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -13.0,
+   "z": -25.0,
+   "y": 0.3,
+   "color": "#3f7f8a",
+   "width": 9.2,
+   "height": 0.05,
+   "depth": 5.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 13.0,
+   "z": 25.0,
+   "y": 0.3,
+   "color": "#3f7f8a",
+   "width": 9.2,
+   "height": 0.05,
+   "depth": 5.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": -13.0,
+   "z": -25.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 13,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": 13.0,
+   "z": 25.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 13,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -17.0,
+   "z": -28.8,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.2,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 17.0,
+   "z": 28.8,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.2,
+   "rotation": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -13.0,
+   "z": -20.4
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 13.0,
+   "z": 20.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -15.0,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": -7.0,
+   "y1": 0.55,
+   "z1": -45.6,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": 45.6,
+   "x1": 15.0,
+   "y1": 0.55,
+   "z1": 46.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -15.0,
+   "y0": 0.0,
+   "z0": -40.4,
+   "x1": -7.0,
+   "y1": 0.55,
+   "z1": -40.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": 40.0,
+   "x1": 15.0,
+   "y1": 0.55,
+   "z1": 40.4,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -15.0,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": -14.6,
+   "y1": 0.55,
+   "z1": -40.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 14.6,
+   "y0": 0.0,
+   "z0": 40.0,
+   "x1": 15.0,
+   "y1": 0.55,
+   "z1": 46.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": -7.4,
+   "y0": 0.0,
+   "z0": -46.0,
+   "x1": -7.0,
+   "y1": 0.55,
+   "z1": -40.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Block",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": 40.0,
+   "x1": 7.4,
+   "y1": 0.55,
+   "z1": 46.0,
+   "color": "#8c8275"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -11.0,
+   "z": -43.0,
+   "y": 0.3,
+   "color": "#3f7f8a",
+   "width": 7.2,
+   "height": 0.05,
+   "depth": 5.2
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 11.0,
+   "z": 43.0,
+   "y": 0.3,
+   "color": "#3f7f8a",
+   "width": 7.2,
+   "height": 0.05,
+   "depth": 5.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": -11.0,
+   "z": -43.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 11,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Tide Mark",
+   "x": 11.0,
+   "z": 43.0,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 11,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -14.0,
+   "z": -46.8,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.2,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 14.0,
+   "z": 46.8,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.2,
+   "rotation": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -11.0,
+   "z": -38.4
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 11.0,
+   "z": 38.4,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.5,
+   "z": -25.0,
+   "y": 1.15,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 11.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.5,
+   "z": 25.0,
+   "y": 1.15,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 11.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -18.0,
+   "y0": 0.8,
+   "z0": -25.35,
+   "x1": -7.0,
+   "y1": 1.5,
+   "z1": -24.65
+  },
+  {
+   "op": "Collider",
+   "x0": 7.0,
+   "y0": 0.8,
+   "z0": 24.65,
+   "x1": 18.0,
+   "y1": 1.5,
+   "z1": 25.35
+  },
+  {
+   "op": "Block",
+   "x0": -16.65,
+   "y0": 0.0,
+   "z0": -25.15,
+   "x1": -16.35,
+   "y1": 1.01,
+   "z1": -24.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 16.35,
+   "y0": 0.0,
+   "z0": 24.85,
+   "x1": 16.65,
+   "y1": 1.01,
+   "z1": 25.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -12.65,
+   "y0": 0.0,
+   "z0": -25.15,
+   "x1": -12.35,
+   "y1": 1.01,
+   "z1": -24.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 12.35,
+   "y0": 0.0,
+   "z0": 24.85,
+   "x1": 12.65,
+   "y1": 1.01,
+   "z1": 25.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -8.65,
+   "y0": 0.0,
+   "z0": -25.15,
+   "x1": -8.35,
+   "y1": 1.01,
+   "z1": -24.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 8.35,
+   "y0": 0.0,
+   "z0": 24.85,
+   "x1": 8.65,
+   "y1": 1.01,
+   "z1": 25.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -11.0,
+   "z": -43.0,
+   "y": 1.15,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 8.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 11.0,
+   "z": 43.0,
+   "y": 1.15,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 8.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -15.0,
+   "y0": 0.8,
+   "z0": -43.35,
+   "x1": -7.0,
+   "y1": 1.5,
+   "z1": -42.65
+  },
+  {
+   "op": "Collider",
+   "x0": 7.0,
+   "y0": 0.8,
+   "z0": 42.65,
+   "x1": 15.0,
+   "y1": 1.5,
+   "z1": 43.35
+  },
+  {
+   "op": "Block",
+   "x0": -13.65,
+   "y0": 0.0,
+   "z0": -43.15,
+   "x1": -13.35,
+   "y1": 1.01,
+   "z1": -42.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 13.35,
+   "y0": 0.0,
+   "z0": 42.85,
+   "x1": 13.65,
+   "y1": 1.01,
+   "z1": 43.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -9.65,
+   "y0": 0.0,
+   "z0": -43.15,
+   "x1": -9.35,
+   "y1": 1.01,
+   "z1": -42.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.35,
+   "y0": 0.0,
+   "z0": 42.85,
+   "x1": 9.65,
+   "y1": 1.01,
+   "z1": 43.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -19.5,
+   "y0": 2.0,
+   "z0": -35.55,
+   "x1": -19.36,
+   "y1": 3.1,
+   "z1": -32.45,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 19.36,
+   "y0": 2.0,
+   "z0": 32.45,
+   "x1": 19.5,
+   "y1": 3.1,
+   "z1": 35.55,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -19.5,
+   "y0": 0.0,
+   "z0": -34.08,
+   "x1": -19.36,
+   "y1": 2.0,
+   "z1": -33.92,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 19.36,
+   "y0": 0.0,
+   "z0": 33.92,
+   "x1": 19.5,
+   "y1": 2.0,
+   "z1": 34.08,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 1",
+   "x": -18.76,
+   "z": -32.95,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 1",
+   "x": 18.76,
+   "z": 32.95,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 2",
+   "x": -18.76,
+   "z": -33.65,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 2",
+   "x": 18.76,
+   "z": 33.65,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 3",
+   "x": -18.76,
+   "z": -34.35,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 3",
+   "x": 18.76,
+   "z": 34.35,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 4",
+   "x": -18.76,
+   "z": -35.05,
+   "y": 2.55,
+   "onto": "wall-x",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 4",
+   "x": 18.76,
+   "z": 35.05,
+   "y": 2.55,
+   "onto": "wall+x",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 10.0,
+   "z": -38.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -10.0,
+   "z": 38.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 10.5,
+   "z": -29.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -10.5,
+   "z": 29.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 8.0,
+   "z": -24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -8.0,
+   "z": 24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -20.0,
+   "z": -20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 20.0,
+   "z": 20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Tyre Tracks",
+    "Footprints",
+    "Dirt Patch"
+   ],
+   "x0": -20.0,
+   "z0": -48.0,
+   "x1": 16.0,
+   "z1": -20.0,
+   "count": 16,
+   "seed": 81,
+   "gap": 2.5
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Tyre Tracks",
+    "Footprints",
+    "Dirt Patch"
+   ],
+   "x0": -16.0,
+   "z0": 20.0,
+   "x1": 20.0,
+   "z1": 48.0,
+   "count": 16,
+   "seed": 82,
+   "gap": 2.5
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Station Supply Case",
+    "IBC Tote",
+    "Chemical Drum",
+    "Cinder Blocks"
+   ],
+   "x0": -20.0,
+   "z0": -48.0,
+   "x1": 16.0,
+   "z1": -20.0,
+   "count": 10,
+   "seed": 91,
+   "mirror": true
+  },
+  {
+   "op": "Block",
+   "x0": -21.05,
+   "y0": 2.2,
+   "z0": 12.56,
+   "x1": -16.95,
+   "y1": 3.3,
+   "z1": 12.7,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 16.95,
+   "y0": 2.2,
+   "z0": -12.7,
+   "x1": 21.05,
+   "y1": 3.3,
+   "z1": -12.56,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -19.08,
+   "y0": 0.0,
+   "z0": 12.56,
+   "x1": -18.92,
+   "y1": 2.2,
+   "z1": 12.7,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 18.92,
+   "y0": 0.0,
+   "z0": -12.7,
+   "x1": 19.08,
+   "y1": 2.2,
+   "z1": -12.56,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 1",
+   "x": -20.52,
+   "z": 11.96,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 1",
+   "x": 20.52,
+   "z": -11.96,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 2",
+   "x": -19.76,
+   "z": 11.96,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 2",
+   "x": 19.76,
+   "z": -11.96,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 3",
+   "x": -19.0,
+   "z": 11.96,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 3",
+   "x": 19.0,
+   "z": -11.96,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 4",
+   "x": -18.24,
+   "z": 11.96,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 4",
+   "x": 18.24,
+   "z": -11.96,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 5",
+   "x": -17.48,
+   "z": 11.96,
+   "y": 2.75,
+   "onto": "wall+z",
+   "size": 0.76,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pipe Field 5",
+   "x": 17.48,
+   "z": -11.96,
+   "y": 2.75,
+   "onto": "wall-z",
+   "size": 0.76,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -26.5,
+   "z": 16.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 9.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 26.5,
+   "z": -16.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 9.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -31.0,
+   "y0": 0.0,
+   "z0": 15.5,
+   "x1": -22.0,
+   "y1": 1.0,
+   "z1": 16.5
+  },
+  {
+   "op": "Collider",
+   "x0": 22.0,
+   "y0": 0.0,
+   "z0": -16.5,
+   "x1": 31.0,
+   "y1": 1.0,
+   "z1": -15.5
+  },
+  {
+   "op": "Block",
+   "x0": -29.65,
+   "y0": 0.0,
+   "z0": 15.85,
+   "x1": -29.35,
+   "y1": 0.3,
+   "z1": 16.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 29.35,
+   "y0": 0.0,
+   "z0": -16.15,
+   "x1": 29.65,
+   "y1": 0.3,
+   "z1": -15.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -25.65,
+   "y0": 0.0,
+   "z0": 15.85,
+   "x1": -25.35,
+   "y1": 0.3,
+   "z1": 16.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 25.35,
+   "y0": 0.0,
+   "z0": -16.15,
+   "x1": 25.65,
+   "y1": 0.3,
+   "z1": -15.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -13.0,
+   "z": 16.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 12.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 13.0,
+   "z": -16.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 12.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -19.0,
+   "y0": 0.0,
+   "z0": 15.5,
+   "x1": -7.0,
+   "y1": 1.0,
+   "z1": 16.5
+  },
+  {
+   "op": "Collider",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": -16.5,
+   "x1": 19.0,
+   "y1": 1.0,
+   "z1": -15.5
+  },
+  {
+   "op": "Block",
+   "x0": -17.65,
+   "y0": 0.0,
+   "z0": 15.85,
+   "x1": -17.35,
+   "y1": 0.3,
+   "z1": 16.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 17.35,
+   "y0": 0.0,
+   "z0": -16.15,
+   "x1": 17.65,
+   "y1": 0.3,
+   "z1": -15.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -13.65,
+   "y0": 0.0,
+   "z0": 15.85,
+   "x1": -13.35,
+   "y1": 0.3,
+   "z1": 16.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 13.35,
+   "y0": 0.0,
+   "z0": -16.15,
+   "x1": 13.65,
+   "y1": 0.3,
+   "z1": -15.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -9.65,
+   "y0": 0.0,
+   "z0": 15.85,
+   "x1": -9.35,
+   "y1": 0.3,
+   "z1": 16.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.35,
+   "y0": 0.0,
+   "z0": -16.15,
+   "x1": 9.65,
+   "y1": 0.3,
+   "z1": -15.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -30.0,
+   "z": 24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 2.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 30.0,
+   "z": -24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 2.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -31.0,
+   "y0": 0.0,
+   "z0": 23.5,
+   "x1": -29.0,
+   "y1": 1.0,
+   "z1": 24.5
+  },
+  {
+   "op": "Collider",
+   "x0": 29.0,
+   "y0": 0.0,
+   "z0": -24.5,
+   "x1": 31.0,
+   "y1": 1.0,
+   "z1": -23.5
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -20.0,
+   "z": 24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 12.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 20.0,
+   "z": -24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 12.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -26.0,
+   "y0": 0.0,
+   "z0": 23.5,
+   "x1": -14.0,
+   "y1": 1.0,
+   "z1": 24.5
+  },
+  {
+   "op": "Collider",
+   "x0": 14.0,
+   "y0": 0.0,
+   "z0": -24.5,
+   "x1": 26.0,
+   "y1": 1.0,
+   "z1": -23.5
+  },
+  {
+   "op": "Block",
+   "x0": -24.65,
+   "y0": 0.0,
+   "z0": 23.85,
+   "x1": -24.35,
+   "y1": 0.3,
+   "z1": 24.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 24.35,
+   "y0": 0.0,
+   "z0": -24.15,
+   "x1": 24.65,
+   "y1": 0.3,
+   "z1": -23.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -20.65,
+   "y0": 0.0,
+   "z0": 23.85,
+   "x1": -20.35,
+   "y1": 0.3,
+   "z1": 24.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 20.35,
+   "y0": 0.0,
+   "z0": -24.15,
+   "x1": 20.65,
+   "y1": 0.3,
+   "z1": -23.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -16.65,
+   "y0": 0.0,
+   "z0": 23.85,
+   "x1": -16.35,
+   "y1": 0.3,
+   "z1": 24.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 16.35,
+   "y0": 0.0,
+   "z0": -24.15,
+   "x1": 16.65,
+   "y1": 0.3,
+   "z1": -23.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -9.0,
+   "z": 24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 4.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 9.0,
+   "z": -24.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 4.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -11.0,
+   "y0": 0.0,
+   "z0": 23.5,
+   "x1": -7.0,
+   "y1": 1.0,
+   "z1": 24.5
+  },
+  {
+   "op": "Collider",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": -24.5,
+   "x1": 11.0,
+   "y1": 1.0,
+   "z1": -23.5
+  },
+  {
+   "op": "Block",
+   "x0": -9.65,
+   "y0": 0.0,
+   "z0": 23.85,
+   "x1": -9.35,
+   "y1": 0.3,
+   "z1": 24.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.35,
+   "y0": 0.0,
+   "z0": -24.15,
+   "x1": 9.65,
+   "y1": 0.3,
+   "z1": -23.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -24.5,
+   "z": 32.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 13.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 24.5,
+   "z": -32.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 13.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -31.0,
+   "y0": 0.0,
+   "z0": 31.5,
+   "x1": -18.0,
+   "y1": 1.0,
+   "z1": 32.5
+  },
+  {
+   "op": "Collider",
+   "x0": 18.0,
+   "y0": 0.0,
+   "z0": -32.5,
+   "x1": 31.0,
+   "y1": 1.0,
+   "z1": -31.5
+  },
+  {
+   "op": "Block",
+   "x0": -29.65,
+   "y0": 0.0,
+   "z0": 31.85,
+   "x1": -29.35,
+   "y1": 0.3,
+   "z1": 32.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 29.35,
+   "y0": 0.0,
+   "z0": -32.15,
+   "x1": 29.65,
+   "y1": 0.3,
+   "z1": -31.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -25.65,
+   "y0": 0.0,
+   "z0": 31.85,
+   "x1": -25.35,
+   "y1": 0.3,
+   "z1": 32.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 25.35,
+   "y0": 0.0,
+   "z0": -32.15,
+   "x1": 25.65,
+   "y1": 0.3,
+   "z1": -31.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -21.65,
+   "y0": 0.0,
+   "z0": 31.85,
+   "x1": -21.35,
+   "y1": 0.3,
+   "z1": 32.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 21.35,
+   "y0": 0.0,
+   "z0": -32.15,
+   "x1": 21.65,
+   "y1": 0.3,
+   "z1": -31.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -11.0,
+   "z": 32.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 8.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 11.0,
+   "z": -32.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 8.0,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -15.0,
+   "y0": 0.0,
+   "z0": 31.5,
+   "x1": -7.0,
+   "y1": 1.0,
+   "z1": 32.5
+  },
+  {
+   "op": "Collider",
+   "x0": 7.0,
+   "y0": 0.0,
+   "z0": -32.5,
+   "x1": 15.0,
+   "y1": 1.0,
+   "z1": -31.5
+  },
+  {
+   "op": "Block",
+   "x0": -13.65,
+   "y0": 0.0,
+   "z0": 31.85,
+   "x1": -13.35,
+   "y1": 0.3,
+   "z1": 32.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 13.35,
+   "y0": 0.0,
+   "z0": -32.15,
+   "x1": 13.65,
+   "y1": 0.3,
+   "z1": -31.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -9.65,
+   "y0": 0.0,
+   "z0": 31.85,
+   "x1": -9.35,
+   "y1": 0.3,
+   "z1": 32.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 9.35,
+   "y0": 0.0,
+   "z0": -32.15,
+   "x1": 9.65,
+   "y1": 0.3,
+   "z1": -31.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -25.0,
+   "z": 19.9,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 25.0,
+   "z": -19.9,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -25.5,
+   "y0": 0.0,
+   "z0": 17.0,
+   "x1": -24.5,
+   "y1": 1.0,
+   "z1": 22.8
+  },
+  {
+   "op": "Collider",
+   "x0": 24.5,
+   "y0": 0.0,
+   "z0": -22.8,
+   "x1": 25.5,
+   "y1": 1.0,
+   "z1": -17.0
+  },
+  {
+   "op": "Block",
+   "x0": -25.15,
+   "y0": 0.0,
+   "z0": 18.35,
+   "x1": -24.85,
+   "y1": 0.3,
+   "z1": 18.65,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 24.85,
+   "y0": 0.0,
+   "z0": -18.65,
+   "x1": 25.15,
+   "y1": 0.3,
+   "z1": -18.35,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -25.0,
+   "z": 19.9,
+   "y": 1.55,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 25.0,
+   "z": -19.9,
+   "y": 1.55,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -25.5,
+   "y0": 1.05,
+   "z0": 17.0,
+   "x1": -24.5,
+   "y1": 2.05,
+   "z1": 22.8
+  },
+  {
+   "op": "Collider",
+   "x0": 24.5,
+   "y0": 1.05,
+   "z0": -22.8,
+   "x1": 25.5,
+   "y1": 2.05,
+   "z1": -17.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -25.0,
+   "z": 19.9,
+   "y": 2.45,
+   "color": "#6c6f73",
+   "width": 0.9,
+   "depth": 0.9,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 25.0,
+   "z": -19.9,
+   "y": 2.45,
+   "color": "#6c6f73",
+   "width": 0.9,
+   "depth": 0.9,
+   "height": 5.8,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -25.45,
+   "y0": 2.0,
+   "z0": 17.0,
+   "x1": -24.55,
+   "y1": 2.9,
+   "z1": 22.8
+  },
+  {
+   "op": "Collider",
+   "x0": 24.55,
+   "y0": 2.0,
+   "z0": -22.8,
+   "x1": 25.45,
+   "y1": 2.9,
+   "z1": -17.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 28.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -28.0,
+   "y": 0.5,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -12.5,
+   "y0": 0.0,
+   "z0": 25.0,
+   "x1": -11.5,
+   "y1": 1.0,
+   "z1": 31.0
+  },
+  {
+   "op": "Collider",
+   "x0": 11.5,
+   "y0": 0.0,
+   "z0": -31.0,
+   "x1": 12.5,
+   "y1": 1.0,
+   "z1": -25.0
+  },
+  {
+   "op": "Block",
+   "x0": -12.15,
+   "y0": 0.0,
+   "z0": 26.35,
+   "x1": -11.85,
+   "y1": 0.3,
+   "z1": 26.65,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 11.85,
+   "y0": 0.0,
+   "z0": -26.65,
+   "x1": 12.15,
+   "y1": 0.3,
+   "z1": -26.35,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 28.0,
+   "y": 1.55,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -28.0,
+   "y": 1.55,
+   "color": "#6c6f73",
+   "width": 1.0,
+   "depth": 1.0,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -12.5,
+   "y0": 1.05,
+   "z0": 25.0,
+   "x1": -11.5,
+   "y1": 2.05,
+   "z1": 31.0
+  },
+  {
+   "op": "Collider",
+   "x0": 11.5,
+   "y0": 1.05,
+   "z0": -31.0,
+   "x1": 12.5,
+   "y1": 2.05,
+   "z1": -25.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 28.0,
+   "y": 2.45,
+   "color": "#6c6f73",
+   "width": 0.9,
+   "depth": 0.9,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -28.0,
+   "y": 2.45,
+   "color": "#6c6f73",
+   "width": 0.9,
+   "depth": 0.9,
+   "height": 6.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -12.45,
+   "y0": 2.0,
+   "z0": 25.0,
+   "x1": -11.55,
+   "y1": 2.9,
+   "z1": 31.0
+  },
+  {
+   "op": "Collider",
+   "x0": 11.55,
+   "y0": 2.0,
+   "z0": -31.0,
+   "x1": 12.45,
+   "y1": 2.9,
+   "z1": -25.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -28.0,
+   "z": 24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 28.0,
+   "z": -24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -28.12,
+   "y0": 0.0,
+   "z0": 15.6,
+   "x1": -27.88,
+   "y1": 2.4,
+   "z1": 15.84,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 27.88,
+   "y0": 0.0,
+   "z0": -15.84,
+   "x1": 28.12,
+   "y1": 2.4,
+   "z1": -15.6,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -28.12,
+   "y0": 0.0,
+   "z0": 32.16,
+   "x1": -27.88,
+   "y1": 2.4,
+   "z1": 32.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 27.88,
+   "y0": 0.0,
+   "z0": -32.4,
+   "x1": 28.12,
+   "y1": 2.4,
+   "z1": -32.16,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -17.0,
+   "z": 24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 17.0,
+   "z": -24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -17.12,
+   "y0": 0.0,
+   "z0": 15.6,
+   "x1": -16.88,
+   "y1": 2.4,
+   "z1": 15.84,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 16.88,
+   "y0": 0.0,
+   "z0": -15.84,
+   "x1": 17.12,
+   "y1": 2.4,
+   "z1": -15.6,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -17.12,
+   "y0": 0.0,
+   "z0": 32.16,
+   "x1": -16.88,
+   "y1": 2.4,
+   "z1": 32.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 16.88,
+   "y0": 0.0,
+   "z0": -32.4,
+   "x1": 17.12,
+   "y1": 2.4,
+   "z1": -32.16,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -9.0,
+   "z": 24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 9.0,
+   "z": -24.0,
+   "y": 2.7,
+   "color": "#6c6f73",
+   "width": 0.6,
+   "depth": 0.6,
+   "height": 17.0,
+   "segments": 12,
+   "pitch": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -9.12,
+   "y0": 0.0,
+   "z0": 15.6,
+   "x1": -8.88,
+   "y1": 2.4,
+   "z1": 15.84,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 8.88,
+   "y0": 0.0,
+   "z0": -15.84,
+   "x1": 9.12,
+   "y1": 2.4,
+   "z1": -15.6,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -9.12,
+   "y0": 0.0,
+   "z0": 32.16,
+   "x1": -8.88,
+   "y1": 2.4,
+   "z1": 32.4,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 8.88,
+   "y0": 0.0,
+   "z0": -32.4,
+   "x1": 9.12,
+   "y1": 2.4,
+   "z1": -32.16,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -22.0,
+   "z": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 22.0,
+   "z": -20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -15.0,
+   "z": 28.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 15.0,
+   "z": -28.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -27.0,
+   "z": 28.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 27.0,
+   "z": -28.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -10.0,
+   "z": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 10.0,
+   "z": -20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -28.0,
+   "z": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 28.0,
+   "z": -20.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -19.0,
+   "z": 36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 19.0,
+   "z": -36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -6.0,
+   "z": 34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 6.0,
+   "z": -34.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -32.0,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 32.0,
+   "z": -14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -30.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 30.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -28.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 28.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -26.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 26.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -24.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 24.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -22.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 22.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -20.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 20.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -18.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 18.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -16.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 16.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -14.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 14.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -12.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 12.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -10.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 10.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -8.0,
+   "z": 20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 8.0,
+   "z": -20.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -30.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 30.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -28.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 28.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -26.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 26.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -24.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 24.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -22.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 22.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -20.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 20.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -18.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 18.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -16.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 16.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -14.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 14.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -12.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 12.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -10.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 10.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": -8.0,
+   "z": 28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 90,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Pipe Lane",
+   "x": 8.0,
+   "z": -28.0,
+   "y": 0.0,
+   "onto": "floor",
+   "rotation": 270.0,
+   "size": 2.2
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -20.5,
+   "z": 14.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 20.5,
+   "z": -14.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -12.5,
+   "z": 22.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 12.5,
+   "z": -22.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 180.0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": -16.5,
+   "z": 30.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 0
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Vapour Warning",
+   "x": 16.5,
+   "z": -30.7,
+   "y": 0.0,
+   "onto": "floor",
+   "size": 1.0,
+   "rotation": 180.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Rust Stain",
+    "Oil Stain",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Water Stain",
+    "Footprints"
+   ],
+   "x0": -31.0,
+   "z0": 14.0,
+   "x1": -7.0,
+   "z1": 34.0,
+   "count": 16,
+   "seed": 101,
+   "gap": 2
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Rust Stain",
+    "Oil Stain",
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Water Stain",
+    "Footprints"
+   ],
+   "x0": 7.0,
+   "z0": -34.0,
+   "x1": 31.0,
+   "z1": -14.0,
+   "count": 16,
+   "seed": 102,
+   "gap": 2
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Station Supply Case",
+    "Gas Cylinders",
+    "Toolbox",
+    "Cable Spool"
+   ],
+   "x0": -31.0,
+   "z0": 14.0,
+   "x1": -7.0,
+   "z1": 34.0,
+   "count": 6,
+   "seed": 111,
+   "mirror": true
+  },
+  {
+   "op": "Waypoint",
+   "x": -28.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 28.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -22.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 22.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -10.0,
+   "z": 20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 10.0,
+   "z": -20.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -28.0,
+   "z": 28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 28.0,
+   "z": -28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -22.0,
+   "z": 28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 22.0,
+   "z": -28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -16.0,
+   "z": 28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 16.0,
+   "z": -28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -10.0,
+   "z": 28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 10.0,
+   "z": -28.0,
+   "y": 0.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -8.0,
+   "z": 16.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 8.0,
+   "z": -16.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": 12.0,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Reagent Sphere",
+   "x": -12.0,
+   "z": -14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": -2.0,
+   "z": 15.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Concrete Tank Trap",
+   "x": 2.0,
+   "z": -15.0,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": 4.0,
+   "z": 19.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Wall Long",
+   "x": -4.0,
+   "z": -19.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -14.0,
+   "z": -14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 14.0,
+   "z": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": -11.5,
+   "z": -14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Deck Barrier",
+   "x": 11.5,
+   "z": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": -18.0,
+   "z": -19.0
+  },
+  {
+   "op": "Prop",
+   "name": "Condenser Unit",
+   "x": 18.0,
+   "z": 19.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": 16.0,
+   "z": -3.0,
+   "yaw": 80.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hover Cargo Sled",
+   "x": -16.0,
+   "z": 3.0,
+   "yaw": 260.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -22.0,
+   "z": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 22.0,
+   "z": -14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 10.0,
+   "z": -24.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -10.0,
+   "z": 24.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": 20.0,
+   "z": 6.0
+  },
+  {
+   "op": "Prop",
+   "name": "Sandbag Nest Ring",
+   "x": -20.0,
+   "z": -6.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": -6.0,
+   "z": -20.0,
+   "yaw": 60.0
+  },
+  {
+   "op": "Prop",
+   "name": "Station Cargo Pod",
+   "x": 6.0,
+   "z": 20.0,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -53.001,
+   "z": 24.3
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 53.001,
+   "z": -24.3,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": -60.27,
+   "z": 8.439
+  },
+  {
+   "op": "Prop",
+   "name": "Warning Light Mast",
+   "x": 60.27,
+   "z": -8.439,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -59.115,
+   "z": -12.579
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 59.115,
+   "z": 12.579,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": -50.132,
+   "z": -27.876
+  },
+  {
+   "op": "Prop",
+   "name": "Atmos Sensor Pole",
+   "x": 50.132,
+   "z": 27.876,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -40.0,
+   "z": -30.0,
+   "yaw": 60.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 40.0,
+   "z": 30.0,
+   "yaw": 240.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": -34.0,
+   "z": 36.0,
+   "yaw": 110.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hab Container",
+   "x": 34.0,
+   "z": -36.0,
+   "yaw": 290.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": -52.0,
+   "z": -22.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Floodlight Mast",
+   "x": 52.0,
+   "z": 22.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Storage Tank",
+   "x": -40.0,
+   "z": 34.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Diesel Storage Tank",
+   "x": 40.0,
+   "z": -34.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": -46.0,
+   "z": 28.0,
+   "yaw": 30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": 46.0,
+   "z": -28.0,
+   "yaw": 210.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": -24.0,
+   "z": -36.0,
+   "yaw": 80.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Stack",
+   "x": 24.0,
+   "z": 36.0,
+   "yaw": 260.0
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Rusty Drum",
+    "IBC Tote",
+    "Pallet Stack",
+    "Cinder Blocks",
+    "Rubble"
+   ],
+   "x0": -56.0,
+   "z0": -34.0,
+   "x1": -36.0,
+   "z1": -20.0,
+   "count": 8,
+   "seed": 121,
+   "mirror": true
+  },
+  {
+   "op": "Clutter",
+   "props": [
+    "Oil Drum",
+    "Pallet",
+    "Small Crate",
+    "Rubble",
+    "Cable Spool"
+   ],
+   "x0": -50.0,
+   "z0": 24.0,
+   "x1": -30.0,
+   "z1": 40.0,
+   "count": 8,
+   "seed": 131,
+   "mirror": true
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": -46.0,
+   "z": 32.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": 46.0,
+   "z": -32.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": -41.0,
+   "z": 36.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": 41.0,
+   "z": -36.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": -50.0,
+   "z": 37.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gas Refinery Tank",
+   "x": 50.0,
+   "z": -37.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": -44.0,
+   "z": 26.0
+  },
+  {
+   "op": "Prop",
+   "name": "Twin Gas Tanks",
+   "x": 44.0,
+   "z": -26.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": -36.0,
+   "z": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Squat Pressure Tank",
+   "x": 36.0,
+   "z": -40.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -45.0,
+   "z": 30.0,
+   "y": 0.95,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 14,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 45.0,
+   "z": -30.0,
+   "y": 0.95,
+   "color": "#6c6f73",
+   "width": 0.7,
+   "depth": 0.7,
+   "height": 14,
+   "segments": 12,
+   "roll": 90,
+   "material": "Metal",
+   "yaw": 180.0
+  },
+  {
+   "op": "Collider",
+   "x0": -52.0,
+   "y0": 0.6,
+   "z0": 29.65,
+   "x1": -38.0,
+   "y1": 1.3,
+   "z1": 30.35
+  },
+  {
+   "op": "Collider",
+   "x0": 38.0,
+   "y0": 0.6,
+   "z0": -30.35,
+   "x1": 52.0,
+   "y1": 1.3,
+   "z1": -29.65
+  },
+  {
+   "op": "Block",
+   "x0": -50.65,
+   "y0": 0.0,
+   "z0": 29.85,
+   "x1": -50.35,
+   "y1": 0.81,
+   "z1": 30.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 50.35,
+   "y0": 0.0,
+   "z0": -30.15,
+   "x1": 50.65,
+   "y1": 0.81,
+   "z1": -29.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -46.65,
+   "y0": 0.0,
+   "z0": 29.85,
+   "x1": -46.35,
+   "y1": 0.81,
+   "z1": 30.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 46.35,
+   "y0": 0.0,
+   "z0": -30.15,
+   "x1": 46.65,
+   "y1": 0.81,
+   "z1": -29.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -42.65,
+   "y0": 0.0,
+   "z0": 29.85,
+   "x1": -42.35,
+   "y1": 0.81,
+   "z1": 30.15,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 42.35,
+   "y0": 0.0,
+   "z0": -30.15,
+   "x1": 42.65,
+   "y1": 0.81,
+   "z1": -29.85,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": -38.0,
+   "z": 31.5
+  },
+  {
+   "op": "Prop",
+   "name": "Station Pipe Riser",
+   "x": 38.0,
+   "z": -31.5,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": -40.0,
+   "z": 28.0
+  },
+  {
+   "op": "Prop",
+   "name": "Pipe Valve Stack",
+   "x": 40.0,
+   "z": -28.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Hangar",
+   "cx": -28,
+   "cz": 40,
+   "w": 12,
+   "d": 9,
+   "h": 5,
+   "wall": "#8c8275",
+   "roof": "#7a5238",
+   "doorsOnX": true
+  },
+  {
+   "op": "Hangar",
+   "cx": 28,
+   "cz": -40,
+   "w": 12,
+   "d": 9,
+   "h": 5,
+   "wall": "#8c8275",
+   "roof": "#7a5238",
+   "doorsOnX": true
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": -28.0,
+   "z": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Coolant Pump",
+   "x": 28.0,
+   "z": -40.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": -28.0,
+   "z": 37.0
+  },
+  {
+   "op": "Prop",
+   "name": "Turbine Generator",
+   "x": 28.0,
+   "z": -37.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": -28.0,
+   "z": 43.0,
+   "y": 4.0
+  },
+  {
+   "op": "Prop",
+   "name": "Caged Bulkhead Lamp",
+   "x": 28.0,
+   "z": -43.0,
+   "y": 4.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Block",
+   "x0": -29.55,
+   "y0": 3.0,
+   "z0": 35.06,
+   "x1": -26.45,
+   "y1": 4.1,
+   "z1": 35.2,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": 26.45,
+   "y0": 3.0,
+   "z0": -35.2,
+   "x1": 29.55,
+   "y1": 4.1,
+   "z1": -35.06,
+   "color": "#3c414e"
+  },
+  {
+   "op": "Block",
+   "x0": -28.08,
+   "y0": 0.0,
+   "z0": 35.06,
+   "x1": -27.92,
+   "y1": 3.0,
+   "z1": 35.2,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Block",
+   "x0": 27.92,
+   "y0": 0.0,
+   "z0": -35.2,
+   "x1": 28.08,
+   "y1": 3.0,
+   "z1": -35.06,
+   "color": "#6c6f73"
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 1",
+   "x": -29.05,
+   "z": 34.46,
+   "y": 3.55,
+   "onto": "wall+z",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 1",
+   "x": 29.05,
+   "z": -34.46,
+   "y": 3.55,
+   "onto": "wall-z",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 2",
+   "x": -28.35,
+   "z": 34.46,
+   "y": 3.55,
+   "onto": "wall+z",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 2",
+   "x": 28.35,
+   "z": -34.46,
+   "y": 3.55,
+   "onto": "wall-z",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 3",
+   "x": -27.65,
+   "z": 34.46,
+   "y": 3.55,
+   "onto": "wall+z",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 3",
+   "x": 27.65,
+   "z": -34.46,
+   "y": 3.55,
+   "onto": "wall-z",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 4",
+   "x": -26.95,
+   "z": 34.46,
+   "y": 3.55,
+   "onto": "wall+z",
+   "size": 0.7,
+   "rotation": 0,
+   "reach": 1.5
+  },
+  {
+   "op": "Decal",
+   "decal": "Redvane Sign Pools 4",
+   "x": 26.95,
+   "z": -34.46,
+   "y": 3.55,
+   "onto": "wall-z",
+   "size": 0.7,
+   "rotation": 180.0,
+   "reach": 1.5
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Dump Truck",
+   "x": -48.0,
+   "z": -30.0,
+   "yaw": 70.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Dump Truck",
+   "x": 48.0,
+   "z": 30.0,
+   "yaw": 250.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tracked Excavator",
+   "x": -38.0,
+   "z": -38.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tracked Excavator",
+   "x": 38.0,
+   "z": 38.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Container",
+   "x": -30,
+   "z": -32,
+   "alongX": true,
+   "color": "#7a5238"
+  },
+  {
+   "op": "Container",
+   "x": 30,
+   "z": 32,
+   "alongX": true,
+   "color": "#7a5238"
+  },
+  {
+   "op": "Container",
+   "x": -30,
+   "z": -29.2,
+   "alongX": true,
+   "color": "#b0804a",
+   "open": true
+  },
+  {
+   "op": "Container",
+   "x": 30,
+   "z": 29.2,
+   "alongX": true,
+   "color": "#b0804a",
+   "open": true
+  },
+  {
+   "op": "Prop",
+   "name": "Tyre Stack",
+   "x": -44.0,
+   "z": -38.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tyre Stack",
+   "x": 44.0,
+   "z": 38.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tyre Stack",
+   "x": -42.5,
+   "z": -37.0,
+   "yaw": 40.0
+  },
+  {
+   "op": "Prop",
+   "name": "Tyre Stack",
+   "x": 42.5,
+   "z": 37.0,
+   "yaw": 220.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Drum Rack",
+   "x": -52.0,
+   "z": -34.0
+  },
+  {
+   "op": "Prop",
+   "name": "Fuel Drum Rack",
+   "x": 52.0,
+   "z": 34.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cable Spool",
+   "x": -36.0,
+   "z": -30.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cable Spool",
+   "x": 36.0,
+   "z": 30.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Timber Stack",
+   "x": -34.0,
+   "z": -41.0,
+   "yaw": 20.0
+  },
+  {
+   "op": "Prop",
+   "name": "Mine Timber Stack",
+   "x": 34.0,
+   "z": 41.0,
+   "yaw": 200.0
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Dirt Patch",
+    "Dry Grass"
+   ],
+   "x0": -60.0,
+   "z0": -48.0,
+   "x1": 0.0,
+   "z1": 48.0,
+   "count": 40,
+   "seed": 141,
+   "gap": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Redvane Dust Ring",
+    "Sand Drift",
+    "Dirt Patch",
+    "Dry Grass"
+   ],
+   "x0": 0.0,
+   "z0": -48.0,
+   "x1": 60.0,
+   "z1": 48.0,
+   "count": 40,
+   "seed": 142,
+   "gap": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Footprints",
+    "Skid Marks"
+   ],
+   "x0": -50.0,
+   "z0": -20.0,
+   "x1": -10.0,
+   "z1": 20.0,
+   "count": 10,
+   "seed": 151,
+   "gap": 4
+  },
+  {
+   "op": "DecalScatter",
+   "decals": [
+    "Tyre Tracks",
+    "Footprints",
+    "Skid Marks"
+   ],
+   "x0": 10.0,
+   "z0": -20.0,
+   "x1": 50.0,
+   "z1": 20.0,
+   "count": 10,
+   "seed": 152,
+   "gap": 4
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 6
+  }
+ ]
+}

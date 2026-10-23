@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Sign Crusher Yard 2",
+ "category": "Hollowrock",
+ "description": "Tile 2 of 6 of the 'CRUSHER YARD' sign (an invented place name).",
+ "author": "Call of Slop",
+ "size": [
+  0.767,
+  0.7
+ ],
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "wall",
+ "image": "hollowrock_sign_crusher_yard_2.png",
+ "fadeDistance": 80
+}

@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Redvane Stack Ring",
+ "category": "Redvane",
+ "description": "A chequered black and white ring round the main stack's base.",
+ "author": "Call of Slop",
+ "size": 16,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "redvane_stack_ring.png",
+ "fadeDistance": 150
+}

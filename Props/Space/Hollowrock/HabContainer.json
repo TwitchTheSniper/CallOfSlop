@@ -1,0 +1,196 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Hab Container",
+ "category": "Space",
+ "description": "A 6 m cargo and habitat container with a lit hatch at one end and a window each side. Long along X.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    6.0,
+    2.8,
+    2.6
+   ],
+   "offset": [
+    0.0,
+    1.4,
+    0.0
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90,
+  "yawJitter": 4
+ },
+ "parts": [
+  {
+   "size": [
+    6.0,
+    0.2,
+    2.6
+   ],
+   "offset": [
+    0.0,
+    0.1,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    6.0,
+    2.5,
+    2.4
+   ],
+   "offset": [
+    0.0,
+    1.45,
+    0.0
+   ],
+   "color": "#c9bda6",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.14,
+    2.6,
+    2.5
+   ],
+   "offset": [
+    -2.9,
+    1.45,
+    0.0
+   ],
+   "color": "#a89b84",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.14,
+    2.6,
+    2.5
+   ],
+   "offset": [
+    -1.0,
+    1.45,
+    0.0
+   ],
+   "color": "#a89b84",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.14,
+    2.6,
+    2.5
+   ],
+   "offset": [
+    1.0,
+    1.45,
+    0.0
+   ],
+   "color": "#a89b84",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.14,
+    2.6,
+    2.5
+   ],
+   "offset": [
+    2.9,
+    1.45,
+    0.0
+   ],
+   "color": "#a89b84",
+   "material": "metal"
+  },
+  {
+   "size": [
+    6.04,
+    0.1,
+    2.44
+   ],
+   "offset": [
+    0.0,
+    2.75,
+    0.0
+   ],
+   "color": "#a89b84"
+  },
+  {
+   "size": [
+    0.08,
+    1.9,
+    1.0
+   ],
+   "offset": [
+    3.03,
+    1.25,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    0.06,
+    2.0,
+    1.1
+   ],
+   "offset": [
+    3.05,
+    1.25,
+    0.0
+   ],
+   "color": "#6fe0e8",
+   "anim": {
+    "type": "pulse",
+    "color": "#6fe0e8",
+    "glow": 0.9,
+    "period": 2.6
+   }
+  },
+  {
+   "size": [
+    0.08,
+    1.9,
+    1.0
+   ],
+   "offset": [
+    3.08,
+    1.25,
+    0.0
+   ],
+   "color": "#34363a"
+  },
+  {
+   "size": [
+    1.6,
+    0.8,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.6,
+    1.23
+   ],
+   "color": "#2e4450"
+  },
+  {
+   "size": [
+    1.6,
+    0.8,
+    0.06
+   ],
+   "offset": [
+    0.0,
+    1.6,
+    -1.23
+   ],
+   "color": "#2e4450"
+  }
+ ],
+ "author": "Call of Slop"
+}

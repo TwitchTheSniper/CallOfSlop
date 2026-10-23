@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Meridian Logo",
+ "category": "Redvane",
+ "description": "The invented Meridian Terraforming Works logo: a red globe with two vanes.",
+ "author": "Call of Slop",
+ "size": 2.4,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "wall",
+  "floor"
+ ],
+ "image": "meridian_logo.png",
+ "fadeDistance": 110
+}

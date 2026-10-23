@@ -1,0 +1,16 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Redvane Vapour Warning",
+ "category": "Redvane",
+ "description": "A yellow warning triangle with a vapour drop, for pipes and pools.",
+ "author": "Call of Slop",
+ "size": 1.8,
+ "rotation": 0,
+ "blend": "alpha",
+ "surfaces": [
+  "floor",
+  "wall"
+ ],
+ "image": "redvane_vapour_warning.png",
+ "fadeDistance": 80
+}

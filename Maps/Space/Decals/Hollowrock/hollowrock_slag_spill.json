@@ -1,0 +1,13 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Slag Spill",
+ "category": "Hollowrock",
+ "description": "A run of still-glowing slag spilt across the floor.",
+ "author": "Call of Slop",
+ "size": 3.0,
+ "rotation": "random",
+ "blend": "alpha",
+ "surfaces": "floor",
+ "image": "hollowrock_slag_spill.png",
+ "fadeDistance": 90
+}

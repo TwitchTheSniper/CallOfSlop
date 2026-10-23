@@ -1,0 +1,14 @@
+{
+ "format": "call-of-slop-decal/1",
+ "name": "Hollowrock Ore Grit",
+ "category": "Hollowrock",
+ "description": "Dark ore grit spilled over the ground (darkens it).",
+ "author": "Call of Slop",
+ "size": 2.2,
+ "rotation": "random",
+ "blend": "multiply",
+ "surfaces": "floor",
+ "image": "hollowrock_ore_grit.png",
+ "fadeDistance": 60,
+ "sizeVariation": 0.3
+}
