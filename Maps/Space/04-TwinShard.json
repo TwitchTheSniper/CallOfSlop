@@ -18,7 +18,7 @@
   "botMatchSeconds": 12,
   "botMatchMode": "koth",
   "spawnsStand": true,
-  "maxStuckBots": 2
+  "maxStuckBots": 4
  },
  "skybox": {
   "preset": "night",
