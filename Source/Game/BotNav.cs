@@ -559,7 +559,7 @@ public sealed partial class NavGraph
         for (var k = 0; k <= steps; k++)
         {
             var p = Vector3.Lerp(a, b, k / (float)steps);
-            if (!boundary.Inside(p.X, p.Z, 0.3f))
+            if (!boundary.Inside(p.X, p.Z, World.PlayerRadius + 0.05f)) // the body's half width: the outline holds the body, not its middle
                 return true;
         }
         return false;

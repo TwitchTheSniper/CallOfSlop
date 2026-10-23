@@ -268,15 +268,15 @@ public sealed partial class NavGraph
     }
 
     /// <summary>
-    /// Walking gets there, and sprinting too on slopes and at ledges (bots do either). A ledge is also tried from half a body
+    /// Walking gets there, and sprinting too on slopes (bots do either). A ledge is also tried from half a body
     /// width to either side of the start (bots seldom arrive dead on the node), so one that only works from one exact spot isn't an edge.
     /// </summary>
     private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
     {
         if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached)
             return false;
-        // Sprinting changes things on slopes (more speed into a slide) and at ledges; drops, steps and squeezes walk the same.
-        if ((flags & (FlagMantle | FlagSlope)) != 0 && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+        // Sprinting changes things on slopes (more speed into a slide); ledges, drops, steps and squeezes walk the same.
+        if ((flags & FlagSlope) != 0 && !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
             return false;
         // Side starts only for a real ledge (one climb of most of a mantle's reach), not for stairs sampled as small mantles.
         if ((flags & FlagMantle) == 0 || ledge.Y - a.Y < 0.9f || b.Y - ledge.Y > 0.3f)

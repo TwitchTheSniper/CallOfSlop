@@ -8,8 +8,8 @@ namespace CallOfSlop;
 /// bots' nav edges one at a time, the way a bot follows them (face the next node, Forward, Jump + Forward at a mantle edge's
 /// ledge), for a few seconds each. An edge the walker can't finish is a spot where bots get stuck (a slope it slides back
 /// down, a ledge it can't climb, a wall in the way). No bots, no matches: deterministic, a couple of seconds for all maps.
-/// Every edge with a height change, a flag (mantle, drop) or a slope on the way is walked (sprinted too on slopes and at
-/// ledges); level edges on a stride, so each map stays within a budget. Last-resort edges (known to fail, kept as the one way
+/// Every edge with a height change, a flag (mantle, drop) or a slope on the way is walked (sprinted too on slopes);
+/// level edges on a stride, so each map stays within a budget. Last-resort edges (known to fail, kept as the one way
 /// somewhere) are counted, not walked.
 /// </summary>
 public static partial class SelfTest
@@ -136,8 +136,8 @@ public static partial class SelfTest
         foreach (var e in interesting)
         {
             list.Add((e, false));
-            if ((nav.EdgeFlags[e] & (NavGraph.FlagMantle | NavGraph.FlagSlope)) != 0)
-                list.Add((e, true)); // sprinting too where it matters (as the nav build checks)
+            if ((nav.EdgeFlags[e] & NavGraph.FlagSlope) != 0)
+                list.Add((e, true)); // sprinting too on slopes (as the nav build checks)
         }
         if (list.Count > EdgeWalkBudget)
         {
