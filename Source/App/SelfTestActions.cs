@@ -197,8 +197,9 @@ public static partial class SelfTest
             game.NextFireTime = 0;
             game.Active.Ammo = game.Active.Def.Mag;
             game.Active.ReloadUntil = 0;
-            clock += 30; // let any spool wind down
-            game.UpdateTrigger(clock, false, false);
+            // Let any spool wind down (a gun without one leaves it full; the loop steps a quarter second at most).
+            for (var i = 0; i < 40; i++)
+                game.UpdateTrigger(clock += 0.25, false, false);
             var shots = new List<double>();
             var start = clock;
             for (var t = 0.0; t < seconds; t += Frame)
@@ -233,8 +234,9 @@ public static partial class SelfTest
             var burst = Def(Rifle("Three-Round Burst Group"));
             var oneBurst = Fire(burst, 1.0, false);
             Expect("3-round burst, one pull", oneBurst, 3, 3);
-            if (oneBurst.Count == 3 && MathF.Abs((float)(oneBurst[2] - oneBurst[0]) - 2 * burst.FireInterval) > 0.01f)
-                Fail($"actions: a burst's rounds should be {burst.FireInterval:0.000} s apart ({oneBurst[0]:0.000} .. {oneBurst[2]:0.000})");
+            // (The first round may come a frame early: the trigger loop lets a shot catch up by up to 20 ms.)
+            if (oneBurst.Count == 3 && MathF.Abs((float)(oneBurst[2] - oneBurst[1]) - burst.FireInterval) > 0.01f)
+                Fail($"actions: a burst's rounds should be {burst.FireInterval:0.000} s apart ({string.Join(" ", oneBurst.Select(x => x.ToString("0.000")))})");
             // Pulling all the time: 3 rounds, then the burst delay, again: cycle 3 x 0.075 + 0.25 = 0.475 s.
             Expect("3-round burst, pulled every frame for 2 s", Fire(burst, 2.0, true), 12, 15);
             Expect("2-round binary trigger, one pull", Fire(Def(Rifle("Binary Trigger")), 1.0, false), 2, 2);
@@ -259,7 +261,7 @@ public static partial class SelfTest
             int In(List<double> s, double a, double b) => s.Count(x => x >= a && x < b);
             Line($"  rotary (Minigun, {minigun.Rpm} rpm, spool {minigun.SpoolTime} s from {minigun.SpoolStart:0.00}): {In(spin, 0, 0.5)} shots in the first 0.5 s, {In(spin, 2, 2.5)} in the last");
             if (!(In(spin, 0, 0.5) < In(spin, 2, 2.5) * 0.7f) || MathF.Abs(In(spin, 2, 2.5) - minigun.Rpm / 120f) > 3)
-                Fail("actions: a rotary action should spin up to its full rate");
+                Fail($"actions: a rotary action should spin up to its full rate ({minigun.Rpm} rpm, spool {minigun.SpoolTime} from {minigun.SpoolStart}: {In(spin, 0, 0.5)} shots in the first 0.5 s, {In(spin, 2, 2.5)} in the last, {spin.Count} in all)");
             var chain = Def("Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Big Iron Barrel,feed:Belt Box,ammo:.50 BMG,action:Chain Drive Motor}}");
             var wind = Fire(chain, 1.5, false);
             var firstGap = wind.Count > 2 ? wind[1] - wind[0] : 0;
@@ -275,10 +277,11 @@ public static partial class SelfTest
 
         // ---- A cluster receiver with a plain action: all barrels at once, conserving the shot ----------------------------
         var six = string.Join(",", Enumerable.Range(1, 6).Select(i => $"barrel_{i}:Standard Barrel"));
-        var rotary = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Electric Rotary Drive}}}}")).Def;
-        var volley = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Full-Auto Sear}}}}")).Def;
+        var rotaryAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Electric Rotary Drive}},foregrip:Chaingun Handle}}"));
+        var volleyAsm = WeaponBuilder.Assemble(BuildOf($"Rifle Grip{{receiver_1:Hellwheel Rotary Receiver{{{six},feed:Backpack Hopper,ammo:5.56 FMJ,action:Full-Auto Sear}},foregrip:Chaingun Handle}}"));
+        var (rotary, volley) = (rotaryAsm.Def, volleyAsm.Def);
         if (rotary == null || volley == null)
-            Fail("actions: a Hellwheel with a rotary or a full-auto action should both be legal");
+            Fail($"actions: a Hellwheel with a rotary or a full-auto action should both be legal ({string.Join("; ", rotaryAsm.Problems.Concat(volleyAsm.Problems).Select(p => p.Message))})");
         else
         {
             var rr = Game.ShotRays(rotary, Vector3.Zero, -Vector3.UnitZ, 0, 0).Count;
