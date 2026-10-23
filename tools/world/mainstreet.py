@@ -156,11 +156,12 @@ N_ALLEY = (-21.6, -17.8)
 S_ALLEY = (17.8, 21.8)
 
 # Buildings: name, origin x, origin z, yaw, footprint (local x0, z0, x1, z1), variant, seed
+# (the Corner Shop stands 2.4 m clear of the Bank: a passage to the north alley for Red, like Blue's beside the Diner)
 BUILDINGS = [
     ("Barber Shop", -27.6, -12.2, 0, (-4.1, -3.6, 4.1, 3.6), {"palette": "red brick"}, 3),
     ("Diner", -14.0, -12.75, 0, (-7.12, -4.12, 7.12, 4.12), {"palette": "mint and chrome"}, 5),
     ("Bank", 14.6, -14.4, 0, (-8.2, -6.2, 8.2, 6.2), {"palette": "limestone"}, 7),
-    ("Corner Shop", 28.4, -12.75, 0, (-4.62, -4.12, 4.62, 4.12), {"palette": "yellow brick"}, 9),
+    ("Corner Shop", 29.8, -12.75, 0, (-4.62, -4.12, 4.62, 4.12), {"palette": "yellow brick"}, 9),
     ("Pizzeria", -26.4, 13.25, 180, (-6.12, -4.62, 6.12, 4.62), {"palette": "cream and green"}, 11),
     ("Pharmacy", -12.4, 13.25, 180, (-6.12, -4.62, 6.12, 4.62), {"palette": "white and green"}, 13),
     ("Gas Station", 25.6, 20.4, 180, (-4.12, -3.12, 4.12, 3.12), {"palette": "red and white"}, 15),
@@ -407,7 +408,7 @@ P("Pickup Truck", -1.3, -11.6, 90)                         # parked on Elm north
 P("Van", 1.4, 14.0, 270)                                   # and on Elm south
 
 # street furniture along the four sidewalk runs
-SKIP_N = [(-27.6 - 0.8, -27.6 + 0.8), (-14.0 - 0.8, -14.0 + 0.8), (14.6 - 2.0, 14.6 + 2.0), (28.4 + 1.6 - 0.8, 28.4 + 1.6 + 0.8)]
+SKIP_N = [(-27.6 - 0.8, -27.6 + 0.8), (-14.0 - 0.8, -14.0 + 0.8), (14.6 - 2.0, 14.6 + 2.0), (29.8 + 1.6 - 0.8, 29.8 + 1.6 + 0.8)]
 for (xa, xb) in ((-33.0, -ELM_SW - 0.6), (ELM_SW + 0.6, 33.5)):
     tk.street_furniture(t, (xa, -SIDE + 0.3), (xb, -SIDE + 0.3), (0, 1), rng, lamp_every=13.0, lamp_kinds=("Street Lamp",), trees=False,
                         kerb_off=2.4, back_off=1.8, extras=[("Bench", "Trash Can"), ("Fire Hydrant",), ("Newspaper Box",), ("Mailbox",), ("Parking Meter",)],
@@ -476,7 +477,7 @@ def alley_dress(z_wall, out, xs, seed):
         tk.bins_by_door(t, (x, z_wall), (1, 0), (0, out), rng, side=1 if k % 2 == 0 else -1, dumpster=k % 2 == 0, seed=seed + k)
 
 
-alley_dress(-17.0, -1, [-31.0, -24.0, -5.8, 8.0, 24.5, 32.6], 100)
+alley_dress(-17.0, -1, [-31.0, -24.0, -5.8, 8.0, 26.6, 32.6], 100)
 alley_dress(18.1, 1, [-32.0, -21.0, -9.0, -6.9], 120)
 for x, z, yaw in ((-33.6, -19.6, 90), (33.9, -19.6, 90), (-33.4, 19.8, 90)):
     P("Garden Shed", x, z, yaw)

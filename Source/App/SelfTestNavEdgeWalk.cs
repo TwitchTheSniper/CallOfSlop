@@ -26,7 +26,7 @@ public static partial class SelfTest
         var notes = new List<string>();
         var perMap = new List<string>();
         var byKind = new Dictionary<string, List<(string Map, EdgeWalkFail F)>>();
-        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0, lastResorts = 0;
+        int totalEdges = 0, totalWalked = 0, totalFailed = 0, badMaps = 0, builderChecked = 0, builderRejected = 0, lastResorts = 0, skippedCurved = 0;
         var rejectedBy = new List<(string Map, int Count)>();
         var sw = Stopwatch.StartNew();
         try
@@ -39,6 +39,11 @@ public static partial class SelfTest
                 var nav = NavGraph.Current;
                 if (nav.Nodes.Length == 0)
                     continue;
+                if (m.PointGravity != null)
+                {
+                    skippedCurved++;
+                    continue; // a planet: its own nav build (NavSphere.cs) and "up" bends, the flat walker doesn't apply
+                }
                 var (walked, fails) = EdgeWalkMap(m, nav);
                 builderChecked += nav.WalkChecked;
                 builderRejected += nav.WalkRejected;
@@ -67,7 +72,7 @@ public static partial class SelfTest
             World.Mover = previousMover;
             World.SetMap(previousMap);
         }
-        var sum = $"{totalWalked} of {totalEdges} nav edges walked on {Maps.All.Length} maps, {totalFailed} failed on {badMaps} map(s), {sw.Elapsed.TotalSeconds:0.0} s";
+        var sum = $"{totalWalked} of {totalEdges} nav edges walked on {Maps.All.Length - skippedCurved} maps ({skippedCurved} planet map(s) skipped), {totalFailed} failed on {badMaps} map(s), {sw.Elapsed.TotalSeconds:0.0} s";
         Line(sum);
         notes.Add(sum);
         if (totalFailed > 0)

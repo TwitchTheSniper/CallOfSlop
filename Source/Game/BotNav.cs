@@ -442,6 +442,8 @@ public sealed partial class NavGraph
         return false;
     }
 
+    private static readonly QueryFilter NoSweeps = new((QueryLayers.Static | QueryLayers.Boundary) & ~QueryLayers.Doors);
+
     /// <summary>A spot near <paramref name="p"/> on the same surface where a standing player fits, or null.</summary>
     private static Vector3? Place(Map map, PhysicsWorld col, Vector3 p, float spread)
     {
@@ -458,6 +460,9 @@ public sealed partial class NavGraph
             if (!float.IsFinite(y) || MathF.Abs(y - p.Y) > 0.05f)
                 continue;
             c.Y = y;
+            // Not on top of a moving platform's sweep (the nav treats a sweep as a solid pillar): nothing real to stand on there.
+            if (map.Movers.Count > 0 && col.Raycast(new Vector3(c.X, p.Y + 0.3f, c.Z), -Vector3.UnitY, 0.6f, NoSweeps) is var st && (st >= 0.6f || MathF.Abs(p.Y + 0.3f - st - y) > 0.05f))
+                continue;
             // On the terrain: only where a player can stand (SlopeRules), so no node sits on a bank or a ramp's edge.
             if (col.Terrain?.Layer(y) is { } t && y - t.HeightAt(c.X, c.Z) < 0.05f && !SlopeRules.NavWalkable(t, c.X, c.Z))
                 continue;
