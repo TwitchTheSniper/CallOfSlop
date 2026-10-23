@@ -90,6 +90,26 @@ public sealed partial class Audio
         return new(OtherShotGain * near, far > 0.02f ? OtherShotGain * MathF.Sqrt(far) : 0f, fall, fall, nb, fb, mix.Gain(nb), mix.Gain(fb));
     }
 
+    /// <summary>
+    /// A gun's <see cref="WeaponDef.Loudness"/> on its shot plan (1: unchanged). Up close it plays sqrt(loudness) louder
+    /// (a 2.5x Loudener about +4 dB, within OpenAL's cap), and another player's shot carries loudness times as far: both
+    /// layers' falloffs start and end that many times further out, so at 60 m a Loudener is as loud as a stock gun at 24 m.
+    /// A quiet gun (below 1) is the reverse. No allocation: the plan and its falloffs are structs.
+    /// </summary>
+    internal static ShotPlan Louder(ShotPlan plan, float loudness, bool own)
+    {
+        if (loudness == 1f)
+            return plan;
+        var g = MathF.Sqrt(loudness);
+        var near = MathF.Min(1f, plan.Near * g);
+        if (own)
+            return plan with { Near = near };
+        return plan with { Near = near, Far = MathF.Min(1f, plan.Far * g), NearFalloff = Stretch(plan.NearFalloff, loudness), FarFalloff = Stretch(plan.FarFalloff, loudness) };
+    }
+
+    /// <summary>A falloff that reaches <paramref name="k"/> times as far (its reference and maximum distances scaled).</summary>
+    private static Falloff Stretch(Falloff f, float k) => f with { Reference = f.Reference * k, Max = f.Max * k };
+
     /// <summary>The falloff of a positional effect (<see cref="Effect3D"/>: explosions, bounces, beeps).</summary>
     internal static Falloff EffectFalloff => Falloff.Normal;
 

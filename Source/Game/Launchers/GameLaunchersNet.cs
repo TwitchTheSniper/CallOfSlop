@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    public const int RocketSpawnBytes = 38, RocketSyncBytes = 29, RocketBoomBytes = 25;
+    public const int RocketSpawnBytes = 39, RocketSyncBytes = 29, RocketBoomBytes = 26; // the kit is 4 bytes since protocol 46 (3 before)
 
     /// <summary>Guided rockets per sync message at most (keeps it inside one datagram).</summary>
     private const int MaxSyncPerPacket = 36;
@@ -30,7 +30,7 @@ public sealed partial class Game
     // =====================================================================
 
     public static void WriteRocketSpawn(PacketWriter w, Rocket r, byte age) =>
-        w.Begin(Msg.RocketSpawn).U16(r.Id).U8(r.Owner).U8(r.WeaponId).U24(r.Kit).U8(r.Target).U8((byte)(r.Wire ? 1 : 0))
+        w.Begin(Msg.RocketSpawn).U16(r.Id).U8(r.Owner).U8(r.WeaponId).U32(r.Kit).U8(r.Target).U8((byte)(r.Wire ? 1 : 0))
             .U32(r.Seed).Vec(r.Pos).Vec(r.Vel).U8(age);
 
     /// <summary>Reads a spawn into a fresh rocket (its <see cref="Rocket.Def"/> resolved from the weapon and kit). Returns the age byte.</summary>
@@ -39,7 +39,7 @@ public sealed partial class Game
         into.Id = r.U16();
         into.Owner = r.U8();
         into.WeaponId = r.U8();
-        into.Kit = r.U24();
+        into.Kit = r.U32();
         into.Target = r.U8();
         into.Wire = (r.U8() & 1) != 0;
         into.Seed = r.U32();
@@ -51,10 +51,10 @@ public sealed partial class Game
     }
 
     public static void WriteRocketBoom(PacketWriter w, Rocket r, RocketEnd end, Vector3 pos, byte flags) =>
-        w.Begin(Msg.RocketBoom).U16(r.Id).U8(r.Owner).U8(r.WeaponId).U24(r.Kit).U8((byte)end).Vec(pos).U8(flags).U32(r.Seed);
+        w.Begin(Msg.RocketBoom).U16(r.Id).U8(r.Owner).U8(r.WeaponId).U32(r.Kit).U8((byte)end).Vec(pos).U8(flags).U32(r.Seed);
 
     public static (ushort Id, byte Owner, byte Weapon, uint Kit, RocketEnd End, Vector3 Pos, byte Flags, uint Seed) ReadRocketBoom(ref PacketReader r) =>
-        (r.U16(), r.U8(), r.U8(), r.U24(), (RocketEnd)r.U8(), r.Vec(), r.U8(), r.U32());
+        (r.U16(), r.U8(), r.U8(), r.U32(), (RocketEnd)r.U8(), r.Vec(), r.U8(), r.U32());
 
     /// <summary>One guided or stuck rocket in a sync message.</summary>
     public static void WriteRocketSyncEntry(PacketWriter w, Rocket r) =>

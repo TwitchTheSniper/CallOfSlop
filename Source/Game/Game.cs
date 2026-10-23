@@ -664,7 +664,7 @@ public sealed partial class Game : IDisposable
     private void SendLoadout()
     {
         _w.Begin(Msg.Loadout).U8(ChosenPrimary).U8(ChosenSecondary).U8((byte)ChosenGrenade).U8((byte)ChosenEquipment)
-            .U24(ChosenPrimaryKit).U24(ChosenSecondaryKit)
+            .U32(ChosenPrimaryKit).U32(ChosenSecondaryKit)
             .U8((byte)ChosenPerks.Movement).U8((byte)ChosenPerks.Survival).U8((byte)ChosenPerks.Damage)
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
             .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
@@ -1657,11 +1657,11 @@ public sealed partial class Game : IDisposable
                     ServerResolveShot(p, weapon, origin, dir, spread, seed, viewTick, now);
                 break;
             }
-            case (byte)Msg.Loadout when IsServer && r.Has(10):
+            case (byte)Msg.Loadout when IsServer && r.Has(12):
             {
                 if (_clients.TryGetValue(sender.G, out var c) && Players.TryGetValue(c.Id, out var p))
                 {
-                    var (lp, ls, lg, le, lpk, lsk) = (r.U8(), r.U8(), (ThrowableKind)r.U8(), (ThrowableKind)r.U8(), r.U24(), r.U24());
+                    var (lp, ls, lg, le, lpk, lsk) = (r.U8(), r.U8(), (ThrowableKind)r.U8(), (ThrowableKind)r.U8(), r.U32(), r.U32());
                     var perks = r.Has(3) ? new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()) : PerkSet.Empty;
                     ServerRequestLoadout(p, lp, ls, lg, le, lpk, lsk, perks, now);
                     ReadLoadoutStreaks(p, ref r);

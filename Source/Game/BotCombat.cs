@@ -32,6 +32,9 @@ public sealed partial class Game
     private const float BotKickPitchScale = 0.6f; // bots soak up some of the climb
     private const float BotPullDown = 1.8f; // high aim error settles this much faster (bots drag back down to the chest)
 
+    /// <summary>How far a bot with this base hearing (20-50 m by aggression; 60 m just after being hit) hears a gun of this <see cref="WeaponDef.Loudness"/>.</summary>
+    public static float HearingRange(float hearing, bool alert, float loudness) => MathF.Max(hearing, alert ? 60f : 0f) * loudness;
+
     /// <summary>Picks and keeps track of a target; hears gunfire; notices being hit. Scans a few times a second.</summary>
     private Player? BotPerceive(Player p, BotBrain b, double now, out bool visible)
     {
@@ -87,8 +90,8 @@ public sealed partial class Game
                     continue;
                 var to = o.Position - p.Position;
                 var dist = to.Length();
-                // Gunfire carries: remember the closest shooter we heard.
-                if (now - o.LastShotTime < 0.4 && dist < MathF.Max(hearing, alert ? 60f : 0f) && dist < heardDist)
+                // Gunfire carries: remember the closest shooter we heard (a loud gun carries further: WeaponDef.Loudness).
+                if (now - o.LastShotTime < 0.4 && dist < HearingRange(hearing, alert, o.WeaponDef.Loudness) && dist < heardDist)
                 {
                     heardDist = dist;
                     b.HeardAt = o.Position;

@@ -339,7 +339,7 @@ public static partial class SelfTest
     private static byte[] LookLoadoutPacket(PlayerLook? look)
     {
         var w = new PacketWriter();
-        w.Begin(Msg.Loadout).U8(Weapons.DefaultPrimary.Id).U8(Weapons.DefaultSecondary.Id).U8(0).U8(0).U24(0).U24(0)
+        w.Begin(Msg.Loadout).U8(Weapons.DefaultPrimary.Id).U8(Weapons.DefaultSecondary.Id).U8(0).U8(0).U32(0).U32(0)
             .U8(0).U8(0).U8(0).U8((byte)KillStreaks.Starters[0]).U8((byte)KillStreaks.Starters[1]).U8((byte)KillStreaks.Starters[2])
             .U8(0).U8(0).U8(4);
         look?.Pack(w);

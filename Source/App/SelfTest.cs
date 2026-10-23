@@ -1392,7 +1392,7 @@ public static partial class SelfTest
             if (!ReferenceEquals(fd, Attachments.Apply(w, full)))
                 Fail($"{w.Name}: kit cache returned a different object");
             // A kit with junk in every slot must come back clean
-            if (Attachments.Sanitize(w, 0xFFFFFF) is var junk && Attachments.InKit(junk).Any(a => !a.Fits(w)))
+            if (Attachments.Sanitize(w, Attachments.FullKit) is var junk && Attachments.InKit(junk).Any(a => !a.Fits(w)))
                 Fail($"{w.Name}: Sanitize let a non-fitting attachment through");
         }
         var counts = Weapons.All.Select(w => Attachments.For(w).Count).ToArray();
@@ -1427,7 +1427,7 @@ public static partial class SelfTest
         if (optics.Length < 10)
             Fail($"only {optics.Length} optics loaded (10 ship with the game)");
         if (optics.Select(o => o.Index).Distinct().Count() != optics.Length || optics.Any(o => o.Index is < 1 or > Attachments.MaxPerSlot))
-            Fail("optic indices are not unique values in 1-15");
+            Fail($"optic indices are not unique values in 1-{Attachments.MaxPerSlot}");
         if (optics.Select(o => o.Name.ToLowerInvariant()).Distinct().Count() != optics.Length)
             Fail("two optics share a name");
         // The shipped optics keep their network indices (kits send indices; saves use names).
@@ -1623,7 +1623,7 @@ public static partial class SelfTest
         if (attachments.Length < 21)
             Fail($"only {attachments.Length} attachments loaded from files (21 ship with the game)");
         if (attachments.Any(a => a.Index is < 1 or > Attachments.MaxPerSlot))
-            Fail("an attachment index is outside 1-15 (kits pack 4 bits per slot)");
+            Fail($"an attachment index is outside 1-{Attachments.MaxPerSlot} (kits pack {Attachments.SlotBits} bits per slot)");
 
         // ---- The original 50 weapons keep their ids (old saves and anything else that stored an id) ----
         for (var i = 0; i < Weapons.LegacyNames.Length; i++)

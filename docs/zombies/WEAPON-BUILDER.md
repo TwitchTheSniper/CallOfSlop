@@ -89,7 +89,7 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
 | Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
 | Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
-| Optic | The game's optics (red dot, holo, ACOG, 4x, 8x) with their reticles and lens | 5 |
+| Optic | The game's optics (red dot, holo, ACOG, 4x, 8x, scout, night tube, periscope, rangefinder, bead, pocket prism) with their reticles and lens | 11 |
 | Muzzle | Flash hider, compensator, brake, suppressor | 4 |
 | Utility | Laser, bayonet, cup holder, and weight relief (sling, anti-grav coil, helium balloons) | 6 |
 | Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 6 |
@@ -743,10 +743,10 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 174 parts
+## The part set: 180 parts
 
-Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, and the
-universal-ammo pass's 4 extra round types and 8 feeds (2026-10-23). By tier, all
+Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
+universal-ammo pass's 4 extra round types and 8 feeds, and the six optics of the attachments pass (2026-10-23). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
@@ -760,7 +760,7 @@ categories (first-tier grips, common and uncommon, hold exactly **one receiver**
 | Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
 | Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
 | Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
-| Optic (5) | Red Dot | Holographic | 2.5x ACOG | 4x Scope | 8x Sniper Scope | |
+| Optic (11) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x | 8x Sniper Scope, Rangefinder 4x | |
 | Muzzle (4) | Flash Hider | Compensator, Muzzle Brake | Suppressor | | | |
 | Utility (6) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | | | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
 | Hilt (6, new) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | | |

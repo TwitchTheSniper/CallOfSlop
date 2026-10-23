@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Outrider 2x Scout",
+  "category": "optic",
+  "rarity": "rare",
+  "flavor": "A slim scope mounted well forward. Both eyes open, 2.2x, nothing in your face.",
+  "weight": 0.4,
+  "optic": "Scout",
+  "stats": [
+    {"stat": "adsZoom", "set": 2.2},
+    {"stat": "adsSpreadMult", "mul": 0.7},
+    {"stat": "adsTime", "add": 0.03},
+    {"stat": "mobility", "add": -0.01}
+  ],
+  "sight": {"reticle": "Duplex", "reticleColor": [1, 0.15, 0.1], "screen": 0.82, "housing": 1.25, "vignette": 0.3}
+}

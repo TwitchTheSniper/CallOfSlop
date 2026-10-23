@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Outrider 2x Scout",
+  "slot": "Optic",
+  "order": 16,
+  "unlockOrder": 167,
+  "blurb": "A slim long-eye-relief scope mounted well forward on the rail. Both eyes open, a clear 2.2x picture and nothing in your face.",
+  "pros": ["2.2x zoom", "-30% aimed spread", "Mounted forward: a wide view around the lens"],
+  "cons": ["Slower to aim", "-1% speed"],
+  "fits": { "classes": ["AssaultRifle", "DMR", "Sniper", "LMG"] },
+  "effects": [
+    { "stat": "optic", "set": "Scout" },
+    { "stat": "adsZoom", "set": 2.2 },
+    { "stat": "adsSpreadMult", "mul": 0.7 },
+    { "stat": "adsTime", "add": 0.03 },
+    { "stat": "mobility", "add": -0.01 }
+  ],
+  "sight": { "reticle": "Duplex", "reticleColor": [1, 0.15, 0.1], "screen": 0.82, "housing": 1.25, "vignette": 0.3, "tint": [0.65, 0.82, 1], "tintAlpha": 0.05 }
+}

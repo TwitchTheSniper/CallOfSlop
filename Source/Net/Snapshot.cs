@@ -154,12 +154,12 @@ public static class Snapshot
     }
 
     public static void WriteSlow(PacketWriter w, in SnapSlow s) =>
-        w.U8(s.Id).U16(s.Kills).U16(s.Deaths).U8(s.Primary).U8(s.Secondary).U24(s.PrimaryKit).U24(s.SecondaryKit)
+        w.U8(s.Id).U16(s.Kills).U16(s.Deaths).U8(s.Primary).U8(s.Secondary).U32(s.PrimaryKit).U32(s.SecondaryKit)
             .U8((byte)s.Perks.Movement).U8((byte)s.Perks.Survival).U8((byte)s.Perks.Damage).U8(s.FrenzyLevel).U8(s.FrenzyClass);
 
     public static SnapSlow ReadSlow(ref PacketReader r) => new()
     {
-        Id = r.U8(), Kills = r.U16(), Deaths = r.U16(), Primary = r.U8(), Secondary = r.U8(), PrimaryKit = r.U24(), SecondaryKit = r.U24(),
+        Id = r.U8(), Kills = r.U16(), Deaths = r.U16(), Primary = r.U8(), Secondary = r.U8(), PrimaryKit = r.U32(), SecondaryKit = r.U32(),
         Perks = new PerkSet((PerkId)r.U8(), (PerkId)r.U8(), (PerkId)r.U8()), FrenzyLevel = r.U8(), FrenzyClass = r.U8(),
     };
 

@@ -77,7 +77,7 @@ public static class Sights
     private static readonly Vector3 Cool = new(0.65f, 0.82f, 1f);
 
     /// <summary>True for the sights you look through with a magnified lens (the dark eyepiece turns clear as you aim).</summary>
-    public static bool Magnified(WeaponDef d) => d.Optic is not (OpticKind.Iron or OpticKind.RedDot or OpticKind.MiniDot or OpticKind.Holo) || GunModel.HasBuiltInScope(d);
+    public static bool Magnified(WeaponDef d) => d.Optic is not (OpticKind.Iron or OpticKind.RedDot or OpticKind.MiniDot or OpticKind.Holo or OpticKind.Periscope or OpticKind.Bead) || GunModel.HasBuiltInScope(d);
 
     /// <summary>Has a lens to look through (any optic, or a built-in scope).</summary>
     public static bool HasLens(WeaponDef d) => GunModel.HasScope(d);
@@ -139,6 +139,18 @@ public static class Sights
                     break;
                 case OpticKind.Scope12:
                     (s.Reticle, s.Screen) = (GunModel.Reticle.MilDot, 1.95f);
+                    break;
+                case OpticKind.Scout:
+                    (s.Reticle, s.Screen) = (GunModel.Reticle.Duplex, 0.82f);
+                    break;
+                case OpticKind.NightTube:
+                    (s.Reticle, s.ReticleColor, s.Screen, s.Tint, s.TintAlpha) = (GunModel.Reticle.CircleDot, new Vector3(0.75f, 1f, 0.8f), 0.8f, new Vector3(0.25f, 1f, 0.35f), 0.3f);
+                    break;
+                case OpticKind.Periscope:
+                    (s.Reticle, s.ReticleColor, s.Vignette, s.Tint, s.TintAlpha) = (GunModel.Reticle.Dot, Red, 0, new Vector3(0.6f, 0.9f, 0.7f), 0.12f);
+                    break;
+                case OpticKind.Bead:
+                    (s.Reticle, s.ReticleColor, s.ReticleSize, s.Vignette, s.TintAlpha) = (GunModel.Reticle.Dot, new Vector3(1f, 0.8f, 0.35f), 1.2f, 0, 0f); // no glass: the bead is the dot
                     break;
                 default: // a built-in scope (or iron sights, which have no lens and never use it)
                     (s.Reticle, s.Screen) = (GunModel.Reticle.Duplex, ScreenForZoom(zoom));

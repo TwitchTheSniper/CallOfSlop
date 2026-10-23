@@ -113,7 +113,7 @@ public sealed class PacketWriter
         return this;
     }
 
-    /// <summary>Low 24 bits (attachment kits).</summary>
+    /// <summary>Low 24 bits (positions; attachment kits were 24 bits until protocol 46).</summary>
     public PacketWriter U24(uint v) => U8((byte)v).U8((byte)(v >> 8)).U8((byte)(v >> 16));
 
     public PacketWriter U16(ushort v)

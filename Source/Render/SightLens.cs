@@ -40,7 +40,7 @@ public static unsafe class SightLens
         """;
 
     // Reticles (GunModel.Reticle): 1 dot, 2 holo ring, 3 chevron, 4 horseshoe, 5 circle-dot, 6 duplex, 7 fine
-    // crosshair, 8 stadia crosshair, 9 mil-dot. Reticle sizes are in pixels (uScale = px per design unit), measured from
+    // crosshair, 8 stadia crosshair, 9 mil-dot, 10 rangefinder (a dot between brackets, a range ladder). Reticle sizes are in pixels (uScale = px per design unit), measured from
     // uRet, the screen point the optic's axis points at (a reticle at infinity), so they're crisp at any resolution.
     private const string FragmentSrc = """
         #version 330 core
@@ -143,6 +143,27 @@ public static unsafe class SightLens
                 {
                     float y = -(18.0 + 9.0 * float(i)) * s, hl2 = (6.0 - float(i)) * s;
                     lit = max(lit, seg(p, vec2(-hl2, y), vec2(hl2, y), max(0.5, 0.7 * s)));
+                }
+            }
+            else if (st == 10)
+            {
+                // Rangefinder: a lit dot between two lit brackets, etched hairlines out to the rim and a range ladder below
+                float bw = max(0.6, 0.9 * s);
+                lit = disc(p, 1.6 * s);
+                for (int k = -1; k <= 1; k += 2)
+                {
+                    float x = 14.0 * s * float(k);
+                    lit = max(lit, seg(p, vec2(x, -10.0 * s), vec2(x, 10.0 * s), bw));
+                    lit = max(lit, seg(p, vec2(x, 10.0 * s), vec2(x - 4.0 * s * float(k), 10.0 * s), bw));
+                    lit = max(lit, seg(p, vec2(x, -10.0 * s), vec2(x - 4.0 * s * float(k), -10.0 * s), bw));
+                }
+                etch = max(seg(p, vec2(-ext, 0.0), vec2(-18.0 * s, 0.0), hw), seg(p, vec2(18.0 * s, 0.0), vec2(ext, 0.0), hw));
+                etch = max(etch, seg(p, vec2(0.0, 14.0 * s), vec2(0.0, ext), hw));
+                etch = max(etch, seg(p, vec2(0.0, -14.0 * s), vec2(0.0, -ext), hw));
+                for (int i = 1; i <= 4; i++)
+                {
+                    float y = -(14.0 + 9.0 * float(i)) * s, hl2 = (7.0 - float(i)) * s;
+                    etch = max(etch, seg(p, vec2(-hl2, y), vec2(hl2, y), hw));
                 }
             }
             else if (st >= 6)

@@ -1,6 +1,6 @@
 # Making attachments for Call of Slop
 
-Every attachment is a single `.json` file in this folder. The 76 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
+Every attachment is a single `.json` file in this folder. The 82 that ship with the game (5 of them for launchers) are sorted into one subfolder per slot (`Optic/`, `Muzzle/`, `Barrel/`, `Underbarrel/`, `Magazine/`, `Stock/`), but the game reads every `*.json` under `Attachments/`, however deep. Drop a file in and restart the game.
 
 An attachment says which slot it goes in, which weapons it fits, and a list of stat changes ("effects") it makes to the weapon's numbers. The weapon numbers are the fields described in [Weapons/README.md](../Weapons/README.md).
 
@@ -47,7 +47,7 @@ Check it with `CallOfSlop.exe --check-weapon Attachments\Muzzle\OilCan.json`. Th
 | `meleeReach` | Extra melee reach in metres (0-2) while the gun carrying it is in hand. Only the Bayonet uses it (+0.8 m: 3.2 m instead of 2.4 m). | `0` |
 | `sight` | Optics only: how it looks when aiming (see [Sight block](#sight-block)). | the default for its `optic` look |
 
-**At most 15 attachments per slot.** A loadout packs each slot into 4 bits (0 = empty), so a 16th attachment in a slot is skipped with a message. In multiplayer, kits travel as these indices, so **never change the `order` of a shipped attachment**: add new ones after the existing ones (saves store names, so they don't care).
+**At most 31 attachments per slot.** A loadout packs each slot into 5 bits (0 = empty; 4 bits and 15 per slot until protocol 46), so a 32nd attachment in a slot is skipped with a message. In multiplayer, kits travel as these indices, so **never change the `order` of a shipped attachment**: add new ones after the existing ones (saves store names, so they don't care).
 
 ## Fits
 
@@ -78,7 +78,7 @@ Add `"min"` and/or `"max"` to `add`, `mul` or `grow` to clamp the result, e.g. `
 
 Any weapon number can be changed, plus these extras that only attachments use:
 
-- `optic`: the sight drawn when aiming: `Iron`, `RedDot`, `MiniDot`, `Holo`, `Prism2`, `Acog`, `Hybrid3`, `Scope4`, `Lpvo6`, `Scope8` or `Scope12`. It picks the model, the reticle and the lens (see [Optics](#optics)). Pair it with an `adsZoom`.
+- `optic`: the sight drawn when aiming: `Iron`, `RedDot`, `MiniDot`, `Holo`, `Prism2`, `Acog`, `Hybrid3`, `Scope4`, `Lpvo6`, `Scope8`, `Scope12`, `Scout` (a slim long-eye-relief tube mounted forward), `NightTube` (a fat night-vision tube with a glowing objective), `Periscope` (a tall riser with a mirror head: a 1x window 7 cm above the rail) or `Bead` (a shotgun bead and ghost ring on a rail, no glass). It picks the model, the reticle and the lens (see [Optics](#optics)). Pair it with an `adsZoom`.
 - `suppressor`: `true` draws a suppressor, makes the gunshot much quieter and dims the muzzle flash and tracers. Pair it with `"sound": "Suppressed"`.
 
 Recoil fields from a weapon's `recoil` block are changed by their names with a `recoil` prefix: `recoilVertical`, `recoilHorizontal`, `recoilBias`, `recoilJitter`, `recoilFirstShot`, `recoilRecovery`, `recoilRecoveryDelay`, `recoilShake`, `recoilPunch`, `recoilKickUp` and so on (every field in [Weapons/README.md](../Weapons/README.md#recoil)). `recoilDeg` scales all of the gun's recoil at once. The shipped attachments use them like this:
@@ -113,7 +113,7 @@ Ammunition attachments (AP, incendiary, overcharged) are stat changes only: ther
 
 ## Optics
 
-The fourteen shipped optics (index = `order`, which the network uses; never renumber them):
+The 21 shipped optics (index = `order`, which the network uses; never renumber them):
 
 | # | Name | Look (`optic`) | Zoom | Aimed spread | Aim time | Speed | Reticle | Fits | Unlock |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -131,6 +131,13 @@ The fourteen shipped optics (index = `order`, which the network uses; never renu
 | 12 | Ghost Ring Reflex | `RedDot` | 1.5x | -15% | +0.015 s | | big gold ring (-8% hip spread) | shotguns | 33 |
 | 13 | Emitter Sight | `RedDot` | 1.6x | -20% | +0.01 s | -1% | magenta ring | specials | 15 |
 | 14 | Amber Thermal 2x | `Prism2` | 2x | -25% | +0.04 s | -2% | white circle-dot, amber tint | LMG, specials | 177 |
+| 15 | Thermal Tube Sight | `Prism2` | 2x | -20% | +0.05 s | | white circle-dot, green tint | launchers | 241 |
+| 16 | Outrider 2x Scout | `Scout` | 2.2x | -30% | +0.03 s | -1% | duplex, mounted forward | AR, DMR, sniper, LMG | 167 |
+| 17 | Owl Tube 2x | `NightTube` | 2x | -26% | +0.045 s | -2% | pale circle-dot, green night-vision tint (+5% draw time; the tube glows) | SMG, AR, LMG, DMR, shotgun | 137 |
+| 18 | Periscope Sight | `Periscope` | 1.5x | -15% | +0.03 s | -2% | red dot, 7 cm above the rail (the gun sits under your eye line) | SMG, AR, LMG, shotgun | 107 |
+| 19 | Rangefinder 4x | `Scope4` | 4.5x | -54% | +0.11 s | -3% | lit dot between brackets + drop ladder | DMR, sniper, LMG | 217 |
+| 20 | Bead Rail | `Bead` | 1.3x | -8% | -0.02 s | | brass bead in a ghost ring, no glass (-5% hip spread, +6% draw time) | shotguns | 27 |
+| 21 | Pocket 1.8x Prism | `Prism2` | 1.8x | -28% | +0.04 s | | horseshoe + dot (+4% hip spread) | pistols, SMGs, shotguns | 77 |
 
 A reflex look's window grows with the look, not the zoom (MiniDot < RedDot < Holo), and the self-test wants more zoom to never mean a smaller lens, so a new reflex optic keeps its zoom in step with its look.
 
@@ -155,7 +162,7 @@ An optic file can say how it looks with a `"sight"` block. Every key is optional
 
 | Key | Meaning | Range |
 | --- | --- | --- |
-| `reticle` | `Dot`, `HoloRing`, `Chevron`, `Horseshoe`, `CircleDot`, `Duplex`, `FineCross` (with a centre dot), `Stadia` (with range ticks) or `MilDot`. | |
+| `reticle` | `Dot`, `HoloRing`, `Chevron`, `Horseshoe`, `CircleDot`, `Duplex`, `FineCross` (with a centre dot), `Stadia` (with range ticks), `MilDot` or `Rangefinder` (a lit dot between brackets, hairlines to the rim and a drop ladder). | |
 | `reticleColor` | Colour of the lit parts (dots, rings, chevrons): `[r, g, b]` with values 0-1, or `"#rrggbb"`. Etched lines are always black. | 0-1 |
 | `reticleSize` | Scale of the reticle; 1 = its design size on a 1080p screen. | 0.25-4 |
 | `screen` | The lens radius at full aim, as a fraction of half the screen height: 1 touches the top and bottom of the screen; about 1.75 or more covers 90% of a 16:9 screen. The optic is brought that close to the eye. Leave it out on reflex sights to keep their window as it is. | 0.1-2.5 |
@@ -165,13 +172,13 @@ An optic file can say how it looks with a `"sight"` block. Every key is optional
 | `vignette` | How much the lens darkens towards its edge. | 0-1 |
 | `tint`, `tintAlpha` | The glass tint over the view, and how strong it is. | 0-1, 0-0.5 |
 
-The defaults per look: Red Dot, Pinhole and Holographic keep their windows; Brick 2x Prism `screen` 0.8, 2.5x ACOG 0.88, Tandem 3x Hybrid 0.95, 4x Scope 1.3, Variant 6x LPVO 1.5, 8x Sniper Scope 1.8, Longshot 12x 1.95. The sight block is only how it looks: it never changes where bullets go.
+The defaults per look: Red Dot, Pinhole, Holographic, Periscope and Bead keep their windows; Brick 2x Prism `screen` 0.8, Owl Tube 0.8, Outrider Scout 0.82, 2.5x ACOG 0.88, Tandem 3x Hybrid 0.95, 4x Scope 1.3, Variant 6x LPVO 1.5, 8x Sniper Scope 1.8, Longshot 12x 1.95. The sight block is only how it looks: it never changes where bullets go.
 
 A new optic file can reuse any of the looks above with its own stats and sight. A brand-new look (model) needs code: a value in `OpticKind`, its sight height in `GunModel.SightHeight`, its model in `GunModel.DrawOptic`, its lens (eyepiece or window) in `GunModel.Lens`, and its default sight in `Sights.Default`.
 
 ## Unlocking and balance
 
-**Snipers start with a scope.** A weapon's default kit holds its `defaultOptic` (see [Weapons/README.md](../Weapons/README.md); snipers without one get their first 4x-or-more scope in unlock order): it needs 0 weapon XP, bots always run it, and Gun Game hands it out with the gun. On such a gun the empty optic slot is its **iron sights**, which unlock at half its max weapon XP (rounded to 50; 3,300-3,450 for the shipped snipers) and are locked in the Optic list until then. The optic slot is full (15), so iron sights aren't an attachment file; `loadout.txt` saves them as `Iron Sights` in the kit, and a sniper kit saved with neither (older files) gets the starting scope back.
+**Snipers start with a scope.** A weapon's default kit holds its `defaultOptic` (see [Weapons/README.md](../Weapons/README.md); snipers without one get their first 4x-or-more scope in unlock order): it needs 0 weapon XP, bots always run it, and Gun Game hands it out with the gun. On such a gun the empty optic slot is its **iron sights**, which unlock at half its max weapon XP (rounded to 50; 3,300-3,450 for the shipped snipers) and are locked in the Optic list until then. Iron sights aren't an attachment file (they were designed when the optic slot was full at 15); `loadout.txt` saves them as `Iron Sights` in the kit, and a sniper kit saved with neither (older files) gets the starting scope back.
 
 Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in `unlockOrder`, are spread along a curve. The total depends on how many fit (`1000 + 180 x count`, rounded to 50: 15 attachments take about 3.7 matches, 33 about 6.9), so adding an attachment to a class makes those guns take a little longer to max out. The 27 attachments that shipped before the class-specific ones never need more weapon XP than they did then (their old place on the old curve is a cap), so nothing a player has unlocked locks again.
 
@@ -179,7 +186,7 @@ Attachments unlock per weapon with weapon XP. Each gun's fitting attachments, in
 
 ## Which classes take what
 
-Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Bayonet, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
+Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Extended and Snub Barrel, Pistol Brace, Holster Stock; SMG: Folding Grip, Collapsed Stock; Assault rifle: Weighted Grip, Stubby Mag; DMR: Cheek Riser; Sniper: Longshot 12x, Match Barrel, Straight-Pull Action, Stripper Clips; Shotgun: Choke, Full Choke, Ghost Ring Reflex, Bead Rail, Rifled Slug Barrel, Shotgun Drum, Shell Holder; LMG: Quick-Change Barrel, Long Belt Box; Special: Emitter Sight, Beam Focuser, Scatter Nozzle, Blunderbuss Bell, Muzzle Weight, Bayonet, Overclock Coils, Precision Bore, Gyro Stabiliser, Overcharged Cell, Shoulder Brace). "all" = every gun in the class, "n/m" = some of them (by sound or magazine size), "-" = none.
 
 | Slot | Attachment | Unlock | Pistol | SMG | AssaultRifle | DMR | Sniper | Shotgun | LMG | Special |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -197,6 +204,12 @@ Each class has attachments of its own (Pistol: Slide Dot, Ported Slide Comp, Ext
 | Optic | Ghost Ring Reflex | 33 | - | - | - | - | - | all | - | - |
 | Optic | Emitter Sight | 15 | - | - | - | - | - | - | - | all |
 | Optic | Amber Thermal 2x | 177 | - | - | - | - | - | - | all | all |
+| Optic | Outrider 2x Scout | 167 | - | - | all | all | all | - | all | - |
+| Optic | Owl Tube 2x | 137 | - | all | all | all | - | all | all | - |
+| Optic | Periscope Sight | 107 | - | all | all | - | - | all | all | - |
+| Optic | Rangefinder 4x | 217 | - | - | - | all | all | - | all | - |
+| Optic | Bead Rail | 27 | - | - | - | - | - | all | - | - |
+| Optic | Pocket 1.8x Prism | 77 | all | all | - | - | - | all | - | - |
 | Muzzle | Suppressor | 110 | 8/9 | 6/7 | 7/8 | all | 3/5 | all | all | - |
 | Muzzle | Compensator | 30 | all | all | all | all | all | - | all | - |
 | Muzzle | Muzzle Brake | 150 | - | all | all | all | all | - | all | - |

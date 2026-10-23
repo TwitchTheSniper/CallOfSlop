@@ -300,6 +300,7 @@ public static class BuildStats
         }
         w.Reload = defs.Max(d => d.Reload) + frame.ReloadPerReceiver * (count - 1);
         w.RecoilDeg = rotate ? defs.Average(d => d.RecoilDeg) : MathF.Sqrt(defs.Sum(d => d.RecoilDeg * d.RecoilDeg));
+        w.Loudness = defs.Max(d => d.Loudness); // the loudest receiver's muzzle devices set the report
         foreach (var f in Averaged)
         {
             var fi = typeof(WeaponDef).GetField(f)!;
@@ -447,6 +448,7 @@ public static class BuildStats
         }
         w.Mobility = Math.Clamp(w.Mobility, 0.4f, 1.2f);
         w.AdsTime = Math.Clamp(w.AdsTime, 0.08f, 0.8f);
+        w.Loudness = Math.Clamp(w.Loudness, WeaponDef.MinLoudness, WeaponDef.MaxLoudness);
         w.Pellets = Math.Clamp(w.Pellets, 1, 30);
     }
 }

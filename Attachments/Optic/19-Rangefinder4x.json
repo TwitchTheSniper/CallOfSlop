@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-attachment/1",
+  "name": "Rangefinder 4x",
+  "slot": "Optic",
+  "order": 19,
+  "unlockOrder": 217,
+  "blurb": "A 4.5x scope with a smart reticle: a lit dot between brackets and a range ladder for the drop. Big, heavy and slow, like every clever thing.",
+  "pros": ["4.5x zoom", "-54% aimed spread", "Rangefinder reticle with a drop ladder"],
+  "cons": ["Much slower to aim", "Tunnel vision", "-3% speed"],
+  "fits": { "classes": ["DMR", "Sniper", "LMG"] },
+  "effects": [
+    { "stat": "optic", "set": "Scope4" },
+    { "stat": "adsZoom", "set": 4.5 },
+    { "stat": "adsSpreadMult", "mul": 0.46 },
+    { "stat": "adsTime", "add": 0.11 },
+    { "stat": "mobility", "add": -0.03 }
+  ],
+  "sight": { "reticle": "Rangefinder", "reticleColor": [1, 0.35, 0.1], "screen": 1.35, "housing": 1.2, "vignette": 0.35, "tint": [0.65, 0.82, 1], "tintAlpha": 0.05 }
+}
