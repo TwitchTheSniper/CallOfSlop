@@ -102,6 +102,8 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
 
 Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).
 
+Fixed 2026-10-23: "Test Range" ("adding bots mid-session gave 5 (4 alive)", main run 40035041351; ~5% of runs). The host-bots check counted live bots half a second after adding them, while the bots fought: a newcomer could already be dead. It now checks the newcomers are alive straight after the call (before any tick) and only the roster after the ticks (0 failures in 200 repeats; the old reading would have failed 10 of the same 200).
+
 **Environment**
 - The cloud agent container has no .NET SDK, and the proxy blocks dot.net, builds.dotnet.microsoft.com and packages.microsoft.com, so agents cannot build or run the self-test locally. They verify with `floaters.py` and branch CI (`[tests: ...]`) instead. Allowing those hosts under Settings > Capabilities would let agents build locally; restoring the Ahwoo packages would still need the NuGet API, which the user's rule forbids.
 

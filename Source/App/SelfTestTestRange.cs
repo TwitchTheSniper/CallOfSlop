@@ -192,24 +192,31 @@ public static partial class SelfTest
         var max = Math.Min(Game.MaxPlayers, game.MapMaxPlayers) - game.HumanCount;
         var want = Math.Min(5, max);
 
+        // The bots keep fighting between the checks, so a bot can be killed the moment it spawns: "spawned into the match"
+        // is read straight after the call (AddBot spawns before any tick runs), and only the roster after the ticks.
+        var before = game.Players.Values.Where(p => p.Bot != null).ToHashSet(); // (the two first bots may be dead right now)
         var changed = game.SetBots(want, skill0);
+        var newcomers = game.Players.Values.Where(p => p.Bot != null && !before.Contains(p)).ToList();
+        var spawnedAdd = before.Count + newcomers.Count(p => p.Alive); // every newcomer in the fight at once: want
+
         Run(game, ref now, 0.5);
-        var afterAdd = (game.BotCount, Alive: game.Players.Values.Count(p => p.Bot != null && p.Alive), Same: game.Players.Values.All(p => p.Bot == null || p.Bot.Skill == skill0));
+        var afterAdd = (game.BotCount, Alive: spawnedAdd, Same: game.Players.Values.All(p => p.Bot == null || p.Bot.Skill == skill0));
         var fewer = game.SetBots(1, skill0);
         Run(game, ref now, 0.2);
         var afterRemove = game.BotCount;
         var newSkill = skill0 == BotDifficulty.Hard ? BotDifficulty.Easy : BotDifficulty.Hard;
         var old = game.Players.Values.Where(p => p.Bot != null).ToHashSet(); // (ids are reused: compare the players themselves)
         var replaced = game.SetBots(2, newSkill);
+        var spawnedSkill = game.Players.Values.Count(p => p.Bot != null && p.Alive); // (all new bots: none has had a tick yet)
         Run(game, ref now, 0.5);
         var afterSkill = (game.BotCount, AllNew: game.Players.Values.Where(p => p.Bot != null).All(p => p.Bot!.Skill == newSkill), Kept: game.Players.Values.Count(p => p.Bot != null && old.Contains(p)),
-            Alive: game.Players.Values.Count(p => p.Bot != null && p.Alive));
+            Alive: spawnedSkill);
         var tooMany = game.SetBots(99, newSkill);
         var capped = game.BotCount;
-        Line($"host bots: 2 -> {want} ({afterAdd.BotCount}, {afterAdd.Alive} alive, all {skill0} {afterAdd.Same}) -> 1 ({afterRemove}) -> 2 {newSkill} ({afterSkill.BotCount}, all new {afterSkill.AllNew}, {afterSkill.Kept} kept, "
-             + $"{afterSkill.Alive} alive) -> 99 capped to {capped} (max {max}); changed {changed}/{fewer}/{replaced}/{tooMany}; skill now {game.BotSkill}, wanted {game.WantedBots}; {game.Phase}, match {match}->{game.MatchNumber}");
+        Line($"host bots: 2 -> {want} ({afterAdd.BotCount}, {afterAdd.Alive} spawned, all {skill0} {afterAdd.Same}) -> 1 ({afterRemove}) -> 2 {newSkill} ({afterSkill.BotCount}, all new {afterSkill.AllNew}, {afterSkill.Kept} kept, "
+             + $"{afterSkill.Alive} spawned) -> 99 capped to {capped} (max {max}); changed {changed}/{fewer}/{replaced}/{tooMany}; skill now {game.BotSkill}, wanted {game.WantedBots}; {game.Phase}, match {match}->{game.MatchNumber}");
         if (!changed || afterAdd.BotCount != want || afterAdd.Alive != want || !afterAdd.Same)
-            Fail($"adding bots mid-session gave {afterAdd.BotCount} ({afterAdd.Alive} alive), wanted {want} spawned into the match");
+            Fail($"adding bots mid-session gave {afterAdd.BotCount} ({afterAdd.Alive} spawned at once), wanted {want} spawned into the match");
         if (!fewer || afterRemove != 1)
             Fail("removing bots mid-session didn't leave one");
         if (!replaced || afterSkill.BotCount != 2 || !afterSkill.AllNew || afterSkill.Kept != 0 || afterSkill.Alive != 2 || game.BotSkill != newSkill)
