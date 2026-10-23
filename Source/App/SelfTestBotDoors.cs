@@ -318,8 +318,8 @@ public static partial class SelfTest
             var anchor = lab.Spot(3.2f, 0, view: true);
             var bot = lab.AddBot(BotPersonality.Anchor, 0, anchor, anchor, null);
             var b = bot.Bot!;
+            lab.Step(0.1); // (its new life starts: then the hold)
             b.ForcedGoal = null;
-            lab.Step(0.1);
             b.Mode = BotMode.Roam;
             b.HoldUntil = lab.Now + 40;
             b.HoldAnchor = anchor;

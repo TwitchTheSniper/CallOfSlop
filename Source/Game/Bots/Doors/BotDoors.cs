@@ -624,7 +624,7 @@ public sealed partial class Game
             if (ofd < 8f && !IsEnemy(p, o) && MathF.Sign(DoorSide(door, o.Position)) != MathF.Sign(anchorSide))
                 return; // a teammate out there: leave their way in open
         }
-        if (MathF.Abs(DoorSide(door, p.Position)) >= 0.6f && MathF.Sign(DoorSide(door, p.Position)) == MathF.Sign(anchorSide) && DoorInReach(door, p.Eye))
+        if (MathF.Abs(DoorSide(door, p.Position)) >= 0.5f && MathF.Sign(DoorSide(door, p.Position)) == MathF.Sign(anchorSide) && DoorInReach(door, p.Eye))
         {
             if (BotUseDoor(p, b, best, false, now))
             {
@@ -637,7 +637,8 @@ public sealed partial class Game
             // Walk over to it (the hold's shuffle goes back to the anchor afterwards).
             b.HoldDoor = best;
             b.HoldDoorAt = now;
-            b.Waypoint = anchorSide > 0 ? door.Plan.SwingSide : door.Plan.OtherSide;
+            var stand = new Vector3(door.Center.X, door.Plan.Closed.Min.Y, door.Center.Z) + DoorNormal(door) * MathF.Sign(anchorSide) * 1.3f;
+            b.Waypoint = stand; // 1.3 m in front of it on the room's side: clear of the leaf, in reach
             b.ShuffleAt = now + 4;
         }
     }
