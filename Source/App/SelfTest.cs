@@ -49,14 +49,6 @@ public static partial class SelfTest
         {
             Line($"Call of Slop self-test {DateTime.Now}");
             var sw = Stopwatch.StartNew();
-            Section("Rooftops diag (temporary)", CheckRooftopsDiag); // TEMP (fix/rooftops-flake)
-            Section("Nav determinism", CheckNavDeterminism);
-            if (sw.Elapsed.TotalSeconds >= 0)
-            {
-                Line($"DONE in {sw.Elapsed.TotalSeconds:0.0} s with {_failures} failure(s).");
-                Brutal.GlfwApi.Glfw.Terminate();
-                return _failures;
-            }
             Section("Launchers (results first, temporary)", CheckLaunchers); // TEMP: to read the notice
             Section("Maps", CheckMaps);
             Section("Map files", CheckMapFiles);
