@@ -244,7 +244,7 @@ For a launcher some of the usual fields mean something a little different: `dama
   "projectile": "Rocket", "guidance": "None", "speed": 22, "maxSpeed": 46, "thrust": 40, "gravity": 0.15,
   "drag": 0, "radius": 6.5, "falloff": 1.1, "direct": 60, "vehicleMult": 1, "selfDamage": 0.6,
   "armDistance": 8, "proximity": 0, "fuse": 7, "bounces": 0, "reserve": 2, "lockTime": 1.2,
-  "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0
+  "lockRange": 160, "lockCone": 9, "turnRate": 90, "cluster": 0, "wallPierce": 0, "knockback": 0
 }
 ```
 
@@ -271,6 +271,7 @@ For a launcher some of the usual fields mean something a little different: `dama
 | `turnRate` | Guided: degrees per second it can turn. | `90` | 0-720 |
 | `cluster` | Bomblets the blast throws out (each 45% of the radius, 40% of the damage). | `0` | 0-12 |
 | `wallPierce` | Thermobaric: share of the blast that gets round walls. | `0` | 0-1 |
+| `knockback` | Blast push on the living, m/s at the centre (every survivor in reach and in the open is shoved away and lifted off the ground; see README "Blast knockback"). `0` = from the damage: `5 + damage / 25`, at most 12. | `0` | 0-30 |
 
 Attachments change these by their field names with a `launcher` prefix, e.g. `{ "stat": "launcherLockTime", "mul": 0.7 }` or `{ "stat": "launcherReserve", "add": 1 }`. Kitted launchers keep at least 70% of their lock time, launch speeds within 70-140% and at most double the reserve.
 

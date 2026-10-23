@@ -113,6 +113,9 @@ public sealed partial class WeaponDef
     /// <summary>Thermobaric: fraction of the blast that still gets through walls (0 = walls stop it, like a grenade).</summary>
     [LauncherKey("wallPierce", 0, 1)] public float LauncherWallPierce;
 
+    /// <summary>Blast push on the living (m/s at the centre, falling off to a small share at the edge; Knockback.cs). 0 = from the damage (5 + damage / 25, at most 12).</summary>
+    [LauncherKey("knockback", 0, 30)] public float LauncherKnockback;
+
     /// <summary>True for launchers (they fire projectiles from Source/Game/Launchers instead of hitscan bullets).</summary>
     public bool IsLauncher => Class == WeaponClass.Launcher;
 }
