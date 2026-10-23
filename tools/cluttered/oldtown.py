@@ -547,9 +547,9 @@ BACK_DOORS = [((-73.0, -24.3), (1, 0), (0, -1), -1), ((-58.0, -24.3), (1, 0), (0
               ((-6.0, -40.3), (1, 0), (0, -1), -1), ((6.0, 40.3), (1, 0), (0, 1), 1)]
 for k, (door, wd, od, side) in enumerate(BACK_DOORS):
     tk.bins_by_door(t, door, wd, od, rng, side=side, dumpster=k < 11, seed=100 + k)
-# behind the solid buildings: more dumpsters (each building has a back door)
-for k, (door, wd, od, side) in enumerate([((-50.0, -24.0), (1, 0), (0, -1), 1), ((-23.0, -24.0), (1, 0), (0, -1), -1), ((50.0, 24.0), (1, 0), (0, 1), -1),
-                                          ((23.0, 24.0), (1, 0), (0, 1), 1), ((-71.0, 14.0), (1, 0), (0, 1), 1)]):
+# behind the solid buildings: more dumpsters (each building has a back door; the bins go to the side away from a fire escape)
+for k, (door, wd, od, side) in enumerate([((-50.0, -24.0), (1, 0), (0, -1), 1), ((-23.0, -24.0), (1, 0), (0, -1), 1), ((50.0, 24.0), (1, 0), (0, 1), -1),
+                                          ((23.0, 24.0), (1, 0), (0, 1), -1), ((-71.0, 14.0), (1, 0), (0, 1), 1)]):
     t.mesh("box", door[0], door[1] + od[1] * 0.04, (0.20, 0.18, 0.16), y=0.0, width=1.2, height=2.2, depth=0.06)
     tk.bins_by_door(t, door, wd, od, rng, side=side, seed=200 + k)
 

@@ -48,7 +48,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Old Town", -26.5f, -24.9f), ("Main Street", 18.3f, -17.6f), ("Main Street", 21.7f, -17.4f), ("Slopview Mall", -58.8f, -7.2f), ("Silo", -5.3f, 49.6f), ("Sprawl", -65.0f, -42.3f),
+        ("Bocage", 6.6f, -34.3f), ("London", 41.9f, 7.9f), ("Slopview Mall", -59.0f, -7.0f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -936,6 +936,19 @@ public static partial class SelfTest
             if (ceiling - p.Y < World.PlayerHeight + 0.05f)
                 return $"{at}: the head is against {(box >= 0 ? StairBoxName(m, box) : "the ceiling")} ({(ceiling - p.Y) * 100:0} cm clear)";
         }
+        // Something in the way: the first box the body would overlap a little further on (or the next step's top).
+        var ahead = StairPoint(f, u + (up ? 0.1f : -0.1f), c, 0);
+        foreach (var y in (ReadOnlySpan<float>)[p.Y + 0.02f, p.Y + World.StepHeight])
+            foreach (var j in phys.CollectBoxes(ahead.X - World.PlayerRadius, ahead.Z - World.PlayerRadius, ahead.X + World.PlayerRadius, ahead.Z + World.PlayerRadius))
+            {
+                if (j >= m.Solid.Count)
+                    continue;
+                var o = m.Solid[j];
+                if (StairIgnored(m, j, o) || !(ahead.X + World.PlayerRadius > o.Min.X && ahead.X - World.PlayerRadius < o.Max.X && ahead.Z + World.PlayerRadius > o.Min.Z && ahead.Z - World.PlayerRadius < o.Max.Z)
+                    || y >= o.Max.Y - 0.001f || y + World.PlayerHeight <= o.Min.Y + 0.001f || o.Max.Y - p.Y <= World.StepHeight && y == p.Y + 0.02f)
+                    continue;
+                return $"{at}: snagged on {StairBoxName(m, j)}";
+            }
         return $"{at}: snagged (on a side, a railing or something on the steps)";
     }
 }
