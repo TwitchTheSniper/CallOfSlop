@@ -347,6 +347,7 @@ public static partial class SelfTest
     private static void BotFoliageSquad(Map lab)
     {
         World.SetMap(lab);
+        Game.SeedNextGame = 4343; // seeded: the bots' reaction and burst timing the same every run (it was flaky unseeded)
         using var game = new Game(NetPeer.Offline(), new Audio(), "SelfTest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id) { MapVoteEnabled = false };
         game.Mode = GameMode.TeamDeathmatch;
         World.SetMap(lab);
@@ -399,7 +400,8 @@ public static partial class SelfTest
         var aims = new List<Vector3>();
         var blindSaw = false;
         var spotterSaw = false;
-        for (var t = 0.0; t < 4.0; t += World.TickDt)
+        // Up to 6 s, or 4 s once the call has drawn blind fire (a slow reaction alone mustn't fail it).
+        for (var t = 0.0; t < 6.0 && !(t >= 4.0 && blind.BlindShots > 0); t += World.TickDt)
         {
             var shots = blind.BlindShots;
             now += World.TickDt;

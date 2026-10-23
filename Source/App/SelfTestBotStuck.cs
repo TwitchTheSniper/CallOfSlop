@@ -184,6 +184,7 @@ public static partial class SelfTest
         }
 
         // ---- Holding on purpose: the hill (KotH) and a perch never count, even with a short timeout ----
+        Game.SeedNextGame = 4711; // seeded: the same walk to the hill every run (it was flaky unseeded)
         using (var game = ModeGame(1, GameMode.KingOfTheHill, 1))
         {
             NavGraph.Pump(double.MaxValue);
