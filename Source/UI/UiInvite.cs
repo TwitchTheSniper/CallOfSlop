@@ -126,7 +126,7 @@ public sealed partial class Ui
         else if (s.RunListServer && ManualListError.Length > 0)
             ImGuiSafe.TextColored(Red, $"Couldn't start it: {ManualListError} (is tools\\RunServerList.bat already running? Then you don't need this.)");
         else
-            ImGui.TextColored(Dim, "Keeps a list running while the game is open (the same as tools\\RunServerList.bat, which runs it without the game). Its UDP port (27050) is opened on your router with UPnP when that's on."u8);
+            ImGuiSafe.TextColored(Dim, "Keeps a list running while the game is open (the same as tools\\RunServerList.bat, which runs it without the game). Its UDP port (27050) is opened on your router with UPnP when that's on.");
         ImGui.PopTextWrapPos();
 
         ImGui.Spacing();

@@ -425,7 +425,7 @@ public sealed partial class Ui
                 _portInput = Math.Clamp(_portInput, 1024, 65535);
         }
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
-        ImGui.TextColored(Dim, "Paste the invite code (or link) the host copied from their lobby, or type the address shown at the top-left of their screen (\"ip:port\" works too)."u8);
+        ImGuiSafe.TextColored(Dim, "Paste the invite code (or link) the host copied from their lobby, or type the address shown at the top-left of their screen (\"ip:port\" works too).");
         ImGui.PopTextWrapPos();
         if (_joinError.Length > 0)
             ImGuiSafe.TextColored(Red, _joinError);
