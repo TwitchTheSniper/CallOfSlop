@@ -28,6 +28,16 @@ public sealed partial class Ui
     private float _mixFrenzySeconds = 20f;
     private double _mixFrenzyUntil = -1;
     private bool _mixWasOpen;
+    private double _mixLastNow = double.NaN;
+    private int _mixBind = Keybinds.Unbound;
+
+    // ImGui ids per row, made once (the window builds no strings per row each frame).
+    private static readonly string[] MixSliderIds = AudioMixDefaults.Entries.Select(e => "##" + e.Key).ToArray();
+    private static readonly string[] MixMuteIds = AudioMixDefaults.Entries.Select(e => "##m" + e.Key).ToArray();
+    private static readonly string[] MixResetIds = AudioMixDefaults.Entries.Select(e => "R##r" + e.Key).ToArray();
+    private static readonly string[] MixDefaultTexts = AudioMixDefaults.Entries.Select(e => e.IsLevel ? e.Default.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture) : e.Default.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+    private static readonly string[] MixTooltips = AudioMixDefaults.Entries.Select(e => $"{e.Help}\nKey: {e.Key}  (default {(e.IsLevel ? e.Default.ToString("+0.0;-0.0;0.0", System.Globalization.CultureInfo.InvariantCulture) + " dB" : e.Default.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture))})").ToArray();
+    private static readonly string[] SmallNumbers = Enumerable.Range(0, 100).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
 
     private const float MeterMinDb = -60f, MeterMaxDb = 6f;
 
@@ -43,24 +53,32 @@ public sealed partial class Ui
 
     /// <summary>
     /// Draws the mixer if it's open (call every frame, also when closed: it turns the meters on and off).
-    /// <paramref name="current"/>: the weapon the test shots use by default (yours in a match).
+    /// <paramref name="current"/>: the weapon the test shots use by default (yours in a match); <paramref name="bind"/>: the key that opens it.
     /// </summary>
-    public void DrawAudioMixer(Audio audio, double now, float dt, WeaponDef current)
+    public void DrawAudioMixer(Audio audio, double now, WeaponDef current, int bind)
     {
-        audio.SetMetering(AudioMixerOpen && audio.Enabled);
         if (!AudioMixerOpen)
         {
             if (_mixWasOpen)
+            {
                 _mixFrenzyUntil = -1; // closing the window ends a preview
-            _mixWasOpen = false;
-            return;
+                audio.SetMetering(false);
+                _mixWasOpen = false;
+            }
+            return; // closed: one bool check a frame, nothing recorded or measured
         }
+        audio.SetMetering(audio.Enabled);
+        _mixBind = bind;
         if (!_mixWasOpen)
         {
             _mixWasOpen = true;
             _mixPresets = AudioMix.ListPresets();
             _mixPresetName ??= new ImInputString(41);
+            _mixLastNow = double.NaN;
+            ImGui.SetNextWindowFocus(); // over the lobby's full-screen menu
         }
+        var dt = double.IsNaN(_mixLastNow) ? 0f : (float)Math.Clamp(now - _mixLastNow, 0, 0.25);
+        _mixLastNow = now;
         audio.UpdateMeters(now, dt);
         var mix = audio.Mix;
         var m = audio.Meters;
@@ -89,7 +107,7 @@ public sealed partial class Ui
             MixMessage(err == null ? $"saved {AudioMix.FileName} ({mix.Changed} value(s) changed from the defaults)" : $"save failed: {err}", now);
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("Saves to audio_mix.json next to the game; it's loaded every time the game starts."u8);
+            ImGui.SetItemTooltip("Saves audio_mix.json in your save folder (it carries over to new builds); it's loaded every time the game starts."u8);
         ImGui.SameLine();
         if (ImGui.Button("Load"u8))
             MixMessage($"{AudioMix.FileName}: {mix.LoadFile(AudioMix.DefaultPath)}", now);
@@ -162,7 +180,7 @@ public sealed partial class Ui
         if (_mixMsg.Length > 0 && now - _mixMsgAt < 8)
             ImGuiSafe.TextColored(Orange, _mixMsg);
         else
-            ImGui.TextColored(Dim, "Drag a slider (Ctrl+click to type a value). Esc frees the mouse in a match; click the game to play with the window open."u8);
+            ImGuiSafe.TextColored(Dim, $"Drag a slider (Ctrl+click to type a value). {Keybinds.Name(_mixBind)} or Esc closes the window (in a match the mouse comes back to the game).");
     }
 
     private void DrawMixMaster(Audio audio, AudioMeters m, double now)
@@ -224,6 +242,9 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.Button("Explosion 15 m"u8))
             audio.TestExplosion(15f, _mixTestAngle);
+        ImGui.SameLine();
+        if (ImGui.Button("Gibs 10 m"u8))
+            audio.Effect3D(Sfx.GibSquelch, audio.AroundListener(10f, _mixTestAngle), 0.95f);
 
         if (ImGui.Button("Own steps"u8))
             audio.TestFootstep(true, 0f, 0f);
@@ -307,24 +328,26 @@ public sealed partial class Ui
         ImGui.TableNextColumn();
         ImGui.Text(e.Label);
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetItemTooltip($"{e.Help}\nKey: {e.Key}");
+            ImGuiSafe.SetItemTooltip(MixTooltips[k]);
         ImGui.TableNextColumn();
         ImGui.SetNextItemWidth(-1);
         var db = mix.Db(bus);
-        if (ImGui.SliderFloat($"##{e.Key}", ref db, AudioMixDefaults.MinDb, AudioMixDefaults.MaxDb, "%+.1f dB"u8))
+        if (ImGui.SliderFloat(MixSliderIds[k], ref db, AudioMixDefaults.MinDb, AudioMixDefaults.MaxDb, "%+.1f dB"u8))
             mix.SetDb(bus, db);
         ImGui.TableNextColumn();
         var mute = mix.Muted(bus);
-        if (ImGui.Checkbox($"##m{e.Key}", ref mute))
+        if (ImGui.Checkbox(MixMuteIds[k], ref mute))
             mix.SetMuted(bus, mute);
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("Mute"u8);
         ImGui.TableNextColumn();
         var isDefault = !mute && db == e.Default;
         ImGui.BeginDisabled(isDefault);
-        if (ImGui.SmallButton($"R##r{e.Key}"))
+        if (ImGui.SmallButton(MixResetIds[k]))
             mix.ResetLevel(bus);
         ImGui.EndDisabled();
         ImGui.TableNextColumn();
-        ImGuiSafe.TextColored(Dim, $"{e.Default:+0.0;-0.0;0.0}");
+        ImGui.TextColored(Dim, MixDefaultTexts[k]);
         ImGui.TableNextColumn();
         if (bus == MixBus.Master)
             MeterBar(m.MasterPeak, m.MasterRms, m.MasterHold, 145 * _scale);
@@ -333,7 +356,7 @@ public sealed partial class Ui
         ImGui.TableNextColumn();
         var voices = bus == MixBus.Master ? m.ActiveVoices : m.VoiceCount[k];
         if (voices > 0)
-            ImGui.Text($"{voices}");
+            ImGui.Text(SmallNumbers[Math.Min(voices, SmallNumbers.Length - 1)]);
     }
 
     private void DrawMixShape(Audio audio, AudioMix mix)
@@ -348,21 +371,22 @@ public sealed partial class Ui
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
             ImGui.Text(e.Label);
+            var row = (int)MixBus.COUNT + i;
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetItemTooltip($"{e.Help}\nKey: {e.Key}");
+                ImGuiSafe.SetItemTooltip(MixTooltips[row]);
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(-1);
             var v = mix.Param(p);
-            if (ImGui.SliderFloat($"##{e.Key}", ref v, e.Min, e.Max, e.Format))
+            if (ImGui.SliderFloat(MixSliderIds[row], ref v, e.Min, e.Max, e.Format))
                 mix.SetParam(p, v);
             ImGui.TableNextColumn();
             ImGui.TableNextColumn();
             ImGui.BeginDisabled(v == e.Default);
-            if (ImGui.SmallButton($"R##r{e.Key}"))
+            if (ImGui.SmallButton(MixResetIds[row]))
                 mix.ResetParam(p);
             ImGui.EndDisabled();
             ImGui.TableNextColumn();
-            ImGuiSafe.TextColored(Dim, $"{e.Default:0.###}");
+            ImGui.TextColored(Dim, MixDefaultTexts[row]);
             ImGui.TableNextColumn();
             ShapeReadout(audio, mix, p);
             ImGui.TableNextColumn();

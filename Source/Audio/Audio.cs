@@ -416,9 +416,11 @@ public sealed partial class Audio : IDisposable
     public static float FarMix(float distance) => AudioMix.Defaults.FarMix(distance); // the crossfade distances are mixer rows (AudioMixDefaults.cs)
 
     // Every public sound call checks Enabled first: with no audio device the sound tables are empty.
-    public void Shot(WeaponDef w, Vector3? position)
+    /// <param name="extra">An extra mixer level on top of the gun rows (Co-op enemies), or <see cref="MixBus.Auto"/> for none.</param>
+    public void Shot(WeaponDef w, Vector3? position, MixBus extra = MixBus.Auto)
     {
-        if (!Enabled)
+        var extraGain = Mix.Gain(extra); // 1 for Auto
+        if (!Enabled || extraGain <= 0f)
             return;
         var hasFar = !_shotsFar[w.Id].IsNull();
         var plan = PlanShot(Mix, position == null, w.Suppressor, hasFar, position is { } at ? Vector3.Distance(at, _listener) : 0f, w.Class == WeaponClass.Launcher); // Audio.GunMix.cs
@@ -431,9 +433,9 @@ public sealed partial class Audio : IDisposable
         if (position == null && FrenzyGunLevel > 0 && FrenzyGunMode != FrenzyGunSoundMode.Off)
             nearGain = FrenzyOwnShot(w, nearGain, ref pitch); // Audio.FrenzyGun.cs: your frenzy class's layers on your own gun
         if (plan.Near > 0f)
-            Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff, plan.NearBus, plan.NearBusGain);
+            Play(PickVariant(w.Suppressor ? _shotsSuppressed[w.Id] : _shots[w.Id]), position, nearGain, pitch, plan.NearFalloff, plan.NearBus, plan.NearBusGain * extraGain);
         if (plan.Far > 0f && hasFar)
-            Play(_shotsFar[w.Id], position, plan.Far * gain * FarTrim(w.Id), pitch, plan.FarFalloff, plan.FarBus, plan.FarBusGain);
+            Play(_shotsFar[w.Id], position, plan.Far * gain * FarTrim(w.Id), pitch, plan.FarFalloff, plan.FarBus, plan.FarBusGain * extraGain);
     }
 
     /// <summary>A random recorded variant (never the same one twice in a row when there are several).</summary>

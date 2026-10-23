@@ -512,7 +512,7 @@ public sealed partial class Game
         var gun = e.Def.Def;
         var muzzle = eye + World.FlatRight(e.Yaw) * 0.22f - new Vector3(0, 0.15f, 0) + World.FlatForward(e.Yaw) * 0.7f;
         AddTracer(muzzle, end, gun, now);
-        Audio.Shot(gun, eye);
+        Audio.Shot(gun, eye, MixBus.CoopEnemies); // the audio mixer's Co-op enemies row on top of the gun rows
     }
 
     // ---- Grenades ---------------------------------------------------------------------------------------------------
@@ -540,7 +540,7 @@ public sealed partial class Game
         Projectiles[proj.Id] = proj;
         _w.Begin(Msg.ProjSpawn).U16(proj.Id).U8((byte)proj.Kind).U8(proj.Owner).Vec(proj.Pos).Vec(proj.Vel);
         Net.Broadcast(_w.Span, Brutal.RakNetApi.PacketReliability.ReliableOrdered);
-        Audio.Effect3D(Sfx.Throw, proj.Pos, 0.6f);
+        Audio.Effect3D(Sfx.Throw, proj.Pos, 0.6f, MixBus.CoopEnemies);
         e.NextGrenade = now + e.Def.GrenadeCooldown * (0.8 + 0.4 * PveRand()) * PveDifficulty.Grenades(BotSkill);
         _pveNextGrenadeAny = now + 2.5;
         e.NextShot = now + 0.8;

@@ -519,9 +519,10 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | Tab (hold) | Scoreboard |
 | Enter / Y | Chat to everyone / to your team (see Text chat and voice chat) |
 | X (hold) | Push to talk (once you've turned your microphone on in Settings > Audio) |
+| F8 | Open / close the Audio mixer debug window (see Audio mixer) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls).
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way.
 
 ### Display
 
@@ -679,6 +680,36 @@ Every weapon has its own **gunshot, reload and equip sound**, synthesised when t
 - **Distance.** Bullets passing within 3 m of you **whizz**, or **crack** for rifles, DMRs, snipers and LMGs. Shots hitting the world make an **impact** by surface (concrete chips, a metal ping, a wood thunk, a dirt puff), sometimes with a **ricochet** off metal, concrete and rock. Breaking props have three variations each.
 - **OpenAL EFX** (part of the OpenAL binding) is used when the device passes a start-up canary: positional sounds lose their air with distance (a high shelf), and gunshots also lose their boom (a band-pass filter's low shelf: about -5 dB below 250 Hz at 30 m, -13 dB at 60 m), and every sound gets a light reverb send that suits the map: open terrain, urban streets, or a stony room for maps that are mostly roofed over. Without EFX everything plays dry, as before. The log's `[audio]` lines give the number of sounds, synthesis time, EFX and HRTF status, and once a minute in a match the sounds played, footsteps dropped by the voice cap and CPU per sound.
 - **Settings > Audio**: **Effects volume** (everything but music), **Own gun volume** (your own gunshots and their frenzy layers, on top of the effects volume; 1.00 is the tuned mix above) and **Footstep volume** (on top of the effects volume), all default 1.00, saved as `effects_volume`, `own_gun_volume` and `footstep_volume` in `settings.txt`; older settings files load with the defaults. Each slider has a Test button.
+
+### Audio mixer
+
+A debug window for tuning the game's sound landscape: a level slider for every kind of sound, so you can try different balances and send the result to the developers.
+
+**Opening it:** press **F8** (rebindable in Settings > Controls as *Audio mixer (debug window)*) or click **Open audio mixer** in **Settings > Audio**. It works in the main menu, in the lobby and live in a match. In a match the mouse is freed while it's open; F8 or Esc closes it and gives the mouse back to the game. It only changes what *you* hear, never anyone else's game. While it's closed it costs nothing (no meters run).
+
+**What's in it:**
+- **Levels** in dB (-40 to +12), each with a **mute** box, a **reset** button (R), its **default** and a live **meter** (RMS bar, peak line, peak-hold tick) with the number of sounds playing. 0 dB is the game as tuned. The rows, by group:
+  - *Master*: everything, on top of Settings > Audio's master volume.
+  - *Guns*: own gun; own gun suppressed; other players' guns (near layer); distant gunfire layer / tail; other players' suppressed guns; the frenzy gun-sound layer; reload / equip / dry fire.
+  - *Launchers*: own launcher; other players' launchers and rocket motors; lock-on tones / detonator.
+  - *Explosions & impacts*: explosions (grenades, rockets, props, kill streak blasts, landmine blasts); bullet impacts and ricochets; bullet whizz / crack-by; breaking props, doors, glass; gore / gibs squelch; body hits heard in the world.
+  - *Hit feedback*: hit marker; headshot; kill confirm; friendly-fire marker; hurt / death / shield. (A wallbang hit plays the normal hit marker sound: its extra ticks are visual only.)
+  - *Movement*: own footsteps; other players' footsteps; own jump / land / prone; others' jump / land / prone; melee.
+  - *Gear & streaks*: tactical gear; the landmine click; kill streaks; zombies; co-op enemies (an extra level on top of the gun rows for Co-op mission soldiers).
+  - *UI & notifications*: UI / menu clicks; notifications (level up, streak ready, mode events; there is no announcer voice).
+  - *Voice chat*: other players' voices, on top of Settings > Audio's voice volume.
+  - *Music*: menu music; lobby music; kill frenzy levels 1 to 6 (a live match has no other music).
+- **Distance (gun mix shape):** gunshot reference distance, rolloff (with the resulting dB per doubling shown), max distance, distance bass cut and its floor, air absorption (treble loss) and its floor, the near/distant crossfade start and end, and the music limiter ceiling for the frenzy (with its deepest gain reduction so far).
+- **Master out (est.):** the estimated total level with a **CLIP** light, the number of voices playing, and the frenzy limiter's headroom. The effect meters are estimated from each sound's gain and envelope (OpenAL mixes them); the music is measured.
+- **Test sounds** (choose a weapon, or your current one, and a direction): your own shot; an enemy shot at 5 / 30 / 80 m; an explosion at 15 m; footsteps (yours, an enemy's at 10 m, a landing); hit marker, headshot, kill and friendly-hit sounds; and **Preview frenzy**: forces the kill-frenzy music and your gun's frenzy layer to level 0-6 for 5-60 s, in the lobby too.
+
+**Saving your mix:**
+- **Save** writes `audio_mix.json` in your save folder (next to `settings.txt`; it carries over to new builds). It's loaded every time the game starts. **Load** reads it back, **Revert to defaults** goes back to the built-in mix (Save afterwards to keep that).
+- Type a name and **Save as...** to keep named presets in `AudioMixes/` (in the save folder), then pick one and **Load preset**.
+- **Copy to clipboard** copies the whole mix as JSON: paste it in a message to send it to the developers.
+- The file is plain JSON: `version`, the `game` build, the time it was `saved`, then every level by key (`"gun.own": {"db": -2.5, "mute": false, "default": 0}`) and every distance value by key. Missing keys keep their default, unknown keys are ignored and out-of-range values are clamped, so files from older or newer builds still load. Delete the file to go back to the defaults. The tester package (`tools/package.ps1`, `Package.bat`) never includes it.
+
+**For developers (baking a mix in):** every default lives in one table, `Source/Audio/AudioMixDefaults.cs`, under the same keys as the JSON. To make a player's mix the game's own, copy each `db` (and each distance value) from their file into that row's default; the self-test's identity check then reports that the table holds a baked mix. With no `audio_mix.json` and the table untouched, every sound plays exactly as before the mixer existed (checked by the self-test).
 
 ### Text chat and voice chat
 

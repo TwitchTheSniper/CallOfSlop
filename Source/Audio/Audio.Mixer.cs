@@ -73,6 +73,7 @@ public sealed partial class Audio
         Sfx.Scuffle or Sfx.LandThud or Sfx.JumpPush => world ? MixBus.FoleyOther : MixBus.FoleyOwn,
         Sfx.RocketMotor => MixBus.LauncherOther,
         Sfx.LockTone or Sfx.LockedTone => MixBus.LauncherLock,
+        Sfx.GibSquelch => MixBus.Gore,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 
@@ -131,7 +132,7 @@ public sealed partial class Audio
     }
 
     /// <summary>Pushes the mix to the music thread when it changed (called with the listener, once a frame).</summary>
-    private void SyncMix()
+    internal void SyncMix()
     {
         if (Mix.Revision == _mixRevision)
             return;
@@ -173,6 +174,11 @@ public sealed partial class Audio
         if (level >= 1)
             Meters.AddExternal(MixBus.Frenzy1 + (Math.Min(level, 6) - 1), frenzyPeak * music, frenzyMs * music * music, toMaster: false);
         Meters.AddMusicOutput(outPeak * ListenerGain, outMs * ListenerGain * ListenerGain);
+        var talkers = 0;
+        foreach (var v in _voiceOut)
+            if (v.Bound != null)
+                talkers++;
+        Meters.VoiceCount[(int)MixBus.Voice] = talkers; // voice chat streams: counted, not measured
         Meters.End(now, dt);
     }
 

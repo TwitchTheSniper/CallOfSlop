@@ -44,7 +44,7 @@ public sealed partial class Game
     {
         var n = Gibs.SpawnProp(p, from, kind, Gibs.SeedFor(i, from));
         AnimalsGibbed++;
-        Audio.Effect3D(Gibs.Mode == GoreMode.Off ? Sfx.BreakSoft : Sfx.GibSquelch, p.Bounds.Center, 0.95f);
+        Audio.Effect3D(Gibs.Mode == GoreMode.Off ? Sfx.BreakSoft : Sfx.GibSquelch, p.Bounds.Center, 0.95f, MixBus.Gore);
         Console.WriteLine($"[gibs] {p.Def.Name} went splat ({n} gibs, {kind}). It had a family, probably.");
     }
 

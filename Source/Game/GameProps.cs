@@ -405,8 +405,8 @@ public sealed partial class Game
         if (map.PropInstances[i].Def.Breakable is { IsMine: true })
         {
             // A pressure plate: a sharp click (and a glint of two sparks), then the blast a moment later.
-            Audio.Effect3D(Sfx.DeployDevice, b.Center, 1f);
-            Audio.Effect3D(Sfx.DryFire, b.Center, 0.9f);
+            Audio.Effect3D(Sfx.DeployDevice, b.Center, 1f, MixBus.Landmine);
+            Audio.Effect3D(Sfx.DryFire, b.Center, 0.9f, MixBus.Landmine);
             PropDebris.Sparks(new Vector3(b.Center.X, b.Max.Y, b.Center.Z), 2, i * 7919 + (int)(PropDebris.Spawned & 0xFFFF));
             MinesClicked++;
             return;

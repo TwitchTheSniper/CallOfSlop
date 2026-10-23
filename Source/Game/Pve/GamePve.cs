@@ -423,7 +423,7 @@ public sealed partial class Game
         if (attacker != null)
             attacker.Kills++;
         OnEnemyKilled(attacker, e, head, explosive, weaponId, now); // the stage's count, XP (GamePveMission.cs)
-        Audio.Effect3D(Sfx.FleshHit3D, e.Position + new Vector3(0, 1.2f, 0), 0.9f);
+        Audio.Effect3D(Sfx.FleshHit3D, e.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.CoopEnemies);
         return true;
     }
 

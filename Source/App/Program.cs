@@ -129,6 +129,7 @@ public static unsafe partial class Program
             AudioSystem.Music.Volume = _settings.MusicVolume;
             (AudioSystem.EffectsVolume, AudioSystem.FootstepVolume) = (_settings.EffectsVolume, _settings.FootstepVolume);
             AudioSystem.OwnGunVolume = _settings.OwnGunVolume;
+            LoadAudioMix(); // audio_mix.json from the Audio mixer window, if there is one (Program.AudioMixer.cs)
             CreateWindow();
             RunSplash(); // the BRUTAL logo before anything else, even with a command-line shortcut (licence section 2.2)
 
@@ -1171,6 +1172,7 @@ public static unsafe partial class Program
                         StartSession(action);
                 }
             }
+            Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.EndFrame();
             if (Ui.Thumbs.Count > 0)
                 DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
@@ -1270,7 +1272,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom; // (a Zombies workbench too; the lobby room)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom || Ui.AudioMixerOpen; // (a Zombies workbench too; the lobby room; the Audio mixer window)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1315,6 +1317,9 @@ public static unsafe partial class Program
             Ui.CloseChat(); // Esc leaves the chat line, not the match
             return;
         }
+
+        if (AudioMixerKey(key)) // F8 (rebindable) or Esc: the Audio mixer window (Program.AudioMixer.cs)
+            return;
 
         if (_session == null || key != GlfwKey.Escape)
             return; // everything else is polled through the keybinds in UpdateLocalPlayer

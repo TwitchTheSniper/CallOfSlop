@@ -415,7 +415,7 @@ public sealed partial class FrenzyLayer
             Volatile.Write(ref _levelTrim[level], float.IsFinite(gain) ? Math.Clamp(gain, 0f, 4f) : 1f);
     }
 
-    private float LevelTrim(int level) => Volatile.Read(ref _levelTrim[Math.Clamp(level, 1, 6)]);
+    internal float LevelTrim(int level) => Volatile.Read(ref _levelTrim[Math.Clamp(level, 1, 6)]);
 
     /// <summary>The mixer's frenzy preview: the layer may play outside a live match (the lobby) while this is on.</summary>
     public bool Preview
