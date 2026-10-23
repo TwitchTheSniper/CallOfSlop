@@ -299,7 +299,7 @@ public sealed partial class NavGraph
     {
         if (MoverWalk(a, b, flags, ledge, sprint: false) is { Reached: false } w0)
         {
-            if (World.Map.Name == "Main Street" && DebugRejects.Count < 60 && a.X > 8 && a.X < 36 && a.Z > -12 && a.Z < -2)
+            if (World.Map.Name == "Main Street" && DebugRejects.Count < 60 && a.X > 4 && a.X < 30 && a.Z > -23 && a.Z < -19)
                 DebugRejects.Add(FormattableString.Invariant($"({a.X:0.0},{a.Y:0.00},{a.Z:0.0})->({b.X:0.0},{b.Y:0.00},{b.Z:0.0}) f{flags} end ({w0.End.X:0.0},{w0.End.Y:0.00},{w0.End.Z:0.0})"));
             return false;
         }

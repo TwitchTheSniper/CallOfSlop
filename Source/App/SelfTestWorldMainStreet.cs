@@ -152,6 +152,13 @@ public static partial class SelfTest
                     Fail($"  route {team}: {string.Join(" ", parts)}");
                 }
                 Fail("  rejected: " + string.Join(" ", NavGraph.DebugRejects));
+                foreach (var wx in new[] { 7.6f, 14.6f, 21.5f, 24.0f })
+                {
+                    var wp = new Vector3(wx, m.GroundHeight(wx, -21.25f), -21.25f);
+                    var k = g.Nearest(wp, needSight: false);
+                    var es = k < 0 ? "-" : string.Join(" ", Enumerable.Range(g.EdgeStart[k], g.EdgeStart[k + 1] - g.EdgeStart[k]).Select(e => FormattableString.Invariant($"({g.Nodes[g.EdgeTo[e]].X:0.0},{g.Nodes[g.EdgeTo[e]].Y:0.0},{g.Nodes[g.EdgeTo[e]].Z:0.0})f{g.EdgeFlags[e]}")));
+                    Fail(FormattableString.Invariant($"  squeeze ({wx:0.0}, -21.25): waypoint listed {m.Waypoints.Any(w => MathF.Abs(w.X - wx) < 0.3f && MathF.Abs(w.Z + 21.25f) < 0.3f)}, nearest node {(k < 0 ? "none" : $"({g.Nodes[k].X:0.0},{g.Nodes[k].Y:0.0},{g.Nodes[k].Z:0.0}) main {g.MainNodes.Contains(k)}")} edges {es}"));
+                }
             }
         }
         for (var i = 0; i < o.Hills.Count; i++)
