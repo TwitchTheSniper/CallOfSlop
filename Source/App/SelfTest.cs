@@ -91,6 +91,7 @@ public static partial class SelfTest
             Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
             Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
             Section("Matches", CheckMatches);
+            Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
             Section("Bots", CheckBots);
             Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
             Section("Bot gear level", CheckBotGearLevel); // SelfTestBotGear.cs: bot loadouts match the lobby's level (unlocks, jitter, personalities, joins, setting, no allocations)
@@ -628,7 +629,7 @@ public static partial class SelfTest
             // runners regularly stall a tick that did 0.1-0.5 ms of work for 20-60 ms (once 100-120 ms), so that rule
             // only catches many slow ticks or a huge one (e.g. blocking file I/O, which uses no CPU).
             if (cpu.WorstMs > MaxTickWorkMs)
-                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
+                Fail($"{m.Name}: a server tick did {cpu.WorstMs:0.0} ms of work, JIT compiling left out (over {MaxTickWorkMs} ms, half the 16 ms budget; {cpu.WorstDetail})");
             if (slowTicks > 30 || maxTickMs > 250)
                 Fail($"{m.Name}: {slowTicks} server ticks went over the 16 ms budget (worst {maxTickMs:0.0} ms)");
             else if (maxTickMs > 16)

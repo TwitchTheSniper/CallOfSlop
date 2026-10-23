@@ -363,5 +363,6 @@ public sealed partial class Map
             d.Version++;
             World.InvalidateGrid(this); // boxes growing back: the collision world reads them again
         }
+        NavGraph.ResetPatches(this); // and the bots' nav graph forgets the holes and fallen floors (BotNavPatch.cs)
     }
 }

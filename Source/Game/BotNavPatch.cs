@@ -97,7 +97,8 @@ public sealed partial class NavGraph
         ExtraHead = new int[Nodes.Length];
         Array.Fill(ExtraHead, -1);
         _cellMap = map;
-        Tainted = DestructionAtStart != DestructionStamp(map) || map.Destruction.Structures.Any(s => s.BrokenCount > 0);
+        // Built from the map as built (PumpGraph, always on a destructible map): no holes in it, whatever is broken now.
+        Tainted = !World.NavBuildAsBuilt && (DestructionAtStart != DestructionStamp(map) || map.Destruction.Structures.Any(s => s.BrokenCount > 0));
     }
 
     /// <summary>Forgets the cached graph of <paramref name="map"/> (it's built again the next time bots need it).</summary>
@@ -109,6 +110,22 @@ public sealed partial class NavGraph
             _last = null;
             _lastMap = null;
         }
+    }
+
+    /// <summary>
+    /// The map's chunks are whole again (<see cref="Map.RestoreDestruction"/>): its cached graphs go back to as built too, so
+    /// whoever uses one next (a new match, a self-test audit) never sees last match's patches. Those ran within a time
+    /// budget per tick, so what they had reached depended on the PC's speed.
+    /// </summary>
+    public static void ResetPatches(Map map)
+    {
+        foreach (var g in Cache.Values)
+            if (g.MapName == map.Name && g.PatchVersion != 0)
+            {
+                g.ResetRuntime();
+                g.PatchOwner = null;
+                g.PatchMatch = -1;
+            }
     }
 
     /// <summary>Undoes every patch: spares parked, nothing off, the extra edges gone. No-op on an unpatched graph.</summary>

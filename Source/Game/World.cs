@@ -133,7 +133,25 @@ public static partial class World
     /// The current map's collision world (built on first use): one BVH over every static collider, the terrain and the
     /// movers. Every collision question goes through it (see <see cref="Query"/>).
     /// </summary>
-    public static PhysicsWorld Physics => _physics is { } p && p.IsFor(Map) ? p : _physics = new PhysicsWorld(Map);
+    public static PhysicsWorld Physics => _navBuildPhysics ?? (_physics is { } p && p.IsFor(Map) ? p : _physics = new PhysicsWorld(Map));
+
+    /// <summary>
+    /// While the nav graph builds a slice (this thread only): the map as at the start of a match
+    /// (<see cref="PhysicsWorld.AsBuilt"/>), so props broken and doors opened meanwhile never change the graph. Null otherwise.
+    /// </summary>
+    [ThreadStatic]
+    private static PhysicsWorld? _navBuildPhysics;
+
+    /// <summary>Is a nav graph slice running on this thread against the map as built (<see cref="UseNavBuildPhysics"/>)?</summary>
+    public static bool NavBuildAsBuilt => _navBuildPhysics != null;
+
+    /// <summary>Points <see cref="Physics"/> at <paramref name="world"/> on this thread (null: back to the live world). Returns the previous one.</summary>
+    public static PhysicsWorld? UseNavBuildPhysics(PhysicsWorld? world)
+    {
+        var previous = _navBuildPhysics;
+        _navBuildPhysics = world;
+        return previous;
+    }
 
     /// <summary>The current map's world queries: rays, shape casts, overlaps (<see cref="IWorldQuery"/>).</summary>
     public static IWorldQuery Query => Physics;
