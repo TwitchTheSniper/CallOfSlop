@@ -91,18 +91,7 @@ public sealed partial class NavGraph
         var dist = d.Length();
         if (dist > 0.01f && World.Physics.Raycast(a + shin, d / dist, dist, QueryFilter.Navigation) < dist - 0.05f)
             return true;
-        if (World.Map.TerrainCollision is not { } ground)
-            return false;
-        var t = ground.Layer(MathF.Min(a.Y, b.Y));
-        var len = Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
-        var n = Math.Max(1, (int)MathF.Ceiling(len / 0.5f));
-        for (var k = 0; k <= n; k++)
-        {
-            var p = Vector3.Lerp(a, b, k / (float)n);
-            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < SlopeRules.FullSpeedNormalY)
-                return true;
-        }
-        return false;
+        return SlopedLink(a, b);
     }
 
     /// <summary>
@@ -144,7 +133,49 @@ public sealed partial class NavGraph
         }
     }
 
-    /// <summary>Walking and sprinting both get there (bots do either).</summary>
-    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge) =>
-        MoverWalk(a, b, flags, ledge, sprint: false).Reached && MoverWalk(a, b, flags, ledge, sprint: true).Reached;
+    /// <summary>
+    /// Walking and sprinting both get there (bots do either). A mantle is also tried from half a body width to either side of
+    /// the start (bots seldom arrive dead on the node), so a ledge that only works from one exact spot isn't an edge.
+    /// </summary>
+    private static bool MoverWalks(Vector3 a, Vector3 b, byte flags, Vector3 ledge)
+    {
+        if (!MoverWalk(a, b, flags, ledge, sprint: false).Reached || !MoverWalk(a, b, flags, ledge, sprint: true).Reached)
+            return false;
+        if ((flags & FlagMantle) == 0)
+            return true;
+        var d = new Vector2(b.X - a.X, b.Z - a.Z);
+        if (d.LengthSquared() < 1e-4f)
+            return true;
+        d = Vector2.Normalize(d);
+        foreach (var side in (ReadOnlySpan<float>)[0.45f, -0.45f])
+        {
+            var p = new Vector3(a.X - d.Y * side, a.Y, a.Z + d.X * side);
+            var t = World.Physics.Raycast(p + new Vector3(0, 0.4f, 0), -Vector3.UnitY, 0.8f, QueryFilter.Navigation);
+            if (t >= 0.8f || MathF.Abs(0.4f - t) > 0.1f)
+                continue; // no floor there at that height (an edge or a step): bots don't stand there
+            p.Y += 0.4f - t;
+            if (World.Physics.BlockedNav(p + new Vector3(0, 0.01f, 0)))
+                continue;
+            if (!MoverWalk(p, b, flags, ledge, sprint: false).Reached)
+                return false;
+        }
+        return true;
+    }
+
+    /// <summary>Does a -> b run over terrain steeper than the full-speed angle (near the line)? Such edges get <see cref="FlagSlope"/>.</summary>
+    private static bool SlopedLink(Vector3 a, Vector3 b)
+    {
+        if (World.Map.TerrainCollision is not { } ground)
+            return false;
+        var t = ground.Layer(MathF.Min(a.Y, b.Y));
+        var len = Vector2.Distance(new Vector2(a.X, a.Z), new Vector2(b.X, b.Z));
+        var n = Math.Max(1, (int)MathF.Ceiling(len / 0.5f));
+        for (var k = 0; k <= n; k++)
+        {
+            var p = Vector3.Lerp(a, b, k / (float)n);
+            if (MathF.Abs(p.Y - t.HeightAt(p.X, p.Z)) < 0.6f && SlopeRules.SupportNormal(t, p.X, p.Z).Y < SlopeRules.FullSpeedNormalY)
+                return true;
+        }
+        return false;
+    }
 }

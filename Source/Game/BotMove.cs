@@ -191,12 +191,12 @@ public sealed partial class Game
         else
         {
             // Look-ahead: skip a node when the one after it is in plain, level, walkable view.
-            if (now >= b.NextShortcut && b.PathIdx + 1 < b.PathLen && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle | NavGraph.FlagDrop))
+            if (now >= b.NextShortcut && b.PathIdx + 1 < b.PathLen && !EdgeIs(nav, b.CurEdge, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope))
             {
                 b.NextShortcut = now + 0.25;
                 var next = nav.Nodes[b.Path[b.PathIdx + 1]];
                 var e = EdgeBetween(nav, b.Path[b.PathIdx], b.Path[b.PathIdx + 1]);
-                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop) && CanShortcut(pos, next))
+                if (!EdgeIs(nav, e, NavGraph.FlagMantle | NavGraph.FlagDrop | NavGraph.FlagSlope) && CanShortcut(pos, next)) // (steep slopes: only the walked edges)
                     BotAdvance(b, nav);
             }
             aimAt = nav.Nodes[b.Path[b.PathIdx]];

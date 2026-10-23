@@ -90,7 +90,7 @@ public static partial class SelfTest
     {
         if ((f.Flags & NavGraph.FlagMantle) != 0)
             return "mantle";
-        if (f.Flags == NavGraph.FlagDrop)
+        if ((f.Flags & (NavGraph.FlagMantle | NavGraph.FlagDrop)) == NavGraph.FlagDrop)
             return "drop";
         if (m.TerrainCollision is { } t && EdgeWalkSloped(t, f.A, f.B))
             return "slope";

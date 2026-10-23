@@ -22,6 +22,9 @@ public sealed partial class NavGraph
     public const float MaxDrop = 6f; // bots won't plan jumps down from higher than this
     public const byte FlagMantle = 1, FlagDrop = 2;
 
+    /// <summary>Runs over a slope past the full-speed angle (BotNavWalk.cs): bots follow it node to node, no shortcuts across it.</summary>
+    public const byte FlagSlope = 4;
+
     public string MapName = "";
     public uint MapHash;
     public float Spacing;
@@ -451,6 +454,11 @@ public sealed partial class NavGraph
                 back = false;
                 g.WalkRejected++;
             }
+        }
+        if (SlopedLink(a, b))
+        {
+            fFlags |= FlagSlope;
+            bFlags |= FlagSlope;
         }
         var len = Vector3.Distance(a, b);
         if (fwd)
