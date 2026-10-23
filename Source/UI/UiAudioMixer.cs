@@ -347,7 +347,7 @@ public sealed partial class Ui
             mix.ResetLevel(bus);
         ImGui.EndDisabled();
         ImGui.TableNextColumn();
-        ImGui.TextColored(Dim, MixDefaultTexts[k]);
+        ImGuiSafe.TextColored(Dim, MixDefaultTexts[k]);
         ImGui.TableNextColumn();
         if (bus == MixBus.Master)
             MeterBar(m.MasterPeak, m.MasterRms, m.MasterHold, 145 * _scale);
@@ -386,7 +386,7 @@ public sealed partial class Ui
                 mix.ResetParam(p);
             ImGui.EndDisabled();
             ImGui.TableNextColumn();
-            ImGui.TextColored(Dim, MixDefaultTexts[row]);
+            ImGuiSafe.TextColored(Dim, MixDefaultTexts[row]);
             ImGui.TableNextColumn();
             ShapeReadout(audio, mix, p);
             ImGui.TableNextColumn();
