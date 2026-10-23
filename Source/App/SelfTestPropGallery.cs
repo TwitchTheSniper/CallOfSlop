@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// AnimatedProps.json, MilitaryProps.json, PropGalleryRetail.json, SpaceProps.json, PropGalleryMore.json) are exactly
 /// what tools/props/gallery.py produces from the Props folders, so a new or resized prop shows up on its gallery after a
 /// run of the tool and nobody edits those maps by hand. Runs the tool with --check when the source tree and a Python 3
-/// are at hand (the agent container, CI, a developer's checkout); a packaged build just says so.
+/// are at hand (the agent container, CI, a developer's checkout); a packaged build just says so. The tool's output is the
+/// same on every Python 3 (it quantises footprints and sums with math.fsum), so a check here means a check anywhere.
 /// </summary>
 public static partial class SelfTest
 {
