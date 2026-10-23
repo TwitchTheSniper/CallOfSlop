@@ -32,6 +32,8 @@ on:
   push:
     tags:
       - "v*"
+    branches: # TEMP (auto-update agent): dry runs from the feature branch; removed before merge
+      - feature/auto-update
 
 permissions:
   contents: write # create the release and upload its files
