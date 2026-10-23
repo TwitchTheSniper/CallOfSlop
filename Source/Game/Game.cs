@@ -154,6 +154,8 @@ public sealed partial class Game : IDisposable
         ThrowableKind grenade = ThrowableKind.None, ThrowableKind equipment = ThrowableKind.None, uint primaryKit = 0, uint secondaryKit = 0,
         PerkSet? perks = null)
     {
+        World.GravitySetting = 100; // a new session starts at the map's own gravity (the host sets GravityPercent; clients learn it)
+        World.GravityScale = 1f;
         ChosenPerks = (perks ?? PerkSet.Empty).Sanitized();
         ChosenPrimaryKit = primaryKit;
         ChosenSecondaryKit = secondaryKit;
@@ -1552,7 +1554,8 @@ public sealed partial class Game : IDisposable
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
                     .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
-                    .U32(PartSet.Hash).U16((ushort)Parts.All.Length); // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
+                    .U32(PartSet.Hash).U16((ushort)Parts.All.Length) // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
+                    .U8((byte)GravityPercent); // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -1741,6 +1744,7 @@ public sealed partial class Game : IDisposable
                     Disconnected = true;
                     break;
                 }
+                ApplyHostGravity(r.Has(1) ? r.U8() : 100); // the host's gravity setting (GameGravity.cs)
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.
@@ -1896,5 +1900,10 @@ public sealed partial class Game : IDisposable
         }
     }
 
-    public void Dispose() => Net.Dispose();
+    public void Dispose()
+    {
+        Net.Dispose();
+        World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)
+        World.GravityScale = 1f;
+    }
 }

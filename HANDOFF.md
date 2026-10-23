@@ -72,6 +72,15 @@
 
 Otherwise nothing. All agents finished and every branch is merged. A weekly scheduled task (Mondays, 8:51 Chicago time) reminds the user about the Foxhole-style sandbox idea; see the project doc `claude/ideas-backlog.md`.
 
+- **feat/gravity-strength** (gravity-maps): (1) the "Matches: Keelhaul Yard: N player(s) below the floor" failure: partly
+  the check (on a void map it compared with y = 0, and Keelhaul's hold floor is at -3; now the fall-kill height, as the Map
+  contract does), partly real: bots walked off unrailed dock edges and the yard's corners (railed now, the deck runs under
+  the hull's ends), crawled under Twin Shard's tethers where they enter the rocks (filled; the Line's zone covers only its
+  deck), and anyone who fell off outside play (warm-up, countdown, results) hung alive 5 m under the map; the server now
+  puts them back on their nearest spawn (`Game.FallRescue`). "Space: gravity physics" plays seeded matches on both maps and
+  checks nobody is alive under the map. (2) The host's *Gravity* setting (25-200%, protocol 48) and Pocket Planet at
+  11 m/s2 with a 60% floor; section "Gravity strength".
+
 ## Open bugs and loose ends
 
 **Gameplay and visual**

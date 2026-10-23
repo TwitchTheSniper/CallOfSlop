@@ -171,6 +171,13 @@ public sealed class TwinShard : IMapGenerator
             k.Block(s * 6, TetherY + 0.45, -6, s * 6.2, TetherY + 1.1, -1.7, Brass);
             k.Block(s * 6, TetherY + 0.45, 1.7, s * 6.2, TetherY + 1.1, 6, Brass);
         }
+        // Where each tether runs into its shard, fill the gap between deck and rock (a 1-2 m crawlspace bots got into).
+        foreach (var sx in new[] { -1, 1 })
+        {
+            double xa = sx * 23.5, xb = sx * (ShardX + 1);
+            k.Block(xa, Y0 + 13.5, -1.5, xb, TetherY - 0.4, 1.5, Dark); // under the Line's deck, into the rock's top
+            k.Block(xa, KeelY + 0.4, -1.5, xb, Y0 - 13.5, 1.5, Dark); // over the Keel Line's deck, into the rock's bottom
+        }
         // Pylons under the Line, cosmetic, and the cable under the Keel Line.
         for (var x = -24; x <= 24; x += 12)
             k.Mesh("cylinder", x, 0, TetherY - 3.4, Dark, width: 0.8, depth: 0.8, height: 3.0, material: "Metal");
@@ -232,7 +239,8 @@ public sealed class TwinShard : IMapGenerator
     {
         var z = new JArray();
         // (The Line's zone is only as wide as its deck: the shards' tops either side of it keep their own pull.)
-        z.Add(new JObject(("shape", "box"), ("name", "the line"), ("min", JArray.Of(-ShardX + 3, Y0 + 15, -2.5)), ("max", JArray.Of(ShardX - 3, Y0 + 26, 2.5)),
+        // (Only the deck's footprint, from just under its top: the rock under and beside the deck keeps its own pull.)
+        z.Add(new JObject(("shape", "box"), ("name", "the line"), ("min", JArray.Of(-ShardX + 3, TetherY - 0.3, -1.6)), ("max", JArray.Of(ShardX - 3, Y0 + 26, 1.6)),
             ("field", new JObject(("type", "uniform"), ("strength", LineG)))));
         z.Add(new JObject(("shape", "box"), ("name", "the knot"), ("min", JArray.Of(-7, Y0 + 15, -7)), ("max", JArray.Of(7, Y0 + 26, 21)),
             ("field", new JObject(("type", "uniform"), ("strength", LineG)))));

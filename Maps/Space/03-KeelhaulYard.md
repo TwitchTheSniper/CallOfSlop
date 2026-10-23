@@ -20,7 +20,7 @@ Mirror-symmetric about z = 0: Blue holds the north dock (z < 0), Red the south. 
 | The Hold | the cargo hold, sunk 3 m, x -46..-16, z +-24 | a third of normal (7 m/s2) | An 18 m void hatch across the middle with a railed catwalk over it (hill 2); container stacks you can jump onto only here; ramps up to the yard at both ends |
 | The Rock | a 12 m asteroid centred 9 m over the yard's middle | its own pull (18 m/s2 towards its centre, 8 m out) | Walk round and under it; a crater on its underside, scattered rocks, two brass cleats. Reached by the piers |
 | The Mooring Masts | columns at z = +-14.5 with switchback stairs (15 m) and a top walkway | plain | A pier runs from each mast's top to just short of the Rock's top; a 0.2 m step off the pier's end onto the Rock |
-| North / South Dock | x +-16, z +-30..46 | plain | The dock office (a U of walls with two doors and a roof) holding the flag and four spawns; four more spawns outside; tanks, pods, barriers, beacons |
+| North / South Dock | x +-16, z +-30..46 | plain | The dock office (a U of walls with two doors and a roof) holding the flag and four spawns; four more spawns outside; tanks, pods, barriers, beacons. Railed sides and back corners |
 
 Getting between gravities:
 - **Deck to hull:** walk up the Bowl, or jump anywhere within 10 m of the hull (its zone starts half a metre up): the
@@ -35,6 +35,10 @@ Getting between gravities:
 Lanes: the docks join the yard through two 4 m doors each; the yard's middle lane runs dock to dock under the Rock
 (hill 1); the hull is a tall flank with sight over the whole yard (and a hill of its own); the hold is the low flank
 with the catwalk choke and long low-gravity jumps round it; the masts and piers put a third level over the middle.
+
+Every open deck edge over the void is railed (a band 0.45-1.1 m up on short posts: people stay on, bullets and grenades
+go under), except the hold's lip and the hatch, which are drops by design. The deck runs on under the hull's ends
+(z +-30 to +-37), so walking down off the wall's bottom edge anywhere lands on it.
 
 ## Objectives
 

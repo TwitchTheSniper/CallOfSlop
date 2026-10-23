@@ -383,7 +383,7 @@ public sealed partial class Game
 
     /// <summary>
     /// The lobby state (protocol 32): version, flags, the map (name + fingerprint), mode, score limit choice, time
-    /// limit, bots wanted and their difficulty, auto-start, then every player's ping. About 30 bytes + 3 per player.
+    /// limit, bots wanted and their difficulty, auto-start, gravity (protocol 48), then every player's ping. About 30 bytes + 3 per player.
     /// </summary>
     public void WriteLobbyState(PacketWriter w)
     {
@@ -391,7 +391,7 @@ public sealed partial class Game
                            | (TrueRandom ? LobbyFlagTrueRandom : 0) | (FrenzyBuffsEnabled ? LobbyFlagFrenzy : 0));
         w.Begin(Msg.LobbyState).U16(LobbyVersion).U8(flags).Str(World.Map.Name).U32(World.Map.ContentHash)
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
-            .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue));
+            .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent); // (protocol 48: gravity, GameGravity.cs)
         var countAt = w.Length;
         w.U8(0);
         byte n = 0;
@@ -436,7 +436,7 @@ public sealed partial class Game
             return;
         var flags = r.U8();
         var mapName = r.Str();
-        if (!r.Has(13))
+        if (!r.Has(14))
             return;
         var hash = r.U32();
         var mode = (GameMode)r.U8();
@@ -445,6 +445,7 @@ public sealed partial class Game
         var bots = r.U8();
         var skill = r.U8();
         var auto = r.U16();
+        var gravity = r.U8();
         int n = r.U8();
         Array.Clear(PingMs);
         for (var i = 0; i < n && r.Has(3); i++)
@@ -455,6 +456,7 @@ public sealed partial class Game
                 PingMs[id] = ping;
         }
         _lobbyStateSeen = true;
+        ApplyHostGravity(gravity); // (every copy: it's a byte, and a missed change mustn't wait for the next version)
         if (version == LobbyVersion && _lobbyMapName == mapName)
             return; // just the pings
         LobbyVersion = version;

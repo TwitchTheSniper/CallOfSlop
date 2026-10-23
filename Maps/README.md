@@ -700,7 +700,7 @@ map in the Space pack (`Maps/Space/02-Planet.json`, written by `tools/planet/mak
 ```
 
 **`gravity`** fields: `type` (`"point"` or `"uniform"`), `center` (default `[0, 0, 0]`), `strength` (m/s², 1 to 60, default
-18, the game's usual) and `axis` (default `[0, 0, -1]`). Players' yaw is measured from "north" in each spot's ground plane,
+18, the game's usual; a small world feels right lighter: Pocket Planet is 11) and `axis` (default `[0, 0, -1]`). Players' yaw is measured from "north" in each spot's ground plane,
 and that north is the `axis` laid flat on the ground; it has no direction on the two points of the planet the axis passes
 through, so **put something solid on both** (Pocket Planet has a monolith on each, at latitude 0, longitude 0 and 180).
 Players never notice the frame: the game carries your view along as you walk, so going all the way round never turns it.
@@ -800,6 +800,20 @@ about three times as far and as high as at 18 m/s², so a low-gravity gap can be
   play as Hard) and the kill streaks that fly over the map, as on a planet. The "Stairs" self-test walks every flight of
   steps the straight-down way, so keep runs of three or more steps out of sideways zones.
 - **Fingerprint:** the default field and every zone's shape, bounds and field are part of it.
+
+### The host's gravity setting
+
+The host's *Gravity* (25% to 200%, Host page and lobby room; `Source/Game/GameGravity.cs`) multiplies every field a map
+declares, the default and every zone alike, and everything that falls. Your map's numbers are what it plays at 100%.
+Design for 100%, but keep in mind:
+- **Planets have a floor.** A map whose whole gravity is a point field plays at no less than the percentage that keeps a
+  sprinting player on the ground with room to spare (2 x sprint speed² / radius, rounded up to 5%; Pocket Planet: 60%).
+  Every PC works it out from the map, so nothing more is sent.
+- **Jumps scale as 1/g.** At 50% a gap twice as long can be jumped, at 200% half. A low-gravity zone stays relatively low.
+  Railings (1.1 m) can be jumped at 25% (a 4 m jump), so a void map is riskier there; bots don't hop in fights in low
+  gravity over a void.
+- **Bots' graphs don't change.** The nav graph is built at 100% for every setting (its links are walks, mantles and drops),
+  so it's deterministic and cached once per map.
 
 ## Decals
 

@@ -541,9 +541,12 @@ public sealed partial class NavGraph
     /// </summary>
     private static bool CanStand(Vector3 feet)
     {
+        var scale = World.GravityScale; // (at the map's own gravity, whatever the host's setting: see MoverWalk)
+        World.GravityScale = 1f;
         var s = new MoveState { Position = feet, Grounded = true };
         for (var t = 0; t < 4; t++)
             ClassicMover.Instance.Simulate(ref s, new InputCmd { Tick = 1, SpeedPct = 100 });
+        World.GravityScale = scale;
         return s.Position.Y > feet.Y - 0.1f;
     }
 

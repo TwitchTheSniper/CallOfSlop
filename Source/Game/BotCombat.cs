@@ -299,8 +299,9 @@ public sealed partial class Game
             buttons |= Buttons.Jump | Buttons.Forward; // forward too, so a ledge in front becomes a mantle
             b.JumpNext = false;
         }
-        if (visible && _rng.NextDouble() < (prof.Kind is BotPersonality.Rusher or BotPersonality.Chaotic ? 0.006 : 0.002) && b.Skill != BotDifficulty.Easy)
-            buttons |= Buttons.Jump; // hop in a fight now and then
+        if (visible && _rng.NextDouble() < (prof.Kind is BotPersonality.Rusher or BotPersonality.Chaotic ? 0.006 : 0.002) && b.Skill != BotDifficulty.Easy
+            && !(World.GravityScale < 1f && World.Map.FallKillY != null))
+            buttons |= Buttons.Jump; // hop in a fight now and then (not in low gravity over a void: a 4 m hop clears the railings)
 
         // Stance: steady long shots by crouching; marksmen (and hard snipers) go prone. Stand up to move.
         var longGun = def.Class is WeaponClass.Sniper or WeaponClass.DMR or WeaponClass.LMG;

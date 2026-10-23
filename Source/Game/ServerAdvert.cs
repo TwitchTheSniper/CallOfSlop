@@ -36,7 +36,8 @@ public sealed partial class Game
             _nextInfoUpdate = now + 1;
             var info = new ServerInfo(ServerName, World.Map.Name, (byte)Players.Count, (byte)MapMaxPlayers, (byte)Players.Values.Count(p => p.Bot != null),
                 Phase, GamePort, ServerInfo.ProtocolVersion, Mode, World.PhysicsMode, TrueRandom ? MapPack.TrueRandomName : "", InstanceId, ListHost, ListPort,
-                BuildInfo.IsRelease ? BuildInfo.Version : ""); // the release, for "your build is older" in browsers (BuildInfo.cs)
+                BuildInfo.IsRelease ? BuildInfo.Version : "", // the release, for "your build is older" in browsers (BuildInfo.cs)
+                (byte)GravityPercent); // the host's gravity setting (GameGravity.cs)
             Net.SetOfflineInfo(info.Encode());
         }
         _heartbeats.Tick(Net, GamePort, AdvertiseTo, now);

@@ -251,7 +251,7 @@ public static class LegacyCollision
         var wasGrounded = grounded;
 
         // ---- Vertical ----
-        velocity.Y -= World.Gravity * dt;
+        velocity.Y -= World.Gravity * dt * World.GravityScale;
         var prevY = feet.Y;
         var newY = feet.Y + velocity.Y * dt;
         grounded = false;
@@ -398,7 +398,7 @@ public static class LegacyCollision
         else if (!grounded)
         {
             // Too steep to stand on: gravity pulls you down the slope.
-            var push = World.Gravity * n.Y * dt;
+            var push = World.Gravity * n.Y * dt * World.GravityScale;
             velocity.X += n.X * push;
             velocity.Z += n.Z * push;
         }

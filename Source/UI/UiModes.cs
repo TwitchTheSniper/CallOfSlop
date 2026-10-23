@@ -57,6 +57,21 @@ public sealed partial class Ui
         ImGui.PopTextWrapPos();
     }
 
+    /// <summary>Hosting: gravity as a percentage of each map's own (GameGravity.cs).</summary>
+    private void GravityPicker(Settings s)
+    {
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Gravity"u8, $"{s.Gravity}%"))
+        {
+            foreach (var g in Game.GravityPercentChoices)
+                if (ImGui.Selectable($"{g}%{(g == 100 ? " (the map's own)" : "")}", g == s.Gravity))
+                    s.Gravity = g;
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip("Every map's gravity times this: players, grenades, rockets, bodies and debris. 50% jumps twice as high and far; 200% half as high. Planets and gravity zones scale too.");
+    }
+
     /// <summary>Host screen: auto-start after the first person readies up.</summary>
     private void AutoStartPicker(Settings s)
     {

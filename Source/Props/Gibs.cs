@@ -478,7 +478,7 @@ public static class Gibs
             }
             if ((i + _frame) % 12 == 0)
                 p.Floor = FloorUnder(p.Pos); // slid over a kerb or flew off a ledge
-            p.Vel.Y -= World.Gravity * p.Gravity * dt;
+            p.Vel.Y -= World.Gravity * p.Gravity * dt * World.GravityScale;
             if (p.Drag > 0)
                 p.Vel *= MathF.Exp(-p.Drag * dt);
             if (p.Kind == Kind.Feather)

@@ -126,7 +126,7 @@ public static class Throwables
         var h = dt / sub;
         for (var i = 0; i < sub; i++)
         {
-            p.Vel.Y -= World.Gravity * h;
+            p.Vel.Y -= World.Gravity * h * World.GravityScale;
             var pos = p.Pos;
 
             pos.X += p.Vel.X * h;
@@ -205,7 +205,7 @@ public static class Throwables
                     {
                         // Resting on the ground: roll, slowing down.
                         var speed = tangent.Length();
-                        var slow = RollFriction * World.Gravity * Vector3.Dot(n, up) * h;
+                        var slow = RollFriction * World.Gravity * Vector3.Dot(n, up) * h * World.GravityScale;
                         p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
                     }
                     else
@@ -371,7 +371,7 @@ public static class Throwables
             p.Vel -= vn * n; // resting contact: lose the into-the-ground part
             var tangent = p.Vel;
             var speed = tangent.Length();
-            var slow = RollFriction * World.Gravity * n.Y * h;
+            var slow = RollFriction * World.Gravity * n.Y * h * World.GravityScale;
             p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
         }
         return true;
