@@ -639,6 +639,9 @@ public sealed partial class NavGraph
             var g = Ground(c, x, z, from, World.MantleReach + 0.05f + MaxDrop);
             if (!float.IsFinite(g))
                 return; // a wall too tall to climb, or a hole
+            if (World.Map.Movers.Count > 0 && c.Raycast(new Vector3(x, from, z), -Vector3.UnitY, World.MantleReach + 0.05f + MaxDrop, NoSweeps) is var st
+                && MathF.Abs(from - st - g) > 0.05f)
+                return; // the "ground" there is a moving platform's sweep (a pillar to the nav), not a floor to walk on
             h[k] = g;
             y = g;
             blocked[k] = c.BlockedNav(new Vector3(x, g + World.StepHeight + 0.02f, z), World.PlayerHeight - World.StepHeight - 0.02f);
