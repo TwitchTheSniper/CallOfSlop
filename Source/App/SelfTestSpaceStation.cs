@@ -92,7 +92,15 @@ public static partial class SelfTest
                                   + $"component {g.Component[k]} of main {g.MainComponent}, {g.EdgeStart[k + 1] - g.EdgeStart[k]} links)");
         }
         if (unreached.Count > 0)
+        {
             Fail("Stratos Station: bots can't reach " + string.Join(", ", unreached));
+            // Where the graph breaks: bridge waypoints and spawns whose node is off the main area.
+            var off = m.Waypoints.Concat(m.Spawns).Select(w => (w, k: g.Nearest(w, needSight: false)))
+                .Where(t => t.k < 0 || g.Component[t.k] != g.MainComponent)
+                .Select(t => t.k < 0 ? $"({t.w.X:0.0},{t.w.Y:0.0},{t.w.Z:0.0}) no node"
+                    : $"({t.w.X:0.0},{t.w.Y:0.0},{t.w.Z:0.0}) node ({g.Nodes[t.k].X:0.0},{g.Nodes[t.k].Y:0.00},{g.Nodes[t.k].Z:0.0}) c{g.Component[t.k]} {g.EdgeStart[t.k + 1] - g.EdgeStart[t.k]} links").ToList();
+            Fail($"  {off.Count} waypoints/spawns off the main area: " + string.Join("; ", off.Take(30)));
+        }
         var notMain = StationPlatforms.Count(p => g.Nearest(new Vector3(p.X, p.Y, p.Z), needSight: false) is var k && k >= 0 && g.Component[k] != g.MainComponent);
 
         // No link over the void: floor under every 0.5 m of every link (within a drop bots would plan).
@@ -160,7 +168,9 @@ public static partial class SelfTest
             float blue = Average(o.TeamSpawns[0], forBlue), red = Average(o.TeamSpawns[1], forRed);
             walks.Add($"{label} {blue:0}/{red:0} m");
             if (float.IsNaN(blue) || float.IsNaN(red))
-                Fail($"Stratos Station: no route from a team's spawns to {label}");
+                Fail($"Stratos Station: no route from a team's spawns to {label}: "
+                     + string.Join(", ", o.TeamSpawns.SelectMany((l, t) => l.Where(sp => float.IsNaN(Walk(sp, t == 0 ? forBlue : forRed)))
+                         .Select(sp => $"({sp.X:0.0},{sp.Y:0.0},{sp.Z:0.0})"))));
             else if (MathF.Abs(blue - red) > 0.1f * MathF.Max(blue, red))
                 Fail($"Stratos Station: {label} is {blue:0} m from Blue and {red:0} m from Red (more than 10% apart)");
         }

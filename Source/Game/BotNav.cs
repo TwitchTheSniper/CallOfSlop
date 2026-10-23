@@ -412,7 +412,10 @@ public sealed partial class NavGraph
                 continue;
             if (map.FallKillY != null && !Supported(col, c))
                 continue; // a void map: not on a railing top or a ledge's lip (GameFallKill.cs)
-            if (!col.BlockedNav(c + new Vector3(0, 0.01f, 0))) // (building doors don't count: bots open them)
+            // Void maps build their sloped bridges from colliders that step up a few cm at a time: the body check starts
+            // above those steps, so the bridges get nodes (other maps keep the classic check).
+            var lift = map.FallKillY != null ? 0.3f : 0.01f;
+            if (!col.BlockedNav(c + new Vector3(0, lift, 0), World.PlayerHeight + 0.01f - lift)) // (building doors don't count: bots open them)
                 return c;
         }
         return null;
