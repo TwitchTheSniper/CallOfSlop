@@ -6,7 +6,7 @@
   "flavor": "A spring tube that eats the kick and gets you back on target faster.",
   "weight": 0.7,
   "model": [
-    {"shape": "rod", "size": [0.03, 0.03, 0.2], "pos": [0, 0, 0.1], "color": "gunmetal"},
+    {"shape": "rod", "size": [0.03, 0.03, 0.2], "pos": [0, -0.025, 0.1], "color": "gunmetal"},
     {"size": [0.04, 0.09, 0.03], "pos": [0, -0.01, 0.21], "color": "black"}
   ],
   "stats": [

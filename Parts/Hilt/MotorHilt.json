@@ -9,7 +9,7 @@
   "gripAngle": 20,
   "hilt": {"damage": 30, "swing": 0.38, "reach": 2.0, "cleave": 2, "hands": "two"},
   "sockets": [
-    {"name": "head", "type": "head", "pos": [0, 0.02, -0.09], "required": true},
+    {"name": "head", "type": "head", "pos": [0, 0.02, -0.078], "required": true},
     {"name": "mod_1", "type": "mod", "pos": [0, 0, 0.02]},
     {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.06]}
   ],
