@@ -233,13 +233,26 @@ public sealed partial class Game
     public static bool IsDugIn(Player p) =>
         p.Sim.Stance != Stance.Stand && new Vector2(p.Sim.Velocity.X, p.Sim.Velocity.Z).Length() < 0.6f && p.Sim.Grounded;
 
-    /// <summary>Bots carry a random perk from each category.</summary>
-    private PerkSet RandomPerks()
+    /// <summary>Bots carry a random perk from each category, one their gear level has unlocked (BotGear.cs).</summary>
+    private PerkSet RandomPerks(int level)
     {
         PerkId Pick(PerkCategory c)
         {
-            var options = Perks.In(c).ToArray();
-            return options[_rng.Next(options.Length)].Id;
+            var options = BotGear.PerkPool(c); // in unlock order, cached
+            var n = 0;
+            foreach (var o in options)
+                if (BotGear.Perk(o.Id, level))
+                    n++;
+            if (n == 0)
+            {
+                _rng.Next(options.Length); // keep the shared random sequence in step
+                return PerkId.None;
+            }
+            var k = _rng.Next(n);
+            foreach (var o in options)
+                if (BotGear.Perk(o.Id, level) && k-- == 0)
+                    return o.Id;
+            return PerkId.None;
         }
         return new PerkSet(Pick(PerkCategory.Movement), Pick(PerkCategory.Survival), Pick(PerkCategory.Damage));
     }
