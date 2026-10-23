@@ -115,6 +115,13 @@ public static partial class SelfTest
         {
             float blue = Average(o.TeamSpawns[0], forBlue, radius), red = Average(o.TeamSpawns[1], forRed, radius);
             walks.Add($"{label} {blue:0}/{red:0} m");
+            if (label == "hill 1") // DIAG
+                for (var t = 0; t < 2; t++)
+                {
+                    var sp = o.TeamSpawns[t][0];
+                    var n = search.Find(g, g.Nearest(sp, needSight: false), g.Nearest(forBlue, needSight: false), path);
+                    Line($"  DIAG team {t} from {sp}: {n} nodes: " + string.Join(" ", Enumerable.Range(0, n).Select(i => g.Nodes[path[i]]).Where((v, i) => i % 2 == 0 || v.Y > 1).Select(v => $"({v.X:0},{v.Y:0.0},{v.Z:0})")));
+                }
             if (float.IsNaN(blue) || float.IsNaN(red))
                 Fail($"{name}: no route from a team's spawns to {label}: " + string.Join(", ",
                     o.TeamSpawns.SelectMany((l, t) => l.Where(sp => float.IsNaN(Walk(sp, t == 0 ? forBlue : forRed)))
