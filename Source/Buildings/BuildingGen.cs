@@ -805,10 +805,13 @@ internal sealed partial class BuildingGenerator
                     var o = s.Dx != 0 ? r.X1 : r.Z1;
                     (a, b) = (o - k * run, o - (k - 1) * run);
                 }
+                var before = _plan.Shell.Count;
                 if (s.Dx != 0)
                     Add(a, lf, r.Z0, b, y1, r.Z1, surf);
                 else
                     Add(r.X0, lf, a, r.X1, y1, b, surf);
+                if (_plan.Shell.Count > before)
+                    _plan.StairBoxes.Add(_plan.Shell[^1].Box);
             }
             var d = new Vector2(s.Dx, s.Dz);
             var foot = StandClear(f, bottom, d, s.Dx != 0 ? MathF.Abs(bottom.X - (s.Dx > 0 ? r.X0 : r.X1)) : MathF.Abs(bottom.Y - (s.Dz > 0 ? r.Z0 : r.Z1)));
@@ -1068,10 +1071,13 @@ internal sealed partial class BuildingGenerator
                     var o = x.StairDx != 0 ? s.X1 : s.Z1;
                     (a, b) = (o - k * run, o - (k - 1) * run);
                 }
+                var before = _plan.Shell.Count;
                 if (x.StairDx != 0)
                     Add(a, lf, s.Z0, b, y1, s.Z1, surf);
                 else
                     Add(s.X0, lf, a, s.X1, y1, b, surf);
+                if (_plan.Shell.Count > before)
+                    _plan.StairBoxes.Add(_plan.Shell[^1].Box);
             }
             var c = s.Center;
             var d = new Vector2(x.StairDx, x.StairDz);

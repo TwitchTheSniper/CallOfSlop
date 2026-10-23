@@ -48,7 +48,7 @@ public static partial class SelfTest
     private static readonly List<string> StairDevDump = new();
     private static readonly (string Map, float X, float Z)[] StairDevTargets =
     [
-        ("Bocage", 6.6f, -34.3f),
+        ("London", 41.9f, 7.9f), ("Slopview Mall", -59.0f, -7.0f),
     ];
 
     private static void StairDump(Map m, PhysicsWorld phys, StairFlight f)
@@ -585,27 +585,25 @@ public static partial class SelfTest
         foreach (var side in (ReadOnlySpan<int>)[-1, 1])
         {
             var edge = side < 0 ? f.C0 : f.C1;
-            // Beside the first treads, on a floor a step below them or level with the first (a plinth at its side), where
-            // stepping on sideways climbs one tread at most (a body that would reach two higher ones at once can't), with a
-            // clear way across the treads to the lane.
+            // Beside the first treads (StairSideSpot): the middle of the first run of spots that work, not grazing a wall.
+            float runStart = float.NaN, runEnd = float.NaN, runFloor = 0;
             for (var u = f.U0 - World.PlayerRadius + 0.02f; u <= f.U0 + 1.0f; u += 0.02f)
             {
-                var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
-                var floor = SupportAt(m, phys, p.X, p.Z, top + 0.005f, lowest, 0.15f); // firm footing under the middle
-                if (!float.IsFinite(floor))
-                    continue;
-                int higher = 0;
-                var reach = 0f;
-                foreach (var b in f.Boxes)
-                    if (AlongLo(b, f.Axis, f.Dir) < u + World.PlayerRadius - 0.005f && AlongHi(b, f.Axis, f.Dir) > u - World.PlayerRadius + 0.005f && b.Max.Y > floor + 0.003f)
-                    {
-                        higher++;
-                        reach = MathF.Max(reach, b.Max.Y - floor);
-                    }
-                if (higher is < 1 or > 1 || reach > World.StepHeight)
-                    continue;
-                if (StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f) && StairAcrossClear(m, phys, f, u, edge, c))
-                    return (p with { Y = floor + 0.002f }, true);
+                var ok = StairSideSpot(m, phys, f, u, edge, side, c, top, lowest, out var floor);
+                if (ok && float.IsNaN(runStart))
+                    (runStart, runFloor) = (u, floor);
+                if (ok)
+                    runEnd = u;
+                else if (!float.IsNaN(runStart))
+                    break;
+            }
+            if (!float.IsNaN(runStart))
+            {
+                var u = (runStart + runEnd) / 2;
+                if (!StairSideSpot(m, phys, f, u, edge, side, c, top, lowest, out runFloor))
+                    u = runStart;
+                StairSideSpot(m, phys, f, u, edge, side, c, top, lowest, out runFloor);
+                return (StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), runFloor + 0.002f), true);
             }
         }
         return null;
@@ -782,6 +780,28 @@ public static partial class SelfTest
         return true;
     }
 
+    /// <summary>
+    /// A spot beside the first treads at along <paramref name="u"/>: on a floor a step below them or level with the first
+    /// (a plinth at its side), where stepping on sideways climbs one tread at most (a body that would reach two higher ones
+    /// at once can't), with room to come from and a clear way across the treads to the lane.
+    /// </summary>
+    private static bool StairSideSpot(Map m, PhysicsWorld phys, StairFlight f, float u, float edge, int side, float c, float top, float lowest, out float floor)
+    {
+        var p = StairPoint(f, u, edge + side * (World.PlayerRadius + 0.02f), 0);
+        floor = SupportAt(m, phys, p.X, p.Z, top + 0.005f, lowest, 0.15f); // firm footing under the middle
+        if (!float.IsFinite(floor))
+            return false;
+        int higher = 0;
+        var reach = 0f;
+        foreach (var b in f.Boxes)
+            if (AlongLo(b, f.Axis, f.Dir) < u + World.PlayerRadius - 0.005f && AlongHi(b, f.Axis, f.Dir) > u - World.PlayerRadius + 0.005f && b.Max.Y > floor + 0.003f)
+            {
+                higher++;
+                reach = MathF.Max(reach, b.Max.Y - floor);
+            }
+        return higher == 1 && reach <= World.StepHeight && StairRoomAlong(m, phys, f, u, edge, side, floor, World.PlayerRadius + 0.02f) && StairAcrossClear(m, phys, f, u, edge, c);
+    }
+
     /// <summary>Can a body standing on the treads under it at along <paramref name="u"/> move across from the flight's edge to the lane?</summary>
     private static bool StairAcrossClear(Map m, PhysicsWorld phys, StairFlight f, float u, float edge, float c)
     {
@@ -874,16 +894,17 @@ public static partial class SelfTest
         var why = StairLeg(m, phys, f, ref s, upYaw, ticks, true, c);
         if (why != null)
             return "going up: " + why;
-        why = StairLeg(m, phys, f, ref s, upYaw + MathF.PI, ticks, false, c);
+        why = StairLeg(m, phys, f, ref s, upYaw + MathF.PI, ticks, false, c, sideways);
         return why == null ? null : "going down: " + why;
     }
 
-    private static string? StairLeg(Map m, PhysicsWorld phys, StairFlight f, ref MoveState s, float yaw, int ticks, bool up, float c)
+    private static string? StairLeg(Map m, PhysicsWorld phys, StairFlight f, ref MoveState s, float yaw, int ticks, bool up, float c, bool sideways = false)
     {
         var stall = 0;
         var lastU = Along(f, s.Position);
         var lastLo = AlongLo(f.Boxes[^1], f.Axis, f.Dir); // up: done once standing on the last tread
-        var firstTop = f.Boxes[0].Max.Y; // down: done once on the first tread or below it, at the foot
+        // Down: done once on the first tread or below it, at the foot (entered from the side: on the first two, where it got on).
+        var firstTop = f.Boxes[sideways && f.Boxes.Count > 1 ? 1 : 0].Max.Y;
         var right = World.FlatRight(yaw);
         var rightAcross = f.Axis == 0 ? right.Z : right.X; // + if "right" points towards +across
         for (var t = 0; t < ticks; t++)

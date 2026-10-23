@@ -66,6 +66,12 @@ public sealed class BuildingPlan
     public readonly List<PlannedRoom> Rooms = new();
     public readonly List<(Vector3 Bottom, Vector3 Top)> Stairs = new();
 
+    /// <summary>
+    /// The steps' boxes (in <see cref="Shell"/>). Destruction cuts them across their width only, never into layers: a layer's
+    /// top inside a step reads as a ledge under the step's top to the classic mover, which then can't climb it.
+    /// </summary>
+    public readonly HashSet<Box> StairBoxes = new();
+
     /// <summary>The building's outline on the ground (outer wall faces), world space, and its bounds.</summary>
     public readonly List<BRect> Footprint = new();
 

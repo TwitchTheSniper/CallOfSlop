@@ -491,9 +491,10 @@ public static class StructureChunker
     /// Cuts <paramref name="b"/> into pieces (added to <paramref name="into"/>, in a fixed order). Cuts sit on a grid fixed in
     /// the world (x and z from 0, y from <paramref name="baseY"/>) so a wall and its lining are cut in the same places; a cut
     /// closer than <see cref="DestructionRules.MinPiece"/> to an end is skipped. <paramref name="scale"/> grows every cell
-    /// (the per-building budget). Returns the piece count (1: the box itself).
+    /// (the per-building budget). <paramref name="layers"/> false never cuts it into layers (a step: a layer's top inside it
+    /// would read as a ledge under its top to the classic mover). Returns the piece count (1: the box itself).
     /// </summary>
-    public static int Split(in Box b, DestructionRules r, float baseY, float scale, List<Box> into)
+    public static int Split(in Box b, DestructionRules r, float baseY, float scale, List<Box> into, bool layers = true)
     {
         Span<float> xs = stackalloc float[66];
         Span<float> ys = stackalloc float[66];
@@ -532,6 +533,8 @@ public static class StructureChunker
                     nz = Cuts(min.Z, max.Z, r.SlabCell * k, 0, r.MinPiece, zs);
                     break;
             }
+            if (!layers)
+                ny = 1;
             if ((nx * ny * nz > r.MaxPerBox || nx > 64 || ny > 64 || nz > 64) && grow < 64)
                 continue;
             xs[nx] = max.X;
