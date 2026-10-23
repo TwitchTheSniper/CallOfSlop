@@ -947,6 +947,7 @@ public static unsafe partial class Program
             _session.TeamSelection = _settings.TeamSelect; // team rules (TeamPick.cs); clients learn the host's from the mode state
             _session.MaxTeamDiff = _settings.TeamMaxDiff;
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
+            _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks
             ApplyVoiceHostSettings(_session, kind == LobbyAction.Join); // "Allow voice chat", dead chat (Program.Voice.cs)
