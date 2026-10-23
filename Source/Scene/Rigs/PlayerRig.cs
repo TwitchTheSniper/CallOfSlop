@@ -27,6 +27,7 @@ public sealed class PlayerRig
     private byte _id;
     private bool _bodyHat, _bodyBuilt;
     private Vector3 _bodyColor;
+    private PlayerLook _bodyLook;
     private readonly SceneNode _corpseHat;
     private HatDef? _hat;
     private Vector3 _color = new(float.NaN);
@@ -95,13 +96,13 @@ public sealed class PlayerRig
     /// <summary>The torso and head parts of a stance (0 stand, 1 crouch, 2 prone; self-test).</summary>
     public (BodyParts Torso, BodyParts Head) Body(int stance) => (_torsoParts[stance], _headParts[stance]);
 
-    /// <summary>Rebuilds the three stances' torso and head parts when the look changes (colour, name, hat on or off).</summary>
+    /// <summary>Rebuilds the three stances' torso and head parts when the look changes (colour, name, appearance, hat on or off).</summary>
     private void PoseBody(Player p, bool hat)
     {
-        if (_bodyBuilt && hat == _bodyHat && p.Color == _bodyColor && _id == p.Id && ReferenceEquals(_name, p.Name))
+        if (_bodyBuilt && hat == _bodyHat && p.Color == _bodyColor && _id == p.Id && ReferenceEquals(_name, p.Name) && p.Look == _bodyLook)
             return;
-        (_bodyBuilt, _bodyHat, _bodyColor, _id, _name) = (true, hat, p.Color, p.Id, p.Name);
-        var v = BodyModel.VariantFor(p.Name, p.Id);
+        (_bodyBuilt, _bodyHat, _bodyColor, _id, _name, _bodyLook) = (true, hat, p.Color, p.Id, p.Name, p.Look);
+        var v = BodyModel.VariantFor(p); // the name's look with the player's APPEARANCE picks on top
         var c = BodyColors.For(p.Color, v);
         for (var i = 0; i < 3; i++)
             BodyModel.Build(_torsoParts[i], _headParts[i], i, v, c, hat);

@@ -626,7 +626,6 @@ public sealed partial class Game : IDisposable
     public void ChooseLoadout(Loadout l, double now)
     {
         ChosenStreaks = l.Streaks.Sanitized();
-        ChosenHat = l.Hat; // cosmetic: the server checks it and tells everyone (GameCosmetics.cs)
         ChooseLoadout(l.Primary, l.Secondary, l.Grenade, l.Equipment, l.PrimaryKit, l.SecondaryKit, now, l.Perks);
     }
 
@@ -670,6 +669,7 @@ public sealed partial class Game : IDisposable
             .U8((byte)ChosenStreaks.A).U8((byte)ChosenStreaks.B).U8((byte)ChosenStreaks.C)
             .U8((byte)ChosenHat); // protocol 25: the hat (GameCosmeticLoadout.cs)
         WriteHelloProfile(_w); // then prestige and level now: the scoreboard's Level column (GameCosmetics.cs; older servers ignore it)
+        ChosenLook.Pack(_w); // protocol 45: the APPEARANCE screen's look (Appearance.cs)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 

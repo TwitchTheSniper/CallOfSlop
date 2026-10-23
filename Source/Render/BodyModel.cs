@@ -35,7 +35,7 @@ public readonly record struct BodyStance(Vector3 TorsoSize, Vector3 TorsoAt, Vec
     public Vector3 HeadScale => HeadSize / BodyModel.RefHead;
 }
 
-/// <summary>A body's look, picked deterministically from the player's name (<see cref="BodyModel.VariantFor"/>).</summary>
+/// <summary>A body's look, picked deterministically from the player's name (<see cref="BodyModel.VariantFor(string, byte)"/>), plus the APPEARANCE screen's picks (<see cref="PlayerLook"/>).</summary>
 public readonly record struct BodyVariant(byte Skin, byte HairColor, Headwear Headwear, bool Beard, byte Gear);
 
 /// <summary>The resolved colours of one body (team colour + variant).</summary>
@@ -314,6 +314,16 @@ public static class BodyModel
             (byte)((h >> 26) % (uint)GearColors.Length));
     }
 
+    /// <summary>
+    /// The look a player is drawn with: the name's look (<see cref="VariantFor(string, byte)"/>) with whatever the player
+    /// picked on the APPEARANCE screen on top (<see cref="Player.Look"/>, Source/Cosmetics/Appearance.cs; bots and players
+    /// who never picked anything: all Auto, so unchanged).
+    /// </summary>
+    public static BodyVariant VariantFor(Player p) => VariantFor(p.Name, p.Id, p.Look);
+
+    /// <summary>The name's look with a picked <paramref name="look"/> on top (Auto axes keep the name's).</summary>
+    public static BodyVariant VariantFor(string name, byte id, in PlayerLook look) => look.Apply(VariantFor(name, id));
+
     /// <summary>Whether a body at <paramref name="at"/> draws its detail parts (near the camera, or no camera set).</summary>
     public static bool WantsDetail(Vector3 at)
     {
@@ -358,12 +368,12 @@ public static class BodyModel
     /// Immediate mode (<see cref="PlayerRender.DrawImmediate"/>): <paramref name="p"/>'s torso and head for a stance under
     /// <paramref name="up"/> (the upper body to world), the same draws as the scene graph's torso and head nodes.
     /// </summary>
-    public static void DrawImmediate(Renderer g, Player p, int stance, in Matrix4x4 up, bool hat)
+    public static void DrawImmediate(Renderer g, Player p, int stance, in Matrix4x4 up, bool hat, bool? detail = null)
     {
-        var v = VariantFor(p.Name, p.Id);
+        var v = VariantFor(p);
         var c = BodyColors.For(p.Color, v);
         Build(ScratchTorso, ScratchHead, stance, v, c, hat);
-        ScratchTorso.ShowDetail = ScratchHead.ShowDetail = WantsDetail(p.RenderPosition);
+        ScratchTorso.ShowDetail = ScratchHead.ShowDetail = detail ?? WantsDetail(p.RenderPosition);
         var s = Stances[stance];
         ScratchTorso.DrawImmediate(g, s.TorsoFrame * up);
         ScratchHead.DrawImmediate(g, Matrix4x4.CreateTranslation(s.HeadAt) * up);

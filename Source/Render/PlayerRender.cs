@@ -57,6 +57,36 @@ public static class PlayerRender
         BodyBloodRender.Unbind(g);
     }
 
+    /// <summary>
+    /// The APPEARANCE screen's model (Program.Appearance.cs): <paramref name="p"/> standing at the origin turned by its
+    /// render yaw, drawn exactly like another player (the same torso, head, headwear, legs, hat, gun and arms) but with every
+    /// detail part, no blood, no health bar and no foot IK against the world behind the menu.
+    /// </summary>
+    public static void DrawPreview(Renderer g, Player p, double time)
+    {
+        var viewer = LegAnimator.Viewer;
+        LegAnimator.Viewer = new Vector3(1e7f); // far away: no foot rays into whatever map is behind the menu
+        try
+        {
+            var body = Matrix4x4.CreateRotationY(-p.RenderYaw) * Matrix4x4.CreateTranslation(p.RenderPosition);
+            var legs = LegAnimator.Animate(p, time);
+            var up = legs.Upper * body;
+            var s = BodyModel.Stances[0];
+            var hat = HatRender.HatFor(p);
+            BodyBloodRender.Reset();
+            BodyModel.DrawImmediate(g, p, 0, up, hat != null, detail: true);
+            if (hat != null)
+                HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * Matrix4x4.CreateTranslation(s.HeadAt) * up);
+            DrawLegs(g, legs, body, p.Color);
+            var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f) * up;
+            DrawArmed(g, p, gunPose, up, time);
+        }
+        finally
+        {
+            LegAnimator.Viewer = viewer;
+        }
+    }
+
     /// <summary>The legs posed by <see cref="LegAnimator.Animate"/>: pelvis, then per leg thigh, knee pad, shin, boot, sole (the rig's order).</summary>
     public static void DrawLegs(Renderer g, LegPose legs, in Matrix4x4 body, Vector3 color)
     {

@@ -123,7 +123,8 @@ public static partial class SelfTest
             Section("Weapon select", CheckWeaponSelect);
             Section("Loadout navigation", CheckLoadoutNav);
             Section("Hidden loadout slots", CheckHiddenSlots); // SelfTestHiddenSlots.cs: only unlocked slots listed, locked pick fallback, locked slots kept
-            Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat slot (save, server check, bots, replication, layout)
+            Section("Cosmetic loadout", CheckCosmeticLoadout); // SelfTestCosmeticLoadout.cs: the hat (appearance.txt + migration, server check, bots, replication, layout)
+            Section("Appearance", CheckAppearance); // SelfTestAppearance.cs: the look (saves, migration, fallback, body, team colour, network, no hat in the loadout)
             Section("Scoreboard level", CheckScoreboardLevel); // SelfTestScoreboard.cs: no HP column, Level for people and bots, prestige label, replication, no allocation
             Section("Recoil", CheckRecoil);
             Section("Sprint spread", CheckSprintSpread); // SelfTestSprintSpread.cs: sprint inaccuracy per class, recovery, crosshair, server floor, bots
