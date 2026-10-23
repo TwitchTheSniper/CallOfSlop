@@ -103,10 +103,11 @@ public static partial class SelfTest
         // FFA / KotH / CTF again when bot snipers started carrying their scope (slower to aim and move; SelfTestSniperScopes.cs),
         // and all four team/FFA matches on top of main b6594c5 (main's re-record without the scopes: FFA B89C7675, TDM 607E5D0D, KotH B8F46D77, CTF 09DADA4C).
         // TDM / KotH / CTF again when the nav build started checking risky links with the real mover (fix/map-stuck-spots, BotNavWalk.cs).
+        // KotH / CTF (Courtyard) again when window climbs that clip the frame became last resorts (fix/rooftops-flake, LedgeRoom).
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0xB269F244E4FE3775),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x86DCD49BE2C8707B),
-        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x947A787E71B72D3F),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x07254C84991E1BB7),
+        (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0xD115C4916268755B),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x646C4EADE7EB9199),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x6580734EF1194E21),
         (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9),
     ];
