@@ -20,6 +20,9 @@ public enum ZPowerKind : byte
     /// <summary>Every window's boards go back up; everyone gets points.</summary>
     Carpenter,
 
+    /// <summary>Shots don't use ammo and magazines stay full, for a while (protocol 49; new kinds go at the end: the id is a wire byte).</summary>
+    InfiniteAmmo,
+
     COUNT,
 }
 
@@ -37,7 +40,7 @@ public sealed class ZPowerUp
 /// <summary>
 /// Zombies power-ups (milestone 3): a kill may drop one (the rules' chance, at most so many a round), it floats glowing
 /// for 30 s (blinking at the end) and the first player standing who walks into it takes it for the whole team: Max
-/// Ammo, Insta-Kill, Double Points, Nuke, Carpenter. Server-owned; clients get the floating ones and the timers in
+/// Ammo, Insta-Kill, Double Points, Nuke, Carpenter, Infinite Ammo. Server-owned; clients get the floating ones and the timers in
 /// <see cref="Msg.ZWorld"/>, the feed line and the banner as usual, and Max Ammo as a <see cref="ZEventKind.MaxAmmo"/>.
 /// </summary>
 public sealed partial class Game
@@ -45,8 +48,8 @@ public sealed partial class Game
     /// <summary>Power-ups floating on the map.</summary>
     public readonly List<ZPowerUp> ZPowerUps = new();
 
-    /// <summary>When Insta-Kill and Double Points run out (the same clock as <see cref="ZPowerUp.Until"/>).</summary>
-    public double ZInstaKillUntil, ZDoublePointsUntil;
+    /// <summary>When Insta-Kill, Double Points and Infinite Ammo run out (the same clock as <see cref="ZPowerUp.Until"/>).</summary>
+    public double ZInstaKillUntil, ZDoublePointsUntil, ZInfiniteAmmoUntil;
 
     /// <summary>Most power-ups floating at once (and in one ZWorld message).</summary>
     public const int MaxPowerUps = 16;
@@ -62,6 +65,7 @@ public sealed partial class Game
         ZPowerKind.DoublePoints => "Double Points",
         ZPowerKind.Nuke => "Nuke",
         ZPowerKind.Carpenter => "Carpenter",
+        ZPowerKind.InfiniteAmmo => "Infinite Ammo",
         _ => "?",
     };
 
@@ -72,6 +76,7 @@ public sealed partial class Game
         ZPowerKind.InstaKill => new Vector3(0.95f, 0.95f, 0.85f),
         ZPowerKind.DoublePoints => new Vector3(1f, 0.85f, 0.25f),
         ZPowerKind.Nuke => new Vector3(1f, 0.45f, 0.15f),
+        ZPowerKind.InfiniteAmmo => new Vector3(0.85f, 0.4f, 1f),
         _ => new Vector3(0.45f, 0.75f, 1f),
     };
 
@@ -80,11 +85,29 @@ public sealed partial class Game
 
     public double DoublePointsLeft(double now) => Math.Max(0, ZDoublePointsUntil - now);
 
+    public double InfiniteAmmoLeft(double now) => Math.Max(0, ZInfiniteAmmoUntil - now);
+
+    /// <summary>Both sides: Infinite Ammo is running (shots use no ammo, magazines stay full, no reloads). 0 outside Zombies.</summary>
+    public bool InfiniteAmmoOn(double now) => now < ZInfiniteAmmoUntil;
+
+    /// <summary>The local player's slots while Infinite Ammo runs (every frame): every magazine full, no reload in progress.</summary>
+    private void LocalInfiniteAmmo(double now)
+    {
+        if (!InfiniteAmmoOn(now))
+            return;
+        for (var s = 0; s < Slots.Length; s++)
+            if (Slots[s] is { } w && w.Def.Mag > 0)
+            {
+                w.Ammo = w.Def.Mag;
+                w.ReloadUntil = 0;
+            }
+    }
+
     /// <summary>Both sides: no power-ups, no timers (a new run).</summary>
     private void ResetPowerUps()
     {
         ZPowerUps.Clear();
-        ZInstaKillUntil = ZDoublePointsUntil = 0;
+        ZInstaKillUntil = ZDoublePointsUntil = ZInfiniteAmmoUntil = 0;
         _zPowerThisRound = 0;
     }
 
@@ -213,11 +236,24 @@ public sealed partial class Game
                 sound = Sfx.CrateLand;
                 break;
             case ZPowerKind.InstaKill:
-                ZInstaKillUntil = now + ZRules.PowerDuration;
+                ZInstaKillUntil = now + ZRules.DurationOf(kind); // a second one restarts the clock (it doesn't add up)
                 break;
             case ZPowerKind.DoublePoints:
-                ZDoublePointsUntil = now + ZRules.PowerDuration;
+                ZDoublePointsUntil = now + ZRules.DurationOf(kind);
                 sound = Sfx.LevelUp;
+                break;
+            case ZPowerKind.InfiniteAmmo:
+                // Timed, like Insta-Kill: a second one restarts the clock. Every player's magazines fill now (the host's
+                // own slots at once, the clients' from the timer in the next ZWorld) and stay full until it runs out.
+                ZInfiniteAmmoUntil = now + ZRules.DurationOf(kind);
+                foreach (var o in Players.Values)
+                    if (o.Bot is { } ib)
+                    {
+                        ib.Ammo = o.DefFor(o.Weapon).Mag;
+                        ib.ReloadUntil = 0;
+                    }
+                LocalInfiniteAmmo(now);
+                sound = Sfx.LockedTone;
                 break;
             case ZPowerKind.Nuke:
             {
@@ -247,8 +283,9 @@ public sealed partial class Game
         ModeEvent(kind switch
         {
             ZPowerKind.MaxAmmo => $"{p.Name} grabbed Max Ammo: full reserve for everyone!",
-            ZPowerKind.InstaKill => $"{p.Name} grabbed Insta-Kill: every hit kills for {ZRules.PowerDuration:0} seconds!",
-            ZPowerKind.DoublePoints => $"{p.Name} grabbed Double Points for {ZRules.PowerDuration:0} seconds!",
+            ZPowerKind.InstaKill => $"{p.Name} grabbed Insta-Kill: every hit kills for {ZRules.DurationOf(kind):0} seconds!",
+            ZPowerKind.DoublePoints => $"{p.Name} grabbed Double Points for {ZRules.DurationOf(kind):0} seconds!",
+            ZPowerKind.InfiniteAmmo => $"{p.Name} grabbed Infinite Ammo: no reloads for {ZRules.DurationOf(kind):0} seconds!",
             ZPowerKind.Nuke => $"{p.Name} grabbed a Nuke! +{ZRules.NukePoints} for everyone.",
             _ => $"{p.Name} grabbed the Carpenter: every barrier rebuilt, +{ZRules.CarpenterPoints} for everyone.",
         }, sound);
@@ -276,7 +313,7 @@ public sealed partial class Game
 
     // ---- Network (the tail of ZWorld) --------------------------------------------------------------------
 
-    /// <summary>The floating power-ups and the two timers, at the end of <see cref="Msg.ZWorld"/>.</summary>
+    /// <summary>The floating power-ups and the three timers, at the end of <see cref="Msg.ZWorld"/> (Infinite Ammo's: protocol 49).</summary>
     private void WritePowerUps(PacketWriter w, double now)
     {
         var n = Math.Min(ZPowerUps.Count, MaxPowerUps);
@@ -287,8 +324,10 @@ public sealed partial class Game
             w.U16(pu.Id).U8((byte)pu.Kind).U16(Q(pu.At.X, 32)).U16(Q(pu.At.Y, 64)).U16(Q(pu.At.Z, 32))
                 .U16((ushort)Math.Clamp((int)Math.Round((pu.Until - now) * 10), 0, 65535));
         }
-        w.U16((ushort)Math.Clamp((int)Math.Round(InstaKillLeft(now) * 10), 0, 65535)).U16((ushort)Math.Clamp((int)Math.Round(DoublePointsLeft(now) * 10), 0, 65535));
+        w.U16(Tenths(InstaKillLeft(now))).U16(Tenths(DoublePointsLeft(now))).U16(Tenths(InfiniteAmmoLeft(now)));
     }
+
+    private static ushort Tenths(double seconds) => (ushort)Math.Clamp((int)Math.Round(seconds * 10), 0, 65535);
 
     private void ReadPowerUps(ref PacketReader r, double now)
     {
@@ -299,7 +338,7 @@ public sealed partial class Game
         for (var i = 0; i < n && r.Has(11); i++)
         {
             var id = r.U16();
-            var kind = (ZPowerKind)Math.Min(r.U8(), (byte)ZPowerKind.Carpenter);
+            var kind = (ZPowerKind)Math.Min(r.U8(), (byte)(ZPowerKind.COUNT - 1));
             var at = new Vector3(DQ(r.U16(), 32), DQ(r.U16(), 64), DQ(r.U16(), 32));
             var left = r.U16() / 10.0;
             ZPowerUps.Add(new ZPowerUp { Id = id, Kind = kind, At = at, Until = now + left });
@@ -308,6 +347,12 @@ public sealed partial class Game
             return;
         ZInstaKillUntil = now + r.U16() / 10.0;
         ZDoublePointsUntil = now + r.U16() / 10.0;
+        if (!r.Has(2))
+            return;
+        var wasOn = InfiniteAmmoOn(now);
+        ZInfiniteAmmoUntil = now + r.U16() / 10.0;
+        if (!wasOn)
+            LocalInfiniteAmmo(now); // (it just started: the magazines fill now, not on the next frame)
     }
 
     // ---- Self-test hooks ------------------------------------------------------------------------------

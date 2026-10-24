@@ -31,6 +31,7 @@ public static partial class SelfTest
             CheckBlackmoorLayout(map, zm);
             CheckBlackmoorZombies(map, zm, ref now);
             CheckZombiePowerUps(ref now);
+            CheckZombieAmmoPowerUps(ref now);
             CheckZombieAmmoEffects(ref now);
         }
         finally
@@ -384,11 +385,13 @@ public static partial class SelfTest
             for (var i = 0; i < g.ZBoards.Length; i++)
                 g.ZBoards[i] = 1;
             var p3 = zp.Points;
-            var kind = g.PickPowerKind(0.999f);
+            var wts = g.ZRules.PowerWeights;
+            var carpRoll = (wts.Take((int)ZPowerKind.Carpenter).Sum() + wts[(int)ZPowerKind.Carpenter] * 0.5f) / wts.Sum(); // the middle of the Carpenter's share
+            var kind = g.PickPowerKind(carpRoll);
             g.SpawnPowerUp(ZPowerKind.Carpenter, spot, now);
             g.SelfTestTickPowerUps(now);
             var carp = g.ZBoards.Select((b, i) => b == g.ZMap!.Windows[i].Boards).All(x => x) && zp.Points - p3 == g.ZRules.CarpenterPoints;
-            var noCarp = g.PickPowerKind(0.999f);
+            var noCarp = g.PickPowerKind(carpRoll);
             results.Add($"Carpenter {carp} (picked with boards down: {Game.PowerName(kind)}, all up: {Game.PowerName(noCarp)})");
             ok &= carp && kind == ZPowerKind.Carpenter && noCarp != ZPowerKind.Carpenter;
 
@@ -428,6 +431,187 @@ public static partial class SelfTest
             if (!same || world.Length > PacketWriter.Mtu)
                 Fail("power-ups and their timers didn't replicate to a client");
         }
+    }
+
+    // ---- Max Ammo and Infinite Ammo (2026-10-23) ---------------------------------------------------------------
+
+    private static void CheckZombieAmmoPowerUps(ref double now)
+    {
+        var rules = ZombiesRules.Current;
+        var keys = ZombiesRules.PowerKeys;
+        if (keys.Length != (int)ZPowerKind.COUNT || keys[(int)ZPowerKind.InfiniteAmmo] != "infiniteAmmo" || rules.DurationOf(ZPowerKind.InfiniteAmmo) < 5)
+            Fail("Infinite Ammo needs its key (\"infiniteAmmo\") last in the power-up keys and a duration in Parts/Tables/ZombiesRules.json");
+        try
+        {
+            ZombiesRules.Load("""{"format": "call-of-slop-zombies/1", "powerUps": {"durations": {"nuke": 5}}}""", "bad rules");
+            Fail("a duration for a power-up that isn't timed (the Nuke) loaded");
+        }
+        catch (WeaponFileException)
+        {
+        }
+
+        using var g = ZGame(1, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerDropChance = 0f; });
+        var me = g.Local!;
+        me.ImmuneUntil = 1e9;
+        var bot = g.Players.Values.First(p => p.Bot != null);
+
+        // 1. The weights: Max Ammo is clearly the most common drop, Infinite Ammo the rarest (seeded rolls).
+        foreach (var boardsDown in new[] { true, false })
+        {
+            for (var i = 0; i < g.ZBoards.Length; i++)
+                g.ZBoards[i] = (byte)(boardsDown && i == 0 ? 0 : g.ZMap!.Windows[i].Boards);
+            var counts = new int[(int)ZPowerKind.COUNT];
+            var rng = new Random(4242);
+            const int n = 20000;
+            for (var i = 0; i < n; i++)
+            {
+                var k = g.PickPowerKind((float)rng.NextDouble());
+                if (k != ZPowerKind.COUNT)
+                    counts[(int)k]++;
+            }
+            var w = g.ZRules.PowerWeights.Select((x, i) => i == (int)ZPowerKind.Carpenter && !boardsDown ? 0 : x).ToArray();
+            var share = counts.Select(c => c / (float)n).ToArray();
+            var expect = w.Select(x => x / w.Sum()).ToArray();
+            var max = share[(int)ZPowerKind.MaxAmmo];
+            var nextBest = share.Where((_, i) => i != (int)ZPowerKind.MaxAmmo).Max();
+            var close = share.Select((x, i) => MathF.Abs(x - expect[i]) < 0.015f).All(x => x);
+            var infRarest = share.Where((x, i) => i != (int)ZPowerKind.InfiniteAmmo && w[i] > 0).All(x => x > share[(int)ZPowerKind.InfiniteAmmo]);
+            ZLine($"  power-up weights ({(boardsDown ? "a board down" : "all boards up")}, {n} seeded rolls): {string.Join(", ", share.Select((x, i) => $"{Game.PowerName((ZPowerKind)i)} {x * 100:0.0}%"))}");
+            if (max < 0.33f || max < nextBest * 1.8f || !close || !infRarest || (!boardsDown && counts[(int)ZPowerKind.Carpenter] > 0))
+                Fail($"Max Ammo should be clearly the most common power-up (over a third, almost twice the next) and Infinite Ammo the rarest, as the weights say ({(boardsDown ? "a board down" : "all boards up")})");
+        }
+
+        // 2. Max Ammo: every slot's reserve full, the magazines as they were (World at War), for a plain gun and a
+        //    two-receiver build; a bot's magazine full.
+        var twin = StandardBuilds.All.Select(b => b.Build()).FirstOrDefault(b => b.Receivers.Count >= 2 && !Game.IsCart(BuildStats.ComputeUnchecked(b)));
+        if (twin == null || !g.GiveBuild(me, 0, twin, full: true))
+        {
+            Fail("no standard build with two receivers to test the ammo power-ups with");
+            return;
+        }
+        g.SwitchTo(1, now);
+        g.SwitchTo(0, now);
+        foreach (var s in new[] { 0, 1 })
+        {
+            g.Slots[s].Ammo = 1;
+            g.Slots[s].Reserve = 0;
+        }
+        bot.Bot!.Ammo = 0;
+        g.GrabPowerUp(me, ZPowerKind.MaxAmmo, now);
+        var maxOk = new[] { 0, 1 }.All(s => g.Slots[s].Reserve == g.Slots[s].Def.Mag * g.ZRules.ReserveMags && g.Slots[s].Ammo == 1) && bot.Bot.Ammo == bot.WeaponDef.Mag;
+        ZLine($"  Max Ammo: '{g.Slots[0].Def.Name}' ({twin.Receivers.Count} receivers) {g.Slots[0].Ammo} | {g.Slots[0].Reserve}, '{g.Slots[1].Def.Name}' {g.Slots[1].Ammo} | {g.Slots[1].Reserve}, bot {bot.Bot.Ammo}/{bot.WeaponDef.Mag}");
+        if (!maxOk)
+            Fail("Max Ammo should fill every slot's reserve (a plain gun and a two-receiver build) and leave the magazines as they are; a bot's magazine fills");
+
+        // 3. Infinite Ammo: the magazines fill at once; a magazine and more of trigger pulls use none and never reload,
+        //    for the two-receiver build, the plain gun and a launcher-bore build; the server's launcher count stands still.
+        var t = now + 1;
+        g.Slots[0].Ammo = 2;
+        g.Slots[1].Ammo = 2;
+        g.GrabPowerUp(me, ZPowerKind.InfiniteAmmo, t);
+        var filled = g.Slots[0].Ammo == g.Slots[0].Def.Mag && g.Slots[1].Ammo == g.Slots[1].Def.Mag && g.InfiniteAmmoOn(t) && Math.Abs(g.InfiniteAmmoLeft(t) - g.ZRules.DurationOf(ZPowerKind.InfiniteAmmo)) < 1e-6;
+        var lob = StandardBuilds.All.Select(b => b.Build()).FirstOrDefault(b => b.Receivers.Any(r => r.Part.Receiver?.Bore == "launcher") && !Game.IsCart(BuildStats.ComputeUnchecked(b)));
+        var results = new List<string>();
+        var infOk = filled && lob != null;
+        foreach (var slot in new[] { 0, 1, 1 }) // the two-receiver build, the plain gun, then a launcher-bore build in slot 2
+        {
+            if (results.Count == 2 && lob != null)
+                g.GiveBuild(me, 1, lob, full: true);
+            g.GrabPowerUp(me, ZPowerKind.InfiniteAmmo, t); // (each gun on a fresh clock: a second pick-up restarts it)
+            var (pulls, shots, ammoSame, reloaded) = InfinitePulls(g, slot, ref t);
+            results.Add($"'{g.Slots[slot].Def.Name}' mag {g.Slots[slot].Def.Mag}: {shots} of {pulls} pulls fired, ammo still {g.Slots[slot].Ammo} {ammoSame}, reloaded {reloaded}, reserve {g.Slots[slot].Reserve}");
+            infOk &= shots > g.Slots[slot].Def.Mag && ammoSame && !reloaded;
+        }
+        ZLine($"  Infinite Ammo: magazines full at once {filled}; {string.Join("; ", results)}");
+
+        // Refresh: a second one restarts the clock (no stacking past one duration).
+        var d = g.ZRules.DurationOf(ZPowerKind.InfiniteAmmo);
+        g.GrabPowerUp(me, ZPowerKind.InfiniteAmmo, t);
+        g.GrabPowerUp(me, ZPowerKind.InfiniteAmmo, t + 5);
+        var refreshed = Math.Abs(g.InfiniteAmmoLeft(t + 5) - d) < 1e-6;
+
+        // A real launcher's server count (GameLaunchers.cs) stands still while it runs.
+        var launcher = Weapons.All.FirstOrDefault(w => w.IsLauncher);
+        var launchOk = true;
+        var launchText = "no launcher";
+        if (launcher != null)
+        {
+            me.Secondary = launcher.Id;
+            me.SecondaryKit = 0;
+            g.SelfTestRefillLauncher(me);
+            var rounds = launcher.Mag + launcher.LauncherReserve;
+            var fired = 0;
+            for (var i = 0; i < rounds + 3; i++)
+                if (g.SelfTestFireLauncher(me, launcher, new Vector3(0, 0.6f, -1), byte.MaxValue, t + 5 + i * (launcher.FireInterval + 0.05)) is not null)
+                    fired++;
+            launchOk = g.LauncherRoundsLeft(me, launcher) == rounds;
+            launchText = $"'{launcher.Name}' {fired} fired, {g.LauncherRoundsLeft(me, launcher)}/{rounds} rounds left";
+        }
+        ZLine($"  Infinite Ammo: refresh restarts the clock {refreshed} ({g.InfiniteAmmoLeft(t + 5):0.0} s left); launcher {launchText}");
+        if (!infOk || !refreshed || !launchOk)
+            Fail("Infinite Ammo should fill every magazine, fire more than a magazine's worth with no ammo used and no reload (builds, plain guns, launcher builds and launchers), and a second one should restart its clock");
+
+        // 4. Replication: the timer and the floating kind reach a client, whose magazines fill when it starts.
+        g.SpawnPowerUp(ZPowerKind.InfiniteAmmo, new Vector3(-6, 0, -4), t + 5);
+        g.SelfTestZombiesTick(t + 5);
+        var ww = new PacketWriter();
+        g.WriteZEnts(ww);
+        var ents = ww.Span.ToArray();
+        var ww2 = new PacketWriter();
+        g.WriteZWorld(ww2);
+        var world = ww2.Span.ToArray();
+        var serverLeft = g.InfiniteAmmoLeft(t + 5); // (WriteZWorld writes at the server's clock: the last zombies tick)
+        using (var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            c.Slots[0].Ammo = 1;
+            c.SelfTestReadZombies(ents, world);
+            var floating = c.ZPowerUps.Any(p => p.Kind == ZPowerKind.InfiniteAmmo);
+            var same = Math.Abs(c.InfiniteAmmoLeft(0) - serverLeft) < 0.11 && c.InfiniteAmmoOn(0) && c.Slots[0].Ammo == c.Slots[0].Def.Mag && floating;
+            ZLine($"  Infinite Ammo replication: server {serverLeft:0.0} s left -> client {c.InfiniteAmmoLeft(0):0.0} s, client magazine {c.Slots[0].Ammo}/{c.Slots[0].Def.Mag}, floating kind {floating}; ZWorld {world.Length} bytes");
+            if (!same || world.Length > PacketWriter.Mtu)
+                Fail("Infinite Ammo's timer and its floating power-up should reach a client (its magazines fill when it starts)");
+        }
+
+        // 5. It runs out: shots use ammo again and the gun reloads.
+        var end = g.ZInfiniteAmmoUntil + 0.01;
+        g.SwitchTo(0, end);
+        var at = Math.Max(end, Math.Max(g.EquipUntil, g.NextFireTime)) + 0.01;
+        g.SelfTestWeaponFrame(at, 0.016f);
+        var before = g.Active.Ammo;
+        g.UpdateTrigger(at, true, true);
+        var used = g.Active.Ammo < before;
+        g.Active.Ammo = 0;
+        g.UpdateTrigger(at + 1, true, true);
+        var reloads = g.IsReloading(at + 1);
+        ZLine($"  Infinite Ammo over: {g.InfiniteAmmoLeft(at):0.0} s left, a shot {before} -> {g.Active.Ammo} uses ammo {used}, an empty magazine reloads {reloads}");
+        if (g.InfiniteAmmoOn(at) || !used || !reloads)
+            Fail("when Infinite Ammo runs out shots should use ammo again and an empty magazine reload");
+    }
+
+    /// <summary>Pulls <paramref name="g"/>'s trigger on <paramref name="slot"/> (a magazine and a few more) while Infinite Ammo runs.</summary>
+    private static (int Pulls, int Shots, bool AmmoSame, bool Reloaded) InfinitePulls(Game g, int slot, ref double t)
+    {
+        g.SwitchTo(slot == 0 ? 1 : 0, t);
+        g.SwitchTo(slot, t);
+        var w = g.Slots[slot];
+        t = Math.Max(t, g.EquipUntil) + 0.01;
+        var step = Math.Max(w.Def.FireInterval * 1.3, 0.02);
+        var pulls = w.Def.Mag + 5;
+        var shots = 0;
+        var same = true;
+        var reloaded = false;
+        for (var i = 0; i < pulls; i++)
+        {
+            t += step;
+            g.SelfTestWeaponFrame(t, (float)step);
+            g.UpdateTrigger(t, true, true);
+            g.UpdateTrigger(t, false, false); // (let go: the next pull is a fresh press)
+            if (g.LastShotTime >= t)
+                shots++;
+            same &= w.Ammo == w.Def.Mag;
+            reloaded |= g.IsReloading(t) || w.ReloadUntil > 0;
+        }
+        return (pulls, shots, same, reloaded);
     }
 
     // ---- Special ammo effects --------------------------------------------------------------------------------

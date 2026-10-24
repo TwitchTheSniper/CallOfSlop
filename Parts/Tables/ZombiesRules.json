@@ -93,8 +93,8 @@
     "salvageScrap": 25
   },
   "powerUps": {
-    "note": "PROPOSED (milestone 3): World at War style power-ups. A kill drops one with dropChance, at most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). Insta-Kill and Double Points last duration seconds.",
-    "dropChance": 0.03,
+    "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23). A kill drops one with dropChance, at most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
+    "dropChance": 0.04,
     "maxPerRound": 4,
     "lifetime": 30,
     "blinkSeconds": 10,
@@ -102,7 +102,8 @@
     "pickupRange": 1.3,
     "nukePoints": 400,
     "carpenterPoints": 200,
-    "weights": {"maxAmmo": 1.2, "instaKill": 1, "doublePoints": 1, "nuke": 0.8, "carpenter": 0.8}
+    "durations": {"instaKill": 30, "doublePoints": 30, "infiniteAmmo": 30},
+    "weights": {"maxAmmo": 2.5, "instaKill": 1, "doublePoints": 1, "nuke": 0.8, "carpenter": 0.8, "infiniteAmmo": 0.5}
   },
   "ammoEffects": {
     "note": "PROPOSED (milestone 3): what part flags do to zombies (docs/zombies/ZOMBIES-MODE.md, Special ammo effects). One effect of each kind per shot or swing, never stacked.",

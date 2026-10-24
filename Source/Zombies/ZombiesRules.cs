@@ -158,18 +158,24 @@ public sealed class ZombiesRules
 
     // ---- Power-ups (World at War style; ZombiesPowerUps.cs) ---------------------------------------------
     /// <summary>Chance a zombie kill drops a power-up, and the most that drop in one round.</summary>
-    public float PowerDropChance = 0.03f;
+    public float PowerDropChance = 0.04f;
 
     public int PowerMaxPerRound = 4;
 
-    /// <summary>A power-up floats this long (seconds), blinking for the last <see cref="PowerBlinkSeconds"/>; Insta-Kill and Double Points last <see cref="PowerDuration"/>.</summary>
+    /// <summary>A power-up floats this long (seconds), blinking for the last <see cref="PowerBlinkSeconds"/>; the timed ones (Insta-Kill, Double Points, Infinite Ammo) last <see cref="PowerDuration"/> unless <see cref="PowerDurations"/> says otherwise.</summary>
     public float PowerLifetime = 30f, PowerBlinkSeconds = 10f, PowerDuration = 30f, PowerPickupRange = 1.3f;
 
     /// <summary>Points the Nuke and the Carpenter give every player.</summary>
     public int NukePoints = 400, CarpenterPoints = 200;
 
-    /// <summary>How often each power-up drops, by <see cref="ZPowerKind"/> (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter).</summary>
-    public float[] PowerWeights = [1f, 1f, 1f, 1f, 1f];
+    /// <summary>How often each power-up drops, by <see cref="ZPowerKind"/> (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter, Infinite Ammo).</summary>
+    public float[] PowerWeights = [2.5f, 1f, 1f, 0.8f, 0.8f, 0.5f];
+
+    /// <summary>The rules file's "durations" by <see cref="ZPowerKind"/> (seconds; 0: <see cref="PowerDuration"/>). Only the timed kinds have one.</summary>
+    public float[] PowerDurations = new float[(int)ZPowerKind.COUNT];
+
+    /// <summary>How long a timed power-up lasts once taken (seconds).</summary>
+    public float DurationOf(ZPowerKind k) => (int)k < PowerDurations.Length && PowerDurations[(int)k] > 0 ? PowerDurations[(int)k] : PowerDuration;
 
     // ---- Special ammo effects (part flags against zombies; ZombiesAmmoEffects.cs) ------------------------
     /// <summary>Incendiary: a burn of this share of the hit's damage (at least <see cref="BurnMin"/>) over <see cref="BurnSeconds"/>.</summary>
@@ -491,6 +497,16 @@ public sealed class ZombiesRules
                                     r.PowerWeights[i] = Real(pw.Value, $"{w}.{pw.Name}", 0, 100);
                                 }
                                 break;
+                            case "durations":
+                                if (v.ValueKind != JsonValueKind.Object)
+                                    throw new WeaponFileException($"{w}: an object of seconds ({string.Join(", ", TimedPowerKeys)})");
+                                foreach (var pd in v.EnumerateObject())
+                                {
+                                    if (Array.IndexOf(TimedPowerKeys, pd.Name) < 0)
+                                        throw new WeaponFileException($"{w}: \"{pd.Name}\" isn't a timed power-up ({string.Join(", ", TimedPowerKeys)})");
+                                    r.PowerDurations[Array.IndexOf(PowerKeys, pd.Name)] = Real(pd.Value, $"{w}.{pd.Name}", 1, 600);
+                                }
+                                break;
                             default: return false;
                         }
                         return true;
@@ -544,7 +560,10 @@ public sealed class ZombiesRules
     }
 
     /// <summary>The power-up keys in the rules file's "weights", in <see cref="ZPowerKind"/> order.</summary>
-    public static readonly string[] PowerKeys = ["maxAmmo", "instaKill", "doublePoints", "nuke", "carpenter"];
+    public static readonly string[] PowerKeys = ["maxAmmo", "instaKill", "doublePoints", "nuke", "carpenter", "infiniteAmmo"];
+
+    /// <summary>The power-ups that run for a while (the keys "durations" takes).</summary>
+    public static readonly string[] TimedPowerKeys = ["instaKill", "doublePoints", "infiniteAmmo"];
 
     private static ZombiePerkDef ReadPerk(JsonElement e, string where, List<ZombiePerkDef> others)
     {

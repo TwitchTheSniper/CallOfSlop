@@ -122,17 +122,19 @@ public sealed partial class Ui
             ImGui.End();
         }
 
-        // Power-ups: Insta-Kill and Double Points timers bottom centre (blinking in their last 5 s); the floating ones labelled.
+        // Power-ups: Insta-Kill, Double Points and Infinite Ammo timers bottom centre (blinking in their last 5 s); the floating ones labelled.
         var insta = game.InstaKillLeft(now);
         var dbl = game.DoublePointsLeft(now);
-        if (insta > 0 || dbl > 0)
+        var inf = game.InfiniteAmmoLeft(now);
+        if (insta > 0 || dbl > 0 || inf > 0)
         {
             ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y - pad - 120 * _scale), ImGuiCond.Always, new float2(0.5f, 1));
             if (ImGui.Begin("##zpowers"u8, Overlay))
             {
                 ImGui.PushFont(default, 26);
-                foreach (var (kind, left) in new[] { (ZPowerKind.InstaKill, insta), (ZPowerKind.DoublePoints, dbl) })
+                for (var i = 0; i < 3; i++)
                 {
+                    var (kind, left) = i switch { 0 => (ZPowerKind.InstaKill, insta), 1 => (ZPowerKind.DoublePoints, dbl), _ => (ZPowerKind.InfiniteAmmo, inf) };
                     if (left <= 0 || (left < 5 && ((int)(now * 4) & 1) == 0))
                         continue;
                     var c = Game.PowerColor(kind);

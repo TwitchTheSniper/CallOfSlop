@@ -407,6 +407,16 @@ public static unsafe partial class Program
                     PowerPart(spin, at, 0.2f, 0.06f, 0.06f, 0, 0.18f, new Vector3(0.3f));
                     PowerPart(spin, at, 0.06f, 0.18f, 0.2f, 0, 0.18f, new Vector3(0.3f));
                     break;
+                case ZPowerKind.InfiniteAmmo: // an infinity sign (two square loops side by side) under a gold round
+                    for (var k = -1; k <= 1; k += 2)
+                    {
+                        PowerPart(spin, at, 0.22f, 0.045f, 0.06f, k * 0.11f, 0.06f, c); // the loop's top
+                        PowerPart(spin, at, 0.22f, 0.045f, 0.06f, k * 0.11f, -0.1f, c); // and bottom
+                        PowerPart(spin, at, 0.045f, 0.2f, 0.06f, k * 0.2f, -0.02f, c * 0.85f); // its outer side
+                    }
+                    PowerPart(spin, at, 0.045f, 0.2f, 0.06f, 0, -0.02f, c * 0.85f); // the crossing in the middle
+                    PowerPart(spin, at, 0.05f, 0.14f, 0.05f, 0, 0.17f, new Vector3(1f, 0.8f, 0.3f));
+                    break;
                 default: // the Carpenter: a hammer
                     PowerPart(spin, at, 0.05f, 0.34f, 0.05f, 0, -0.04f, new Vector3(0.6f, 0.4f, 0.2f));
                     PowerPart(spin, at, 0.24f, 0.08f, 0.08f, 0, 0.14f, c);

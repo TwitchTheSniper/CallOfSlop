@@ -97,7 +97,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     during a Zombies match means ready for the next round. Downed players crawl (same input bits, capped speed).
     // 48: the host's gravity setting (Source/Game/GameGravity.cs, 25-200%): a byte at the end of the Welcome and after the
     //     auto-start in Msg.LobbyState, so clients predict falls, jumps and grenades the host's way.
-    public const byte ProtocolVersion = 48;
+    // 49: the Zombies Infinite Ammo power-up (Source/Game/ZombiesPowerUps.cs): ZPowerKind 5 in Msg.ZWorld's floating
+    //     power-ups, and a third timer (Infinite Ammo's tenths of a second left) after Insta-Kill's and Double Points'.
+    public const byte ProtocolVersion = 49;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

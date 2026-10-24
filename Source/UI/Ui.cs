@@ -199,7 +199,7 @@ public sealed partial class Ui : IDisposable
             if (reload >= 0)
                 ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
             else
-                ImGuiSafe.TextColored(Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), Game.IsEmptyGun(w.Def) ? "-" : w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve (an empty slot: nothing)
+                ImGuiSafe.TextColored(Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), Game.IsEmptyGun(w.Def) ? "-" : game.InfiniteAmmoOn(now) ? $"{w.Ammo} | INF" : w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF)
             ImGui.PopFont();
             ImGui.Text($"{w.Def.Name}");
             ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
