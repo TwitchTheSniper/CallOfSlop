@@ -322,25 +322,35 @@ your player has died. And if you can't get to them in time, will despawn after 5
 
 ## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
 
-- **Drops.** Every zombie a player kills may drop one: `dropChance` 3 percent, at most `maxPerRound` (4) a round (the
-  count resets when a round starts). The kind is rolled from `weights` (Max Ammo 1.2, Insta-Kill 1, Double Points 1,
-  Nuke 0.8, Carpenter 0.8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
+- **Drops.** Every zombie a player kills may drop one: `dropChance` 4 percent, at most `maxPerRound` (4) a round (the
+  count resets when a round starts). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
+  Nuke 0.8, Carpenter 0.8, Infinite Ammo 0.5: Max Ammo is about 38 percent of drops, 43 with every board up, and
+  Infinite Ammo about 8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
   it at that window's inside spot. Kills by a burn, a splash or a chain drop like any kill; the Nuke's kills drop nothing.
 - **Looks.** It floats 0.9 m up, turning and bobbing, a glowing token for its kind (an ammo can, a skull, two gold coins,
-  a bomb, a hammer) over a green halo with a faint beam; its name floats over it within 12 m. It lasts `lifetime` (30 s)
+  a bomb, a hammer, a purple infinity sign under a gold round) over a green halo with a faint beam; its name floats over it within 12 m. It lasts `lifetime` (30 s)
   and blinks for the last `blinkSeconds` (10 s), faster in the last 3.
 - **Taking one:** the first player standing who walks within `pickupRange` (1.3 m) takes it **for the whole team**; a
   feed line ("Tester grabbed Insta-Kill: every hit kills for 30 seconds!") and a banner ("INSTA-KILL!") go to everyone.
 
 | Power-up | What it does |
 | --- | --- |
-| **Max Ammo** | Every player's guns get a full reserve (magazines stay as they are) |
+| **Max Ammo** (the most common, about 38 percent) | Every player's guns get a full reserve (magazines stay as they are, as in World at War; a bot's magazine fills) |
 | **Insta-Kill** | For `duration` (30 s) every hit on a zombie kills it |
 | **Double Points** | For 30 s every point earned (hits, kills, boards) counts twice |
 | **Nuke** | Every zombie alive dies at once (no kill points or drops); every player gets `nukePoints` (400) |
 | **Carpenter** | Every window's boards go back up; every player gets `carpenterPoints` (200) |
+| **Infinite Ammo** (rare, about 8 percent) | For `durations.infiniteAmmo` (30 s) every magazine is full and no shot uses ammo, so nothing reloads: plain guns, every build (all receivers, shared feeds, special ammo), launchers and push carts. A second one restarts the clock (no stacking) |
 
-The HUD shows Insta-Kill and Double Points with their seconds left, bottom centre (blinking in the last 5 s).
+The timed ones last their `durations` entry (`instaKill`, `doublePoints`, `infiniteAmmo`; `duration` otherwise). The
+HUD shows Insta-Kill, Double Points and Infinite Ammo with their seconds left, bottom centre (blinking in the last 5 s);
+while Infinite Ammo runs the ammo counter reads `40 | INF`. The server owns the timer; clients get it in `ZWorld` and
+fill their own magazines from it.
+
+**Decision (user, 2026-10-23):** add Max Ammo as one of the most common drops and an Infinite Ammo one. Read as
+power-up drops (not perk machines). Max Ammo's weight went 1.2 -> 2.5 (about 38 percent, up from 25) and `dropChance`
+3 -> 4 percent, so a round of 24 kills shows about one power-up instead of 0.7 (still at most 4 a round); Infinite
+Ammo is timed, 30 s, weight 0.5.
 
 ## Special ammo effects (milestone 3; proposed numbers in "ammoEffects")
 
@@ -438,6 +448,9 @@ Insta-Kill / Double Points' seconds left; `ZEvent` gains `MaxAmmo` (refill your 
 effect: kind, sound and a position after the text; unreliable); bits 6-7 of a zombie's state byte in `ZEnts` say
 burning / zapped. (38 and 39 are other features on main.)
 
+Protocol 49 (2026-10-23): `ZWorld`'s floating power-ups may be kind 5 (Infinite Ammo), and a third timer (Infinite
+Ammo's tenths of a second left) follows Insta-Kill's and Double Points'.
+
 
 New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (every zombie with each snapshot:
 id, quantised position, yaw, state, speed, health; 12 bytes each, about 300 bytes for 24), `ZWorld` (10 Hz: round,
@@ -477,7 +490,7 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
    (fixed 1500, or rising each buy), whether it should count toward the perk limit (today it does), and whether solo
    Quick Revive should be cheaper again.
 4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). Still open: the numbers
-   (3 percent a kill, 4 a round, 30 s), and whether drops should follow World at War's points-based schedule instead.
+   (4 percent a kill since 2026-10-23, 4 a round, 30 s; Max Ammo 38 percent of drops), and whether drops should follow World at War's points-based schedule instead.
 5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). Still open: the
    numbers, and whether effects should also hurt players in other modes.
 6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything (still the default).
