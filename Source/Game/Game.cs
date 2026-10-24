@@ -390,6 +390,7 @@ public sealed partial class Game : IDisposable
 
     private void UpdateWeaponState(double now, float dt)
     {
+        LocalInfiniteAmmo(now); // Zombies' Infinite Ammo: every magazine full, no reloads (ZombiesPowerUps.cs)
         var w = Active;
         if (w.ReloadUntil > 0 && now >= w.ReloadUntil)
         {
@@ -506,7 +507,8 @@ public sealed partial class Game : IDisposable
         var w = Active;
         var def = w.Def;
 
-        w.Ammo--;
+        if (!InfiniteAmmoOn(now))
+            w.Ammo--; // (Zombies' Infinite Ammo: the shot uses none)
         NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Double Tap
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;

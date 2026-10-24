@@ -16,7 +16,7 @@
 - **Zombies** (id 5), milestones 1 to 3 (see `docs/zombies/ZOMBIES-MODE.md`):
   - rounds, boarded windows, buyable doors, wall buys, mystery box, perks, power switch, workbenches, salvage and scrap;
   - dropped builds on death, and 2 → 4 weapon slots;
-  - power-ups (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter);
+  - power-ups (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter, Infinite Ammo since 2026-10-23);
   - special ammo effects for every part flag;
   - solid machine props;
   - the first real map, **Blackmoor Asylum** (`Maps/Zombies/01-BlackmoorAsylum.json`, 7 areas);
@@ -143,7 +143,9 @@ Fixed 2026-10-23: "Test Range" ("adding bots mid-session gave 5 (4 alive)", main
 Defaults are in place for all of them.
 
 1. **Zombies:**
-   - the power-up numbers: 3% a kill, at most 4 a round, 30 s;
+   - ~~the power-up numbers~~: answered 2026-10-23 (the user asked for Max Ammo to be among the most common and for an
+     Infinite Ammo one): 4% a kill, at most 4 a round, timed ones 30 s; weights Max Ammo 2.5 (about 38% of drops),
+     Insta-Kill 1, Double Points 1, Nuke 0.8, Carpenter 0.8, Infinite Ammo 0.5 (about 8%). Still tunable in ZombiesRules.json;
    - should special ammo hurt players in other modes;
    - should co-op bots buy things;
    - downed weapon: today it's the gun in your hands; the crawl speed (0.8 x prone);

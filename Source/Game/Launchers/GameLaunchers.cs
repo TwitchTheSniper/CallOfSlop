@@ -131,8 +131,11 @@ public sealed partial class Game
         if (!float.IsFinite(dir.X + dir.Y + dir.Z) || dir.LengthSquared() < 0.5f)
             dir = GravityFrames.Forward(p.Position, p.Yaw, p.Pitch);
         dir = Vector3.Normalize(dir);
-        a.Fired++;
-        a.InMag--;
+        if (!InfiniteAmmoOn(now)) // (Zombies' Infinite Ammo: the round doesn't count)
+        {
+            a.Fired++;
+            a.InMag--;
+        }
         a.LastShot = now;
         a.NextShot = now + def.FireInterval * 0.85;
         p.LastShotTime = now;
