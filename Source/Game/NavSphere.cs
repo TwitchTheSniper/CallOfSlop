@@ -17,7 +17,7 @@ public sealed partial class NavGraph
     {
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
-        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
+        var g = new NavGraph { MapName = map.Name, MapHash = HashOf(map), DestructionAtStart = DestructionStamp(map) };
         var c = World.Physics;
         var radius = map.PlanetRadius > 0 ? map.PlanetRadius : MathF.Max(map.HalfX, map.HalfZ) * 0.7f;
         var s = Math.Clamp(radius * 0.085f, 3f, 6f); // 4.8 m on a 56 m planet: about 1,700 nodes
@@ -44,9 +44,18 @@ public sealed partial class NavGraph
             var up = GravityFrames.UpOf(planet, w);
             if (SurfaceNode(c, planet, w + up * 1.0f, up, 3f) is { } p && !nodes.Any(q => Vector3.DistanceSquared(q, p) < 0.8f * 0.8f))
                 nodes.Add(p);
+            if (++k % 4 == 0)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null; // (each looks through every node so far)
+                t0 = Stopwatch.GetTimestamp();
+            }
         }
         g.Nodes = nodes.ToArray();
         g.BuildCells(map);
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
 
         // ---- Edges: neighbours within 1.6 spacings, walked along the curve ----
         var edges = new List<(int From, int To, float Cost)>(nodes.Count * 8);
@@ -109,6 +118,9 @@ public sealed partial class NavGraph
             g.EdgeTo[at] = remap[e.To];
             g.EdgeCost[at] = e.Cost;
         }
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
         g.BuildCells(map);
         g.BuildComponents();
         work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;

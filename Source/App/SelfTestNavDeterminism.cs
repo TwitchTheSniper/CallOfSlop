@@ -94,7 +94,48 @@ public static partial class SelfTest
                     Fail($"{name}: the nav graph keeps destruction patches after the map is restored ({restored:x8}, as built {h0:x8}, patched {patched:x8})");
             }
         }
+        CheckWalkerSplit();
         Line($"nav determinism: {sw.Elapsed.TotalSeconds:0.0} s");
+    }
+
+    /// <summary>
+    /// The build spreads each mover walk over slices, a few mover ticks at a time (NavGraph.MoverWalker): a walk run a tick
+    /// per call must end exactly as one run whole (NavGraph.MoverWalk), sprinting or not, on mantles, drops and climbs.
+    /// </summary>
+    private static void CheckWalkerSplit()
+    {
+        if (Maps.Find("Rooftops") is not { } map)
+            return;
+        World.SetMap(map);
+        var g = NavGraph.Current is { Nodes.Length: > 0 } c ? c : NavGraph.Build(map);
+        var walker = new NavGraph.MoverWalker();
+        int walks = 0, differ = 0;
+        string first = "";
+        for (var i = 0; i < g.Nodes.Length && walks < 60; i += 3)
+            for (var e = g.EdgeStart[i]; e < g.EdgeStart[i + 1] && walks < 60; e++)
+            {
+                var (a, b) = (g.Nodes[i], g.Nodes[g.EdgeTo[e]]);
+                if ((g.EdgeFlags[e] & (NavGraph.FlagMantle | NavGraph.FlagDrop)) == 0 && MathF.Abs(b.Y - a.Y) < 0.5f && walks % 4 != 0)
+                    continue; // mostly the ledges, where a walk lasts longest
+                var sprint = walks % 2 == 1;
+                var whole = NavGraph.MoverWalk(a, b, g.EdgeFlags[e], g.EdgeLedge[e], sprint);
+                walker.Begin(a, b, g.EdgeFlags[e], g.EdgeLedge[e], sprint);
+                var calls = 1;
+                while (!walker.Advance(1))
+                    calls++;
+                var split = walker.Result;
+                walks++;
+                if (split.Reached == whole.Reached && split.End == whole.End && split.Airborne == whole.Airborne && split.Mantled == whole.Mantled
+                    && split.Closest == whole.Closest)
+                    continue;
+                if (differ++ == 0)
+                    first = $"edge {i}->{g.EdgeTo[e]}: whole reached {whole.Reached} end {whole.End} airborne {whole.Airborne}, a tick per call ({calls} calls) reached {split.Reached} end {split.End} airborne {split.Airborne}";
+            }
+        Line($"mover walks split a tick per call: {walks} edges on {map.Name}, {differ} differ from walking whole");
+        if (walks < 20)
+            Fail($"{map.Name}: only {walks} edges for the split-walk check");
+        if (differ > 0)
+            Fail($"a mover walk split over calls ends differently from one walked whole ({differ} of {walks}; first: {first})");
     }
 
     /// <summary>FNV-1a over a graph's nodes and edges (positions, targets, costs, flags, ledges).</summary>

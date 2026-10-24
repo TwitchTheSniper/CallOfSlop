@@ -106,17 +106,26 @@ public sealed partial class NavGraph
             var map = World.Map;
             if (_last != null && ReferenceEquals(_lastMap, map))
                 return _last;
-            if (!ReferenceEquals(_hashMap, map))
-            {
-                _hashMap = map; // the fingerprint walks every box: work it out once per map, not every tick of a build
-                _hash = map.ContentHash;
-            }
-            if (!Cache.TryGetValue((map.Name, _hash), out var cached))
+            if (!Cache.TryGetValue((map.Name, HashOf(map)), out var cached))
                 return Empty;
             _lastMap = map;
             _last = cached;
             return cached;
         }
+    }
+
+    /// <summary>
+    /// <paramref name="map"/>'s fingerprint (<see cref="Map.ContentHash"/>), worked out once per map: it walks every box (a few
+    /// milliseconds on a big map), and a build would otherwise take it every tick, and again when it starts and when it ends.
+    /// </summary>
+    private static uint HashOf(Map map)
+    {
+        if (!ReferenceEquals(_hashMap, map))
+        {
+            _hashMap = map;
+            _hash = map.ContentHash;
+        }
+        return _hash;
     }
 
     /// <summary>
@@ -191,7 +200,7 @@ public sealed partial class NavGraph
 
     private static void Store(Map map, NavGraph g)
     {
-        Cache[(map.Name, map.ContentHash)] = g;
+        Cache[(map.Name, HashOf(map))] = g;
         Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
             + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped, {g.LastResorts} kept as last resorts), {g.BuildMs:0} ms of work");
     }
@@ -216,6 +225,12 @@ public sealed partial class NavGraph
     // ---- Building -------------------------------------------------------------------------------
 
     /// <summary>
+    /// Mover ticks of a link walk per build slice (BuildSteps). A mover tick is usually 0.01-0.05 ms but up to ~0.25 ms on a big
+    /// map (a capsule among many boxes or terrain), so 4 keep a slice under a millisecond; the walks' total work is the same.
+    /// </summary>
+    private const int WalkTicksPerSlice = 4;
+
+    /// <summary>
     /// The build as a sequence of small steps: yields null after each slice of work and the finished graph last.
     /// The map must stay <see cref="World.Map"/> throughout (the collision queries use it); <see cref="Pump"/> drops
     /// the build if it changes. <see cref="BuildMs"/> counts only the time spent working.
@@ -232,7 +247,10 @@ public sealed partial class NavGraph
         }
         var work = 0.0;
         var t0 = Stopwatch.GetTimestamp();
-        var g = new NavGraph { MapName = map.Name, MapHash = map.ContentHash, DestructionAtStart = DestructionStamp(map) };
+        var g = new NavGraph { MapName = map.Name, MapHash = HashOf(map), DestructionAtStart = DestructionStamp(map) };
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null; // (the fingerprint walks every box, and so does the top below: a slice apiece on a big map)
+        t0 = Stopwatch.GetTimestamp();
         // Every probe below goes through World.Physics, read afresh in every slice: during a build that's the map as built
         // (PumpGraph and Build point it there), never the live match world kept from an earlier slice.
         var s = Math.Clamp(MathF.Sqrt(4 * map.HalfX * map.HalfZ / 1000f), 3f, 7f);
@@ -244,6 +262,9 @@ public sealed partial class NavGraph
         top = MathF.Min(top + 1f, 59f);
         if (map.TerrainCollision is { } terrain)
             top = MathF.Max(top, terrain.Data.MaxHeight + 2f); // hills can rise above every box
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
 
         // ---- Nodes: every standable surface at each grid point, plus the map's waypoints and spawns ----
         var nodes = new List<Vector3>();
@@ -333,14 +354,24 @@ public sealed partial class NavGraph
                 }
         }
 
-        // The mover walks, one per slice (a slice can't hold many: a few milliseconds each on a big terrain map).
+        // The mover walks, a few mover ticks per slice: one walk can run ~3 s of mover ticks (a failing climb on a big terrain
+        // map), 10 ms of work and more, so a walk is spread over slices (MoverWalker) and the graph comes out the same.
+        var walker = new MoverWalker();
         foreach (var pw in pending)
         {
             var w0 = Stopwatch.GetTimestamp();
             var ok = true;
             foreach (var (from, sprint) in WalkStarts(pw))
             {
-                ok = MoverWalk(from, pw.B, pw.Flags, pw.Ledge, sprint).Reached;
+                walker.Begin(from, pw.B, pw.Flags, pw.Ledge, sprint);
+                while (!walker.Advance(WalkTicksPerSlice))
+                {
+                    work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                    g.WalkTicks += Stopwatch.GetTimestamp() - w0;
+                    yield return null;
+                    t0 = w0 = Stopwatch.GetTimestamp();
+                }
+                ok = walker.Result.Reached;
                 work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
                 g.WalkTicks += Stopwatch.GetTimestamp() - w0;
                 yield return null;
@@ -356,8 +387,12 @@ public sealed partial class NavGraph
             edges[pw.Slot] = (-1, -1, 0f, (byte)0, Vector3.Zero);
         }
         edges.RemoveAll(e => e.From < 0);
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null; // (each of these looks at every edge or node: a slice apiece)
+        t0 = Stopwatch.GetTimestamp();
 
         // Declared links (building stairs, Map.NavLinks): between the waypoint nodes at either end, without a walk.
+        var declared = 0;
         foreach (var (la, lb) in map.NavLinks)
         {
             int ia = WaypointNode(g.Nodes, gridCount, la), ib = WaypointNode(g.Nodes, gridCount, lb);
@@ -372,10 +407,19 @@ public sealed partial class NavGraph
             var len = Vector3.Distance(g.Nodes[ia], g.Nodes[ib]);
             edges.Add((ia, ib, len, (byte)0, Vector3.Zero));
             edges.Add((ib, ia, len, (byte)0, Vector3.Zero));
+            if (++declared % 8 == 0)
+            {
+                work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+                yield return null; // (each end looks through every node: a few links per slice on a big map)
+                t0 = Stopwatch.GetTimestamp();
+            }
         }
 
         // Directions the mover couldn't walk come back only where they're the only way in or out of somewhere: kept at a high
         // cost, so a room or a floor never drops out of the graph because its one way in is awkward (BotNavWalk.cs).
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
         foreach (var _ in KeepLastResorts(g, g.Nodes.Length, edges, failed))
         {
             work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -461,8 +505,11 @@ public sealed partial class NavGraph
                 t0 = Stopwatch.GetTimestamp();
             }
         }
-        g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        work += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        yield return null;
+        t0 = Stopwatch.GetTimestamp();
         g.FinishRuntime(map);
+        g.BuildMs = work + Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         yield return g;
     }
 

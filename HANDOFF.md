@@ -104,10 +104,11 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
 **Flaky tests (passed on rerun; root cause unknown)**
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
-- "Maps" tick work on Main Street: one 9.6 ms server tick (limit 8 ms; no JIT, no GC) on Windows CI, run 40012259653 on 763445c (2026-10-23); passed on rerun. If it recurs, suspect the attachments branch's bot hearing (loudness) or the gravity-zone field lookup.
 - "Matches" on Keelhaul Yard: "4 player(s) below the floor" once in the agent container (2026-10-23, fix/test-range-qol, unseeded bot match on the gravity-zone map); passed on rerun.
 - "Space: gravity maps" (now the "Map contract" bot match on Twin Shard): "3 bots barely moved in a KingOfTheHill match" on main's Linux run 40035032503 (2026-10-23). The seeded 12 s match is the same every run on one machine but not across machines (float differences); the map's `test` block allows 4 stuck bots since.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun.
+
+Fixed 2026-10-23 (fix/nav-build-tick): the bot-match tick-work check ("Matches", printed as "<map>: a server tick did N ms of work ... nav building") on Paris Quarter (17.3 ms, main run 40036261385; feat/zombies-ammo-powerups Windows job 120736621484), Vuorikoski (8.8 ms) and Main Street (9.6 ms, run 40012259653). Cause: the nav graph build is time-sliced (3 ms a tick, BotMove.BotNavBuildMs), but the budget is only checked between steps and some steps were far bigger than the budget. The worst was one mover walk per step: a failing climb runs up to ~3 s of mover ticks, 8-12 ms of CPU on a big World Tour map. Smaller ones: the first step (Map.ContentHash, which walks every box: 4-7 ms), the step after the walks (RemoveAll, the declared stair links, the first last-resort pass: up to 8 ms), the last step (FinishRuntime plus a second ContentHash in Store), and on Pocket Planet the waypoint pass (12 ms). Now a walk is a resumable NavGraph.MoverWalker that runs 4 mover ticks a step, those big steps are split, and the fingerprint is worked out once per map (NavGraph.HashOf). The largest step is now under ~1.3 ms of CPU on the cloud box (before: 8-12 ms), and the graphs are bit-identical to before. "Nav determinism" also checks that a walk run one tick per call ends exactly like one walked whole. Left as it was: the as-built physics copy (PhysicsWorld.AsBuilt) still takes one tick on maps with changing boxes, 60-110 ms on Paris, London and Vuorikoski, the tick after the map loads (warm-up, so the check skips it; it is the same size as the map load itself).
 
 Fixed 2026-10-23: "Test Range" ("a killed bot didn't respawn" / "the kill wasn't counted", ~6% of runs). The check read one bot's state at a single instant while the other bots kept fighting: a bot already in Last Stand (1 HP, shield up) ate the test's shot, or the victim was killed again by another bot within a second of respawning. The check now clears the shield and watches the kill and the respawn as they happen (0 failures in 300 runs).
 
@@ -162,7 +163,7 @@ Defaults are in place for all of them.
 2. Cut the next release so testers get Appearance and the action placement: Actions → Release, or ask the agent.
 3. Get answers to the open questions above, one at a time, then tune `Parts/Tables/ZombiesRules.json`.
 4. Fix the four remaining floating parts.
-5. Look into the four flaky tests if they recur.
+5. Look into the flaky tests above if they recur.
 6. Backlog:
    - Zombies: more maps, perk machine visuals, bots buying things;
    - co-op phases 2–4;

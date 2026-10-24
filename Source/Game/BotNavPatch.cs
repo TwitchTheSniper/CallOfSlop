@@ -105,6 +105,11 @@ public sealed partial class NavGraph
     public static void Forget(Map map)
     {
         Cache.Remove((map.Name, map.ContentHash));
+        if (ReferenceEquals(_hashMap, map))
+        {
+            Cache.Remove((map.Name, _hash)); // (the fingerprint kept from before, should the map have changed since: HashOf)
+            _hashMap = null;
+        }
         if (ReferenceEquals(_lastMap, map))
         {
             _last = null;
