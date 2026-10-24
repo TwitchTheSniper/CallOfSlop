@@ -87,8 +87,8 @@ public sealed partial class Game
 
     public double InfiniteAmmoLeft(double now) => Math.Max(0, ZInfiniteAmmoUntil - now);
 
-    /// <summary>Both sides: Infinite Ammo is running (shots use no ammo, magazines stay full, no reloads). 0 outside Zombies.</summary>
-    public bool InfiniteAmmoOn(double now) => now < ZInfiniteAmmoUntil;
+    /// <summary>Both sides: Infinite Ammo is running (shots use no ammo, magazines stay full, no reloads). Never outside Zombies.</summary>
+    public bool InfiniteAmmoOn(double now) => now < ZInfiniteAmmoUntil && IsZombies;
 
     /// <summary>The local player's slots while Infinite Ammo runs (every frame): every magazine full, no reload in progress.</summary>
     private void LocalInfiniteAmmo(double now)
