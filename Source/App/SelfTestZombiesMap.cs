@@ -579,11 +579,12 @@ public static partial class SelfTest
         g.SelfTestWeaponFrame(at, 0.016f);
         var before = g.Active.Ammo;
         g.UpdateTrigger(at, true, true);
-        var used = g.Active.Ammo < before;
+        var after = g.Active.Ammo;
+        var used = after < before;
         g.Active.Ammo = 0;
         g.UpdateTrigger(at + 1, true, true);
         var reloads = g.IsReloading(at + 1);
-        ZLine($"  Infinite Ammo over: {g.InfiniteAmmoLeft(at):0.0} s left, a shot {before} -> {g.Active.Ammo} uses ammo {used}, an empty magazine reloads {reloads}");
+        ZLine($"  Infinite Ammo over: {g.InfiniteAmmoLeft(at):0.0} s left, a shot {before} -> {after} uses ammo {used}, an empty magazine reloads {reloads}");
         if (g.InfiniteAmmoOn(at) || !used || !reloads)
             Fail("when Infinite Ammo runs out shots should use ammo again and an empty magazine reload");
     }
