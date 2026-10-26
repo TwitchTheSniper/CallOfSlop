@@ -83,6 +83,9 @@ public sealed partial class NavGraph
     private static bool _builderChanging; // can anything in the build's map break or open (Map.HasChangingBoxes)?
     private static Map? _hashMap;
     private static uint _hash;
+    private static Map? _bakeMap; // the map a baked or cached graph was looked for (BotNavBake.cs)
+    private static byte[]? _bakeKey;
+    private static Task<(NavGraph? Graph, string Result)>? _bakeTask;
 
     /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
     public static readonly NavGraph Empty = CreateEmpty();
@@ -150,6 +153,41 @@ public sealed partial class NavGraph
             return;
         if (_builder != null && !ReferenceEquals(_builderMap, map))
             _builder = null; // the map changed under it
+        if (_bakeMap != null && !ReferenceEquals(_bakeMap, map))
+        {
+            _bakeMap = null; // (a read still running for the old map: its result is dropped)
+            _bakeTask = null;
+            _bakeKey = null;
+        }
+        // A baked or cached graph for exactly this map (BotNavBake.cs): read on a worker, so a tick never waits on the disk.
+        if (_builder == null && NavBake.Enabled)
+        {
+            if (_bakeMap == null)
+            {
+                _bakeMap = map;
+                var key = _bakeKey = NavBake.KeyOf(map, HashOf(map)); // (game thread: it reads the boxes; a slice of its own)
+                string name = map.Name;
+                var hash = HashOf(map);
+                _bakeTask = Task.Run(() => (NavBake.TryLoad(name, hash, key, out var result), result));
+                if (budgetMs < 10)
+                    return;
+            }
+            if (_bakeTask != null)
+            {
+                if (!_bakeTask.IsCompleted && budgetMs < double.MaxValue)
+                    return; // bots steer straight a moment longer
+                var (loaded, result) = _bakeTask.Result;
+                _bakeTask = null;
+                NavBake.Note(result);
+                if (loaded != null)
+                {
+                    loaded.Attach(map, result);
+                    Interlocked.Increment(ref NavBake.Loaded);
+                    Store(map, loaded);
+                    return;
+                }
+            }
+        }
         // Every slice probes the map as built (props whole, doors as they start), never the match as it is now: the graph
         // must come out the same however the slices fall between ticks, on a fast PC or a slow one (BuildSteps). On a map
         // where things can break or open, the build runs on a copy of the map as built (PhysicsWorld.AsBuilt), made in its
@@ -201,7 +239,15 @@ public sealed partial class NavGraph
     private static void Store(Map map, NavGraph g)
     {
         Cache[(map.Name, HashOf(map))] = g;
-        Console.WriteLine($"[bots] nav graph for {map.Name}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
+        // A graph built here from the map as built goes to the cache for next time (written on a worker; the bytes are taken
+        // now, before any destruction patch changes the graph).
+        if (g.Origin == "built" && !g.Tainted && NavBake.Enabled && ReferenceEquals(_bakeMap, map) && _bakeKey != null && g.Nodes.Length > 0)
+        {
+            var file = NavBake.Write(g, map, _bakeKey);
+            var name = map.Name;
+            Task.Run(() => NavBake.WriteCache(name, file));
+        }
+        Console.WriteLine($"[bots] nav graph for {map.Name}{(g.Origin == "built" ? "" : $" ({g.Origin})")}: {g.Nodes.Length} nodes, {g.EdgeCount} edges ({g.MantleEdges} mantles), "
             + $"{g.MainNodes.Length} in the main area, {g.WalkChecked} links walked by the mover ({g.WalkRejected} directions dropped, {g.LastResorts} kept as last resorts), {g.BuildMs:0} ms of work");
     }
 

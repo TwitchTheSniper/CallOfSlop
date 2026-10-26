@@ -97,6 +97,7 @@ if ($Step -ne "zip") {
                   "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log")
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
+    if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached nav graphs)
     Copy-Item -Force "tools/TESTERS.txt" (Join-Path $folder "READ ME FIRST.txt")
     Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring progression over from an older build
     Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") # a server list for friends (README, Playing with friends)

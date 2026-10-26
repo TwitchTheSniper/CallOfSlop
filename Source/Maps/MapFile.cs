@@ -321,6 +321,7 @@ public static partial class MapFile
 
             var map = new Map
             {
+                SourceTextHash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(json)), // baked nav graphs are keyed on it (NavBake)
                 Name = ReqStr("name"),
                 Description = Prop(root, "description") is { ValueKind: JsonValueKind.String } d ? d.GetString()! : "",
                 HalfX = Math.Clamp(ReqNum("halfX"), 5f, 500f),

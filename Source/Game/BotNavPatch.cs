@@ -115,6 +115,12 @@ public sealed partial class NavGraph
             _last = null;
             _lastMap = null;
         }
+        if (ReferenceEquals(_bakeMap, map))
+        {
+            _bakeMap = null; // look for a baked or cached graph again next time
+            _bakeTask = null;
+            _bakeKey = null;
+        }
     }
 
     /// <summary>

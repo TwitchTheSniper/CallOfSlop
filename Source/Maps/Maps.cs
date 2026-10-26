@@ -17,6 +17,9 @@ public sealed partial class Map
 
     public readonly List<Box> Solid = new();
 
+    /// <summary>SHA-256 of the map file's text (empty for a map built in code): part of a baked nav graph's key (NavBake).</summary>
+    public byte[] SourceTextHash { get; init; } = [];
+
     /// <summary>Wall-clock ms <see cref="MapFile.Load"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/> (0 otherwise).</summary>
     public double LoadMs;
 
