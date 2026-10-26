@@ -120,6 +120,7 @@ public sealed partial class Map
     {
         if (!HasTerrain || Solid.Count == firstBox || op is nameof(PlaceProp) or nameof(Clutter) or nameof(PlaceBuilding))
             return; // (props and buildings stand themselves on the ground, see MapProps.cs and MapBuildings.cs)
+        InvalidatePlaceSpace(firstBox); // the boxes from firstBox on are lifted below (a nested PlaceProp may have filed them)
         switch (EffectiveAnchor(op, anchor))
         {
             case OpAnchor.Ground:

@@ -330,6 +330,19 @@ public sealed partial class Map
             return true; // a cave's ceiling too low to stand under
         if (Gravity is { } field && field.UpAt(feet) is var up && up != Vector3.UnitY)
             return BlockedAlongUp(feet, up, r); // in a gravity zone with its own up (a wall you stand on): the body stands along that up
+        if (_validateGrid is { } grid)
+        {
+            // Validate: only the boxes filed near the feet (the same test, and any order gives the same answer).
+            var near = grid.Near(feet.X - r, feet.Z - r, feet.X + r, feet.Z + r);
+            foreach (var i in near)
+            {
+                var b = Solid[i];
+                if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
+                    && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
+                    return true;
+            }
+            return false;
+        }
         foreach (var b in Solid)
         {
             if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
@@ -338,6 +351,10 @@ public sealed partial class Map
         }
         return false;
     }
+
+    // Set only while Validate runs: Solid filed into 4 m cells, so moving spawns and waypoints out of geometry costs
+    // points x nearby boxes instead of points x every box (London: 1.5 s). Solid doesn't change during Validate.
+    private SolidGrid? _validateGrid;
 
     /// <summary>Would a body standing along <paramref name="up"/> at <paramref name="feet"/> overlap a box? Spheres of radius <paramref name="r"/> along its axis.</summary>
     private bool BlockedAlongUp(Vector3 feet, Vector3 up, float r)
@@ -386,8 +403,11 @@ public sealed partial class Map
         const float r = World.PlayerRadius + 0.05f;
         if (MathF.Abs(feet.X) > HalfX - r || MathF.Abs(feet.Z) > HalfZ - r || OnSteepGround(feet))
             return true;
-        for (var i = 0; i < Solid.Count; i++)
+        var all = _validateGrid == null;
+        var near = _validateGrid?.Near(feet.X - r, feet.Z - r, feet.X + r, feet.Z + r);
+        for (var n = 0; n < (all ? Solid.Count : near!.Count); n++)
         {
+            var i = all ? n : near![n];
             var b = Solid[i];
             if (!IsBuildingDoorBox(i) && feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
                 && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
@@ -408,9 +428,17 @@ public sealed partial class Map
         }
         SnapToGround(Spawns);
         SnapToGround(Waypoints);
-        Fix(Spawns, "spawn");
-        Fix(Waypoints, "waypoint");
-        EnsureSpawns(); // one spawn per player: generated extras when the map has too few (MapPlayers.cs)
+        _validateGrid = new SolidGrid(Solid);
+        try
+        {
+            Fix(Spawns, "spawn");
+            Fix(Waypoints, "waypoint");
+            EnsureSpawns(); // one spawn per player: generated extras when the map has too few (MapPlayers.cs)
+        }
+        finally
+        {
+            _validateGrid = null;
+        }
 
         void Fix(List<Vector3> points, string what)
         {
@@ -858,5 +886,73 @@ public static partial class Maps
         m.Waypoint(0, -6);
         m.Waypoint(6, 0);
         return m;
+    }
+}
+
+/// <summary>
+/// The indices of a box list filed into 4 m columns (a snapshot: the list mustn't change while it's used). <see cref="Near"/>
+/// gives every box whose footprint may touch a region (a superset, each once); callers apply their exact test.
+/// </summary>
+internal sealed class SolidGrid
+{
+    private const float Cell = 4f, Margin = 0.05f;
+    private readonly Dictionary<long, List<int>> _cells = new();
+    private readonly List<int> _huge = new();
+    private readonly List<int> _near = new();
+    private int[] _seen;
+    private int _stamp;
+
+    public SolidGrid(List<Box> boxes)
+    {
+        _seen = new int[boxes.Count];
+        for (var i = 0; i < boxes.Count; i++)
+        {
+            var b = boxes[i];
+            int x0 = C(b.Min.X - Margin), x1 = C(b.Max.X + Margin), z0 = C(b.Min.Z - Margin), z1 = C(b.Max.Z + Margin);
+            if ((long)(x1 - x0 + 1) * (z1 - z0 + 1) > 400)
+            {
+                _huge.Add(i); // the ground slab and other giants: checked every time, there are few
+                continue;
+            }
+            for (var z = z0; z <= z1; z++)
+            for (var x = x0; x <= x1; x++)
+            {
+                if (!_cells.TryGetValue(Key(x, z), out var l))
+                    _cells[Key(x, z)] = l = new List<int>(4);
+                l.Add(i);
+            }
+        }
+    }
+
+    private static long Key(int x, int z) => ((long)x << 32) ^ (uint)z;
+
+    private static int C(float v) => (int)MathF.Floor(v / Cell);
+
+    /// <summary>The boxes near (x0, z0)..(x1, z1); the list is reused by the next call.</summary>
+    public List<int> Near(float x0, float z0, float x1, float z1)
+    {
+        _near.Clear();
+        if (++_stamp == int.MaxValue)
+        {
+            Array.Clear(_seen);
+            _stamp = 1;
+        }
+        foreach (var i in _huge)
+            Take(i);
+        int cx0 = C(x0 - Margin), cx1 = C(x1 + Margin), cz0 = C(z0 - Margin), cz1 = C(z1 + Margin);
+        for (var z = cz0; z <= cz1; z++)
+        for (var x = cx0; x <= cx1; x++)
+            if (_cells.TryGetValue(Key(x, z), out var l))
+                foreach (var i in l)
+                    Take(i);
+        return _near;
+    }
+
+    private void Take(int i)
+    {
+        if (_seen[i] == _stamp)
+            return;
+        _seen[i] = _stamp;
+        _near.Add(i);
     }
 }

@@ -61,8 +61,7 @@ public sealed partial class Map
             py = ground + y;
             if (y == 0 && def.GroundSnap)
             {
-                var space = new BoxSpace(Solid);
-                var top = space.SupportTop(x, z, ground - 0.05f, ground + 0.6f);
+                var top = PlaceSpace().SupportTop(x, z, ground - 0.05f, ground + 0.6f);
                 if (top > py)
                     py = top;
             }
@@ -99,6 +98,32 @@ public sealed partial class Map
         if (width < 0 || gap is < 0 or > 10)
             throw new InvalidOperationException("width must be 0 or more, gap 0 to 10");
         _clutter.Add(new ClutterRequest(props, x0, z0, x1, z1, count, seed, width, align, gap, mirror, Ops.Count - 1));
+    }
+
+    // One BoxSpace kept over Solid while the ops run, so each PlaceProp queries it instead of filing every box again
+    // (that was props x boxes: a second on the World Tour maps). Boxes added since the last PlaceProp are filed in on the
+    // next one; anything that moves or shrinks boxes already filed drops it (PlaceOnTerrain, InvalidatePlaceSpace), so
+    // the answers are the ones a fresh BoxSpace over Solid would give.
+    private BoxSpace? _placeSpace;
+    private int _placeSpaceCount;
+
+    private BoxSpace PlaceSpace()
+    {
+        if (_placeSpace == null || _placeSpaceCount > Solid.Count)
+        {
+            _placeSpace = new BoxSpace(Solid);
+            _placeSpaceCount = Solid.Count;
+        }
+        for (; _placeSpaceCount < Solid.Count; _placeSpaceCount++)
+            _placeSpace.Add(Solid[_placeSpaceCount]);
+        return _placeSpace;
+    }
+
+    /// <summary>Forgets the PlaceProp box space when boxes already in Solid were moved (it is rebuilt on the next PlaceProp).</summary>
+    private void InvalidatePlaceSpace(int firstChanged)
+    {
+        if (_placeSpace != null && firstChanged < _placeSpaceCount)
+            _placeSpace = null;
     }
 
     // ---- Adding a prop -------------------------------------------------------------------------------------
@@ -235,6 +260,7 @@ public sealed partial class Map
     /// </summary>
     public void FinishProps()
     {
+        _placeSpace = null; // the ops are done
         ClutterStart = PropInstances.Count;
         if (_clutter.Count > 0)
         {
@@ -258,7 +284,10 @@ public sealed partial class Map
         public readonly List<HillZone> Hills = new();
         public readonly List<Vector3> Flags = new();
         public readonly List<Box> Movers = new();
-        public readonly List<(Vector2 Min, Vector2 Max)> Placed = new();
+        public readonly RectGrid Placed = new(); // footprints of the clutter placed so far
+        public readonly RectGrid WaypointGrid = new(); // Waypoints[i] as a point
+        public readonly RectGrid PathGrid = new(); // Paths[i]'s bounds
+        public readonly List<int> Near = new(); // scratch for the grid queries
 
         public ClutterContext(Map m)
         {
@@ -289,6 +318,10 @@ public sealed partial class Map
                 for (var k = 0; k < near.Count && k < 4; k++)
                     Paths.Add((Flat(Waypoints[i]), Flat(Waypoints[near[k].J])));
             }
+            foreach (var w in Waypoints)
+                WaypointGrid.Add(Flat(w), Flat(w));
+            foreach (var (a, b) in Paths)
+                PathGrid.Add(Vector2.Min(a, b), Vector2.Max(a, b));
         }
     }
 
@@ -385,7 +418,7 @@ public sealed partial class Map
     {
         AddProp(def, pos, yaw, scale, space);
         var fb = WorldBounds(def.Bounds, pos, yaw, scale);
-        ctx.Placed.Add((new Vector2(fb.Min.X, fb.Min.Z), new Vector2(fb.Max.X, fb.Max.Z)));
+        ctx.Placed.Add(new Vector2(fb.Min.X, fb.Min.Z), new Vector2(fb.Max.X, fb.Max.Z));
     }
 
     private bool TryClutterSpot(PropDef def, Vector2 p, float yaw, float scale, float gap, BoxSpace space, ClutterContext ctx, out Vector3 pos)
@@ -441,10 +474,16 @@ public sealed partial class Map
         if (space.Overlaps(bodyMin, bodyMax))
             return false;
 
-        // Not on top of other clutter.
-        foreach (var (pmin, pmax) in ctx.Placed)
+        // Not on top of other clutter. (The grids only pick candidates, with a margin; the tests are the exact ones, and
+        // any order gives the same yes or no.)
+        var near = ctx.Near;
+        ctx.Placed.Query(new Vector2(min.X - gap, min.Y - gap), new Vector2(max.X + gap, max.Y + gap), near);
+        foreach (var k in near)
+        {
+            var (pmin, pmax) = ctx.Placed[k];
             if (min.X - gap < pmax.X && max.X + gap > pmin.X && min.Y - gap < pmax.Y && max.Y + gap > pmin.Y)
                 return false;
+        }
 
         if (def.IsSolid)
         {
@@ -456,12 +495,19 @@ public sealed partial class Map
             foreach (var s in ctx.Spawns)
                 if (Vector2.Distance(Flat(s), p) < ClutterSpawnClearance + radius)
                     return false;
-            foreach (var w in ctx.Waypoints)
-                if (Vector2.Distance(Flat(w), p) < ClutterWaypointClearance + radius)
+            var reach = new Vector2(ClutterWaypointClearance + radius);
+            ctx.WaypointGrid.Query(p - reach, p + reach, near);
+            foreach (var k in near)
+                if (Vector2.Distance(Flat(ctx.Waypoints[k]), p) < ClutterWaypointClearance + radius)
                     return false;
-            foreach (var (pa, pb) in ctx.Paths)
+            reach = new Vector2(ClutterPathClearance + radius);
+            ctx.PathGrid.Query(p - reach, p + reach, near);
+            foreach (var k in near)
+            {
+                var (pa, pb) = ctx.Paths[k];
                 if (SegmentDistance(p, pa, pb) < ClutterPathClearance + radius)
                     return false;
+            }
             foreach (var h in ctx.Hills)
                 if (Vector2.Distance(Flat(h.Center), p) < h.Radius + 1f + radius)
                     return false;
@@ -714,5 +760,76 @@ internal sealed class BoxSpace
             if (top >= lo && top <= hi && top > best && x >= b.Min.X && x <= b.Max.X && z >= b.Min.Z && z <= b.Max.Z)
                 best = top;
         }
+    }
+}
+
+/// <summary>
+/// Rectangles on the ground (x, z) filed into 4 m cells, for Clutter's "anything near here?" tests (map loading only).
+/// <see cref="Query"/> returns a superset of the rectangles that come within its region (a small margin covers rounding),
+/// each once; the caller applies its exact test.
+/// </summary>
+internal sealed class RectGrid
+{
+    private const float Cell = 4f, Margin = 0.05f;
+    private readonly Dictionary<long, List<int>> _cells = new();
+    private readonly List<int> _huge = new();
+    private readonly List<(Vector2 Min, Vector2 Max)> _rects = new();
+    private int[] _seen = [];
+    private int _stamp;
+
+    public int Count => _rects.Count;
+
+    public (Vector2 Min, Vector2 Max) this[int i] => _rects[i];
+
+    private static long Key(int x, int z) => ((long)x << 32) ^ (uint)z;
+
+    private static int C(float v) => (int)MathF.Floor(v / Cell);
+
+    public void Add(Vector2 min, Vector2 max)
+    {
+        var i = _rects.Count;
+        _rects.Add((min, max));
+        int x0 = C(min.X - Margin), x1 = C(max.X + Margin), z0 = C(min.Y - Margin), z1 = C(max.Y + Margin);
+        if ((long)(x1 - x0 + 1) * (z1 - z0 + 1) > 64)
+        {
+            _huge.Add(i);
+            return;
+        }
+        for (var z = z0; z <= z1; z++)
+        for (var x = x0; x <= x1; x++)
+        {
+            if (!_cells.TryGetValue(Key(x, z), out var l))
+                _cells[Key(x, z)] = l = new List<int>(4);
+            l.Add(i);
+        }
+    }
+
+    /// <summary>Fills <paramref name="into"/> with the rectangles that may touch min..max (every one that does).</summary>
+    public void Query(Vector2 min, Vector2 max, List<int> into)
+    {
+        into.Clear();
+        if (_seen.Length < _rects.Count)
+            Array.Resize(ref _seen, Math.Max(_rects.Count, _seen.Length * 2));
+        if (++_stamp == int.MaxValue)
+        {
+            Array.Clear(_seen);
+            _stamp = 1;
+        }
+        foreach (var i in _huge)
+            Take(i, into);
+        int x0 = C(min.X - Margin), x1 = C(max.X + Margin), z0 = C(min.Y - Margin), z1 = C(max.Y + Margin);
+        for (var z = z0; z <= z1; z++)
+        for (var x = x0; x <= x1; x++)
+            if (_cells.TryGetValue(Key(x, z), out var l))
+                foreach (var i in l)
+                    Take(i, into);
+    }
+
+    private void Take(int i, List<int> into)
+    {
+        if (_seen[i] == _stamp)
+            return;
+        _seen[i] = _stamp;
+        into.Add(i);
     }
 }
