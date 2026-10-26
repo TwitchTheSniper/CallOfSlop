@@ -301,10 +301,10 @@ public static unsafe class MapThumbs
             Matrix4x4.CreatePerspectiveFieldOfView(fovY, Width / (float)Height, MathF.Max(0.1f, far * 0.002f), far));
         var dist = Vector3.Distance(eye, target);
         gfx.SetFog(map.Sky, dist * 1.2f, dist * 3f); // just a hint of haze on the far side of big maps
-        for (var i = 0; i < map.Solid.Count; i++)
-            if (map.IsDrawnBox(i))
-                gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
-        BuildingR.Draw(map, gfx, now); // buildings (instanced)
+        if (!BuildingR.Draw(map, gfx, now)) // buildings and the map's boxes (instanced)
+            for (var i = 0; i < map.Solid.Count; i++)
+                if (map.IsDrawnBox(i))
+                    gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
         MoverRender.DrawImmediate(gfx, map, 0); // movers at their start pose
         TerrainR.Draw(gfx, map);
         PropR.Draw(map, gfx, now);

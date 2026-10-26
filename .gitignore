@@ -15,6 +15,7 @@ workbench.txt
 appearance.txt
 audio_mix.json
 AudioMixes/
+Cache/
 portable.txt
 update_check.txt
 update.log

@@ -17,6 +17,7 @@ namespace CallOfSlop;
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
+/// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
 /// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
 /// --check-part FILE, --check-parts [DIR], --export-parts DIR [--resolved], --watch-parts (hot reload while playing).
 /// </summary>
@@ -105,6 +106,8 @@ public static unsafe partial class Program
             return PartTools.Export(partDir, args.Any(a => a.Equals("--resolved", StringComparison.OrdinalIgnoreCase))); // part files normalised (or resolved)
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
+        if (args.SkipWhile(a => !a.Equals("--bake", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } bakeDir)
+            return NavBake.BakeAll(bakeDir); // Release workflow: every shipped map's nav graph, built once and shipped (BotNavBake.cs)
         if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
             return UpdateVerifyCli.Run(manifestFile, zipFile); // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
 
@@ -1311,10 +1314,12 @@ public static unsafe partial class Program
     {
         var map = World.Map;
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
-        for (var i = 0; i < map.Solid.Count; i++)
-            if (map.IsDrawnBox(i)) // props are drawn as models by the prop renderer (a shaped map's floor as a mesh)
-                Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
-        BuildingGfx.Draw(map, Gfx, Glfw.Time); // buildings: walls, floors, roofs, doors and glass, instanced (Program.Buildings.cs)
+        // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs,
+        // Program.Buildings.cs). Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
+        if (!BuildingGfx.Draw(map, Gfx, Glfw.Time))
+            for (var i = 0; i < map.Solid.Count; i++)
+                if (map.IsDrawnBox(i)) // (no instancing: the boxes one by one, as before)
+                    Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
         DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)

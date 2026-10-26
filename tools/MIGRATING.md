@@ -21,6 +21,8 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
 | `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
 
+The `Cache` folder in the save folder is not a save: it holds bot route maps the game worked out for maps it had no ready-made ones for. Don't copy it; it's safe to delete, and the game rebuilds what it needs.
+
 ### The easy way (automatic)
 
 1. Unzip the new build **next to your old one**, in the same parent folder. For example:

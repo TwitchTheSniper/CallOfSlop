@@ -16,6 +16,15 @@ public sealed partial class Map
     public Vector3 Sky = new(0.36f, 0.42f, 0.50f);
 
     public readonly List<Box> Solid = new();
+
+    /// <summary>SHA-256 of the map file's text (empty for a map built in code): part of a baked nav graph's key (NavBake).</summary>
+    public byte[] SourceTextHash { get; init; } = [];
+
+    /// <summary>Wall-clock ms <see cref="MapFile.Load"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/> (0 otherwise).</summary>
+    public double LoadMs;
+
+    /// <summary>Wall-clock ms <see cref="Validate"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/>.</summary>
+    public double ValidateMs;
     public readonly List<Vector3> Colors = new();
     public readonly List<Vector3> Spawns = new();
     public readonly List<Vector3> Waypoints = new();
@@ -330,6 +339,19 @@ public sealed partial class Map
             return true; // a cave's ceiling too low to stand under
         if (Gravity is { } field && field.UpAt(feet) is var up && up != Vector3.UnitY)
             return BlockedAlongUp(feet, up, r); // in a gravity zone with its own up (a wall you stand on): the body stands along that up
+        if (_validateGrid is { } grid)
+        {
+            // Validate: only the boxes filed near the feet (the same test, and any order gives the same answer).
+            var near = grid.Near(feet.X - r, feet.Z - r, feet.X + r, feet.Z + r);
+            foreach (var i in near)
+            {
+                var b = Solid[i];
+                if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
+                    && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
+                    return true;
+            }
+            return false;
+        }
         foreach (var b in Solid)
         {
             if (feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
@@ -338,6 +360,10 @@ public sealed partial class Map
         }
         return false;
     }
+
+    // Set only while Validate runs: Solid filed into 4 m cells, so moving spawns and waypoints out of geometry costs
+    // points x nearby boxes instead of points x every box (London: 1.5 s). Solid doesn't change during Validate.
+    private SolidGrid? _validateGrid;
 
     /// <summary>Would a body standing along <paramref name="up"/> at <paramref name="feet"/> overlap a box? Spheres of radius <paramref name="r"/> along its axis.</summary>
     private bool BlockedAlongUp(Vector3 feet, Vector3 up, float r)
@@ -386,8 +412,11 @@ public sealed partial class Map
         const float r = World.PlayerRadius + 0.05f;
         if (MathF.Abs(feet.X) > HalfX - r || MathF.Abs(feet.Z) > HalfZ - r || OnSteepGround(feet))
             return true;
-        for (var i = 0; i < Solid.Count; i++)
+        var all = _validateGrid == null;
+        var near = _validateGrid?.Near(feet.X - r, feet.Z - r, feet.X + r, feet.Z + r);
+        for (var n = 0; n < (all ? Solid.Count : near!.Count); n++)
         {
+            var i = all ? n : near![n];
             var b = Solid[i];
             if (!IsBuildingDoorBox(i) && feet.Y < b.Max.Y - 0.001f && feet.Y + World.PlayerHeight > b.Min.Y + 0.001f
                 && feet.X + r > b.Min.X && feet.X - r < b.Max.X && feet.Z + r > b.Min.Z && feet.Z - r < b.Max.Z)
@@ -408,9 +437,17 @@ public sealed partial class Map
         }
         SnapToGround(Spawns);
         SnapToGround(Waypoints);
-        Fix(Spawns, "spawn");
-        Fix(Waypoints, "waypoint");
-        EnsureSpawns(); // one spawn per player: generated extras when the map has too few (MapPlayers.cs)
+        _validateGrid = new SolidGrid(Solid);
+        try
+        {
+            Fix(Spawns, "spawn");
+            Fix(Waypoints, "waypoint");
+            EnsureSpawns(); // one spawn per player: generated extras when the map has too few (MapPlayers.cs)
+        }
+        finally
+        {
+            _validateGrid = null;
+        }
 
         void Fix(List<Vector3> points, string what)
         {
@@ -563,43 +600,25 @@ public static partial class Maps
     /// Map names must be unique across all packs. Bad files are skipped and described in <paramref name="errors"/>.
     /// Returns the maps sorted by order then name (ids assigned, validated; at most 255) and the non-empty packs.
     /// </summary>
-    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors)
+    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors) => LoadFolder(folder, errors, ParallelLoad);
+
+    /// <summary>Build the map files of <see cref="LoadFolder(string, List{string})"/> on worker threads (off: one by one,
+    /// as before; the "Big maps" self-test compares the two).</summary>
+    public static bool ParallelLoad = true;
+
+    /// <summary><see cref="LoadFolder(string, List{string})"/>, the files built on worker threads or one after another.</summary>
+    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors, bool parallel)
     {
         var maps = new List<Map>();
         var packs = new List<MapPack>();
         if (!Directory.Exists(folder))
             return ([], []);
         static bool IsMapFile(string f) => !Path.GetFileName(f).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase);
+        var jobs = new List<LoadJob>();
         void LoadInto(MapPack pack, IEnumerable<string> files, bool loose, string packDir)
         {
             foreach (var file in files.Where(IsMapFile).OrderBy(f => f, StringComparer.OrdinalIgnoreCase))
-            {
-                var rel = Path.GetRelativePath(folder, file);
-                try
-                {
-                    var m = MapFile.Load(File.ReadAllText(file), rel, packDir); // packDir: the pack's own props and models come first
-                    if (maps.FirstOrDefault(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)) is { } other)
-                    {
-                        // A loose copy identical to a map in a pack, or the same map in a retired pack folder (Classic,
-                        // CollisionPoint, HighGround: their maps moved to Legacy): most likely files left over from
-                        // before the maps moved. Updates unzip into a new folder, so only a build unzipped over an older one or a reused dev
-                        // bin folder (dotnet build never deletes outputs) has them; keep this. Skip it quietly.
-                        if ((loose || MapPack.IsRetiredFolder(pack.Folder)) && MapFile.ToJson(other) == MapFile.ToJson(m))
-                        {
-                            Console.WriteLine($"[maps] ignored {rel}: same map as {other.SourceFile}");
-                            continue;
-                        }
-                        throw new MapFileException($"{rel}: another map is already called '{m.Name}' ({other.SourceFile})");
-                    }
-                    m.Pack = pack;
-                    maps.Add(m);
-                }
-                catch (Exception ex) when (ex is MapFileException or IOException)
-                {
-                    errors.Add(ex.Message);
-                    Console.WriteLine($"[maps] skipped: {ex.Message}");
-                }
-            }
+                jobs.Add(new LoadJob(pack, file, Path.GetRelativePath(folder, file), loose, packDir));
             packs.Add(pack);
         }
 
@@ -631,6 +650,49 @@ public static partial class Maps
         LoadInto(new MapPack { Name = MapPack.LooseName, Description = "Map files placed directly in the Maps folder.", Order = int.MaxValue },
             Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly), true, "");
 
+        var tFiles = System.Diagnostics.Stopwatch.GetTimestamp();
+        // Build every file (in parallel: each map is built alone from its own text; the shared libraries are loaded
+        // first and only read after that), then take the results in file order, exactly as one-by-one loading did.
+        RunJobs(jobs, parallel, j =>
+        {
+            var t = System.Diagnostics.Stopwatch.GetTimestamp();
+            j.Map = MapFile.Load(File.ReadAllText(j.File), j.Rel, j.PackDir); // packDir: the pack's own props and models come first
+            j.Map.LoadMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+        }, warm: true);
+        var tBuilt = System.Diagnostics.Stopwatch.GetTimestamp();
+        foreach (var j in jobs)
+        {
+            if (j.Log.Length > 0)
+                Console.Write(j.Log);
+            j.Log = "";
+            try
+            {
+                if (j.Error != null)
+                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(j.Error).Throw(); // as if it had happened here
+                var m = j.Map!;
+                if (maps.FirstOrDefault(x => x.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase)) is { } other)
+                {
+                    // A loose copy identical to a map in a pack, or the same map in a retired pack folder (Classic,
+                    // CollisionPoint, HighGround: their maps moved to Legacy): most likely files left over from
+                    // before the maps moved. Updates unzip into a new folder, so only a build unzipped over an older one or a reused dev
+                    // bin folder (dotnet build never deletes outputs) has them; keep this. Skip it quietly.
+                    if ((j.Loose || MapPack.IsRetiredFolder(j.Pack.Folder)) && MapFile.ToJson(other) == MapFile.ToJson(m))
+                    {
+                        Console.WriteLine($"[maps] ignored {j.Rel}: same map as {other.SourceFile}");
+                        continue;
+                    }
+                    throw new MapFileException($"{j.Rel}: another map is already called '{m.Name}' ({other.SourceFile})");
+                }
+                m.Pack = j.Pack;
+                maps.Add(m);
+            }
+            catch (Exception ex) when (ex is MapFileException or IOException)
+            {
+                errors.Add(ex.Message);
+                Console.WriteLine($"[maps] skipped: {ex.Message}");
+            }
+        }
+
         var sorted = maps.OrderBy(m => m.Order).ThenBy(m => m.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         if (sorted.Length > 255)
         {
@@ -638,9 +700,25 @@ public static partial class Maps
             sorted = sorted[..255];
         }
         for (var i = 0; i < sorted.Length; i++)
-        {
             sorted[i].Id = (byte)i;
-            sorted[i].Validate();
+        // Validate each map (it only moves that map's own spawns and waypoints), in parallel too; the log in list order.
+        var checks = sorted.Select(m => new LoadJob(null!, "", m.SourceFile ?? m.Name, false, "") { Map = m }).ToList();
+        var tValidate = System.Diagnostics.Stopwatch.GetTimestamp();
+        RunJobs(checks, parallel, j =>
+        {
+            var t = System.Diagnostics.Stopwatch.GetTimestamp();
+            j.Map!.Validate();
+            j.Map.ValidateMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+        }, warm: false);
+        var tEnd = System.Diagnostics.Stopwatch.GetTimestamp();
+        LastLoadTimes = (System.Diagnostics.Stopwatch.GetElapsedTime(tFiles, tBuilt).TotalMilliseconds - _warmMs, _warmMs,
+            System.Diagnostics.Stopwatch.GetElapsedTime(tValidate, tEnd).TotalMilliseconds);
+        foreach (var j in checks)
+        {
+            if (j.Log.Length > 0)
+                Console.Write(j.Log);
+            if (j.Error != null)
+                System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(j.Error).Throw();
         }
         foreach (var p in packs)
         {
@@ -649,6 +727,116 @@ public static partial class Maps
         }
         var usedPacks = packs.Where(p => p.Maps.Count > 0).OrderBy(p => p.Order).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         return (sorted, usedPacks);
+    }
+
+    /// <summary>The last <see cref="LoadFolder(string, List{string}, bool)"/>: ms building the map files, loading the shared
+    /// libraries first (parallel loads only; otherwise inside the build), validating.</summary>
+    public static (double BuildMs, double LibrariesMs, double ValidateMs) LastLoadTimes { get; private set; }
+
+    private static double _warmMs;
+
+    private sealed class LoadJob(MapPack pack, string file, string rel, bool loose, string packDir)
+    {
+        public readonly MapPack Pack = pack;
+        public readonly string File = file, Rel = rel, PackDir = packDir;
+        public readonly bool Loose = loose;
+        public Map? Map;
+        public Exception? Error;
+        public string Log = ""; // what the job wrote to the console, printed in order afterwards
+    }
+
+    /// <summary>
+    /// Runs <paramref name="work"/> for every job, on worker threads when <paramref name="parallel"/>, each job's console
+    /// output kept in <see cref="LoadJob.Log"/> (so the log reads the same as a one-by-one load). With <paramref name="warm"/>
+    /// the shared libraries every map reads (props, decals, buildings, materials, flags, the packs' own folders) are
+    /// loaded first, on this thread.
+    /// </summary>
+    private static void RunJobs(List<LoadJob> jobs, bool parallel, Action<LoadJob> work, bool warm)
+    {
+        void Run(LoadJob j)
+        {
+            try
+            {
+                work(j);
+            }
+            catch (Exception ex)
+            {
+                j.Error = ex; // rethrown (or reported) by the caller, in order
+            }
+        }
+        if (warm)
+            _warmMs = 0;
+        if (!parallel || jobs.Count < 2 || Environment.ProcessorCount < 2)
+        {
+            foreach (var j in jobs)
+                Run(j);
+            return;
+        }
+        if (warm)
+        {
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            _ = Props.All;
+            _ = Decals.All;
+            _ = Buildings.All;
+            _ = MaterialDestruction.Current;
+            _ = FlagPool.Designs;
+            foreach (var dir in jobs.Select(j => j.PackDir).Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                _ = Props.ForPack(dir.Length > 0 ? dir : null);
+                _ = Decals.ForPack(dir.Length > 0 ? dir : null);
+                _ = MapPack.DestructibleDefault(dir.Length > 0 ? dir : null);
+            }
+            _warmMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        }
+        var console = Console.Out;
+        var router = new JobConsole(console);
+        Console.SetOut(router);
+        try
+        {
+            // Biggest files first, so one large map doesn't start last and leave the other cores idle.
+            var order = Enumerable.Range(0, jobs.Count).OrderByDescending(i => jobs[i].File.Length > 0 ? new FileInfo(jobs[i].File).Length : jobs[i].Map?.Solid.Count ?? 0).ThenBy(i => i).ToArray();
+            System.Threading.Tasks.Parallel.ForEach(order, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 8) }, i =>
+            {
+                var j = jobs[i];
+                var sb = new StringWriter();
+                JobConsole.Current = sb;
+                try
+                {
+                    Run(j);
+                }
+                finally
+                {
+                    JobConsole.Current = null;
+                    j.Log = sb.ToString();
+                }
+            });
+        }
+        finally
+        {
+            Console.SetOut(console);
+        }
+    }
+
+    /// <summary>The console while maps load in parallel: each worker's lines go to its job's buffer, everyone else's straight through.</summary>
+    private sealed class JobConsole(TextWriter inner) : TextWriter
+    {
+        [ThreadStatic] public static StringWriter? Current;
+
+        public override System.Text.Encoding Encoding => inner.Encoding;
+
+        private TextWriter Target => (TextWriter?)Current ?? inner;
+
+        public override void Write(char value) => Target.Write(value);
+
+        public override void Write(string? value) => Target.Write(value);
+
+        public override void Write(char[] buffer, int index, int count) => Target.Write(buffer, index, count);
+
+        public override void WriteLine(string? value) => Target.WriteLine(value);
+
+        public override void WriteLine() => Target.WriteLine();
+
+        public override void Flush() => Target.Flush();
     }
 
     /// <summary>
@@ -858,5 +1046,73 @@ public static partial class Maps
         m.Waypoint(0, -6);
         m.Waypoint(6, 0);
         return m;
+    }
+}
+
+/// <summary>
+/// The indices of a box list filed into 4 m columns (a snapshot: the list mustn't change while it's used). <see cref="Near"/>
+/// gives every box whose footprint may touch a region (a superset, each once); callers apply their exact test.
+/// </summary>
+internal sealed class SolidGrid
+{
+    private const float Cell = 4f, Margin = 0.05f;
+    private readonly Dictionary<long, List<int>> _cells = new();
+    private readonly List<int> _huge = new();
+    private readonly List<int> _near = new();
+    private int[] _seen;
+    private int _stamp;
+
+    public SolidGrid(List<Box> boxes)
+    {
+        _seen = new int[boxes.Count];
+        for (var i = 0; i < boxes.Count; i++)
+        {
+            var b = boxes[i];
+            int x0 = C(b.Min.X - Margin), x1 = C(b.Max.X + Margin), z0 = C(b.Min.Z - Margin), z1 = C(b.Max.Z + Margin);
+            if ((long)(x1 - x0 + 1) * (z1 - z0 + 1) > 400)
+            {
+                _huge.Add(i); // the ground slab and other giants: checked every time, there are few
+                continue;
+            }
+            for (var z = z0; z <= z1; z++)
+            for (var x = x0; x <= x1; x++)
+            {
+                if (!_cells.TryGetValue(Key(x, z), out var l))
+                    _cells[Key(x, z)] = l = new List<int>(4);
+                l.Add(i);
+            }
+        }
+    }
+
+    private static long Key(int x, int z) => ((long)x << 32) ^ (uint)z;
+
+    private static int C(float v) => (int)MathF.Floor(v / Cell);
+
+    /// <summary>The boxes near (x0, z0)..(x1, z1); the list is reused by the next call.</summary>
+    public List<int> Near(float x0, float z0, float x1, float z1)
+    {
+        _near.Clear();
+        if (++_stamp == int.MaxValue)
+        {
+            Array.Clear(_seen);
+            _stamp = 1;
+        }
+        foreach (var i in _huge)
+            Take(i);
+        int cx0 = C(x0 - Margin), cx1 = C(x1 + Margin), cz0 = C(z0 - Margin), cz1 = C(z1 + Margin);
+        for (var z = cz0; z <= cz1; z++)
+        for (var x = cx0; x <= cx1; x++)
+            if (_cells.TryGetValue(Key(x, z), out var l))
+                foreach (var i in l)
+                    Take(i);
+        return _near;
+    }
+
+    private void Take(int i)
+    {
+        if (_seen[i] == _stamp)
+            return;
+        _seen[i] = _stamp;
+        _near.Add(i);
     }
 }

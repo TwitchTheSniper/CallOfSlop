@@ -8,7 +8,7 @@
 #
 # What it does (Windows runner): build with the version stamped into the exe, run the headless self-test, package with
 # tools/package.ps1 (self-contained win-x64 zip, no personal files, READ ME FIRST.txt), optionally code-sign the exe,
-# check the package with the game's own updater (CallOfSlop.exe --verify-update), then publish a GitHub Release with
+# bake every shipped map's nav graph (--bake), check the package with the game's own updater (CallOfSlop.exe --verify-update), then publish a GitHub Release with
 # the zip and update.json (version, build, git sha, protocol, zip URL, size, SHA-256, notes, minimum updater version).
 # Uses only the built-in GITHUB_TOKEN. NuGet packages come from the Actions cache (same approach as build.yml); a cold
 # Windows cache restores once from nuget.org. Nothing here contacts the BRUTAL author's own servers.
@@ -113,6 +113,23 @@ jobs:
       - name: Package (publish)
         shell: pwsh
         run: ./tools/package.ps1 -Version "${{ steps.ver.outputs.version }}" -Sha "${{ github.sha }}" -Tag "${{ steps.ver.outputs.tag }}" -Step publish
+
+      # Baked nav graphs (Source/Game/BotNavBake.cs): the packaged game itself builds every shipped map's bot nav graph once
+      # and writes Baked/Nav, so players' bots are ready the moment a map starts. A bake carries this exact build's id, so it
+      # is never used by any other build (stale bakes are impossible), and a map whose bake is missing just builds live.
+      - name: Bake nav graphs
+        shell: pwsh
+        run: |
+          $dir = "bin/package/CallOfSlop"
+          $p = Start-Process -FilePath "$dir/CallOfSlop.exe" -ArgumentList "--bake", "$dir/Baked" -Wait -PassThru -NoNewWindow
+          if (Test-Path "$dir/callofslop.log") {
+            Select-String -Path "$dir/callofslop.log" -Pattern "\[bake\]" | ForEach-Object {
+              $l = $_.Line.Trim()
+              if ($l -cmatch "FAILED") { Write-Output "::error title=Bake::$l" } elseif ($l -match "maps baked") { Write-Output "::notice title=Bake::$l" }
+            }
+            Remove-Item -Force "$dir/callofslop.log" # (the package has no logs)
+          }
+          if ($p.ExitCode -ne 0) { Write-Output "::error title=Bake::$($p.ExitCode) map(s) failed to bake"; exit 1 }
 
       # Optional code signing with Azure Artifact Signing (formerly Trusted Signing), so Windows SmartScreen trusts the
       # exe. SKIPPED unless the repository variable SIGNING_ENABLED is 'true'. To turn it on, set up an Artifact Signing

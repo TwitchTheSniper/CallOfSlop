@@ -79,6 +79,7 @@ public static partial class SelfTest
         }
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
         SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
+        NavBake.Enabled = false; // every nav graph built live, whatever an earlier run cached ("Nav bake" turns it on in a temp folder)
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -191,6 +192,8 @@ public static partial class SelfTest
         Section("Map files", CheckMapFiles);
         Section("Map reload", CheckMapReload);
         Section("Map packs", CheckMapPacks);
+        Section("Big maps", CheckBigMaps);
+        Section("Box batches", CheckBoxBatches); // SelfTestBigMaps.cs: the map's own boxes instanced by 24 m cell (BuildingRenderer.cs): each drawn box once, as drawn // SelfTestBigMaps.cs: load cost: parallel = one by one, per-map and stress-map budgets, linear in props
         Section("Pack assets", CheckPackAssets); // SelfTestPackAssets.cs: pack-local props, models and skies
         Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
         Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
@@ -228,6 +231,7 @@ public static partial class SelfTest
         Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
         Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
         Section("Matches", CheckMatches);
+        Section("Nav bake", CheckNavBake); // SelfTestNavBake.cs: baked and cached nav graphs = the live build, cache and baked folder, mismatched or damaged files refused, never a stalled tick
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
         Section("Bots", CheckBots, "Matches"); // judges the bot stats of the Matches section's games
         Section("Nav edge walks", CheckNavEdgeWalks); // SelfTestNavEdgeWalk.cs: the real mover walks every map's nav edges (no bots)
@@ -833,6 +837,7 @@ public static partial class SelfTest
         var search = new NavSearch();
         var path = new int[128];
         double totalBuild = 0;
+        var bakedSame = 0;
         foreach (var m in Maps.All)
         {
             World.SetMap(m);
@@ -840,6 +845,16 @@ public static partial class SelfTest
                 NavGraph.Pump(50); // usually already built (and cached) during the match on this map above
             var g = NavGraph.Current;
             totalBuild += g.BuildMs;
+            // Baked equals live (BotNavBake.cs): this map's graph written as the release bakes it reads back bit for bit.
+            if (g != NavGraph.Empty && g.PatchVersion == 0 && g.EdgeTo.Length == g.BuiltEdges)
+            {
+                var key = NavBake.KeyOf(m, m.ContentHash);
+                var back = NavBake.Read(NavBake.Write(g, m, key), m.Name, m.ContentHash, key, out var why);
+                if (back == null || !back.Serialize().AsSpan().SequenceEqual(g.Serialize()) || NavFingerprint(back) != NavFingerprint(g))
+                    Fail($"{m.Name}: its baked nav graph doesn't read back as built ({why})");
+                else
+                    bakedSame++;
+            }
             // A* between the spawns furthest apart (the routes bots need most).
             var pairs = 0;
             var unreachable = new List<string>();
@@ -867,7 +882,7 @@ public static partial class SelfTest
             if (g.BuildMs > 3000)
                 Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build (mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms)");
         }
-        Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game)");
+        Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game); {bakedSame} baked and read back bit for bit");
 
         // Walk to a far goal: one bot alone, told where to go.
         foreach (var name in new[] { "ProtoBox", "Courtyard", "Rooftops", "Harbor", "Downtown", "Galleria" })
