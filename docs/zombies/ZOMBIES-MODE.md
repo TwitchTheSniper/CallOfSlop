@@ -435,7 +435,61 @@ coming away with them; the body leaning over the sill with the hands planted whi
 ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit; shots
 at a zombie tearing boards landing from a steep side angle (the hit box follows the step in).
 
+## Sound (zombie voices and footsteps, 2026-10-26)
+
+Before this zombies only borrowed generic sounds (a melee hit when they strike you, a flesh hit when shot, wood
+breaking at windows). Those stay; on top, every zombie now has a voice and a body (`Source/Audio/ZombieSounds.cs` decides
+what plays, `SynthZombie.cs` makes the sounds, `Audio.Zombies.cs` plays them):
+
+| When | Sound |
+| --- | --- |
+| A foot plants (the walk cycle passes pi/2 + k pi, the same cycle the legs are drawn with) | By speed class: a walker's dragged **shuffle** (heard within 16 m), a runner's **thud** (26 m), a sprinter's stamping **slap** (36 m). Moving only (not standing, tearing or climbing). |
+| A new swipe starts (the windup) | A hissing intake and a rising **snarl** (35 m). The hit you take is still its own sound when it lands. |
+| Shot, not killed | A **grunt**; a **screech** that chokes off when the hit was in the head. Burns and bleeds flinch every tick, so at most one grunt every 0.3 s. |
+| Killed | A falling **death rattle**; a headshot kill is a screech **cut off** into a gurgle. |
+| Rising from the ground, climbing in | A **growl**. |
+| On its own | **Groans and moans** (walking to its window: every 5-10 s, mostly moans) and **growls** (chasing or swiping: every 3-6 s; tearing boards: every 2.2-4.5 s; mostly growls). Sprinters are a fifth more vocal. A zombie first seen waits 0.5-4.5 s, so a horde doesn't start in chorus. |
+
+**The sounds** are synthesised at start-up like every other effect (no samples): a buzzing glottal pulse with jitter,
+a period-doubling growl, a wet gurgle and breath noise through three formant resonators gliding between vowels, then a
+little drive. 40 buffers: 6 groans, 5 growls, 4 snarls, 4 grunts, 3 screeches, 3 death rattles, 3 cut-off screeches and
+4 of each step. Every zombie has its own voice pitch (0.84-1.16, by id, the same on every PC; its steps are a little
+heavier or lighter to match), a small random pitch and level on top, and never plays the same variant twice in a row.
+
+**Caps.** Zombie voices have their own 8 OpenAL sources and their steps another 8, so a horde never takes the voices
+gunfire and players' steps use. A new sound takes a free voice, else the farthest one if it is nearer, else it is
+dropped; an idle groan counts as 1.5x as far away as it is, so it never takes a voice from a nearer snarl, grunt or
+death. One mouth per zombie: an event cuts the zombie's own last vocal, and an idle groan waits for it. The idle groans
+share a budget of 3 a second for the whole horde (bursts of 4). Sounds beyond their range don't start at all.
+
+**Network and cost.** Every PC (host and clients) works the sounds out every frame from what it already knows to draw
+the zombies: the walk cycle, the swipe and flinch clocks and the state (see "Animation"). The server does no extra work.
+The one thing clients didn't know was whether a hit was in the head, so **protocol 50** gives a zombie's state byte in
+`ZEnts` a head bit (bit 3; the state is the low 3 bits): alive, a head hit landed in the last 4 ticks (two snapshots see
+it); dead, the kill was a headshot (which also gives clients the headshot ragdoll). Still 12 bytes a zombie. The
+director allocates nothing and costs a couple of microseconds a frame for 24 zombies.
+
+**Mixer** (F8): *Zombies* is everything zombies make; *Zombie voices* and *Zombie footsteps* (keys `zombies.voices`,
+`zombies.steps`, 0 dB by default) are on top of it, so the Zombies row still turns all of it up or down. Zombie steps
+also follow Settings > Audio's footstep volume. Saved mixes from before keep their levels and get 0 dB for the new rows.
+
+**Self-test** (`SelfTestZombieSounds.cs`, section "Zombie sounds"): every sound synthesises with at least 3 variants
+(the screech brighter than a grunt and a groan, a death rattle longer than a grunt, a cut-off screech shorter than a
+rattle) on its mixer row; the rows' defaults and an old save; one step per foot plant at each speed and none standing;
+one snarl per swipe; a grunt for a body hit, a screech for a head hit, burn flinches rate-limited; a death rattle and a
+cut-off screech; nothing for a zombie first seen or 90 m away; the idle rate chasing vs walking to a window; a
+24-zombie sprinting horde with swipes and hits for 10 s never has more than 8 + 8 voices busy, keeps to the groan
+budget and allocates nothing; and over the network a real head shot and body shot on the host give a screech and a
+grunt on host and client, and a headshot kill the cut-off screech on both.
+
+**What to check by ear** (nothing audible runs in CI): a horde coming round a corner (steps and growls from the right
+side), the snarl just before a swipe lands, headshots screeching, and a big round staying a horde rather than a wall
+of noise.
+
 ## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
+
+Protocol 50 (sounds, see "Sound"): bit 3 of a zombie's state byte in `ZEnts` is the head bit (a fresh head hit, or a
+headshot kill); the state is the low 3 bits.
 
 Protocol 43 (animations, see "Animation"): a tearing or climbing zombie's yaw byte in `ZEnts` is its animation byte
 (the board cycle / the climb's progress); still 12 bytes a zombie.
