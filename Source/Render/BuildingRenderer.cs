@@ -105,6 +105,9 @@ public sealed unsafe class BuildingRenderer
     /// <summary>Shell boxes uploaded for the current map.</summary>
     public int Boxes { get; private set; }
 
+    /// <summary>The map's own boxes uploaded with them (<see cref="BoxBatches"/>).</summary>
+    public int MapBoxes { get; private set; }
+
     /// <summary>Draw calls and instances drawn last frame (shell, doors, glass).</summary>
     public int LastDraws { get; private set; }
 
@@ -117,23 +120,23 @@ public sealed unsafe class BuildingRenderer
     /// Draws the map's buildings with the camera, fog and texture array <paramref name="gfx"/> has set up (after the opaque
     /// boxes). Also eases the doors' swing (frame time).
     /// </summary>
-    public void Draw(Map map, Renderer gfx, double now)
+    /// <returns>False when the renderer couldn't be set up: the caller then draws the map's boxes one by one itself.</returns>
+    public bool Draw(Map map, Renderer gfx, double now)
     {
         var dt = (float)Math.Clamp(now - _lastNow, 0, 0.1);
         _lastNow = now;
         if (_broken)
-            return;
-        if (map.PlacedBuildings.Count == 0 && map.Destruction == null)
-        {
-            _map = null;
-            LastDraws = LastInstances = 0;
-            return;
-        }
+            return false;
         var t0 = Stopwatch.GetTimestamp();
         if (!_ready && !Init())
-            return;
+            return false;
         if (!ReferenceEquals(map, _map))
             Rebuild(map);
+        if (_runs.Length == 0 && map.BuildingDoors.Count == 0 && map.BuildingWindows.Count == 0)
+        {
+            LastDraws = LastInstances = 0;
+            return true;
+        }
         else if (map.Destruction is { } destruction && destruction.Version != _destructionVersion)
             RefreshDestroyed(map, destruction);
         var swinging = Swing(map, dt);
@@ -213,7 +216,7 @@ public sealed unsafe class BuildingRenderer
         _statInstances += instances;
         if (_statStart < 0)
             _statStart = now;
-        if (now - _statStart >= 5)
+        if (now - _statStart >= 5 && (map.PlacedBuildings.Count > 0 || map.Destruction != null))
         {
             Console.WriteLine($"[buildings] {map.Name}: {map.PlacedBuildings.Count} buildings, {Boxes} shell boxes, {map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows"
                               + (map.Destruction is { } dd ? $", {dd.Count} destructible chunks ({dd.Structures.Sum(st => st.BrokenCount)} broken, {_destructionUploads} run uploads)" : "") + "; "
@@ -223,6 +226,7 @@ public sealed unsafe class BuildingRenderer
             _statFrames = _statDraws = _statInstances = 0;
             _cpuMs = 0;
         }
+        return true;
     }
 
     private void DrawRun(int start, int count)
@@ -277,7 +281,7 @@ public sealed unsafe class BuildingRenderer
         return n;
     }
 
-    private static void Write(float[] d, int i, Box b, float yaw, Vector2 pivot, Vector3 color, float alpha, int layer)
+    internal static void Write(float[] d, int i, Box b, float yaw, Vector2 pivot, Vector3 color, float alpha, int layer)
     {
         var o = i * FloatsPerInstance;
         d[o] = b.Center.X;
@@ -371,6 +375,19 @@ public sealed unsafe class BuildingRenderer
     {
         _map = map;
         (_static, _runs) = BuildStatic(map);
+        // The map's own boxes (Block ops, trunks...: everything not a prop, building or Zombies door) go after the
+        // buildings' runs, a run per 24 m cell (BoxBatches): one draw per visible stretch of cells instead of one per box.
+        var (boxData, boxRuns) = BoxBatches.Build(map);
+        MapBoxes = boxRuns.Sum(r => r.Count);
+        if (boxRuns.Length > 0)
+        {
+            var at = _runs.Length == 0 ? 0 : _runs.Max(r => r.Start + r.Count);
+            var data = new float[(at + MapBoxes) * FloatsPerInstance];
+            Array.Copy(_static, data, Math.Min(_static.Length, at * FloatsPerInstance));
+            Array.Copy(boxData, 0, data, at * FloatsPerInstance, MapBoxes * FloatsPerInstance);
+            _static = data;
+            _runs = [.. _runs, .. boxRuns.Select(r => (r.Start + at, r.Count, r.Min, r.Max))];
+        }
         _runVersions = new int[_runs.Length];
         if (map.Destruction is { } dv)
         {
@@ -383,13 +400,13 @@ public sealed unsafe class BuildingRenderer
                     _runVersions[run] = st.Version;
             }
         }
-        Boxes = _runs.Sum(r => r.Count);
+        Boxes = _runs.Sum(r => r.Count) - MapBoxes;
         Native.glBindBuffer(GL_ARRAY_BUFFER, _staticVbo);
         fixed (float* p = _static)
             Native.glBufferData(GL_ARRAY_BUFFER, _static.Length * sizeof(float), p, GL_STATIC_DRAW);
         _dynVersion = -1;
-        Console.WriteLine($"[buildings] {map.Name}: uploaded {Boxes} shell boxes of {map.PlacedBuildings.Count} buildings ({_static.Length * sizeof(float) / 1024} KB), "
-                          + $"{map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows");
+        Console.WriteLine($"[buildings] {map.Name}: uploaded {Boxes} shell boxes of {map.PlacedBuildings.Count} buildings and {MapBoxes} map boxes in {boxRuns.Length} cells "
+                          + $"({_static.Length * sizeof(float) / 1024} KB), {map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows");
     }
 
     // ---- Culling ------------------------------------------------------------------------------
@@ -515,5 +532,55 @@ public sealed unsafe class BuildingRenderer
                 data.AddRange([p.X, p.Y, p.Z, n.X, n.Y, n.Z]);
         }
         return data.ToArray();
+    }
+}
+
+/// <summary>
+/// The map's own boxes for <see cref="BuildingRenderer"/> (no GL: the "Box batches" self-test checks it): every box
+/// <see cref="Map.IsDrawnBox"/> draws, as building-shader instances (centre, size, colour, texture layer: the map box
+/// shader's look), grouped by 24 m cell in snake order, each cell a run with the bounds of its boxes for frustum culling.
+/// These boxes never change in a match (breakable props, doors, windows, chunks and Zombies doors are drawn elsewhere),
+/// so the buffer is built once per map.
+/// </summary>
+public static class BoxBatches
+{
+    public const float Cell = 24f;
+
+    public static (float[] Data, (int Start, int Count, Vector3 Min, Vector3 Max)[] Runs) Build(Map map)
+    {
+        var mats = map.Materials;
+        var cells = new Dictionary<(int Z, int X), List<int>>();
+        for (var i = 0; i < map.Solid.Count; i++)
+        {
+            if (!map.IsDrawnBox(i))
+                continue;
+            var c = map.Solid[i].Center;
+            var key = ((int)MathF.Floor(c.Z / Cell), (int)MathF.Floor(c.X / Cell));
+            if (!cells.TryGetValue(key, out var list))
+                cells[key] = list = new List<int>();
+            list.Add(i);
+        }
+        // Rows of cells, alternate rows reversed (snake order), so cells next to each other on screen are often next to
+        // each other in the buffer and merge into one draw.
+        var order = cells.Keys.OrderBy(k => k.Z).ThenBy(k => (k.Z & 1) == 0 ? k.X : -k.X).ToArray();
+        var total = cells.Values.Sum(l => l.Count);
+        var data = new float[Math.Max(1, total) * BuildingRenderer.FloatsPerInstance];
+        var runs = new (int, int, Vector3, Vector3)[order.Length];
+        var n = 0;
+        for (var r = 0; r < order.Length; r++)
+        {
+            var start = n;
+            var min = new Vector3(float.MaxValue);
+            var max = new Vector3(float.MinValue);
+            foreach (var i in cells[order[r]])
+            {
+                var b = map.Solid[i];
+                BuildingRenderer.Write(data, n++, b, 0, Vector2.Zero, map.Colors[i], 1f, (int)mats[i]);
+                min = Vector3.Min(min, b.Min);
+                max = Vector3.Max(max, b.Max);
+            }
+            runs[r] = (start, n - start, min, max);
+        }
+        return (data, runs);
     }
 }

@@ -150,6 +150,65 @@ public static partial class SelfTest
             Fail($"Big maps: the stress map placed only {bigMap.PropInstances.Count} of 12,000 props");
     }
 
+    /// <summary>
+    /// "Box batches" (BoxBatches, BuildingRenderer.cs): on every map, the instance buffer holds every box the old loop drew
+    /// one by one, once each, with its exact centre, size, colour and texture layer, in 24 m cells whose bounds hold their
+    /// boxes; and the draw calls it takes with everything in view.
+    /// </summary>
+    private static void CheckBoxBatches()
+    {
+        var worst = (Name: "", Boxes: 0, Runs: 0);
+        long bytes = 0;
+        foreach (var m in Maps.All)
+        {
+            var (data, runs) = BoxBatches.Build(m);
+            var drawn = Enumerable.Range(0, m.Solid.Count).Where(m.IsDrawnBox).ToList();
+            var count = runs.Sum(r => r.Count);
+            if (count != drawn.Count)
+            {
+                Fail($"Box batches: {m.Name}: {count} instances for {drawn.Count} drawn boxes");
+                continue;
+            }
+            // Every drawn box exactly once, as the box shader drew it.
+            var want = new Dictionary<(float, float, float, float, float, float, float, float, float, float), int>();
+            foreach (var i in drawn)
+            {
+                var b = m.Solid[i];
+                var c = m.Colors[i];
+                var k = (b.Center.X, b.Center.Y, b.Center.Z, b.Half.X, b.Half.Y, b.Half.Z, c.X, c.Y, c.Z, (float)(int)m.Materials[i]);
+                want[k] = want.GetValueOrDefault(k) + 1;
+            }
+            const int f = BuildingRenderer.FloatsPerInstance;
+            var ok = true;
+            foreach (var r in runs)
+                for (var n = r.Start; n < r.Start + r.Count && ok; n++)
+                {
+                    var o = n * f;
+                    var k = (data[o], data[o + 1], data[o + 2], data[o + 4], data[o + 5], data[o + 6], data[o + 8], data[o + 9], data[o + 10], data[o + 7]);
+                    if (data[o + 3] != 0 || data[o + 11] != 1f || !want.TryGetValue(k, out var left) || left == 0)
+                    {
+                        Fail($"Box batches: {m.Name}: instance {n} isn't one of the map's drawn boxes (or is there twice)");
+                        ok = false;
+                        break;
+                    }
+                    want[k] = left - 1;
+                    var min = new System.Numerics.Vector3(data[o] - data[o + 4], data[o + 1] - data[o + 5], data[o + 2] - data[o + 6]);
+                    var max = new System.Numerics.Vector3(data[o] + data[o + 4], data[o + 1] + data[o + 5], data[o + 2] + data[o + 6]);
+                    if (min.X < r.Min.X || min.Y < r.Min.Y || min.Z < r.Min.Z || max.X > r.Max.X || max.Y > r.Max.Y || max.Z > r.Max.Z)
+                    {
+                        Fail($"Box batches: {m.Name}: a box sticks out of its cell's bounds (it would be culled while in view)");
+                        ok = false;
+                    }
+                }
+            bytes += (long)count * f * sizeof(float);
+            // With everything in view, contiguous runs merge: one draw call.
+            if (count > worst.Boxes)
+                worst = (m.Name, count, runs.Length);
+        }
+        Line($"{Maps.All.Length} maps: every drawn box batched once, as drawn ({bytes / 1024} KB of instances in all); the most: {worst.Name} "
+             + $"{worst.Boxes} boxes in {worst.Runs} cells (was {worst.Boxes} draw calls a frame; now 1 with all in view, at most {worst.Runs})");
+    }
+
     private const int MapDecalsLimit = Map.MaxDecals;
 
     private static int DrawnBoxCount(Map m)

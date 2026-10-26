@@ -297,7 +297,7 @@ public static unsafe partial class Program
             LogDecalSmoke(view.Name); // Program.Decals.cs
         if (view.Name.StartsWith("cluttered_", StringComparison.Ordinal))
         {
-            // Cluttered pack maps: the foliage and box side of the same frames (boxes are still one draw call each).
+            // Cluttered pack maps: the foliage and box side of the same frames (the boxes are instanced by cell, BoxBatches).
             var f = FoliageGfx.Window;
             var map = World.Map;
             var boxes = 0;
