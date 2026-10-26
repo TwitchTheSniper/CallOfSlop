@@ -68,6 +68,149 @@ public static partial class SelfTest
         return h;
     }
 
+    // Budgets. Generous against the CI runner's noise (the loads are measured warm, best of two), tight against the
+    // quadratic paths this section exists for: those were 5-30x over (docs/perf/STREAMING.md, "Load-path fixes").
+    private const double BigMapLoadBudgetMs = 2000; // any one shipped map, warm (Vuorikoski: ~0.3 s on a desktop)
+    private const double AllMapsLoadBudgetMs = 15000; // every shipped map, warm, as the game loads them
+    private const double StressLoadBudgetMs = 1500; // the 10,000-prop, 400 x 400 m stress map (was 1.4 s in the container before the fixes)
+    private const double StressScalingBudget = 8; // 10,000 props vs 2,000 on the same yard: linear is under 5, quadratic was ~20
+    private const int DrawnBoxBudget = 1000; // boxes drawn one by one per map (STREAMING.md 2.3)
+    private const int PropBudget = 65535; // the prop index is a U16 on the wire (GameProps.cs)
+
+    /// <summary>
+    /// "Big maps": what loading costs, so it can't creep back up. Every shipped map loads the same in parallel as one by
+    /// one (digests, ids, order); each stays under a load-time budget, a drawn-box budget and the prop and decal limits;
+    /// the stress map (tools/perf/stress_grid.py, built here in memory) loads within its budget and scales linearly in
+    /// props; a breakdown of the biggest maps is printed.
+    /// </summary>
+    private static void CheckBigMaps()
+    {
+        // 1. Parallel and one-by-one loading build the same list (warm: both after the libraries and JIT are in).
+        var errors = new List<string>();
+        _ = Maps.All;
+        var t0 = Stopwatch.GetTimestamp();
+        var (serial, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: false);
+        var serialMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        var serialTimes = serial.ToDictionary(m => m.Name, m => m.LoadMs);
+        t0 = Stopwatch.GetTimestamp();
+        var (par, parPacks) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
+        var parMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        if (errors.Count > 0)
+            Fail($"Big maps: loading the Maps folder gave {errors.Count} error(s): {errors[0]}");
+        var same = par.Length == serial.Length;
+        for (var i = 0; same && i < par.Length; i++)
+            if (par[i].Name != serial[i].Name || par[i].Id != serial[i].Id || MapDigest(par[i]) != MapDigest(serial[i]))
+            {
+                Fail($"Big maps: {par[i].Name} (#{i}) loads differently in parallel than one by one (digest {MapDigest(par[i]):x16} vs {MapDigest(serial[i]):x16})");
+                same = false;
+            }
+        if (par.Length != Maps.All.Length || par.Zip(Maps.All).Any(x => x.First.Name != x.Second.Name || MapDigest(x.First) != MapDigest(x.Second)))
+            Fail("Big maps: a fresh load of the Maps folder doesn't match Maps.All");
+        Line($"{par.Length} maps in {parPacks.Length} packs: one by one {serialMs:0} ms, parallel {parMs:0} ms on {Environment.ProcessorCount} cores "
+             + $"(build {Maps.LastLoadTimes.BuildMs:0} ms, libraries {Maps.LastLoadTimes.LibrariesMs:0} ms, validate {Maps.LastLoadTimes.ValidateMs:0} ms); identical: {same}");
+        if (Math.Min(serialMs, parMs) > AllMapsLoadBudgetMs)
+            Fail($"Big maps: loading every map took {Math.Min(serialMs, parMs):0} ms (budget {AllMapsLoadBudgetMs:0} ms)");
+
+        // 2. Per map: load time (one by one, warm), drawn boxes, props, decals.
+        foreach (var m in serial)
+        {
+            var ms = Math.Min(m.LoadMs, par.First(x => x.Name == m.Name).LoadMs);
+            if (ms > BigMapLoadBudgetMs)
+                Fail($"Big maps: {m.Name} took {ms:0} ms to load (budget {BigMapLoadBudgetMs:0} ms)");
+            var drawn = DrawnBoxCount(m);
+            if (drawn > DrawnBoxBudget)
+                Fail($"Big maps: {m.Name} draws {drawn} boxes one by one (budget {DrawnBoxBudget})");
+            if (m.PropInstances.Count > PropBudget)
+                Fail($"Big maps: {m.Name} has {m.PropInstances.Count} props (the wire limit is {PropBudget})");
+            if (m.DecalCount > MapDecalsLimit)
+                Fail($"Big maps: {m.Name} has {m.DecalCount} decals (limit {MapDecalsLimit})");
+        }
+        Line("Biggest maps (warm load ms, one by one / in parallel):");
+        foreach (var m in serial.OrderByDescending(m => m.LoadMs).Take(8))
+            Line($"  {m.Name,-22} {m.Solid.Count,6} boxes ({DrawnBoxCount(m),4} drawn one by one)  {m.PropInstances.Count,5} props  {m.FoliageInstances.Length,6} plants  "
+                 + $"{m.DecalCount,5} decals  {serialTimes[m.Name],5:0} / {par.First(x => x.Name == m.Name).LoadMs,5:0} ms");
+
+        // 3. The stress map: within budget, and linear in props (the same 400 x 400 m yard with 2,000 and 10,000 props).
+        var small = StressLoad(2000, out var smallMap);
+        var big = StressLoad(10000, out var bigMap);
+        var ratio = big / Math.Max(small, 1);
+        Line($"Stress grid 400 x 400 m: 2,000 props {small:0} ms ({smallMap.PropInstances.Count} placed), 10,000 props {big:0} ms "
+             + $"({bigMap.PropInstances.Count} placed, {bigMap.Solid.Count} boxes, {bigMap.Waypoints.Count} waypoints): x{ratio:0.0}");
+        if (big > StressLoadBudgetMs)
+            Fail($"Big maps: the 10,000-prop stress map took {big:0} ms to load and validate (budget {StressLoadBudgetMs:0} ms)");
+        if (ratio > StressScalingBudget)
+            Fail($"Big maps: 5x the props took {ratio:0.0}x as long to load (budget {StressScalingBudget}x: something is quadratic again)");
+        if (bigMap.PropInstances.Count < 9000)
+            Fail($"Big maps: the stress map placed only {bigMap.PropInstances.Count} of 10,000 props");
+    }
+
+    private const int MapDecalsLimit = Map.MaxDecals;
+
+    private static int DrawnBoxCount(Map m)
+    {
+        var n = 0;
+        for (var i = 0; i < m.Solid.Count; i++)
+            if (m.IsDrawnBox(i))
+                n++;
+        return n;
+    }
+
+    /// <summary>Loads and validates the stress map with <paramref name="props"/> props; the best of two runs, in ms.</summary>
+    private static double StressLoad(int props, out Map map)
+    {
+        var json = StressGridJson(props, 2000, 200, 40);
+        var best = double.MaxValue;
+        map = null!;
+        for (var run = 0; run < 2; run++)
+        {
+            var t = Stopwatch.GetTimestamp();
+            map = MapFile.Load(json, "Stress Grid.json", "");
+            map.Validate();
+            best = Math.Min(best, Stopwatch.GetElapsedTime(t).TotalMilliseconds);
+        }
+        return best;
+    }
+
+    /// <summary>The stress map of tools/perf/stress_grid.py: a 2h x 2h yard, a grid of low walls, Clutter and DecalScatter ops.</summary>
+    internal static string StressGridJson(int props, int decals, int half, int walls)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        string F(double v) => v.ToString("0.####", inv);
+        var ops = new List<string>
+        {
+            "{\"op\": \"Ground\", \"color\": [0.42, 0.42, 0.44]}",
+            "{\"op\": \"Perimeter\", \"height\": 6, \"color\": [0.62, 0.62, 0.64]}",
+        };
+        var pitch = (2.0 * half - 16) / walls;
+        for (var ix = 0; ix < walls; ix++)
+        for (var iz = 0; iz < walls; iz++)
+        {
+            var x = -half + 8 + ix * pitch + pitch / 2;
+            var z = -half + 8 + iz * pitch + pitch / 2;
+            var alongX = (ix + iz) % 2 == 0;
+            var (w, d) = alongX ? (pitch * 0.45, 0.4) : (0.4, pitch * 0.45);
+            ops.Add($"{{\"op\": \"Block\", \"x0\": {F(x - w / 2)}, \"y0\": 0, \"z0\": {F(z - d / 2)}, \"x1\": {F(x + w / 2)}, \"y1\": {F(1.2 + (ix * 7 + iz * 3) % 4 * 0.4)}, "
+                    + $"\"z1\": {F(z + d / 2)}, \"color\": [{F(0.5 + ix % 3 * 0.1)}, 0.45, 0.4]}}");
+        }
+        ops.Add("{\"op\": \"RingSpawns\", \"count\": 32, \"frac\": 0.85}");
+        ops.Add("{\"op\": \"AutoWaypoints\", \"spacing\": 10}");
+        string[][] pools = [["Street"], ["Industrial", "Debris"], ["Furniture", "Garden"], ["Household", "Office"], ["Street", "Debris", "Industrial"]];
+        var strips = Math.Max(1, (props + 1999) / 2000);
+        for (int k = 0, left = props; left > 0; k++, left -= 2000)
+        {
+            var z0 = -half + 6 + (2.0 * half - 12) * k / strips;
+            var z1 = -half + 6 + (2.0 * half - 12) * (k + 1) / strips;
+            ops.Add($"{{\"op\": \"Clutter\", \"props\": [{string.Join(", ", pools[k % pools.Length].Select(p => $"\"{p}\""))}], \"x0\": {-half + 6}, \"z0\": {F(z0)}, "
+                    + $"\"x1\": {half - 6}, \"z1\": {F(z1)}, \"count\": {Math.Min(2000, left)}, \"seed\": {100 + k}}}");
+        }
+        string[] decalNames = ["Oil Stain", "Puddle", "Floor Cracks", "Leaf Litter", "Tyre Tracks", "Dirt Patch", "Rust Stain", "Skid Marks"];
+        for (int k = 0, left = decals; left > 0; k++, left -= 2000)
+            ops.Add($"{{\"op\": \"DecalScatter\", \"decals\": [{string.Join(", ", decalNames.Select(n => $"\"{n}\""))}], \"x0\": {-half + 4}, \"z0\": {-half + 4}, "
+                    + $"\"x1\": {half - 4}, \"z1\": {half - 4}, \"count\": {Math.Min(2000, left)}, \"seed\": {500 + k}, \"minSize\": 0.8, \"maxSize\": 2.5}}");
+        return $"{{\"format\": \"call-of-slop-map/1\", \"name\": \"Stress Grid\", \"description\": \"Load-cost stress map (Big maps self-test).\", \"order\": 999, "
+               + $"\"halfX\": {half}, \"halfZ\": {half}, \"maxPlayers\": 32, \"sky\": [0.36, 0.42, 0.5], \"ops\": [\n{string.Join(",\n", ops)}\n]}}";
+    }
+
     // TEMPORARY (removed before the branch is finished): dumps every map's digest and load time.
     private static void CheckLoadDigestDump()
     {

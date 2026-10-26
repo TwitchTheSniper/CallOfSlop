@@ -191,6 +191,7 @@ public static partial class SelfTest
         Section("Map files", CheckMapFiles);
         Section("Map reload", CheckMapReload);
         Section("Map packs", CheckMapPacks);
+        Section("Big maps", CheckBigMaps); // SelfTestBigMaps.cs: load cost: parallel = one by one, per-map and stress-map budgets, linear in props
         Section("Pack assets", CheckPackAssets); // SelfTestPackAssets.cs: pack-local props, models and skies
         Section("High Ground pack", CheckHighGround); // SelfTestHighGround.cs: the terrain map pack
         Section("Foliage", CheckFoliage); // see SelfTest.Foliage.cs
