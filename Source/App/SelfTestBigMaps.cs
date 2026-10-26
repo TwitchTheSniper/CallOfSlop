@@ -75,8 +75,11 @@ public static partial class SelfTest
         using var w = new StreamWriter(path, false);
         var t0 = Stopwatch.GetTimestamp();
         var errors = new List<string>();
-        var (maps, _) = Maps.LoadFolder(Maps.Folder, errors);
+        var (maps, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: false);
         w.WriteLine($"LoadFolder {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {maps.Length} maps, {errors.Count} errors");
+        t0 = Stopwatch.GetTimestamp();
+        var (par, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
+        w.WriteLine($"LoadFolder parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {par.Length} maps, {Environment.ProcessorCount} cores, same: {par.Length == maps.Length && par.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second) && x.First.Id == x.Second.Id)}");
         foreach (var m in maps)
         {
             var file = Path.Combine(Maps.Folder, m.SourceFile!);
