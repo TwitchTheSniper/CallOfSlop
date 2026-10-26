@@ -57,8 +57,9 @@ public static partial class SelfTest
             World.SetMap(map);
             NavGraph.Forget(map);
             var live = NavGraph.Build(map);
-            var t = Stopwatch.GetTimestamp();
             var key = NavBake.KeyOf(map, map.ContentHash);
+            var t = Stopwatch.GetTimestamp();
+            key = NavBake.KeyOf(map, map.ContentHash); // (timed the second time: the first pays the JIT)
             var keyMs = Stopwatch.GetElapsedTime(t).TotalMilliseconds;
             var file = NavBake.Write(live, map, key);
             t = Stopwatch.GetTimestamp();
@@ -108,7 +109,7 @@ public static partial class SelfTest
         NavGraph.Forget(map);
         NavGraph.Pump(double.MaxValue);
         var second = NavGraph.Current;
-        if (second.Origin != "cached" || NavFingerprint(second) != liveHash || !second.Serialize().AsSpan().SequenceEqual(live.Serialize()))
+        if (second.Origin != "cached" || NavFingerprint(second) != liveHash || !second.Serialize().AsSpan().SequenceEqual(first.Serialize()))
             Fail($"Nav bake: the second time the graph came out {second.Origin} ({NavBake.LastResult}), fingerprint {NavFingerprint(second):x8} vs {liveHash:x8}");
 
         // The release's baked folder comes before the cache.
