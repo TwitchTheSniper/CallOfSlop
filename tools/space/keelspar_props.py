@@ -12,6 +12,7 @@ structures are unbreakable cover; small cases and crates are heavy metal; the ox
 with a short fuse.
 """
 import json
+import math
 import os
 import sys
 
@@ -222,12 +223,12 @@ def outpost():
     # Solar array rack: a tilted row of dark blue panels on a frame.
     p = []
     for x in (-1.6, 0, 1.6):
-        p.append(At([0.1, 0.9, 0.1], 0, x, 0.5, color=STEEL))
-        p.append(At([0.1, 1.7, 0.1], 0, x, -0.5, color=STEEL))
-    p.append(B([4.0, 0.06, 1.7], [0, 1.3, 0], color=PANEL, pitch=-36))
+        p.append(At([0.1, 1.0, 0.1], 0, x, 0.5, color=STEEL))   # the short legs carry the low edge (+Z)
+        p.append(At([0.1, 1.6, 0.1], 0, x, -0.5, color=STEEL))  # the tall legs carry the high edge (-Z)
+    p.append(B([4.0, 0.06, 1.7], [0, 1.3, 0], color=PANEL, pitch=36))
     for x in (-1.0, 1.0):
-        p.append(B([0.03, 0.08, 1.7], [x, 1.33, 0], color=PALE, pitch=-36))
-    p.append(B([4.0, 0.08, 0.03], [0, 1.33, 0], color=PALE, pitch=-36))
+        p.append(B([0.03, 0.08, 1.7], [x, 1.33, 0], color=PALE, pitch=36))
+    p.append(B([4.0, 0.08, 0.03], [0, 1.33, 0], color=PALE, pitch=36))
     p.append(At([0.4, 0.4, 0.3], 0, 1.95, 0.4, color=DARK))
     p.append(lit(At([0.08, 0.05, 0.03], 0.3, 1.95, 0.56, color="#5aff7a"), glow("blink", "#5aff7a", 2.0, duty=0.5, glow_=1.0)))
     prop("Solar Array Rack", "A 4 m row of dark blue solar panels tilted on a frame: chest-high cover (long along X).", p,
@@ -267,6 +268,32 @@ def outpost():
         p.append(At([0.5, 0.2, 0.5], 1.18, x, 0, color="#9a9088"))
     prop("Ore Conveyor Section", "A 4 m ore conveyor on legs with turning rollers and a few lumps of ore: hip-high cover (long along X).", p,
          collider=[C([4.0, 1.35, 1.2], [0, 0.68, 0])], scatter=SQ)
+    # Ore conveyor slope: the same belt on legs, 4.75 m long on the level and rising 0.975 m towards +X (11.6 degrees), so a
+    # chain of them follows a ramp as one unbroken belt. Placed with anchor "world": the prop's origin is the belt's
+    # centre-line point at ground level; legs run a little below it so the terrain's bumps never show a gap.
+    RUN, RISE = 4.75, 0.975
+    tn = RISE / RUN
+    ang = math.degrees(math.atan(tn))
+    ln = math.hypot(RUN, RISE) + 0.04
+    p = []
+    for x in (-1.7, 1.7):
+        for z in (-0.5, 0.5):
+            p.append(At([0.1, 1.0 + 0.4, 0.1], x * tn - 0.4, x, z, color=STEEL))
+    p.append(B([ln, 0.12, 1.2], [0, 1.06, 0], color=DARK, roll=ang))
+    p.append(B([ln, 0.06, 1.0], [0, 1.15, 0], color="#2a2a2e", roll=ang))
+    for x in (-1.6, -0.8, 0, 0.8, 1.6):
+        p.append(lit(B([0.14, 0.14, 1.1], [x, 1.19 + x * tn, 0], color=STEEL, pitch=45), {"type": "spin", "axis": "x", "rpm": 40}))
+    for s_ in (-1, 1):
+        p.append(B([ln, 0.04, 0.08], [0, 1.3, s_ * 0.56], color=HAZARD, roll=ang))
+    for x in (-1.2, 0, 1.2):
+        p.append(At([0.5, 0.2, 0.5], 1.18 + x * tn, x, 0, color="#9a9088"))
+    cols = []
+    for k in range(4):  # four stepped slices follow the slope: hip-high cover all the way
+        x0, x1 = -RUN / 2 + k * RUN / 4, -RUN / 2 + (k + 1) * RUN / 4
+        lo, hi = x0 * tn - 0.3, 1.34 + x1 * tn
+        cols.append(C([x1 - x0, hi - lo, 1.2], [(x0 + x1) / 2, (lo + hi) / 2, 0]))
+    prop("Ore Conveyor Slope", "A 4.75 m ore conveyor on legs that climbs 0.97 m along its length (11.6 degrees), for running a belt up a ramp as one piece: place a chain of them with anchor world (long along X, rising to +X).", p,
+         collider=cols, scatter=SQ)
     # Regolith hopper: a square funnel on legs with a chute.
     p = []
     for x in (-1.0, 1.0):
