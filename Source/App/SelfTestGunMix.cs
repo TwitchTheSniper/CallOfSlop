@@ -240,18 +240,21 @@ public static partial class SelfTest
     private static void CheckGunMixCost()
     {
         float sink = 0;
-        for (var i = 0; i < 1000; i++)
-            sink += Audio.PlanShot(i % 3 == 0, i % 5 == 0, true, i % 120).Near; // warm-up
-        var sw = Stopwatch.StartNew();
-        var before = GC.GetAllocatedBytesForCurrentThread();
         const int calls = 200_000;
-        for (var i = 0; i < calls; i++)
+        void Round()
         {
-            var p = Audio.PlanShot(i % 3 == 0, i % 5 == 0, true, i % 120);
-            var f = Audio.DistanceFilter(p.NearFalloff, i % 120);
-            sink += p.Near + p.Far + f.Lf + f.Hf;
+            for (var i = 0; i < calls; i++)
+            {
+                var p = Audio.PlanShot(i % 3 == 0, i % 5 == 0, true, i % 120);
+                var f = Audio.DistanceFilter(p.NearFalloff, i % 120);
+                sink += p.Near + p.Far + f.Lf + f.Hf;
+            }
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off
+        // runtime allocation on this thread (seen while other threads allocate and collect) in one at most.
+        var bytes = SteadyAllocBytes(Round);
+        var sw = Stopwatch.StartNew();
+        Round();
         var ns = sw.Elapsed.TotalMilliseconds * 1e6 / calls;
         MixLine($"cost: {ns:0} ns per shot plan + filter, {bytes} bytes allocated over {calls} (sink {sink % 1:0.0})");
         if (bytes > 0)

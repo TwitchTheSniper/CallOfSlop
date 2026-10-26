@@ -131,7 +131,7 @@ public sealed partial class NavGraph
     public static void ResetPatches(Map map)
     {
         foreach (var g in Cache.Values)
-            if (g.MapName == map.Name && g.PatchVersion != 0)
+            if (g.MapName == map.Name && (g.PatchVersion != 0 || g.EdgeOff.Length != 0)) // (a patch that started but changed nothing yet sized EdgeOff)
             {
                 g.ResetRuntime();
                 g.PatchOwner = null;
@@ -142,7 +142,7 @@ public sealed partial class NavGraph
     /// <summary>Undoes every patch: spares parked, nothing off, the extra edges gone. No-op on an unpatched graph.</summary>
     public void ResetRuntime()
     {
-        if (PatchVersion == 0 || ExtraHead.Length == 0)
+        if ((PatchVersion == 0 && EdgeOff.Length == 0) || ExtraHead.Length == 0)
             return;
         for (var i = SpareStart; i < SpareStart + SpareCount; i++)
         {

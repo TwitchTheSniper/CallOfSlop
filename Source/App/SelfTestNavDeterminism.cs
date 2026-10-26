@@ -138,7 +138,7 @@ public static partial class SelfTest
             Fail($"a mover walk split over calls ends differently from one walked whole ({differ} of {walks}; first: {first})");
     }
 
-    /// <summary>FNV-1a over a graph's nodes and edges (positions, targets, costs, flags, ledges).</summary>
+    /// <summary>FNV-1a over a graph's nodes and edges (positions, targets, costs, flags, ledges) and which of them are switched off.</summary>
     private static uint NavFingerprint(NavGraph g)
     {
         var h = 2166136261u;
@@ -165,10 +165,15 @@ public static partial class SelfTest
             MixF(g.EdgeLedge[e].Y);
             MixF(g.EdgeLedge[e].Z);
         }
-        foreach (var off in g.NodeOff)
-            Mix(off ? 1u : 0u);
-        foreach (var off in g.EdgeOff)
-            Mix(off ? 1u : 0u);
+        // What is switched off, by index: a graph with nothing off hashes the same whether its flags are an empty array or an
+        // all-false one (a destruction patch sizes EdgeOff when it starts, before it switches anything off).
+        for (var i = 0; i < g.NodeOff.Length; i++)
+            if (g.NodeOff[i])
+                Mix((uint)i);
+        Mix(0xFFFFFFFFu);
+        for (var e = 0; e < g.EdgeOff.Length; e++)
+            if (g.EdgeOff[e])
+                Mix((uint)e);
         return h;
     }
 }
