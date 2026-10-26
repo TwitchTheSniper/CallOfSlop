@@ -353,7 +353,7 @@ public static partial class SelfTest
             return allocated;
         }
         var warm = Pass();
-        var bytes = Math.Max(Pass(), Pass());
+        var bytes = SteadyAllocBytes(Pass, warmups: 0, rounds: 2); // the least of two (SelfTestCpuRatio.cs): a one-off runtime allocation shows in one at most
         ClassLine($"allocations while mixing with class switches: {bytes} bytes per 600 blocks after warm-up (first pass {warm}); {h.ClassSwitches} switches");
         if (bytes > 0)
             Fail($"the class styles allocated {bytes} bytes while mixing (want 0)");

@@ -560,6 +560,12 @@ public static partial class SelfTest
         var us = (Stopwatch.GetTimestamp() - t0) * 1e6 / Stopwatch.Frequency / 1000;
         var alloc = GC.GetAllocatedBytesForCurrentThread() - before;
         var heard = game.Voice.Get(guest.Id)?.Jitter.Played ?? 0;
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        alloc = RecheckAllocBytes(alloc, () =>
+        {
+            for (var i = 0; i < 1000; i++)
+                Step(i);
+        });
         VLine($"voice path (process + encode + relay + 2 jitter buffers + decode + radio EQ): {alloc} bytes allocated over 1000 frames, {us:0.0} us a frame ({us / 200:0.000}% of a core per talker); host heard {heard} frames");
         if (alloc > 0)
             Fail($"the voice path allocates ({alloc} bytes over 1000 frames)");

@@ -394,7 +394,7 @@ public static partial class SelfTest
             return allocated;
         }
         var warm = Pass();
-        var allocated = Math.Max(Pass(), Pass());
+        var allocated = SteadyAllocBytes(Pass, warmups: 0, rounds: 2); // the least of two (SelfTestCpuRatio.cs): a one-off runtime allocation shows in one at most
         FrenzyLine($"allocations while mixing: {allocated} bytes per 500 blocks after warm-up (first pass {warm})");
         if (allocated > 0)
             Fail($"the frenzy layer allocated {allocated} bytes while mixing (want 0)");

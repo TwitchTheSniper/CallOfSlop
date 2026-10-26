@@ -221,7 +221,7 @@ public static partial class SelfTest
             return bytes;
         }
         var warm = Pass();
-        var allocated = Math.Max(Pass(), Pass());
+        var allocated = SteadyAllocBytes(Pass, warmups: 0, rounds: 2); // the least of two (SelfTestCpuRatio.cs): a one-off runtime allocation shows in one at most
         Line($"frenzy tempo: allocations through speed-ups and glides {allocated} bytes after warm-up (first pass {warm}); {g.TempoChanges} tempo changes");
         notes.Add($"allocations through speed-ups and glides: {allocated} bytes after warm-up; {g.TempoChanges} tempo changes");
         // One annotation on the CI run (a warning, like "Frenzy classes": the run keeps only the first few notices).

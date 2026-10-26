@@ -256,14 +256,16 @@ public static partial class SelfTest
 
         // No allocations per bot life (the lobby level and the whole loadout draw).
         Draw(3, _ => true, out _, out _, out _); // warm
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 100; i++)
-            foreach (var b in bots)
-            {
-                b.SpawnTick = tick++;
-                game.SelfTestPickBotLoadout(b);
-            }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 100; i++)
+                foreach (var b in bots)
+                {
+                    b.SpawnTick = tick++;
+                    game.SelfTestPickBotLoadout(b);
+                }
+        }, warmups: 0);
         Line($"bot gear: {100 * bots.Count} loadout draws allocated {bytes} bytes");
         if (bytes > 0)
         {

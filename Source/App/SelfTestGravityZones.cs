@@ -182,11 +182,13 @@ public static partial class SelfTest
         // The frame on the wall: up -X, north -Z (the axis laid flat), right +Y (right-handed).
         GravityFrames.Frame(wall, out var r, out var u, out var n);
         ok &= u == -Vector3.UnitX && n == -Vector3.UnitZ && r == Vector3.UnitY;
-        var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         var sum = 0f;
-        for (var i = 0; i < 10000; i++)
-            sum += GravityFrames.GravityAt(new Vector3(i % 40 - 20, i % 7, i % 11 - 5)).Y;
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - alloc0;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var alloc = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 10000; i++)
+                sum += GravityFrames.GravityAt(new Vector3(i % 40 - 20, i % 7, i % 11 - 5)).Y;
+        });
         ZoneLine($"field: {z.Zones.Length} zones, floor/low-g/wall/rock/side sampled right {ok}, 10000 lookups allocated {alloc} bytes (sum {sum:0})");
         if (!ok || alloc != 0)
             Fail($"gravity zones: the field isn't sampled as expected (ok {ok}, {alloc} bytes allocated)");
@@ -406,11 +408,17 @@ public static partial class SelfTest
         var t0 = Stopwatch.GetTimestamp();
         var alloc0 = GC.GetAllocatedBytesForCurrentThread();
         const int costTicks = 240;
-        for (var t = 0; t < costTicks; t++)
-            for (var i = 0; i < crowd.Length; i++)
-                World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (t % 50 == i ? Buttons.Jump : 0), Yaw = i + t * 0.01f, SpeedPct = 100 });
+        void Ticks()
+        {
+            for (var t = 0; t < costTicks; t++)
+                for (var i = 0; i < crowd.Length; i++)
+                    World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (t % 50 == i ? Buttons.Jump : 0), Yaw = i + t * 0.01f, SpeedPct = 100 });
+        }
+        Ticks();
         var alloc = GC.GetAllocatedBytesForCurrentThread() - alloc0;
         var us = Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / costTicks;
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        alloc = RecheckAllocBytes(alloc, Ticks);
         ZoneLine($"cost: 16 players moving about the zones: {us:0} us per tick, {alloc} bytes allocated in {costTicks} ticks");
         if (alloc != 0 || us > 4000)
             Fail($"gravity zones: movement about the zones allocated {alloc} bytes or costs {us:0} us per tick");

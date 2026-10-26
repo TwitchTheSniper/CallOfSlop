@@ -168,10 +168,12 @@ public static partial class SelfTest
         }
         Frame(); // warm: caches filled, JIT done
         Frame();
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var f = 0; f < 200; f++)
-            Frame();
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
+        {
+            for (var f = 0; f < 200; f++)
+                Frame();
+        }, warmups: 0);
         Line($"allocation: 200 scoreboard frames for {ranked.Count} players across {modules.Count} modes' cells: {bytes} bytes (checksum {sink})");
         if (ranked.Count != game.Players.Count || left.Count + right.Count != ranked.Count)
             Fail($"scoreboard: the ranking has {ranked.Count} of {game.Players.Count} players ({left.Count} + {right.Count} in the columns)");

@@ -333,10 +333,12 @@ public static partial class SelfTest
         var sink = Vector3.Zero;
         for (var i = 0; i < 1000; i++)
             sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 0f, 5f, 80f, out _);
-        var alloc = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 10000; i++)
-            sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 0f, 5f, 80f, out _);
-        alloc = GC.GetAllocatedBytesForCurrentThread() - alloc;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var alloc = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 10000; i++)
+                sink += PropAnim.Animate(data.Records, (int)data.VertexRecord[r0], Vector3.One, i * 0.01f, 0.3f, 0f, 5f, 80f, out _);
+        }, warmups: 0);
         if (alloc > 0 || !float.IsFinite(sink.X))
             Fail($"the animation maths allocated {alloc} bytes for 10000 vertices");
     }

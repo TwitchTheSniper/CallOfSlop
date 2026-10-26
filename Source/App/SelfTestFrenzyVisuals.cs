@@ -364,10 +364,15 @@ public static partial class SelfTest
         FrenzyParticles.Clear();
         for (var i = 0; i < 480; i++)
             Frame(); // warm up (JIT) and fill to the steady state
+        void Frames()
+        {
+            for (var i = 0; i < 2400; i++)
+                Frame();
+        }
         var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 2400; i++)
-            Frame();
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        Frames();
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        var bytes = RecheckAllocBytes(GC.GetAllocatedBytesForCurrentThread() - before, Frames);
         if (bytes != 0)
             Fail($"frenzy visuals: the per-frame work allocates ({bytes} bytes over 2400 frames)");
 

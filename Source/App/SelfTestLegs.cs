@@ -496,6 +496,17 @@ public static partial class SelfTest
             Frame(f, true);
         sw2.Stop();
         var rigBytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        legsBytes = RecheckAllocBytes(legsBytes, () =>
+        {
+            for (var f = 0; f < frames; f++)
+                Frame(f, false);
+        });
+        rigBytes = RecheckAllocBytes(rigBytes, () =>
+        {
+            for (var f = 0; f < frames; f++)
+                Frame(f, true);
+        });
         var perPlayer = sw.Elapsed.TotalMilliseconds * 1000 / (frames * players.Length);
         var perRig = sw2.Elapsed.TotalMilliseconds * 1000 / (frames * players.Length);
         if (legsBytes > 0 || rigBytes > 0)

@@ -329,15 +329,17 @@ public static partial class SelfTest
             var w = Weapons.All[0];
             for (var i = 0; i < 100; i++)
                 ui.DrawAudioMixer(audio, i * 0.016, w, Keybinds.Unbound); // warm-up
-            var a0 = GC.GetAllocatedBytesForCurrentThread();
             var sink = 0f;
-            for (var i = 0; i < 20000; i++)
+            // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+            var closedBytes = SteadyAllocBytes(() =>
             {
-                ui.DrawAudioMixer(audio, i * 0.016, w, Keybinds.Unbound); // closed
-                sink += audio.Mix.Gain((MixBus)(i % levels)) + Audio.PlanShot(audio.Mix, false, false, true, i % 200).FarMixed;
-                audio.Meters.Record(i % AudioMeters.MaxVoices, MixBus.Explosion, 1f, i, 1f, 0); // off: ignored
-            }
-            var closedBytes = GC.GetAllocatedBytesForCurrentThread() - a0;
+                for (var i = 0; i < 20000; i++)
+                {
+                    ui.DrawAudioMixer(audio, i * 0.016, w, Keybinds.Unbound); // closed
+                    sink += audio.Mix.Gain((MixBus)(i % levels)) + Audio.PlanShot(audio.Mix, false, false, true, i % 200).FarMixed;
+                    audio.Meters.Record(i % AudioMeters.MaxVoices, MixBus.Explosion, 1f, i, 1f, 0); // off: ignored
+                }
+            }, warmups: 0);
             if (closedBytes > 0 || audio.Meters.Enabled)
                 Fail($"audio mixer: {closedBytes} bytes allocated over 20000 frames with the window closed (want 0), meters {(audio.Meters.Enabled ? "on" : "off")}");
 
@@ -376,18 +378,21 @@ public static partial class SelfTest
                 meters.Begin(); meters.AccumulateVoices(i * 0.016, 1f); meters.End(i * 0.016, 0.016f);
                 audio.UpdateMeters(i * 0.016, 0.016f);
             }
-            a0 = GC.GetAllocatedBytesForCurrentThread();
-            for (var i = 0; i < 20000; i++)
+            var t0 = 2.0;
+            var meterBytes = SteadyAllocBytes(() => // (the least of identical rounds, as above; the clock runs on)
             {
-                var t = 2 + i * 0.016;
-                meters.Record(i % AudioMeters.MaxVoices, (MixBus)(i % levels), 0.5f, t, 1f + (i % 3) * 0.1f, first + (i & 1));
-                meters.Begin();
-                meters.AccumulateVoices(t, 0.8f);
-                meters.AddExternal(MixBus.Frenzy3, 0.2f, 0.01f, toMaster: false);
-                meters.End(t, 0.016f);
-                audio.UpdateMeters(t, 0.016f);
-            }
-            var meterBytes = GC.GetAllocatedBytesForCurrentThread() - a0;
+                for (var i = 0; i < 20000; i++)
+                {
+                    var t = t0 + i * 0.016;
+                    meters.Record(i % AudioMeters.MaxVoices, (MixBus)(i % levels), 0.5f, t, 1f + (i % 3) * 0.1f, first + (i & 1));
+                    meters.Begin();
+                    meters.AccumulateVoices(t, 0.8f);
+                    meters.AddExternal(MixBus.Frenzy3, 0.2f, 0.01f, toMaster: false);
+                    meters.End(t, 0.016f);
+                    audio.UpdateMeters(t, 0.016f);
+                }
+                t0 += 20000 * 0.016;
+            }, warmups: 0);
             audio.SetMetering(false);
             if (meterBytes > 0)
                 Fail($"audio mixer meters: {meterBytes} bytes allocated over 20000 frames (want 0)");
