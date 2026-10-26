@@ -285,7 +285,10 @@ public static partial class Synth
                 p.Drive = R(5f, 7f);
                 p.Gain = 1f;
                 Throat(b, rng, p);
-                Band(b, rng, p.Length * 0.9f, R(0.25f, 0.35f), 0.01f, 0.05f, 200, 900, tremolo: R(30, 40), length: 0.15f); // the catch
+                // The rasp: a torn, hissing edge over the whole screech (what makes it shrill).
+                Band(b, rng, 0.01f, R(0.5f, 0.65f), 0.02f, p.Length * 0.45f, 2400, 7500, tremolo: p.GurgleHz, length: p.Length);
+                Noise(b, rng, 0, R(0.3f, 0.4f), 0.0005f, 0.012f, 5000, highpass: true); // the crack it starts on
+                Band(b, rng, p.Length * 0.9f, R(0.2f, 0.3f), 0.01f, 0.05f, 200, 900, tremolo: R(30, 40), length: 0.15f); // the catch
                 return Finish(b, 0.75f);
             }
             case Sfx.ZombieDeath:
