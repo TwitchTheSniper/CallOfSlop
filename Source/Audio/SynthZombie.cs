@@ -65,6 +65,9 @@ public static partial class Synth
 
         /// <summary>How far the formants open towards the middle (a moan swelling) and the drive (grit).</summary>
         public float Open, Drive;
+
+        /// <summary>The upper formants' level over the first's (0 = 1: a shriek has them loud).</summary>
+        public float Bright;
     }
 
     /// <summary>
@@ -86,7 +89,8 @@ public static partial class Synth
         q[0] = 1f / 6f;
         q[1] = 1f / 8f;
         q[2] = 1f / 10f;
-        ReadOnlySpan<float> fg = [1f, 0.65f, 0.3f];
+        var hi = p.Bright > 0f ? p.Bright : 1f;
+        ReadOnlySpan<float> fg = [1f / MathF.Sqrt(hi), 0.65f * hi, 0.3f * hi];
         var period = 0;
         for (var k = 0; k < n; k++)
         {
@@ -272,6 +276,7 @@ public static partial class Synth
                 p.PeakAt = R(0.15f, 0.3f);
                 p.VowelA = ZE;
                 p.VowelB = ZI;
+                p.Bright = R(3f, 3.6f);
                 p.Sub = R(0.4f, 0.6f);
                 p.Jitter = R(0.8f, 1f);
                 p.Breath = R(0.35f, 0.5f);
@@ -286,7 +291,7 @@ public static partial class Synth
                 p.Gain = 1f;
                 Throat(b, rng, p);
                 // The rasp: a torn, hissing edge over the whole screech (what makes it shrill).
-                Band(b, rng, 0.01f, R(0.5f, 0.65f), 0.02f, p.Length * 0.45f, 2400, 7500, tremolo: p.GurgleHz, length: p.Length);
+                Band(b, rng, 0.01f, R(0.8f, 1f), 0.02f, p.Length * 0.45f, 2400, 7500, tremolo: p.GurgleHz, length: p.Length);
                 Noise(b, rng, 0, R(0.3f, 0.4f), 0.0005f, 0.012f, 5000, highpass: true); // the crack it starts on
                 Band(b, rng, p.Length * 0.9f, R(0.2f, 0.3f), 0.01f, 0.05f, 200, 900, tremolo: R(30, 40), length: 0.15f); // the catch
                 return Finish(b, 0.75f);
@@ -327,6 +332,7 @@ public static partial class Synth
                 p.PeakAt = R(0.08f, 0.15f);
                 p.VowelA = ZE;
                 p.VowelB = ZU;
+                p.Bright = 2f;
                 p.Sub = R(0.55f, 0.8f);
                 p.Jitter = R(0.8f, 1f);
                 p.Breath = R(0.35f, 0.5f);
