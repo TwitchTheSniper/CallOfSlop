@@ -454,6 +454,29 @@ public static partial class SelfTest
             Fail($"co-op: the shared player physics allocates {physPerTick:0} bytes per tick for {bodies.Length} bodies on a cave map");
         if (perTickBytes > 64)
             Fail($"co-op: the enemy tick allocates {perTickBytes:0} bytes per tick (by section: {where})");
+
+        // A door that shuts (enemies shut them from cover: BotDoors.cs) refits the collision tree. Its scratch is sized when
+        // the tree is built, so even the first door shut in a match allocates nothing (it used to allocate ~684 KB on
+        // Silo, once, and failed the steady-state window above when an enemy happened to shut the match's first door in it).
+        var doors = World.Map.BuildingDoors;
+        var door = -1;
+        for (var i = 0; i < doors.Count && door < 0; i++)
+            if (!doors[i].Broken && !doors[i].Open)
+                door = i;
+        long doorBytes = -1;
+        if (door >= 0)
+        {
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
+            var opened = g.ServerSetDoor(door, true, now);
+            var shut = g.ServerSetDoor(door, false, now);
+            CoopTicks(g, ref now, 0.05);
+            doorBytes = GC.GetAllocatedBytesForCurrentThread() - b0;
+            CoopLine($"a door opened and shut ({opened}, {shut}) with 3 ticks after: {doorBytes} bytes allocated ({doors.Count} doors on {World.Map.Name})");
+            if (!opened || !shut)
+                Fail($"co-op: door {door} wouldn't open and shut again (opened {opened}, shut {shut})");
+        }
+        if (door < 0 || doorBytes > 64)
+            Fail($"co-op: opening and shutting a door allocates {doorBytes} bytes (door {door} of {doors.Count})");
     }
 
     // ---- Enemy fire: spread, damage, the kill ------------------------------------------------------------------------

@@ -152,11 +152,16 @@ public sealed class PhysicsWorld : IWorldQuery
             return;
         var sw = Stopwatch.StartNew();
         var n = StaticCount;
-        var mins = new Vector3[n];
-        var maxs = new Vector3[n];
+        if (_refitMin.Length < n)
+        {
+            _refitMin = new Vector3[n];
+            _refitMax = new Vector3[n];
+        }
+        var mins = _refitMin.AsSpan(0, n);
+        var maxs = _refitMax.AsSpan(0, n);
         for (var i = 0; i < n; i++)
             ItemBounds(i, out mins[i], out maxs[i]);
-        _tree = new Bvh(mins, maxs);
+        _tree = new Bvh(mins, maxs); // (copies them: the same arrays are Refit's scratch later, so the first door that shuts in a match allocates nothing)
         _dirty = false;
         BuildMs = sw.Elapsed.TotalMilliseconds;
     }
