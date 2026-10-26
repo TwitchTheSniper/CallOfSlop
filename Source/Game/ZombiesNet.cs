@@ -106,11 +106,17 @@ public sealed partial class Game
             var p = z.Position;
             w.U16(z.Id).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
-                .U8((byte)((byte)z.State | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0))) // bits 6-7: burning, zapped (protocol 40)
+                .U8((byte)((byte)z.State | (ZHeadBit(z) ? 8 : 0) | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0))) // bits 6-7: burning, zapped (protocol 40); bit 3: head hit (protocol 50)
                 .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255))
                 .U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
         }
     }
+
+    /// <summary>
+    /// Bit 3 of a zombie's state byte (protocol 50): alive, a head hit landed in the last few ticks (two snapshots see it);
+    /// dead, the kill was a headshot. Clients use it for the headshot screech and the headshot ragdoll.
+    /// </summary>
+    private bool ZHeadBit(Zombie z) => z.State == ZState.Dead ? z.KilledByHead : ServerTick - z.HeadHitTick <= 4;
 
     private static ushort Q(float v, float scale) => (ushort)(short)Math.Clamp((int)MathF.Round(v * scale), short.MinValue, short.MaxValue);
 
@@ -441,7 +447,15 @@ public sealed partial class Game
                 z.RenderYaw = yaw;
                 Horde.Add(z);
             }
-            var state = (ZState)Math.Min(sb & 15, (int)ZState.Dead);
+            var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
+            if ((sb & 8) != 0)
+            {
+                // The head bit (protocol 50): a fresh head hit, or a headshot kill.
+                if (state == ZState.Dead)
+                    z.KilledByHead = true;
+                else if (tick - z.HeadHitTick > 4)
+                    z.HeadHitTick = tick;
+            }
             if (state == ZState.Dead && z.State != ZState.Dead)
             {
                 z.DiedAt = now;
@@ -596,6 +610,7 @@ public sealed partial class Game
             }
             ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
+        ZSounds.Frame(Audio, Horde, dt); // their voices and footsteps, from what this side knows (Source/Audio/ZombieSounds.cs)
         if (Local is { } me)
         {
             var zp = ZP(me);

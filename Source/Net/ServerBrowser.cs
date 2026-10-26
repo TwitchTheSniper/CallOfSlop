@@ -99,7 +99,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     auto-start in Msg.LobbyState, so clients predict falls, jumps and grenades the host's way.
     // 49: the Zombies Infinite Ammo power-up (Source/Game/ZombiesPowerUps.cs): ZPowerKind 5 in Msg.ZWorld's floating
     //     power-ups, and a third timer (Infinite Ammo's tenths of a second left) after Insta-Kill's and Double Points'.
-    public const byte ProtocolVersion = 49;
+    // 50: zombie voices (Source/Audio/ZombieSounds.cs): bit 3 of a zombie's state byte in Msg.ZEnts is the head bit (a head
+    //     hit in the last 4 ticks while alive, a headshot kill once dead); the state is the low 3 bits.
+    public const byte ProtocolVersion = 50;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

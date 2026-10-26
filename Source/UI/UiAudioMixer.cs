@@ -247,6 +247,12 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.Button("Gibs 10 m"u8))
             audio.Effect3D(Sfx.GibSquelch, audio.AroundListener(10f, _mixTestAngle), 0.95f);
+        ImGui.SameLine();
+        if (ImGui.Button("Zombie groan 8 m"u8))
+            audio.TestZombie(false, 8f, _mixTestAngle);
+        ImGui.SameLine();
+        if (ImGui.Button("Zombie steps 8 m"u8))
+            audio.TestZombie(true, 8f, _mixTestAngle);
 
         if (ImGui.Button("Own steps"u8))
             audio.TestFootstep(true, 0f, 0f);
