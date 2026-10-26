@@ -74,6 +74,8 @@ public sealed partial class Audio
         Sfx.RocketMotor => MixBus.LauncherOther,
         Sfx.LockTone or Sfx.LockedTone => MixBus.LauncherLock,
         Sfx.GibSquelch => MixBus.Gore,
+        Sfx.ZombieShuffle or Sfx.ZombieRun or Sfx.ZombieSprint => MixBus.ZombieSteps, // (ZombieSounds plays these on top of the Zombies row)
+        >= Sfx.ZombieGroan and <= Sfx.ZombieHeadDeath => MixBus.ZombieVoices,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 
@@ -249,8 +251,8 @@ public sealed class AudioMeters
     /// <summary>Samples per envelope block (about 11.6 ms).</summary>
     public const int Block = 512;
 
-    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 10 frenzy-layer voices (and a little spare).</summary>
-    public const int MaxVoices = 80;
+    /// <summary>Voice slots: 48 effect voices, 12 footstep voices, 10 frenzy-layer voices, 16 zombie voices (and a little spare).</summary>
+    public const int MaxVoices = 96;
 
     private const int Buses = (int)MixBus.COUNT;
 

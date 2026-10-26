@@ -106,6 +106,9 @@ public sealed partial class Game
     /// <summary>Every zombie in the world, alive or falling over (by id).</summary>
     public readonly List<Zombie> Horde = new();
 
+    /// <summary>The zombies' voices and footsteps on this PC (client side, every frame: Source/Audio/ZombieSounds.cs).</summary>
+    public readonly ZombieSounds ZSounds = new();
+
     private ushort _zNextId = 1;
     private readonly NavSearch _zSearch = new();
     private int _zPathBudget;
@@ -614,7 +617,10 @@ public sealed partial class Game
         _zShotDamage[z] = _zShotDamage.GetValueOrDefault(z) + damage * (head ? ZRules.ZombieHeadMult : 1f);
         _zShotRay.TryAdd(z, _zLastRay);
         if (head)
+        {
             _zShotHead.Add(z);
+            z.HeadHitTick = ServerTick; // the head bit in ZEnts and the headshot screech (ZombieSounds.cs)
+        }
     }
 
     /// <summary>Server: applies a trigger pull's zombie damage, then the gun's special ammo effects (ZombiesAmmoEffects.cs). Returns hit flags (1 hit, 2 headshot, 4 kill).</summary>

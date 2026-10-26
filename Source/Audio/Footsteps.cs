@@ -342,4 +342,13 @@ public sealed class FootstepVoicePool
         _dist[pick] = distance;
         return pick;
     }
+
+    /// <summary>Re-books voice <paramref name="v"/> (a sound cutting the same source's last one).</summary>
+    public void Take(int v, double now, float distance, float seconds)
+    {
+        if ((uint)v >= (uint)_until.Length)
+            return;
+        _until[v] = now + seconds;
+        _dist[v] = distance;
+    }
 }

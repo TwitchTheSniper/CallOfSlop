@@ -81,7 +81,7 @@ public sealed partial class Audio
             _slot.Load(_reverb);
             _slot.Gain = 0.3f;
             var sends = efx.MaxAuxiliarySends;
-            foreach (var src in _sources.Concat(_stepSources))
+            foreach (var src in _sources.Concat(_stepSources).Concat(_zombieSources))
             {
                 if (sends > 0)
                     src.SetAuxiliarySend(_slot, 0, AlFilter.Null);
@@ -103,7 +103,7 @@ public sealed partial class Audio
         EfxEnabled = false;
         try
         {
-            foreach (var src in _sources.Concat(_stepSources))
+            foreach (var src in _sources.Concat(_stepSources).Concat(_zombieSources))
                 src.SetAuxiliarySend(AlAuxiliaryEffectSlot.Null, 0, AlFilter.Null);
             if (!_slot.IsNull())
                 _slot.Delete();

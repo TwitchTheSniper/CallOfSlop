@@ -245,8 +245,12 @@ def landing_pad():
 
 def ore_dock_north():
     """The north ore dock (hill 2): hoppers, a conveyor climbing out of the pit, crates and a sign."""
-    for z in (-10, -14, -18, -22):
-        prop("Ore Conveyor Section", 3.0, z, 0, 90)
+    # One continuous belt from the pit floor up the ramp to the dock: four sloped sections, each pitched to the ramp's
+    # straight profile (anchor "world": y is the ground height at the section's centre, so none floats or sinks).
+    run = 4.75
+    for k in range(4):
+        zc = -8 - run * (k + 0.5)
+        prop("Ore Conveyor Slope", 1.6, zc, PIT_FLOOR + (-8 - zc) / 19.0 * (DOCK_Y - PIT_FLOOR), 90, anchor="world")
     for (n, x, z, yw) in [("Regolith Hopper", -8, -36, 0), ("Regolith Hopper", 8, -36, 0), ("Ore Bin Hopper", 0, -39, 0), ("Ore Mine Cart", -9, -31, 90),
                           ("Blasting Explosives Crate", 9, -29, 0), ("Blasting Warning Sign", 7, -26.5, 180), ("Mine Floodlight Mast", -10, -29, 0),
                           ("Sample Crate", -7, -27, 0), ("Sample Crate", -8, -27.8, 40), ("Station Deck Barrier", 6, -32, 90), ("Lunar Boulder", 12, -34, 0)]:

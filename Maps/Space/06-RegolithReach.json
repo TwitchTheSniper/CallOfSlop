@@ -2689,31 +2689,39 @@
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": 3.0,
-   "z": -10.0,
-   "yaw": 90.0
+   "name": "Ore Conveyor Slope",
+   "x": 1.6,
+   "z": -10.375,
+   "y": -3.013,
+   "yaw": 90.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": 3.0,
-   "z": -14.0,
-   "yaw": 90.0
+   "name": "Ore Conveyor Slope",
+   "x": 1.6,
+   "z": -15.125,
+   "y": -2.038,
+   "yaw": 90.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": 3.0,
-   "z": -18.0,
-   "yaw": 90.0
+   "name": "Ore Conveyor Slope",
+   "x": 1.6,
+   "z": -19.875,
+   "y": -1.062,
+   "yaw": 90.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": 3.0,
-   "z": -22.0,
-   "yaw": 90.0
+   "name": "Ore Conveyor Slope",
+   "x": 1.6,
+   "z": -24.625,
+   "y": -0.087,
+   "yaw": 90.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
@@ -5184,31 +5192,39 @@
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": -3.0,
-   "z": 10.0,
-   "yaw": 270.0
+   "name": "Ore Conveyor Slope",
+   "x": -1.6,
+   "z": 10.375,
+   "y": -3.013,
+   "yaw": 270.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": -3.0,
-   "z": 14.0,
-   "yaw": 270.0
+   "name": "Ore Conveyor Slope",
+   "x": -1.6,
+   "z": 15.125,
+   "y": -2.038,
+   "yaw": 270.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": -3.0,
-   "z": 18.0,
-   "yaw": 270.0
+   "name": "Ore Conveyor Slope",
+   "x": -1.6,
+   "z": 19.875,
+   "y": -1.062,
+   "yaw": 270.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
-   "name": "Ore Conveyor Section",
-   "x": -3.0,
-   "z": 22.0,
-   "yaw": 270.0
+   "name": "Ore Conveyor Slope",
+   "x": -1.6,
+   "z": 24.625,
+   "y": -0.087,
+   "yaw": 270.0,
+   "anchor": "world"
   },
   {
    "op": "Prop",
