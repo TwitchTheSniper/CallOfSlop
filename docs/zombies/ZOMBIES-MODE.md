@@ -11,7 +11,7 @@ mystery box, wall buys, part drops and the workbench (the weapon builder: `WEAPO
 Everything marked **proposed** is a working default for the user to change; the numbers live in data files.
 
 Code: `Source/Game/ZombiesMode.cs` (run state, rounds, points, players, downs, the interact key, buyables, box, parts,
-workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups), `ZombiesAmmoEffects.cs` (special ammo), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror),
+workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups), `ZombiesSlots.cs` (slot machines), `ZombiesAmmoEffects.cs` (special ammo), `ZombieAI.cs` (spawning, AI, hit tests), `ZombiesNet.cs` (messages, client mirror),
 `ZombieAnimNet.cs` (animation clocks and sync), `Source/Render/ZombieAnim.cs` (the zombie poses, see "Animation"), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
@@ -143,6 +143,7 @@ grey: not possible now (needs the power, already owned...).
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Scrap, once per round per pile | +25 scrap |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 
 ### Perks (proposed; "perks", up to 8)
 
@@ -246,6 +247,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "slotUpgrade": {"at": [x, z], "yaw": -90, "cost": 4000},
   "power": {"at": [x, z], "yaw": -90},
   "salvage": [ {"at": [x, z], "cost": 25} ],
+  "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0} ],
   "machineProps": true
 }
 ```
@@ -254,10 +256,11 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   `Props/Zombies` (players, zombies, bullets and the bots' nav graph treat it like any solid prop): **Perk Machine** (the
   game paints the perk's colour and lit sign on its front), **Mystery Box Crate** (one at every box spot; the box itself
   is drawn a little bigger over the crate at the spot it's in), **Zombies Workbench**, **Power Switch Box** (the lever
-  and lamp are drawn on it) and **Weapon Locker** (the slot upgrade; its screen is drawn on it). The section places them
+  and lamp are drawn on it) and **Weapon Locker** (the slot upgrade; its screen is drawn on it) and **Reel Cabinet** (a slot machine; its reels, heat
+  meter and topper lights are drawn on it). The section places them
   itself (they're not ops), facing the machine's `yaw`, so put each machine where its prop fits: a perk machine is
-  0.9 x 0.7 m, a box crate 1.3 x 0.66, a workbench 1.6 x 0.8, the locker 1.0 x 0.6 and the power box 0.7 x 0.3 (place
-  it 0.2 m off a wall). They count towards the map's prop fingerprint. Without the key (Zombies Test) machines are drawn
+  0.9 x 0.7 m, a box crate 1.3 x 0.66, a workbench 1.6 x 0.8, the locker 1.0 x 0.6, the reel cabinet 0.9 x 0.7 and the power box 0.7 x 0.3
+  (place it 0.2 m off a wall). They count towards the map's prop fingerprint. Without the key (Zombies Test) machines are drawn
   without collision, as before.
 
 - **Areas** are rectangles; the **area graph** is made by the doors: an area is unlocked when it's the start area or
@@ -292,18 +295,72 @@ the ambient raised so it stays readable, flickering caged lamps, tube lights and
 
 | Area | Way in (price) | What's there |
 | --- | --- | --- |
-| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Quick Revive and Second Wind (no power), the Wall Rifle, box spot 1, a reception desk |
+| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Quick Revive and Second Wind (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk |
 | **East Ward** | the Ward Door (750) | 2 windows, Juggernog (power), the Wall SMG, salvage, hospital beds |
 | **West Offices** | the Records Debris (750) | 2 windows, Speed Cola (power), the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
 | **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, a fountain |
 | **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, generators |
 | **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Double Tap (power), the Wall SMG, box spot 4, pews and an altar |
-| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, the Wall Pump, box spot 5, salvage, consoles |
+| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), the Wall Pump, box spot 5, salvage, consoles |
 
 Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 5 perk
-machines (3 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
+machines (3 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
 the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
 runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
+
+## Slot machines (board item "Zombies slots", 2026-10-26)
+
+"Slot machines: gamble points for weapon-builder parts, with rarity rising as the rounds go on (a per-round odds table,
+a machine 'heat' pity timer, and jackpot rounds every 5th round)." The mystery box gives complete builds only (a user
+decision), so the slots are where a run gambles for **single parts**. Code: `Source/Game/ZombiesSlots.cs` (server,
+odds, reels, network), `Source/App/Program.ZombiesSlots.cs` (drawing); prop `Props/Zombies/ReelCabinet.json`;
+self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Every number is data
+(`ZombiesRules.json` "slots", `DropTables.json` "slotTiers").
+
+- **A pull.** Walk up (a machine's prompt: "Hold [F] to pull the slot machine [550] - heat 2/5"), hold F like any buy
+  and pay **500 + 25 a round after the first** (at most 1250; a machine's own `cost` overrides it). The three reels spin
+  for 2 s and stop one by one (a click each) on what the server rolled; the result shows for 2.5 s (the reels flash, a
+  part won floats over the cabinet), then the machine takes the next pull. One player at a time per machine.
+- **What the reels mean.** Symbols: a **skull**, a **cog** (scrap), a **coin** (points back) and a **gem** per rarity
+  in its colour (the wonder gem only on jackpot rounds). **Three of a gem**: a loose part of that rarity; **two of a
+  gem**: a part one tier lower (two commons: scrap); otherwise a cog pays **40 scrap**, a coin **1.5 x the price back**
+  in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
+  as it (self-test: they always do), so the table, not the reels, sets the odds.
+- **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
+  a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose is
+  **auto-scrapped** into its scrap value instead (`autoScrapAt`). A legendary or wonder part is announced to everyone.
+- **Rarity rising: three levers that stack.**
+  1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 25, 35): weights for nothing, scrap,
+     points and each part tier; the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
+     common and uncommon, 2 percent rare or better; round 36: about half rare or better).
+  2. **Machine heat** (the pity timer): every pull that doesn't pay a **rare-or-better** part (`pityTier`) adds 1 heat;
+     every **5** heat (`heatStep`) moves the part weights **one tier up** (at most 3 steps, `heatMaxSteps`); a
+     rare-or-better part resets it to 0. Heat belongs to the machine (shared by the team, so a cold machine is a choice).
+     The cabinet shows it: a 5-segment meter under the reels fills towards the next step (yellow, orange, red; flashing
+     at the top), and the topper's lights chase faster as it warms up.
+  3. **Jackpot rounds** (every 5th round, `jackpotEvery`): the **wonder gem** goes on the reels and legendary (+6) and
+     wonder (+4) weights are added; the topper flashes gold and pink and the prompt says "JACKPOT ROUND". Outside
+     jackpot rounds wonder parts never come up from the slots.
+- **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
+  would-be blank pays scrap instead.
+- **Placement**: Blackmoor Asylum has two (the Receiving Hall, against the east wall by the Ward Door, and the Research
+  Lab, which needs the power); Zombies Test two (the start room, and the Power Room on the power). Map key `"slots"`
+  (spots like a perk machine's: `at`, `yaw`, `power`, `cost`), at most 8; with machine props each stands as a solid
+  **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall, its front facing the yaw).
+- **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
+  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left). Clients start the reel
+  animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
+  and scrap come in `ZRun` as for any payout. Bots don't use the machines. Nothing in the machines' tick allocates
+  (self-test).
+
+| Rules (`ZombiesRules.json` "slots") | Default | What |
+| --- | --- | --- |
+| `costBase`, `costPerRound`, `costMax` | 500, 25, 1250 | the price: base + per round after the first, capped |
+| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long the result shows |
+| `heatStep`, `heatMaxSteps`, `pityTier` | 5, 3, rare | heat per tier step, the most steps, the tier that resets heat |
+| `maxNothing` | 3 | blanks in a row per player per machine, at most |
+| `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
+| `scrapPayout`, `pointsBack`, `autoScrapAt` | 40, 1.5, 3 | scrap for a cog, points back (x the price) for a coin, auto-scrap from this many loose |
 
 ## Dropped builds (user decision, 2026-10-21)
 
@@ -515,6 +572,8 @@ Insta-Kill / Double Points' seconds left; `ZEvent` gains `MaxAmmo` (refill your 
 effect: kind, sound and a position after the text; unreliable); bits 6-7 of a zombie's state byte in `ZEnts` say
 burning / zapped. (38 and 39 are other features on main.)
 
+Protocol 51 (2026-10-26): `ZWorld` ends with the slot machines (see "Slot machines"). (50 is the zombie sounds on main.)
+
 Protocol 49 (2026-10-23): `ZWorld`'s floating power-ups may be kind 5 (Infinite Ammo), and a third timer (Infinite
 Ammo's tenths of a second left) follows Insta-Kill's and Double Points'.
 
@@ -541,7 +600,7 @@ most 2 nav graph searches per tick (the rest steer straight until their turn). T
 
 ## Controls
 
-F (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench to open it (Esc / Close goes back).
+F (Interact): hold to buy, revive, rebuild boards, salvage, pull a slot machine; press at a workbench to open it (Esc / Close goes back).
 F3 (Ready): between rounds, ready for the next one (again: not ready; the host, once ready: start it now).
 Right / Left arrow (or Fire / Aim): while out after bleeding out, spectate the next / previous living teammate.
 Downed: the move keys crawl.
@@ -573,3 +632,6 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 12. **Ready-up** (2026-10-23): the fallback is 3 minutes and the countdown 3 s; the host forces the start by pressing F3
     again once ready (rather than a separate key). Spectating is over the shoulder only (first person would need the
     watched player's arms and gun drawn). OK?
+13. **Slot machines** (2026-10-26, proposed defaults): the odds table, heat (5 a step, 3 steps, shared by the team),
+    jackpot every 5th round, 3 blanks at most, auto-scrap from 3 loose copies. Not done: **bet levels** (1x / 2x / 5x)
+    and a machine that **moves** on a skull like the box's teddy bear (the cabinets are solid map props); bots don't pull.

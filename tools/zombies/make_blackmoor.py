@@ -6,7 +6,7 @@ Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
 buys, five perk machines, the power switch (it gates three perks and the lab shutter), two workbenches, four salvage
-piles and the weapon-slot upgrade. Every machine is a solid prop ("machineProps": true). The script also checks its own
+piles, the weapon-slot upgrade and two slot machines (the start room, and the lab on the power). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
 Plan (north is -Z, east is +X):

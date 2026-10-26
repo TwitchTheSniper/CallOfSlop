@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Zombies Test",
-  "description": "Zombies test map: a start room and three areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade and the power switch. The machine props (Props/Zombies) stand in a row outside the west wall.",
+  "description": "Zombies test map: a start room and three areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade, the power switch and two slot machines (one on the power). The machine props (Props/Zombies) stand in a row outside the west wall.",
   "author": "Call of Slop",
   "order": 985,
   "halfX": 24,

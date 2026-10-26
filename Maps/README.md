@@ -1107,7 +1107,7 @@ gravity maps have "Space: gravity physics" for standing on walls and the Pebble 
 
 A map with a `"zombies"` section can be played in the Zombies mode (and only those maps offer it in the lobby): its
 areas, doors and debris, boarded windows, zombie spawners, wall buys, mystery box spots, workbenches, perk machines,
-the weapon-slot upgrade, the power switch and salvage piles. The format is in
+the weapon-slot upgrade, the power switch, salvage piles and slot machines. The format is in
 [docs/zombies/ZOMBIES-MODE.md](../docs/zombies/ZOMBIES-MODE.md) ("Map format"); `Dev/ZombiesTest.json` is a worked
 example and `Zombies/01-BlackmoorAsylum.json` (the **Zombies** pack, written by `tools/zombies/make_blackmoor.py`) a
 full map. With `"machineProps": true` in the section every machine stands as a solid prop from `Props/Zombies`, placed
