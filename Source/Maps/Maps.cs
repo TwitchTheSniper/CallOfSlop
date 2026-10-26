@@ -641,12 +641,14 @@ public static partial class Maps
         LoadInto(new MapPack { Name = MapPack.LooseName, Description = "Map files placed directly in the Maps folder.", Order = int.MaxValue },
             Directory.GetFiles(folder, "*.json", SearchOption.TopDirectoryOnly), true, "");
 
+        var tFiles = System.Diagnostics.Stopwatch.GetTimestamp();
         // Build every file (in parallel: each map is built alone from its own text; the shared libraries are loaded
         // first and only read after that), then take the results in file order, exactly as one-by-one loading did.
         RunJobs(jobs, parallel, j =>
         {
             j.Map = MapFile.Load(File.ReadAllText(j.File), j.Rel, j.PackDir); // packDir: the pack's own props and models come first
         }, warm: true);
+        var tBuilt = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var j in jobs)
         {
             if (j.Log.Length > 0)
@@ -690,7 +692,11 @@ public static partial class Maps
             sorted[i].Id = (byte)i;
         // Validate each map (it only moves that map's own spawns and waypoints), in parallel too; the log in list order.
         var checks = sorted.Select(m => new LoadJob(null!, "", m.SourceFile ?? m.Name, false, "") { Map = m }).ToList();
+        var tValidate = System.Diagnostics.Stopwatch.GetTimestamp();
         RunJobs(checks, parallel, j => j.Map!.Validate(), warm: false);
+        var tEnd = System.Diagnostics.Stopwatch.GetTimestamp();
+        LastLoadTimes = (System.Diagnostics.Stopwatch.GetElapsedTime(tFiles, tBuilt).TotalMilliseconds - _warmMs, _warmMs,
+            System.Diagnostics.Stopwatch.GetElapsedTime(tValidate, tEnd).TotalMilliseconds);
         foreach (var j in checks)
         {
             if (j.Log.Length > 0)
@@ -706,6 +712,12 @@ public static partial class Maps
         var usedPacks = packs.Where(p => p.Maps.Count > 0).OrderBy(p => p.Order).ThenBy(p => p.Name, StringComparer.OrdinalIgnoreCase).ToArray();
         return (sorted, usedPacks);
     }
+
+    /// <summary>The last <see cref="LoadFolder(string, List{string}, bool)"/>: ms building the map files, loading the shared
+    /// libraries first (parallel loads only; otherwise inside the build), validating.</summary>
+    public static (double BuildMs, double LibrariesMs, double ValidateMs) LastLoadTimes { get; private set; }
+
+    private static double _warmMs;
 
     private sealed class LoadJob(MapPack pack, string file, string rel, bool loose, string packDir)
     {
@@ -736,6 +748,8 @@ public static partial class Maps
                 j.Error = ex; // rethrown (or reported) by the caller, in order
             }
         }
+        if (warm)
+            _warmMs = 0;
         if (!parallel || jobs.Count < 2 || Environment.ProcessorCount < 2)
         {
             foreach (var j in jobs)
@@ -744,6 +758,7 @@ public static partial class Maps
         }
         if (warm)
         {
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             _ = Props.All;
             _ = Decals.All;
             _ = Buildings.All;
@@ -755,6 +770,7 @@ public static partial class Maps
                 _ = Decals.ForPack(dir.Length > 0 ? dir : null);
                 _ = MapPack.DestructibleDefault(dir.Length > 0 ? dir : null);
             }
+            _warmMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         }
         var console = Console.Out;
         var router = new JobConsole(console);
