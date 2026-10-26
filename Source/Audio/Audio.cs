@@ -67,6 +67,16 @@ public enum Sfx
     LockedTone, // locked on (a high solid tone)
     FlarePop, // a kill streak machine popping flares against an incoming lock-on rocket
     GibSquelch, // an animal or a body bursting into meaty gibs (SynthGore.cs)
+    ZombieGroan, // zombies (SynthZombie.cs, played by ZombieSounds): a long low moan while it wanders
+    ZombieGrowl, // a wet rattling growl (chasing, tearing boards, climbing in, rising)
+    ZombieAttack, // the swipe's snarl on the windup
+    ZombieHurt, // a grunt when shot (body)
+    ZombieHeadshot, // a screech when shot in the head
+    ZombieDeath, // a death rattle
+    ZombieHeadDeath, // a screech cut off into a gurgle (a headshot kill)
+    ZombieShuffle, // a walker's dragged step
+    ZombieRun, // a runner's footfall
+    ZombieSprint, // a sprinter's stamping footfall
     COUNT,
 }
 
@@ -140,6 +150,7 @@ public sealed partial class Audio : IDisposable
             _context.MakeCurrent();
             _sources = Al.GenSources(Voices);
             _stepSources = Al.GenSources(StepVoices);
+            InitZombieSources(); // Audio.Zombies.cs
 
             var sw = Stopwatch.StartNew();
             var pcm = SynthesiseAll();
@@ -172,7 +183,7 @@ public sealed partial class Audio : IDisposable
             }
             Console.WriteLine($"Audio: OpenAL ready, synthesised {BufferCount} sounds in {SynthMs:0} ms.");
             Console.WriteLine($"[audio] {BufferCount} buffers ({BufferBytes / 1024} KB) synthesised in {SynthMs:0} ms on {Environment.ProcessorCount} threads; "
-                + $"{Voices} effect voices + {StepVoices} footstep voices; footsteps {(int)FootSurface.Count} surfaces x 2 gaits x {Synth.StepVariants} variants; "
+                + $"{Voices} effect voices + {StepVoices} footstep voices + {ZombieSounds.VoiceCap}+{ZombieSounds.StepCap} zombie voices/steps; footsteps {(int)FootSurface.Count} surfaces x 2 gaits x {Synth.StepVariants} variants; "
                 + $"EFX {EfxStatus}; HRTF {hrtf}");
             var lib = GunSampleLibrary.Shared;
             Console.WriteLine($"[audio] gun samples: {lib.FilesLoaded}/{lib.FilesListed} files ({lib.BytesLoaded / 1024} KB) loaded in {lib.LoadMs:0} ms from {lib.Folder}"
@@ -607,6 +618,7 @@ public sealed partial class Audio : IDisposable
         }
         DisposeFrenzyGun();
         DisposeEfx();
+        DisposeZombieSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);
@@ -945,6 +957,8 @@ public static partial class Synth
             return launcher; // SynthLaunchers.cs
         if (GoreFoley(sfx, variant) is { } gore)
             return gore; // SynthGore.cs
+        if (ZombieFoley(sfx, variant) is { } zombie)
+            return zombie; // SynthZombie.cs
         var rng = new Random(77 + (int)sfx + variant * 1000);
         Buf b;
         switch (sfx)
