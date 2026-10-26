@@ -178,7 +178,7 @@ public static class Keybinds
             GameAction.SwapWeapon => "Swap weapon",
             GameAction.Loadout => "Loadout menu",
             GameAction.Scoreboard => "Scoreboard (hold)",
-            GameAction.Grenade => "Throw grenade",
+            GameAction.Grenade => "Throw grenade (Zombies: take apart at the box)",
             GameAction.Equipment => "Use equipment",
             GameAction.Melee => "Melee",
             GameAction.Streak1 => "Kill streak 1 (cheapest)",

@@ -101,7 +101,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     power-ups, and a third timer (Infinite Ammo's tenths of a second left) after Insta-Kill's and Double Points'.
     // 50: zombie voices (Source/Audio/ZombieSounds.cs): bit 3 of a zombie's state byte in Msg.ZEnts is the head bit (a head
     //     hit in the last 4 ticks while alive, a headshot kill once dead); the state is the low 3 bits.
-    public const byte ProtocolVersion = 50;
+    // 51: Zombies slot machines (Source/Game/ZombiesSlots.cs): Msg.ZWorld ends with the machines (a count, then 11 bytes
+    //     each: state, heat, owner, spin counter, three reel symbols, result / tier / auto-scrapped, the part, tenths left).
+    public const byte ProtocolVersion = 51;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

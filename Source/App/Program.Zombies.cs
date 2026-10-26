@@ -171,6 +171,8 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.25f, 0.4f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.8f, 0)), new Vector3(0.1f, 0.1f, 0.1f));
         }
 
+        DrawSlotMachines(zm, live, now); // slot machines: reels, heat meter, topper lights (Program.ZombiesSlots.cs)
+
         // The weapon-slot upgrade (a crate with two gun racks), the power switch, workbenches, salvage piles.
         if (zm.SlotUpgrade is { } su)
         {
@@ -454,6 +456,8 @@ public static unsafe partial class Program
         if (_game.Mode != GameMode.Zombies)
             return;
         _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
+        if (_mouseCaptured && Pressed(GameAction.Grenade))
+            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the gun in your hands apart (no grenades in Zombies)
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);

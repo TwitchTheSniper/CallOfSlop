@@ -173,6 +173,55 @@ public static partial class SelfTest
                 Fail("disassembling should only work at a workbench");
         }
 
+        // ---- At the mystery box: exactly what the workbench gives (board item, 2026-10-26) ----
+        if (zm.BoxSpots.Count == 0)
+            Fail("disassemble at the box: the test map needs a mystery box");
+        else
+        {
+            Dictionary<string, int> GainedAt(bool atBox, ref double t, out string? why, out bool emptied, out string state)
+            {
+                using var g = ZGame(0, ref t, tweak: r => r.FirstRoundDelay = 9999);
+                var me = g.Local!;
+                var zp = g.ZP(me);
+                g.GiveBuild(me, 0, multi.Build(), full: true);
+                zp.Parts["Red Dot"] = 1;
+                var spot = zm.BoxSpots[Math.Clamp(g.BoxSpot, 0, zm.BoxSpots.Count - 1)];
+                me.Teleport(atBox ? spot.At + new Vector3(0, 0, -1.2f) : zm.Benches[0].At + new Vector3(0, 0, -1.2f));
+                var before = new Dictionary<string, int>(zp.Parts, StringComparer.OrdinalIgnoreCase);
+                why = g.ServerBench(me, Game.BenchDisassemble, 0, "");
+                emptied = zp.Slots[0] == null && Game.IsEmptyGun(me.BuiltPrimary);
+                var gained = DisGained(before, zp.Parts);
+                state = "";
+                if (atBox)
+                {
+                    // The other bench actions still need a bench; a teddy-bear box (moving) refuses; the client's key and prompt.
+                    var salvage = g.ServerBench(me, 1, 0, "Red Dot");
+                    g.GiveBuild(me, 1, wall.Build(), full: true);
+                    g.BoxState = ZBoxState.Teddy;
+                    var teddy = g.ServerBench(me, Game.BenchDisassemble, 1, "");
+                    g.BoxState = ZBoxState.Spinning;
+                    var prompt = g.BoxDisassemblePrompt("G", t);
+                    g.BoxDisassembleKey(t); // first press: armed
+                    var armedKept = zp.Slots[1] != null && g.BoxDisassembleArmed(1, t);
+                    g.BoxDisassembleKey(t + 0.5); // second press: the request (the host runs it at once)
+                    var spinning = zp.Slots[1] == null;
+                    me.Teleport(spot.At + new Vector3(0, 0, -(Game.BoxDisassembleRange + 1.5f)));
+                    g.GiveBuild(me, 1, wall.Build(), full: true);
+                    var away = g.ServerBench(me, Game.BenchDisassemble, 1, "");
+                    state = $"salvage at the box '{salvage}', teddy '{teddy}', prompt '{prompt}', key arms first {armedKept}, while spinning {spinning}, away '{away}'";
+                    if (salvage == null || teddy == null || away == null || !armedKept || !spinning || prompt == null)
+                        Fail("at the box only Disassemble works (not salvage), not while the box moves (teddy) or away from it; the key takes two presses");
+                }
+                return gained;
+            }
+            var atBench = GainedAt(false, ref now, out var whyBench, out var emptyBench, out _);
+            var atBox = GainedAt(true, ref now, out var whyBox, out var emptyBox, out var boxState);
+            var same = whyBench == null && whyBox == null && emptyBench && emptyBox && DisSame(atBench, atBox) && atBench.Values.Sum() == multi.Build().Nodes.Count();
+            ZLine($"disassemble at the box: '{multi.Name}' -> {whyBox ?? "ok"}, {atBox.Values.Sum()} parts, the same as at a workbench ({atBench.Values.Sum()}) {same}; {boxState}");
+            if (!same)
+                Fail("disassembling at the mystery box should give exactly what the workbench gives and leave the slot empty");
+        }
+
         // ---- Co-op: the server's messages leave a client (and a joiner) with the same slots and parts ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
         {
