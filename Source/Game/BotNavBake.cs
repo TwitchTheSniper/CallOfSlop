@@ -71,11 +71,11 @@ public static class NavBake
     public static byte[] KeyOf(Map map, uint contentHash)
     {
         using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-        Span<byte> buf = stackalloc byte[16];
+        var buf = new byte[4];
         void U(uint v)
         {
             BitConverter.TryWriteBytes(buf, v);
-            sha.AppendData(buf[..4]);
+            sha.AppendData(buf);
         }
         void F(float f) => U(BitConverter.SingleToUInt32Bits(f));
         void V(Vector3 v)

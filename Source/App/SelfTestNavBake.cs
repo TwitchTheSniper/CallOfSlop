@@ -206,7 +206,7 @@ public static partial class SelfTest
         Line($"Paris Quarter in a match: ready after {ticks} ticks ({g.Origin}), the longest tick's share {worst:0.0} ms");
         if (g.Origin != "cached" || NavFingerprint(g) != built)
             Fail($"Nav bake: Paris Quarter in a match came out {g.Origin} ({NavBake.LastResult})");
-        if (SelfTestTiming.Available && worst > 8)
+        if (TickCpu.Available && worst > 8)
             Fail($"Nav bake: looking for the bake took {worst:0.0} ms of one tick (budget 8 ms)");
     }
 }
