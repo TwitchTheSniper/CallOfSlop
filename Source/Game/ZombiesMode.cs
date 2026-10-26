@@ -1252,8 +1252,14 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm || !p.Alive || IsDowned(p))
             return "Not now.";
-        if (!zm.Benches.Any(b => Flat(b.At - p.Position) <= 3.5f))
-            return "You're not at a workbench.";
+        if (!AtWorkbench(p))
+        {
+            // Taking the build in a slot apart works at the mystery box too (ZombiesDisassemble.cs); everything else needs a bench.
+            if (kind != BenchDisassemble)
+                return "You're not at a workbench.";
+            if (BoxDisassembleRefusal(p) is { } notAtBox)
+                return notAtBox;
+        }
         var zp = ZP(p);
         switch (kind)
         {

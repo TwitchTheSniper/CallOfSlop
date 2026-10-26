@@ -109,8 +109,93 @@ public sealed partial class Game
         }
         ClearSlot(p, slot);
         SendZRun(p);
-        ZFeedTo(p, $"Workbench: took the {old.Name} apart: {total} part{(total == 1 ? "" : "s")} to your loose parts.", Sfx.HitTick);
+        var where = AtWorkbench(p) ? "Workbench" : "At the box";
+        ZFeedTo(p, $"{where}: took the {old.Name} apart: {total} part{(total == 1 ? "" : "s")} to your loose parts.", Sfx.HitTick);
         return null;
+    }
+
+    // ---- At the mystery box (board item "Zombies": disassemble at the box, 2026-10-26) ------------------
+
+    /// <summary>How close to the mystery box (its current spot) a player must stand to take a build apart there.</summary>
+    public const float BoxDisassembleRange = 2.4f;
+
+    /// <summary>Is <paramref name="p"/> standing at a workbench (the range every bench action allows)?</summary>
+    private bool AtWorkbench(Player p)
+    {
+        if (ZMap is not { } zm)
+            return false;
+        foreach (var b in zm.Benches)
+            if (Flat(b.At - p.Position) <= 3.5f)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Can <paramref name="p"/> take a build apart at the mystery box now? Null when yes, else why not. Free, and it works
+    /// while the box is idle, spinning or offering (it's your own gun, not the box's); not while the teddy bear has it
+    /// (the box is flying off to another spot).
+    /// </summary>
+    public string? BoxDisassembleRefusal(Player p)
+    {
+        if (ZMap is not { } zm || zm.BoxSpots.Count == 0)
+            return "There's no mystery box on this map.";
+        var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
+        if (Flat(spot.At - p.Position) > BoxDisassembleRange)
+            return "You're not at a workbench or the mystery box.";
+        if (BoxState == ZBoxState.Teddy)
+            return "The mystery box is moving: take it apart at a workbench, or wait for the box.";
+        return null;
+    }
+
+    /// <summary>Local: the slot armed for a disassembly at the box (the first press of the key) and when; -1 when not armed.</summary>
+    private int _boxDisArmedSlot = -1;
+
+    private double _boxDisArmedAt;
+
+    /// <summary>Local: is the box-side disassembly of slot <paramref name="slot"/> armed (a second press confirms it)?</summary>
+    public bool BoxDisassembleArmed(int slot, double now) => _boxDisArmedSlot == slot && now - _boxDisArmedAt < 4.0;
+
+    /// <summary>
+    /// Local: what the second key at the mystery box would take apart (the build in your hands, slot 0-3), or -1: you're
+    /// standing at the box (within its prompt's reach; idle, spinning or offering), alive and not downed, and the gun in your hands is a build.
+    /// </summary>
+    public int BoxDisassembleSlot()
+    {
+        if (Local is not { } me || ZMap is not { } zm || zm.BoxSpots.Count == 0 || !IsStanding(me) || Phase != MatchPhase.Playing || BoxDisassembleRefusal(me) != null)
+            return -1;
+        if (Flat(zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)].At - me.Position) > 1.9f)
+            return -1; // the box's own prompt range (the server allows a little more, for lag)
+        var slot = SlotOf(me, me.Weapon);
+        return slot is >= 0 and < 4 && ZP(me).Slots[slot] != null ? slot : -1;
+    }
+
+    /// <summary>
+    /// Local: the box's disassemble key (the grenade key, G: no grenades in Zombies) was pressed. The first press arms it
+    /// and says what will happen; a second press within 4 s sends the same request as the workbench's Disassemble
+    /// (<see cref="BenchDisassemble"/>), which the server checks against the box instead of a bench.
+    /// </summary>
+    public void BoxDisassembleKey(double now)
+    {
+        if (Local == null || BoxDisassembleSlot() is not (>= 0 and var slot))
+            return;
+        if (!BoxDisassembleArmed(slot, now))
+        {
+            _boxDisArmedSlot = slot;
+            _boxDisArmedAt = now;
+            return;
+        }
+        _boxDisArmedSlot = -1;
+        BenchRequest(BenchDisassemble, slot, ""); // the server checks the box and the slot, and moves the parts
+    }
+
+    /// <summary>Local: the HUD's second line at the mystery box (null when there's nothing in your hands to take apart).</summary>
+    public string? BoxDisassemblePrompt(string key, double now)
+    {
+        if (BoxDisassembleSlot() is not (>= 0 and var slot) || Local is not { } me || ZP(me).Slots[slot] is not { } b)
+            return null;
+        return BoxDisassembleArmed(slot, now)
+            ? $"Press [{key}] again to take the {b.Name} apart: all {b.Nodes.Count()} parts to your loose parts, slot {slot + 1} left empty"
+            : $"Press [{key}] twice to take the {b.Name} apart into parts (free)";
     }
 
     /// <summary>

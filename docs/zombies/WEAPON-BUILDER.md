@@ -553,6 +553,9 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   ZOMBIES-MODE.md, "Disassembling a build". **The main menu's sandbox has no Disassemble**: its stock is every part
   without limit (or the fixed practice stock), there's no inventory for parts to go back to, so taking a build apart
   would change nothing; "New weapon" (N) already starts from an empty grip there.
+- **Disassemble at the mystery box (board item, 2026-10-26).** The same take-apart works standing at the mystery box,
+  without opening the bench: **G twice** (the grenade key; Zombies has no grenades) takes the gun in your hands apart.
+  It's the same server action and gives exactly what the workbench gives (ZOMBIES-MODE.md, "Disassembling a build").
 - **Server authority is unchanged**: Apply sends the build's text in `ZBench` and the server checks the parts again;
   crafting the missing parts is the existing craft request, sent once per part before the build (reliable, ordered).
   No new messages for these (Disassemble is a new `ZBench` kind, protocol 41). The workbench is a menu for the cursor

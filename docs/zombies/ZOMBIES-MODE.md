@@ -213,6 +213,19 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   parts, and sends `ZRun` (your loose parts) to you and a `ZBuild` with flag 4 ("cleared", no text; the weapon id of the
   Empty hands copy for slots 1-2) to everyone, so every PC shows the slot empty and the hands move the same way. Joiners
   get a cleared `ZBuild` for every empty slot 1-2 after the builds. An older build can't join (protocol 40).
+- **At the mystery box (board item "Zombies", 2026-10-26).** "Disassemble weapons directly at the mystery box into
+  parts, not only at a workbench." Standing at the box (in reach of its prompt), a second HUD line under the box's
+  prompt says "Press [G] twice to take the Wall Rifle apart into parts (free)": **G** (the grenade key, rebindable as
+  "Throw grenade (Zombies: take apart at the box)"; there are no grenades in Zombies) **twice within 4 s** takes the
+  **gun in your hands** apart; the first press arms it (the line turns orange and says how many parts). It's the
+  **same server action** as the workbench's (`ZBench` kind 3): the server accepts it at a workbench or within 2.4 m of
+  the box's current spot, so it gives exactly the same parts, the same empty slot and the same checks (self-test: the
+  same build at the box and at a bench gives the same parts). The other bench actions (salvage, craft, Apply) still
+  need a bench. Decisions (proposed, easy to change): **free** (no points, no scrap: you only move parts you own); it
+  works while the box is **idle, spinning or offering** (it's your own gun; taking apart the gun in your hands just
+  before taking the offered build puts the build into the emptied slot), but **not while the teddy bear has it** (the
+  box is flying off); the teddy bear has no other role; the melee slot is taken apart at a bench only (the box key
+  works on what's in your hands). No wire change (the request is the same message; only where the server accepts it).
 - **The main menu's sandbox** has no Disassemble: its stock is unlimited (or the fixed practice stock), so there's no
   inventory to put parts back into; "New weapon" already starts from an empty grip.
 
@@ -478,7 +491,7 @@ F (Interact): hold to buy, revive, rebuild boards, salvage; press at a workbench
 F3 (Ready): between rounds, ready for the next one (again: not ready; the host, once ready: start it now).
 Right / Left arrow (or Fire / Aim): while out after bleeding out, spectate the next / previous living teammate.
 Downed: the move keys crawl.
-At the workbench, D twice (or Disassemble clicked twice) takes the slot's build apart.
+At the workbench, D twice (or Disassemble clicked twice) takes the slot's build apart; at the mystery box, G twice takes the gun in your hands apart.
 Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as before (3-4 after the upgrade).
 
 ## Open questions (for the user)
