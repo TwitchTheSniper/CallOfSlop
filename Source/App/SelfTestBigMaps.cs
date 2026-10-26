@@ -75,9 +75,10 @@ public static partial class SelfTest
         using var w = new StreamWriter(path, false);
         var errors = new List<string>();
         var t0 = Stopwatch.GetTimestamp();
-        Line($"props already loaded? {Props.LoadErrors.Count >= 0}");
         var (cold, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
         w.WriteLine($"LoadFolder cold parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {cold.Length} maps, {errors.Count} errors, {Environment.ProcessorCount} cores, {Maps.LastLoadTimes}");
+        foreach (var m in cold.OrderByDescending(m => m.LoadMs).Take(25))
+            w.WriteLine($"  cold {m.SourceFile} {m.LoadMs:0} ms");
         t0 = Stopwatch.GetTimestamp();
         var (maps, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: false);
         w.WriteLine($"LoadFolder warm serial {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms {Maps.LastLoadTimes}");

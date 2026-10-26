@@ -16,6 +16,9 @@ public sealed partial class Map
     public Vector3 Sky = new(0.36f, 0.42f, 0.50f);
 
     public readonly List<Box> Solid = new();
+
+    /// <summary>Wall-clock ms <see cref="MapFile.Load"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/> (0 otherwise).</summary>
+    public double LoadMs;
     public readonly List<Vector3> Colors = new();
     public readonly List<Vector3> Spawns = new();
     public readonly List<Vector3> Waypoints = new();
@@ -646,7 +649,9 @@ public static partial class Maps
         // first and only read after that), then take the results in file order, exactly as one-by-one loading did.
         RunJobs(jobs, parallel, j =>
         {
+            var t = System.Diagnostics.Stopwatch.GetTimestamp();
             j.Map = MapFile.Load(File.ReadAllText(j.File), j.Rel, j.PackDir); // packDir: the pack's own props and models come first
+            j.Map.LoadMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
         }, warm: true);
         var tBuilt = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var j in jobs)
