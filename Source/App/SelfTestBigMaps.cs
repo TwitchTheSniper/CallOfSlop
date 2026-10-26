@@ -73,13 +73,16 @@ public static partial class SelfTest
     {
         var path = Path.Combine(AppContext.BaseDirectory, "loaddigest.txt");
         using var w = new StreamWriter(path, false);
-        var t0 = Stopwatch.GetTimestamp();
         var errors = new List<string>();
+        var t0 = Stopwatch.GetTimestamp();
+        var (cold, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
+        w.WriteLine($"LoadFolder cold parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {cold.Length} maps, {errors.Count} errors, {Environment.ProcessorCount} cores");
+        t0 = Stopwatch.GetTimestamp();
         var (maps, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: false);
-        w.WriteLine($"LoadFolder {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {maps.Length} maps, {errors.Count} errors");
+        w.WriteLine($"LoadFolder warm serial {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms");
         t0 = Stopwatch.GetTimestamp();
         var (par, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
-        w.WriteLine($"LoadFolder parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {par.Length} maps, {Environment.ProcessorCount} cores, same: {par.Length == maps.Length && par.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second) && x.First.Id == x.Second.Id)}");
+        w.WriteLine($"LoadFolder warm parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, same: {par.Length == maps.Length && par.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second) && x.First.Id == x.Second.Id) && cold.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second))}");
         foreach (var m in maps)
         {
             var file = Path.Combine(Maps.Folder, m.SourceFile!);
