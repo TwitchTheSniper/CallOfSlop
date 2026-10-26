@@ -19,6 +19,9 @@ public sealed partial class Map
 
     /// <summary>Wall-clock ms <see cref="MapFile.Load"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/> (0 otherwise).</summary>
     public double LoadMs;
+
+    /// <summary>Wall-clock ms <see cref="Validate"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/>.</summary>
+    public double ValidateMs;
     public readonly List<Vector3> Colors = new();
     public readonly List<Vector3> Spawns = new();
     public readonly List<Vector3> Waypoints = new();
@@ -698,7 +701,12 @@ public static partial class Maps
         // Validate each map (it only moves that map's own spawns and waypoints), in parallel too; the log in list order.
         var checks = sorted.Select(m => new LoadJob(null!, "", m.SourceFile ?? m.Name, false, "") { Map = m }).ToList();
         var tValidate = System.Diagnostics.Stopwatch.GetTimestamp();
-        RunJobs(checks, parallel, j => j.Map!.Validate(), warm: false);
+        RunJobs(checks, parallel, j =>
+        {
+            var t = System.Diagnostics.Stopwatch.GetTimestamp();
+            j.Map!.Validate();
+            j.Map.ValidateMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+        }, warm: false);
         var tEnd = System.Diagnostics.Stopwatch.GetTimestamp();
         LastLoadTimes = (System.Diagnostics.Stopwatch.GetElapsedTime(tFiles, tBuilt).TotalMilliseconds - _warmMs, _warmMs,
             System.Diagnostics.Stopwatch.GetElapsedTime(tValidate, tEnd).TotalMilliseconds);

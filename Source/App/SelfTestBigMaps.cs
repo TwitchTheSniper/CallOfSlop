@@ -72,9 +72,10 @@ public static partial class SelfTest
     // quadratic paths this section exists for: those were 5-30x over (docs/perf/STREAMING.md, "Load-path fixes").
     private const double BigMapLoadBudgetMs = 2000; // any one shipped map, warm (Vuorikoski: ~0.3 s on a desktop)
     private const double AllMapsLoadBudgetMs = 15000; // every shipped map, warm, as the game loads them
-    private const double StressLoadBudgetMs = 1500; // the 10,000-prop, 400 x 400 m stress map (was 1.4 s in the container before the fixes)
-    private const double StressScalingBudget = 8; // 10,000 props vs 2,000 on the same yard: linear is under 5, quadratic was ~20
-    private const int DrawnBoxBudget = 1000; // boxes drawn one by one per map (STREAMING.md 2.3)
+    private const double ValidateBudgetMs = 150; // any one shipped map, warm (London was 0.35 s on a desktop before the fixes, 6 ms after)
+    private const double StressLoadBudgetMs = 600; // the 10,000 + 2,000-prop, 400 x 400 m stress map (~70 ms on a desktop; the old paths took seconds)
+    private const double StressScalingBudget = 8; // 5x the props on the same yard: linear is under 5, quadratic was 20 or more
+    private const int DrawnBoxBudget = 1500; // boxes drawn one by one per map (STREAMING.md 2.3; Downtown has 1,245)
     private const int PropBudget = 65535; // the prop index is a U16 on the wire (GameProps.cs)
 
     /// <summary>
@@ -114,9 +115,12 @@ public static partial class SelfTest
         // 2. Per map: load time (one by one, warm), drawn boxes, props, decals.
         foreach (var m in serial)
         {
-            var ms = Math.Min(m.LoadMs, par.First(x => x.Name == m.Name).LoadMs);
+            var twin = par.First(x => x.Name == m.Name);
+            var ms = Math.Min(m.LoadMs, twin.LoadMs);
             if (ms > BigMapLoadBudgetMs)
                 Fail($"Big maps: {m.Name} took {ms:0} ms to load (budget {BigMapLoadBudgetMs:0} ms)");
+            if (Math.Min(m.ValidateMs, twin.ValidateMs) > ValidateBudgetMs)
+                Fail($"Big maps: {m.Name} took {Math.Min(m.ValidateMs, twin.ValidateMs):0} ms to validate (budget {ValidateBudgetMs:0} ms)");
             var drawn = DrawnBoxCount(m);
             if (drawn > DrawnBoxBudget)
                 Fail($"Big maps: {m.Name} draws {drawn} boxes one by one (budget {DrawnBoxBudget})");
@@ -125,23 +129,25 @@ public static partial class SelfTest
             if (m.DecalCount > MapDecalsLimit)
                 Fail($"Big maps: {m.Name} has {m.DecalCount} decals (limit {MapDecalsLimit})");
         }
+        Line($"Slowest validate: {string.Join(", ", serial.OrderByDescending(m => m.ValidateMs).Take(4).Select(m => $"{m.Name} {m.ValidateMs:0.0} ms"))}");
         Line("Biggest maps (warm load ms, one by one / in parallel):");
         foreach (var m in serial.OrderByDescending(m => m.LoadMs).Take(8))
             Line($"  {m.Name,-22} {m.Solid.Count,6} boxes ({DrawnBoxCount(m),4} drawn one by one)  {m.PropInstances.Count,5} props  {m.FoliageInstances.Length,6} plants  "
                  + $"{m.DecalCount,5} decals  {serialTimes[m.Name],5:0} / {par.First(x => x.Name == m.Name).LoadMs,5:0} ms");
 
-        // 3. The stress map: within budget, and linear in props (the same 400 x 400 m yard with 2,000 and 10,000 props).
-        var small = StressLoad(2000, out var smallMap);
-        var big = StressLoad(10000, out var bigMap);
+        // 3. The stress map: within budget, and linear in props (the same 400 x 400 m yard with 2,000 Clutter props and
+        // 400 Prop ops, then five times both).
+        var small = StressLoad(2000, 400, out var smallMap);
+        var big = StressLoad(10000, 2000, out var bigMap);
         var ratio = big / Math.Max(small, 1);
-        Line($"Stress grid 400 x 400 m: 2,000 props {small:0} ms ({smallMap.PropInstances.Count} placed), 10,000 props {big:0} ms "
+        Line($"Stress grid 400 x 400 m: 2,400 props {small:0} ms ({smallMap.PropInstances.Count} placed), 12,000 props {big:0} ms "
              + $"({bigMap.PropInstances.Count} placed, {bigMap.Solid.Count} boxes, {bigMap.Waypoints.Count} waypoints): x{ratio:0.0}");
         if (big > StressLoadBudgetMs)
             Fail($"Big maps: the 10,000-prop stress map took {big:0} ms to load and validate (budget {StressLoadBudgetMs:0} ms)");
         if (ratio > StressScalingBudget)
             Fail($"Big maps: 5x the props took {ratio:0.0}x as long to load (budget {StressScalingBudget}x: something is quadratic again)");
-        if (bigMap.PropInstances.Count < 9000)
-            Fail($"Big maps: the stress map placed only {bigMap.PropInstances.Count} of 10,000 props");
+        if (bigMap.PropInstances.Count < 11000)
+            Fail($"Big maps: the stress map placed only {bigMap.PropInstances.Count} of 12,000 props");
     }
 
     private const int MapDecalsLimit = Map.MaxDecals;
@@ -156,9 +162,9 @@ public static partial class SelfTest
     }
 
     /// <summary>Loads and validates the stress map with <paramref name="props"/> props; the best of two runs, in ms.</summary>
-    private static double StressLoad(int props, out Map map)
+    private static double StressLoad(int props, int placed, out Map map)
     {
-        var json = StressGridJson(props, 2000, 200, 40);
+        var json = StressGridJson(props, placed, 2000, 200, 40);
         var best = double.MaxValue;
         map = null!;
         for (var run = 0; run < 2; run++)
@@ -171,8 +177,9 @@ public static partial class SelfTest
         return best;
     }
 
-    /// <summary>The stress map of tools/perf/stress_grid.py: a 2h x 2h yard, a grid of low walls, Clutter and DecalScatter ops.</summary>
-    internal static string StressGridJson(int props, int decals, int half, int walls)
+    /// <summary>The stress map of tools/perf/stress_grid.py: a 2h x 2h yard, a grid of low walls, Clutter and DecalScatter
+    /// ops, and <paramref name="placed"/> Prop ops (one prop each) at the lane crossings.</summary>
+    internal static string StressGridJson(int props, int placed, int decals, int half, int walls)
     {
         var inv = System.Globalization.CultureInfo.InvariantCulture;
         string F(double v) => v.ToString("0.####", inv);
@@ -191,6 +198,13 @@ public static partial class SelfTest
             var (w, d) = alongX ? (pitch * 0.45, 0.4) : (0.4, pitch * 0.45);
             ops.Add($"{{\"op\": \"Block\", \"x0\": {F(x - w / 2)}, \"y0\": 0, \"z0\": {F(z - d / 2)}, \"x1\": {F(x + w / 2)}, \"y1\": {F(1.2 + (ix * 7 + iz * 3) % 4 * 0.4)}, "
                     + $"\"z1\": {F(z + d / 2)}, \"color\": [{F(0.5 + ix % 3 * 0.1)}, 0.45, 0.4]}}");
+        }
+        string[] single = ["Wooden Crate", "Oil Drum", "Trash Can", "Traffic Cone"];
+        for (var k = 0; k < placed; k++)
+        {
+            int ix = k % (walls + 1), iz = k / (walls + 1) % (walls + 1);
+            var off = k / ((walls + 1) * (walls + 1)) * 1.3; // more than one per crossing: step along the lane
+            ops.Add($"{{\"op\": \"Prop\", \"name\": \"{single[k % single.Length]}\", \"x\": {F(-half + 8 + ix * pitch + off)}, \"z\": {F(-half + 8 + iz * pitch)}, \"yaw\": {k * 37 % 360}}}");
         }
         ops.Add("{\"op\": \"RingSpawns\", \"count\": 32, \"frac\": 0.85}");
         ops.Add("{\"op\": \"AutoWaypoints\", \"spacing\": 10}");
