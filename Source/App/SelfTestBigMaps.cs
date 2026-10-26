@@ -242,20 +242,8 @@ public static partial class SelfTest
         t0 = Stopwatch.GetTimestamp();
         var (par, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
         w.WriteLine($"LoadFolder warm parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, same: {par.Length == maps.Length && par.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second) && x.First.Id == x.Second.Id) && cold.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second))}");
-        foreach (var m in maps)
-        {
-            var file = Path.Combine(Maps.Folder, m.SourceFile!);
-            var rel = m.SourceFile!.Replace('\\', '/');
-            var packDir = rel.Contains('/') ? Path.Combine(Maps.Folder, rel[..rel.IndexOf('/')]) : "";
-            var text = File.ReadAllText(file);
-            var a = Stopwatch.GetTimestamp();
-            var again = MapFile.Load(text, m.SourceFile!, packDir);
-            var loadMs = Stopwatch.GetElapsedTime(a).TotalMilliseconds;
-            a = Stopwatch.GetTimestamp();
-            again.Validate();
-            var validateMs = Stopwatch.GetElapsedTime(a).TotalMilliseconds;
-            w.WriteLine($"{rel}\t{MapDigest(m):x16}\t{MapDigest(again):x16}\t{m.ContentHash:x8}\tload {loadMs:0}\tvalidate {validateMs:0}\tprops {m.PropInstances.Count}\tboxes {m.Solid.Count}");
-        }
+        foreach (var m in par)
+            w.WriteLine($"{m.SourceFile!.Replace('\\', '/')}\t{MapDigest(m):x16}\t{m.Id}");
         Line($"wrote {path}");
     }
 }
