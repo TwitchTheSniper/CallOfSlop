@@ -24,6 +24,18 @@ public sealed class RunTables
     /// <summary>Tier of the complete build the mystery box gives, by round.</summary>
     public List<RoundRow> BoxTiers = new();
 
+    /// <summary>
+    /// What a slot machine pull pays, by round (ZombiesSlots.cs): weights indexed by <see cref="SlotNothing"/>,
+    /// <see cref="SlotScrap"/>, <see cref="SlotPoints"/>, then a part of each rarity (<see cref="SlotPart"/> + the tier).
+    /// The wonder weight only counts in jackpot rounds.
+    /// </summary>
+    public List<RoundRow> SlotTiers = new();
+
+    public const int SlotNothing = 0, SlotScrap = 1, SlotPoints = 2, SlotPart = 3;
+
+    /// <summary>The outcome keys of a "slotTiers" row (after "fromRound"), in index order.</summary>
+    public static readonly string[] SlotKeys = ["nothing", "scrap", "points", "common", "uncommon", "rare", "epic", "legendary", "wonder"];
+
     /// <summary>Points prices (proposed): the mystery box, the weapon-slot upgrade (2 -> 4 slots, once per run), a wall weapon.</summary>
     public int BoxCost = 950, SlotUpgradeCost = 4000, WallCost = 500;
 
@@ -95,6 +107,7 @@ public sealed class RunTables
                 case "partDrops": t.PartDrops = Rows(p.Value, at, weights: true); break;
                 case "dropChance": t.DropChance = Rows(p.Value, at, weights: false); break;
                 case "boxTiers": t.BoxTiers = Rows(p.Value, at, weights: true); break;
+                case "slotTiers": t.SlotTiers = SlotRows(p.Value, at); break;
                 case "costs":
                     foreach (var c in p.Value.EnumerateObject())
                     {
@@ -110,10 +123,40 @@ public sealed class RunTables
                         }
                     }
                     break;
-                default: throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" (format, note, partDrops, dropChance, boxTiers, costs)");
+                default: throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" (format, note, partDrops, dropChance, boxTiers, slotTiers, costs)");
             }
         }
         return t;
+    }
+
+    private static List<RoundRow> SlotRows(JsonElement e, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array)
+            throw new WeaponFileException($"{where}: expected a list of rows");
+        var list = new List<RoundRow>();
+        foreach (var row in e.EnumerateArray())
+        {
+            if (row.ValueKind != JsonValueKind.Object)
+                throw new WeaponFileException($"{where}: each row is an object");
+            var from = 0;
+            var w = new float[SlotKeys.Length];
+            foreach (var p in row.EnumerateObject())
+            {
+                var k = Array.IndexOf(SlotKeys, p.Name);
+                if (p.Name == "fromRound")
+                    from = WeaponFile.Int(p.Value, $"{where}.fromRound");
+                else if (k >= 0)
+                    w[k] = WeaponFile.Number(p.Value, $"{where}.{p.Name}");
+                else
+                    throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" in a row (fromRound, {string.Join(", ", SlotKeys)})");
+            }
+            if (from < 1 || (list.Count > 0 && from <= list[^1].FromRound))
+                throw new WeaponFileException($"{where}: rows need \"fromRound\" 1 or more, in increasing order");
+            if (w.Any(x => x < 0) || w.Sum() <= 0)
+                throw new WeaponFileException($"{where}: row from round {from} has a negative or empty weight");
+            list.Add(new RoundRow(from, w, 0));
+        }
+        return list;
     }
 
     private static List<RoundRow> Rows(JsonElement e, string where, bool weights)

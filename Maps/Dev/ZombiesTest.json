@@ -41,6 +41,7 @@
     {"op": "Prop", "name": "Zombies Workbench", "x": -16.3, "z": 12, "yaw": 180},
     {"op": "Prop", "name": "Weapon Locker", "x": -13.4, "z": 12, "yaw": 180},
     {"op": "Prop", "name": "Power Switch Box", "x": -11.2, "z": 12, "yaw": 180},
+    {"op": "Prop", "name": "Reel Cabinet", "x": -9.6, "z": 12, "yaw": 180},
 
     {"op": "Spawn", "x": -2, "z": -3},
     {"op": "Spawn", "x": 2, "z": -3},
@@ -112,6 +113,10 @@
     "salvage": [
       {"at": [-5, 9]},
       {"at": [11.5, -4.5]}
+    ],
+    "slots": [
+      {"at": [0, -5.6], "yaw": 180},
+      {"at": [10, 9.5], "yaw": 0, "power": true}
     ]
   }
 }

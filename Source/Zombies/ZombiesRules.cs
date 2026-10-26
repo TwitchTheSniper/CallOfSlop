@@ -142,6 +142,42 @@ public sealed class ZombiesRules
 
     public float BoxSpinSeconds = 4f, BoxOfferSeconds = 10f, BoxMoveSeconds = 3f;
 
+    // ---- Slot machines (ZombiesSlots.cs; the odds by round are DropTables.json "slotTiers") ---------------------
+    /// <summary>A pull's price: <see cref="SlotCostBase"/> + <see cref="SlotCostPerRound"/> a round after the first, at most <see cref="SlotCostMax"/>.</summary>
+    public int SlotCostBase = 500, SlotCostPerRound = 25, SlotCostMax = 1250;
+
+    /// <summary>How long the reels spin, and how long the result shows before the machine takes another pull.</summary>
+    public float SlotSpinSeconds = 2f, SlotShowSeconds = 2.5f;
+
+    /// <summary>
+    /// Machine heat (the pity timer): every pull without a <see cref="SlotPityTier"/>-or-better part adds 1; every
+    /// <see cref="SlotHeatStep"/> heat moves the part odds one rarity step up (at most <see cref="SlotHeatMaxSteps"/> steps);
+    /// such a part resets it.
+    /// </summary>
+    public int SlotHeatStep = 5, SlotHeatMaxSteps = 3;
+
+    public Rarity SlotPityTier = Rarity.Rare;
+
+    /// <summary>Bad-luck protection: at most this many "nothing" results in a row per player per machine (the next one pays scrap).</summary>
+    public int SlotMaxNothing = 3;
+
+    /// <summary>Every Nth round is a jackpot round: the wonder symbol is on the reels and these weights are added to legendary and wonder.</summary>
+    public int SlotJackpotEvery = 5;
+
+    public float SlotJackpotLegendary = 6f, SlotJackpotWonder = 4f;
+
+    /// <summary>Payouts: scrap for a scrap result, points back (times the price) for a coin, and a part you already hold this many of loose turns into its scrap value.</summary>
+    public int SlotScrap = 40;
+
+    public float SlotPointsBack = 1.5f;
+    public int SlotAutoScrapAt = 3;
+
+    /// <summary>The price of a pull in <paramref name="round"/>.</summary>
+    public int SlotCost(int round) => Math.Min(SlotCostMax, SlotCostBase + SlotCostPerRound * Math.Max(0, round - 1));
+
+    /// <summary>Is <paramref name="round"/> a jackpot round?</summary>
+    public bool SlotJackpot(int round) => SlotJackpotEvery > 0 && round > 0 && round % SlotJackpotEvery == 0;
+
     /// <summary>Reserve ammo: magazines of reserve a bought gun comes with (the start guns get fewer), and the wall ammo price as a share of the gun's.</summary>
     public int ReserveMags = 6, StartReserveMags = 4;
 
@@ -294,7 +330,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -546,6 +582,35 @@ public sealed class ZombiesRules
                         return true;
                     });
                     break;
+                case "slots":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "costBase": r.SlotCostBase = Whole(v, w, 0, 100000); break;
+                            case "costPerRound": r.SlotCostPerRound = Whole(v, w, 0, 10000); break;
+                            case "costMax": r.SlotCostMax = Whole(v, w, 0, 100000); break;
+                            case "spinSeconds": r.SlotSpinSeconds = Real(v, w, 0.3f, 10); break;
+                            case "showSeconds": r.SlotShowSeconds = Real(v, w, 0.2f, 10); break;
+                            case "heatStep": r.SlotHeatStep = Whole(v, w, 1, 100); break;
+                            case "heatMaxSteps": r.SlotHeatMaxSteps = Whole(v, w, 0, 5); break;
+                            case "pityTier":
+                                r.SlotPityTier = Enum.TryParse<Rarity>(WeaponFile.Text(v, w), true, out var tier) && Enum.IsDefined(tier)
+                                    ? tier : throw new WeaponFileException($"{w}: a rarity (common, uncommon, rare, epic, legendary, wonder)");
+                                break;
+                            case "maxNothing": r.SlotMaxNothing = Whole(v, w, 0, 100); break;
+                            case "jackpotEvery": r.SlotJackpotEvery = Whole(v, w, 0, 100); break;
+                            case "jackpotLegendary": r.SlotJackpotLegendary = Real(v, w, 0, 1000); break;
+                            case "jackpotWonder": r.SlotJackpotWonder = Real(v, w, 0, 1000); break;
+                            case "scrapPayout": r.SlotScrap = Whole(v, w, 0, 10000); break;
+                            case "pointsBack": r.SlotPointsBack = Real(v, w, 0, 20); break;
+                            case "autoScrapAt": r.SlotAutoScrapAt = Whole(v, w, 0, 100); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
                 default:
                     throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" ({string.Join(", ", Sections)})");
             }
@@ -554,6 +619,8 @@ public sealed class ZombiesRules
             r.Perks.AddRange(Defaults().Perks);
         if (r.BoxMoveMax < r.BoxMoveMin)
             throw new WeaponFileException($"{source}: box \"moveMax\" is below \"moveMin\"");
+        if (r.SlotCostMax < r.SlotCostBase)
+            throw new WeaponFileException($"{source}: slots \"costMax\" is below \"costBase\"");
         if (r.SpawnDelayMin > r.SpawnDelay)
             throw new WeaponFileException($"{source}: rounds \"spawnDelayMin\" is above \"spawnDelay\"");
         return r;

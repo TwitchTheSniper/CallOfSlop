@@ -124,6 +124,9 @@ public sealed class ZombiesMap
     public ZSpot? Power;
     public readonly List<ZSpot> Salvage = new();
 
+    /// <summary>Slot machines (ZombiesSlots.cs): pull for a loose part, scrap, points back or nothing. A spot's cost overrides the rules' price.</summary>
+    public readonly List<ZSpot> SlotMachines = new();
+
     /// <summary>
     /// "machineProps": true: every machine stands as a solid prop from <c>Props/Zombies</c> (<see cref="MachineProp"/>):
     /// perk machines, workbenches, the power switch, the slot upgrade, and a crate at every mystery box spot (the box is
@@ -135,13 +138,13 @@ public sealed class ZombiesMap
     /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
     public static class MachineProp
     {
-        public const string Perk = "Perk Machine", BoxSpot = "Mystery Box Crate", Bench = "Zombies Workbench", Power = "Power Switch Box", Slots = "Weapon Locker";
+        public const string Perk = "Perk Machine", BoxSpot = "Mystery Box Crate", Bench = "Zombies Workbench", Power = "Power Switch Box", Slots = "Weapon Locker", SlotMachine = "Reel Cabinet";
     }
 
     /// <summary>The section as it was in the file (written back unchanged).</summary>
     public string Raw = "{}";
 
-    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12;
+    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 8;
 
     /// <summary>The area <paramref name="p"/> is in (the nearest one if it's in none).</summary>
     public int AreaAt(Vector3 p)
@@ -169,7 +172,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "machineProps"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "machineProps"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -329,6 +332,11 @@ public sealed class ZombiesMap
         if (Get(e, "salvage") is { } sv)
             foreach (var s in List(sv, $"{where}.salvage"))
                 z.Salvage.Add(Spot(map, z, s, $"{where}.salvage"));
+        if (Get(e, "slots") is { } sm)
+            foreach (var s in List(sm, $"{where}.slots"))
+                z.SlotMachines.Add(Spot(map, z, s, $"{where}.slots"));
+        if (z.SlotMachines.Count > MaxSlotMachines)
+            throw new MapFileException($"{where}: at most {MaxSlotMachines} slot machines");
         if (Get(e, "machineProps") is { } mp)
             z.MachineProps = mp.ValueKind switch
             {
@@ -352,7 +360,7 @@ public sealed class ZombiesMap
         return z;
     }
 
-    /// <summary>Every machine and the prop it stands as with <see cref="MachineProps"/>, in a fixed order (the box spots, perk machines, workbenches, the slot upgrade, the power switch).</summary>
+    /// <summary>Every machine and the prop it stands as with <see cref="MachineProps"/>, in a fixed order (the box spots, perk machines, workbenches, the slot upgrade, the power switch, the slot machines).</summary>
     public IEnumerable<(string Prop, ZSpot Spot)> Machines()
     {
         foreach (var s in BoxSpots)
@@ -365,6 +373,8 @@ public sealed class ZombiesMap
             yield return (MachineProp.Slots, su);
         if (Power is { } pw)
             yield return (MachineProp.Power, pw);
+        foreach (var s in SlotMachines)
+            yield return (MachineProp.SlotMachine, s); // (last: maps without them place the same props as before)
     }
 
     private static ZSpot Spot(Map map, ZombiesMap z, JsonElement s, string w, string extra = "")

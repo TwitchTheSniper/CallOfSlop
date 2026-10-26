@@ -48,6 +48,9 @@ public enum ZUseKind : byte
 
     /// <summary>A built weapon on the floor (dropped when someone bled out): pick it up (ZombiesDrops.cs).</summary>
     Pickup,
+
+    /// <summary>A slot machine: pull for a part, scrap, points back or nothing (ZombiesSlots.cs).</summary>
+    SlotMachine,
 }
 
 /// <summary>One thing the interact key can use: what, which one, its price and the prompt.</summary>
@@ -88,6 +91,9 @@ public sealed class ZPlayer
 
     /// <summary>The build in each slot (0-3 guns, 4 the melee weapon), in text form: what the workbench edits and clients assemble.</summary>
     public readonly WeaponBuild?[] Slots = new WeaponBuild?[5];
+
+    /// <summary>Slot machines: "nothing" results in a row on each machine (bad-luck protection, ZombiesSlots.cs).</summary>
+    public readonly byte[] SlotNothing = new byte[ZombiesMap.MaxSlotMachines];
 
     /// <summary>Bled out: comes back with the start gear when the round ends.</summary>
     public bool NeedsStartGear = true;
@@ -258,6 +264,7 @@ public sealed partial class Game
         BoxBuild = -1;
         BoxOwner = byte.MaxValue;
         BoxUses = 0;
+        ResetSlots(); // ZombiesSlots.cs
         Array.Clear(_salvageRound);
         World.Map.CloseAllDoors();
         var z = World.Map.Zombies;
@@ -323,6 +330,7 @@ public sealed partial class Game
         foreach (var p in Players.Values.OrderBy(p => p.Id))
             TickZPlayer(p, ZP(p), zm, now);
         TickBox(zm, now);
+        TickSlots(zm, now); // ZombiesSlots.cs
         TickDrops(now);
         TickWeaponDrops(now); // ZombiesDrops.cs
         TickPowerUps(now); // ZombiesPowerUps.cs
@@ -832,6 +840,12 @@ public sealed partial class Game
         }
         if (zm.Power is { } pw && !ZPower)
             Consider(Flat(pw.At - pos), UseRange, new ZUse(ZUseKind.Power, 0, 0, "Hold [E] to turn on the power"));
+        for (var i = 0; i < zm.SlotMachines.Count && i < ZSlots.Length; i++)
+        {
+            var d = Flat(zm.SlotMachines[i].At - pos);
+            if (d <= UseRange)
+                Consider(d, UseRange, SlotUse(zm, i)); // ZombiesSlots.cs
+        }
         for (var i = 0; i < zm.Benches.Count; i++)
             Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts and scrap)"));
         for (var i = 0; i < zm.Salvage.Count && i < _salvageRound.Length; i++)
@@ -933,6 +947,10 @@ public sealed partial class Game
                 break;
             case ZUseKind.Pickup:
                 ClaimWeaponDrop(p, u.Index, now); // ZombiesDrops.cs
+                break;
+            case ZUseKind.SlotMachine when u.Index >= 0 && u.Index < zm.SlotMachines.Count && ZSlots[u.Index].State == ZSlotState.Idle:
+                zp.Points -= u.Cost;
+                PullSlot(p, zp, zm, u.Index, u.Cost, now); // ZombiesSlots.cs
                 break;
             case ZUseKind.Salvage:
             {

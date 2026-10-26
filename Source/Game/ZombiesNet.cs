@@ -153,6 +153,7 @@ public sealed partial class Game
         }
         WritePowerUps(w, _zNow); // power-ups and their timers (protocol 40, ZombiesPowerUps.cs)
         w.U8(ZWaitingReady ? (byte)1 : (byte)0); // the break waits for ready-up (protocol 47, ZombiesFlow.cs)
+        WriteSlots(w); // the slot machines (protocol 51, ZombiesSlots.cs)
     }
 
     /// <summary>Server: the time of the last Zombies tick (what the power-up times in ZWorld count from).</summary>
@@ -569,6 +570,7 @@ public sealed partial class Game
         }
         ReadPowerUps(ref r, now); // (ZombiesPowerUps.cs)
         ZWaitingReady = r.Has(1) && (r.U8() & 1) != 0; // (protocol 47)
+        ReadSlots(ref r); // the slot machines (protocol 51, ZombiesSlots.cs)
     }
 
     // ---- Both sides, every frame ------------------------------------------------------------------------

@@ -226,6 +226,10 @@ PERKS = [
 ]
 SLOT = {"at": [22.65, 6.5], "yaw": -90, "cost": 4000}
 POWER = {"at": [18, -25.8], "yaw": 180}
+SLOTS = [  # slot machines (Reel Cabinet props): one in the start room, one in the lab behind the power
+    {"at": [6.6, -6.2], "yaw": -90},
+    {"at": [22.6, 8.4], "yaw": -90, "power": True},
+]
 SALVAGE = [{"at": [12.2, 1.2]}, {"at": [6, -25.5]}, {"at": [23.5, -22]}, {"at": [13.2, 12.6]}]
 
 zombies = {
@@ -242,6 +246,7 @@ zombies = {
     "slotUpgrade": SLOT,
     "power": POWER,
     "salvage": SALVAGE,
+    "slots": SLOTS,
 }
 
 # ---- Keep-clear zones: where players and zombies must be able to stand and walk -----------------------------
@@ -262,8 +267,8 @@ def fwd(yaw_deg):
     return math.sin(a), -math.cos(a)
 
 
-MACHINE_SIZE = {"box": (1.3, 0.66), "bench": (1.6, 0.8), "perk": (0.9, 0.7), "slot": (1.0, 0.6), "power": (0.7, 0.3)}
-machines = [("box", s) for s in BOX] + [("bench", s) for s in BENCHES] + [("perk", s) for s in PERKS] + [("slot", SLOT), ("power", POWER)]
+MACHINE_SIZE = {"box": (1.3, 0.66), "bench": (1.6, 0.8), "perk": (0.9, 0.7), "slot": (1.0, 0.6), "power": (0.7, 0.3), "slots": (0.9, 0.7)}
+machines = [("box", s) for s in BOX] + [("bench", s) for s in BENCHES] + [("perk", s) for s in PERKS] + [("slot", SLOT), ("power", POWER)] + [("slots", s) for s in SLOTS]
 for kind, s in machines:
     fx, fz = fwd(s["yaw"])
     KEEP.append((s["at"][0] + fx * (MACHINE_SIZE[kind][1] / 2 + 0.6), s["at"][1] + fz * (MACHINE_SIZE[kind][1] / 2 + 0.6), 0.6, f"{kind} front"))

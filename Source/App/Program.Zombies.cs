@@ -171,6 +171,8 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.25f, 0.4f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.8f, 0)), new Vector3(0.1f, 0.1f, 0.1f));
         }
 
+        DrawSlotMachines(zm, live, now); // slot machines: reels, heat meter, topper lights (Program.ZombiesSlots.cs)
+
         // The weapon-slot upgrade (a crate with two gun racks), the power switch, workbenches, salvage piles.
         if (zm.SlotUpgrade is { } su)
         {
