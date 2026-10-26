@@ -75,12 +75,12 @@ public static partial class SelfTest
     private const double ValidateBudgetMs = 150; // any one shipped map, warm (London was 0.35 s on a desktop before the fixes, 6 ms after)
     private const double StressLoadBudgetMs = 600; // the 10,000 + 2,000-prop, 400 x 400 m stress map (~70 ms on a desktop; the old paths took seconds)
     private const double StressScalingBudget = 8; // 5x the props on the same yard: linear is under 5, quadratic was 20 or more
-    private const int DrawnBoxBudget = 1500; // boxes drawn one by one per map (STREAMING.md 2.3; Downtown has 1,245)
+    private const int BoxCellBudget = 400; // 24 m cells of map boxes per map: the box draw calls with everything in view apart (Downtown: 57)
     private const int PropBudget = 65535; // the prop index is a U16 on the wire (GameProps.cs)
 
     /// <summary>
     /// "Big maps": what loading costs, so it can't creep back up. Every shipped map loads the same in parallel as one by
-    /// one (digests, ids, order); each stays under a load-time budget, a drawn-box budget and the prop and decal limits;
+    /// one (digests, ids, order); each stays under a load-time budget, a box-cell budget and the prop and decal limits;
     /// the stress map (tools/perf/stress_grid.py, built here in memory) loads within its budget and scales linearly in
     /// props; a breakdown of the biggest maps is printed.
     /// </summary>
@@ -121,9 +121,9 @@ public static partial class SelfTest
                 Fail($"Big maps: {m.Name} took {ms:0} ms to load (budget {BigMapLoadBudgetMs:0} ms)");
             if (Math.Min(m.ValidateMs, twin.ValidateMs) > ValidateBudgetMs)
                 Fail($"Big maps: {m.Name} took {Math.Min(m.ValidateMs, twin.ValidateMs):0} ms to validate (budget {ValidateBudgetMs:0} ms)");
-            var drawn = DrawnBoxCount(m);
-            if (drawn > DrawnBoxBudget)
-                Fail($"Big maps: {m.Name} draws {drawn} boxes one by one (budget {DrawnBoxBudget})");
+            var cells = BoxBatches.Build(m).Runs.Length;
+            if (cells > BoxCellBudget)
+                Fail($"Big maps: {m.Name}'s boxes fill {cells} cells (budget {BoxCellBudget}: at most that many box draw calls a frame)");
             if (m.PropInstances.Count > PropBudget)
                 Fail($"Big maps: {m.Name} has {m.PropInstances.Count} props (the wire limit is {PropBudget})");
             if (m.DecalCount > MapDecalsLimit)
@@ -132,7 +132,7 @@ public static partial class SelfTest
         Line($"Slowest validate: {string.Join(", ", serial.OrderByDescending(m => m.ValidateMs).Take(4).Select(m => $"{m.Name} {m.ValidateMs:0.0} ms"))}");
         Line("Biggest maps (warm load ms, one by one / in parallel):");
         foreach (var m in serial.OrderByDescending(m => m.LoadMs).Take(8))
-            Line($"  {m.Name,-22} {m.Solid.Count,6} boxes ({DrawnBoxCount(m),4} drawn one by one)  {m.PropInstances.Count,5} props  {m.FoliageInstances.Length,6} plants  "
+            Line($"  {m.Name,-22} {m.Solid.Count,6} boxes ({DrawnBoxCount(m),4} map boxes)  {m.PropInstances.Count,5} props  {m.FoliageInstances.Length,6} plants  "
                  + $"{m.DecalCount,5} decals  {serialTimes[m.Name],5:0} / {par.First(x => x.Name == m.Name).LoadMs,5:0} ms");
 
         // 3. The stress map: within budget, and linear in props (the same 400 x 400 m yard with 2,000 Clutter props and
@@ -282,27 +282,5 @@ public static partial class SelfTest
                     + $"\"x1\": {half - 4}, \"z1\": {half - 4}, \"count\": {Math.Min(2000, left)}, \"seed\": {500 + k}, \"minSize\": 0.8, \"maxSize\": 2.5}}");
         return $"{{\"format\": \"call-of-slop-map/1\", \"name\": \"Stress Grid\", \"description\": \"Load-cost stress map (Big maps self-test).\", \"order\": 999, "
                + $"\"halfX\": {half}, \"halfZ\": {half}, \"maxPlayers\": 32, \"sky\": [0.36, 0.42, 0.5], \"ops\": [\n{string.Join(",\n", ops)}\n]}}";
-    }
-
-    // TEMPORARY (removed before the branch is finished): dumps every map's digest and load time.
-    private static void CheckLoadDigestDump()
-    {
-        var path = Path.Combine(AppContext.BaseDirectory, "loaddigest.txt");
-        using var w = new StreamWriter(path, false);
-        var errors = new List<string>();
-        var t0 = Stopwatch.GetTimestamp();
-        var (cold, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
-        w.WriteLine($"LoadFolder cold parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, {cold.Length} maps, {errors.Count} errors, {Environment.ProcessorCount} cores, {Maps.LastLoadTimes}");
-        foreach (var m in cold.OrderByDescending(m => m.LoadMs).Take(25))
-            w.WriteLine($"  cold {m.SourceFile} {m.LoadMs:0} ms");
-        t0 = Stopwatch.GetTimestamp();
-        var (maps, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: false);
-        w.WriteLine($"LoadFolder warm serial {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms {Maps.LastLoadTimes}");
-        t0 = Stopwatch.GetTimestamp();
-        var (par, _) = Maps.LoadFolder(Maps.Folder, errors, parallel: true);
-        w.WriteLine($"LoadFolder warm parallel {Stopwatch.GetElapsedTime(t0).TotalMilliseconds:0} ms, same: {par.Length == maps.Length && par.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second) && x.First.Id == x.Second.Id) && cold.Zip(maps).All(x => MapDigest(x.First) == MapDigest(x.Second))}");
-        foreach (var m in par)
-            w.WriteLine($"{m.SourceFile!.Replace('\\', '/')}\t{MapDigest(m):x16}\t{m.Id}");
-        Line($"wrote {path}");
     }
 }

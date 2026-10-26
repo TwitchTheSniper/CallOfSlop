@@ -36,6 +36,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 - Version scheme: `0.YYYY.MDD.N` (`BuildInfo.cs`).
 - The Azure signing step is present but off (`vars.SIGNING_ENABLED`).
 - The release notes append `tools/MIGRATING.md`.
+- It bakes every shipped map's nav graph with the packaged exe (`--bake DIR`, `Source/Game/BotNavBake.cs`); dev builds cache their own in the save folder's `Cache/`.
 
 ## Layout
 

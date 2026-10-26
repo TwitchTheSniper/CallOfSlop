@@ -367,3 +367,76 @@ save folder rules.
 6. Can one `[windows ci]` run be spent on the Space maps once they land, so the tick and GC numbers are real?
 7. Do the Space maps use `Clutter` heavily (stage 0's Clutter fix matters most) or hand-placed `Prop` ops (the
    `PlaceProp` fix matters most)? Both are in stage 0 either way.
+
+## 6. Done (feat/loading-perf, 2026-10-26)
+
+Board items FTR-ST01 and FTR-BK01. Measured on the user's PC runner (the desktop app's Linux VM: 2 cores, 3 GB; slower
+than the desktop itself, faster than the agent container), Release build, 110 shipped maps, before = main 561a06af.
+
+### 6.1 What changed
+
+1. **The three slow load paths** (stage 0). `PlaceProp` keeps one `BoxSpace` per map while the ops run, filing new
+   boxes in on the next `PlaceProp` and dropping it when `PlaceOnTerrain` lifts boxes it already holds
+   (`MapProps.cs`, `PlaceSpace`). Clutter files the placed footprints, waypoints and route segments in 4 m `RectGrid`s
+   (candidates only, with a margin; the tests are the exact ones). `Validate` files `Solid` in a `SolidGrid` for its
+   duration (`Maps.cs`). Every map builds exactly as before: a digest of every box (exact bits), colour, spawn,
+   waypoint, prop instance, plant count and the fingerprint matched on all 110 maps, with the same ids and order
+   (a temporary dump against main, removed), and Pack assets, Props, Cluttered pack and Mode modules stay green.
+2. **Parallel loading** (stage 1). `Maps.LoadFolder` builds the files on worker threads (the shared libraries are
+   loaded first on the calling thread; each map is built alone from its text), then takes the results in file order and
+   validates in parallel too. Console lines are buffered per map and printed in order, so the log reads as before.
+   `Maps.ParallelLoad = false` (or `LoadFolder(..., parallel: false)`) loads one by one.
+3. **"Big maps" self-test section**: parallel = one by one (digests, ids, order) and = `Maps.All`; every shipped map
+   under 2,000 ms to load and 150 ms to validate (warm); the whole folder under 15 s; at most 400 box cells per map;
+   the prop wire limit and the decal cap; the stress map (`tools/perf/stress_grid.py`, built in memory, plus 2,000
+   `Prop` ops) under 600 ms, and 5x the props within 8x the time (linear is under 5x; the old paths were 20x and more).
+4. **Baked nav graphs** (`Source/Game/BotNavBake.cs`, FTR-BK01). A finished graph is written to a file and read back
+   bit for bit. `PumpGraph` first looks for `Baked/Nav/<map>.nav` next to the game (the release workflow's new "Bake
+   nav graphs" step runs the packaged exe with `--bake`), then `Cache/Nav/<map>.nav` in the save folder (written on a
+   worker after the game builds a graph itself). The read runs on a worker, so no tick waits on the disk; until it
+   finishes bots steer straight, as during a build. A file is used only when everything matches: the bake format, this
+   exact build (module id) with its runtime and OS, the map name and fingerprint, and a SHA-256 of the map file's
+   text, every box as built with its kind, spawns, waypoints, building nav points and links, the barrier and the solid
+   meshes. A 0.4 mm change to one box (below the fingerprint's rounding) changes the key. A damaged or cut-short file
+   fails its SHA-256 or its array checks and is ignored. `Cache` is not a save file: never migrated, safe to delete,
+   stripped by `tools/package.ps1`, in `.gitignore`, explained in `tools/MIGRATING.md`. The self-test never reads a
+   bake or cache except in the "Nav bake" section, which uses temp folders; the "Bots" section bakes and reads back
+   every map's graph (baked = live, every map, on every full run). The live build stays for `--check-map`, map reload,
+   destruction patches and the generators.
+5. **Box batching** (stage 2): the map's own boxes go into the building renderer's static instance buffer after the
+   buildings, one run per 24 m cell in snake order, frustum-culled per cell, contiguous visible cells merged into one
+   `glDrawArraysInstanced`. Same shader maths as the box shader's textured mode (world-space planar mapping, rim light,
+   lighting and fog). If the instanced renderer can't start, `DrawArena` and the thumbnails fall back to the old loop.
+   "Box batches" checks every map's buffer holds each drawn box once, exactly as drawn, inside its cell's bounds.
+
+Not done: **built-map bakes** (FTR-BK01's second half: the whole built `Map` serialised and loaded). After 1-2, a warm
+load of all 110 maps is 1.8 s on 2 cores; what is left of the cold launch is mostly JIT (see 6.3). Serialising a
+`Map` means every field of every partial (boxes, props, buildings, foliage, decals, terrain, destruction, Zombies,
+movers, objectives) with the same "exactly matches" rule: worth it only if 6.3's runtime switch isn't taken.
+
+### 6.2 Measurements
+
+| What | Before (main) | After | Notes |
+| --- | --- | --- | --- |
+| Launch: load every map, cold (first in the process) | 8.8-9.8 s, one by one | 6.4-7.6 s, parallel on 2 cores | Mostly JIT and tier-0 code now (6.3); more cores help more |
+| Load every map again, warm | 4.8 s | 1.8 s parallel (2.4-3.3 s one by one) | What "Refresh maps" costs |
+| Vuorikoski (Finland): load / validate | 542 / 73 ms | 322 / 3 ms | warm, one by one |
+| Bocage | 463 / 48 ms | 194 / 2 ms | |
+| Silo | 433 / 30 ms | 184 / 2 ms | |
+| Paris Quarter | 390 / 149 ms | 156 / 7 ms | |
+| London | 357 / 350 ms | 133 / 6 ms | |
+| Sprawl, Old Town, Timberline (Cluttered) | 150-164 ms | 79-90 ms | Clutter-heavy |
+| Stress grid 400 m, 10k Clutter props | 1,371 ms (container, 2.1) | 68 ms | 2.4k / 12k props (with 400 / 2,000 Prop ops): 64 / 160 ms |
+| Nav graph, Paris Quarter: build / read baked | 753-833 ms of work (13-14 s of play at 3 ms a tick) | 1.3-2.1 ms read on a worker, ready in 2 ticks | key 2-6 ms on the game thread, once |
+| Nav graph, Building Yard / Pocket Planet / Keelhaul Yard | 256 / 186 / 377 ms | 1.0 / 0.3 / 0.2 ms | files 349 / 358 / 134 KB |
+| Box draw calls, Downtown (most map boxes) | 1,245 a frame | 1 with all in view, at most 57 | 1.4 MB of instances over all 110 maps |
+
+### 6.3 Open for the developer
+
+- **Cold start is now JIT.** With `DOTNET_TieredCompilation=0` the cold parallel load took 2.3 s instead of 4.9 s
+  (`DOTNET_TC_QuickJitForLoops=0`: 3.8 s): the load loops run as unoptimised tier-0 code the first time. Turning
+  tiering off (or ReadyToRun in the package) would cut launch time further but changes start-up and steady-state code
+  quality everywhere (no dynamic PGO), so it needs a `[windows ci]` run of the tick and music budgets first. Not changed.
+- The shipped bakes are made by the packaged exe on the Windows release runner; a tester's own dev build (any other
+  module id) never uses them and caches its own instead.
+- The box batching has no pixel test here (no GPU); compare a smoke run's `smoke_*.bmp` on Windows before merging.

@@ -360,7 +360,6 @@ public static partial class SelfTest
         Section("Gravity zones", CheckGravityZones); // SelfTestGravityZones.cs: several gravity regions on one map: fields, files, frames, a walker up a pipe onto a wall, a grenade on the wall, low-g jumps, replays, nav, costs
         Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
         Section("Gravity strength", CheckGravityStrength); // SelfTestGravityStrength.cs: the host's gravity setting: every field type scales, jumps and falls as 1/g, Pocket Planet 11 m/s2 and its 60% floor, nav unchanged, clients and the browser get it, seeded bot matches at 25% and 200%
-        Section("Zz load digest", CheckLoadDigestDump); // TEMPORARY
         Section("Map kit", CheckMapKit); // SelfTestMapKit.cs: Source/MapKit: map files round-trip, generators reproduce their maps, MapChecks.Check agrees with the Space sections
     }
 
