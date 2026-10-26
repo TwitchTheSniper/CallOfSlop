@@ -278,7 +278,7 @@ def outpost():
     p = []
     for x in (-1.7, 1.7):
         for z in (-0.5, 0.5):
-            p.append(At([0.1, 1.0 + 0.4, 0.1], x * tn - 0.4, x, z, color=STEEL))
+            p.append(At([0.1, 1.0 + 0.15, 0.1], x * tn - 0.15, x, z, color=STEEL))
     p.append(B([ln, 0.12, 1.2], [0, 1.06, 0], color=DARK, roll=ang))
     p.append(B([ln, 0.06, 1.0], [0, 1.15, 0], color="#2a2a2e", roll=ang))
     for x in (-1.6, -0.8, 0, 0.8, 1.6):
@@ -290,7 +290,7 @@ def outpost():
     cols = []
     for k in range(4):  # four stepped slices follow the slope: hip-high cover all the way
         x0, x1 = -RUN / 2 + k * RUN / 4, -RUN / 2 + (k + 1) * RUN / 4
-        lo, hi = x0 * tn - 0.3, 1.34 + x1 * tn
+        lo, hi = x0 * tn - 0.15, 1.34 + x1 * tn
         cols.append(C([x1 - x0, hi - lo, 1.2], [(x0 + x1) / 2, (lo + hi) / 2, 0]))
     prop("Ore Conveyor Slope", "A 4.75 m ore conveyor on legs that climbs 0.97 m along its length (11.6 degrees), for running a belt up a ramp as one piece: place a chain of them with anchor world (long along X, rising to +X).", p,
          collider=cols, scatter=SQ)
