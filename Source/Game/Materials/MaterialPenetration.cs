@@ -24,7 +24,7 @@ public static class MaterialPenetration
     public const string Format = "call-of-slop-penetration/1";
 
     /// <summary>The folder with penetration.json (copied next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Materials");
+    public static string Folder => Path.Combine(AppFolders.Data, "Materials");
 
     /// <summary>Most separate surfaces (walls, floors, a door...) one bullet passes before it must stop in the next.</summary>
     public static int MaxSurfaces { get; private set; } = 3;

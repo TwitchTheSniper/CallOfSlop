@@ -801,7 +801,7 @@ internal static partial class MapGraph
 
     internal sealed class Writer(MapLibraryIndex library, Map root)
     {
-        private static readonly string GameFolder = Path.TrimEndingDirectorySeparator(AppContext.BaseDirectory);
+        private static readonly string GameFolder = Path.TrimEndingDirectorySeparator(AppFolders.Data);
         private byte[] _buf = new byte[1 << 16];
         private int _pos;
         private readonly Dictionary<object, int> _ids = new(ReferenceEqualityComparer.Instance);

@@ -7,7 +7,8 @@ namespace CallOfSlop;
 /// Where the player's own files live (progress, loadouts, settings, workbench builds, audio mixes), so they carry over
 /// from one build to the next. Game data (Maps, Weapons, Props, classes.json, hats.json...) stays next to the game.
 /// <list type="bullet">
-/// <item>Normally: <c>%APPDATA%\CallOfSlop\</c> on Windows, <c>~/.local/share/CallOfSlop/</c> elsewhere (CI and dev).</item>
+/// <item>Normally: <c>%APPDATA%\CallOfSlop\</c> on Windows, <c>~/Library/Application Support/CallOfSlop/</c> on macOS,
+/// <c>~/.local/share/CallOfSlop/</c> on Linux (CI and dev).</item>
 /// <item><c>portable.txt</c> next to the game: saves stay next to the game (USB sticks, dev copies).</item>
 /// <item><c>--save-dir &lt;path&gt;</c> on the command line: saves go there (wins over both).</item>
 /// </list>
@@ -64,8 +65,13 @@ public static class SavePaths
 
     private static string RoamingData() => Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
-    // On Linux/macOS .NET maps LocalApplicationData to $XDG_DATA_HOME or ~/.local/share.
-    private static string LocalData() => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+    // Linux: .NET maps LocalApplicationData to $XDG_DATA_HOME or ~/.local/share. macOS: ~/Library/Application Support,
+    // spelled out here rather than left to the runtime's mapping (which has changed between .NET versions).
+    private static string LocalData() => OperatingSystem.IsMacOS() ? MacAppSupport(AppFolders.Home())
+        : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+
+    /// <summary>~/Library/Application Support for a home folder (empty when there's no home: the exe-folder fallback).</summary>
+    public static string MacAppSupport(string home) => string.IsNullOrWhiteSpace(home) ? "" : Path.Combine(home, "Library", "Application Support");
 
     // ---- Choosing the folder -----------------------------------------------------------
 
@@ -497,7 +503,7 @@ public static class SavePaths
         Warned.Clear();
     }
 
-    /// <summary>Opens the save folder in Explorer (or the desktop's file manager).</summary>
+    /// <summary>Opens the save folder in Explorer (Finder on a Mac, or the desktop's file manager).</summary>
     public static void OpenFolder()
     {
         try
@@ -506,7 +512,7 @@ public static class SavePaths
             Directory.CreateDirectory(dir);
             var psi = OperatingSystem.IsWindows()
                 ? new ProcessStartInfo("explorer.exe", $"\"{dir}\"") { UseShellExecute = true }
-                : new ProcessStartInfo("xdg-open", dir) { UseShellExecute = false };
+                : new ProcessStartInfo(OperatingSystem.IsMacOS() ? "open" : "xdg-open", dir) { UseShellExecute = false };
             Process.Start(psi)?.Dispose();
         }
         catch (Exception ex)

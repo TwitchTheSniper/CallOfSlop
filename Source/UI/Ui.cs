@@ -66,7 +66,9 @@ public sealed partial class Ui : IDisposable
     /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
     private float TargetScale()
     {
-        var h = _window?.FramebufferSize.Y ?? 900;
+        // The window's height in screen units: ImGui lays out in those. On Windows and Linux that's the framebuffer
+        // height; a Mac Retina framebuffer is twice the window, and ImGui's DisplayFramebufferScale already makes it sharp.
+        var h = _window == null ? 900 : OperatingSystem.IsMacOS() ? _window.Size.Y : _window.FramebufferSize.Y;
         var auto = Math.Clamp(h / 900f, 0.8f, 3f);
         return Math.Clamp(auto * UserScale, 0.6f, 5f);
     }

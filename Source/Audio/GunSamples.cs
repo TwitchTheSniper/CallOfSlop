@@ -96,7 +96,7 @@ public sealed class GunSampleLibrary
         get
         {
             lock (SharedLock)
-                return _shared ??= Load(Path.Combine(AppContext.BaseDirectory, FolderName));
+                return _shared ??= Load(Path.Combine(AppFolders.Data, FolderName));
         }
     }
 

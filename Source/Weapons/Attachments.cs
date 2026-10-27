@@ -142,7 +142,7 @@ public static class Attachments
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder attachment files are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Attachments");
+    public static string Folder => Path.Combine(AppFolders.Data, "Attachments");
 
     /// <summary>
     /// Every *.json in the Attachments folder and its subfolders. Indices inside a slot follow "order" then name.

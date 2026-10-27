@@ -24,7 +24,7 @@ public static partial class SelfTest
     private static void CheckGunSamples()
     {
         GunSampleNotes.Clear();
-        var folder = Path.Combine(AppContext.BaseDirectory, GunSampleLibrary.FolderName);
+        var folder = Path.Combine(AppFolders.Data, GunSampleLibrary.FolderName);
         var lib = GunSampleLibrary.Load(folder);
         GunLine($"[gunsamples] {lib.FilesLoaded}/{lib.FilesListed} files, {lib.BytesLoaded / 1024} KB, {lib.Sets.Count} sets, {lib.Rules.Count} rules, loaded in {lib.LoadMs:0.0} ms (cold)");
         if (!lib.ManifestFound)

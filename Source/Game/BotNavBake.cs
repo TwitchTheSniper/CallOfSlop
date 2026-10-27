@@ -37,7 +37,7 @@ public static class NavBake
     /// <summary>The cache (null: Cache/Nav in the save folder).</summary>
     public static string? CacheFolderOverride;
 
-    public static string BakedFolder => BakedFolderOverride ?? Path.Combine(AppContext.BaseDirectory, "Baked", "Nav");
+    public static string BakedFolder => BakedFolderOverride ?? Path.Combine(AppFolders.Data, "Baked", "Nav");
 
     public static string CacheFolder => CacheFolderOverride ?? Path.Combine(SavePaths.Folder, "Cache", "Nav");
 

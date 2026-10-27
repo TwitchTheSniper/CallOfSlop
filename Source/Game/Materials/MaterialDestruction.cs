@@ -79,7 +79,7 @@ public sealed class MaterialDestruction
     public const string Format = "call-of-slop-destruction/1";
 
     /// <summary>The Materials folder next to the game.</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Materials");
+    public static string Folder => Path.Combine(AppFolders.Data, "Materials");
 
     private static MaterialDestruction? _current;
 

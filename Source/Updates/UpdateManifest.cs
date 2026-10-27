@@ -6,6 +6,12 @@ namespace CallOfSlop;
 /// <summary>
 /// The <c>update.json</c> asset of a GitHub release (written by tools/package.ps1): which build the release is and how
 /// to check its zip. The game only trusts a manifest whose zip lives in this repository's own release downloads.
+/// <para>
+/// Platforms: the top-level url / size / sha256 are the Windows (win-x64) zip, as every older build expects. A release
+/// may add <c>"platforms": {"osx-arm64": {"url", "size", "sha256"}}</c> (the Mac job in release.yml); a build picks
+/// the entry for <see cref="CurrentPlatform"/> when there is one. A Mac never falls back to the top-level (Windows)
+/// zip: without its own entry the release has no download for it (<see cref="NoDownloadForPlatform"/>).
+/// </para>
 /// </summary>
 public sealed record UpdateManifest(
     Version Version,
@@ -32,6 +38,17 @@ public sealed record UpdateManifest(
 
     /// <summary>Biggest zip the game will download (today's build is far smaller).</summary>
     public const long MaxSize = 1536L * 1024 * 1024;
+
+    /// <summary>The platform this build downloads for: "win-x64", "osx-arm64" or "linux-x64".</summary>
+    public static string CurrentPlatform => PlatformOverride ?? (OperatingSystem.IsWindows() ? "win-x64" : OperatingSystem.IsMacOS() ? MacPlatform : "linux-x64");
+
+    /// <summary>Self-test only: plays another platform (the "Updates" section runs as Windows on every runner, "Mac release" as a Mac).</summary>
+    internal static string? PlatformOverride;
+
+    public const string MacPlatform = "osx-arm64";
+
+    /// <summary>The start of <see cref="Parse(string, out string, string)"/>'s error when the release has no zip for the platform.</summary>
+    public const string NoDownloadForPlatform = "no download for this platform";
 
     /// <summary>Can this game's updater install it (or must the player download it by hand)?</summary>
     public bool InstallableHere => MinUpdater <= BuildInfo.UpdaterVersion;
@@ -87,8 +104,11 @@ public sealed record UpdateManifest(
         return s.Length >= max ? s[..(max - 3)].TrimEnd() + "..." : s;
     }
 
-    /// <summary>Reads and checks a manifest. Null with a reason when it's malformed or not trustworthy.</summary>
-    public static UpdateManifest? Parse(string json, out string error)
+    /// <summary>Reads and checks a manifest for this build's platform. Null with a reason when it's malformed or not trustworthy.</summary>
+    public static UpdateManifest? Parse(string json, out string error) => Parse(json, out error, CurrentPlatform);
+
+    /// <summary>Reads and checks a manifest, taking the zip for <paramref name="platform"/> (see the class summary).</summary>
+    public static UpdateManifest? Parse(string json, out string error, string platform)
     {
         error = "";
         try
@@ -109,6 +129,22 @@ public sealed record UpdateManifest(
             var hash = Str(r, "sha256")?.Trim().ToLowerInvariant() ?? "";
             if (hash.Length != 64 || !hash.All(Uri.IsHexDigit))
                 return Bad("missing or malformed SHA-256", out error);
+            // This platform's own zip, when the release lists one (checked exactly like the top-level one).
+            if (r.TryGetProperty("platforms", out var platforms) && platforms.ValueKind == JsonValueKind.Object
+                && platforms.TryGetProperty(platform, out var mine) && mine.ValueKind == JsonValueKind.Object)
+            {
+                url = Str(mine, "url");
+                if (!IsTrustedAssetUrl(url, ".zip"))
+                    return Bad($"the {platform} download isn't one of this repository's GitHub release files", out error);
+                size = Long(mine, "size");
+                if (size <= 0 || size > MaxSize)
+                    return Bad($"bad {platform} size {size}", out error);
+                hash = Str(mine, "sha256")?.Trim().ToLowerInvariant() ?? "";
+                if (hash.Length != 64 || !hash.All(Uri.IsHexDigit))
+                    return Bad($"missing or malformed {platform} SHA-256", out error);
+            }
+            else if (platform == MacPlatform)
+                return Bad($"{NoDownloadForPlatform} (this release has no Mac download)", out error); // the top-level zip is Windows
             var sha = Str(r, "sha")?.Trim().ToLowerInvariant() ?? "";
             if (!sha.All(Uri.IsHexDigit) || sha.Length > 40)
                 sha = "";
@@ -137,6 +173,12 @@ public sealed record UpdateManifest(
 /// <summary>What the GitHub API says about the newest release (the parts the game uses).</summary>
 public sealed record ReleaseInfo(string Tag, string PageUrl, string Notes, string ManifestUrl, long ZipAssetSize, string ZipAssetName)
 {
+    /// <summary>Every zip asset's size by name (a release can carry a Windows and a Mac zip).</summary>
+    public IReadOnlyDictionary<string, long> ZipSizes { get; init; } = new Dictionary<string, long>();
+
+    /// <summary>The size of the release's zip called <paramref name="name"/>, or -1 when it has none.</summary>
+    public long ZipSize(string name) => ZipSizes.TryGetValue(name, out var n) ? n : name == ZipAssetName ? ZipAssetSize : -1;
+
     /// <summary>Reads <c>GET /repos/.../releases/latest</c>. Null with a reason when there's no usable update.json asset.</summary>
     public static ReleaseInfo? Parse(string json, out string error)
     {
@@ -153,6 +195,7 @@ public sealed record ReleaseInfo(string Tag, string PageUrl, string Notes, strin
                 page = UpdateManifest.ReleasesPage;
             string? manifest = null, zipName = "";
             long zipSize = -1;
+            var sizes = new Dictionary<string, long>(StringComparer.Ordinal);
             if (r.TryGetProperty("assets", out var assets) && assets.ValueKind == JsonValueKind.Array)
                 foreach (var a in assets.EnumerateArray().Take(50))
                 {
@@ -161,11 +204,17 @@ public sealed record ReleaseInfo(string Tag, string PageUrl, string Notes, strin
                     if (name == "update.json" && UpdateManifest.IsTrustedAssetUrl(dl, ".json"))
                         manifest = dl;
                     else if (name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) && UpdateManifest.IsTrustedAssetUrl(dl, ".zip"))
+                    {
                         (zipName, zipSize) = (name, UpdateManifest.Long(a, "size"));
+                        sizes[name] = zipSize;
+                    }
                 }
             if (manifest == null)
                 return Fail($"the newest release ({UpdateManifest.CleanNotes(tag, 40)}) has no update.json", out error);
-            return new ReleaseInfo(UpdateManifest.CleanNotes(tag, 40), page!, UpdateManifest.CleanNotes(UpdateManifest.Str(r, "body")), manifest, zipSize, zipName);
+            return new ReleaseInfo(UpdateManifest.CleanNotes(tag, 40), page!, UpdateManifest.CleanNotes(UpdateManifest.Str(r, "body")), manifest, zipSize, zipName)
+            {
+                ZipSizes = sizes,
+            };
         }
         catch (JsonException ex)
         {

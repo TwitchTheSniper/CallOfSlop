@@ -44,7 +44,7 @@ public static class MapBake
     /// <summary>The cache (null: Cache/Maps in the save folder).</summary>
     public static string? CacheFolderOverride;
 
-    public static string BakedFolder => BakedFolderOverride ?? Path.Combine(AppContext.BaseDirectory, "Baked", "Maps");
+    public static string BakedFolder => BakedFolderOverride ?? Path.Combine(AppFolders.Data, "Baked", "Maps");
 
     public static string CacheFolder => CacheFolderOverride ?? Path.Combine(SavePaths.Folder, "Cache", "Maps");
 
@@ -72,7 +72,7 @@ public static class MapBake
         var files = new List<(string Rel, string Path)>();
         foreach (var lib in LibraryFolders)
         {
-            var dir = Path.Combine(AppContext.BaseDirectory, lib);
+            var dir = Path.Combine(AppFolders.Data, lib);
             if (Directory.Exists(dir))
                 foreach (var f in Directory.GetFiles(dir, "*", SearchOption.AllDirectories))
                     files.Add((lib + "/" + Path.GetRelativePath(dir, f).Replace('\\', '/'), f));
@@ -195,7 +195,7 @@ public static class MapBake
 
     private static string RelToGame(string path)
     {
-        var rel = Path.GetRelativePath(AppContext.BaseDirectory, path);
+        var rel = Path.GetRelativePath(AppFolders.Data, path);
         return rel.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(rel) ? path : rel.Replace('\\', '/');
     }
 
@@ -237,7 +237,7 @@ public static class MapBake
                 if (bar < 0)
                     return null;
                 var file = rest[..bar];
-                return MeshLibrary.Model(Path.IsPathRooted(file) ? file : Path.Combine(AppContext.BaseDirectory, file), rest[(bar + 1)..]);
+                return MeshLibrary.Model(Path.IsPathRooted(file) ? file : Path.Combine(AppFolders.Data, file), rest[(bar + 1)..]);
             }
             default:
                 return null;

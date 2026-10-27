@@ -45,7 +45,7 @@ public static class Cosmetics
     public const int MaxPrestige = 5;
 
     /// <summary>Where the catalog is read from.</summary>
-    public static string FilePath => Path.Combine(AppContext.BaseDirectory, "Cosmetics", "hats.json");
+    public static string FilePath => Path.Combine(AppFolders.Data, "Cosmetics", "hats.json");
 
     private static IReadOnlyList<HatDef>? _hats;
 

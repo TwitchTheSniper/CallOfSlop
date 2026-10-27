@@ -7,7 +7,7 @@ public static partial class SelfTest
     /// <summary>The BRUTAL logo for the launch splash (licence section 2.2): shipped unaltered, readable, and shown long enough.</summary>
     private static void CheckBranding()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, Splash.LogoFile);
+        var path = Path.Combine(AppFolders.Data, Splash.LogoFile);
         if (!File.Exists(path))
         {
             Fail($"{Splash.LogoFile} is missing from the build output (the BRUTAL licence needs the logo shown at launch)");

@@ -102,7 +102,7 @@ public static class MeshLibrary
     private static readonly object Gate = new();
 
     /// <summary>The folder model files are looked up in (next to the game).</summary>
-    public static string ModelsFolder => Path.Combine(AppContext.BaseDirectory, "Models");
+    public static string ModelsFolder => Path.Combine(AppFolders.Data, "Models");
 
     /// <summary>LOD levels made for each primitive (full detail plus up to two simpler ones).</summary>
     public const int MaxLods = 3;
@@ -159,7 +159,7 @@ public static class MeshLibrary
     {
         if (string.IsNullOrWhiteSpace(file))
             throw new ModelException("no model file given");
-        var path = Path.IsPathRooted(file) ? file : Path.Combine(AppContext.BaseDirectory, file.Replace('\\', '/'));
+        var path = Path.IsPathRooted(file) ? file : Path.Combine(AppFolders.Data, file.Replace('\\', '/'));
         if (!System.IO.File.Exists(path))
         {
             var near = Directory.Exists(ModelsFolder)

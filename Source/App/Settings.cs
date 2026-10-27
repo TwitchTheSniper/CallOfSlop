@@ -209,7 +209,7 @@ public sealed class Settings
     }
 
     /// <summary>Where the release's shipped server lists are read from (masters.txt next to the game; the self-test points it elsewhere).</summary>
-    public static string ShippedMastersPath = Path.Combine(AppContext.BaseDirectory, "masters.txt");
+    public static string ShippedMastersPath = Path.Combine(AppFolders.Data, "masters.txt");
 
     private static (string Path, DateTime Stamp, List<(string Host, ushort Port)> List)? _shipped;
 

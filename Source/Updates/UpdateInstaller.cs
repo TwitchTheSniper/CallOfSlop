@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Installing an update: download the zip (resuming a partial download), check its size and SHA-256 against the
 /// manifest, unzip it into a NEW folder next to the current build (e.g. <c>CallOfSlop-0.2026.1022.5</c>), then start the
-/// new CallOfSlop.exe. The running build is never overwritten. Every folder unzipped here gets a
+/// new CallOfSlop.exe (on a Mac, the new CallOfSlop.app). The running build is never overwritten. Every folder unzipped here gets a
 /// <see cref="BuildMarker"/> (<c>.callofslop-build</c>), the proof <see cref="UpdateCleanup"/> needs before it may remove an
 /// old version once the new build has reached its main menu; nothing else is ever deleted. Saves live in
 /// %APPDATA%\CallOfSlop (SavePaths.cs), so the new build sees them straight away.
@@ -24,6 +24,20 @@ public static class UpdateInstaller
 {
     public const string ExeName = "CallOfSlop.exe";
 
+    /// <summary>The Mac build: an app bundle (Contents/MacOS/CallOfSlop, data in Contents/Resources; AppFolders.cs).</summary>
+    public const string AppName = "CallOfSlop.app";
+
+    /// <summary>The bundle's program, relative to the .app (it must be executable after unzipping).</summary>
+    public const string AppBinary = "Contents/MacOS/CallOfSlop";
+
+    /// <summary>
+    /// The folder that stands for this build: the exe's folder, or for a Mac app bundle the folder holding the .app
+    /// (the zip's CallOfSlop folder), so the install root and the cleanup see the same layout on both.
+    /// </summary>
+    public static string GameFolder(string exeFolder) =>
+        AppFolders.BundleOf(Path.TrimEndingDirectorySeparator(Path.GetFullPath(exeFolder))) is { } app && Path.GetDirectoryName(app) is { } holder
+            ? holder : exeFolder;
+
     /// <summary>A download that gets no data for this long fails (the partial file stays for Retry).</summary>
     public static TimeSpan StallTimeout = TimeSpan.FromSeconds(30);
 
@@ -33,7 +47,7 @@ public static class UpdateInstaller
     /// </summary>
     public static string InstallRoot(string exeFolder)
     {
-        var self = Path.TrimEndingDirectorySeparator(Path.GetFullPath(exeFolder));
+        var self = Path.TrimEndingDirectorySeparator(Path.GetFullPath(GameFolder(exeFolder)));
         var parent = Path.GetDirectoryName(self);
         if (parent == null)
             return self;
@@ -46,7 +60,8 @@ public static class UpdateInstaller
 
     /// <summary>Where builds go when the install root can't be written to (e.g. Program Files).</summary>
     public static string FallbackRoot() =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData) is { Length: > 0 } l ? l : Path.GetTempPath(), "CallOfSlop", "Builds");
+        Path.Combine((OperatingSystem.IsMacOS() ? SavePaths.MacAppSupport(AppFolders.Home()) : Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)) is { Length: > 0 } l
+            ? l : Path.GetTempPath(), "CallOfSlop", "Builds");
 
     /// <summary>A free folder name for the new build in <paramref name="root"/>: CallOfSlop-&lt;version&gt;, then -2, -3...</summary>
     public static string TargetFolder(string root, Version version)
@@ -215,16 +230,40 @@ public static class UpdateInstaller
             BuildMarker.Write(staging, version, finalName, partial: false, installed);
         Directory.Move(staging, target);
         RemoveMarkOfTheWeb(target);
-        return FindGame(target) ?? throw new IOException($"the update has no {ExeName}");
+        var game = FindGame(target) ?? throw new IOException($"the update has no {ExeName} or {AppName}");
+        MakeAppRunnable(game);
+        return game;
     }
 
-    /// <summary>CallOfSlop.exe in the folder or one level down (the zip holds a CallOfSlop folder); dll-only builds count too.</summary>
+    /// <summary>
+    /// A Mac bundle's program must be executable. The zip records Unix permissions and .NET restores them, but a zip
+    /// made without them would leave a bundle that can't start, so the bit is set here too. Nothing to do elsewhere.
+    /// </summary>
+    public static void MakeAppRunnable(string game)
+    {
+        if (OperatingSystem.IsWindows() || !game.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+            return;
+        var bin = Path.Combine(game, AppBinary);
+        if (!File.Exists(bin))
+            throw new IOException($"the update's {AppName} has no {AppBinary}");
+        var mode = File.GetUnixFileMode(bin);
+        const UnixFileMode exec = UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
+        if ((mode & exec) != exec)
+            File.SetUnixFileMode(bin, mode | exec);
+    }
+
+    /// <summary>
+    /// CallOfSlop.exe (or on a Mac, CallOfSlop.app) in the folder or one level down (the zip holds a CallOfSlop folder);
+    /// dll-only builds count too.
+    /// </summary>
     public static string? FindGame(string folder)
     {
         foreach (var dir in new[] { folder }.Concat(SafeDirs(folder)))
         {
             if (File.Exists(Path.Combine(dir, ExeName)))
                 return Path.Combine(dir, ExeName);
+            if (File.Exists(Path.Combine(dir, AppName, AppBinary)))
+                return Path.Combine(dir, AppName);
         }
         foreach (var dir in new[] { folder }.Concat(SafeDirs(folder)))
             if (File.Exists(Path.Combine(dir, "CallOfSlop.dll")) && !OperatingSystem.IsWindows())
@@ -278,6 +317,14 @@ public static class UpdateInstaller
     public static ProcessStartInfo LaunchCommand(string game)
     {
         var dir = Path.GetDirectoryName(Path.GetFullPath(game))!;
+        if (game.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+        {
+            // macOS: a bundle is opened by Launch Services ("open -n": a new instance even while this one is still running).
+            var open = new ProcessStartInfo("open") { WorkingDirectory = dir, UseShellExecute = false };
+            open.ArgumentList.Add("-n");
+            open.ArgumentList.Add(game);
+            return open;
+        }
         if (game.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
         {
             var psi = new ProcessStartInfo("dotnet") { WorkingDirectory = dir, UseShellExecute = false };
