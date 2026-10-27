@@ -153,5 +153,19 @@
     "refreshHealth": 5,
     "bayonetRange": 2.2,
     "bayonetMult": 1.5
+  },
+  "bots": {
+    "note": "Co-op bots spend their own points like players (2026-10-26; ZombieBotsShop.cs): only when it's safe (the break, or no zombie within quietRange and nobody down), within shopRange of their post, keeping reserve points. Priorities: the power switch, perks in perkOrder (saving up for the next one it can reach), a better wall gun (wallBetter x the damage per second in hand), the slot upgrade, the box (boxSurplus spare), a door between rounds (one a break for the team), a slot pull (slotSurplus spare).",
+    "buy": true,
+    "reserve": 250,
+    "quietRange": 10,
+    "shopRange": 40,
+    "perkOrder": ["jugg", "revive", "speed", "doubletap", "secondwind"],
+    "boxSurplus": 500,
+    "slotSurplus": 2500,
+    "wallBetter": 1.15,
+    "doors": true,
+    "thinkSeconds": 0.5,
+    "giveUpSeconds": 15
   }
 }

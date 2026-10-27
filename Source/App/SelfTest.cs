@@ -322,6 +322,7 @@ public static partial class SelfTest
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
         Section("Zombies flow", CheckZombiesFlow); // SelfTestZombiesFlow.cs: crawling while downed, revives vs crawling, spectating the living, ready-up between rounds, respawn at the round's end
         Section("Zombies slots", CheckZombiesSlots); // SelfTestZombiesSlots.cs: slot machines: the odds by round, heat, jackpot rounds, the reels, payouts, bad-luck protection, the network copy
+        Section("Zombies bot shopping", CheckZombiesBotShop); // SelfTestZombiesBotShop.cs: co-op bots spend their points (priorities, reserve, back at their post, safety, revives first, deterministic, no allocation)
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
         Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network

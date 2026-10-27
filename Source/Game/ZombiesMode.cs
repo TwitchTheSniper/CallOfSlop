@@ -251,6 +251,7 @@ public sealed partial class Game
         ZDrops.Clear();
         ZWeaponDrops.Clear();
         ResetPowerUps(); // ZombiesPowerUps.cs
+        ResetBotShops(); // ZombieBotsShop.cs
         ZFxList.Clear();
         ZPlayers.Clear();
         ZRound = 0;

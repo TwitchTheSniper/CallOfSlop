@@ -159,6 +159,30 @@ public sealed class ZombiesRules
 
     public float BoxSpinSeconds = 4f, BoxOfferSeconds = 10f, BoxMoveSeconds = 3f;
 
+    // ---- Co-op bots spending their points (ZombieBotsShop.cs; developer answer, 2026-10-26) --------------------
+    /// <summary>Bots buy doors, wall guns, the box, perks, the slot upgrade and slot pulls with their own points.</summary>
+    public bool BotsBuy = true;
+
+    /// <summary>Points a bot keeps back; a zombie this close (m) mid-round stops its shopping; how far from its post (m) it shops.</summary>
+    public int BotReserve = 250;
+
+    public float BotQuietRange = 10f, BotShopRange = 40f;
+
+    /// <summary>The perks a bot wants, most wanted first (rules keys).</summary>
+    public string[] BotPerkOrder = ["jugg", "revive", "speed", "doubletap", "secondwind"];
+
+    /// <summary>Spare points (over the price, the reserve and what it saves for its next perk) before a bot spins the box / pulls a slot machine.</summary>
+    public int BotBoxSurplus = 500, BotSlotSurplus = 2500;
+
+    /// <summary>A wall gun is worth buying when its damage per second is this many times the gun in hand's.</summary>
+    public float BotWallBetter = 1.15f;
+
+    /// <summary>Bots open doors (between rounds only, one door a break for the whole team).</summary>
+    public bool BotDoors = true;
+
+    /// <summary>How often a bot thinks about shopping (s), and how long it tries to reach something before giving up (s).</summary>
+    public float BotThinkSeconds = 0.5f, BotGiveUpSeconds = 15f;
+
     // ---- Slot machines (ZombiesSlots.cs; the odds by round are DropTables.json "slotTiers") ---------------------
     /// <summary>A pull's price: <see cref="SlotCostBase"/> + <see cref="SlotCostPerRound"/> a round after the first, at most <see cref="SlotCostMax"/>.</summary>
     public int SlotCostBase = 500, SlotCostPerRound = 25, SlotCostMax = 1250;
@@ -313,10 +337,16 @@ public sealed class ZombiesRules
         return r;
     }
 
-    public ZombiePerkDef? Perk(string keyOrName) =>
-        Perks.FirstOrDefault(p => p.Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase));
+    public ZombiePerkDef? Perk(string keyOrName) => PerkIndex(keyOrName) is var i and >= 0 ? Perks[i] : null;
 
-    public int PerkIndex(string keyOrName) => Perks.FindIndex(p => p.Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase));
+    /// <summary>The perk with this key or name, or -1 (no allocation: the bots look perks up every think).</summary>
+    public int PerkIndex(string keyOrName)
+    {
+        for (var i = 0; i < Perks.Count; i++)
+            if (Perks[i].Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || Perks[i].Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
+    }
 
     // ---- The round curve ----------------------------------------------------------------------------------
 
@@ -356,7 +386,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -637,6 +667,32 @@ public sealed class ZombiesRules
                             case "scrapPayout": r.SlotScrap = Whole(v, w, 0, 10000); break;
                             case "pointsBack": r.SlotPointsBack = Real(v, w, 0, 20); break;
                             case "autoScrapAt": r.SlotAutoScrapAt = Whole(v, w, 0, 100); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
+                case "bots":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "buy": r.BotsBuy = Flag(v, w); break;
+                            case "reserve": r.BotReserve = Whole(v, w, 0, 100000); break;
+                            case "quietRange": r.BotQuietRange = Real(v, w, 0, 100); break;
+                            case "shopRange": r.BotShopRange = Real(v, w, 1, 500); break;
+                            case "perkOrder":
+                                if (v.ValueKind != JsonValueKind.Array)
+                                    throw new WeaponFileException($"{w}: a list of perk keys");
+                                r.BotPerkOrder = v.EnumerateArray().Select(x => WeaponFile.Text(x, w)).ToArray();
+                                break;
+                            case "boxSurplus": r.BotBoxSurplus = Whole(v, w, 0, 100000); break;
+                            case "slotSurplus": r.BotSlotSurplus = Whole(v, w, 0, 100000); break;
+                            case "wallBetter": r.BotWallBetter = Real(v, w, 1, 10); break;
+                            case "doors": r.BotDoors = Flag(v, w); break;
+                            case "thinkSeconds": r.BotThinkSeconds = Real(v, w, 0.05f, 10); break;
+                            case "giveUpSeconds": r.BotGiveUpSeconds = Real(v, w, 1, 120); break;
                             default: return false;
                         }
                         return true;
