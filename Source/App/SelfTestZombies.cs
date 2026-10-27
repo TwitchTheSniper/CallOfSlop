@@ -88,7 +88,7 @@ public static partial class SelfTest
             Fail("sprinters should start at round 5 and runners at round 3, and more players should mean more zombies");
         if (rules.Perks.Count != 12 || rules.Perk("jugg")?.DamageTaken >= 1 || rules.Perk("speed")?.Reload >= 1 || rules.Perk("doubletap")?.FireRate <= 1 || rules.Perk("revive") is not { SelfRevive: false, Revive: < 1f }
             || rules.Perk("secondwind") is not { SelfRevive: true })
-            Fail("the four World at War perks and Second Wind (the only self-revive) aren't in the rules as expected");
+            Fail("the four base perks and Second Wind (the only self-revive) aren't in the rules as expected");
         foreach (var bad in new[] { """{"format": "call-of-slop-zombies/1", "rounds": {"countBase": -3}}""", """{"format": "call-of-slop-zombies/1", "zombie": {"bite": 3}}""", """{"format": "x"}""" })
             try
             {
@@ -327,7 +327,7 @@ public static partial class SelfTest
             if (!spinning || !took || !teddy || g.BoxSpot == oldSpot || g.BoxState != ZBoxState.Idle)
                 Fail("the mystery box should spin for its price, offer a build to take, and the teddy bear should refund and move it");
 
-            // Perks need the power; Juggernog cuts zombie damage; going down loses every perk.
+            // Perks need the power; Ironhide Cider cuts zombie damage; going down loses every perk.
             var jugg = zm.PerkMachines.First(m => m.Perk == "jugg");
             me.Teleport(jugg.At + World.FlatForward(jugg.Yaw) * 1.0f);
             zp.Points = 10000;
@@ -345,14 +345,14 @@ public static partial class SelfTest
             g.ZombieHurt(me, g.ZRules.ZombieDamage, now);
             var juggHit = World.MaxHealth - me.Health;
             g.SelfTestDown(me, now);
-            ZLine($"perks: refused without power {noPower}, power on {power}, Juggernog {hasJugg}; a zombie hit does {juggHit} with it ({g.ZRules.ZombieDamage} without); down -> perks {zp.Perks}");
+            ZLine($"perks: refused without power {noPower}, power on {power}, Ironhide Cider {hasJugg}; a zombie hit does {juggHit} with it ({g.ZRules.ZombieDamage} without); down -> perks {zp.Perks}");
             if (!noPower || !power || !hasJugg || juggHit >= g.ZRules.ZombieDamage || zp.Perks != 0)
-                Fail("perk machines should need the power, Juggernog should cut zombie damage, and going down should lose every perk");
-            // Speed Cola and Double Tap change the reload and the fire rate.
+                Fail("perk machines should need the power, Ironhide Cider should cut zombie damage, and going down should lose every perk");
+            // Swiftload Seltzer and Twinfire Punch change the reload and the fire rate.
             zp.Downed = false;
             zp.Perks = (ushort)((1 << g.ZRules.PerkIndex("speed")) | (1 << g.ZRules.PerkIndex("doubletap")));
             if (g.ZombieReloadMult(me) >= 1 || g.ZombieFireIntervalMult(me) >= 1)
-                Fail("Speed Cola / Double Tap don't change reload / fire rate");
+                Fail("Swiftload Seltzer / Twinfire Punch don't change reload / fire rate");
             // No hard cap on perks (developer answer, 2026-10-26): beyond the 4th each costs double the step before.
             {
                 var r = g.ZRules;
@@ -543,7 +543,7 @@ public static partial class SelfTest
                 Fail("the run should end when nobody is left standing");
         }
         // Second Wind (the self-revive perk, start room): bought, down -> back up on your own after the delay, used up,
-        // bought again; solo and co-op. Quick Revive alone no longer gets you up.
+        // bought again; solo and co-op. Mender's Mead alone no longer gets you up.
         foreach (var coop in new[] { false, true })
             using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
             {
@@ -586,15 +586,15 @@ public static partial class SelfTest
                     results.Add($"buy {buy + 1}: '{prompt?.Text}' bought {bought}, down {downed}, used up {used}, still down at {g.ZRules.SelfReviveSeconds - 0.5:0.0} s {stillDown}, up after {up}");
                     ok &= bought && downed && used && stillDown && up;
                 }
-                // Without it: down stays down (solo: the game over; Quick Revive doesn't self-revive any more).
+                // Without it: down stays down (solo: the game over; Mender's Mead doesn't self-revive any more).
                 zp.Perks = (ushort)(1 << g.ZRules.PerkIndex("revive"));
                 g.SelfTestBeginRound(1, now); // (the game over needs a round on)
                 g.SelfTestDown(me, now);
                 ZTicks(g, ref now, g.ZRules.SelfReviveSeconds + 0.3);
                 var noSelf = coop ? g.IsDowned(me) : g.Phase == MatchPhase.Ended;
-                ZLine($"Second Wind ({(coop ? "co-op" : "solo")}, {cost} points): {string.Join("; ", results)}; Quick Revive alone keeps you down {noSelf}");
+                ZLine($"Second Wind ({(coop ? "co-op" : "solo")}, {cost} points): {string.Join("; ", results)}; Mender's Mead alone keeps you down {noSelf}");
                 if (!ok || !noSelf)
-                    Fail($"Second Wind should get you back up on your own once per buy ({(coop ? "co-op" : "solo")}), and Quick Revive alone shouldn't");
+                    Fail($"Second Wind should get you back up on your own once per buy ({(coop ? "co-op" : "solo")}), and Mender's Mead alone shouldn't");
             }
 
         CheckZombieDroppedBuilds(map, zm, ref now);

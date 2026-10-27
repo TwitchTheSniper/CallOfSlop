@@ -13,22 +13,22 @@ public sealed class ZombiePerkDef
 
     public int Cost;
 
-    /// <summary>Solo price (Quick Revive is cheaper alone, World at War style). 0 = the same as <see cref="Cost"/>.</summary>
+    /// <summary>Solo price (Mender's Mead is cheaper alone, World at War style). 0 = the same as <see cref="Cost"/>.</summary>
     public int SoloCost;
 
     public string Blurb = "";
     public Vector3 Color = new(0.8f, 0.8f, 0.8f);
 
-    /// <summary>Zombie hits do this much damage (Juggernog: 0.4, about 2.5x the health).</summary>
+    /// <summary>Zombie hits do this much damage (Ironhide Cider: 0.4, about 2.5x the health).</summary>
     public float DamageTaken = 1f;
 
-    /// <summary>Reload time multiplier (Speed Cola: 0.5).</summary>
+    /// <summary>Reload time multiplier (Swiftload Seltzer: 0.5).</summary>
     public float Reload = 1f;
 
-    /// <summary>Fire rate multiplier (Double Tap: 1.33).</summary>
+    /// <summary>Fire rate multiplier (Twinfire Punch: 1.33).</summary>
     public float FireRate = 1f;
 
-    /// <summary>Revive time multiplier for the reviver (Quick Revive: 0.5).</summary>
+    /// <summary>Revive time multiplier for the reviver (Mender's Mead: 0.5).</summary>
     public float Revive = 1f;
 
     /// <summary>Solo only: being downed with this perk gets you back up on your own after a few seconds (the perk is used up).</summary>
@@ -433,10 +433,10 @@ public sealed class ZombiesRules
     public static ZombiesRules Defaults()
     {
         var r = new ZombiesRules();
-        r.Perks.Add(new ZombiePerkDef { Name = "Juggernog", Key = "jugg", Cost = 2500, DamageTaken = 0.4f, Color = new Vector3(0.85f, 0.15f, 0.15f), Icon = "heart", Blurb = "Zombie hits do 40 percent of their damage." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Speed Cola", Key = "speed", Cost = 3000, Reload = 0.5f, Color = new Vector3(0.2f, 0.85f, 0.3f), Icon = "drum", Blurb = "Reload twice as fast." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Double Tap", Key = "doubletap", Cost = 2000, FireRate = 1.33f, Color = new Vector3(0.95f, 0.75f, 0.15f), Icon = "rounds", Blurb = "Fire a third faster." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Quick Revive", Key = "revive", Cost = 1500, Revive = 0.5f, Color = new Vector3(0.3f, 0.6f, 1f), Icon = "cross", Blurb = "Revive teammates twice as fast." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Ironhide Cider", Key = "jugg", Cost = 2500, DamageTaken = 0.4f, Color = new Vector3(0.85f, 0.15f, 0.15f), Icon = "heart", Blurb = "Zombie hits do 40 percent of their damage." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Swiftload Seltzer", Key = "speed", Cost = 3000, Reload = 0.5f, Color = new Vector3(0.2f, 0.85f, 0.3f), Icon = "drum", Blurb = "Reload twice as fast." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Twinfire Punch", Key = "doubletap", Cost = 2000, FireRate = 1.33f, Color = new Vector3(0.95f, 0.75f, 0.15f), Icon = "rounds", Blurb = "Fire a third faster." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Mender's Mead", Key = "revive", Cost = 1500, Revive = 0.5f, Color = new Vector3(0.3f, 0.6f, 1f), Icon = "cross", Blurb = "Revive teammates twice as fast." });
         r.Perks.Add(new ZombiePerkDef { Name = "Second Wind", Key = "secondwind", Cost = 1500, SelfRevive = true, Color = new Vector3(1f, 0.55f, 0.1f), Icon = "wind", Blurb = "When you go down, you get back up on your own after a few seconds (used up)." });
         foreach (var d in MorePerks())
             r.Perks.Add(d);

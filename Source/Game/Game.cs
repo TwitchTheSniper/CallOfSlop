@@ -518,7 +518,7 @@ public sealed partial class Game : IDisposable
 
         if (!InfiniteAmmoOn(now))
             w.Ammo--; // (Zombies' Infinite Ammo: the shot uses none)
-        NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Double Tap
+        NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Twinfire Punch
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
@@ -1347,7 +1347,7 @@ public sealed partial class Game : IDisposable
         shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
         if (shooter.ShotClock > now + 0.05)
             return;
-        shooter.ShotClock += def.FireInterval * 0.85 * ZombieFireIntervalMult(shooter); // Zombies' Double Tap fires faster
+        shooter.ShotClock += def.FireInterval * 0.85 * ZombieFireIntervalMult(shooter); // Zombies' Twinfire Punch fires faster
         shooter.LastShotTime = now;
         shooter.LastCombatTime = now;
         if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
