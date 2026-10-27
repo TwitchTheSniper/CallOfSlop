@@ -587,7 +587,7 @@ public sealed partial class Game
     /// Server, per ray of a shot: the nearest zombie the ray hits before <paramref name="dist"/> (zombies rewound to
     /// <paramref name="rewindTo"/>), or null. Shortens <paramref name="dist"/> to the hit.
     /// </summary>
-    private Zombie? ZombieRayHit(Vector3 o, Vector3 d, ref float dist, double rewindTo, out bool head)
+    private Zombie? ZombieRayHit(Vector3 o, Vector3 d, ref float dist, double rewindTo, out bool head, float grow = 0f)
     {
         head = false;
         Zombie? hit = null;
@@ -596,7 +596,7 @@ public sealed partial class Game
             if (z.State == ZState.Dead)
                 continue;
             var at = ZombieAt(z, rewindTo);
-            if (World.Hitbox(at, Stance.Stand, z.Yaw).Raycast(o, d, dist) is { } t && t < dist)
+            if (World.Hitbox(at, Stance.Stand, z.Yaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist) // grow: a fat round's radius
             {
                 dist = t;
                 hit = z;
@@ -755,7 +755,7 @@ public sealed partial class Game
     // ---- Client: hit prediction against what you see ------------------------------------------------------
 
     /// <summary>Client: how far a ray goes before it hits a zombie as drawn (for tracers and the hit marker), or <paramref name="dist"/>.</summary>
-    public float ZombieRayDrawn(Vector3 o, Vector3 d, float dist, out bool hit)
+    public float ZombieRayDrawn(Vector3 o, Vector3 d, float dist, out bool hit, float grow = 0f)
     {
         hit = false;
         foreach (var z in Horde)
@@ -763,7 +763,7 @@ public sealed partial class Game
             if (z.State == ZState.Dead)
                 continue;
             var feet = z.RenderPos + ZombieHitShift(z, ZAnimTick, z.RenderPos); // at a window: on the drawn body
-            if (World.Hitbox(feet, Stance.Stand, z.RenderYaw).Raycast(o, d, dist) is { } t && t < dist)
+            if (World.Hitbox(feet, Stance.Stand, z.RenderYaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist)
             {
                 dist = t;
                 hit = true;

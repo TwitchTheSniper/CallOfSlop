@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Recoil Eater",
+  "category": "muzzle",
+  "rarity": "epic",
+  "flavor": "A finned drum that swallows the kick: well under half the recoil. The blast it dumps sideways shoves every shot off line.",
+  "weight": 0.7,
+  "muzzles": [[0, 0, -0.11]],
+  "model": [
+    {"shape": "rod", "size": [0.036, 0.036, 0.02], "pos": [0, 0, -0.01], "color": "steel"},
+    {"shape": "rod", "size": [0.075, 0.075, 0.08], "pos": [0, 0, -0.06], "color": "gunmetal"},
+    {"size": [0.09, 0.012, 0.06], "pos": [0, 0, -0.06], "color": "black"},
+    {"size": [0.012, 0.09, 0.06], "pos": [0, 0, -0.06], "color": "black"},
+    {"shape": "rod", "size": [0.04, 0.04, 0.01], "pos": [0, 0, -0.105], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.45},
+    {"stat": "recoilVertical", "mul": 0.75},
+    {"stat": "recoilShake", "mul": 0.6},
+    {"stat": "hipSpreadDeg", "mul": 1.5},
+    {"stat": "adsSpreadMult", "mul": 1.4}
+  ]
+}

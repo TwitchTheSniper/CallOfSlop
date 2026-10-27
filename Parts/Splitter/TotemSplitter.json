@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Totem Splitter",
+  "category": "splitter",
+  "rarity": "epic",
+  "flavor": "Four outputs stacked like a totem pole. A quarter each, and a muzzle climb you'll feel in your shoulder.",
+  "weight": 1.1,
+  "split": {"splay": 2, "spreadMult": 0.75},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0, 0.075, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0, 0.025, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [0, -0.025, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0, -0.075, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.044, 0.194, 0.05], "pos": [0.0, 0.0, -0.035], "color": "gunmetal"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 1.15},
+    {"stat": "adsTime", "add": 0.02}
+  ]
+}

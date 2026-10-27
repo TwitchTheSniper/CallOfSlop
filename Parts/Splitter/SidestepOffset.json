@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Sidestep Offset",
+  "category": "splitter",
+  "rarity": "uncommon",
+  "flavor": "Steps the barrel 5 cm to the right, clear of whatever you've hung on top. Same shot, a touch of sideways kick.",
+  "weight": 0.3,
+  "split": {"splay": 0},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0.05, 0, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.084, 0.034, 0.05], "pos": [0.025, 0, -0.035], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilHorizontal", "mul": 1.08}
+  ]
+}

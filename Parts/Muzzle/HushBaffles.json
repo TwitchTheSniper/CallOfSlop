@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Hush Baffles",
+  "category": "muzzle",
+  "rarity": "legendary",
+  "flavor": "A stack of baffles as long as a forearm: the quietest thing that still counts as a gun, with a fifth less kick. Heavy, slow to swing, a little shorter reach.",
+  "weight": 0.9,
+  "flags": ["suppressed"],
+  "muzzles": [[0, 0, -0.24]],
+  "model": [
+    {"shape": "rod", "size": [0.046, 0.046, 0.24], "pos": [0, 0, -0.12], "color": "black"},
+    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.005], "color": "steel"},
+    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.085], "color": "steel"},
+    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.165], "color": "steel"},
+    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.235], "color": "steel"}
+  ],
+  "stats": [
+    {"stat": "loudness", "mul": 0.25},
+    {"stat": "recoilDeg", "mul": 0.8},
+    {"stat": "recoilShake", "mul": 0.8},
+    {"stat": "rangeM", "mul": 0.9},
+    {"stat": "adsTime", "add": 0.05},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

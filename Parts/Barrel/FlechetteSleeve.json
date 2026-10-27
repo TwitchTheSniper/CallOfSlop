@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Flechette Sleeve",
+  "category": "barrel",
+  "rarity": "epic",
+  "flavor": "Sheds the jacket and fires a tiny dart at twice the speed. Little damage per dart, but it threads through walls, flies dead straight, and a shotgun throws half again as many.",
+  "weight": 0.6,
+  "hand": [0, -0.03, -0.128],
+  "muzzles": [[0, 0, -0.32]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.32]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.028, 0.028, 0.32], "pos": [0, 0, -0.16], "color": "black"},
+    {"shape": "rod", "size": [0.036, 0.036, 0.05], "pos": [0, 0, -0.025], "color": "accent"},
+    {"shape": "rod", "size": [0.036, 0.036, 0.05], "pos": [0, 0, -0.295], "color": "accent"}
+  ],
+  "stats": [
+    {"stat": "bulletSize", "mul": 0.4},
+    {"stat": "bulletSpeed", "mul": 2.0},
+    {"stat": "damage", "mul": 0.7},
+    {"stat": "pellets", "grow": 1.5},
+    {"stat": "penetrationMult", "mul": 2.2},
+    {"stat": "hipSpreadDeg", "mul": 0.6},
+    {"stat": "recoilDeg", "mul": 0.85}
+  ]
+}

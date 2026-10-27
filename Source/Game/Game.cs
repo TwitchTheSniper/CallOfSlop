@@ -11,6 +11,12 @@ public struct Tracer
     public Vector3 Color;
     public float Width;
     public double Born;
+
+    /// <summary>Metres per second the round is drawn travelling at (0: the usual instant streak; a slow round's slug, Game.TracerSpeed).</summary>
+    public float Speed;
+
+    /// <summary>Seconds it lasts (0: 0.25 s, the instant streak's fade).</summary>
+    public float Life;
 }
 
 /// <summary>Ammo / reload state of one weapon slot in the local player's loadout.</summary>
@@ -378,7 +384,7 @@ public sealed partial class Game : IDisposable
 
         // (Plain loops, not RemoveAll with a lambda: that would allocate a closure every frame.)
         for (var i = Tracers.Count - 1; i >= 0; i--)
-            if (now - Tracers[i].Born > 0.25)
+            if (now - Tracers[i].Born > (Tracers[i].Life > 0 ? Tracers[i].Life : 0.25))
                 Tracers.RemoveAt(i);
         for (var i = Feed.Count - 1; i >= 0; i--)
             if (now - Feed[i].Time > 8)
@@ -562,15 +568,15 @@ public sealed partial class Game : IDisposable
             dist = TacticalRayDrawn(o, d, dist); // Deployable Cover and enemy devices stop it (GameTactical.cs)
             if (Horde.Count > 0)
             {
-                dist = ZombieRayDrawn(o, d, dist, out var zHit); // Zombies, as you see them (ZombieAI.cs)
+                dist = ZombieRayDrawn(o, d, dist, out var zHit, BulletRadius(ray.Size)); // Zombies, as you see them (ZombieAI.cs); a fat round clips them as on the server
                 predictedHit |= zHit;
             }
             if (Enemies.Count > 0)
             {
-                dist = PveRayDrawn(o, d, dist, out var eHit); // Co-op enemies, as you see them (GamePve.cs)
+                dist = PveRayDrawn(o, d, dist, out var eHit, BulletRadius(ray.Size)); // Co-op enemies, as you see them (GamePve.cs)
                 predictedHit |= eHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through);
+            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through, size: ray.Size);
         }
         if (predictedHit)
         {
@@ -750,10 +756,12 @@ public sealed partial class Game : IDisposable
         return p.RenderEye + fwd * (0.4f + p.WeaponDef.Length) + right * 0.25f - Vector3.UnitY * 0.2f;
     }
 
-    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null, Vector3? through = null)
+    private void AddTracer(Vector3 from, Vector3 to, WeaponDef def, double now, int hitFlags = -1, Player? shooter = null, Vector3? through = null, float size = -1f)
     {
+        if (size < 0)
+            size = def.BulletSize; // other players' shots: the weapon's (mean) round size
         TracerSounds(from, to, def, hitFlags); // impacts, whizzes, hits heard in the world (GameSounds.cs)
-        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def)); // a bullet-impact decal where it ends on a surface (Source/Decals)
+        ImpactDecals.OnTracer(World.Map, from, to, shooter?.Id ?? (byte)255, now, def.Pellets > 1, ImpactDecals.CalibreScale(def) * SizeLook(size)); // a bullet-impact decal where it ends on a surface (Source/Decals); bigger rounds leave bigger marks
         PenetrationMarks(through, to, def, shooter?.Id ?? (byte)255, now); // went through walls on the way: marks on both sides (GamePenetration.cs)
         var color = def.Sound switch
         {
@@ -765,8 +773,11 @@ public sealed partial class Game : IDisposable
         var width = def.Sound == SoundStyle.Zap ? 0.06f : def.Pellets > 1 ? 0.015f : 0.02f + def.Caliber * 0.02f;
         if (def.Sound == SoundStyle.Suppressed)
             width *= 0.6f; // suppressed shots leave faint, thin tracers
+        width *= SizeLook(size); // a Bloat Barrel's slug is a fat streak, a Needle's a hairline
         FrenzyFx.OnTracer(this, shooter, def, from, to, now, ref color, ref width); // a frenzied shooter's class look (Source/Render/FrenzyFx)
-        Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now });
+        var speed = TracerSpeed(def.BulletSpeed); // a slow round's slug visibly travels (GameBuilder.cs)
+        var life = speed > 0 ? 0.25f + Vector3.Distance(from, to) / speed : 0f;
+        Tracers.Add(new Tracer { From = from, To = to, Color = color, Width = width, Born = now, Speed = speed, Life = MathF.Min(life, 1.5f) });
     }
 
     private void OnLocalSpawn(Player p)
@@ -1385,13 +1396,14 @@ public sealed partial class Game : IDisposable
         {
             var o = ray.Origin;
             var d = ray.Dir;
+            var grow = BulletRadius(ray.Size); // a fat round (a Bloat Barrel's slug) clips targets off its line (GameBuilder.cs)
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
-                if ((GravityFrames.Curved ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist) : t.Hitbox.Raycast(o, d, dist)) is { } td && td < dist)
+                if ((GravityFrames.Curved ? World.RayHitsBody(t.At.Position, t.At.Stance, t.At.Yaw, o, d, dist) : t.Hitbox.Grown(grow).Raycast(o, d, dist)) is { } td && td < dist)
                 {
                     dist = td;
                     hit = t;
@@ -1404,14 +1416,14 @@ public sealed partial class Game : IDisposable
                 hit = null;
                 turret = null;
             }
-            var zombie = Horde.Count > 0 ? ZombieRayHit(o, d, ref dist, rewindTo, out zHead) : null; // Zombies (ZombieAI.cs)
+            var zombie = Horde.Count > 0 ? ZombieRayHit(o, d, ref dist, rewindTo, out zHead, grow) : null; // Zombies (ZombieAI.cs)
             if (zombie != null)
             {
                 hit = null;
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult : 1f) * PenFactor(dist), zHead);
             }
-            if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead) is { } enemy) // Co-op enemies (GamePve.cs)
+            if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead, grow) is { } enemy) // Co-op enemies (GamePve.cs)
             {
                 hit = null;
                 turret = null;

@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Cannon Sleeve",
+  "category": "barrel",
+  "rarity": "legendary",
+  "flavor": "A ship's cannon sawn short and bolted on. Every round leaves as a crawling ball three times the size and nearly twice the damage. It stops at the first wall and the gun tries to leave with it.",
+  "weight": 2.0,
+  "hand": [0, -0.03, -0.12],
+  "muzzles": [[0, 0, -0.3]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.3]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.034, 0.034, 0.06], "pos": [0, 0, -0.03], "color": "steel"},
+    {"shape": "rod", "size": [0.085, 0.085, 0.26], "pos": [0, 0, -0.17], "color": "black"},
+    {"shape": "rod", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.07], "color": "brass"},
+    {"shape": "rod", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.17], "color": "brass"},
+    {"shape": "rod", "size": [0.1, 0.1, 0.02], "pos": [0, 0, -0.28], "color": "brass"}
+  ],
+  "stats": [
+    {"stat": "bulletSize", "mul": 3.2},
+    {"stat": "bulletSpeed", "mul": 0.4},
+    {"stat": "damage", "mul": 1.9},
+    {"stat": "recoilDeg", "mul": 1.6},
+    {"stat": "recoilPunchFov", "mul": 1.5},
+    {"stat": "hipSpreadDeg", "mul": 1.2},
+    {"stat": "penetrationMult", "mul": 0.4},
+    {"stat": "adsTime", "add": 0.06},
+    {"stat": "mobility", "add": -0.04}
+  ]
+}

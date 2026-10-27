@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Dragon Mouth",
+  "category": "muzzle",
+  "rarity": "legendary",
+  "flavor": "A snarling iron jaw that turns every round into a short cone of burning shot: four times the projectiles at a third the damage each, slow and fat, gone by ten metres. Sets zombies alight.",
+  "weight": 1.1,
+  "flags": ["incendiary"],
+  "muzzles": [[0, 0, -0.16]],
+  "model": [
+    {"shape": "rod", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
+    {"shape": "rod", "size": [0.06, 0.06, 0.05], "pos": [0, 0, -0.055], "color": "gunmetal"},
+    {"shape": "rod", "size": [0.085, 0.085, 0.05], "pos": [0, 0, -0.105], "color": "gunmetal"},
+    {"size": [0.1, 0.02, 0.03], "pos": [0, 0.035, -0.145], "color": "black"},
+    {"size": [0.1, 0.02, 0.03], "pos": [0, -0.035, -0.145], "color": "black"},
+    {"shape": "rod", "size": [0.04, 0.04, 0.035], "pos": [0, 0, -0.1375], "color": "orange", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "pellets", "mul": 4},
+    {"stat": "damage", "mul": 0.34},
+    {"stat": "hipSpreadDeg", "mul": 3},
+    {"stat": "adsSpreadMult", "mul": 2.5},
+    {"stat": "rangeM", "mul": 0.6},
+    {"stat": "bulletSize", "mul": 1.6},
+    {"stat": "bulletSpeed", "mul": 0.5},
+    {"stat": "loudness", "mul": 1.4}
+  ]
+}

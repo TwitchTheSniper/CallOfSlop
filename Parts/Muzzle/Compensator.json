@@ -3,7 +3,7 @@
   "name": "Compensator",
   "category": "muzzle",
   "rarity": "uncommon",
-  "flavor": "Ports on top push the muzzle down. Less climb.",
+  "flavor": "Ports on top push the muzzle down. Nearly half the climb, a little louder and looser.",
   "weight": 0.2,
   "muzzles": [[0, 0, -0.06]],
   "model": [
@@ -11,6 +11,8 @@
     {"size": [0.02, 0.008, 0.04], "pos": [0, 0.018, -0.03], "color": "black"}
   ],
   "stats": [
-    {"stat": "recoilVertical", "mul": 0.7}
+    {"stat": "recoilVertical", "mul": 0.55},
+    {"stat": "hipSpreadDeg", "mul": 1.05},
+    {"stat": "loudness", "mul": 1.1}
   ]
 }

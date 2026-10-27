@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Dogleg Offset",
+  "category": "splitter",
+  "rarity": "rare",
+  "flavor": "A crooked elbow: up 4 cm and left 4 cm. Moves the barrel, adds nothing, looks like it hurts.",
+  "weight": 0.35,
+  "split": {"splay": 0, "spreadMult": 0.97},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [-0.04, 0.04, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.034, 0.074, 0.05], "pos": [0, 0.02, -0.035], "color": "gunmetal"},
+    {"size": [0.074, 0.034, 0.05], "pos": [-0.02, 0.04, -0.035], "color": "gunmetal"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": []
+}

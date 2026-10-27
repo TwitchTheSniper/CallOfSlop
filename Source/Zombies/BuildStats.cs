@@ -8,11 +8,13 @@ namespace CallOfSlop;
 /// One barrel of a built weapon: where it fires from (gun model space), how far it's turned off the bore line, which
 /// receiver it belongs to (<see cref="Group"/>), and its pellets, damage and spread relative to the weapon's numbers.
 /// <see cref="Rotary"/> barrels take turns within their group (a minigun receiver).
+/// <see cref="Size"/> is the barrel's own <see cref="WeaponDef.BulletSize"/> (its barrel and muzzle device can make the round
+/// bigger or smaller than the next barrel's).
 /// </summary>
-public readonly record struct BarrelPoint(Vector3 Muzzle, float YawDeg, float PitchDeg, int Group, int Pellets, float DamageMult, float SpreadMult, bool Rotary);
+public readonly record struct BarrelPoint(Vector3 Muzzle, float YawDeg, float PitchDeg, int Group, int Pellets, float DamageMult, float SpreadMult, bool Rotary, float Size = 1f);
 
-/// <summary>One barrel muzzle of a receiver as the stat pipeline sees it.</summary>
-public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float SplitMult, float SplayDeg, float SpreadMult = 1f);
+/// <summary>One barrel muzzle of a receiver as the stat pipeline sees it (splay: <see cref="SplayDeg"/> sideways, <see cref="PitchDeg"/> up).</summary>
+public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float SplitMult, float SplayDeg, float SpreadMult = 1f, float PitchDeg = 0f);
 
 /// <summary>
 /// Turns a build (a tree of parts) into a <see cref="WeaponDef"/> the existing firing code uses. Deterministic: the same
@@ -42,7 +44,7 @@ public static class BuildStats
     private static readonly string[] Averaged =
     [
         nameof(WeaponDef.RangeM), nameof(WeaponDef.MinDamageMult), nameof(WeaponDef.HeadMult), nameof(WeaponDef.AdsSpreadMult), nameof(WeaponDef.AdsTime),
-        nameof(WeaponDef.EquipTime), nameof(WeaponDef.Mobility),
+        nameof(WeaponDef.EquipTime), nameof(WeaponDef.Mobility), nameof(WeaponDef.BulletSize), nameof(WeaponDef.BulletSpeed),
     ];
 
     private static readonly PartCategory[] GripStages = [PartCategory.Grip, PartCategory.Stock, PartCategory.Optic, PartCategory.Utility];
@@ -67,11 +69,45 @@ public static class BuildStats
         return Math.Clamp(w.Pellets, 1, 30);
     }
 
+    /// <summary>
+    /// Pellets each barrel muzzle of a receiver fires, in <see cref="Leaves"/> order: the receiver's own
+    /// (<see cref="PelletsOf"/> without the barrels), then that barrel's pellet effects (shotgun bores only) and its muzzle
+    /// device's (any bore: a Blunderbuss Flare or Fork Crown splits whatever comes out). For the projectile limit.
+    /// </summary>
+    public static List<int> PelletsPerBarrel(BuildNode receiver)
+    {
+        var cls = receiver.Part.Receiver is { } r ? Parts.Registry.ClassOf(r.Bore) : BoreClass.Default;
+        var w = new WeaponDef { Name = "", Class = WeaponClass.AssaultRifle, Damage = 1, RangeM = 1, Rpm = 1, Mag = 1, Reload = 1, HipSpreadDeg = 1 };
+        w.Pellets = cls.Calibre.Pellets;
+        foreach (var n in receiver.Walk().Where(n => n.Part.Category is PartCategory.Receiver or PartCategory.Ammo or PartCategory.Feed))
+        {
+            if (n.Part.Category == PartCategory.Ammo)
+                ApplyAmmo(n.Part, w, cls);
+            else
+                foreach (var e in n.Part.Effects.Where(e => e.Field.Name == nameof(WeaponDef.Pellets)))
+                    e.ApplyTo(w);
+        }
+        var list = new List<int>();
+        foreach (var leaf in Leaves(receiver))
+        {
+            var c = w.Clone();
+            if (cls.Pellets)
+                foreach (var e in leaf.Barrel.Part.Effects.Where(e => e.Field.Name == nameof(WeaponDef.Pellets)))
+                    e.ApplyTo(c);
+            foreach (var (s, dev) in leaf.Barrel.Children())
+                if (s.Type == "muzzle")
+                    foreach (var e in dev.Part.Effects.Where(e => e.Field.Name == nameof(WeaponDef.Pellets)))
+                        e.ApplyTo(c);
+            list.Add(Math.Clamp(c.Pellets, 1, 30));
+        }
+        return list;
+    }
+
     /// <summary>A receiver's barrel muzzles (in socket order), with the splitter multiplier and splay on the way to each.</summary>
     public static List<BarrelLeaf> Leaves(BuildNode receiver)
     {
         var list = new List<BarrelLeaf>();
-        Collect(receiver, 1f, 0f, 1f, list);
+        Collect(receiver, 1f, 0f, 0f, 1f, list);
         // A receiver with several barrel sockets (the rotary clusters) fires them in turn with a rotary action; with any
         // other action they all fire at once, and like a splitter each gets 1/N of the shot (the total stays the same).
         if (receiver.Part.Receiver != null && WeaponBuild.ActionOf(receiver) is { Kind: not ActionKind.Rotary })
@@ -84,25 +120,47 @@ public static class BuildStats
         return list;
     }
 
-    private static void Collect(BuildNode n, float mult, float splay, float spread, List<BarrelLeaf> into)
+    private static void Collect(BuildNode n, float mult, float yaw, float pitch, float spread, List<BarrelLeaf> into)
     {
         if (n.Part.Category == PartCategory.Barrel)
         {
             for (var i = 0; i < n.Part.Muzzles.Length; i++)
-                into.Add(new BarrelLeaf(n, i, mult, splay, spread));
+                into.Add(new BarrelLeaf(n, i, mult, yaw, spread, pitch));
             return;
         }
         var split = n.Part.Split;
         var outs = n.Part.Sockets.Where(s => s.Type == "barrel").ToList();
+        // A row of outputs (every output at one height: the Y, Trident, Peacock, Hydra) fans sideways from -splay to +splay
+        // across its sockets in order, as it always has. Any other layout (over-under stacks, grids, crosses, rosettes)
+        // fans outward from the outputs' centre in both directions: each output turns by splay x its offset from the centre
+        // over the farthest output's, so a vertical stack fans up and down and a rosette opens like a flower.
+        // An offset splitter (one output) only moves its barrel: no splay, no split (1/1 of the shot).
+        var row = outs.Count > 1 && outs.All(o => MathF.Abs(o.Pos.Y - outs[0].Pos.Y) < 1e-4f);
+        var centre = Vector2.Zero;
+        foreach (var o in outs)
+            centre += new Vector2(o.Pos.X, o.Pos.Y);
+        centre /= Math.Max(1, outs.Count);
+        var reach = 0f;
+        foreach (var o in outs)
+            reach = MathF.Max(reach, (new Vector2(o.Pos.X, o.Pos.Y) - centre).Length());
         for (var i = 0; i < outs.Count; i++)
         {
             if (n.Child(outs[i].Name) is not { } child)
                 continue;
             // Splitters conserve damage: each output gets 1/N of the shot (nested splitters divide again).
             var m = split != null ? mult * SplitInfo.OutputMult(n.Part) : mult;
-            // Outputs fan out evenly from -splay to +splay across the splitter's barrel sockets.
-            var sp = split != null && outs.Count > 1 ? splay + split.SplayDeg * (2f * i / (outs.Count - 1) - 1f) : splay;
-            Collect(child, m, sp, split != null ? spread * split.SpreadMult : spread, into);
+            var (y, p) = (yaw, pitch);
+            if (split != null && outs.Count > 1 && split.SplayDeg != 0)
+            {
+                if (row)
+                    y += split.SplayDeg * (2f * i / (outs.Count - 1) - 1f);
+                else if (reach > 1e-5f)
+                {
+                    y += split.SplayDeg * (outs[i].Pos.X - centre.X) / reach;
+                    p += split.SplayDeg * (outs[i].Pos.Y - centre.Y) / reach;
+                }
+            }
+            Collect(child, m, y, p, split != null ? spread * split.SpreadMult : spread, into);
         }
     }
 
@@ -187,7 +245,7 @@ public static class BuildStats
 
         /// <summary>Its action part's numbers (fire type, rate, spool-up, chamber).</summary>
         public ActionInfo Action = NoAction;
-        public readonly List<(BarrelLeaf Leaf, float Damage, int Pellets, float HipSpread)> Barrels = new();
+        public readonly List<(BarrelLeaf Leaf, float Damage, int Pellets, float HipSpread, float Size)> Barrels = new();
     }
 
     /// <summary>Runs the per-receiver part of the pipeline (stages, then barrel paths).</summary>
@@ -227,8 +285,12 @@ public static class BuildStats
             foreach (var (s, dev) in leaf.Barrel.Children())
                 if (s.Type == "muzzle")
                     Apply(dev.Part, c);
+            // Hitscan rounds: a faster round carries its full damage further, a slower one drops off sooner (range x speed).
+            c.BulletSpeed = Math.Clamp(c.BulletSpeed, WeaponDef.MinBulletSpeed, WeaponDef.MaxBulletSpeed);
+            c.BulletSize = Math.Clamp(c.BulletSize, WeaponDef.MinBulletSize, WeaponDef.MaxBulletSize);
+            c.RangeM *= c.BulletSpeed;
             copies.Add(c);
-            res.Barrels.Add((leaf, c.Damage * leaf.SplitMult, Math.Clamp(c.Pellets, 1, 30), c.HipSpreadDeg * leaf.SpreadMult));
+            res.Barrels.Add((leaf, c.Damage * leaf.SplitMult, Math.Clamp(c.Pellets, 1, 30), c.HipSpreadDeg * leaf.SpreadMult, c.BulletSize));
         }
         if (copies.Count > 0)
         {
@@ -306,7 +368,7 @@ public static class BuildStats
             var fi = typeof(WeaponDef).GetField(f)!;
             fi.SetValue(w, defs.Average(d => (float)fi.GetValue(d)!));
         }
-        var barrels = per.SelectMany((p, g) => p.Barrels.Select(x => (Group: g, x.Leaf, x.Damage, x.Pellets, x.HipSpread, Rotary: p.Action.Kind == ActionKind.Rotary))).ToList();
+        var barrels = per.SelectMany((p, g) => p.Barrels.Select(x => (Group: g, x.Leaf, x.Damage, x.Pellets, x.HipSpread, x.Size, Rotary: p.Action.Kind == ActionKind.Rotary))).ToList();
         var meanHip = barrels.Count > 0 ? barrels.Average(x => x.HipSpread) : w.HipSpreadDeg;
         w.HipSpreadDeg = meanHip;
         var maxDamage = barrels.Count > 0 ? barrels.Max(x => x.Damage) : w.Damage;
@@ -331,8 +393,8 @@ public static class BuildStats
         var single = barrels.Count == 1;
         if (!single)
         {
-            w.MuzzlePoints = barrels.Select(x => new BarrelPoint(Vector3.Zero, x.Leaf.SplayDeg, 0f, x.Group, x.Pellets, x.Damage / MathF.Max(1, w.Damage),
-                x.HipSpread / MathF.Max(0.01f, meanHip), x.Rotary)).ToArray();
+            w.MuzzlePoints = barrels.Select(x => new BarrelPoint(Vector3.Zero, x.Leaf.SplayDeg, x.Leaf.PitchDeg, x.Group, x.Pellets, x.Damage / MathF.Max(1, w.Damage),
+                x.HipSpread / MathF.Max(0.01f, meanHip), x.Rotary, x.Size)).ToArray();
             w.RotateGroups = rotate;
         }
 
@@ -449,6 +511,8 @@ public static class BuildStats
         w.Mobility = Math.Clamp(w.Mobility, 0.4f, 1.2f);
         w.AdsTime = Math.Clamp(w.AdsTime, 0.08f, 0.8f);
         w.Loudness = Math.Clamp(w.Loudness, WeaponDef.MinLoudness, WeaponDef.MaxLoudness);
+        w.BulletSize = Math.Clamp(w.BulletSize, WeaponDef.MinBulletSize, WeaponDef.MaxBulletSize);
+        w.BulletSpeed = Math.Clamp(w.BulletSpeed, WeaponDef.MinBulletSpeed, WeaponDef.MaxBulletSpeed);
         w.Pellets = Math.Clamp(w.Pellets, 1, 30);
     }
 }

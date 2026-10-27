@@ -46,5 +46,8 @@
   "stats": [                                  // what it does to the weapon (any attachment stat: Attachments/README.md)
     {"stat": "rangeM", "mul": 1.1},
     {"stat": "adsTime", "add": 0.01}
+    // parts also have "bulletSize" (1 = the stock round; above 1 the round hits with a radius, 6 cm per unit, and draws
+    // fatter) and "bulletSpeed" (1 = stock; scales the range on that barrel, below 0.95 the round is drawn travelling).
+    // A splitter with ONE barrel socket is an offset: it only moves the barrel (no extra barrel, "splay" must be 0).
   ]
 }

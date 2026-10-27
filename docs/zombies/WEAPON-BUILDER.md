@@ -83,15 +83,15 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 | Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand: vertical, angled, skeleton, thumb stub, recoil pad, pogo, chaingun handle) | 27 |
 | Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
 | Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
-| Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
-| Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
+| Barrel | Range, damage, spread, and the round's **size and speed** (Bloat Barrel: twice the size at half the speed; Needle Barrel: half the size, 1.7x the speed); bundles have several muzzles (Barrel of Barrels: 7) | 20 |
+| Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter): rows, vertical stacks, grids, a cross, a rosette; plus **offsets** (one output: they only move the barrel) | 23 |
 | Feed | Magazine size and reload (box, stick, extended, drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 5 shared feeds; 3+ per bore | 25 |
 | Ammo | The round type on the receiver's calibre: relative damage, range, pellets, fall-off and flags; fits every receiver | 14 |
 | Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
 | Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
 | Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
 | Optic | The game's optics (red dot, holo, ACOG, 4x, 8x, scout, night tube, periscope, rangefinder, bead, pocket prism) with their reticles and lens | 11 |
-| Muzzle | Flash hider, compensator, brake, suppressor, Loudener (2.5x the report: bots and the gunshot mix hear it that much further), shrouded can, duckbill, recoil hook, thread protector, vent collar, blunderbuss flare | 11 |
+| Muzzle | Flash hider, compensator, brake, suppressor, Loudener (2.5x the report: bots and the gunshot mix hear it that much further), shrouded can, duckbill, recoil hook, thread protector, vent collar, blunderbuss flare; Recoil Eater, Dragon Mouth, Velocity Booster, Long Choke, Fork Crown, Tumbler Ring, Hush Baffles | 18 |
 | Utility | Laser, bayonet, cup holder, and weight relief (sling, anti-grav coil, helium balloons) | 6 |
 | Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 6 |
 | Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
@@ -137,6 +137,99 @@ friction in matches."
   Now barrels aren't typed, the merged Pistol Grip carries 5 kg (10 at most) and the barrels go on.)
 - **Saves.** Builds only gain options: every old build loads unchanged (old part files' barrel `"bores"` only say what
   the barrel is drawn for). Servers validate with the same rules (protocol 38).
+
+### Splitters, barrels and muzzles (developer request, 2026-10-27)
+
+The developer: "add more splitter models in the workbench, including vertical options. Also include a few offset
+splitters that don't provide more attachment points, but move the location of the points." / "add more barrel options.
+The barrels don't really do much beyond velocity changes. I would like barrels that can make the bullets bigger and
+slower, or a barrel that can make the bullets smaller and faster." / "muzzle devices that have more noticeable effects on
+your weapon's performance." All of it is data in `Parts/Splitter`, `Parts/Barrel` and `Parts/Muzzle`; the rarity tags
+are a first placing (the late-game pass sets the power curve). Self-test section **Parts mechanics**
+(`Source/App/SelfTestPartsMechanics.cs`).
+
+**Splitters.** Twelve new multi-output splitters and five offsets:
+
+| Splitter | Tier | Outputs | Layout | Spread | Splay |
+| --- | --- | --- | --- | --- | --- |
+| Narrow Twin | common | 2 | side by side, 3.6 cm apart | x0.95 | 0 |
+| Wide Y | common | 2 | side by side, 14 cm apart (hip spread x1.05) | x1.0 | 1.5 |
+| Diagonal | uncommon | 2 | low left, high right | x0.9 | 1.5 |
+| Stepped | uncommon | 3 | a staircase | x0.85 | 1.5 |
+| Tower | rare | 3 | **stacked vertically** (vertical recoil x1.08) | x0.8 | 1.5 |
+| Pyramid | rare | 3 | one over two | x0.8 | 1.5 |
+| Quad Line | rare | 4 | a row (hip spread x1.1) | x0.8 | 2.5 |
+| Totem | epic | 4 | **stacked vertically** (vertical recoil x1.15, aim +0.02 s) | x0.75 | 2 |
+| Cross | epic | 4 | up, down, left, right | x0.7 | 3 |
+| Ladder | legendary | 6 | two columns of three | x0.65 | 1.5 |
+| Rosette | wonder | 6 | a ring | x0.55 | 3 |
+| Wall | wonder | 9 | a 3 x 3 grid (recoil x1.1, aim +0.04 s, mobility -0.03) | x0.5 | 2 |
+
+- **Splay in two directions.** A splitter whose outputs are all at one height (a row: the old Y, Trident, Peacock, Hydra
+  and the new rows) fans sideways from -splay to +splay across its sockets in order, exactly as before. Any other layout
+  fans **outward from the outputs' centre**: each output turns by splay x its offset from the centre / the farthest
+  output's offset, sideways and up or down (`BarrelLeaf.PitchDeg`, `BarrelPoint.PitchDeg`, which the shot rays already
+  used). So a Tower fires a vertical line that opens up and down, a Rosette opens like a flower. Every barrel still fires
+  from its own muzzle (`Game.ShotRays`): a vertical stack's rays start one above the other.
+- **Offsets** (one `barrel` socket): Riser (up 5 cm, vertical recoil x1.06), Drop (down 4 cm, vertical recoil x0.92,
+  aim +0.01 s), Sidestep (5 cm right, horizontal recoil x1.08), Dogleg (up and left 4 cm, spread x0.97) and Canted (right
+  and up, the barrel rolled 30 degrees with its socket's `rot`; recoil bias +0.1). They take the whole shot (1/1), have
+  no splay (a file with one output and a splay is refused), add no barrel, never count towards the 2-deep stacking limit
+  (`BuildRules.SplitterTooDeep`, `BuildNode.SplitterDepth`), and work anywhere a splitter does: on a receiver, on a
+  splitter's output, between two stacked splitters. Their barrel keeps aiming down the sights (a canted barrel is a look,
+  not a crooked shot). `PartDef.IsOffset` / `BarrelOutputs`; the workbench describes them as "offset: moves the barrel
+  socket". A part file's splitter now needs one or more barrel sockets (it used to need two).
+
+**Bullet size and speed: two new stats.** `bulletSize` and `bulletSpeed` are `WeaponDef` fields (1 on every stock gun;
+like `loudness` they are part and attachment stats, never weapon-file keys), carried per barrel (`BarrelPoint.Size`,
+`ShotRay.Size`). Shots stay hitscan, so:
+
+- **Size** is the hit. A round above 1 hits with a radius of 6 cm per unit above 1 (`Game.BulletRadius`, at most 18 cm):
+  for that ray the server grows every target's hit box by it (players, zombies, co-op enemies; `Box.Grown`), and the
+  shooter's predicted tracer does the same against zombies and enemies, so a fat slug clips a target a thin bullet would
+  miss. Size also draws the tracer wider and the impact mark bigger (`Game.SizeLook`: size^0.75, 0.6x to 2.2x). A round
+  smaller than 1 keeps the plain ray. Damage and wall penetration are the parts' own `damage` and `penetrationMult`
+  stats, so every barrel says its trade-off in its file. (No bullet drop: the game has none for bullets.)
+- **Speed** is the reach and the look. Each barrel path's range (the full-damage distance) is multiplied by its speed
+  (`BuildStats.ReceiverStats`, after the barrel and muzzle device), so a faster round carries its damage further and a
+  slow one falls off sooner. A round below 0.95 is drawn as a slug with a short streak that **visibly travels** at 320 x
+  speed m/s (`Game.TracerSpeed`, `Tracer.Speed`): a Cannon Sleeve's ball crawls out at 128 m/s. The damage still lands at
+  once.
+- **No wire change.** Built weapons replicate as build text and every client assembles the same weapon, so the size and
+  speed are known everywhere; the hit radius is server-side. The protocol stays as it was.
+
+| Barrel | Tier | Size | Speed (= range) | Damage | Other |
+| --- | --- | --- | --- | --- | --- |
+| Heavy Bore | uncommon | x1.5 | x0.8 | x1.2 | recoil x1.15, penetration x0.8 |
+| Bloat | rare | x2.2 | x0.5 | x1.45 | recoil x1.3, hip x1.1, penetration x0.55, aim +0.03 s |
+| Cannon Sleeve | legendary | x3.2 | x0.4 | x1.9 | recoil x1.6, FOV punch x1.5, hip x1.2, penetration x0.4, aim +0.06 s, mobility -0.04 |
+| Squeeze Bore | uncommon | x0.75 | x1.3 | x0.9 | penetration x1.35, hip x0.9, recoil x0.92 |
+| Needle | rare | x0.5 | x1.7 | x0.78 | penetration x1.8, hip x0.75, aimed spread x0.8, recoil x0.75, aim +0.02 s |
+| Flechette Sleeve | epic | x0.4 | x2.0 | x0.7 | shotguns x1.5 pellets, penetration x2.2, hip x0.6, recoil x0.85 |
+| Sawn-Off | common | | | x1.15 | hip x1.8, aimed spread x1.3, range x0.55, aim -0.04 s, mobility +0.04 |
+| Ported | uncommon | | | | recoil x0.75, vertical x0.85, loudness x1.25, range x0.92 |
+| Heatsink | rare | | | | fire rate x1.12, shake x1.2, hip x1.05 |
+| Marksman | epic | | x1.5 | | hip x0.55, aimed spread x0.65, recoil x0.9, aim +0.05 s, mobility -0.03 |
+
+**Muzzle devices.** The existing ones were pushed so each is felt (the Loudener, Thread Protector, Duckbill and
+Blunderbuss Flare are unchanged): Flash Hider hip x0.88 and shake x0.8; Compensator vertical recoil x0.55 (hip x1.05,
+loudness x1.1); Muzzle Brake horizontal x0.5, shake x0.45, recoil x0.9 (loudness x1.25); Recoil Hook vertical x0.6,
+recovery x1.4; Suppressor loudness x0.35, recoil x0.9, range x0.88; Shrouded Can loudness x0.3, recoil x0.88; Vent
+Collar jitter x0.5, sway x0.7. New:
+
+| Muzzle | Tier | Effect |
+| --- | --- | --- |
+| Recoil Eater | epic | recoil x0.45, vertical x0.75, shake x0.6; hip spread x1.5, aimed spread x1.4 |
+| Dragon Mouth | legendary | 4x the projectiles at x0.34 damage each (1.36x if all land), hip x3, aimed x2.5, range x0.6, size x1.6, speed x0.5 (so range x0.3 in all), loudness x1.4, **incendiary** |
+| Velocity Booster | epic | speed x1.6 (range x1.6), damage x1.08, recoil x1.15, loudness x1.3 |
+| Long Choke | rare | hip spread x0.55, aimed x0.8, aim +0.03 s, mobility -0.02 (any gun) |
+| Fork Crown | epic | splits every projectile in two at x0.6 (1.2x if both land), hip and aimed spread x1.3 |
+| Tumbler Ring | rare | size x1.4, damage x1.12, range x0.8, penetration x0.8 |
+| Hush Baffles | legendary | loudness x0.25 (the floor), recoil x0.8, shake x0.8, range x0.9, aim +0.05 s, mobility -0.03, suppressed |
+
+A muzzle device's pellet change works on any bore (as the Blunderbuss Flare's always did). The projectile limit now
+counts what each barrel really fires (`BuildStats.PelletsPerBarrel`: the receiver's pellets, then that barrel's and that
+muzzle device's), instead of every barrel's pellet change on every barrel.
 
 ### Actions: the fire type is a part (2026-10-23)
 
@@ -329,7 +422,7 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
 | Feeds must match the receiver's bore (barrels, splitters, muzzles and ammo fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
 | Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Triad Burst Receiver's Three-Round Burst Group is 3-round burst." |
-| Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
+| Splitters stack at most 2 deep (offsets, one output, don't count) | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
 | Weight: a grip carries up to 2x its carry weight (plus weight relief) | "Too heavy: 10.8 kg; the Pistol Grip can't carry more than 10 kg." |
@@ -356,7 +449,8 @@ and the same muzzle positions, and the self-test checks this by assembling every
    splitter's outputs); nested splitters divide again (a Party Tray of Tridents: 12 barrels at 1/12). The total damage
    of a shot is the same with or without splitters; what changes is coverage (more barrels, splay) and accuracy: each
    splitter's `spreadMult` multiplies its outputs' spread (Y 1.0, Over-Under 0.85, Trident 0.8, Peacock 0.75, Party
-   Tray 0.7, Hydra 0.6). Pellets are per barrel, so a split shotgun really fires twice the pellets at half the damage
+   Tray 0.7, Hydra 0.6; the 2026-10-27 splitters fit the same ladder: no splitter is less accurate than one of a
+   commoner tier, which the self-test checks; offsets are outside it). Pellets are per barrel, so a split shotgun really fires twice the pellets at half the damage
    each. Damage comes from **damage multipliers** and **receiver upgrades** instead.
 3. **Combine the receivers** by the build's fire style (the Chain fire checkbox, see below).
 4. **The grip and what's on it:** grip, stock, foregrip, optic and utility parts, applied once to the whole weapon.
@@ -461,7 +555,8 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
 
 - Every barrel fires from **its own muzzle socket**. The ray starts at the eye moved sideways and up by that muzzle's
   offset from the barrels' centre (capped at 0.45 m so rays don't start inside a wall next to you), turned by the
-  splitter splay, with its own pellets, damage and spread.
+  splitter splay (sideways and, off a row, up and down), with its own pellets, damage, spread and round size (a round
+  above size 1 grows the target's hit box: see "Splitters, barrels and muzzles").
 - **Rotary receivers** (minigun): one barrel per shot, in turn; the fire rate is `rpmPerBarrel x barrels` and spools
   up from `spoolStart` over `spoolTime` while the trigger is held (spools down twice as fast). Chain guns spool too.
 - The shot seed (the client's shot counter) picks whose turn it is, so client prediction and the server agree.
@@ -760,26 +855,26 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 191 parts
+## The part set: 235 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
 universal-ammo pass's 4 extra round types and 8 feeds, and the six optics, seven muzzle devices and four foregrips of the attachments pass
-(2026-10-23). By tier, all
+(2026-10-23), and the 17 splitters, 10 barrels and 7 muzzle devices of the splitters, barrels and muzzles pass (2026-10-27). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
 | Grip (27) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip, Skeleton Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip, Thumb Stub | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
 | Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
-| Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
-| Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
+| Barrel (20) | Standard, Stub, Scattermouth, Launcher Tube, **Sawn-Off** | Long, Blunderbuss Bell, **Heavy Bore**, **Squeeze Bore**, **Ported** | Big Iron, Fluted Match, **Bloat**, **Needle**, **Heatsink** | Coil, **Flechette Sleeve**, **Marksman** | **Cannon Sleeve** | Barrel of Barrels |
+| Splitter (23) | Y-Splitter (2), Narrow Twin (2), Wide Y (2), **Riser Offset** | Over-Under (2, spread x0.85), Diagonal (2), Stepped (3), **Drop / Sidestep Offset** | Trident (3, x0.8), Tower (3 high), Pyramid (3), Quad Line (4), **Dogleg / Canted Offset** | Peacock (5 fanned, x0.75), Totem (4 high), Cross (4) | Party Tray (4, x0.7), Ladder (6) | **Hydra (6, x0.6)**, Rosette (6), Wall (9) |
 | Feed (25) | Box, Stick, Shell Tube, Single Breech, **Belt Pouch** (heavy, 25, belt), **Battery Clip** (energy, 24), **Three-Round Tube** (launcher) | Extended, Heavy Box, **Heavy Drum** (30), **Shell Box** (10), **Capacitor Pack** (energy, 32), **Revolver Cylinder** (launcher, 6) | Drum, Shell Drum, Energy Cell, **Link Chute** (heavy, 60, belt), **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
 | Ammo (14, universal) | FMJ, Hollow Point, Buckshot | Slug, Armour Piercing, Frag | Match Grade, Plasma, Subsonic | Explosive Tip, Dragon's Breath, Shock | Sabot | Rubber Duck |
 | Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
 | Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
 | Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
 | Optic (11) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x | 8x Sniper Scope, Rangefinder 4x | |
-| Muzzle (11) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Duckbill Spreader, Blunderbuss Flare | Shrouded Can | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg) | |
+| Muzzle (18) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Duckbill Spreader, Blunderbuss Flare, **Long Choke**, **Tumbler Ring** | Shrouded Can, **Recoil Eater**, **Velocity Booster**, **Fork Crown** | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg), **Dragon Mouth**, **Hush Baffles** | |
 | Utility (6) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | | | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
 | Hilt (6, new) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | | |
 | Head (8, new) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | | Frozen Fish |
