@@ -572,6 +572,10 @@ public sealed partial class Game
         if (tick < _zEntsTick)
             return;
         _zEntsTick = tick;
+        ZEntsRead++;
+        if (_zEntsReadAt > 0)
+            ZEntsGapWorst = Math.Max(ZEntsGapWorst, now - _zEntsReadAt);
+        _zEntsReadAt = now;
         int total = r.U16();
         int n = r.U16();
         for (var i = 0; i < n && r.Has(ZEntBytes - 1); i++)
@@ -636,6 +640,12 @@ public sealed partial class Game
 
     /// <summary>Client: the server's horde size in the last <see cref="Msg.ZEnts"/> (it may send fewer than that).</summary>
     public int ZEntsLastTotal;
+
+    /// <summary>Client: <see cref="Msg.ZEnts"/> packets read, and the longest wait between two (self-test, logs).</summary>
+    public int ZEntsRead;
+
+    public double ZEntsGapWorst;
+    private double _zEntsReadAt;
 
     /// <summary>Every zombie by id (both sides: the client's lookup for each entry, the server's ids in use).</summary>
     private readonly Dictionary<ushort, Zombie> _zById = new();

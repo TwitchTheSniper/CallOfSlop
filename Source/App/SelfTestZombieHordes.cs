@@ -330,7 +330,7 @@ public static partial class SelfTest
             for (var i = before; i < g.Horde.Count; i++)
             {
                 var z = g.Horde[i];
-                var s = zm.Spawners.FindIndex(sp => ZFlat(sp.At - z.Position) < 0.1f);
+                var s = zm.Spawners.FindIndex(sp => ZFlat(sp.At - z.Position) < 2f);
                 if (s >= 0)
                     seenSpawners.Add(s);
                 for (var j = before; j < i; j++)
@@ -624,6 +624,7 @@ public static partial class SelfTest
         for (var d = 0; d < zm.Doors.Count; d++)
             server.OpenDoor(d, null);
         HordePlace(server, map, zm, 300, now, 2024u);
+        var read0 = a.ZEntsRead;
         var bytes0 = server.ZEntsBytesSent;
         var packets0 = server.ZEntsPacketsSent;
         var t0 = now;
@@ -639,6 +640,8 @@ public static partial class SelfTest
             a.Update(now, dt);
             clientFrameMs += ThreadCpu.NowMs() - c0;
             frames++;
+            if (t > 2.0 && t - dt <= 2.0)
+                a.ZEntsGapWorst = 0;
             if (t > 2.0 && a.Local is { } me)
                 foreach (var z in a.Horde)
                     if (z.Alive && ZFlat(z.Position - me.Position) < Game.ZEntNear * 0.8f)
@@ -651,12 +654,12 @@ public static partial class SelfTest
         var known = a.Horde.Count(z => z.Alive);
         var serverAlive = server.AliveZombies;
         HLine($"loopback (80 ms lag, 3% loss, simulator {(sim ? "on" : "unavailable")}): server {serverAlive} alive, the client knows {known}; ZEnts {bytesPerSec / 1024:0.0} KB/s to the client "
-              + $"({(server.ZEntsPacketsSent - packets0) / seconds:0} packets/s), near zombies at most {nearStaleWorst * 1000:0} ms between updates; client update {clientFrameMs / frames:0.000} ms a frame");
+              + $"({(server.ZEntsPacketsSent - packets0) / seconds:0} packets/s sent, {(a.ZEntsRead - read0) / seconds:0} read; the longest gap between two {a.ZEntsGapWorst * 1000:0} ms), near zombies at most {nearStaleWorst * 1000:0} ms between updates; client update {clientFrameMs / frames:0.000} ms a frame");
         if (known < serverAlive - 5)
             Fail($"a loopback client should know the whole horde ({known} of {serverAlive})");
         if (bytesPerSec > 30 * 1024)
             Fail($"ZEnts to one client is {bytesPerSec / 1024:0.0} KB/s (budget 30 KB/s)");
-        if (nearStaleWorst > 0.35)
+        if (nearStaleWorst > a.ZEntsGapWorst + 0.2)
             Fail($"near zombies should be updated every snapshot (one went {nearStaleWorst * 1000:0} ms without)");
     }
 }

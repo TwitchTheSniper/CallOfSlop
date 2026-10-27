@@ -28,7 +28,7 @@
     "maxAlivePerExtraPlayer": 0.15,
     "spawnBurstCurve": [[1, 1], [12, 1], [20, 3], [30, 5], [40, 6]],
     "activeSpawnersCurve": [[1, 4], [15, 4], [25, 7], [35, 10]],
-    "spawnerCooldown": 0.6,
+    "spawnerCooldown": 0.35,
     "breakSeconds": 10,
     "firstRoundDelay": 4,
     "readyUp": true,

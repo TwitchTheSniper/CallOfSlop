@@ -146,7 +146,7 @@ public sealed class ZombiesRules
     public RoundCurve ActiveSpawnersCurve = new([(1, 4), (15, 4), (25, 7), (35, 10)]);
 
     /// <summary>A spawner rests this long (seconds) after a zombie came out of it (spreads a burst over the spawners).</summary>
-    public float SpawnerCooldown = 0.6f;
+    public float SpawnerCooldown = 0.35f;
 
     /// <summary>The horde controller's numbers (the "horde" section; Source/Game/Horde/HordeController.cs).</summary>
     public HordeTuning Horde = new();

@@ -127,6 +127,34 @@ public sealed partial class Game
     private readonly List<int> _zActive = new();
     private float[] _zSpawnKey = [];
     private double[] _zSpawnerReady = [];
+    private readonly Vector3[] _zSpawnedAt = new Vector3[16];
+
+    /// <summary>
+    /// Where a zombie can come out at spawner spot <paramref name="at"/>: the spot itself, or the nearest of a ring of
+    /// spots round it (0.9 m, then 1.8 m) with nobody standing there (the horde's grid and the zombies already out this
+    /// tick), room to stand and in plain view of the spawner. False: crowded all round.
+    /// </summary>
+    private bool FreeSpawnSpot(Vector3 at, int spawnedThisTick, out Vector3 spot)
+    {
+        for (var ring = 0; ring < 3; ring++)
+            for (var k = 0; k < (ring == 0 ? 1 : 6); k++)
+            {
+                var a = k * MathF.Tau / 6 + ring * 0.5f;
+                var p = ring == 0 ? at : at + new Vector3(MathF.Sin(a), 0, MathF.Cos(a)) * (0.9f * ring);
+                if (HordeAI.Grid.Any(p, 0.6f))
+                    continue;
+                var free = true;
+                for (var j = 0; j < spawnedThisTick && j < _zSpawnedAt.Length; j++)
+                    if (Flat(_zSpawnedAt[j] - p) < 0.6f)
+                        free = false;
+                if (!free || (ring > 0 && (World.Blocked(p + new Vector3(0, 0.05f, 0)) || !NavGraph.Clear(at, p))))
+                    continue;
+                spot = p;
+                return true;
+            }
+        spot = at;
+        return false;
+    }
 
     /// <summary>
     /// Server, every tick of a round: spawns while the round has zombies queued and fewer than the alive cap
@@ -186,9 +214,12 @@ public sealed partial class Game
             var pick = _zActive[k];
             _zActive.RemoveAt(k); // one per spawner per burst
             var sp = zm.Spawners[pick];
-            if (spawned > 0 && (now < _zSpawnerReady[pick] || HordeAI.Grid.Any(sp.At, 0.6f)))
-                continue; // spread: this one rests or is still occupied; try another (the burst may come out short)
-            SpawnZombie(zm, pick, now);
+            if (spawned > 0 && now < _zSpawnerReady[pick])
+                continue; // spread: this one rests; try another (the burst may come out short)
+            if (!FreeSpawnSpot(sp.At, spawned, out var at))
+                continue; // crowded all round
+            _zSpawnedAt[spawned] = at;
+            SpawnZombie(zm, pick, now, at);
             _zSpawnerReady[pick] = now + ZRules.SpawnerCooldown;
             _zToSpawn--;
             _zAlive++;
@@ -198,9 +229,10 @@ public sealed partial class Game
     }
 
     /// <summary>Server: a new zombie at spawner <paramref name="spawner"/> (health and speed from the round).</summary>
-    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now)
+    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now, Vector3? at = null)
     {
         var sp = zm.Spawners[spawner];
+        var pos = at ?? sp.At;
         var (run, sprint) = ZRules.SpeedMix(Math.Max(1, ZRound));
         var r = ZRand();
         var z = new Zombie
@@ -216,11 +248,11 @@ public sealed partial class Game
         };
         ZRand(); // (the old first path search delay: keeps the seeded stream in step)
         z.MaxHealth = z.Health;
-        z.Sim = new MoveState { Position = sp.At, Grounded = true };
-        z.PrevPos = z.RenderPos = sp.At;
+        z.Sim = new MoveState { Position = pos, Grounded = true };
+        z.PrevPos = z.RenderPos = pos;
         z.Yaw = z.RenderYaw = sp.Window >= 0 ? zm.Windows[sp.Window].Yaw : ZRand() * MathF.Tau;
         for (var i = 0; i < z.History.Length; i++)
-            z.History[i] = sp.At;
+            z.History[i] = pos;
         if (World.Map.Zombies is { } hz)
             HordeSetup(hz);
         z.Hm.Slot = TakeZombieSlot();
