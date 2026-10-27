@@ -17,13 +17,13 @@
     {"name": "amp", "type": "amp", "pos": [-0.0285, 0.0461, 0.02]}
   ],
   "model": [
-    {"size": [0.055, 0.03, 0.17], "pos": [0, 0.015, 0.005], "color": "tan"},
-    {"size": [0.055, 0.032, 0.2], "pos": [0, 0.044, -0.01], "color": "tan"},
+    {"shape": "bevel", "size": [0.055, 0.03, 0.17], "pos": [0, 0.015, 0.005], "color": "tan", "radius": 0.12, "edges": "long"},
+    {"shape": "bevel", "size": [0.055, 0.032, 0.2], "pos": [0, 0.044, -0.01], "color": "tan", "radius": 0.12, "edges": "long"},
     {"size": [0.045, 0.006, 0.2], "pos": [0, 0.063, -0.01], "color": "tan"},
-    {"size": [0.055, 0.014, 0.04], "pos": [0, 0.016, -0.092], "rot": [35, 0, 0], "color": "tan"},
-    {"size": [0.057, 0.012, 0.022], "pos": [0, 0.03, 0.0], "color": "black"},
-    {"size": [0.057, 0.012, 0.022], "pos": [0, 0.03, 0.03], "color": "black"},
-    {"size": [0.0275, 0.014, 0.1], "pos": [0, 0.069, -0.006], "color": "black"},
+    {"shape": "bevel", "size": [0.055, 0.014, 0.04], "pos": [0, 0.016, -0.092], "rot": [35, 0, 0], "color": "tan", "radius": 0.2},
+    {"shape": "bevel", "size": [0.057, 0.012, 0.022], "pos": [0, 0.03, 0], "color": "black", "radius": 0.2},
+    {"shape": "bevel", "size": [0.057, 0.012, 0.022], "pos": [0, 0.03, 0.03], "color": "black", "radius": 0.2},
+    {"shape": "bevel", "size": [0.0275, 0.014, 0.1], "pos": [0, 0.069, -0.006], "color": "black", "radius": 0.2, "edges": "long"},
     {"size": [0.057, 0.01, 0.04], "pos": [0, 0.039, 0.07], "color": "accent"},
     {"use": "Picatinny Rail", "pos": [0, 0.069, -0.02], "scale": [1, 1, 0.8]}
   ],

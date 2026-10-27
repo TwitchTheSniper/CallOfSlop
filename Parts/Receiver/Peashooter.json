@@ -8,7 +8,7 @@
   "receiver": {"soundOf": "P9 Sidearm", "stockAction": "Semi-Auto Trigger"},
   "+model": [
     {"size": [0.047, 0.008, 0.06], "pos": [0, 0.012, -0.01], "color": [0.35, 0.75, 0.3]},
-    {"size": [0.046, 0.01, 0.022], "pos": [0, 0.041, -0.03], "color": "black"}
+    {"shape": "bevel", "size": [0.046, 0.01, 0.022], "pos": [0, 0.041, -0.03], "color": "black", "radius": 0.2}
   ],
   "stats": [
     {"stat": "damage", "mul": 0.65},

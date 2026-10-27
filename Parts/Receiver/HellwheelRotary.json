@@ -22,11 +22,11 @@
     {"name": "amp", "type": "amp", "pos": [-0.041, 0.062, 0.02]}
   ],
   "model": [
-    {"size": [0.08, 0.09, 0.3], "pos": [0, 0.045, -0.05], "color": "gunmetal"},
-    {"size": [0.04, 0.014, 0.15], "pos": [0, 0.094, -0.04], "color": "black"},
+    {"shape": "bevel", "size": [0.08, 0.09, 0.3], "pos": [0, 0.045, -0.05], "color": "gunmetal", "radius": 0.12, "edges": "long"},
+    {"shape": "bevel", "size": [0.04, 0.014, 0.15], "pos": [0, 0.094, -0.04], "color": "black", "radius": 0.2, "edges": "long"},
     {"size": [0.082, 0.01, 0.04], "pos": [0, 0.054, 0.07], "color": "accent"},
-    {"size": [0.08, 0.08, 0.02], "pos": [0, 0.045, -0.19], "color": "steel"},
-    {"size": [0.03, 0.03, 0.06], "pos": [0.05, 0.07, 0.0], "color": "black"}
+    {"shape": "bevel", "size": [0.03, 0.03, 0.06], "pos": [0.05, 0.07, 0], "color": "black", "radius": 0.2},
+    {"shape": "cylinder", "size": [0.08, 0.08, 0.02], "pos": [0, 0.045, -0.19], "color": "steel", "segments": 16}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.2},
