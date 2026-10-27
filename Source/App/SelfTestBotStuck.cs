@@ -48,6 +48,7 @@ public static partial class SelfTest
         var outside = new Vector3(14, 0, 3);
 
         // ---- A pit with no exit: warmup and countdown never trigger it, then the bot kills itself and respawns ----
+        Game.SeedNextGame = 4243; // seeded: the same bot (personality, loadout, hops) every run
         using (var game = ModeGame(1, GameMode.FreeForAll))
         {
             game.WarmupEnabled = true;
@@ -93,20 +94,38 @@ public static partial class SelfTest
             var start = now;
             var diedAt = -1.0;
             var maxStage = 0;
+            var why = new int[16]; // the watch's verdict per tick (StuckWhy), [15]: ticks without a watch step
+            var (lo, hi) = (bot.Position, bot.Position);
+            var lastProgressAt = -1.0;
             while (now - start < 9 && diedAt < 0)
             {
                 Run(game, ref now, 1.0 / World.TickRate);
                 maxStage = Math.Max(maxStage, b.StuckStage);
                 if (!bot.Alive)
                     diedAt = now - start;
+                else if (b.StuckWatchTick != game.ServerTick)
+                    why[15]++;
+                else
+                {
+                    why[(int)b.StuckLastWhy]++;
+                    if (b.StuckLastWhy == StuckWhy.Progress)
+                        lastProgressAt = now - start;
+                    lo = Vector3.Min(lo, bot.Position);
+                    hi = Vector3.Max(hi, bot.Position);
+                }
             }
+            var whyText = $"watch per tick: counting {why[0]}, not playing {why[1]}, idle {why[2]}, mover {why[3]}, holding {why[4]}, progress {why[5]} (last at {lastProgressAt:0.00} s), "
+                          + $"paused: sight {why[6]}, engage {why[7]}, blind {why[8]}, mantle {why[9]}; no watch {why[15]}; spread x {lo.X:0.0}..{hi.X:0.0}, y {lo.Y:0.0}..{hi.Y:0.0}, z {lo.Z:0.0}..{hi.Z:0.0}; "
+                          + $"{bot.Name}, mode {b.Mode}, at ({bot.Position.X:0.0}, {bot.Position.Y:0.0}, {bot.Position.Z:0.0}), path {b.PathLen}, nav {NavGraph.Current.Nodes.Length} nodes, "
+                          + $"hold {b.HoldUntil - now:0.0} s, objective {b.Objective?.ToString() ?? "none"}, phase {game.Phase}";
+            Line(whyText);
             var log = game.LastStuckLog;
             Line($"pit in play: self-kill after {(diedAt < 0 ? "NEVER" : $"{diedAt:0.00} s")} (timeout {game.BotStuckSuicideSeconds:0} s), recovery stages reached {maxStage} (mode {b.Mode}), "
                  + $"deaths {deaths}->{bot.Deaths}, kills {kills}->{bot.Kills}, counters {game.BotStuckKills} (this map {game.StuckKillsOn(lab.Name)}, this match {game.BotStuckKillsThisMatch})");
             Line($"log: {log}");
             StuckNotes.Add($"pit: self-kill after {diedAt:0.00} s (timeout 5 s), stages {maxStage}; {log}");
             if (diedAt < 0)
-                Fail("a bot boxed into a pit with no exit didn't kill itself within 9 s (timeout 5 s)");
+                Fail($"a bot boxed into a pit with no exit didn't kill itself within 9 s (timeout 5 s); {whyText}");
             else if (diedAt < game.BotStuckSuicideSeconds - 0.2)
                 Fail($"the stuck bot killed itself too early ({diedAt:0.00} s, timeout {game.BotStuckSuicideSeconds:0} s)");
             if (maxStage < 3)
@@ -148,6 +167,47 @@ public static partial class SelfTest
                 Fail("the stuck watch ran on the results screen");
             if (!summaryReset)
                 Fail("the end of the match didn't write the stuck summary (the per-match count wasn't reset)");
+        }
+
+        // ---- Hopping in the pit isn't progress ----
+        // BotUnstick hops at the wall every couple of seconds. The watch used to measure progress in 3D, so each hop (1.5 m up)
+        // and landing started the spell over: a boxed-in bot that hopped often enough never reached a recovery stage and never
+        // killed itself (Windows CI, 2026-10-27; random personalities and hop timings, about 2% of seeds on Linux). These
+        // seeds did exactly that before the fix.
+        foreach (var seed in (ReadOnlySpan<int>)[42, 53, 128])
+        {
+            Game.SeedNextGame = seed;
+            using var game = ModeGame(1, GameMode.FreeForAll);
+            game.HotSwapMap(lab);
+            NavGraph.Pump(double.MaxValue);
+            Run(game, ref now, Game.CountdownSeconds + 0.3);
+            var host = game.Local!;
+            var bot = game.Players.Values.First(p => p.Bot != null);
+            var b = bot.Bot!;
+            game.BotStuckSuicideSeconds = 5f;
+            game.SelfTestPlace(bot, pitCenter, 0);
+            b.ForcedGoal = outside;
+            host.Alive = false;
+            host.Health = 0;
+            host.WantsRespawn = false;
+            var start = now;
+            var (maxStage, hops, maxY) = (0, 0, 0f);
+            var wasUp = false;
+            while (now - start < 9 && bot.Alive)
+            {
+                Run(game, ref now, 1.0 / World.TickRate);
+                maxStage = Math.Max(maxStage, b.StuckStage);
+                maxY = MathF.Max(maxY, bot.Position.Y);
+                var up = bot.Position.Y > 0.5f;
+                if (up && !wasUp)
+                    hops++;
+                wasUp = up;
+            }
+            var line = $"pit, seed {seed} ({bot.Name}): {hops} hops (up to {maxY:0.0} m), stages {maxStage}, {(bot.Alive ? "still alive after 9 s" : $"self-kill after {now - start:0.00} s")}";
+            Line(line);
+            StuckNotes.Add(line);
+            if (bot.Alive || maxStage < 3)
+                Fail($"a bot hopping in a pit with no exit (seed {seed}) didn't go through the recovery stages to the self-kill: {line}");
         }
 
         // ---- Wedged against a wall (no path planned): jump / re-plan gets it round before the timeout ----
