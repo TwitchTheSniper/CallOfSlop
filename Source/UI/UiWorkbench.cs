@@ -125,6 +125,20 @@ public sealed partial class Ui
     private static readonly PartCategory[] MeleeCategories = [PartCategory.Hilt, PartCategory.Head, PartCategory.MeleeMod];
     private static readonly string[] WbRowIds = Enumerable.Range(0, 512).Select(i => $"##wbrow{i}").ToArray();
     private static readonly string[] WbInvIds = Enumerable.Range(0, 512).Select(i => $"##wbinv{i}").ToArray();
+    /// <summary>Part text (descriptions, flavour, stat and effect lines) wraps at this many pixels at UI scale 1 (about 55 characters), so tooltips and panels stay compact.</summary>
+    internal const float PartTextWidth = 440;
+
+    /// <summary>A workbench tooltip: wrapped at <see cref="PartTextWidth"/> so a long description never widens it.</summary>
+    /// <summary>Coloured text wrapped at <see cref="PartTextWidth"/> (or the space left, if that is narrower).</summary>
+    private void WbWrapped(float4 col, string text)
+    {
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MathF.Min(PartTextWidth * _scale, ImGui.GetContentRegionAvail().X));
+        ImGuiSafe.TextColored(col, text);
+        ImGui.PopTextWrapPos();
+    }
+
+    private void WbTip(ImString text) => ImGuiSafe.WrappedTooltip(text, PartTextWidth * _scale);
+
     private static readonly string[] WbCountText = Enumerable.Range(0, 100).Select(i => $"x{i}").ToArray();
     private static readonly string[] WbHiddenText = Enumerable.Range(0, 1000).Select(i => $"({i} hidden)").ToArray();
 
@@ -474,7 +488,7 @@ public sealed partial class Ui
             BenchSettings.Save();
         }
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip(showAll
+            WbTip(showAll
                 ? (inventory ? "Showing every grip in the game. The dimmed ones you don't own yet: see what they do, but you can't pick them until you find one."u8
                     : "Showing every grip in the game. The dimmed ones you don't own: you can still plan with them (they show as missing)."u8)
                 : "Showing only the grips you own. Tick to see every grip in the game, and which ones you're missing."u8);
@@ -546,7 +560,7 @@ public sealed partial class Ui
             if (locked)
                 dl.AddRectFilled(p0, p1, LockShade8, 6 * _scale); // dimmed: stats still readable, not pickable
             if (hot)
-                ImGuiSafe.SetTooltip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
+                WbTip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
                                      + (have ? "" : locked ? "\nYou don't own one yet: find one (drops, salvage piles, the slot machines) to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
             if (clicked)
             {
@@ -634,7 +648,7 @@ public sealed partial class Ui
             BenchSettings.Save();
         }
         if (ImGui.IsItemHovered())
-            ImGuiSafe.SetTooltip(showAll ? "Showing every part you own; the ones that fit nowhere on this build, or have none spare, are dimmed (hover one for why)."
+            WbTip(showAll ? "Showing every part you own; the ones that fit nowhere on this build, or have none spare, are dimmed (hover one for why)."
                 : "Showing only parts that fit somewhere on this build and have a spare copy. Tick to see all your parts.");
         RefreshInventory();
         _wbFilter = _inv.Filter; // a chosen category that just became hidden falls back to All
@@ -717,7 +731,7 @@ public sealed partial class Ui
                 if (!Bm.Stock.IsUnlimited)
                     tip += $"\nYou have {Bm.Stock.Owned(p)} ({Math.Max(0, free)} free).";
                 tip += _inv.Why[i] is { } cant ? (_inv.Compatible[i] ? $"\nCan't fit it: {cant} (all yours are on the build)." : $"\nIncompatible: {cant}.") : "\nDrag it onto the gun, or double-click to fit it.";
-                ImGuiSafe.SetTooltip(tip);
+                WbTip(tip);
                 if (ImGui.IsMouseClicked(ImGuiMouseButton.Left) && !ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
                 {
                     _dragArmed = true;
@@ -814,7 +828,7 @@ public sealed partial class Ui
             if (ImGui.Button("Auto-complete"u8))
                 WbAutoComplete();
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
+                WbTip("Fills every empty socket the build needs with parts you have (the rarest that fits first). Key: A"u8);
         }
         ImGui.SameLine();
         ImGui.SetNextItemWidth(MathF.Max(80 * _scale, ImGui.GetContentRegionAvail().X));
@@ -1042,7 +1056,7 @@ public sealed partial class Ui
         else if (problems.Count > 0)
         {
             var p = problems[0];
-            ImGuiSafe.TextColored(p.Incomplete ? Yellow : Red, (p.Incomplete ? "Needs: " : "Problem: ") + p.Message + (problems.Count > 1 ? $"  (+{problems.Count - 1} more)" : ""));
+            WbWrapped(p.Incomplete ? Yellow : Red, (p.Incomplete ? "Needs: " : "Problem: ") + p.Message + (problems.Count > 1 ? $"  (+{problems.Count - 1} more)" : ""));
         }
     }
 
@@ -1107,7 +1121,7 @@ public sealed partial class Ui
                 WbSay(chain ? "Chain fire: the receivers fire in turn, one per shot (fire rates add up, recoil averages)." : "Volley: every receiver fires at once (the slowest sets the rate, recoil adds up).");
             }
             if (ImGui.IsItemHovered())
-                ImGui.SetTooltip("Off: a volley, every receiver fires together. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
+                WbTip("Off: a volley, every receiver fires together. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
         }
         if (!ImGui.BeginChild("##wblinear"u8, new float2(0, height), ImGuiChildFlags.Borders))
         {
@@ -1176,9 +1190,9 @@ public sealed partial class Ui
             if (hot && !_dragging)
             {
                 if (r.Kind == BenchRowKind.Part)
-                    ImGuiSafe.SetTooltip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nClick: show this category in your parts. Double-click (or drag it off) to take it off, with what's on it. Right-click: options.");
+                    WbTip($"{r.Node!.Part.Name}{(r.Missing ? " - MISSING: you don't have this part" : "")}\n{PartSummary(r.Node.Part)}\nClick: show this category in your parts. Double-click (or drag it off) to take it off, with what's on it. Right-click: options.");
                 else
-                    ImGuiSafe.SetTooltip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here ({SocketAbout(r.Socket.Type)}). Drag one from your parts onto it (or onto the yellow ring on the gun).");
+                    WbTip($"Empty: the build needs {(r.Socket!.Type == "ammo" ? "ammo" : "a " + r.Socket.Type)} here ({SocketAbout(r.Socket.Type)}). Drag one from your parts onto it (or onto the yellow ring on the gun).");
             }
             if (clicked && !_dragging && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && r.Node != null)
             {
@@ -1336,13 +1350,13 @@ public sealed partial class Ui
             WbBar("Reload", d.Reload, t?.Reload, 1 - StatBars.Reload(d), t != null ? 1 - StatBars.Reload(t) : null, "0.0 s", false);
             WbBar("Mobility", d.Mobility, t?.Mobility, StatBars.Mobility(d), t != null ? StatBars.Mobility(t) : null, "0.00", true);
             if (d.SpoolTime > 0)
-                ImGuiSafe.TextColored(Dim, $"Spins up over {d.SpoolTime:0.0} s from {d.SpoolStart * 100:0}% fire rate.");
+                WbWrapped(Dim, $"Spins up over {d.SpoolTime:0.0} s from {d.SpoolStart * 100:0}% fire rate.");
             if (d.NoAds)
                 ImGui.TextColored(Yellow, "Hip fire only."u8);
             if (Game.IsCart(d))
-                ImGuiSafe.TextColored(Yellow, $"A real cart: push it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} parks it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} at its bar mans its gun.");
+                WbWrapped(Yellow, $"A real cart: push it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} parks it, {Keybinds.NameOf(_hudSettings, GameAction.Interact)} at its bar mans its gun.");
             if (d.BuildFlags.Length > 0)
-                ImGuiSafe.TextColored(Dim, "Flags: " + string.Join(", ", d.BuildFlags));
+                WbWrapped(Dim, "Flags: " + string.Join(", ", d.BuildFlags));
         }
         else
         {
@@ -1353,7 +1367,7 @@ public sealed partial class Ui
         var cap = b.CarryWeight * 2;
         WbBar("Weight", b.Weight, trial?.Build.Weight, cap > 0 ? b.Weight / cap : 0, trial != null && cap > 0 ? trial.Build.Weight / (trial.Build.CarryWeight * 2) : null, "0.0 kg", false);
         if (b.Frame != null)
-            ImGuiSafe.TextColored(Dim, $"Carries {b.CarryWeight:0.#} kg before it slows you (at most {cap:0.#} kg).");
+            WbWrapped(Dim, $"Carries {b.CarryWeight:0.#} kg before it slows you (at most {cap:0.#} kg).");
     }
 
     /// <summary>A stat bar with the change a trial would make: green where it gets better, red where worse.</summary>
@@ -1424,7 +1438,7 @@ public sealed partial class Ui
                 WbCopy(n);
             ImGui.EndDisabled();
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGuiSafe.SetTooltip(target != null ? "Duplicates this receiver and everything hanging off it onto a free receiver slot. Parts you don't have show red until you get them." : $"The {Bm.Build.Root!.Part.Name} has every receiver slot full.");
+                WbTip(target != null ? "Duplicates this receiver and everything hanging off it onto a free receiver slot. Parts you don't have show red until you get them." : $"The {Bm.Build.Root!.Part.Name} has every receiver slot full.");
         }
         if (n != Bm.Build.Root && ImGui.Selectable("Take it off (back to your parts)"u8))
             WbRemove(n);
@@ -1717,7 +1731,7 @@ public sealed partial class Ui
     // ---- Part text -----------------------------------------------------------------------------------------------
 
     /// <summary>One line on what a part is and does (bores, weight, stat changes).</summary>
-    private static string PartSummary(PartDef p)
+    internal static string PartSummary(PartDef p)
     {
         var bits = new List<string>();
         if (p.Frame is { } f)
@@ -1830,7 +1844,7 @@ public sealed partial class Ui
             ImGui.EndDisabled();
             WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGuiSafe.SetTooltip(Bm.FinalizeTip());
+                WbTip(Bm.FinalizeTip());
             ImGui.SameLine();
             if (ImGui.Button("Revert"u8))
                 LoadWorkbenchMelee(true);
@@ -1852,7 +1866,7 @@ public sealed partial class Ui
                 if (ImGui.Selectable(label, BuildStore.Selected == i))
                     LoadWorkbenchSlot(i);
                 if (ImGui.IsItemHovered())
-                    ImGuiSafe.SetTooltip((_slotMissing[i] > 0 ? $"{_slotMissing[i]} part(s) missing against your parts.\n" : "")
+                    WbTip((_slotMissing[i] > 0 ? $"{_slotMissing[i]} part(s) missing against your parts.\n" : "")
                                          + (i == BuildStore.Second ? "Your second weapon in the range." : i >= BuildStore.FreeSlots ? "Slots 3-4: used once the weapon-slot upgrade is on (toggle below, or the station in the range)." : "Click to edit this build."));
                 MissingBadge(_slotMissing[i]);
             }
@@ -1867,7 +1881,7 @@ public sealed partial class Ui
             ImGui.EndDisabled();
             WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGuiSafe.SetTooltip(Bm.FinalizeTip());
+                WbTip(Bm.FinalizeTip());
             ImGui.SameLine();
             if (ImGui.Button("Revert"u8))
                 LoadWorkbenchSlot(BuildStore.Selected);
@@ -1890,11 +1904,11 @@ public sealed partial class Ui
             WbSay(_wbPractice ? "Practice parts: two of every common part, one of every uncommon. Missing parts show red." : "Every part unlocked again.");
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("Builds with what an early Zombies run might own, so you can try missing parts and copying assemblies without a run."u8);
+            WbTip("Builds with what an early Zombies run might own, so you can try missing parts and copying assemblies without a run."u8);
         if (ImGui.Checkbox("Weapon slots 3-4 unlocked"u8, ref BuildStore.ExtraSlotsUnlocked))
             BuildStore.Save();
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip("In Zombies the slot upgrade is bought on the map, once per run. Here it's a toggle (or use the station by the range's spawn)."u8);
+            WbTip("In Zombies the slot upgrade is bought on the map, once per run. Here it's a toggle (or use the station by the range's spawn)."u8);
         ImGuiSafe.TextColored(Dim, $"Practice dummies: {BuildStore.Dummies}");
         ImGui.SameLine();
         if (ImGui.SmallButton("-##dum"u8) && BuildStore.Dummies > 0)
@@ -1927,7 +1941,7 @@ public sealed partial class Ui
         ImGui.EndDisabled();
         WbRefusedClick(ready);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGuiSafe.SetTooltip(ready ? $"Opens the Workbench Range with your builds ({Keybinds.NameOf(_hudSettings, GameAction.Interact)}: park / push a cart, buy the slot upgrade)." : Bm.FinalizeTip());
+            WbTip(ready ? $"Opens the Workbench Range with your builds ({Keybinds.NameOf(_hudSettings, GameAction.Interact)}: park / push a cart, buy the slot upgrade)." : Bm.FinalizeTip());
         return launch;
     }
 
@@ -1945,7 +1959,7 @@ public sealed partial class Ui
             var clicked = ImGui.Selectable($"{sb.Name}  [{PartDef.RarityName(sb.Tier)}, {string.Join("/", sb.Sources)}]##preset{sb.Name}");
             ImGui.PopStyleColor();
             if (ImGui.IsItemHovered())
-                ImGuiSafe.SetTooltip(sb.Flavor + (missing > 0 ? $"\nYou'd be missing {missing} part(s): load it as a plan, the missing ones show red." : ""));
+                WbTip(sb.Flavor + (missing > 0 ? $"\nYou'd be missing {missing} part(s): load it as a plan, the missing ones show red." : ""));
             MissingBadge(missing);
             if (!clicked)
                 continue;
