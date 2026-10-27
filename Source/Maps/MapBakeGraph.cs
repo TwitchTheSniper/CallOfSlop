@@ -24,9 +24,9 @@ public sealed class MapBakeException(string message) : Exception(message);
 /// <list type="bullet">
 /// <item>Value types without references, and arrays and lists of them, are copied as raw bytes (exact bits).</item>
 /// <item>Objects keep their identity: an object held twice is one object after reading (shared lists, cycles).</item>
-/// <item>Library objects (props, buildings, decals, flag designs and variants, models, the destruction table, values of
-/// static readonly fields) are written as a path from their library root and resolved to the very same instance on
-/// reading. Procedural meshes are interned in <see cref="MeshLibrary"/>.</item>
+/// <item>Library objects (props, buildings, decals, flag designs and variants, models, the destruction table) are
+/// written as a path from their library root and resolved to the very same instance on reading. Procedural meshes are
+/// written as their shape and fetched from <see cref="MeshLibrary"/> (built there once if they aren't yet).</item>
 /// <item>Dictionaries and sets are rebuilt from their entries in enumeration order, with the same comparer.</item>
 /// <item>Anything it can't reproduce exactly (delegates, tasks, threads, reflection objects, unknown collections, other
 /// maps) is refused with <see cref="MapBakeException"/>; that map is then simply built live.</item>
@@ -138,7 +138,8 @@ internal static partial class MapGraph
         public override void Compare(GraphComparer c, object a, object b, string path) => c.Diff(path, $"{Type} can't be compared ({why})");
     }
 
-    // Value types without references: raw bytes.
+    // Value types without references: raw bytes (padding included, so a baked value is bit for bit the one written; two
+    // separate live builds can differ in padding bytes, which the comparer would see, but a bake is compared with its source).
     private sealed class Unmanaged<T>() : Codec(typeof(T)) where T : struct
     {
         public override void WriteValue(Writer w, object? v)
@@ -746,10 +747,10 @@ internal static partial class MapGraph
     }
 
     /// <summary>
-    /// A mesh: a procedural one (cylinder, sphere...) is written whole, and on reading the one <see cref="MeshLibrary"/>
-    /// already holds for its key is used (or this one is added), so every map shares one asset per shape, as when built
-    /// live. A map's own mesh (its boundary floor) is read back as a new asset. Model meshes are library objects (their
-    /// model's path) and never get here. Always built with the constructor, so each asset gets its own id.
+    /// A mesh: a procedural one (cylinder, sphere...) is written as its shape, and on reading <see cref="MeshLibrary"/>
+    /// gives the asset for that shape (building it once if it hasn't yet), so every map shares one asset per shape, as
+    /// when built live. A map's own mesh (its boundary floor) is written whole and read back as a new asset, made with
+    /// the constructor so it gets its own id. Model meshes are library objects (their model's path) and never get here.
     /// </summary>
     private sealed class MeshAssetCodec() : Codec(typeof(MeshAsset))
     {

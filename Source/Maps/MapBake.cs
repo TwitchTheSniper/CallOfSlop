@@ -138,8 +138,8 @@ public static class MapBake
 
     /// <summary>
     /// The library objects a map built in pack folder <paramref name="packDir"/> may hold, by key: the global and pack
-    /// props, decals, buildings, flag designs, the destruction table, every flag variant and model loaded so far, and
-    /// the values of static readonly fields (the last only as themselves: nothing inside them is a library object).
+    /// props, decals, buildings, flag designs, the destruction table, and every flag variant and model loaded so far.
+    /// (Nothing else is shared between maps today; an object shared some other way would be baked as each map's own copy.)
     /// </summary>
     internal static MapGraph.MapLibraryIndex IndexFor(string? packDir)
     {
@@ -190,7 +190,6 @@ public static class MapBake
         foreach (var (path, model) in MeshLibrary.LoadedModels())
             more.Add(($"MM/{RelToGame(path)}|{model.File}", model));
         index.Add(more, deep: true);
-        index.Add(StaticRoots(), deep: false);
         return index;
     }
 
@@ -198,38 +197,6 @@ public static class MapBake
     {
         var rel = Path.GetRelativePath(AppContext.BaseDirectory, path);
         return rel.StartsWith("..", StringComparison.Ordinal) || Path.IsPathRooted(rel) ? path : rel.Replace('\\', '/');
-    }
-
-    private static (string, object)[]? _statics;
-
-    /// <summary>The value of every static readonly reference field in the game (shared singletons a map may point at).</summary>
-    private static (string, object)[] StaticRoots()
-    {
-        if (_statics != null)
-            return _statics;
-        var list = new List<(string, object)>();
-        foreach (var t in typeof(Map).Assembly.GetTypes())
-        {
-            if (t.ContainsGenericParameters)
-                continue;
-            foreach (var f in t.GetFields(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
-            {
-                if (!f.IsInitOnly || f.FieldType.IsValueType || f.IsLiteral)
-                    continue;
-                object? v;
-                try
-                {
-                    v = f.GetValue(null);
-                }
-                catch (Exception) // (a type initialiser that can't run here: nothing a map holds)
-                {
-                    continue;
-                }
-                if (v != null && v is not string)
-                    list.Add(($"S/{t.AssemblyQualifiedName}|{f.Name}", v));
-            }
-        }
-        return _statics = list.ToArray();
     }
 
     /// <summary>A library root by key (reader side), or null if the library has no such object.</summary>
@@ -271,11 +238,6 @@ public static class MapBake
                     return null;
                 var file = rest[..bar];
                 return MeshLibrary.Model(Path.IsPathRooted(file) ? file : Path.Combine(AppContext.BaseDirectory, file), rest[(bar + 1)..]);
-            }
-            case "S":
-            {
-                var bar = rest.LastIndexOf('|');
-                return bar < 0 ? null : Type.GetType(rest[..bar])?.GetField(rest[(bar + 1)..], BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic)?.GetValue(null);
             }
             default:
                 return null;
