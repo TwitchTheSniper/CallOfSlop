@@ -562,8 +562,9 @@ op(op="Decal", decal="Stencil Arrow", x=13, z=-8.32, y=1.6, onto="wall+z", size=
 op(op="Decal", decal="Graffiti Scribble", x=0, z=-7.98, y=2.2, onto="wall-z", size=2.2)
 op(op="Decal", decal="Handprints", x=-6.98, z=1.5, y=1.4, onto="wall-x", size=1.0)
 
-# Spawns: four in the start room (Zombies spawns the team there); more round the map for other modes.
-for (x, z) in [(-2.5, -3.5), (2.5, -3.5), (-2.5, 0.5), (2.5, 0.5), (14, -2), (-14, 0), (0, -14), (21, -13), (-12, 9), (12, 11)]:
+# Spawns: four in the start room (Zombies spawns the team there); more round the map for other modes (two moved off
+# the roulette and dice tables, 2026-10-27).
+for (x, z) in [(-2.5, -3.5), (2.5, -3.5), (-2.5, 0.5), (2.5, 0.5), (14, -2), (-14, 0), (0, -14), (18.4, -12.6), (-12, 9), (9.0, 11.0)]:
     op(op="Spawn", x=x, z=z)
 op(op="AutoWaypoints", spacing=3)
 
