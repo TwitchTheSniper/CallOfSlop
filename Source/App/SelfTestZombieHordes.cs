@@ -118,6 +118,6 @@ public static partial class SelfTest
         var draws = rec.Count / 10.0;
         ZLine($"horde {count}: {g.AliveZombies} alive, server tick {sumMs / ticks:0.00} ms mean ({sumCpu / ticks:0.00} ms CPU), worst {worstMs:0.00} ms, AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
               + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s ({ents.Length} bytes, {c.Horde.Count} on the client); "
-              + $"client read {readMs:0.000} ms, pose+draw {poseMs:0.00} ms ({draws:0} box draws)");
+              + $"client read {readMs:0.000} ms, pose+draw {poseMs:0.00} ms ({draws:0} box draws); nav {NavGraph.Current.Nodes.Length} nodes; {g.HordeSummary()}");
     }
 }

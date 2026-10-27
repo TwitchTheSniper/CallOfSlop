@@ -123,8 +123,40 @@ public sealed class ZombiesRules
     /// <summary>Seconds between spawns: start, x mult per round, never below the minimum.</summary>
     public float SpawnDelay = 2f, SpawnDelayMult = 0.95f, SpawnDelayMin = 0.25f;
 
-    /// <summary>Most zombies alive at once (performance cap; the rest wait in a queue).</summary>
-    public int MaxAlive = 24;
+    /// <summary>
+    /// Most zombies alive at once, whatever the round (the rules' hard cap, up to <see cref="Game.MaxZombies"/>; the rest wait
+    /// in a queue). The round's own cap is <see cref="MaxAliveCurve"/>; the host's "Zombie horde cap" setting can lower both.
+    /// </summary>
+    public int MaxAlive = 400;
+
+    /// <summary>
+    /// The alive cap by round (docs/zombies/ZOMBIES-MODE.md, "Hordes"): 24 early, about 60 by round 10, 150 by round 20,
+    /// 300 by round 30 (straight lines between the points, flat past the ends), plus <see cref="MaxAlivePerExtraPlayer"/>
+    /// of that per extra player.
+    /// </summary>
+    public RoundCurve MaxAliveCurve = new([(1, 24), (5, 24), (10, 60), (20, 150), (30, 300), (40, 400)]);
+
+    /// <summary>Each extra player adds this share of the round's alive cap (0.15: four players get 45 percent more).</summary>
+    public float MaxAlivePerExtraPlayer = 0.15f;
+
+    /// <summary>Zombies that come out at once per spawn (late rounds fill a big cap faster), by round.</summary>
+    public RoundCurve SpawnBurstCurve = new([(1, 1), (12, 1), (20, 2), (30, 3), (40, 4)]);
+
+    /// <summary>How many of the spawners nearest the players are used, by round (late rounds spread a horde over more of them).</summary>
+    public RoundCurve ActiveSpawnersCurve = new([(1, 4), (15, 4), (25, 6), (35, 8)]);
+
+    /// <summary>A spawner rests this long (seconds) after a zombie came out of it (spreads a burst over the spawners).</summary>
+    public float SpawnerCooldown = 0.6f;
+
+    /// <summary>The horde controller's numbers (the "horde" section; Source/Game/Horde/HordeController.cs).</summary>
+    public HordeTuning Horde = new();
+
+    /// <summary>The alive cap in round <paramref name="round"/> with <paramref name="players"/> players (the curve, the extra players, the hard cap).</summary>
+    public int MaxAliveFor(int round, int players)
+    {
+        var v = MaxAliveCurve.At(Math.Max(1, round)) * (1f + MaxAlivePerExtraPlayer * Math.Max(0, players - 1));
+        return Math.Clamp((int)MathF.Round(v), 1, Math.Min(MaxAlive, Game.MaxZombies));
+    }
 
     /// <summary>Seconds of break between rounds, and before round 1.</summary>
     public float BreakSeconds = 10f, FirstRoundDelay = 4f;
@@ -504,7 +536,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots", "horde"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -552,6 +584,11 @@ public sealed class ZombiesRules
                             case "spawnDelayMult": r.SpawnDelayMult = Real(v, w, 0.5f, 1); break;
                             case "spawnDelayMin": r.SpawnDelayMin = Real(v, w, 0.02f, 30); break;
                             case "maxAlive": r.MaxAlive = Whole(v, w, 1, Game.MaxZombies); break;
+                            case "maxAliveCurve": r.MaxAliveCurve = RoundCurve.Read(v, w, 1, Game.MaxZombies); break;
+                            case "maxAlivePerExtraPlayer": r.MaxAlivePerExtraPlayer = Real(v, w, 0, 2); break;
+                            case "spawnBurstCurve": r.SpawnBurstCurve = RoundCurve.Read(v, w, 1, 16); break;
+                            case "activeSpawnersCurve": r.ActiveSpawnersCurve = RoundCurve.Read(v, w, 1, 64); break;
+                            case "spawnerCooldown": r.SpawnerCooldown = Real(v, w, 0, 30); break;
                             case "breakSeconds": r.BreakSeconds = Real(v, w, 1, 120); break;
                             case "firstRoundDelay": r.FirstRoundDelay = Real(v, w, 0, 120); break;
                             case "readyUp": r.ReadyUp = Flag(v, w); break;
@@ -851,6 +888,58 @@ public sealed class ZombiesRules
                         return true;
                     });
                     break;
+                case "horde":
+                {
+                    var h = r.Horde;
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "nearRange": h.NearRange = Real(v, w, 1, 500); break;
+                            case "midRange": h.MidRange = Real(v, w, 1, 500); break;
+                            case "farRange": h.FarRange = Real(v, w, 1, 1000); break;
+                            case "thinkEvery":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() != 4)
+                                    throw new WeaponFileException($"{w}: a list of 4 tick counts (near, mid, far, very far)");
+                                h.ThinkEvery = v.EnumerateArray().Select(x => Whole(x, w, 1, 60)).ToArray();
+                                break;
+                            case "groupThinkSeconds": h.GroupThinkSeconds = Real(v, w, 0.05f, 10); break;
+                            case "tearers": h.Tearers = Whole(v, w, 1, 8); break;
+                            case "queueSplitAt": h.QueueSplitAt = Whole(v, w, 1, 100); break;
+                            case "flankRange": h.FlankRange = Real(v, w, 0, 200); break;
+                            case "queueCost": h.QueueCost = Real(v, w, 0, 20); break;
+                            case "surroundMin": h.SurroundMin = Real(v, w, 0, 20); break;
+                            case "surroundRange": h.SurroundRange = Real(v, w, 0, 50); break;
+                            case "surroundRadius": h.SurroundRadius = Real(v, w, 0, 10); break;
+                            case "pressureWeight": h.PressureWeight = Real(v, w, 0, 20); break;
+                            case "pressureFree": h.PressureFree = Whole(v, w, 0, 500); break;
+                            case "areaPenalty": h.AreaPenalty = Real(v, w, 0, 500); break;
+                            case "hearGunfire": h.HearGunfire = Real(v, w, 0, 300); break;
+                            case "hearPowerUp": h.HearPowerUp = Real(v, w, 0, 300); break;
+                            case "hurtAlert": h.HurtAlert = Real(v, w, 0, 100); break;
+                            case "engagedRange": h.EngagedRange = Real(v, w, 0, 100); break;
+                            case "scatterScale": h.ScatterScale = Real(v, w, 0, 5); break;
+                            case "scatterSeconds": h.ScatterSeconds = Real(v, w, 0, 5); break;
+                            case "explosionStagger": h.ExplosionStagger = Real(v, w, 0, 3); break;
+                            case "stuckSeconds": h.StuckSeconds = Real(v, w, 0.2f, 30); break;
+                            case "stuckProgress": h.StuckProgress = Real(v, w, 0, 10); break;
+                            case "stuckMinMembers": h.StuckMinMembers = Whole(v, w, 1, 500); break;
+                            case "regroupSeconds": h.RegroupSeconds = Real(v, w, 0, 10); break;
+                            case "lureRange": h.LureRange = Real(v, w, 0, 200); break;
+                            case "separationRadius": h.SeparationRadius = Real(v, w, 0.1f, 3); break;
+                            case "separationStrength": h.SeparationStrength = Real(v, w, 0, 10); break;
+                            case "flowFields": h.FlowFields = Whole(v, w, 4, 128); break;
+                            case "flowBuildsPerTick": h.FlowBuildsPerTick = Whole(v, w, 1, 8); break;
+                            case "flowRefreshSeconds": h.FlowRefreshSeconds = Real(v, w, 0.1f, 60); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    if (!(h.NearRange <= h.MidRange && h.MidRange <= h.FarRange))
+                        throw new WeaponFileException($"{at}: nearRange <= midRange <= farRange");
+                    break;
+                }
                 default:
                     throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" ({string.Join(", ", Sections)})");
             }
@@ -968,4 +1057,62 @@ public sealed class ZombiesRules
         var v = WeaponFile.Number(e, where);
         return v >= min && v <= max ? v : throw new WeaponFileException($"{where}: {v} is outside {min}-{max}");
     }
+}
+
+/// <summary>
+/// A number that changes with the round (the rules file's curves): points of (round, value), straight lines between
+/// them, flat before the first and after the last. In the file: <c>[[1, 24], [10, 60], [20, 150]]</c>.
+/// </summary>
+public sealed class RoundCurve
+{
+    private readonly (int Round, float Value)[] _points;
+
+    public RoundCurve(IEnumerable<(int Round, float Value)> points)
+    {
+        _points = points.OrderBy(p => p.Round).ToArray();
+        if (_points.Length == 0)
+            throw new ArgumentException("a curve needs a point");
+    }
+
+    public IReadOnlyList<(int Round, float Value)> Points => _points;
+
+    /// <summary>The value in round <paramref name="round"/>.</summary>
+    public float At(int round)
+    {
+        var p = _points;
+        if (round <= p[0].Round)
+            return p[0].Value;
+        for (var i = 1; i < p.Length; i++)
+            if (round <= p[i].Round)
+            {
+                var t = (round - p[i - 1].Round) / (float)Math.Max(1, p[i].Round - p[i - 1].Round);
+                return p[i - 1].Value + (p[i].Value - p[i - 1].Value) * t;
+            }
+        return p[^1].Value;
+    }
+
+    /// <summary>Reads <c>[[round, value], ...]</c> (rounds 1-1000 rising, values in <paramref name="min"/>-<paramref name="max"/>).</summary>
+    public static RoundCurve Read(JsonElement e, string where, float min, float max)
+    {
+        if (e.ValueKind != JsonValueKind.Array || e.GetArrayLength() is < 1 or > 32)
+            throw new WeaponFileException($"{where}: a list of 1-32 [round, value] pairs");
+        var list = new List<(int, float)>();
+        var last = 0;
+        foreach (var p in e.EnumerateArray())
+        {
+            if (p.ValueKind != JsonValueKind.Array || p.GetArrayLength() != 2)
+                throw new WeaponFileException($"{where}: each point is [round, value]");
+            var round = WeaponFile.Int(p[0], where);
+            var value = WeaponFile.Number(p[1], where);
+            if (round < 1 || round > 1000 || round <= last)
+                throw new WeaponFileException($"{where}: rounds go up from 1 (got {round} after {last})");
+            if (value < min || value > max)
+                throw new WeaponFileException($"{where}: {value} is outside {min}-{max}");
+            last = round;
+            list.Add((round, value));
+        }
+        return new RoundCurve(list);
+    }
+
+    public override string ToString() => string.Join(" ", _points.Select(p => $"r{p.Round}:{p.Value:0.##}"));
 }

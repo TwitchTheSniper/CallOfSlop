@@ -178,7 +178,7 @@ public sealed partial class Game
     /// <summary>Self-test: the round in progress ends now (its zombies all dead).</summary>
     public void SelfTestEndRound(double now)
     {
-        Horde.Clear();
+        ClearHorde();
         _zToSpawn = 0;
         EndRound(now);
     }

@@ -191,7 +191,13 @@ public sealed class ZombiesMap
     }
 
     /// <summary>Is <paramref name="p"/> inside any area (not outside, where zombies come from)?</summary>
-    public bool Inside(Vector3 p) => Areas.Any(a => a.Contains(p));
+    public bool Inside(Vector3 p)
+    {
+        for (var i = 0; i < Areas.Count; i++) // (a loop: Any with a lambda allocated a closure per call, every zombie every tick)
+            if (Areas[i].Contains(p))
+                return true;
+        return false;
+    }
 
     public int AreaIndex(string name) => Areas.FindIndex(a => a.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
