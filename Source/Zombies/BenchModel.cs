@@ -1167,3 +1167,63 @@ public sealed class BenchInventory
         return true;
     }
 }
+
+/// <summary>
+/// The workbench's grip picker (step 1) as a list: the grips (or hilts, for the melee slot) ordered by receiver slots,
+/// then rarity. With "Show all grips" off (the default) only the ones you own are listed; on, every one in the game is,
+/// with <see cref="Owned"/> false for the ones you don't have (drawn dimmed). In the sandbox every grip is owned, so both
+/// show everything. Rebuilt only when its inputs change: calling <see cref="Refresh"/> every frame allocates nothing.
+/// </summary>
+public sealed class BenchGrips
+{
+    public readonly List<PartDef> Items = new();
+
+    /// <summary>Per item: you own at least one.</summary>
+    public readonly List<bool> Owned = new();
+
+    /// <summary>Per item: its receiver slot count (cached; the card shows it).</summary>
+    public readonly List<int> Slots = new();
+
+    /// <summary>Grips left out because you don't own them (the toggle is off).</summary>
+    public int Hidden { get; private set; }
+
+    private BenchStock? _stock;
+    private object? _all; // the part library (a hot reload swaps it)
+    private (int Stock, bool Melee, bool ShowAll) _key;
+
+    /// <summary>Rebuilds the list if anything changed; true when it did.</summary>
+    public bool Refresh(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll)
+    {
+        var key = (stock.Fingerprint, melee, showAll);
+        if (ReferenceEquals(stock, _stock) && ReferenceEquals(all, _all) && key == _key)
+            return false;
+        _stock = stock;
+        _all = all;
+        _key = key;
+        Rebuild(stock, all, melee, showAll);
+        return true;
+    }
+
+    private void Rebuild(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll) // its own method: the filter's closure is allocated only on a rebuild
+    {
+        Items.Clear();
+        Owned.Clear();
+        Slots.Clear();
+        Hidden = 0;
+        foreach (var p in all.Where(p => melee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity))
+        {
+            var have = stock.Owned(p) > 0;
+            if (!have && !showAll)
+            {
+                Hidden++;
+                continue;
+            }
+            Items.Add(p);
+            Owned.Add(have);
+            Slots.Add(p.ReceiverCapacity);
+        }
+    }
+
+    /// <summary>Whether a click on <paramref name="grip"/> picks it: always in the sandbox (plan with it, it shows missing), only an owned one where the session uses an inventory (a Zombies run's bench).</summary>
+    public static bool CanPick(BenchStock stock, PartDef grip, bool inventory) => !inventory || stock.Owned(grip) > 0;
+}

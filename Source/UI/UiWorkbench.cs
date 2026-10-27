@@ -103,6 +103,10 @@ public sealed partial class Ui
     // The inventory list, cached until the build, stock, filter or search changes.
     private readonly BenchInventory _inv = new();
 
+    // The grip picker's list, cached until the stock, the slot kind or "Show all grips" changes.
+    private readonly BenchGrips _grips = new();
+    private static readonly ImColor8 LockShade8 = new(14, 15, 18, 150);
+
     /// <summary>The settings the "Show incompatible parts" checkbox lives in (saved to settings.txt); set by Program.</summary>
     public Settings? BenchSettings;
 
@@ -414,7 +418,10 @@ public sealed partial class Ui
 
     private void DrawGripPicker(float width, float height, float2 winPos, float2 winSize)
     {
-        var grips = Parts.All.Where(p => _wbMelee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity); // by slot count: 1, 2, 3 ... 9 and the big frames
+        // OFF (default): the grips you own. ON: every grip in the game, the ones you don't own dimmed (locked at a run's bench).
+        var showAll = BenchSettings?.WorkbenchShowAllGrips ?? false;
+        _grips.Refresh(Bm.Stock, Parts.All, _wbMelee, showAll); // by slot count: 1, 2, 3 ... 9 and the big frames; cached
+        var inventory = BenchRun != null; // a Zombies run's bench: only grips you own can be picked
         ImGui.PushFont(default, 18);
         ImGuiSafe.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT" : "CHANGE THE GRIP") : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON" : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"));
         ImGui.PopFont();
@@ -428,7 +435,22 @@ public sealed partial class Ui
             if (ImGui.SmallButton("Back to the build"u8))
                 _wbPicking = false;
         }
-        if (!ImGui.BeginChild("##wbgrips"u8, new float2(width, height - 50 * _scale), ImGuiChildFlags.None))
+        if (ImGui.Checkbox(_wbMelee ? "Show all hilts"u8 : "Show all grips"u8, ref showAll) && BenchSettings != null)
+        {
+            BenchSettings.WorkbenchShowAllGrips = showAll;
+            BenchSettings.Save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(showAll
+                ? (inventory ? "Showing every grip in the game. The dimmed ones you don't own yet: see what they do, but you can't pick them until you find one."u8
+                    : "Showing every grip in the game. The dimmed ones you don't own: you can still plan with them (they show as missing)."u8)
+                : "Showing only the grips you own. Tick to see every grip in the game, and which ones you're missing."u8);
+        if (_grips.Hidden > 0)
+        {
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, WbHiddenText[Math.Min(_grips.Hidden, WbHiddenText.Length - 1)]);
+        }
+        if (!ImGui.BeginChild("##wbgrips"u8, new float2(width, height - 76 * _scale), ImGuiChildFlags.None))
         {
             ImGui.EndChild();
             return;
@@ -438,9 +460,11 @@ public sealed partial class Ui
         var cardH = 232 * _scale;
         var gap = 12 * _scale;
         var cols = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (cardW + gap)));
-        var i = 0;
-        foreach (var g in grips)
+        if (_grips.Items.Count == 0)
+            ImGui.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
+        for (var i = 0; i < _grips.Items.Count; i++)
         {
+            var g = _grips.Items[i];
             if (i % cols != 0)
                 ImGui.SameLine(0, gap);
             var p0 = ImGui.GetCursorScreenPos();
@@ -448,12 +472,13 @@ public sealed partial class Ui
             var hot = ImGui.IsItemHovered();
             var p1 = p0 + new float2(cardW, cardH);
             var owned = Bm.Stock.Owned(g);
-            var have = owned > 0;
+            var have = _grips.Owned[i];
+            var locked = !BenchGrips.CanPick(Bm.Stock, g, inventory);
             var rc = PartDef.RarityColor(g.Rarity);
             dl.AddRectFilled(p0, p1, hot ? Hover8 : Card8, 6 * _scale);
             dl.AddRectFilled(p0, new float2(p1.X, p0.Y + 4 * _scale), WbC8(rc, have ? 1f : 0.4f), 6 * _scale);
             if (hot)
-                dl.AddRect(p0, p1, Orange8, 6 * _scale, ImDrawFlags.None, 2f);
+                dl.AddRect(p0, p1, locked ? Dim8 : Orange8, 6 * _scale, ImDrawFlags.None, 2f);
             var imgMin = p0 + new float2(8 * _scale, 10 * _scale);
             var imgMax = new float2(p1.X - 8 * _scale, p0.Y + cardH * 0.5f);
             DrawPartIcon(dl, g, imgMin, imgMax, !have);
@@ -464,7 +489,7 @@ public sealed partial class Ui
             y += 22 * _scale;
             if (g.Frame is { } f)
             {
-                var cap = g.ReceiverCapacity;
+                var cap = _grips.Slots[i];
                 ImGui.PushFont(default, 20);
                 DlText(dl, new float2(x, y), cap == 1 ? White8 : Orange8, cap == 1 ? "1 RECEIVER SLOT" : $"{cap} RECEIVER SLOTS");
                 ImGui.PopFont();
@@ -483,14 +508,20 @@ public sealed partial class Ui
                 y += 18 * _scale;
                 DlText(dl, new float2(x, y), Dim8, $"{h.Hands}-handed{(h.Stun > 0 ? $", stun {h.Stun:0.0} s" : "")}");
             }
-            var ownTxt = Bm.Stock.IsUnlimited ? "sandbox" : have ? $"{owned} owned" : "none owned";
+            var ownTxt = Bm.Stock.IsUnlimited ? "sandbox" : have ? $"{owned} owned" : locked ? "LOCKED - none owned" : "none owned";
             DlText(dl, new float2(x, p1.Y - 22 * _scale), have ? Green8 : Red8, ownTxt);
+            if (locked)
+                dl.AddRectFilled(p0, p1, LockShade8, 6 * _scale); // dimmed: stats still readable, not pickable
             if (hot)
                 ImGuiSafe.SetTooltip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
-                                     + (have ? "" : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
+                                     + (have ? "" : locked ? "\nYou don't own one yet: find or craft one to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
             if (clicked)
-                PickGrip(g);
-            i++;
+            {
+                if (locked)
+                    WbSay($"You don't own a {g.Name} yet, so you can't build on it here.", true);
+                else
+                    PickGrip(g);
+            }
         }
         ImGui.EndChild();
     }

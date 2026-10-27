@@ -489,8 +489,13 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
 
 - **Step 1: the grip.** "New weapon" (key N, and any empty slot) opens the grip picker: a card per grip with its 3D
   picture, receiver slots ("1 RECEIVER SLOT" for the first tiers), fire style, hands, carry weight and how many you own
-  (in a run). A grip you don't own can still be picked to plan a build: it shows as missing. "Change grip" (G) moves the
-  current build onto another grip (receivers into the same-numbered slots).
+  (in a run). A **Show all grips** checkbox (`wb_show_all_grips` in `settings.txt`, off by default; "Show all hilts" on
+  the melee slot) decides what's listed: off, only the grips you own (a "(N hidden)" hint); on, every grip in the game,
+  the ones you don't own dimmed with their rarity, slots and stats still readable (2026-10-26 board item). In the
+  sandbox an unowned grip can still be picked to plan a build (it shows as missing); at a Zombies run's bench it is
+  locked ("LOCKED - none owned") and a click only says why (`BenchGrips`, self-test "Workbench grip list"). The sandbox's
+  every-part stock owns every grip, so it lists them all either way. "Change grip" (G) moves the current build onto
+  another grip (receivers into the same-numbered slots).
 - **Step 2: assembly.** Left: your parts, grouped by category with counts (a run: loose parts plus the slot's own), a
   search box and category chips, 3D icons (rendered once into textures and cached, `PartThumbs`), a tooltip with what
   the part does. A **Show incompatible parts** checkbox (saved in `settings.txt` as `wb_show_incompatible`, off by
