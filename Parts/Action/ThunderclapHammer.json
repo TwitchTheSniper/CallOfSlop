@@ -9,7 +9,7 @@
   "model": [
     {"shape": "bevel", "size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black", "radius": 0.25},
     {"shape": "arc", "size": [0.006, 0.014, 0.008], "pos": [0, -0.029, -0.001], "color": "steel", "segments": 4, "inner": 0.4, "angle": 80, "dir": 270},
-    {"shape": "arc", "size": [0.006, 0.02, 0.026], "pos": [0, -0.032, 0], "color": "black", "segments": 8, "inner": 0.62, "angle": 180, "dir": 0},
+    {"shape": "arc", "size": [0.006, 0.02, 0.022], "pos": [0, -0.032, 0], "color": "black", "segments": 8, "inner": 0.62, "angle": 180, "dir": 0},
     {"shape": "cylinder", "size": [0.016, 0.016, 0.006], "pos": [0.019, -0.01, 0], "rot": [0, 90, 0], "color": [0.85, 0.65, 0.2], "segments": 12},
     {"size": [0.004, 0.004, 0.012], "pos": [0.021, -0.004, 0], "color": "accent", "tag": "glow"}
   ],
