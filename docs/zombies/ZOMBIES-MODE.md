@@ -900,8 +900,12 @@ numbers are the rules file's **"horde"** section.
   of piling on the nearest (re-checked about every half second, with hysteresis).
 - **Group decisions** (each group about every `groupThinkSeconds`, 0.5 s, staggered): portal groups split their queue
   ("Hordes" above); a target group of at least 4 that got less than 0.6 m closer in 2.5 s while nobody is at its
-  target **regroups** for 1.2 s: the members near the group's centre hold, the rest close up on it, then they go again
-  with fresh routes.
+  target and the target itself stayed put (moved less than 1.5 m: a player kiting the horde is chased, not a block)
+  **regroups** for 1.2 s: the members near the group's centre, or at least as near the target as the centre, hold; the
+  stragglers behind it close up on it (so closing up never walks anyone away from the target); then they go again with
+  fresh routes. (Before 2026-10-27 a kited group regrouped every few seconds and every member walked at the centre,
+  which for a horde spread round its target is somewhere else entirely: on Horde Test the dais in the middle, so the
+  whole horde turned to the origin together. Board bug dev-horde-wrong-target-hz01; self-test "Horde targets".)
 - **Surrounding.** Between 2.5 and 9 m of their target, members close in on a ring point at their own angle (from the
   id), so a group comes at a player from all sides; nearer, straight at them.
 - **Stimuli** (handled at the start of the next tick, in order): **gunfire** (every trigger pull in Zombies; heard to
@@ -926,6 +930,11 @@ The self-test checks each of these with short seeded scenarios on Blackmoor: 60 
 over both, 20 at one window queue on its spots and split to the other two, a gunshot turns a group in earshot, a blast
 scatters the zombies near it and their group regroups and goes on, a down sends a group to the other player, a lure
 draws a group and lets it go, a group shut in a room regroups, and the same horde twice plays out the same.
+Section **"Horde targets"** (Horde Test): 40 zombies plus round 10's spawns chasing the host round the dais for 26 s
+(about 50 target nodes and 80 flow fields built, every field dropped once mid-run): never more than a sixth of the
+moving horde walking away from the host at once, never a run of them heading for the origin, no zombie walking away
+for more than a second (routing round the towers), no regroup of the kited group, and a regrouping member only closing
+up from behind the centre. The code before the fix fails all five.
 
 ## Horde Test, start round and test kit (developer request, 2026-10-27)
 

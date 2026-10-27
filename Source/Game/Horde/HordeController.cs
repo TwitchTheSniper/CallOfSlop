@@ -550,35 +550,39 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     private void CheckBlocked(List<T> agents, HordeGroup g, double now)
     {
         var tu = Tuning;
+        var slot = g.Index - Portals.Length;
         if (g.Mode == HordeGroupMode.Regroup)
         {
             if (now >= g.ModeUntil)
             {
                 g.Mode = HordeGroupMode.Advance;
-                g.CheckDist = g.MeanDist;
-                g.CheckAt = now;
+                RestartCheck(g, slot, now);
             }
             return;
         }
-        if (g.Index == LureGroup || g.Count < tu.StuckMinMembers)
+        if (g.Index == LureGroup || g.Count < tu.StuckMinMembers || !IsLive(slot) || Targets[slot].Engaged > 0)
         {
-            g.CheckDist = g.MeanDist;
-            g.CheckAt = now;
-            return;
-        }
-        var slot = g.Index - Portals.Length;
-        if (IsLive(slot) && Targets[slot].Engaged > 0)
-        {
-            g.CheckDist = g.MeanDist;
-            g.CheckAt = now;
+            RestartCheck(g, slot, now);
             return;
         }
         if (now - g.CheckAt < tu.StuckSeconds)
             return;
-        if (g.CheckDist - g.MeanDist < tu.StuckProgress && g.MeanDist > tu.SurroundRange)
+        // Blocked: no closer, and not because the target walked off (a player kiting the horde round the map is chased,
+        // not a blocked group: regrouping then turned the whole horde to its own centre every few seconds, 2026-10-27).
+        if (g.CheckDist - g.MeanDist < tu.StuckProgress && g.MeanDist > tu.SurroundRange && Flat(Targets[slot].Pos - g.CheckTarget) < StuckTargetMove)
             StartRegroup(agents, g, now);
+        RestartCheck(g, slot, now);
+    }
+
+    /// <summary>How far (m) a target may move during a blocked check and the group still count as blocked.</summary>
+    public const float StuckTargetMove = 1.5f;
+
+    private void RestartCheck(HordeGroup g, int slot, double now)
+    {
         g.CheckDist = g.MeanDist;
         g.CheckAt = now;
+        if (IsLive(slot))
+            g.CheckTarget = Targets[slot].Pos;
     }
 
     private void StartRegroup(List<T> agents, HordeGroup g, double now)
@@ -800,19 +804,28 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         return true;
     }
 
-    /// <summary>Is the member's group regrouping, and is it holding still (<paramref name="hold"/>) or closing up on the centre (<paramref name="centre"/>)?</summary>
+    /// <summary>
+    /// Is the member's group regrouping, and is it holding still (<paramref name="hold"/>) or closing up on the centre
+    /// (<paramref name="centre"/>)? Only the stragglers close up: a member at least as near the group's goal as the centre
+    /// holds, so closing up never walks anyone away from the target (a group spread round its target has its centre
+    /// somewhere else entirely, such as the middle of the map: the whole horde turned there, 2026-10-27).
+    /// </summary>
     public bool Regrouping(T a, out bool hold, out Vector3 centre)
     {
         var m = a.Member;
         hold = false;
         centre = default;
-        if (m.Group < 0 || m.Group >= Groups.Length)
+        if (m.Group < 0 || m.Group >= Groups.Length || m.Group == LureGroup)
             return false;
         var g = Groups[m.Group];
-        if (g.Mode != HordeGroupMode.Regroup || _now >= g.ModeUntil)
+        if (g.Mode != HordeGroupMode.Regroup || _now >= g.ModeUntil || g.Count == 0)
             return false;
+        var slot = m.Group - Portals.Length;
+        if (m.Group >= Portals.Length && !IsLive(slot))
+            return false; // (its target is gone: it picks another next tick)
         centre = g.Centre;
-        hold = m.HoldUntil > _now || Flat(a.Position - g.Centre) < 2f;
+        var goal = GoalOf(m.Group);
+        hold = m.HoldUntil > _now || Flat(a.Position - g.Centre) < 2f || Flat(goal - a.Position) <= Flat(goal - g.Centre) + 0.5f;
         return true;
     }
 
