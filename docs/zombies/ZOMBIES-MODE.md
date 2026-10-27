@@ -157,6 +157,7 @@ grey: not possible now (needs the power, already owned...).
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
 | **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or nothing; a loss frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Casino table** | Blackjack, roulette, high-low or Bone Dice for points: press the interact key for the table's panel (see "Casino tables") | your bet, within the table's limits |
 
 ### Perks (proposed; "perks", up to 16)
 
@@ -315,6 +316,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "power": {"at": [x, z], "yaw": -90},
   "salvage": [ {"at": [x, z], "cost": 25} ],
   "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0, "category": "Barrel"} ],
+  "casino": [ {"game": "blackjack", "at": [x, z], "yaw": 0, "power": false, "min": 50, "max": 1000} ],
   "machineProps": true,
   "testKit": true
 }
@@ -367,13 +369,13 @@ the ambient raised so it stays readable, flickering caged lamps, tube lights and
 
 | Area | Way in (price) | What's there |
 | --- | --- | --- |
-| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk |
+| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk, the **high-low table** |
 | **East Ward** | the Ward Door (750) | 2 windows, Ironhide Cider (power), the Wall SMG, salvage, hospital beds |
-| **West Offices** | the Records Debris (750) | 2 windows, Swiftload Seltzer (power), Bloodroot Tonic, the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
+| **West Offices** | the Records Debris (750) | 2 windows, Swiftload Seltzer (power), Bloodroot Tonic, the Wall Pistol, box spot 2, **workbench 1**, desks and filing, the **blackjack table** |
 | **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, Salvage Stout, a fountain |
-| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, Fleetfoot Fizz and Windfall Soda (power), generators |
+| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, Fleetfoot Fizz and Windfall Soda (power), generators, the **dice table** |
 | **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Twinfire Punch and Bulwark Brew (power), the Wall SMG, box spot 4, pews and an altar |
-| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), Marksman Malt (power), the Wall Pump, box spot 5, salvage, consoles |
+| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), Marksman Malt (power), the Wall Pump, box spot 5, salvage, consoles, the **roulette table** |
 
 Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 12 perk
 machines (7 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
@@ -527,6 +529,90 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
 | `winSeconds` | 4 | how long a win shows over the machine |
 | `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |
 | `DropTables.json` `slotTiers` `melee` | 5 | the weight of a complete melee build (its tier from the row's part weights) |
+
+## Casino tables (board item "Zombies: casino games to bet points", 2026-10-27)
+
+"Add gambling for points to Zombies: a few casino games where you bet your points and win more back or lose your bet,
+more interactive than a single button press." Developer's note: **points only** (the run's currency; no real money and
+no progression stakes). Code: `Source/Game/Casino.cs` (the maths), `Source/Game/ZombiesCasino.cs` (the server's
+tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (the panel and the labels),
+`Source/App/Program.ZombiesCasino.cs` (cards, wheel, chips and dice on the tables); props
+`Props/Zombies/Casino` (written by `tools/zombies/make_casino_tables.py`); self-test section **"Zombies casino"**.
+
+- **Playing.** Walk up to a table ("Press F to play Blackjack (bets 50-1000 points)") and press the interact key: the
+  table's panel opens on the right with the mouse free, over the match. **The world goes on**: zombies keep coming and
+  can hit you while you play (you don't move while the panel is open). Esc or "Back to the fight" closes it. Choose
+  your bet with the chip buttons (+10, +100, +500, Min, Max) within the table's limits and the points you have; points
+  are taken when the bet goes down and **never go below zero** (a bet you can't cover is refused and nothing is taken).
+- **Blackjack** (one dealer, up to **four seats**: one per player): bet to sit down; the deal waits 5 s after the first
+  bet for others (or deals at once with every seat taken); a bet before the deal can be taken back. Then **hit, stand
+  or double** (double: on your first two cards, the bet again for exactly one card). The dealer **draws to 16 and
+  stands on every 17** (soft 17 too), peeks with an ace or a ten up (its natural ends the hand at once), and
+  doesn't draw when every hand is bust or a natural. A **natural pays 3:2**, a win 1:1, a push gives the bet back. No
+  splits or insurance (kept simple). A hand still deciding after 20 s stands. The dealer's hole card goes out to
+  clients face down until it's turned (it can't be read off the wire). House edge: about half a percent to a few
+  percent depending on how you play (the self-test's draw-to-17 player loses 5 percent).
+- **Roulette** (a **single zero**, 37 pockets; everyone at the table bets on one spin): put chips on a **number**
+  (35:1), a **split** of two side-by-side numbers (17:1; tick "Split" and click both), **red / black**, **odd / even**,
+  **1-18 / 19-36** (1:1), a **dozen** or a **column** (2:1); the zero loses every outside bet. The first chip starts a
+  12 s betting clock (take your chips back before the spin if you like), then the wheel spins 6 s and the ball lands
+  in the pocket the server rolled at the start of the spin. Every bet keeps exactly 1 in 37 (2.7 percent) for the
+  house. The table's limit is a player's **total on one spin**. Chips ride the spin even if you walk off.
+- **High-low** (one player at a time): bet and a card is dealt; guess whether the next is **higher or lower**
+  (an endless deck: every rank 1 in 13; **a tie loses**). Each right guess multiplies the pot by **(1 - 5 percent)
+  over the guess's chance** (rounded down): from a two, "higher" pays x1.02; from a seven, either way x1.76; "higher"
+  on an ace (or "lower" on a two) can't be made. **Cash out** whenever you like; after 6 right guesses the table cashes
+  you out; a hand left for 30 s cashes out too.
+- **Bone Dice** (the pass line, one shooter at a time): bet, then **roll**: a first roll of 7 or 11 wins, 2, 3 or 12
+  loses, anything else is **the point**: roll it again before a 7 to win (1:1). It wins exactly 244 hands in 495 (a
+  1.41 percent house edge). Dice left for 30 s roll themselves.
+- **Walking away forfeits.** Go more than 4 m from a table (`leaveRange`), go down or leave with a blackjack, high-low
+  or dice hand unfinished and its bet is lost (a blackjack bet before the deal comes back instead). Roulette chips ride.
+- **Everyone sees the table.** Cards, chip stacks (a colour per player), the turning wheel and ball, the tumbling dice
+  and the point puck are drawn on the table for everybody; a label over it within 10 m names the game, its limits and
+  what's on it (the hands' totals, the pocket, the pot, the point). A win of **1000 points or more over the bet**
+  (`announceAt`) is announced to everyone: a gold line in the feed, a sound at the table and "X won N points!" over it
+  (within 25 m), like a slot machine's big win.
+- **Server-authoritative and seeded.** Each round (a deal, a spin, a hand) is seeded from the run's seed, so the same
+  run seed and the same moves give the same cards; the self-test checks the payout maths exactly. The tables' tick
+  allocates nothing. **Bots ignore the tables** (they never bet).
+- **Network (protocol 66).** `Msg.ZCasino` (server to everyone, reliable, on a change and to each joiner): a table's
+  whole state (game, phase, round, tenths of a second left, the last big win, every seat's player, bet, flags, outcome,
+  payout and cards, the dealer's cards with the hole card hidden, the pot and guesses, the dice, point and roll
+  counter, the pocket, every chip). `Msg.ZCasinoAct` (client to server): table, act (bet, hit, stand, double, higher,
+  lower, cash out, roll, clear, leave), arg (a roulette spot: 0-36 numbers, then 24 splits across, 33 down, red,
+  black, odd, even, 1-18, 19-36, the dozens, the columns) and amount; the server checks everything again.
+- **Map logic.** A table is a `zmachine` with `"machine": "casino"` (Maps/README.md "Map logic"): it sends `used` on
+  every bet that goes down, and `disable` closes it ("Locked"; no bets) until `enable`.
+
+**Placing tables (for a map generator: the Cathedral and later maps).** Add a `"casino"` list to the zombies section:
+`{"game": "blackjack" | "roulette" | "highLow" | "dice", "at": [x, z], "yaw": degrees, "power": false, "min": 50,
+"max": 1000}` (`min` / `max` optional: the rules' limits for the game; at most 8 tables). With `"machineProps": true`
+each table stands as its solid prop ("Blackjack Table", "Roulette Table", "High-Low Table", "Dice Table"), placed by
+the game from the zombies section: don't add a Prop op for it. Players stand on the table's front, which faces -Z
+before the yaw (yaw 0: the players on the -Z side, yaw 180: on +Z), so leave about 1.5 m clear there. Footprints
+(x by z before the yaw, from the spot): blackjack 1.95 x 1.25 (z -0.79 to 0.46: its curved front reaches further
+forward), roulette 2.6 x 1.15, high-low 1.35 x 1.35 (its sign is 2.2 m tall at the back), dice 2.05 x 1.15. A table
+is played within 2.2 m of its spot (`useRange`), so keep other machines' spots more than that away or the nearest wins
+the prompt. In a C# map kit generator, add the entries to the zombies section's `casino` array like the `slots`
+entries (`Source/MapKit/Generators/HordeTest.cs` shows the slots). **Themed rooms**: give each table a room that
+suits it, as Blackmoor Asylum does: **high-low** at the night porter's desk in the Receiving Hall (the start room: a
+cheap early game), **blackjack** on the staff card table in the West Offices, **roulette** in the Research Lab (the
+"probability experiment", behind the power) and the **dice** tub with the stokers by the Generator House turbine. For
+the Cathedral: a card table in the vestry or the sacristy (blackjack), the wheel under the bell tower or in the crypt
+(roulette), high-low by the confessionals, dice among the gravestones' masons' tools.
+
+| Rules (`ZombiesRules.json` "casino") | Default | What |
+| --- | --- | --- |
+| `blackjack`, `roulette`, `highLow`, `dice` `min` / `max` | 50-1000, 10-1000, 50-500, 50-1000 | each game's limits (roulette: a player's total on one spin); a table's own `min` / `max` win |
+| `betStep` | 10 | every bet is a whole number of these |
+| `dealSeconds`, `turnSeconds` | 5, 20 | blackjack: the wait for other seats after the first bet; the time to act (then you stand) |
+| `rouletteBetSeconds`, `spinSeconds` | 12, 6 | roulette: betting after the first chip; the wheel's spin |
+| `actSeconds` | 30 | high-low and dice: the time to act (then high-low cashes out, dice roll) |
+| `showSeconds` | 4 | how long a result shows before the table opens again |
+| `useRange`, `leaveRange` | 2.2, 4 | how near you play from; how far an unfinished hand may wander before it's forfeit |
+| `highLowEdge`, `highLowMaxSteps` | 0.05, 6 | high-low's edge on every guess; the most guesses in a hand |
+| `announceAt` | 1000 | a win this far over the bet is shown to everyone |
 
 ## Dropped builds (user decision, 2026-10-21)
 

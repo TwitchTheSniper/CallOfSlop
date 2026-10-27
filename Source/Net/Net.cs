@@ -78,6 +78,8 @@ public enum Msg : byte
     ZSlotWin, // server -> all: Zombies: a slot machine paid a part or a melee build (machine, player, result, index, tier, flags): shown over the machine and in the feed (reliable; ZombiesSlotWin.cs)
     WeaponTweaks, // server -> all (on a change) and each joining client: the host's weapon tweak window set: class multipliers and per-weapon stat overrides (reliable; GameWeaponTweaks.cs, protocol 60)
     Logic, // server <-> clients: map logic (a LogicMsgKind first): entity flags, a button or lever used, a mover's clock, a sound, a notice, the joiner's full state (GameLogic.cs)
+    ZCasino, // server -> all (on a change) and each joining client: Zombies: one casino table's whole state (round, seats and hands, the dealer, roulette chips, dice, the last big win) (reliable; ZombiesCasinoNet.cs, protocol 66)
+    ZCasinoAct, // client -> server: Zombies: a move at a casino table (table, act, arg, amount): bet, hit, stand, double, higher, lower, cash out, roll, clear, leave (reliable; protocol 66)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

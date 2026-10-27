@@ -136,7 +136,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
     //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
     //     a crawler), 11-13 bytes a zombie.
-    public const byte ProtocolVersion = 65;
+    // 66: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
+    //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
+    public const byte ProtocolVersion = 66;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

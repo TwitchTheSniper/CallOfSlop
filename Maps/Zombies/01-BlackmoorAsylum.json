@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-map/1",
  "name": "Blackmoor Asylum",
- "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, the power in the generator house.",
+ "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, four casino tables, the power in the generator house.",
  "author": "Call of Slop",
  "order": 960,
  "maxPlayers": 8,
@@ -1804,8 +1804,8 @@
   },
   {
    "op": "Spawn",
-   "x": 21,
-   "z": -13
+   "x": 18.4,
+   "z": -12.6
   },
   {
    "op": "Spawn",
@@ -1814,8 +1814,8 @@
   },
   {
    "op": "Spawn",
-   "x": 12,
-   "z": 11
+   "x": 9.0,
+   "z": 11.0
   },
   {
    "op": "AutoWaypoints",
@@ -2910,6 +2910,40 @@
     ],
     "yaw": 90,
     "category": "Muzzle"
+   }
+  ],
+  "casino": [
+   {
+    "game": "highLow",
+    "at": [
+     4.4,
+     -1.6
+    ],
+    "yaw": 0
+   },
+   {
+    "game": "blackjack",
+    "at": [
+     -17.2,
+     0.9
+    ],
+    "yaw": 0
+   },
+   {
+    "game": "roulette",
+    "at": [
+     12.0,
+     11.0
+    ],
+    "yaw": 0
+   },
+   {
+    "game": "dice",
+    "at": [
+     21.2,
+     -12.0
+    ],
+    "yaw": 180
    }
   ]
  }
