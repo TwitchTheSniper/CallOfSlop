@@ -93,20 +93,29 @@ public static partial class SelfTest
             var start = now;
             var diedAt = -1.0;
             var maxStage = 0;
+            var why = new int[8]; // the watch's verdict per tick (StuckWhy), [7]: ticks without a watch step
             while (now - start < 9 && diedAt < 0)
             {
                 Run(game, ref now, 1.0 / World.TickRate);
                 maxStage = Math.Max(maxStage, b.StuckStage);
                 if (!bot.Alive)
                     diedAt = now - start;
+                else if (b.StuckWatchTick != game.ServerTick)
+                    why[7]++;
+                else
+                    why[(int)b.StuckLastWhy]++;
             }
+            var whyText = $"watch per tick: counting {why[0]}, not playing {why[1]}, idle {why[2]}, mover {why[3]}, holding {why[4]}, progress {why[5]}, paused {why[6]}, no watch {why[7]}; "
+                          + $"{bot.Name}, mode {b.Mode}, at ({bot.Position.X:0.0}, {bot.Position.Y:0.0}, {bot.Position.Z:0.0}), path {b.PathLen}, nav {NavGraph.Current.Nodes.Length} nodes, "
+                          + $"hold {b.HoldUntil - now:0.0} s, objective {b.Objective?.ToString() ?? "none"}, phase {game.Phase}";
+            Line(whyText);
             var log = game.LastStuckLog;
             Line($"pit in play: self-kill after {(diedAt < 0 ? "NEVER" : $"{diedAt:0.00} s")} (timeout {game.BotStuckSuicideSeconds:0} s), recovery stages reached {maxStage} (mode {b.Mode}), "
                  + $"deaths {deaths}->{bot.Deaths}, kills {kills}->{bot.Kills}, counters {game.BotStuckKills} (this map {game.StuckKillsOn(lab.Name)}, this match {game.BotStuckKillsThisMatch})");
             Line($"log: {log}");
             StuckNotes.Add($"pit: self-kill after {diedAt:0.00} s (timeout 5 s), stages {maxStage}; {log}");
             if (diedAt < 0)
-                Fail("a bot boxed into a pit with no exit didn't kill itself within 9 s (timeout 5 s)");
+                Fail($"a bot boxed into a pit with no exit didn't kill itself within 9 s (timeout 5 s); {whyText}");
             else if (diedAt < game.BotStuckSuicideSeconds - 0.2)
                 Fail($"the stuck bot killed itself too early ({diedAt:0.00} s, timeout {game.BotStuckSuicideSeconds:0} s)");
             if (maxStage < 3)

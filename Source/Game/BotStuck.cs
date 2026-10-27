@@ -40,6 +40,21 @@ public sealed partial class BotBrain
     internal Vector3 RescueAt;
     internal double NextOffNavCheck;
     internal double LastStuckLog = -1000; // the log line is written at most once a minute per bot
+
+    /// <summary>What the last watch step made of this tick (self-test diagnostics; see <see cref="StuckWhy"/>).</summary>
+    public StuckWhy StuckLastWhy;
+}
+
+/// <summary>What the stuck watch made of one tick (self-test diagnostics: why a stuck clock didn't run).</summary>
+public enum StuckWhy : byte
+{
+    Counting, // the clock ran (or paused for a fight) this tick
+    NotPlaying, // a phase other than Playing
+    Idle, // not wanting to move (no wish, or stationary on purpose)
+    Mover, // on a lift or another mover's sweep
+    Holding, // holding a spot on purpose (BotHolding)
+    Progress, // made progress: the spell started over
+    Paused, // in a fight, flashed or climbing: the clock paused
 }
 
 /// <summary>
@@ -107,13 +122,18 @@ public sealed partial class Game
         }
         b.StuckWatchTick = ServerTick;
         if (Phase != MatchPhase.Playing)
+        {
+            b.StuckLastWhy = StuckWhy.NotPlaying;
             return false;
+        }
         var nav = b.PathGraph ?? NavGraph.Current;
         var onMover = InMoverSweep(pos);
 
         // Standing still on purpose, or something else holds the bot: not stuck.
         var wants = s.Wish.LengthSquared() >= 0.05f && !s.Stationary;
-        var idle = !wants || onMover || BotHolding(p, b, now);
+        var holding = BotHolding(p, b, now);
+        var idle = !wants || onMover || holding;
+        b.StuckLastWhy = !wants ? StuckWhy.Idle : onMover ? StuckWhy.Mover : holding ? StuckWhy.Holding : StuckWhy.Counting;
 
         // Off the walkable area: checked twice a second, straight to the self-kill after a few seconds of wanting out
         // and staying within a few metres (a bot running about isn't in a pit; falling out of the map always counts).
@@ -155,6 +175,7 @@ public sealed partial class Game
                 : moved >= StuckProgress * StuckProgress;
         if (progressed && now >= b.BackOffUntil)
         {
+            b.StuckLastWhy = StuckWhy.Progress;
             StuckReset(b, pos);
             b.StuckAnchorNode = node;
             b.StuckAnchorNodeDist = nodeDist;
@@ -170,6 +191,8 @@ public sealed partial class Game
         var paused = visible || b.Mode == BotMode.Engage || BotBlinded(p, now) || p.Sim.MantleTicks > 0;
         if (!paused)
             b.StuckSecs += World.TickDt;
+        else
+            b.StuckLastWhy = StuckWhy.Paused;
 
         var limit = MathF.Max(1f, BotStuckSuicideSeconds);
         if (b.StuckSecs >= limit)
