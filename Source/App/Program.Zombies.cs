@@ -483,15 +483,29 @@ public static unsafe partial class Program
 
     // ---- Input -------------------------------------------------------------------------------------------
 
+    /// <summary>This frame's grenade key press went to a slot machine's bet or the box's take-apart (no throw).</summary>
+    private static bool _zGrenadeKeyTaken;
+
     /// <summary>Every frame of input in a match: the interact key's hold state (Zombies), and E at a workbench opens it.</summary>
     private static void ZombiesInput(double now, bool interactPressed)
     {
         ZombiesSpectateInput(); // out after bleeding out: watch a living teammate
+        _zGrenadeKeyTaken = false;
         if (_game.Mode != GameMode.Zombies)
             return;
         _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
-        if (_mouseCaptured && Pressed(GameAction.Grenade) && !_game.SlotBetKey())
-            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the box's OFFERED build apart (no grenades in Zombies); at a slot machine G changes the bet
+        if (_mouseCaptured && Pressed(GameAction.Grenade))
+        {
+            // At a slot machine G changes the bet; at the mystery box while it offers you a build, G twice takes the
+            // OFFERED build apart. Either way the key is taken and no grenade is thrown (UpdateLocalPlayer).
+            if (_game.SlotBetKey())
+                _zGrenadeKeyTaken = true;
+            else if (_game.BoxDisassembleOffer() >= 0)
+            {
+                _zGrenadeKeyTaken = true;
+                _game.BoxDisassembleKey(now);
+            }
+        }
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);

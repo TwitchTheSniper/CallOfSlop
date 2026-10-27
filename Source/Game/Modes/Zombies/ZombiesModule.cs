@@ -28,7 +28,9 @@ public sealed class ZombiesModule : GameModeModule
     public override bool HostPanelInMatch => true; // Esc > HOST: bots, the next round now or a skip to any round (testing; ZombiesStartRound.cs)
     public override MapNeeds Needs => MapNeeds.ZombiesSection;
     // UsesThrowables stays true and FixedPerks null: the server-side start gear (ZombiesOnSpawn) takes the multiplayer
-    // perks and the loadout's grenades away itself, while the local client keeps its grenade count as it always has.
+    // perks and the loadout's throwables away itself and gives the Zombies grenade (ZombiesRules.json "grenades",
+    // topped up every round); clients follow the server's count (Msg.ZWorld).
+    public override bool ServerSetsThrowables => true;
 
     public override string MapWarning => "Zombies needs a Zombies map: pick one (Zombies pack: Blackmoor Asylum; Dev pack: Zombies Test, Horde Test), or it plays Free-for-all.";
 
