@@ -244,6 +244,7 @@ public sealed partial class Game : IDisposable
         UpdateTacticalEffects(now, (float)frameDt); // decoy shots, sensor beeps, flash deafness (GameTactical.cs)
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
+        TickWeaponTweaks(now); // host: send the weapon tweak window's changes (GameWeaponTweaks.cs)
 
         _accumulator += frameDt;
         var steps = 0;
@@ -1811,6 +1812,7 @@ public sealed partial class Game : IDisposable
                 LogJoin(name);
                 ServerSystemChat($"{name} joined", now); // chat system line (LobbyChat.cs)
                 SendVoiceInfo(sender); // the host's "Allow voice chat" (GameVoice.cs)
+                SendWeaponTweaks(sender); // the host's weapon tweaks, even none (GameWeaponTweaks.cs)
                 BroadcastRoster();
                 break;
             }
@@ -1858,6 +1860,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ChatSay:
             case (byte)Msg.ChatLine:
                 OnChatPacket(id, ref r, sender, now); // lobby chat (LobbyChat.cs)
+                break;
+            case (byte)Msg.WeaponTweaks when !IsServer:
+                ReadWeaponTweaks(ref r); // the host's weapon tweak window (GameWeaponTweaks.cs)
                 break;
             case (byte)Msg.VoiceUp:
             case (byte)Msg.VoiceDown:
@@ -1948,6 +1953,7 @@ public sealed partial class Game : IDisposable
     public void Dispose()
     {
         Net.Dispose();
+        EndWeaponTweaks(); // a client drops the host's weapon tweaks (GameWeaponTweaks.cs)
         World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)
         World.GravityScale = 1f;
     }

@@ -376,6 +376,7 @@ public static partial class SelfTest
         Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
+        Section("Weapon tweaks", CheckWeaponTweaks); // SelfTestWeaponTweaks.cs: the dev tweak window: live tweaks and kitted copies, class multipliers, revert / reset, Save into temp copies (minimal patch, loads back, --check-weapon), fingerprint and fits untouched, host -> client over loopback, F7, no allocations closed
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming

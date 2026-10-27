@@ -122,7 +122,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     entry carries the window byte only outside, at a window or swiping (11 or 12 bytes).
     // 59: Zombies start round and test kit (Source/Game/ZombiesStartRound.cs): Msg.LobbyState ends with the start round
     //     and a Zombies flags byte (bit 0: the test kit).
-    public const byte ProtocolVersion = 59;
+    // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
+    //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
+    public const byte ProtocolVersion = 60;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
