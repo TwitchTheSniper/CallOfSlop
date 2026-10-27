@@ -112,7 +112,10 @@ public static class PlayerRender
     private static void DrawArmed(Renderer g, Player p, in Matrix4x4 gunPose, in Matrix4x4 body, double time)
     {
         var def = p.WeaponDef;
-        GunModel.Draw(g, def, ThirdPersonArms.Animate(p, def, gunPose, body, time), false, (float)time);
+        var shot = ThirdPersonArms.ShotFlash; // the muzzles of their last shot flash (Source/Game/GameMuzzle.cs)
+        GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;
+        GunModel.Draw(g, def, ThirdPersonArms.Animate(p, def, gunPose, body, time), shot != 0, (float)time);
+        GunModel.FlashBarrels = GunModel.AllBarrels;
         ThirdPersonArms.Draw(g);
     }
 }

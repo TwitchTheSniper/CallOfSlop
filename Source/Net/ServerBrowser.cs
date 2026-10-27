@@ -129,7 +129,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     joiner's full flags); movers can be started and stopped, so their pose follows that clock.
     // 62: Grenades in Zombies (2026-10-27): every player entry in Msg.ZWorld ends with the grenade kind and how many
     //     are left (the server tops them up every round; ZombiesRules.json "grenades").
-    public const byte ProtocolVersion = 62;
+    // 63: Shots leave the muzzle that fired (Source/Game/GameMuzzle.cs): Msg.Shot from a built gun with several barrels
+    //     ends with a count and each end's barrel index (one byte each), after the ends and the wall origin.
+    public const byte ProtocolVersion = 63;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

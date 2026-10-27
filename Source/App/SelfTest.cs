@@ -321,6 +321,7 @@ public static partial class SelfTest
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
         Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
         Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
+        Section("Shot origins", CheckShotOrigins); // SelfTestShotOrigins.cs: every tracer and flash leaves the muzzle of the barrel that fired (view model and world model), classic guns and every standard build
         Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
         Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
         Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers

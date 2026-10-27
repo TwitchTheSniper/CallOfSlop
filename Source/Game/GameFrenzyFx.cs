@@ -16,7 +16,7 @@ public sealed partial class Game
         var n = 0;
         var aim = LookDir(LookYaw, LookPitch);
         var dist = World.Query.Raycast(me.RenderEye, aim, World.Range, QueryFilter.Shots);
-        AddTracer(MuzzleWorld(me), me.RenderEye + aim * dist, me.WeaponDef, now, -1, me);
+        AddTracer(MuzzlePoint(me, me.WeaponDef, 0, now), me.RenderEye + aim * dist, me.WeaponDef, now, -1, me);
         n++;
         var flat = World.Forward(LookYaw, 0);
         var right = World.FlatRight(LookYaw);
@@ -26,7 +26,7 @@ public sealed partial class Game
                 continue;
             var side = (p.Id & 1) == 0 ? 1f : -1f;
             var target = me.RenderPosition + flat * 7f + right * (3f * side) + new Vector3(0, 0.02f, 0);
-            var from = MuzzleWorld(p);
+            var from = MuzzlePoint(p, p.WeaponDef, 0, now);
             var d = target - from;
             var len = d.Length();
             if (len < 0.5f)

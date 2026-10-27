@@ -43,7 +43,10 @@ public sealed class GunRig : GunModel.IPartSink
     private int _magCount;
     private bool _cutawayShapes; // some part's shape follows the cutaway (the holo hood): re-emit when it changes
     private float _cutaway = float.NaN;
-    private float _flashSize;
+    private float _flashSize, _flashAlpha;
+    private Vector3 _flashColor;
+    private SceneNode[] _flashes = [];
+    private int _flashCount;
     private Vector3 _magOffset;
     private bool _magHidden;
 
@@ -92,6 +95,21 @@ public sealed class GunRig : GunModel.IPartSink
         _mode = Mode.Build;
         GunModel.Emit(def, this, 0f);
 
+        // One flash per muzzle (GunMuzzles.cs: the end of each barrel, past its muzzle device); a shot shows the barrels that fired.
+        var muzzles = GunMuzzles.Count(def);
+        if (_flashes.Length < muzzles)
+            _flashes = new SceneNode[muzzles];
+        _flashCount = muzzles;
+        for (var i = 0; i < muzzles; i++)
+        {
+            var socket = Root.AddSocket(i == 0 ? "muzzle" : $"muzzle_{i + 1}", GunMuzzles.Local(def, i));
+            if (i == 0)
+                Muzzle = socket;
+            _flashes[i] = socket.Add("flash", Matrix4x4.CreateScale(_flashSize), Renderable.Box(_flashColor, _flashAlpha, 2, Material.Grid, RenderFlags.Blend));
+            _flashes[i].Visible = false;
+        }
+        Flash = _flashes[0];
+
         // Sockets: where the hands and attachments go (the hand anchors carry the hands' rotations).
         var a = ArmAnchors.For(def);
         Grip = Root.AddSocket("grip", a.Grip, a.GripRot);
@@ -138,10 +156,22 @@ public sealed class GunRig : GunModel.IPartSink
                 _mags[i].Visible = !magHidden;
             }
         }
-        Flash.Visible = flash;
-        if (flash)
-            Flash.SetLocalMatrix(Matrix4x4.CreateScale(_flashSize) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, 0, -_flashSize * 0.4f));
+        var barrels = GunModel.FlashBarrels;
+        for (var i = 0; i < _flashCount; i++)
+        {
+            var f = _flashes[i];
+            var on = flash && (barrels & 1UL << (i & 63)) != 0;
+            f.Visible = on;
+            if (on)
+                f.SetLocalMatrix(Matrix4x4.CreateScale(_flashSize) * Matrix4x4.CreateRotationZ(time * 50f) * Matrix4x4.CreateTranslation(0, 0, -_flashSize * 0.4f));
+        }
     }
+
+    /// <summary>The flash node of barrel <paramref name="barrel"/> (its parent socket sits at that muzzle; self-test).</summary>
+    public SceneNode FlashOf(int barrel) => _flashes[Math.Clamp(barrel, 0, _flashCount - 1)];
+
+    /// <summary>Muzzle flashes (one per barrel).</summary>
+    public int FlashCount => _flashCount;
 
     private void ApplyCutaway(float cutaway)
     {
@@ -217,10 +247,8 @@ public sealed class GunRig : GunModel.IPartSink
     {
         if (_mode != Mode.Build)
             return;
-        Muzzle = Root.AddSocket("muzzle", muzzle);
-        _flashSize = size;
-        Flash = Muzzle.Add("flash", Matrix4x4.CreateScale(size), Renderable.Box(color, alpha, 2, Material.Grid, RenderFlags.Blend));
-        Flash.Visible = false;
+        // The flash nodes go at every muzzle after the emit (Build); this is the look.
+        (_flashSize, _flashColor, _flashAlpha) = (size, color, alpha);
         _group = null;
     }
 
