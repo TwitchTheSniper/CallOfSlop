@@ -11,9 +11,8 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.3]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.03, 0.03, 0.12], "pos": [0, 0, -0.06], "color": "black"},
-    {"shape": "rod", "size": [0.024, 0.024, 0.1], "pos": [0, 0, -0.17], "color": "black"},
-    {"shape": "rod", "size": [0.018, 0.018, 0.08], "pos": [0, 0, -0.26], "color": "steel"}
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.22], "pos": [0, 0, -0.11], "color": "black", "taper": 0.8},
+    {"shape": "tube", "size": [0.024, 0.024, 0.08], "pos": [0, 0, -0.26], "color": "steel", "inner": 0.5, "ends": "back", "taper": 0.75}
   ],
   "stats": [
     {"stat": "bulletSize", "mul": 0.75},

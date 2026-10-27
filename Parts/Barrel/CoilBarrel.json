@@ -12,11 +12,11 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.32]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.022, 0.022, 0.32], "pos": [0, 0, -0.16], "color": "white"},
-    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.06], "color": "accent", "tag": "glow"},
-    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.12], "color": "accent", "tag": "glow"},
-    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.18], "color": "accent", "tag": "glow"},
-    {"size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.24], "color": "accent", "tag": "glow"}
+    {"shape": "tube", "size": [0.022, 0.022, 0.32], "pos": [0, 0, -0.16], "color": "white", "inner": 0.45, "ends": "back"},
+    {"shape": "tube", "size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.06], "color": "accent", "tag": "glow", "inner": 0.55},
+    {"shape": "tube", "size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.12], "color": "accent", "tag": "glow", "inner": 0.55},
+    {"shape": "tube", "size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.18], "color": "accent", "tag": "glow", "inner": 0.55},
+    {"shape": "tube", "size": [0.04, 0.04, 0.012], "pos": [0, 0, -0.24], "color": "accent", "tag": "glow", "inner": 0.55}
   ],
   "stats": [
     {"stat": "rangeM", "mul": 2.0},

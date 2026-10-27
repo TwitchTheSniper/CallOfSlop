@@ -194,8 +194,11 @@ public sealed class PartBox
     /// <summary>An arc's sweep (degrees, 0 = default 90) and the direction its middle points (degrees: 0 down, 90 forward, 180 up, 270 back).</summary>
     public float Angle, Dir;
 
-    /// <summary>The shape's mesh id (<see cref="PartShapes.For"/>; 0 = a plain box). Set when the part is checked.</summary>
-    public ushort ShapeId;
+    /// <summary>
+    /// The shape's mesh id (<see cref="PartShapes.For"/>; 0 = a plain box). Set when the part is checked. A property, so
+    /// <see cref="PartDigest"/> (which reads fields) leaves it out: ids depend on load order, the shape itself doesn't.
+    /// </summary>
+    public ushort ShapeId { get; internal set; }
     public Vector3 Size = new(0.02f);
     public Vector3 Pos;
     public Vector3 RotDeg;
@@ -419,7 +422,7 @@ public sealed class PartDef
     public PartBox[] Boxes = [];
 
     /// <summary>Triangles the part's model draws (counted when it is checked; Parts/README.md, "Shapes").</summary>
-    public int Triangles;
+    public int Triangles { get; internal set; }
     public AttachmentEffect[] Effects = [];
 
     /// <summary>Special-effect flags (incendiary, explosive, penetrating...): carried into the build, gameplay comes later.</summary>

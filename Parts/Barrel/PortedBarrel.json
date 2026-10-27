@@ -11,10 +11,13 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.22]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.024, 0.024, 0.22], "pos": [0, 0, -0.11], "color": "black"},
-    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.14], "color": "#101012"},
-    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.17], "color": "#101012"},
-    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.2], "color": "#101012"}
+    {"shape": "cylinder", "size": [0.024, 0.024, 0.05], "pos": [0, 0, -0.025], "color": "black"},
+    {"shape": "cylinder", "size": [0.024, 0.024, 0.012], "pos": [0, 0, -0.056], "color": "black", "taper": 0.9},
+    {"shape": "tube", "size": [0.0216, 0.0216, 0.146], "pos": [0, 0, -0.135], "color": "black", "inner": 0.45, "ends": "back"},
+    {"shape": "tube", "size": [0.0228, 0.0228, 0.012], "pos": [0, 0, -0.214], "color": "gunmetal", "inner": 0.42, "ends": "back"},
+    {"shape": "rounded", "size": [0.008, 0.006, 0.012], "pos": [0, 0.0112, -0.14], "color": "#101012", "segments": 2, "radius": 0.5},
+    {"shape": "rounded", "size": [0.008, 0.006, 0.012], "pos": [0, 0.0112, -0.17], "color": "#101012", "segments": 2, "radius": 0.5},
+    {"shape": "rounded", "size": [0.008, 0.006, 0.012], "pos": [0, 0.0112, -0.2], "color": "#101012", "segments": 2, "radius": 0.5}
   ],
   "stats": [
     {"stat": "recoilDeg", "mul": 0.75},

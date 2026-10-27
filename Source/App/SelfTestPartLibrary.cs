@@ -261,10 +261,10 @@ public static partial class SelfTest
                 Fail("hot reload: built weapons don't carry their build text");
             var melee = BuilderExamples.Melee().Select(m => WeaponBuilder.Assemble(m.Build).Melee).FirstOrDefault(m => m != null);
 
-            // Edit: a longer-ranged Standard Barrel with a longer rod, a new part, a broken Box Mag.
+            // Edit: a longer-ranged Standard Barrel reaching further out, a new part, a broken Box Mag.
             var sbFile = Path.Combine(dir, sb.SourceFile!);
             File.WriteAllText(sbFile, File.ReadAllText(sbFile).Replace("\"stats\": []", "\"stats\": [{\"stat\": \"rangeM\", \"mul\": 2}]")
-                .Replace("\"size\": [0.022, 0.022, 0.2]", "\"size\": [0.022, 0.022, 0.4]"));
+                .Replace("\"pos\": [0, 0, -0.194]", "\"pos\": [0, 0, -0.394]")); // the crown moved 20 cm out
             File.WriteAllText(Path.Combine(dir, "Muzzle", "HotReloadTest.json"),
                 File.ReadAllText(Path.Combine(Parts.Folder, Parts.Find("Flash Hider")!.SourceFile!)).Replace("\"Flash Hider\"", "\"Hot Reload Test Hider\""));
             File.WriteAllText(Path.Combine(dir, boxMag.SourceFile!), "{ \"name\": \"Box Mag\", oops");

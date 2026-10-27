@@ -11,11 +11,12 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.3]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.034, 0.034, 0.06], "pos": [0, 0, -0.03], "color": "steel"},
-    {"shape": "rod", "size": [0.085, 0.085, 0.26], "pos": [0, 0, -0.17], "color": "black"},
-    {"shape": "rod", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.07], "color": "brass"},
-    {"shape": "rod", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.17], "color": "brass"},
-    {"shape": "rod", "size": [0.1, 0.1, 0.02], "pos": [0, 0, -0.28], "color": "brass"}
+    {"shape": "cylinder", "size": [0.034, 0.034, 0.06], "pos": [0, 0, -0.03], "color": "steel"},
+    {"shape": "sphere", "size": [0.085, 0.085, 0.05], "pos": [0, 0, -0.06], "color": "black", "segments": 16},
+    {"shape": "tube", "size": [0.085, 0.085, 0.24], "pos": [0, 0, -0.18], "color": "black", "segments": 16, "inner": 0.42, "ends": "back", "taper": 0.85},
+    {"shape": "tube", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.07], "color": "brass", "segments": 16, "inner": 0.88},
+    {"shape": "tube", "size": [0.095, 0.095, 0.02], "pos": [0, 0, -0.17], "color": "brass", "segments": 16, "inner": 0.83},
+    {"shape": "tube", "size": [0.1, 0.1, 0.02], "pos": [0, 0, -0.29], "color": "brass", "segments": 16, "inner": 0.5}
   ],
   "stats": [
     {"stat": "bulletSize", "mul": 3.2},

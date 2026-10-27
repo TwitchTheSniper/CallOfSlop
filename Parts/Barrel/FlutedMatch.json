@@ -11,7 +11,11 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.34]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.022, 0.022, 0.34], "pos": [0, 0, -0.17], "color": "steel"}
+    {"shape": "cylinder", "size": [0.022, 0.022, 0.06], "pos": [0, 0, -0.03], "color": "steel"},
+    {"shape": "cylinder", "size": [0.022, 0.022, 0.012], "pos": [0, 0, -0.066], "color": "steel", "taper": 0.9},
+    {"shape": "cylinder", "size": [0.02, 0.02, 0.25], "pos": [0, 0, -0.197], "color": "steel", "segments": 6},
+    {"shape": "cylinder", "size": [0.022, 0.022, 0.012], "pos": [0, 0, -0.322], "color": "steel", "taper": [1, 1]},
+    {"shape": "tube", "size": [0.022, 0.022, 0.016], "pos": [0, 0, -0.332], "color": "gunmetal", "inner": 0.42, "ends": "back"}
   ],
   "stats": [
     {"stat": "rangeM", "mul": 1.5},
