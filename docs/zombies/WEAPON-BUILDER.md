@@ -240,7 +240,7 @@ receiver. Also: more feed options for heavy, and no part category may have fewer
   eight of 11. A Slug or Sabot (`pellets: 1`) turns a shotgun's eight pellets into one of 112, and is just the bullet on
   a rifle. A pellet *stat* (Dragon's Breath's +2) counts on shotgun bores only, like a barrel's. Everything else is a
   `mul`/`add`, so a Plasma round on a pistol and on an autocannon both read as "that calibre, plus the plasma effect".
-  Flags are unchanged and keep their Zombies effects (ZOMBIES-MODE.md, "Special ammo effects").
+  Flags are unchanged and keep their Zombies effects, which since 2026-10-26 also hurt players wherever such a build meets them, friendly fire respected (ZOMBIES-MODE.md, "Special ammo effects").
 
 | Round type | Tier | Change on the calibre | Flags |
 | --- | --- | --- | --- |
