@@ -16,6 +16,8 @@ namespace CallOfSlop;
 ///   CallOfSlop join &lt;ip&gt; [port]   join immediately
 ///   --lag=ms --loss=%              simulate a bad connection (testing)
 ///   --no-upnp                      don't touch the router when hosting
+///   --zombies-round N              hosting Zombies: runs start at round N (the lobby's Start round, not saved)
+///   --test-kit                     hosting Zombies: the test kit on maps that allow it (Horde Test; not saved)
 ///   --save-dir &lt;path&gt;              keep the saves in that folder (see SavePaths.cs)
 /// Release: --bake DIR (baked nav graphs for every shipped map, BotNavBake.cs).
 /// Modding helpers: --check-map FILE, --check-maps DIR, --gen-map NAME, --gen-maps, --gen-plan FILE PNG, --map-ops, --export-maps DIR, --check-weapon FILE, --export-weapons DIR,
@@ -136,7 +138,9 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
-        var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--")).ToArray();
+        (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
+        _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
+        var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
 
         // Remove the router mapping even if the process is closed abruptly.
         AppDomain.CurrentDomain.ProcessExit += (_, _) => _upnp?.Dispose();
@@ -892,6 +896,23 @@ public static unsafe partial class Program
         }
     }
 
+    private static int _cliStartRound;
+    private static bool _cliTestKit;
+
+    /// <summary>"--zombies-round 30" or "--zombies-round=30": the round, and the separate value argument (so it isn't read as a port).</summary>
+    private static (int Round, string? Value) ZombiesRoundFlag(string[] args)
+    {
+        for (var i = 0; i < args.Length; i++)
+        {
+            var a = args[i];
+            if (a.StartsWith("--zombies-round=", StringComparison.OrdinalIgnoreCase) && int.TryParse(a["--zombies-round=".Length..], out var r))
+                return (Math.Clamp(r, 1, Game.MaxStartRound), null);
+            if (a.Equals("--zombies-round", StringComparison.OrdinalIgnoreCase) && i + 1 < args.Length && int.TryParse(args[i + 1], out r))
+                return (Math.Clamp(r, 1, Game.MaxStartRound), args[i + 1]);
+        }
+        return (0, null);
+    }
+
     private static int FlagValue(string[] args, string name)
     {
         var arg = args.FirstOrDefault(a => a.StartsWith(name + "=", StringComparison.OrdinalIgnoreCase));
@@ -1007,6 +1028,11 @@ public static unsafe partial class Program
             _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
             _session.HostHordeCap = _settings.ZombieHordeCap; // host setting (ZombieHorde.cs): the server's cap; clients don't need it
+            if (kind != LobbyAction.Join)
+            {
+                _session.ZStartRound = _cliStartRound > 0 ? _cliStartRound : _settings.ZombieStartRound; // host settings (ZombiesStartRound.cs); clients learn them from the lobby state
+                _session.ZTestKit = _cliTestKit || _settings.ZombieTestKit;
+            }
             if (kind != LobbyAction.Join)
                 _session.GravityPercent = _settings.Gravity; // host setting (GameGravity.cs); clients learn it from the Welcome and the lobby state
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks

@@ -26,6 +26,7 @@ public static class GeneratorRegistry
     public static IReadOnlyList<IMapGenerator> All => _all ??=
     [
         new Generators.TwinShard(),
+        new Generators.HordeTest(),
     ];
 
     private static IMapGenerator[]? _all;
@@ -36,7 +37,8 @@ public static class GeneratorRegistry
     public static string Slug(string name) => new(name.Where(char.IsLetterOrDigit).ToArray());
 
     /// <summary>The file a generator writes, relative to the Maps folder ("Space/04-TwinShard.json").</summary>
-    public static string RelativeFile(IMapGenerator g) => $"{g.Pack}/{g.Number:00}-{Slug(g.Name)}.json";
+    // (A Number of 0 means no number, the Dev pack's habit: "Dev/HordeTest.json".)
+    public static string RelativeFile(IMapGenerator g) => g.Number > 0 ? $"{g.Pack}/{g.Number:00}-{Slug(g.Name)}.json" : $"{g.Pack}/{Slug(g.Name)}.json";
 
     /// <summary>Runs a generator and returns its kit.</summary>
     public static Kit Run(IMapGenerator g)
@@ -110,7 +112,8 @@ public static class MapKitCli
             Plan.Draw(m, png);
             Console.WriteLine($"plan: {png}");
         }
-        var report = MapChecks.Check(m);
+        // A map's own test block may lower the main-area share (a Zombies map: the outside strip is cut off by the windows).
+        var report = MapChecks.Check(m, m.TestSpec is { } t ? new CheckOptions { MainAreaShare = Math.Min(0.75f, t.MinMainNavPct / 100f) } : null);
         Console.WriteLine(report.ToString());
         return report.Failures.Count == 0 ? 0 : 1;
     }

@@ -526,6 +526,8 @@ public sealed partial class Ui
 
     private static readonly string[] GravityChoiceLabels = Game.GravityPercentChoices.Select(g => g == 100 ? "100% (the map's own)" : $"{g}%").ToArray();
 
+    private static readonly string[] StartRoundLabels = Game.StartRoundChoices.Select(r => r == 1 ? "Round 1 (a normal run)" : $"Round {r}").ToArray();
+
     private static readonly string[] HordeCapLabels = Game.HordeCapChoices.Select(c => c >= Game.MaxZombies ? "No limit (the rounds decide)" : $"{c} zombies").ToArray();
 
     /// <summary>World section: gravity, frenzy buffs, destruction, the Zombies horde cap.</summary>
@@ -580,6 +582,32 @@ public sealed partial class Ui
             }
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetItemTooltip("The most zombies alive at once. Late rounds bring hundreds (24 early, about 60 by round 10, 150 by round 20, 300 by round 30); lower it if the host's PC struggles. The rest wait their turn.");
+            ImGui.SetNextItemWidth(200 * _scale);
+            var roundIdx = Array.IndexOf(Game.StartRoundChoices, game.ZStartRound);
+            if (ImGui.BeginCombo("Start round##room"u8, roundIdx >= 0 ? StartRoundLabels[roundIdx] : $"Round {game.ZStartRound}"))
+            {
+                var choices = Game.StartRoundChoices;
+                for (var i = 0; i < choices.Length; i++)
+                    if (ImGui.Selectable(StartRoundLabels[i], choices[i] == game.ZStartRound) && host)
+                    {
+                        game.ZStartRound = choices[i]; // told to everyone in the lobby state (ZombiesStartRound.cs)
+                        s.ZombieStartRound = choices[i];
+                    }
+                ImGui.EndCombo();
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGuiSafe.SetItemTooltip("For testing: the run starts at this round, with the points a player would have by then and the round's power-ups, box and drops. Round 30 brings up to 300 zombies at once.");
+            if (World.Map.Zombies is { TestKit: true })
+            {
+                var kit = game.ZTestKit;
+                if (ImGui.Checkbox("Test kit##room"u8, ref kit) && host)
+                {
+                    game.ZTestKit = kit;
+                    s.ZombieTestKit = kit;
+                }
+                ImGui.SameLine();
+                ImGui.TextColored(Dim, "every perk, 4 slots, strong guns, the power on"u8);
+            }
         }
         if (!host)
             return;

@@ -13,9 +13,12 @@ public sealed partial class Ui
     private int _hostBots;
     private BotDifficulty _hostSkill;
 
+    private int _hostSkipRound;
+
     private void OpenPauseHost(Game game)
     {
         _pauseHost = true;
+        _hostSkipRound = Math.Max(1, game.ZRound + 1);
         _hostBots = game.BotCount;
         _hostSkill = game.BotSkill;
     }
@@ -37,6 +40,8 @@ public sealed partial class Ui
         ImGui.EndDisabled();
         if (_hostSkill != game.BotSkill)
             ImGuiSafe.TextColored(Dim, "A new difficulty replaces every bot.");
+        if (game.Mode == GameMode.Zombies)
+            DrawHostZombies(game);
         ImGui.Spacing();
         ImGui.Separator();
         var action = PauseAction.None;
@@ -52,5 +57,22 @@ public sealed partial class Ui
         if (BigButton("BACK"))
             _pauseHost = false;
         return action;
+    }
+
+    /// <summary>Zombies (testing): the next round now, or a skip to any round (Game.HostSkipToRound, ZombiesStartRound.cs).</summary>
+    private void DrawHostZombies(Game game)
+    {
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGuiSafe.TextColored(Dim, $"Zombies: round {game.ZRound}, {game.AliveZombies} up, {game.ZRemaining} left this round");
+        var now = Brutal.GlfwApi.Glfw.Time;
+        if (BigButton($"NEXT ROUND NOW (round {game.ZRound + 1})"))
+            game.HostSkipToRound(game.ZRound + 1, now);
+        ImGui.SetNextItemWidth(260 * _scale);
+        ImGui.SliderInt("Round##hostskip"u8, ref _hostSkipRound, 1, Game.MaxStartRound);
+        ImGui.SameLine();
+        if (ImGui.Button("SKIP TO IT"u8))
+            game.HostSkipToRound(_hostSkipRound, now);
+        ImGuiSafe.TextColored(Dim, "For testing: the zombies up now go (no points), the new round starts at once, and anyone short of that round's points is raised to them.");
     }
 }

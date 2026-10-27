@@ -120,7 +120,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 58: Zombie hordes (hundreds alive late game): Msg.ZEnts is sent to each client on its own, interest-managed (the
     //     zombies that matter most to that client, at most 80 a packet), with a 16-bit horde size and entry count; an
     //     entry carries the window byte only outside, at a window or swiping (11 or 12 bytes).
-    public const byte ProtocolVersion = 58;
+    // 59: Zombies start round and test kit (Source/Game/ZombiesStartRound.cs): Msg.LobbyState ends with the start round
+    //     and a Zombies flags byte (bit 0: the test kit).
+    public const byte ProtocolVersion = 59;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

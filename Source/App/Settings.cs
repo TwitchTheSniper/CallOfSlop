@@ -139,6 +139,8 @@ public sealed class Settings
     public GameMode Mode = GameMode.FreeForAll;
     public int AutoStart; // hosting: start N seconds after the first person readies up (0: wait for everyone)
     public int Gravity = 100; // hosting: every map's gravity in percent, 25-200 (Source/Game/GameGravity.cs)
+    public int ZombieStartRound = 1; // hosting: the round a Zombies run starts at (testing; Source/Game/ZombiesStartRound.cs)
+    public bool ZombieTestKit; // hosting: the test kit on maps that allow it (Horde Test)
     public int ZombieHordeCap = Game.MaxZombies; // hosting: Zombies' most zombies alive at once (weak PCs lower it; Source/Game/ZombieHorde.cs); files without it get no extra limit
     public TeamSelection TeamSelect = TeamSelection.Manual; // team modes: players pick their team, or Auto only (TeamPick.cs)
     public int TeamMaxDiff = TeamRules.DefaultMaxDiff; // team modes: how much bigger a side may get by picks (0-4)
@@ -385,6 +387,8 @@ public sealed class Settings
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
                     case "gravity" when int.TryParse(v, out var i): s.Gravity = Math.Clamp(i, Game.MinGravityPercent, Game.MaxGravityPercent); break;
                     case "zombie_horde_cap" when int.TryParse(v, out var i): s.ZombieHordeCap = Math.Clamp(i, Game.MinHordeCap, Game.MaxZombies); break;
+                    case "zombie_start_round" when int.TryParse(v, out var i): s.ZombieStartRound = Math.Clamp(i, 1, Game.MaxStartRound); break;
+                    case "zombie_test_kit": s.ZombieTestKit = v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase); break;
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;
                     case "team_max_diff" when int.TryParse(v, out var i): s.TeamMaxDiff = Math.Clamp(i, 0, TeamRules.MaxDiffLimit); break;
                     case "physics" when Enum.TryParse<PhysicsMode>(v, true, out var pm) && Enum.IsDefined(pm): s.Physics = pm; break;
@@ -489,6 +493,8 @@ public sealed class Settings
                     $"auto_start={AutoStart}",
                     $"gravity={Gravity}",
                     $"zombie_horde_cap={ZombieHordeCap}",
+                    $"zombie_start_round={ZombieStartRound}",
+                    $"zombie_test_kit={(ZombieTestKit ? 1 : 0)}",
                     $"team_select={(TeamSelect == TeamSelection.AutoOnly ? "auto" : "manual")}",
                     $"team_max_diff={TeamMaxDiff}",
                     $"physics={Physics.ToString().ToLowerInvariant()}",
