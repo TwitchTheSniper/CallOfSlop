@@ -315,6 +315,7 @@ public static partial class SelfTest
         Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
         Section("Audio mixer", CheckAudioMixer); // SelfTestAudioMixer.cs: defaults table, the baked SeabMix2 levels, identity with no audio_mix.json, old saves moving untouched levels to the new defaults, JSON round trip / unknown keys / clamping, slider isolation, mute, F8 migration, no allocations closed or metering
         Section("Text", CheckText); // SelfTestText.cs: player-visible text
+        Section("Part text width", CheckPartTextWidth); // SelfTestPartTextWidth.cs: part descriptions wrap at a set width
         Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
         Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
@@ -351,6 +352,7 @@ public static partial class SelfTest
         Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network
         Section("Zombie hordes", CheckZombieHordes); // SelfTestZombieHordes.cs: 24/100/300-zombie hordes on Blackmoor: tick cost, allocations, snapshot bytes, client cost; the alive curve; the horde controller
         Section("Zombies start round", CheckZombiesStartRound); // SelfTestZombiesStartRound.cs: Horde Test, a run started at round 30 with the test kit (economy, fill time, tick cost), the host's round skip, the settings reaching a client
+        Section("Horde targets", CheckHordeTargets); // SelfTestHordeTargets.cs: a kited horde never turns together to a wrong spot (no false regroup; regrouping only closes up from behind), field drops, a missing target for a tick
         Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
         Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
         Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations
@@ -377,6 +379,7 @@ public static partial class SelfTest
         Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
+        Section("Weapon tweaks", CheckWeaponTweaks); // SelfTestWeaponTweaks.cs: the dev tweak window: live tweaks and kitted copies, class multipliers, revert / reset, Save into temp copies (minimal patch, loads back, --check-weapon), fingerprint and fits untouched, host -> client over loopback, F7, no allocations closed
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming

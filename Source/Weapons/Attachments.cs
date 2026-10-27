@@ -205,7 +205,7 @@ public static class Attachments
     {
         if (d.Kit == 0)
             return 0f;
-        var baseDef = Weapons.Get(d.Id);
+        var baseDef = WeaponTweaks.FileDef(Weapons.Get(d.Id));
         var sum = 0f;
         foreach (var a in InKit(d.Kit))
             if (a.MeleeReach != 0 && a.Fits(baseDef))
@@ -220,7 +220,7 @@ public static class Attachments
     {
         if (_forCache.TryGetValue(w.Id, out var list))
             return list;
-        var baseDef = Weapons.Get(w.Id);
+        var baseDef = WeaponTweaks.FileDef(Weapons.Get(w.Id)); // the file's weapon: a tweaked magazine never moves unlocks
         list = UnlockSequence.Where(a => a.Fits(baseDef)).ToArray();
         _forCache[w.Id] = list;
         return list;
@@ -314,7 +314,7 @@ public static class Attachments
     /// The optic a weapon starts with (null: iron sights, the empty slot). The file's "defaultOptic" if it names an optic
     /// that fits; otherwise, for a sniper, its first full scope (4x and up) in unlock order. Cached per weapon id.
     /// </summary>
-    public static AttachmentDef? DefaultOptic(WeaponDef w) => _defaultOptic.GetOrAdd(w.Id, id => ResolveDefaultOptic(Weapons.Get(id)));
+    public static AttachmentDef? DefaultOptic(WeaponDef w) => _defaultOptic.GetOrAdd(w.Id, id => ResolveDefaultOptic(WeaponTweaks.FileDef(Weapons.Get(id))));
 
     /// <summary><see cref="DefaultOptic"/> worked out for any weapon definition (uncached; --check-weapon uses it on a file).</summary>
     public static AttachmentDef? ResolveDefaultOptic(WeaponDef baseDef)
@@ -371,11 +371,12 @@ public static class Attachments
     public static uint Sanitize(WeaponDef w, uint kit, Progress? progress = null)
     {
         var baseDef = Weapons.Get(w.Id);
+        var fit = WeaponTweaks.FileDef(baseDef); // fits and unlocks go by the file, never a live tweak
         uint clean = 0;
         for (var s = 0; s < SlotCount; s++)
         {
             var a = Get((AttachSlot)s, Slot(kit, (AttachSlot)s));
-            if (a == null || !a.Fits(baseDef))
+            if (a == null || !a.Fits(fit))
                 continue;
             if (progress != null && progress.WeaponXp(w.Id) < UnlockXp(baseDef, a))
                 continue;
@@ -401,20 +402,42 @@ public static class Attachments
             if (_applied.TryGetValue((baseDef.Id, kit), out var def))
                 return def;
             def = baseDef.Clone();
-            def.Kit = kit;
-            foreach (var a in InKit(kit))
-                if (a.Fits(baseDef))
-                    a.Apply(def);
-            def.Mobility = Math.Clamp(def.Mobility, 0.6f, 1.25f);
-            def.AdsTime = Math.Clamp(def.AdsTime, 0.08f, 0.5f);
-            def.Loudness = Math.Clamp(def.Loudness, WeaponDef.MinLoudness, WeaponDef.MaxLoudness);
-            // However much is stacked, a kitted gun keeps at least half its hip spread and 40% of its recoil.
-            def.HipSpreadDeg = MathF.Max(def.HipSpreadDeg, baseDef.HipSpreadDeg * 0.5f);
-            Recoil.ClampKit(baseDef, def);
-            LauncherStats.ClampKit(baseDef, def); // launchers keep sane lock times, speeds and reserves (LauncherStats.cs)
+            Fill(baseDef, kit, def);
             _applied[(baseDef.Id, kit)] = def;
             return def;
         }
+    }
+
+    /// <summary>A kitted copy's stats: the weapon's, then the kit's attachments, then the kit clamps.</summary>
+    private static void Fill(WeaponDef baseDef, uint kit, WeaponDef def)
+    {
+        def.Kit = kit;
+        var fit = WeaponTweaks.FileDef(baseDef); // what fits goes by the weapon's file, never a live tweak (WeaponTweaks.cs)
+        foreach (var a in InKit(kit))
+            if (a.Fits(fit))
+                a.Apply(def);
+        def.Mobility = Math.Clamp(def.Mobility, 0.6f, 1.25f);
+        def.AdsTime = Math.Clamp(def.AdsTime, 0.08f, 0.5f);
+        def.Loudness = Math.Clamp(def.Loudness, WeaponDef.MinLoudness, WeaponDef.MaxLoudness);
+        // However much is stacked, a kitted gun keeps at least half its hip spread and 40% of its recoil.
+        def.HipSpreadDeg = MathF.Max(def.HipSpreadDeg, baseDef.HipSpreadDeg * 0.5f);
+        Recoil.ClampKit(baseDef, def);
+        LauncherStats.ClampKit(baseDef, def); // launchers keep sane lock times, speeds and reserves (LauncherStats.cs)
+    }
+
+    /// <summary>
+    /// The weapon tweak window changed <paramref name="baseDef"/> (WeaponTweaks.cs): its kitted copies are rebuilt in place,
+    /// so whoever holds one fires the new numbers. Runs only when a tweak changes.
+    /// </summary>
+    internal static void RefreshKits(WeaponDef baseDef)
+    {
+        lock (_applied)
+            foreach (var (key, def) in _applied)
+                if (key.Item1 == baseDef.Id)
+                {
+                    WeaponTweaks.CopyInto(baseDef, def);
+                    Fill(baseDef, key.Item2, def);
+                }
     }
 
     public static string Describe(uint kit)

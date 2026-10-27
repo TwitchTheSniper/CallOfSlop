@@ -39,6 +39,20 @@ public static class ImGuiSafe
     /// <summary><c>ImGui.SetTooltip</c> without printf formatting.</summary>
     public static void SetTooltip(ImString text) => ImGui.SetTooltip(Escape(text));
 
+    /// <summary>
+    /// A tooltip whose text wraps at <paramref name="width"/> pixels (already scaled) instead of widening the tooltip to its
+    /// longest line, without printf formatting. Newlines in the text still start a new line.
+    /// </summary>
+    public static void WrappedTooltip(ImString text, float width)
+    {
+        if (!ImGui.BeginTooltip())
+            return;
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + width);
+        ImGui.Text(text);
+        ImGui.PopTextWrapPos();
+        ImGui.EndTooltip();
+    }
+
     /// <summary><c>ImGui.SetItemTooltip</c> without printf formatting.</summary>
     public static void SetItemTooltip(ImString text) => ImGui.SetItemTooltip(Escape(text));
 

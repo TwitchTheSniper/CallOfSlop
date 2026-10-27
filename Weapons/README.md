@@ -259,7 +259,7 @@ To pin any of it, add an optional `"voice"` block (every key optional; the rest 
 | `click` | Mechanism click level (0 = none). | 0-1 |
 | `tail` | Body length and dryness (lower = drier, shorter). | 0.5-1.5 |
 
-Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30), an SMG fires 650-1150 rpm with 11-18 m of range, and a sniper does 70-140 damage. `--check-weapon` prints DPS and shots to kill so you can compare with the shipped guns.
+Some numbers to aim for: a typical rifle kills in 4-5 body shots (`damage` 22-30), an SMG fires 650-1150 rpm with 11-18 m of range, and a sniper does 70-140 damage. `--check-weapon` prints DPS and shots to kill so you can compare with the shipped guns. To try numbers live, the **weapon tweak window** (F7 in a dev build; README.md, "Weapon tweak window") slides every stat while you play, shows the time to kill at a few ranges and saves the result into the file, changing only those values.
 
 ## Launchers
 

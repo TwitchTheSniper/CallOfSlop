@@ -76,6 +76,7 @@ public enum Msg : byte
     PEnts, // server -> each client: Co-op: the enemies near that client (interest-managed, 13 bytes each, 20 Hz) (unreliable sequenced; GamePveNet.cs)
     PEvent, // server -> one client or all: Co-op: a banner, kill / objective / mission XP, enemies cleared (reliable)
     ZSlotWin, // server -> all: Zombies: a slot machine paid a part or a melee build (machine, player, result, index, tier, flags): shown over the machine and in the feed (reliable; ZombiesSlotWin.cs)
+    WeaponTweaks, // server -> all (on a change) and each joining client: the host's weapon tweak window set: class multipliers and per-weapon stat overrides (reliable; GameWeaponTweaks.cs, protocol 60)
     Logic, // server <-> clients: map logic (a LogicMsgKind first): entity flags, a button or lever used, a mover's clock, a sound, a notice, the joiner's full state (GameLogic.cs)
 }
 

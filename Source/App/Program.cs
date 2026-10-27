@@ -389,6 +389,11 @@ public static unsafe partial class Program
             SmokeAudioMixer(now); // Program.AudioMixer.cs: the Audio mixer window over a match, with a test shot on its meters
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokeTweakStep < 2)
+        {
+            SmokeWeaponTweaks(now); // Program.WeaponTweaks.cs: the weapon tweak window over the match (nothing changed or saved)
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
             SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
@@ -1262,6 +1267,7 @@ public static unsafe partial class Program
                 }
             }
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
+            Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
             Ui.EndFrame();
             if (Ui.Thumbs.Count > 0)
                 DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
@@ -1363,7 +1369,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom || Ui.AudioMixerOpen; // (a Zombies workbench too; the lobby room; the Audio mixer window)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen; // (a Zombies workbench too; the lobby room; the Audio mixer and weapon tweak windows)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1415,6 +1421,8 @@ public static unsafe partial class Program
         }
 
         if (AudioMixerKey(key)) // F8 (rebindable) or Esc: the Audio mixer window (Program.AudioMixer.cs)
+            return;
+        if (WeaponTweaksKey(key)) // F7 (rebindable) or Esc: the weapon tweak window (Program.WeaponTweaks.cs)
             return;
 
         if (_session == null || key != GlfwKey.Escape)
