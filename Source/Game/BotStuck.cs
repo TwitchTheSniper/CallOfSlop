@@ -170,7 +170,10 @@ public sealed partial class Game
         var following = now - b.FollowTime < 0.05 && b.FollowNode >= 0;
         var node = following ? b.FollowNode : -1;
         var nodeDist = following ? Flat(b.FollowAim - pos) : 0f;
-        var moved = Vector3.DistanceSquared(pos, b.StuckAnchor);
+        // Across the ground only: a hop in place (BotUnstick jumps at a wall every couple of seconds) rises 1.5 m and lands
+        // again, which isn't getting anywhere. Counting it reset the clock on every hop, so a boxed-in bot that happened to
+        // hop more often than once a second never reached a recovery stage (the Windows "Bot stuck watch" failure).
+        var moved = FlatVec(pos - b.StuckAnchor).LengthSquared();
         var progressed = b.StuckStage > 0
             ? moved >= StuckProgressRecovering * StuckProgressRecovering
             : node >= 0 && node == b.StuckAnchorNode
@@ -448,7 +451,7 @@ public sealed partial class Game
             return;
         }
         var radius = b.StuckStage == 0 ? StuckProgress : StuckProgressRecovering;
-        if (Vector3.DistanceSquared(pos, b.StuckAnchor) >= radius * radius && now >= b.BackOffUntil)
+        if (FlatVec(pos - b.StuckAnchor).LengthSquared() >= radius * radius && now >= b.BackOffUntil) // (across the ground: a hop isn't progress)
         {
             StuckReset(b, pos);
             return;
