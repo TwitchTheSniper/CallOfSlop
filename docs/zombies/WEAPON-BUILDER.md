@@ -489,8 +489,13 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
 
 - **Step 1: the grip.** "New weapon" (key N, and any empty slot) opens the grip picker: a card per grip with its 3D
   picture, receiver slots ("1 RECEIVER SLOT" for the first tiers), fire style, hands, carry weight and how many you own
-  (in a run). A grip you don't own can still be picked to plan a build: it shows as missing. "Change grip" (G) moves the
-  current build onto another grip (receivers into the same-numbered slots).
+  (in a run). A **Show all grips** checkbox (`wb_show_all_grips` in `settings.txt`, off by default; "Show all hilts" on
+  the melee slot) decides what's listed: off, only the grips you own (a "(N hidden)" hint); on, every grip in the game,
+  the ones you don't own dimmed with their rarity, slots and stats still readable (2026-10-26 board item). In the
+  sandbox an unowned grip can still be picked to plan a build (it shows as missing); at a Zombies run's bench it is
+  locked ("LOCKED - none owned") and a click only says why (`BenchGrips`, self-test "Workbench grip list"). The sandbox's
+  every-part stock owns every grip, so it lists them all either way. "Change grip" (G) moves the current build onto
+  another grip (receivers into the same-numbered slots).
 - **Step 2: assembly.** Left: your parts, grouped by category with counts (a run: loose parts plus the slot's own), a
   search box and category chips, 3D icons (rendered once into textures and cached, `PartThumbs`), a tooltip with what
   the part does. A **Show incompatible parts** checkbox (saved in `settings.txt` as `wb_show_incompatible`, off by
@@ -507,7 +512,16 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   (a run's stock) stay hidden either way. Visibility is worked out once per build/stock/toggle change, each part's fit
   checked once (self-test section "Workbench hidden categories"). Middle: the gun large
   (drag to orbit, wheel to zoom, double-click or R to reset) with socket markers: yellow rings on empty sockets the
-  build needs, red on missing parts, orange on the selection. Right: the build as a **linear list** (Grip > Receiver(s) >
+  build needs, red on missing parts, orange on the selection. **Pressing Build on an incomplete weapon** (a click on the
+  greyed-out Save / Save melee / Test fire / Apply button; 2026-10-26 board item) circles every empty socket the build
+  needs in red (`BenchModel.RefuseBuild`: the `Needed` spots, i.e. what `BuildRules.NeedsFilling` requires in each
+  receiver subtree - barrel, feed, ammo, action, a splitter's outputs - and one receiver slot on an empty grip; optional
+  sockets are never marked). The rings sit at the socket positions the yellow ones use (an empty action socket at its
+  stock action's spot), are drawn over the 3D view so they show from any angle and through the model, pulse hard for
+  1.6 s and then beat gently; hovering one says what goes there, clicking it shows that category in the parts list. Each
+  ring goes once its socket is filled (for good: undo brings the socket back yellow), and all of them when another
+  build is loaded. The message line names the sockets; the button's tooltip keeps the full reason (self-test
+  "Workbench refused build"). Right: the build as a **linear list** (Grip > Receiver(s) >
   Feed > Ammo > Barrel(s) > Muzzle > damage multiplier / upgrades > Stock > Optic > Foregrip > Utility, a splitter's
   barrels indented under it, empty needed sockets as yellow "+ Feed: needs feed" rows) and **stat bars** (damage, fire
   rate, recoil, magazine, DPS, reload, mobility, weight against the grip's carry) that show the change in green and red

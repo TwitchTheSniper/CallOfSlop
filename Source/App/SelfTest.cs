@@ -287,6 +287,7 @@ public static partial class SelfTest
         Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
         Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
         Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
+        Section("Return to lobby", CheckReturnToLobby); // SelfTestReturnToLobby.cs: the host's BACK TO LOBBY over loopback (clients stay, teams/loadouts/bots kept, a client leaving, a new match, Zombies cleared), the pause menu's exits
         Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
         Section("Arms", CheckArms);
         Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
@@ -320,6 +321,8 @@ public static partial class SelfTest
         Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
         Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
         Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
+        Section("Workbench grip list", CheckWorkbenchGrips); // SelfTestWorkbenchGrips.cs: "Show all grips" off = owned grips, on = every grip (unowned flagged, locked in Zombies), setting, no allocations
+        Section("Workbench refused build", CheckWorkbenchRefused); // SelfTestWorkbenchRefused.cs: Build on an incomplete weapon marks exactly the required empty sockets (red rings), they clear as filled, no allocations
         Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
         Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
