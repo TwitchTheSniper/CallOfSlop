@@ -357,7 +357,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose pays
   the **coin payout** (1.5 x the price) instead (`dupePointsAt`; 0 keeps every copy). A legendary or wonder part is announced to everyone.
 - **Rarity rising: three levers that stack.**
-  1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 25, 35): weights for nothing,
+  1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 20, 25, 35): weights for nothing,
      points and each part tier (no scrap since 2026-10-27: its weight went to points); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
      common and uncommon, 2 percent rare or better; round 36: about half rare or better).
   2. **Machine heat** (the pity timer): every pull that doesn't pay a **rare-or-better** part (`pityTier`) adds 1 heat;
@@ -368,6 +368,10 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   3. **Jackpot rounds** (every 5th round, `jackpotEvery`): the **wonder gem** goes on the reels and legendary (+6) and
      wonder (+4) weights are added; the topper flashes gold and pink and the prompt says "JACKPOT ROUND". Outside
      jackpot rounds wonder parts never come up from the slots.
+  4. **Each row's top tier** (the late-game pass, 2026-10-27: `"top"` in a `slotTiers` row, default wonder): the
+     rarest tier that row pays. Heat, bets and the jackpot weights that would go past it pay the top tier instead, so the
+     slots pay epic at most before round 20 and legendary at most before round 25 (wonder from the jackpot round 25),
+     however hot the machine or big the bet (WEAPON-BUILDER.md, "The power curve").
 - **Bets (developer answer to question 13, 2026-10-26).** At an idle machine the **second key** (G, the Grenade key:
   there are no grenades in Zombies) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
   (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
@@ -560,10 +564,12 @@ only the kill), and works with Insta-Kill and Double Points.
 | `bonk` (Frying Pan) | A 1 s stun with a cartoon bonk |
 | `fish` (Frozen Fish) | A wet slap that **knocks the zombie back** (4.5 m/s) |
 | `rocket` (Rocket Booster) | Knocks the zombie flying (6 m/s) |
+| `launch` (Wrecking Ball, Swordfish, Grandfather Clock, Jet Engine, Bowling Ball; 2026-10-27) | **Throws the zombie** away at 11 m/s and up at 8 m/s, stunned 1.2 s (`launchSpeed`, `launchUp`, `launchStun`); on a player only a rocket's knockback |
 | `party` (Helium Balloons) | A zombie it kills **floats away** on its balloons |
 | `refreshing` (Cup Holder) | Every kill gives the shooter 5 health back |
 | `bayonet` (Bayonet) | Hits within 2.2 m do 1.5x damage |
 | `suppressed`, `cart` | No effect on zombies (they already do their own thing) |
+| `marks` (All-Seeing Eye) | No effect on a zombie: while the gun is in hand, the HUD marks every zombie through walls (client side) |
 
 **On players too (developer answer, 2026-10-26).** Wherever a gun or melee build carrying these flags can be used
 against players (the Workbench Range's targets today; any mode that lets builds meet players), the effects hurt players

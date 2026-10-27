@@ -80,22 +80,22 @@ weapon can mix a pistol receiver, a shotgun receiver and a minigun receiver if t
 
 | Category | What it does | Count |
 | --- | --- | --- |
-| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand: vertical, angled, skeleton, thumb stub, recoil pad, pogo, chaingun handle) | 27 |
-| Receiver | The **calibre**: bore class, base damage, class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 23 |
-| Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 28 |
+| Grip | Root grips (capacity, fire style, how it is held, carry weight) and foregrips (off hand: vertical, angled, skeleton, thumb stub, recoil pad, pogo, chaingun handle, third arm) | 30 |
+| Receiver | The **calibre**: bore class, damage (its bore's, scaled: see "Receivers: a damage spread"), class (recoil, arm poses), sound, barrel size and limits. No fire type: see Action | 25 |
+| Action | The **fire type and rate**, one per receiver: single shot, semi, burst, pump, lever, bolt, full auto, rotary, chain, muzzle-loaded (see "Actions: the fire type is a part") | 31 |
 | Barrel | Range, damage, spread; bundles have several muzzles (Barrel of Barrels: 7) | 10 |
 | Splitter | One shot in, N barrels out at 1/N each (barrel sockets take barrels or another splitter) | 6 |
-| Feed | Magazine size and reload (box, stick, extended, drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 5 shared feeds; 3+ per bore | 25 |
-| Ammo | The round type on the receiver's calibre: relative damage, range, pellets, fall-off and flags; fits every receiver | 14 |
-| Damage Multiplier | x1.1 to x2.5 damage, one per receiver, with a drawback | 6 |
-| Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 8 |
-| Stock | Recoil, aim time, mobility (the Shoulder Harness relieves weight) | 5 |
-| Optic | The game's optics (red dot, holo, ACOG, 4x, 8x, scout, night tube, periscope, rangefinder, bead, pocket prism) with their reticles and lens | 11 |
+| Feed | Magazine size and reload (box, stick, extended, drum, conga drum, belt, pouch, chute, hopper, tube, shell box and drum, cell, clip, pack, breech, cylinder, toaster) and 7 shared feeds; 3+ per bore | 28 |
+| Ammo | The round type on the receiver's calibre: relative damage, range, pellets, fall-off and flags; fits every receiver | 18 |
+| Damage Multiplier | x1.1 to x5 damage, one per receiver, with a drawback | 8 |
+| Receiver Upgrade | Fire rate or damage up, two per receiver (rear, side) | 10 |
+| Stock | Recoil, aim time, mobility, carry (the Shoulder Harness, Exo Spine, Gyro and Jetpack stocks relieve weight) | 7 |
+| Optic | The game's optics (red dot, holo, ACOG, 4x, 6x, 8x, scout, night tube, periscope, rangefinder, bead, pocket prism, the All-Seeing Eye) with their reticles and lens | 13 |
 | Muzzle | Flash hider, compensator, brake, suppressor, Loudener (2.5x the report: bots and the gunshot mix hear it that much further), shrouded can, duckbill, recoil hook, thread protector, vent collar, blunderbuss flare | 11 |
-| Utility | Laser, bayonet, cup holder, and weight relief (sling, anti-grav coil, helium balloons) | 6 |
-| Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 6 |
-| Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish | 8 |
-| Melee Mod | Nails, grip tape, counterweight, barbed wire, shock coil, rocket booster, whoopee cushion | 7 |
+| Utility | Laser, bayonet, cup holder, and weight relief (sling, gravity sock, exo sling, anti-grav coil, helium balloons) | 8 |
+| Hilt | Melee roots: base damage, swing time, reach, cleave, hands | 8 |
+| Head | Melee heads: machete, bat, sledgehammer, fire axe, katana, chainsaw blade, frying pan, frozen fish, wrecking ball, swordfish, grandfather clock | 11 |
+| Melee Mod | Nails, grip tape, counterweight, barbed wire, shock coil, tesla wrap, rocket booster, jet engine, whoopee cushion | 9 |
 
 **Bores.** Each receiver fires one calibre class (`pistol`, `rifle`, `heavy`, `shell`, `launcher`, `energy`), and the
 registry gives each class its **calibre** (base damage, range, pellets, fall-off, headshot multiplier). Feeds list the
@@ -180,33 +180,36 @@ be caliber selection, basically. So single, semi, burst, muzzle load is determin
 | Action | Tier | Fire type | Rate | Effects | Stock action of |
 | --- | --- | --- | --- | --- | --- |
 | Break Action | common | single shot (1 round) | 120 | damage x1.3, reload x0.45 | |
-| Semi-Auto Trigger | common | semi | 400 | | Plinker, Reaper |
+| Semi-Auto Trigger | common | semi | 400 | | Plinker, Peashooter, Reaper |
 | Revolver Hammer | common | semi | 150 | | Kingpin |
-| Lob Trigger | common | semi | 60 | | Bucket Launcher |
+| Lob Trigger | common | semi | 60 | | Bucket Launcher, Hand Mortar, Parade Cannon |
 | Full-Auto Sear | common | auto | 600 | | Workhorse, Bastille |
 | Carbine Sear | common | auto | 720 | | Courier, Sparkplug |
 | Blowback SMG Sear | common | auto | 900 | | Stampede |
-| Buzzsaw Sear | common | auto | 1100 | | Buzzbox |
+| Buzzsaw Sear | uncommon (was common) | auto | 1100 | | (the removed Buzzbox) |
 | Pump Slide | common | pump | 70 | | Farmhand Pump |
-| Turn Bolt | common | bolt | 45 | | Longreach, Railspike |
+| Turn Bolt | common | bolt | 45 | | Longreach, Railspike, Sunbeam Lance |
 | Riot Trigger | uncommon | semi | 200 | | Street Sweeper |
 | Marksman Trigger | uncommon | semi | 300 | | Longbow |
 | Heavy Auto Sear | uncommon | auto | 260 | | Gravedigger |
-| Three-Round Burst Group | uncommon | 3-round burst | 800, 0.25 s | | Triad |
-| Ratchet Burst Group | uncommon | 3-round burst | 1000, 0.18 s | | Ratchet Burst SMG |
+| Three-Round Burst Group | uncommon | 3-round burst | 800, 0.25 s | | (the removed Triad) |
+| Ratchet Burst Group | uncommon | 3-round burst | 1000, 0.18 s | | (the removed Ratchet Burst SMG) |
 | Lever Action | uncommon | lever | 110 | aim -0.02 s | |
 | Muzzleloader Ramrod | uncommon | muzzle-loaded (1 round) | 60 | damage x2.5, reload x1.6 + 1.5 s, recoil x1.4 | |
-| Autocannon Drive | rare | auto | 200 | | Hammerfall |
+| Autocannon Drive | rare | auto | 200 | | Hammerfall, Bunker Buster |
 | Hand-Crank Rotary | rare | rotary | 150 per barrel, 0.3 s spool from 50% | | Pepperbox |
-| Hair Trigger | rare | semi | 650 | hip spread x1.15 | |
+| Hair Trigger | rare | semi | 800 (was 650) | hip spread x1.15 | |
 | Straight-Pull Bolt | rare | bolt | 60 | | |
-| Binary Trigger | rare | 2-round burst | 900, 0.12 s | recoil x1.05 | |
+| Binary Trigger | rare | 2-round burst | 1800, 0.05 s (was 900, 0.12 s) | damage x1.05, recoil x1.05 | |
 | Electric Rotary Drive | epic | rotary | 400 per barrel, 1.2 s spool from 25% | | Hellwheel |
 | Chain Drive Motor | epic | chain | 450, 0.4 s spool from 50% | | Thumper |
-| Hyperburst Group | epic | 5-round burst | 1400, 0.35 s | recoil x1.1 | |
-| Overdrive Sear | legendary | auto | 1400 | recoil x1.2, hip spread x1.15 | |
+| Hyperburst Group | epic | 5-round burst | 2400, 0.1 s (was 1400, 0.35 s) | damage x1.1, recoil x1.1 | |
+| Overdrive Sear | legendary | auto | 2400 (was 1400) | damage x1.15, recoil x1.2, hip spread x1.15 | |
+| **Thunderclap Hammer** | legendary | semi | 300 | damage x1.9, recoil x1.6, hip spread x1.1 | |
+| **Avalanche Burst Group** | legendary | 10-round burst | 2400, 0.2 s | recoil x1.15 | |
 | Bicycle Chain Drive | wonder | chain | 360, 0.6 s spool from 40% | | Sawmill |
-| Panic Button | wonder | auto | 2400 | recoil x1.3, hip spread x1.6 | |
+| Panic Button | wonder | auto | 3000 (was 2400) | recoil x1.3, hip spread x1.6 | |
+| **Perpetual Sear** | wonder | auto | 2200 | damage x1.15, reload x0.25, recoil x1.25 | |
 
 **Balance.** Old builds keep their fire mode, magazine, reload and weight exactly; their rate is the receiver's old
 one except where one action now serves two receivers: Bastille 650 -> 600 rpm, Plinker 420 -> 400, Reaper 380 -> 400,
@@ -328,7 +331,7 @@ Every refusal comes with a plain sentence saying why. These are the actual messa
 | A build starts from a grip (or a hilt) | "Rifle Grip is a grip you build on: start a new build with it instead." |
 | Grip capacity | "The Pistol Grip holds 3 receivers; it has no receiver_4 slot." |
 | Feeds must match the receiver's bore (barrels, splitters, muzzles and ammo fit any) | "Box Mag is made for rifle rounds; the Plinker Receiver fires pistol rounds." |
-| Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Triad Burst Receiver's Three-Round Burst Group is 3-round burst." |
+| Fire types: belts and hoppers need an action that pulls them | "Belt Box needs full auto, chain or rotary action; the Workhorse Receiver's Three-Round Burst Group is 3-round burst." |
 | Splitters stack at most 2 deep | "Splitters only stack 2 deep: the shot gets too thin." |
 | Barrels per receiver (default 12, the Hellwheel takes 3-6) | "Too many barrels on the Workhorse Receiver: 13; it handles at most 12." |
 | Limits per weapon: 96 parts, 32 barrels, 240 projectiles per pull | "Too many projectiles per trigger pull: 256; the most is 240." |
@@ -423,17 +426,21 @@ Every receiver has three new sockets: `amp` (one **damage multiplier**) and `upg
 | Hot Load Kit | common | amp | damage x1.1, recoil x1.08 |
 | Overpressure Chamber | uncommon | amp | damage x1.2, fire rate x0.95 |
 | Tungsten Core Injector | rare | amp | damage x1.35, reload x1.05 |
-| Rail Accelerator | epic | amp | damage x1.5, reload x1.1 |
-| Singularity Chamber | legendary | amp | damage x1.8, aim time +0.05 s |
+| Rail Accelerator | epic | amp | damage x1.65 (was x1.5), reload x1.1 |
+| Singularity Chamber | legendary | amp | damage x2 (was x1.8), aim time +0.05 s |
+| **Tripler Chamber** | legendary | amp | damage x3, reload x1.2, recoil x1.3 |
 | Spite Amplifier | wonder | amp | damage x2.5, hip spread x1.6 |
+| **Five-Alarm Chamber** | wonder | amp | damage x5, fire rate x0.7, recoil x1.6 |
 | Lightweight Bolt | common | upgrade | fire rate x1.08 |
 | Match Trigger Group | common | upgrade | damage x1.05 |
 | Buffer Spring Kit | uncommon | upgrade | fire rate x1.15, recoil x1.05 |
 | Heavy Hammer | uncommon | upgrade | damage x1.12, fire rate x0.95 |
 | Gas Overclock | rare | upgrade | fire rate x1.25 |
 | Coil Hammer | rare | upgrade | damage x1.2 |
-| Twin Sear | epic | upgrade | fire rate x1.4, hip spread x1.1 |
-| Overclock Core | legendary | upgrade | fire rate x1.6, damage x1.1 |
+| Twin Sear | epic | upgrade | fire rate x1.5 (was x1.4), damage x1.1, hip spread x1.1 |
+| Overclock Core | legendary | upgrade | fire rate x1.7, damage x1.2 (were x1.6, x1.1) |
+| **Doom Hammer** | legendary | upgrade | damage x1.75, recoil x1.15 |
+| **Overkill Coprocessor** | wonder | upgrade | fire rate x1.8, damage x1.8, hip spread x1.1 |
 
 ### Shared feeds (hoppers and manifolds)
 
@@ -456,6 +463,8 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
 | Ammo Can Manifold | epic | 6 | rifle, heavy | 300 | 6.0 s |
 | Bottomless Bucket | legendary | 9 | pistol, rifle, heavy | 900 | 8.0 s |
 | Power Bus | legendary | 8 | energy | 400 | 5.0 s |
+| **Shell Silo** | legendary | 6 | shell | 160 | 5.0 s |
+| **Clown Car Hopper** | wonder | 16 | pistol, rifle, heavy, shell, energy | 999 | 3.0 s |
 
 ### Firing (GameBuilder.cs)
 
@@ -582,16 +591,181 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
 | Tier | Colour | Where it comes from (proposed) |
 | --- | --- | --- |
 | Common | white | wall weapons, early drops |
-| Uncommon | green | drops from round 3 |
-| Rare | blue | drops from round 8, salvage |
-| Epic | purple | drops from round 15, mystery box |
-| Legendary | orange | mystery box, bosses, late drops |
-| Wonder | red | mystery box and special drops only: fun first, balance second |
+| Uncommon | green | drops from round 1 (15%) |
+| Rare | blue | drops from round 4, salvage, slot machines from round 1 (2%) |
+| Epic | purple | drops from round 10, slot machines from round 5, the box from round 1 (5%) |
+| Legendary | orange | drops from round 18, slot machines from round 20, the box from round 15 |
+| Wonder | red | drops from round 25, slot machines in jackpot rounds from round 25, the box from round 22: fun first, balance second |
+
+The rounds are the late-game pass's (2026-10-27); see "The power curve" below.
 
 **No scrap (developer request, 2026-10-27).** Parts used to have a scrap value (break one down at the workbench, craft
 one for 3x its value). Zombies has no scrap now: the `Scrap` hooks, part values and the bench's break-down and craft
 actions are gone; parts come from drops, salvage piles, the slot machines and taking builds apart (ZOMBIES-MODE.md,
 "Parts and the workbench"). A part file's old `"scrap"` key is still accepted and ignored.
+
+## The power curve (late-game pass, 2026-10-27)
+
+The developer: "add more weapon parts and rescale the parts. I want much more powerful items to be available later
+game. It'll take longer to get to them, but currently I don't think there's enough late game, ultra powerful, funny
+options." / "just add some more very strong options for later game progression." / "add more damage variants to the
+receivers. There is only a few different damage amounts, so all the different receivers end up feeling very similar.
+also remove receivers that were attributed to fire rates, such as a burst receiver." "Rescale" means progression, damage
+and performance, not the models' size.
+
+**How a part is measured** (`Source/Zombies/PowerCurve.cs`, only the self-test and these docs use it). Gun parts are
+fitted to a reference gun (a Workhorse on the Rifle Grip with a standard barrel, box mag, FMJ and the Full-Auto Sear) and
+scored by how much they change its **gun power**: sustained body damage per second over a magazine and its reload,
+headshots a quarter of the time, accuracy (hip and aimed spread, recoil), reach (range x zoom) and handling (mobility,
+aim time), times what its flags are worth in Zombies (explosive x1.3, launch x1.4, marks x1.3, incendiary x1.2...).
+Feeds are scored on their bore's commonest receiver against a common feed (a shared feed x the root of the receivers it
+feeds); receivers by their damage per trigger pull on their stock action; root grips by receiver slots x the root of the
+carry weight; hilts, heads and melee mods by melee power (damage per second, cleave, stun, reach, flags).
+
+**The rules** (self-test "Power curve", `SelfTestPowerCurve.cs`): in every row the best part of a tier is never weaker
+than the best part of the tier below; in the damage rows (receiver, action, ammo, multiplier, upgrade, hilt, head, melee
+mod) the best part of a tier is at least this many times the best common part:
+
+| Tier | Common | Uncommon | Rare | Epic | Legendary | Wonder |
+| --- | --- | --- | --- | --- | --- | --- |
+| Floor (best of the tier / best common) | x1 | x1 | x1.1 | x1.3 | x1.6 | x2.2 |
+| Arrives: zombie drops | round 1 | round 1 | round 4 | round 10 | round 18 | round 25 |
+| Arrives: slot machines (at full heat and bet too) | round 1 | round 1 | round 1 | round 5 | round 20 | round 25 (jackpot rounds) |
+| Arrives: mystery box (complete builds) | - | round 1 | round 1 | round 1 | round 15 | round 22 |
+
+The curve as it stands (the best part of each tier and its score; CI's log lists every part):
+
+| Row (score) | Common | Uncommon | Rare | Epic | Legendary | Wonder |
+| --- | --- | --- | --- | --- | --- | --- |
+| Receiver (damage a pull) | Farmhand Pump 112 | Longreach Bolt 119 | Bucket Launcher 126 | Railspike Coil 150 | Bunker Buster 255 | Parade Cannon 491 (360, explosive) |
+| Action (power x) | Blowback SMG Sear 1.24 | Buzzsaw Sear 1.35 | Binary Trigger 1.37 | Hyperburst Group 1.63 | Overdrive Sear 2.0 | Perpetual Sear 4.4 |
+| Ammo | Hollow Point 1.14 | Frag 1.27 | Plasma 1.34 | Explosive Tip 1.72 | Depleted Core 2.08 | Bowling Ball 3.27 |
+| Damage Multiplier | Hot Load Kit 1.11 | Overpressure Chamber 1.15 | Tungsten Core Injector 1.31 | Rail Accelerator 1.57 | Tripler Chamber 2.71 | Five-Alarm Chamber 3.91 |
+| Receiver Upgrade | Lightweight Bolt 1.04 | Heavy Hammer 1.08 | Coil Hammer 1.19 | Twin Sear 1.36 | Doom Hammer 1.75 | Overkill Coprocessor 2.4 |
+| Feed | Belt Pouch 1.55 | Revolver Cylinder 1.75 | Manifold Hopper 2.29 | Ammo Can Manifold 3.87 | Bottomless Bucket 4.93 | Clown Car Hopper 7.15 |
+| Grip (slots x root of carry) | Service Rifle Grip 2.8 | Sport Rifle Grip 3.2 | Mule Frame 24 | Exo Harness 66 | Gantry Rig 111 | Parade Float 124 |
+| Foregrip | Skeleton 1.0 | Angled 1.01 | Pogo 1.01 | - | Third Arm 1.04 | - |
+| Stock | Wire Stock 1.0 | - | Shoulder Harness 1.08 | Exo Spine Stock 1.15 | Gyro Stock 1.19 | Jetpack Stock 1.33 |
+| Optic | Red Dot 1.05 | Pocket Prism 1.08 | 2.5x ACOG 1.17 | Lighthouse 6x 1.42 | 8x Sniper Scope 1.47 | All-Seeing Eye 1.62 |
+| Utility | Bayonet 1.04 | Laser Sight 1.05 | Gravity Sock 1.08 | Exo Sling 1.17 | Anti-Grav Coil 1.24 | Helium Balloons 1.36 |
+| Hilt (melee power) | Bat Grip 116 | Long Haft 130 | Sword Hilt 184 | Motor Hilt 229 | Lamp Post 252 | Turbine Hilt 522 |
+| Head | Machete Blade 114 | Sledgehammer Head 127 | Katana Blade 163 | Chainsaw Blade 264 | Wrecking Ball 469 | Swordfish 1014 |
+| Melee Mod (power x) | Nail Ring 1.36 | Barbed Wire Wrap 1.43 | Shock Coil 1.55 | Tesla Wrap 2.11 | Rocket Booster 2.4 | Jet Engine 4.48 |
+
+Commons are as before; the top tiers stack (a receiver x multiplier x two upgrades x ammo), so a late Bunker Buster with a
+Tripler Chamber, two Doom Hammers and Depleted Core would do 255 x 3 x 1.75 x 1.75 x 1.7 = about 4000 a round, and
+reaches the cap every weapon has (1000 damage a projectile). Zombie health is about 2100 at round 30 and 3800 at round 40.
+
+**Rescaled existing parts.** Receivers: below. Actions: Buzzsaw Sear common -> uncommon (it was the Buzzbox's stock
+action), Hair Trigger 650 -> 800 rpm, Binary Trigger 900 rpm / 0.12 s -> 1800 / 0.05 s and damage x1.05, Hyperburst
+Group 1400 / 0.35 s -> 2400 / 0.1 s and damage x1.1, Overdrive Sear 1400 -> 2400 rpm and damage x1.15, Panic Button
+2400 -> 3000 rpm. Ammo: Plasma damage x1.15. Damage multipliers: Rail Accelerator x1.5 -> x1.65, Singularity Chamber
+x1.8 -> x2. Upgrades: Twin Sear rate x1.4 -> x1.5 and damage x1.1, Overclock Core rate x1.6 -> x1.7 and damage x1.1 ->
+x1.2. Gyro Stock: +8 kg carry, mobility +0.04, recoil x0.55 -> x0.5. Laser Sight: hip spread x0.8 -> x0.5, aimed spread
+x0.85. Barrels, splitters and muzzle devices are the parts-mechanics branch's (not rescaled here).
+
+### Receivers: a damage spread (2026-10-27)
+
+Receivers are the calibre (the action is the fire type), and until now their damage was only their bore's: six numbers
+for 23 receivers. Each receiver now scales its bore's damage (a `damage` `mul` in its stats, applied before the ammo), and
+its handling differs too:
+
+| Receiver | Tier | Bore | Damage (x the bore) | Handling |
+| --- | --- | --- | --- | --- |
+| **Peashooter** (new) | common | pistol | 13 (x0.65) | almost no kick (recoil x0.6), mobility +0.07, quickest to aim |
+| Stampede | common | pistol | 18 (x0.9) | soft-shooting (recoil x0.85) |
+| Plinker | common | pistol | 20 | |
+| Courier Carbine | common | rifle | 23 (x0.9) | light, quick |
+| Workhorse | common | rifle | 26 | |
+| Farmhand Pump | common | shell | 14 x 8 | |
+| Reaper Battle Rifle | uncommon | rifle | 35 (x1.35) | recoil x1.25, aim +0.02 s |
+| Kingpin Revolver | uncommon | heavy | 64 (x0.75) | a hand-cannon, recoil x1.6 |
+| Longreach Bolt | uncommon | heavy | 119 (x1.4) | |
+| Bastille LMG | rare | rifle | 30 (x1.15) | |
+| Longbow DMR | rare | rifle | 43 (x1.65) | recoil x1.15 |
+| Gravedigger Auto | rare | shell | 11 x 8 (x0.8) | recoil x0.8 |
+| Street Sweeper | rare | shell | 15 x 8 (x1.1) | |
+| Bucket Launcher | rare | launcher | 126 (x1.05) | |
+| Hellwheel Rotary | epic | rifle | 31 (x1.2) | |
+| Thumper Chain Gun | epic | heavy | 76 (x0.9) | |
+| Railspike Coil | epic | energy | 150 (x5) | recoil x1.6 |
+| **Hand Mortar** (new) | epic | launcher | 144 (x1.2) | recoil x1.3, full damage at any range |
+| Sparkplug Energy | legendary | energy | 39 (x1.3) | |
+| Hammerfall Autocannon | legendary | heavy | 187 (x2.2) | |
+| **Bunker Buster** (new) | legendary | heavy | 255 (x3) | autocannon drive, recoil x1.9, fat barrels |
+| Pepperbox | wonder | pistol | 32 (x1.6) | |
+| Sawmill | wonder | shell | 18 x 8 (x1.3) | |
+| **Sunbeam Lance** (new) | wonder | energy | 240 (x8) | plasma, penetrating, perfect aimed accuracy |
+| **Parade Cannon** (new) | wonder | launcher | 360 (x3) | small cannon shells: explosive, party; barrels x3.3 |
+
+**Removed: the receivers that were only a fire rate.** The Ratchet Burst SMG Receiver (a burst pistol action), the Triad
+Burst Receiver (a burst rifle action) and the Buzzbox Machine Pistol Receiver (a pistol action named for its 1100 rpm)
+went: since actions are parts, their fire mode and rate are the Ratchet Burst Group, the Three-Round Burst Group and the
+Buzzsaw Sear on any receiver. `WeaponBuild.RemovedReceivers` maps each to a replacement of its bore and the action it
+fired with: Ratchet Burst -> Stampede + Ratchet Burst Group, Triad Burst -> Workhorse + Three-Round Burst Group, Buzzbox
+-> Plinker + Buzzsaw Sear. A build text naming one loads on the replacement; one written before actions were parts gets
+the old action (so it fires as it did); `workbench.txt` is saved back. The standard builds that used them (Burst
+Marksman, Four-by-Three, Ratchet PDW, Buzzbox Machine Pistol, Buzzbox Akimbo) name the replacements, so they are the
+same guns (damage and rates as before, apart from the Stampede's x0.9). The Thumper and Sawmill (chain guns) and the
+Hellwheel and Pepperbox (rotary clusters) stay: their models and barrel sockets are what they are, not a rate.
+
+### The late-game parts (35, 2026-10-27)
+
+| Part | Category | Tier | What it does |
+| --- | --- | --- | --- |
+| Peashooter Receiver | Receiver | common | the light end of the receiver spread: 13 damage, nearly no recoil, fast |
+| Hand Mortar Receiver | Receiver | epic | a held trench mortar: 144 a bomb, no fall-off |
+| Bunker Buster Receiver | Receiver | legendary | a .50 bored out for tank shells: 255 a round on the autocannon drive |
+| Parade Cannon Receiver | Receiver | wonder | fires small cannon shells: 360, explosive and party, huge barrels |
+| Sunbeam Lance Receiver | Receiver | wonder | a slice of the sun: 240, plasma, penetrating, a bolt action |
+| Thunderclap Hammer | Action | legendary | semi, 300 rpm, damage x1.9 |
+| Avalanche Burst Group | Action | legendary | ten-round bursts at 2400 rpm |
+| Perpetual Sear | Action | wonder | auto 2200 rpm, damage x1.15, reload x0.25 ("reloads itself out of spite") |
+| Depleted Core | Ammo | legendary | damage x1.7, range x1.3, penetrating |
+| Thermobaric | Ammo | legendary | damage x1.45, explosive and incendiary |
+| Bowling Ball | Ammo | wonder | one ball a shot, damage x2.6, short range, bouncy, launches zombies |
+| Pocket Sun | Ammo | wonder | damage x2.2, plasma and incendiary |
+| Conga Drum | Feed | legendary | two drums back to back: 150 rounds (pistol, rifle), 3 s reload |
+| Shell Silo | Feed | legendary | shared: six shotguns, 160 shells |
+| Clown Car Hopper | Feed | wonder | shared: 999 rounds of any round but grenades, for sixteen receivers |
+| Titan Harness | Grip | legendary | the Exo Harness with legs: 12 receivers, 45 kg carry |
+| Parade Float | Grip | wonder | a carnival gantry: 16 receivers, 60 kg carry, pennants |
+| Third Arm | Grip (foregrip) | legendary | a robot arm: recoil x0.55, hip spread x0.7 |
+| Lighthouse 6x | Optic | epic | 6x variable scope |
+| All-Seeing Eye | Optic | wonder | 3x; marks every zombie on the map through walls while held ("marks" flag) |
+| Exo Spine Stock | Stock | epic | +8 kg carry, recoil x0.75 |
+| Jetpack Stock | Stock | wonder | +12 kg carry, mobility +0.15, recoil x0.6, quicker draw |
+| Doom Hammer | Upgrade | legendary | damage x1.75 |
+| Overkill Coprocessor | Upgrade | wonder | fire rate x1.8 and damage x1.8 |
+| Tripler Chamber | Damage Multiplier | legendary | damage x3, reload x1.2 |
+| Five-Alarm Chamber | Damage Multiplier | wonder | damage x5, fire rate x0.7, recoil x1.6 |
+| Gravity Sock | Utility | rare | +4 kg carry |
+| Exo Sling | Utility | epic | +8 kg carry, hip spread x0.9 |
+| Lamp Post | Hilt | legendary | 70 damage, reach 3 m, cleave 3 |
+| Turbine Hilt | Hilt | wonder | 45 damage at 0.3 s, cleave 4 |
+| Wrecking Ball | Head | legendary | +110 damage, stun 1.2 s, launches zombies |
+| Swordfish | Head | wonder | +85, faster, +0.7 m reach, cleave +3, fish and launch |
+| Grandfather Clock | Head | wonder | +160, stun 2.2 s, cleave +3, bonk and launch |
+| Jet Engine | Melee Mod | wonder | +30, swing x0.6, rocket and launch |
+| Tesla Wrap | Melee Mod | epic | +12, stun 0.9 s, shock |
+
+Every one is a box model in one piece (self-test "Late-game parts" builds each on a complete gun or melee weapon and
+checks it connects; most receivers and the two big grips `extends` an existing part, so their sockets and action points
+are the tested ones). Their slot machines are the category machines that already exist.
+
+**New effects.** `launch` (Zombies, `ZombiesAmmoEffects.cs`): the zombie hit is thrown away at `launchSpeed` (11 m/s)
+and up at `launchUp` (8 m/s) and stunned `launchStun` (1.2 s) (ZombiesRules.json `ammoEffects`; it replaces a rocket or
+fish knockback on the same hit). `marks` (the All-Seeing Eye): while the gun is in hand the HUD draws a mark over every
+zombie, through walls (`Game.MarksZombies`, `TacticalHud.cs`; client side, no network). A **slot row's `"top"`**
+(DropTables.json `slotTiers`): the rarest tier the row pays; heat, bets and the jackpot bonus that would go past it pay
+that tier instead, so heat and a 5x bet can't pull a legendary before round 20.
+
+**Balance.** No PvP mode uses builds: they exist in Zombies and the Workbench Range only, where they meet players only
+through friendly fire (ZOMBIES-MODE.md); the Frenzy buffs are untouched. The mystery box bands per trigger pull and DPS
+were raised for the late tiers (epic 1500 / 3000, legendary 3000 / 8000, wonder 5000 / 12000); the Rail Battery is 1188
+a pull now (six 150-damage Railspikes) and the Minigun 1240 DPS (Hellwheel x1.2). A jetpack-hop stock was considered and
+left out: a jump boost needs the movement state on the wire (it would be a protocol change); the Jetpack Stock speeds
+you up instead.
 
 ## Model building (BuildModel.cs)
 
@@ -760,30 +934,31 @@ checks, that normalising is stable and lossless, and hot reload from a temporary
 kept, a new part added, the fingerprint moving and refusing a joiner, weapons in hand rebuilt, `workbench.txt` still
 loading) before restoring the real folder.
 
-## The part set: 191 parts
+## The part set: 233 parts
 
 Milestone 1's 75 parts, 48 from milestone 2, the three one-receiver grips of the workbench rework, 28 actions, the
-universal-ammo pass's 4 extra round types and 8 feeds, and the six optics, seven muzzle devices and four foregrips of the attachments pass
-(2026-10-23). By tier, all
+universal-ammo pass's 4 extra round types and 8 feeds, the six optics, seven muzzle devices and four foregrips of the attachments pass
+(2026-10-23), and the late-game pass's 35 parts less the three removed receivers (2026-10-27; new parts in bold italics
+are listed in "The late-game parts"). By tier, all
 categories (first-tier grips, common and uncommon, hold exactly **one receiver**: the user's call, 2026-10-22):
 
 | Category | Common | Uncommon | Rare | Epic | Legendary | Wonder |
 | --- | --- | --- | --- | --- | --- | --- |
-| Grip (27) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip, Skeleton Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip, Thumb Stub | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)** | Push Cart (16, a real cart) |
-| Receiver (23) | Plinker, Stampede, Workhorse, Farmhand Pump, **Courier Carbine** (rifle, light auto), **Buzzbox Machine Pistol** (pistol, 1100 rpm) | Longreach Bolt, Triad Burst, **Kingpin Revolver** (heavy rounds, pistol action), **Reaper Battle Rifle** (rifle semi), **Ratchet Burst SMG** (pistol burst) | Bucket Launcher, Gravedigger Auto, **Longbow DMR** (rifle semi, tight ADS), **Street Sweeper** (shell semi), **Bastille LMG** (rifle auto) | Hellwheel Rotary, Thumper Chain Gun, **Railspike Coil** (energy bolt) | Sparkplug Energy, **Hammerfall Autocannon** (heavy auto, barrels x1.9 thick) | **Pepperbox** (pistol rotary, 2-6 barrels), **Sawmill** (shell chain gun) |
+| Grip (30) | **Service Pistol Grip (1, 4 kg)**, **Service Rifle Grip (1, 8 kg)**, Vertical Foregrip, Skeleton Foregrip | **Sport Rifle Grip (1, 10 kg)**, Angled Foregrip, Thumb Stub | Double-Tap (2), Pistol Grip (3, 5 kg), Quad Rack (4), Penta Rack (5), Hex Rack (6), Briefcase (4, hip fire), Chaingun Handle, **Mule Frame (6, 16 kg)** | Septet Rack (7), Octet Rack (8), Rifle Grip (9, 12 kg), Steering Wheel (8, chain fire), **Exo Harness (12, chain fire, 30 kg)** | Chainsaw Grip (6), **Gantry Rig (16, 48 kg)**, ***Titan Harness (12, 45 kg)***, ***Third Arm*** | Push Cart (16, a real cart), ***Parade Float (16, 60 kg)*** |
+| Receiver (25) | ***Peashooter*** (13), Plinker (20), Stampede (18), Workhorse (26), Farmhand Pump (14 x 8), **Courier Carbine** (23) | Longreach Bolt (119), **Kingpin Revolver** (64), **Reaper Battle Rifle** (35) | Bucket Launcher (126), Gravedigger Auto (11 x 8), **Longbow DMR** (43), **Street Sweeper** (15 x 8), **Bastille LMG** (30) | Hellwheel Rotary (31), Thumper Chain Gun (76), **Railspike Coil** (150), ***Hand Mortar*** (144) | Sparkplug Energy (39), **Hammerfall Autocannon** (187), ***Bunker Buster*** (255) | **Pepperbox** (32), **Sawmill** (18 x 8), ***Sunbeam Lance*** (240), ***Parade Cannon*** (360) |
 | Barrel (10) | Standard, Stub, Scattermouth, Launcher Tube | Long, Blunderbuss Bell | Big Iron, Fluted Match | Coil | | Barrel of Barrels |
 | Splitter (6) | Y-Splitter (2) | Over-Under (2, spread x0.85) | Trident (3, x0.8) | Peacock (5 fanned, x0.75) | Party Tray (4, x0.7) | **Hydra (6, x0.6)** |
-| Feed (25) | Box, Stick, Shell Tube, Single Breech, **Belt Pouch** (heavy, 25, belt), **Battery Clip** (energy, 24), **Three-Round Tube** (launcher) | Extended, Heavy Box, **Heavy Drum** (30), **Shell Box** (10), **Capacitor Pack** (energy, 32), **Revolver Cylinder** (launcher, 6) | Drum, Shell Drum, Energy Cell, **Link Chute** (heavy, 60, belt), **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)** | Toaster Feed |
-| Ammo (14, universal) | FMJ, Hollow Point, Buckshot | Slug, Armour Piercing, Frag | Match Grade, Plasma, Subsonic | Explosive Tip, Dragon's Breath, Shock | Sabot | Rubber Duck |
-| Damage Multiplier (6, new) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber | Spite Amplifier |
-| Receiver Upgrade (8, new) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core | |
-| Stock (5) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | | Gyro | |
-| Optic (11) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x | 8x Sniper Scope, Rangefinder 4x | |
+| Feed (28) | Box, Stick, Shell Tube, Single Breech, **Belt Pouch** (heavy, 25, belt), **Battery Clip** (energy, 24), **Three-Round Tube** (launcher) | Extended, Heavy Box, **Heavy Drum** (30), **Shell Box** (10), **Capacitor Pack** (energy, 32), **Revolver Cylinder** (launcher, 6) | Drum, Shell Drum, Energy Cell, **Link Chute** (heavy, 60, belt), **Manifold Hopper (shared, 3)** | Belt Box, **Shell Hopper (shared, 4)**, **Ammo Can Manifold (shared, 6)** | Backpack Hopper, **Bottomless Bucket (shared, 9)**, **Power Bus (shared, 8)**, ***Conga Drum*** (150), ***Shell Silo (shared, 6)*** | Toaster Feed, ***Clown Car Hopper (shared, 16, 999)*** |
+| Ammo (18, universal) | FMJ, Hollow Point, Buckshot | Slug, Armour Piercing, Frag | Match Grade, Plasma, Subsonic | Explosive Tip, Dragon's Breath, Shock | Sabot, ***Depleted Core***, ***Thermobaric*** | Rubber Duck, ***Bowling Ball***, ***Pocket Sun*** |
+| Damage Multiplier (8) | Hot Load Kit | Overpressure Chamber | Tungsten Core Injector | Rail Accelerator | Singularity Chamber, ***Tripler Chamber*** | Spite Amplifier, ***Five-Alarm Chamber*** |
+| Receiver Upgrade (10) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core, ***Doom Hammer*** | ***Overkill Coprocessor*** |
+| Stock (7) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | ***Exo Spine (+8 kg)*** | Gyro (+8 kg) | ***Jetpack Stock (+12 kg, mobility +0.15)*** |
+| Optic (13) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x, ***Lighthouse 6x*** | 8x Sniper Scope, Rangefinder 4x | ***All-Seeing Eye*** (marks zombies) |
 | Muzzle (11) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Duckbill Spreader, Blunderbuss Flare | Shrouded Can | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg) | |
-| Utility (6) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | | | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
-| Hilt (6, new) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | | |
-| Head (8, new) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | | Frozen Fish |
-| Melee Mod (7, new) | Nail Ring, Grip Tape | Counterweight, Barbed Wire Wrap | Shock Coil | | Rocket Booster | Whoopee Cushion |
+| Utility (8) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | ***Gravity Sock (+4 kg)*** | ***Exo Sling (+8 kg)*** | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
+| Hilt (8) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | ***Lamp Post*** | ***Turbine Hilt*** |
+| Head (11) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | ***Wrecking Ball*** | Frozen Fish, ***Swordfish***, ***Grandfather Clock*** |
+| Melee Mod (9) | Nail Ring, Grip Tape | Counterweight, Barbed Wire Wrap | Shock Coil | ***Tesla Wrap*** | Rocket Booster | Whoopee Cushion, ***Jet Engine*** |
 
 Special flags (incendiary, explosive, penetrating, plasma, squeaky, bouncy, bayonet, suppressed, chainsaw, fish, ...) are
 carried into the built weapon and shown in the workbench; their gameplay effects come with the Zombies mode.
@@ -796,11 +971,11 @@ weight-relief parts (`"carry"`) raise what any grip carries, so the huge guns ar
 
 | Rounds (proposed) | What drops (part tiers) | Frames you can expect | What a build looks like |
 | --- | --- | --- | --- |
-| 1-2 | common 85%, uncommon 15% | Service Pistol Grip (4 kg), Service Rifle Grip (8 kg), Sport Rifle Grip (10 kg): **one receiver each** | the start builds: Wall Rifle, Wall Pistol, a Machete |
-| 3-7 | + rare 8% | + Double-Tap (2), Pistol Grip (3), Quad / Penta / Hex Rack (4-6), Briefcase | the first two- to six-receiver guns, a Y-splitter shotgun, first upgrades |
-| 8-14 | rare 24%, epic 6% | + **Mule Frame (16 kg, 6)**, Shoulder Harness | three to six receivers, a Manifold Hopper, Gas Overclock |
-| 15-24 | epic 20%, legendary 7%, wonder 1% | + **Exo Harness (30 kg, 12)**, Septet / Octet Rack (7, 8), Rifle Grip (9), Steering Wheel | ten-plus receivers on shared feeds, damage multipliers |
-| 25+ | legendary 17-28%, wonder 5-12% | + **Gantry Rig (48 kg, 16)**, Anti-Grav Coil, the Push Cart | broken, silly, sixteen receivers (Gantry Sixteen, Shopping Spree) |
+| 1-3 | common 85%, uncommon 15% | Service Pistol Grip (4 kg), Service Rifle Grip (8 kg), Sport Rifle Grip (10 kg): **one receiver each** | the start builds: Wall Rifle, Wall Pistol, a Machete |
+| 4-9 | + rare 8% | + Double-Tap (2), Pistol Grip (3), Quad / Penta / Hex Rack (4-6), Briefcase | the first two- to six-receiver guns, a Y-splitter shotgun, first upgrades |
+| 10-17 | rare 24%, epic 6% | + **Mule Frame (16 kg, 6)**, Shoulder Harness, then the epic frames: **Exo Harness (30 kg, 12)**, Septet / Octet Rack (7, 8), Rifle Grip (9), Steering Wheel | three to twelve receivers, a Manifold Hopper, Gas Overclock, Rail Accelerator |
+| 18-24 | epic 22%, legendary 5% | + **Gantry Rig (48 kg, 16)**, **Titan Harness (45 kg, 12)**, Anti-Grav Coil | the legendary parts: Bunker Buster, Tripler Chamber, Doom Hammer, Depleted Core, Conga Drum |
+| 25+ | legendary 18-30%, wonder 5-13% | + **Parade Float (60 kg, 16)**, the Push Cart, Jetpack Stock | broken, silly, sixteen receivers: Parade Cannons on a Five-Alarm Chamber, the Clown Car Hopper, the All-Seeing Eye |
 
 The numbers live in `Parts/Tables/DropTables.json` (format `call-of-slop-drops/1`): part tiers by round, the chance a
 zombie drops a part by round (4% -> 10%), the mystery box's build tier by round, and prices (box 950, slot upgrade 4000,
@@ -834,8 +1009,8 @@ new box builds from the workbench rework's receivers and 2-8 slot grips):
 | Tier | Guns | Melee |
 | --- | --- | --- |
 | Common | Wall Rifle (wall, start), Wall Pistol (wall, start), Wall Pump (wall), Wall SMG (wall): all on the one-receiver Service grips | Machete (start, box) |
-| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip; Kingpin Hand Cannon (a heavy-round revolver, its Long Barrel sized down); **Reaper Marksman** (semi battle-rifle DMR, holo), **Ratchet PDW** (pistol-calibre burst carbine), **Buzzbox Machine Pistol** (1265 rpm, laser), **Courier Carbine** (light auto carbine, long barrel) | Nail Bat, Fire Axe, **Barbed Slugger** (barbed wire and nails: cleave 2, bleed) |
-| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip), Double-Tap Twins (chain fire), Longbow Marksman; **Street Sweeper** (semi shotgun on a shell drum), **Bastille Squad LMG** (drum, ACOG), **Buzzbox Akimbo** (two machine pistols, chain fire), **Four-by-Three** (four burst rifles on the Quad Rack), **High Five** (five pistols on the Penta Rack), **Executive Decision** (two SMGs in the Briefcase on a Manifold Hopper, hip fire), **Elephant Gun** (.50 bolt action, tungsten core) | Sledgehammer, Frying Pan, **Shock Katana** (shock arcs), **Big Bonk** (a frying pan on a long haft: bonk and shock) |
+| Uncommon | Twin Splitter Shotgun, Burst Marksman (box, wall): on the Sport Rifle Grip; Kingpin Hand Cannon (a heavy-round revolver, its Long Barrel sized down); **Reaper Marksman** (semi battle-rifle DMR, holo), **Ratchet PDW** (a Stampede on the Ratchet Burst Group: a burst carbine), **Buzzbox Machine Pistol** (a Plinker on the Buzzsaw Sear, 1265 rpm, laser), **Courier Carbine** (light auto carbine, long barrel) | Nail Bat, Fire Axe, **Barbed Slugger** (barbed wire and nails: cleave 2, bleed) |
+| Rare | Hopper Triplets (Mule Frame, shared feed), Auto Shotgun, Triple Pistol (the three-receiver Pistol Grip), Double-Tap Twins (chain fire), Longbow Marksman; **Street Sweeper** (semi shotgun on a shell drum), **Bastille Squad LMG** (drum, ACOG), **Buzzbox Akimbo** (two Plinkers on Buzzsaw Sears, chain fire), **Four-by-Three** (four Workhorses on Three-Round Burst Groups, the Quad Rack), **High Five** (five pistols on the Penta Rack), **Executive Decision** (two SMGs in the Briefcase on a Manifold Hopper, hip fire), **Elephant Gun** (.50 bolt action, tungsten core) | Sledgehammer, Frying Pan, **Shock Katana** (shock arcs), **Big Bonk** (a frying pan on a long haft: bonk and shock) |
 | Epic | Minigun, Belt-Fed Chaingun, Exo Twelve (12 receivers, chain fire, ammo can manifold); **Firing Squad** (seven battle rifles, Septet Rack), **Dragon's Choir** (four pumps on a Shell Hopper of Dragon's Breath), **Road Rage** (eight carbines round the Steering Wheel, chain fire), **Demolition Marksman** (DMR on explosive tips, 4x), **Twin Thumpers** (two belt-fed chain guns, Mule Frame), **Grenade Organ** (four launchers on the Quad Rack, chain fire), **Rail Battery** (six coil rifles on plasma, Hex Rack) | Chainsaw Sword, **Lawnmower** (a chainsaw bar on a long haft with wire and nails: cleave 5, bleed) |
 | Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack, Hammerfall Cannon (autocannon); **Power Grid** (eight Sparkplugs on a Power Bus, Octet Rack), **Siege Battery** (two autocannons with singularity chambers on an ammo can), **Hellfire Minigun** (long barrels, explosive tips, overclock core), **Kitchen Sink** (nine different receivers on one Rifle Grip), **Last Word** (suppressed .50 bolt action, 8x), **Suppressing Fire** (six LMGs on a bottomless bucket) | Rocket Katana, **Rocket Hammer** (sledgehammer, rocket booster, shock coil) |
 | Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol; **Party Cannon** (a toaster-fed launcher through a Peacock splitter, balloons on: explosive, toasty, party), **Seven Shooter** (a revolver behind the Barrel of Barrels), **Sawmill Inferno** (two shotgun chain guns on the Chainsaw Grip, Dragon's Breath), **Drive-Thru** (eight SMGs round the Steering Wheel on a bottomless bucket, with a cup holder: refreshing) | The Codfather (a frozen fish on a rod), **Flying Fish** (a frozen fish with a rocket booster and a whoopee cushion: knockback, stun) |
@@ -851,21 +1026,21 @@ is rare; a wonder part makes it legendary or wonder), placed by what it does nex
 **Self-test** (section "Weapon builder", `CheckBoxBuilds` in SelfTestWeaponBuilder2.cs): every box build is complete and legal and its model has no
 floating boxes (section "Model connectivity"); its tier is within one of its rarest part's (slot melee builds too); every
 box tier has 5 or more guns; and its numbers stay in the tier's band: a gun does 60 DPS or more (body, close range), and at
-most 250 / 250 / 450 / 900 / 2000 / 2000 body damage per trigger pull and 600 / 600 / 1200 / 2500 / 6000 / 8000 DPS
+most 250 / 250 / 450 / 1500 / 3000 / 5000 body damage per trigger pull and 600 / 600 / 1200 / 3000 / 8000 / 12000 DPS
 (common to wonder); a melee build does 30 DPS or more and at most 150 / 150 / 200 / 250 / 400 / 400 damage a hit. The
 Zombies section checks the box never offers a gun you carry nor any melee build, and offers 5 or more different guns of
 every tier; "Zombies slots" checks the melee payouts. Approximate numbers (CI's log lists them all as `box ...` lines):
 
 | Build | Tier | Per pull | RPM | DPS | Mag |
 | --- | --- | --- | --- | --- | --- |
-| Reaper Marksman / Courier Carbine / Ratchet PDW / Buzzbox Machine Pistol | uncommon | 26 / 26 / 20 x3 burst / 20 | 380 / 720 / 1000 / 1265 | 165 / 312 / 167 / 422 | 45 |
-| Street Sweeper / Bastille Squad LMG / Elephant Gun | rare | 112 / 26 / 138 | 200 / 650 / 45 | 373 / 282 / 104 | 20 / 75 / 10 |
+| Reaper Marksman / Courier Carbine / Ratchet PDW / Buzzbox Machine Pistol | uncommon | 35 / 23 / 18 x3 burst / 20 | 400 / 720 / 1000 / 1265 | 233 / 276 / 150 / 422 | 45 |
+| Street Sweeper / Bastille Squad LMG / Elephant Gun | rare | 120 / 30 / 193 | 200 / 600 / 45 | 400 / 300 / 145 | 20 / 75 / 10 |
 | Buzzbox Akimbo / Four-by-Three / High Five / Executive Decision | rare | 20 / 104 / 100 / 40 | 2200 / 800 burst / 420 / 900 | 733 / 657 / 700 / 600 | 40 / 20 / 20 / 60 |
-| Firing Squad / Dragon's Choir / Road Rage / Twin Thumpers | epic | 182 / 480 / 26 / 170 | 380 / 70 / 3000 / 450 | 1153 / 560 / 1300 / 1275 | 20 / 12 / 160 / 150 |
-| Demolition Marksman / Grenade Organ / Rail Battery | epic | 49 / 132 / 204 | 270 / 240 / 50 | 220 / 528 / 170 | 30 / 4 / 40 |
-| Power Grid / Siege Battery / Hellfire Minigun / Suppressing Fire | legendary | 272 / 306 / 40 / 156 | 700 / 200 / 3000 / 650 | 3173 / 1020 / 2000 / 1690 | 50 / 150 / 400 / 150 |
-| Kitchen Sink / Last Word | legendary | 457 / 202 | 70 / 72 | 533 / 242 | 6 / 10 |
-| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 132 / 147 / 360 / 20 | 90 / 150 / 360 / 3000 | 198 / 368 / 2160 / 1000 | 2 / 10 / 20 / 900 |
+| Firing Squad / Dragon's Choir / Road Rage / Twin Thumpers | epic | 245 / 480 / 23 / 152 | 400 / 70 / 3000 / 450 | 1633 / 560 / 1150 / 1140 | 20 / 12 / 160 / 150 |
+| Demolition Marksman / Grenade Organ / Rail Battery | epic | 81 / 139 / 1188 | 270 / 240 / 45 | 365 / 556 / 891 | 30 / 4 / 40 |
+| Power Grid / Siege Battery / Hellfire Minigun / Suppressing Fire | legendary | 416 / 748 / 52 / 180 | 720 / 200 / 3000 / 600 | 4992 / 2493 / 2600 / 1800 | 50 / 150 / 400 / 150 |
+| Kitchen Sink / Last Word | legendary | 451 / 343 | 70 / 76 | 526 / 434 | 6 / 10 |
+| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 139 / 112 / 450 / 18 | 90 / 150 / 360 / 3000 | 209 / 280 / 2700 / 900 | 2 / 10 / 20 / 900 |
 
 New melee: Barbed Slugger 69 dmg, 0.72 s, cleave 2; Shock Katana 68, 0.40 s; Big Bonk 75, 1.14 s, stun 1.8 s; Lawnmower
 85, 0.61 s, cleave 5; Rocket Hammer 125, 1.07 s, stun 1.6 s; Flying Fish 58, 0.35 s, stun 2.5 s.
@@ -963,15 +1138,15 @@ range; DPS = damage per shot x shots per second, every projectile landing).
 | Build | Grip | Receivers / barrels | Damage per shot | RPM | Mag | Reload | Mobility | DPS |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | **Plain Rifle**: Workhorse, standard barrel, flash hider, box mag, FMJ, fixed stock, red dot | Rifle Grip | 1 / 1 | 26 | 600 auto | 30 | 2.2 s | 0.95 | 260 |
-| **Triple Pistol**: three Plinkers, stick mags, FMJ (volley) | Pistol Grip | 3 / 3 | 60 (3 x 20) | 420 semi | 20 | 2.4 s | 0.99 | 420 |
+| **Triple Pistol**: three Plinkers, stick mags, FMJ (volley) | Pistol Grip | 3 / 3 | 60 (3 x 20) | 400 semi | 20 | 2.4 s | 0.99 | 400 |
 | **Nine Lives**: nine Workhorses with stub barrels, fixed stock | Rifle Grip | 9 / 9 | 234 (9 x 26) | 600 auto | 20 | 3.9 s | 0.67 | 2340 |
 | **Twin Splitter Shotgun**: Farmhand Pump, Y-Splitter, two Scattermouths, buckshot | Rifle Grip | 1 / 2 | 112 (2 x 8 x 7) | 70 pump | 6 | 3.0 s | 0.95 | 131 |
-| **Belt-Fed Chaingun**: Thumper, Big Iron, Belt Box, Armour Piercing, chaingun handle | Rifle Grip | 1 / 1 | 85 | 450 (0.4 s spool) | 150 | 6.0 s | 0.86 | 637 |
-| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, FMJ | Rifle Grip | 1 / 6 (one per shot) | 26 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1040 |
-| **Lumberjack**: six Gravedigger auto shotguns, shell drums, buckshot | Chainsaw Grip | 6 / 6 | 672 (6 x 8 x 14) | 260 auto | 20 | 5.6 s | 0.40 | 2912 |
-| **Shopping Spree**: sixteen Stampede SMG receivers (hip fire only) | Push Cart | 16 / 16 | 320 (16 x 20) | 900 auto | 20 | 4.9 s | 0.40 | 4800 |
+| **Belt-Fed Chaingun**: Thumper, Big Iron, Belt Box, Armour Piercing, chaingun handle | Rifle Grip | 1 / 1 | 76 | 450 (0.4 s spool) | 150 | 6.0 s | 0.86 | 570 |
+| **Minigun**: Hellwheel with six standard barrels, Backpack Hopper, FMJ | Rifle Grip | 1 / 6 (one per shot) | 31 | 2400 (1.2 s spool) | 400 | 9.0 s | 0.81 | 1240 |
+| **Lumberjack**: six Gravedigger auto shotguns, shell drums, buckshot | Chainsaw Grip | 6 / 6 | 528 (6 x 8 x 11) | 260 auto | 20 | 5.6 s | 0.40 | 2288 |
+| **Shopping Spree**: sixteen Stampede SMG receivers (hip fire only) | Push Cart | 16 / 16 | 288 (16 x 18) | 900 auto | 20 | 4.9 s | 0.40 | 4320 |
 | **Party Platter**: Workhorse, Party Tray of four Tridents, twelve stub barrels | Rifle Grip | 1 / 12 | 26 (12 x 2.2: conserved) | 335 auto | 75 | 3.4 s | 0.87 | 145 |
-| **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck | Pistol Grip | 1 / 1 | 90 | 90 semi | 2 | 1.0 s | 0.96 | 135 |
+| **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck | Pistol Grip | 1 / 1 | 94 | 90 semi | 2 | 1.0 s | 0.96 | 141 |
 
 The big multi-receiver numbers (Lumberjack, Shopping Spree) are deliberately silly in this sandbox; in Zombies they
 are gated by weight (both sit at the 0.40 mobility floor), part rarity, and by zombie health scaling with
@@ -1032,3 +1207,10 @@ Milestone 2 (the user's decisions):
    while pushed (hip fire with heavy spread), or stay "park it, then man it"?
 4. **The numbers marked proposed:** the drop tables and prices, the weight penalties, melee stun
    on players (off today).
+5. **The power curve (2026-10-27):** are the floors right (the best part of a tier x1 / x1 / x1.1 / x1.3 / x1.6 / x2.2
+   the best common in the damage rows), and the arrival rounds (legendary drops from 18, wonder from 25; slots capped at
+   epic before round 20)? Each projectile still caps at 1000 damage, so a fully stacked late gun (about 4000 a round)
+   hits the cap: raise it for builds? A jetpack-hop stock needs the jump on the wire (a protocol change), so the Jetpack
+   Stock gives speed instead: worth doing the hop? Should the Thumper and Sawmill (named for chain fire) go the way of
+   the burst receivers too? Barrels, splitters and muzzle devices are not on the curve yet (the parts-mechanics branch
+   owns them; add their rows to PowerCurve.Rows when it merges).
