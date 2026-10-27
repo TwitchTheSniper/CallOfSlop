@@ -213,14 +213,14 @@ like `loudness` they are part and attachment stats, never weapon-file keys), car
 
 **Muzzle devices.** The existing ones were pushed so each is felt (the Loudener, Thread Protector, Duckbill and
 Blunderbuss Flare are unchanged): Flash Hider hip x0.88 and shake x0.8; Compensator vertical recoil x0.55 (hip x1.05,
-loudness x1.1); Muzzle Brake horizontal x0.5, shake x0.45, recoil x0.9 (loudness x1.25); Recoil Hook vertical x0.6,
+loudness x1.1); Muzzle Brake horizontal x0.5, shake x0.45, recoil x0.8, hip spread x0.9 (recoil x0.9 and no hip change until the power curve; loudness x1.25); Recoil Hook vertical x0.6,
 recovery x1.4; Suppressor loudness x0.35, recoil x0.9, range x0.88; Shrouded Can loudness x0.3, recoil x0.88; Vent
 Collar jitter x0.5, sway x0.7. New:
 
 | Muzzle | Tier | Effect |
 | --- | --- | --- |
 | Recoil Eater | epic | recoil x0.45, vertical x0.75, shake x0.6; hip spread x1.5, aimed spread x1.4 |
-| Dragon Mouth | legendary | 4x the projectiles at x0.34 damage each (1.36x if all land), hip x3, aimed x2.5, range x0.6, size x1.6, speed x0.5 (so range x0.3 in all), loudness x1.4, **incendiary** |
+| Dragon Mouth | legendary | 4x the projectiles at x0.55 damage each (2.2x if all land; x0.34 until the power curve, 2026-10-27), hip x3, aimed x2.5, range x0.6, size x1.6, speed x0.5 (so range x0.3 in all), loudness x1.4, **incendiary** |
 | Velocity Booster | epic | speed x1.6 (range x1.6), damage x1.08, recoil x1.15, loudness x1.3 |
 | Long Choke | rare | hip spread x0.55, aimed x0.8, aim +0.03 s, mobility -0.02 (any gun) |
 | Fork Crown | epic | splits every projectile in two at x0.6 (1.2x if both land), hip and aimed spread x1.3 |
@@ -711,10 +711,11 @@ and performance, not the models' size.
 **How a part is measured** (`Source/Zombies/PowerCurve.cs`, only the self-test and these docs use it). Gun parts are
 fitted to a reference gun (a Workhorse on the Rifle Grip with a standard barrel, box mag, FMJ and the Full-Auto Sear) and
 scored by how much they change its **gun power**: sustained body damage per second over a magazine and its reload,
-headshots a quarter of the time, accuracy (hip and aimed spread, recoil), reach (range x zoom) and handling (mobility,
+headshots a quarter of the time, accuracy (hip and aimed spread, the recoil and its pattern, the round's size), reach (range x zoom) and handling (mobility,
 aim time), times what its flags are worth in Zombies (explosive x1.3, launch x1.4, marks x1.3, incendiary x1.2...).
 Feeds are scored on their bore's commonest receiver against a common feed (a shared feed x the root of the receivers it
-feeds); receivers by their damage per trigger pull on their stock action; root grips by receiver slots x the root of the
+feeds); barrels, splitters (standard barrels on every output, +5% an extra output) and muzzle devices on the reference
+rifle too; receivers by their damage per trigger pull on their stock action; root grips by receiver slots x the root of the
 carry weight; hilts, heads and melee mods by melee power (damage per second, cleave, stun, reach, flags).
 
 **The rules** (self-test "Power curve", `SelfTestPowerCurve.cs`): in every row the best part of a tier is never weaker
@@ -737,6 +738,9 @@ The curve as it stands (the best part of each tier and its score; CI's log lists
 | Ammo | Hollow Point 1.14 | Frag 1.27 | Plasma 1.34 | Explosive Tip 1.72 | Depleted Core 2.08 | Bowling Ball 3.27 |
 | Damage Multiplier | Hot Load Kit 1.11 | Overpressure Chamber 1.15 | Tungsten Core Injector 1.31 | Rail Accelerator 1.57 | Tripler Chamber 2.71 | Five-Alarm Chamber 3.91 |
 | Receiver Upgrade | Lightweight Bolt 1.04 | Heavy Hammer 1.08 | Coil Hammer 1.19 | Twin Sear 1.36 | Doom Hammer 1.75 | Overkill Coprocessor 2.4 |
+| Barrel | Standard Barrel 1.0 | Heavy Bore 1.21 | Bloat 1.4 | Coil 1.55 | Cannon Sleeve 1.82 | Barrel of Barrels 2.31 |
+| Splitter (+5% an extra output) | Narrow Twin 1.05 | Stepped 1.1 | Quad Line 1.14 | Peacock 1.19 | Ladder 1.24 | Wall 1.35 |
+| Muzzle | Flash Hider 1.01 | Muzzle Brake 1.01 | Blunderbuss Flare 1.15 | Duckbill Spreader 1.48 | Dragon Mouth 1.57 | - |
 | Feed | Belt Pouch 1.55 | Revolver Cylinder 1.75 | Manifold Hopper 2.29 | Ammo Can Manifold 3.87 | Bottomless Bucket 4.93 | Clown Car Hopper 7.15 |
 | Grip (slots x root of carry) | Service Rifle Grip 2.8 | Sport Rifle Grip 3.2 | Mule Frame 24 | Exo Harness 66 | Gantry Rig 111 | Parade Float 124 |
 | Foregrip | Skeleton 1.0 | Angled 1.01 | Pogo 1.01 | - | Third Arm 1.04 | - |
@@ -757,7 +761,10 @@ Group 1400 / 0.35 s -> 2400 / 0.1 s and damage x1.1, Overdrive Sear 1400 -> 2400
 2400 -> 3000 rpm. Ammo: Plasma damage x1.15. Damage multipliers: Rail Accelerator x1.5 -> x1.65, Singularity Chamber
 x1.8 -> x2. Upgrades: Twin Sear rate x1.4 -> x1.5 and damage x1.1, Overclock Core rate x1.6 -> x1.7 and damage x1.1 ->
 x1.2. Gyro Stock: +8 kg carry, mobility +0.04, recoil x0.55 -> x0.5. Laser Sight: hip spread x0.8 -> x0.5, aimed spread
-x0.85. Barrels, splitters and muzzle devices are the parts-mechanics branch's (not rescaled here).
+x0.85. Barrels, splitters and muzzle devices (the splitters, barrels and muzzles pass, merged the same day) are on the
+curve too: Coil Barrel damage x1.15 -> x1.3; Duckbill Spreader rare -> epic (on a single-projectile gun it doubles the
+round at x0.8 each); Dragon Mouth x0.34 -> x0.55 a projectile; Muzzle Brake recoil x0.9 -> x0.8 and hip spread x0.9.
+The rest kept their tiers and numbers.
 
 ### Receivers: a damage spread (2026-10-27)
 
@@ -1050,7 +1057,7 @@ categories (first-tier grips, common and uncommon, hold exactly **one receiver**
 | Receiver Upgrade (10) | Lightweight Bolt, Match Trigger Group | Buffer Spring Kit, Heavy Hammer | Gas Overclock, Coil Hammer | Twin Sear | Overclock Core, ***Doom Hammer*** | ***Overkill Coprocessor*** |
 | Stock (7) | Fixed, Wire | | Recoil Buffer, **Shoulder Harness (+5 kg carry)** | ***Exo Spine (+8 kg)*** | Gyro (+8 kg) | ***Jetpack Stock (+12 kg, mobility +0.15)*** |
 | Optic (13) | Red Dot, Bead Rail | Holographic, Pocket 1.8x Prism | 2.5x ACOG, Outrider 2x Scout, Periscope Sight | 4x Scope, Owl Tube 2x, ***Lighthouse 6x*** | 8x Sniper Scope, Rangefinder 4x | ***All-Seeing Eye*** (marks zombies) |
-| Muzzle (18) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Duckbill Spreader, Blunderbuss Flare, **Long Choke**, **Tumbler Ring** | Shrouded Can, **Recoil Eater**, **Velocity Booster**, **Fork Crown** | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg), **Dragon Mouth**, **Hush Baffles** | |
+| Muzzle (18) | Flash Hider, Thread Protector | Compensator, Muzzle Brake, Recoil Hook, Vent Collar | Suppressor, Blunderbuss Flare, **Long Choke**, **Tumbler Ring** | Shrouded Can, Duckbill Spreader (rare until 2026-10-27), **Recoil Eater**, **Velocity Booster**, **Fork Crown** | **Loudener** (2.5x loudness, +6% damage, +25% recoil, 1.4 kg), **Dragon Mouth**, **Hush Baffles** | |
 | Utility (8) | Bayonet, **Padded Sling (+1.5 kg)** | Laser Sight | ***Gravity Sock (+4 kg)*** | ***Exo Sling (+8 kg)*** | **Anti-Grav Coil (+12 kg)** | Cup Holder, **Helium Balloons (+15 kg)** |
 | Hilt (8) | Wooden Handle, Bat Grip | Long Haft, Fishing Rod Grip | Sword Hilt | Motor Hilt | ***Lamp Post*** | ***Turbine Hilt*** |
 | Head (11) | Machete Blade, Bat Barrel | Sledgehammer Head, Fire Axe Head | Katana Blade, Frying Pan | Chainsaw Blade | ***Wrecking Ball*** | Frozen Fish, ***Swordfish***, ***Grandfather Clock*** |
@@ -1308,5 +1315,4 @@ Milestone 2 (the user's decisions):
    epic before round 20)? Each projectile still caps at 1000 damage, so a fully stacked late gun (about 4000 a round)
    hits the cap: raise it for builds? A jetpack-hop stock needs the jump on the wire (a protocol change), so the Jetpack
    Stock gives speed instead: worth doing the hop? Should the Thumper and Sawmill (named for chain fire) go the way of
-   the burst receivers too? Barrels, splitters and muzzle devices are not on the curve yet (the parts-mechanics branch
-   owns them; add their rows to PowerCurve.Rows when it merges).
+   the burst receivers too? There is no wonder muzzle device yet.

@@ -26,6 +26,9 @@ public static class PowerCurve
         new("Ammo", "gun power x on the reference rifle", true, p => p.Category == PartCategory.Ammo),
         new("Multiplier", "gun power x on the reference rifle", true, p => p.Category == PartCategory.Multiplier),
         new("Upgrade", "gun power x on the reference rifle", true, p => p.Category == PartCategory.Upgrade),
+        new("Barrel", "gun power x on the reference rifle (bullet size counts as accuracy)", false, p => p.Category == PartCategory.Barrel),
+        new("Splitter", "gun power x on the reference rifle with standard barrels on every output, +5% per extra output", false, p => p.Category == PartCategory.Splitter),
+        new("Muzzle", "gun power x on the reference rifle's standard barrel", false, p => p.Category == PartCategory.Muzzle),
         new("Feed", "gun power x on its bore's commonest receiver, against a common feed (shared feeds x root of receivers fed)", false, p => p.Category == PartCategory.Feed),
         new("Grip", "receiver slots x root of carry weight (root grips)", false, p => p.Category == PartCategory.Grip && p.IsRoot),
         new("Foregrip", "gun power x on the reference rifle", false, p => p.Category == PartCategory.Grip && !p.IsRoot),
@@ -55,7 +58,7 @@ public static class PowerCurve
 
     /// <summary>
     /// A gun's overall power: sustained body damage per second (a magazine and its reload), headshots counted a quarter of
-    /// the time, accuracy (hip and aimed spread, recoil), reach (range times zoom), handling (mobility, aim time).
+    /// the time, accuracy (hip and aimed spread, the recoil and its pattern, the bullet's size), reach (range times zoom), handling (mobility, aim time).
     /// </summary>
     public static float GunPower(WeaponDef w, IEnumerable<string>? flags = null)
     {
@@ -65,7 +68,10 @@ public static class PowerCurve
         var magTime = w.Mag * w.ShotDamage / dps;
         var sustained = dps * magTime / (magTime + w.Reload);
         var head = 0.75f + 0.25f * w.HeadMult / 2f;
-        var accuracy = 1f / (1f + 0.04f * w.HipSpreadDeg + 0.06f * w.HipSpreadDeg * w.AdsSpreadMult + 0.03f * w.RecoilDeg);
+        // The kick: the recoil per shot shaped by its pattern (up, sideways, jitter, sway), recovered from faster or slower.
+        var kick = w.RecoilDeg * (w.RecoilVertical + w.RecoilHorizontal + 0.5f * w.RecoilJitter + 0.3f * w.RecoilSway) / MathF.Sqrt(Math.Max(0.2f, w.RecoilRecovery));
+        var accuracy = 1f / (1f + 0.04f * w.HipSpreadDeg + 0.06f * w.HipSpreadDeg * w.AdsSpreadMult + 0.05f * kick)
+                       * (1f + 0.15f * (Math.Clamp(w.BulletSize, 0.3f, 4f) - 1f)); // a bigger round is easier to land
         var reach = MathF.Pow(Math.Clamp(MathF.Min(w.RangeM, 200f) * w.AdsZoom / 35f, 0.05f, 50f), 0.25f);
         var handling = MathF.Sqrt(Math.Max(0.1f, w.Mobility)) / (1f + 0.5f * w.AdsTime);
         return sustained * head * accuracy * reach * handling * Flags(flags ?? w.BuildFlags ?? []);
@@ -110,6 +116,26 @@ public static class PowerCurve
             case PartCategory.MeleeMod:
                 return MeleeOf(P("Wooden Handle"), P("Machete Blade"), p) is { } mm && MeleeOf(P("Wooden Handle"), P("Machete Blade"), null) is { } m0
                     ? MeleePower(mm) / MeleePower(m0) : null;
+        }
+        if (p.Category is PartCategory.Barrel or PartCategory.Splitter or PartCategory.Muzzle)
+        {
+            var outs = p.Category == PartCategory.Splitter ? p.Sockets.Count(x => x.Type == "barrel") : 1;
+            var bb = Reference((g, r) =>
+            {
+                if (p.Category == PartCategory.Muzzle)
+                    r.Child("barrel")!.Attach("muzzle", p);
+                else if (p.Category == PartCategory.Barrel)
+                    r.Attach("barrel", p);
+                else
+                {
+                    var sp = r.Attach("barrel", p);
+                    foreach (var x in p.Sockets.Where(x => x.Type == "barrel"))
+                        sp.Attach(x.Name, P("Standard Barrel"));
+                }
+            });
+            if (Stats(bb) is not { } wb)
+                return null;
+            return GunPower(wb) / RefPower() * (1f + 0.05f * (outs - 1));
         }
         var socket = p.Category switch
         {
