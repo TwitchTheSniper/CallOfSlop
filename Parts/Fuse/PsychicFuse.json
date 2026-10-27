@@ -5,7 +5,7 @@
   "rarity": "wonder",
   "flavor": "It knows they're coming before they do. Goes off with anything inside six metres.",
   "weight": 0.1,
-  "fuse": {"kind": "proximity", "seconds": 0.2, "trigger": 6},
+  "fuse": {"kind": "proximity", "seconds": 0.3, "trigger": 6},
   "model": [
     {"size": [0.03, 0.02, 0.03], "pos": [0, 0.008, 0], "color": "#8040d0"},
     {"shape": "rod", "size": [0.03, 0.03, 0.03], "pos": [0, 0.03, 0], "color": "#c080ff", "tag": "glow"}

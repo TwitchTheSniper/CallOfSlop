@@ -65,6 +65,18 @@ public sealed partial class Game
                 else if (why != null)
                     problems.Add(why);
             }
+            if (p.GrenadeBuild is { BuildText: { } gt })
+            {
+                // A built grenade: assembled again from its text (a new def; grenades in the air keep the old numbers).
+                var gb = WeaponBuild.Parse(gt, Parts.Find, migrate: false);
+                if (WeaponBuilder.Assemble(gb).Grenade is { } g)
+                {
+                    p.GrenadeBuild = g;
+                    n++;
+                }
+                else
+                    problems.Add($"{p.GrenadeBuild.Name}: the grenade no longer builds");
+            }
         }
         _cartShapes.Clear(); // push-cart collision shapes come from the built body (GameZombies.cs)
         if (n > 0 && Local is { } me)

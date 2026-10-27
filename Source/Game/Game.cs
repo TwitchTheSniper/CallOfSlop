@@ -994,6 +994,7 @@ public sealed partial class Game : IDisposable
         ServerTickMatch(now);
         AllocProfile.Mark("projectiles");
         ServerTickProjectiles(now);
+        ServerTickGrenadeZones(now); // built grenades' fires, clouds and lures (GameGrenades.cs)
         AllocProfile.Mark("rockets");
         ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
         AllocProfile.Mark("tactical");
@@ -1763,6 +1764,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.ProjSpawn:
             case (byte)Msg.Explode:
                 OnThrowablePacket(id, ref r, sender, now);
+                break;
+            case (byte)Msg.ZGrenade:
+                OnZGrenadePacket(ref r, sender, now); // built grenades: remote detonation, a lure's bang (GameGrenades.cs)
                 break;
             case (byte)Msg.TacState:
             case (byte)Msg.TacEvent:

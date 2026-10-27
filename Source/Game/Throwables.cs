@@ -20,6 +20,9 @@ public enum ThrowableKind : byte
     Cover, // placed: an energy wall that stops bullets and blasts
     Insertion, // placed: your next spawn point
     Stim, // used on yourself: instant heal and a short regen boost
+
+    // Zombies: the grenade a player built at a workbench (GameGrenades.cs; its numbers are the player's GrenadeDef).
+    Built,
 }
 
 public sealed class ThrowableDef
@@ -44,7 +47,10 @@ public sealed class ThrowableDef
     public float Knockback;
     public int PerLife;
     public Vector3 Color;
-    public bool IsEquipment => Kind == ThrowableKind.Recon || Kind >= ThrowableKind.Flash; // every tactical item goes in the Equipment slot
+    public bool IsEquipment => Kind == ThrowableKind.Recon || TacticalGear.Is(Kind); // every tactical item goes in the Equipment slot
+
+    /// <summary>Can a multiplayer loadout pick it (the built grenade comes from the Zombies workbench only)?</summary>
+    public bool InLoadouts => Kind != ThrowableKind.Built;
 }
 
 public static class Throwables
@@ -77,6 +83,8 @@ public static class Throwables
         new() { Kind = ThrowableKind.Recon, Name = "Recon Pulse", Blurb = "Throw it anywhere. For 12 s it reveals every enemy within 18 m to you, through walls, in their team colour.",
             Fuse = 8f, Radius = 18f, PerLife = 1, Color = new(0.2f, 0.85f, 0.95f) },
         .. TacticalGear.Defs, // Flashbang .. Stim, in enum order (TacticalGear.cs)
+        new() { Kind = ThrowableKind.Built, Name = "Built Grenade", Blurb = "Built at a Zombies workbench from a casing, a fuse, a payload and mods.",
+            Fuse = 2.5f, Radius = 6f, PerLife = 0, Color = new(0.5f, 0.5f, 0.45f) },
     ];
 
     /// <summary>Blast damage at <paramref name="dist"/> metres from the centre (before the self and prone multipliers).</summary>
@@ -133,14 +141,14 @@ public static class Throwables
             if (flat ? pos.Y < flatGround + ProjectileRadius : InsideSolid(pos))
             {
                 pos.X = p.Pos.X;
-                p.Vel.X *= -Restitution;
+                p.Vel.X *= -p.Bounce;
                 touched = true;
             }
             pos.Z += p.Vel.Z * h;
             if (flat ? pos.Y < flatGround + ProjectileRadius : InsideSolid(pos))
             {
                 pos.Z = p.Pos.Z;
-                p.Vel.Z *= -Restitution;
+                p.Vel.Z *= -p.Bounce;
                 touched = true;
             }
             pos.Y += p.Vel.Y * h;
@@ -148,7 +156,7 @@ public static class Throwables
             {
                 pos.Y = p.Pos.Y;
                 var landing = p.Vel.Y < 0;
-                p.Vel.Y *= -Restitution;
+                p.Vel.Y *= -p.Bounce;
                 if (landing)
                 {
                     p.Vel.X *= 0.7f; // friction on the ground
@@ -165,7 +173,7 @@ public static class Throwables
             }
             pos.X = Math.Clamp(pos.X, -World.Map.HalfX, World.Map.HalfX);
             pos.Z = Math.Clamp(pos.Z, -World.Map.HalfZ, World.Map.HalfZ);
-            if (World.Map.Boundary is { } boundary && boundary.KeepInside(ref pos, ref p.Vel, ProjectileRadius, Restitution))
+            if (World.Map.Boundary is { } boundary && boundary.KeepInside(ref pos, ref p.Vel, ProjectileRadius, p.Bounce))
                 touched = true; // over the barrier: bounced back in off the outline
             if (World.Map.TerrainCollision is { } terrain && TerrainContact(p, ref pos, terrain, h))
                 touched = true;
@@ -209,7 +217,7 @@ public static class Throwables
                         p.Vel = speed <= slow ? Vector3.Zero : tangent * (1 - slow / speed);
                     }
                     else
-                        p.Vel = tangent * (ground ? 0.7f : 1f) - vn * Restitution * n;
+                        p.Vel = tangent * (ground ? 0.7f : 1f) - vn * p.Bounce * n;
                 }
                 touched = true;
             }
@@ -332,20 +340,20 @@ public static class Throwables
         if (Solid(new Vector3(pos.X, old.Y, old.Z)) && !Solid(old))
         {
             pos.X = old.X;
-            p.Vel.X *= -Restitution;
+            p.Vel.X *= -p.Bounce;
             touched = true;
         }
         if (Solid(new Vector3(pos.X, old.Y, pos.Z)) && !Solid(old))
         {
             pos.Z = old.Z;
-            p.Vel.Z *= -Restitution;
+            p.Vel.Z *= -p.Bounce;
             touched = true;
         }
         var ceiling = terrain.CeilingAbove(pos.X, pos.Z, old.Y);
         if (pos.Y + r > ceiling && p.Vel.Y > 0)
         {
             pos.Y = MathF.Min(old.Y, ceiling - r);
-            p.Vel.Y *= -Restitution;
+            p.Vel.Y *= -p.Bounce;
             touched = true;
         }
         return touched;
@@ -364,7 +372,7 @@ public static class Throwables
         if (vn < -1.2f)
         {
             var tangent = p.Vel - vn * n;
-            p.Vel = tangent * 0.7f - vn * Restitution * n; // bounce, with the same ground friction as boxes
+            p.Vel = tangent * 0.7f - vn * p.Bounce * n; // bounce, with the same ground friction as boxes
         }
         else
         {
@@ -390,13 +398,27 @@ public sealed class Projectile
     public double LastBounceSound;
     /// <summary>Server: has it touched anything yet (a smoke grenade waits for this before it pops).</summary>
     public bool Landed;
+
+    /// <summary>How much speed a bounce keeps (<see cref="Throwables.Restitution"/>; a built grenade's casing and mods change it).</summary>
+    public float Bounce = Throwables.Restitution;
+
+    // A built grenade (ThrowableKind.Built; GameGrenades.cs): its numbers (the thrower's at the throw), what it is
+    // (0 thrown, 1 a cluster bomblet, 2 an aftershock), its share of the payload, the aftershocks still to come, a
+    // remote fuse told to go off, and when it first landed (proximity fuses arm after that).
+    public GrenadeDef? Grenade;
+    public byte Gen;
+    public float DamageScale = 1f, RadiusScale = 1f;
+    public int StagesLeft;
+    public bool Detonate;
+    public double LandedAt = -1;
 }
 
 public readonly record struct SmokeCloud(Vector3 Pos, double Born, double Until);
 
 public readonly record struct ReconSensor(Vector3 Pos, byte Owner, double Born, double Until);
 
-public readonly record struct Blast(Vector3 Pos, double Born, float Radius, ThrowableKind Kind);
+/// <summary>A blast's flash (drawn for 0.6 s). <paramref name="Tint"/>: a built grenade's payload colour (zero: the standard orange).</summary>
+public readonly record struct Blast(Vector3 Pos, double Born, float Radius, ThrowableKind Kind, Vector3 Tint = default);
 
 public sealed partial class Game
 {
@@ -437,8 +459,8 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Local player presses the grenade or equipment key.</summary>
-    public void TryThrow(bool equipment, double now)
+    /// <summary>Local player presses the grenade or equipment key (<paramref name="cook"/>: seconds a built grenade's timer already ran in the hand).</summary>
+    public void TryThrow(bool equipment, double now, float cook = 0)
     {
         if (Local is not { Alive: true } me || now < _nextThrow || Phase != MatchPhase.Playing)
             return;
@@ -461,21 +483,25 @@ public sealed partial class Game
         var origin = Throwables.LaunchPoint(me.RenderEye, dir);
         if (IsServer)
         {
-            ServerThrow(me, kind, origin, dir, now);
+            ServerThrow(me, kind, origin, dir, now, cook);
         }
         else
         {
             _w.Begin(Msg.Throw).U8((byte)kind).Vec(origin).Vec(dir);
+            if (kind == ThrowableKind.Built)
+                _w.U8((byte)Math.Clamp((int)MathF.Round(cook * 50f), 0, 255)); // how long it was cooked (1/50 s; protocol 67)
             Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
         }
     }
 
     // ---- Server ---------------------------------------------------------------------
 
-    private void ServerThrow(Player p, ThrowableKind kind, Vector3 origin, Vector3 dir, double now)
+    private void ServerThrow(Player p, ThrowableKind kind, Vector3 origin, Vector3 dir, double now, float cook = 0)
     {
         if (!p.Alive || now < p.NextThrow || kind == ThrowableKind.None || !DamageEnabled)
             return;
+        if (kind == ThrowableKind.Built && p.GrenadeBuild == null)
+            return; // a built grenade needs the build (the Zombies grenade slot)
         if (kind == p.Grenade && p.GrenadesLeft > 0)
             p.GrenadesLeft--;
         else if (kind == p.Equipment && p.EquipmentLeft > 0)
@@ -508,10 +534,14 @@ public sealed partial class Game
         };
         if (_nextProjectileId == 0)
             _nextProjectileId = 1;
+        if (kind == ThrowableKind.Built)
+            ServerBuiltThrown(p, proj, dir, cook, now); // its numbers, launch speed, bounce, cooked fuse (GameGrenades.cs)
         Projectiles[proj.Id] = proj;
         p.LastCombatTime = now;
 
         _w.Begin(Msg.ProjSpawn).U16(proj.Id).U8((byte)kind).U8(p.Id).Vec(proj.Pos).Vec(proj.Vel);
+        if (kind == ThrowableKind.Built)
+            _w.U8(proj.Gen); // a built grenade: thrown, bomblet or aftershock (protocol 67)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         if (p.Id != LocalId)
             Audio.Effect3D(Sfx.Throw, proj.Pos, 0.6f);
@@ -527,6 +557,12 @@ public sealed partial class Game
             if (touched)
                 BounceSound(proj, now);
             var def = Throwables.Get(proj.Kind);
+            if (proj.Kind == ThrowableKind.Built)
+            {
+                if (BuiltGoesOff(proj, touched, now)) // its fuse (GameGrenades.cs)
+                    (done ??= new()).Add(proj);
+                continue;
+            }
             proj.Landed |= touched;
             if (Throwables.GoesOff(def, now - proj.Born, touched, proj.Landed))
                 (done ??= new()).Add(proj);
@@ -546,6 +582,11 @@ public sealed partial class Game
         byte flags = 0;
         Players.TryGetValue(proj.Owner, out var owner);
 
+        if (proj.Kind == ThrowableKind.Built)
+        {
+            ServerBuiltDetonate(proj, owner, now); // the payload, bomblets, aftershocks and the Explode message (GameGrenades.cs)
+            return;
+        }
         if (proj.Owner == PveGrenadeOwner && owner == null && proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact)
             flags |= PveGrenadeBlast(proj, now); // a co-op enemy's grenade: hurts players only (GamePveAi.cs)
         else if (proj.Kind is ThrowableKind.Frag or ThrowableKind.Impact && owner != null)
@@ -631,6 +672,8 @@ public sealed partial class Game
                 Sensors.Add(new ReconSensor(pos, owner, now, now + Throwables.ReconDuration));
                 Audio.Effect3D(Sfx.ReconBeep, pos, 0.7f);
                 break;
+            case ThrowableKind.Built:
+                break; // OnBuiltDetonated (GameGrenades.cs) has the payload's look
             default:
                 OnTacticalDetonated(kind, owner, pos, now); // the tactical items' bursts and sounds (GameTactical.cs)
                 break;
@@ -652,13 +695,15 @@ public sealed partial class Game
     {
         foreach (var proj in Projectiles.Values)
         {
-            if (TacticalGear.Sticks(proj.Kind) && proj.Stuck)
+            if ((TacticalGear.Sticks(proj.Kind) || proj.Grenade is { Sticky: true }) && proj.Stuck)
                 continue;
             if (Throwables.Step(proj, World.TickDt))
             {
                 BounceSound(proj, now);
                 if (TacticalGear.Sticks(proj.Kind))
                     proj.Stuck = true;
+                if (proj.Grenade is { Sticky: true })
+                    StickBuilt(proj); // a sticky built grenade stops where it touched, as on the server (GameGrenades.cs)
             }
             if (now - proj.Born > 10)
                 proj.Stuck = true; // the server will clean it up
@@ -687,6 +732,15 @@ public sealed partial class Game
             var age = now - s.Born;
             if ((int)age != (int)(age - dt) && age > 0.5)
                 Audio.Effect3D(Sfx.ReconBeep, s.Pos, 0.45f);
+        }
+        if (!IsServer)
+            ClientTickGrenadeZones(now); // built grenades' patches fade (GameGrenades.cs)
+        foreach (ref readonly var gz in GrenadeZones.AsSpan())
+        {
+            // A lure squeaks twice a second while it plays (everyone hears it; so do the zombies).
+            var age = now - gz.Born;
+            if (gz.Active && gz.Kind == PayloadKind.Lure && (int)(age * 2) != (int)((age - dt) * 2))
+                Audio.Effect3D(Sfx.SensorBeep, gz.Pos, 0.6f);
         }
         Shake *= MathF.Exp(-4f * dt);
         UpdateKnockFeedback(dt); // a blast push's view kick settles (Knockback.cs)
@@ -759,12 +813,15 @@ public sealed partial class Game
                 var kind = (ThrowableKind)r.U8();
                 var origin = r.Vec();
                 var dir = r.Vec();
-                ServerThrow(p, kind, origin, dir, now);
+                var cook = kind == ThrowableKind.Built && r.Has(1) ? r.U8() / 50f : 0f;
+                ServerThrow(p, kind, origin, dir, now, cook);
                 break;
             }
             case (byte)Msg.ProjSpawn when !IsServer && r.Has(28):
             {
                 var proj = new Projectile { Id = r.U16(), Kind = (ThrowableKind)r.U8(), Owner = r.U8(), Pos = r.Vec(), Vel = r.Vec(), Born = now };
+                if (proj.Kind == ThrowableKind.Built)
+                    ClientBuiltSpawned(proj, r.Has(1) ? r.U8() : (byte)0); // the thrower's grenade numbers, so it flies the same (GameGrenades.cs)
                 Projectiles[proj.Id] = proj;
                 if (proj.Owner != LocalId)
                     Audio.Effect3D(Sfx.Throw, proj.Pos, 0.6f);
@@ -778,6 +835,8 @@ public sealed partial class Game
                 var pos = r.Vec();
                 var flags = r.U8();
                 Projectiles.Remove(pid);
+                if (kind == ThrowableKind.Built)
+                    ReadBuiltExplode(ref r, owner, pos, now); // the payload's look and lingering cloud (GameGrenades.cs)
                 OnDetonated(kind, owner, pos, flags, now);
                 break;
             }

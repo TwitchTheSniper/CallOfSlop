@@ -290,7 +290,7 @@ public static class LoadoutStore
                 if (ironsS)
                     ChosenIrons.Add((l, 1));
                 break;
-            case "grenade" when Enum.TryParse<ThrowableKind>(value, out var g) && !Throwables.Get(g).IsEquipment:
+            case "grenade" when Enum.TryParse<ThrowableKind>(value, out var g) && !Throwables.Get(g).IsEquipment && Throwables.Get(g).InLoadouts:
                 l.Grenade = g;
                 break;
             case "equipment" when Enum.TryParse<ThrowableKind>(value, out var e) && (e == ThrowableKind.None || Throwables.Get(e).IsEquipment):

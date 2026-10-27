@@ -136,7 +136,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
     //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
     //     a crawler), 11-13 bytes a zombie.
-    public const byte ProtocolVersion = 65;
+    // 67: Modular grenades (Source/Game/GameGrenades.cs): builds in the Zombies grenade slot (Msg.ZBuild slot 5);
+    //     ThrowableKind.Built; Msg.Throw of a built grenade ends with the cook time (1/50 s), Msg.ProjSpawn with what it is
+    //     (thrown, bomblet, aftershock) and Msg.Explode with the payload, radius and duration (tenths) and that byte;
+    //     Msg.ZGrenade at the end of Msg (remote detonation, a lure's closing bang).
+    public const byte ProtocolVersion = 67;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -217,7 +217,9 @@ public sealed partial class Ui : IDisposable
                 ImGuiSafe.TextColored(Orange, $"[{K(GameAction.Interact)}] {hint}");
             if (game.LocalGrenade != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
-                    $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
+                    game.LocalGrenade == ThrowableKind.Built && game.LocalGrenadeBuild is { } gb // a built grenade (Zombies): its name, and the cook
+                        ? (game.CookingSince >= 0 ? $"[{K(GameAction.Grenade)}] COOKING {gb.Name}: {MathF.Max(0, gb.FuseSeconds - (float)(Brutal.GlfwApi.Glfw.Time - game.CookingSince)):0.0} s" : $"[{K(GameAction.Grenade)}] {gb.Name} x{game.GrenadesLeft}")
+                        : $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
             if (game.LocalEquipment != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
                     $"[{K(GameAction.Equipment)}] {Throwables.Get(game.LocalEquipment).Name} x{game.EquipmentLeft}");

@@ -96,10 +96,10 @@ public sealed partial class Game
     /// </summary>
     private string? ServerDisassemble(Player p, ZPlayer zp, int slot)
     {
-        if (slot is < 0 or > 4 || (slot is 2 or 3 && !p.ExtraSlots))
+        if (slot is < 0 or >= BuildSlots || (slot is 2 or 3 && !p.ExtraSlots))
             return "That slot isn't yours.";
         if (zp.Slots[slot] is not { } old)
-            return slot == 4 ? "There's no melee build to take apart." : $"Slot {slot + 1} has no build to take apart.";
+            return slot == 4 ? "There's no melee build to take apart." : slot == GrenadeSlot ? "There's no grenade build to take apart." : $"Slot {slot + 1} has no build to take apart.";
         var counts = PartCounts(old);
         var total = 0;
         foreach (var (name, n) in counts)
@@ -259,13 +259,15 @@ public sealed partial class Game
     /// </summary>
     public void ClearSlot(Player p, int slot)
     {
-        if (slot is < 0 or > 4)
+        if (slot is < 0 or >= BuildSlots)
             return;
         var zp = ZP(p);
         zp.Slots[slot] = null;
         byte weapon = 0;
         if (slot == 4)
             p.MeleeBuild = null; // the standard melee strike
+        else if (slot == GrenadeSlot)
+            SwapZombiesGrenade(p, null); // the rules' stock grenade again, the count kept
         else
         {
             var inHand = SlotOf(p, p.Weapon) == slot;
@@ -320,6 +322,13 @@ public sealed partial class Game
             p.MeleeBuild = null;
             if (p.Id == LocalId)
                 ZP(p).Slots[4] = null;
+            return;
+        }
+        if (slot == GrenadeSlot)
+        {
+            p.GrenadeBuild = null;
+            if (p.Id == LocalId)
+                ZP(p).Slots[GrenadeSlot] = null;
             return;
         }
         if (slot is < 0 or > 3)
@@ -380,7 +389,7 @@ public sealed partial class Game
         var list = new List<byte[]>();
         var w = new PacketWriter();
         var zp = ZP(p);
-        for (var s = 0; s < 5; s++)
+        for (var s = 0; s < BuildSlots; s++)
             if (zp.Slots[s] is { } b)
             {
                 WriteBuild(w, p.Id, s, WeaponIn(p, s), 0, b.ToText());
