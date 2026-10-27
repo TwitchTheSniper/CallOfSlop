@@ -7,21 +7,9 @@
   "weight": 0.55,
   "optic": "Lpvo6",
   "stats": [
-    {
-      "stat": "adsZoom",
-      "set": 6.0
-    },
-    {
-      "stat": "adsSpreadMult",
-      "mul": 0.42
-    },
-    {
-      "stat": "adsTime",
-      "add": 0.08
-    },
-    {
-      "stat": "mobility",
-      "add": -0.03
-    }
+    {"stat": "adsZoom", "set": 6.0},
+    {"stat": "adsSpreadMult", "mul": 0.42},
+    {"stat": "adsTime", "add": 0.08},
+    {"stat": "mobility", "add": -0.03}
   ]
 }

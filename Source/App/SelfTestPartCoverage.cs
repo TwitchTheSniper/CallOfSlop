@@ -76,6 +76,19 @@ public static partial class SelfTest
                 if (probs.Count > 0)
                     problems.Add($"{f.Name} on the {r.Name}: {string.Join("; ", probs.Select(p => p.Message))}");
             }
+            // What the receiver fires plain (FMJ): receivers scale their calibre's damage (2026-10-27), so the round types are judged against it.
+            WeaponDef? Plain()
+            {
+                var b = new WeaponBuild("Coverage", grip);
+                var rn = b.Root!.Attach("receiver_1", r);
+                rn.Attach("barrel", stdBarrel);
+                rn.Attach("feed", feeds.First(f => f.FitsBore(bore) && f.RequiresAction.Length == 0));
+                rn.Attach("ammo", Parts.Find("FMJ")!);
+                if (action != null)
+                    rn.Attach("action", action);
+                return WeaponBuilder.Assemble(b).Def;
+            }
+            var plain = Plain();
             foreach (var a in ammo)
             {
                 var b = new WeaponBuild("Coverage", grip);
@@ -98,13 +111,16 @@ public static partial class SelfTest
                     continue;
                 }
                 var perPull = def.Damage * def.Pellets;
-                var basePull = cal.Damage * cal.Pellets;
+                var basePull = plain != null ? plain.Damage * plain.Pellets : cal.Damage * cal.Pellets;
+                var baseRange = plain?.RangeM ?? cal.RangeM;
                 lines.Add($"{bore}/{a.Name}: {def.Damage}x{def.Pellets} = {perPull} per shot, {def.RangeM:0} m");
-                // A round type changes the calibre's numbers by a sensible ratio: damage within x0.5 to x1.6 of what the bore fires plain, range x0.5 to x3
-                // (a split round keeps the total within rounding), and never below 1 damage a projectile.
+                // A round type changes the receiver's numbers by a sensible ratio: damage within x0.5 to x1.6 of what it fires plain (FMJ; the
+                // late-game rounds more: legendary x2, wonder x3, 2026-10-27), range x0.5 to x3 (a split round keeps the total within rounding),
+                // and never below 1 damage a projectile.
                 var ratio = perPull / (float)basePull;
-                if (ratio < 0.5f || ratio > 1.6f || def.Damage < 1 || def.Pellets < 1 || def.Pellets > 30 || def.RangeM < cal.RangeM * 0.5f || def.RangeM > cal.RangeM * 3f)
-                    problems.Add($"{a.Name} on the {r.Name}: {perPull} per shot ({def.Damage}x{def.Pellets}) and {def.RangeM:0} m against the {bore} calibre's {basePull} and {cal.RangeM:0} m");
+                var most = a.Rarity == Rarity.Wonder ? 3f : a.Rarity == Rarity.Legendary ? 2f : 1.6f;
+                if (ratio < 0.5f || ratio > most || def.Damage < 1 || def.Pellets < 1 || def.Pellets > 30 || def.RangeM < baseRange * 0.5f - 0.01f || def.RangeM > baseRange * 3f)
+                    problems.Add($"{a.Name} on the {r.Name}: {perPull} per shot ({def.Damage}x{def.Pellets}) and {def.RangeM:0} m against its plain {basePull} and {baseRange:0} m");
                 if (a.Round is { Pellets: > 0 } rd && def.Pellets != rd.Pellets && !(reg.ClassOf(bore).Pellets && a.Effects.Any(e => e.Field.Name == nameof(WeaponDef.Pellets))))
                     problems.Add($"{a.Name} on the {r.Name}: {def.Pellets} pellets, its round block says {rd.Pellets}");
             }

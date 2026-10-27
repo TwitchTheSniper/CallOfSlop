@@ -5,59 +5,16 @@
   "rarity": "legendary",
   "flavor": "A .50 action bored out until it takes shells meant for a tank. Three times the heavy round, and your shoulder files a complaint.",
   "weight": 3.6,
-  "receiver": {
-    "class": "LMG",
-    "soundOf": "Leviathan .50",
-    "stockAction": "Autocannon Drive",
-    "barrelScale": [
-      1.7,
-      1.7,
-      1.4
-    ]
-  },
+  "receiver": {"class": "LMG", "soundOf": "Leviathan .50", "stockAction": "Autocannon Drive", "barrelScale": [1.7, 1.7, 1.4]},
   "+model": [
-    {
-      "size": [
-        0.07,
-        0.012,
-        0.05
-      ],
-      "pos": [
-        0,
-        0.004,
-        0.03
-      ],
-      "color": [
-        0.85,
-        0.65,
-        0.2
-      ]
-    }
+    {"size": [0.07, 0.012, 0.05], "pos": [0, 0.004, 0.03], "color": [0.85, 0.65, 0.2]}
   ],
   "stats": [
-    {
-      "stat": "damage",
-      "mul": 3.0
-    },
-    {
-      "stat": "hipSpreadDeg",
-      "set": 3.8
-    },
-    {
-      "stat": "reload",
-      "set": 5.2
-    },
-    {
-      "stat": "headMult",
-      "set": 1.5
-    },
-    {
-      "stat": "recoilDeg",
-      "mul": 1.9
-    },
-    {
-      "stat": "mobility",
-      "add": -0.05
-    }
+    {"stat": "damage", "mul": 3.0},
+    {"stat": "hipSpreadDeg", "set": 3.8},
+    {"stat": "reload", "set": 5.2},
+    {"stat": "headMult", "set": 1.5},
+    {"stat": "recoilDeg", "mul": 1.9},
+    {"stat": "mobility", "add": -0.05}
   ]
 }

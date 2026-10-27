@@ -5,46 +5,10 @@
   "rarity": "wonder",
   "flavor": "A tiny jet engine on the haft. Every swing is supersonic and every hit sends a zombie into orbit, or near enough.",
   "weight": 0.9,
-  "flags": [
-    "rocket",
-    "launch"
-  ],
-  "melee": {
-    "damage": 30,
-    "swingMult": 0.6
-  },
+  "flags": ["rocket", "launch"],
+  "melee": {"damage": 30, "swingMult": 0.6},
   "model": [
-    {
-      "shape": "rod",
-      "size": [
-        0.035,
-        0.035,
-        0.1
-      ],
-      "pos": [
-        0.035,
-        0,
-        -0.02
-      ],
-      "color": "steel"
-    },
-    {
-      "size": [
-        0.028,
-        0.028,
-        0.02
-      ],
-      "pos": [
-        0.035,
-        0,
-        0.04
-      ],
-      "color": [
-        0.3,
-        0.8,
-        1.0
-      ],
-      "tag": "glow"
-    }
+    {"shape": "rod", "size": [0.035, 0.035, 0.1], "pos": [0.035, 0, -0.02], "color": "steel"},
+    {"size": [0.028, 0.028, 0.02], "pos": [0.035, 0, 0.04], "color": [0.3, 0.8, 1.0], "tag": "glow"}
   ]
 }

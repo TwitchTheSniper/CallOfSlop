@@ -232,7 +232,7 @@ public static class BuilderExamples
             r.Attach("feed", Need("Backpack Hopper", find));
             r.Attach("ammo", Need("FMJ", find));
             b.Root.Attach("foregrip", Need("Chaingun Handle", find));
-            return new Example(b, 900, 1200, "Six barrels taking turns at 2400 rpm once it has spun up.");
+            return new Example(b, 1050, 1400, "Six barrels taking turns at 2400 rpm once it has spun up.");
         });
         Try(() =>
         {

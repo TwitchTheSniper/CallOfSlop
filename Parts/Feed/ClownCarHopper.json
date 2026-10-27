@@ -4,124 +4,24 @@
   "category": "feed",
   "rarity": "wonder",
   "flavor": "A tiny hopper that holds nine hundred and ninety-nine rounds of anything and feeds sixteen receivers. Do not ask where they come from. Do not look inside.",
-  "bores": [
-    "pistol",
-    "rifle",
-    "heavy",
-    "shell",
-    "energy"
-  ],
+  "mount": "hopper",
+  "bores": ["pistol", "rifle", "heavy", "shell", "energy"],
   "weight": 2.0,
-  "hand": [
-    0,
-    -0.05,
-    0
-  ],
+  "hand": [0, -0.05, 0],
   "feed": "hopper",
+  "shared": {"feeds": 16},
+  "sockets": [
+    {"name": "ammo", "type": "ammo", "pos": [0, -0.02, 0]}
+  ],
   "model": [
-    {
-      "size": [
-        0.12,
-        0.1,
-        0.12
-      ],
-      "pos": [
-        0,
-        -0.06,
-        0
-      ],
-      "color": [
-        0.9,
-        0.25,
-        0.3
-      ]
-    },
-    {
-      "size": [
-        0.13,
-        0.015,
-        0.13
-      ],
-      "pos": [
-        0,
-        -0.008,
-        0
-      ],
-      "color": [
-        0.95,
-        0.85,
-        0.2
-      ]
-    },
-    {
-      "size": [
-        0.124,
-        0.02,
-        0.124
-      ],
-      "pos": [
-        0,
-        -0.09,
-        0
-      ],
-      "color": [
-        0.2,
-        0.6,
-        0.95
-      ]
-    },
-    {
-      "shape": "rod",
-      "size": [
-        0.015,
-        0.015,
-        0.1
-      ],
-      "pos": [
-        0.04,
-        -0.02,
-        -0.08
-      ],
-      "color": "black"
-    },
-    {
-      "shape": "rod",
-      "size": [
-        0.015,
-        0.015,
-        0.1
-      ],
-      "pos": [
-        -0.04,
-        -0.02,
-        -0.08
-      ],
-      "color": "black"
-    }
+    {"size": [0.12, 0.1, 0.12], "pos": [0, -0.06, 0], "color": [0.9, 0.25, 0.3]},
+    {"size": [0.13, 0.015, 0.13], "pos": [0, -0.008, 0], "color": [0.95, 0.85, 0.2]},
+    {"size": [0.124, 0.02, 0.124], "pos": [0, -0.09, 0], "color": [0.2, 0.6, 0.95]},
+    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [0.04, -0.02, -0.08], "color": "black"},
+    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [-0.04, -0.02, -0.08], "color": "black"}
   ],
   "stats": [
-    {
-      "stat": "mag",
-      "set": 999
-    },
-    {
-      "stat": "reload",
-      "set": 3.0
-    }
-  ],
-  "mount": "hopper",
-  "shared": {
-    "feeds": 16
-  },
-  "sockets": [
-    {
-      "name": "ammo",
-      "type": "ammo",
-      "pos": [
-        0,
-        -0.02,
-        0
-      ]
-    }
+    {"stat": "mag", "set": 999},
+    {"stat": "reload", "set": 3.0}
   ]
 }

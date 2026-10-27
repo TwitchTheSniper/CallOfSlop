@@ -5,57 +5,17 @@
   "rarity": "wonder",
   "flavor": "A coil gun that skips the bolt and fires a slice of the sun. Goes through the first zombie, the second, and the wall behind them.",
   "weight": 1.9,
-  "flags": [
-    "plasma",
-    "penetrating"
-  ],
-  "receiver": {
-    "stockAction": "Turn Bolt"
-  },
+  "flags": ["plasma", "penetrating"],
+  "receiver": {"stockAction": "Turn Bolt"},
   "+model": [
-    {
-      "size": [
-        0.05,
-        0.01,
-        0.05
-      ],
-      "pos": [
-        0,
-        0.004,
-        0.02
-      ],
-      "color": [
-        1.0,
-        0.85,
-        0.3
-      ],
-      "tag": "glow"
-    }
+    {"size": [0.05, 0.01, 0.05], "pos": [0, 0.004, 0.02], "color": [1.0, 0.85, 0.3], "tag": "glow"}
   ],
   "stats": [
-    {
-      "stat": "damage",
-      "mul": 8.0
-    },
-    {
-      "stat": "hipSpreadDeg",
-      "set": 3.0
-    },
-    {
-      "stat": "adsSpreadMult",
-      "set": 0.0
-    },
-    {
-      "stat": "reload",
-      "set": 2.6
-    },
-    {
-      "stat": "headMult",
-      "set": 2.6
-    },
-    {
-      "stat": "recoilDeg",
-      "mul": 1.2
-    }
+    {"stat": "damage", "mul": 8.0},
+    {"stat": "hipSpreadDeg", "set": 3.0},
+    {"stat": "adsSpreadMult", "set": 0.0},
+    {"stat": "reload", "set": 2.6},
+    {"stat": "headMult", "set": 2.6},
+    {"stat": "recoilDeg", "mul": 1.2}
   ]
 }

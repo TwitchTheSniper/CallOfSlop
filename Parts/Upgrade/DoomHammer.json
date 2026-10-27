@@ -6,59 +6,12 @@
   "flavor": "A firing pin forged from an anvil. Every round leaves a lot angrier: damage x1.75.",
   "weight": 0.7,
   "model": [
-    {
-      "size": [
-        0.03,
-        0.035,
-        0.05
-      ],
-      "pos": [
-        0,
-        0,
-        0.02
-      ],
-      "color": "gunmetal"
-    },
-    {
-      "size": [
-        0.036,
-        0.02,
-        0.02
-      ],
-      "pos": [
-        0,
-        0.026,
-        0.02
-      ],
-      "color": "black"
-    },
-    {
-      "size": [
-        0.01,
-        0.01,
-        0.01
-      ],
-      "pos": [
-        0,
-        0.04,
-        0.02
-      ],
-      "color": [
-        1.0,
-        0.4,
-        0.1
-      ],
-      "tag": "glow"
-    }
+    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "gunmetal"},
+    {"size": [0.036, 0.02, 0.02], "pos": [0, 0.026, 0.02], "color": "black"},
+    {"size": [0.01, 0.01, 0.01], "pos": [0, 0.04, 0.02], "color": [1.0, 0.4, 0.1], "tag": "glow"}
   ],
   "stats": [
-    {
-      "stat": "damage",
-      "mul": 1.75
-    },
-    {
-      "stat": "recoilDeg",
-      "mul": 1.15
-    }
+    {"stat": "damage", "mul": 1.75},
+    {"stat": "recoilDeg", "mul": 1.15}
   ]
 }

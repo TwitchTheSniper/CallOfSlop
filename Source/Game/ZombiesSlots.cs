@@ -611,6 +611,17 @@ public sealed partial class Game
         else
             w[wonder] = 0; // the wonder symbol is only on the reels in jackpot rounds
         var top = jackpot ? wonder : legendary;
+        // The row's top tier (2026-10-27): the late tiers only from their rounds; what a jackpot adds above it pays the top.
+        var rowTop = RunTables.SlotPart + (int)row.Top;
+        if (rowTop < top)
+        {
+            for (var t = top; t > rowTop; t--)
+            {
+                w[rowTop] += w[t];
+                w[t] = 0;
+            }
+            top = rowTop;
+        }
         // Heat steps (at most heatMaxSteps) plus the bet's steps (2026-10-26): only the part tiers move, never the blanks.
         var steps = Math.Min(rules.SlotHeatMaxSteps, heat / Math.Max(1, rules.SlotHeatStep)) + Math.Max(0, betSteps);
         for (var s = 0; s < steps; s++)
