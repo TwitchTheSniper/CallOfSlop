@@ -93,6 +93,13 @@ public sealed class ZSpot
     /// <summary>Perk machines: the perk (a key in the rules file); salvage: unused.</summary>
     public string Perk = "";
 
+    /// <summary>
+    /// Perk machines: the prop it stands as (and is drawn as without machine props): the perk's own machine
+    /// (<see cref="ZombiesMap.MachineProp.PerkFor"/>, "Jugg Perk Machine") if the props have it, else the plain
+    /// "Perk Machine" (a modded perk without a machine of its own). Worked out when the map is read.
+    /// </summary>
+    public string PropName = "";
+
     /// <summary>Price (slot upgrade, slot machines); 0 = the rules' default. Salvage piles ignore it (they gave that much scrap before 2026-10-27; now they give parts).</summary>
     public int Cost;
 
@@ -145,6 +152,13 @@ public sealed class ZombiesMap
     public static class MachineProp
     {
         public const string Perk = "Perk Machine", BoxSpot = "Mystery Box Crate", Bench = "Zombies Workbench", Power = "Power Switch Box", Slots = "Weapon Locker", SlotMachine = "Reel Cabinet";
+
+        /// <summary>
+        /// The perk machine prop of perk <paramref name="key"/> (2026-10-27: every perk has its own machine,
+        /// Props/Zombies/PerkMachines, written by tools/zombies/make_perk_machines.py): "Jugg Perk Machine". Props are
+        /// found by name ignoring case. A map whose props lack it uses the plain <see cref="Perk"/> prop.
+        /// </summary>
+        public static string PerkFor(string key) => key.Length == 0 ? Perk : $"{char.ToUpperInvariant(key[0])}{key[1..]} {Perk}";
 
         private static readonly string[] CategoryCabinets = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c)} {SlotMachine}").ToArray();
 
@@ -334,6 +348,8 @@ public sealed class ZombiesMap
                 var spot = Spot(map, z, s, $"{where}.perks", "perk");
                 if (spot.Perk.Length == 0)
                     throw new MapFileException($"{where}.perks: each machine needs \"perk\" (a perk key from Parts/Tables/ZombiesRules.json)");
+                var own = MachineProp.PerkFor(spot.Perk);
+                spot.PropName = map.PropScope.Find(own) != null ? own : MachineProp.Perk;
                 z.PerkMachines.Add(spot);
             }
         if (Get(e, "slotUpgrade") is { } su)
@@ -390,7 +406,7 @@ public sealed class ZombiesMap
         foreach (var s in BoxSpots)
             yield return (MachineProp.BoxSpot, s);
         foreach (var s in PerkMachines)
-            yield return (MachineProp.Perk, s);
+            yield return (s.PropName.Length > 0 ? s.PropName : MachineProp.Perk, s);
         foreach (var s in Benches)
             yield return (MachineProp.Bench, s);
         if (SlotUpgrade is { } su)

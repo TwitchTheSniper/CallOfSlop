@@ -5,7 +5,7 @@ Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
-buys, five perk machines, the power switch (it gates three perks and the lab shutter), two workbenches, four salvage
+buys, twelve perk machines (each perk its own machine), the power switch (it gates seven perks and the lab shutter), two workbenches, four salvage
 piles, the weapon-slot upgrade and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
@@ -223,6 +223,14 @@ PERKS = [
     {"perk": "jugg", "at": [22.6, -2], "yaw": -90, "power": True},
     {"perk": "speed", "at": [-22.6, -2], "yaw": 90, "power": True},
     {"perk": "doubletap", "at": [-6.7, 13.5], "yaw": -90, "power": True},
+    # The seven perks added 2026-10-27: three without the power (the cheap board perk in the start room), four behind it.
+    {"perk": "hammerhand", "at": [-6.6, -4.9], "yaw": 90},                     # start room, west wall
+    {"perk": "bloodroot", "at": [-12.4, 3.6], "yaw": 0},                       # offices, south wall
+    {"perk": "salvage", "at": [12.5, -27.6], "yaw": 180},                      # courtyard, the far garden wall
+    {"perk": "fleetfoot", "at": [25.6, -21.5], "yaw": -90, "power": True},     # generator house, east wall
+    {"perk": "marksman", "at": [6.7, 15.1], "yaw": 90, "power": True},         # lab, west wall
+    {"perk": "windfall", "at": [23.6, -8.7], "yaw": 180, "power": True},       # generator house, north wall
+    {"perk": "bulwark", "at": [-6.7, 5.4], "yaw": -90, "power": True},         # chapel, east wall
 ]
 SLOT = {"at": [22.65, 6.5], "yaw": -90, "cost": 4000}
 POWER = {"at": [18, -25.8], "yaw": 180}
@@ -556,7 +564,7 @@ for kind, s in machines:
 the_map = {
     "format": "call-of-slop-map/1",
     "name": "Blackmoor Asylum",
-    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, a slot machine for every part category, the power in the generator house.",
+    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, the power in the generator house.",
     "author": "Call of Slop",
     "order": 960,
     "maxPlayers": 8,

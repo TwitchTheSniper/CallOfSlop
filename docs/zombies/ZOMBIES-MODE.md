@@ -36,13 +36,13 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   swipe through it at players standing right at it.
 - **Downs.** Zombie hits take health (it regenerates as usual). At 0 you're **downed**: you lie on the floor and
   **crawl** (see "Between rounds, downs and spectating"; you can still shoot), lose **every perk**
-  (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the interact key on you for 3 s (Quick Revive
+  (`downs.losePerksOnDown`), and bleed out in 30 s unless a teammate holds the interact key on you for 3 s (Mender's Mead
   halves it). Bleeding out: you **spectate** a living teammate and are out until the **end of the round** (its last
   zombie dies), then back in the start area with the start gear; perks and 10 percent of your points are lost
   (`downs.bleedoutPointLoss`), and your **builds drop on the floor where you went down** (see "Dropped builds").
 - **Self-revive: Second Wind** (a perk machine in the start room, no power needed): when you go down with it you get
   back up on your own after `downs.selfReviveSeconds` (5 s), **solo or co-op**; the perk is used up by it, and you can
-  buy it again. Downed alone without it is the game over. Quick Revive is back to World at War co-op behaviour
+  buy it again. Downed alone without it is the game over. Mender's Mead is back to World at War co-op behaviour
   (revive teammates twice as fast) and no longer self-revives solo (user decision, 2026-10-21; see below).
 - **Game over** when nobody is left standing (everyone downed or bled out). The results screen says
   "Game over on round N: survived N-1 rounds"; after it a fresh run starts on the same map (no map vote in Zombies).
@@ -145,28 +145,66 @@ grey: not possible now (needs the power, already owned...).
 | **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
 | **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or nothing; a loss frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 
-### Perks (proposed; "perks", up to 8)
+### Perks (proposed; "perks", up to 16)
 
-| Perk | Price | Effect |
-| --- | --- | --- |
-| Juggernog | 2500 | zombie hits do 40 percent (the health bar stays 100: 6 hits instead of 3) |
-| Speed Cola | 3000 | reloads twice as fast |
-| Double Tap | 2000 | fires a third faster (client and server fire-rate checks both know it) |
-| Quick Revive | 1500 | revive teammates twice as fast |
-| Second Wind | 1500 (every buy) | down: back up on your own after 5 s (solo or co-op); used up by it |
+| Perk | Key | Price | Power (Blackmoor) | Effect | Rules fields |
+| --- | --- | --- | --- | --- | --- |
+| Ironhide Cider | jugg | 2500 | yes | zombie hits do 40 percent (the health bar stays 100: 6 hits instead of 3) | `damageTaken` 0.4 |
+| Swiftload Seltzer | speed | 3000 | yes | reloads twice as fast | `reload` 0.5 |
+| Twinfire Punch | doubletap | 2000 | yes | fires a third faster (client and server fire-rate checks both know it) | `fireRate` 1.33 |
+| Mender's Mead | revive | 1500 | no | revive teammates twice as fast | `revive` 0.5 |
+| Second Wind | secondwind | 1500 (every buy) | no | down: back up on your own after 5 s (solo or co-op); used up by it | `selfRevive` |
+| Fleetfoot Fizz | fleetfoot | 2000 | yes | move 20 percent faster on foot (not while crawling) | `moveSpeed` 1.2 |
+| Marksman Malt | marksman | 2500 | yes | headshot pellets do 1.5x; a headshot kill pays 50 more (150) | `headshotDamage` 1.5, `headshotPoints` 50 |
+| Bloodroot Tonic | bloodroot | 2000 | no | melee does double damage; every swing that hits a zombie heals you 30 | `meleeDamage` 2, `meleeHeal` 30 |
+| Windfall Soda | windfall | 3000 | yes | each of your kills has a 6 percent chance of its own to drop a power-up, which may go up to 2 over the round's cap | `powerUpChance` 0.06, `powerUpExtra` 2 |
+| Hammerhand Ale | hammerhand | 1000 | no | rebuild barriers 2.5x as fast; each board pays double (and the round's board cap doubles with it) | `repair` 0.4, `repairPoints` 2 |
+| Salvage Stout | salvage | 2000 | no | your kills drop parts twice as often; a salvage pile gives you one part more | `partDrops` 2, `salvageBonus` 1 |
+| Bulwark Brew | bulwark | 3500 | yes | an armour plate takes a whole zombie hit, then grows back 12 s later (its HUD badge goes grey meanwhile) | `plateSeconds` 12 |
 
-On Zombies Test, Quick Revive and Second Wind (both in the start room) work without power; the other three need it.
+**Seven more perks (developer request, 2026-10-27: "Add five to eight more perks into the zombie mode. And make machines
+for them").** Each is about one thing the existing five don't touch, so no two overlap: moving (Fleetfoot), aiming
+for the head (Marksman), melee and staying alive without a teammate (Bloodroot), the power-ups (Windfall), the boards
+(Hammerhand), the weapon builder's parts (Salvage) and a flat hit blocker that's different from Ironhide Cider's cut
+(Bulwark: one free hit every 12 s; with Ironhide Cider too, the hits that do land are cut). Ideas left out: faster
+workbench / box / slot handling (the bench already pauses nothing and a box spin is short: too small to feel), bonus
+slot odds (the slot machines' bad-luck protection and jackpot rounds already shape them; Salvage feeds the same
+builder loop more visibly), explosive resistance (zombies don't explode and Zombies has no self-damage), a slide or
+dodge (new movement code and animation for one perk), faster aiming (no aim-time stat in the builder yet), extra
+magazine size (the builder's Feed parts own that), reviving from range (overlaps Mender's Mead). The cheap Hammerhand
+sits in the start room for the early rounds; four of the seven need the power. The HUD shows every perk held as a
+round badge with its own glyph (`"icon"`: heart, drum, rounds, cross, wind, chevrons, target, fang, star, hammer,
+gear, shield; UiZombiesPerks.cs), and every machine has its name over it within 9 m ("NEEDS POWER" under it while it
+waits). The perk flags went from 8 to 16 bits and a player's flags gained the plate bit (protocol 57). Self-test:
+**"Zombies more perks"**.
+
+**A machine for every perk (developer request, 2026-10-27: "make each of the perk machines more unique. They're
+suffering from rectangle syndrome").** `tools/zombies/make_perk_machines.py` writes Props/Zombies/PerkMachines: one
+prop per perk, found by key (`"jugg"` -> "Jugg Perk Machine"; a modded perk without one stands as the plain "Perk
+Machine"), each its own silhouette on the theme of its effect: a riveted pressure tank (Ironhide Cider), a revolver
+cylinder on end with a speed loader (Swiftload Seltzer), twin barrels with a cartridge belt (Twinfire Punch), a slim medical
+column under a big plus sign with paddles (Mender's Mead), bellows under swept wings (Second Wind), a raked tower with
+fins (Fleetfoot), a bullseye on an easel (Marksman), a gnarled stump on roots (Bloodroot), a gumball globe with a coin
+dial (Windfall), a stack of planks with a hammer on top (Hammerhand), a scrap hopper on legs with a gear (Salvage) and
+a heater shield under a helmet (Bulwark). They share one face where the game draws: the sign board at 1.62 m (the lit,
+pulsing sign in the perk's colour), two lamps blinking in turn at its top corners, a glow strip under it, and the
+dispenser below. All stay inside the plain machine's 0.9 x 0.7 m footprint. The same script reshaped the Power Switch
+Box (a breaker panel with ceramic insulators; the lever and lamp stay where the game draws them). Without machine
+props (Zombies Test) a machine's prop is drawn without collision.
+
+On Zombies Test, Mender's Mead, Second Wind and Hammerhand (start room), Bloodroot and Salvage (West Wing) work without
+power; the other seven need it (Fleetfoot, Marksman, Windfall and Bulwark in a row along the Hall's far wall).
 A perk with `"selfRevive": true` is a self-revive perk (any perk can be made one in the rules file). **Second Wind
 (decided 2026-10-26)**: a fixed 1500 every time (no rising price of its own), it counts as a perk for the doubling
 below (it's a perk like the others), it's used up by the revive (and lost with the others on a down anyway).
 Zombies don't attack downed players today, so a self-revive can't be "finished off" yet: being revived by a teammate
-first also ends it (the perk is still used up). Quick Revive lost its 500 solo price with its solo self-revive.
+first also ends it (the perk is still used up). Mender's Mead lost its 500 solo price with its solo self-revive.
 
 **More than 4 perks (developer answer, 2026-10-26).** There's no hard limit any more: holding 4 perks, the 5th costs
 2x its listed price, the 6th 4x, the 7th 8x (each step doubles), for every perk including Second Wind (so a 5th-perk
 Second Wind is 3000). The prompt shows the real price and the step ("Hold F to buy Second Wind [3000] (5th perk:
-x2)"). Rules: `buy.fullPricePerks` (4; 0 = never dearer), `buy.extraPerkFactor` (2), `buy.maxPerks` (now 8, every
-perk: a hard cap if a map ever wants one). Co-op bots pay the same prices. Self-test: "Zombies mode" ("perk price").
+x2)"). Rules: `buy.fullPricePerks` (4; 0 = never dearer), `buy.extraPerkFactor` (2), `buy.maxPerks` (16 since
+2026-10-27, at least every perk: a hard cap if a map ever wants one). Co-op bots pay the same prices. Self-test: "Zombies mode" ("perk price").
 
 ### Ammo
 
@@ -269,8 +307,9 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 ```
 
 - **Machine props** (`"machineProps": true`, milestone 3; open question 9): every machine stands as a **solid prop** from
-  `Props/Zombies` (players, zombies, bullets and the bots' nav graph treat it like any solid prop): **Perk Machine** (the
-  game paints the perk's colour and lit sign on its front), **Mystery Box Crate** (one at every box spot; the box itself
+  `Props/Zombies` (players, zombies, bullets and the bots' nav graph treat it like any solid prop): **the perk's own machine**
+  ("Jugg Perk Machine": Props/Zombies/PerkMachines, see "Perks"; the plain **Perk Machine** for a perk without one, the
+  game painting the perk's colour on its front; the game draws the lit sign and lamps on either), **Mystery Box Crate** (one at every box spot; the box itself
   is drawn a little bigger over the crate at the spot it's in), **Zombies Workbench**, **Power Switch Box** (the lever
   and lamp are drawn on it) and **Weapon Locker** (the slot upgrade; its screen is drawn on it) and **Reel Cabinet** (a slot machine; its reels, heat
   meter and topper lights are drawn on it). The section places them
@@ -296,9 +335,9 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 - Builds named by wall buys must be standard builds tagged `"wall"`; perks must be keys from the rules file.
 
 The dev map **Zombies Test** (48 x 48 m): a start room (two windows, a wall SMG, the box's first spot, a workbench,
-Quick Revive), the **Hall** behind a door (window, wall pump, Juggernog, a box spot, salvage), the **West Wing**
-behind debris (window, a ground spawner, the wall rifle for ammo, Speed Cola, a box spot) and the **Power Room**
-behind a door (window, the power switch, Double Tap, the slot upgrade, a workbench, salvage, the Burst Marksman), plus
+Mender's Mead), the **Hall** behind a door (window, wall pump, Ironhide Cider, a box spot, salvage), the **West Wing**
+behind debris (window, a ground spawner, the wall rifle for ammo, Swiftload Seltzer, a box spot) and the **Power Room**
+behind a door (window, the power switch, Twinfire Punch, the slot upgrade, a workbench, salvage, the Burst Marksman), plus
 a shutter between the Hall and the Power Room that needs the power.
 
 ## Blackmoor Asylum (milestone 3, the Zombies pack)
@@ -311,16 +350,16 @@ the ambient raised so it stays readable, flickering caged lamps, tube lights and
 
 | Area | Way in (price) | What's there |
 | --- | --- | --- |
-| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Quick Revive and Second Wind (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk |
-| **East Ward** | the Ward Door (750) | 2 windows, Juggernog (power), the Wall SMG, salvage, hospital beds |
-| **West Offices** | the Records Debris (750) | 2 windows, Speed Cola (power), the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
-| **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, a fountain |
-| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, generators |
-| **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Double Tap (power), the Wall SMG, box spot 4, pews and an altar |
-| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), the Wall Pump, box spot 5, salvage, consoles |
+| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk |
+| **East Ward** | the Ward Door (750) | 2 windows, Ironhide Cider (power), the Wall SMG, salvage, hospital beds |
+| **West Offices** | the Records Debris (750) | 2 windows, Swiftload Seltzer (power), Bloodroot Tonic, the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
+| **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, Salvage Stout, a fountain |
+| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, Fleetfoot Fizz and Windfall Soda (power), generators |
+| **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Twinfire Punch and Bulwark Brew (power), the Wall SMG, box spot 4, pews and an altar |
+| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), Marksman Malt (power), the Wall Pump, box spot 5, salvage, consoles |
 
-Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 5 perk
-machines (3 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
+Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 12 perk
+machines (7 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
 the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
 runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
 
@@ -704,7 +743,7 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 - **Where**: within `shopRange` (40 m) of its post, in unlocked areas, walking area to area through the open doors'
   sides; afterwards it walks back to its post, so nobody is left alone at the windows (no stranding the team).
 - **What, in order** (a think every `thinkSeconds`, 0.5 s; always keeping `reserve`, 250 points): the **power switch**
-  (free); **perks** in `perkOrder` (Juggernog, Quick Revive, Speed Cola, Double Tap, Second Wind), at the players'
+  (free); **perks** in `perkOrder` (Ironhide Cider, Mender's Mead, Hammerhand Ale, Swiftload Seltzer, Twinfire Punch, Second Wind), at the players'
   prices (the doubling past the 4th included); the first one it can reach but can't afford yet is what it **saves
   for**, so the rest only spends what's left over; a **wall gun** with `wallBetter` (1.15) x the damage per second of
   the gun in its hands (or into a free slot); the **slot upgrade**; the **mystery box** with `boxSurplus` (500) spare,
@@ -722,13 +761,13 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `buy` | true | bots spend their points |
 | `reserve` | 250 | points a bot always keeps |
 | `quietRange`, `shopRange` | 10, 40 | no shopping mid-round with a zombie this close; how far from its post it shops (m) |
-| `perkOrder` | jugg, revive, speed, doubletap, secondwind | the perks it wants, first first |
+| `perkOrder` | jugg, revive, hammerhand, speed, doubletap, secondwind | the perks it wants, first first (Hammerhand early: cheap, and bots rebuild boards; the other new perks are left out, since past the 6th the doubling price would have a bot saving for one all game) |
 | `boxSurplus`, `slotSurplus` | 500, 2500 | spare points before a box spin / a slot pull |
 | `wallBetter` | 1.15 | how much better (damage per second) a wall gun must be |
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags)
 
 Protocol 50 (sounds, see "Sound"): bit 3 of a zombie's state byte in `ZEnts` is the head bit (a fresh head hit, or a
 headshot kill); the state is the low 3 bits.
@@ -786,7 +825,7 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
    anyone be able to pick up your builds (today), or only you; and a points refund for the owner?
 3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). **Answered 2026-10-26**:
    a fixed 1500 every buy; no hard perk limit any more: each perk beyond the 4th costs double the step before (5th 2x,
-   6th 4x, 7th 8x...), Second Wind included; solo Quick Revive unchanged (see "Perks").
+   6th 4x, 7th 8x...), Second Wind included; solo Mender's Mead unchanged (see "Perks").
 4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). **Answered 2026-10-26**: a
    World at War style team points schedule replaced the 4 percent a kill roll (rewards come more evenly), tuned to the
    same average rate; 4 a round, 30 s, Max Ammo 38 percent kept.

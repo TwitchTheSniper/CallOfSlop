@@ -115,7 +115,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     has no scrap value (0 nothing, 1 points, 2 part, 3 melee) and its reels no cog (0 skull, 1 coin, 2-7 gems, 8 blade);
     //     the result byte's bit 7 (and Msg.ZSlotWin's flag bit 0) now means a part you held plenty of paid points instead;
     //     Msg.ZBench kinds 1 and 2 (break down, craft) are gone.
-    public const byte ProtocolVersion = 56;
+    // 57: Zombies has 12 perks (seven new ones, 2026-10-27): the perk flags in Msg.ZWorld are 16 bits, and bit 5 of a
+    //     player's flags says the armour plate (Bulwark Brew) is up.
+    public const byte ProtocolVersion = 57;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

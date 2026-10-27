@@ -107,20 +107,8 @@ public sealed partial class Ui
         }
         ImGui.End();
 
-        // Perks, bottom-left beside the round.
-        var perks = game.ZP(me).Perks;
-        if (perks != 0)
-        {
-            ImGui.SetNextWindowPos(new float2(pos.X + pad + 170 * _scale, pos.Y + size.Y - pad - 200 * _scale), ImGuiCond.Always, new float2(0, 1));
-            if (ImGui.Begin("##zperks"u8, Overlay))
-                for (var i = 0; i < game.ZRules.Perks.Count; i++)
-                    if ((perks & (1 << i)) != 0)
-                    {
-                        var c = game.ZRules.Perks[i].Color;
-                        ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), $"[{game.ZRules.Perks[i].Name}]");
-                    }
-            ImGui.End();
-        }
+        // Perks, bottom-left beside the round: a badge each (UiZombiesPerks.cs).
+        DrawZPerkBadges(game, game.ZP(me), pos, size, pad);
 
         // Power-ups: Insta-Kill, Double Points and Infinite Ammo timers bottom centre (blinking in their last 5 s); the floating ones labelled.
         var insta = game.InstaKillLeft(now);
@@ -145,6 +133,7 @@ public sealed partial class Ui
             ImGui.End();
         }
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
+        DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
         foreach (var pu in game.ZPowerUps)
         {
             var dx = pu.At.X - me.Position.X;

@@ -77,7 +77,7 @@ public static partial class SelfTest
         if (rules.Perks.Any(p => zm.PerkMachines.All(m => rules.Perk(m.Perk) != p)))
             Fail($"{map.Name}: not every perk has a machine");
         if (zm.PerkMachines.Any(m => m.Perk is "revive" or "secondwind" && (m.NeedsPower || m.Area != zm.StartArea)))
-            Fail($"{map.Name}: Quick Revive and Second Wind should be in the start room without the power");
+            Fail($"{map.Name}: Mender's Mead and Second Wind should be in the start room without the power");
 
         // Every area is reachable through doors (the door graph), and every door is a real way through (shut: blocked).
         var reach = new HashSet<int> { zm.StartArea };

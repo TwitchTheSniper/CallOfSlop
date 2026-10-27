@@ -140,7 +140,7 @@ public sealed partial class Game
         foreach (var p in players)
         {
             var zp = ZP(p);
-            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0))).U8(zp.Perks) // bits 3-4: ready-up (protocol 47)
+            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
                 .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535));
         }
@@ -571,7 +571,8 @@ public sealed partial class Game
             zp.ReadyVoter = (flags & 16) != 0;
             if (Players.TryGetValue(id, out var p) && id != LocalId)
                 p.ExtraSlots = (flags & 2) != 0;
-            zp.Perks = r.U8();
+            zp.PlateReady = (flags & 32) != 0;
+            zp.Perks = r.U16();
             zp.BleedFraction = r.U8() / 255f;
             zp.BeingRevived = r.U8() / 255f;
             zp.Kills = r.U16();
