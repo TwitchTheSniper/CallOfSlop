@@ -237,8 +237,15 @@ public static partial class SelfTest
         game.SelfTestNavGates();
         var shutLen = search.Find(g, inside, outside, path, maxExpand: 60000);
         var pathOk = openLen > 0 && shutLen <= 0;
+        // The switches are runtime state: a restored map's cached graph is as built again, so its bake reads back the same (the "Bots" check).
+        map.RestoreProps();
+        var key = NavBake.KeyOf(map, map.ContentHash);
+        var back = NavBake.Read(NavBake.Write(g, map, key), map.Name, map.ContentHash, key, out _);
+        var asBuilt = !g.EdgeOff.Contains(true) && back != null && back.Serialize().AsSpan().SequenceEqual(g.Serialize()) && NavFingerprint(back) == NavFingerprint(g);
         Line($"Logic Test: {l.Entities.Count} entities ({doors.Length} doors solid and undrawn {boxesOk}), {l.Wires.Length} wires; nav links {string.Join(", ", shut.Select(x => $"{x.Edges} edges"))}, "
-             + $"all off while shut, the gate's on while open {navOk}; a path out of the yard {openLen} nodes while open, {shutLen} while shut");
+             + $"all off while shut, the gate's on while open {navOk}; a path out of the yard {openLen} nodes while open, {shutLen} while shut; restored, the graph is as built and bakes the same {asBuilt}");
+        if (!asBuilt)
+            Fail("map logic: a restored map's nav graph still has door switches (baked != live)");
         if (!boxesOk || !navOk)
             Fail("map logic: the Logic Test doors aren't solid undrawn boxes, or their nav links don't follow them");
         if (!pathOk)
