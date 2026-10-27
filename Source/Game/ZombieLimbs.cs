@@ -256,6 +256,26 @@ public sealed partial class Game
         return ZombieShotApply(p, p.WeaponDef, now);
     }
 
+    /// <summary>Self-test: one trigger pull of pellets at the world points <paramref name="at"/> on zombie <paramref name="z"/> (a shotgun: one damage event, several limbs).</summary>
+    public byte SelfTestLimbPellets(Player p, Zombie z, ReadOnlySpan<Vector3> at, float damage, double now)
+    {
+        for (var i = 0; i < at.Length; i++)
+        {
+            var o = at[i] + World.FlatForward(z.Yaw) * 3f;
+            var d = Vector3.Normalize(at[i] - o);
+            var dist = 10f;
+            if (ZombieRayHit(o, d, ref dist, ServerTick, out var head) is { } hit)
+                ZombieShotAdd(hit, damage, head);
+        }
+        return ZombieShotApply(p, p.WeaponDef, now);
+    }
+
+    /// <summary>Self-test: a zombie's limb health from its (changed) health, all limbs back on.</summary>
+    public void SelfTestInitLimbs(Zombie z) => InitLimbs(z);
+
+    /// <summary>Self-test: how fast this zombie moves (m/s: its class, slows and lost legs).</summary>
+    public float SelfTestSpeedOf(Zombie z) => SpeedOf(z);
+
     /// <summary>Self-test: the limb a ray from <paramref name="o"/> along <paramref name="d"/> hits on the first zombie in its way (-2: none).</summary>
     public int SelfTestLimbRay(Vector3 o, Vector3 d)
     {
