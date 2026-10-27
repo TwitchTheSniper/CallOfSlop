@@ -133,7 +133,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     ends with a count and each end's barrel index (one byte each), after the ends and the wall origin.
     // 64: independent receiver fire rates (Source/Game/GameFireGroups.cs): Msg.Fire ends with the lock-target byte (0xFF
     //     when none) and a u16 mask of the receivers that fired on a volley build (0 = all); the server budgets each one.
-    public const byte ProtocolVersion = 64;
+    // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
+    //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
+    //     a crawler), 11-13 bytes a zombie.
+    public const byte ProtocolVersion = 65;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

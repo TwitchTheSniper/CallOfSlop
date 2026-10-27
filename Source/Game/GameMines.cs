@@ -161,8 +161,10 @@ public sealed partial class Game
                 continue;
             if (credit != null)
             {
+                BlastLimbs(z, center, radius, maxDamage); // (ZombieLimbs.cs)
                 if (DamageZombie(credit, z, amount, false, melee: false, now, explosive: true))
                     ZombiesKilledByMines++;
+                SeverLimbs(z, credit, now);
                 continue;
             }
             z.Health -= amount;

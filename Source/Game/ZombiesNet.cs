@@ -99,8 +99,14 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Most bytes per zombie in <see cref="Msg.ZEnts"/> (12 with the window byte, 11 without: protocol 58).</summary>
+    /// <summary>Most bytes per zombie in <see cref="Msg.ZEnts"/> with all its limbs (12 with the window byte, 11 without: protocol 58).</summary>
     public const int ZEntBytes = 12;
+
+    /// <summary>
+    /// A zombie that has lost a limb carries one more byte (protocol 65): the top bit of its id says so, the byte holds the
+    /// lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler). 9 + 80 x 13 = 1049 bytes at most.
+    /// </summary>
+    public const int ZEntLimbBytes = 1, ZEntLimbFlag = 0x8000;
 
     /// <summary>The header of <see cref="Msg.ZEnts"/>: the message id, the tick, the horde's size and the entry count (protocol 58).</summary>
     public const int ZEntsHeader = 1 + 4 + 2 + 2;
@@ -129,6 +135,7 @@ public sealed partial class Game
         public readonly ushort[] SentId = new ushort[MaxZombies];
         public readonly byte[] Age = new byte[MaxZombies];
         public readonly byte[] SentState = new byte[MaxZombies];
+        public readonly byte[] SentLimbs = new byte[MaxZombies];
     }
 
     private readonly Dictionary<ulong, ZEntView> _zViews = new();
@@ -186,8 +193,8 @@ public sealed partial class Game
                     var p = age * weight;
                     if (isNew)
                         p += 1000f;
-                    else if (view.SentState[slot] != ZStateByte(z))
-                        p += 600f;
+                    else if (view.SentState[slot] != ZStateByte(z) || view.SentLimbs[slot] != z.Limbs)
+                        p += 600f; // (a limb coming off goes out at once, like a death)
                     if (age >= ZEntMaxAge)
                         p += 5000f;
                     key = -p;
@@ -206,17 +213,20 @@ public sealed partial class Game
             var z = Horde[_zEntIdx[k]];
             var p = z.Position;
             var sb = ZStateByte(z);
-            w.U16(z.Id).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
+            w.U16((ushort)(z.Id | (z.Limbs != 0 ? ZEntLimbFlag : 0))).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
                 .U8(sb)
                 .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255));
             if (ZEntHasWindow(z.State))
                 w.U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
+            if (z.Limbs != 0)
+                w.U8(z.Limbs); // the lost limbs (protocol 65, ZombieLimbs.cs)
             if (view != null && z.Hm.Slot is >= 0 and < MaxZombies)
             {
                 view.SentId[z.Hm.Slot] = z.Id;
                 view.Age[z.Hm.Slot] = 0;
                 view.SentState[z.Hm.Slot] = sb;
+                view.SentLimbs[z.Hm.Slot] = z.Limbs;
             }
         }
         if (view != null)
@@ -581,7 +591,8 @@ public sealed partial class Game
         int n = r.U16();
         for (var i = 0; i < n && r.Has(ZEntBytes - 1); i++)
         {
-            var id = r.U16();
+            var rawId = r.U16();
+            var id = (ushort)(rawId & ~ZEntLimbFlag);
             var pos = new Vector3(DQ(r.U16(), 32), DQ(r.U16(), 64), DQ(r.U16(), 32));
             var yawByte = r.U8();
             var yaw = yawByte / 256f * MathF.Tau;
@@ -589,10 +600,12 @@ public sealed partial class Game
             var health = r.U8();
             var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
+            var limbs = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? (byte)(r.U8() & AllLimbs) : (byte)0; // (protocol 65)
             if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)
                 continue; // a late packet: this zombie already has newer news
             if (!latest && known == null)
                 continue; // (a late packet doesn't bring back one the newer ones dropped)
+            var fresh = false;
             if (!_zById.TryGetValue(id, out var z))
             {
                 z = new Zombie { Id = id };
@@ -600,6 +613,12 @@ public sealed partial class Game
                 z.RenderYaw = yaw;
                 Horde.Add(z);
                 _zById[id] = z;
+                fresh = true;
+            }
+            if (limbs != z.Limbs)
+            {
+                z.Limbs = (byte)(z.Limbs | limbs); // (limbs never grow back: a late packet can't put one on again)
+                ShowLimbs(z, z.RenderPos, z.RenderYaw, now, fresh); // the severing effect, once (ZombieLimbs.cs)
             }
             z.LastHeard = now;
             if ((sb & 8) != 0)

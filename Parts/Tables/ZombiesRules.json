@@ -245,5 +245,33 @@
     "flowFields": 24,
     "flowBuildsPerTick": 1,
     "flowRefreshSeconds": 1.0
+  },
+  "limbs": {
+    "note": "Dismemberment (docs/zombies/ZOMBIES-MODE.md, Dismemberment; Source/Game/ZombieLimbs.cs): each arm and leg has healthFraction of the zombie's health (at least healthMin) times its type's healthMult; a hit on a limb (damageShare of it) or a blast (blastShare, by each limb's distance) takes it off. One arm swipes weaker and slower, none bites; one leg limps; none crawls (slow, low reach, a prone-sized hit box, slow at windows). The pieces fly off as pooled gibs (goreCap pieces at most, goreSeconds each). types: walk, run, sprint (brutes and specials get their own when they exist; severs false ignores dismemberment).",
+    "enabled": true,
+    "healthFraction": 0.4,
+    "healthMin": 40,
+    "damageShare": 1.0,
+    "blastShare": 0.8,
+    "oneArmDamage": 0.7,
+    "oneArmWindup": 1.3,
+    "oneArmSwing": 1.3,
+    "biteDamage": 0.5,
+    "biteReach": 0.7,
+    "biteWindup": 1.15,
+    "oneLegSpeed": 0.55,
+    "crawlSpeed": 0.32,
+    "crawlReach": 0.8,
+    "crawlDamage": 0.8,
+    "crawlAttackHeight": 0.7,
+    "crawlClimb": 2.2,
+    "limbPoints": 0,
+    "goreSeconds": 6,
+    "goreCap": 48,
+    "types": {
+      "walk": { "healthMult": 1.0, "severs": true },
+      "run": { "healthMult": 1.0, "severs": true },
+      "sprint": { "healthMult": 1.2, "severs": true }
+    }
   }
 }

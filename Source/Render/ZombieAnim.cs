@@ -80,6 +80,9 @@ public struct ZombieAnimInput
     public ZSpeed Speed;
     public ushort Id;
 
+    /// <summary>The limbs it has lost (<see cref="Zombie.Limbs"/>: bit 0 right arm, 1 left arm, 2 right leg, 3 left leg). 0: whole.</summary>
+    public byte Limbs;
+
     /// <summary>Walk cycle phase (radians) and how much it is moving (0 standing .. 1 at its speed).</summary>
     public float Gait, Move;
 
@@ -182,6 +185,9 @@ public static class ZombieAnim
 
     /// <summary>Half a step's length by speed class (the walk cycle covers four of these, so <see cref="Game"/> keys the cycle to the speed).</summary>
     public static float StrideHalf(ZSpeed s) => s switch { ZSpeed.Sprint => 0.46f, ZSpeed.Run => 0.33f, _ => 0.24f };
+
+    /// <summary>Half a step's length with <paramref name="limbs"/> lost: a crawl's pull is short, a hop shorter than a stride.</summary>
+    public static float StrideHalf(ZSpeed s, byte limbs) => (limbs & 12) == 12 ? 0.16f : (limbs & 12) != 0 ? StrideHalf(s) * 0.6f : StrideHalf(s);
 
     /// <summary>Beyond this distance limbs are drawn as one box each (today's count of boxes).</summary>
     public static float LodRange = 28f;
@@ -335,13 +341,31 @@ public static class ZombieAnim
                 RiseTargets(a, look, out t);
                 break;
             default:
-                Locomotion(a, look, out t);
+                if ((a.Limbs & 12) == 12)
+                    Crawl(a, look, out t);
+                else
+                {
+                    Locomotion(a, look, out t);
+                    if ((a.Limbs & 12) != 0)
+                        Hop(a, (a.Limbs & 4) != 0 ? -1 : 1, ref t);
+                }
                 break;
+        }
+        if ((a.Limbs & 12) == 12 && a.Mode is ZAnimMode.Tearing or ZAnimMode.WindowIdle or ZAnimMode.Rising or ZAnimMode.Vaulting)
+        {
+            // No legs at a window or coming up: the body sits low, leaning in (the hands reach what they can).
+            t.Pelvis.Y -= 0.5f;
+            t.Pitch += 0.45f;
         }
         if (a.Mode == ZAnimMode.Dead)
             return; // the arms go up as it tips over (Solve), no overlays
         if (a.Attack >= 0 && a.Mode != ZAnimMode.Vaulting && a.Mode != ZAnimMode.Rising)
-            SwipeOverlay(a, look, ref t);
+        {
+            if ((a.Limbs & 3) == 3)
+                BiteOverlay(a, ref t);
+            else
+                SwipeOverlay(a, look, ref t);
+        }
         if (a.Stagger >= 0 && a.Stagger < 0.7f && a.Mode == ZAnimMode.Locomotion)
         {
             // Just landed from the window: knees give, a wobble, arms out for balance.
@@ -429,6 +453,71 @@ public static class ZombieAnim
         var sl = Shoulder(t, -1);
         t.HandR = ArmRest(a, look, sr, 1, a.Gait, amp);
         t.HandL = ArmRest(a, look, sl, -1, a.Gait + MathF.PI, amp);
+    }
+
+    /// <summary>
+    /// One leg gone: it hops and drags on the other (under the body's middle), the hips low and rolled towards the
+    /// missing side. <paramref name="side"/>: the leg it still has (+1 right, -1 left).
+    /// </summary>
+    private static void Hop(in ZombieAnimInput a, int side, ref ZombieTargets t)
+    {
+        var amp = Math.Clamp(a.Move, 0, 1);
+        var hop = MathF.Max(0, MathF.Cos(2 * a.Gait));
+        var foot = new Vector3(side * 0.06f, hop * 0.1f * amp, -MathF.Sin(a.Gait) * StrideHalf(a.Speed, a.Limbs) * amp);
+        var stump = new Vector3(-side * HipX, PelvisY - 0.2f, 0.05f); // (not drawn: keeps the solve tidy)
+        if (side > 0)
+            (t.FootR, t.FootL) = (foot, stump);
+        else
+            (t.FootL, t.FootR) = (foot, stump);
+        t.Pelvis.Y = PelvisY - 0.08f - 0.06f * amp * (1 - hop) + 0.05f * amp * hop;
+        t.Pelvis.X = side * 0.05f;
+        t.Roll += -side * 0.16f;
+        t.Pitch += 0.12f;
+    }
+
+    /// <summary>
+    /// No legs: a crawler. Belly down with the chest up a little and the head raised to look ahead, the hands taking turns
+    /// to reach forward onto the ground and pull (the cycle keyed to how far it moves).
+    /// </summary>
+    private static void Crawl(in ZombieAnimInput a, in ZombieLook look, out ZombieTargets t)
+    {
+        var amp = Math.Clamp(a.Move, 0, 1);
+        t = default;
+        t.Pitch = 1.32f;
+        t.Pelvis = new Vector3(0, 0.22f + 0.02f * amp * MathF.Sin(2 * a.Gait), 0.1f);
+        t.Roll = 0.08f * amp * MathF.Sin(a.Gait);
+        t.Twist = 0.1f * amp * MathF.Sin(a.Gait);
+        t.HeadRoll = look.HeadRoll * 0.5f;
+        t.HeadNod = -0.95f + 0.05f * MathF.Sin(a.Gait + a.Time * 0.4f);
+        t.FootR = new Vector3(HipX, 0.1f, 0.75f); // (no legs to draw)
+        t.FootL = new Vector3(-HipX, 0.1f, 0.75f);
+        for (var side = -1; side <= 1; side += 2)
+        {
+            var g = a.Gait + (side > 0 ? 0 : MathF.PI);
+            var reach = MathF.Sin(g); // +1 reaching forward, -1 pulled back under the chest
+            var lift = MathF.Max(0, MathF.Cos(g)) * 0.12f * amp; // the hand comes up as it goes forward
+            var hand = new Vector3(side * 0.34f, 0.04f + lift, -0.82f - 0.22f * reach * (0.3f + 0.7f * amp));
+            if (side > 0)
+                t.HandR = hand;
+            else
+                t.HandL = hand;
+        }
+    }
+
+    /// <summary>No arms: it bites. The body lunges forward and the head snaps at you, timed like the swipe.</summary>
+    private static void BiteOverlay(in ZombieAnimInput a, ref ZombieTargets t)
+    {
+        var s = a.Attack;
+        var w = MathF.Max(0.05f, a.Windup);
+        const float strike = 0.14f, recover = 0.32f;
+        if (s > w + strike + recover)
+            return;
+        var k = s < w ? -0.4f * Smoothstep(0, w, s) // reels back
+            : s < w + strike ? Lerp(-0.4f, 1f, Smoothstep(w, w + strike, s)) // the lunge
+            : 1 - Smoothstep(w + strike, w + strike + recover, s);
+        t.Pitch += 0.32f * k;
+        t.Pelvis.Z -= 0.14f * k;
+        t.HeadNod -= 0.35f * MathF.Max(0, k);
     }
 
     /// <summary>At a window: tearing the top remaining board (or clawing at an empty opening).</summary>
@@ -609,7 +698,9 @@ public static class ZombieAnim
         const float strike = 0.14f, recover = 0.32f;
         if (s > w + strike + recover)
             return;
-        var side = look.SwipeSide;
+        var side = (int)look.SwipeSide;
+        if ((a.Limbs & (side > 0 ? 1 : 2)) != 0)
+            side = -side; // that arm is gone: the other swipes
         var weight = s < w + strike ? 1f : 1 - Smoothstep(w + strike, w + strike + recover, s);
         var sh = Shoulder(t, side);
         var other = Shoulder(t, -side);
@@ -799,8 +890,19 @@ public static class ZombieAnim
     /// (BodyModel.DrawZombieUpper); glowing eyes;
     /// upper arms, forearms and hands. Far away (<paramref name="lod"/>) each limb is one box. Returns the boxes drawn.
     /// </summary>
-    public static int Draw(Renderer g, in ZombiePose p, Vector3 shirt, Vector3 skin, Vector3 pants, bool detail, bool lod, bool eyes)
+    public static int Draw(Renderer g, in ZombiePose p, Vector3 shirt, Vector3 skin, Vector3 pants, bool detail, bool lod, bool eyes) => Draw(g, p, shirt, skin, pants, detail, lod, eyes, 0);
+
+    /// <summary>The colour of a lost limb's stump.</summary>
+    public static readonly Vector3 StumpColor = new(0.5f, 0.06f, 0.05f);
+
+    /// <summary>
+    /// <see cref="Draw(Renderer, in ZombiePose, Vector3, Vector3, Vector3, bool, bool, bool)"/> without the limbs in
+    /// <paramref name="limbs"/> (<see cref="Zombie.Limbs"/>): their boxes are skipped and a raw stump drawn at the joint.
+    /// </summary>
+    public static int Draw(Renderer g, in ZombiePose p, Vector3 shirt, Vector3 skin, Vector3 pants, bool detail, bool lod, bool eyes, byte limbs)
     {
+        if (limbs != 0)
+            return DrawMissing(g, p, shirt, skin, pants, detail, lod, eyes, limbs);
         var n = 0;
         var arm = skin * 0.92f;
         if (lod)
@@ -851,6 +953,81 @@ public static class ZombieAnim
             n += 2;
         }
         return n;
+    }
+
+    /// <summary>The body with limbs missing (the same boxes as <see cref="Draw(Renderer, in ZombiePose, Vector3, Vector3, Vector3, bool, bool, bool, byte)"/> otherwise, plus a stump per lost limb).</summary>
+    private static int DrawMissing(Renderer g, in ZombiePose p, Vector3 shirt, Vector3 skin, Vector3 pants, bool detail, bool lod, bool eyes, byte limbs)
+    {
+        var n = 0;
+        var arm = skin * 0.92f;
+        for (var side = 1; side >= -1; side -= 2)
+        {
+            var lost = (limbs & (side > 0 ? 4 : 8)) != 0;
+            ref readonly var up = ref side > 0 ? ref p.LegUpR : ref p.LegUpL;
+            ref readonly var lo = ref side > 0 ? ref p.LegLoR : ref p.LegLoL;
+            var hip = side > 0 ? p.HipR : p.HipL;
+            if (lost)
+            {
+                g.Draw(Matrix4x4.CreateScale(0.2f, 0.1f, 0.22f) * StumpAt(p.Root, hip - Vector3.TransformNormal(new Vector3(0, 0.04f, 0), p.Root)), StumpColor);
+                n++;
+                continue;
+            }
+            if (lod)
+            {
+                n += Limb(g, hip, side > 0 ? p.FootR : p.FootL, 0.21f, pants, p.Root);
+                continue;
+            }
+            g.Draw(Matrix4x4.CreateScale(0.21f, LegUp + 0.04f, 0.23f) * up, pants);
+            g.Draw(Matrix4x4.CreateScale(0.17f, LegLo, 0.18f) * lo, pants * 0.9f);
+            n += 2;
+            if (detail)
+            {
+                g.Draw(Feet(side > 0 ? p.FootR : p.FootL, p.Root), skin * 0.7f);
+                n++;
+            }
+        }
+        n += BodyModel.DrawZombieUpper(g, p.Upper, p.Head, shirt, skin, detail);
+        if (eyes)
+            for (var side = -1; side <= 1; side += 2)
+            {
+                g.Draw(Matrix4x4.CreateScale(0.07f, 0.05f, 0.02f) * Matrix4x4.CreateTranslation(side * 0.09f, 0.84f, -0.23f) * p.Head, new Vector3(1f, 0.55f, 0.1f), 1f, mode: 2);
+                n++;
+            }
+        for (var side = 1; side >= -1; side -= 2)
+        {
+            var lost = (limbs & (side > 0 ? 1 : 2)) != 0;
+            var sh = side > 0 ? p.ShoulderR : p.ShoulderL;
+            if (lost)
+            {
+                g.Draw(Matrix4x4.CreateScale(0.15f, 0.15f, 0.15f) * StumpAt(p.Upper, sh), StumpColor);
+                n++;
+                continue;
+            }
+            if (lod)
+            {
+                n += Limb(g, sh, side > 0 ? p.HandR : p.HandL, 0.13f, arm, p.Root);
+                continue;
+            }
+            g.Draw(Matrix4x4.CreateScale(0.14f, ArmUp + 0.04f, 0.14f) * (side > 0 ? p.ArmUpR : p.ArmUpL), arm);
+            g.Draw(Matrix4x4.CreateScale(0.12f, ArmLo, 0.12f) * (side > 0 ? p.ArmLoR : p.ArmLoL), arm * 0.95f);
+            n += 2;
+            if (detail)
+            {
+                g.Draw(Matrix4x4.CreateScale(0.13f, 0.12f, 0.06f) * Matrix4x4.CreateTranslation(0, ArmLo * 0.5f, 0) * (side > 0 ? p.ArmLoR : p.ArmLoL), skin * 0.8f);
+                n++;
+            }
+        }
+        return n;
+    }
+
+    /// <summary>A frame turned like <paramref name="frame"/> with its origin at <paramref name="at"/> (world): where a stump is drawn.</summary>
+    private static Matrix4x4 StumpAt(in Matrix4x4 frame, Vector3 at)
+    {
+        var m = frame;
+        m.M41 = at.X;
+        m.M42 = at.Y;
+        m.M43 = at.Z;
+        return m;
     }
 
     /// <summary>One box from <paramref name="a"/> to <paramref name="b"/> (world), facing like the root.</summary>
