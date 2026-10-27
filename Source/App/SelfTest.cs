@@ -326,6 +326,7 @@ public static partial class SelfTest
         Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
         Section("Parts mechanics", CheckPartsMechanics); // SelfTestPartsMechanics.cs: vertical/grid/rosette and offset splitters, bullet size and speed barrels (a seeded server shot), stronger muzzles, no allocations
         Section("Optic mounts", CheckOpticMounts); // SelfTestOpticMounts.cs: every optic sits on top of every receiver on every grip, never inside it; the aim point follows
+        Section("Independent fire rates", CheckIndependentFireRates); // SelfTestFireRates.cs: volley receivers each at their own rate, trigger, feed, spool and burst; the server's per-receiver budget; bots; no allocations
         Section("Workbench actions", CheckWorkbenchActions); // SelfTestActions.cs: the fire type is an Action part: sockets, migration, fire timing per type, old builds' feel kept
         Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
         Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations

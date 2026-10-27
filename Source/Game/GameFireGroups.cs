@@ -308,6 +308,12 @@ public sealed partial class Game
         return mask;
     }
 
+    /// <summary>The client's predicted rays of its own shot, reused (no list per shot).</summary>
+    private readonly List<ShotRay> _predictRays = new(16);
+
+    /// <summary>Self-test: the server's per-receiver budget for one shot of <paramref name="def"/> naming <paramref name="mask"/>.</summary>
+    internal ushort SelfTestGroupBudget(Player p, WeaponDef def, ushort mask, double now) => ServerGroupBudget(p, def.FireGroups!, mask, now);
+
     /// <summary>Receivers in a fire mask.</summary>
     public static int GroupCount(ushort mask) => BitOperations.PopCount(mask);
 }

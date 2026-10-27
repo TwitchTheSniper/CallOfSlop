@@ -564,7 +564,7 @@ public sealed partial class Game : IDisposable
 
         // Predict every pellet against what we see; the server rewinds to the same tick.
         var predictedHit = false;
-        foreach (var ray in ShotRays(def, origin, dir, spread, seed, null, groups)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        foreach (var ray in ShotRays(def, origin, dir, spread, seed, _predictRays, groups)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
         {
             var o = ray.Origin;
             var d = ray.Dir;
