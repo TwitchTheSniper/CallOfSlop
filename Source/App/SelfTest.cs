@@ -342,6 +342,7 @@ public static partial class SelfTest
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
         Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network
+        Section("Zombie hordes", CheckZombieHordes); // SelfTestZombieHordes.cs: 24/100/300-zombie hordes on Blackmoor: tick cost, allocations, snapshot bytes, client cost; the alive curve; the horde controller
         Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
         Section("Friendly hits", CheckFriendlyHits); // SelfTestFriendlyHits.cs: friendly-flagged hits on teammates (bullets, melee, grenades), FFA, Zombies, sound, client marker
         Section("Name tags", CheckNameTags); // SelfTestNameTags.cs: HUD world-to-screen projection, name tag rules, layout, settings, no allocations

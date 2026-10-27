@@ -139,8 +139,8 @@ public sealed partial class Game
     /// <summary>Zombies is co-op for up to this many players (people and bots).</summary>
     public const int ZombiesMaxPlayers = 4;
 
-    /// <summary>The most zombies that can be alive at once (the rules file's cap goes up to this).</summary>
-    public const int MaxZombies = 64;
+    /// <summary>The most zombies that can be alive at once (the rules file's cap and curve go up to this; protocol 58 sends any number).</summary>
+    public const int MaxZombies = 512;
 
     /// <summary>The rules (Parts/Tables/ZombiesRules.json).</summary>
     public ZombiesRules ZRules = ZombiesRules.Current;
@@ -251,7 +251,7 @@ public sealed partial class Game
     /// <summary>Both sides: the map and the run state back to the start (doors shut, boards up, no zombies, round 0).</summary>
     internal void ResetZombiesWorld()
     {
-        Horde.Clear();
+        ClearHorde();
         ZDrops.Clear();
         ZWeaponDrops.Clear();
         ResetPowerUps(); // ZombiesPowerUps.cs
@@ -332,8 +332,9 @@ public sealed partial class Game
         TickHorde(zm, now); // ZombieAI.cs
         foreach (var zpl in ZPlayers.Values)
             zpl.BeingRevived = 0; // set again by whoever is reviving them this tick: crawling out of reach, or the reviver letting go, clears it
-        foreach (var p in Players.Values.OrderBy(p => p.Id))
-            TickZPlayer(p, ZP(p), zm, now);
+        for (var id = 0; id < 256; id++) // (in id order without OrderBy: no allocation every tick)
+            if (Players.TryGetValue((byte)id, out var p))
+                TickZPlayer(p, ZP(p), zm, now);
         TickBox(zm, now);
         TickSlots(zm, now); // ZombiesSlots.cs
         TickDrops(now);
@@ -341,7 +342,7 @@ public sealed partial class Game
         TickPowerUps(now); // ZombiesPowerUps.cs
 
         // The game over: nobody left standing (everyone downed or bled out).
-        if (_zAnySpawned && ZRound > 0 && Players.Count > 0 && !Players.Values.Any(p => IsStanding(p) || (p.Alive && ZP(p).SelfReviveAt > 0)))
+        if (_zAnySpawned && ZRound > 0 && Players.Count > 0 && !AnyoneStanding())
         {
             var survived = Math.Max(0, ZRound - 1);
             ZLastResult = $"Game over on round {ZRound}: survived {survived} round{(survived == 1 ? "" : "s")}";
@@ -350,6 +351,15 @@ public sealed partial class Game
             return;
         }
         ServerSendZombies(now); // ZombiesNet.cs
+    }
+
+    /// <summary>Is anyone standing, or about to get up on their own (Second Wind)? (A loop: no closure every tick.)</summary>
+    private bool AnyoneStanding()
+    {
+        foreach (var p in Players.Values)
+            if (IsStanding(p) || (p.Alive && ZP(p).SelfReviveAt > 0))
+                return true;
+        return false;
     }
 
     private void BeginRound(int round, double now)
@@ -1314,7 +1324,12 @@ public sealed partial class Game
         ZDrops.Add(new ZDrop { Id = _zNextDrop++, Part = part.Name, At = at + new Vector3(0, 0.15f, 0), Until = now + ZRules.DropSeconds });
     }
 
-    private void TickDrops(double now) => ZDrops.RemoveAll(d => d.Until <= now);
+    private void TickDrops(double now)
+    {
+        for (var i = ZDrops.Count - 1; i >= 0; i--) // (a loop: RemoveAll with a lambda allocated a closure every tick)
+            if (ZDrops[i].Until <= now)
+                ZDrops.RemoveAt(i);
+    }
 
     /// <summary>
     /// Server: <paramref name="p"/> searched a salvage pile: <see cref="ZombiesRules.SalvageParts"/> loose parts, each

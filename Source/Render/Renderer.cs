@@ -195,6 +195,7 @@ public sealed unsafe class Renderer
         Native.glUniform1i(_locTex, 0);
         Enable(GlCapability.DepthTest);
         Native.glDisable(GlCapability.Blend);
+        _blendOn = false;
     }
 
     public void SetCamera(Matrix4x4 view, Matrix4x4 proj)
@@ -241,6 +242,172 @@ public sealed unsafe class Renderer
     public uint TextureArray => _texture;
 
     /// <summary>Re-binds this renderer's shader, cube mesh and texture array after another renderer used its own.</summary>
+    // ---- Instanced batches -------------------------------------------------------------------------------
+
+    /// <summary>Floats per batched box (the model matrix, the colour and alpha, the mode and the material layer), and boxes per instanced draw.</summary>
+    public const int BatchFloats = 22, BatchMax = 4096;
+
+    private readonly float[] _batch = new float[BatchMax * BatchFloats];
+    private int _batchCount;
+    private bool _batching, _blendOn, _instReady, _instBroken;
+    private GlProgram _instProgram;
+    private GlVertexArray _instVao;
+    private GlBuffer _instVbo;
+    private int _iLocViewProj, _iLocCam, _iLocFog, _iLocFogRange, _iLocTex;
+
+    /// <summary>Instanced draws and the boxes in them since the last read (the smoke test's zombie line).</summary>
+    public int BatchDraws, BatchBoxes;
+
+    /// <summary>
+    /// Until <see cref="EndBatch"/>, opaque <see cref="Draw"/> calls (no blood, no blending) are collected and drawn as
+    /// one instanced draw per <see cref="BatchMax"/> boxes with the same shader maths (an instanced copy of the box
+    /// shader). Anything else flushes the batch first, so the order never changes. Used for a zombie horde: hundreds of
+    /// bodies of a dozen boxes each. Nothing happens headless (recording) or if the instanced shader couldn't be made.
+    /// </summary>
+    public void BeginBatch()
+    {
+        if (Recorder != null || _instBroken || _batching)
+            return;
+        if (!_instReady && !InitInstanced())
+            return;
+        _batching = true;
+        _batchCount = 0;
+    }
+
+    /// <summary>Draws what the batch collected and goes back to drawing each box at once.</summary>
+    public void EndBatch()
+    {
+        if (!_batching)
+            return;
+        FlushBatch();
+        _batching = false;
+    }
+
+    private void FlushBatch()
+    {
+        if (_batchCount == 0)
+            return;
+        _instProgram.Use();
+        var vp = _viewProj;
+        Native.glUniformMatrix4fv(_iLocViewProj, 1, false, &vp.M11);
+        var cam = CameraPosition;
+        Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
+        Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
+        Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
+        _instVao.Bind();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+        Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
+        fixed (float* p = _batch)
+            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
+        Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+        BatchDraws++;
+        BatchBoxes += _batchCount;
+        _batchCount = 0;
+        _program.Use();
+        _vao.Bind();
+    }
+
+    private bool InitInstanced()
+    {
+        try
+        {
+            const string vsSrc = """
+                #version 330 core
+                layout(location = 0) in vec3 aPos;
+                layout(location = 1) in vec3 aNormal;
+                layout(location = 2) in vec4 iM0;
+                layout(location = 3) in vec4 iM1;
+                layout(location = 4) in vec4 iM2;
+                layout(location = 5) in vec4 iM3;
+                layout(location = 6) in vec4 iColor;
+                layout(location = 7) in vec2 iModeLayer;
+                uniform mat4 uViewProj;
+                out vec3 vWorld;
+                out vec3 vNormal;
+                out vec4 vColorI;
+                flat out float vModeI;
+                flat out float vLayerI;
+                void main()
+                {
+                    mat4 model = mat4(iM0, iM1, iM2, iM3);
+                    vec4 w = model * vec4(aPos, 1.0);
+                    vWorld = w.xyz;
+                    vNormal = mat3(model) * aNormal;
+                    vColorI = iColor;
+                    vModeI = iModeLayer.x;
+                    vLayerI = iModeLayer.y;
+                    gl_Position = uViewProj * w;
+                }
+                """;
+            // The box shader's own fragment code, with the per-draw uniforms coming from the instance instead.
+            var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
+                .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
+                .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(vsSrc).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(fsSrc).Compile();
+            _instProgram = CreateProgram();
+            Native.glAttachShader(_instProgram, vs);
+            Native.glAttachShader(_instProgram, fs);
+            Native.glLinkProgram(_instProgram);
+            int linked;
+            Native.glGetProgramiv(_instProgram, GL_LINK_STATUS, &linked);
+            if (linked == 0)
+                throw new InvalidOperationException("instanced box shader link failed");
+            vs.Dispose();
+            fs.Dispose();
+            Lighting.Upload(_instProgram); // the sun and sky like every scene shader (and their changes)
+            fixed (byte* p = "uViewProj\0"u8)
+                _iLocViewProj = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uCam\0"u8)
+                _iLocCam = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uFog\0"u8)
+                _iLocFog = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uFogRange\0"u8)
+                _iLocFogRange = Native.glGetUniformLocation(_instProgram, p);
+            fixed (byte* p = "uTex\0"u8)
+                _iLocTex = Native.glGetUniformLocation(_instProgram, p);
+            Native.glUniform1i(_iLocTex, 0);
+
+            _instVao = GenVertexArray();
+            _instVao.Bind();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+            const int stride = 6 * sizeof(float);
+            Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
+            EnableVertexAttribArray(0);
+            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
+            EnableVertexAttribArray(1);
+            _instVbo = GenBuffer();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+            Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW);
+            const int istride = BatchFloats * sizeof(float);
+            for (uint a = 0; a < 5; a++)
+            {
+                Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, istride, (void*)(a * 4 * sizeof(float)));
+                EnableVertexAttribArray(2 + a);
+                Native.glVertexAttribDivisor(2 + a, 1);
+            }
+            Native.glVertexAttribPointer(7, 2, GL_FLOAT, false, istride, (void*)(20 * sizeof(float)));
+            EnableVertexAttribArray(7);
+            Native.glVertexAttribDivisor(7, 1);
+            _program.Use();
+            _vao.Bind();
+            var err = (uint)Native.glGetError();
+            if (err != 0)
+                Console.WriteLine($"[render] GL error 0x{err:X} while setting up the instanced boxes (continuing)");
+            Console.WriteLine($"[render] instanced boxes ready ({BatchMax} a draw)");
+            _instReady = true;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] instanced boxes off (one draw each): {ex.Message}");
+            _instBroken = true;
+            _program.Use();
+            _vao.Bind();
+            return false;
+        }
+    }
+
     public void Rebind()
     {
         _program.Use();
@@ -284,6 +451,9 @@ public sealed unsafe class Renderer
             Recorder.SetBlend(on);
             return;
         }
+        if (_batching)
+            FlushBatch();
+        _blendOn = on;
         if (on)
             Enable(GlCapability.Blend);
         else
@@ -300,6 +470,8 @@ public sealed unsafe class Renderer
     {
         if (Recorder != null || _locBloodN < 0 || marks <= 0)
             return;
+        if (_batching)
+            FlushBatch();
         marks = Math.Min(marks, Math.Min(8, data.Length / 2));
         float c = MathF.Cos(yaw), sn = MathF.Sin(yaw);
         fixed (Vector4* p = data)
@@ -400,6 +572,25 @@ public sealed unsafe class Renderer
         {
             Recorder.Draw(model, color, alpha, mode, material);
             return;
+        }
+        if (_batching)
+        {
+            if (!_bloodOn && !_blendOn && alpha >= 1f)
+            {
+                // Batched (a zombie horde): one instanced draw per few thousand boxes instead of one draw each.
+                var o = _batchCount * BatchFloats;
+                var b = _batch;
+                b[o] = model.M11; b[o + 1] = model.M12; b[o + 2] = model.M13; b[o + 3] = model.M14;
+                b[o + 4] = model.M21; b[o + 5] = model.M22; b[o + 6] = model.M23; b[o + 7] = model.M24;
+                b[o + 8] = model.M31; b[o + 9] = model.M32; b[o + 10] = model.M33; b[o + 11] = model.M34;
+                b[o + 12] = model.M41; b[o + 13] = model.M42; b[o + 14] = model.M43; b[o + 15] = model.M44;
+                b[o + 16] = color.X; b[o + 17] = color.Y; b[o + 18] = color.Z; b[o + 19] = alpha;
+                b[o + 20] = mode; b[o + 21] = (float)material;
+                if (++_batchCount == BatchMax)
+                    FlushBatch();
+                return;
+            }
+            FlushBatch(); // keep the order: everything batched so far goes first
         }
         Native.glUniform1f(_locLayer, (float)material);
         var mvp = model * _viewProj;

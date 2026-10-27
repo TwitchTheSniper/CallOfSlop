@@ -526,7 +526,9 @@ public sealed partial class Ui
 
     private static readonly string[] GravityChoiceLabels = Game.GravityPercentChoices.Select(g => g == 100 ? "100% (the map's own)" : $"{g}%").ToArray();
 
-    /// <summary>World section: gravity, frenzy buffs, destruction.</summary>
+    private static readonly string[] HordeCapLabels = Game.HordeCapChoices.Select(c => c >= Game.MaxZombies ? "No limit (the rounds decide)" : $"{c} zombies").ToArray();
+
+    /// <summary>World section: gravity, frenzy buffs, destruction, the Zombies horde cap.</summary>
     private void DrawRoomWorldSection(Game game, Settings s, bool host)
     {
         ImGui.SetNextItemWidth(200 * _scale);
@@ -561,6 +563,24 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "explosives blast holes and floors can come down"u8);
         else
             ImGui.TextColored(Dim, "buildings stay whole"u8);
+        if (game.Mode == GameMode.Zombies)
+        {
+            ImGui.SetNextItemWidth(200 * _scale);
+            var capIdx = Array.IndexOf(Game.HordeCapChoices, game.HostHordeCap);
+            if (ImGui.BeginCombo("Zombie horde cap##room"u8, capIdx >= 0 ? HordeCapLabels[capIdx] : HordeCapLabels[^1]))
+            {
+                var choices = Game.HordeCapChoices;
+                for (var i = 0; i < choices.Length; i++)
+                    if (ImGui.Selectable(HordeCapLabels[i], choices[i] == game.HostHordeCap) && host)
+                    {
+                        game.HostHordeCap = choices[i]; // the server's own cap (ZombieHorde.cs)
+                        s.ZombieHordeCap = choices[i];
+                    }
+                ImGui.EndCombo();
+            }
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                ImGuiSafe.SetItemTooltip("The most zombies alive at once. Late rounds bring hundreds (24 early, about 60 by round 10, 150 by round 20, 300 by round 30); lower it if the host's PC struggles. The rest wait their turn.");
+        }
         if (!host)
             return;
         if (buffs != game.FrenzyBuffsEnabled)

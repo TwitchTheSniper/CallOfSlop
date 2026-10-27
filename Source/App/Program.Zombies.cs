@@ -250,10 +250,15 @@ public static unsafe partial class Program
                 DrawGun(def, Matrix4x4.CreateRotationZ(MathF.PI / 2 * 0.9f) * Matrix4x4.CreateRotationY(spin) * Matrix4x4.CreateTranslation(wd.At + new Vector3(0, 0.35f + 0.06f * MathF.Sin(t * 2 + wd.Id), 0)), false);
         }
 
-        // The zombies.
+        // The zombies: one instanced draw for the whole horde's opaque boxes (Renderer.BeginBatch).
+        _zFrame++;
+        Gfx.BeginBatch();
         foreach (var z in _game.Horde)
             DrawZombie(z, now, animDt);
+        Gfx.EndBatch();
     }
+
+    private static long _zFrame;
 
     /// <summary>
     /// A zombie, posed by <see cref="ZombieAnim"/> (Source/Render/ZombieAnim.cs): a shamble, jog or sprint keyed to its speed,
@@ -273,18 +278,34 @@ public static unsafe partial class Program
             ZombieAnim.NoteCulled();
             return;
         }
-        ZombieAnim.Targets(a, out var target);
-        // A change of state blends over a third of a second; settled, the pose is exact (hands right on the board or sill).
-        var settled = (float)((_game.ZAnimTick - z.AnimStateTick) * World.TickDt);
-        if (now - z.AnimSmoothAt > 0.25 || settled > 0.35f)
-            z.AnimTargets = target;
-        else
-            ZombieAnim.Smooth(ref z.AnimTargets, target, 1f - MathF.Exp(-dt * 14f));
-        z.AnimSmoothAt = now;
-        ZombieAnim.Solve(a, z.AnimTargets, out var pose);
-        var detail = BodyModel.WantsDetail(a.Pos);
         var cam = LegAnimator.Viewer;
-        var lod = !float.IsNaN(cam.X) && Vector3.DistanceSquared(cam, a.Pos) > ZombieAnim.LodRange * ZombieAnim.LodRange;
+        var camDist = float.IsNaN(cam.X) ? 0f : Vector3.Distance(cam, a.Pos);
+        // Animation level of detail: far away, the last pose is carried along for a frame or three (staggered by id).
+        var every = ZombieAnim.PoseEvery(camDist, _game.Horde.Count);
+        ZombiePose pose;
+        if (every > 1 && (_zFrame + z.Id) % every != 0 && _zFrame - z.AnimPoseFrame < every && z.AnimPoseState == z.State && a.Mode == ZAnimMode.Locomotion)
+        {
+            pose = z.AnimPose;
+            ZombieAnim.Shift(ref pose, a.Pos - z.AnimPoseAt);
+        }
+        else
+        {
+            ZombieAnim.Targets(a, out var target);
+            // A change of state blends over a third of a second; settled, the pose is exact (hands right on the board or sill).
+            var settled = (float)((_game.ZAnimTick - z.AnimStateTick) * World.TickDt);
+            if (now - z.AnimSmoothAt > 0.25 || settled > 0.35f)
+                z.AnimTargets = target;
+            else
+                ZombieAnim.Smooth(ref z.AnimTargets, target, 1f - MathF.Exp(-dt * 14f));
+            z.AnimSmoothAt = now;
+            ZombieAnim.Solve(a, z.AnimTargets, out pose);
+            z.AnimPose = pose;
+            z.AnimPoseAt = a.Pos;
+            z.AnimPoseState = z.State;
+            z.AnimPoseFrame = _zFrame;
+        }
+        var detail = BodyModel.WantsDetail(a.Pos);
+        var lod = camDist > ZombieAnim.LodRange;
         BodyBloodRender.PlaceZombie(z, pose, a.Yaw); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
         BodyBloodRender.Bind(Gfx);
         var boxes = ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead);
@@ -632,7 +653,7 @@ public static unsafe partial class Program
                     var torn = SmokeTearingZombie(g);
                     SmokeShot("zombies_barrier");
                     Console.WriteLine($"[smoke] zombies at a barrier: {g.AliveZombies} alive, {(torn != null ? $"one tearing at window {torn.Window} {Vector3.Distance(torn.Position, g.Local?.Position ?? torn.Position):0.0} m away" : "none tearing now")}, "
-                                      + $"boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / t:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick; {ZombieAnim.Stats}");
+                                      + $"boards {string.Join(",", g.ZBoards)}, {(_smokeFrames - _zSmokeFrames) / t:0} fps, AI {(g.ZAiZombieTicks > 0 ? g.ZAiMs * 1000 / g.ZAiZombieTicks : 0):0.0} us per zombie per tick; {ZombieAnim.Stats}; instanced draws {Gfx.BatchDraws} ({Gfx.BatchBoxes} boxes)");
                     _zSmokeStart = now;
                     _zSmokeStage = 6;
                 }

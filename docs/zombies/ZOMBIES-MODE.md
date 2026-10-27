@@ -26,8 +26,8 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 - **Start.** Ready up, a 5 s countdown, then round 1 comes after `firstRoundDelay` (4 s). Everyone starts in the map's
   start area with the **start builds** (today: Wall Rifle in slot 1, Wall Pistol in slot 2, the Machete on the melee
   key) and **500 points**. No loadout screen, no multiplayer perks, no grenades, no kill streaks.
-- **Rounds.** Each round sends a number of zombies (below); they come out of the **active spawners** one by one (at
-  most 24 alive at once, the rest wait in a queue). When every zombie of the round is dead there's a **break**: the
+- **Rounds.** Each round sends a number of zombies (below); they come out of the **active spawners** (at most 24 alive
+  at once early on, rising with the round to hundreds late in a run: see "Hordes"; the rest wait in a queue). When every zombie of the round is dead there's a **break**: the
   next round waits until everyone alive is **ready** (see "Between rounds"; a plain 10 s break in a bots-only run). The HUD shows the round in red tally marks (I to IIIII, then the number) bottom-left, the round
   and what's left of it at the top.
 - **Zombies** come from spawners behind **windows**: they walk to the window, tear the boards off one at a time,
@@ -109,7 +109,8 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
 | Zombie health | 150, +60 a round to round 9 (630), then x 1.06 a round (slowed 2026-10-23, was +100 and x 1.1) | r10 668, r20 1196, r30 2142 | the same |
 | Speed | walk 1.3 m/s; runners (3.2 m/s) from round 3 (+15 percent a round, max 90); sprinters (5.2 m/s) from round 5 (+10 percent a round, max 75) | | |
 | Spawn delay | 2 s x 0.95 a round, at least 0.25 s | | |
-| Most alive at once | 24 (performance cap, `maxAlive`) | | |
+| Most alive at once | `maxAliveCurve`: 24 to round 5, 60 at round 10, 150 at 20, 300 at 30, 400 from 40 (straight lines between), +15 percent per extra player (`maxAlivePerExtraPlayer`), never over `maxAlive` (400) or the host's horde cap | r10 60, r20 150, r30 300 | r10 87, r20 218, r30 400 |
+| Spawning | a burst per spawn time (`spawnBurstCurve`: 1 to round 12, 3 at 20, 5 at 30, 6 at 40) from the `activeSpawnersCurve` spawners nearest the players (4 to round 15, 7 at 25, 10 at 35), one per spawner, a spawner resting `spawnerCooldown` (0.35 s) after use | | |
 
 Players walk at 6 m/s, so even sprinters can be outrun; zombies swipe for 40 (3 hits from full health).
 
@@ -651,7 +652,7 @@ window: there the box follows the drawn body (see "Tearing boards" below).
 | Dead (ragdolls off) | Tips over backwards with the arms flying up, then sinks away (as before). |
 
 **Network (protocol 43).** Clients see the same thing: every clock is the server's and read at the same interpolation
-tick as the positions. A zombie's `ZEnts` entry stays **12 bytes**: while it tears or climbs (it faces its window
+tick as the positions. A zombie's `ZEnts` entry stays **12 bytes** (11 without its window byte since protocol 58): while it tears or climbs (it faces its window
 then, so the yaw is known from the map) the yaw byte carries the **animation byte** instead: the board cycle (0-255, the
 board comes off at 255) or the climb's progress. The state byte's changes give the state, swipe and landing clocks (at
 the snapshot's tick), and a drop of the health byte gives the flinch. Clients extrapolate the animation byte between
@@ -767,7 +768,11 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes)
+
+Protocol 58 (hordes, see "Hordes"): `ZEnts` per client, interest-managed, at most 80 zombies a packet, 16-bit horde size
+and entry count, the window byte only outside, at a window or swiping (11 or 12 bytes a zombie), unreliable (not
+sequenced).
 
 Protocol 50 (sounds, see "Sound"): bit 3 of a zombie's state byte in `ZEnts` is the head bit (a fresh head hit, or a
 headshot kill); the state is the low 3 bits.
@@ -789,8 +794,9 @@ Protocol 49 (2026-10-23): `ZWorld`'s floating power-ups may be kind 5 (Infinite 
 Ammo's tenths of a second left) follows Insta-Kill's and Double Points'.
 
 
-New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (every zombie with each snapshot:
-id, quantised position, yaw, state, speed, health; 12 bytes each, about 300 bytes for 24), `ZWorld` (10 Hz: round,
+New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (the zombies with each snapshot:
+id, quantised position, yaw, state, speed, health; 11-12 bytes each, about 280 bytes for 24; interest-managed per
+client since protocol 58), `ZWorld` (10 Hz: round,
 phase, doors, boards, box, every player's points / downs / perks / bleed and revive progress, parts on the floor),
 `ZEvent` (feed lines, ammo refills, banners), `ZRun` (your loose parts), `ZBuild` (a build went into a
 player's slot: **the build's text**, which every PC assembles into the same weapon deterministically) and `ZBench`
@@ -804,10 +810,118 @@ get every dropped build on the floor when they connect. Clients keep the time le
 
 ## AI cost
 
-Zombies move with the shared player physics (the same mover as players), pick targets twice a second, and share at
-most 2 nav graph searches per tick (the rest steer straight until their turn). The self-test measures the cost with
-24 zombies chasing inside the start room (see the report line "AI cost"); it includes the per-tick animation update
-(the animation byte and clocks, a few comparisons a zombie). Drawing cost: see "Animation".
+Zombies move with the shared player physics (the same mover as players). Since the hordes (2026-10-27) the thinking
+is the horde controller's ("Horde controller" below): shared flow fields instead of an A* search per zombie, a level
+of detail by distance, the grid for separation. The self-test measures 24 zombies chasing inside the start room (the
+report line "AI cost"; it includes the per-tick animation update), and "Zombie hordes" 24, 100 and 300 on Blackmoor
+(see "Hordes"). Drawing cost: see "Animation" and "Hordes".
+
+## Hordes (developer request, 2026-10-27)
+
+"As the rounds progress, I want to see hundreds of zombies all on the map at the same time. Late game." The alive cap
+now rises with the round (`maxAliveCurve` in "rounds"; the round curve table above): 24 early, about 60 by round 10,
+150 by round 20, 300 by round 30, 400 from round 40, more with more players, never over the rules' hard cap
+`maxAlive` (400; the code's own limit is 512, `Game.MaxZombies`). **The host can lower it**: the lobby room's World
+section has **Zombie horde cap** (48, 100, 150, 200, 300, 400 or no limit; settings key `zombie_horde_cap`) for weak
+PCs; the rest of the round waits its turn as before. Round sizes are unchanged (round 30 solo is 648 zombies), so the
+cap is what decides how many are up at once.
+
+To fill a big cap, late rounds spawn in **bursts** (`spawnBurstCurve`) from **more spawners** (`activeSpawnersCurve`),
+spread out: one zombie per spawner per burst, a spawner rests `spawnerCooldown` after use, and a spawner with someone
+standing on it puts the new zombie on a free spot of a ring round it (0.9 m, then 1.8 m; standable and in view of the
+spawner), never on top of another. Round 30 on Blackmoor fills to 300 in about 28 s.
+
+At the windows the horde **queues** instead of jamming: two zombies (`tearers`) work the boards, the rest stand on
+queue spots in rows of three behind the window (checked standable and in view when the map loads), and when a
+window's queue is longer than `queueSplitAt` (6) its back members walk round to the open window with the shortest
+queue within `flankRange` (30 m of route). Only one climbs through at a time, as before.
+
+**Budgets and measurements** (the "Zombie hordes" self-test on Blackmoor Asylum; the user's PC through the agent
+runner, Linux): server tick CPU per tick, ZEnts bytes per client per second, the client's zombie work per frame (reading
+snapshots, posing and drawing every zombie it knows into the headless recorder, the sounds).
+
+| Zombies | Before: tick | Before: ZEnts | Before: client | After: tick (mean / worst) | After: ZEnts | After: client |
+| --- | --- | --- | --- | --- | --- | --- |
+| 24 | 0.06 ms | 8.6 KB/s | 0.05 ms | 0.06 / 0.09 ms | 8.1 KB/s | 0.06 ms |
+| 100 | 0.36 ms | 31.8 KB/s (only 90 sent) | 0.18 ms (90 drawn) | 0.22 / 0.27 ms | 26.3 KB/s (all 100 known) | 0.18 ms |
+| 300 | 1.94 ms | 31.8 KB/s (only 90 sent) | 0.15 ms (90 drawn) | 0.62 / 0.71 ms | 26.3 KB/s (all 300 known) | 0.49 ms |
+
+Before, the tick also allocated about 115 bytes per zombie per tick (a LINQ closure in the area check every zombie made
+every tick: 35 KB a tick at 300); now nothing. The slower cloud box measured 4.3 ms before and 1.8 ms after at 300.
+The self-test's budgets: no allocation per tick; on Windows no tick over 8 ms of CPU (the thread's cycles); elsewhere a
+mean of at most 1 / 2 / 4 ms at 24 / 100 / 300 (slack for noisy runners); ZEnts at most 30 KB/s per client and one
+datagram per packet; the client at most 1.5 ms a frame (3 ms at 300).
+
+**Network (protocol 58).** `ZEnts` is now sent to each client on its own, **interest-managed**: every zombie gets a
+priority per client, how many snapshots since that client last heard of it times how near it is (8x within 12 m, 3x
+within 30 m, 1.5x within 60 m); a new zombie, a changed state (a death, a climb) or one not heard of for 24 snapshots
+goes first, and the top 80 go (at most 9 + 80 x 12 = 969 bytes). A horde of up to 80 is sent whole every snapshot as
+before; a bigger one keeps the near zombies at or near 30 Hz and the far ones at a few Hz. The header has a 16-bit horde
+size and entry count (the count was one byte, and the server stopped at 90), an entry carries its window byte only
+outside, at a window or swiping (11 or 12 bytes). The packets are unreliable but not sequenced: a late one still
+updates the zombies that have no newer news. Clients keep a zombie they haven't heard of for 1.6 s at most, a dead one
+for 1.7 s, carry a far zombie on at its last speed for up to a quarter of a second past its last update (no stop and
+jump), and look zombies up by id (it was a list search per entry). Over loopback with 80 ms of lag and 3 percent loss a
+client knows all 300 of a horde, gets 26 KB/s of ZEnts, and the near zombies are never more than about 200 ms old.
+
+**Drawing.** The horde's opaque boxes go into **one instanced draw** per 4096 boxes (`Renderer.BeginBatch`: an
+instanced copy of the box shader with the same lighting and fog; anything with blood marks or blending is drawn as
+before, in order). **Animation level of detail**: beyond 28 m a zombie is posed every 2nd frame and beyond 50 m every
+4th (staggered by id; a horde over 120 starts a little nearer), its last pose carried along with the body in between
+(`ZombieAnim.Shift`); beyond 28 m each limb is one box as before. Corpses: at most 10 zombie ragdolls at once (the
+rest vanish when they die, as before), gibs keep their own caps. Sounds: the 8 vocal and 8 footstep voice caps stay;
+the idle groan budget (3 a second) grows with the square root of the horde past 48 zombies, up to twice (6 a second
+at 300).
+
+**Co-op bots** look for a target nearest first and stop at the first one in a clear line of fire (a few ray casts, not
+one per zombie in range), and find the nearest zombie and the window to repair without LINQ (the horde's grid).
+
+**Economy.** Points per hit and kill are unchanged, so a horde round pays more as it has more zombies; power-ups still
+come on the team's points schedule, at most 4 a round. Zombie health still grows by round, so a 300-zombie round 30 is
+mostly a crowd-control problem (explosives, penetration, the special ammo effects).
+
+## Horde controller (developer request, 2026-10-27)
+
+"An agent may need to be assigned to create a horde controller which dictates large groups of NPCs and how they
+respond to things." `Source/Game/Horde/` is that system, generic over the NPC (`IHordeAgent`: a horde record, the
+position, alive, the barrier it is working towards and whether it is at the front, an id); Zombies wires its zombies
+in (`Source/Game/ZombieHorde.cs`), the co-op enemies could later (docs/pve/DESIGN.md, "Horde controller"). The
+numbers are the rules file's **"horde"** section.
+
+- **Groups.** Fixed slots: one per **portal** (a window: members outside, queueing), one per **target** (a standing
+  player; a player keeps their slot while they stand), one **lure** group. Members move between them (splitting and
+  merging): a long portal queue sends its back members to another portal's group; members inside join the target
+  group with the best score: distance, plus `areaPenalty` (20 m) for another area, plus `pressureWeight` (0.4 m) for each
+  member already on that player past the first `pressureFree` (8), so a big horde **spreads over the players** instead
+  of piling on the nearest (re-checked about every half second, with hysteresis).
+- **Group decisions** (each group about every `groupThinkSeconds`, 0.5 s, staggered): portal groups split their queue
+  ("Hordes" above); a target group of at least 4 that got less than 0.6 m closer in 2.5 s while nobody is at its
+  target **regroups** for 1.2 s: the members near the group's centre hold, the rest close up on it, then they go again
+  with fresh routes.
+- **Surrounding.** Between 2.5 and 9 m of their target, members close in on a ring point at their own angle (from the
+  id), so a group comes at a player from all sides; nearer, straight at them.
+- **Stimuli** (handled at the start of the next tick, in order): **gunfire** (every trigger pull in Zombies; heard to
+  35 m) and a **grabbed power-up** (45 m) turn members in earshot that aren't already fighting (within 10 m of their
+  own target) on the shooter; a **hurt** zombie turns its neighbours within 12 m the same way; a **blast** staggers the
+  zombies near it (0.3 s), they **scatter** away from it for 0.6 s, then their group regroups and turns on the thrower;
+  a player **going down** sends everyone after them to someone else at once; a **lure** (`Game.HordeLure`: no item uses
+  it yet, Zombies has no grenades) draws the members in range to it until it ends, then back to the players.
+- **Level of detail.** Members nearer a player than 12 / 30 / 60 m think every 1 / 2 / 4 ticks, the rest every 8
+  (staggered by id; `thinkEvery`): the line-of-sight checks, the corner cuts, the area and target checks. Movement
+  (the shared physics), separation and attacking run every tick.
+- **Routes.** **Flow fields** over the bots' nav graph (`HordeFlowFields`): one Dijkstra over the reversed edges per
+  goal node (a player's node, a door side, a window, a lure) gives every member heading there its next node in one
+  lookup. 24 are cached (least recently used goes), at most 1 new one is built a tick (a member whose field isn't
+  ready steers straight meanwhile), and one older than a second is rebuilt when next asked for. Edges destruction took
+  away are left out. On Blackmoor (549 nodes) a field takes about 0.01-0.03 ms.
+- **Separation** comes from a uniform grid of the members (1.25 m cells, rebuilt every tick with a counting sort), not
+  the old loop over every pair.
+- **Deterministic** (no random numbers in the controller; ordered by list index and id) and **allocation-free** per tick.
+
+The self-test checks each of these with short seeded scenarios on Blackmoor: 60 zombies near one of two players spread
+over both, 20 at one window queue on its spots and split to the other two, a gunshot turns a group in earshot, a blast
+scatters the zombies near it and their group regroups and goes on, a down sends a group to the other player, a lure
+draws a group and lets it go, a group shut in a room regroups, and the same horde twice plays out the same.
 
 ## Controls
 

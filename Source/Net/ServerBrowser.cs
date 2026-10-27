@@ -117,7 +117,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     Msg.ZBench kinds 1 and 2 (break down, craft) are gone.
     // 57: Zombies has 12 perks (seven new ones, 2026-10-27): the perk flags in Msg.ZWorld are 16 bits, and bit 5 of a
     //     player's flags says the armour plate (Bulwark Brew) is up.
-    public const byte ProtocolVersion = 57;
+    // 58: Zombie hordes (hundreds alive late game): Msg.ZEnts is sent to each client on its own, interest-managed (the
+    //     zombies that matter most to that client, at most 80 a packet), with a 16-bit horde size and entry count; an
+    //     entry carries the window byte only outside, at a window or swiping (11 or 12 bytes).
+    public const byte ProtocolVersion = 58;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

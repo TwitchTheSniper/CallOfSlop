@@ -77,9 +77,20 @@ public sealed partial class Game
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
-            WriteZEnts(_w);
-            Net.Broadcast(_w.Span, PacketReliability.UnreliableSequenced);
+            // Interest-managed (protocol 58): each client gets the zombies that matter most to it this snapshot.
+            foreach (var (guid, id) in _clients.Values)
+            {
+                if (!_zViews.TryGetValue(guid.G, out var view))
+                    _zViews[guid.G] = view = new ZEntView(); // (once per client)
+                var at = Players.TryGetValue(id, out var cp) ? cp.Position : Vector3.Zero;
+                WriteZEntsFor(_w, view, at);
+                Net.SendTo(guid, _w.Span, PacketReliability.Unreliable); // (not sequenced: a late packet still has news of the zombies the next one left out)
+                ZEntsBytesSent += _w.Length;
+                ZEntsPacketsSent++;
+            }
             _zEntsLive = Horde.Count > 0;
+            if (_zViews.Count > _clients.Count)
+                ForgetGoneViews();
         }
         if (ServerTick % (World.SnapshotEvery * 3) == 0)
         {
@@ -88,29 +99,141 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Bytes per zombie in <see cref="Msg.ZEnts"/>.</summary>
+    /// <summary>Most bytes per zombie in <see cref="Msg.ZEnts"/> (12 with the window byte, 11 without: protocol 58).</summary>
     public const int ZEntBytes = 12;
 
+    /// <summary>The header of <see cref="Msg.ZEnts"/>: the message id, the tick, the horde's size and the entry count (protocol 58).</summary>
+    public const int ZEntsHeader = 1 + 4 + 2 + 2;
+
     /// <summary>
-    /// Every zombie: id, position (quantised: 3 cm across, 1.6 cm up), yaw, state and speed, health and window. Tearing or
-    /// climbing (when it faces its window anyway) the yaw byte carries the animation byte instead: the board cycle or the
-    /// climb's progress (protocol 43, ZombieAnimNet.cs).
+    /// The most zombies in one <see cref="Msg.ZEnts"/> (9 + 80 x 12 = 969 bytes at most, one datagram; about 28 KB/s per
+    /// client at 30 Hz, what 90 zombies a packet cost before protocol 58). A horde bigger than this is interest-managed.
     /// </summary>
-    public void WriteZEnts(PacketWriter w)
+    public const int ZEntsMax = 80;
+
+    /// <summary>Interest management: zombies nearer a client than these (m) count 8x, 3x and 1.5x as much as far ones.</summary>
+    public const float ZEntNear = 12f, ZEntMid = 30f, ZEntFar = 60f;
+
+    /// <summary>A zombie a client hasn't heard about for this many snapshots goes in the next one whatever (0.8 s at 30 Hz).</summary>
+    public const int ZEntMaxAge = 24;
+
+    /// <summary>Client: a zombie not heard about for this long (s) is dropped (the server sends each at least every <see cref="ZEntMaxAge"/> snapshots).</summary>
+    public const double ZEntTimeout = 1.6;
+
+    /// <summary>Bytes and packets of <see cref="Msg.ZEnts"/> sent this run (self-test, logs).</summary>
+    public long ZEntsBytesSent, ZEntsPacketsSent;
+
+    /// <summary>What one client has been sent, by zombie slot: the id there, snapshots since, and the state byte it last got.</summary>
+    public sealed class ZEntView
     {
-        var n = Math.Min(Horde.Count, 90);
-        w.Begin(Msg.ZEnts).U32(ServerTick).U8((byte)n);
-        for (var i = 0; i < n; i++)
+        public readonly ushort[] SentId = new ushort[MaxZombies];
+        public readonly byte[] Age = new byte[MaxZombies];
+        public readonly byte[] SentState = new byte[MaxZombies];
+    }
+
+    private readonly Dictionary<ulong, ZEntView> _zViews = new();
+    private float[] _zEntKey = new float[MaxZombies];
+    private int[] _zEntIdx = new int[MaxZombies];
+    private readonly List<ulong> _zGoneViews = new();
+
+    private void ForgetGoneViews()
+    {
+        _zGoneViews.Clear();
+        foreach (var g in _zViews.Keys)
+            if (!_clients.ContainsKey(g))
+                _zGoneViews.Add(g);
+        foreach (var g in _zGoneViews)
+            _zViews.Remove(g);
+    }
+
+    /// <summary>Every zombie (up to <see cref="ZEntsMax"/>, in list order): what a client with nothing to prioritise gets (self-tests).</summary>
+    public void WriteZEnts(PacketWriter w) => WriteZEntsFor(w, null, Vector3.Zero);
+
+    /// <summary>
+    /// The zombies for a client at <paramref name="viewer"/> (protocol 58): each zombie's priority is how many snapshots
+    /// since that client last heard of it times how near it is (8x within <see cref="ZEntNear"/>, 3x within
+    /// <see cref="ZEntMid"/>, 1.5x within <see cref="ZEntFar"/>), with a new zombie, a changed state (a death, a climb)
+    /// or one unheard of for <see cref="ZEntMaxAge"/> snapshots going first; the top <see cref="ZEntsMax"/> go. A horde of
+    /// up to that many is sent whole every snapshot (as before); a bigger one keeps the near zombies at 30 Hz and the far
+    /// ones at a few Hz. No allocation. <paramref name="view"/> null: the first <see cref="ZEntsMax"/> in list order.
+    /// </summary>
+    public void WriteZEntsFor(PacketWriter w, ZEntView? view, Vector3 viewer)
+    {
+        var count = Horde.Count;
+        if (_zEntKey.Length < count)
+        {
+            _zEntKey = new float[count];
+            _zEntIdx = new int[count];
+        }
+        var n = 0;
+        for (var i = 0; i < count; i++)
         {
             var z = Horde[i];
+            var key = (float)i; // (no view: list order)
+            if (view != null)
+            {
+                var slot = z.Hm.Slot;
+                if (slot < 0 || slot >= MaxZombies)
+                    key = -1e6f; // (no slot: always)
+                else
+                {
+                    var dx = z.Position.X - viewer.X;
+                    var dz = z.Position.Z - viewer.Z;
+                    var d2 = dx * dx + dz * dz;
+                    var weight = d2 < ZEntNear * ZEntNear ? 8f : d2 < ZEntMid * ZEntMid ? 3f : d2 < ZEntFar * ZEntFar ? 1.5f : 1f;
+                    var isNew = view.SentId[slot] != z.Id;
+                    var age = isNew ? 255 : Math.Min(255, view.Age[slot] + 1);
+                    var p = age * weight;
+                    if (isNew)
+                        p += 1000f;
+                    else if (view.SentState[slot] != ZStateByte(z))
+                        p += 600f;
+                    if (age >= ZEntMaxAge)
+                        p += 5000f;
+                    key = -p;
+                }
+            }
+            _zEntKey[n] = key;
+            _zEntIdx[n] = i;
+            n++;
+        }
+        if (view != null && n > ZEntsMax)
+            Array.Sort(_zEntKey, _zEntIdx, 0, n);
+        var send = Math.Min(n, ZEntsMax);
+        w.Begin(Msg.ZEnts).U32(ServerTick).U16((ushort)Math.Min(count, 65535)).U16((ushort)send);
+        for (var k = 0; k < send; k++)
+        {
+            var z = Horde[_zEntIdx[k]];
             var p = z.Position;
+            var sb = ZStateByte(z);
             w.U16(z.Id).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
-                .U8((byte)((byte)z.State | (ZHeadBit(z) ? 8 : 0) | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0))) // bits 6-7: burning, zapped (protocol 40); bit 3: head hit (protocol 50)
-                .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255))
-                .U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
+                .U8(sb)
+                .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255));
+            if (ZEntHasWindow(z.State))
+                w.U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
+            if (view != null && z.Hm.Slot is >= 0 and < MaxZombies)
+            {
+                view.SentId[z.Hm.Slot] = z.Id;
+                view.Age[z.Hm.Slot] = 0;
+                view.SentState[z.Hm.Slot] = sb;
+            }
         }
+        if (view != null)
+            for (var k = send; k < n; k++)
+            {
+                var slot = Horde[_zEntIdx[k]].Hm.Slot;
+                if (slot is >= 0 and < MaxZombies && view.Age[slot] < 255)
+                    view.Age[slot]++;
+            }
     }
+
+    /// <summary>The state byte: state (bits 0-2), head hit (3), speed (4-5), burning and zapped (6-7).</summary>
+    private byte ZStateByte(Zombie z) =>
+        (byte)((byte)z.State | (ZHeadBit(z) ? 8 : 0) | ((byte)z.Speed << 4) | (z.FxBurning ? 64 : 0) | (z.FxZapped ? 128 : 0)); // bits 6-7: burning, zapped (protocol 40); bit 3: head hit (protocol 50)
+
+    /// <summary>Does a zombie's entry carry its window byte (protocol 58: only outside, at a window or swiping)?</summary>
+    public static bool ZEntHasWindow(ZState s) => s is ZState.ToWindow or ZState.Tearing or ZState.Climbing or ZState.Attack;
 
     /// <summary>
     /// Bit 3 of a zombie's state byte (protocol 50): alive, a head hit landed in the last few ticks (two snapshots see it);
@@ -443,15 +566,19 @@ public sealed partial class Game
 
     private void ReadZEnts(ref PacketReader r, double now)
     {
-        if (!r.Has(5))
+        if (!r.Has(8))
             return;
         var tick = r.U32();
-        if (tick < _zEntsTick)
-            return;
-        _zEntsTick = tick;
-        int n = r.U8();
-        _zSeen.Clear();
-        for (var i = 0; i < n && r.Has(ZEntBytes); i++)
+        var latest = tick >= _zEntsTick;
+        if (latest)
+            _zEntsTick = tick;
+        ZEntsRead++;
+        if (_zEntsReadAt > 0)
+            ZEntsGapWorst = Math.Max(ZEntsGapWorst, now - _zEntsReadAt);
+        _zEntsReadAt = now;
+        int total = r.U16();
+        int n = r.U16();
+        for (var i = 0; i < n && r.Has(ZEntBytes - 1); i++)
         {
             var id = r.U16();
             var pos = new Vector3(DQ(r.U16(), 32), DQ(r.U16(), 64), DQ(r.U16(), 32));
@@ -459,17 +586,21 @@ public sealed partial class Game
             var yaw = yawByte / 256f * MathF.Tau;
             var sb = r.U8();
             var health = r.U8();
-            var window = r.U8();
-            _zSeen.Add(id);
-            var z = Horde.FirstOrDefault(x => x.Id == id);
-            if (z == null)
+            var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
+            var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
+            if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)
+                continue; // a late packet: this zombie already has newer news
+            if (!latest && known == null)
+                continue; // (a late packet doesn't bring back one the newer ones dropped)
+            if (!_zById.TryGetValue(id, out var z))
             {
                 z = new Zombie { Id = id };
                 z.Sim.Position = z.RenderPos = pos;
                 z.RenderYaw = yaw;
                 Horde.Add(z);
+                _zById[id] = z;
             }
-            var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
+            z.LastHeard = now;
             if ((sb & 8) != 0)
             {
                 // The head bit (protocol 50): a fresh head hit, or a headshot kill.
@@ -503,11 +634,42 @@ public sealed partial class Game
             if (z.Snaps.Count > 6)
                 z.Snaps.RemoveAt(0);
         }
-        Horde.RemoveAll(z => !_zSeen.Contains(z.Id));
+        if (latest && total == 0 && Horde.Count > 0)
+        {
+            Horde.Clear(); // the server has none left
+            _zById.Clear();
+        }
+        if (latest)
+            ZEntsLastTotal = total;
+    }
+
+    /// <summary>Client: the server's horde size in the last <see cref="Msg.ZEnts"/> (it may send fewer than that).</summary>
+    public int ZEntsLastTotal;
+
+    /// <summary>Client: <see cref="Msg.ZEnts"/> packets read, and the longest wait between two (self-test, logs).</summary>
+    public int ZEntsRead;
+
+    public double ZEntsGapWorst;
+    private double _zEntsReadAt;
+
+    /// <summary>Every zombie by id (both sides: the client's lookup for each entry, the server's ids in use).</summary>
+    private readonly Dictionary<ushort, Zombie> _zById = new();
+
+    /// <summary>Client: drops zombies the server stopped sending (gone, or long dead).</summary>
+    private void DropStaleZombies(double now)
+    {
+        for (var i = Horde.Count - 1; i >= 0; i--)
+        {
+            var z = Horde[i];
+            if (now - z.LastHeard > ZEntTimeout || (z.State == ZState.Dead && z.DiedAt >= 0 && now - z.DiedAt > 1.7))
+            {
+                Horde.RemoveAt(i);
+                _zById.Remove(z.Id);
+            }
+        }
     }
 
     private uint _zEntsTick, _zWorldTick;
-    private readonly HashSet<ushort> _zSeen = new();
 
     private void ReadZWorld(ref PacketReader r, double now)
     {
@@ -598,7 +760,7 @@ public sealed partial class Game
     // ---- Both sides, every frame ------------------------------------------------------------------------
 
     /// <summary>Where every zombie is drawn this frame (the host blends ticks; clients interpolate snapshots like players), the points popups, late builds.</summary>
-    private void UpdateZombiesFrame(float dt)
+    private void UpdateZombiesFrame(double now, float dt)
     {
         if (Mode != GameMode.Zombies)
         {
@@ -606,6 +768,8 @@ public sealed partial class Game
                 World.Map.OpenAllDoors(); // a Zombies map in another mode: one big map (clients learn the mode after joining)
             return;
         }
+        if (!IsServer)
+            DropStaleZombies(now);
         foreach (var z in Horde)
         {
             if (IsServer)
@@ -620,7 +784,20 @@ public sealed partial class Game
                 if (rt <= snaps[0].Tick)
                     (z.RenderPos, z.RenderYaw) = (snaps[0].Pos, snaps[0].Yaw);
                 else if (rt >= snaps[^1].Tick)
-                    (z.RenderPos, z.RenderYaw) = (snaps[^1].Pos, snaps[^1].Yaw);
+                {
+                    // Past its last update (a far zombie of a big horde is sent a few times a second): carry on at its
+                    // last speed for up to a quarter of a second rather than stopping and jumping.
+                    var (t1, p1, y1) = snaps[^1];
+                    z.RenderPos = p1;
+                    z.RenderYaw = y1;
+                    if (snaps.Count >= 2 && z.State is ZState.Chase or ZState.ToWindow)
+                    {
+                        var (s0, p0, _) = snaps[^2];
+                        var span = t1 - s0;
+                        if (span > 0 && span <= 30)
+                            z.RenderPos = p1 + (p1 - p0) * (float)(Math.Min(rt - t1, 15) / span);
+                    }
+                }
                 else
                     for (var i = 0; i < snaps.Count - 1; i++)
                     {
@@ -670,6 +847,13 @@ public sealed partial class Game
         ReadZEnts(ref r, 0);
         var r2 = new PacketReader(world[1..]);
         ReadZWorld(ref r2, 0);
+    }
+
+    /// <summary>Self-test: a client's copy reads one <see cref="Msg.ZEnts"/> (the message id included) at local time <paramref name="now"/>.</summary>
+    public void SelfTestReadEnts(ReadOnlySpan<byte> ents, double now)
+    {
+        var r = new PacketReader(ents[1..]);
+        ReadZEnts(ref r, now);
     }
 
     /// <summary>Self-test: a client's copy applies a build message.</summary>

@@ -271,7 +271,7 @@ public sealed partial class Game : IDisposable
         UpdateRenderStates((float)frameDt);
         AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
-        UpdateZombiesFrame((float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
+        UpdateZombiesFrame(now, (float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
         UpdatePveFrame(now, (float)frameDt); // Co-op: where enemies are drawn (GamePveNet.cs)
         AllocProfile.Mark("feedback");
         UpdateFeedback(now);

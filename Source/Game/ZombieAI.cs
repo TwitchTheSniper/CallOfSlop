@@ -69,11 +69,7 @@ public sealed partial class Zombie
     /// <summary>Drawn burning / crackling with electricity (the server sets these each tick; clients get them in ZEnts).</summary>
     public bool FxBurning, FxZapped;
 
-    // Path within an area (nav graph nodes).
-    public readonly int[] Path = new int[64];
-    public int PathLen, PathIdx;
-    public Vector3 PathGoal;
-    public double NextPath;
+    // The stuck watch (routes come from the horde controller's shared flow fields: Source/Game/Horde/).
     public Vector3 StuckPos;
     public double StuckAt;
     public double UnstickUntil;
@@ -110,11 +106,6 @@ public sealed partial class Game
     public readonly ZombieSounds ZSounds = new();
 
     private ushort _zNextId = 1;
-    private readonly NavSearch _zSearch = new();
-    private int _zPathBudget;
-
-    /// <summary>A* searches allowed per server tick for all zombies together (the rest steer straight until their turn).</summary>
-    public const int ZombieSearchesPerTick = 2;
 
     /// <summary>Zombie AI cost: total and ticks measured (the self-test reports the cost per zombie per tick).</summary>
     public double ZAiTicks, ZAiZombieTicks, ZAiMs;
@@ -134,11 +125,55 @@ public sealed partial class Game
     // ---- Spawning -----------------------------------------------------------------------------------------
 
     private readonly List<int> _zActive = new();
+    private float[] _zSpawnKey = [];
+    private double[] _zSpawnerReady = [];
+    private readonly Vector3[] _zSpawnedAt = new Vector3[16];
 
+    /// <summary>
+    /// Where a zombie can come out at spawner spot <paramref name="at"/>: the spot itself, or the nearest of a ring of
+    /// spots round it (0.9 m, then 1.8 m) with nobody standing there (the horde's grid and the zombies already out this
+    /// tick), room to stand and in plain view of the spawner. False: crowded all round.
+    /// </summary>
+    private bool FreeSpawnSpot(Vector3 at, int spawnedThisTick, out Vector3 spot)
+    {
+        for (var ring = 0; ring < 3; ring++)
+            for (var k = 0; k < (ring == 0 ? 1 : 6); k++)
+            {
+                var a = k * MathF.Tau / 6 + ring * 0.5f;
+                var p = ring == 0 ? at : at + new Vector3(MathF.Sin(a), 0, MathF.Cos(a)) * (0.9f * ring);
+                if (HordeAI.Grid.Any(p, 0.6f))
+                    continue;
+                var free = true;
+                for (var j = 0; j < spawnedThisTick && j < _zSpawnedAt.Length; j++)
+                    if (Flat(_zSpawnedAt[j] - p) < 0.6f)
+                        free = false;
+                if (!free || (ring > 0 && (World.Blocked(p + new Vector3(0, 0.05f, 0)) || !NavGraph.Clear(at, p))))
+                    continue;
+                spot = p;
+                return true;
+            }
+        spot = at;
+        return false;
+    }
+
+    /// <summary>
+    /// Server, every tick of a round: spawns while the round has zombies queued and fewer than the alive cap
+    /// (<see cref="ZAliveCap"/>) are up. Each spawn time a burst (the rules' spawnBurstCurve) comes out of the active
+    /// spawners (in open areas, the activeSpawnersCurve nearest the players), spread over them: one per spawner, a
+    /// spawner rests <see cref="ZombiesRules.SpawnerCooldown"/> after use, and one with a zombie still standing on it waits.
+    /// </summary>
     private void SpawnTick(ZombiesMap zm, double now)
     {
-        if (_zToSpawn <= 0 || now < _zNextSpawn || AliveZombies >= Math.Min(ZRules.MaxAlive, MaxZombies))
+        if (_zToSpawn <= 0 || now < _zNextSpawn)
             return;
+        var cap = ZAliveCap();
+        if (_zAlive >= cap)
+            return;
+        if (_zSpawnerReady.Length != zm.Spawners.Count)
+        {
+            _zSpawnerReady = new double[zm.Spawners.Count];
+            _zSpawnKey = new float[zm.Spawners.Count];
+        }
         // Active spawners: in unlocked areas. Prefer the ones nearest the players (World at War spawns by zone).
         _zActive.Clear();
         for (var i = 0; i < zm.Spawners.Count; i++)
@@ -146,32 +181,63 @@ public sealed partial class Game
                 _zActive.Add(i);
         if (_zActive.Count == 0)
             return;
-        var standing = Players.Values.Where(IsStanding).OrderBy(p => p.Id).ToList();
-        if (standing.Count > 0 && _zActive.Count > 4)
+        var near = Math.Max(1, (int)MathF.Round(ZRules.ActiveSpawnersCurve.At(Math.Max(1, ZRound))));
+        if (_zActive.Count > near && HordeAI.TargetCount > 0)
         {
-            _zActive.Sort((a, b) =>
+            foreach (var s in _zActive)
             {
-                float Near(int s) => standing.Min(p => Vector3.DistanceSquared(p.Position, zm.Spawners[s].At));
-                var c = Near(a).CompareTo(Near(b));
-                return c != 0 ? c : a.CompareTo(b);
-            });
-            _zActive.RemoveRange(4, _zActive.Count - 4);
+                var best = float.MaxValue;
+                for (var t = 0; t < HordeController<Zombie>.MaxTargets; t++)
+                    if (HordeAI.Targets[t].Live)
+                        best = MathF.Min(best, Vector3.DistanceSquared(HordeAI.Targets[t].Pos, zm.Spawners[s].At));
+                _zSpawnKey[s] = best;
+            }
+            // Insertion sort by distance, then index (a few dozen spawners at most; no allocation).
+            for (var i = 1; i < _zActive.Count; i++)
+            {
+                var v = _zActive[i];
+                var j = i - 1;
+                while (j >= 0 && (_zSpawnKey[_zActive[j]] > _zSpawnKey[v] || (_zSpawnKey[_zActive[j]] == _zSpawnKey[v] && _zActive[j] > v)))
+                {
+                    _zActive[j + 1] = _zActive[j];
+                    j--;
+                }
+                _zActive[j + 1] = v;
+            }
+            _zActive.RemoveRange(near, _zActive.Count - near);
         }
-        var pick = _zActive[ZRange(_zActive.Count)];
-        SpawnZombie(zm, pick, now);
-        _zToSpawn--;
+        var burst = Math.Min(Math.Max(1, (int)MathF.Round(ZRules.SpawnBurstCurve.At(Math.Max(1, ZRound)))), Math.Min(cap - _zAlive, _zToSpawn));
+        var spawned = 0;
+        while (spawned < burst && _zActive.Count > 0)
+        {
+            var k = ZRange(_zActive.Count);
+            var pick = _zActive[k];
+            _zActive.RemoveAt(k); // one per spawner per burst
+            var sp = zm.Spawners[pick];
+            if (spawned > 0 && now < _zSpawnerReady[pick])
+                continue; // spread: this one rests; try another (the burst may come out short)
+            if (!FreeSpawnSpot(sp.At, spawned, out var at))
+                continue; // crowded all round
+            _zSpawnedAt[spawned] = at;
+            SpawnZombie(zm, pick, now, at);
+            _zSpawnerReady[pick] = now + ZRules.SpawnerCooldown;
+            _zToSpawn--;
+            _zAlive++;
+            spawned++;
+        }
         _zNextSpawn = now + ZRules.SpawnDelayFor(ZRound);
     }
 
     /// <summary>Server: a new zombie at spawner <paramref name="spawner"/> (health and speed from the round).</summary>
-    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now)
+    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now, Vector3? at = null)
     {
         var sp = zm.Spawners[spawner];
+        var pos = at ?? sp.At;
         var (run, sprint) = ZRules.SpeedMix(Math.Max(1, ZRound));
         var r = ZRand();
         var z = new Zombie
         {
-            Id = _zNextId++,
+            Id = NextZombieId(),
             Health = ZRules.ZombieHealth(Math.Max(1, ZRound)),
             Speed = r < sprint ? ZSpeed.Sprint : r < sprint + run ? ZSpeed.Run : ZSpeed.Walk,
             Window = sp.Window,
@@ -179,18 +245,35 @@ public sealed partial class Game
             State = sp.Window >= 0 ? ZState.ToWindow : ZState.Rising,
             StateAt = now,
             SpawnTick = ServerTick,
-            NextPath = now + ZRand() * 0.5,
         };
-        if (_zNextId == 0)
-            _zNextId = 1;
+        ZRand(); // (the old first path search delay: keeps the seeded stream in step)
         z.MaxHealth = z.Health;
-        z.Sim = new MoveState { Position = sp.At, Grounded = true };
-        z.PrevPos = z.RenderPos = sp.At;
+        z.Sim = new MoveState { Position = pos, Grounded = true };
+        z.PrevPos = z.RenderPos = pos;
         z.Yaw = z.RenderYaw = sp.Window >= 0 ? zm.Windows[sp.Window].Yaw : ZRand() * MathF.Tau;
         for (var i = 0; i < z.History.Length; i++)
-            z.History[i] = sp.At;
+            z.History[i] = pos;
+        if (World.Map.Zombies is { } hz)
+            HordeSetup(hz);
+        z.Hm.Slot = TakeZombieSlot();
+        HordeController<Zombie>.Joined(z);
         Horde.Add(z);
+        _zById[z.Id] = z;
         return z;
+    }
+
+    /// <summary>The next zombie id (never 0, and never one still in use: ids wrap after 65535).</summary>
+    private ushort NextZombieId()
+    {
+        for (var tries = 0; tries < 70000; tries++)
+        {
+            var id = _zNextId++;
+            if (_zNextId == 0)
+                _zNextId = 1;
+            if (id != 0 && !_zById.ContainsKey(id))
+                return id;
+        }
+        return _zNextId;
     }
 
     // ---- Thinking and moving -------------------------------------------------------------------------
@@ -198,7 +281,6 @@ public sealed partial class Game
     private void TickHorde(ZombiesMap zm, double now)
     {
         var t0 = Stopwatch.GetTimestamp();
-        _zPathBudget = ZombieSearchesPerTick;
         var alive = 0;
         for (var i = Horde.Count - 1; i >= 0; i--)
         {
@@ -206,7 +288,11 @@ public sealed partial class Game
             if (z.State == ZState.Dead)
             {
                 if (now - z.StateAt > 1.5)
+                {
                     Horde.RemoveAt(i);
+                    _zById.Remove(z.Id);
+                    FreeZombieSlot(z);
+                }
                 else if (z.Floaty)
                 {
                     z.PrevPos = z.Sim.Position;
@@ -217,6 +303,7 @@ public sealed partial class Game
             }
             alive++;
         }
+        HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
         foreach (var z in Horde)
         {
             if (z.State == ZState.Dead)
@@ -267,16 +354,38 @@ public sealed partial class Game
             case ZState.ToWindow:
             {
                 var w = zm.Windows[z.Window];
-                var to = w.Outside - z.Position;
-                if (Flat(to) < 0.35f)
+                var m = z.Hm;
+                // Its place in the window's queue (the horde controller): the front ones go to the window, the rest to a spot behind.
+                var front = m.QueueRank < 0 || m.QueueRank < Math.Max(1, ZRules.Horde.Tearers);
+                var spot = front ? w.Outside : m.QueueSpot;
+                var to = spot - z.Position;
+                if (front && Flat(w.Outside - z.Position) < 0.35f)
                 {
                     SetZState(z, ZState.Tearing, now);
                     z.NextTear = now + ZRules.BoardTearSeconds * (0.7 + 0.3 * ZRand());
                     MoveZombie(z, w.Yaw, false, false);
                     return;
                 }
-                var yaw = MathF.Atan2(to.X, -to.Z);
-                MoveZombie(z, Separated(z, yaw), true, false);
+                if (HordeAI.Fleeing(z, out var fy))
+                {
+                    MoveZombie(z, HordeAI.Separate(z, fy), true, false);
+                    return;
+                }
+                if (!front && Flat(to) < 0.3f)
+                {
+                    MoveZombie(z, w.Yaw, false, false); // waiting its turn, facing the window
+                    z.StuckAt = now;
+                    z.StuckPos = z.Position;
+                    return;
+                }
+                var portalNode = z.Window < HordeAI.Portals.Length ? HordeAI.Portals[z.Window].Node : -1;
+                var p = HordeAI.Steer(z, spot, portalNode, out var jump);
+                var d = p - z.Position;
+                var yaw = MathF.Atan2(d.X, -d.Z);
+                if (now < z.UnstickUntil)
+                    yaw = z.UnstickYaw;
+                ZStuckWatch(z, yaw, spot, now);
+                MoveZombie(z, HordeAI.Separate(z, yaw), true, jump);
                 return;
             }
             case ZState.Tearing:
@@ -291,8 +400,10 @@ public sealed partial class Game
                 if (z.Window < ZBoards.Length && ZBoards[z.Window] == 0)
                 {
                     // Only one zombie climbs through at a time.
-                    if (Horde.Any(o => o != z && o.State == ZState.Climbing && o.Window == z.Window))
+                    if (z.Window < _zClimbing.Length && _zClimbing[z.Window])
                         return;
+                    if (z.Window < _zClimbing.Length)
+                        _zClimbing[z.Window] = true;
                     z.ClimbFrom = z.Position;
                     z.ClimbTo = w.Inside;
                     SetZState(z, ZState.Climbing, now);
@@ -372,20 +483,58 @@ public sealed partial class Game
 
     private void ChaseTick(ZombiesMap zm, Zombie z, double now)
     {
-        if (zm.Inside(z.Position) && z.Door < 0)
+        var m = z.Hm;
+        var ai = HordeAI;
+        if (z.Door < 0 && m.ThinkNow && zm.Inside(z.Position))
             z.Area = zm.AreaAt(z.Position);
-        var target = ZombieTarget(z, now);
-        if (target == null)
+        // Its group's target (the horde controller spreads the horde over the players); a lure draws it instead.
+        var lured = m.Group == ai.LureGroup && ai.LureUntil >= 0;
+        Player? target = null;
+        if (ai.IsLive(m.TargetSlot))
+            Players.TryGetValue(ai.Targets[m.TargetSlot].Id, out target);
+        z.Target = target?.Id ?? byte.MaxValue;
+        if (target == null && !lured)
         {
             MoveZombie(z, z.Yaw, false, false); // nobody standing: wait
             return;
         }
-        if (TrySwipe(z, now, throughWindow: false))
+        if (target != null && TrySwipe(z, now, throughWindow: false))
             return;
+        if (ai.Fleeing(z, out var fleeYaw))
+        {
+            MoveZombie(z, ai.Separate(z, fleeYaw), true, false); // scattering from a blast
+            return;
+        }
 
-        // Which way: through open doors to the target's area, then along the nav graph (or straight when in plain view).
-        var goal = target.Position;
-        var targetArea = zm.AreaAt(goal);
+        // Which way: through open doors to the goal's area, then along the shared flow field (or straight when in plain view).
+        Vector3 goal;
+        int goalArea, goalNode;
+        if (lured)
+        {
+            goal = ai.LurePos;
+            goalArea = _zLureArea;
+            goalNode = _zLureNode;
+        }
+        else
+        {
+            ref var tg = ref ai.Targets[m.TargetSlot];
+            goal = ai.SurroundGoal(z, tg.Pos);
+            goalArea = tg.Area;
+            goalNode = tg.Node;
+        }
+        if (!lured && ai.Regrouping(z, out var hold, out var centre))
+        {
+            if (hold)
+            {
+                MoveZombie(z, z.Yaw, false, false); // the group closes up and holds
+                z.StuckAt = now;
+                z.StuckPos = z.Position;
+                return;
+            }
+            goal = centre;
+            goalArea = z.Area;
+            goalNode = -1;
+        }
         if (z.Door >= 0)
         {
             var door = zm.Doors[z.Door];
@@ -394,14 +543,17 @@ public sealed partial class Game
             {
                 z.Area = door.Other(z.Area);
                 z.Door = -1;
-                z.PathLen = 0;
+                m.Node = -1;
             }
             else
+            {
                 goal = outSide;
+                goalNode = DoorSideNode(z.Door, z.Area, outSide: true);
+            }
         }
-        else if (targetArea != z.Area)
+        else if (goalArea >= 0 && goalArea != z.Area)
         {
-            var d = DoorTowards(z.Area, targetArea);
+            var d = DoorTowards(z.Area, goalArea);
             if (d >= 0)
             {
                 var inSide = zm.Doors[d].SideIn(z.Area);
@@ -409,98 +561,39 @@ public sealed partial class Game
                 {
                     z.Door = d;
                     goal = zm.Doors[d].SideOut(z.Area);
+                    goalNode = DoorSideNode(d, z.Area, outSide: true);
                 }
                 else
+                {
                     goal = inSide;
+                    goalNode = DoorSideNode(d, z.Area, outSide: false);
+                }
             }
         }
 
-        var yaw = SteerZombie(z, goal, now);
+        var p = ai.Steer(z, goal, goalNode, out var jump);
+        var to = p - z.Position;
+        var yaw = MathF.Atan2(to.X, -to.Z);
         if (now < z.UnstickUntil)
             yaw = z.UnstickYaw;
-        // Stuck check: barely moved in a second while trying to: walk off sideways for a moment, plan again.
-        if (now - z.StuckAt > 1.0)
-        {
-            if (Flat(z.Position - z.StuckPos) < 0.25f * SpeedOf(z) && Flat(goal - z.Position) > 1.2f)
-            {
-                z.UnstickUntil = now + 0.6;
-                z.UnstickYaw = World.WrapAngle(yaw + (ZRand() < 0.5f ? 1.4f : -1.4f));
-                z.PathLen = 0;
-                z.NextPath = now;
-            }
-            z.StuckPos = z.Position;
-            z.StuckAt = now;
-        }
-        var jump = z.PathLen > 0 && z.PathIdx < z.PathLen && NavGraph.Current.Nodes.Length > z.Path[z.PathIdx]
-                   && NavGraph.Current.Nodes[z.Path[z.PathIdx]].Y - z.Position.Y > World.StepHeight;
-        MoveZombie(z, Separated(z, yaw), true, jump);
+        ZStuckWatch(z, yaw, goal, now);
+        MoveZombie(z, ai.Separate(z, yaw), true, jump);
     }
 
-    /// <summary>The yaw to walk towards <paramref name="goal"/>: straight when it's close and in plain view, else along a nav graph path.</summary>
-    private float SteerZombie(Zombie z, Vector3 goal, double now)
+    /// <summary>Stuck check: barely moved in a second while trying to: walk off sideways for a moment, plan again.</summary>
+    private void ZStuckWatch(Zombie z, float yaw, Vector3 goal, double now)
     {
-        var pos = z.Position;
-        var to = goal - pos;
-        var dist = Flat(to);
-        if (dist < 14f && MathF.Abs(to.Y) < 1.2f && NavGraph.Clear(pos, goal))
+        if (now - z.StuckAt <= 1.0)
+            return;
+        if (Flat(z.Position - z.StuckPos) < 0.25f * SpeedOf(z) && Flat(goal - z.Position) > 1.2f)
         {
-            z.PathLen = 0;
-            return MathF.Atan2(to.X, -to.Z);
+            z.UnstickUntil = now + 0.6;
+            z.UnstickYaw = World.WrapAngle(yaw + (ZRand() < 0.5f ? 1.4f : -1.4f));
+            z.Hm.Node = -1;
+            z.Hm.Straight = false;
         }
-        var nav = NavGraph.Current;
-        if ((z.PathLen == 0 || now >= z.NextPath || Vector3.DistanceSquared(goal, z.PathGoal) > 4f) && _zPathBudget > 0 && nav.Nodes.Length > 0)
-        {
-            _zPathBudget--;
-            z.NextPath = now + 0.8 + ZRand() * 0.4;
-            z.PathGoal = goal;
-            var a = nav.Nearest(pos, needSight: false);
-            var b = nav.Nearest(goal, needSight: false);
-            z.PathLen = a >= 0 && b >= 0 ? _zSearch.Find(nav, a, b, z.Path, null, 1500) : 0;
-            z.PathIdx = z.PathLen > 1 ? 1 : 0;
-        }
-        while (z.PathLen > 0 && z.PathIdx < z.PathLen && z.Path[z.PathIdx] < nav.Nodes.Length)
-        {
-            var n = nav.Nodes[z.Path[z.PathIdx]];
-            if (Flat(n - pos) < 0.65f && z.PathIdx < z.PathLen - 1)
-            {
-                z.PathIdx++;
-                continue;
-            }
-            // Cut a corner when the node after is in plain view.
-            if (z.PathIdx + 1 < z.PathLen && z.Path[z.PathIdx + 1] < nav.Nodes.Length && NavGraph.Clear(pos, nav.Nodes[z.Path[z.PathIdx + 1]]) && (ServerTick + z.Id) % 6 == 0)
-            {
-                z.PathIdx++;
-                continue;
-            }
-            var d = n - pos;
-            if (z.PathIdx == z.PathLen - 1 && Flat(d) < 0.65f)
-                break;
-            return MathF.Atan2(d.X, -d.Z);
-        }
-        return MathF.Atan2(to.X, -to.Z);
-    }
-
-    /// <summary>Turns a walking yaw away from other zombies close by (so the horde doesn't stack up into one body).</summary>
-    private float Separated(Zombie z, float yaw)
-    {
-        var wish = World.FlatForward(yaw);
-        var push = Vector3.Zero;
-        foreach (var o in Horde)
-        {
-            if (o == z || o.State == ZState.Dead)
-                continue;
-            var d = z.Position - o.Position;
-            d.Y = 0;
-            var l2 = d.LengthSquared();
-            if (l2 > 0.81f || l2 < 1e-6f)
-                continue;
-            var l = MathF.Sqrt(l2);
-            push += d / l * (0.9f - l) * 1.6f;
-        }
-        if (push.LengthSquared() < 1e-6f)
-            return yaw;
-        var w = wish + push;
-        return MathF.Atan2(w.X, -w.Z);
+        z.StuckPos = z.Position;
+        z.StuckAt = now;
     }
 
     /// <summary>One tick of movement through the shared player physics (walking at its speed when <paramref name="walk"/>).</summary>
@@ -581,6 +674,7 @@ public sealed partial class Game
     }
 
     private readonly Dictionary<Zombie, float> _zShotDamage = new();
+    private readonly List<Zombie> _zShotOrder = new();
     private readonly HashSet<Zombie> _zShotHead = new();
 
     /// <summary>
@@ -630,8 +724,13 @@ public sealed partial class Game
         var fx = def.BuildFlags.Length > 0 && ZEffectFlags(def.BuildFlags) != 0;
         if (fx)
             _zFxHits.Clear();
-        foreach (var (z, dmg) in _zShotDamage.OrderBy(kv => kv.Key.Id))
+        _zShotOrder.Clear();
+        foreach (var kv in _zShotDamage)
+            _zShotOrder.Add(kv.Key);
+        _zShotOrder.Sort(static (a, b) => a.Id.CompareTo(b.Id));
+        foreach (var z in _zShotOrder)
         {
+            var dmg = _zShotDamage[z];
             var head = _zShotHead.Contains(z);
             flags |= (byte)(head ? 3 : 1);
             var amount = (int)MathF.Round(dmg);
@@ -648,6 +747,7 @@ public sealed partial class Game
         _zShotRay.Clear();
         if (fx && _zFxHits.Count > 0)
             ApplyZombieEffects(shooter, def.BuildFlags, _zFxHits, now);
+        HordeGunfire(shooter, now); // the horde hears it (ZombieHorde.cs)
         return flags;
     }
 
@@ -664,7 +764,10 @@ public sealed partial class Game
         if (z.Health > 0)
         {
             if (!dot)
+            {
                 EarnPoints(attacker, ZRules.HitPoints, now);
+                HordeHurt(z, attacker, now); // its neighbours turn on the shooter (ZombieHorde.cs)
+            }
             return false;
         }
         z.Health = 0;
@@ -694,7 +797,8 @@ public sealed partial class Game
         if (Mode != GameMode.Zombies || cleave <= 0)
             return 0;
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
-        var list = new List<(Zombie Z, float Dist)>();
+        var list = _zMeleeList;
+        list.Clear();
         foreach (var z in Horde)
         {
             if (z.State == ZState.Dead)
@@ -718,8 +822,9 @@ public sealed partial class Game
         if (fx)
             _zFxHits.Clear();
         damage *= ZPerkMult(attacker, static d => d.MeleeDamage); // Bloodroot Tonic
-        foreach (var (z, dist) in list.Take(cleave))
+        for (var li = 0; li < list.Count && li < cleave; li++)
         {
+            var (z, dist) = list[li];
             hitFlags |= 1;
             if (stun > 0)
                 z.StunnedUntil = Math.Max(z.StunnedUntil, now + stun);
@@ -738,13 +843,17 @@ public sealed partial class Game
         return hitFlags;
     }
 
+    private readonly List<(Zombie Z, float Dist)> _zMeleeList = new();
+
     /// <summary>Server: a grenade or blast: zombies in the radius take damage falling off with distance (walls shield).</summary>
     private void BlastZombies(Player? owner, Vector3 center, float radius, float maxDamage, double now)
     {
         if (owner == null || Mode != GameMode.Zombies)
             return;
-        foreach (var z in Horde.ToList())
+        HordeExplosion(owner, center, radius, now); // the horde scatters and regroups (ZombieHorde.cs)
+        for (var zi = 0; zi < Horde.Count; zi++)
         {
+            var z = Horde[zi];
             if (z.State == ZState.Dead)
                 continue;
             var to = z.Position + new Vector3(0, 1.1f, 0) - center;
@@ -780,4 +889,7 @@ public sealed partial class Game
     // ---- Self-test hooks ------------------------------------------------------------------------------
 
     public Zombie SelfTestSpawnZombie(int spawner, double now) => SpawnZombie(World.Map.Zombies!, spawner, now);
+
+    /// <summary>Self-test: a blast from <paramref name="owner"/> (damage and the horde's reaction).</summary>
+    public void SelfTestBlast(Player owner, Vector3 at, float radius, float damage, double now) => BlastZombies(owner, at, radius, damage, now);
 }

@@ -1006,6 +1006,7 @@ public static unsafe partial class Program
             ConfigureLobbyRoom(_session, kind); // the pre-match lobby room and team balance (Program.LobbyRoom.cs)
             _session.BotGearMode = _settings.BotGear; // host setting: bots match the players' level (BotGear.cs)
             _session.FrenzyBuffsEnabled = _settings.FrenzyBuffs; // host setting (FrenzyServer.cs); clients learn it from the snapshot
+            _session.HostHordeCap = _settings.ZombieHordeCap; // host setting (ZombieHorde.cs): the server's cap; clients don't need it
             if (kind != LobbyAction.Join)
                 _session.GravityPercent = _settings.Gravity; // host setting (GameGravity.cs); clients learn it from the Welcome and the lobby state
             _session.DestructionEnabled = _settings.Destruction; // host setting (GameDestruction.cs): the server decides what breaks

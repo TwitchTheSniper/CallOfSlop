@@ -735,6 +735,57 @@ public static class ZombieAnim
     }
 
     /// <summary>Targets then solve, no smoothing (the self-test and anything that wants the exact pose).</summary>
+    /// <summary>
+    /// Moves a whole pose by <paramref name="d"/> (world): animation level of detail reuses a far zombie's pose for a frame
+    /// or three and only carries it along with the body (<see cref="PoseEvery"/>).
+    /// </summary>
+    public static void Shift(ref ZombiePose p, Vector3 d)
+    {
+        static void M(ref Matrix4x4 m, Vector3 d)
+        {
+            m.M41 += d.X;
+            m.M42 += d.Y;
+            m.M43 += d.Z;
+        }
+        M(ref p.Root, d);
+        M(ref p.Upper, d);
+        M(ref p.Head, d);
+        M(ref p.ArmUpR, d);
+        M(ref p.ArmUpL, d);
+        M(ref p.ArmLoR, d);
+        M(ref p.ArmLoL, d);
+        M(ref p.LegUpR, d);
+        M(ref p.LegUpL, d);
+        M(ref p.LegLoR, d);
+        M(ref p.LegLoL, d);
+        p.ShoulderR += d;
+        p.ShoulderL += d;
+        p.ElbowR += d;
+        p.ElbowL += d;
+        p.HandR += d;
+        p.HandL += d;
+        p.HipR += d;
+        p.HipL += d;
+        p.KneeR += d;
+        p.KneeL += d;
+        p.FootR += d;
+        p.FootL += d;
+    }
+
+    /// <summary>Animation level of detail: beyond these distances (m) a zombie is posed every 2nd and every 4th frame (staggered by id).</summary>
+    public const float PoseHalfRange = 28f, PoseQuarterRange = 50f;
+
+    /// <summary>
+    /// Every how many frames a zombie <paramref name="dist"/> metres from the camera is posed (1 near; in between its
+    /// last pose is carried along with it: <see cref="Shift"/>). A <paramref name="horde"/> of more than 120 starts
+    /// thinning a little nearer.
+    /// </summary>
+    public static int PoseEvery(float dist, int horde)
+    {
+        var scale = horde > 120 ? 0.7f : 1f;
+        return dist > PoseQuarterRange * scale ? 4 : dist > PoseHalfRange * scale ? 2 : 1;
+    }
+
     public static void Evaluate(in ZombieAnimInput a, out ZombiePose p)
     {
         Targets(a, out var t);

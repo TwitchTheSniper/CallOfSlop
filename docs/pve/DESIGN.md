@@ -177,6 +177,18 @@ cave maps such as Silo, for players as well as enemies: an engine fix for later)
 Clients interpolate enemies from the last two updates (like zombies), drop one not updated for 1.2 s, and draw a tracer
 and a gunshot for each new shot in the counter (direction from yaw and pitch, the end from a ray in their own world).
 
+### Horde controller (reuse, 2026-10-27)
+
+Zombies now steers its hordes through a generic **horde controller** (`Source/Game/Horde/`, docs/zombies/ZOMBIES-MODE.md
+"Horde controller"): groups that decide together (targets spread over the players by pressure, portals with queues
+that split, regrouping when blocked), stimuli (gunfire, blasts, downs, power-ups, hurt neighbours, lures), a think
+level of detail by distance, shared flow fields over the nav graph and a spatial grid for separation. It is generic
+over the NPC: an agent implements `IHordeAgent` (a `HordeMember` record, `Position`, `HordeActive`, `HordePortal` -1
+when there are no barriers, `HordeAtPortal`, `HordeId`) and the mode calls `BeginTick` once a tick with its agents and
+targets, then asks `Steer` / `Separate` / `Fleeing` / `Regrouping` per agent. Co-op enemies could use it for large
+squads later: their squads would become target groups (the cover and fire logic stays their own), and `PEnts` already
+does its own interest management. Not wired yet: the co-op budget (80 alive) doesn't need it.
+
 ## 5. Data format
 
 A mission is a JSON file in a map pack's `Missions` folder (`Maps/World/Missions/SiloBreach.json`). Missions are kept
