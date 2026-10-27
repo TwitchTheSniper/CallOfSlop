@@ -462,7 +462,7 @@ public static unsafe partial class Program
             return;
         _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
         if (_mouseCaptured && Pressed(GameAction.Grenade) && !_game.SlotBetKey())
-            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the gun in your hands apart (no grenades in Zombies); at a slot machine G changes the bet
+            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the box's OFFERED build apart (no grenades in Zombies); at a slot machine G changes the bet
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);

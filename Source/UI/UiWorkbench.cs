@@ -475,7 +475,7 @@ public sealed partial class Ui
             BenchSettings.Save();
         }
         if (ImGui.IsItemHovered())
-            ImGui.SetTooltip(showAll
+            ImGuiSafe.SetTooltip(showAll
                 ? (inventory ? "Showing every grip in the game. The dimmed ones you don't own yet: see what they do, but you can't pick them until you find one."u8
                     : "Showing every grip in the game. The dimmed ones you don't own: you can still plan with them (they show as missing)."u8)
                 : "Showing only the grips you own. Tick to see every grip in the game, and which ones you're missing."u8);
@@ -495,7 +495,7 @@ public sealed partial class Ui
         var gap = 12 * _scale;
         var cols = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (cardW + gap)));
         if (_grips.Items.Count == 0)
-            ImGui.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
+            ImGuiSafe.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
         for (var i = 0; i < _grips.Items.Count; i++)
         {
             var g = _grips.Items[i];

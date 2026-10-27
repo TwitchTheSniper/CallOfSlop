@@ -91,7 +91,7 @@ public sealed partial class Game
     // ---- Server --------------------------------------------------------------------------------------
 
     /// <summary>
-    /// Server (from <see cref="ServerBench"/>, which already checked you're standing at a workbench): takes the build in
+    /// Server (from <see cref="ServerBench"/>, which already checked you're standing at a workbench; never at the box): takes the build in
     /// <paramref name="slot"/> (0-3 guns, 4 melee) apart into your loose parts. Returns why not, or null.
     /// </summary>
     private string? ServerDisassemble(Player p, ZPlayer zp, int slot)
@@ -109,14 +109,19 @@ public sealed partial class Game
         }
         ClearSlot(p, slot);
         SendZRun(p);
-        var where = AtWorkbench(p) ? "Workbench" : "At the box";
-        ZFeedTo(p, $"{where}: took the {old.Name} apart: {total} part{(total == 1 ? "" : "s")} to your loose parts.", Sfx.HitTick);
+        ZFeedTo(p, $"Workbench: took the {old.Name} apart: {total} part{(total == 1 ? "" : "s")} to your loose parts.", Sfx.HitTick);
         return null;
     }
 
-    // ---- At the mystery box (board item "Zombies": disassemble at the box, 2026-10-26) ------------------
+    // ---- At the mystery box: the OFFERED build (board items 2026-10-26: "disassemble at the box", then the bug fix) ----
 
-    /// <summary>How close to the mystery box (its current spot) a player must stand to take a build apart there.</summary>
+    /// <summary>
+    /// The <see cref="Msg.ZBench"/> kind that takes the mystery box's OFFERED build apart (protocol 54; the slot byte is
+    /// ignored). Its parts go to your loose parts and the box closes, as a take does; the gun in your hands is untouched.
+    /// </summary>
+    public const int BenchBoxDisassemble = 5;
+
+    /// <summary>How close to the mystery box (its current spot) a player must stand to take its offer apart (the server allows a little more than the prompt, for lag).</summary>
     public const float BoxDisassembleRange = 2.4f;
 
     /// <summary>Is <paramref name="p"/> standing at a workbench (the range every bench action allows)?</summary>
@@ -131,9 +136,8 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Can <paramref name="p"/> take a build apart at the mystery box now? Null when yes, else why not. Free, and it works
-    /// while the box is idle, spinning or offering (it's your own gun, not the box's); not while the teddy bear has it
-    /// (the box is flying off to another spot).
+    /// Can <paramref name="p"/> take the mystery box's offer apart now? Null when yes, else why not: the box must be
+    /// offering a build to <paramref name="p"/> (its buyer, as for a take) and they must be standing at it.
     /// </summary>
     public string? BoxDisassembleRefusal(Player p)
     {
@@ -141,61 +145,112 @@ public sealed partial class Game
             return "There's no mystery box on this map.";
         var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
         if (Flat(spot.At - p.Position) > BoxDisassembleRange)
-            return "You're not at a workbench or the mystery box.";
-        if (BoxState == ZBoxState.Teddy)
-            return "The mystery box is moving: take it apart at a workbench, or wait for the box.";
+            return "You're not at the mystery box.";
+        if (BoxState != ZBoxState.Offering || BoxBuild < 0 || BoxBuild >= StandardBuilds.All.Length)
+            return "The mystery box isn't offering anything to take apart.";
+        if (BoxOwner != p.Id)
+            return "That's someone else's box spin.";
         return null;
     }
 
-    /// <summary>Local: the slot armed for a disassembly at the box (the first press of the key) and when; -1 when not armed.</summary>
-    private int _boxDisArmedSlot = -1;
+    /// <summary>
+    /// Server (from <see cref="ServerBench"/>): takes the box's offered build apart into <paramref name="p"/>'s loose
+    /// parts and closes the box exactly as taking it does. Nothing in the player's slots changes. Returns why not, or null.
+    /// </summary>
+    private string? ServerBoxDisassemble(Player p, ZPlayer zp)
+    {
+        if (BoxDisassembleRefusal(p) is { } why)
+            return why;
+        var ob = StandardBuilds.All[BoxBuild];
+        var total = 0;
+        foreach (var (name, n) in PartCounts(ob.Build()))
+        {
+            zp.Parts[name] = zp.Parts.GetValueOrDefault(name) + n; // no cap on loose parts (the wire's own limits are 200 kinds, 255 each)
+            total += n;
+        }
+        CloseBox();
+        SendZRun(p);
+        ZFeedTo(p, $"At the box: took the {ob.Name} apart: {total} part{(total == 1 ? "" : "s")} to your loose parts.", Sfx.HitTick);
+        return null;
+    }
+
+    /// <summary>Server: the box's offer is gone (taken, taken apart or timed out): back to idle.</summary>
+    private void CloseBox()
+    {
+        BoxState = ZBoxState.Idle;
+        BoxBuild = -1;
+        BoxOwner = byte.MaxValue;
+    }
+
+    /// <summary>Local: the offer armed for a disassembly at the box (the first press of the key) and when; -1 when not armed.</summary>
+    private int _boxDisArmedBuild = -1;
 
     private double _boxDisArmedAt;
 
-    /// <summary>Local: is the box-side disassembly of slot <paramref name="slot"/> armed (a second press confirms it)?</summary>
-    public bool BoxDisassembleArmed(int slot, double now) => _boxDisArmedSlot == slot && now - _boxDisArmedAt < 4.0;
+    /// <summary>Local: is the box-side disassembly of the current offer armed (a second press confirms it)?</summary>
+    public bool BoxDisassembleArmed(double now) => _boxDisArmedBuild >= 0 && _boxDisArmedBuild == BoxDisassembleOffer() && now - _boxDisArmedAt < 4.0;
 
     /// <summary>
-    /// Local: what the second key at the mystery box would take apart (the build in your hands, slot 0-3), or -1: you're
-    /// standing at the box (within its prompt's reach; idle, spinning or offering), alive and not downed, and the gun in your hands is a build.
+    /// Local: the standard build index the box key would take apart (the box's offer to you), or -1: you're standing at
+    /// the box (within its prompt's reach), alive and not downed, and it's offering you a build. Nothing otherwise.
     /// </summary>
-    public int BoxDisassembleSlot()
+    public int BoxDisassembleOffer()
     {
         if (Local is not { } me || ZMap is not { } zm || zm.BoxSpots.Count == 0 || !IsStanding(me) || Phase != MatchPhase.Playing || BoxDisassembleRefusal(me) != null)
             return -1;
         if (Flat(zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)].At - me.Position) > 1.9f)
             return -1; // the box's own prompt range (the server allows a little more, for lag)
-        var slot = SlotOf(me, me.Weapon);
-        return slot is >= 0 and < 4 && ZP(me).Slots[slot] != null ? slot : -1;
+        return BoxBuild;
     }
 
     /// <summary>
     /// Local: the box's disassemble key (the grenade key, G: no grenades in Zombies) was pressed. The first press arms it
-    /// and says what will happen; a second press within 4 s sends the same request as the workbench's Disassemble
-    /// (<see cref="BenchDisassemble"/>), which the server checks against the box instead of a bench.
+    /// and says what will happen; a second press within 4 s asks the server (<see cref="BenchBoxDisassemble"/>) to take
+    /// the OFFERED build apart. With no offer the key does nothing.
     /// </summary>
     public void BoxDisassembleKey(double now)
     {
-        if (Local == null || BoxDisassembleSlot() is not (>= 0 and var slot))
-            return;
-        if (!BoxDisassembleArmed(slot, now))
-        {
-            _boxDisArmedSlot = slot;
-            _boxDisArmedAt = now;
-            return;
-        }
-        _boxDisArmedSlot = -1;
-        BenchRequest(BenchDisassemble, slot, ""); // the server checks the box and the slot, and moves the parts
+        if (BoxDisassembleConfirmed(now))
+            BenchRequest(BenchBoxDisassemble, 0, ""); // the server checks the box and its offer, and moves the parts
     }
 
-    /// <summary>Local: the HUD's second line at the mystery box (null when there's nothing in your hands to take apart).</summary>
+    /// <summary>Local: the box key's two presses: true on the confirming second one (the request is then due).</summary>
+    public bool BoxDisassembleConfirmed(double now)
+    {
+        if (Local == null || BoxDisassembleOffer() is not (>= 0 and var offer))
+            return false;
+        if (!BoxDisassembleArmed(now))
+        {
+            _boxDisArmedBuild = offer;
+            _boxDisArmedAt = now;
+            return false;
+        }
+        _boxDisArmedBuild = -1;
+        return true;
+    }
+
+    /// <summary>Local: the HUD's second line at the mystery box (null when the box offers you nothing).</summary>
     public string? BoxDisassemblePrompt(string key, double now)
     {
-        if (BoxDisassembleSlot() is not (>= 0 and var slot) || Local is not { } me || ZP(me).Slots[slot] is not { } b)
+        if (BoxDisassembleOffer() is not (>= 0 and var offer))
             return null;
-        return BoxDisassembleArmed(slot, now)
-            ? $"Press [{key}] again to take the {b.Name} apart: all {b.Nodes.Count()} parts to your loose parts, slot {slot + 1} left empty"
-            : $"Press [{key}] twice to take the {b.Name} apart into parts (free)";
+        var sb = StandardBuilds.All[offer];
+        return BoxDisassembleArmed(now)
+            ? $"Press [{key}] again to take the {sb.Name} apart: its {BoxOfferPartCount(offer)} parts to your loose parts (your gun stays)"
+            : $"Press [{key}] twice to take the {sb.Name} apart into parts instead";
+    }
+
+    private int _boxPartsFor = -1, _boxPartsCount;
+
+    /// <summary>How many parts standard build <paramref name="index"/> has (cached: the prompt is drawn every frame).</summary>
+    private int BoxOfferPartCount(int index)
+    {
+        if (_boxPartsFor != index)
+        {
+            _boxPartsFor = index;
+            _boxPartsCount = StandardBuilds.All[index].Build().Nodes.Count();
+        }
+        return _boxPartsCount;
     }
 
     /// <summary>
