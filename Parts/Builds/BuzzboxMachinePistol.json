@@ -3,7 +3,8 @@
   "name": "Buzzbox Machine Pistol",
   "tier": "uncommon",
   "source": [
-    "box"
+    "box",
+    "wall"
   ],
   "flavor": "A pistol receiver on a buzzsaw sear, with a buffer spring and a laser. Empties the mag before you finish saying 'spray'.",
   "build": "Service Pistol Grip{receiver_1:Plinker Receiver{barrel:Stub Barrel,feed:Extended Mag,ammo:FMJ,action:Buzzsaw Sear,upgrade_rear:Buffer Spring Kit},utility:Laser Sight}"
