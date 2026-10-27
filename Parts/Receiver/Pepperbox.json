@@ -17,15 +17,23 @@
     {"name": "ammo", "type": "ammo", "pos": [0, 0.035, 0], "required": true},
     {"name": "action", "type": "action", "pos": [0.03, 0.0245, 0.035], "points": {"under": [0, 0, 0.017], "front": [0, 0.012, -0.1]}, "required": true},
     {"name": "utility", "type": "utility", "pos": [0.032, 0.035, -0.048]},
-    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.1]},
+    {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.0497, 0.09]},
     {"name": "upgrade_side", "type": "upgrade", "pos": [0.031, 0.0497, 0.02]},
     {"name": "amp", "type": "amp", "pos": [-0.031, 0.0497, 0.02]}
   ],
   "model": [
-    {"size": [0.06, 0.07, 0.16], "pos": [0, 0.035, 0.0], "color": "brass"},
-    {"size": [0.03, 0.014, 0.08], "pos": [0, 0.074, 0.004], "color": "black"},
-    {"size": [0.062, 0.01, 0.04], "pos": [0, 0.042, 0.07], "color": "accent"},
-    {"size": [0.06, 0.06, 0.02], "pos": [0, 0.042, -0.09], "color": "steel"}
+    {"size": [0.05, 0.03, 0.16], "pos": [0, 0.015, 0.0], "color": "brass"},
+    {"size": [0.056, 0.028, 0.15], "pos": [0, 0.042, -0.005], "color": "brass"},
+    {"size": [0.028, 0.056, 0.15], "pos": [0, 0.042, -0.005], "color": "brass"},
+    {"size": [0.0198, 0.0198, 0.15], "pos": [-0.014, 0.028, -0.005], "rot": [0, 0, 45], "color": "brass"},
+    {"size": [0.0198, 0.0198, 0.15], "pos": [-0.014, 0.056, -0.005], "rot": [0, 0, 45], "color": "brass"},
+    {"size": [0.0198, 0.0198, 0.15], "pos": [0.014, 0.028, -0.005], "rot": [0, 0, 45], "color": "brass"},
+    {"size": [0.0198, 0.0198, 0.15], "pos": [0.014, 0.056, -0.005], "rot": [0, 0, 45], "color": "brass"},
+    {"size": [0.06, 0.06, 0.02], "pos": [0, 0.042, -0.09], "color": "steel"},
+    {"size": [0.044, 0.036, 0.02], "pos": [0, 0.04, 0.08], "color": "brass"},
+    {"size": [0.03, 0.014, 0.08], "pos": [0, 0.074, 0.0], "color": "black"},
+    {"size": [0.014, 0.022, 0.026], "pos": [0, 0.072, 0.062], "rot": [-30, 0, 0], "color": "black"},
+    {"size": [0.058, 0.01, 0.04], "pos": [0, 0.03, 0.05], "color": "accent"}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.6},
