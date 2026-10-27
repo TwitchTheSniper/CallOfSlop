@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Motion Fuse",
+  "category": "fuse",
+  "rarity": "epic",
+  "flavor": "A doorbell camera with opinions. Anything within four metres sets it off.",
+  "weight": 0.14,
+  "fuse": {"kind": "proximity", "seconds": 0.4, "trigger": 4},
+  "model": [
+    {"size": [0.035, 0.025, 0.035], "pos": [0, 0.011, 0], "color": "white"},
+    {"size": [0.02, 0.012, 0.004], "pos": [0, 0.012, -0.019], "color": "#30c0ff", "tag": "glow"}
+  ]
+}

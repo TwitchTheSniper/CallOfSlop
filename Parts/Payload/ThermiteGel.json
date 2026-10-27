@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Thermite Gel",
+  "category": "payload",
+  "rarity": "epic",
+  "flavor": "Burns hot enough to go through the floor. Please don't stand in it.",
+  "weight": 0.35,
+  "payload": {"kind": "incendiary", "damage": 600, "radius": 5.5, "duration": 8},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#ffb030"},
+    {"size": [0.03, 0.006, 0.004], "pos": [0, 0, -0.006], "color": "#ff5010", "tag": "glow"}
+  ]
+}

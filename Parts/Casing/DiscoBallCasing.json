@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Disco Ball Casing",
+  "category": "casing",
+  "rarity": "wonder",
+  "flavor": "Every surface a tiny mirror, every mirror a bad idea.",
+  "weight": 0.8,
+  "hand": [0, 0, 0],
+  "casing": {"throw": 1.0, "bounce": 0.5, "damageMult": 2.2, "radiusMult": 1.5, "extra": 1},
+  "sockets": [
+    {"name": "fuse", "type": "fuse", "pos": [0, 0.05, 0], "required": true},
+    {"name": "payload", "type": "payload", "pos": [0, 0, -0.05], "required": true},
+    {"name": "gmod_1", "type": "gmod", "pos": [0.05, 0, 0]},
+    {"name": "gmod_2", "type": "gmod", "pos": [-0.05, 0, 0], "rot": [0, 180, 0]},
+    {"name": "gmod_3", "type": "gmod", "pos": [0, -0.05, 0], "rot": [0, 0, -90]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.1, 0.1, 0.1], "pos": [0, 0, 0], "color": "chrome"},
+    {"shape": "rod", "size": [0.104, 0.1, 0.06], "pos": [0, 0, 0], "rot": [0, 45, 0], "color": "#e0e0ff"},
+    {"size": [0.01, 0.03, 0.01], "pos": [0, 0.06, 0], "color": "steel"}
+  ]
+}

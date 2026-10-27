@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Old Gym Socks",
+  "category": "payload",
+  "rarity": "rare",
+  "flavor": "A cloud nobody can stand in for long. Not even the dead.",
+  "weight": 0.2,
+  "payload": {"kind": "gas", "damage": 400, "radius": 5, "duration": 8},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#9ac43a"},
+    {"size": [0.02, 0.01, 0.004], "pos": [0, 0.008, -0.006], "color": "#5a7a20"}
+  ]
+}

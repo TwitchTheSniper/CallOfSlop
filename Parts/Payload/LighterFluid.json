@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Lighter Fluid",
+  "category": "payload",
+  "rarity": "common",
+  "flavor": "Sets a patch of floor on fire. The zombies walk through it anyway.",
+  "weight": 0.2,
+  "payload": {"kind": "incendiary", "damage": 220, "radius": 4.5, "duration": 6},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#e8641c"},
+    {"size": [0.01, 0.02, 0.004], "pos": [0, 0.005, -0.006], "color": "yellow"}
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Pineapple Casing",
+  "category": "casing",
+  "rarity": "common",
+  "flavor": "The classic ribbed egg. Nobody remembers who first called it a pineapple.",
+  "weight": 0.4,
+  "hand": [0, 0, 0],
+  "casing": {"throw": 1.0, "bounce": 0.3, "damageMult": 1.05},
+  "sockets": [
+    {"name": "fuse", "type": "fuse", "pos": [0, 0.045, 0], "required": true},
+    {"name": "payload", "type": "payload", "pos": [0, 0, -0.035], "required": true},
+    {"name": "gmod_1", "type": "gmod", "pos": [0.035, 0, 0]}
+  ],
+  "model": [
+    {"size": [0.07, 0.09, 0.07], "pos": [0, 0, 0], "color": "olive"},
+    {"size": [0.076, 0.012, 0.076], "pos": [0, 0.02, 0], "color": "olive"},
+    {"size": [0.076, 0.012, 0.076], "pos": [0, -0.02, 0], "color": "olive"},
+    {"size": [0.012, 0.094, 0.076], "pos": [0, 0, 0], "color": "olive"}
+  ]
+}

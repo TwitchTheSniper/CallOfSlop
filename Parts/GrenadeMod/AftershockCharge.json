@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Aftershock Charge",
+  "category": "grenademod",
+  "rarity": "rare",
+  "flavor": "Goes off, hops up, goes off again.",
+  "weight": 0.15,
+  "grenade": {"stages": 1},
+  "model": [
+    {"size": [0.02, 0.03, 0.02], "pos": [0.008, 0, 0], "color": "#c03030"},
+    {"size": [0.006, 0.006, 0.006], "pos": [0.02, 0.008, 0], "color": "yellow", "tag": "glow"}
+  ]
+}

@@ -496,7 +496,7 @@ public static class PartJson
     public static readonly string[] KeyOrder =
     [
         "format", "extends", "name", "category", "rarity", "flavor", "author", "about", "mount", "bores", "sizedFor", "requiresAction", "weight", "scrap", "carry", "flags", "hand",
-        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "frame", "split", "round", "shared", "hilt", "melee", "sockets", "model", "stats",
+        "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "frame", "split", "round", "shared", "hilt", "melee", "casing", "fuse", "payload", "grenade", "sockets", "model", "stats",
     ];
 
     /// <summary>

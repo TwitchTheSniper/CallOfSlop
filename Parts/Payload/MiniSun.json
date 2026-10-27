@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Mini Sun",
+  "category": "payload",
+  "rarity": "wonder",
+  "flavor": "A star in a can. Do not look directly at the grenade.",
+  "weight": 0.5,
+  "payload": {"kind": "frag", "damage": 3000, "radius": 11, "knockback": 16},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#fff080"},
+    {"shape": "rod", "size": [0.026, 0.026, 0.006], "pos": [0, 0, -0.006], "color": "#ffd020", "tag": "glow"}
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Kitchen Timer Fuse",
+  "category": "fuse",
+  "rarity": "common",
+  "flavor": "Twist to the bang. Hold the key to let it tick in your hand first.",
+  "weight": 0.1,
+  "fuse": {"kind": "timer", "seconds": 3.5, "cook": true},
+  "model": [
+    {"shape": "rod", "size": [0.05, 0.03, 0.05], "pos": [0, 0.013, 0], "rot": [90, 0, 0], "color": "white"},
+    {"size": [0.008, 0.012, 0.008], "pos": [0, 0.034, 0], "color": "black"}
+  ]
+}

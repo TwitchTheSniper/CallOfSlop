@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rubber Duck Flock",
+  "category": "payload",
+  "rarity": "epic",
+  "flavor": "Forty tiny ducks burst out at once. The zombies go flying; the ducks are fine.",
+  "weight": 0.3,
+  "payload": {"kind": "duck", "damage": 150, "radius": 7, "knockback": 14},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "yellow"},
+    {"size": [0.012, 0.008, 0.006], "pos": [0.01, 0.006, -0.006], "color": "orange"}
+  ]
+}

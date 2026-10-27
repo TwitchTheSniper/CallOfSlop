@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Contact Fuse",
+  "category": "fuse",
+  "rarity": "uncommon",
+  "flavor": "A spring-loaded nose. It goes off the moment it touches anything.",
+  "weight": 0.08,
+  "fuse": {"kind": "impact", "seconds": 8},
+  "model": [
+    {"size": [0.03, 0.02, 0.03], "pos": [0, 0.008, 0], "color": "brass"},
+    {"size": [0.012, 0.03, 0.012], "pos": [0, 0.03, 0], "color": "brass"}
+  ]
+}

@@ -321,7 +321,7 @@ public static class BuildStats
     public static WeaponDef? Compute(WeaponBuild b, out List<BuildProblem> problems)
     {
         problems = BuildRules.Check(b);
-        return problems.Count > 0 || b.IsMelee ? null : ComputeUnchecked(b); // melee builds: MeleeStats
+        return problems.Count > 0 || b.IsMelee || b.IsGrenade ? null : ComputeUnchecked(b); // melee builds: MeleeStats; grenades: GrenadeStats
     }
 
     /// <summary>The stats of a complete build (no rule checks). Muzzle positions are zero until the model is built.</summary>

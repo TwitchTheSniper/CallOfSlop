@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Overpacker",
+  "category": "grenademod",
+  "rarity": "legendary",
+  "flavor": "Far too much payload for the casing. Throws short, hits very hard.",
+  "weight": 0.35,
+  "grenade": {"damageMult": 1.6, "radiusMult": 1.2, "throwMult": 0.85},
+  "model": [
+    {"size": [0.03, 0.05, 0.04], "pos": [0.012, 0, 0], "color": "#a03020"},
+    {"size": [0.034, 0.008, 0.044], "pos": [0.012, 0, 0], "color": "yellow"}
+  ]
+}

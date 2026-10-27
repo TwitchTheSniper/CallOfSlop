@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Pocket Clip",
+  "category": "grenademod",
+  "rarity": "uncommon",
+  "flavor": "Packs small: one more grenade every round, a little weaker each.",
+  "weight": 0.03,
+  "grenade": {"extra": 1, "damageMult": 0.9},
+  "model": [
+    {"size": [0.006, 0.05, 0.012], "pos": [0.002, 0, 0], "color": "chrome"}
+  ]
+}

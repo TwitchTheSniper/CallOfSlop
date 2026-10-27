@@ -26,7 +26,10 @@
     {"name": "hopper", "about": "A grip's shared feed socket (hoppers and manifolds)."},
     {"name": "head", "about": "Melee: where a hilt's blade or head goes."},
     {"name": "mod", "about": "Melee: a hilt's modifier sockets (nails, wraps, weights)."},
-    {"name": "action", "about": "A receiver's fire-control group: the action part decides the fire type and rate."}
+    {"name": "action", "about": "A receiver's fire-control group: the action part decides the fire type and rate."},
+    {"name": "fuse", "about": "Grenades: a casing's fuse (timer, impact, proximity, remote)."},
+    {"name": "payload", "about": "Grenades: what's packed in the casing (frag, fire, cryo, shock, gas, lure, healing, ducks)."},
+    {"name": "gmod", "about": "Grenades: a casing's mod sockets (cluster, bigger blast, sticky, bouncy, aftershocks)."}
   ],
   "bores": [
     {"name": "pistol", "about": "9 mm and friends.", "barrelScale": [0.8, 0.8, 0.7], "barrelStrength": 0.85,
@@ -58,6 +61,10 @@
     {"name": "hilt", "mount": "", "display": "Hilt"},
     {"name": "head", "mount": "head", "display": "Head"},
     {"name": "meleemod", "mount": "mod", "display": "Melee Mod"},
-    {"name": "action", "mount": "action", "display": "Action"}
+    {"name": "action", "mount": "action", "display": "Action"},
+    {"name": "casing", "mount": "", "display": "Casing", "about": "The root of a grenade build."},
+    {"name": "fuse", "mount": "fuse", "display": "Fuse"},
+    {"name": "payload", "mount": "payload", "display": "Payload"},
+    {"name": "grenademod", "mount": "gmod", "display": "Grenade Mod"}
   ]
 }

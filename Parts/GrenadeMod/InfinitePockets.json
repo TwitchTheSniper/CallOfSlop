@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Infinite Pockets",
+  "category": "grenademod",
+  "rarity": "wonder",
+  "flavor": "Where do they all come from? Three more grenades every round.",
+  "weight": 0.02,
+  "grenade": {"extra": 3},
+  "model": [
+    {"size": [0.006, 0.04, 0.04], "pos": [0.002, 0, 0], "color": "#4040a0"},
+    {"size": [0.008, 0.01, 0.03], "pos": [0.004, 0.012, 0], "color": "#8080ff", "tag": "glow"}
+  ]
+}

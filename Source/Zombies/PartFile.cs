@@ -34,6 +34,7 @@ public static class PartFile
     [
         "format", "name", "category", "rarity", "flavor", "author", "mount", "placement", "bores", "sizedFor", "requiresAction", "weight", "scrap", "flags", "hand",
         "gripAngle", "muzzles", "optic", "sight", "feed", "receiver", "action", "split", "round", "frame", "sockets", "model", "stats", "carry", "shared", "hilt", "melee",
+        "casing", "fuse", "payload", "grenade",
     ];
 
     /// <summary>The mount a category gets when the file doesn't say (the registry's "mount" for it).</summary>
@@ -56,6 +57,10 @@ public static class PartFile
         PartCategory.Head => "head",
         PartCategory.MeleeMod => "mod",
         PartCategory.Action => "action",
+        PartCategory.Casing => "",
+        PartCategory.Fuse => "fuse",
+        PartCategory.Payload => "payload",
+        PartCategory.GrenadeMod => "gmod",
         _ => "utility",
     };
 
@@ -170,6 +175,14 @@ public static class PartFile
             part.Hilt = ReadHilt(hi, $"{where}: \"hilt\"");
         if (Get("melee") is { } me)
             part.Melee = ReadMelee(me, $"{where}: \"melee\"");
+        if (Get("casing") is { } cs)
+            part.Casing = ReadCasing(cs, $"{where}: \"casing\"");
+        if (Get("fuse") is { } fu)
+            part.Fuse = ReadFuse(fu, $"{where}: \"fuse\"");
+        if (Get("payload") is { } pa)
+            part.Payload = ReadPayload(pa, $"{where}: \"payload\"");
+        if (Get("grenade") is { } gr)
+            part.GMod = ReadGrenadeMod(gr, $"{where}: \"grenade\"");
         if (Get("sockets") is { } so)
             part.Sockets = so.ValueKind == JsonValueKind.Array
                 ? so.EnumerateArray().Select((x, i) => ReadSocket(x, $"{where}: socket #{i + 1}")).ToArray()
@@ -237,6 +250,7 @@ public static class PartFile
             throw new WeaponFileException($"{where}: only melee heads and mods have a \"melee\" block");
         if (p.IsMeleePart && (p.Effects.Length > 0 || p.Bores.Length > 0))
             throw new WeaponFileException($"{where}: melee parts change the melee numbers with \"melee\"/\"hilt\", not gun \"stats\" or \"bores\"");
+        ValidateGrenade(p, where);
         if (p.Shared != null && (p.Category != PartCategory.Feed || p.Mount != "hopper"))
             throw new WeaponFileException($"{where}: a \"shared\" block is for shared feeds (category feed, \"mount\": \"hopper\")");
         if (p.Category == PartCategory.Feed && p.Mount == "hopper" && p.Shared == null)
@@ -258,7 +272,7 @@ public static class PartFile
         {
             if (p.Frame != null)
                 throw new WeaponFileException($"{where}: only root grips have a \"frame\" block");
-            if (p.Category != PartCategory.Hilt && !SocketTypes.Contains(p.Mount))
+            if (p.Category is not (PartCategory.Hilt or PartCategory.Casing) && !SocketTypes.Contains(p.Mount))
                 throw new WeaponFileException($"{where}: \"mount\" \"{p.Mount}\" isn't a socket type ({string.Join(", ", SocketTypes)}; socket types are listed in Parts/_Registry.json)");
         }
         if (p.ReceiverCapacity > 0 && p.Frame == null)
@@ -512,6 +526,122 @@ public static class PartFile
             }
         }
         return h;
+    }
+
+    /// <summary>The grenade categories' rules: each has its own block, and only it; a casing is a root with a hand, a fuse and a payload socket.</summary>
+    private static void ValidateGrenade(PartDef p, string where)
+    {
+        if (p.Category == PartCategory.Casing)
+        {
+            if (p.Mount != "" || p.Casing == null)
+                throw new WeaponFileException($"{where}: a casing is the root of a grenade: no \"mount\", and a \"casing\" block (throw, bounce, sticky...)");
+            if (p.Hand == null)
+                throw new WeaponFileException($"{where}: a casing needs a \"hand\" point (where the hand holds it)");
+            if (!p.Sockets.Any(s => s.Type == "fuse" && s.Required) || !p.Sockets.Any(s => s.Type == "payload" && s.Required))
+                throw new WeaponFileException($"{where}: a casing needs a required \"fuse\" socket and a required \"payload\" socket");
+            if (p.Sockets.Count(s => s.Type == "gmod") > 3)
+                throw new WeaponFileException($"{where}: at most 3 \"gmod\" sockets (grenade mods) per casing");
+        }
+        else if (p.Casing != null)
+            throw new WeaponFileException($"{where}: only casings have a \"casing\" block");
+        if ((p.Category == PartCategory.Fuse) != (p.Fuse != null))
+            throw new WeaponFileException(p.Fuse == null ? $"{where}: a fuse needs a \"fuse\" block (kind, seconds...)" : $"{where}: only fuses have a \"fuse\" block");
+        if ((p.Category == PartCategory.Payload) != (p.Payload != null))
+            throw new WeaponFileException(p.Payload == null ? $"{where}: a payload needs a \"payload\" block (kind, damage, radius...)" : $"{where}: only payloads have a \"payload\" block");
+        if ((p.Category == PartCategory.GrenadeMod) != (p.GMod != null))
+            throw new WeaponFileException(p.GMod == null ? $"{where}: a grenade mod needs a \"grenade\" block (cluster, radiusMult...)" : $"{where}: only grenade mods have a \"grenade\" block");
+        if (p.IsGrenadePart && (p.Effects.Length > 0 || p.Bores.Length > 0 || p.Melee != null || p.Hilt != null))
+            throw new WeaponFileException($"{where}: grenade parts change the grenade with \"casing\"/\"fuse\"/\"payload\"/\"grenade\", not gun \"stats\", \"bores\" or melee blocks");
+        if (!p.IsGrenadePart && p.Sockets.Any(s => s.Type is "fuse" or "payload" or "gmod"))
+            throw new WeaponFileException($"{where}: only casings have fuse, payload and grenade mod sockets");
+    }
+
+    private static CasingInfo ReadCasing(JsonElement e, string where)
+    {
+        var c = new CasingInfo();
+        foreach (var (k, v) in Props(e, where, "throw", "bounce", "sticky", "damageMult", "radiusMult", "extra"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "throw": c.Throw = Range(WeaponFile.Number(v, at), 0.4f, 1.6f, at); break;
+                case "bounce": c.Bounce = Range(WeaponFile.Number(v, at), 0, 0.9f, at); break;
+                case "sticky": c.Sticky = (bool)WeaponFile.FromJson(v, typeof(bool), at); break;
+                case "damageMult": c.DamageMult = Range(WeaponFile.Number(v, at), 0.1f, 5, at); break;
+                case "radiusMult": c.RadiusMult = Range(WeaponFile.Number(v, at), 0.3f, 3, at); break;
+                case "extra": c.Extra = (int)Range(WeaponFile.Int(v, at), 0, 3, at); break;
+            }
+        }
+        return c;
+    }
+
+    private static FuseInfo ReadFuse(JsonElement e, string where)
+    {
+        var f = new FuseInfo();
+        var hasKind = false;
+        foreach (var (k, v) in Props(e, where, "kind", "seconds", "cook", "trigger"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "kind": f.Kind = WeaponFile.EnumValue<FuseKind>(v, at); hasKind = true; break;
+                case "seconds": f.Seconds = Range(WeaponFile.Number(v, at), 0.3f, 30, at); break;
+                case "cook": f.Cook = (bool)WeaponFile.FromJson(v, typeof(bool), at); break;
+                case "trigger": f.Trigger = Range(WeaponFile.Number(v, at), 0.5f, 8, at); break;
+            }
+        }
+        if (!hasKind)
+            throw new WeaponFileException($"{where}: needs a \"kind\" ({string.Join(", ", Enum.GetNames<FuseKind>()).ToLowerInvariant()})");
+        if (f.Cook && f.Kind != FuseKind.Timer)
+            throw new WeaponFileException($"{where}: only a timer fuse can \"cook\"");
+        return f;
+    }
+
+    private static PayloadInfo ReadPayload(JsonElement e, string where)
+    {
+        var p = new PayloadInfo();
+        var hasKind = false;
+        foreach (var (k, v) in Props(e, where, "kind", "damage", "radius", "knockback", "duration", "strength"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "kind": p.Kind = WeaponFile.EnumValue<PayloadKind>(v, at); hasKind = true; break;
+                case "damage": p.Damage = Range(WeaponFile.Number(v, at), 0, 3000, at); break;
+                case "radius": p.Radius = Range(WeaponFile.Number(v, at), 1, 12, at); break;
+                case "knockback": p.Knockback = Range(WeaponFile.Number(v, at), 0, 30, at); break;
+                case "duration": p.Duration = Range(WeaponFile.Number(v, at), 0, 20, at); break;
+                case "strength": p.Strength = Range(WeaponFile.Number(v, at), 0, 500, at); break;
+            }
+        }
+        if (!hasKind)
+            throw new WeaponFileException($"{where}: needs a \"kind\" ({string.Join(", ", Enum.GetNames<PayloadKind>()).ToLowerInvariant()})");
+        if (p.Kind is PayloadKind.Incendiary or PayloadKind.Gas or PayloadKind.Lure && p.Duration <= 0)
+            throw new WeaponFileException($"{where}: a {p.Kind.ToString().ToLowerInvariant()} payload needs a \"duration\" (seconds it lasts)");
+        return p;
+    }
+
+    private static GrenadeModInfo ReadGrenadeMod(JsonElement e, string where)
+    {
+        var m = new GrenadeModInfo();
+        foreach (var (k, v) in Props(e, where, "cluster", "damageMult", "radiusMult", "throwMult", "fuseMult", "durationMult", "bounce", "sticky", "stages", "extra"))
+        {
+            var at = $"{where}.{k}";
+            switch (k)
+            {
+                case "cluster": m.Cluster = (int)Range(WeaponFile.Int(v, at), 0, GrenadeStats.MaxCluster, at); break;
+                case "damageMult": m.DamageMult = Range(WeaponFile.Number(v, at), 0.1f, 5, at); break;
+                case "radiusMult": m.RadiusMult = Range(WeaponFile.Number(v, at), 0.3f, 3, at); break;
+                case "throwMult": m.ThrowMult = Range(WeaponFile.Number(v, at), 0.4f, 2, at); break;
+                case "fuseMult": m.FuseMult = Range(WeaponFile.Number(v, at), 0.2f, 3, at); break;
+                case "durationMult": m.DurationMult = Range(WeaponFile.Number(v, at), 0.2f, 4, at); break;
+                case "bounce": m.Bounce = Range(WeaponFile.Number(v, at), 0, 0.6f, at); break;
+                case "sticky": m.Sticky = (bool)WeaponFile.FromJson(v, typeof(bool), at); break;
+                case "stages": m.Stages = (int)Range(WeaponFile.Int(v, at), 0, GrenadeStats.MaxStages, at); break;
+                case "extra": m.Extra = (int)Range(WeaponFile.Int(v, at), 0, 3, at); break;
+            }
+        }
+        return m;
     }
 
     private static MeleeEffects ReadMelee(JsonElement e, string where)

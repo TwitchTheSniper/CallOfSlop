@@ -49,6 +49,12 @@ public sealed class WeaponBuild
     /// <summary>A melee build (rooted on a hilt) rather than a gun.</summary>
     public bool IsMelee => Root?.Part.Hilt != null;
 
+    /// <summary>A grenade build (rooted on a casing; the Zombies grenade slot).</summary>
+    public bool IsGrenade => Root?.Part.Casing != null;
+
+    /// <summary>What the build is: a gun, a melee weapon or a grenade (by its root; no root counts as a gun).</summary>
+    public BuildKind Kind => IsGrenade ? BuildKind.Grenade : IsMelee ? BuildKind.Melee : BuildKind.Gun;
+
     /// <summary>The shared feed (hopper / manifold) on the grip's hopper socket, if one is fitted.</summary>
     public BuildNode? Hopper => Root?.Children().Where(c => c.Socket.Type == "hopper" && c.Node.Part.Shared != null).Select(c => c.Node).FirstOrDefault();
 
@@ -403,6 +409,7 @@ public static class BuildRules
         PartCategory.Multiplier => "damage multipliers",
         PartCategory.Upgrade => "receiver upgrades",
         PartCategory.MeleeMod => "melee mods",
+        PartCategory.GrenadeMod => "grenade mods",
         _ => c.ToString().ToLowerInvariant() + "s",
     };
 
@@ -412,7 +419,9 @@ public static class BuildRules
         if (part.IsRoot)
             return part.Hilt != null
                 ? $"{part.Name} is a hilt you build a melee weapon on: start a melee build with it instead."
-                : $"{part.Name} is a grip you build on: start a new build with it instead.";
+                : part.Casing != null
+                    ? $"{part.Name} is a casing you build a grenade on: start a grenade build with it instead."
+                    : $"{part.Name} is a grip you build on: start a new build with it instead.";
         if (socket.Type != part.Mount)
             return $"{part.Name} mounts on {Article(part.Mount)} {part.Mount} socket, not {Article(socket.Type)} {socket.Type} socket.";
         if (socket.Accepts.Length > 0 && !socket.Accepts.Contains(part.Category))
@@ -456,7 +465,7 @@ public static class BuildRules
     public static string? SocketWhyShort(BuildNode parent, PartSocket socket, PartDef part)
     {
         if (part.IsRoot)
-            return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
+            return part.Hilt != null ? "starts a new melee weapon" : part.Casing != null ? "starts a new grenade" : "starts a new weapon";
         var mount = part.Mount;
         if (socket.Type != mount)
             return $"needs {Article(mount)} {mount} socket";
@@ -493,7 +502,7 @@ public static class BuildRules
     {
         if (n.Child(s.Name) != null || !(s.Required || (n.Part.Category == PartCategory.Splitter && s.Type == "barrel")))
             return false;
-        if (b.IsMelee)
+        if (b.IsMelee || b.IsGrenade)
             return s.Required;
         return !(fed.Contains(n) && (s.Type == "feed" || (s.Type == "ammo" && b.Hopper?.Child("ammo") != null)));
     }
@@ -598,6 +607,8 @@ public static class BuildRules
             return $"Too heavy: {b.Weight:0.0} kg; the {b.Root!.Part.Name} can't carry more than {b.CarryWeight * 2:0.#} kg.";
         if (b.IsMelee && b.Weight > MaxMeleeWeight)
             return $"Too heavy: {b.Weight:0.0} kg; a melee weapon can't be more than {MaxMeleeWeight:0} kg.";
+        if (b.IsGrenade)
+            return GrenadeStats.Problem(b); // weight, one cluster mod, sticky vs bouncy, proximity vs lure (GrenadeStats.cs)
         return null;
     }
 
@@ -621,7 +632,7 @@ public static class BuildRules
                     list.Add(new(false, why));
         if (LimitProblem(b) is { } limit)
             list.Add(new(false, limit));
-        if (b.IsMelee)
+        if (b.IsMelee || b.IsGrenade)
         {
             foreach (var n in b.Nodes)
                 foreach (var s in n.Part.Sockets)

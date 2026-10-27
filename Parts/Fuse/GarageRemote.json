@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Garage Remote",
+  "category": "fuse",
+  "rarity": "rare",
+  "flavor": "Press the grenade key again to open the garage. And everything near it.",
+  "weight": 0.15,
+  "fuse": {"kind": "remote", "seconds": 30},
+  "model": [
+    {"size": [0.04, 0.02, 0.025], "pos": [0, 0.009, 0], "color": "black"},
+    {"size": [0.012, 0.006, 0.012], "pos": [0, 0.021, 0], "color": "#ff3030"},
+    {"size": [0.003, 0.03, 0.003], "pos": [0.015, 0.03, 0], "color": "steel"}
+  ]
+}

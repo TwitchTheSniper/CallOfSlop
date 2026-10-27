@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Squeaky Toy Lure",
+  "category": "payload",
+  "rarity": "rare",
+  "flavor": "Squeaks for six seconds. Every zombie nearby has to see what it is. Then it goes off.",
+  "weight": 0.2,
+  "payload": {"kind": "lure", "damage": 900, "radius": 7, "duration": 6},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#ff6fb0"},
+    {"size": [0.016, 0.016, 0.006], "pos": [0, 0, -0.006], "color": "yellow"}
+  ]
+}

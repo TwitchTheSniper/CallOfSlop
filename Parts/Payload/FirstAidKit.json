@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "First Aid Kit",
+  "category": "payload",
+  "rarity": "uncommon",
+  "flavor": "Heals every player it lands near. Zombies get nothing.",
+  "weight": 0.2,
+  "payload": {"kind": "heal", "radius": 6, "strength": 60, "damage": 0},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "white"},
+    {"size": [0.024, 0.008, 0.004], "pos": [0, 0, -0.006], "color": "#d02020"},
+    {"size": [0.008, 0.024, 0.004], "pos": [0, 0, -0.006], "color": "#d02020"}
+  ]
+}

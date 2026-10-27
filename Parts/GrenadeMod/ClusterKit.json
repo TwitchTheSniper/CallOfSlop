@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Cluster Kit",
+  "category": "grenademod",
+  "rarity": "uncommon",
+  "flavor": "Splits into three bomblets when it goes off.",
+  "weight": 0.15,
+  "grenade": {"cluster": 3},
+  "model": [
+    {"size": [0.018, 0.018, 0.018], "pos": [0.008, 0.012, 0], "color": "olive"},
+    {"size": [0.018, 0.018, 0.018], "pos": [0.008, -0.012, 0], "color": "olive"},
+    {"size": [0.018, 0.018, 0.018], "pos": [0.008, 0, 0.016], "color": "olive"}
+  ]
+}

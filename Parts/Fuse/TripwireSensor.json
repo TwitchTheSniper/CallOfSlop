@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Tripwire Sensor",
+  "category": "fuse",
+  "rarity": "rare",
+  "flavor": "Arms once it lands, then waits for something to shamble past.",
+  "weight": 0.12,
+  "fuse": {"kind": "proximity", "seconds": 0.8, "trigger": 2.5},
+  "model": [
+    {"size": [0.03, 0.02, 0.03], "pos": [0, 0.008, 0], "color": "gunmetal"},
+    {"size": [0.006, 0.05, 0.006], "pos": [0, 0.04, 0], "color": "steel"},
+    {"size": [0.01, 0.01, 0.01], "pos": [0, 0.068, 0], "color": "#ff2a2a", "tag": "glow"}
+  ]
+}

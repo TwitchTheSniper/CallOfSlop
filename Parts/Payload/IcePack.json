@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ice Pack",
+  "category": "payload",
+  "rarity": "uncommon",
+  "flavor": "Freezes the zombies near it solid for a moment, then slows them down.",
+  "weight": 0.25,
+  "payload": {"kind": "cryo", "damage": 120, "radius": 6, "duration": 4, "strength": 2.5},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#8fd8ff"},
+    {"size": [0.02, 0.02, 0.004], "pos": [0, 0, -0.006], "color": "white"}
+  ]
+}
