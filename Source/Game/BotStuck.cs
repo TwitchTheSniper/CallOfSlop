@@ -40,6 +40,24 @@ public sealed partial class BotBrain
     internal Vector3 RescueAt;
     internal double NextOffNavCheck;
     internal double LastStuckLog = -1000; // the log line is written at most once a minute per bot
+
+    /// <summary>What the last watch step made of this tick (self-test diagnostics; see <see cref="StuckWhy"/>).</summary>
+    public StuckWhy StuckLastWhy;
+}
+
+/// <summary>What the stuck watch made of one tick (self-test diagnostics: why a stuck clock didn't run).</summary>
+public enum StuckWhy : byte
+{
+    Counting, // the clock ran (or paused for a fight) this tick
+    NotPlaying, // a phase other than Playing
+    Idle, // not wanting to move (no wish, or stationary on purpose)
+    Mover, // on a lift or another mover's sweep
+    Holding, // holding a spot on purpose (BotHolding)
+    Progress, // made progress: the spell started over
+    PausedSight, // an enemy in sight: the clock paused
+    PausedEngage, // fighting (Engage mode)
+    PausedBlind, // flashed
+    PausedMantle, // climbing a ledge
 }
 
 /// <summary>
@@ -107,13 +125,18 @@ public sealed partial class Game
         }
         b.StuckWatchTick = ServerTick;
         if (Phase != MatchPhase.Playing)
+        {
+            b.StuckLastWhy = StuckWhy.NotPlaying;
             return false;
+        }
         var nav = b.PathGraph ?? NavGraph.Current;
         var onMover = InMoverSweep(pos);
 
         // Standing still on purpose, or something else holds the bot: not stuck.
         var wants = s.Wish.LengthSquared() >= 0.05f && !s.Stationary;
-        var idle = !wants || onMover || BotHolding(p, b, now);
+        var holding = BotHolding(p, b, now);
+        var idle = !wants || onMover || holding;
+        b.StuckLastWhy = !wants ? StuckWhy.Idle : onMover ? StuckWhy.Mover : holding ? StuckWhy.Holding : StuckWhy.Counting;
 
         // Off the walkable area: checked twice a second, straight to the self-kill after a few seconds of wanting out
         // and staying within a few metres (a bot running about isn't in a pit; falling out of the map always counts).
@@ -147,7 +170,10 @@ public sealed partial class Game
         var following = now - b.FollowTime < 0.05 && b.FollowNode >= 0;
         var node = following ? b.FollowNode : -1;
         var nodeDist = following ? Flat(b.FollowAim - pos) : 0f;
-        var moved = Vector3.DistanceSquared(pos, b.StuckAnchor);
+        // Across the ground only: a hop in place (BotUnstick jumps at a wall every couple of seconds) rises 1.5 m and lands
+        // again, which isn't getting anywhere. Counting it reset the clock on every hop, so a boxed-in bot that happened to
+        // hop more often than once a second never reached a recovery stage (the Windows "Bot stuck watch" failure).
+        var moved = FlatVec(pos - b.StuckAnchor).LengthSquared();
         var progressed = b.StuckStage > 0
             ? moved >= StuckProgressRecovering * StuckProgressRecovering
             : node >= 0 && node == b.StuckAnchorNode
@@ -155,6 +181,7 @@ public sealed partial class Game
                 : moved >= StuckProgress * StuckProgress;
         if (progressed && now >= b.BackOffUntil)
         {
+            b.StuckLastWhy = StuckWhy.Progress;
             StuckReset(b, pos);
             b.StuckAnchorNode = node;
             b.StuckAnchorNodeDist = nodeDist;
@@ -170,6 +197,8 @@ public sealed partial class Game
         var paused = visible || b.Mode == BotMode.Engage || BotBlinded(p, now) || p.Sim.MantleTicks > 0;
         if (!paused)
             b.StuckSecs += World.TickDt;
+        else
+            b.StuckLastWhy = visible ? StuckWhy.PausedSight : b.Mode == BotMode.Engage ? StuckWhy.PausedEngage : p.Sim.MantleTicks > 0 ? StuckWhy.PausedMantle : StuckWhy.PausedBlind;
 
         var limit = MathF.Max(1f, BotStuckSuicideSeconds);
         if (b.StuckSecs >= limit)
@@ -422,7 +451,7 @@ public sealed partial class Game
             return;
         }
         var radius = b.StuckStage == 0 ? StuckProgress : StuckProgressRecovering;
-        if (Vector3.DistanceSquared(pos, b.StuckAnchor) >= radius * radius && now >= b.BackOffUntil)
+        if (FlatVec(pos - b.StuckAnchor).LengthSquared() >= radius * radius && now >= b.BackOffUntil) // (across the ground: a hop isn't progress)
         {
             StuckReset(b, pos);
             return;

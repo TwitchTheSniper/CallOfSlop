@@ -105,7 +105,8 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
   - the Bank's new west side door.
 
 **Flaky tests (passed on rerun; root cause unknown)**
-- "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
+- Fixed 2026-10-27 (fix/bot-stuck): "Bot stuck watch": the pit bot never reached a recovery stage (0) and never killed itself, so all six pit checks failed (Windows: main manual run 40464661149 on d24e084e, release 40477227127 attempt 1 on 7ae1d5c; it predates the horde merge). Not a timeout and not Windows code: the watch measured progress in 3D, and BotUnstick hops at the wall (1.5 m up), so each hop and landing restarted the stuck spell; a bot that hopped about once a second never got its 1 s to stage 1. The pit game was unseeded, so it depended on the random personality and hop timing (about 2% of seeds on Linux, seeds 42/53/128; more often with Windows' maths). Progress is now measured across the ground; the pit game is seeded and the section replays those three seeds.
+- "Zombie hordes": "near zombies should be updated every snapshot (one went 283 ms without)". Windows, twice in six full manual runs of fix/bot-stuck (2026-10-27, jobs 122118206115 and 122124671857); not looked into.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
 - "Matches" on Keelhaul Yard: "4 player(s) below the floor" once in the agent container (2026-10-23, fix/test-range-qol, unseeded bot match on the gravity-zone map); passed on rerun.
 - "Space: gravity maps" (now the "Map contract" bot match on Twin Shard): "3 bots barely moved in a KingOfTheHill match" on main's Linux run 40035032503 (2026-10-23). The seeded 12 s match is the same every run on one machine but not across machines (float differences); the map's `test` block allows 4 stuck bots since.
