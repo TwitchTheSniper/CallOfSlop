@@ -1461,4 +1461,13 @@ public sealed partial class Game
     public int SelfTestToSpawn => _zToSpawn;
 
     public void SelfTestRollDrop(Vector3 at, int round, double now) => RollDrop(at, round, now);
+
+    /// <summary>Self-test: a melee swing from <paramref name="p"/>'s eye along <paramref name="dir"/> against zombies (2 m reach, one zombie).</summary>
+    public byte SelfTestZombieMelee(Player p, Vector3 dir, float damage, double now) => ZombieMelee(p, p.Eye, dir, 2f, 0.5f, damage, 1, 0, ServerTick, now);
+
+    /// <summary>Self-test: the round's power-up count back to none (a new round's cap).</summary>
+    public void SelfTestResetPowerCount() => _zPowerThisRound = 0;
+
+    /// <summary>Self-test: one server tick of <paramref name="p"/>'s Zombies state (the interact key, the plate, bleeding out).</summary>
+    public void SelfTestPerkTick(Player p, double now) => TickZPlayer(p, ZP(p), ZMap!, now);
 }

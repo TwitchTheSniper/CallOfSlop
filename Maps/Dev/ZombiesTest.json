@@ -110,7 +110,14 @@
       {"perk": "secondwind", "at": [6.5, -1.5], "yaw": -90},
       {"perk": "jugg", "at": [-6, 16], "yaw": 90, "power": true},
       {"perk": "speed", "at": [-18.5, 4.5], "yaw": 90, "power": true},
-      {"perk": "doubletap", "at": [17.5, -4.5], "yaw": -90, "power": true}
+      {"perk": "doubletap", "at": [17.5, -4.5], "yaw": -90, "power": true},
+      {"perk": "hammerhand", "at": [-6.5, -3.2], "yaw": 90},
+      {"perk": "bloodroot", "at": [-8.9, 4.6], "yaw": -90},
+      {"perk": "salvage", "at": [-18.5, -4.5], "yaw": 90},
+      {"perk": "fleetfoot", "at": [1.8, 17.6], "yaw": 0, "power": true},
+      {"perk": "marksman", "at": [2.9, 17.6], "yaw": 0, "power": true},
+      {"perk": "windfall", "at": [4.0, 17.6], "yaw": 0, "power": true},
+      {"perk": "bulwark", "at": [5.1, 17.6], "yaw": 0, "power": true}
     ],
     "slotUpgrade": {"at": [17.5, 7.5], "yaw": -90, "cost": 4000},
     "power": {"at": [19.5, 8.5], "yaw": -90},
