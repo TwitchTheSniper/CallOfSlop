@@ -27,12 +27,17 @@ public static partial class SelfTest
 
     private static void CheckBotStuck()
     {
+        // The scenarios' stuck spells are staged: keep them out of the run's stuck-spot report (stuck-spots.json).
+        var saved = StuckSpots.Session.ToJson("saved");
         try
         {
             CheckBotStuckScenarios();
+            CheckStuckReport();
         }
         finally
         {
+            StuckSpots.Session.Clear();
+            StuckSpots.Session.ReadJson(saved);
             if (StuckNotes.Count == 0)
                 StuckNotes.Add("no stuck self-kills in the every-map matches");
             Line("::notice title=Bot stuck watch (results)::" + string.Join("%0A", StuckNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
@@ -134,6 +139,15 @@ public static partial class SelfTest
                 Fail("the stuck self-kill didn't count as one suicide (death +1, no kill credit) or the counters are off");
             if (!log.StartsWith("[bots] stuck: ", StringComparison.Ordinal) || !log.Contains(lab.Name) || !log.Contains("self-kill") || !log.Contains("("))
                 Fail($"no proper [bots] stuck: log line (map, position, cause): '{log}'");
+            // The stuck-spot report: one spot in the pit, with the spell, the stages and the self-kill.
+            var pitSpots = StuckSpots.Session.On(lab.Name);
+            var pitSpot = pitSpots.Count == 1 ? pitSpots[0] : null;
+            var reportText = pitSpot == null ? $"{pitSpots.Count} spots" : StuckSpots.Describe(pitSpot);
+            Line($"stuck-spot report: {reportText}; this match {game.StuckSpellsThisMatch} spell(s) at {game.StuckSpotsThisMatch.Count} spot(s)");
+            StuckNotes.Add($"stuck-spot report: {reportText}");
+            if (pitSpot == null || pitSpot.Spells != 1 || pitSpot.SelfKills != 1 || pitSpot.MaxStage != 4 || Flat2(pitSpot.At) > 1.6f || pitSpot.NavNode < 0
+                || pitSpot.MainCause == BotStuckCause.None || game.StuckSpotsThisMatch.Count != 1 || game.StuckSpellsThisMatch != 1)
+                Fail($"the stuck-spot report didn't record the pit spell (one spot in the pit, 1 spell, 1 self-kill, gave up, a nav node and a cause): {reportText}");
             b.ForcedGoal = null;
             Run(game, ref now, World.RespawnDelay + 0.5);
             var flat = MathF.Max(MathF.Abs(bot.Position.X), MathF.Abs(bot.Position.Z));
@@ -153,6 +167,8 @@ public static partial class SelfTest
                 Run(game, ref now, 1.0 / World.TickRate);
             if (game.BotStuckKills != 2 || !ReferenceEquals(firstLog, game.LastStuckLog))
                 Fail($"a second stuck self-kill within a minute: counted {game.BotStuckKills} (want 2), logged again {!ReferenceEquals(firstLog, game.LastStuckLog)}");
+            if (StuckSpots.Session.On(lab.Name) is not [{ Spells: 2, SelfKills: 2 }] || game.StuckSpotsThisMatch.Count != 1)
+                Fail($"the second pit spell didn't go to the same spot in the stuck-spot report ({string.Join("; ", StuckSpots.Session.On(lab.Name).Select(StuckSpots.Describe))})");
 
             // The results screen: never.
             Run(game, ref now, World.RespawnDelay + 0.5);
@@ -165,8 +181,8 @@ public static partial class SelfTest
             StuckNotes.Add($"results screen ({game.Phase}): stuck kills {endKills}->{game.BotStuckKills}, end-of-match summary written {summaryReset}");
             if (game.Phase != MatchPhase.Ended || game.BotStuckKills != endKills)
                 Fail("the stuck watch ran on the results screen");
-            if (!summaryReset)
-                Fail("the end of the match didn't write the stuck summary (the per-match count wasn't reset)");
+            if (!summaryReset || game.StuckSpotsThisMatch.Count != 0 || game.StuckSpellsThisMatch != 0)
+                Fail("the end of the match didn't write the stuck summary (the per-match counts weren't reset)");
         }
 
         // ---- Hopping in the pit isn't progress ----
@@ -366,6 +382,70 @@ public static partial class SelfTest
                 Fail("a stuck Zombies co-op bot didn't hop and back off, then teleport to its teammate");
         }
         World.SetMap(Maps.All[0]);
+    }
+
+    /// <summary>The stuck-spot report (StuckSpots.cs): clustering, the JSON round trip, log lines, merging and --stuck-report.</summary>
+    private static void CheckStuckReport()
+    {
+        var r = new StuckSpots();
+        var a = r.Spell("Map A", "Free-for-all", new Vector3(10, 0, 10), BotStuckCause.Ledge, 7);
+        var a2 = r.Spell("Map A", "Team Deathmatch", new Vector3(11.5f, 0.5f, 11), BotStuckCause.Ledge, 8); // within 2.5 m: the same spot
+        var up = r.Spell("Map A", "Free-for-all", new Vector3(10, 4, 10), BotStuckCause.Blocked, 9); // the floor above: another spot
+        var b = r.Spell("Map B", "Free-for-all", new Vector3(-3, 0, 2), BotStuckCause.Trap, 1);
+        r.Stage(a, 3);
+        r.GaveUp(a, BotStuckCause.Ledge, BotStuckCause.Ledge, rescue: false);
+        r.GaveUp(b, BotStuckCause.OffNav, BotStuckCause.Trap, rescue: true);
+        var clustered = ReferenceEquals(a, a2) && !ReferenceEquals(a, up) && r.Count == 3 && a.Spells == 2 && a.NavNode == 7 && a.Modes == "Free-for-all, Team Deathmatch"
+                        && b.Causes[(int)BotStuckCause.OffNav] == 1 && b.Causes[(int)BotStuckCause.Trap] == 0 && b.Rescues == 1;
+        var json = r.ToJson("self-test");
+        var back = new StuckSpots();
+        var read = back.ReadJson(json);
+        var same = read == 3 && string.Join("|", back.Table()) == string.Join("|", r.Table());
+        back.ReadJson(json); // a second copy merges into the same spots
+        var doubled = back.Count == 3 && back.On("Map A").Sum(s => s.Spells) == 6;
+        const string log = "[bots] stuck: [BOT] Ace (Rusher) on Old Mill Yard (Team Deathmatch) at (12.3, 1.0, -4.5): blocked at a ledge climb (mantle edge) for 15.0 s -> self-kill (3 on this map this session)";
+        var parsed = StuckSpots.FromLogLine(log);
+        var logOk = parsed is { Map: "Old Mill Yard", Modes: "Team Deathmatch", SelfKills: 1, Spells: 1 } && parsed.MainCause == BotStuckCause.Ledge && Flat2(parsed.At - new Vector3(12.3f, 0, -4.5f)) < 0.01f
+                    && StuckSpots.FromLogLine("[bots] match over on X: 0 stuck self-kill(s)") == null;
+        // --stuck-report DIR: a report and a game log in a folder (and a subfolder), merged into one table and file.
+        var dir = Path.Combine(Path.GetTempPath(), $"callofslop-stuck-report-{Guid.NewGuid():N}");
+        int code, codeEmpty;
+        var merged = new StuckSpots();
+        try
+        {
+            Directory.CreateDirectory(Path.Combine(dir, "ci"));
+            File.WriteAllText(Path.Combine(dir, "ci", "stuck-spots.json"), json);
+            File.WriteAllLines(Path.Combine(dir, "callofslop.log"), ["something else", log, log.Replace("12.3", "13.0")]);
+            var outFile = Path.Combine(dir, "merged", "stuck-spots-merged.json");
+            code = StuckSpots.Cli(dir, ["--stuck-report", dir, "--out", outFile]);
+            if (File.Exists(outFile))
+                merged.ReadJson(File.ReadAllText(outFile));
+            Directory.CreateDirectory(Path.Combine(dir, "empty"));
+            codeEmpty = StuckSpots.Cli(Path.Combine(dir, "empty"), []);
+        }
+        finally
+        {
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch (IOException)
+            {
+            }
+        }
+        var mill = merged.On("Old Mill Yard");
+        var cliOk = code == 0 && codeEmpty == 1 && merged.Count == 4 && mill.Count == 1 && mill[0].SelfKills == 2;
+        Line($"stuck-spot report: clustered {clustered}, JSON round trip {same} (merging a copy doubles {doubled}), log line {logOk}, --stuck-report exit {code} (empty folder {codeEmpty}), merged {merged.Count} spots");
+        foreach (var l in merged.Table())
+            Line("  " + l);
+        if (!clustered)
+            Fail("the stuck-spot report didn't cluster spells by spot (2.5 m across, separate floors)");
+        if (!same || !doubled)
+            Fail("the stuck-spot report didn't read back what it wrote, or didn't merge a second copy into the same spots");
+        if (!logOk)
+            Fail($"a [bots] stuck: log line didn't parse into a spot ({(parsed == null ? "null" : StuckSpots.Describe(parsed))})");
+        if (!cliOk)
+            Fail($"--stuck-report didn't merge a report and a log from a folder (exit {code}, {merged.Count} spots, empty folder exit {codeEmpty})");
     }
 
     private static float Flat2(Vector3 v) => MathF.Sqrt(v.X * v.X + v.Z * v.Z);

@@ -736,13 +736,16 @@ public static partial class SelfTest
         }
         var kills = game.Players.Values.Sum(p => (int)p.Kills);
         var stuck = moved.Count(kv => kv.Value < 8f);
+        var spots = game.StuckSpotsThisMatch; // the stuck watch's report (StuckSpots.cs): spells that reached a recovery stage
         var text = $"{t.BotMatchMode} {game.Players.Count} players, {seconds} s: kills {kills}, fall kills {game.FallKills}, avg bot travel {(moved.Count == 0 ? 0 : moved.Values.Average()):0} m, "
-                   + $"stuck {stuck}, player-ticks outside {outsideTicks}, below the floor {fallenTicks}, worst tick {maxTickMs:0.00} ms (work {cpu.WorstText}; {jitTicks} JIT ticks not counted), "
+                   + $"stuck {stuck}, stuck spots {spots.Count}, player-ticks outside {outsideTicks}, below the floor {fallenTicks}, worst tick {maxTickMs:0.00} ms (work {cpu.WorstText}; {jitTicks} JIT ticks not counted), "
                    + $"broken props {m.BrokenProps.Count} ({sw.Elapsed.TotalSeconds:0.0} s)";
         if (game.Players.Count != players)
             Fail($"{m.Name}: the {t.BotMatchMode} match has {game.Players.Count} players (expected {players})");
         if (outsideTicks > 0 || fallenTicks > 0)
             Fail($"{m.Name}: players left the map in the bot match ({outsideTicks} player-ticks outside the outline, {fallenTicks} below the floor)");
+        if (t.MaxStuckSpots >= 0 && spots.Count > t.MaxStuckSpots)
+            Fail($"{m.Name}: bots got stuck at {spots.Count} spot(s) in the {t.BotMatchMode} bot match (allowed {t.MaxStuckSpots}): {string.Join("; ", spots.Select(StuckSpots.Describe))}");
         if (t.MaxStuckBots >= 0 && stuck > t.MaxStuckBots)
             Fail($"{m.Name}: {stuck} bots barely moved in a {t.BotMatchMode} match (allowed {t.MaxStuckBots})");
         if (cpu.WorstMs > MaxTickWorkMs)

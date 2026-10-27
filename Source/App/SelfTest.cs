@@ -104,6 +104,11 @@ public static partial class SelfTest
                         Fail($"section \"{name}\" needs \"{b}\", which isn't a section");
                 Sections();
                 Line("");
+                // Every stuck spell of the run's bot matches (the stuck-spot report, StuckSpots.cs), beside this log: CI uploads it,
+                // and --stuck-report pools it with other runs and testers' reports.
+                var spotsFile = Path.Combine(AppContext.BaseDirectory, "stuck-spots.json");
+                StuckSpots.Session.Write(spotsFile, only == null ? "self-test (full suite)" : $"self-test (--selftest-only \"{only}\")");
+                Line($"STUCK SPOTS: {StuckSpots.Session.Count} spot(s) on {StuckSpots.Session.Maps.Count()} map(s) in the run's bot matches (stuck-spots.json)");
                 var slowest = _times.OrderByDescending(t => t.Seconds).Take(10).Select(t => $"{t.Name} {t.Seconds:0.0} s");
                 Line("SLOWEST: " + string.Join(", ", slowest));
                 Line(only == null

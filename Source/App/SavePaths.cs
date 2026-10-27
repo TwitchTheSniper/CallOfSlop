@@ -30,7 +30,7 @@ public static class SavePaths
     public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", "audio_mix.json", AppearanceStore.FileName];
 
     // Also in the save folder but not save files (never migrated; safe to delete): update_check.txt (UpdateCache.cs) and
-    // update.log (what the updater's cleanup removed, UpdateCleanup.cs), and the Cache folder (cached nav graphs, BotNavBake.cs).
+    // update.log (what the updater's cleanup removed, UpdateCleanup.cs), the Cache folder (cached nav graphs, BotNavBake.cs) and the Logs folder (stuck-spot reports, StuckSpots.cs).
     // The package script still strips them.
 
     /// <summary>The player's own folders (copied over file by file).</summary>
