@@ -127,9 +127,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 61: map logic (Source/Game/GameLogic.cs, Maps/README.md "Map logic"): Msg.Logic at the end of Msg (a LogicMsgKind byte
     //     first: entity flags, a button or lever used, a mover's control clock as three doubles, a sound, a notice, the
     //     joiner's full flags); movers can be started and stopped, so their pose follows that clock.
-    // 62: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
+    // 62: Grenades in Zombies (2026-10-27): every player entry in Msg.ZWorld ends with the grenade kind and how many
+    //     are left (the server tops them up every round; ZombiesRules.json "grenades").
+    // 63: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
     //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
-    public const byte ProtocolVersion = 62;
+    public const byte ProtocolVersion = 63;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

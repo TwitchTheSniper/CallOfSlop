@@ -34,7 +34,7 @@ those.
    `Rules()`. Keep player-visible text ASCII (the self-test checks).
 3. **Register it**: one line in `GameModeRegistry.Factories`. The position is the menu order.
 4. **Set the capability flags** (all virtual, all default to free-for-all behaviour):
-   `TeamBased`, `CoOp`, `UsesLoadout`, `AllowsStreaks`, `FixedPerks`, `UsesThrowables`, `ServerPicksWeapons`,
+   `TeamBased`, `CoOp`, `UsesLoadout`, `AllowsStreaks`, `FixedPerks`, `UsesThrowables`, `ServerSetsThrowables`, `ServerPicksWeapons`,
    `UsesMapVote`, `HasTimeLimit`, `Endless`, `HostPanelInMatch`, `ScoreRule` + `ScoreUnit`, `Needs` (what the map must have), `DevOnly`,
    `ShowsRespawnMessage`, `ShowsKillNotices`, `MaxPlayers(map)`, `Fits(map)` / `MapWarning`.
 5. **Override the hooks you need** (see the table). Anything you don't override behaves like free-for-all.

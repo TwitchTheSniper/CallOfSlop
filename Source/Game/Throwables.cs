@@ -426,6 +426,15 @@ public sealed partial class Game
             LocalGrenade = LocalEquipment = ThrowableKind.None; // Gun Game: the gun and nothing else
         GrenadesLeft = Throwables.Get(LocalGrenade).PerLife;
         EquipmentLeft = Throwables.Get(LocalEquipment).PerLife;
+        if (Module.ServerSetsThrowables)
+        {
+            // Zombies: the server's grenade and count (SyncZombiesGrenades, ZombiesNet.cs), no equipment.
+            LocalEquipment = ThrowableKind.None;
+            EquipmentLeft = 0;
+            LocalGrenade = Local?.Grenade ?? ThrowableKind.None;
+            GrenadesLeft = Local?.GrenadesLeft ?? 0;
+            _zSyncGrenades = -1; // take the next count over, whatever it is
+        }
     }
 
     /// <summary>Local player presses the grenade or equipment key.</summary>

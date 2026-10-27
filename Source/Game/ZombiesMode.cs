@@ -381,6 +381,7 @@ public sealed partial class Game
         foreach (var p in Players.Values)
         {
             ZP(p).RepairPointsThisRound = 0;
+            GiveZombiesGrenades(p, ZRules.GrenadesForRound(round), topUp: true); // refreshed every round, never taken away
             if (!p.Alive && !(ZHostSitsOut && p.Id == LocalId))
             {
                 p.RespawnAt = now; // bled out during the break (or joined late): back in with the start gear (bleeding out in a round: back at its end, EndRound)
@@ -470,8 +471,12 @@ public sealed partial class Game
         if (World.Map.Zombies is not { } zm)
             return;
         ApplyPerks(p, PerkSet.Empty); // the multiplayer perks don't apply in Zombies; the perk machines do
-        p.Grenade = p.Equipment = ThrowableKind.None;
-        p.GrenadesLeft = p.EquipmentLeft = 0;
+        // The Zombies grenade, not the loadout's throwables (ZombiesRules.json "grenades"): the round's count. Before
+        // 2026-10-27 this took every grenade away while the client kept its loadout count, so a throw played its sound
+        // and the server dropped it ("grenades do nothing in Zombies").
+        GiveZombiesGrenades(p, ZRules.GrenadesForRound(ZRound), topUp: false);
+        p.Equipment = ThrowableKind.None;
+        p.EquipmentLeft = 0;
         var zp = ZP(p);
         zp.Downed = false;
         zp.SelfReviveAt = -1;
@@ -488,6 +493,21 @@ public sealed partial class Game
             GiveStartGear(p, quiet: _zRunMatch != MatchNumber);
         else
             KeepBuiltGuns(p);
+    }
+
+    /// <summary>
+    /// Server: <paramref name="p"/> carries the Zombies grenade (<see cref="ZombiesRules.GrenadeKind"/>) with
+    /// <paramref name="count"/> of them, or (<paramref name="topUp"/>) at least that many. Clients learn it from
+    /// <see cref="Msg.ZWorld"/> (protocol 63).
+    /// </summary>
+    private void GiveZombiesGrenades(Player p, int count, bool topUp)
+    {
+        if (p.Grenade != ZRules.GrenadeKind)
+        {
+            p.Grenade = ZRules.GrenadeKind;
+            p.GrenadesLeft = 0;
+        }
+        p.GrenadesLeft = topUp ? Math.Max(p.GrenadesLeft, count) : count;
     }
 
     /// <summary>
