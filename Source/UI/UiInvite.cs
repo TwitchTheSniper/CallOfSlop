@@ -95,6 +95,16 @@ public sealed partial class Ui
     /// <summary>Settings > Multiplayer.</summary>
     private void MultiplayerSettings(Settings s, float w)
     {
+        ImGui.SeparatorText("Hosting"u8);
+        int port = s.Port;
+        ImGui.SetNextItemWidth(200 * _scale);
+        if (ImGui.InputInt("Port"u8, ref port, 1, 100))
+            s.Port = (ushort)Math.Clamp(port, 1024, 65535);
+        ImGui.Checkbox("Open the port on my router automatically (UPnP)"u8, ref s.UseUpnp);
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 700 * _scale);
+        ImGui.TextColored(Dim, "The UDP port your game listens on when you host (joining by address uses the host's). The server name, server lists and every match setting are in your lobby."u8);
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
         ImGui.SeparatorText("Server lists"u8);
         ImGui.SetNextItemWidth(w * 1.8f);
         try

@@ -33,6 +33,10 @@ public sealed class LobbyRoomView
     public readonly int[] TeamCounts = new int[2];
 
     public string MapTitle = "", MapInfo = "", ModeLine = "", PackLine = "", SettingsLine = "", ReadyLine = "", CountdownLine = "", BotsLine = "";
+
+    /// <summary>The settings tabs' text (UiLobbyRoom.cs): the mode's rules, the score limit's meaning, the gravity combo's
+    /// label and the Rules line under the settings line (destruction, voice, dead chat, bot gear).</summary>
+    public string ModeRules = "", ScoreLimitText = "", GravityLabel = "", RulesLine = "";
     public int Ready, Humans;
 
     /// <summary>Why the local player can't join Blue / Red right now (null: they can). <see cref="Game.TeamRefusal"/> (no cooldown in the lobby).</summary>
@@ -92,6 +96,9 @@ public sealed class LobbyRoomView
         h = Mix(h, game.ScoreLimit);
         h = Mix(h, game.MaxTeamDiff * 4 + (int)game.TeamSelection + ((int)game.TeamBalance << 8) + (game.HumansTeam << 12));
         h = Mix(h, World.Map.Name.GetHashCode());
+        h = Mix(h, game.GravityPercent | (game.MatchMinutes << 8) | ((int)game.BotSkill << 16) | ((int)game.BotGearMode << 20) | ((int)game.ScoreLimitMode << 24));
+        h = Mix(h, game.WantedBots | (game.AutoStartSeconds << 8) | ((game.DestructionEnabled ? 1 : 0) << 24) | ((game.VoiceAllowed ? 1 : 0) << 25)
+                   | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27) | ((game.FrenzyBuffsEnabled ? 1 : 0) << 28));
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
         {
@@ -174,6 +181,15 @@ public sealed class LobbyRoomView
             SettingsLine += ", " + Game.GravityLabel(game.EffectiveGravityPercent) + (game.EffectiveGravityPercent != game.GravityPercent ? $" (the lowest this map plays at; set {game.GravityPercent}%)" : "");
         if (game.IsTeamMode && game.TeamBalance != TeamBalance.Auto)
             SettingsLine += game.HumansVsBots ? $", Humans vs Bots (people on {GameModes.TeamNames[game.HumansTeam]})" : ", team balancing off";
+        ModeRules = mode.Rules();
+        ScoreLimitText = ScoreLimits.Describe(game.Mode, game.ScoreLimitMode);
+        GravityLabel = game.GravityPercent == 100 ? "100% (the map's own)" : $"{game.GravityPercent}%";
+        var destruction = map.Destruction == null ? "no destructible buildings on this map"
+            : !Game.DestructionAllowedIn(game.Mode) ? "buildings stay whole in this mode"
+            : game.DestructionEnabled ? "destruction on" : "destruction off";
+        RulesLine = $"Frenzy buffs {(game.FrenzyBuffsEnabled ? "on" : "off")}, {destruction}, voice chat {(game.VoiceAllowed ? "allowed" : "off")}, "
+                    + $"{(game.DeadChatPrivate ? "dead players' chat reaches only the dead" : "dead players' chat reaches everyone")}"
+                    + (game.WantedBots > 0 ? $", bot gear: {BotGear.Name(game.BotGearMode)}" : "");
         BotsLine = game.WantedBots > 0 ? $"{game.BotCount} bot{(game.BotCount == 1 ? "" : "s")} ({game.BotSkill}) fill the empty places" : "No bots";
         ReadyLine = $"{Ready}/{Humans} ready";
         var cd = game.LobbyCountdown;

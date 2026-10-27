@@ -113,6 +113,9 @@ public static partial class SelfTest
 
         // The lobby state packet: round trip and size.
         server.LobbySetOptions(ScoreLimitMode.Fixed, 15, 20, true, false);
+        var versionBefore = server.LobbyVersion;
+        server.LobbySetHostRules(destruction: false, voice: false, deadChatPrivate: true, BotGearMode.Starter); // the lobby's World / Lobby and chat / Bots sections (protocol 52)
+        var rulesDirty = server.LobbyVersion != versionBefore;
         var w = new PacketWriter();
         server.WriteLobbyState(w);
         var r = new PacketReader(w.Span[1..]);
@@ -120,6 +123,15 @@ public static partial class SelfTest
         Line($"lobby state: {w.Length} bytes for {server.Players.Count} players; read back {a.MatchMinutes} min, auto {a.AutoStartSeconds} s, return {a.ReturnToLobby}, {a.ScoreLimitMode}");
         if (a.MatchMinutes != 15 || a.AutoStartSeconds != 20 || !a.ReturnToLobby || a.ScoreLimitMode != ScoreLimitMode.Fixed || a.FrenzyBuffsEnabled)
             Fail("the lobby state didn't round-trip");
+        Line($"lobby host rules: changed the version {rulesDirty}; read back destruction {a.DestructionEnabled}, voice {a.VoiceAllowed}, dead chat private {a.DeadChatPrivate}, bot gear {a.BotGearMode}");
+        if (!rulesDirty || a.DestructionEnabled || a.VoiceAllowed || !a.DeadChatPrivate || a.BotGearMode != BotGearMode.Starter)
+            Fail("the lobby's destruction / voice / dead chat / bot gear settings didn't reach a client");
+        server.LobbySetHostRules(destruction: true, voice: true, deadChatPrivate: false, BotGearMode.MatchPlayers);
+        server.WriteLobbyState(w);
+        r = new PacketReader(w.Span[1..]);
+        a.ReadLobbyState(ref r);
+        if (!a.DestructionEnabled || !a.VoiceAllowed || a.DeadChatPrivate || a.BotGearMode != BotGearMode.MatchPlayers)
+            Fail("turning the lobby's host rules back on didn't reach a client");
         if (w.Length > 40 + 3 * Game.MaxPlayers + 40)
             Fail($"the lobby state is {w.Length} bytes (not compact)");
     }

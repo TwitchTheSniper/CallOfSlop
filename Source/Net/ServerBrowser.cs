@@ -103,7 +103,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     hit in the last 4 ticks while alive, a headshot kill once dead); the state is the low 3 bits.
     // 51: Zombies slot machines (Source/Game/ZombiesSlots.cs): Msg.ZWorld ends with the machines (a count, then 11 bytes
     //     each: state, heat, owner, spin counter, three reel symbols, result / tier / auto-scrapped, the part, tenths left).
-    public const byte ProtocolVersion = 51;
+    // 52: lobby settings in the lobby room (Source/UI/UiLobbyRoom.cs): Msg.LobbyState's flags gain Destruction (32), Allow
+    //     voice chat (64) and dead players' chat private (128), and a bot gear byte follows the gravity byte.
+    public const byte ProtocolVersion = 52;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
