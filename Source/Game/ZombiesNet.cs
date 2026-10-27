@@ -74,6 +74,7 @@ public sealed partial class Game
             if (Players.TryGetValue(id, out var me))
                 SendZRun(me);
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
+            SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
@@ -466,6 +467,16 @@ public sealed partial class Game
                 break;
             case (byte)Msg.ZWorld when !IsServer:
                 ReadZWorld(ref r, now);
+                break;
+            case (byte)Msg.ZCasino when !IsServer:
+                ReadCasino(ref r); // a casino table's state (ZombiesCasinoNet.cs)
+                break;
+            case (byte)Msg.ZCasinoAct when IsServer && r.Has(7):
+                if (_clients.TryGetValue(sender.G, out var cc) && Players.TryGetValue(cc.Id, out var cp2))
+                {
+                    if (OnCasinoAct(cp2, ref r, now) is { } why)
+                        ZFeedTo(cp2, why, Sfx.DryFire);
+                }
                 break;
             case (byte)Msg.ZSlotWin when !IsServer && r.Has(ZSlotWinBytes):
                 ReadSlotWin(ref r); // a slot machine win: over the machine and in the feed (ZombiesSlotWin.cs)

@@ -359,6 +359,31 @@ public sealed class ZombiesRules
     /// <summary>Does a machine of <paramref name="category"/> (-1: classic) pay whole melee builds?</summary>
     public bool SlotPaysMelee(int category) => category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category];
 
+    // ---- Casino tables (ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino tables") ---------------------------
+    /// <summary>Each game's table limits (index: <see cref="CasinoGame"/>), unless a map's table sets its own: the smallest and largest bet (roulette: a player's total on one spin).</summary>
+    public int[] CasinoMin = [50, 10, 50, 50], CasinoMax = [1000, 1000, 500, 1000];
+
+    /// <summary>The bet step (every bet is a whole number of these).</summary>
+    public int CasinoBetStep = 10;
+
+    /// <summary>
+    /// Blackjack: seconds the table waits for other seats after the first bet, then each hand's time to act (a hand
+    /// that hasn't finished by then stands). Roulette: seconds of betting after the first chip, and the wheel's spin.
+    /// High-low and dice: the time to act before a hand cashes out / rolls on its own. Every game: how long a result shows.
+    /// </summary>
+    public float CasinoDealSeconds = 5f, CasinoTurnSeconds = 20f, CasinoRouletteBetSeconds = 12f, CasinoSpinSeconds = 6f, CasinoActSeconds = 30f, CasinoShowSeconds = 4f;
+
+    /// <summary>How near a table you must be to play it, and how far you may wander before an unfinished hand is forfeit (metres).</summary>
+    public float CasinoUseRange = 2.2f, CasinoLeaveRange = 4f;
+
+    /// <summary>High-low: the house edge on every correct guess (a guess pays (1 - edge) / its chance), and the most guesses in one hand (it cashes out after).</summary>
+    public float HighLowEdge = 0.05f;
+
+    public int HighLowMaxSteps = 6;
+
+    /// <summary>A win paying at least this many points over the bet is announced to everyone (the feed and a label over the table).</summary>
+    public int CasinoAnnounceAt = 1000;
+
     /// <summary>Reserve ammo: magazines of reserve a bought gun comes with (the start guns get fewer), and the wall ammo price as a share of the gun's.</summary>
     public int ReserveMags = 6, StartReserveMags = 4;
 
@@ -546,7 +571,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots", "horde"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -873,6 +898,49 @@ public sealed class ZombiesRules
                         }
                         return true;
                     });
+                    break;
+                case "casino":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "blackjack" or "roulette" or "highLow" or "dice":
+                            {
+                                var g = k switch { "blackjack" => 0, "roulette" => 1, "highLow" => 2, _ => 3 };
+                                Fields(v, w, (gk, gv, gw) =>
+                                {
+                                    switch (gk)
+                                    {
+                                        case "note": break;
+                                        case "min": r.CasinoMin[g] = Whole(gv, gw, 1, 1000000); break;
+                                        case "max": r.CasinoMax[g] = Whole(gv, gw, 1, 1000000); break;
+                                        default: return false;
+                                    }
+                                    return true;
+                                });
+                                if (r.CasinoMax[g] < r.CasinoMin[g])
+                                    throw new WeaponFileException($"{w}: max is below min");
+                                break;
+                            }
+                            case "betStep": r.CasinoBetStep = Whole(v, w, 1, 10000); break;
+                            case "dealSeconds": r.CasinoDealSeconds = Real(v, w, 0.5f, 60); break;
+                            case "turnSeconds": r.CasinoTurnSeconds = Real(v, w, 2, 300); break;
+                            case "rouletteBetSeconds": r.CasinoRouletteBetSeconds = Real(v, w, 1, 120); break;
+                            case "spinSeconds": r.CasinoSpinSeconds = Real(v, w, 1, 30); break;
+                            case "actSeconds": r.CasinoActSeconds = Real(v, w, 2, 300); break;
+                            case "showSeconds": r.CasinoShowSeconds = Real(v, w, 0.5f, 30); break;
+                            case "useRange": r.CasinoUseRange = Real(v, w, 0.5f, 10); break;
+                            case "leaveRange": r.CasinoLeaveRange = Real(v, w, 1, 30); break;
+                            case "highLowEdge": r.HighLowEdge = Real(v, w, 0, 0.5f); break;
+                            case "highLowMaxSteps": r.HighLowMaxSteps = Whole(v, w, 1, 10); break;
+                            case "announceAt": r.CasinoAnnounceAt = Whole(v, w, 0, 10000000); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    if (r.CasinoLeaveRange < r.CasinoUseRange)
+                        throw new WeaponFileException($"{at}: leaveRange is below useRange");
                     break;
                 case "bots":
                     Fields(p.Value, at, (k, v, w) =>

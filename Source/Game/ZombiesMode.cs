@@ -51,6 +51,9 @@ public enum ZUseKind : byte
 
     /// <summary>A slot machine: pull for a part, points back or nothing (ZombiesSlots.cs).</summary>
     SlotMachine,
+
+    /// <summary>A casino table: press to open its panel (the client opens it; moves go up in Msg.ZCasinoAct; ZombiesCasino.cs).</summary>
+    Casino,
 }
 
 /// <summary>One thing the interact key can use: what, which one, its price and the prompt.</summary>
@@ -271,6 +274,7 @@ public sealed partial class Game
         BoxOwner = byte.MaxValue;
         BoxUses = 0;
         ResetSlots(); // ZombiesSlots.cs
+        ResetCasino(); // ZombiesCasino.cs
         Array.Clear(_salvageRound);
         World.Map.CloseAllDoors();
         var z = World.Map.Zombies;
@@ -339,6 +343,7 @@ public sealed partial class Game
                 TickZPlayer(p, ZP(p), zm, now);
         TickBox(zm, now);
         TickSlots(zm, now); // ZombiesSlots.cs
+        TickCasino(zm, now); // ZombiesCasino.cs
         TickDrops(now);
         TickWeaponDrops(now); // ZombiesDrops.cs
         TickPowerUps(now); // ZombiesPowerUps.cs
@@ -645,10 +650,10 @@ public sealed partial class Game
                     Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
                 }
                 break;
-            case ZUseKind.Workbench:
+            case ZUseKind.Workbench or ZUseKind.Casino:
                 zp.Reviving = byte.MaxValue;
                 zp.ReviveProgress = 0;
-                break; // the client opens the workbench itself; its changes come back in ZBench
+                break; // the client opens the workbench (or the table's panel) itself; its changes come back in ZBench (ZCasinoAct)
             default:
                 zp.Reviving = byte.MaxValue; // the downed player crawled out of reach: the revive is interrupted
                 zp.ReviveProgress = 0;
@@ -931,6 +936,12 @@ public sealed partial class Game
             var d = Flat(zm.SlotMachines[i].At - pos);
             if (d <= UseRange)
                 Consider(d, UseRange, SlotUse(zm, i)); // ZombiesSlots.cs
+        }
+        for (var i = 0; i < zm.CasinoTables.Count && i < ZCasino.Length; i++)
+        {
+            var d = Flat(zm.CasinoTables[i].At - pos);
+            if (d <= ZRules.CasinoUseRange)
+                Consider(d, ZRules.CasinoUseRange, CasinoUse(zm, i)); // ZombiesCasino.cs
         }
         for (var i = 0; i < zm.Benches.Count; i++)
             Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts)"));

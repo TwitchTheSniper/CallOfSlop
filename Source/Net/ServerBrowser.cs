@@ -124,7 +124,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and a Zombies flags byte (bit 0: the test kit).
     // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
     //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
-    public const byte ProtocolVersion = 60;
+    // 62: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
+    //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg. (61 was left for the map-events branch;
+    //     the merger renumbers.)
+    public const byte ProtocolVersion = 62;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
