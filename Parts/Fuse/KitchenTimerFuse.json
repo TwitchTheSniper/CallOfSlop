@@ -7,7 +7,7 @@
   "weight": 0.1,
   "fuse": {"kind": "timer", "seconds": 3.5, "cook": true},
   "model": [
-    {"shape": "rod", "size": [0.05, 0.03, 0.05], "pos": [0, 0.013, 0], "rot": [90, 0, 0], "color": "white"},
+    {"shape": "rod", "size": [0.05, 0.05, 0.03], "pos": [0, 0.013, 0], "rot": [90, 0, 0], "color": "white"},
     {"size": [0.008, 0.012, 0.008], "pos": [0, 0.034, 0], "color": "black"}
   ]
 }

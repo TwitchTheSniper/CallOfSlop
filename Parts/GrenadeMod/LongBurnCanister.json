@@ -7,6 +7,6 @@
   "weight": 0.15,
   "grenade": {"durationMult": 1.6},
   "model": [
-    {"shape": "rod", "size": [0.02, 0.05, 0.02], "pos": [0.008, 0, 0], "rot": [90, 0, 0], "color": "#d06020"}
+    {"shape": "rod", "size": [0.02, 0.02, 0.05], "pos": [0.008, 0, 0], "rot": [90, 0, 0], "color": "#d06020"}
   ]
 }

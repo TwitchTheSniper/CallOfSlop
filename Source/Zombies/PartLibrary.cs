@@ -17,7 +17,7 @@ public sealed class PartRegistry
     public const string Format = "call-of-slop-part-registry/1";
 
     /// <summary>Socket types the code itself refers to (rules, stats, model sockets): every registry must keep them.</summary>
-    public static readonly string[] CoreSocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "hopper", "head", "action", "fuse", "payload"];
+    public static readonly string[] CoreSocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "hopper", "head", "action"];
 
     /// <summary>Every socket type, in registry order.</summary>
     public required string[] SocketTypes;

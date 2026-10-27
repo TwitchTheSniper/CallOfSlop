@@ -530,6 +530,9 @@ public sealed partial class Game
     /// <summary>Self-test: the server's lingering patches for one tick at <paramref name="now"/>.</summary>
     public void SelfTestTickGrenadeZones(double now) => ServerTickGrenadeZones(now);
 
+    /// <summary>Self-test: every lingering patch gone.</summary>
+    public void SelfTestClearGrenadeZones() => Array.Clear(GrenadeZones);
+
     /// <summary>Self-test: sets off <paramref name="p"/>'s remote grenades as their key would on the server.</summary>
     public void SelfTestRemoteDetonate(Player p) => ServerRemoteDetonate(p);
 
