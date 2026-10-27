@@ -6,8 +6,9 @@
   "flavor": "A red laser. Hip fire goes where it points (more or less).",
   "weight": 0.1,
   "model": [
-    {"size": [0.02, 0.02, 0.05], "pos": [0.01, 0, 0], "color": "black"},
-    {"size": [0.006, 0.006, 0.006], "pos": [0.01, 0, -0.026], "color": "#c83228", "tag": "glow"}
+    {"shape": "rounded", "size": [0.02, 0.02, 0.05], "pos": [0.01, 0, 0], "color": "black", "segments": 4, "radius": 0.3, "edges": "long"},
+    {"shape": "cylinder", "size": [0.022, 0.022, 0.012], "pos": [0.01, 0, 0.012], "color": "gunmetal", "segments": 10},
+    {"shape": "cylinder", "size": [0.008, 0.008, 0.004], "pos": [0.01, 0, -0.0255], "color": "#c83228", "tag": "glow", "segments": 8}
   ],
   "stats": [
     {"stat": "adsSpreadMult", "mul": 0.85},
