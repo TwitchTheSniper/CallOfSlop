@@ -1730,7 +1730,7 @@ public static unsafe partial class Program
                 _game.Interact(now, hold: Down(GameAction.Interact));
                 _interactDownAt = -1;
             }
-            if (Pressed(GameAction.Grenade))
+            if (Pressed(GameAction.Grenade) && !_zGrenadeKeyTaken) // (Zombies: not at a slot machine or the box's offer, Program.Zombies.cs)
                 _game.TryThrow(equipment: false, now);
             if (Pressed(GameAction.Equipment))
                 _game.TryThrow(equipment: true, now);

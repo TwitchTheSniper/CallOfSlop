@@ -25,7 +25,8 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 
 - **Start.** Ready up, a 5 s countdown, then round 1 comes after `firstRoundDelay` (4 s). Everyone starts in the map's
   start area with the **start builds** (today: Wall Rifle in slot 1, Wall Pistol in slot 2, the Machete on the melee
-  key) and **500 points**. No loadout screen, no multiplayer perks, no grenades, no kill streaks.
+  key), **500 points** and the round's **grenades** (below). No loadout screen, no multiplayer perks, no equipment, no
+  kill streaks.
 - **Rounds.** Each round sends a number of zombies (below); they come out of the **active spawners** (at most 24 alive
   at once early on, rising with the round to hundreds late in a run: see "Hordes"; the rest wait in a queue). When every zombie of the round is dead there's a **break**: the
   next round waits until everyone alive is **ready** (see "Between rounds"; a plain 10 s break in a bots-only run). The HUD shows the round in red tally marks (I to IIIII, then the number) bottom-left, the round
@@ -47,6 +48,17 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
 - **Game over** when nobody is left standing (everyone downed or bled out). The results screen says
   "Game over on round N: survived N-1 rounds"; after it a fresh run starts on the same map (no map vote in Zombies).
 - **No friendly fire**; your own grenade still hurts you.
+- **Grenades (board bug fix, 2026-10-27).** Everyone carries Frag grenades (`grenades.kind` in ZombiesRules.json; Frag
+  or Impact), thrown with the grenade key (G) as in multiplayer. At the **start of every round** each player is topped
+  up (never taken down) to `start + floor((round - 1) / roundsPerExtra)`: 1 at rounds 1-3, 2 at 4-6, 3 at 7-9, 4 at
+  10-12, 5 at 13-15 and on up, with **no cap** (developer's decision; ask before adding one). A spawn in a round gets
+  that round's count. A blast does `ObjectDamage x 3` to zombies with a 1.4 falloff (a Frag kills round-1 zombies within
+  about 5.5 m), credits the thrower with the kill and its points like any kill, and staggers and scatters the horde
+  (below); it doesn't open bought doors or tear boards. The server decides the grenade and the count and sends both in
+  `ZWorld` (protocol 63); the client's HUD and key follow it. At a slot machine or at the box while it offers you a
+  build, G does that machine's thing instead (the bet, the take-apart) and throws nothing. Before the fix the server
+  took every grenade away on spawn while the client kept its loadout count, so a throw played its sound, counted down
+  and was dropped by the server. Self-test "Zombies grenades".
 
 ## Between rounds, downs and spectating (user requests, 2026-10-23)
 
@@ -273,7 +285,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   G twice at the box take apart the **gun in your hands**; testers read the prompt as "take the box's gun apart" and lost
   the gun they were holding. Now, while the box is **offering you a build** (you spun it), a second HUD line under
   "Hold [E] to take the X" says "Press [G] twice to take the X apart into parts instead": **G** (the grenade key,
-  rebindable as "Throw grenade (Zombies: take apart at the box)"; there are no grenades in Zombies) **twice within 4 s**
+  rebindable as "Throw grenade (Zombies: take apart at the box)"; at the box's offer it throws nothing) **twice within 4 s**
   takes the **offered build** apart: all its parts (grip included) go to your loose parts and the box closes, exactly as
   taking it would; **your slots and the gun in your hands are untouched**. With no offer (idle, spinning, teddy bear,
   someone else's spin) G at the box does nothing. Free (the spin was the price). Loose parts have no cap (the parts
@@ -417,7 +429,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
      slots pay epic at most before round 20 and legendary at most before round 25 (wonder from the jackpot round 25),
      however hot the machine or big the bet (WEAPON-BUILDER.md, "The power curve").
 - **Bets (developer answer to question 13, 2026-10-26).** At an idle machine the **second key** (G, the Grenade key:
-  there are no grenades in Zombies) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
+  it throws nothing at a machine) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
   (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
   machine's heat (the same shift as a heat step). The nothing and coin weights don't change, so a higher bet
   **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
@@ -913,7 +925,7 @@ numbers are the rules file's **"horde"** section.
   own target) on the shooter; a **hurt** zombie turns its neighbours within 12 m the same way; a **blast** staggers the
   zombies near it (0.3 s), they **scatter** away from it for 0.6 s, then their group regroups and turns on the thrower;
   a player **going down** sends everyone after them to someone else at once; a **lure** (`Game.HordeLure`: no item uses
-  it yet, Zombies has no grenades) draws the members in range to it until it ends, then back to the players.
+  it yet; grenades trigger the blast reaction) draws the members in range to it until it ends, then back to the players.
 - **Level of detail.** Members nearer a player than 12 / 30 / 60 m think every 1 / 2 / 4 ticks, the rest every 8
   (staggered by id; `thinkEvery`): the line-of-sight checks, the corner cuts, the area and target checks. Movement
   (the shared physics), separation and attacking run every tick.
