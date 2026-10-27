@@ -8,10 +8,9 @@
   "weight": 0.15,
   "action": {"kind": "auto", "rpm": 720},
   "model": [
-    {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
-    {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
-    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.029, -0.008], "color": "black"},
-    {"size": [0.006, 0.004, 0.022], "pos": [0, -0.04, 0], "color": "black"},
+    {"shape": "bevel", "size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black", "radius": 0.25},
+    {"shape": "arc", "size": [0.006, 0.014, 0.008], "pos": [0, -0.029, -0.001], "color": "steel", "segments": 4, "inner": 0.4, "angle": 80, "dir": 270},
+    {"shape": "arc", "size": [0.006, 0.02, 0.026], "pos": [0, -0.032, 0], "color": "black", "segments": 8, "inner": 0.62, "angle": 180, "dir": 0},
     {"size": [0.004, 0.006, 0.01], "pos": [0.018, -0.007, -0.003], "color": "accent"},
     {"size": [0.004, 0.008, 0.008], "pos": [0.018, -0.015, 0.006], "color": "steel"}
   ],

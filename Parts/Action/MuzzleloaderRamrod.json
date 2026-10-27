@@ -8,10 +8,10 @@
   "weight": 0.15,
   "action": {"kind": "muzzleLoad", "rpm": 60, "chamber": 1},
   "model": [
-    {"size": [0.012, 0.01, 0.014], "pos": [0, -0.005, -0.007], "color": "brass"},
-    {"shape": "rod", "size": [0.006, 0.006, 0.13], "pos": [0, -0.004, -0.065], "color": "wood"},
-    {"size": [0.01, 0.01, 0.01], "pos": [0, -0.004, -0.085], "color": "brass"},
-    {"size": [0.009, 0.009, 0.01], "pos": [0, -0.004, -0.13], "color": "brass"}
+    {"shape": "rounded", "size": [0.012, 0.01, 0.014], "pos": [0, -0.005, -0.007], "color": "brass", "radius": 0.3, "segments": 2},
+    {"shape": "cylinder", "size": [0.006, 0.006, 0.13], "pos": [0, -0.004, -0.065], "color": "wood", "segments": 8},
+    {"shape": "cylinder", "size": [0.01, 0.01, 0.01], "pos": [0, -0.004, -0.085], "color": "brass", "segments": 8},
+    {"shape": "cylinder", "size": [0.009, 0.009, 0.01], "pos": [0, -0.004, -0.13], "color": "brass", "segments": 8}
   ],
   "stats": [
     {"stat": "damage", "mul": 2.5},

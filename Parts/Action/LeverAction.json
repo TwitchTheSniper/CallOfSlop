@@ -7,9 +7,8 @@
   "weight": 0.2,
   "action": {"kind": "lever", "rpm": 110},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.008, 0.03, 0.01], "pos": [0.012, -0.014, 0.012], "color": "brass"},
-    {"size": [0.008, 0.008, 0.03], "pos": [0.012, -0.027, 0.0], "color": "brass"}
+    {"shape": "bevel", "size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black", "radius": 0.25},
+    {"shape": "arc", "size": [0.008, 0.032, 0.034], "pos": [0.012, -0.02, 0.004], "color": "brass", "segments": 10, "inner": 0.62, "angle": 200, "dir": 0}
   ],
   "stats": [
     {"stat": "adsTime", "add": -0.02}

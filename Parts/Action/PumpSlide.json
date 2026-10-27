@@ -8,10 +8,10 @@
   "weight": 0.2,
   "action": {"kind": "pump", "rpm": 70},
   "model": [
-    {"size": [0.03, 0.016, 0.07], "pos": [0, -0.008, -0.035], "color": "wood"},
-    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.02], "color": "black"},
-    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.035], "color": "black"},
-    {"size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.05], "color": "black"}
+    {"shape": "rounded", "size": [0.03, 0.016, 0.07], "pos": [0, -0.008, -0.035], "color": "wood", "radius": 0.4, "edges": "long", "segments": 2},
+    {"shape": "rounded", "size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.02], "color": "black", "radius": 0.4, "edges": "long", "segments": 2},
+    {"shape": "rounded", "size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.035], "color": "black", "radius": 0.4, "edges": "long", "segments": 2},
+    {"shape": "rounded", "size": [0.032, 0.018, 0.004], "pos": [0, -0.008, -0.05], "color": "black", "radius": 0.4, "edges": "long", "segments": 2}
   ],
   "stats": []
 }
