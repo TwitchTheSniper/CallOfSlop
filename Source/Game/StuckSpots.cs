@@ -380,19 +380,30 @@ public sealed class StuckSpots
     /// under <paramref name="dir"/> (a tester's save folder, CI artifacts, a mix) and prints the per-map table. With
     /// <c>--out FILE</c> it writes the merged report too. Exit code: 0, or 1 when nothing could be read.
     /// </summary>
-    public static int Cli(string dir, IReadOnlyList<string> args)
+    public static int Cli(string dir, IReadOnlyList<string> args, TextWriter? output = null)
     {
         if (!Directory.Exists(dir) && !File.Exists(dir))
         {
-            Console.Error.WriteLine($"--stuck-report: no such folder or file: {dir}");
+            Console.WriteLine($"--stuck-report: no such folder or file: {dir}");
             return 1;
         }
+        using var stdout = output == null ? new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true } : null; // (Console goes to callofslop.log)
+        var say = (TextWriter?)stdout ?? output!;
+        void Say(string line)
+        {
+            say.WriteLine(line);
+            if (output == null)
+                Console.WriteLine(line);
+        }
+        var ownLog = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "callofslop.log")); // this run's own log: nothing to read
         var all = new StuckSpots();
         var files = File.Exists(dir) ? [dir] : Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
         int reports = 0, logs = 0, logLines = 0, bad = 0;
         foreach (var f in files)
         {
             var name = Path.GetFileName(f);
+            if (Path.GetFullPath(f) == ownLog)
+                continue;
             try
             {
                 if (name.StartsWith("stuck-spots", StringComparison.OrdinalIgnoreCase) && name.EndsWith(".json", StringComparison.OrdinalIgnoreCase))
@@ -416,20 +427,20 @@ public sealed class StuckSpots
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException or FormatException or KeyNotFoundException or InvalidOperationException)
             {
-                Console.WriteLine($"skipped {f}: {ex.Message}");
+                Say($"skipped {f}: {ex.Message}");
                 bad++;
             }
         }
-        Console.WriteLine($"Stuck-spot report: {reports} report(s), {logLines} [bots] stuck: line(s) from {logs} log(s){(bad > 0 ? $", {bad} unreadable file(s)" : "")}");
+        Say($"Stuck-spot report: {reports} report(s), {logLines} [bots] stuck: line(s) from {logs} log(s){(bad > 0 ? $", {bad} unreadable file(s)" : "")}");
         foreach (var line in all.Table())
-            Console.WriteLine(line);
+            Say(line);
         if (all.Count == 0)
-            Console.WriteLine("no stuck spots");
+            Say("no stuck spots");
         if (args.SkipWhile(a => !a.Equals("--out", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } outFile)
         {
             if (!all.Write(outFile, $"--stuck-report {dir}"))
                 return 1;
-            Console.WriteLine($"merged report written to {outFile}");
+            Say($"merged report written to {outFile}");
         }
         return reports + logs > 0 ? 0 : 1;
     }

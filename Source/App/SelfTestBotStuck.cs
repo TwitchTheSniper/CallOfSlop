@@ -417,11 +417,11 @@ public static partial class SelfTest
             File.WriteAllText(Path.Combine(dir, "ci", "stuck-spots.json"), json);
             File.WriteAllLines(Path.Combine(dir, "callofslop.log"), ["something else", log, log.Replace("12.3", "13.0")]);
             var outFile = Path.Combine(dir, "merged", "stuck-spots-merged.json");
-            code = StuckSpots.Cli(dir, ["--stuck-report", dir, "--out", outFile]);
+            code = StuckSpots.Cli(dir, ["--stuck-report", dir, "--out", outFile], TextWriter.Null);
             if (File.Exists(outFile))
                 merged.ReadJson(File.ReadAllText(outFile));
             Directory.CreateDirectory(Path.Combine(dir, "empty"));
-            codeEmpty = StuckSpots.Cli(Path.Combine(dir, "empty"), []);
+            codeEmpty = StuckSpots.Cli(Path.Combine(dir, "empty"), [], TextWriter.Null);
         }
         finally
         {
