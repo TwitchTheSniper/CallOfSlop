@@ -502,7 +502,7 @@ public sealed partial class Ui
         if (_wbPickKeep && old.Root != null)
             nb = Regrip(old, grip);
         else
-            nb = new WeaponBuild(WeaponBuild.CleanName(_wbNameInput?.ToString() ?? old.Name), grip);
+            nb = new WeaponBuild(WeaponBuild.CleanName((_wbNameInput is { } box_ ? ImGuiSafe.Text(box_) : null) ?? old.Name), grip);
         Bm.SetBuild(nb, keepHistory: old.Root != null);
         _wbPicking = false;
         _wbPickKeep = false;
@@ -556,7 +556,7 @@ public sealed partial class Ui
         try
         {
             if (ImGui.InputTextWithHint("##wbsearch"u8, "Search parts..."u8, _wbSearchInput!))
-                _wbSearch = _wbSearchInput!.ToString().Trim();
+                _wbSearch = ImGuiSafe.Text(_wbSearchInput!).Trim();
         }
         catch (Exception ex)
         {
@@ -757,7 +757,7 @@ public sealed partial class Ui
         try
         {
             if (ImGui.InputTextWithHint("##wbname"u8, "Weapon name"u8, _wbNameInput!))
-                b.Name = WeaponBuild.CleanName(_wbNameInput!.ToString());
+                b.Name = WeaponBuild.CleanName(ImGuiSafe.Text(_wbNameInput!));
         }
         catch (Exception ex)
         {

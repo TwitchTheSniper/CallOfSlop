@@ -387,7 +387,7 @@ public sealed partial class Ui
         {
             ImGuiSafe.FieldFailed("address", ex);
         }
-        var text = _addressInput!.ToString();
+        var text = ImGuiSafe.Text(_addressInput!);
         var isInvite = InviteCode.LooksLikeInvite(text);
         if (!isInvite)
         {
@@ -550,7 +550,7 @@ public sealed partial class Ui
             try
             {
                 if (ImGui.InputText("Name"u8, _nameInput!))
-                    s.Name = Settings.Clean(_nameInput!.ToString());
+                    s.Name = Settings.Clean(ImGuiSafe.Text(_nameInput!));
             }
             catch (Exception ex)
             {

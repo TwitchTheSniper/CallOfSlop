@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+using System.Text;
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
@@ -75,6 +77,43 @@ public static class ImGuiSafe
     {
         var clean = NetSafety.CleanText(value, input.Capacity - 1); // ASCII: one byte per character, room for the NUL
         input.SetValue(clean.AsSpan());
+    }
+
+    private sealed class InputText
+    {
+        public byte[] Bytes = [];
+        public int Length = -1;
+        public string Text = "";
+    }
+
+    private static readonly ConditionalWeakTable<ImInputString, InputText> InputTexts = new();
+
+    /// <summary>
+    /// What a text box holds, as a string. Use this, never <c>ImInputString.ToString()</c>.
+    /// <para>
+    /// The bug: BRUTAL's <c>ImInputString.ToString()</c> goes through <c>ImString.ToString()</c>, which (with
+    /// <c>ImString.CacheToString</c> on, the default) looks the text up in a shared pool keyed only by the 32-bit
+    /// <c>HashCode</c> of its bytes. Two different texts with the same hash share one entry, so a box can read back
+    /// text that was typed or pasted earlier somewhere else (the hash seed is random per process, so it shows up at
+    /// random: the "Paste and packets" round trip failed once on Windows CI). The pool also keeps every text ever read.
+    /// </para>
+    /// <para>
+    /// This reads the box's own bytes. The string is kept per box and reused while the text is unchanged, so calling
+    /// it every frame allocates nothing.
+    /// </para>
+    /// </summary>
+    public static string Text(ImInputString input)
+    {
+        var bytes = input.ValueSpan;
+        var cached = InputTexts.GetValue(input, static _ => new InputText());
+        if (cached.Length == bytes.Length && bytes.SequenceEqual(cached.Bytes.AsSpan(0, cached.Length)))
+            return cached.Text;
+        if (cached.Bytes.Length < bytes.Length)
+            cached.Bytes = new byte[input.Capacity];
+        bytes.CopyTo(cached.Bytes);
+        cached.Length = bytes.Length;
+        cached.Text = Encoding.UTF8.GetString(bytes);
+        return cached.Text;
     }
 
     private static readonly LogLimiter FieldLog = new(10);
