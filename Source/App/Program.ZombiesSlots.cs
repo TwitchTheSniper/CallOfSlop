@@ -96,6 +96,16 @@ public static unsafe partial class Program
                 Part(segW * 0.8f, 0.06f, 0.006f, -0.23f + segW * (s + 0.5f), 0.76f, -0.31f, on ? heatCol : new Vector3(0.12f, 0.08f, 0.06f), 1f, on ? 2 : 0);
             }
 
+            // The bet: a lamp per level under the heat meter, lit up to the machine's bet (green, gold, then red for the top bet).
+            var bets = Math.Clamp(_game.ZRules.SlotBets.Length, 1, 5);
+            if (bets > 1)
+                for (var bl = 0; bl < bets; bl++)
+                {
+                    var on = lit && bl <= m.Bet;
+                    var c = bl == 0 ? new Vector3(0.3f, 1f, 0.35f) : bl == bets - 1 ? new Vector3(1f, 0.25f, 0.15f) : SlotGold;
+                    Part(0.07f, 0.05f, 0.006f, -0.2f + 0.4f * bl / (bets - 1), 0.66f, -0.31f, on ? c : c * 0.2f, 1f, on ? 2 : 0);
+                }
+
             // The topper's chasing lights: faster as it warms up; gold and pink in a jackpot round.
             var jackpot = _game.ZRules.SlotJackpot(_game.ZRound);
             var speed = 2f + 2.5f * steps + (jackpot ? 4f : 0f) + (m.State == ZSlotState.Spinning ? 6f : 0f);

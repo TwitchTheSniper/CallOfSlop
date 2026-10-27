@@ -188,7 +188,7 @@ public sealed partial class Ui
             }
             else if (game.FindZUse(me) is { } use)
             {
-                var text = use.Text.Replace("[E]", key);
+                var text = use.Text.Replace("[E]", key).Replace("[G]", Keybinds.Name(settings.Bind(GameAction.Grenade)));
                 var poor = !use.Blocked && use.Cost > me2.Points;
                 ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)

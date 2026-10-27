@@ -98,7 +98,7 @@ public static partial class SelfTest
 
         // ---- Odds by round (seeded): the rarity mix rises, nothing outside the table comes up ----
         const int Rolls = 20000;
-        (float MeanTier, float RarePlus, int[] Count) Mix(int round, int heat)
+        (float MeanTier, float RarePlus, int[] Count) Mix(int round, int heat, int bet = 0)
         {
             var count = new int[RunTables.SlotKeys.Length];
             var sum = 0f;
@@ -106,7 +106,7 @@ public static partial class SelfTest
             var rare = 0;
             for (var i = 0u; i < Rolls; i++)
             {
-                var (r, t) = Game.RollSlotOutcome(rules, tables, round, heat, i * 2654435761u + 17u);
+                var (r, t) = Game.RollSlotOutcome(rules, tables, round, heat, i * 2654435761u + 17u, rules.SlotBetStep(bet));
                 var k = r switch { ZSlotResult.Nothing => 0, ZSlotResult.Scrap => 1, ZSlotResult.Points => 2, ZSlotResult.Melee => RunTables.SlotMelee, _ => RunTables.SlotPart + (int)t };
                 count[k]++;
                 if (r == ZSlotResult.Part)
@@ -150,6 +150,35 @@ public static partial class SelfTest
             Fail($"slot machine odds should rise with the round and stay inside the table (rising {rising}, {outside} outcome(s) outside it)");
         if (!(m1h > m1 && m1hh > m1h && r1h > r1) || jack[RunTables.SlotPart + (int)Rarity.Wonder] == 0)
             Fail("machine heat should move the odds up a tier per step, and a jackpot round should pay wonder parts");
+
+        // ---- Bets (open question 13, 2026-10-26): a higher bet gives a rarer mix, never a sure win ----
+        {
+            var betLine = "";
+            var lastMean = -1f;
+            var betRising = true;
+            var blanksEach = true;
+            var blanks0 = -1;
+            var blanksSame = true;
+            foreach (var round in new[] { 3, 12 })
+                for (var bet = 0; bet < rules.SlotBets.Length; bet++)
+                {
+                    var (mean, rare, count) = Mix(round, 0, bet);
+                    var nothing = count[0];
+                    if (bet == 0)
+                    {
+                        lastMean = -1f;
+                        blanks0 = nothing;
+                    }
+                    betRising &= mean > lastMean;
+                    lastMean = mean;
+                    blanksEach &= nothing > Rolls / 20 && count[1] > 0;
+                    blanksSame &= Math.Abs(nothing - blanks0) < Rolls / 50;
+                    betLine += $"; r{round} bet {rules.SlotBets[bet]:0.#}x ({rules.SlotBetCost(rules.SlotCost(round), bet)} a pull): mean tier {mean:0.00}, rare+ {rare * 100:0.0}%, nothing {nothing * 100f / Rolls:0.0}%";
+                }
+            ZLine($"slot bets{betLine}");
+            if (rules.SlotBets.Length < 3 || rules.SlotBets[0] != 1 || rules.SlotBetCost(500, 1) != 1000 || rules.SlotBetCost(500, 2) != 2500 || !betRising || !blanksEach || !blanksSame)
+                Fail($"slot machine bets (1x / 2x / 5x) should raise the rarity mix with the bet (rising {betRising}) while blanks still come up at every bet (each {blanksEach}, as often {blanksSame})");
+        }
 
         // ---- A real machine (Zombies Test, start room) ----
         var now = 0.0;
@@ -276,6 +305,37 @@ public static partial class SelfTest
             var sm = g.ZSlots[1];
             var netOk = cm.State == sm.State && cm.SpinId == sm.SpinId && cm.Heat == sm.Heat && cm.Owner == sm.Owner && cm.Symbols.SequenceEqual(sm.Symbols) && cm.Result == sm.Result
                         && cm.Part == sm.Part && MathF.Abs(cm.Left - sm.Left) <= 0.11f && c.ZSlots[0].Heat == g.ZSlots[0].Heat && ServerInfo.ProtocolVersion >= 51;
+
+            // The bet at a real machine: changed with the second key (not while it spins), the price and the prompt follow, the client sees it.
+            var busyBet = g.ServerBench(me, Game.BenchSlotBet, 1, "");
+            now += 10;
+            g.SelfTestTickSlots(now);
+            g.SelfTestTickSlots(now += 10); // (the result shows, then the machine is idle)
+            var baseCost = g.SlotBaseCost(ztm, 1);
+            var bet1 = g.ServerBench(me, Game.BenchSlotBet, 1, "");
+            var cost2 = g.SlotCost(ztm, 1);
+            var prompt2 = g.FindZUse(me);
+            var w3 = new PacketWriter();
+            g.WriteZWorld(w3);
+            c.SelfTestReadZombies(ents, w3.Span.ToArray());
+            var clientBet = c.ZSlots[1].Bet;
+            g.ServerBench(me, Game.BenchSlotBet, 1, "");
+            var cost5 = g.SlotCost(ztm, 1);
+            var points5 = zp.Points;
+            g.SelfTestUse(me, now += 0.01);
+            var paid5 = points5 - zp.Points;
+            now += 10;
+            g.SelfTestTickSlots(now);
+            g.SelfTestTickSlots(now += 10);
+            g.ServerBench(me, Game.BenchSlotBet, 1, "");
+            var wrapped = g.ZSlots[1].Bet == 0 && g.SlotCost(ztm, 1) == baseCost;
+            me.Teleport(new Vector3(-30, 0, -30));
+            var away = g.ServerBench(me, Game.BenchSlotBet, 1, "");
+            var betOk = busyBet != null && bet1 == null && cost2 == baseCost * 2 && prompt2?.Cost == cost2 && prompt2?.Text.Contains("bet 2x") == true && clientBet == 1
+                        && cost5 == baseCost * 5 && paid5 == cost5 && wrapped && away != null;
+            ZLine($"slot bet at a machine: while spinning '{busyBet}'; 1x {baseCost}, 2x {cost2} ('{prompt2?.Text}'), client sees bet {clientBet}; 5x {cost5}, paid {paid5}; wraps to 1x {wrapped}; from afar '{away}'");
+            if (!betOk)
+                Fail("a slot machine's bet should change with the second key at an idle machine (1x / 2x / 5x, wrapping round), set the price and the prompt, and reach the clients");
 
             // No allocations: the machines' tick (idle and spinning) and the rolls.
             long Measure(Span<byte> s)

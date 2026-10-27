@@ -216,6 +216,21 @@ public sealed class ZombiesRules
     /// <summary>The price of a pull in <paramref name="round"/>.</summary>
     public int SlotCost(int round) => Math.Min(SlotCostMax, SlotCostBase + SlotCostPerRound * Math.Max(0, round - 1));
 
+    /// <summary>
+    /// Bet levels (developer answer to open question 13, 2026-10-26): a pull costs the price x <see cref="SlotBets"/>[bet],
+    /// and its part odds move <see cref="SlotBetSteps"/>[bet] tiers up the ladder (on top of the machine's heat). The
+    /// blanks, scrap and coin weights don't change: a higher bet never guarantees a reward.
+    /// </summary>
+    public float[] SlotBets = [1f, 2f, 5f];
+
+    public int[] SlotBetSteps = [0, 1, 2];
+
+    /// <summary>The price of a pull at bet level <paramref name="bet"/> on a machine whose 1x price is <paramref name="price"/> (to the nearest 10).</summary>
+    public int SlotBetCost(int price, int bet) => SlotBets.Length == 0 ? price : (int)MathF.Round(price * SlotBets[Math.Clamp(bet, 0, SlotBets.Length - 1)] / 10f) * 10;
+
+    /// <summary>The tier steps of bet level <paramref name="bet"/>.</summary>
+    public int SlotBetStep(int bet) => SlotBetSteps.Length == 0 ? 0 : SlotBetSteps[Math.Clamp(bet, 0, SlotBetSteps.Length - 1)];
+
     /// <summary>Is <paramref name="round"/> a jackpot round?</summary>
     public bool SlotJackpot(int round) => SlotJackpotEvery > 0 && round > 0 && round % SlotJackpotEvery == 0;
 
@@ -656,6 +671,16 @@ public sealed class ZombiesRules
                             case "showSeconds": r.SlotShowSeconds = Real(v, w, 0.2f, 10); break;
                             case "heatStep": r.SlotHeatStep = Whole(v, w, 1, 100); break;
                             case "heatMaxSteps": r.SlotHeatMaxSteps = Whole(v, w, 0, 5); break;
+                            case "bets":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() is < 1 or > 5)
+                                    throw new WeaponFileException($"{w}: a list of 1 to 5 price multipliers (1, 2, 5)");
+                                r.SlotBets = v.EnumerateArray().Select(x => Real(x, w, 0.1f, 100)).ToArray();
+                                break;
+                            case "betSteps":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() is < 1 or > 5)
+                                    throw new WeaponFileException($"{w}: a list of 1 to 5 tier steps (0, 1, 2), one per bet");
+                                r.SlotBetSteps = v.EnumerateArray().Select(x => Whole(x, w, 0, 5)).ToArray();
+                                break;
                             case "pityTier":
                                 r.SlotPityTier = Enum.TryParse<Rarity>(WeaponFile.Text(v, w), true, out var tier) && Enum.IsDefined(tier)
                                     ? tier : throw new WeaponFileException($"{w}: a rarity (common, uncommon, rare, epic, legendary, wonder)");

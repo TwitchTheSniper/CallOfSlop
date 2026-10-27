@@ -84,7 +84,7 @@
     "moveSeconds": 3
   },
   "slots": {
-    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and the result shows showSeconds. The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
+    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and the result shows showSeconds. The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank, scrap and coin weights stay: no sure win). At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
     "costBase": 500,
     "costPerRound": 25,
     "costMax": 1250,
@@ -92,6 +92,8 @@
     "showSeconds": 2.5,
     "heatStep": 5,
     "heatMaxSteps": 3,
+    "bets": [1, 2, 5],
+    "betSteps": [0, 1, 2],
     "pityTier": "rare",
     "maxNothing": 3,
     "jackpotEvery": 5,

@@ -356,6 +356,18 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   3. **Jackpot rounds** (every 5th round, `jackpotEvery`): the **wonder gem** goes on the reels and legendary (+6) and
      wonder (+4) weights are added; the topper flashes gold and pink and the prompt says "JACKPOT ROUND". Outside
      jackpot rounds wonder parts never come up from the slots.
+- **Bets (developer answer to question 13, 2026-10-26).** At an idle machine the **second key** (G, the Grenade key:
+  there are no grenades in Zombies) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
+  (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
+  machine's heat (the same shift as a heat step). The nothing, scrap and coin weights don't change, so a higher bet
+  **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
+  mix goes from 1.9 percent rare-or-better at 1x to 12 at 2x and 33 at 5x). Coins pay 1.5x what you paid. The bet
+  belongs to the machine (shared by the team, like the heat) and stays until someone changes it; the prompt shows it
+  ("Hold F to pull the slot machine [1100] - bet 2x (G to change)") and so does the cabinet (a lamp per level under the
+  heat meter: green, gold, red). Server-authoritative: a client asks with `Msg.ZBench` kind 4 (the machine in its slot
+  byte); the server checks you're at the machine and it's idle. Bots pull at whatever bet is set. Self-test "Zombies
+  slots": the rarer mix and the unchanged blanks at every bet over seeded rolls, the price, the prompt, the wrap and the
+  client copy.
 - **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
   would-be blank pays scrap instead.
 - **Placement**: Blackmoor Asylum has two (the Receiving Hall, against the east wall by the Ward Door, and the Research
@@ -364,9 +376,10 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall, its front facing the yaw).
 - **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
   counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left); protocol 53 adds result 4
-  (a melee build: the part field is then an index into the standard builds) and the blade symbol (9). Clients start the reel
+  (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
+  bet level. Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
-  and scrap come in `ZRun` as for any payout. Bots don't use the machines. Nothing in the machines' tick allocates
+  and scrap come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
   (self-test).
 
 | Rules (`ZombiesRules.json` "slots") | Default | What |
@@ -377,6 +390,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 | `maxNothing` | 3 | blanks in a row per player per machine, at most |
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
 | `scrapPayout`, `pointsBack`, `autoScrapAt` | 40, 1.5, 3 | scrap for a cog, points back (x the price) for a coin, auto-scrap from this many loose |
+| `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
+| `DropTables.json` `slotTiers` `melee` | 5 | the weight of a complete melee build (its tier from the row's part weights) |
 
 ## Dropped builds (user decision, 2026-10-21)
 
@@ -596,6 +611,42 @@ grunt on host and client, and a headshot kill the cut-off screech on both.
 side), the snarl just before a swipe lands, headshots screeching, and a big round staying a horde rather than a wall
 of noise.
 
+## Co-op bots (developer answer, 2026-10-26)
+
+Bots hold the area they started in, shoot, revive and rebuild boards as before, and now **spend their own points**
+the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.json` "bots"; self-test section
+**"Zombies bot shopping"**). Everything goes through the same interact key, prices and hold time as a person.
+
+- **When**: only when it's safe: in the break between rounds (or before round 1), or mid-round with no zombie within
+  `quietRange` (10 m). Running from a zombie on top of it, **reviving** a downed teammate and **boarding** windows in its
+  area always come first; a bot with a downed teammate doesn't shop at all.
+- **Where**: within `shopRange` (40 m) of its post, in unlocked areas, walking area to area through the open doors'
+  sides; afterwards it walks back to its post, so nobody is left alone at the windows (no stranding the team).
+- **What, in order** (a think every `thinkSeconds`, 0.5 s; always keeping `reserve`, 250 points): the **power switch**
+  (free); **perks** in `perkOrder` (Juggernog, Quick Revive, Speed Cola, Double Tap, Second Wind), at the players'
+  prices (the doubling past the 4th included); the first one it can reach but can't afford yet is what it **saves
+  for**, so the rest only spends what's left over; a **wall gun** with `wallBetter` (1.15) x the damage per second of
+  the gun in its hands (or into a free slot); the **slot upgrade**; the **mystery box** with `boxSurplus` (500) spare,
+  taking the offer only when it beats the gun in hand (or a slot is free), else letting it go back; a **door**,
+  between rounds only and one a break for the whole team (the cheapest off an open area); a **slot machine pull**
+  with `slotSurplus` (2500) spare, once a round, at the machine's current bet.
+- Something it couldn't reach or buy (the nearest buyable at its spot was something else, or `giveUpSeconds`, 15 s,
+  went by) is left alone for 20 s. `bots.buy: false` turns it all off.
+- **Cost**: deterministic (no random numbers, fixed orders), the planning allocates nothing (self-test: 500 plans, 0
+  bytes) and runs twice a second per bot; on the way it only steers. The seeded Zombies digest in "Mode modules" was
+  re-recorded (the bots now shop in the 2-bot match).
+
+| Rules (`ZombiesRules.json` "bots") | Default | What |
+| --- | --- | --- |
+| `buy` | true | bots spend their points |
+| `reserve` | 250 | points a bot always keeps |
+| `quietRange`, `shopRange` | 10, 40 | no shopping mid-round with a zombie this close; how far from its post it shops (m) |
+| `perkOrder` | jugg, revive, speed, doubletap, secondwind | the perks it wants, first first |
+| `boxSurplus`, `slotSurplus` | 500, 2500 | spare points before a box spin / a slot pull |
+| `wallBetter` | 1.15 | how much better (damage per second) a wall gun must be |
+| `doors` | true | bots open doors (between rounds, one a break) |
+| `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
+
 ## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
 
 Protocol 50 (sounds, see "Sound"): bit 3 of a zombie's state byte in `ZEnts` is the head bit (a fresh head hit, or a
@@ -652,26 +703,29 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 1. **Numbers**: the round curve, points, prices, perks, reserve ammo and the drop chances are all proposed.
 2. ~~Bleeding out~~: **decided**: builds drop as pickups for 5 minutes (see "Dropped builds"). Still open: should
    anyone be able to pick up your builds (today), or only you; and a points refund for the owner?
-3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). Still open: its price
-   (fixed 1500, or rising each buy), whether it should count toward the perk limit (today it does), and whether solo
-   Quick Revive should be cheaper again.
-4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). Still open: the numbers
-   (4 percent a kill since 2026-10-23, 4 a round, 30 s; Max Ammo 38 percent of drops), and whether drops should follow World at War's points-based schedule instead.
-5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). Still open: the
-   numbers, and whether effects should also hurt players in other modes.
-6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything (still the default).
-   Should they buy doors / guns / perks with their own points?
-7. **Downed**: shoot with whatever is in your hands (still the default), or a forced pistol (World at War's last stand)?
-   Crawling (2026-10-23) is 0.8 x the prone speed (`downs.crawlSpeed`): slower or faster?
-8. **Melee builds from the box** go to the melee slot (still the default): or should the box give guns only?
+3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). **Answered 2026-10-26**:
+   a fixed 1500 every buy; no hard perk limit any more: each perk beyond the 4th costs double the step before (5th 2x,
+   6th 4x, 7th 8x...), Second Wind included; solo Quick Revive unchanged (see "Perks").
+4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). **Answered 2026-10-26**: a
+   World at War style team points schedule replaced the 4 percent a kill roll (rewards come more evenly), tuned to the
+   same average rate; 4 a round, 30 s, Max Ammo 38 percent kept.
+5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). **Answered
+   2026-10-26**: yes, they hurt players too wherever such a gun meets players, friendly fire respected ("On players
+   too"). The numbers stay as proposed.
+6. ~~Co-op bots buying~~: **answered 2026-10-26**: yes: they spend their own points on doors, wall guns, the box,
+   perks, the slot upgrade and slot pulls, with sensible priorities and never at the cost of revives or boards (see
+   "Co-op bots").
+7. ~~Downed~~: **answered 2026-10-26**: keep as is (crawl at 0.8 x the prone speed, shoot with the gun in your hands).
+8. ~~Melee builds from the box~~: **answered 2026-10-26**: the box gives guns only; the slot machines pay complete
+   melee builds into the melee slot (rarity from the slot tiers); melee parts stay in the part pool (see "Slot
+   machines").
 9. ~~Machines have no collision~~: **done in milestone 3** on real maps (`"machineProps": true`, solid props from
    `Props/Zombies`); Zombies Test keeps them collision-free.
-10. **Second Wind's price** (still a fixed 1500, counting toward the 4 perks; see question 3).
-11. **Blackmoor Asylum**: the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500, the power shutter 750) are
-    proposed; more Zombies maps next?
-12. **Ready-up** (2026-10-23): the fallback is 3 minutes and the countdown 3 s; the host forces the start by pressing F3
-    again once ready (rather than a separate key). Spectating is over the shoulder only (first person would need the
-    watched player's arms and gun drawn). OK?
-13. **Slot machines** (2026-10-26, proposed defaults): the odds table, heat (5 a step, 3 steps, shared by the team),
-    jackpot every 5th round, 3 blanks at most, auto-scrap from 3 loose copies. Not done: **bet levels** (1x / 2x / 5x)
-    and a machine that **moves** on a skull like the box's teddy bear (the cabinets are solid map props); bots don't pull.
+10. ~~Second Wind's price~~: **answered 2026-10-26**: a fixed 1500; it counts as a perk for the doubling past the 4th
+    (see question 3).
+11. ~~Blackmoor Asylum~~: **answered 2026-10-26**: keep the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500,
+    the power shutter 750). More Zombies maps are wanted, but later, after the developer talks to testers.
+12. ~~Ready-up~~: **answered 2026-10-26**: the fallback is now 5 minutes; the 3 s countdown, F3 again to force the start
+    and over-the-shoulder spectating stay.
+13. ~~Slot machines~~: **answered 2026-10-26**: bet levels added (1x / 2x / 5x the price, each a rarity step up on top
+    of the heat; blanks as likely at every bet, so no sure win; see "Bets"); the other numbers stay; no moving machines.

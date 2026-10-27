@@ -1276,6 +1276,8 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm || !p.Alive || IsDowned(p))
             return "Not now.";
+        if (kind == BenchSlotBet)
+            return ServerSlotBet(p, slot); // a slot machine's bet (ZombiesSlots.cs), not a workbench change
         if (!AtWorkbench(p))
         {
             // Taking the build in a slot apart works at the mystery box too (ZombiesDisassemble.cs); everything else needs a bench.

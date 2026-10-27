@@ -42,6 +42,9 @@ public sealed class ZSlotMachine
     /// <summary>Pulls since the last rare-or-better part (<see cref="ZombiesRules.SlotPityTier"/>).</summary>
     public byte Heat;
 
+    /// <summary>The bet level (an index into <see cref="ZombiesRules.SlotBets"/>): set at the machine with the second key, kept until changed (shared, like the heat).</summary>
+    public byte Bet;
+
     /// <summary>Counts pulls (wrapping), so a client sees a new spin even when the state byte didn't change between two messages.</summary>
     public byte SpinId;
 
@@ -72,6 +75,7 @@ public sealed class ZSlotMachine
         Left = 0;
         Owner = byte.MaxValue;
         Heat = 0;
+        Bet = 0;
         SpinId = 0;
         Symbols[0] = Symbols[1] = Symbols[2] = 0;
         Result = ZSlotResult.Nothing;
@@ -121,8 +125,45 @@ public sealed partial class Game
             m.Reset();
     }
 
-    /// <summary>The price of a pull on machine <paramref name="i"/> this round (the map's own price, or the rules' rising one).</summary>
-    public int SlotCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count && zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound);
+    /// <summary>The 1x price of a pull on machine <paramref name="i"/> this round (the map's own price, or the rules' rising one).</summary>
+    public int SlotBaseCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count && zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound);
+
+    /// <summary>The price of a pull on machine <paramref name="i"/> at its bet.</summary>
+    public int SlotCost(ZombiesMap zm, int i) => ZRules.SlotBetCost(SlotBaseCost(zm, i), i >= 0 && i < ZSlots.Length ? ZSlots[i].Bet : 0);
+
+    /// <summary>"2x" for bet level <paramref name="bet"/>.</summary>
+    public string SlotBetName(int bet) => ZRules.SlotBets.Length == 0 ? "1x" : $"{ZRules.SlotBets[Math.Clamp(bet, 0, ZRules.SlotBets.Length - 1)]:0.#}x";
+
+    /// <summary>The workbench message kind (<see cref="Msg.ZBench"/>) that moves a slot machine's bet up a level (wrapping round); its slot byte is the machine.</summary>
+    public const int BenchSlotBet = 4;
+
+    /// <summary>
+    /// Server: <paramref name="p"/> changes machine <paramref name="i"/>'s bet (the next level, wrapping round to 1x).
+    /// Only standing at an idle machine. Returns why not, or null.
+    /// </summary>
+    public string? ServerSlotBet(Player p, int i)
+    {
+        if (ZMap is not { } zm || i < 0 || i >= zm.SlotMachines.Count || i >= ZSlots.Length)
+            return "That's not a slot machine.";
+        if (Flat(zm.SlotMachines[i].At - p.Position) > UseRange + 0.3f)
+            return "You're not at the slot machine.";
+        var m = ZSlots[i];
+        if (m.State != ZSlotState.Idle)
+            return "Wait for the reels to stop.";
+        var levels = Math.Max(1, Math.Min(ZRules.SlotBets.Length, 255));
+        m.Bet = (byte)((m.Bet + 1) % levels);
+        ZFeedTo(p, $"Slot machine bet: {SlotBetName(m.Bet)} ({SlotCost(zm, i)} a pull; rarer parts, no sure win)", Sfx.HitTick);
+        return null;
+    }
+
+    /// <summary>Local: the second key at a slot machine changes its bet (the host does it, a client asks).</summary>
+    public bool SlotBetKey()
+    {
+        if (Local is not { } me || FindZUse(me) is not { Kind: ZUseKind.SlotMachine } u)
+            return false;
+        BenchRequest(BenchSlotBet, u.Index, "");
+        return true;
+    }
 
     /// <summary>The interact prompt at machine <paramref name="i"/> (FindZUse).</summary>
     private ZUse SlotUse(ZombiesMap zm, int i)
@@ -136,7 +177,8 @@ public sealed partial class Game
         var step = Math.Max(1, ZRules.SlotHeatStep);
         var steps = Math.Min(ZRules.SlotHeatMaxSteps, m.Heat / step);
         var heat = steps >= ZRules.SlotHeatMaxSteps ? "heat MAX" : $"heat {m.Heat % step}/{step}{(steps > 0 ? $" (+{steps})" : "")}";
-        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the slot machine [{cost}] - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
+        var bet = ZRules.SlotBets.Length > 1 ? $" - bet {SlotBetName(m.Bet)} ([G] to change)" : "";
+        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the slot machine [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
     }
 
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
@@ -166,7 +208,7 @@ public sealed partial class Game
         m.Paid = cost;
         m.AutoScrapped = false;
         var jackpot = ZRules.SlotJackpot(ZRound);
-        var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext());
+        var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext(), ZRules.SlotBetStep(m.Bet));
         if (result == ZSlotResult.Nothing && ZRules.SlotMaxNothing > 0 && zp.SlotNothing[i] >= ZRules.SlotMaxNothing)
             result = ZSlotResult.Scrap; // bad-luck protection: never more than maxNothing blanks in a row
         m.Part = -1;
@@ -274,8 +316,8 @@ public sealed partial class Game
 
     // ---- Network (protocol 51: the end of Msg.ZWorld) ------------------------------------------------------
 
-    /// <summary>Bytes per machine at the end of <see cref="Msg.ZWorld"/>.</summary>
-    public const int ZSlotBytes = 11;
+    /// <summary>Bytes per machine at the end of <see cref="Msg.ZWorld"/> (12 since protocol 53: the bet).</summary>
+    public const int ZSlotBytes = 12;
 
     /// <summary>Server: every machine (state, heat, owner, spin counter, the three symbols, result and tier, the part, tenths of a second left).</summary>
     private void WriteSlots(PacketWriter w)
@@ -287,7 +329,7 @@ public sealed partial class Game
             var m = ZSlots[i];
             w.U8((byte)m.State).U8(m.Heat).U8(m.Owner).U8(m.SpinId).U8(m.Symbols[0]).U8(m.Symbols[1]).U8(m.Symbols[2])
                 .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.AutoScrapped ? 128 : 0))).U16((ushort)m.Part)
-                .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255));
+                .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255)).U8(m.Bet);
         }
     }
 
@@ -308,8 +350,10 @@ public sealed partial class Game
             var res = r.U8();
             var part = (short)r.U16();
             var left = r.U8() / 10f;
+            var bet = r.U8();
             if (m == null)
                 continue;
+            m.Bet = bet;
             m.State = state;
             m.Heat = heat;
             m.Owner = owner;
@@ -399,10 +443,10 @@ public sealed partial class Game
     /// then every <see cref="ZombiesRules.SlotHeatStep"/> heat moves the part weights one tier up (the top tier keeps
     /// what reaches it). Deterministic from <paramref name="seed"/>; no allocation.
     /// </summary>
-    public static (ZSlotResult Result, Rarity Tier) RollSlotOutcome(ZombiesRules rules, RunTables tables, int round, int heat, uint seed)
+    public static (ZSlotResult Result, Rarity Tier) RollSlotOutcome(ZombiesRules rules, RunTables tables, int round, int heat, uint seed, int betSteps = 0)
     {
         Span<float> w = stackalloc float[RunTables.SlotKeys.Length];
-        SlotWeights(rules, tables, round, heat, w);
+        SlotWeights(rules, tables, round, heat, w, betSteps);
         var total = 0f;
         foreach (var x in w)
             total += x;
@@ -457,7 +501,7 @@ public sealed partial class Game
     }
 
     /// <summary>The weights a pull rolls from (see <see cref="RollSlotOutcome"/>), into <paramref name="w"/> (<see cref="RunTables.SlotKeys"/> order).</summary>
-    public static void SlotWeights(ZombiesRules rules, RunTables tables, int round, int heat, Span<float> w)
+    public static void SlotWeights(ZombiesRules rules, RunTables tables, int round, int heat, Span<float> w, int betSteps = 0)
     {
         w.Clear();
         RoundRow? row = null;
@@ -483,7 +527,8 @@ public sealed partial class Game
         else
             w[wonder] = 0; // the wonder symbol is only on the reels in jackpot rounds
         var top = jackpot ? wonder : legendary;
-        var steps = Math.Min(rules.SlotHeatMaxSteps, heat / Math.Max(1, rules.SlotHeatStep));
+        // Heat steps (at most heatMaxSteps) plus the bet's steps (2026-10-26): only the part tiers move, never the blanks.
+        var steps = Math.Min(rules.SlotHeatMaxSteps, heat / Math.Max(1, rules.SlotHeatStep)) + Math.Max(0, betSteps);
         for (var s = 0; s < steps; s++)
         {
             w[top] += w[top - 1];
