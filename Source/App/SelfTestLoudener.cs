@@ -88,10 +88,12 @@ public static partial class SelfTest
         if (loudLevel < stockLevel * 1.8f || loud60.NearFalloff.Max <= at60.NearFalloff.Max || ownLoud.Near > 1f || Audio.Louder(at60, 1f, false) != at60)
             Fail("the Loudener should carry a shot about 2.5x further (and 1 should change nothing)");
         var warm = Audio.Louder(at60, 2.5f, false);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
-            warm = Audio.Louder(at60, 2.5f, (i & 1) == 0);
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 1000; i++)
+                warm = Audio.Louder(at60, 2.5f, (i & 1) == 0);
+        });
         if (bytes > 0)
             Fail($"Audio.Louder allocates ({bytes} bytes over 1000 shots)");
 

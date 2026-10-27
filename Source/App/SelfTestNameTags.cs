@@ -242,9 +242,8 @@ public static partial class SelfTest
             }
         }
         Frames(200, 0); // warm up (JIT)
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        Frames(2400, 100);
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() => Frames(2400, 100), warmups: 0);
 
         // The match adapter: candidates from a real offline game with bots (fake walls, so only the tag code is measured).
         World.SetMap(Maps.All[0]);
@@ -266,10 +265,11 @@ public static partial class SelfTest
             var eye = me.RenderEye;
             for (var i = 0; i < 200; i++)
                 adapter.Update(game, eye, fwd, NameTagMode.All, i / 240.0, NameTags.None);
-            var b0 = GC.GetAllocatedBytesForCurrentThread();
-            for (var i = 0; i < 2400; i++)
-                adapter.Update(game, eye, i % 50 < 25 ? fwd : away, NameTagMode.All, 10 + i / 240.0, NameTags.None);
-            gameBytes = GC.GetAllocatedBytesForCurrentThread() - b0;
+            gameBytes = SteadyAllocBytes(() => // (the least of identical rounds, as above)
+            {
+                for (var i = 0; i < 2400; i++)
+                    adapter.Update(game, eye, i % 50 < 25 ? fwd : away, NameTagMode.All, 10 + i / 240.0, NameTags.None);
+            }, warmups: 0);
             adapter.Update(game, eye, fwd, NameTagMode.All, 30, NameTags.None);
             gameTags = adapter.Count;
         }

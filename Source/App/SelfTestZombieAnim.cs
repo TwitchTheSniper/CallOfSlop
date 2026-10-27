@@ -417,6 +417,12 @@ public static partial class SelfTest
             sw.Stop();
             var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
             var boxes = rec.Count / (double)(frames * inputs.Length);
+            // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+            allocated = RecheckAllocBytes(allocated, () =>
+            {
+                for (var f = 0; f < frames; f++)
+                    Frame(f, false);
+            });
             rec.Reset();
             Frame(0, true);
             var lodBoxes = rec.Count / (double)inputs.Length;

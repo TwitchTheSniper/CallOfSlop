@@ -80,7 +80,7 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
   Bots count as ready; the dead (and a host sitting out, in the self-tests) don't block. When everyone is ready the
   next round starts `rounds.readyGoSeconds` (3 s) later, with its banner and sound as before ("ROUND 4", the whistle).
   The HUD shows "Press [F3] when ready - 1/2 ready" (centre) and "Break: 1/2 ready" in the match bar; the scoreboard
-  (Tab) tags each player [READY] / [not ready]. **Safety valve**: `rounds.readyFallbackSeconds` (180 s = 3 minutes,
+  (Tab) tags each player [READY] / [not ready]. **Safety valve**: `rounds.readyFallbackSeconds` (300 s = 5 minutes,
   0 = off) after the round ended it starts anyway (the bar counts it down); the **host** can force it: once ready, press
   F3 again ("host: press [F3] again to start now"). Walking about, buying and the workbench all work during the break.
   `rounds.readyUp: false` brings back the plain `breakSeconds` timer, which bots-only runs (nobody to ready up) still
@@ -96,7 +96,7 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
 | Rules (`Parts/Tables/ZombiesRules.json`) | Default | What |
 | --- | --- | --- |
 | `rounds.readyUp` | true | ready-up between rounds (false: the `breakSeconds` timer) |
-| `rounds.readyFallbackSeconds` | 180 | start anyway this long after the round ended (0 = never; the host can still force it) |
+| `rounds.readyFallbackSeconds` | 300 | start anyway this long after the round ended (0 = never; the host can still force it) |
 | `rounds.readyGoSeconds` | 3 | the countdown once everyone is ready |
 | `rounds.breakSeconds` | 10 | the break when ready-up is off or nobody can ready up (bots only) |
 | `downs.crawlSpeed` | 0.8 | crawl speed, as a fraction of the prone speed |
@@ -137,13 +137,13 @@ grey: not possible now (needs the power, already owned...).
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
-| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a build of that tier you don't already carry (in a gun slot or the melee slot; 59 box builds, 10-16 per tier) After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
-| **Perk machine** | A perk from the rules file (one machine per perk). At most 4 perks; all lost when downed | per perk |
+| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
+| **Perk machine** | A perk from the rules file (one machine per perk). No cap: beyond the 4th each perk costs double the step before (the 5th 2x its price, the 6th 4x...); all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Scrap, once per round per pile | +25 scrap |
-| **Slot machine** | Three reels spin 2 s and pay a loose part, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 
 ### Perks (proposed; "perks", up to 8)
 
@@ -157,10 +157,16 @@ grey: not possible now (needs the power, already owned...).
 
 On Zombies Test, Quick Revive and Second Wind (both in the start room) work without power; the other three need it.
 A perk with `"selfRevive": true` is a self-revive perk (any perk can be made one in the rules file). **Second Wind
-(proposed)**: a fixed 1500 every time (no rising price), it counts toward the 4-perk limit (it's a perk like the
-others, and the limit makes it a real choice), it's used up by the revive (and lost with the others on a down anyway).
+(decided 2026-10-26)**: a fixed 1500 every time (no rising price of its own), it counts as a perk for the doubling
+below (it's a perk like the others), it's used up by the revive (and lost with the others on a down anyway).
 Zombies don't attack downed players today, so a self-revive can't be "finished off" yet: being revived by a teammate
 first also ends it (the perk is still used up). Quick Revive lost its 500 solo price with its solo self-revive.
+
+**More than 4 perks (developer answer, 2026-10-26).** There's no hard limit any more: holding 4 perks, the 5th costs
+2x its listed price, the 6th 4x, the 7th 8x (each step doubles), for every perk including Second Wind (so a 5th-perk
+Second Wind is 3000). The prompt shows the real price and the step ("Hold F to buy Second Wind [3000] (5th perk:
+x2)"). Rules: `buy.fullPricePerks` (4; 0 = never dearer), `buy.extraPerkFactor` (2), `buy.maxPerks` (now 8, every
+perk: a hard cap if a map ever wants one). Co-op bots pay the same prices. Self-test: "Zombies mode" ("perk price").
 
 ### Ammo
 
@@ -326,6 +332,15 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   gem**: a part one tier lower (two commons: scrap); otherwise a cog pays **40 scrap**, a coin **1.5 x the price back**
   in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
   as it (self-test: they always do), so the table, not the reels, sets the odds.
+- **Melee builds (developer answer, 2026-10-26).** The mystery box gives guns only, so melee builds come from here: a
+  `"melee"` weight in each `slotTiers` row (5, about 5 percent of pulls) pays a **complete melee build** (the 14
+  standard builds tagged `"slots"`), straight into your **melee slot**. Its rarity is rolled from the same row's part
+  weights, so it follows the slot tiers: the round, the machine's heat and jackpot rounds (a rare-or-better one resets
+  the heat like a part); never the one you hold, the nearest tier with one when that tier has none, never wonder outside
+  a jackpot round. The reels show **two blades and the build's gem** (a lone blade is a near miss); a legendary or
+  wonder one is announced to everyone, and a glowing blade in its rarity colour floats over the cabinet. The melee build
+  you had goes on the floor 3 m in front of the machine as a dropped build (5 minutes, anyone can pick it up), unless
+  it's the untouched start Machete. Melee parts stay in the part pool.
 - **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
   a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose is
   **auto-scrapped** into its scrap value instead (`autoScrapAt`). A legendary or wonder part is announced to everyone.
@@ -341,6 +356,18 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   3. **Jackpot rounds** (every 5th round, `jackpotEvery`): the **wonder gem** goes on the reels and legendary (+6) and
      wonder (+4) weights are added; the topper flashes gold and pink and the prompt says "JACKPOT ROUND". Outside
      jackpot rounds wonder parts never come up from the slots.
+- **Bets (developer answer to question 13, 2026-10-26).** At an idle machine the **second key** (G, the Grenade key:
+  there are no grenades in Zombies) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
+  (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
+  machine's heat (the same shift as a heat step). The nothing, scrap and coin weights don't change, so a higher bet
+  **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
+  mix goes from 1.9 percent rare-or-better at 1x to 12 at 2x and 33 at 5x). Coins pay 1.5x what you paid. The bet
+  belongs to the machine (shared by the team, like the heat) and stays until someone changes it; the prompt shows it
+  ("Hold F to pull the slot machine [1100] - bet 2x (G to change)") and so does the cabinet (a lamp per level under the
+  heat meter: green, gold, red). Server-authoritative: a client asks with `Msg.ZBench` kind 4 (the machine in its slot
+  byte); the server checks you're at the machine and it's idle. Bots pull at whatever bet is set. Self-test "Zombies
+  slots": the rarer mix and the unchanged blanks at every bet over seeded rolls, the price, the prompt, the wrap and the
+  client copy.
 - **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
   would-be blank pays scrap instead.
 - **Placement**: Blackmoor Asylum has two (the Receiving Hall, against the east wall by the Ward Door, and the Research
@@ -348,9 +375,11 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   (spots like a perk machine's: `at`, `yaw`, `power`, `cost`), at most 8; with machine props each stands as a solid
   **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall, its front facing the yaw).
 - **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
-  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left). Clients start the reel
+  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left); protocol 53 adds result 4
+  (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
+  bet level. Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
-  and scrap come in `ZRun` as for any payout. Bots don't use the machines. Nothing in the machines' tick allocates
+  and scrap come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
   (self-test).
 
 | Rules (`ZombiesRules.json` "slots") | Default | What |
@@ -361,6 +390,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 | `maxNothing` | 3 | blanks in a row per player per machine, at most |
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
 | `scrapPayout`, `pointsBack`, `autoScrapAt` | 40, 1.5, 3 | scrap for a cog, points back (x the price) for a coin, auto-scrap from this many loose |
+| `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
+| `DropTables.json` `slotTiers` `melee` | 5 | the weight of a complete melee build (its tier from the row's part weights) |
 
 ## Dropped builds (user decision, 2026-10-21)
 
@@ -392,8 +423,17 @@ your player has died. And if you can't get to them in time, will despawn after 5
 
 ## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
 
-- **Drops.** Every zombie a player kills may drop one: `dropChance` 4 percent, at most `maxPerRound` (4) a round (the
-  count resets when a round starts). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
+- **Drops: a team points schedule** (World at War style; developer answer, 2026-10-26, replacing the flat 4 percent a
+  kill roll, so rewards come more evenly). Every point the team **earns** (hits, kills, boards; Double Points counted as
+  paid; not the Nuke's, the Carpenter's or a slot machine's coins) goes into one shared tally. When it passes
+  `firstAt` (1800) a drop is **due**, and the next zombie a player kills drops it; the next one is due a step later
+  (from the points at that drop), and each step is `stepGrowth` (1.02) x the one before, at most `stepMax` (4000): 1836,
+  then 2194 by the 10th drop, 3260 by the 30th. At most `maxPerRound` (4) a round (the count resets when a round
+  starts): a drop due at the cap waits for the next round's first kill. `dropChance` adds an optional flat chance per
+  kill on top (0: off). Tuning: a scripted model of solo and 4-player runs to round 30 (the real round curve, hits per
+  kill from zombie health against a gun that improves) gives the same number of drops as the old rule (x1.00: 12 by
+  round 10 solo, 91 by round 30), more evenly spread; self-test "Zombies mode" ("power-up schedule", "power-up rate").
+  Server-only (no wire change). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
   Nuke 0.8, Carpenter 0.8, Infinite Ammo 0.5: Max Ammo is about 38 percent of drops, 43 with every board up, and
   Infinite Ammo about 8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
   it at that window's inside spot. Kills by a burn, a splash or a chain drop like any kill; the Nuke's kills drop nothing.
@@ -420,7 +460,7 @@ fill their own magazines from it.
 **Decision (user, 2026-10-23):** add Max Ammo as one of the most common drops and an Infinite Ammo one. Read as
 power-up drops (not perk machines). Max Ammo's weight went 1.2 -> 2.5 (about 38 percent, up from 25) and `dropChance`
 3 -> 4 percent, so a round of 24 kills shows about one power-up instead of 0.7 (still at most 4 a round); Infinite
-Ammo is timed, 30 s, weight 0.5.
+Ammo is timed, 30 s, weight 0.5. (2026-10-26: the per-kill chance became the points schedule above, at the same average rate.)
 
 ## Special ammo effects (milestone 3; proposed numbers in "ammoEffects")
 
@@ -449,6 +489,21 @@ only the kill), and works with Insta-Kill and Double Points.
 | `refreshing` (Cup Holder) | Every kill gives the shooter 5 health back |
 | `bayonet` (Bayonet) | Hits within 2.2 m do 1.5x damage |
 | `suppressed`, `cart` | No effect on zombies (they already do their own thing) |
+
+**On players too (developer answer, 2026-10-26).** Wherever a gun or melee build carrying these flags can be used
+against players (the Workbench Range's targets today; any mode that lets builds meet players), the effects hurt players
+the way they hurt zombies, with the same numbers (`Source/Game/AmmoEffectsPlayers.cs`): burns and bleeds tick on the
+player (as napalm: Flak Jacket helps), the splash hits the players round the one hit (walls shield), the shock chains to
+the 3 nearest, the pierce goes on through the players behind, the rubber duck bounces to the nearest, the bayonet
+hits harder at point blank, the cup holder gives a sip per kill, and the rocket booster, the frozen fish and the toaster
+knock players about (the predicted knock, as a blast's). Stuns (shock, squeak, bonk, chainsaw) hold bots still, as a
+melee build's stun does; the plasma slow and the party balloons stay zombie-only (a player's movement is predicted,
+and a slow would need replicated state). **Friendly fire is respected**: all of it goes through the normal damage rules
+(no damage to teammates in team modes or co-op, so in Zombies nothing changes), area effects never pick a player the
+shooter can't damage (a teammate doesn't soak up a chain), and the shooter is never hit by their own effects. The
+flashes show in every mode (the `ZEvent` effect message is read outside Zombies too; no wire change). Self-test
+section **"Ammo effects on players"** (a flat lab map, scripted shots in FFA and TDM, no matches; no allocation in the
+burn tick, an effect shot allocates no more than a plain one).
 
 The self-test fails if a part ever carries a flag that's in neither list. Effects players see: a short flash where an
 effect goes off (an orange burst for a splash, blue sparks for a chain, pink for party balloons...) and its sound;
@@ -556,6 +611,42 @@ grunt on host and client, and a headshot kill the cut-off screech on both.
 side), the snarl just before a swipe lands, headshots screeching, and a big round staying a horde rather than a wall
 of noise.
 
+## Co-op bots (developer answer, 2026-10-26)
+
+Bots hold the area they started in, shoot, revive and rebuild boards as before, and now **spend their own points**
+the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.json` "bots"; self-test section
+**"Zombies bot shopping"**). Everything goes through the same interact key, prices and hold time as a person.
+
+- **When**: only when it's safe: in the break between rounds (or before round 1), or mid-round with no zombie within
+  `quietRange` (10 m). Running from a zombie on top of it, **reviving** a downed teammate and **boarding** windows in its
+  area always come first; a bot with a downed teammate doesn't shop at all.
+- **Where**: within `shopRange` (40 m) of its post, in unlocked areas, walking area to area through the open doors'
+  sides; afterwards it walks back to its post, so nobody is left alone at the windows (no stranding the team).
+- **What, in order** (a think every `thinkSeconds`, 0.5 s; always keeping `reserve`, 250 points): the **power switch**
+  (free); **perks** in `perkOrder` (Juggernog, Quick Revive, Speed Cola, Double Tap, Second Wind), at the players'
+  prices (the doubling past the 4th included); the first one it can reach but can't afford yet is what it **saves
+  for**, so the rest only spends what's left over; a **wall gun** with `wallBetter` (1.15) x the damage per second of
+  the gun in its hands (or into a free slot); the **slot upgrade**; the **mystery box** with `boxSurplus` (500) spare,
+  taking the offer only when it beats the gun in hand (or a slot is free), else letting it go back; a **door**,
+  between rounds only and one a break for the whole team (the cheapest off an open area); a **slot machine pull**
+  with `slotSurplus` (2500) spare, once a round, at the machine's current bet.
+- Something it couldn't reach or buy (the nearest buyable at its spot was something else, or `giveUpSeconds`, 15 s,
+  went by) is left alone for 20 s. `bots.buy: false` turns it all off.
+- **Cost**: deterministic (no random numbers, fixed orders), the planning allocates nothing (self-test: 500 plans, 0
+  bytes) and runs twice a second per bot; on the way it only steers. The seeded Zombies digest in "Mode modules" was
+  re-recorded (the bots now shop in the 2-bot match).
+
+| Rules (`ZombiesRules.json` "bots") | Default | What |
+| --- | --- | --- |
+| `buy` | true | bots spend their points |
+| `reserve` | 250 | points a bot always keeps |
+| `quietRange`, `shopRange` | 10, 40 | no shopping mid-round with a zombie this close; how far from its post it shops (m) |
+| `perkOrder` | jugg, revive, speed, doubletap, secondwind | the perks it wants, first first |
+| `boxSurplus`, `slotSurplus` | 500, 2500 | spare points before a box spin / a slot pull |
+| `wallBetter` | 1.15 | how much better (damage per second) a wall gun must be |
+| `doors` | true | bots open doors (between rounds, one a break) |
+| `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
+
 ## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations)
 
 Protocol 50 (sounds, see "Sound"): bit 3 of a zombie's state byte in `ZEnts` is the head bit (a fresh head hit, or a
@@ -612,26 +703,29 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 1. **Numbers**: the round curve, points, prices, perks, reserve ammo and the drop chances are all proposed.
 2. ~~Bleeding out~~: **decided**: builds drop as pickups for 5 minutes (see "Dropped builds"). Still open: should
    anyone be able to pick up your builds (today), or only you; and a points refund for the owner?
-3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). Still open: its price
-   (fixed 1500, or rising each buy), whether it should count toward the perk limit (today it does), and whether solo
-   Quick Revive should be cheaper again.
-4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). Still open: the numbers
-   (4 percent a kill since 2026-10-23, 4 a round, 30 s; Max Ammo 38 percent of drops), and whether drops should follow World at War's points-based schedule instead.
-5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). Still open: the
-   numbers, and whether effects should also hurt players in other modes.
-6. **Co-op bots** hold the start area, shoot, revive and rebuild boards, but never buy anything (still the default).
-   Should they buy doors / guns / perks with their own points?
-7. **Downed**: shoot with whatever is in your hands (still the default), or a forced pistol (World at War's last stand)?
-   Crawling (2026-10-23) is 0.8 x the prone speed (`downs.crawlSpeed`): slower or faster?
-8. **Melee builds from the box** go to the melee slot (still the default): or should the box give guns only?
+3. ~~Solo self-revive~~: **decided**: Second Wind, a perk in the start room (solo and co-op). **Answered 2026-10-26**:
+   a fixed 1500 every buy; no hard perk limit any more: each perk beyond the 4th costs double the step before (5th 2x,
+   6th 4x, 7th 8x...), Second Wind included; solo Quick Revive unchanged (see "Perks").
+4. ~~Power-ups~~: **done in milestone 3** (all five, World at War style; see "Power-ups"). **Answered 2026-10-26**: a
+   World at War style team points schedule replaced the 4 percent a kill roll (rewards come more evenly), tuned to the
+   same average rate; 4 a round, 30 s, Max Ammo 38 percent kept.
+5. ~~Special part flags~~: **done in milestone 3** (every flag on a part; see "Special ammo effects"). **Answered
+   2026-10-26**: yes, they hurt players too wherever such a gun meets players, friendly fire respected ("On players
+   too"). The numbers stay as proposed.
+6. ~~Co-op bots buying~~: **answered 2026-10-26**: yes: they spend their own points on doors, wall guns, the box,
+   perks, the slot upgrade and slot pulls, with sensible priorities and never at the cost of revives or boards (see
+   "Co-op bots").
+7. ~~Downed~~: **answered 2026-10-26**: keep as is (crawl at 0.8 x the prone speed, shoot with the gun in your hands).
+8. ~~Melee builds from the box~~: **answered 2026-10-26**: the box gives guns only; the slot machines pay complete
+   melee builds into the melee slot (rarity from the slot tiers); melee parts stay in the part pool (see "Slot
+   machines").
 9. ~~Machines have no collision~~: **done in milestone 3** on real maps (`"machineProps": true`, solid props from
    `Props/Zombies`); Zombies Test keeps them collision-free.
-10. **Second Wind's price** (still a fixed 1500, counting toward the 4 perks; see question 3).
-11. **Blackmoor Asylum**: the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500, the power shutter 750) are
-    proposed; more Zombies maps next?
-12. **Ready-up** (2026-10-23): the fallback is 3 minutes and the countdown 3 s; the host forces the start by pressing F3
-    again once ready (rather than a separate key). Spectating is over the shoulder only (first person would need the
-    watched player's arms and gun drawn). OK?
-13. **Slot machines** (2026-10-26, proposed defaults): the odds table, heat (5 a step, 3 steps, shared by the team),
-    jackpot every 5th round, 3 blanks at most, auto-scrap from 3 loose copies. Not done: **bet levels** (1x / 2x / 5x)
-    and a machine that **moves** on a skull like the box's teddy bear (the cabinets are solid map props); bots don't pull.
+10. ~~Second Wind's price~~: **answered 2026-10-26**: a fixed 1500; it counts as a perk for the doubling past the 4th
+    (see question 3).
+11. ~~Blackmoor Asylum~~: **answered 2026-10-26**: keep the layout and prices (750 / 750 / 1000 / 1250 / 1250 / 1500,
+    the power shutter 750). More Zombies maps are wanted, but later, after the developer talks to testers.
+12. ~~Ready-up~~: **answered 2026-10-26**: the fallback is now 5 minutes; the 3 s countdown, F3 again to force the start
+    and over-the-shoulder spectating stay.
+13. ~~Slot machines~~: **answered 2026-10-26**: bet levels added (1x / 2x / 5x the price, each a rarity step up on top
+    of the heat; blanks as likely at every bet, so no sure win; see "Bets"); the other numbers stay; no moving machines.

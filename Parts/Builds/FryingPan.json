@@ -3,7 +3,7 @@
   "name": "Frying Pan",
   "tier": "rare",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "Cast iron on a wooden handle. Bonk.",
   "build": "Wooden Handle{head:Frying Pan,mod_1:Counterweight}"

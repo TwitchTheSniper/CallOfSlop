@@ -1922,6 +1922,7 @@ public static unsafe partial class Program
         TacticalRender.Draw(Gfx, _game, now); // tactical devices (TacticalRender.cs)
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
+        DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
 

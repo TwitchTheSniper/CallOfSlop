@@ -251,6 +251,7 @@ public sealed partial class Game
         ZDrops.Clear();
         ZWeaponDrops.Clear();
         ResetPowerUps(); // ZombiesPowerUps.cs
+        ResetBotShops(); // ZombieBotsShop.cs
         ZFxList.Clear();
         ZPlayers.Clear();
         ZRound = 0;
@@ -817,7 +818,7 @@ public sealed partial class Game
             if (k < 0)
                 continue;
             var perk = ZRules.Perks[k];
-            var cost = m.Cost > 0 ? m.Cost : perk.Price(solo);
+            var cost = ZRules.PerkPrice(m.Cost > 0 ? m.Cost : perk.Price(solo), PerkCount(zp));
             if (m.NeedsPower && !ZPower)
                 Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"{perk.Name}: needs the power on", Blocked: true));
             else if (zp.Has(k))
@@ -825,7 +826,12 @@ public sealed partial class Game
             else if (PerkCount(zp) >= ZRules.MaxPerks)
                 Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"You can't carry more than {ZRules.MaxPerks} perks", Blocked: true));
             else
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"Hold [E] to buy {perk.Name} [{cost}]: {perk.Blurb}"));
+            {
+                var held = PerkCount(zp);
+                var extra = ZRules.FullPricePerks > 0 && held >= ZRules.FullPricePerks
+                    ? $" ({Ordinal(held + 1)} perk: x{ZRules.PerkPrice(1000, held) / 1000f:0.#})" : "";
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"Hold [E] to buy {perk.Name} [{cost}]{extra}: {perk.Blurb}"));
+            }
         }
         if (zm.SlotUpgrade is { } su)
         {
@@ -872,7 +878,9 @@ public sealed partial class Game
     }
 
 
-    private static int PerkCount(ZPlayer zp) => System.Numerics.BitOperations.PopCount(zp.Perks);
+    private static string Ordinal(int n) => n + (n % 100 is 11 or 12 or 13 ? "th" : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" });
+
+    public static int PerkCount(ZPlayer zp) => System.Numerics.BitOperations.PopCount(zp.Perks);
 
     public int WallCost(ZWallBuy wb) => wb.Cost > 0 ? wb.Cost : RunTables.Current.WallCost;
 
@@ -1163,13 +1171,11 @@ public sealed partial class Game
     public int RollBoxBuild(Player? p, int round, uint seed)
     {
         var all = StandardBuilds.All;
-        var box = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("box")).ToList();
+        var box = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("box")).ToList(); // guns only: the loader refuses a melee "box" build (2026-10-26)
         if (box.Count == 0)
             return -1;
         var tier = RunTables.Roll(RunTables.Current.BoxTiers, Math.Max(1, round), seed);
-        // "Already carry" covers the melee slot too: the box never offers the melee build in your hand.
-        var notOwned = box.Where(i => p == null || (OwnsBuild(p, all[i].Name) < 0
-            && !(p.MeleeBuild != null && p.MeleeBuild.Name.Equals(all[i].Name, StringComparison.OrdinalIgnoreCase)))).ToList();
+        var notOwned = box.Where(i => p == null || OwnsBuild(p, all[i].Name) < 0).ToList();
         if (notOwned.Count == 0)
             notOwned = box;
         for (var step = 0; step < 6; step++)
@@ -1270,6 +1276,8 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm || !p.Alive || IsDowned(p))
             return "Not now.";
+        if (kind == BenchSlotBet)
+            return ServerSlotBet(p, slot); // a slot machine's bet (ZombiesSlots.cs), not a workbench change
         if (!AtWorkbench(p))
         {
             // Taking the build in a slot apart works at the mystery box too (ZombiesDisassemble.cs); everything else needs a bench.

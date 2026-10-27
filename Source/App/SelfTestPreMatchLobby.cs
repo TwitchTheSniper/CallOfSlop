@@ -279,13 +279,15 @@ public static partial class SelfTest
         view.Refresh(game, null);
         view.RefreshMapList(game, 0);
         var rebuilds = view.Rebuilds;
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 2000; i++)
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
         {
-            view.Refresh(game, null);
-            view.RefreshMapList(game, 0);
-        }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var i = 0; i < 2000; i++)
+            {
+                view.Refresh(game, null);
+                view.RefreshMapList(game, 0);
+            }
+        }, warmups: 0);
         var rows = view.Rows.Count;
         game.SetReady(true); // a change: one rebuild
         view.Refresh(game, null);

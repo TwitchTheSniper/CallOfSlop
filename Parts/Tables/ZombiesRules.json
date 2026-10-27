@@ -27,7 +27,7 @@
     "breakSeconds": 10,
     "firstRoundDelay": 4,
     "readyUp": true,
-    "readyFallbackSeconds": 180,
+    "readyFallbackSeconds": 300,
     "readyGoSeconds": 3
   },
   "zombie": {
@@ -65,7 +65,9 @@
   },
   "buy": {
     "holdSeconds": 0.25,
-    "maxPerks": 4
+    "maxPerks": 8,
+    "fullPricePerks": 4,
+    "extraPerkFactor": 2
   },
   "perks": [
     {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "blurb": "Zombie hits do 40 percent of their damage."},
@@ -82,7 +84,7 @@
     "moveSeconds": 3
   },
   "slots": {
-    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and the result shows showSeconds. The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
+    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and the result shows showSeconds. The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank, scrap and coin weights stay: no sure win). At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
     "costBase": 500,
     "costPerRound": 25,
     "costMax": 1250,
@@ -90,6 +92,8 @@
     "showSeconds": 2.5,
     "heatStep": 5,
     "heatMaxSteps": 3,
+    "bets": [1, 2, 5],
+    "betSteps": [0, 1, 2],
     "pityTier": "rare",
     "maxNothing": 3,
     "jackpotEvery": 5,
@@ -111,8 +115,11 @@
     "salvageScrap": 25
   },
   "powerUps": {
-    "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23). A kill drops one with dropChance, at most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
-    "dropChance": 0.04,
+    "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23; the points schedule 2026-10-26). A drop becomes due once the team has earned firstAt points (hits, kills, boards), and the next kill drops it; each later one is due a step later that grows x stepGrowth a drop (at most stepMax). dropChance is an extra flat chance per kill (0: off). At most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
+    "firstAt": 1800,
+    "stepGrowth": 1.02,
+    "stepMax": 4000,
+    "dropChance": 0,
     "maxPerRound": 4,
     "lifetime": 30,
     "blinkSeconds": 10,
@@ -148,5 +155,19 @@
     "refreshHealth": 5,
     "bayonetRange": 2.2,
     "bayonetMult": 1.5
+  },
+  "bots": {
+    "note": "Co-op bots spend their own points like players (2026-10-26; ZombieBotsShop.cs): only when it's safe (the break, or no zombie within quietRange and nobody down), within shopRange of their post, keeping reserve points. Priorities: the power switch, perks in perkOrder (saving up for the next one it can reach), a better wall gun (wallBetter x the damage per second in hand), the slot upgrade, the box (boxSurplus spare), a door between rounds (one a break for the team), a slot pull (slotSurplus spare).",
+    "buy": true,
+    "reserve": 250,
+    "quietRange": 10,
+    "shopRange": 40,
+    "perkOrder": ["jugg", "revive", "speed", "doubletap", "secondwind"],
+    "boxSurplus": 500,
+    "slotSurplus": 2500,
+    "wallBetter": 1.15,
+    "doors": true,
+    "thinkSeconds": 0.5,
+    "giveUpSeconds": 15
   }
 }

@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Zombies: co-op bots and the downed state's controls. A bot holds the area it started in: it shoots the nearest zombie
 /// it can see (through windows too), backs off from zombies that get close, revives downed teammates and rebuilds
-/// boards when it's quiet. Bots don't buy anything (proposed; see docs/zombies/ZOMBIES-MODE.md). Everything a bot does
+/// boards when it's quiet, and spends its points when it's safe (ZombieBotsShop.cs, 2026-10-26). Everything a bot does
 /// goes through the same input commands, shots and interact key as a person.
 /// </summary>
 public sealed partial class Game
@@ -50,6 +50,7 @@ public sealed partial class Game
             b.Ammo = def.Mag;
             b.ReloadUntil = 0;
             b.Target = byte.MaxValue;
+            BotShop(p).Clear(); // (a new life: a new shopping plan)
         }
         if (b.ReloadUntil > 0 && now >= b.ReloadUntil)
         {
@@ -125,8 +126,16 @@ public sealed partial class Game
                 break;
             }
         }
-        if (goal == null && !use && Flat(b.HoldAnchor - p.Position) > 2.5f)
-            goal = b.HoldAnchor;
+        // Shopping (ZombieBotsShop.cs): only when nothing above needs doing; it's safe, it decides itself.
+        var shopping = false;
+        if (goal == null && !use && downed == null && ZombieBotShop(p, b, zp, nearD, now, out var shopGoal, out var shopUse))
+        {
+            shopping = true;
+            goal = shopGoal;
+            use = shopUse;
+        }
+        if (goal == null && !use && !shopping && Flat(b.HoldAnchor - p.Position) > 2.5f)
+            goal = ZMap is { } home ? BotWaypoint(home, p.Position, b.HoldAnchor, home.AreaAt(b.HoldAnchor)) : b.HoldAnchor; // back to its post, through the doorways
         ServerSetUse(p, use, now);
 
         // Aim: at the target's chest (hard bots go for the head), with a little error that settles.

@@ -285,11 +285,115 @@ public static partial class SelfTest
 
     // ---- Power-ups -------------------------------------------------------------------------------------------
 
+    /// <summary>
+    /// The World at War style drop schedule (developer answer, 2026-10-26): a drop becomes due at the team's points
+    /// threshold and comes on the next kill, the steps rise, a due drop waits out the round's cap, and (a scripted model of
+    /// a solo and a 4-player run to round 30) the average rate stays near the old 4 percent a kill.
+    /// </summary>
+    private static void CheckPowerSchedule(ZombiesRules rules, ref double now)
+    {
+        // The real game: points earned by two players count for the team; the drop comes on the kill that passes it.
+        using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            var t = now;
+            var me = g.Local!;
+            var mate = g.SelfTestAddHuman();
+            g.SelfTestSpawn(mate);
+            me.Teleport(new Vector3(6, 0, 3));
+            g.SelfTestBeginRound(1, t);
+            var kill = g.ZRules.KillPoints;
+            var log = new List<string>();
+            var ok = true;
+            int Kill()
+            {
+                var before = g.ZPowerUps.Count;
+                var z = g.SelfTestSpawnZombie(0, t);
+                z.Sim.Position = new Vector3(-4, 0, -2);
+                g.DamageZombie(me, z, 100000, false, false, t);
+                return g.ZPowerUps.Count - before;
+            }
+            var first = g.PowerDueAt;
+            g.SelfTestEarn(me, (int)first / 2, t);
+            g.SelfTestEarn(mate, (int)first - (int)first / 2 - kill - 1, t); // one point short after the next kill
+            var early = Kill();
+            g.SelfTestEarn(mate, 1, t);
+            var onTime = Kill(); // (the kill itself passes it: earned points count before the drop check)
+            var second = g.PowerDueAt - g.PowerEarned;
+            log.Add($"first due at {first:0} team points: one short {early}, passed {onTime}; next step {second:0}");
+            ok &= early == 0 && onTime == 1 && Math.Abs(first - rules.PowerFirstAt) < 0.5 && Math.Abs(second - Game.NextPowerStep(rules, rules.PowerFirstAt)) < 0.5 && second > first;
+            // Steps rise drop by drop (to the cap).
+            var steps = new List<double>();
+            var s = (double)rules.PowerFirstAt;
+            for (var i = 0; i < 60; i++)
+                steps.Add(s = Game.NextPowerStep(rules, s));
+            var rising = steps.Zip(steps.Skip(1)).All(p => p.Second >= p.First) && steps[^1] > steps[0] && (rules.PowerStepMax <= 0 || steps[^1] <= rules.PowerStepMax + 0.5);
+            log.Add($"steps {steps[0]:0}, {steps[9]:0}, {steps[29]:0}, {steps[59]:0} (rising {rising})");
+            ok &= rising;
+            // At the round's cap a due drop waits for the next round.
+            for (var i = 0; i < 3; i++)
+            {
+                g.SelfTestEarn(me, (int)(g.PowerDueAt - g.PowerEarned) + 1, t);
+                ok &= Kill() == 1;
+            }
+            g.SelfTestEarn(me, (int)(g.PowerDueAt - g.PowerEarned) + 1, t);
+            var capped = Kill();
+            g.SelfTestBeginRound(2, t);
+            var waited = Kill();
+            log.Add($"4 a round: the 5th due one held back {capped == 0}, dropped next round {waited == 1}");
+            ok &= capped == 0 && waited == 1;
+            // Double Points counts as paid.
+            var e0 = g.PowerEarned;
+            g.ZDoublePointsUntil = t + 10;
+            g.SelfTestEarn(me, 50, t);
+            g.ZDoublePointsUntil = 0;
+            log.Add($"under Double Points 50 counts {g.PowerEarned - e0:0}");
+            ok &= Math.Abs(g.PowerEarned - e0 - 100) < 0.01;
+            ZLine($"power-up schedule: {string.Join("; ", log)}");
+            if (!ok)
+                Fail("power-ups should drop on the kill that takes the team's earned points past the schedule, with rising steps, waiting out the 4-a-round cap");
+        }
+
+        // The rate (a scripted model, no match): kills by round on the real round curve, hits a kill from zombie health
+        // against a gun that improves through the run; the old rule was 4 percent a kill, capped at 4 a round.
+        foreach (var players in new[] { 1, 4 })
+        {
+            double earned = 0, due = rules.PowerFirstAt, step = rules.PowerFirstAt, oldDrops = 0;
+            var drops = 0;
+            var line = "";
+            for (var round = 1; round <= 30; round++)
+            {
+                var kills = rules.ZombieCount(round, players);
+                var health = rules.ZombieHealth(round);
+                var hits = Math.Max(1, (int)MathF.Ceiling(health / (110f * (1 + 0.18f * (round - 1)))));
+                var perKill = 10 * (hits - 1) + 0.7 * rules.KillPoints + 0.3 * rules.HeadshotKillPoints;
+                var thisRound = 0;
+                for (var k = 0; k < kills; k++)
+                {
+                    earned += perKill;
+                    if (earned >= due && thisRound < rules.PowerMaxPerRound)
+                    {
+                        drops++;
+                        thisRound++;
+                        step = Game.NextPowerStep(rules, step);
+                        due = earned + step;
+                    }
+                }
+                oldDrops += Math.Min(rules.PowerMaxPerRound, kills * 0.04);
+                if (round is 5 or 10 or 20 or 30)
+                    line += $" r{round} {drops}/{oldDrops:0.0}";
+            }
+            var ratio = drops / oldDrops;
+            ZLine($"power-up rate ({players} player{(players > 1 ? "s" : "")}, scripted, schedule/old 4 percent):{line} (x{ratio:0.00})");
+            if (ratio is < 0.85 or > 1.2)
+                Fail($"the power-up schedule should keep about the old average rate ({drops} drops vs {oldDrops:0.0} by round 30, {players} players)");
+        }
+    }
+
     private static void CheckZombiePowerUps(ref double now)
     {
         var rules = ZombiesRules.Current;
-        if (rules.PowerMaxPerRound < 1 || rules.PowerDropChance <= 0 || rules.PowerLifetime != 30 || rules.PowerWeights.Length != (int)ZPowerKind.COUNT)
-            Fail("the power-up rules (drop chance, per-round cap, a 30 s lifetime, a weight per kind) aren't in Parts/Tables/ZombiesRules.json");
+        if (rules.PowerMaxPerRound != 4 || rules.PowerFirstAt <= 0 || rules.PowerStepGrowth <= 1 || rules.PowerDropChance != 0 || rules.PowerLifetime != 30 || rules.PowerWeights.Length != (int)ZPowerKind.COUNT)
+            Fail("the power-up rules (the points schedule with rising steps and no flat chance, 4 a round, a 30 s lifetime, a weight per kind) aren't in Parts/Tables/ZombiesRules.json");
         foreach (var bad in new[] { """{"format": "call-of-slop-zombies/1", "powerUps": {"weights": {"raygun": 1}}}""", """{"format": "call-of-slop-zombies/1", "ammoEffects": {"burnSeconds": -1}}""" })
             try
             {
@@ -300,8 +404,10 @@ public static partial class SelfTest
             {
             }
 
-        // Drops: every kill rolls (chance 1 here), at most the cap a round; a new round resets the cap.
-        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerDropChance = 1f; }))
+        CheckPowerSchedule(rules, ref now);
+
+        // Drops: every kill is due one (a 1-point schedule here), at most the cap a round; a new round resets the cap.
+        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerFirstAt = 1; r.PowerStepGrowth = 1; r.PowerStepMax = 0; }))
         {
             var me = g.Local!;
             me.Teleport(new Vector3(6, 0, 3));
@@ -319,13 +425,13 @@ public static partial class SelfTest
             var z2 = g.SelfTestSpawnZombie(0, now);
             g.DamageZombie(me, z2, 100000, false, false, now);
             var afterRound = g.ZPowerUps.Count;
-            ZLine($"power-ups: 12 kills at chance 1 -> {first} dropped (cap {g.ZRules.PowerMaxPerRound}: {kinds}), all inside the areas {allInside}; next round +{afterRound - first}");
+            ZLine($"power-ups: 12 kills, each due one -> {first} dropped (cap {g.ZRules.PowerMaxPerRound}: {kinds}), all inside the areas {allInside}; next round +{afterRound - first}");
             if (first != g.ZRules.PowerMaxPerRound || afterRound != first + 1 || !allInside)
                 Fail("power-ups should drop on kills up to the per-round cap (reset each round), inside the areas (a kill at a window drops it at the window's inside)");
         }
 
         // Each one applies; pickups by walking into them; lifetime and the timers run out.
-        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerDropChance = 0f; }))
+        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerFirstAt = 0; r.PowerDropChance = 0f; }))
         {
             var me = g.Local!;
             me.ImmuneUntil = 1e9;
@@ -450,7 +556,7 @@ public static partial class SelfTest
         {
         }
 
-        using var g = ZGame(1, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerDropChance = 0f; });
+        using var g = ZGame(1, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerFirstAt = 0; r.PowerDropChance = 0f; });
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
         var bot = g.Players.Values.First(p => p.Bot != null);
@@ -626,7 +732,7 @@ public static partial class SelfTest
         if (unknown.Count > 0)
             Fail($"part flags with no Zombies effect (add one or list them as none): {string.Join(", ", unknown)}");
 
-        using var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerDropChance = 0f; });
+        using var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 9999; r.PowerFirstAt = 0; r.PowerDropChance = 0f; });
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
         me.Teleport(new Vector3(0, 0, 4.5f));

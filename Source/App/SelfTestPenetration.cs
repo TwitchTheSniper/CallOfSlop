@@ -265,10 +265,13 @@ public static partial class SelfTest
         PenNote($"wood + plaster wallbang: {placed} marks ({PenetrationTrace.EntryMarks - entry} entry, {PenetrationTrace.ExitMarks - exit} exit), pool {pool.Count}");
         if (placed != 4 || PenetrationTrace.EntryMarks - entry != 2 || PenetrationTrace.ExitMarks - exit != 2 || pool.Count != 4)
             Fail($"penetration decals: {placed} marks for two walls (want an entry and an exit mark on each)");
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 50; i++)
-            PenetrationTrace.OnPenetratedTracer(lab, origin + new Vector3(0, i * 0.01f, 0), end, 1, 2.0 + i, false, 1f);
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var t = 2.0;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 50; i++)
+                PenetrationTrace.OnPenetratedTracer(lab, origin + new Vector3(0, i * 0.01f, 0), end, 1, t += 1, false, 1f);
+        });
         if (bytes > 0)
             Fail($"penetration decals allocate ({bytes} bytes for 50 tracers)");
         // The end itself is on the far side: nothing between, no extra marks.

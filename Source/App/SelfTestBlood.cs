@@ -167,14 +167,16 @@ public static partial class SelfTest
         var allocOv = new BloodOverlay();
         Run(allocOv, 1f, true, 0, 0.05);
         Run(allocOv, 0.3f, true, 4, 0.05);
-        var before0 = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 2000; i++)
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var alloc = SteadyAllocBytes(() =>
         {
-            now += dt;
-            allocOv.Update(0.3f - (i % 50) * 0.004f, true, i & 15, now, dt);
-            allocOv.Build(a, b, w, h, left, span, BloodMode.Full);
-        }
-        var alloc = GC.GetAllocatedBytesForCurrentThread() - before0;
+            for (var i = 0; i < 2000; i++)
+            {
+                now += dt;
+                allocOv.Update(0.3f - (i % 50) * 0.004f, true, i & 15, now, dt);
+                allocOv.Build(a, b, w, h, left, span, BloodMode.Full);
+            }
+        }, warmups: 0);
         Line($"2000 frames of overlay update + build (a hit every frame): {alloc} bytes allocated");
         if (alloc > 0)
             Fail("blood overlay: allocates per frame");

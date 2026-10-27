@@ -429,13 +429,17 @@ public static partial class SelfTest
         // Warm up with the same argument shapes as the measured loop, so tiered JIT / on-stack replacement settles first.
         for (var i = 0; i < 20000; i++)
             pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, i * 0.1f, i % 6, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);
-        var sw = Stopwatch.StartNew(); // (before the count: the stopwatch itself is an allocation)
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
         const int adds = 50000;
-        for (var i = 0; i < adds; i++)
-            pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, i * 0.1f, i % 6, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);
+        void Adds()
+        {
+            for (var i = 0; i < adds; i++)
+                pool.Add(map, new Vector3(i % 97, 1, i % 13), Vector3.UnitZ, 0.15f, i * 0.1f, i % 6, (byte)(i % 32), i % 9, now += 0.001, i % 5 == 0);
+        }
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(Adds, warmups: 0);
+        var sw = Stopwatch.StartNew(); // the time: one more round on its own
+        Adds();
         var ns = sw.Elapsed.TotalMilliseconds * 1e6 / adds;
-        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
         DecalLine($"impact pool cost: {ns:0} ns per add, {bytes} bytes allocated over {adds} adds");
         // A real per-add allocation would be tens of bytes x 50000 adds; a few KB once is the runtime (JIT tier-up), not the pool.
         if (bytes > 16 * 1024)
