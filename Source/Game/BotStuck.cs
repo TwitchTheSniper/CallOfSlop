@@ -41,6 +41,7 @@ public sealed partial class BotBrain
     internal double NextOffNavCheck;
     internal double LastStuckLog = -1000; // the log line is written at most once a minute per bot
 
+    internal float StuckIdleSecs; // seconds in a row the watch has seen no wish to move (a short gap only pauses the clock)
     internal StuckSpot? StuckSpellSpot; // the stuck-spot report's spot for the current spell (from recovery stage 1 on; StuckSpots.cs)
     internal BotStuckCause StuckSpellCause; // the cause as the spell reached stage 1
 
@@ -94,6 +95,7 @@ public sealed partial class Game
     private const float StuckProgressRecovering = 4f; // ...or this far once a recovery started (backing off isn't progress)
     private const float StuckNodeProgress = 0.5f; // getting this much closer to the same path node is progress too
     private const double StuckLogEvery = 60; // seconds between log lines per bot
+    private const float StuckIdleReset = 1f; // seconds of standing still on purpose that end a stuck spell
 
     /// <summary>Stuck self-kills (or rescues, in modes without respawns) this session (server; read by the self-test).</summary>
     public int BotStuckKills;
@@ -164,9 +166,15 @@ public sealed partial class Game
         }
         if (idle)
         {
-            StuckReset(b, pos);
+            // Standing still on purpose: the spell is over, once it lasts. A moment without a wish (a re-plan, a corner
+            // between two path nodes) only pauses the clock: resetting on every such tick let a bot jammed on a stair
+            // top that went idle for a tick every second or so stay at stage 0 for good.
+            b.StuckIdleSecs += World.TickDt;
+            if (b.StuckIdleSecs >= StuckIdleReset)
+                StuckReset(b, pos);
             return false;
         }
+        b.StuckIdleSecs = 0;
 
         // Progress: away from where the spell started, or clearly closer to the same path node. Once a recovery has
         // started only a real move away counts (backing off and walking back into the same corner isn't progress).
@@ -257,6 +265,7 @@ public sealed partial class Game
         b.BackOffUntil = 0;
         b.RescueUntil = 0;
         b.StuckSpellSpot = null;
+        b.StuckIdleSecs = 0;
     }
 
     /// <summary>Spots stuck spells reached this match (Map contract: <c>maxStuckSpots</c>; reset by the end-of-match summary).</summary>
@@ -268,9 +277,9 @@ public sealed partial class Game
     /// <summary>A stuck spell reached recovery stage 1 (or gave up at once): the stuck-spot report (StuckSpots.cs) counts it at its spot.</summary>
     private void StuckSpellStarts(BotBrain b, NavGraph nav, Vector3 pos, BotStuckCause cause)
     {
-        if (!IsServer)
-            return;
-        var node = nav.Nodes.Length > 0 ? nav.Nearest(pos, needSight: false) : -1;
+        if (!IsServer || nav.Nodes.Length == 0)
+            return; // (the map's nav graph is still being built: bots steer straight at their goals meanwhile, not a map problem)
+        var node = nav.Nearest(pos, needSight: false);
         var spot = StuckSpots.Session.Spell(World.Map.Name, Module.Name, pos, cause, node);
         b.StuckSpellSpot = spot;
         b.StuckSpellCause = cause;
