@@ -133,6 +133,7 @@ public sealed partial class Ui
             ImGui.End();
         }
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
+        DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
         foreach (var pu in game.ZPowerUps)
         {
