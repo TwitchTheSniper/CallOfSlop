@@ -425,6 +425,11 @@ public static unsafe partial class Program
                     break;
             }
         }
+    }
+
+    /// <summary>Special ammo flashes (a splash, a chain, a burn...): Zombies, and any mode where an effect gun hits players (AmmoEffectsPlayers.cs).</summary>
+    private static void DrawAmmoFx(double now)
+    {
         foreach (var (time, kind, pos) in _game.ZFxList)
         {
             var age = (float)(now - time);

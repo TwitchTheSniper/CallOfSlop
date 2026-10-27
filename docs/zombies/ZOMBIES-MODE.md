@@ -475,6 +475,21 @@ only the kill), and works with Insta-Kill and Double Points.
 | `bayonet` (Bayonet) | Hits within 2.2 m do 1.5x damage |
 | `suppressed`, `cart` | No effect on zombies (they already do their own thing) |
 
+**On players too (developer answer, 2026-10-26).** Wherever a gun or melee build carrying these flags can be used
+against players (the Workbench Range's targets today; any mode that lets builds meet players), the effects hurt players
+the way they hurt zombies, with the same numbers (`Source/Game/AmmoEffectsPlayers.cs`): burns and bleeds tick on the
+player (as napalm: Flak Jacket helps), the splash hits the players round the one hit (walls shield), the shock chains to
+the 3 nearest, the pierce goes on through the players behind, the rubber duck bounces to the nearest, the bayonet
+hits harder at point blank, the cup holder gives a sip per kill, and the rocket booster, the frozen fish and the toaster
+knock players about (the predicted knock, as a blast's). Stuns (shock, squeak, bonk, chainsaw) hold bots still, as a
+melee build's stun does; the plasma slow and the party balloons stay zombie-only (a player's movement is predicted,
+and a slow would need replicated state). **Friendly fire is respected**: all of it goes through the normal damage rules
+(no damage to teammates in team modes or co-op, so in Zombies nothing changes), area effects never pick a player the
+shooter can't damage (a teammate doesn't soak up a chain), and the shooter is never hit by their own effects. The
+flashes show in every mode (the `ZEvent` effect message is read outside Zombies too; no wire change). Self-test
+section **"Ammo effects on players"** (a flat lab map, scripted shots in FFA and TDM, no matches; no allocation in the
+burn tick, an effect shot allocates no more than a plain one).
+
 The self-test fails if a part ever carries a flag that's in neither list. Effects players see: a short flash where an
 effect goes off (an orange burst for a splash, blue sparks for a chain, pink for party balloons...) and its sound;
 burning and zapped zombies glow.

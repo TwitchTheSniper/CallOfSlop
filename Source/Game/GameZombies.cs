@@ -184,6 +184,9 @@ public sealed partial class Game
         var rewindTo = Math.Max(viewTick, (double)ServerTick - World.MaxRewindTicks);
         var hits = MeleeTargets(attacker, origin, dir, m.Reach, m.ConeCos, rewindTo);
         byte flags = 0;
+        var pfx = HasPlayerEffects(m.Flags);
+        if (pfx)
+            _pFxHits.Clear();
         foreach (var (victim, at, dist) in hits.Take(m.Cleave))
         {
             if (IsFriendlyHit(attacker, victim))
@@ -198,9 +201,17 @@ public sealed partial class Game
                 flags |= 8;
             if (m.Stun > 0)
                 victim.StunnedUntil = Math.Max(victim.StunnedUntil, now + m.Stun);
-            if (DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee))
+            if (pfx)
+                dmg = BayonetPlayer(m.Flags, attacker, victim, dmg);
+            var healthBefore = victim.Health;
+            var killed = DamagePlayer(attacker, victim, (int)MathF.Round(dmg), false, MeleeKillId, now, DamageKind.Melee);
+            if (killed)
                 flags |= 4;
+            if (pfx && (killed || victim.Health < healthBefore))
+                _pFxHits.Add(new PFxHit(victim, (int)MathF.Round(dmg), killed, origin, dir, dist));
         }
+        if (pfx && _pFxHits.Count > 0)
+            ApplyPlayerEffects(attacker, m.Flags, _pFxHits, MeleeKillId, now); // the build's part flags on the players it hurt (AmmoEffectsPlayers.cs)
         var taken = Math.Min(hits.Count, m.Cleave);
         flags |= ZombieMelee(attacker, origin, dir, m.Reach, m.ConeCos, m.Damage, m.Cleave - taken, m.Stun, viewTick, now, m.Flags); // Zombies (ZombieAI.cs; the build's part flags: ZombiesAmmoEffects.cs)
         if (hits.Count == 0 && flags == 0)
