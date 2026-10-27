@@ -22,6 +22,9 @@ public static partial class SelfTest
     private static void CheckBlastPush()
     {
         PushNotes.Clear();
+        // The push curve assumes plain gravity: an earlier section can leave a gravity-zone map loaded (run after
+        // "Frenzy visuals", whose 16-player map has zones, the curve checks failed).
+        World.SetMap(Maps.All[0]);
         try
         {
             BlastPushCurve();
