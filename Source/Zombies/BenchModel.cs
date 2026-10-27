@@ -337,8 +337,14 @@ public sealed class BenchModel
     /// <summary>Every socket on the model (filled or not), in <see cref="Rows"/> order.</summary>
     public readonly List<SocketSpot> Spots = new();
 
-    /// <summary>Bumped on every change (UI caches compare it).</summary>
+    /// <summary>
+    /// Bumped on every change (UI caches compare it). Unique across every model, not just within one: the workbench
+    /// makes a new model for each build it opens, and a per-model count (1 for every freshly opened build) let the
+    /// list's cached labels and names, keyed on the version alone, show the previous build's rows.
+    /// </summary>
     public int Version { get; private set; }
+
+    private static int s_lastVersion;
 
     /// <summary>Nodes of the last copied receiver assembly: marked missing first.</summary>
     private HashSet<BuildNode>? _copied;
@@ -540,8 +546,19 @@ public sealed class BenchModel
         BuildSpots();
         MarkRefused();
         if (bump)
-            Version++;
+            Version = Interlocked.Increment(ref s_lastVersion);
     }
+
+    /// <summary>A list row's socket label: "Grip" / "Hilt" for the root, else the socket's name ("Barrel 2", "Upgrade side").</summary>
+    public static string RowLabel(BenchRow r) => r.Socket == null ? (r.Node!.Part.Hilt != null ? "Hilt" : "Grip") : SocketLabel(r.Socket);
+
+    /// <summary>A list row's text after the label: the fitted part's name, or what the empty socket needs.</summary>
+    public static string RowName(BenchRow r) => r.Kind == BenchRowKind.Part ? r.Node!.Part.Name
+        : r.Socket!.Type == "receiver" ? "needs a receiver" : $"needs {(r.Socket.Type == "ammo" ? "ammo" : r.Socket.Type)}";
+
+    /// <summary>A socket's name for the player: "barrel_2" -> "Barrel 2" (the type when it has no name).</summary>
+    public static string SocketLabel(PartSocket s) =>
+        s.Name.Length == 0 ? s.Type : char.ToUpperInvariant(s.Name[0]) + s.Name[1..].Replace('_', ' ');
 
     /// <summary>Order of socket types in the linear list (Grip, Receiver(s), Feed, Ammo, Barrel(s), Muzzle, ..., Stock, Optic).</summary>
     public static int TypeRank(string type) => type switch
