@@ -54,7 +54,10 @@ public enum StuckWhy : byte
     Mover, // on a lift or another mover's sweep
     Holding, // holding a spot on purpose (BotHolding)
     Progress, // made progress: the spell started over
-    Paused, // in a fight, flashed or climbing: the clock paused
+    PausedSight, // an enemy in sight: the clock paused
+    PausedEngage, // fighting (Engage mode)
+    PausedBlind, // flashed
+    PausedMantle, // climbing a ledge
 }
 
 /// <summary>
@@ -192,7 +195,7 @@ public sealed partial class Game
         if (!paused)
             b.StuckSecs += World.TickDt;
         else
-            b.StuckLastWhy = StuckWhy.Paused;
+            b.StuckLastWhy = visible ? StuckWhy.PausedSight : b.Mode == BotMode.Engage ? StuckWhy.PausedEngage : p.Sim.MantleTicks > 0 ? StuckWhy.PausedMantle : StuckWhy.PausedBlind;
 
         var limit = MathF.Max(1f, BotStuckSuicideSeconds);
         if (b.StuckSecs >= limit)

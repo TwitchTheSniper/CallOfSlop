@@ -93,7 +93,9 @@ public static partial class SelfTest
             var start = now;
             var diedAt = -1.0;
             var maxStage = 0;
-            var why = new int[8]; // the watch's verdict per tick (StuckWhy), [7]: ticks without a watch step
+            var why = new int[16]; // the watch's verdict per tick (StuckWhy), [15]: ticks without a watch step
+            var (lo, hi) = (bot.Position, bot.Position);
+            var lastProgressAt = -1.0;
             while (now - start < 9 && diedAt < 0)
             {
                 Run(game, ref now, 1.0 / World.TickRate);
@@ -101,11 +103,18 @@ public static partial class SelfTest
                 if (!bot.Alive)
                     diedAt = now - start;
                 else if (b.StuckWatchTick != game.ServerTick)
-                    why[7]++;
+                    why[15]++;
                 else
+                {
                     why[(int)b.StuckLastWhy]++;
+                    if (b.StuckLastWhy == StuckWhy.Progress)
+                        lastProgressAt = now - start;
+                    lo = Vector3.Min(lo, bot.Position);
+                    hi = Vector3.Max(hi, bot.Position);
+                }
             }
-            var whyText = $"watch per tick: counting {why[0]}, not playing {why[1]}, idle {why[2]}, mover {why[3]}, holding {why[4]}, progress {why[5]}, paused {why[6]}, no watch {why[7]}; "
+            var whyText = $"watch per tick: counting {why[0]}, not playing {why[1]}, idle {why[2]}, mover {why[3]}, holding {why[4]}, progress {why[5]} (last at {lastProgressAt:0.00} s), "
+                          + $"paused: sight {why[6]}, engage {why[7]}, blind {why[8]}, mantle {why[9]}; no watch {why[15]}; spread x {lo.X:0.0}..{hi.X:0.0}, y {lo.Y:0.0}..{hi.Y:0.0}, z {lo.Z:0.0}..{hi.Z:0.0}; "
                           + $"{bot.Name}, mode {b.Mode}, at ({bot.Position.X:0.0}, {bot.Position.Y:0.0}, {bot.Position.Z:0.0}), path {b.PathLen}, nav {NavGraph.Current.Nodes.Length} nodes, "
                           + $"hold {b.HoldUntil - now:0.0} s, objective {b.Objective?.ToString() ?? "none"}, phase {game.Phase}";
             Line(whyText);
