@@ -14,8 +14,8 @@ all on a dark sign board whose front is at z -0.35; under it the dispenser (a ni
 stays behind z -0.335 where the face is (|x| < 0.4, y 0.5 to 2.0).
 
 The BODY round and behind the face is the perk's own silhouette, themed on what it does (original shapes): a riveted
-pressure tank (Juggernog), a revolver cylinder standing on end (Speed Cola), twin barrels with a cartridge belt (Double
-Tap), a slim medical column under a big plus sign with paddles at its sides (Quick Revive), a bellows with a pair of
+pressure tank (Ironhide Cider), a revolver cylinder standing on end (Swiftload Seltzer), twin barrels with a cartridge belt (Twinfire
+Punch), a slim medical column under a big plus sign with paddles at its sides (Mender's Mead), a bellows with a pair of
 wings (Second Wind), a raked aerodynamic tower with tail fins (Fleetfoot Fizz), a bullseye on an easel (Marksman Malt),
 a gnarled stump on splayed roots (Bloodroot Tonic), a gumball globe on a stepped base with a coin dial (Windfall Soda),
 a stack of planks with a hammer on top (Hammerhand Ale), a scrap hopper on legs with a gear (Salvage Stout) and a

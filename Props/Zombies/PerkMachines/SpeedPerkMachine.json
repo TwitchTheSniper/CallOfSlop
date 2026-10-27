@@ -2,7 +2,7 @@
   "format": "call-of-slop-prop/1",
   "name": "Speed Perk Machine",
   "category": "Zombies",
-  "description": "The Zombies perk machine for Speed Cola: a revolver cylinder standing on end, a speed loader on its pin and the crane arm swung out, with the perk machines' face (sign board, lamp bezels, dispenser). The front faces -Z; the game paints the perk's lit sign and lamps on it.",
+  "description": "The Zombies perk machine for Swiftload Seltzer: a revolver cylinder standing on end, a speed loader on its pin and the crane arm swung out, with the perk machines' face (sign board, lamp bezels, dispenser). The front faces -Z; the game paints the perk's lit sign and lamps on it.",
   "collision": "solid",
   "collider": [{"size": [0.9, 2.3, 0.7]}],
   "scatter": {"randomYaw": false, "yawStep": 90},

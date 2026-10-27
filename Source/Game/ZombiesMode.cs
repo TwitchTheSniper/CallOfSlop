@@ -694,10 +694,10 @@ public sealed partial class Game
     /// <summary>A Zombies perk multiplier for <paramref name="p"/> (1 outside Zombies, or for a player with no run).</summary>
     private float ZPerkMult(Player? p, Func<ZombiePerkDef, float> f) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) ? PerkMult(z, f) : 1f;
 
-    /// <summary>Reload time multiplier from Zombies perks (Speed Cola) for <paramref name="p"/> (1 outside Zombies).</summary>
+    /// <summary>Reload time multiplier from Zombies perks (Swiftload Seltzer) for <paramref name="p"/> (1 outside Zombies).</summary>
     public float ZombieReloadMult(Player? p) => ZPerkMult(p, static d => d.Reload);
 
-    /// <summary>Fire interval multiplier from Zombies perks (Double Tap) for <paramref name="p"/> (1 outside Zombies).</summary>
+    /// <summary>Fire interval multiplier from Zombies perks (Twinfire Punch) for <paramref name="p"/> (1 outside Zombies).</summary>
     public float ZombieFireIntervalMult(Player? p) => 1f / ZPerkMult(p, static d => d.FireRate);
 
     /// <summary>

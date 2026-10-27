@@ -70,10 +70,10 @@
     "extraPerkFactor": 2
   },
   "perks": [
-    {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "icon": "heart", "blurb": "Zombie hits do 40 percent of their damage."},
-    {"name": "Speed Cola", "key": "speed", "cost": 3000, "reload": 0.5, "color": "#33d94d", "icon": "drum", "blurb": "Reload twice as fast."},
-    {"name": "Double Tap", "key": "doubletap", "cost": 2000, "fireRate": 1.33, "color": "#f2bf26", "icon": "rounds", "blurb": "Fire a third faster."},
-    {"name": "Quick Revive", "key": "revive", "cost": 1500, "revive": 0.5, "color": "#4d99ff", "icon": "cross", "blurb": "Revive teammates twice as fast."},
+    {"name": "Ironhide Cider", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "icon": "heart", "blurb": "Zombie hits do 40 percent of their damage."},
+    {"name": "Swiftload Seltzer", "key": "speed", "cost": 3000, "reload": 0.5, "color": "#33d94d", "icon": "drum", "blurb": "Reload twice as fast."},
+    {"name": "Twinfire Punch", "key": "doubletap", "cost": 2000, "fireRate": 1.33, "color": "#f2bf26", "icon": "rounds", "blurb": "Fire a third faster."},
+    {"name": "Mender's Mead", "key": "revive", "cost": 1500, "revive": 0.5, "color": "#4d99ff", "icon": "cross", "blurb": "Revive teammates twice as fast."},
     {"name": "Second Wind", "key": "secondwind", "cost": 1500, "selfRevive": true, "color": "#ff8c1a", "icon": "wind", "blurb": "When you go down, you get back up on your own after a few seconds (used up)."},
     {"name": "Fleetfoot Fizz", "key": "fleetfoot", "cost": 2000, "moveSpeed": 1.2, "color": "#40e6e6", "icon": "chevrons", "blurb": "Move 20 percent faster."},
     {"name": "Marksman Malt", "key": "marksman", "cost": 2500, "headshotDamage": 1.5, "headshotPoints": 50, "color": "#8c59f2", "icon": "target", "blurb": "Headshots do 50 percent more damage; headshot kills pay 50 more points."},
