@@ -14,7 +14,7 @@
 - **Test Range** (id 8): endless free-for-all. Nothing ends the match or changes the map.
 - **Co-op PvE** (id 7): enemy soldiers and a spawn director. One mission so far: `Maps/World/Missions/SiloBreach.json`, on Silo.
 - **Zombies** (id 5), milestones 1 to 3 (see `docs/zombies/ZOMBIES-MODE.md`):
-  - rounds, boarded windows, buyable doors, wall buys, mystery box, perks, power switch, workbenches, salvage and scrap;
+  - rounds, boarded windows, buyable doors, wall buys, mystery box, perks, power switch, workbenches, salvage piles (parts; scrap was removed 2026-10-27);
   - dropped builds on death, and 2 → 4 weapon slots;
   - power-ups (Max Ammo, Insta-Kill, Double Points, Nuke, Carpenter, Infinite Ammo since 2026-10-23);
   - special ammo effects for every part flag;

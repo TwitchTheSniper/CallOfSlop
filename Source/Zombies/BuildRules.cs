@@ -109,8 +109,6 @@ public sealed class WeaponBuild
 
     public float Weight => Nodes.Sum(n => n.Part.Weight);
 
-    public int ScrapValue => Nodes.Sum(n => n.Part.Scrap);
-
     public WeaponBuild Clone() => new() { Name = Name, Root = Root?.Clone(), StyleChoice = StyleChoice };
 
     /// <summary>Stock actions <see cref="Parse"/> added to an old build (one written before actions were parts): it should be saved again.</summary>

@@ -34,8 +34,9 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 
 ## How it fits the Zombies loop
 
-- **Finding parts.** Zombies drop parts (later rounds roll rarer tiers), and salvage spots on the map give scrap.
-- **Workbenches** on the map are where you assemble, swap and break down parts.
+- **Finding parts.** Zombies drop parts (later rounds roll rarer tiers), salvage spots on the map give a part once a
+  round, and the slot machines pay them (there is no scrap since 2026-10-27: "the gambling machines replace the need").
+- **Workbenches** on the map are where you assemble, swap and take apart builds.
 - **Mystery box** gives a *standard complete configuration* only (decided): a whole build from `Parts/Builds` (for
   example the Minigun or the Twin Splitter Shotgun), never a single part. You can then take it to a bench and change it.
 - **Wall weapons** are plain, working guns (one grip, one receiver): the standard builds marked `"wall"`. Bought off
@@ -551,9 +552,8 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   the gun, red rows with a MISSING tag in the list, and the strip under the view says "Missing: 1x Long Barrel, 1x
   Compensator, 1x Extended Mag". The build can't be saved or applied until they're owned.
 - **Missing parts everywhere.** Saved builds and presets (standard builds load as plans) carry a red "[N missing]"
-  badge, the Save / Apply button's tooltip lists what's missing and what's still needed, and the run's workbench offers
-  **CRAFT MISSING & APPLY (N scrap)** when every missing part can be crafted this round (3x its scrap value; never wonder
-  parts, nor tiers above what the round's drop table rolls). The sandbox's **Practice parts** toggle (two of every
+  badge, and the Save / Apply button's tooltip lists what's missing and what's still needed (CRAFT MISSING & APPLY went
+  with scrap, 2026-10-27: missing parts come from drops, salvage piles and the slot machines). The sandbox's **Practice parts** toggle (two of every
   common part, one of every uncommon) lets you try all of this without a run.
 - **Disassemble (a run's workbench, 2026-10-23).** The user asked: "allow for the user to completely disassemble a gun
   into inventory items from the workbench". **Disassemble slot N** (D), the button that replaced Auto-complete in the top row (New weapon, Change grip, Undo, Redo, Disassemble) takes the selected slot's whole build
@@ -562,8 +562,7 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   within 4 s: the first arms it (the button turns red and the strip says how many parts will come off). One **Undo**
   (the footer's "Undo disassemble" button, or Ctrl+Z once the new build has nothing left to undo) puts the same build
   back from your loose parts while the bench is open (it's an ordinary Apply: the server checks the parts again). The
-  footer also shows the slot buttons while the grip picker is up, so an empty slot isn't a dead end. Breaking parts
-  down for scrap stays a separate action (the Loose parts list). The rules, the network and the empty slot are in
+  footer also shows the slot buttons while the grip picker is up, so an empty slot isn't a dead end. The rules, the network and the empty slot are in
   ZOMBIES-MODE.md, "Disassembling a build". **The main menu's sandbox has no Disassemble**: its stock is every part
   without limit (or the fixed practice stock), there's no inventory for parts to go back to, so taking a build apart
   would change nothing; "New weapon" (N) already starts from an empty grip there.
@@ -571,28 +570,28 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   grenade key; Zombies has no grenades) takes the **offered** build apart instead of taking it: its parts go to your
   loose parts and the box closes; the gun in your hands is never touched (a bug fix: the first version took the held
   gun apart). `ZBench` kind 5, protocol 54 (ZOMBIES-MODE.md, "Disassembling a build").
-- **Server authority is unchanged**: Apply sends the build's text in `ZBench` and the server checks the parts again;
-  crafting the missing parts is the existing craft request, sent once per part before the build (reliable, ordered).
+- **Server authority is unchanged**: Apply sends the build's text in `ZBench` and the server checks the parts again.
   No new messages for these (Disassemble is a new `ZBench` kind, protocol 41). The workbench is a menu for the cursor
   rule (`CursorPolicy`): the mouse stays free.
 - **Cost.** The editing model (`BenchModel`) does its allocating work only when the build changes (assembling, the
   list, the sockets, what's missing); the per-frame calls (camera, projection, the ray pick, the stock fingerprint)
   allocate nothing (self-test). Part pictures render 8 per frame at most, once per part per session.
 
-## Rarity tiers and scrap hooks
+## Rarity tiers
 
-| Tier | Colour | Scrap value | Craft cost (3x) | Where it comes from (proposed) |
-| --- | --- | --- | --- | --- |
-| Common | white | 5 | 15 | wall weapons, early drops |
-| Uncommon | green | 12 | 36 | drops from round 3 |
-| Rare | blue | 25 | 75 | drops from round 8, salvage |
-| Epic | purple | 50 | 150 | drops from round 15, mystery box |
-| Legendary | orange | 100 | 300 | mystery box, bosses, late drops |
-| Wonder | red | 150 | can't be crafted | mystery box and special drops only: fun first, balance second |
+| Tier | Colour | Where it comes from (proposed) |
+| --- | --- | --- |
+| Common | white | wall weapons, early drops |
+| Uncommon | green | drops from round 3 |
+| Rare | blue | drops from round 8, salvage |
+| Epic | purple | drops from round 15, mystery box |
+| Legendary | orange | mystery box, bosses, late drops |
+| Wonder | red | mystery box and special drops only: fun first, balance second |
 
-Hooks in `Scrap` (PartDef.cs): `SalvageValue` (break a part down), `CraftCost` (3x its value; Wonder parts can't be
-crafted), `UpgradeCost(from, to)` (same category, higher tier: the craft cost difference minus half the old part's
-value). A part file can override its value with `"scrap"`. A build's scrap value is the sum of its parts.
+**No scrap (developer request, 2026-10-27).** Parts used to have a scrap value (break one down at the workbench, craft
+one for 3x its value). Zombies has no scrap now: the `Scrap` hooks, part values and the bench's break-down and craft
+actions are gone; parts come from drops, salvage piles, the slot machines and taking builds apart (ZOMBIES-MODE.md,
+"Parts and the workbench"). A part file's old `"scrap"` key is still accepted and ignored.
 
 ## Model building (BuildModel.cs)
 
@@ -668,7 +667,7 @@ support, reloadPerReceiver; an older `fireStyles` list reads as its first style)
 `carry` (weight relief, kg), `hilt` for melee roots (damage, swing, reach, cleave, stun, hands), `melee` for heads and
 mods (damage, damageMult, swingMult, reach, cleave, stun), `hand`, `gripAngle`, `muzzles`, `optic`, `sight`,
 `round` for ammo (`pellets`: the projectiles the round is split into, sharing its damage), `feedStyle`, `flags`,
-`requiresAction`, `mount`, `placement` (which of its socket's `points` the part is drawn at), `scrap`; sockets
+`requiresAction`, `mount`, `placement` (which of its socket's `points` the part is drawn at) (an old `scrap` is ignored); sockets
 take `name`, `type`, `pos`, `points` (named other positions: `{"under": [x, y, z]}`), `rot`, `accepts`, `required`. Unknown keys, bad numbers, unknown colours and boxes far from the part are refused with the file and
 the problem; the self-test loads every part file and feeds it broken ones.
 
@@ -805,7 +804,7 @@ weight-relief parts (`"carry"`) raise what any grip carries, so the huge guns ar
 
 The numbers live in `Parts/Tables/DropTables.json` (format `call-of-slop-drops/1`): part tiers by round, the chance a
 zombie drops a part by round (4% -> 10%), the mystery box's build tier by round, and prices (box 950, slot upgrade 4000,
-wall weapon 500), and what a **slot machine** pull pays by round (`slotTiers`: nothing, scrap, points back or a
+wall weapon 500), and what a **slot machine** pull pays by round (`slotTiers`: nothing, points back or a
 loose part of a tier; ZOMBIES-MODE.md, "Slot machines": the slots are how a run gambles for single parts, since the box
 gives complete builds only). `RunTables.Roll(rows, round, seed)` rolls deterministically (the same seed gives the same tier on
 the server and every client). Nothing rolls them yet: the Zombies mode will. Bad parts along the way (heavy, slow,
@@ -845,7 +844,7 @@ new box builds from the workbench rework's receivers and 2-8 slot grips):
 uncommon 7, rare 12, epic 10, legendary 9, wonder 8 (46 box guns). The melee column above is tagged `"slots"` instead:
 the **slot machines** pay those 14 melee builds as a complete build into the melee slot (ZOMBIES-MODE.md, "Slot
 machines"); the loader refuses a melee build tagged `"box"` and a gun tagged `"slots"`. Melee parts (hilts, heads, mods)
-stay in the part pool (drops, slot parts, crafting). The roll picks a gun of the rolled tier that you **don't already
+stay in the part pool (drops, slot parts, salvage piles). The roll picks a gun of the rolled tier that you **don't already
 carry** in a gun slot. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
 is rare; a wonder part makes it legendary or wonder), placed by what it does next to the others of that tier.
 
@@ -975,7 +974,7 @@ range; DPS = damage per shot x shots per second, every projectile landing).
 | **Toaster Duck**: Bucket Launcher, Launcher Tube, Toaster Feed, Rubber Duck | Pistol Grip | 1 / 1 | 90 | 90 semi | 2 | 1.0 s | 0.96 | 135 |
 
 The big multi-receiver numbers (Lumberjack, Shopping Spree) are deliberately silly in this sandbox; in Zombies they
-are gated by weight (both sit at the 0.40 mobility floor), part rarity and scrap cost, and by zombie health scaling with
+are gated by weight (both sit at the 0.40 mobility floor), part rarity, and by zombie health scaling with
 rounds. Balancing them is part of the open questions.
 
 ## Checklists

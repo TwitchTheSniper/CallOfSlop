@@ -49,7 +49,7 @@ public enum ZUseKind : byte
     /// <summary>A built weapon on the floor (dropped when someone bled out): pick it up (ZombiesDrops.cs).</summary>
     Pickup,
 
-    /// <summary>A slot machine: pull for a part, scrap, points back or nothing (ZombiesSlots.cs).</summary>
+    /// <summary>A slot machine: pull for a part, points back or nothing (ZombiesSlots.cs).</summary>
     SlotMachine,
 }
 
@@ -84,10 +84,8 @@ public sealed class ZPlayer
     public float BeingRevived;
     public float BleedFraction;
 
-    /// <summary>Loose parts (by name) and scrap, for the workbench.</summary>
+    /// <summary>Loose parts (by name), for the workbench. (Zombies has no scrap since 2026-10-27.)</summary>
     public readonly SortedDictionary<string, int> Parts = new(StringComparer.OrdinalIgnoreCase);
-
-    public int Scrap;
 
     /// <summary>The build in each slot (0-3 guns, 4 the melee weapon), in text form: what the workbench edits and clients assemble.</summary>
     public readonly WeaponBuild?[] Slots = new WeaponBuild?[5];
@@ -877,14 +875,13 @@ public sealed partial class Game
                 Consider(d, UseRange, SlotUse(zm, i)); // ZombiesSlots.cs
         }
         for (var i = 0; i < zm.Benches.Count; i++)
-            Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts and scrap)"));
+            Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts)"));
         for (var i = 0; i < zm.Salvage.Count && i < _salvageRound.Length; i++)
         {
             var s = zm.Salvage[i];
-            var scrap = s.Cost > 0 ? s.Cost : ZRules.SalvageScrap;
             Consider(Flat(s.At - pos), UseRange, _salvageRound[i] == ZRound
                 ? new ZUse(ZUseKind.Salvage, i, 0, "Picked clean this round", Blocked: true)
-                : new ZUse(ZUseKind.Salvage, i, 0, $"Hold [E] to salvage scrap (+{scrap})"));
+                : new ZUse(ZUseKind.Salvage, i, 0, ZRules.SalvageParts == 1 ? "Hold [E] to search the pile for a part" : $"Hold [E] to search the pile for parts (+{ZRules.SalvageParts})"));
         }
         foreach (var wd in ZWeaponDrops)
         {
@@ -984,11 +981,8 @@ public sealed partial class Game
                 break;
             case ZUseKind.Salvage:
             {
-                var s = zm.Salvage[u.Index];
                 _salvageRound[u.Index] = ZRound;
-                zp.Scrap += s.Cost > 0 ? s.Cost : ZRules.SalvageScrap;
-                ZFeedTo(p, $"Salvaged {(s.Cost > 0 ? s.Cost : ZRules.SalvageScrap)} scrap ({zp.Scrap} now).", Sfx.BreakMetal);
-                SendZRun(p);
+                SalvagePile(p, zp, ZRound);
                 break;
             }
         }
@@ -1276,24 +1270,40 @@ public sealed partial class Game
 
     private void TickDrops(double now) => ZDrops.RemoveAll(d => d.Until <= now);
 
-    /// <summary>Highest part tier the workbench can craft this round (the tiers the drop table can roll now; never wonder).</summary>
-    public Rarity CraftTierCap(int round)
+    /// <summary>
+    /// Server: <paramref name="p"/> searched a salvage pile: <see cref="ZombiesRules.SalvageParts"/> loose parts, each
+    /// rolled like a zombie's part drop for <paramref name="round"/> (DropTables.json "partDrops"). Piles gave scrap until
+    /// 2026-10-27; with scrap gone they give the parts scrap used to craft.
+    /// </summary>
+    private void SalvagePile(Player p, ZPlayer zp, int round)
     {
-        var row = RunTables.RowFor(RunTables.Current.PartDrops, Math.Max(1, round));
-        var best = Rarity.Common;
-        if (row != null)
-            for (var i = 0; i < row.Weights.Length; i++)
-                if (row.Weights[i] > 0 && (Rarity)i != Rarity.Wonder)
-                    best = (Rarity)i;
-        return best;
+        var got = 0;
+        PartDef? last = null;
+        for (var k = 0; k < ZRules.SalvageParts; k++)
+        {
+            var i = PickSlotPart(RunTables.Roll(RunTables.Current.PartDrops, round, ZNext()), ZNext());
+            if (i < 0)
+                continue;
+            last = Parts.All[i];
+            zp.Parts[last.Name] = zp.Parts.GetValueOrDefault(last.Name) + 1;
+            got++;
+        }
+        if (last == null)
+        {
+            ZFeedTo(p, "Nothing useful in the pile.", Sfx.BreakMetal);
+            return;
+        }
+        ZFeedTo(p, got == 1 ? $"Salvaged a part: {last.Name} ({PartDef.RarityName(last.Rarity)}). Fit it at a workbench." : $"Salvaged {got} parts. Fit them at a workbench.", Sfx.BreakMetal);
+        SendZRun(p);
     }
 
     /// <summary>
     /// Server: a workbench change from <paramref name="p"/> (in <see cref="Msg.ZBench"/>, or the host's own): 0 = put
     /// <paramref name="text"/> in slot <paramref name="slot"/> (the parts it adds must be in their loose parts; parts it
-    /// drops go back there), 1 = break a loose part down for scrap, 2 = craft a part with scrap, 3 = take the build in
+    /// drops go back there), 3 = take the build in
     /// <paramref name="slot"/> apart into your loose parts (<see cref="BenchDisassemble"/>), 5 = at the mystery box, take
-    /// its offered build apart (<see cref="BenchBoxDisassemble"/>). Returns why not, or null.
+    /// its offered build apart (<see cref="BenchBoxDisassemble"/>). Kinds 1 (break a part down for scrap) and 2 (craft a
+    /// part with scrap) went with scrap (2026-10-27) and are refused. Returns why not, or null.
     /// </summary>
     public string? ServerBench(Player p, int kind, int slot, string text)
     {
@@ -1349,34 +1359,8 @@ public sealed partial class Game
                 ZFeedTo(p, $"Workbench: {nb.Name} is in slot {(slot == 4 ? "melee" : (slot + 1).ToString())}.", Sfx.HitTick);
                 return null;
             }
-            case 1:
-            {
-                if (!zp.Parts.TryGetValue(text, out var n) || n <= 0 || Parts.Find(text) is not { } part)
-                    return "You don't have that part loose.";
-                if (n == 1)
-                    zp.Parts.Remove(text);
-                else
-                    zp.Parts[text] = n - 1;
-                zp.Scrap += Scrap.SalvageValue(part);
-                SendZRun(p);
-                return null;
-            }
             case BenchDisassemble:
                 return ServerDisassemble(p, zp, slot); // take the slot's whole build apart (ZombiesDisassemble.cs)
-            case 2:
-            {
-                if (Parts.Find(text) is not { } part)
-                    return "No such part.";
-                var cost = Scrap.CraftCost(part);
-                if (cost < 0 || part.Rarity > CraftTierCap(ZRound))
-                    return $"The {part.Name} can't be crafted yet (round {ZRound} crafts up to {PartDef.RarityName(CraftTierCap(ZRound))}).";
-                if (zp.Scrap < cost)
-                    return $"Not enough scrap ({zp.Scrap} of {cost}).";
-                zp.Scrap -= cost;
-                zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1;
-                SendZRun(p);
-                return null;
-            }
         }
         return "Unknown workbench action.";
     }

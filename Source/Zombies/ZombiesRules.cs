@@ -199,7 +199,7 @@ public sealed class ZombiesRules
 
     public Rarity SlotPityTier = Rarity.Rare;
 
-    /// <summary>Bad-luck protection: at most this many "nothing" results in a row per player per machine (the next one pays scrap).</summary>
+    /// <summary>Bad-luck protection: at most this many "nothing" results in a row per player per machine (the next one pays coins: points back).</summary>
     public int SlotMaxNothing = 3;
 
     /// <summary>Every Nth round is a jackpot round: the wonder symbol is on the reels and these weights are added to legendary and wonder.</summary>
@@ -207,11 +207,13 @@ public sealed class ZombiesRules
 
     public float SlotJackpotLegendary = 6f, SlotJackpotWonder = 4f;
 
-    /// <summary>Payouts: scrap for a scrap result, points back (times the price) for a coin, and a part you already hold this many of loose turns into its scrap value.</summary>
-    public int SlotScrap = 40;
-
+    /// <summary>
+    /// Payouts: points back (times the price) for a coin; and a part you already hold this many of loose pays the coin
+    /// payout instead ("dupePointsAt"; 0 = always keep the part). Zombies has no scrap since 2026-10-27.
+    /// </summary>
     public float SlotPointsBack = 1.5f;
-    public int SlotAutoScrapAt = 3;
+
+    public int SlotDupePointsAt = 3;
 
     /// <summary>The price of a pull in <paramref name="round"/>.</summary>
     public int SlotCost(int round) => Math.Min(SlotCostMax, SlotCostBase + SlotCostPerRound * Math.Max(0, round - 1));
@@ -219,7 +221,7 @@ public sealed class ZombiesRules
     /// <summary>
     /// Bet levels (developer answer to open question 13, 2026-10-26): a pull costs the price x <see cref="SlotBets"/>[bet],
     /// and its part odds move <see cref="SlotBetSteps"/>[bet] tiers up the ladder (on top of the machine's heat). The
-    /// blanks, scrap and coin weights don't change: a higher bet never guarantees a reward.
+    /// blank and coin weights don't change: a higher bet never guarantees a reward.
     /// </summary>
     public float[] SlotBets = [1f, 2f, 5f];
 
@@ -266,14 +268,17 @@ public sealed class ZombiesRules
 
     public float AmmoCostFraction = 0.5f;
 
-    // ---- Parts and scrap ---------------------------------------------------------------------------------
-    /// <summary>A dropped part lies on the floor this long; a salvage pile gives its scrap once per round.</summary>
+    // ---- Parts ---------------------------------------------------------------------------------------------
+    /// <summary>A dropped part lies on the floor this long; a salvage pile can be searched once per round.</summary>
     public float DropSeconds = 30f;
 
     public float PickupRange = 1.4f;
 
-    /// <summary>Scrap every zombie kill gives the killer (on top of part drops), and scrap per salvage pile.</summary>
-    public int ScrapPerKill = 1, SalvageScrap = 25;
+    /// <summary>
+    /// Loose parts a salvage pile gives when searched (once per round; each rolled like a zombie's part drop, from
+    /// DropTables.json "partDrops" for the round). Before 2026-10-27 piles gave scrap.
+    /// </summary>
+    public int SalvageParts = 1;
 
     // ---- Power-ups (World at War style; ZombiesPowerUps.cs) ---------------------------------------------
     /// <summary>
@@ -601,8 +606,8 @@ public sealed class ZombiesRules
                         {
                             case "dropSeconds": r.DropSeconds = Real(v, w, 1, 600); break;
                             case "pickupRange": r.PickupRange = Real(v, w, 0.3f, 5); break;
-                            case "scrapPerKill": r.ScrapPerKill = Whole(v, w, 0, 1000); break;
-                            case "salvageScrap": r.SalvageScrap = Whole(v, w, 0, 10000); break;
+                            case "salvageParts": r.SalvageParts = Whole(v, w, 0, 10); break;
+                            case "scrapPerKill" or "salvageScrap": break; // (scrap is gone, 2026-10-27: older rules files still load)
                             default: return false;
                         }
                         return true;
@@ -716,9 +721,10 @@ public sealed class ZombiesRules
                             case "jackpotEvery": r.SlotJackpotEvery = Whole(v, w, 0, 100); break;
                             case "jackpotLegendary": r.SlotJackpotLegendary = Real(v, w, 0, 1000); break;
                             case "jackpotWonder": r.SlotJackpotWonder = Real(v, w, 0, 1000); break;
-                            case "scrapPayout": r.SlotScrap = Whole(v, w, 0, 10000); break;
+                            case "scrapPayout": break; // (scrap is gone, 2026-10-27: older rules files still load)
                             case "pointsBack": r.SlotPointsBack = Real(v, w, 0, 20); break;
-                            case "autoScrapAt": r.SlotAutoScrapAt = Whole(v, w, 0, 100); break;
+                            case "dupePointsAt": r.SlotDupePointsAt = Whole(v, w, 0, 100); break;
+                            case "autoScrapAt": break; // (replaced by dupePointsAt, 2026-10-27)
                             case "winSeconds": r.SlotWinSeconds = Real(v, w, 0.5f, 30); break;
                             case "machines":
                                 Fields(v, w, (ck, cv, cw) =>

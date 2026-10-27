@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>The <see cref="Msg.ZBench"/> kind that takes the build in a slot apart (0 put, 1 salvage, 2 craft).</summary>
+    /// <summary>The <see cref="Msg.ZBench"/> kind that takes the build in a slot apart (0 put; 1 and 2, break down and craft, went with scrap).</summary>
     public const int BenchDisassemble = 3;
 
     /// <summary><see cref="Msg.ZBuild"/> flag (with 1 = full ammo, 2 = start gear): the slot is now empty; no build text follows.</summary>
@@ -394,13 +394,13 @@ public sealed partial class Game
         return list;
     }
 
-    /// <summary>Self-test: a client's copy reads a run message (its loose parts and scrap).</summary>
+    /// <summary>Self-test: a client's copy reads a run message (its loose parts).</summary>
     public void SelfTestReadRun(ReadOnlySpan<byte> msg)
     {
         var r = new PacketReader(msg[1..]);
         ReadZRun(ref r);
     }
 
-    /// <summary>Self-test: the run message the server would send <paramref name="p"/> (its loose parts and scrap).</summary>
+    /// <summary>Self-test: the run message the server would send <paramref name="p"/> (its loose parts).</summary>
     public void SelfTestWriteRun(PacketWriter w, Player p) => WriteZRun(w, ZP(p));
 }

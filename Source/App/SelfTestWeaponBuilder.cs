@@ -57,15 +57,6 @@ public static partial class SelfTest
         CheckBuilderSaves();
         CheckBuilder2(); // SelfTestWeaponBuilder2.cs: the user's decisions (fire style, splitters, upgrades, shared feed, builds, cart, melee, slots)
 
-        // Scrap hooks
-        var common = parts.First(p => p.Rarity == Rarity.Common);
-        var better = parts.FirstOrDefault(p => p.Category == common.Category && p.Rarity is Rarity.Rare or Rarity.Epic);
-        if (Scrap.CraftCost(common) != common.Scrap * 3 || Scrap.SalvageValue(common) != Scrap.TierValue(Rarity.Common))
-            Fail("scrap: craft cost isn't 3x the scrap value, or salvage isn't the tier value");
-        if (better != null && Scrap.UpgradeCost(common, better) <= 0)
-            Fail($"scrap: upgrading {common.Name} to {better.Name} should cost something");
-        if (parts.FirstOrDefault(p => p.Category != common.Category) is { } other && Scrap.UpgradeCost(common, other) != -1)
-            Fail("scrap: upgrading across categories should be refused");
         if (Maps.Find("Workbench Range") is not { } range)
             Fail("no Workbench Range map");
         else

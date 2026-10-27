@@ -249,7 +249,7 @@ public sealed partial class Ui
                 {
                     SlotWinLabelSeq[i] = m.WinSeq;
                     var who = m.WinPlayer == game.LocalId ? "You" : game.NameOf(m.WinPlayer);
-                    SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinScrapped ? " (scrapped)" : "")}";
+                    SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinRefunded ? " (points instead)" : "")}";
                 }
                 var fade = (float)Math.Clamp((game.ZRules.SlotWinSeconds - (now - m.WinAt)) * 2, 0, 1);
                 Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, 3.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);

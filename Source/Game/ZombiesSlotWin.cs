@@ -19,7 +19,7 @@ public sealed partial class Game
     /// <summary>Server: machine <paramref name="i"/> paid <paramref name="p"/>: show it here and tell every client.</summary>
     private void ServerSlotWin(int i, ZSlotMachine m, Player p)
     {
-        ApplySlotWin(i, p.Id, m.Result, m.Part, m.Tier, m.AutoScrapped);
+        ApplySlotWin(i, p.Id, m.Result, m.Part, m.Tier, m.Refunded);
         if (Net.IsOffline)
             return;
         WriteSlotWin(_w, i, m);
@@ -27,7 +27,7 @@ public sealed partial class Game
     }
 
     private static void WriteSlotWin(PacketWriter w, int i, ZSlotMachine m) =>
-        w.Begin(Msg.ZSlotWin).U8((byte)i).U8(m.WinPlayer).U8((byte)m.WinResult).U16((ushort)m.WinIndex).U8((byte)m.WinTier).U8(m.WinScrapped ? (byte)1 : (byte)0);
+        w.Begin(Msg.ZSlotWin).U8((byte)i).U8(m.WinPlayer).U8((byte)m.WinResult).U16((ushort)m.WinIndex).U8((byte)m.WinTier).U8(m.WinRefunded ? (byte)1 : (byte)0);
 
     /// <summary>Client: a <see cref="Msg.ZSlotWin"/> (after the id).</summary>
     private void ReadSlotWin(ref PacketReader r)
@@ -37,13 +37,13 @@ public sealed partial class Game
         var result = (ZSlotResult)Math.Min(r.U8(), (byte)ZSlotResult.Melee);
         var index = (short)r.U16();
         var tier = (Rarity)Math.Min(r.U8(), (byte)Rarity.Wonder);
-        var scrapped = (r.U8() & 1) != 0;
+        var refunded = (r.U8() & 1) != 0; // (bit 0: you held plenty of it, so it paid points instead)
         if (result is ZSlotResult.Part or ZSlotResult.Melee)
-            ApplySlotWin(i, player, result, index, tier, scrapped);
+            ApplySlotWin(i, player, result, index, tier, refunded);
     }
 
     /// <summary>Both sides: machine <paramref name="i"/>'s win shows now (over the machine, a feed line, a sound).</summary>
-    private void ApplySlotWin(int i, byte player, ZSlotResult result, short index, Rarity tier, bool scrapped)
+    private void ApplySlotWin(int i, byte player, ZSlotResult result, short index, Rarity tier, bool refunded)
     {
         if (i < 0 || i >= ZSlots.Length)
             return;
@@ -53,20 +53,20 @@ public sealed partial class Game
         m.WinResult = result;
         m.WinIndex = index;
         m.WinTier = tier;
-        m.WinScrapped = scrapped;
+        m.WinRefunded = refunded;
         m.WinAt = Brutal.GlfwApi.Glfw.Time;
         var category = World.Map.Zombies is { } zm && i < zm.SlotMachines.Count ? zm.SlotMachines[i].SlotCategory : -1;
         var mine = player == LocalId;
         var who = mine ? "You" : NameOf(player);
         var what = SlotWinWhat(result, index, tier);
-        var line = scrapped
-            ? $"{who} won {what} on the {SlotMachineName(category)} (scrapped: plenty already)"
+        var line = refunded
+            ? $"{who} won {what} on the {SlotMachineName(category)} (plenty already: points instead)"
             : $"{who} won {what} on the {SlotMachineName(category)}!";
         Feed.Add(new FeedEntry(Brutal.GlfwApi.Glfw.Time, line, mine, PartDef.RarityColor(tier)));
         Console.WriteLine(line);
         if (World.Map.Zombies is { } z2 && i < z2.SlotMachines.Count)
             Audio.Effect3D(tier >= Rarity.Legendary ? Sfx.StreakReady : tier >= Rarity.Epic ? Sfx.StreakCall : Sfx.LevelUp, z2.SlotMachines[i].At + new Vector3(0, 1.6f, 0), tier >= Rarity.Legendary ? 1f : 0.8f);
-        if (tier >= Rarity.Legendary && !scrapped)
+        if (tier >= Rarity.Legendary && !refunded)
             Audio.Effect(Sfx.StreakReady, 0.5f, MixBus.Notify); // a big win is heard across the map
     }
 

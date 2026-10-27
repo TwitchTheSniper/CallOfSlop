@@ -484,7 +484,7 @@ public static partial class SelfTest
             var body = Kill(false, false);
             var head = Kill(true, false);
             var knife = Kill(false, true);
-            ZLine($"points: hit {body / 10000}, kill {body % 10000}, headshot kill {head % 10000}, melee kill {knife % 10000}; zombie kills {zp.Kills}, scrap {zp.Scrap}");
+            ZLine($"points: hit {body / 10000}, kill {body % 10000}, headshot kill {head % 10000}, melee kill {knife % 10000}; zombie kills {zp.Kills}");
             if (body / 10000 != g.ZRules.HitPoints || body % 10000 != g.ZRules.KillPoints || head % 10000 != g.ZRules.HeadshotKillPoints || knife % 10000 != g.ZRules.MeleeKillPoints || zp.Kills != 3)
                 Fail("points per hit / kill / headshot kill / melee kill don't match the rules");
 
@@ -599,7 +599,7 @@ public static partial class SelfTest
 
         CheckZombieDroppedBuilds(map, zm, ref now);
 
-        // ---- Workbench: change a build with your own parts; scrap ----
+        // ---- Workbench: change a build with your own parts (no scrap: breaking down and crafting are gone) ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
         {
             var me = g.Local!;
@@ -612,16 +612,14 @@ public static partial class SelfTest
             var ok = g.ServerBench(me, 0, 0, Edit(slot0.Clone(), "Red Dot"));
             var fitted = zp.Slots[0]!.Nodes.Any(n => n.Part.Name == "Red Dot") && !zp.Parts.ContainsKey("Red Dot");
             zp.Parts["Hot Load Kit"] = 2;
-            var salvage = g.ServerBench(me, 1, 0, "Hot Load Kit");
-            var scrap = zp.Scrap;
-            zp.Scrap = 1000;
-            var craftRare = g.ServerBench(me, 2, 0, "Gas Overclock"); // round 0-1 crafts common/uncommon only
-            var craftCommon = g.ServerBench(me, 2, 0, "Lightweight Bolt");
-            ZLine($"workbench: without the part '{notOwned}', with it {ok ?? "ok"} (fitted {fitted}); salvage {salvage ?? "ok"} -> {scrap} scrap; craft rare '{craftRare}', common {craftCommon ?? "ok"}");
-            if (notOwned == null || ok != null || !fitted || salvage != null || scrap <= 0 || craftRare == null || craftCommon != null || zp.Parts.GetValueOrDefault("Lightweight Bolt") != 1)
-                Fail("the workbench should only fit parts you own, salvage for scrap and craft within the round's tier");
+            var breakDown = g.ServerBench(me, 1, 0, "Hot Load Kit"); // (kind 1 broke a part down for scrap before 2026-10-27)
+            var craft = g.ServerBench(me, 2, 0, "Lightweight Bolt"); // (kind 2 crafted one with scrap)
+            var kept = zp.Parts.GetValueOrDefault("Hot Load Kit") == 2 && !zp.Parts.ContainsKey("Lightweight Bolt");
+            ZLine($"workbench: without the part '{notOwned}', with it {ok ?? "ok"} (fitted {fitted}); break down '{breakDown}', craft '{craft}' (no scrap), loose parts kept {kept}");
+            if (notOwned == null || ok != null || !fitted || breakDown == null || craft == null || !kept)
+                Fail("the workbench should only fit parts you own, and refuse the old scrap actions (break down, craft) without touching your parts");
             me.Teleport(new Vector3(-30, 0, -30));
-            if (g.ServerBench(me, 1, 0, "Hot Load Kit") == null)
+            if (g.ServerBench(me, 0, 0, slot0.ToText()) == null)
                 Fail("the workbench worked away from a workbench");
         }
         CheckZombieDisassemble(zm, ref now); // taking whole builds apart, solo and co-op (SelfTestZombiesDisassemble.cs)

@@ -355,7 +355,7 @@ public static class PartTools
             var errors = new List<string>();
             var all = Parts.LoadDetailed(folder, errors).Parts.Where(x => !x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)).Append(p).ToList();
             Console.WriteLine($"OK: '{p.Name}' ({PartDef.CategoryName(p.Category)}, {p.Rarity}{(p.Mount != "" ? $", mounts on \"{p.Mount}\"" : ", root")}): {p.Boxes.Length} box(es), "
-                              + $"{p.Sockets.Length} socket(s){(p.Muzzles.Length > 0 ? $", {p.Muzzles.Length} muzzle(s)" : "")}, {p.Weight:0.###} kg, scrap {p.Scrap}, "
+                              + $"{p.Sockets.Length} socket(s){(p.Muzzles.Length > 0 ? $", {p.Muzzles.Length} muzzle(s)" : "")}, {p.Weight:0.###} kg, "
                               + $"fingerprint {WeaponSet.Fnv([PartDigest.Of(p)]):x8}");
             if (p.Sockets.Length > 0)
                 Console.WriteLine("sockets: " + string.Join(", ", p.Sockets.Select(s => $"{s.Name} ({s.Type}{(s.Required ? ", required" : "")})")));

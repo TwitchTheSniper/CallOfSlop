@@ -223,11 +223,6 @@ public static partial class SelfTest
             || !cp.Missing.Nodes.All(copyNodes.Contains) || redRows != 3 || redSpots != 3 || ghosts == 0 || cp.CanFinalize || !cp.Asm.Ok
             || !cp.FinalizeTip().Contains("Missing: 1x Long Barrel"))
             Fail("workbench: a copy without the parts should list exactly what's missing, mark the copy's parts red and block finalising");
-        var craft = cp.Missing.CraftCost(Rarity.Uncommon);
-        var craftCommon = cp.Missing.CraftCost(Rarity.Common);
-        Line($"craft the missing parts: {craft} scrap (round cap uncommon), cap common: {craftCommon}");
-        if (craft != 3 * (P("Long Barrel").Scrap + P("Compensator").Scrap + P("Extended Mag").Scrap) || craftCommon != -1)
-            Fail("workbench: crafting the missing parts should cost 3x their scrap, and be refused above the round's tier");
         cp.SetStock(BenchStock.Of([(P("Pistol Grip"), 1), (P("Plinker Receiver"), 2), (P("Long Barrel"), 2), (P("Compensator"), 2), (P("Extended Mag"), 2), (P("FMJ"), 2), (P("Semi-Auto Trigger"), 2)]));
         if (cp.Missing.Total != 0 || !cp.CanFinalize)
             Fail("workbench: once the missing parts are owned the copied build should finalise");

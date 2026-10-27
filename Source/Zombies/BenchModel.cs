@@ -152,23 +152,6 @@ public sealed class MissingReport
         }
         return r;
     }
-
-    /// <summary>
-    /// The scrap it costs to craft every missing part at a workbench, or -1 if one can't be crafted (a wonder part, or
-    /// above <paramref name="cap"/>, the tier the round crafts up to).
-    /// </summary>
-    public int CraftCost(Rarity cap)
-    {
-        var total = 0;
-        foreach (var m in Parts)
-        {
-            var c = Scrap.CraftCost(m.Part);
-            if (c < 0 || m.Part.Rarity > cap)
-                return -1;
-            total += c * m.Count;
-        }
-        return total;
-    }
 }
 
 /// <summary>What a row of the linear build list is.</summary>
@@ -687,7 +670,7 @@ public sealed class BenchModel
             return BuildRules.SocketWhy(s.Parent, s.Socket, part); // the build's limits are checked once it has moved (Move)
         }
         else if (Stock.Free(part, Build) <= 0)
-            return $"You have no {part.Name} left (zombies drop parts; or craft one with scrap).";
+            return $"You have no {part.Name} left (zombies drop parts; so do the slot machines and salvage piles).";
         return BuildRules.WhyNot(Build, s.Parent, s.Socket, part);
     }
 

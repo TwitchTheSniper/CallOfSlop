@@ -21,7 +21,7 @@ public sealed record WorkbenchLaunch(WeaponDef Primary, WeaponDef Secondary, Wea
 /// previews snapped in place over one, and snaps in on release (a refused drop bounces back with the reason).
 /// Right-click (or drag off) a part to take it off; right-click a receiver to copy its whole assembly onto a free
 /// receiver slot, even without the parts: what you're missing shows red on the gun, in the list and on the saved builds,
-/// and the build can't be saved or applied until you have them (in a run, missing parts can be crafted with scrap).
+/// and the build can't be saved or applied until you have them (in a run, missing parts come from zombie drops, salvage piles, the slot machines and the mystery box).
 /// Double-click a part to put it on its best free socket; the A key auto-completes every empty needed socket (the top row has Disassemble for the selected slot at a run's bench, Auto-complete in the sandbox); Ctrl+Z undoes.
 /// The editing model is <see cref="BenchModel"/> (headless, self-tested); this file only draws it and feeds it input.
 /// </summary>
@@ -548,7 +548,7 @@ public sealed partial class Ui
                 dl.AddRectFilled(p0, p1, LockShade8, 6 * _scale); // dimmed: stats still readable, not pickable
             if (hot)
                 ImGuiSafe.SetTooltip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
-                                     + (have ? "" : locked ? "\nYou don't own one yet: find or craft one to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
+                                     + (have ? "" : locked ? "\nYou don't own one yet: find one (drops, salvage piles, the slot machines) to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
             if (clicked)
             {
                 if (locked)
@@ -603,7 +603,7 @@ public sealed partial class Ui
         {
             DrawLinear(height * 0.4f);
             DrawStatBars();
-            launch = BenchRun != null ? DrawBenchRunSide(Bm.Build) : DrawWorkbenchSide(Bm.Build); // Zombies: your slots, parts and scrap (UiWorkbenchRun.cs)
+            launch = BenchRun != null ? DrawBenchRunSide(Bm.Build) : DrawWorkbenchSide(Bm.Build); // Zombies: your slots and parts (UiWorkbenchRun.cs)
         }
         ImGui.EndChild();
         return launch;
@@ -675,7 +675,7 @@ public sealed partial class Ui
         var rowW = ImGui.GetContentRegionAvail().X;
         if (_inv.Items.Count == 0)
             ImGuiSafe.TextColored(Dim, _inv.Hidden > 0 ? "None of these fit this build or have a spare copy. Tick \"Show incompatible parts\" to see them anyway."
-                : BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); salvage piles give scrap to craft with." : "Nothing matches.");
+                : BenchRun != null ? "No loose parts that fit this list. Zombies drop parts (rarer ones in later rounds); so do salvage piles and the slot machines." : "Nothing matches.");
         PartCategory? group = null;
         for (var i = 0; i < _inv.Items.Count; i++)
         {
@@ -1339,7 +1339,7 @@ public sealed partial class Ui
         var cap = b.CarryWeight * 2;
         WbBar("Weight", b.Weight, trial?.Build.Weight, cap > 0 ? b.Weight / cap : 0, trial != null && cap > 0 ? trial.Build.Weight / (trial.Build.CarryWeight * 2) : null, "0.0 kg", false);
         if (b.Frame != null)
-            ImGuiSafe.TextColored(Dim, $"Carries {b.CarryWeight:0.#} kg before it slows you (at most {cap:0.#} kg). {b.ScrapValue} scrap.");
+            ImGuiSafe.TextColored(Dim, $"Carries {b.CarryWeight:0.#} kg before it slows you (at most {cap:0.#} kg).");
     }
 
     /// <summary>A stat bar with the change a trial would make: green where it gets better, red where worse.</summary>
@@ -1747,7 +1747,7 @@ public sealed partial class Ui
             bits.Add("fits every receiver");
         if (p.RequiresAction.Length > 0)
             bits.Add("needs " + string.Join("/", p.RequiresAction.Select(a => a.ToString().ToLowerInvariant())) + " action");
-        bits.Add($"{p.Weight:0.0#} kg, {p.Scrap} scrap");
+        bits.Add($"{p.Weight:0.0#} kg");
         foreach (var e in p.Effects)
             bits.Add(e.Op switch
             {

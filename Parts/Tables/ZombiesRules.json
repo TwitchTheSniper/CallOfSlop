@@ -84,7 +84,7 @@
     "moveSeconds": 3
   },
   "slots": {
-    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and the result shows showSeconds. The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank, scrap and coin weights stay: no sure win). At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
+    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and a win shows showSeconds (a pull that wins nothing frees the machine at once: pull again). A part you already hold dupePointsAt of loose pays pointsBack instead (0: always keep it). The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank and coin weights stay: no sure win). At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
     "costBase": 500,
     "costPerRound": 25,
     "costMax": 1250,
@@ -99,9 +99,8 @@
     "jackpotEvery": 5,
     "jackpotLegendary": 6,
     "jackpotWonder": 4,
-    "scrapPayout": 40,
     "pointsBack": 1.5,
-    "autoScrapAt": 3,
+    "dupePointsAt": 3,
     "winSeconds": 4,
     "machines": {
       "note": "PROPOSED per-category slot machines (2026-10-26; a map's slots entry with \"category\"): each only pays parts of its category, with the same odds table, heat, bets and jackpot rounds as the classic machine but its own heat. price is a multiple of the classic machine's price (to the nearest 10); melee: the blade (a whole melee build) is on its reels (default: the melee categories only; elsewhere a melee result pays a part of that tier).",
@@ -131,8 +130,7 @@
   "parts": {
     "dropSeconds": 30,
     "pickupRange": 1.4,
-    "scrapPerKill": 1,
-    "salvageScrap": 25
+    "salvageParts": 1
   },
   "powerUps": {
     "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23; the points schedule 2026-10-26). A drop becomes due once the team has earned firstAt points (hits, kills, boards), and the next kill drops it; each later one is due a step later that grows x stepGrowth a drop (at most stepMax). dropChance is an extra flat chance per kill (0: off). At most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
