@@ -935,6 +935,13 @@ Section **"Horde targets"** (Horde Test): 40 zombies plus round 10's spawns chas
 moving horde walking away from the host at once, never a run of them heading for the origin, no zombie walking away
 for more than a second (routing round the towers), no regroup of the kited group, and a regrouping member only closing
 up from behind the centre. The code before the fix fails all five.
+Section **"Horde respawn"** (Horde Test, 2026-10-27): the chased player stops being a target and comes back, and the
+horde goes on. Zombies moving a tick (of about 40-50): solo with Second Wind 39 before, 2 while down (nobody standing:
+they wait), 42 after it gets the player up; two players 39 before, then 40 with the host down (all on the mate), 40
+revived, 39 bled out, 29-33 in the next round (fewer up yet), after the mate leaves, rejoins, and the host missing for
+one raw tick. A solo player not standing for one tick (Alive false, no Second Wind) is the run's game over, as a solo
+down is in play, so the match ends and the horde stops with it: that, not the controller, was the "1 zombie moving
+instead of 40" seen while writing "Horde targets". In play Alive only goes false by bleeding out.
 
 ## Horde Test, start round and test kit (developer request, 2026-10-27)
 
