@@ -41,6 +41,10 @@ public sealed partial class BotBrain
     internal double NextOffNavCheck;
     internal double LastStuckLog = -1000; // the log line is written at most once a minute per bot
 
+    internal float StuckIdleSecs; // seconds in a row the watch has seen no wish to move (a short gap only pauses the clock)
+    internal StuckSpot? StuckSpellSpot; // the stuck-spot report's spot for the current spell (from recovery stage 1 on; StuckSpots.cs)
+    internal BotStuckCause StuckSpellCause; // the cause as the spell reached stage 1
+
     /// <summary>What the last watch step made of this tick (self-test diagnostics; see <see cref="StuckWhy"/>).</summary>
     public StuckWhy StuckLastWhy;
 }
@@ -91,6 +95,7 @@ public sealed partial class Game
     private const float StuckProgressRecovering = 4f; // ...or this far once a recovery started (backing off isn't progress)
     private const float StuckNodeProgress = 0.5f; // getting this much closer to the same path node is progress too
     private const double StuckLogEvery = 60; // seconds between log lines per bot
+    private const float StuckIdleReset = 1f; // seconds of standing still on purpose that end a stuck spell
 
     /// <summary>Stuck self-kills (or rescues, in modes without respawns) this session (server; read by the self-test).</summary>
     public int BotStuckKills;
@@ -161,9 +166,15 @@ public sealed partial class Game
         }
         if (idle)
         {
-            StuckReset(b, pos);
+            // Standing still on purpose: the spell is over, once it lasts. A moment without a wish (a re-plan, a corner
+            // between two path nodes) only pauses the clock: resetting on every such tick let a bot jammed on a stair
+            // top that went idle for a tick every second or so stay at stage 0 for good.
+            b.StuckIdleSecs += World.TickDt;
+            if (b.StuckIdleSecs >= StuckIdleReset)
+                StuckReset(b, pos);
             return false;
         }
+        b.StuckIdleSecs = 0;
 
         // Progress: away from where the spell started, or clearly closer to the same path node. Once a recovery has
         // started only a real move away counts (backing off and walking back into the same corner isn't progress).
@@ -206,16 +217,19 @@ public sealed partial class Game
         if (b.StuckStage == 0 && b.StuckSecs >= limit * 0.2f)
         {
             b.StuckStage = 1;
+            StuckSpellStarts(b, nav, pos, StuckCauseHere(b, nav, now - b.StuckSecs));
             StuckBackOff(b, s.Wish, now);
         }
         else if (b.StuckStage == 1 && b.StuckSecs >= limit * 0.4f)
         {
             b.StuckStage = 2;
+            StuckSpellStage(b);
             StuckReplan(p, b, nav, now);
         }
         else if (b.StuckStage == 2 && b.StuckSecs >= limit * 0.6f)
         {
             b.StuckStage = 3;
+            StuckSpellStage(b);
             b.StrafeDir = -b.StrafeDir;
             StuckBackOff(b, s.Wish, now);
         }
@@ -250,8 +264,35 @@ public sealed partial class Game
         b.StuckAnchorNode = -1;
         b.BackOffUntil = 0;
         b.RescueUntil = 0;
+        b.StuckSpellSpot = null;
+        b.StuckIdleSecs = 0;
     }
 
+    /// <summary>Spots stuck spells reached this match (Map contract: <c>maxStuckSpots</c>; reset by the end-of-match summary).</summary>
+    public readonly List<StuckSpot> StuckSpotsThisMatch = new(32);
+
+    /// <summary>Stuck spells (recovery stage 1 or a give-up) this match.</summary>
+    public int StuckSpellsThisMatch;
+
+    /// <summary>A stuck spell reached recovery stage 1 (or gave up at once): the stuck-spot report (StuckSpots.cs) counts it at its spot.</summary>
+    private void StuckSpellStarts(BotBrain b, NavGraph nav, Vector3 pos, BotStuckCause cause)
+    {
+        if (!IsServer || nav.Nodes.Length == 0)
+            return; // (the map's nav graph is still being built: bots steer straight at their goals meanwhile, not a map problem)
+        var node = nav.Nearest(pos, needSight: false);
+        var spot = StuckSpots.Session.Spell(World.Map.Name, Module.Name, pos, cause, node);
+        b.StuckSpellSpot = spot;
+        b.StuckSpellCause = cause;
+        StuckSpellsThisMatch++;
+        if (!StuckSpotsThisMatch.Contains(spot))
+            StuckSpotsThisMatch.Add(spot);
+    }
+
+    private static void StuckSpellStage(BotBrain b)
+    {
+        if (b.StuckSpellSpot is { } spot)
+            StuckSpots.Session.Stage(spot, b.StuckStage);
+    }
     /// <summary>Holding a spot on purpose: a vantage point, a marksman's or anchor's perch, the objective (the hill), a squad hold or suppression.</summary>
     private static bool BotHolding(Player p, BotBrain b, double now)
     {
@@ -347,21 +388,31 @@ public sealed partial class Game
     private bool StuckGiveUp(Player p, BotBrain b, NavGraph nav, BotStuckCause cause, float secs, double now)
     {
         var at = p.Position;
+        if (b.StuckSpellSpot == null)
+            StuckSpellStarts(b, nav, at, cause); // off the nav area: straight to the last resort, no stages
+        var spot = b.StuckSpellSpot;
+        var spellCause = b.StuckSpellCause;
         StuckReset(b, at);
         b.OffNavSecs = 0;
         b.ClearPath();
         b.Waypoint = Vector3.Zero;
         if (!Module.CanRespawn(this, p, now))
         {
-            if (NearestMainNode(nav, at) is not { } spot)
+            if (NearestMainNode(nav, at) is not { } to)
                 return false;
-            StuckTeleport(p, spot);
+            StuckTeleport(p, to);
+            if (spot != null)
+                StuckSpots.Session.GaveUp(spot, cause, spellCause, rescue: true);
             StuckNote(p, b, cause, at, secs, "teleported to the nearest nav node (no respawns in this mode)", now, rescue: true);
             return false;
         }
         var died = ServerSuicide(p, now);
         if (died)
+        {
+            if (spot != null)
+                StuckSpots.Session.GaveUp(spot, cause, spellCause, rescue: false);
             StuckNote(p, b, cause, at, secs, "self-kill", now, rescue: false);
+        }
         return died;
     }
 
@@ -402,7 +453,7 @@ public sealed partial class Game
         Console.WriteLine(LastStuckLog);
     }
 
-    private static string StuckCauseText(BotStuckCause c) =>
+    internal static string StuckCauseText(BotStuckCause c) =>
         c switch
         {
             BotStuckCause.Ledge => "blocked at a ledge climb (mantle edge)",
@@ -425,8 +476,21 @@ public sealed partial class Game
                 bots++;
         if (bots == 0)
             return;
-        Console.WriteLine($"[bots] match over on {World.Map.Name}: {BotStuckKillsThisMatch} stuck self-kill(s) this match, {StuckKillsOn(World.Map.Name)} on this map this session");
+        var map = World.Map.Name;
+        Console.WriteLine($"[bots] match over on {map}: {BotStuckKillsThisMatch} stuck self-kill(s) this match, {StuckKillsOn(map)} on this map this session; "
+                          + $"{StuckSpellsThisMatch} stuck spell(s) at {StuckSpotsThisMatch.Count} spot(s) this match");
+        // The map's stuck spots this session (the stuck-spot report, StuckSpots.cs), worst first.
+        var spots = StuckSpots.Session.On(map);
+        if (spots.Count > 0)
+        {
+            Console.WriteLine($"[bots] stuck spots on {map} this session: {spots.Count}");
+            foreach (var spot in spots.OrderByDescending(x => x.Spells + x.SelfKills).Take(5))
+                Console.WriteLine("[bots]   " + StuckSpots.Describe(spot));
+        }
+        StuckSpots.Session.WriteSessionInBackground();
         BotStuckKillsThisMatch = 0;
+        StuckSpellsThisMatch = 0;
+        StuckSpotsThisMatch.Clear();
     }
 
     // ---- Zombies co-op bots (ZombieBots.cs) ----------------------------------------------------------------
@@ -472,16 +536,23 @@ public sealed partial class Game
             }
             var to = best?.Position ?? b.HoldAnchor;
             var secs = b.StuckSecs;
+            var zspot = b.StuckSpellSpot;
             StuckReset(b, pos);
             if (Vector3.DistanceSquared(to, pos) < 1f)
                 return;
             StuckTeleport(p, to); // (players don't block each other: right where the teammate stands is fine)
+            if (zspot != null)
+                StuckSpots.Session.GaveUp(zspot, BotStuckCause.Blocked, BotStuckCause.Blocked, rescue: true);
             StuckNote(p, b, BotStuckCause.Blocked, pos, secs, best != null ? $"teleported to {best.Name}" : "teleported back to its start spot", now, rescue: true);
             return;
         }
         if (b.StuckStage < 3 && b.StuckSecs >= limit * (0.2f + 0.2f * b.StuckStage))
         {
             b.StuckStage++;
+            if (b.StuckStage == 1)
+                StuckSpellStarts(b, NavGraph.Current, pos, BotStuckCause.Blocked);
+            else
+                StuckSpellStage(b);
             b.StrafeDir = -b.StrafeDir;
             b.BackOffUntil = now + 0.7;
         }

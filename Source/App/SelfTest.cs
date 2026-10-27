@@ -104,6 +104,11 @@ public static partial class SelfTest
                         Fail($"section \"{name}\" needs \"{b}\", which isn't a section");
                 Sections();
                 Line("");
+                // Every stuck spell of the run's bot matches (the stuck-spot report, StuckSpots.cs), beside this log: CI uploads it,
+                // and --stuck-report pools it with other runs and testers' reports.
+                var spotsFile = Path.Combine(AppContext.BaseDirectory, "stuck-spots.json");
+                StuckSpots.Session.Write(spotsFile, only == null ? "self-test (full suite)" : $"self-test (--selftest-only \"{only}\")");
+                Line($"STUCK SPOTS: {StuckSpots.Session.Count} spot(s) on {StuckSpots.Session.Maps.Count()} map(s) in the run's bot matches (stuck-spots.json)");
                 var slowest = _times.OrderByDescending(t => t.Seconds).Take(10).Select(t => $"{t.Name} {t.Seconds:0.0} s");
                 Line("SLOWEST: " + string.Join(", ", slowest));
                 Line(only == null
@@ -714,6 +719,16 @@ public static partial class SelfTest
 
     // ---- 2. Matches ----------------------------------------------------------------------
 
+    /// <summary>Most milliseconds of work one map's nav graph may take to build (Bots), on a machine as fast as <see cref="NavBuildReferenceMs"/> says.</summary>
+    private const double MaxNavBuildMs = 3000;
+
+    /// <summary>
+    /// Every shipped map's nav graph but the over-limit ones, built one after another: under this on a GitHub runner or a
+    /// gaming PC (about 9 s on the developer's PC in 2026-10; about 29 s on the 2-core agent box). A machine slower than this
+    /// scales the per-map limit.
+    /// </summary>
+    private const double NavBuildReferenceMs = 15000;
+
     private static void CheckMatches()
     {
         var botStats = _matchBotStats = new BotStats();
@@ -805,7 +820,7 @@ public static partial class SelfTest
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  stuck spots {StuckSpots.Session.On(m.Name).Count(x => x.MaxStage >= 2)} (+{StuckSpots.Session.On(m.Name).Count(x => x.MaxStage < 2)} stage 1)  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             var measuredTicks = 90 * World.TickRate - 61;
             // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
             // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a
@@ -860,6 +875,7 @@ public static partial class SelfTest
         var search = new NavSearch();
         var path = new int[128];
         double totalBuild = 0;
+        var slowBuilds = new List<(string Name, double Ms, string Detail)>();
         var bakedSame = 0;
         foreach (var m in Maps.All)
         {
@@ -902,10 +918,18 @@ public static partial class SelfTest
                 Fail($"{m.Name}: nav graph too small ({g.Nodes.Length} nodes, {g.EdgeCount} edges)");
             if (unreachable.Count > pairs / 4)
                 Fail($"{m.Name}: {unreachable.Count} of {pairs} far spawn pairs have no path");
-            if (g.BuildMs > 3000)
-                Fail($"{m.Name}: nav graph took {g.BuildMs:0} ms to build (mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms)");
+            if (g.BuildMs > MaxNavBuildMs)
+                slowBuilds.Add((m.Name, g.BuildMs, $"mover walks: {g.WalkChecked} links, {g.WalkTicks * 1000.0 / Stopwatch.Frequency:0} ms"));
         }
-        Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game); {bakedSame} baked and read back bit for bit");
+        // The 3 s limit is for a GitHub runner or a gaming PC. A slower machine (the 2-core agent box builds everything about
+        // 3x slower than the developer's PC) gets it scaled by how long all the other maps' graphs took here: a map that is slow
+        // only because the machine is slow passes, one that got slower than the rest still fails.
+        var machine = Math.Max(1.0, (totalBuild - slowBuilds.Sum(x => x.Ms)) / NavBuildReferenceMs);
+        Line($"nav graphs for {Maps.All.Length} maps: {totalBuild / 1000:0.0} s of build work in total (spread over ticks in a real game); {bakedSame} baked and read back bit for bit; "
+             + $"machine speed factor {machine:0.00} (the other maps vs {NavBuildReferenceMs / 1000:0} s), per-map limit {MaxNavBuildMs * machine:0} ms");
+        foreach (var (name, ms, detail) in slowBuilds)
+            if (ms > MaxNavBuildMs * machine)
+                Fail($"{name}: nav graph took {ms:0} ms to build (limit {MaxNavBuildMs} ms x machine factor {machine:0.00}; {detail})");
 
         // Walk to a far goal: one bot alone, told where to go.
         foreach (var name in new[] { "ProtoBox", "Courtyard", "Rooftops", "Harbor", "Downtown", "Galleria" })

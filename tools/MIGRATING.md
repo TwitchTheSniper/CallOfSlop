@@ -55,7 +55,7 @@ Use this if the automatic copy didn't find your old build, for example because i
 
 > Do this before playing much on the new build. Whatever you copy in replaces the new build's progress.
 
-Not save files (you don't need to copy them): `update_check.txt` (when the game last asked GitHub for updates) and `update.log` (what the updater removed). Both live in the save folder and are safe to delete.
+Not save files (you don't need to copy them): `update_check.txt` (when the game last asked GitHub for updates) and `update.log` (what the updater removed). Both live in the save folder and are safe to delete. The `Logs` folder isn't a save either: it holds the stuck-spot reports (`stuck-spots-*.json`, where bots got stuck in your matches). Send it to the developer if bots got stuck a lot; it's safe to delete.
 
 ### Old versions
 

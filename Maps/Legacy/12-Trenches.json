@@ -123,6 +123,14 @@
     { "op": "Spawn", "x": 0, "z": 33 },
     { "op": "Spawn", "x": 20, "z": 33 },
     { "op": "Spawn", "x": 40, "z": 33 },
+    { "op": "Waypoint", "x": -9.5, "z": 41.5 },
+    { "op": "Waypoint", "x": -6.5, "z": 41.5 },
+    { "op": "Waypoint", "x": 6.5, "z": 41.5 },
+    { "op": "Waypoint", "x": 9.5, "z": 41.5 },
+    { "op": "Waypoint", "x": -9.5, "z": -41.5 },
+    { "op": "Waypoint", "x": -6.5, "z": -41.5 },
+    { "op": "Waypoint", "x": 6.5, "z": -41.5 },
+    { "op": "Waypoint", "x": 9.5, "z": -41.5 },
     { "op": "AutoWaypoints", "spacing": 7 }
   ]
 }

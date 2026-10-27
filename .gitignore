@@ -16,6 +16,8 @@ appearance.txt
 audio_mix.json
 AudioMixes/
 Cache/
+Logs/
+stuck-spots*.json
 portable.txt
 update_check.txt
 update.log

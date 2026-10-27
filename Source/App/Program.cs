@@ -110,6 +110,8 @@ public static unsafe partial class Program
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
         if (args.SkipWhile(a => !a.Equals("--bake", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } bakeDir)
             return NavBake.BakeAll(bakeDir); // Release workflow: every shipped map's nav graph, built once and shipped (BotNavBake.cs)
+        if (args.SkipWhile(a => !a.Equals("--stuck-report", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } stuckDir)
+            return StuckSpots.Cli(stuckDir, args); // merges stuck-spot reports and logs from testers and CI (StuckSpots.cs)
         if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
             return UpdateVerifyCli.Run(manifestFile, zipFile, // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
                 args.SkipWhile(a => !a.Equals("--platform", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? UpdateManifest.CurrentPlatform);

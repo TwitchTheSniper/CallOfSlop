@@ -96,10 +96,11 @@ if ($Step -ne "zip") {
 
     # Belt and braces: no personal or debug files in the shared copy.
     $personal = @("settings.txt", "progress*.txt", "loadout*.txt", "workbench.txt", "audio_mix.json", "appearance.txt", "portable.txt", "update_check.txt", "update.log", ".callofslop-build",
-                  "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log")
+                  "*.bak", "*.tmp", "*.corrupt", "*.log", "smoke_*.bmp", "selftest.log", "stuck-spots*.json")
     foreach ($p in $personal) { Get-ChildItem -Path $folder -Filter $p -File -ErrorAction SilentlyContinue | Remove-Item -Force }
     if (Test-Path (Join-Path $folder "AudioMixes")) { Remove-Item -Recurse -Force (Join-Path $folder "AudioMixes") }
     if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached maps and nav graphs)
+    if (Test-Path (Join-Path $folder "Logs")) { Remove-Item -Recurse -Force (Join-Path $folder "Logs") } # the game's own reports (portable mode: stuck-spot reports)
     Copy-Item -Force "tools/TESTERS.txt" (Join-Path $folder "READ ME FIRST.txt")
     Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring progression over from an older build
     if ($Runtime -like "win-*") { Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") } # a server list for friends (README, Playing with friends)

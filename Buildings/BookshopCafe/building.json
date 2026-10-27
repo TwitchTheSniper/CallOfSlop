@@ -124,7 +124,9 @@
   "stairs": [{"floor": 0, "rect": [-0.4, -3.9, 0.75, -2.05], "dir": "-z", "color": {"color": "#4a2e1c", "material": "wood"}}],
   "roof": {"type": "gable", "ridge": "x", "pitch": 35, "overhang": 0.4, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
-    {"type": "block", "min": [-6.15, 0, 5.12], "max": [6.15, 0.5, 5.22], "color": "$front"},
+    {"type": "block", "min": [-6.15, 0, 5.12], "max": [-3.65, 0.5, 5.22], "color": "$front"},
+    {"type": "block", "min": [-2.35, 0, 5.12], "max": [3.85, 0.5, 5.22], "color": "$front"},
+    {"type": "block", "min": [5.15, 0, 5.12], "max": [6.15, 0.5, 5.22], "color": "$front"},
     {"type": "block", "min": [-6.15, 2.35, 5.12], "max": [6.15, 2.95, 5.24], "color": "$front"},
     {"type": "prop", "name": "Shop Sign", "at": [-3.0, 2.4, 5.24]},
     {"type": "prop", "name": "Hanging Shop Sign", "at": [5.6, 0, 5.7]},

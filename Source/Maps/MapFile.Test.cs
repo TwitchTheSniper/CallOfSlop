@@ -18,7 +18,7 @@ public sealed class MapTestSpec
         "minDecalShare", "minMeshes", "minPlants", "minTrees", "maxDrawnBoxes", "minPackProps", "requireProps", "requireDecals",
         "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricHills", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
         "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
-        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "spawnsStand", "propsInside", "propsClear", "explosivesClear",
+        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "maxStuckSpots", "spawnsStand", "propsInside", "propsClear", "explosivesClear",
     ];
 
     /// <summary>"any" (the default), "non-rectangular", or a boundary shape: "rect", "circle", "ellipse", "smooth", "polygon".</summary>
@@ -71,6 +71,7 @@ public sealed class MapTestSpec
     public GameMode BotMatchMode = GameMode.FreeForAll;
     public int BotMatchPlayers = -1; // -1: the player limit
     public int MaxStuckBots = -1; // -1: not checked (in a match under 12 s most bots are still walking out)
+    public int MaxStuckSpots = 0; // the stuck watch's report: at most this many spots where a stuck spell reached recovery stage 2 or gave up (-1: not checked)
 
     public bool SpawnsStand;
     public bool PropsInside = true;
@@ -176,6 +177,7 @@ public sealed class MapTestSpec
                     break;
                 case "botMatchPlayers": s.BotMatchPlayers = Int(v, at, 2, Map.HardMaxPlayers); break;
                 case "maxStuckBots": s.MaxStuckBots = Int(v, at, -1); break;
+                case "maxStuckSpots": s.MaxStuckSpots = Int(v, at, -1); break;
                 case "spawnsStand": s.SpawnsStand = Bool(v, at); break;
                 case "propsInside": s.PropsInside = Bool(v, at); break;
                 case "propsClear": s.PropsClear = Bool(v, at); break;

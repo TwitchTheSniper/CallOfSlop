@@ -18,7 +18,7 @@ public static partial class SelfTest
         ("Legacy/01-ProtoBox.json", 0xa83dd7a5u), ("Legacy/02-Courtyard.json", 0x9b62bfadu), ("Legacy/03-Crossroads.json", 0x04fab23au),
         ("Legacy/04-Warehouse9.json", 0x0d1b5095u), ("Legacy/05-LongShot.json", 0x9a88c69cu), ("Legacy/06-Ziggurat.json", 0xd8b982f8u),
         ("Legacy/07-Scrapyard.json", 0xdece740cu), ("Legacy/08-Rooftops.json", 0x3601e902u), ("Legacy/09-Harbor.json", 0x56f96d12u),
-        ("Legacy/10-MarketStreet.json", 0xb8c3562au), ("Legacy/11-Quarry.json", 0xc0f1d401u), ("Legacy/12-Trenches.json", 0xb1bd94b3u),
+        ("Legacy/10-MarketStreet.json", 0xb8c3562au), ("Legacy/11-Quarry.json", 0xc0f1d401u), ("Legacy/12-Trenches.json", 0x58540d3bu) /* 2026-10-27: Waypoint ops out of the bunkers (bots had no way out; the look is unchanged) */,
         ("Legacy/13-TrainYard.json", 0xd94dde9du), ("Legacy/14-OfficePark.json", 0xbf692394u), ("Legacy/15-Ruins.json", 0xe93ec317u),
         ("Legacy/16-Overpass.json", 0x5b03f45fu), ("Legacy/17-Farmland.json", 0xfcc5a090u), ("Legacy/18-Downtown.json", 0x2a9960f5u),
         ("Legacy/19-Canyon.json", 0x03353c42u), ("Legacy/20-Airfield.json", 0xf47d65a6u), ("Legacy/21-Village.json", 0x8004499bu),

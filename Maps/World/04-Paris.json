@@ -7578,25 +7578,25 @@
   {
    "op": "Prop",
    "name": "Wheelie Bin Grey",
-   "x": -40.0,
+   "x": -41.4,
    "z": -31.6
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin Grey",
-   "x": 40.0,
+   "x": 41.4,
    "z": -31.6
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin",
-   "x": -39.2,
+   "x": -40.6,
    "z": -31.6
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin",
-   "x": 39.2,
+   "x": 40.6,
    "z": -31.6
   },
   {
@@ -7666,13 +7666,13 @@
   {
    "op": "Prop",
    "name": "Wooden Crate",
-   "x": -13.0,
+   "x": -11.6,
    "z": -31.6
   },
   {
    "op": "Prop",
    "name": "Wooden Crate",
-   "x": 13.0,
+   "x": 11.6,
    "z": -31.6
   },
   {
@@ -7948,28 +7948,28 @@
   {
    "op": "Prop",
    "name": "Wheelie Bin Grey",
-   "x": -40.0,
+   "x": -38.0,
    "z": 31.6,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin Grey",
-   "x": 40.0,
+   "x": 38.0,
    "z": 31.6,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin",
-   "x": -39.2,
+   "x": -38.8,
    "z": 31.6,
    "yaw": 180
   },
   {
    "op": "Prop",
    "name": "Wheelie Bin",
-   "x": 39.2,
+   "x": 38.8,
    "z": 31.6,
    "yaw": 180
   },
@@ -8042,13 +8042,13 @@
   {
    "op": "Prop",
    "name": "Wooden Crate",
-   "x": -13.0,
+   "x": -11.6,
    "z": 31.6
   },
   {
    "op": "Prop",
    "name": "Wooden Crate",
-   "x": 13.0,
+   "x": 11.6,
    "z": 31.6
   },
   {
