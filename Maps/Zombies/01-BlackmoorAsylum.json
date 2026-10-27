@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-map/1",
  "name": "Blackmoor Asylum",
- "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, the power in the generator house.",
+ "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, a slot machine for every part category, the power in the generator house.",
  "author": "Call of Slop",
  "order": 960,
  "maxPlayers": 8,
@@ -2802,6 +2802,54 @@
     "yaw": 90,
     "power": true,
     "category": "Optic"
+   },
+   {
+    "at": [
+     13.5,
+     -7.6
+    ],
+    "yaw": 180,
+    "category": "Splitter"
+   },
+   {
+    "at": [
+     17.0,
+     3.6
+    ],
+    "yaw": 0,
+    "category": "Utility"
+   },
+   {
+    "at": [
+     16.8,
+     -20.5
+    ],
+    "yaw": 90,
+    "category": "Upgrade"
+   },
+   {
+    "at": [
+     15.6,
+     -13.8
+    ],
+    "yaw": -90,
+    "category": "Multiplier"
+   },
+   {
+    "at": [
+     -22.6,
+     5.2
+    ],
+    "yaw": 90,
+    "category": "MeleeMod"
+   },
+   {
+    "at": [
+     -15.6,
+     -12.2
+    ],
+    "yaw": 90,
+    "category": "Muzzle"
    }
   ]
  }

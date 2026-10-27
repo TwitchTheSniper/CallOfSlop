@@ -6,7 +6,7 @@ Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
 buys, five perk machines, the power switch (it gates three perks and the lab shutter), two workbenches, four salvage
-piles, the weapon-slot upgrade and eleven slot machines (the classic one in the start room; ten per-category ones round the map, two in the lab on the power). Every machine is a solid prop ("machineProps": true). The script also checks its own
+piles, the weapon-slot upgrade and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
 Plan (north is -Z, east is +X):
@@ -238,7 +238,23 @@ SLOTS = [  # slot machines: the classic one (any part) in the start room; per-ca
     {"at": [-6.7, 7.0], "yaw": -90, "category": "Hilt"},                       # chapel, east wall
     {"at": [-11.6, 15.6], "yaw": 0, "category": "Head"},                       # chapel, south wall
     {"at": [6.7, 5.2], "yaw": 90, "power": True, "category": "Optic"},         # lab, west wall, behind the power
+    {"at": [13.5, -7.6], "yaw": 180, "category": "Splitter"},                  # ward, north wall, by the courtyard gate
+    {"at": [17.0, 3.6], "yaw": 0, "category": "Utility"},                      # ward, south wall, by the lab shutter
+    {"at": [16.8, -20.5], "yaw": 90, "category": "Upgrade"},                   # generator house, west wall
+    {"at": [15.6, -13.8], "yaw": -90, "category": "Multiplier"},               # courtyard, the generator house wall
+    {"at": [-22.6, 5.2], "yaw": 90, "category": "MeleeMod"},                   # chapel, west wall
+    {"at": [-15.6, -12.2], "yaw": 90, "category": "Muzzle"},                   # courtyard, the west garden wall
 ]
+# Every part category (a Parts/<Category> folder: the PartCategory names) gets a machine; a new category must be placed here.
+PART_CATEGORIES = sorted(d for d in os.listdir(os.path.join(ROOT, "Parts")) if not d.startswith("_") and d not in ("Builds", "Tables")
+                         and os.path.isdir(os.path.join(ROOT, "Parts", d)))
+_placed_cats = [s["category"] for s in SLOTS if "category" in s]
+for c in PART_CATEGORIES:
+    if c not in _placed_cats:
+        problems.append(f"the part category {c} has no slot machine: add one to SLOTS")
+for c in _placed_cats:
+    if c not in PART_CATEGORIES or _placed_cats.count(c) > 1:
+        problems.append(f"slot machine category {c}: not a Parts folder, or placed twice")
 SALVAGE = [{"at": [12.2, 1.2]}, {"at": [6, -25.5]}, {"at": [23.5, -22]}, {"at": [13.2, 12.6]}]
 
 zombies = {
@@ -540,7 +556,7 @@ for kind, s in machines:
 the_map = {
     "format": "call-of-slop-map/1",
     "name": "Blackmoor Asylum",
-    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, the power in the generator house.",
+    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, a slot machine for every part category, the power in the generator house.",
     "author": "Call of Slop",
     "order": 960,
     "maxPlayers": 8,

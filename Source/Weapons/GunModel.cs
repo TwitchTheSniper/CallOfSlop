@@ -966,7 +966,11 @@ public static class GunModel
         {
             // Box magazine hanging under/left of the receiver, plus a belt
             var big = mag == "Drum Mag" ? 1.35f : mag == "Extended Mag" ? 1.18f : 1f;
-            Box(f.RecvW * 1.5f * big, 0.12f * big, 0.14f * big, -f.RecvW * 0.35f, magY - 0.06f * big, magZ, color);
+            if (mag == "Drum Mag")
+                for (var k = 0; k < 6; k++) // a round drum (twelve-sided, axis along X) instead of the box
+                    Box(f.RecvW * 1.5f * big, 0.14f * big, 0.14f * big * 0.268f, -f.RecvW * 0.35f, magY - 0.07f * big, magZ, (k & 1) == 0 ? color : color * 0.94f, rotX: k * MathF.PI / 6);
+            else
+                Box(f.RecvW * 1.5f * big, 0.12f * big, 0.14f * big, -f.RecvW * 0.35f, magY - 0.06f * big, magZ, color);
             Box(0.03f, 0.01f, 0.05f, 0, magY + 0.01f, magZ, Metal * 0.6f);
             return;
         }
@@ -974,8 +978,8 @@ public static class GunModel
         {
             case "Drum Mag":
                 // Round drum standing sideways (axis along X)
-                Box(0.06f, 0.13f, 0.13f, 0, magY - 0.09f, magZ, color);
-                Box(0.06f, 0.13f, 0.13f, 0, magY - 0.09f, magZ, color * 0.92f, rotX: MathF.PI / 4);
+                for (var k = 0; k < 6; k++) // twelve-sided: six boxes turned 30 degrees apart
+                    Box(0.06f, 0.13f, 0.13f * 0.268f, 0, magY - 0.09f, magZ, (k & 1) == 0 ? color : color * 0.94f, rotX: k * MathF.PI / 6);
                 Box(0.066f, 0.04f, 0.04f, 0, magY - 0.09f, magZ, Metal * 0.6f);
                 Box(0.03f, 0.05f, 0.035f, 0, magY - 0.02f, magZ, color * 0.8f);
                 return;
