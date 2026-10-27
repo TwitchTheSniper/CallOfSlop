@@ -80,15 +80,15 @@ public static unsafe partial class Program
                     var roll = k * 18f + r * 0.37f;
                     var sym = (byte)((int)roll % 7); // skull, coin and the gems up to legendary
                     var dy = (roll - MathF.Floor(roll) - 0.5f) * 0.22f;
-                    DrawSlotSymbol(place, x, 1.3f - dy, front - 0.012f, sym, lit, 0.7f);
-                    Part(0.16f, 0.03f, 0.005f, x, 1.3f + dy * 0.5f, front - 0.02f, new Vector3(1f), 0.35f, 2);
+                    DrawSlotSymbol(place, x, 1.3f - dy, front - 0.02f, sym, lit, 0.7f);
+                    Part(0.16f, 0.03f, 0.005f, x, 1.3f + dy * 0.5f, front - 0.05f, new Vector3(1f), 0.35f, 2);
                 }
                 else if (m.State != ZSlotState.Idle || m.SpinId != 0)
-                    DrawSlotSymbol(place, x, 1.3f, front - 0.012f, m.Symbols[r], lit, 1f);
+                    DrawSlotSymbol(place, x, 1.3f, front - 0.02f, m.Symbols[r], lit, 1f);
             }
             var winning = m.State == ZSlotState.Showing && m.Result != ZSlotResult.Nothing;
             if (winning && ((int)(t * 6) & 1) == 0)
-                Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.025f, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? PartDef.RarityColor(m.Tier) : SlotGold, 0.35f, 2);
+                Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.055f, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? PartDef.RarityColor(m.Tier) : SlotGold, 0.35f, 2);
 
             // The heat meter: segments towards the next rarity step; flashing red at the top step.
             var step = Math.Max(1, _game.ZRules.SlotHeatStep);
@@ -236,8 +236,11 @@ public static unsafe partial class Program
     {
         var mode = lit ? 2 : 0;
         var dim = lit ? 1f : 0.4f;
+        // Each box sits a few millimetres in front of the one before, so a symbol's details (a skull's eyes, a gem's
+        // facets) never share a depth with the shape under them (z-fighting), and the whole symbol stands clear of the reel face.
+        var layer = 0;
         void Box(float sx, float sy, float ox, float oy, Vector3 c, float roll = 0) =>
-            Gfx.Draw(Matrix4x4.CreateScale(sx, sy, 0.006f) * Matrix4x4.CreateRotationZ(roll) * Matrix4x4.CreateTranslation(x + ox, y + oy, z) * place, c * dim, alpha, mode);
+            Gfx.Draw(Matrix4x4.CreateScale(sx, sy, 0.006f) * Matrix4x4.CreateRotationZ(roll) * Matrix4x4.CreateTranslation(x + ox, y + oy, z - 0.004f * layer++) * place, c * dim, alpha, mode);
         switch (sym)
         {
             case Game.SlotSymSkull:
