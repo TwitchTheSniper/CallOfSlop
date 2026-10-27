@@ -107,6 +107,8 @@ Otherwise nothing. All agents finished and every branch is merged. A weekly sche
 **Flaky tests (passed on rerun; root cause unknown)**
 - "Bot stuck watch": the pit bot doesn't self-kill within 9 s. Windows, once.
 - "Civic Buildings": a single 507 ms wall-clock tick, from a runner stall. Linux, once.
+- "Nav bake": "Building Yard: the bake key took 27 ms" (limit 25, wall clock). Windows release dry run 40488961866 (feat/mac-release, 2026-10-27), once; the same commit's other runs passed.
+- "Frenzy music" (DMR): "the frenzy costs 1.55x the heaviest track" (allowed 1.5x). The macos-latest release job, dry run 40488961866 (2026-10-27), once; the first Mac run passed.
 - "Matches" on Keelhaul Yard: "4 player(s) below the floor" once in the agent container (2026-10-23, fix/test-range-qol, unseeded bot match on the gravity-zone map); passed on rerun.
 - "Space: gravity maps" (now the "Map contract" bot match on Twin Shard): "3 bots barely moved in a KingOfTheHill match" on main's Linux run 40035032503 (2026-10-23). The seeded 12 s match is the same every run on one machine but not across machines (float differences); the map's `test` block allows 4 stuck bots since.
 - "Audio mixer meters": 1,800 bytes allocated. Linux, once. Again 6,984 bytes once in the agent container under load 15 on 2 cores (2026-10-23), with "boosted music costs 1.51x" in the same run; both passed on rerun. Fixed 2026-10-26 (steady allocation probes, below).
