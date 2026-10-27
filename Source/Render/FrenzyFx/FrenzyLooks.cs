@@ -290,7 +290,7 @@ public static class FrenzyLooks
     public static IReadOnlyList<FrenzyLook> All => _all;
 
     /// <summary>The shared per-class data file (each frenzy feature owns one section of each class entry; this owns "visual").</summary>
-    public static string DataFile => Path.Combine(AppContext.BaseDirectory, "Weapons", "Frenzy", "classes.json");
+    public static string DataFile => Path.Combine(AppFolders.Data, "Weapons", "Frenzy", "classes.json");
 
     /// <summary>Loads the "visual" sections of <see cref="DataFile"/> over the built-in looks, if the file is there. Never throws.</summary>
     public static void Load()

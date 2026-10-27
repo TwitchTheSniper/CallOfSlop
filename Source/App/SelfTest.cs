@@ -67,7 +67,7 @@ public static partial class SelfTest
     /// it), or null for the full suite.</param>
     public static int Run(string? only = null)
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "selftest.log");
+        var path = AppFolders.LogPath("selftest.log");
         // First pass: collect the section names without running anything, and resolve the filter against them.
         CollectNames();
         string[] picked = [];
@@ -379,6 +379,7 @@ public static partial class SelfTest
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)
         Section("Update cleanup", CheckUpdateCleanup); // SelfTestUpdateCleanup.cs: build markers, what the cleanup removes and keeps in a fake install root (temp folders only), rollback, locks, resuming
+        Section("Mac release", CheckMacRelease); // SelfTestMac.cs: app bundle data/log folders, Mac save folder, per-platform update.json, unzipping and opening CallOfSlop.app, a Mac check + install against a fake GitHub (temp folders only)
         Section("Save folder", CheckSaves); // SelfTestSaves.cs: save paths, portable/--save-dir, migration, atomic writes + .bak, newer-format guard (temp folders only)
         // space-b maps
         // space-d maps

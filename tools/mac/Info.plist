@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- CallOfSlop.app's Info.plist (tools/mac/package_mac.sh fills in @VERSION@). Apple Silicon only. -->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleName</key>
+	<string>Call of Slop</string>
+	<key>CFBundleDisplayName</key>
+	<string>Call of Slop</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.twitchthesniper.callofslop</string>
+	<key>CFBundleExecutable</key>
+	<string>CallOfSlop</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@VERSION@</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.action-games</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSArchitecturePriority</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticGraphicsSwitching</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Call of Slop uses the microphone only for in-game voice chat.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Call of Slop looks for your router (UPnP) to open a port when you host, and finds games on your local network.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited.</string>
+</dict>
+</plist>

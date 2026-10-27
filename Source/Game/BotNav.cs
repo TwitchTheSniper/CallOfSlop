@@ -85,7 +85,7 @@ public sealed partial class NavGraph
     private static uint _hash;
     private static Map? _bakeMap; // the map a baked or cached graph was looked for (BotNavBake.cs)
     private static byte[]? _bakeKey;
-    private static Task<(NavGraph? Graph, string Result)>? _bakeTask;
+    private static Task<(NavGraph? Graph, string Result, byte[]? Key)>? _bakeTask;
 
     /// <summary>An empty graph, used while the real one is being built: bots steer straight at their goals meanwhile.</summary>
     public static readonly NavGraph Empty = CreateEmpty();
@@ -165,10 +165,24 @@ public sealed partial class NavGraph
             if (_bakeMap == null)
             {
                 _bakeMap = map;
-                var key = _bakeKey = NavBake.KeyOf(map, HashOf(map)); // (game thread: it reads the boxes; a slice of its own)
                 string name = map.Name;
                 var hash = HashOf(map);
-                _bakeTask = Task.Run(() => (NavBake.TryLoad(name, hash, key, out var result), result));
+                // The key hashes everything the graph is built from (tens of ms on a big map): on the worker too. Only the
+                // boxes as they are now are taken here, a plain copy; the rest of what it reads never changes after the build.
+                var boxes = NavBake.TakeBoxes(map);
+                _bakeTask = Task.Run(() =>
+                {
+                    byte[] key;
+                    try
+                    {
+                        key = NavBake.KeyOf(map, hash, boxes);
+                    }
+                    catch (Exception ex)
+                    {
+                        return (null, $"no bake key ({ex.GetType().Name}: {ex.Message})", null); // built live, and not cached
+                    }
+                    return (NavBake.TryLoad(name, hash, key, out var result), result, key);
+                });
                 if (budgetMs < 10)
                     return;
             }
@@ -176,8 +190,9 @@ public sealed partial class NavGraph
             {
                 if (!_bakeTask.IsCompleted && budgetMs < double.MaxValue)
                     return; // bots steer straight a moment longer
-                var (loaded, result) = _bakeTask.Result;
+                var (loaded, result, key) = _bakeTask.Result;
                 _bakeTask = null;
+                _bakeKey = key; // (for the cache, should the graph be built here after all: Store)
                 NavBake.Note(result);
                 if (loaded != null)
                 {

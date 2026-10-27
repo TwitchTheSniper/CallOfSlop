@@ -8,6 +8,8 @@ Running it
 - Double-click CallOfSlop.exe. No install needed; .NET is included.
 - Windows 10/11, 64-bit, with a graphics card that supports OpenGL 4.1.
 - If Windows SmartScreen warns about an unknown app, click "More info" > "Run anyway".
+- Mac: a Mac download (Apple Silicon) is ready but not shipped yet. When it is, it comes as its own
+  CallOfSlop-<version>-mac.zip with its own READ ME FIRST.txt; this zip is the Windows build.
 
 Updates
 - The game tells you when there's an update (a banner on the main menu); click Install.

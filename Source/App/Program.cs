@@ -113,7 +113,8 @@ public static unsafe partial class Program
         if (args.SkipWhile(a => !a.Equals("--stuck-report", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } stuckDir)
             return StuckSpots.Cli(stuckDir, args); // merges stuck-spot reports and logs from testers and CI (StuckSpots.cs)
         if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])
-            return UpdateVerifyCli.Run(manifestFile, zipFile); // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
+            return UpdateVerifyCli.Run(manifestFile, zipFile, // Release workflow: the game's own updater checks the package (UpdateVerifyCli.cs)
+                args.SkipWhile(a => !a.Equals("--platform", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() ?? UpdateManifest.CurrentPlatform);
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
@@ -799,7 +800,7 @@ public static unsafe partial class Program
             OpenGl.Native.glReadPixels(0, 0, w, h, OpenGl.GL_RGBA, OpenGl.GL_UNSIGNED_BYTE, p);
         int ow = w / 2, oh = h / 2;
         var rowBytes = (ow * 3 + 3) & ~3;
-        using var f = new BinaryWriter(File.Create(Path.Combine(AppContext.BaseDirectory, $"smoke_{name}.bmp")));
+        using var f = new BinaryWriter(File.Create(AppFolders.LogPath($"smoke_{name}.bmp")));
         f.Write((byte)'B');
         f.Write((byte)'M');
         f.Write(54 + rowBytes * oh);
@@ -888,7 +889,7 @@ public static unsafe partial class Program
         try
         {
             var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log" : "callofslop.log";
-            var writer = new StreamWriter(Path.Combine(AppContext.BaseDirectory, name), append: false) { AutoFlush = true };
+            var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
             Console.SetError(writer);
         }

@@ -107,7 +107,7 @@ public sealed partial class Map
             if (File.Exists(local))
                 return (local, $"Maps/{Path.GetFileName(PackDir)}/{rel}", rel);
         }
-        var global = Path.Combine(AppContext.BaseDirectory, rel);
+        var global = Path.Combine(AppFolders.Data, rel);
         if (File.Exists(global))
             return (global, rel, null);
         static IEnumerable<string> ModelsIn(string dir) => Directory.Exists(dir)
