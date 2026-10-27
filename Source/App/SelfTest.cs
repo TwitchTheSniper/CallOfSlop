@@ -314,6 +314,7 @@ public static partial class SelfTest
         Section("Gun mix", CheckGunMix); // SelfTestGunMix.cs: own shot vs other players' by distance, rendered offline through the mixing path
         Section("Audio mixer", CheckAudioMixer); // SelfTestAudioMixer.cs: defaults table, the baked SeabMix2 levels, identity with no audio_mix.json, old saves moving untouched levels to the new defaults, JSON round trip / unknown keys / clamping, slider isolation, mute, F8 migration, no allocations closed or metering
         Section("Text", CheckText); // SelfTestText.cs: player-visible text
+        Section("Part text width", CheckPartTextWidth); // SelfTestPartTextWidth.cs: part descriptions wrap at a set width
         Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
         Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged

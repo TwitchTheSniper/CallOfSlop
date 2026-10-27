@@ -113,7 +113,7 @@ public sealed partial class Ui
         ImGui.EndDisabled();
         WbRefusedClick(ready); // a click on the greyed-out Apply: red rings on the empty sockets that need a part
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGuiSafe.SetTooltip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
+            WbTip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
         if (ImGui.Button("Revert"u8))
             BenchLoad(run.Slot);
                 DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
@@ -161,7 +161,7 @@ public sealed partial class Ui
             ImGui.PopStyleColor();
         ImGui.EndDisabled();
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-            ImGuiSafe.SetTooltip(current == null
+            WbTip(current == null
                 ? $"Nothing in {SlotName(run.Slot)} to take apart."
                 : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
                   + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : " (another gun goes in your hands, or nothing: the melee key still works).")
