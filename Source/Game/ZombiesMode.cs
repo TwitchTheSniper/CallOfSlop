@@ -463,6 +463,30 @@ public sealed partial class Game
             p.History[i] = new HistoryEntry { Position = at, Yaw = p.Yaw };
         if (zp.NeedsStartGear)
             GiveStartGear(p, quiet: _zRunMatch != MatchNumber);
+        else
+            KeepBuiltGuns(p);
+    }
+
+    /// <summary>
+    /// Server, a spawn that keeps the guns already given (the warmup's end respawns everyone): Spawn has just put the
+    /// loadout's guns back in the primary and secondary ids (and bots draw a fresh multiplayer loadout every spawn), while
+    /// the built guns stay in <see cref="Player.BuiltPrimary"/> and <see cref="Player.BuiltSecondary"/>. The ids go back
+    /// to the built guns' ids, or <see cref="Player.WeaponDef"/> would be a gun the player doesn't
+    /// <see cref="Player.Owns"/> and the server would drop every shot (bots never hit anything after a warmup, 2026-10-27).
+    /// </summary>
+    private static void KeepBuiltGuns(Player p)
+    {
+        if (p.BuiltPrimary is { } prim)
+        {
+            p.Primary = p.WantPrimary = prim.Id;
+            p.PrimaryKit = p.WantPrimaryKit = 0;
+        }
+        if (p.BuiltSecondary is { } sec)
+        {
+            p.Secondary = p.WantSecondary = sec.Id;
+            p.SecondaryKit = p.WantSecondaryKit = 0;
+        }
+        p.Weapon = p.Primary;
     }
 
     /// <summary>Server: the start builds ("start" in Parts/Builds): the guns in slots 1-2, the melee weapon on the melee key.</summary>
