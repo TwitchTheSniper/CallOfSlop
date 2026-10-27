@@ -81,7 +81,7 @@ public static unsafe partial class Program
             }
             var winning = m.State == ZSlotState.Showing && m.Result != ZSlotResult.Nothing;
             if (winning && ((int)(t * 6) & 1) == 0)
-                Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.025f, m.Result == ZSlotResult.Part ? PartDef.RarityColor(m.Tier) : SlotGold, 0.35f, 2);
+                Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.025f, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? PartDef.RarityColor(m.Tier) : SlotGold, 0.35f, 2);
 
             // The heat meter: segments towards the next rarity step; flashing red at the top step.
             var step = Math.Max(1, _game.ZRules.SlotHeatStep);
@@ -112,6 +112,15 @@ public static unsafe partial class Program
                 var up = 2.1f + 0.3f * Math.Clamp(1f - m.Left / Math.Max(0.1f, _game.ZRules.SlotShowSeconds), 0, 1);
                 Gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateRotationY(t * 3) * Matrix4x4.CreateTranslation(0, up, -0.1f) * place, PartDef.RarityColor(m.Tier), 1f, mode: 2);
             }
+            else if (m.State == ZSlotState.Showing && m.Result == ZSlotResult.Melee)
+            {
+                // A melee build won: a glowing blade in its rarity colour, turning over the machine.
+                var up = 2.1f + 0.3f * Math.Clamp(1f - m.Left / Math.Max(0.1f, _game.ZRules.SlotShowSeconds), 0, 1);
+                var wonAt = Matrix4x4.CreateRotationY(t * 3) * Matrix4x4.CreateTranslation(0, up, -0.1f) * place;
+                Gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.5f, 0.02f) * Matrix4x4.CreateTranslation(0, 0.12f, 0) * wonAt, PartDef.RarityColor(m.Tier), 1f, mode: 2);
+                Gfx.Draw(Matrix4x4.CreateScale(0.2f, 0.04f, 0.04f) * Matrix4x4.CreateTranslation(0, -0.15f, 0) * wonAt, new Vector3(0.3f, 0.2f, 0.1f));
+                Gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.16f, 0.04f) * Matrix4x4.CreateTranslation(0, -0.25f, 0) * wonAt, new Vector3(0.3f, 0.2f, 0.1f));
+            }
         }
     }
 
@@ -136,6 +145,12 @@ public static unsafe partial class Program
                 Box(0.1f, 0.03f, 0, 0, new Vector3(0.45f, 0.47f, 0.5f), MathF.PI / 4);
                 Box(0.1f, 0.03f, 0, 0, new Vector3(0.45f, 0.47f, 0.5f), -MathF.PI / 4);
                 Box(0.04f, 0.04f, 0, 0, new Vector3(0.2f));
+                break;
+            case Game.SlotSymBlade:
+                // A sword: blade, guard and grip (two blades and a gem: a melee build of the gem's rarity).
+                Box(0.025f, 0.11f, 0, 0.03f, new Vector3(0.85f, 0.88f, 0.92f), -MathF.PI / 4);
+                Box(0.07f, 0.018f, -0.03f, -0.03f, new Vector3(0.75f, 0.6f, 0.2f), -MathF.PI / 4);
+                Box(0.02f, 0.04f, -0.045f, -0.045f, new Vector3(0.4f, 0.25f, 0.12f), -MathF.PI / 4);
                 break;
             case Game.SlotSymCoin:
                 Box(0.09f, 0.09f, 0, 0, new Vector3(0.95f, 0.72f, 0.15f), MathF.PI / 4);

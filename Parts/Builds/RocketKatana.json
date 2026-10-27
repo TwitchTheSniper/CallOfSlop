@@ -3,7 +3,7 @@
   "name": "Rocket Katana",
   "tier": "legendary",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "A katana with a rocket motor taped on. Very fast, very silly.",
   "build": "Sword Hilt{head:Katana Blade,mod_1:Rocket Booster}"

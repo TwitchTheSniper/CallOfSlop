@@ -21,6 +21,9 @@ public enum ZSlotResult : byte
     Scrap,
     Points,
     Part,
+
+    /// <summary>A complete melee build into the melee slot (developer answer, 2026-10-26: melee comes from the slots, not the box).</summary>
+    Melee,
 }
 
 /// <summary>One slot machine on the map: its state, heat (the pity timer) and the last pull's reels and result.</summary>
@@ -48,7 +51,7 @@ public sealed class ZSlotMachine
     public ZSlotResult Result;
     public Rarity Tier;
 
-    /// <summary>The part paid (an index into <see cref="Parts.All"/>), or -1.</summary>
+    /// <summary>The part paid (an index into <see cref="Parts.All"/>; a melee build: into <see cref="StandardBuilds.All"/>), or -1.</summary>
     public short Part = -1;
 
     /// <summary>The price paid for this pull (points back pay a share of it).</summary>
@@ -94,8 +97,12 @@ public sealed class ZSlotMachine
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>Reel symbols: a skull (nothing), a cog (scrap), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier).</summary>
-    public const byte SlotSymSkull = 0, SlotSymScrap = 1, SlotSymCoin = 2, SlotSymGem = 3;
+    /// <summary>Reel symbols: a skull (nothing), a cog (scrap), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier),
+    /// then a blade (<see cref="SlotSymBlade"/>: two blades and a gem pay a melee build of the gem's rarity).</summary>
+    public const byte SlotSymSkull = 0, SlotSymScrap = 1, SlotSymCoin = 2, SlotSymGem = 3, SlotSymBlade = SlotSymGem + (int)Rarity.Wonder + 1;
+
+    /// <summary>Is <paramref name="s"/> a gem (not a skull, cog, coin or blade)?</summary>
+    public static bool IsSlotGem(byte s) => s >= SlotSymGem && s < SlotSymBlade;
 
     /// <summary>Every machine's state (only the first <see cref="ZombiesMap.SlotMachines"/>.Count are used).</summary>
     public readonly ZSlotMachine[] ZSlots = MakeSlots();
@@ -138,6 +145,7 @@ public sealed partial class Game
         ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.AutoScrapped
             ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: scrapped for {Scrap.SalvageValue(Parts.All[m.Part])})"
             : $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!",
+        ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length => $"{PartDef.RarityName(m.Tier)} melee: the {StandardBuilds.All[m.Part].Name}!",
         ZSlotResult.Scrap => $"Scrap: +{ZRules.SlotScrap}",
         ZSlotResult.Points => $"Coins: +{SlotPointsBack(m.Paid)} points",
         _ => "Nothing. Better luck next pull.",
@@ -168,6 +176,14 @@ public sealed partial class Game
             if (m.Part < 0)
                 result = ZSlotResult.Scrap; // no part of that tier (a modded part set): scrap instead
         }
+        else if (result == ZSlotResult.Melee)
+        {
+            m.Part = PickSlotMelee(tier, jackpot, zp.Slots[4]?.Name, ZNext());
+            if (m.Part < 0)
+                result = ZSlotResult.Scrap; // no "slots" melee builds (a modded set): scrap instead
+            else
+                tier = StandardBuilds.All[m.Part].Tier; // (the nearest tier when that one had none: the reels show what's paid)
+        }
         m.Result = result;
         m.Tier = tier;
         SlotSymbols(result, tier, jackpot, ZNext(), m.Symbols);
@@ -191,6 +207,50 @@ public sealed partial class Game
         return -1;
     }
 
+    private static StandardBuild[]? _slotMeleeFor;
+    private static int[] _slotMelee = [];
+
+    /// <summary>The standard builds a slot machine can pay (tagged "slots": melee builds), as indices into <see cref="StandardBuilds.All"/>.</summary>
+    public static int[] SlotMeleeBuilds()
+    {
+        var all = StandardBuilds.All;
+        if (!ReferenceEquals(_slotMeleeFor, all))
+        {
+            _slotMelee = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("slots") && all[i].IsMelee).ToArray();
+            _slotMeleeFor = all;
+        }
+        return _slotMelee;
+    }
+
+    /// <summary>
+    /// A melee build of <paramref name="tier"/> for a slot payout (not the one called <paramref name="held"/>): that tier,
+    /// else the nearest tier with one (never wonder outside a jackpot round), else -1. An index into <see cref="StandardBuilds.All"/>.
+    /// </summary>
+    public static short PickSlotMelee(Rarity tier, bool jackpot, string? held, uint seed)
+    {
+        var all = StandardBuilds.All;
+        var pool = SlotMeleeBuilds();
+        var top = (int)(jackpot ? Rarity.Wonder : Rarity.Legendary);
+        for (var step = 0; step <= (int)Rarity.Wonder; step++)
+            for (var side = 0; side < (step == 0 ? 1 : 2); side++)
+            {
+                var t = (int)tier + (side == 0 ? -step : step);
+                if (t < 0 || t > top)
+                    continue;
+                var n = 0;
+                foreach (var i in pool)
+                    if ((int)all[i].Tier == t && !all[i].Name.Equals(held, StringComparison.OrdinalIgnoreCase))
+                        n++;
+                if (n == 0)
+                    continue;
+                var k = (int)((seed * 2654435761u >> 5) % (uint)n);
+                foreach (var i in pool)
+                    if ((int)all[i].Tier == t && !all[i].Name.Equals(held, StringComparison.OrdinalIgnoreCase) && k-- == 0)
+                        return (short)i;
+            }
+        return -1;
+    }
+
     /// <summary>Server, every tick: a spin that ends pays out; a result that has shown long enough frees the machine.</summary>
     private void TickSlots(ZombiesMap zm, double now)
     {
@@ -201,7 +261,7 @@ public sealed partial class Game
             {
                 m.State = ZSlotState.Showing;
                 m.Until = now + ZRules.SlotShowSeconds;
-                PaySlot(zm, i, m);
+                PaySlot(zm, i, m, now);
             }
             else if (m.State == ZSlotState.Showing && now >= m.Until)
             {
@@ -257,7 +317,7 @@ public sealed partial class Game
             m.Symbols[0] = s0;
             m.Symbols[1] = s1;
             m.Symbols[2] = s2;
-            m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Part);
+            m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Melee);
             m.Tier = (Rarity)Math.Min((res >> 3) & 7, (int)Rarity.Wonder);
             m.AutoScrapped = (res & 128) != 0;
             m.Part = part;
@@ -265,10 +325,10 @@ public sealed partial class Game
         }
     }
 
-    private void PaySlot(ZombiesMap zm, int i, ZSlotMachine m)
+    private void PaySlot(ZombiesMap zm, int i, ZSlotMachine m, double now)
     {
         // Heat: a rare-or-better part resets it, anything else warms the machine up.
-        if (m.Result == ZSlotResult.Part && m.Tier >= ZRules.SlotPityTier)
+        if (m.Result is ZSlotResult.Part or ZSlotResult.Melee && m.Tier >= ZRules.SlotPityTier)
             m.Heat = 0;
         else if (m.Heat < 255)
             m.Heat++;
@@ -294,6 +354,25 @@ public sealed partial class Game
                     ModeEvent($"{p.Name} hit the jackpot on a slot machine: {PartDef.RarityName(m.Tier)} {part.Name}!", Sfx.StreakReady);
                 else
                     ZFeedTo(p, $"Slot machine: {SlotResultText(m)}", Sfx.LevelUp);
+                Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
+                break;
+            }
+            case ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length:
+            {
+                // Into the melee slot; the melee build there goes on the floor a few steps in front of the machine (as a
+                // swap would, so you can change your mind; far enough out that the machine's prompt stays the nearest),
+                // unless it's the untouched start one (you get that back with the start gear anyway).
+                var sb = StandardBuilds.All[m.Part];
+                if (zp.Slots[4] is { } old && !IsStartBuild(old))
+                {
+                    var spot = zm.SlotMachines[i];
+                    SpawnWeaponDrop(old, DropSpots(spot.At + World.FlatForward(spot.Yaw) * 3.2f, 1, p.Id)[0], now + ZRules.BuildDropSeconds, p, full: true, now);
+                }
+                GiveBuild(p, 4, sb.Build(), full: true);
+                if (m.Tier >= Rarity.Legendary)
+                    ModeEvent($"{p.Name} won a {PartDef.RarityName(m.Tier)} melee build on a slot machine: the {sb.Name}!", Sfx.StreakReady);
+                else
+                    ZFeedTo(p, $"Slot machine: {SlotResultText(m)} (in your melee slot)", Sfx.LevelUp);
                 Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
                 break;
             }
@@ -349,8 +428,32 @@ public sealed partial class Game
             RunTables.SlotNothing => (ZSlotResult.Nothing, Rarity.Common),
             RunTables.SlotScrap => (ZSlotResult.Scrap, Rarity.Common),
             RunTables.SlotPoints => (ZSlotResult.Points, Rarity.Common),
+            RunTables.SlotMelee => (ZSlotResult.Melee, MeleeTier(w, h)),
             _ => (ZSlotResult.Part, (Rarity)(k - RunTables.SlotPart)),
         };
+    }
+
+    /// <summary>A melee payout's rarity: rolled from the same weights as a part's (the round's row, heat and jackpot included).</summary>
+    private static Rarity MeleeTier(ReadOnlySpan<float> w, uint h)
+    {
+        h = (h ^ 0x9E3779B9u) * 2246822519u;
+        h ^= h >> 13;
+        var total = 0f;
+        for (var t = 0; t <= (int)Rarity.Wonder; t++)
+            total += w[RunTables.SlotPart + t];
+        if (total <= 0)
+            return Rarity.Common;
+        var pick = (h % 1000000u) / 1000000f * total;
+        for (var t = 0; t <= (int)Rarity.Wonder; t++)
+        {
+            pick -= w[RunTables.SlotPart + t];
+            if (pick < 0 && w[RunTables.SlotPart + t] > 0)
+                return (Rarity)t;
+        }
+        for (var t = (int)Rarity.Wonder; t > 0; t--)
+            if (w[RunTables.SlotPart + t] > 0)
+                return (Rarity)t;
+        return Rarity.Common;
     }
 
     /// <summary>The weights a pull rolls from (see <see cref="RollSlotOutcome"/>), into <paramref name="w"/> (<see cref="RunTables.SlotKeys"/> order).</summary>
@@ -397,12 +500,21 @@ public sealed partial class Game
     /// </summary>
     public static (ZSlotResult Result, Rarity Tier) ReadSlotSymbols(ReadOnlySpan<byte> s)
     {
-        if (s[0] >= SlotSymGem && s[0] == s[1] && s[1] == s[2])
+        // Two blades (or three): a melee build, of the third symbol's gem (common without one).
+        var blades = (s[0] == SlotSymBlade ? 1 : 0) + (s[1] == SlotSymBlade ? 1 : 0) + (s[2] == SlotSymBlade ? 1 : 0);
+        if (blades >= 2)
+        {
+            for (var i = 0; i < 3; i++)
+                if (IsSlotGem(s[i]))
+                    return (ZSlotResult.Melee, (Rarity)(s[i] - SlotSymGem));
+            return (ZSlotResult.Melee, Rarity.Common);
+        }
+        if (IsSlotGem(s[0]) && s[0] == s[1] && s[1] == s[2])
             return (ZSlotResult.Part, (Rarity)(s[0] - SlotSymGem));
         byte pair = 0;
-        if (s[0] >= SlotSymGem && (s[0] == s[1] || s[0] == s[2]))
+        if (IsSlotGem(s[0]) && (s[0] == s[1] || s[0] == s[2]))
             pair = s[0];
-        else if (s[1] >= SlotSymGem && s[1] == s[2])
+        else if (IsSlotGem(s[1]) && s[1] == s[2])
             pair = s[1];
         if (pair != 0)
             return pair == SlotSymGem ? (ZSlotResult.Scrap, Rarity.Common) : (ZSlotResult.Part, (Rarity)(pair - SlotSymGem - 1));
@@ -417,8 +529,8 @@ public sealed partial class Game
 
     /// <summary>
     /// Reels that read as <paramref name="r"/> / <paramref name="tier"/> (<see cref="ReadSlotSymbols"/>), varied by
-    /// <paramref name="seed"/>: a part comes up as three of its gem or as two of the next gem up; near misses (odd gems)
-    /// fill the rest. The wonder gem only shows in jackpot rounds. No allocation.
+    /// <paramref name="seed"/>: a part comes up as three of its gem or as two of the next gem up, a melee build as two
+    /// blades and its gem; near misses (odd gems, now and then a lone blade) fill the rest. The wonder gem only shows in jackpot rounds. No allocation.
     /// </summary>
     public static void SlotSymbols(ZSlotResult r, Rarity tier, bool jackpot, uint seed, Span<byte> s)
     {
@@ -437,8 +549,8 @@ public sealed partial class Game
         {
             for (var tries = 0; tries < 6; tries++)
             {
-                var g = Next() % 3 == 0 ? SlotSymSkull : Gem();
-                if (g == SlotSymSkull || (g != a && g != b))
+                var g = Next() % 3 == 0 ? (Next() % 4 == 0 && a != SlotSymBlade && b != SlotSymBlade ? SlotSymBlade : SlotSymSkull) : Gem();
+                if (g is SlotSymSkull or SlotSymBlade || (g != a && g != b))
                     return g;
             }
             return SlotSymSkull;
@@ -460,6 +572,11 @@ public sealed partial class Game
                     s[0] = s[1] = s[2] = gem;
                 return;
             }
+            case ZSlotResult.Melee:
+                // Two blades and the build's gem (the gem anywhere on the line).
+                s[0] = s[1] = s[2] = SlotSymBlade;
+                s[at] = (byte)(SlotSymGem + (int)tier);
+                return;
             case ZSlotResult.Scrap when Next() % 3 == 0:
                 s[0] = s[1] = s[2] = SlotSymGem; // two commons
                 s[at] = Odd(SlotSymGem, SlotSymGem);

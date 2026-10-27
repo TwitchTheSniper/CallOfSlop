@@ -206,13 +206,14 @@ public static partial class SelfTest
                 Fail("the alive cap or the spawn queue doesn't work");
         }
 
-        // ---- The box never offers what you already carry (a gun slot or the melee slot), and every tier has variety ----
+        // ---- The box never offers what you already carry, never a melee build (guns only since 2026-10-26), and every tier has variety ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
         {
             var me = g.Local!;
             var all = StandardBuilds.All;
             var gun = StandardBuilds.From("box").FirstOrDefault(b => b.Tier == Rarity.Uncommon && !b.IsMelee);
-            var melee = StandardBuilds.From("box").FirstOrDefault(b => b.Tier == Rarity.Uncommon && b.IsMelee);
+            var melee = StandardBuilds.All.FirstOrDefault(b => b.Tier == Rarity.Uncommon && b.IsMelee);
+            var meleeOffers = 0;
             var gave = gun != null && melee != null && g.GiveBuild(me, 0, gun.Build(), full: true) && g.GiveBuild(me, 4, melee.Build(), full: true);
             var repeats = 0;
             var seen = new HashSet<int>[6];
@@ -226,15 +227,17 @@ public static partial class SelfTest
                         continue;
                     if (all[b].Name == gun?.Name || all[b].Name == melee?.Name)
                         repeats++;
+                    if (all[b].IsMelee)
+                        meleeOffers++;
                     seen[(int)all[b].Tier].Add(b);
                 }
-            ZLine($"box repeats: carrying '{gun?.Name}' and '{melee?.Name}' (given {gave}): offered again {repeats} time(s) in 12000 rolls; distinct offers by tier "
+            ZLine($"box repeats: carrying '{gun?.Name}' and '{melee?.Name}' (given {gave}): offered again {repeats} time(s), melee builds offered {meleeOffers} time(s) in 12000 rolls; distinct offers by tier "
                   + string.Join(" ", Enumerable.Range(0, 6).Select(i => $"{(Rarity)i} {seen[i].Count}")));
-            if (!gave || repeats > 0)
-                Fail("the mystery box should never offer a build you already carry, in a gun slot or the melee slot");
+            if (!gave || repeats > 0 || meleeOffers > 0)
+                Fail("the mystery box should never offer a gun you already carry, nor any melee build (guns only: melee builds come from the slot machines)");
             for (var t = (int)Rarity.Uncommon; t <= (int)Rarity.Wonder; t++)
-                if (seen[t].Count < 6)
-                    Fail($"the mystery box offered only {seen[t].Count} different {(Rarity)t} builds (expected 6 or more for variety)");
+                if (seen[t].Count < 5)
+                    Fail($"the mystery box offered only {seen[t].Count} different {(Rarity)t} guns (expected 5 or more for variety)");
         }
 
         // ---- Doors cost points and unlock; wall buys and ammo; the box and the teddy bear; perks and power ----

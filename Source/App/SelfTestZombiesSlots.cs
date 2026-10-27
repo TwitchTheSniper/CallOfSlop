@@ -35,12 +35,13 @@ public static partial class SelfTest
         Span<byte> sym = stackalloc byte[3];
         var misread = 0;
         var wonderShown = 0;
+        var loneBlades = 0;
         var shapes = new HashSet<int>();
         foreach (var jackpot in new[] { false, true })
-            for (var res = ZSlotResult.Nothing; res <= ZSlotResult.Part; res++)
+            for (var res = ZSlotResult.Nothing; res <= ZSlotResult.Melee; res++)
                 for (var tier = Rarity.Common; tier <= (jackpot ? Rarity.Wonder : Rarity.Legendary); tier++)
                 {
-                    if (res != ZSlotResult.Part && tier != Rarity.Common)
+                    if (res is not (ZSlotResult.Part or ZSlotResult.Melee) && tier != Rarity.Common)
                         continue;
                     for (var seed = 1u; seed <= 400; seed++)
                     {
@@ -48,16 +49,52 @@ public static partial class SelfTest
                         if (Game.ReadSlotSymbols(sym) != (res, tier))
                             misread++;
                         var gemTop = Game.SlotSymGem + (int)(jackpot ? Rarity.Wonder : Rarity.Legendary);
-                        if (sym[0] > gemTop || sym[1] > gemTop || sym[2] > gemTop)
+                        foreach (var x in sym)
+                            if (x > gemTop && x != Game.SlotSymBlade)
+                                misread++;
+                        var blades = (sym[0] == Game.SlotSymBlade ? 1 : 0) + (sym[1] == Game.SlotSymBlade ? 1 : 0) + (sym[2] == Game.SlotSymBlade ? 1 : 0);
+                        if ((blades >= 2) != (res == ZSlotResult.Melee))
                             misread++;
+                        if (blades == 1)
+                            loneBlades++;
                         if (!jackpot && (sym[0] == Game.SlotSymGem + (int)Rarity.Wonder || sym[1] == Game.SlotSymGem + (int)Rarity.Wonder || sym[2] == Game.SlotSymGem + (int)Rarity.Wonder))
                             wonderShown++;
                         shapes.Add(sym[0] | sym[1] << 8 | sym[2] << 16);
                     }
                 }
-        ZLine($"slots: reels misread {misread}, wonder gem outside a jackpot round {wonderShown}, {shapes.Count} different reel lines");
-        if (misread > 0 || wonderShown > 0 || shapes.Count < 60)
-            Fail("slot machine reels should always read as what was paid (three of a gem: that tier; two: one lower), with variety, and the wonder gem only in jackpot rounds");
+        ZLine($"slots: reels misread {misread}, wonder gem outside a jackpot round {wonderShown}, {shapes.Count} different reel lines, {loneBlades} near-miss lone blades");
+        if (misread > 0 || wonderShown > 0 || shapes.Count < 60 || loneBlades == 0)
+            Fail("slot machine reels should always read as what was paid (three of a gem: that tier; two: one lower; two blades and a gem: a melee build of that tier), with variety, and the wonder gem only in jackpot rounds");
+
+        // ---- Melee builds: from the slots, never the box (developer answer, 2026-10-26) ----
+        {
+            var boxMelee = StandardBuilds.From("box").Count(b => b.IsMelee);
+            var slotGuns = StandardBuilds.From("slots").Count(b => !b.IsMelee);
+            var slotMelee = Game.SlotMeleeBuilds();
+            var meleeTiers = slotMelee.Select(i => StandardBuilds.All[i].Tier).Distinct().Count();
+            var refused = 0;
+            foreach (var (src, tree) in new[] { ("box", "Wooden Handle{head:Machete Blade}"), ("slots", StandardBuilds.Find("Wall Pistol")?.Tree ?? "") })
+                try
+                {
+                    StandardBuilds.Load($$"""{"format": "call-of-slop-build/1", "name": "Bad", "tier": "common", "source": ["{{src}}"], "build": "{{tree}}"}""", "bad build", Parts.Find);
+                }
+                catch (WeaponFileException)
+                {
+                    refused++;
+                }
+            var boxRolls = 0;
+            var n0 = 0.0;
+            using (var g0 = ZGame(0, ref n0, tweak: r => r.FirstRoundDelay = 9999))
+                for (var i = 0u; i < 3000; i++)
+                    if (g0.RollBoxBuild(null, 1 + (int)(i % 30), i * 2654435761u) is var b and >= 0 && StandardBuilds.All[b].IsMelee)
+                        boxRolls++;
+            var held = StandardBuilds.All[slotMelee.First(i => StandardBuilds.All[i].Tier == Rarity.Rare)].Name;
+            var notHeld = Enumerable.Range(0, 400).All(i => Game.PickSlotMelee(Rarity.Rare, false, held, (uint)i * 7919u) is var k and >= 0 && StandardBuilds.All[k].Name != held);
+            var noWonder = Enumerable.Range(0, 400).All(i => StandardBuilds.All[Game.PickSlotMelee(Rarity.Wonder, false, null, (uint)i)].Tier != Rarity.Wonder);
+            ZLine($"melee builds: {slotMelee.Length} slot builds in {meleeTiers} tiers, {boxMelee} in the box (3000 box rolls: {boxRolls} melee), {slotGuns} slot guns; bad tags refused {refused}/2; a held build never paid again {notHeld}; wonder only in jackpot rounds {noWonder}");
+            if (boxMelee > 0 || boxRolls > 0 || slotGuns > 0 || slotMelee.Length < 6 || meleeTiers < 5 || refused != 2 || !notHeld || !noWonder)
+                Fail("melee builds should come from the slot machines only (tagged \"slots\", across the tiers) and never from the mystery box; the loader should refuse a melee box build and a gun slot build");
+        }
 
         // ---- Odds by round (seeded): the rarity mix rises, nothing outside the table comes up ----
         const int Rolls = 20000;
@@ -70,7 +107,7 @@ public static partial class SelfTest
             for (var i = 0u; i < Rolls; i++)
             {
                 var (r, t) = Game.RollSlotOutcome(rules, tables, round, heat, i * 2654435761u + 17u);
-                var k = r switch { ZSlotResult.Nothing => 0, ZSlotResult.Scrap => 1, ZSlotResult.Points => 2, _ => RunTables.SlotPart + (int)t };
+                var k = r switch { ZSlotResult.Nothing => 0, ZSlotResult.Scrap => 1, ZSlotResult.Points => 2, ZSlotResult.Melee => RunTables.SlotMelee, _ => RunTables.SlotPart + (int)t };
                 count[k]++;
                 if (r == ZSlotResult.Part)
                 {
@@ -97,7 +134,7 @@ public static partial class SelfTest
             var wonders = count[RunTables.SlotPart + (int)Rarity.Wonder];
             if (!rules.SlotJackpot(round) && wonders > 0)
                 outside++;
-            line += $"; r{round}{(heat > 0 ? $" heat {heat}" : "")}{(rules.SlotJackpot(round) ? " (jackpot)" : "")}: mean tier {mean:0.00}, rare+ {rare * 100:0.0}%, wonder {wonders}, nothing {count[0] * 100 / Rolls}%";
+            line += $"; r{round}{(heat > 0 ? $" heat {heat}" : "")}{(rules.SlotJackpot(round) ? " (jackpot)" : "")}: mean tier {mean:0.00}, rare+ {rare * 100:0.0}%, wonder {wonders}, melee {count[RunTables.SlotMelee] * 100f / Rolls:0.0}%, nothing {count[0] * 100 / Rolls}%";
             if (heat == 0 && !rules.SlotJackpot(round))
             {
                 rising &= mean > last;
@@ -135,9 +172,12 @@ public static partial class SelfTest
             var poorRefused = g.ZSlots[0].State == ZSlotState.Idle && zp.Points == 100;
             g.ZRound = 3;
             var cost = g.SlotCost(ztm, 0);
-            var builds = string.Join("|", zp.Slots.Select(b => b?.ToText() ?? "-"));
+            var builds = string.Join("|", zp.Slots.Take(4).Select(b => b?.ToText() ?? "-")); // (the guns: a melee win changes slot 5)
             zp.Points = 1_000_000;
-            var counts = new int[4];
+            var counts = new int[5];
+            var meleeOk = true;
+            var meleeDrops = 0;
+            var meleeSeen = new List<string>();
             var tiers = new int[6];
             var worstBlankRun = 0;
             var blankRun = 0;
@@ -150,6 +190,8 @@ public static partial class SelfTest
                 var scrap = zp.Scrap;
                 var loose = zp.Parts.Values.Sum();
                 var heat = g.ZSlots[0].Heat;
+                var meleeBefore = zp.Slots[4];
+                var drops = g.ZWeaponDrops.Count;
                 now += 0.01;
                 g.SelfTestUse(me, now);
                 var m = g.ZSlots[0];
@@ -167,6 +209,17 @@ public static partial class SelfTest
                         payOk &= m.AutoScrapped ? zp.Scrap == scrap + Scrap.SalvageValue(Parts.All[m.Part]) : zp.Parts.Values.Sum() == loose + 1 && zp.Parts.GetValueOrDefault(Parts.All[m.Part].Name) > 0;
                         heatResetOk &= m.Tier >= rules.SlotPityTier ? m.Heat == 0 : m.Heat == heat + 1;
                         break;
+                    case ZSlotResult.Melee:
+                    {
+                        var won = StandardBuilds.All[m.Part];
+                        meleeSeen.Add($"{won.Name} ({PartDef.RarityName(m.Tier)})");
+                        var dropped = g.ZWeaponDrops.Count - drops;
+                        meleeDrops += dropped;
+                        meleeOk &= won.IsMelee && won.Tier == m.Tier && zp.Slots[4]?.Name == won.Name && me.MeleeBuild?.Name == won.Name && meleeBefore?.Name != won.Name
+                                   && dropped == (meleeBefore != null && !Game.IsStartBuild(meleeBefore) ? 1 : 0) && zp.Scrap == scrap && zp.Parts.Values.Sum() == loose;
+                        heatResetOk &= m.Tier >= rules.SlotPityTier ? m.Heat == 0 : m.Heat == heat + 1;
+                        break;
+                    }
                     case ZSlotResult.Scrap:
                         payOk &= zp.Scrap == scrap + rules.SlotScrap;
                         heatResetOk &= m.Heat == heat + 1;
@@ -180,14 +233,14 @@ public static partial class SelfTest
                         heatResetOk &= m.Heat == heat + 1;
                         break;
                 }
-                payOk &= busy && Game.ReadSlotSymbols(m.Symbols) == (m.Result, m.Result == ZSlotResult.Part ? m.Tier : Rarity.Common);
+                payOk &= busy && Game.ReadSlotSymbols(m.Symbols) == (m.Result, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? m.Tier : Rarity.Common);
                 blankRun = m.Result == ZSlotResult.Nothing ? blankRun + 1 : 0;
                 worstBlankRun = Math.Max(worstBlankRun, blankRun);
                 now += rules.SlotShowSeconds + 0.01;
                 g.SelfTestTickSlots(now);
                 spinOk &= m.State == ZSlotState.Idle;
             }
-            var buildsKept = string.Join("|", zp.Slots.Select(b => b?.ToText() ?? "-")) == builds;
+            var buildsKept = string.Join("|", zp.Slots.Take(4).Select(b => b?.ToText() ?? "-")) == builds;
             // A part you already hold plenty of turns into scrap.
             var common = Parts.All.First(p => p.Rarity == Rarity.Common);
             zp.Parts[common.Name] = rules.SlotAutoScrapAt;
@@ -244,16 +297,18 @@ public static partial class SelfTest
             Measure(sym); // (warm-up: the first calls compile)
             var alloc = Measure(sym);
             ZLine($"slot machine (round 3, {cost} a pull): too poor refused {poorRefused} ('{prompt?.Text}'); 150 pulls: nothing {counts[0]}, scrap {counts[1]}, points {counts[2]}, parts {counts[3]} "
-                  + $"(common {tiers[0]}, uncommon {tiers[1]}, rare {tiers[2]}, epic {tiers[3]}, legendary {tiers[4]}, wonder {tiers[5]}); longest run of nothing {worstBlankRun}; spin {spinOk}, paid right {payOk}, heat {heatResetOk}; "
+                  + $"(common {tiers[0]}, uncommon {tiers[1]}, rare {tiers[2]}, epic {tiers[3]}, legendary {tiers[4]}, wonder {tiers[5]}), melee builds {counts[4]} [{string.Join(", ", meleeSeen)}] (into the melee slot {meleeOk}, old ones dropped {meleeDrops}); longest run of nothing {worstBlankRun}; spin {spinOk}, paid right {payOk}, heat {heatResetOk}; "
                   + $"builds untouched {buildsKept}; duplicate auto-scrapped {autoScrapped}; power machine '{dark?.Text}' then '{litUse?.Text}'; client copy {netOk} ({Game.ZSlotBytes} bytes a machine, protocol {ServerInfo.ProtocolVersion}); {alloc} bytes allocated");
             if (!poorRefused || prompt is not { Kind: ZUseKind.SlotMachine, Blocked: false })
                 Fail("a slot machine should prompt with its price and refuse a pull you can't pay for");
+            if (counts[4] == 0 || !meleeOk)
+                Fail("a slot machine should sometimes pay a complete melee build (two blades and a gem) straight into the melee slot, dropping the old one unless it's the start build");
             if (!spinOk || !payOk || !heatResetOk || counts[3] == 0 || counts[1] == 0)
                 Fail("a slot machine pull should take the price, spin, then pay what its reels show (parts to your loose parts, scrap, points) and keep its heat");
             if (worstBlankRun > rules.SlotMaxNothing)
                 Fail($"a slot machine gave nothing {worstBlankRun} times in a row (at most {rules.SlotMaxNothing})");
             if (!buildsKept || !autoScrapped)
-                Fail("a slot machine should never touch your builds, and a part you hold plenty of should turn into scrap");
+                Fail("a slot machine should never touch your guns, and a part you hold plenty of should turn into scrap");
             if (dark is not { Blocked: true } || litUse is not { Blocked: false })
                 Fail("a slot machine marked \"power\" should only work with the power on");
             if (!netOk)

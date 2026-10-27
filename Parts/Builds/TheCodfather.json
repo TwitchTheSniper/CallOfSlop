@@ -3,7 +3,7 @@
   "name": "The Codfather",
   "tier": "wonder",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "A frozen fish on a fishing rod, with a whoopee cushion. Stuns everything it slaps.",
   "build": "Fishing Rod Grip{head:Frozen Fish,mod_2:Whoopee Cushion}"

@@ -1170,13 +1170,11 @@ public sealed partial class Game
     public int RollBoxBuild(Player? p, int round, uint seed)
     {
         var all = StandardBuilds.All;
-        var box = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("box")).ToList();
+        var box = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("box")).ToList(); // guns only: the loader refuses a melee "box" build (2026-10-26)
         if (box.Count == 0)
             return -1;
         var tier = RunTables.Roll(RunTables.Current.BoxTiers, Math.Max(1, round), seed);
-        // "Already carry" covers the melee slot too: the box never offers the melee build in your hand.
-        var notOwned = box.Where(i => p == null || (OwnsBuild(p, all[i].Name) < 0
-            && !(p.MeleeBuild != null && p.MeleeBuild.Name.Equals(all[i].Name, StringComparison.OrdinalIgnoreCase)))).ToList();
+        var notOwned = box.Where(i => p == null || OwnsBuild(p, all[i].Name) < 0).ToList();
         if (notOwned.Count == 0)
             notOwned = box;
         for (var step = 0; step < 6; step++)

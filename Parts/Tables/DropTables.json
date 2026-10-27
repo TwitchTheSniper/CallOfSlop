@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-drops/1",
-  "note": "PROPOSED roguelite tables for the Zombies mode (open for the user). Weights are relative per row; a row applies from its round on. A run starts with wall gear (common) and climbs: rare frames from round 8, legendary carry from round 15, wonder parts and box builds late. slotTiers: what a slot machine pull pays by round (nothing, scrap, points back, or a part of a tier); the wonder weight only counts in jackpot rounds (ZombiesRules.json slots).",
+  "note": "PROPOSED roguelite tables for the Zombies mode (open for the user). Weights are relative per row; a row applies from its round on. A run starts with wall gear (common) and climbs: rare frames from round 8, legendary carry from round 15, wonder parts and box builds late. slotTiers: what a slot machine pull pays by round (nothing, scrap, points back, or a part of a tier, or melee: a complete melee build whose tier is rolled from the same row's part weights; the mystery box gives guns only); the wonder weight only counts in jackpot rounds (ZombiesRules.json slots).",
   "partDrops": [
     {"fromRound": 1, "common": 85, "uncommon": 15},
     {"fromRound": 3, "common": 60, "uncommon": 32, "rare": 8},
@@ -22,12 +22,12 @@
     {"fromRound": 25, "rare": 15, "epic": 35, "legendary": 35, "wonder": 15}
   ],
   "slotTiers": [
-    {"fromRound": 1, "nothing": 30, "scrap": 22, "points": 13, "common": 22, "uncommon": 11, "rare": 2},
-    {"fromRound": 5, "nothing": 28, "scrap": 20, "points": 12, "common": 16, "uncommon": 15, "rare": 7, "epic": 2},
-    {"fromRound": 10, "nothing": 26, "scrap": 18, "points": 12, "common": 9, "uncommon": 14, "rare": 13, "epic": 6, "legendary": 2},
-    {"fromRound": 15, "nothing": 24, "scrap": 16, "points": 12, "common": 4, "uncommon": 10, "rare": 15, "epic": 12, "legendary": 5, "wonder": 2},
-    {"fromRound": 25, "nothing": 22, "scrap": 14, "points": 12, "uncommon": 6, "rare": 14, "epic": 16, "legendary": 10, "wonder": 6},
-    {"fromRound": 35, "nothing": 20, "scrap": 12, "points": 12, "uncommon": 2, "rare": 10, "epic": 18, "legendary": 16, "wonder": 10}
+    {"fromRound": 1, "nothing": 30, "scrap": 22, "points": 13, "common": 22, "uncommon": 11, "rare": 2, "melee": 5},
+    {"fromRound": 5, "nothing": 28, "scrap": 20, "points": 12, "common": 16, "uncommon": 15, "rare": 7, "epic": 2, "melee": 5},
+    {"fromRound": 10, "nothing": 26, "scrap": 18, "points": 12, "common": 9, "uncommon": 14, "rare": 13, "epic": 6, "legendary": 2, "melee": 5},
+    {"fromRound": 15, "nothing": 24, "scrap": 16, "points": 12, "common": 4, "uncommon": 10, "rare": 15, "epic": 12, "legendary": 5, "wonder": 2, "melee": 5},
+    {"fromRound": 25, "nothing": 22, "scrap": 14, "points": 12, "uncommon": 6, "rare": 14, "epic": 16, "legendary": 10, "wonder": 6, "melee": 5},
+    {"fromRound": 35, "nothing": 20, "scrap": 12, "points": 12, "uncommon": 2, "rare": 10, "epic": 18, "legendary": 16, "wonder": 10, "melee": 5}
   ],
   "costs": {"box": 950, "slotUpgrade": 4000, "wall": 500}
 }

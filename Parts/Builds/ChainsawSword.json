@@ -3,7 +3,7 @@
   "name": "Chainsaw Sword",
   "tier": "epic",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "A motor hilt driving a chainsaw bar. Every swing is a sweep.",
   "build": "Motor Hilt{head:Chainsaw Blade,mod_1:Grip Tape}"

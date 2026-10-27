@@ -137,13 +137,13 @@ grey: not possible now (needs the power, already owned...).
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
-| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a build of that tier you don't already carry (in a gun slot or the melee slot; 59 box builds, 10-16 per tier) After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
+| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
 | **Perk machine** | A perk from the rules file (one machine per perk). No cap: beyond the 4th each perk costs double the step before (the 5th 2x its price, the 6th 4x...); all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Scrap, once per round per pile | +25 scrap |
-| **Slot machine** | Three reels spin 2 s and pay a loose part, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 
 ### Perks (proposed; "perks", up to 8)
 
@@ -332,6 +332,15 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   gem**: a part one tier lower (two commons: scrap); otherwise a cog pays **40 scrap**, a coin **1.5 x the price back**
   in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
   as it (self-test: they always do), so the table, not the reels, sets the odds.
+- **Melee builds (developer answer, 2026-10-26).** The mystery box gives guns only, so melee builds come from here: a
+  `"melee"` weight in each `slotTiers` row (5, about 5 percent of pulls) pays a **complete melee build** (the 14
+  standard builds tagged `"slots"`), straight into your **melee slot**. Its rarity is rolled from the same row's part
+  weights, so it follows the slot tiers: the round, the machine's heat and jackpot rounds (a rare-or-better one resets
+  the heat like a part); never the one you hold, the nearest tier with one when that tier has none, never wonder outside
+  a jackpot round. The reels show **two blades and the build's gem** (a lone blade is a near miss); a legendary or
+  wonder one is announced to everyone, and a glowing blade in its rarity colour floats over the cabinet. The melee build
+  you had goes on the floor 3 m in front of the machine as a dropped build (5 minutes, anyone can pick it up), unless
+  it's the untouched start Machete. Melee parts stay in the part pool.
 - **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
   a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose is
   **auto-scrapped** into its scrap value instead (`autoScrapAt`). A legendary or wonder part is announced to everyone.
@@ -354,7 +363,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   (spots like a perk machine's: `at`, `yaw`, `power`, `cost`), at most 8; with machine props each stands as a solid
   **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall, its front facing the yaw).
 - **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
-  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left). Clients start the reel
+  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left); protocol 53 adds result 4
+  (a melee build: the part field is then an index into the standard builds) and the blade symbol (9). Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
   and scrap come in `ZRun` as for any payout. Bots don't use the machines. Nothing in the machines' tick allocates
   (self-test).
