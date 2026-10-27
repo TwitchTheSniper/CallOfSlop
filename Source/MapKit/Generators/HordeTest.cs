@@ -11,7 +11,7 @@ namespace CallOfSlop.MapKit.Generators;
 /// raised dais in the middle (1.6 m, stairs east and west) and two railed lookout towers (3.2 m) either side of it see
 /// over the 3 m walls. Every perk machine stands in a row along the arena's north wall; the box, a workbench, four wall
 /// buys and a classic slot machine are in the arena, the power switch, the slot upgrade and a second workbench in the
-/// Power Annex, five category slot machines and a box spot in the Armoury. Everything is a solid machine prop.
+/// Power Annex, a slot machine for every part category and a box spot in the Armoury. Everything is a solid machine prop.
 ///
 /// Mirror-symmetric about z = 0 for the multiplayer modes' checks (team spawns, flags; the hill is on the dais). The
 /// section's "testKit" lets the host's Test kit setting hand out every perk and a strong late build (Lobby: Zombies).
@@ -127,7 +127,7 @@ public sealed class HordeTest : IMapGenerator
         foreach (var x in NorthWindows) // the annexes, north
             Window(x < 0 ? "Power Annex" : "Armoury", [x - h, SillLo, AnnexZ, x + h, SillHi, AnnexZ + T], (x, AnnexZ + 1.4), (x, AnnexZ - 0.9), (x - 1.2, 31.5), (x + 1.2, 33));
         spawners.Add(new JObject(("area", "Power Annex"), ("at", P(-16, 27))));
-        spawners.Add(new JObject(("area", "Armoury"), ("at", P(16, 25.5))));
+        spawners.Add(new JObject(("area", "Armoury"), ("at", P(21.5, 27.2))));
 
         string[] perks = ["revive", "secondwind", "hammerhand", "bloodroot", "salvage", "jugg", "speed", "doubletap", "fleetfoot", "marksman", "windfall", "bulwark"];
         string[] powered = ["jugg", "speed", "doubletap", "fleetfoot", "marksman", "windfall", "bulwark"];
@@ -141,9 +141,11 @@ public sealed class HordeTest : IMapGenerator
         }
 
         var slots = new JArray([Spot(-A + 0.45, -4, 90)]);
-        string[] cats = ["Receiver", "Barrel", "Ammo", "Optic", "Upgrade"];
+        // A slot machine for every part category (as every map with category machines has), in a row along the
+        // Armoury's south wall either side of the debris, facing into the room.
+        var cats = Enum.GetValues<PartCategory>();
         for (var i = 0; i < cats.Length; i++)
-            slots.Add(Spot(A - 0.45, A + T + 0.7 + 0.95 * i, -90, ("category", cats[i])));
+            slots.Add(Spot(i < 7 ? 1.2 + 0.95 * i : 14.2 + 0.95 * (i - 7), A + T + 0.4, 180, ("category", cats[i].ToString())));
 
         return new JObject(
             ("start", "Arena"),

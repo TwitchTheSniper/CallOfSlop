@@ -936,7 +936,7 @@ testing big hordes quickly:
 (`Source/MapKit/Generators/HordeTest.cs`; `CallOfSlop --gen-map "Horde Test"`, never edit the JSON by hand). A 48 x 48 m
 walled arena (the start area) with 15 boarded windows in its south, east and west walls, and two annexes on its north
 side, the **Power Annex** behind the Power Door (750: the power switch, the slot upgrade, a workbench, salvage, a ground
-spawner) and the **Armoury** behind the Armoury Debris (1000: five category slot machines, a box spot, the Coach Gun,
+spawner) and the **Armoury** behind the Armoury Debris (1000: a slot machine for every part category in a row, a box spot, the Coach Gun,
 salvage, a ground spawner), with three windows each: 21 windows, **two spawners behind each** (44 spawners). Outside
 the walls a 5-10 m open strip runs right round the map, so the queues at the windows, the splits to other windows and
 the flanks are easy to watch: from the **dais** in the middle (1.6 m, stairs east and west) or the two railed **lookout
