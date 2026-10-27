@@ -339,8 +339,7 @@ public sealed partial class Ui
         return new ImColor8(v.X, v.Y, v.Z, (byte)Math.Clamp((int)(v.W * a), 0, 255));
     }
 
-    private static string SocketLabel(PartSocket s) =>
-        s.Name.Length == 0 ? s.Type : char.ToUpperInvariant(s.Name[0]) + s.Name[1..].Replace('_', ' ');
+    private static string SocketLabel(PartSocket s) => BenchModel.SocketLabel(s);
 
     private static Vector2 V2(float2 f) => new(f.X, f.Y);
 
@@ -1072,11 +1071,26 @@ public sealed partial class Ui
         {
             var r = Bm.Rows[i];
             _rowSpot[i] = r.Socket != null ? Bm.SpotOf(r.ParentPath, r.Socket.Name) : -1;
-            _rowLabel[i] = r.Socket == null ? (r.Node!.Part.Hilt != null ? "Hilt" : "Grip") : SocketLabel(r.Socket);
-            _rowName[i] = r.Kind == BenchRowKind.Part ? r.Node!.Part.Name
-                : r.Socket!.Type == "receiver" ? "needs a receiver" : $"needs {(r.Socket.Type == "ammo" ? "ammo" : r.Socket.Type)}";
+            _rowLabel[i] = BenchModel.RowLabel(r);
+            _rowName[i] = BenchModel.RowName(r);
         }
     }
+
+    /// <summary>Self-test hook: opens <paramref name="b"/> on the workbench as a player would (a new model, unlimited stock).</summary>
+    internal void WorkbenchOpenForTest(WeaponBuild b)
+    {
+        _wbPractice = false;
+        StartEditing(b, b.Name);
+    }
+
+    /// <summary>Self-test hook: the list's row count and the label and name it draws for row <paramref name="i"/> (through its cache).</summary>
+    internal (int Rows, string Label, string Name) WorkbenchRowTextForTest(int i)
+    {
+        RefreshRows();
+        return (Bm.Rows.Count, _rowLabel[i], _rowName[i]);
+    }
+
+    internal BenchModel? WorkbenchModelForTest => _bm;
 
     private void DrawLinear(float height)
     {
