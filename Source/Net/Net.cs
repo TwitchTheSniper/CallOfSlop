@@ -50,7 +50,7 @@ public enum Msg : byte
     ZEvent, // server -> one client or all: Zombies: a feed line, an ammo refill, a banner (reliable)
     ZRun, // server -> one client: Zombies: your loose parts (reliable; no scrap since protocol 56)
     ZBuild, // server -> all: Zombies: a built weapon went into player X's slot (the build's text) (reliable)
-    ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, salvage a part, craft a part) (reliable)
+    ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, take a build apart, a slot machine bet) (reliable)
     ZPickup, // server -> all (and each joiner): Zombies: a dropped build appeared (where, seconds left, owner, build text) or went (picked up by X / despawned) (reliable)
     TeamPick, // client -> server: put me on Blue (0), Red (1) or Auto (255) (reliable; the server checks the rules, TeamPick.cs)
     TeamReply, // server -> one client: the answer to a team pick (accepted / moved flags, team, pick, text) (reliable)

@@ -548,7 +548,7 @@ public sealed partial class Ui
                 dl.AddRectFilled(p0, p1, LockShade8, 6 * _scale); // dimmed: stats still readable, not pickable
             if (hot)
                 ImGuiSafe.SetTooltip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
-                                     + (have ? "" : locked ? "\nYou don't own one yet: find or craft one to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
+                                     + (have ? "" : locked ? "\nYou don't own one yet: find one (drops, salvage piles, the slot machines) to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
             if (clicked)
             {
                 if (locked)

@@ -82,6 +82,7 @@ public static partial class SelfTest
         var feed0 = g.Feed.Count;
 
         // The salvage pile: a loose part (rolled like a zombie drop), then picked clean for the round.
+        Run(g, ref now, 1.5); // (round 1 starts: piles open once a round has begun)
         var pile = zm.Salvage[0];
         me.Teleport(pile.At + new Vector3(0, 0, 0.8f));
         var pilePrompt = g.FindZUse(me);

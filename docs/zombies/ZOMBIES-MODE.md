@@ -142,8 +142,8 @@ grey: not possible now (needs the power, already owned...).
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
-| **Salvage pile** | Scrap, once per round per pile | +25 scrap |
-| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, scrap, points back or nothing (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or nothing; a loss frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 
 ### Perks (proposed; "perks", up to 8)
 
@@ -174,24 +174,34 @@ In Zombies guns have a **reserve** (the HUD shows "magazine | reserve"): a bough
 reserve, the start guns with 4. Reloads come out of the reserve; wall ammo refills it. (Every other mode keeps endless
 reloads.)
 
-## Parts, scrap and the workbench (the roguelite climb)
+## Parts and the workbench (the roguelite climb)
+
+**No scrap (developer request, 2026-10-27):** "Edit the zombies mode to remove the scrap feature. I believe the gambling
+machines replace the need." Scrap is gone from Zombies: kills and salvage piles no longer give it, the workbench no
+longer breaks parts down or crafts them (CRAFT MISSING went with it), and the slot machines lost the cog. Parts come
+from zombie drops, salvage piles, the slot machines, and taking builds apart (the mystery box's offer too). What
+replaced what (proposed, all data): the cog's weight in `slotTiers` went to **points** (coins), so a pull wins as
+often as before (round 1: 71.4 percent); bad-luck protection and the "no part of that tier" fallbacks pay coins; two
+common gems read as coins; a part you already hold 3 of loose pays the coin payout instead (`dupePointsAt`); a salvage
+pile gives a loose part (`parts.salvageParts`). Older rules and drop tables with the scrap keys still load (an old
+row's scrap weight counts as points); old part files' `"scrap"` is ignored. Protocol 56. Self-test "Zombies no
+scrap".
 
 - **Drops.** Every zombie kill may drop a part: the chance and the part's tier by round come from `DropTables.json`
   (`dropChance`, `partDrops`); the part is one of that tier. It lies on the floor for 30 s as a small glowing box in its
-  rarity colour; walk over it to pick it up (a feed line says what it was). Each kill also gives 1 scrap.
-- **Inventory.** Per player, per run: loose parts (by name, with counts) and scrap. The parts on your guns are yours
+  rarity colour; walk over it to pick it up (a feed line says what it was).
+- **Inventory.** Per player, per run: loose parts (by name, with counts). The parts on your guns are yours
   too.
 - **Workbench.** F at a workbench opens the same editor as the main menu's sandbox, but it lists **only the parts you
   own this run** (loose plus those already on the build) and edits **your slots** (1-2, 3-4 with the upgrade, and the
   melee slot). APPLY sends the build to the server, which checks you're at a bench and that every added part is in
-  your loose parts; parts taken off go back to your loose parts. Scrap: **break down** a loose part (its scrap value:
-  common 5 ... legendary 100, wonder 150), or **craft** a part for 3x its value, up to the highest tier the drop table
-  rolls this round (never wonder parts).
+  your loose parts; parts taken off go back to your loose parts. The bench lists your loose parts (there is no breaking
+  down or crafting since scrap went, 2026-10-27).
 - **Disassemble**: take a slot's whole build apart into your loose parts (below, "Disassembling a build").
 - **The workbench UI** (WEAPON-BUILDER.md, "The workbench"): pick a grip, then drag your parts onto the gun; the build
   reads as a linear list with live stats. Standard builds load as plans and a receiver assembly can be copied without
-  the parts: what's missing shows red, and **CRAFT MISSING & APPLY** crafts every missing part with scrap and applies
-  the build in one click (the same server checks). First-tier grips (common, uncommon) hold one receiver.
+  the parts: what's missing shows red, and the build can't be applied until you own them (drops, salvage piles, the
+  slot machines). First-tier grips (common, uncommon) hold one receiver.
 
 ## Disassembling a build (2026-10-23)
 
@@ -204,7 +214,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   two), and the slot is **empty**. It works on any build: guns in slots 1-4 (wall-buy and box builds too, they're builds
   like any other) and the **melee slot** (hilt, head and mods). One **Undo** puts the same build back from your loose
   parts while the bench stays open (an ordinary Apply, checked again; it's gone once you close the bench or the slot gets
-  something else). Breaking loose parts down for scrap is still its own action.
+  something else).
 - **Checks (server).** You must be standing at a workbench, alive and not downed (as for every bench action), the slot
   must be yours (3-4 only after the slot upgrade) and hold a build; a stock gun (no build) can't be taken apart. Parts are
   only moved, never made or lost: loose plus on builds stays the same (self-test).
@@ -325,12 +335,14 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 
 - **A pull.** Walk up (a machine's prompt: "Hold [F] to pull the slot machine [550] - heat 2/5"), hold F like any buy
   and pay **500 + 25 a round after the first** (at most 1250; a machine's own `cost` overrides it). The three reels spin
-  for 2 s and stop one by one (a click each) on what the server rolled; the result shows for 2.5 s (the reels flash, a
-  part won floats over the cabinet), then the machine takes the next pull. One player at a time per machine.
-- **What the reels mean.** Symbols: a **skull**, a **cog** (scrap), a **coin** (points back) and a **gem** per rarity
-  in its colour (the wonder gem only on jackpot rounds). **Three of a gem**: a loose part of that rarity; **two of a
-  gem**: a part one tier lower (two commons: scrap); otherwise a cog pays **40 scrap**, a coin **1.5 x the price back**
-  in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
+  for 2 s and stop one by one (a click each) on what the server rolled. A **win** shows for 2.5 s (the reels flash, a
+  part won floats over the cabinet), then the machine takes the next pull. A pull that **wins nothing** (skulls, odd
+  gems) frees the machine the moment the reels stop: no result time and no cooldown, so you can pull again at once
+  (developer request, 2026-10-27; self-test "Zombies slots"). One player at a time per machine.
+- **What the reels mean.** Symbols: a **skull**, a **coin** (points back) and a **gem** per rarity in its colour (the
+  wonder gem only on jackpot rounds; the scrap cog went with scrap, 2026-10-27). **Three of a gem**: a loose part of
+  that rarity; **two of a gem**: a part one tier lower (two commons: coins); otherwise a coin pays **1.5 x the price
+  back** in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
   as it (self-test: they always do), so the table, not the reels, sets the odds.
 - **Melee builds (developer answer, 2026-10-26).** The mystery box gives guns only, so melee builds come from here: a
   `"melee"` weight in each `slotTiers` row (5, about 5 percent of pulls) pays a **complete melee build** (the 14
@@ -342,11 +354,11 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   you had goes on the floor 3 m in front of the machine as a dropped build (5 minutes, anyone can pick it up), unless
   it's the untouched start Machete. Melee parts stay in the part pool.
 - **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
-  a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose is
-  **auto-scrapped** into its scrap value instead (`autoScrapAt`). A legendary or wonder part is announced to everyone.
+  a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose pays
+  the **coin payout** (1.5 x the price) instead (`dupePointsAt`; 0 keeps every copy). A legendary or wonder part is announced to everyone.
 - **Rarity rising: three levers that stack.**
-  1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 25, 35): weights for nothing, scrap,
-     points and each part tier; the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
+  1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 25, 35): weights for nothing,
+     points and each part tier (no scrap since 2026-10-27: its weight went to points); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
      common and uncommon, 2 percent rare or better; round 36: about half rare or better).
   2. **Machine heat** (the pity timer): every pull that doesn't pay a **rare-or-better** part (`pityTier`) adds 1 heat;
      every **5** heat (`heatStep`) moves the part weights **one tier up** (at most 3 steps, `heatMaxSteps`); a
@@ -359,7 +371,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 - **Bets (developer answer to question 13, 2026-10-26).** At an idle machine the **second key** (G, the Grenade key:
   there are no grenades in Zombies) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
   (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
-  machine's heat (the same shift as a heat step). The nothing, scrap and coin weights don't change, so a higher bet
+  machine's heat (the same shift as a heat step). The nothing and coin weights don't change, so a higher bet
   **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
   mix goes from 1.9 percent rare-or-better at 1x to 12 at 2x and 33 at 5x). Coins pay 1.5x what you paid. The bet
   belongs to the machine (shared by the team, like the heat) and stays until someone changes it; the prompt shows it
@@ -369,7 +381,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   slots": the rarer mix and the unchanged blanks at every bet over seeded rolls, the price, the prompt, the wrap and the
   client copy.
 - **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
-  would-be blank pays scrap instead.
+  would-be blank pays coins (points back) instead.
 - **Placement**: Map key `"slots"` (spots like a perk machine's: `at`, `yaw`, `power`, `cost`, and an optional
   `category`, below), at most 24; with machine props each stands as a solid **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall,
   its front facing the yaw), a category machine as its own cabinet. Blackmoor Asylum: the classic machine in the
@@ -408,34 +420,35 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
   draws the same cabinet without collision. Over each machine within 9 m a label names it ("BARREL SLOTS", "SLOTS:
   ANY PART") in the category colour; the prompt says "Hold [E] to pull the Barrel slot machine".
 - **The win, for everyone.** When a machine pays a part or a melee build the server sends `Msg.ZSlotWin` (protocol 55:
-  machine, player, result, the part or build index, tier, scrapped flag) to every client. Every PC then shows for
+  machine, player, result, the part or build index, tier, flags: bit 0 a duplicate paid as points, protocol 56) to every client. Every PC then shows for
   `winSeconds` (4 s) the won part's **own model** turning over the machine with a halo of glow boxes and a beam in the
   rarity colour, a label "Name: a Rare Long Barrel" over it (within 25 m), and a kill-feed line in the rarity colour
   ("Name won a Rare Long Barrel on the Barrel slot machine!"); legendary and wonder wins add a light pillar, sparks
-  spiralling up and a sound heard across the map. A duplicate turned into scrap says so. The old feed lines for slot
+  spiralling up and a sound heard across the map. A duplicate paid as points says so ("points instead"). The old feed lines for slot
   wins are replaced by this one.
 - **Blackmoor Asylum's spread (proposed).** Receiving Hall: the classic machine; East Ward: Barrel; West Offices: Grip,
   Stock; Courtyard: Ammo, Feed (against the hall's back wall); Generator House: Action; Chapel: Hilt, Head; Research Lab
   (on the power): Receiver, Optic. Splitter, Utility, Receiver Upgrade, Damage Multiplier and Melee Mod parts come from
-  the classic machine there (and drops and crafting).
+  the classic machine there (and drops and salvage piles).
 - **Open questions for the developer.** Every map all machines, or a selection (as now)? The per-category prices above?
   Should the classic any-part machine stay next to the category ones?
 - **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
-  counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left); protocol 53 adds result 4
+  counter, the three symbols, result / tier / a duplicate paid as points, the part, tenths of a second left); protocol 53 adds result 4
   (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
-  bet level. Clients start the reel
+  bet level; protocol 56 drops scrap (results 0 nothing, 1 points, 2 part, 3 melee; symbols 0 skull, 1 coin, 2-7
+  gems, 8 blade). Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
-  and scrap come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
+  come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
   (self-test).
 
 | Rules (`ZombiesRules.json` "slots") | Default | What |
 | --- | --- | --- |
 | `costBase`, `costPerRound`, `costMax` | 500, 25, 1250 | the price: base + per round after the first, capped |
-| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long the result shows |
+| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long a win shows (a loss frees the machine at once) |
 | `heatStep`, `heatMaxSteps`, `pityTier` | 5, 3, rare | heat per tier step, the most steps, the tier that resets heat |
 | `maxNothing` | 3 | blanks in a row per player per machine, at most |
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
-| `scrapPayout`, `pointsBack`, `autoScrapAt` | 40, 1.5, 3 | scrap for a cog, points back (x the price) for a coin, auto-scrap from this many loose |
+| `pointsBack`, `dupePointsAt` | 1.5, 3 | points back (x the price) for a coin; a part you hold this many of loose pays that instead (0: keep it) |
 | `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
 | `winSeconds` | 4 | how long a win shows over the machine |
 | `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |
@@ -720,7 +733,7 @@ Ammo's tenths of a second left) follows Insta-Kill's and Double Points'.
 New messages at the end of `Msg`: `ZUse` (client: interact key down / up), `ZEnts` (every zombie with each snapshot:
 id, quantised position, yaw, state, speed, health; 12 bytes each, about 300 bytes for 24), `ZWorld` (10 Hz: round,
 phase, doors, boards, box, every player's points / downs / perks / bleed and revive progress, parts on the floor),
-`ZEvent` (feed lines, ammo refills, banners), `ZRun` (your loose parts and scrap), `ZBuild` (a build went into a
+`ZEvent` (feed lines, ammo refills, banners), `ZRun` (your loose parts), `ZBuild` (a build went into a
 player's slot: **the build's text**, which every PC assembles into the same weapon deterministically) and `ZBench`
 (client workbench changes). **Built weapons now work in co-op**: clients get their own builds (and see everyone else's
 guns) from `ZBuild`, fire them with the same stats as the server, and the server validates them as before. Clients
