@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Team selection UI (rules in Source/Game/TeamPick.cs): Join Blue / Join Red / Auto with both rosters, in the TEAMS
 /// window beside the loadout screen (warmup, respawn screen, join in progress), on the pause menu's TEAMS page, and the
-/// host's "Team selection" and "Max team size difference" settings on the Host / Single player screens.
+/// host's "Team selection" and "Max team size difference" settings on the Single player screen (hosting: the lobby room's TEAMS section).
 /// </summary>
 public sealed partial class Ui
 {
@@ -16,7 +16,7 @@ public sealed partial class Ui
 
     // ---- Lobby (host settings) -----------------------------------------------------------------
 
-    /// <summary>Host / Single player screens: the team rules, shown for team modes only.</summary>
+    /// <summary>Single player screen: the team rules, shown for team modes only.</summary>
     private void TeamRulesPicker(Settings s)
     {
         if (!GameModes.IsTeam(s.Mode))
@@ -41,7 +41,7 @@ public sealed partial class Ui
     }
 
     /// <summary>
-    /// "Team balance: Auto / Off / Humans vs Bots" (TeamBalance.cs), on the Host / Single player screens and in the
+    /// "Team balance: Auto / Off / Humans vs Bots" (TeamBalance.cs), on the Single player screen and in the
     /// lobby room. Returns true when it changed.
     /// </summary>
     private bool TeamBalancePicker(ref TeamBalance balance, ref byte humansTeam, string id)

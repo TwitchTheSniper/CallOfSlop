@@ -4,7 +4,7 @@ using Brutal.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The map select screen, opened from the Single player and Host game pages ("Change map..."). Left: a column of map
+/// The map select screen, opened from the Single player page ("Change map..."). Left: a column of map
 /// pack tiles (picture, name, map count, sizes), True Random at the bottom. Right: the open pack's entries, "Random"
 /// first (pre-selected whenever a pack is opened), then its maps (picture, size, player limit, description).
 /// Click selects, double-click (or Enter, or CHOOSE) takes the selection and goes back to the lobby; double-clicking a
