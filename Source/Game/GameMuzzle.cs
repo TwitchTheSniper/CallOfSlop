@@ -34,9 +34,6 @@ public sealed partial class Game
 
         /// <summary>The gun is drawn in the world (a manned push cart), not as the view model.</summary>
         public bool InWorld;
-
-        /// <summary>When it was drawn (the frame clock).</summary>
-        public double At;
     }
 
     /// <summary>Your gun as Program last drew it (for your tracers).</summary>
@@ -65,6 +62,9 @@ public sealed partial class Game
         return age >= 0 && age < window ? _shotFlashMask[id] : 0;
     }
 
+    /// <summary>The barrels of player <paramref name="id"/>'s last shot, however long ago (self-test).</summary>
+    internal ulong LastShotBarrels(byte id) => _shotFlashMask[id];
+
     /// <summary>A tracer of <paramref name="def"/> fired from <paramref name="barrel"/>: where it starts, and the flash it makes there.</summary>
     internal Vector3 TracerStart(Player p, WeaponDef def, int barrel, double now)
     {
@@ -81,7 +81,7 @@ public sealed partial class Game
     public Vector3 MuzzlePoint(Player p, WeaponDef def, int barrel, double now)
     {
         var local = GunMuzzles.Local(def, barrel);
-        if (p.Id == LocalId && ViewGun.Def is { } vd && ReferenceEquals(vd, def) && now - ViewGun.At is >= -0.25 and < 0.25)
+        if (p.Id == LocalId && ViewGun.Def is { } vd && ReferenceEquals(vd, def))
         {
             var at = Vector3.Transform(local, ViewGun.Pose);
             return ViewGun.InWorld ? at : GunMuzzles.ViewToWorld(at, ViewGun.InvView, ViewGun.TanHalfFov);
@@ -90,32 +90,33 @@ public sealed partial class Game
     }
 
     /// <summary>Msg.Shot after the ends (and the wall origin): a count, then each end's barrel (only built guns with several barrels).</summary>
-    private void WriteShotBarrels(WeaponDef def, List<int> barrels)
+    internal static void WriteShotBarrels(PacketWriter w, WeaponDef def, List<int> barrels)
     {
         if (def.MuzzlePoints is not { Length: > 1 })
             return;
-        _w.U8((byte)barrels.Count);
-        foreach (var b in barrels)
-            _w.U8((byte)Math.Clamp(b, 0, 255));
+        var n = Math.Min(barrels.Count, 255);
+        w.U8((byte)n);
+        for (var i = 0; i < n; i++)
+            w.U8((byte)Math.Clamp(barrels[i], 0, 255));
     }
 
     private byte[]? _shotBarrelsIn;
 
-    /// <summary>Reads what <see cref="WriteShotBarrels"/> wrote (all barrel 0 when it isn't there).</summary>
-    private ReadOnlySpan<byte> ReadShotBarrels(ref PacketReader r, int ends)
+    /// <summary>Reads what <see cref="WriteShotBarrels"/> wrote into <paramref name="into"/> (barrel 0 for every end it doesn't give).</summary>
+    internal static ReadOnlySpan<byte> ReadShotBarrels(ref PacketReader r, int ends, byte[] into)
     {
-        var into = _shotBarrelsIn ??= new byte[256];
-        Array.Clear(into, 0, Math.Min(ends, into.Length));
+        ends = Math.Min(ends, into.Length);
+        Array.Clear(into, 0, ends);
         if (r.Has(1))
         {
             int n = r.U8();
             for (var i = 0; i < n && r.Has(1); i++)
             {
                 var b = r.U8();
-                if (i < into.Length)
+                if (i < ends)
                     into[i] = b;
             }
         }
-        return into.AsSpan(0, Math.Min(ends, into.Length));
+        return into.AsSpan(0, ends);
     }
 }

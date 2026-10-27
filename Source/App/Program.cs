@@ -2240,7 +2240,6 @@ public static unsafe partial class Program
             HeadBob = _headBob.Weight, HeadBobPhase = _headBob.DipPhase,
         });
         var pose = _vmAnim.GunPose;
-        RememberViewGun(def, pose, now, inWorld: false); // your tracers leave this gun's muzzle (Program.Muzzle.cs)
         if (Game.IsEmptyGun(def))
             return; // an empty slot (taken apart at a workbench): nothing in your hands (the melee swing above still draws)
         // The view through the optic's lens: the world behind it is copied now, the lens is drawn over the gun below.
@@ -2252,6 +2251,7 @@ public static unsafe partial class Program
             _vmAnim.DrawArms(Gfx, armColors); // manning a cart: it's drawn in the world (its gun turns); only your hands on its bar here
             return;
         }
+        RememberViewGun(def, pose, inWorld: false); // your tracers leave this gun's muzzle (Program.Muzzle.cs)
         if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
         {
             GunModel.FlashBarrels = LocalFlashBarrels(now); // only the barrels that fired flash

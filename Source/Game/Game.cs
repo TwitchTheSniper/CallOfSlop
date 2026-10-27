@@ -1512,7 +1512,7 @@ public sealed partial class Game : IDisposable
             _w.Vec(end);
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
-        WriteShotBarrels(def, barrels); // which barrel fired each end (GameMuzzle.cs)
+        WriteShotBarrels(_w, def, barrels); // which barrel fired each end (GameMuzzle.cs)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         _resolveBusy = nested;
     }
@@ -1891,7 +1891,7 @@ public sealed partial class Game : IDisposable
                 ShotsSeen[shooter]++;
                 Audio.Shot(def, sp.RenderEye);
                 var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
-                var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length); // which barrel fired each (GameMuzzle.cs)
+                var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length, _shotBarrelsIn ??= new byte[256]); // which barrel fired each (GameMuzzle.cs)
                 for (var i = 0; i < shotEnds.Length; i++)
                     AddTracer(TracerStart(sp, def, shotBarrels[i], now), shotEnds[i], def, now, flags, sp, through);
                 break;

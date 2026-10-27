@@ -12,11 +12,11 @@ public static unsafe partial class Program
     /// Records the gun just drawn in your hands: <paramref name="pose"/> is gun space -> view model camera space, or gun
     /// space -> world when <paramref name="inWorld"/> (a manned push cart's gun).
     /// </summary>
-    private static void RememberViewGun(WeaponDef def, in Matrix4x4 pose, double now, bool inWorld)
+    private static void RememberViewGun(WeaponDef def, in Matrix4x4 pose, bool inWorld)
     {
         if (!Matrix4x4.Invert(_worldView, out var inv))
             return;
-        _game.ViewGun = new Game.FirstPersonGun { Def = def, Pose = pose, InvView = inv, TanHalfFov = MathF.Tan(_worldFov * 0.5f), InWorld = inWorld, At = now };
+        _game.ViewGun = new Game.FirstPersonGun { Def = def, Pose = pose, InvView = inv, TanHalfFov = MathF.Tan(_worldFov * 0.5f), InWorld = inWorld };
     }
 
     /// <summary>The barrels of your last shot (barrel 0 if none is known): the muzzles your flash shows at.</summary>
