@@ -819,7 +819,7 @@ public static partial class SelfTest
                 || (m.Terrain is { Voids: not null } td && td.SolidAt(p.Position.X, p.Position.Z, p.Position.Y + 0.3f)))); // below the floor (or the terrain; in a terrain cave, its floor), or inside cave rock
             var avgMove = moved.Count == 0 ? 0 : moved.Values.Average();
             var stuck = moved.Count(kv => kv.Value < 15f);
-            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
+            Line($"{m.Name,-14} kills {kills,3}  matches {game.MatchNumber}  phases {string.Join("/", phasesSeen)}  avg bot travel {avgMove,5:0} m  stuck bots {stuck}  stuck self-kills {game.BotStuckKills}  stuck spots {StuckSpots.Session.On(m.Name).Count(x => x.MaxStage >= 2)} (+{StuckSpots.Session.On(m.Name).Count(x => x.MaxStage < 2)} stage 1)  worst tick {maxTickMs,5:0.00} ms (work {cpu.WorstText})  ({sw.Elapsed.TotalSeconds:0.0} s)");
             var measuredTicks = 90 * World.TickRate - 61;
             // What the game allocates per tick, and where (AllocProfile): garbage sets off GC pauses on the game thread, and a
             // pause inside a tick counts as that tick's work. Today a few hundred bytes at most (events: kills, respawns, a

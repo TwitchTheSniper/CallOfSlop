@@ -71,7 +71,7 @@ public sealed class MapTestSpec
     public GameMode BotMatchMode = GameMode.FreeForAll;
     public int BotMatchPlayers = -1; // -1: the player limit
     public int MaxStuckBots = -1; // -1: not checked (in a match under 12 s most bots are still walking out)
-    public int MaxStuckSpots = 0; // the stuck watch's report: at most this many spots where a stuck spell reached a recovery stage (-1: not checked)
+    public int MaxStuckSpots = 0; // the stuck watch's report: at most this many spots where a stuck spell reached recovery stage 2 or gave up (-1: not checked)
 
     public bool SpawnsStand;
     public bool PropsInside = true;
