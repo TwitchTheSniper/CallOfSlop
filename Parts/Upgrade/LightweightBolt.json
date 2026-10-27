@@ -6,8 +6,8 @@
   "flavor": "A skeletonised bolt carrier. Cycles a hair faster.",
   "weight": 0.1,
   "model": [
-    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "steel"},
-    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+    {"shape": "rounded", "size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "steel", "radius": 0.25, "segments": 2},
+    {"shape": "rounded", "size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent", "radius": 0.4, "edges": "long", "segments": 2}
   ],
   "stats": [
     {"stat": "rpm", "mul": 1.08}

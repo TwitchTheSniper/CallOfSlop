@@ -221,7 +221,9 @@ public static class BuildModel
             }
             var f = flags | (alpha < 0.999f ? GunPartFlags.Blend : 0) | (IsIrons(bx.Tag) ? GunPartFlags.Top : 0);
             var m = Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos) * post;
-            var n = pn.Add($"box{i}", m, Renderable.Box(color, alpha, mode));
+            var r = Renderable.Box(color, alpha, mode);
+            r.Shape = bx.ShapeId; // a contoured shape drawn inside the box (Source/Zombies/PartShapes.cs)
+            var n = pn.Add($"box{i}", m, r);
             n.Tag = f;
             if (bx.Shape == "rod")
             {
@@ -301,7 +303,7 @@ public static class BuildModel
             {
                 Sx = new Vector3(w.M11, w.M12, w.M13).Length(), Sy = new Vector3(w.M21, w.M22, w.M23).Length(), Sz = new Vector3(w.M31, w.M32, w.M33).Length(),
                 X = w.M41, Y = w.M42, Z = w.M43, Color = n.Renderable.Color, Alpha = n.Renderable.Alpha, Mode = n.Renderable.Mode,
-                Flags = n.Tag is GunPartFlags f ? f : GunPartFlags.None,
+                Flags = n.Tag is GunPartFlags f ? f : GunPartFlags.None, Shape = n.Renderable.Shape,
             });
         }
         var mesh = new GunMesh { Parts = parts.ToArray(), Matrices = mats.ToArray() };

@@ -6,8 +6,8 @@
   "flavor": "An electromagnetic hammer strikes the primer and then some.",
   "weight": 0.4,
   "model": [
-    {"size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "brass"},
-    {"size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent"}
+    {"shape": "cylinder", "size": [0.03, 0.035, 0.05], "pos": [0, 0, 0.02], "color": "brass"},
+    {"shape": "rounded", "size": [0.032, 0.01, 0.03], "pos": [0, 0.02, 0.02], "color": "accent", "radius": 0.4, "edges": "long", "segments": 2}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.2}

@@ -10,7 +10,7 @@
     {"name": "foregrip", "type": "foregrip", "pos": [0, 0.0, -0.2]}
   ],
   "+model": [
-    {"size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
-    {"size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black"}
+    {"shape": "cylinder", "size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
+    {"shape": "bevel", "size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black", "radius": 0.25, "edges": "long"}
   ]
 }

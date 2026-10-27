@@ -7,7 +7,7 @@
   "weight": 1.8,
   "receiver": {"soundOf": "Leviathan .50", "stockAction": "Lob Trigger"},
   "+model": [
-    {"size": [0.07, 0.012, 0.03], "pos": [0, 0.004, 0.02], "color": "olive"}
+    {"shape": "bevel", "size": [0.07, 0.012, 0.03], "pos": [0, 0.004, 0.02], "color": "olive", "radius": 0.2}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.2},

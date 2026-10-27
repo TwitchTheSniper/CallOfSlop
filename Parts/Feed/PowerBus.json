@@ -14,10 +14,14 @@
     {"name": "ammo", "type": "ammo", "pos": [0, -0.02, 0]}
   ],
   "model": [
-    {"size": [0.12, 0.1, 0.12], "pos": [0, -0.06, 0], "color": "gunmetal"},
-    {"size": [0.13, 0.015, 0.13], "pos": [0, -0.008, 0], "color": "black"},
-    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [0.04, -0.02, -0.08], "color": "black"},
-    {"shape": "rod", "size": [0.015, 0.015, 0.1], "pos": [-0.04, -0.02, -0.08], "color": "black"}
+    {"shape": "bevel", "size": [0.12, 0.1, 0.12], "pos": [0, -0.06, 0], "color": "gunmetal", "radius": 0.1},
+    {"shape": "bevel", "size": [0.13, 0.015, 0.13], "pos": [0, -0.008, 0], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "bevel", "size": [0.124, 0.006, 0.124], "pos": [0, -0.04, 0], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "bevel", "size": [0.124, 0.006, 0.124], "pos": [0, -0.06, 0], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "bevel", "size": [0.124, 0.006, 0.124], "pos": [0, -0.08, 0], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "cylinder", "size": [0.02, 0.02, 0.004], "pos": [0, -0.06, -0.0615], "color": "accent", "tag": "glow"},
+    {"shape": "tube", "size": [0.015, 0.015, 0.1], "pos": [0.04, -0.02, -0.08], "color": "black", "inner": 0.55},
+    {"shape": "tube", "size": [0.015, 0.015, 0.1], "pos": [-0.04, -0.02, -0.08], "color": "black", "inner": 0.55}
   ],
   "stats": [
     {"stat": "mag", "set": 400},

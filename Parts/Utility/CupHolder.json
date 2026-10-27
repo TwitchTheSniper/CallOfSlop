@@ -7,8 +7,9 @@
   "weight": 0.1,
   "flags": ["refreshing"],
   "model": [
-    {"size": [0.04, 0.03, 0.04], "pos": [0.03, 0, 0], "color": "accent"},
-    {"size": [0.03, 0.05, 0.03], "pos": [0.03, 0.03, 0], "color": "#c83228"}
+    {"shape": "tube", "size": [0.04, 0.04, 0.03], "pos": [0.03, 0, 0], "rot": [-90, 0, 0], "color": "accent", "segments": 14, "inner": 0.8, "ends": "front"},
+    {"shape": "tube", "size": [0.03, 0.03, 0.05], "pos": [0.03, 0.03, 0], "rot": [-90, 0, 0], "color": "#c83228", "segments": 14, "inner": 0.86, "ends": "front", "taper": 0.8},
+    {"shape": "cylinder", "size": [0.004, 0.004, 0.04], "pos": [0.034, 0.06, 0.004], "rot": [80, 0, 0], "color": "white", "segments": 6}
   ],
   "stats": [
     {"stat": "equipTime", "add": -0.15}

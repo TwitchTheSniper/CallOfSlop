@@ -7,7 +7,11 @@
   "weight": 0.2,
   "muzzles": [[0, 0, -0.07]],
   "model": [
-    {"size": [0.07, 0.03, 0.07], "pos": [0, 0, -0.035], "color": "steel"}
+    {"shape": "bevel", "size": [0.07, 0.03, 0.07], "pos": [0, 0, -0.035], "color": "steel", "radius": 0.35, "edges": "long"},
+    {"size": [0.072, 0.012, 0.008], "pos": [0, 0, -0.018], "color": "black"},
+    {"size": [0.072, 0.012, 0.008], "pos": [0, 0, -0.035], "color": "black"},
+    {"size": [0.072, 0.012, 0.008], "pos": [0, 0, -0.052], "color": "black"},
+    {"shape": "cylinder", "size": [0.014, 0.014, 0.004], "pos": [0, 0, -0.0685], "color": "black"}
   ],
   "stats": [
     {"stat": "hipSpreadDeg", "mul": 0.9},

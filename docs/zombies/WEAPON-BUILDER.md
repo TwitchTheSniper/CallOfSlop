@@ -923,6 +923,23 @@ you up instead.
   the Bastille, Sawmill and Hammerfall receivers, which the barrel runs through; the Barbed Wire Wrap and Nail Ring on
   the hilt; the push cart's upper rows of receivers, piled in the basket).
 
+- **Contoured shapes (2026-10-27, board item dev-part-models-pm01).** Besides box, rod and plate, a model box may be
+  a `cylinder`, `tube`, `wedge`, `bevel`, `rounded`, `capsule`, `sphere` or `arc` with a few settings (segments, inner
+  size, capped ends, taper and shift of the front end, bevel or rounding radius and which edges, an arc's sweep and
+  direction); Parts/README.md, "Shapes", lists them. Each shape is a small mesh made once per (shape, settings, size)
+  when the parts load (`Source/Zombies/PartShapes.cs`) and drawn **inside its box**: the box's matrix and size are
+  unchanged, so bounds, the optic seat, the workbench's framing and picking, the cart's collision and every test that
+  measures a gun by its boxes keep working. The shape id rides on `PartBox.ShapeId`, `GunPart.Shape`,
+  `Renderable.Shape` and `DrawItem.Shape`; `Renderer.Draw` uploads new shapes into its box vertex buffer once and draws a
+  shaped piece with one draw call, like a box (not batched with the horde's instanced boxes). Normals are stored divided
+  by the size so the box's own scale turns them right. Budgets: 6000 triangles per part (`PartFile.MaxTriangles`), 30000
+  per standard build (self-test "Part shapes"; the heaviest, the Gantry Sixteen, draws about 17000). Connectivity counts
+  a shape only where it really is, through a few proxy boxes inside it (`PartShapes.Proxies`, mirrored in
+  `tools/parts/shapes.py` for `floaters.py` and `viz.py`). Every part category with part models was remodelled with
+  them (optics are drawn by `GunModel` and ammo has no model), keeping sockets, hand points, sizes and silhouettes; the
+  old `rod` drew its 45-degree copy about Z whatever its long axis was, so the push cart's bar (long in X) drew as a
+  cross; it is a cylinder now.
+
 **Chainsaw view.** The chainsaw grip is just a grip (decided): the normal first-person pose with the off hand on its
 top wrap bar. The push cart is no longer a held gun: see "The push cart".
 
@@ -948,6 +965,9 @@ top wrap bar. The push cart is no longer a held gun: see "The push cart".
   "stats": []
 }
 ```
+
+A model box may also take a contoured `"shape"` with its settings, e.g. `{"shape": "tube", "size": [0.022, 0.022, 0.2],
+"pos": [0, 0, -0.1], "inner": 0.45, "ends": "back"}` (Parts/README.md, "Shapes").
 
 Other blocks: `receiver` (class, bore, soundOf, minBarrels, maxBarrels, barrelScale, stockAction), `action` for
 action parts (kind, rpm, burstCount, burstDelay, spoolTime, spoolStart, rpmPerBarrel, chamber), `frame` for root grips (fireStyle, hands, carry, mobility, ads, ironHeight,

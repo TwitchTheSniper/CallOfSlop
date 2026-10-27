@@ -12,8 +12,10 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.2]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.2], "pos": [0, 0, -0.1], "color": "brass"},
-    {"size": [0.07, 0.07, 0.04], "pos": [0, 0, -0.2], "color": "brass"}
+    {"shape": "tube", "size": [0.036, 0.036, 0.17], "pos": [0, 0, -0.085], "color": "brass", "inner": 0.5, "ends": "back"},
+    {"shape": "cylinder", "size": [0.04, 0.04, 0.008], "pos": [0, 0, -0.04], "color": "brass", "segments": 14},
+    {"shape": "tube", "size": [0.07, 0.07, 0.06], "pos": [0, 0, -0.19], "rot": [0, 180, 0], "color": "brass", "segments": 16, "inner": 0.8, "taper": 0.5},
+    {"shape": "tube", "size": [0.072, 0.072, 0.006], "pos": [0, 0, -0.217], "color": "brass", "segments": 16, "inner": 0.8}
   ],
   "stats": [
     {"stat": "pellets", "grow": 1.5},

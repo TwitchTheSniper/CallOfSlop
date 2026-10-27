@@ -65,7 +65,7 @@ public static class GunMuzzles
     {
         public Vector3 Muzzle;
 
-        public void Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, GunModel.PartGroup group, GunModel.EmitFlags flags)
+        public void Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, GunModel.PartGroup group, GunModel.EmitFlags flags, int shape)
         {
         }
 

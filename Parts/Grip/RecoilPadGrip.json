@@ -12,11 +12,11 @@
     0
   ],
   "model": [
-    {"size": [   0.042,   0.1,   0.044 ], "pos": [   0,   -0.05,   0 ], "color": "#2a2a2c" },
-    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.025,   0 ], "color": "black" },
-    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.05,   0 ], "color": "black" },
-    {"size": [   0.046,   0.006,   0.048 ], "pos": [   0,   -0.075,   0 ], "color": "black" },
-    {"size": [   0.05,   0.022,   0.052 ], "pos": [   0,   -0.111,   0 ], "color": "#1e1e20" }
+    {"shape": "rounded", "size": [0.042, 0.044, 0.1], "pos": [0, -0.05, 0], "rot": [90, 0, 0], "color": "#2a2a2c", "segments": 4, "radius": 0.35, "edges": "long"},
+    {"shape": "rounded", "size": [0.046, 0.006, 0.048], "pos": [0, -0.025, 0], "color": "black", "segments": 2, "radius": 0.45, "edges": "all"},
+    {"shape": "rounded", "size": [0.046, 0.006, 0.048], "pos": [0, -0.05, 0], "color": "black", "segments": 2, "radius": 0.45, "edges": "all"},
+    {"shape": "rounded", "size": [0.046, 0.006, 0.048], "pos": [0, -0.075, 0], "color": "black", "segments": 2, "radius": 0.45, "edges": "all"},
+    {"shape": "rounded", "size": [0.05, 0.022, 0.052], "pos": [0, -0.111, 0], "color": "#1e1e20", "segments": 2, "radius": 0.4}
   ],
   "stats": [
     {"stat": "recoilVertical", "mul": 0.7 },

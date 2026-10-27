@@ -28,7 +28,10 @@ public static class PartFile
     [ThreadStatic] private static PartLibrary? _lib;
 
     /// <summary>Box shapes a part's model may use.</summary>
-    public static readonly string[] Shapes = ["box", "rod", "plate"];
+    public static readonly string[] Shapes = ["box", "rod", "plate", .. PartShapes.Names];
+
+    /// <summary>Most triangles one part's model may draw (box 12, rod 24, the contoured shapes their mesh; Parts/README.md, "Shapes").</summary>
+    public const int MaxTriangles = 6000;
 
     private static readonly string[] Keys =
     [
@@ -308,6 +311,15 @@ public static class PartFile
             if (tagSocket != null && !names.Contains(tagSocket))
                 throw new WeaponFileException($"{where}: a box is tagged \"{b.Tag}\" but the part has no socket called \"{tagSocket}\"");
         }
+        var tris = 0;
+        foreach (var b in p.Boxes)
+        {
+            b.ShapeId = PartShapes.For(b);
+            tris += b.Shape == "rod" ? 24 : PartShapes.Triangles(b.ShapeId);
+        }
+        if (tris > MaxTriangles)
+            throw new WeaponFileException($"{where}: the model draws {tris} triangles, at most {MaxTriangles} per part (use fewer segments, or plain boxes for small pieces)");
+        p.Triangles = tris;
         if (p.Boxes.Length > MaxBoxes)
             throw new WeaponFileException($"{where}: {p.Boxes.Length} model boxes, at most {MaxBoxes} per part (fragments count with every box they bring)");
         if (p.Sockets.Length > 24)
@@ -625,11 +637,62 @@ public static class PartFile
     {
         var b = new PartBox();
         var hasSize = false;
-        foreach (var (k, v) in Props(e, where, "shape", "size", "pos", "rot", "color", "alpha", "tag"))
+        var settings = new List<string>();
+        foreach (var (k, v) in Props(e, where, "shape", "size", "pos", "rot", "color", "alpha", "tag", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir"))
         {
             var at = $"{where}.{k}";
             switch (k)
             {
+                case "segments":
+                    b.Segments = (int)Range(WeaponFile.Number(v, at), 1, 32, at);
+                    settings.Add(k);
+                    break;
+                case "inner":
+                    b.Inner = Range(WeaponFile.Number(v, at), 0, 0.95f, at);
+                    settings.Add(k);
+                    break;
+                case "ends":
+                    b.Ends = WeaponFile.Text(v, at).ToLowerInvariant();
+                    if (b.Ends is not ("closed" or "open" or "front" or "back"))
+                        throw new WeaponFileException($"{at}: \"{b.Ends}\" isn't one of closed, open, front, back");
+                    settings.Add(k);
+                    break;
+                case "taper":
+                case "shift":
+                {
+                    var (lo, hi) = k == "taper" ? (0f, 1f) : (-0.5f, 0.5f);
+                    Vector2 t;
+                    if (v.ValueKind == JsonValueKind.Number)
+                        t = new Vector2(Range(WeaponFile.Number(v, at), lo, hi, at));
+                    else if (v.ValueKind == JsonValueKind.Array && v.GetArrayLength() == 2)
+                        t = new Vector2(Range(WeaponFile.Number(v[0], at), lo, hi, at), Range(WeaponFile.Number(v[1], at), lo, hi, at));
+                    else
+                        throw new WeaponFileException($"{at}: expected a number or [x, y]");
+                    if (k == "taper")
+                        b.Taper = t;
+                    else
+                        b.Shift = t;
+                    settings.Add(k);
+                    break;
+                }
+                case "radius":
+                    b.Radius = Range(WeaponFile.Number(v, at), 0.01f, 0.5f, at);
+                    settings.Add(k);
+                    break;
+                case "edges":
+                    b.Edges = WeaponFile.Text(v, at).ToLowerInvariant();
+                    if (b.Edges is not ("all" or "long"))
+                        throw new WeaponFileException($"{at}: \"{b.Edges}\" isn't one of all, long");
+                    settings.Add(k);
+                    break;
+                case "angle":
+                    b.Angle = Range(WeaponFile.Number(v, at), 5, 360, at);
+                    settings.Add(k);
+                    break;
+                case "dir":
+                    b.Dir = Range(WeaponFile.Number(v, at), -360, 360, at);
+                    settings.Add(k);
+                    break;
                 case "shape":
                     b.Shape = WeaponFile.Text(v, at).ToLowerInvariant();
                     if (!Shapes.Contains(b.Shape))
@@ -650,6 +713,19 @@ public static class PartFile
         }
         if (!hasSize)
             throw new WeaponFileException($"{where}: a box needs a \"size\" [w, h, l]");
+        var allowed = PartShapes.SettingsOf(b.Shape);
+        foreach (var k in settings)
+            if (!allowed.Contains(k))
+                throw new WeaponFileException(allowed.Length == 0
+                    ? $"{where}: \"{k}\" is a shape setting, and a {b.Shape} has none (shapes with settings: {string.Join(", ", PartShapes.Names)})"
+                    : $"{where}: a {b.Shape} doesn't take \"{k}\" (it takes {string.Join(", ", allowed)})");
+        var taper = PartShapes.TaperOf(b);
+        if (MathF.Abs(b.Shift.X) + taper.X * 0.5f > 0.5001f || MathF.Abs(b.Shift.Y) + taper.Y * 0.5f > 0.5001f)
+            throw new WeaponFileException($"{where}: with \"taper\" {WeaponFile.Num(taper.X)}, {WeaponFile.Num(taper.Y)} the front end can move at most {WeaponFile.Num(0.5f - taper.X * 0.5f)}, {WeaponFile.Num(0.5f - taper.Y * 0.5f)} (\"shift\") and stay inside its box");
+        if (b.Shape is "cylinder" or "tube" or "capsule" or "sphere" && b.Segments is > 0 and < 3)
+            throw new WeaponFileException($"{where}: a {b.Shape} needs at least 3 segments");
+        if (b.Shape == "rounded" && b.Segments > 8)
+            throw new WeaponFileException($"{where}: a rounded box takes 1 to 8 segments per corner");
         return b;
     }
 

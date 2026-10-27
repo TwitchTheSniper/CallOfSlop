@@ -8,8 +8,10 @@
   "flags": ["chainsaw"],
   "melee": {"damage": 25, "swingMult": 0.6, "reach": 0.3, "cleave": 2},
   "model": [
-    {"size": [0.02, 0.07, 0.51], "pos": [0, 0, -0.245], "color": "steel"},
-    {"size": [0.024, 0.012, 0.51], "pos": [0, 0.04, -0.245], "color": "black"},
-    {"size": [0.024, 0.012, 0.51], "pos": [0, -0.04, -0.245], "color": "black"}
+    {"shape": "bevel", "size": [0.02, 0.07, 0.475], "pos": [0, 0, -0.2375], "color": "steel", "radius": 0.3, "edges": "long"},
+    {"shape": "cylinder", "size": [0.07, 0.07, 0.02], "pos": [0, 0, -0.475], "rot": [0, 90, 0], "color": "steel", "segments": 16},
+    {"shape": "bevel", "size": [0.024, 0.012, 0.475], "pos": [0, 0.04, -0.2375], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "bevel", "size": [0.024, 0.012, 0.475], "pos": [0, -0.04, -0.2375], "color": "black", "radius": 0.3, "edges": "long"},
+    {"shape": "arc", "size": [0.024, 0.094, 0.047], "pos": [0, 0, -0.475], "rot": [0, 90, 0], "color": "black", "segments": 10, "inner": 0.74, "angle": 180, "dir": 270}
   ]
 }

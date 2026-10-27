@@ -7,11 +7,11 @@
   "weight": 0.7,
   "muzzles": [[0, 0, -0.11]],
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.02], "pos": [0, 0, -0.01], "color": "steel"},
-    {"shape": "rod", "size": [0.075, 0.075, 0.08], "pos": [0, 0, -0.06], "color": "gunmetal"},
-    {"size": [0.09, 0.012, 0.06], "pos": [0, 0, -0.06], "color": "black"},
-    {"size": [0.012, 0.09, 0.06], "pos": [0, 0, -0.06], "color": "black"},
-    {"shape": "rod", "size": [0.04, 0.04, 0.01], "pos": [0, 0, -0.105], "color": "steel"}
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.02], "pos": [0, 0, -0.01], "color": "steel"},
+    {"shape": "cylinder", "size": [0.075, 0.075, 0.08], "pos": [0, 0, -0.06], "color": "gunmetal", "segments": 16},
+    {"shape": "bevel", "size": [0.09, 0.012, 0.06], "pos": [0, 0, -0.06], "color": "black", "radius": 0.4, "edges": "long"},
+    {"shape": "bevel", "size": [0.012, 0.09, 0.06], "pos": [0, 0, -0.06], "color": "black", "radius": 0.4, "edges": "long"},
+    {"shape": "tube", "size": [0.04, 0.04, 0.01], "pos": [0, 0, -0.105], "color": "steel", "inner": 0.5, "ends": "back"}
   ],
   "stats": [
     {"stat": "recoilDeg", "mul": 0.45},

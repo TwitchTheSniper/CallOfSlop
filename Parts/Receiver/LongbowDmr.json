@@ -17,12 +17,12 @@
     {"name": "amp", "type": "amp", "pos": [-0.03, 0.0497, 0.02]}
   ],
   "model": [
-    {"size": [0.058, 0.058, 0.3], "pos": [0, 0.029, -0.05], "color": "gunmetal"},
-    {"size": [0.046, 0.012, 0.3], "pos": [0, 0.064, -0.05], "color": "gunmetal"},
-    {"size": [0.06, 0.005, 0.17], "pos": [0, 0.026, -0.1], "color": "black"},
-    {"size": [0.06, 0.005, 0.17], "pos": [0, 0.04, -0.1], "color": "black"},
-    {"size": [0.05, 0.034, 0.02], "pos": [0, 0.017, 0.11], "color": "gunmetal"},
-    {"size": [0.029, 0.014, 0.14], "pos": [0, 0.074, -0.036], "color": "black"},
+    {"shape": "bevel", "size": [0.058, 0.058, 0.3], "pos": [0, 0.029, -0.05], "color": "gunmetal", "radius": 0.12, "edges": "long"},
+    {"shape": "bevel", "size": [0.046, 0.012, 0.3], "pos": [0, 0.064, -0.05], "color": "gunmetal", "radius": 0.2},
+    {"shape": "bevel", "size": [0.06, 0.005, 0.17], "pos": [0, 0.026, -0.1], "color": "black", "radius": 0.2, "edges": "long"},
+    {"shape": "bevel", "size": [0.06, 0.005, 0.17], "pos": [0, 0.04, -0.1], "color": "black", "radius": 0.2, "edges": "long"},
+    {"shape": "bevel", "size": [0.05, 0.034, 0.02], "pos": [0, 0.017, 0.11], "color": "gunmetal", "radius": 0.2},
+    {"shape": "bevel", "size": [0.029, 0.014, 0.14], "pos": [0, 0.074, -0.036], "color": "black", "radius": 0.2, "edges": "long"},
     {"size": [0.06, 0.01, 0.04], "pos": [0, 0.042, 0.07], "color": "accent"},
     {"use": "Picatinny Rail", "pos": [0, 0.074, -0.07], "scale": [1, 1, 1.4]},
     {"use": "Screw Head", "pos": [0, 0.07, 0.07]}

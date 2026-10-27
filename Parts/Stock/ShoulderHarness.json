@@ -7,8 +7,8 @@
   "weight": 0.8,
   "carry": 5,
   "model": [
-    {"size": [0.12, 0.04, 0.18], "pos": [0, -0.01, 0.09], "color": "olive"},
-    {"size": [0.14, 0.06, 0.03], "pos": [0, -0.01, 0.19], "color": "black"}
+    {"shape": "rounded", "size": [0.12, 0.04, 0.18], "pos": [0, -0.01, 0.09], "color": "olive", "segments": 4, "radius": 0.45},
+    {"shape": "rounded", "size": [0.14, 0.06, 0.03], "pos": [0, -0.01, 0.19], "color": "black", "segments": 4, "radius": 0.4, "edges": "long"}
   ],
   "stats": [
     {"stat": "recoilDeg", "mul": 0.9},

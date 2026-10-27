@@ -7,7 +7,7 @@
   "weight": 5.0,
   "melee": {"damage": 70, "swingMult": 1.5, "stun": 1.0},
   "model": [
-    {"size": [0.08, 0.08, 0.2], "pos": [0, 0, -0.04], "rot": [90, 0, 0], "color": "gunmetal"},
-    {"size": [0.085, 0.085, 0.02], "pos": [0, 0.1, -0.04], "rot": [90, 0, 0], "color": "steel"}
+    {"shape": "bevel", "size": [0.08, 0.08, 0.2], "pos": [0, 0, -0.04], "rot": [90, 0, 0], "color": "gunmetal", "radius": 0.2},
+    {"shape": "bevel", "size": [0.085, 0.085, 0.02], "pos": [0, 0.1, -0.04], "rot": [90, 0, 0], "color": "steel", "radius": 0.3}
   ]
 }

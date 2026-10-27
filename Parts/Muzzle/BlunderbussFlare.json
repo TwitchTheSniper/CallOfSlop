@@ -10,10 +10,9 @@
     ]
   ],
   "model": [
-    {"shape": "rod", "size": [   0.034,   0.034,   0.02 ], "pos": [   0,   0,   -0.01 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.05,   0.05,   0.02 ], "pos": [   0,   0,   -0.03 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.07,   0.07,   0.02 ], "pos": [   0,   0,   -0.05 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.095,   0.095,   0.02 ], "pos": [   0,   0,   -0.07 ], "color": "brass" }
+    {"shape": "cylinder", "size": [0.034, 0.034, 0.02], "pos": [0, 0, -0.01], "color": "brass"},
+    {"shape": "tube", "size": [0.095, 0.095, 0.06], "pos": [0, 0, -0.05], "rot": [0, 180, 0], "color": "brass", "segments": 16, "inner": 0.82, "taper": 0.36},
+    {"shape": "tube", "size": [0.098, 0.098, 0.006], "pos": [0, 0, -0.077], "color": "brass", "segments": 16, "inner": 0.84}
   ],
   "stats": [
     {"stat": "pellets", "grow": 1.5 },

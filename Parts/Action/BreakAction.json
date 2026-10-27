@@ -7,9 +7,9 @@
   "weight": 0.1,
   "action": {"kind": "single", "rpm": 120, "chamber": 1},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.012, 0.012, 0.012], "pos": [0.012, 0.006, -0.016], "color": "steel"},
-    {"size": [0.008, 0.01, 0.008], "pos": [0.011, -0.006, 0.016], "color": "accent"}
+    {"shape": "bevel", "size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black", "radius": 0.25},
+    {"shape": "cylinder", "size": [0.012, 0.012, 0.012], "pos": [0.012, 0.006, -0.016], "rot": [0, 90, 0], "color": "steel", "segments": 10},
+    {"shape": "rounded", "size": [0.008, 0.01, 0.008], "pos": [0.011, -0.006, 0.016], "color": "accent", "radius": 0.3, "segments": 2}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.3},

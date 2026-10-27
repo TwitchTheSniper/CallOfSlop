@@ -103,8 +103,7 @@ public static partial class SelfTest
             var bn = rn.Attach(P(receiver).Sockets.First(s => s.Type == "barrel").Name, P(barrel));
             BuildNode? dn = device != null ? bn.Attach("muzzle", P(device)) : null;
             var model = BuildModel.Build(b, Vector3.One);
-            var (from, _) = BuildModel.NodeRange(model, bn);
-            var part = model.Mesh.Parts[from];
+            var (mn, mx) = BuildModel.Bounds(model.Nodes[bn], false); // the barrel's own pieces (it is made of several shapes)
             var scale = BuildRules.BarrelScale(bn);
             var gap = 0f;
             if (dn != null)
@@ -112,7 +111,7 @@ public static partial class SelfTest
                 var socket = model.Nodes[bn].ToWorld(bn.Part.Sockets.First(s => s.Type == "muzzle").Pos * scale);
                 gap = Vector3.Distance(socket, model.Nodes[dn].WorldPosition);
             }
-            return (scale, MathF.Min(part.Sx, part.Sy), part.Sz, model.Muzzles[0] - model.Nodes[bn].WorldPosition, gap);
+            return (scale, MathF.Min(mx.X - mn.X, mx.Y - mn.Y), mx.Z - mn.Z, model.Muzzles[0] - model.Nodes[bn].WorldPosition, gap);
         }
         var pistol = Sized("Plinker Receiver", "Standard Barrel", null);
         var rifleS = Sized("Workhorse Receiver", "Standard Barrel", null);

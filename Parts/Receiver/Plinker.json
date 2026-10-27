@@ -17,16 +17,13 @@
     {"name": "amp", "type": "amp", "pos": [-0.024, 0.043, 0.02]}
   ],
   "model": [
-    {"size": [0.043, 0.03, 0.13], "pos": [0, 0.015, 0.02], "color": "gunmetal"},
-    {"size": [0.045, 0.022, 0.145], "pos": [0, 0.041, 0.0125], "color": "gunmetal"},
-    {"size": [0.029, 0.008, 0.145], "pos": [0, 0.056, 0.0125], "color": "gunmetal"},
-    {"size": [0.0113, 0.0113, 0.145], "pos": [-0.0145, 0.052, 0.0125], "rot": [0, 0, 45], "color": "gunmetal"},
-    {"size": [0.0113, 0.0113, 0.145], "pos": [0.0145, 0.052, 0.0125], "rot": [0, 0, 45], "color": "gunmetal"},
+    {"shape": "bevel", "size": [0.043, 0.03, 0.13], "pos": [0, 0.015, 0.02], "color": "gunmetal", "radius": 0.12, "edges": "long"},
     {"size": [0.0465, 0.016, 0.004], "pos": [0, 0.042, 0.064], "color": "black"},
     {"size": [0.0465, 0.016, 0.004], "pos": [0, 0.042, 0.072], "color": "black"},
-    {"size": [0.0225, 0.014, 0.08], "pos": [0, 0.064, 0.006], "color": "black"},
+    {"shape": "bevel", "size": [0.0225, 0.014, 0.08], "pos": [0, 0.064, 0.006], "color": "black", "radius": 0.2, "edges": "long"},
     {"size": [0.047, 0.008, 0.03], "pos": [0, 0.026, 0.045], "color": "accent"},
-    {"size": [0.03, 0.008, 0.024], "pos": [0, 0.022, 0.092], "rot": [-15, 0, 0], "color": "gunmetal"}
+    {"size": [0.03, 0.008, 0.024], "pos": [0, 0.022, 0.092], "rot": [-15, 0, 0], "color": "gunmetal"},
+    {"shape": "rounded", "size": [0.045, 0.03, 0.145], "pos": [0, 0.045, 0.0125], "color": "gunmetal", "segments": 4, "radius": 0.3, "edges": "long"}
   ],
   "stats": [
     {"stat": "hipSpreadDeg", "set": 1.3},

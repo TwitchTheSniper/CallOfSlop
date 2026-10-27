@@ -7,9 +7,9 @@
   "weight": 0.35,
   "action": {"kind": "chain", "rpm": 450, "spoolTime": 0.4, "spoolStart": 0.5},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.02, 0.03, 0.03], "pos": [0.015, 0, 0], "color": "gunmetal"},
-    {"size": [0.006, 0.006, 0.05], "pos": [0.027, 0.012, 0], "color": "steel"}
+    {"shape": "bevel", "size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black", "radius": 0.25},
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.02], "pos": [0.015, 0, 0], "rot": [0, 90, 0], "color": "gunmetal", "segments": 12},
+    {"shape": "capsule", "size": [0.006, 0.006, 0.05], "pos": [0.027, 0.012, 0], "color": "steel", "segments": 6}
   ],
   "stats": []
 }

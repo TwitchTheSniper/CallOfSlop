@@ -9,7 +9,8 @@
   "hand": [0, -0.012, -0.1],
   "feed": "tube",
   "model": [
-    {"size": [0.025, 0.025, 0.2], "pos": [0, -0.012, -0.1], "color": "black"}
+    {"shape": "cylinder", "size": [0.025, 0.025, 0.19], "pos": [0, -0.012, -0.095], "color": "black"},
+    {"shape": "cylinder", "size": [0.026, 0.026, 0.012], "pos": [0, -0.012, -0.194], "color": "steel", "segments": 10}
   ],
   "stats": [
     {"stat": "mag", "set": 6},

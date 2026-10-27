@@ -12,9 +12,9 @@
     -0.01
   ],
   "model": [
-    {"size": [   0.026,   0.03,   0.03 ], "pos": [   0,   -0.015,   -0.01 ], "rot": [   14,   0,   0 ], "color": "polymer" },
-    {"size": [   0.03,   0.008,   0.04 ], "pos": [   0.024,   0.004,   -0.01 ], "color": "black" },
-    {"size": [   0.012,   0.012,   0.03 ], "pos": [   0.014,   0.0,   -0.01 ], "color": "black" }
+    {"shape": "rounded", "size": [0.026, 0.03, 0.03], "pos": [0, -0.015, -0.01], "rot": [14, 0, 0], "color": "polymer", "segments": 4, "radius": 0.4},
+    {"shape": "bevel", "size": [0.03, 0.008, 0.04], "pos": [0.024, 0.004, -0.01], "color": "black", "radius": 0.3},
+    {"shape": "bevel", "size": [0.012, 0.012, 0.03], "pos": [0.014, 0, -0.01], "color": "black", "radius": 0.3, "edges": "long"}
   ],
   "stats": [
     {"stat": "recoilSway", "mul": 0.7 },

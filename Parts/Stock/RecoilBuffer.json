@@ -6,8 +6,11 @@
   "flavor": "A spring tube that eats the kick and gets you back on target faster.",
   "weight": 0.7,
   "model": [
-    {"shape": "rod", "size": [0.03, 0.03, 0.2], "pos": [0, -0.025, 0.1], "color": "gunmetal"},
-    {"size": [0.04, 0.09, 0.03], "pos": [0, -0.01, 0.21], "color": "black"}
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.2], "pos": [0, -0.025, 0.1], "color": "gunmetal"},
+    {"shape": "cylinder", "size": [0.033, 0.033, 0.006], "pos": [0, -0.025, 0.05], "color": "black"},
+    {"shape": "cylinder", "size": [0.033, 0.033, 0.006], "pos": [0, -0.025, 0.1], "color": "black"},
+    {"shape": "cylinder", "size": [0.033, 0.033, 0.006], "pos": [0, -0.025, 0.15], "color": "black"},
+    {"shape": "rounded", "size": [0.04, 0.09, 0.03], "pos": [0, -0.01, 0.21], "color": "black", "segments": 4, "radius": 0.4}
   ],
   "stats": [
     {"stat": "recoilDeg", "mul": 0.7},

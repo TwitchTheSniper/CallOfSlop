@@ -9,8 +9,8 @@
   "hand": [0, -0.03, 0],
   "feed": "cell",
   "model": [
-    {"size": [0.03, 0.06, 0.06], "pos": [0, -0.03, 0], "color": "accent"},
-    {"size": [0.032, 0.012, 0.062], "pos": [0, -0.03, 0], "color": "accent", "tag": "glow"}
+    {"shape": "rounded", "size": [0.03, 0.06, 0.06], "pos": [0, -0.03, 0], "color": "accent", "segments": 4, "radius": 0.4},
+    {"shape": "rounded", "size": [0.032, 0.012, 0.062], "pos": [0, -0.03, 0], "color": "accent", "tag": "glow", "segments": 2, "radius": 0.4, "edges": "long"}
   ],
   "stats": [
     {"stat": "mag", "set": 40},

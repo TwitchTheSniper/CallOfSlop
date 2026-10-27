@@ -14,7 +14,8 @@ Usage:
 
 It reads part files the way the game does (comments and trailing commas allowed), resolves "extends" (Parts/_Bases and
 other parts) and fragment "use" entries (Parts/_Fragments), and draws each part's boxes (rods as octagons) with its
-sockets as coloured markers (labelled by socket name) and muzzles as red dots. The rotation conventions match the game
+sockets as coloured markers (labelled by socket name) and muzzles as red dots; contoured shapes (cylinder, tube, wedge,
+bevel, rounded, capsule, sphere, arc) are drawn with tools/parts/shapes.py. The rotation conventions match the game
 (PartDef.Rot: Z, then X, then Y turns as Rz*Rx*Ry). Exit code 1 if a file didn't resolve or --lint found problems.
 See docs/zombies/WEAPON-BUILDER.md, "Making parts".
 """
@@ -24,6 +25,9 @@ import math
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import shapes  # noqa: E402  (the contoured model shapes, mirrored from Source/Zombies/PartShapes.cs)
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 
@@ -156,7 +160,7 @@ class Library:
         return merge(parent, data, source)
 
     def boxes(self, model, where, depth=0):
-        """A model list with fragment uses expanded: [(shape, size, pos, R, color, alpha, tag)]."""
+        """A model list with fragment uses expanded: [(shape, size, pos, R, color, alpha, tag, settings)] (settings: the box entry, for shapes.py)."""
         out = []
         for i, b in enumerate(model or []):
             b = lower_keys(b)
@@ -172,15 +176,15 @@ class Library:
                 sc = [sc] * 3 if isinstance(sc, (int, float)) else sc
                 R = mat_rot(b.get("rot", [0, 0, 0]))
                 p0 = b.get("pos", [0, 0, 0])
-                for (shape, size, pos, Rb, col, alpha, tag) in self.boxes(lower_keys(frag[1]).get("model"), f"{at} -> fragment '{name}' ({frag[0]})", depth + 1):
+                for (shape, size, pos, Rb, col, alpha, tag, st) in self.boxes(lower_keys(frag[1]).get("model"), f"{at} -> fragment '{name}' ({frag[0]})", depth + 1):
                     size = [abs(size[k] * sc[k]) for k in range(3)]
                     pos = [v + p0[k] for k, v in enumerate(mv(R, [pos[k] * sc[k] for k in range(3)]))]
-                    out.append((shape, size, pos, mm(R, Rb), b.get("color", col), b.get("alpha", alpha), b.get("tag", tag)))
+                    out.append((shape, size, pos, mm(R, Rb), b.get("color", col), b.get("alpha", alpha), b.get("tag", tag), st))
             else:
                 if "size" not in b:
                     raise PartError(f"{at}: a box needs a \"size\"")
                 out.append((b.get("shape", "box").lower(), b["size"], b.get("pos", [0, 0, 0]), mat_rot(b.get("rot", [0, 0, 0])),
-                            b.get("color", "gunmetal"), b.get("alpha", 1.0), b.get("tag", "")))
+                            b.get("color", "gunmetal"), b.get("alpha", 1.0), b.get("tag", ""), b))
         return out
 
 
@@ -286,8 +290,20 @@ def triangles(boxes, accent):
     corners = np.array([[x, y, z] for x in (-0.5, 0.5) for y in (-0.5, 0.5) for z in (-0.5, 0.5)])
     faces = [(0, 1, 3, 2), (4, 6, 7, 5), (0, 4, 5, 1), (2, 3, 7, 6), (0, 2, 6, 4), (1, 5, 7, 3)]
     r45 = mat_rot([0, 0, 45])
-    for (shape, size, pos, R, col, alpha, tag) in boxes:
+    for (shape, size, pos, R, col, alpha, tag, st) in boxes:
         c = np.array(color_of(col, accent))
+        if shapes.is_shaped({"shape": shape}):
+            # A contoured shape (tools/parts/shapes.py, mirrored from Source/Zombies/PartShapes.cs): its own triangles.
+            Rn = np.array(R)
+            shade = c * (1.3 if tag == "glow" else 1.0)
+            for (a, b, q, na, nb, nq) in shapes.mesh(dict(st, shape=shape, size=[abs(x) for x in size])):
+                P = [Rn @ np.array(v) + np.array(pos) for v in (a, b, q)]
+                n = Rn @ (np.array(na) + np.array(nb) + np.array(nq))
+                ln = np.linalg.norm(n)
+                if ln < 1e-12:
+                    continue
+                out.append((P[0], P[1], P[2], n / ln, shade))
+            continue
         copies = [(R, c)] + ([(mm(R, r45), c * 0.93)] if shape == "rod" else [])
         for (Rm, cc) in copies:
             P = (np.array(Rm) @ (corners * np.array(size)).T).T + np.array(pos)

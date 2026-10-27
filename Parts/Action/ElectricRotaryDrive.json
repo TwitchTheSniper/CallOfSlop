@@ -7,9 +7,9 @@
   "weight": 0.4,
   "action": {"kind": "rotary", "rpm": 1800, "rpmPerBarrel": 400, "spoolTime": 1.2, "spoolStart": 0.25},
   "model": [
-    {"size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black"},
-    {"size": [0.026, 0.03, 0.04], "pos": [0.018, 0, 0], "color": "steel"},
-    {"size": [0.004, 0.02, 0.03], "pos": [0.032, 0, 0], "color": "accent", "tag": "glow"}
+    {"shape": "bevel", "size": [0.01, 0.026, 0.05], "pos": [0.004, 0, 0], "color": "black", "radius": 0.25},
+    {"shape": "cylinder", "size": [0.04, 0.03, 0.026], "pos": [0.018, 0, 0], "rot": [0, 90, 0], "color": "steel", "segments": 14},
+    {"shape": "cylinder", "size": [0.03, 0.02, 0.004], "pos": [0.032, 0, 0], "rot": [0, 90, 0], "color": "accent", "tag": "glow", "segments": 12}
   ],
   "stats": []
 }

@@ -325,6 +325,7 @@ public static partial class SelfTest
         Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
         Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
         Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
+        Section("Part shapes", CheckPartShapes); // SelfTestPartShapes.cs: contoured part shapes (cylinder, tube, wedge, bevel, rounded, capsule, sphere, arc) stay in their box, face out, are shared and reach the drawn gun
         Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
         Section("Parts mechanics", CheckPartsMechanics); // SelfTestPartsMechanics.cs: vertical/grid/rosette and offset splitters, bullet size and speed barrels (a seeded server shot), stronger muzzles, no allocations
         Section("Optic mounts", CheckOpticMounts); // SelfTestOpticMounts.cs: every optic sits on top of every receiver on every grip, never inside it; the aim point follows
