@@ -6,7 +6,8 @@ Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
 buys, twelve perk machines (each perk its own machine), the power switch (it gates seven perks and the lab shutter), two workbenches, four salvage
-piles, the weapon-slot upgrade and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
+piles, the weapon-slot upgrade, four casino tables (high-low in the start room, blackjack in the offices, roulette in the lab, dice in the
+generator house) and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
 Plan (north is -Z, east is +X):
@@ -263,6 +264,14 @@ for c in PART_CATEGORIES:
 for c in _placed_cats:
     if c not in PART_CATEGORIES or _placed_cats.count(c) > 1:
         problems.append(f"slot machine category {c}: not a Parts folder, or placed twice")
+# Casino tables (2026-10-27; Source/Game/ZombiesCasino.cs): points only, each in a room that suits it. The props come
+# from tools/zombies/make_casino_tables.py; the players stand on each table's front (-Z before the yaw).
+CASINO = [
+    {"game": "highLow", "at": [4.4, -1.6], "yaw": 0},          # Receiving Hall: the night porter's card game at the intake desk
+    {"game": "blackjack", "at": [-17.2, 0.9], "yaw": 0},       # West Offices: the staff card table between the desks
+    {"game": "roulette", "at": [12.0, 11.0], "yaw": 0},        # Research Lab (behind the power): the probability experiment
+    {"game": "dice", "at": [21.2, -12.0], "yaw": 180},         # Generator House: the stokers' dice tub by the turbine
+]
 SALVAGE = [{"at": [12.2, 1.2]}, {"at": [6, -25.5]}, {"at": [23.5, -22]}, {"at": [13.2, 12.6]}]
 
 zombies = {
@@ -280,6 +289,7 @@ zombies = {
     "power": POWER,
     "salvage": SALVAGE,
     "slots": SLOTS,
+    "casino": CASINO,
 }
 
 # ---- Keep-clear zones: where players and zombies must be able to stand and walk -----------------------------
@@ -300,8 +310,10 @@ def fwd(yaw_deg):
     return math.sin(a), -math.cos(a)
 
 
-MACHINE_SIZE = {"box": (1.3, 0.66), "bench": (1.6, 0.8), "perk": (0.9, 0.7), "slot": (1.0, 0.6), "power": (0.7, 0.3), "slots": (0.9, 0.7)}
-machines = [("box", s) for s in BOX] + [("bench", s) for s in BENCHES] + [("perk", s) for s in PERKS] + [("slot", SLOT), ("power", POWER)] + [("slots", s) for s in SLOTS]
+MACHINE_SIZE = {"box": (1.3, 0.66), "bench": (1.6, 0.8), "perk": (0.9, 0.7), "slot": (1.0, 0.6), "power": (0.7, 0.3), "slots": (0.9, 0.7),
+                "blackjack": (2.0, 1.6), "roulette": (2.6, 1.15), "highLow": (1.35, 1.35), "dice": (2.05, 1.15)}
+machines = [("box", s) for s in BOX] + [("bench", s) for s in BENCHES] + [("perk", s) for s in PERKS] + [("slot", SLOT), ("power", POWER)] + [("slots", s) for s in SLOTS] \
+    + [(t["game"], t) for t in CASINO]
 for kind, s in machines:
     fx, fz = fwd(s["yaw"])
     KEEP.append((s["at"][0] + fx * (MACHINE_SIZE[kind][1] / 2 + 0.6), s["at"][1] + fz * (MACHINE_SIZE[kind][1] / 2 + 0.6), 0.6, f"{kind} front"))
@@ -564,7 +576,7 @@ for kind, s in machines:
 the_map = {
     "format": "call-of-slop-map/1",
     "name": "Blackmoor Asylum",
-    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, the power in the generator house.",
+    "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, four casino tables, the power in the generator house.",
     "author": "Call of Slop",
     "order": 960,
     "maxPlayers": 8,
