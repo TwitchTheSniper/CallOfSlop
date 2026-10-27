@@ -23,6 +23,9 @@ public sealed class MeshAsset
     /// <summary>Where the LODs came from: "segments", "meshoptimizer" or "none".</summary>
     public readonly string LodSource;
 
+    /// <summary>The (resolved) shape of a library primitive, null for any other mesh (a baked map stores just this, MapBake.cs).</summary>
+    public PrimitiveSpec? Spec { get; init; }
+
     public MeshAsset(string key, MeshData[] lods, bool doubleSided, string lodSource)
     {
         Id = Interlocked.Increment(ref _nextId);
@@ -127,10 +130,24 @@ public static class MeshLibrary
             for (var lod = 1; lod < MaxLods; lod++)
                 if (s.ForLod(lod) is { } simpler)
                     lods.Add(MeshOpt.Optimize(MeshPrimitives.Build(simpler)));
-            var asset = new MeshAsset(key, lods.ToArray(), false, lods.Count > 1 ? "segments" : "none");
+            var asset = new MeshAsset(key, lods.ToArray(), false, lods.Count > 1 ? "segments" : "none") { Spec = s };
             Primitives[key] = asset;
             return asset;
         }
+    }
+
+    /// <summary>Is <paramref name="asset"/> the library's primitive for its key (MapBake.cs)?</summary>
+    public static bool IsPrimitive(MeshAsset asset)
+    {
+        lock (Gate)
+            return Primitives.TryGetValue(asset.Key, out var hit) && ReferenceEquals(hit, asset);
+    }
+
+    /// <summary>Every model loaded so far, with its full path (a baked map refers to models by path, MapBake.cs).</summary>
+    public static (string Path, ModelAsset Model)[] LoadedModels()
+    {
+        lock (Gate)
+            return Models.Select(kv => (kv.Key, kv.Value.Model)).OrderBy(m => m.Key, StringComparer.Ordinal).ToArray();
     }
 
     /// <summary>

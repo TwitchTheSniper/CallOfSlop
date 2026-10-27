@@ -249,12 +249,17 @@ public static class NavBake
     }
 
     /// <summary>
-    /// <c>CallOfSlop --bake DIR</c> (the release workflow): builds every shipped map's nav graph live and writes it to
-    /// DIR/Nav. Returns the number of maps that failed.
+    /// <c>CallOfSlop --bake DIR</c> (the release workflow): builds every shipped map live and writes it to DIR/Maps
+    /// (MapBake.cs), then builds every map's nav graph live and writes it to DIR/Nav. Returns the number of bakes that failed.
     /// </summary>
     public static int BakeAll(string dir)
     {
         Enabled = false; // bake from live builds only
+        MapBake.Enabled = false; // the maps too (MapBake.cs): each is built live and written to DIR/Maps as it is built
+        MapBake.CacheWrites = false;
+        MapBake.BakeOutFolder = Path.Combine(dir, "Maps");
+        _ = Maps.All;
+        var mapFailures = MapBake.CheckBakes(MapBake.BakeOutFolder);
         var outDir = Path.Combine(dir, "Nav");
         Directory.CreateDirectory(outDir);
         var failed = 0;
@@ -281,7 +286,7 @@ public static class NavBake
             }
         }
         Console.WriteLine($"[bake] {Maps.All.Length - failed} of {Maps.All.Length} maps baked to {outDir} in {sw.Elapsed.TotalSeconds:0.0} s ({bytes / 1024} KB); {failed} failed");
-        return failed;
+        return failed + mapFailures;
     }
 }
 
