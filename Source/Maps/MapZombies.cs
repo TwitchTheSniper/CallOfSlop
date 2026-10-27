@@ -110,7 +110,7 @@ public sealed class ZSpot
     /// Slot machines: the part category it pays (a <see cref="PartCategory"/> as a number, from "category" in the map
     /// file), or -1 for the classic machine that pays any part (ZombiesSlots.cs, "per-category machines").
     /// </summary>
-    public int SlotCategory = -1;
+    public int SlotCategory = -1; // a PartCategory, or SlotCategoryGrenade (any grenade part)
 
     /// <summary>Casino tables (ZombiesCasino.cs): the game (a <see cref="CasinoGame"/> as a number, from "game"); -1 for anything else.</summary>
     public int Game = -1;
@@ -188,6 +188,9 @@ public sealed class ZombiesMap
 
     /// <summary>The section as it was in the file (written back unchanged).</summary>
     public string Raw = "{}";
+
+    /// <summary>A slot machine's category for the grenade parts machine (any casing, fuse, payload or grenade mod; "category": "grenade" in a map).</summary>
+    public const int SlotCategoryGrenade = 64;
 
     public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8;
 
@@ -391,7 +394,15 @@ public sealed class ZombiesMap
                 var spot = Spot(map, z, s, $"{where}.slots", "category");
                 if (spot.Perk.Length > 0)
                 {
-                    // A per-category machine: it pays parts of this category only ("Barrel", "Optic", "Melee Mod"...).
+                    // A per-category machine: it pays parts of this category only ("Barrel", "Optic", "Melee Mod"...), or
+                    // "Grenade" / "Grenade Parts": any grenade part (casings, fuses, payloads, grenade mods).
+                    if (spot.Perk.Equals("grenade", StringComparison.OrdinalIgnoreCase) || spot.Perk.Equals("grenade parts", StringComparison.OrdinalIgnoreCase))
+                    {
+                        spot.SlotCategory = SlotCategoryGrenade;
+                        spot.Perk = "";
+                        z.SlotMachines.Add(spot);
+                        continue;
+                    }
                     var cat = Enum.GetValues<PartCategory>().Where(c => c.ToString().Equals(spot.Perk, StringComparison.OrdinalIgnoreCase)
                                                                           || PartDef.BuiltInCategoryName(c).Equals(spot.Perk, StringComparison.OrdinalIgnoreCase)).ToArray();
                     if (cat.Length != 1)

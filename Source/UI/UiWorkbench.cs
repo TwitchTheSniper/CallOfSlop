@@ -254,7 +254,7 @@ public sealed partial class Ui
         _runStockKey = int.MinValue;
         _inv.Invalidate();
         _rowVersion = -1;
-        _badgeKey = (int.MinValue, -1, false);
+        _badgeKey = (int.MinValue, -1, BuildKind.Gun);
         _trialKey = (-1, -1, null, null);
         _hoverTrialKey = (-1, null);
         _animRest = _animPart = null;

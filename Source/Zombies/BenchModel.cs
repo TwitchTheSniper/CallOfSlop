@@ -726,7 +726,7 @@ public sealed class BenchModel
     public string WhyNowhere(PartDef part)
     {
         if (part.IsRoot)
-            return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : "A grip starts a new weapon (New weapon, or Change grip).";
+            return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : part.Casing != null ? "A casing starts a new grenade (the grenade slot)." : "A grip starts a new weapon (New weapon, or Change grip).";
         if (NowhereSpot(part, out var socketOk) is var i and >= 0)
             return socketOk ? WhyNot(i, part) ?? "It doesn't fit there." : BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) ?? "It doesn't fit there.";
         return $"This build has no {part.Mount} socket for it.";
@@ -761,7 +761,7 @@ public sealed class BenchModel
     public string WhyNowhereShort(PartDef part)
     {
         if (part.IsRoot)
-            return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
+            return part.Hilt != null ? "starts a new melee weapon" : part.Casing != null ? "starts a new grenade" : "starts a new weapon";
         if (NowhereSpot(part, out var socketOk) is var i and >= 0)
             return socketOk ? "fits a socket, but not on this build as it is" : BuildRules.SocketWhyShort(Spots[i].Parent, Spots[i].Socket, part) ?? "doesn't fit";
         return $"no {part.Mount} socket on this build";
