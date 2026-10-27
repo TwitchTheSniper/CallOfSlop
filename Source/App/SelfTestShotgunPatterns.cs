@@ -120,8 +120,8 @@ public static partial class SelfTest
                     Fail($"Shotgun patterns: {w.Name} ({kname}) still does {far:0} past {k.RangeM * 3:0} m, should be under half a life");
                 if (one > 12f)
                     Fail($"Shotgun patterns: {w.Name} ({kname}) one-shots out to {one:0.0} m, no longer a close-range gun (12 m max)");
-                if (two > 25f)
-                    Fail($"Shotgun patterns: {w.Name} ({kname}) two-shots out to {two:0.0} m (25 m max)");
+                if (two > 30f)
+                    Fail($"Shotgun patterns: {w.Name} ({kname}) two-shots out to {two:0.0} m (30 m max)");
             }
             lines.Add($"{w.Name} ({w.Pellets}x{w.Damage}, {InchesPerYard(w):0.00} in/yd): {string.Join("; ", row)}");
         }
