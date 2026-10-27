@@ -409,7 +409,7 @@ than the desktop itself, faster than the agent container), Release build, 110 sh
    lighting and fog). If the instanced renderer can't start, `DrawArena` and the thumbnails fall back to the old loop.
    "Box batches" checks every map's buffer holds each drawn box once, exactly as drawn, inside its cell's bounds.
 
-Not done: **built-map bakes** (FTR-BK01's second half: the whole built `Map` serialised and loaded). After 1-2, a warm
+Not done here: **built-map bakes** (FTR-BK01's second half: the whole built `Map` serialised and loaded; done in section 7). After 1-2, a warm
 load of all 110 maps is 1.8 s on 2 cores; what is left of the cold launch is mostly JIT (see 6.3). Serialising a
 `Map` means every field of every partial (boxes, props, buildings, foliage, decals, terrain, destruction, Zombies,
 movers, objectives) with the same "exactly matches" rule: worth it only if 6.3's runtime switch isn't taken.
@@ -440,3 +440,77 @@ movers, objectives) with the same "exactly matches" rule: worth it only if 6.3's
 - The shipped bakes are made by the packaged exe on the Windows release runner; a tester's own dev build (any other
   module id) never uses them and caches its own instead.
 - The box batching has no pixel test here (no GPU); compare a smoke run's `smoke_*.bmp` on Windows before merging.
+
+## 7. Baked maps (feat/map-bake, 2026-10-26)
+
+Board item FTR-BK01, the stage left over from section 6: whole built maps baked ahead of time and cached, chosen over
+changing .NET tiered compilation (6.3). Code: `Source/Maps/MapBake.cs` (keys, files, where they are looked for),
+`MapBakeGraph.cs` (the object graph written and read back, and the comparer), `MapBakeRead.cs` (the fast reader, XXH64),
+the hook in `Maps.LoadFolder` (`Source/Maps/Maps.cs`), the "Map bake" self-test section (`Source/App/SelfTestMapBake.cs`).
+
+### 7.1 What it does
+
+- **What is baked:** the map as `Maps.LoadFolder` leaves it after building and validating it: every box after ops,
+  props, clutter, foliage trunks and terrain placement, colours, spawns and waypoints (moved by `Validate`), props,
+  buildings with their plans, doors and windows, destruction chunks, decal requests, foliage instances, terrain heights
+  and collision, boundary, gravity and planets, meshes and models, the decoded sky image, movers, Zombies and objective
+  data, the recorded ops (so "Refresh maps" and `MapFile.ToJson` work as before), the fingerprint inputs, and the
+  console lines building and validating it printed (replayed, so the log reads the same). Render data (prop and box
+  instance buffers, the decal bake, terrain meshes) is still built on the GL thread when a map is first drawn, as before:
+  it is fast (section 6) and needs the GL context, so it is not in the bake.
+- **How:** generic over the map's own types: every instance field of every object the map holds, private ones
+  included, so a field added later is baked without anyone having to remember it. Values without references (boxes,
+  plants, heights) and arrays and lists of them are raw bytes; objects keep their identity (shared objects and cycles
+  survive); dictionaries and sets are rebuilt in enumeration order with the same comparer; library objects (global and
+  pack props, decals, buildings, flag designs, flag variants, models, the destruction table) are written as a path from
+  their library root and resolved to the very same instance (the renderer compares references); procedural meshes are
+  written as their shape and fetched from `MeshLibrary`. Fields the loader sets afterwards (`Id`, `Pack`, `PackDir`,
+  load times) are marked `[NotBaked]`. Anything the bake can't reproduce exactly (a delegate, a running task, a
+  framework type it doesn't know, another map, an absolute path on this computer) refuses that map, which then simply
+  loads live; no shipped map is refused.
+- **Reading:** one `File.ReadAllBytes` per map on the load's worker threads (in parallel, as `LoadFolder` builds), an
+  XXH64 check of the payload, then a single pass: a small method emitted once per type reads each class's and struct's
+  fields straight into place (no reflection or boxing per field). Bodies are written breadth first, so nothing recurses
+  deeply.
+- **Where:** `Baked/Maps` next to the game first (the release workflow's "Bake maps and nav graphs" step runs the
+  packaged exe with `--bake DIR`, which builds every map live, writes it, reads each back and compares it with the live
+  map field for field, failing the release on any difference), then `Cache/Maps` in the save folder (written in the
+  background after the game builds a map itself; not a save file: stripped by `tools/package.ps1`, in `.gitignore`,
+  explained in `tools/MIGRATING.md`). "Refresh maps" builds live and caches what changed; `--check-map`, the
+  generators and the self-test always build live (the self-test reads bakes only in "Map bake", in temp folders).
+- **Key (exact match or nothing):** the bake format, this exact build (module id) with its runtime, architecture and
+  OS, the map file's path, a SHA-256 of its text, and a SHA-256 over every other file a map can read while it is built:
+  the Props, Buildings, Decals, Materials and Models folders and every file in the Maps folder that isn't another map
+  (pack props and decals, models, sky images, pack.json; each file's path, length and content). Editing any of them
+  rebuilds every map once (about the warm live load below) and caches it again; editing one map file rebuilds only
+  that map. A damaged or cut-short file fails its XXH64 or its structure checks and is ignored; a stale one fails its
+  key. The key costs 13-19 ms per start on the PC (18 MB of input files hashed in parallel).
+
+### 7.2 Measurements
+
+User's PC runner (the desktop app's Linux VM, 2 cores), Release build, 110 shipped maps, each launch a fresh process
+(`Maps.All` from the start of the process; the OS file cache warm, as on a second start). "Warm" is a second load in the
+same process (what a reload would cost if it used the bakes). Three runs each.
+
+| What | Built live (before) | Baked | Notes |
+| --- | --- | --- | --- |
+| Launch: every map, fresh process | 4.9-6.9 s | **0.69-0.70 s** | 7-10x; whole process to exit 7.9-9.1 s vs 0.87-0.88 s |
+| Load every map again, warm | 1.9-3.0 s | **0.13-0.14 s** | |
+| First start after a change (build live + cache) | 4.9-6.9 s | 4.8 s | the cache is serialised on the load's workers and written in the background |
+| "Map bake" section: 110 maps built and cached / read back / compared | 2.5 s / 0.30 s / 0.5 s | | 110 of 110 maps read back exactly as built |
+| Bake files, all 110 maps | | 110 MB (about 50 MB compressed) | biggest: Vuorikoski 9.8 MB, Stratos Station 10 MB (its 2048 x 1024 sky image, raw) |
+
+Agent container (slower, shared): fresh process 12-16 s live vs 2.1-2.4 s baked; warm 5.9-9.2 s vs 0.55-0.78 s.
+
+What is left of a baked launch: the shared libraries (props, decals, buildings) still load from their JSON files at
+start (0.8 of the 2.1 s in the container), then the bakes. Where the bytes go (all 110 maps): foliage instances 34 MB, meshes
+and models (placements, the boundary floor meshes) 21 MB, terrain 12 MB, destruction chunks 10 MB, building box looks
+10 MB, the one sky image 8 MB, boxes 7 MB, props 4 MB, buildings 4 MB, recorded ops 4 MB.
+
+### 7.3 Open for the developer
+
+- Bakes are not compressed: 110 MB on disk in the release folder and the dev cache (the release zip compresses them
+  to about 50 MB anyway). Deflate on the payload would halve the disk use for roughly 0.1 s more per launch.
+- The shared libraries could be baked the same way next (the other half of a baked launch).
+- Floating-point results are trusted to be the same on every x64 CPU running the same build (as for the nav bakes);
+  the fingerprint still guards multiplayer.

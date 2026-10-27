@@ -36,7 +36,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 - Version scheme: `0.YYYY.MDD.N` (`BuildInfo.cs`).
 - The Azure signing step is present but off (`vars.SIGNING_ENABLED`).
 - The release notes append `tools/MIGRATING.md`.
-- It bakes every shipped map's nav graph with the packaged exe (`--bake DIR`, `Source/Game/BotNavBake.cs`); dev builds cache their own in the save folder's `Cache/`.
+- It bakes every shipped map (the built map, `Source/Maps/MapBake.cs`) and its nav graph (`Source/Game/BotNavBake.cs`) with the packaged exe (`--bake DIR`); dev builds cache their own in the save folder's `Cache/`.
 
 ## Layout
 
@@ -128,6 +128,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   - `SelfTestModeModules.cs` holds the seeded match digests per mode. They change whenever nav, bot or gameplay timing changes, and are then re-recorded from the failure message.
   - `SelfTestPackAssets.cs` pins map and prop hashes, including some Windows-only pins. Editing a prop or map changes them.
 - **Windows-only checks.** CPU-time tick checks only measure on Windows (`SelfTestTiming.Available`), so some failures only show up with `[windows ci]`. That includes GC pauses on big maps, stuck-spot counts and tick work.
+- **Baked maps** (`Source/Maps/MapBake*.cs`, docs/perf/STREAMING.md section 7) write every instance field of everything a built `Map` holds, generically. A field the game sets after a map is built (like `Id`, `Pack`) is marked `[NotBaked]`; a runtime cache that is still empty after `Validate` needs nothing. A new kind of shared library object (like props or models) needs a root in `MapBake.IndexFor`. "Map bake" checks every shipped map reads back exactly as built.
 - **Nav graph building must stay deterministic.** It builds from an as-built copy of the map. Destruction patches are reset when a map is restored. "Nav determinism" tests this, and "Nav edge walks" walks risky edges with the real mover.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
