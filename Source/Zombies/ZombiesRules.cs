@@ -134,7 +134,24 @@ public sealed class ZombiesRules
     /// <summary>How long the interact key is held to buy something (seconds).</summary>
     public float BuyHoldSeconds = 0.25f;
 
-    public int MaxPerks = 4;
+    /// <summary>A hard cap on perks held (8: every perk; there's no real cap since 2026-10-26).</summary>
+    public int MaxPerks = 8;
+
+    /// <summary>Perks beyond this many held cost more (developer answer, 2026-10-26): the next perk costs its price x
+    /// <see cref="ExtraPerkFactor"/> to the power (perks held - this + 1), so with 4 the 5th costs 2x, the 6th 4x, the
+    /// 7th 8x. Every perk, Second Wind too. 0 = never.</summary>
+    public int FullPricePerks = 4;
+
+    public float ExtraPerkFactor = 2f;
+
+    /// <summary>What a perk listed at <paramref name="price"/> costs someone holding <paramref name="held"/> perks.</summary>
+    public int PerkPrice(int price, int held)
+    {
+        if (FullPricePerks <= 0 || held < FullPricePerks)
+            return price;
+        var m = Math.Pow(ExtraPerkFactor, held - FullPricePerks + 1);
+        return (int)Math.Min(int.MaxValue / 2, Math.Round(price * m));
+    }
     public readonly List<ZombiePerkDef> Perks = new();
 
     /// <summary>Mystery box: the box moves after this many uses (rolled between the two), the spin, and how long the gun is offered.</summary>
@@ -452,6 +469,8 @@ public sealed class ZombiesRules
                         {
                             case "holdSeconds": r.BuyHoldSeconds = Real(v, w, 0, 3); break;
                             case "maxPerks": r.MaxPerks = Whole(v, w, 0, 8); break;
+                            case "fullPricePerks": r.FullPricePerks = Whole(v, w, 0, 8); break;
+                            case "extraPerkFactor": r.ExtraPerkFactor = Real(v, w, 1, 10); break;
                             default: return false;
                         }
                         return true;

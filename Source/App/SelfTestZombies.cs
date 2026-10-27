@@ -350,6 +350,31 @@ public static partial class SelfTest
             zp.Perks = (byte)((1 << g.ZRules.PerkIndex("speed")) | (1 << g.ZRules.PerkIndex("doubletap")));
             if (g.ZombieReloadMult(me) >= 1 || g.ZombieFireIntervalMult(me) >= 1)
                 Fail("Speed Cola / Double Tap don't change reload / fire rate");
+            // No hard cap on perks (developer answer, 2026-10-26): beyond the 4th each costs double the step before.
+            {
+                var r = g.ZRules;
+                var sw = zm.PerkMachines.FirstOrDefault(m => m.Perk == "secondwind");
+                var swk = r.PerkIndex("secondwind");
+                if (sw != null && swk >= 0)
+                {
+                    zp.Perks = 0;
+                    for (var i = 0; i < r.Perks.Count && Game.PerkCount(zp) < r.FullPricePerks; i++)
+                        if (i != swk)
+                            zp.Perks |= (byte)(1 << i);
+                    var held = Game.PerkCount(zp);
+                    me.Teleport(sw.At + World.FlatForward(sw.Yaw) * 1.0f);
+                    zp.Points = 100000;
+                    var pp = g.FindZUse(me);
+                    g.SelfTestUse(me, now);
+                    var listed = r.Perks[swk].Price(g.Players.Count <= 1);
+                    var paid = 100000 - zp.Points;
+                    var steps = $"{r.PerkPrice(1000, 3)} {r.PerkPrice(1000, 4)} {r.PerkPrice(1000, 5)} {r.PerkPrice(1000, 6)}";
+                    ZLine($"perk price: {held} held, '{pp?.Text}', paid {paid} for a {listed} perk; 1000 with 3/4/5/6 held: {steps}");
+                    if (held != 4 || !zp.Has(swk) || paid != listed * 2 || pp?.Cost != paid || pp?.Text.Contains($"[{paid}]") != true || steps != "1000 2000 4000 8000"
+                        || r.MaxPerks < r.Perks.Count)
+                        Fail("a 5th perk should be on sale at twice its price (the prompt showing that price), a 6th at 4x, a 7th at 8x, with no cap below the perk count");
+                }
+            }
             zp.Perks = 0;
 
             // The slot upgrade: 2 -> 4 slots for its price.

@@ -65,7 +65,9 @@
   },
   "buy": {
     "holdSeconds": 0.25,
-    "maxPerks": 4
+    "maxPerks": 8,
+    "fullPricePerks": 4,
+    "extraPerkFactor": 2
   },
   "perks": [
     {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "blurb": "Zombie hits do 40 percent of their damage."},

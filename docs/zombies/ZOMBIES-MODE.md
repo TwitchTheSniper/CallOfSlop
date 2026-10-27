@@ -138,7 +138,7 @@ grey: not possible now (needs the power, already owned...).
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
 | **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a build of that tier you don't already carry (in a gun slot or the melee slot; 59 box builds, 10-16 per tier) After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
-| **Perk machine** | A perk from the rules file (one machine per perk). At most 4 perks; all lost when downed | per perk |
+| **Perk machine** | A perk from the rules file (one machine per perk). No cap: beyond the 4th each perk costs double the step before (the 5th 2x its price, the 6th 4x...); all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
@@ -157,10 +157,16 @@ grey: not possible now (needs the power, already owned...).
 
 On Zombies Test, Quick Revive and Second Wind (both in the start room) work without power; the other three need it.
 A perk with `"selfRevive": true` is a self-revive perk (any perk can be made one in the rules file). **Second Wind
-(proposed)**: a fixed 1500 every time (no rising price), it counts toward the 4-perk limit (it's a perk like the
-others, and the limit makes it a real choice), it's used up by the revive (and lost with the others on a down anyway).
+(decided 2026-10-26)**: a fixed 1500 every time (no rising price of its own), it counts as a perk for the doubling
+below (it's a perk like the others), it's used up by the revive (and lost with the others on a down anyway).
 Zombies don't attack downed players today, so a self-revive can't be "finished off" yet: being revived by a teammate
 first also ends it (the perk is still used up). Quick Revive lost its 500 solo price with its solo self-revive.
+
+**More than 4 perks (developer answer, 2026-10-26).** There's no hard limit any more: holding 4 perks, the 5th costs
+2x its listed price, the 6th 4x, the 7th 8x (each step doubles), for every perk including Second Wind (so a 5th-perk
+Second Wind is 3000). The prompt shows the real price and the step ("Hold F to buy Second Wind [3000] (5th perk:
+x2)"). Rules: `buy.fullPricePerks` (4; 0 = never dearer), `buy.extraPerkFactor` (2), `buy.maxPerks` (now 8, every
+perk: a hard cap if a map ever wants one). Co-op bots pay the same prices. Self-test: "Zombies mode" ("perk price").
 
 ### Ammo
 

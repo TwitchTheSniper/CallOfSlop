@@ -817,7 +817,7 @@ public sealed partial class Game
             if (k < 0)
                 continue;
             var perk = ZRules.Perks[k];
-            var cost = m.Cost > 0 ? m.Cost : perk.Price(solo);
+            var cost = ZRules.PerkPrice(m.Cost > 0 ? m.Cost : perk.Price(solo), PerkCount(zp));
             if (m.NeedsPower && !ZPower)
                 Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"{perk.Name}: needs the power on", Blocked: true));
             else if (zp.Has(k))
@@ -825,7 +825,12 @@ public sealed partial class Game
             else if (PerkCount(zp) >= ZRules.MaxPerks)
                 Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"You can't carry more than {ZRules.MaxPerks} perks", Blocked: true));
             else
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"Hold [E] to buy {perk.Name} [{cost}]: {perk.Blurb}"));
+            {
+                var held = PerkCount(zp);
+                var extra = ZRules.FullPricePerks > 0 && held >= ZRules.FullPricePerks
+                    ? $" ({Ordinal(held + 1)} perk: x{ZRules.PerkPrice(1000, held) / 1000f:0.#})" : "";
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"Hold [E] to buy {perk.Name} [{cost}]{extra}: {perk.Blurb}"));
+            }
         }
         if (zm.SlotUpgrade is { } su)
         {
@@ -872,7 +877,9 @@ public sealed partial class Game
     }
 
 
-    private static int PerkCount(ZPlayer zp) => System.Numerics.BitOperations.PopCount(zp.Perks);
+    private static string Ordinal(int n) => n + (n % 100 is 11 or 12 or 13 ? "th" : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" });
+
+    public static int PerkCount(ZPlayer zp) => System.Numerics.BitOperations.PopCount(zp.Perks);
 
     public int WallCost(ZWallBuy wb) => wb.Cost > 0 ? wb.Cost : RunTables.Current.WallCost;
 
