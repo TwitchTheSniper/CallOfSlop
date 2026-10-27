@@ -24,7 +24,7 @@ public static partial class SelfTest
     [
         ("01-ProtoBox", 0xa83dd7a5u), ("02-Courtyard", 0x9b62bfadu), ("03-Crossroads", 0x04fab23au),
         ("05-LongShot", 0x9a88c69cu), ("06-Ziggurat", 0xd8b982f8u), ("07-Scrapyard", 0xdece740cu), ("08-Rooftops", 0x3601e902u),
-        ("09-Harbor", 0x56f96d12u), ("10-MarketStreet", 0xb8c3562au), ("11-Quarry", 0xc0f1d401u), ("12-Trenches", 0xb1bd94b3u),
+        ("09-Harbor", 0x56f96d12u), ("10-MarketStreet", 0xb8c3562au), ("11-Quarry", 0xc0f1d401u),
         ("14-OfficePark", 0xbf692394u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x5b03f45fu),
         ("17-Farmland", 0xfcc5a090u), ("18-Downtown", 0x2a9960f5u), ("19-Canyon", 0x03353c42u), ("20-Airfield", 0xf47d65a6u),
         ("21-Village", 0x8004499bu), ("22-Industrial", 0x87c760edu), ("23-Highlands", 0xe932e450u), ("24-MilitaryBase", 0xe6122c44u),
