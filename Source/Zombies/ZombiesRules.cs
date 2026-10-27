@@ -338,6 +338,9 @@ public sealed class ZombiesRules
     /// <summary>Bonk (frying pan): stun seconds; squeaky: a short stun; rocket and fish: knockback speed (m/s).</summary>
     public float BonkStun = 1f, SqueakStun = 0.3f, Knockback = 6f;
 
+    /// <summary>The "launch" flag: how fast a launched zombie flies away and up (m/s), and how long it is stunned.</summary>
+    public float LaunchSpeed = 11f, LaunchUp = 8f, LaunchStun = 1.2f;
+
     /// <summary>Nails and chainsaw: a bleed of this share of the hit over <see cref="BurnSeconds"/>.</summary>
     public float BleedFraction = 0.3f;
 
@@ -681,6 +684,9 @@ public sealed class ZombiesRules
                             case "bonkStun": r.BonkStun = Real(v, w, 0, 5); break;
                             case "squeakStun": r.SqueakStun = Real(v, w, 0, 5); break;
                             case "knockback": r.Knockback = Real(v, w, 0, 20); break;
+                            case "launchSpeed": r.LaunchSpeed = Real(v, w, 0, 30); break;
+                            case "launchUp": r.LaunchUp = Real(v, w, 0, 20); break;
+                            case "launchStun": r.LaunchStun = Real(v, w, 0, 5); break;
                             case "bleedFraction": r.BleedFraction = Real(v, w, 0, 5); break;
                             case "refreshHealth": r.RefreshHealth = Whole(v, w, 0, 200); break;
                             case "bayonetRange": r.BayonetRange = Real(v, w, 0, 10); break;

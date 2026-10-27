@@ -6,7 +6,7 @@
   "rarity": "rare",
   "flavor": "One shot on the pull, one on the release. Lawyers hate it.",
   "weight": 0.15,
-  "action": {"kind": "burst", "rpm": 900, "burstCount": 2, "burstDelay": 0.12},
+  "action": {"kind": "burst", "rpm": 1800, "burstCount": 2, "burstDelay": 0.05},
   "model": [
     {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
     {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
@@ -17,6 +17,7 @@
     {"size": [0.003, 0.003, 0.003], "pos": [0.0175, -0.016, 0.0022], "color": "accent"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.05},
     {"stat": "recoilDeg", "mul": 1.05}
   ]
 }

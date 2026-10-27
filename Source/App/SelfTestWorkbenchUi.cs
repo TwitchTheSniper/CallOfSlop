@@ -147,14 +147,14 @@ public static partial class SelfTest
         // The raw regression: attach twice into one socket, then use the first node.
         var gn = new BuildNode(P("Service Rifle Grip"));
         var first = gn.Attach("receiver_1", P("Workhorse Receiver"));
-        var second = gn.Attach("receiver_1", P("Triad Burst Receiver"));
+        var second = gn.Attach("receiver_1", P("Reaper Battle Rifle Receiver"));
         first.Detach();
         if (first.Path() != "" || gn.Child("receiver_1") != second || second.Path() != "receiver_1")
             Fail("workbench: BuildNode.Attach replacing a part should orphan the old node cleanly");
         // A receiver swapped for one of the same bore keeps everything; another bore keeps only what fits (the barrel and
         // the ammo fit any receiver, the magazine is bore-bound).
         var r1 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
-        r1.Place(r1.SpotOf("", "receiver_1"), P("Triad Burst Receiver"), out _);
+        r1.Place(r1.SpotOf("", "receiver_1"), P("Reaper Battle Rifle Receiver"), out _);
         var r2 = new BenchModel(BuildOf("Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Box Mag,ammo:FMJ}}"), BenchStock.Unlimited);
         r2.Place(r2.SpotOf("", "receiver_1"), P("Plinker Receiver"), out _);
         Line($"swap receiver: rifle -> rifle {r1.Build.ToText()}; rifle -> pistol {r2.Build.ToText()}");

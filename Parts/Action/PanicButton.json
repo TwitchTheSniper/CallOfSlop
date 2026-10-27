@@ -6,7 +6,7 @@
   "rarity": "wonder",
   "flavor": "A big red button where the trigger used to be. Press it and everything happens at once.",
   "weight": 0.15,
-  "action": {"kind": "auto", "rpm": 2400},
+  "action": {"kind": "auto", "rpm": 3000},
   "model": [
     {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
     {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},

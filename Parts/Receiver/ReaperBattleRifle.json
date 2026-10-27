@@ -23,6 +23,9 @@
     {"use": "Picatinny Rail", "pos": [0, 0.076, -0.04]}
   ],
   "stats": [
+    {"stat": "adsTime", "add": 0.02},
+    {"stat": "recoilDeg", "mul": 1.25},
+    {"stat": "damage", "mul": 1.35},
     {"stat": "hipSpreadDeg", "set": 2.0},
     {"stat": "adsSpreadMult", "set": 0.3},
     {"stat": "reload", "set": 2.4},

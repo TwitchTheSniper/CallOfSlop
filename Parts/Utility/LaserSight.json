@@ -10,6 +10,7 @@
     {"size": [0.006, 0.006, 0.006], "pos": [0.01, 0, -0.026], "color": "#c83228", "tag": "glow"}
   ],
   "stats": [
-    {"stat": "hipSpreadDeg", "mul": 0.8}
+    {"stat": "adsSpreadMult", "mul": 0.85},
+    {"stat": "hipSpreadDeg", "mul": 0.5}
   ]
 }

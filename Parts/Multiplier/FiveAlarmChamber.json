@@ -1,0 +1,89 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Five-Alarm Chamber",
+  "category": "multiplier",
+  "rarity": "wonder",
+  "flavor": "A chamber with a fire bell on it. Five times the damage, a slower cycle, and recoil you can feel in your teeth.",
+  "weight": 1.8,
+  "model": [
+    {
+      "size": [
+        0.03,
+        0.045,
+        0.07
+      ],
+      "pos": [
+        -0.015,
+        0,
+        0
+      ],
+      "color": [
+        0.85,
+        0.15,
+        0.12
+      ]
+    },
+    {
+      "size": [
+        0.032,
+        0.012,
+        0.05
+      ],
+      "pos": [
+        -0.015,
+        0.028,
+        0
+      ],
+      "color": "steel"
+    },
+    {
+      "size": [
+        0.02,
+        0.02,
+        0.02
+      ],
+      "pos": [
+        -0.034,
+        0.012,
+        -0.02
+      ],
+      "color": [
+        0.95,
+        0.8,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.008,
+        0.008,
+        0.008
+      ],
+      "pos": [
+        -0.034,
+        0.012,
+        0.02
+      ],
+      "color": [
+        1.0,
+        0.3,
+        0.1
+      ],
+      "tag": "glow"
+    }
+  ],
+  "stats": [
+    {
+      "stat": "damage",
+      "mul": 5.0
+    },
+    {
+      "stat": "rpm",
+      "mul": 0.7
+    },
+    {
+      "stat": "recoilDeg",
+      "mul": 1.6
+    }
+  ]
+}

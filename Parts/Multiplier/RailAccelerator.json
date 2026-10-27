@@ -11,7 +11,7 @@
     {"size": [0.008, 0.008, 0.008], "pos": [-0.031, 0.008, -0.02], "color": [1.0, 0.4, 0.1], "tag": "glow"}
   ],
   "stats": [
-    {"stat": "damage", "mul": 1.5},
+    {"stat": "damage", "mul": 1.65},
     {"stat": "reload", "mul": 1.1}
   ]
 }

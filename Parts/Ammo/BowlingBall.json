@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Bowling Ball",
+  "category": "ammo",
+  "rarity": "wonder",
+  "flavor": "One bowling ball per shot, whatever the calibre. Slow, short, enormous, and anything it hits goes flying.",
+  "weight": 0.0,
+  "flags": [
+    "bouncy",
+    "launch"
+  ],
+  "round": {
+    "pellets": 1
+  },
+  "stats": [
+    {
+      "stat": "damage",
+      "mul": 2.6
+    },
+    {
+      "stat": "rangeM",
+      "mul": 0.55
+    },
+    {
+      "stat": "minDamageMult",
+      "mul": 1.5,
+      "max": 1
+    },
+    {
+      "stat": "rpm",
+      "mul": 0.85
+    },
+    {
+      "stat": "recoilDeg",
+      "mul": 1.4
+    }
+  ]
+}

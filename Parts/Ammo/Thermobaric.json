@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Thermobaric",
+  "category": "ammo",
+  "rarity": "legendary",
+  "flavor": "A round that bursts into a fuel cloud and lights it. Explodes and sets the survivors on fire.",
+  "weight": 0.0,
+  "flags": [
+    "explosive",
+    "incendiary"
+  ],
+  "stats": [
+    {
+      "stat": "damage",
+      "mul": 1.45
+    },
+    {
+      "stat": "headMult",
+      "mul": 0.6,
+      "min": 0.5
+    },
+    {
+      "stat": "rangeM",
+      "mul": 0.9
+    }
+  ]
+}

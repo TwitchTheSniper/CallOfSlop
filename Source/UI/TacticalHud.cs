@@ -70,6 +70,18 @@ public static class TacticalHud
                 ImDrawListExtensions.AddCircle(dl, in c, r * 1.6f, Hud.Colour(new Vector3(1f, 0.4f, 0.3f), 0.5f * a), 4, 1.5f * scale);
             }
 
+        // The All-Seeing Eye (a wonder optic, "marks" flag): every zombie marked through walls while the gun is held.
+        if (!flashed && me.Alive && game.Horde.Count > 0 && game.MarksZombies)
+            foreach (var z in game.Horde)
+            {
+                if (!z.Alive || !Hud.Project(cam.ViewProj, z.RenderPos + new Vector3(0, 2.05f, 0), area.X, area.Y, out var s, out _, 20f))
+                    continue;
+                var c = new float2(org.X + s.X, org.Y + s.Y);
+                var r = 5f * scale;
+                ImDrawListExtensions.AddNgonFilled(dl, in c, r, Hud.Colour(new Vector3(1f, 0.75f, 0.2f), 0.8f), 4);
+                ImDrawListExtensions.AddCircle(dl, in c, r * 1.7f, Hud.Colour(new Vector3(1f, 0.55f, 0.15f), 0.45f), 4, 1.2f * scale);
+            }
+
         foreach (var e in game.TacDevices)
         {
             var mine = e.Owner == me.Id;

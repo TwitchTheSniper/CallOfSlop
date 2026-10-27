@@ -24,6 +24,8 @@
     {"size": [0.064, 0.012, 0.012], "pos": [0, 0.035, -0.06], "color": "accent", "tag": "glow"}
   ],
   "stats": [
+    {"stat": "recoilDeg", "mul": 1.6},
+    {"stat": "damage", "mul": 5.0},
     {"stat": "hipSpreadDeg", "set": 4.0},
     {"stat": "adsSpreadMult", "set": 0.0},
     {"stat": "reload", "set": 3.2},

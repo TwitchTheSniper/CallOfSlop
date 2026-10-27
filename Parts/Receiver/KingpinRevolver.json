@@ -23,6 +23,7 @@
     {"use": "Drum Shell", "pos": [0, 0.09, -0.02], "rot": [0, 0, 0], "scale": [1.1, 0.55, 0.55], "color": "gunmetal"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 0.75},
     {"stat": "hipSpreadDeg", "set": 2.0},
     {"stat": "reload", "set": 2.6},
     {"stat": "headMult", "set": 2.0},

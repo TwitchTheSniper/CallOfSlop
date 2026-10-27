@@ -1,0 +1,49 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Tesla Wrap",
+  "category": "meleemod",
+  "rarity": "epic",
+  "flavor": "A copper coil round the grip that dumps a capacitor into whatever you hit. Zaps the next three along too.",
+  "weight": 0.5,
+  "flags": [
+    "shock"
+  ],
+  "melee": {
+    "damage": 12,
+    "stun": 0.9
+  },
+  "model": [
+    {
+      "shape": "rod",
+      "size": [
+        0.05,
+        0.05,
+        0.05
+      ],
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "color": "copper"
+    },
+    {
+      "size": [
+        0.054,
+        0.01,
+        0.054
+      ],
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "color": [
+        0.4,
+        0.8,
+        1.0
+      ],
+      "tag": "glow"
+    }
+  ]
+}

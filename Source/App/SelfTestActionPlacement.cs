@@ -16,6 +16,7 @@ public static partial class SelfTest
         ["Three-Round Burst Group"] = "under", ["Ratchet Burst Group"] = "under", ["Binary Trigger"] = "under",
         ["Hyperburst Group"] = "under", ["Hair Trigger"] = "under", ["Overdrive Sear"] = "under", ["Panic Button"] = "under",
         ["Lob Trigger"] = "under", ["Revolver Hammer"] = "under",
+        ["Thunderclap Hammer"] = "under", ["Avalanche Burst Group"] = "under", ["Perpetual Sear"] = "under",
         ["Pump Slide"] = "front", ["Muzzleloader Ramrod"] = "front",
         ["Turn Bolt"] = "side", ["Straight-Pull Bolt"] = "side", ["Lever Action"] = "side", ["Hand-Crank Rotary"] = "side",
         ["Electric Rotary Drive"] = "side", ["Chain Drive Motor"] = "side", ["Autocannon Drive"] = "side",
