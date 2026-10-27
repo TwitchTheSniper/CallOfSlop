@@ -7,8 +7,8 @@ namespace CallOfSlop;
 /// </summary>
 public static class StatBars
 {
-    /// <summary>Hip-fire accuracy: 0.4 deg (or less) fills the bar, 9 deg empties it.</summary>
-    public static float Accuracy(WeaponDef w) => 1f - Math.Clamp(MathF.Log(MathF.Max(w.HipSpreadDeg, 0.01f) / 0.4f) / MathF.Log(9f / 0.4f), 0f, 1f);
+    /// <summary>Hip-fire accuracy: 0.25 deg (or less) fills the bar, 9 deg empties it (a fully choked Scattergun Lever is 0.29 deg).</summary>
+    public static float Accuracy(WeaponDef w) => 1f - Math.Clamp(MathF.Log(MathF.Max(w.HipSpreadDeg, 0.01f) / 0.25f) / MathF.Log(9f / 0.25f), 0f, 1f);
 
     /// <summary>Recoil control (see <see cref="Recoil.ControlBar"/>).</summary>
     public static float Control(WeaponDef w) => Recoil.ControlBar(w);
