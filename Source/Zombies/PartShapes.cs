@@ -333,7 +333,7 @@ public static class PartShapes
 
     private static Vector2 Lerp2(Vector2 a, Vector2 b, float t) => a + (b - a) * t;
 
-    /// <summary>Proxy boxes of an elliptical cross-section of half sizes <paramref name="hx"/>: a solid cross, or a ring of eight for a hollow one.</summary>
+    /// <summary>Proxy boxes of an elliptical cross-section of half sizes <paramref name="hx"/>: a solid cross and the square inside it, or a ring of eight for a hollow one.</summary>
     private static void CrossSection(Builder bl, Vector3 c, Vector3 hx, float inner)
     {
         const float Cos = 0.924f, Sin = 0.383f;
@@ -341,6 +341,7 @@ public static class PartShapes
         {
             bl.Proxy(c, new Vector3(2 * hx.X * Cos, 2 * hx.Y * Sin, 2 * hx.Z));
             bl.Proxy(c, new Vector3(2 * hx.X * Sin, 2 * hx.Y * Cos, 2 * hx.Z));
+            bl.Proxy(c, new Vector3(2 * hx.X * 0.707f, 2 * hx.Y * 0.707f, 2 * hx.Z)); // and the square between them
             return;
         }
         // Walls: top, bottom, left, right, and four at the diagonals (in unit-circle terms, then scaled).

@@ -14,8 +14,8 @@
     {"name": "mod_2", "type": "mod", "pos": [0, 0, -0.07]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.03, 0.03, 0.16], "pos": [0, 0, 0.0], "color": "black"},
-    {"size": [0.16, 0.025, 0.025], "pos": [0, 0, -0.085], "color": "brass"},
-    {"size": [0.04, 0.04, 0.04], "pos": [0, 0, 0.09], "color": "brass"}
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.16], "pos": [0, 0, 0], "color": "black", "segments": 8},
+    {"shape": "capsule", "size": [0.025, 0.025, 0.16], "pos": [0, 0, -0.085], "rot": [0, 90, 0], "color": "brass", "segments": 10},
+    {"shape": "sphere", "size": [0.04, 0.04, 0.04], "pos": [0, 0, 0.09], "color": "brass", "segments": 10}
   ]
 }

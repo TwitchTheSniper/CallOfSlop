@@ -196,6 +196,7 @@ def _cross_section(bl, c, hx, inner):
     if inner <= 0:
         bl.proxy(c, (2 * hx[0] * COS, 2 * hx[1] * SIN, 2 * hx[2]))
         bl.proxy(c, (2 * hx[0] * SIN, 2 * hx[1] * COS, 2 * hx[2]))
+        bl.proxy(c, (2 * hx[0] * 0.707, 2 * hx[1] * 0.707, 2 * hx[2]))
         return
     ri = inner
     y1 = ri + (1 - ri) * 0.6

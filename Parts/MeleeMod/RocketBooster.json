@@ -8,7 +8,8 @@
   "flags": ["rocket"],
   "melee": {"damage": 15, "swingMult": 0.65},
   "model": [
-    {"shape": "rod", "size": [0.025, 0.025, 0.09], "pos": [0.03, 0, -0.02], "color": "white"},
-    {"size": [0.02, 0.02, 0.02], "pos": [0.03, 0, 0.035], "color": "orange", "tag": "glow"}
+    {"shape": "cylinder", "size": [0.025, 0.025, 0.065], "pos": [0.03, 0, -0.0075], "color": "white", "segments": 12},
+    {"shape": "cylinder", "size": [0.025, 0.025, 0.025], "pos": [0.03, 0, -0.0525], "color": [0.85, 0.2, 0.2], "segments": 12, "taper": 0.1},
+    {"shape": "tube", "size": [0.02, 0.02, 0.02], "pos": [0.03, 0, 0.035], "color": "orange", "tag": "glow", "inner": 0.5, "ends": "front", "taper": 0.7}
   ]
 }

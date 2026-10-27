@@ -7,6 +7,8 @@
   "weight": 0.05,
   "melee": {"swingMult": 0.9},
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.08], "pos": [0, 0, 0], "color": "black"}
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.08], "pos": [0, 0, 0], "color": "black", "segments": 8},
+    {"shape": "cylinder", "size": [0.038, 0.038, 0.006], "pos": [0, 0, -0.037], "color": "black", "segments": 8},
+    {"shape": "cylinder", "size": [0.038, 0.038, 0.006], "pos": [0, 0, 0.037], "color": "black", "segments": 8}
   ]
 }

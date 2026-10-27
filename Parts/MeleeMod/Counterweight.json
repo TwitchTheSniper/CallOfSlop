@@ -7,6 +7,6 @@
   "weight": 0.6,
   "melee": {"damageMult": 1.15, "swingMult": 1.08},
   "model": [
-    {"size": [0.045, 0.045, 0.04], "pos": [0, 0, 0.1], "color": "gunmetal"}
+    {"shape": "cylinder", "size": [0.045, 0.045, 0.04], "pos": [0, 0, 0.1], "color": "gunmetal", "segments": 12}
   ]
 }
