@@ -15,20 +15,20 @@
 
   <ItemGroup>
     <!-- Windowing + input -->
-    <PackageReference Include="Ahwoo.BRUTAL.Glfw" Version="2026.10.4" />
+    <PackageReference Include="Ahwoo.BRUTAL.Glfw" Version="2026.10.5" />
     <!-- Rendering (OpenGL 4.1 core via GLAD) -->
-    <PackageReference Include="Ahwoo.BRUTAL.OpenGl" Version="2026.10.1" />
+    <PackageReference Include="Ahwoo.BRUTAL.OpenGl" Version="2026.10.2" />
     <!-- Networking -->
-    <PackageReference Include="Ahwoo.BRUTAL.RakNet" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.RakNet" Version="2026.10.3" />
     <!-- Loadout menu + HUD text (Dear ImGui with GLFW/OpenGL backends) -->
-    <PackageReference Include="Ahwoo.BRUTAL.ImGui" Version="2026.10.2" />
-    <PackageReference Include="Ahwoo.BRUTAL.ImGui.Backends" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui" Version="2026.10.3" />
+    <PackageReference Include="Ahwoo.BRUTAL.ImGui.Backends" Version="2026.10.3" />
     <!-- 3D weapon audio (OpenAL Soft) -->
-    <PackageReference Include="Ahwoo.BRUTAL.OpenAl" Version="2026.10.2" />
+    <PackageReference Include="Ahwoo.BRUTAL.OpenAl" Version="2026.10.3" />
     <!-- Mesh pipeline: glTF 2.0 parsing (managed; brings Brutal.Texture for image decoding) and meshoptimizer
          (vertex cache optimisation, LOD simplification). Both natives are canary-checked at runtime, with fallbacks. -->
-    <PackageReference Include="Ahwoo.BRUTAL.Gltf" Version="2026.10.2" />
-    <PackageReference Include="Ahwoo.BRUTAL.MeshOptimizer" Version="2026.10.1" />
+    <PackageReference Include="Ahwoo.BRUTAL.Gltf" Version="2026.10.3" />
+    <PackageReference Include="Ahwoo.BRUTAL.MeshOptimizer" Version="2026.10.2" />
   </ItemGroup>
 
   <ItemGroup>
