@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Heavy Hitter",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A rifle on a heavy bore: fatter, slower rounds that are hard to miss. A compensator keeps it on the chest.",
+  "build": "Sport Rifle Grip{receiver_1:Workhorse Receiver{barrel:Heavy Bore Barrel{muzzle:Compensator},feed:Extended Mag,ammo:FMJ,action:Full-Auto Sear},stock:Fixed Stock,optic:Red Dot}"
+}

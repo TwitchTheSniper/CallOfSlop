@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Trench Party",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two hand mortars on one grip, fired in turn from three-round tubes of frag. Full damage at any range. Bring snacks.",
+  "build": "Rifle Grip{receiver_1:Hand Mortar Receiver{barrel:Launcher Tube,feed:Three-Round Tube,ammo:Frag,action:Lob Trigger},receiver_2:Hand Mortar Receiver{barrel:Launcher Tube,feed:Three-Round Tube,ammo:Frag,action:Lob Trigger},stock:Fixed Stock}",
+  "chainFire": true
+}

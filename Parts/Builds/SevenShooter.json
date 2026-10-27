@@ -5,6 +5,6 @@
   "source": [
     "box"
   ],
-  "flavor": "A revolver frame behind a barrel of barrels. Seven .50 rounds a pull; don't ask how it reloads.",
-  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Barrel of Barrels,feed:Heavy Box,ammo:Armour Piercing,action:Revolver Hammer}}"
+  "flavor": "A revolver frame behind a barrel of barrels with a tripler chamber. Seven depleted-core .50s a pull; don't ask how it reloads.",
+  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Barrel of Barrels,feed:Heavy Box,ammo:Depleted Core,action:Revolver Hammer,amp:Tripler Chamber}}"
 }

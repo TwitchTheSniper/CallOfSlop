@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Fire Escape",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "An autocannon on depleted core and a singularity chamber through a ladder splitter: six barrels, two columns, every rung a shell.",
+  "build": "Rifle Grip{receiver_1:Hammerfall Autocannon Receiver{barrel:Ladder Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Link Chute,ammo:Depleted Core,action:Autocannon Drive,amp:Singularity Chamber},foregrip:Chaingun Handle,stock:Gyro Stock}"
+}

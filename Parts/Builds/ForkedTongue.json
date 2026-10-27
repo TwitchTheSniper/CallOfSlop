@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Forked Tongue",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two battle rifles on hair triggers, each through a fork crown: every round splits in two. Speaks in quadruplicate.",
+  "build": "Twin Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Fork Crown},feed:Extended Mag,ammo:Hollow Point,action:Hair Trigger},receiver_2:Reaper Battle Rifle Receiver{barrel:Long Barrel{muzzle:Fork Crown},feed:Extended Mag,ammo:Hollow Point,action:Hair Trigger},optic:Holographic,stock:Fixed Stock}"
+}

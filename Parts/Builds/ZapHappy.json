@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Zap Happy",
+  "tier": "epic",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A bat with a tesla wrap and nails. Every hit is a small thunderstorm.",
+  "build": "Bat Grip{head:Bat Barrel,mod_1:Tesla Wrap,mod_2:Nail Ring}"
+}

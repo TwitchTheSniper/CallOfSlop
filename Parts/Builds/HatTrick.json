@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Hat Trick",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A battle rifle bursting three at a time through a tripler chamber and a doom hammer. Three shots, three wishes.",
+  "build": "Sport Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Long Barrel,feed:Conga Drum,ammo:FMJ,action:Three-Round Burst Group,amp:Tripler Chamber,upgrade_rear:Doom Hammer},optic:Rangefinder 4x,stock:Fixed Stock}"
+}

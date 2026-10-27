@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Coach Gun",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "Two sawn-off barrels side by side on a pump. Same pellets, twice the doorway.",
+  "build": "Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Narrow Twin Splitter{barrel_1:Sawn-Off Barrel,barrel_2:Sawn-Off Barrel},feed:Shell Tube,ammo:Buckshot,action:Pump Slide},stock:Wire Stock}"
+}

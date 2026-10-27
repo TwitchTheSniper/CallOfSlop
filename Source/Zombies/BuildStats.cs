@@ -489,11 +489,23 @@ public static class BuildStats
         }
     }
 
-    /// <summary>Keeps every number inside the ranges weapon files allow (and recoil fields inside theirs).</summary>
+    /// <summary>
+    /// The most damage a built weapon's projectile may do: no real cap (developer decision, 2026-10-27: "Remove it for
+    /// builds"; weapon files keep the 1000 of <see cref="WeaponFile.Ranges"/>), only a bound far below int overflow once
+    /// headshots, perks and splash have multiplied it.
+    /// </summary>
+    public const int MaxDamage = 1_000_000;
+
+    /// <summary>Keeps every number inside the ranges weapon files allow (and recoil fields inside theirs), except damage: builds have no damage cap (<see cref="MaxDamage"/>).</summary>
     public static void Clamp(WeaponDef w)
     {
         foreach (var (field, (min, max)) in WeaponFile.Ranges)
         {
+            if (field == nameof(WeaponDef.Damage))
+            {
+                w.Damage = Math.Clamp(w.Damage, (int)min, MaxDamage);
+                continue;
+            }
             var f = typeof(WeaponDef).GetField(field)!;
             if (f.FieldType == typeof(int))
                 f.SetValue(w, Math.Clamp((int)f.GetValue(w)!, (int)MathF.Ceiling(min), (int)max));

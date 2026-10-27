@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Last Orders",
+  "tier": "legendary",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A sledgehammer head on a lamp post with a tesla wrap and nails. Time, gentlemen.",
+  "build": "Lamp Post{head:Sledgehammer Head,mod_1:Tesla Wrap,mod_2:Nail Ring}"
+}

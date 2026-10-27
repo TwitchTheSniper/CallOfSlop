@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Backbone",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Three rifles on heavy bores and twin sears, fed by a manifold on a Mule Frame, held up by an exo spine.",
+  "build": "Mule Frame{receiver_1:Workhorse Receiver{barrel:Heavy Bore Barrel,action:Full-Auto Sear,upgrade_rear:Twin Sear},receiver_2:Workhorse Receiver{barrel:Heavy Bore Barrel,action:Full-Auto Sear,upgrade_rear:Twin Sear},receiver_3:Workhorse Receiver{barrel:Heavy Bore Barrel,action:Full-Auto Sear,upgrade_rear:Twin Sear},hopper:Manifold Hopper{ammo:FMJ},stock:Exo Spine Stock,foregrip:Vertical Foregrip}"
+}

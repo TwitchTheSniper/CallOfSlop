@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Crossroads",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "A chain gun through a cross splitter: up, down, left and right at once. Pick a direction, it already has.",
+  "build": "Rifle Grip{receiver_1:Thumper Chain Gun Receiver{barrel:Cross Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel,barrel_3:Standard Barrel,barrel_4:Standard Barrel},feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor},foregrip:Chaingun Handle,stock:Fixed Stock}"
+}

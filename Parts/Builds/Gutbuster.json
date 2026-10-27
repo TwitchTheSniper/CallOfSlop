@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Gutbuster",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "An LMG on a bloat barrel: big, slow, swollen rounds from a drum. A muzzle brake does its best.",
+  "build": "Sport Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Bloat Barrel{muzzle:Muzzle Brake},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear},stock:Recoil Buffer Stock,foregrip:Vertical Foregrip}"
+}

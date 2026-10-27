@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Titan's Tantrum",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Twelve chain guns on a Titan Harness, nine fed from a bottomless bucket and three from belt boxes, fired in turn.",
+  "build": "Titan Harness{receiver_1:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_2:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_3:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_4:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_5:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_6:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_7:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_8:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_9:Thumper Chain Gun Receiver{barrel:Stub Barrel,action:Chain Drive Motor},receiver_10:Thumper Chain Gun Receiver{barrel:Stub Barrel,feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor},receiver_11:Thumper Chain Gun Receiver{barrel:Stub Barrel,feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor},receiver_12:Thumper Chain Gun Receiver{barrel:Stub Barrel,feed:Belt Box,ammo:Armour Piercing,action:Chain Drive Motor},hopper:Bottomless Bucket{ammo:Armour Piercing},stock:Exo Spine Stock}"
+}

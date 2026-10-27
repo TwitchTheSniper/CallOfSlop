@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Weed Whacker",
+  "tier": "common",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A machete on a broom handle with nails round the collar. Garden work, technically.",
+  "build": "Wooden Handle{head:Machete Blade,mod_1:Nail Ring,mod_2:Grip Tape}"
+}

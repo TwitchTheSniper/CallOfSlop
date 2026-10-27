@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Flechette Storm",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "An auto shotgun through a flechette sleeve on a twin sear: half again the pellets, thin as darts, through everything.",
+  "build": "Rifle Grip{receiver_1:Gravedigger Auto Receiver{barrel:Flechette Sleeve,feed:Shell Drum,ammo:Buckshot,action:Heavy Auto Sear,upgrade_rear:Twin Sear},stock:Recoil Buffer Stock}"
+}

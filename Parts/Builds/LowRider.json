@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Low Rider",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A rifle with a ported barrel dropped low on an offset. Sits flat in the hands and barely climbs.",
+  "build": "Sport Rifle Grip{receiver_1:Workhorse Receiver{barrel:Drop Offset{barrel_1:Ported Barrel},feed:Extended Mag,ammo:FMJ,action:Full-Auto Sear},foregrip:Vertical Foregrip,stock:Wire Stock}"
+}

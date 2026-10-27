@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Snowball Effect",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Three rifles on avalanche groups: ten-round bursts from each, all at once. It only gets bigger.",
+  "build": "Triple Rifle Grip{receiver_1:Workhorse Receiver{barrel:Standard Barrel,feed:Drum Mag,ammo:FMJ,action:Avalanche Burst Group},receiver_2:Workhorse Receiver{barrel:Standard Barrel,feed:Drum Mag,ammo:FMJ,action:Avalanche Burst Group},receiver_3:Workhorse Receiver{barrel:Standard Barrel,feed:Drum Mag,ammo:FMJ,action:Avalanche Burst Group},stock:Gyro Stock}"
+}

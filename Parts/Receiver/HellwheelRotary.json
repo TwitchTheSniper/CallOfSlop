@@ -19,7 +19,7 @@
     {"name": "utility", "type": "utility", "pos": [0.042, 0.045, -0.12]},
     {"name": "upgrade_rear", "type": "upgrade", "pos": [0, 0.062, 0.1]},
     {"name": "upgrade_side", "type": "upgrade", "pos": [0.065, 0.062, 0.02], "rot": [0, 0, 0]},
-    {"name": "amp", "type": "amp", "pos": [-0.065, 0.062, 0.02]}
+    {"name": "amp", "type": "amp", "pos": [-0.041, 0.062, 0.02]}
   ],
   "model": [
     {"size": [0.08, 0.09, 0.3], "pos": [0, 0.045, -0.05], "color": "gunmetal"},

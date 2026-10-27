@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Skinny Dipper",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A carbine through a squeeze bore on armour piercing: thin, fast rounds that go through one and into the next.",
+  "build": "Sport Rifle Grip{receiver_1:Courier Carbine Receiver{barrel:Squeeze Bore Barrel{muzzle:Muzzle Brake},feed:Extended Mag,ammo:Armour Piercing,action:Carbine Sear},foregrip:Angled Foregrip,optic:Holographic}"
+}

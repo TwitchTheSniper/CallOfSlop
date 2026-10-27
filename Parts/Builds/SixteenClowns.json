@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Sixteen Clowns",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Sixteen peashooters on buzzsaw sears, all fed from one clown car hopper of pocket suns. How do they all fit?",
+  "build": "Parade Float{receiver_1:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_2:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_3:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_4:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_5:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_6:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_7:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_8:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_9:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_10:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_11:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_12:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_13:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_14:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_15:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},receiver_16:Peashooter Receiver{barrel:Squeeze Bore Barrel,action:Buzzsaw Sear},hopper:Clown Car Hopper{ammo:Pocket Sun}}"
+}

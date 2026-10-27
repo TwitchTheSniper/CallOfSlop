@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Bouquet",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "An energy carbine through a rosette of needle barrels on pocket suns and an overkill coprocessor. Say it with flowers.",
+  "build": "Rifle Grip{receiver_1:Sparkplug Energy Receiver{barrel:Rosette Splitter{barrel_1:Needle Barrel,barrel_2:Needle Barrel,barrel_3:Needle Barrel,barrel_4:Needle Barrel,barrel_5:Needle Barrel,barrel_6:Needle Barrel},feed:Energy Cell,ammo:Pocket Sun,action:Overdrive Sear,upgrade_rear:Overkill Coprocessor,utility:Helium Balloons}}"
+}

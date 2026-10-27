@@ -5,6 +5,6 @@
   "source": [
     "box"
   ],
-  "flavor": "Rubber ducks, two at a time, out of a toaster.",
-  "build": "Pistol Grip{receiver_1:Bucket Launcher Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Rubber Duck,action:Lob Trigger}}"
+  "flavor": "Two parade cannons firing rubber ducks out of toasters. Explosive, bouncy, squeaky, warm.",
+  "build": "Pistol Grip{receiver_1:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Rubber Duck,action:Lob Trigger},receiver_2:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Rubber Duck,action:Lob Trigger}}"
 }

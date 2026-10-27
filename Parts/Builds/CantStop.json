@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Cant Stop",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A battle rifle with its match barrel canted thirty degrees off the side. Looks cool. That is the whole reason.",
+  "build": "Sport Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Canted Offset{barrel_1:Fluted Match Barrel{muzzle:Muzzle Brake}},feed:Extended Mag,ammo:Match Grade,action:Semi-Auto Trigger},optic:Outrider 2x Scout,stock:Fixed Stock}"
+}

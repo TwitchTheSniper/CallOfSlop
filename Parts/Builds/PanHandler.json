@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Pan Handler",
+  "tier": "rare",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A frying pan on a long haft, wrapped in wire and nails. Spare a moment?",
+  "build": "Long Haft{head:Frying Pan,mod_1:Barbed Wire Wrap,mod_2:Nail Ring}"
+}

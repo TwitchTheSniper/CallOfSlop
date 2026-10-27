@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Prairie Lever",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A heavy revolver receiver on a lever action with a long barrel and a drum. Home on the range.",
+  "build": "Sport Rifle Grip{receiver_1:Kingpin Revolver Receiver{barrel:Long Barrel,feed:Heavy Drum,ammo:FMJ,action:Lever Action},optic:Holographic,stock:Wire Stock}"
+}

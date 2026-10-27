@@ -5,7 +5,7 @@
   "source": [
     "box"
   ],
-  "flavor": "Eight SMGs round a steering wheel on a bottomless bucket, with a cup holder. Every kill is a sip of health.",
-  "chainFire": true,
-  "build": "Steering Wheel{receiver_1:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear,utility:Cup Holder},receiver_2:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_3:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_4:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_5:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_6:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_7:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_8:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},hopper:Bottomless Bucket{ammo:FMJ}}"
+  "flavor": "Eight SMGs round a steering wheel on a bottomless bucket of pocket suns, with a cup holder. Every kill is a sip of health.",
+  "build": "Steering Wheel{receiver_1:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear,utility:Cup Holder},receiver_2:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_3:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_4:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_5:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_6:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_7:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},receiver_8:Stampede Receiver{barrel:Stub Barrel,action:Blowback SMG Sear},hopper:Bottomless Bucket{ammo:Pocket Sun}}",
+  "chainFire": true
 }

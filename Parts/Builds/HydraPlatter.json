@@ -5,6 +5,6 @@
   "source": [
     "box"
   ],
-  "flavor": "One rifle receiver through a six-headed splitter. Same damage, everywhere at once.",
-  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Hydra Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear,amp:Overpressure Chamber}}"
+  "flavor": "One rifle receiver through a six-headed splitter on the perpetual sear, pocket suns and a spite amplifier. Everywhere at once, all the time.",
+  "build": "Rifle Grip{receiver_1:Workhorse Receiver{barrel:Hydra Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel},feed:Drum Mag,ammo:Pocket Sun,action:Perpetual Sear,amp:Spite Amplifier}}"
 }

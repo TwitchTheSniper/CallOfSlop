@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Staircase",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "An SMG through a stepped splitter: three stubby barrels in a staircase. It fires up a flight of stairs.",
+  "build": "Service Rifle Grip{receiver_1:Stampede Receiver{barrel:Stepped Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel},feed:Extended Mag,ammo:FMJ,action:Blowback SMG Sear},stock:Wire Stock}"
+}

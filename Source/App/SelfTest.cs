@@ -329,6 +329,7 @@ public static partial class SelfTest
         Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
         Section("Power curve", CheckPowerCurve); // SelfTestPowerCurve.cs: the rarity curve per category (best of a tier never below the tier under it, damage floors), late tiers only from their rounds (drops, box, slots at full heat and bet)
         Section("Late-game parts", CheckLateGameParts); // SelfTestPowerCurve.cs: the fire-rate receivers are gone and old builds on them migrate; every late-game part loads, fits, measures and connects; the All-Seeing Eye's marks
+        Section("Standard builds", CheckStandardBuildSet); // SelfTestStandardBuilds.cs: the prefab build set: loads, unique names, counts per tier, every new part used, power rising by tier; builds have no damage cap, weapon files do
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
         Section("Zombies flow", CheckZombiesFlow); // SelfTestZombiesFlow.cs: crawling while downed, revives vs crawling, spectating the living, ready-up between rounds, respawn at the round's end
         Section("Zombies category slots", CheckZombiesCategorySlots); // SelfTestZombiesCategorySlots.cs: a machine per part category: only its own parts, its own heat, prices, jackpot, distinct cabinets, the win every client sees

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Brick Wall",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A bunker buster through a nine-barrel wall splitter and a five-alarm chamber on thermobaric. The zombie doesn't get through.",
+  "build": "Rifle Grip{receiver_1:Bunker Buster Receiver{barrel:Wall Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,barrel_5:Stub Barrel,barrel_6:Stub Barrel,barrel_7:Stub Barrel,barrel_8:Stub Barrel,barrel_9:Stub Barrel},feed:Heavy Drum,ammo:Thermobaric,action:Autocannon Drive,amp:Five-Alarm Chamber},foregrip:Third Arm,stock:Jetpack Stock}"
+}

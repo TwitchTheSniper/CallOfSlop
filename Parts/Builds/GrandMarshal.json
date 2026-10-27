@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Grand Marshal",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Eight parade cannons on a Parade Float, each fed by a toaster. Leads the parade. Ends the parade.",
+  "build": "Parade Float{receiver_1:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_2:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_3:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_4:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_5:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_6:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_7:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},receiver_8:Parade Cannon Receiver{barrel:Launcher Tube,feed:Toaster Feed,ammo:Frag,action:Lob Trigger},foregrip:Third Arm}"
+}

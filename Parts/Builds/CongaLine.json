@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Conga Line",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two LMGs on overdrive sears and heatsink barrels, a conga drum each, on depleted core. Everybody join in.",
+  "build": "Twin Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Conga Drum,ammo:Depleted Core,action:Overdrive Sear},receiver_2:Bastille LMG Receiver{barrel:Heatsink Barrel,feed:Conga Drum,ammo:Depleted Core,action:Overdrive Sear},stock:Gyro Stock}"
+}

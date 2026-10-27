@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Wide Load",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "A carbine through a wide Y: two stubby barrels a hand apart. Hits the zombie and the one next to it.",
+  "build": "Service Rifle Grip{receiver_1:Courier Carbine Receiver{barrel:Wide Y Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel},feed:Stick Mag,ammo:FMJ,action:Carbine Sear},foregrip:Skeleton Foregrip}"
+}

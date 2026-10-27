@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Cuckoo Clock",
+  "tier": "wonder",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A grandfather clock on a long haft with a jet engine and a whoopee cushion. On the hour, every hour.",
+  "build": "Long Haft{head:Grandfather Clock,mod_1:Jet Engine,mod_2:Whoopee Cushion}"
+}

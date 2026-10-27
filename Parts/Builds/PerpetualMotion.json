@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Perpetual Motion",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "An LMG on the perpetual sear and an overkill coprocessor, depleted core from a conga drum. Reloads itself out of spite.",
+  "build": "Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Heatsink Barrel{muzzle:Recoil Eater},feed:Conga Drum,ammo:Depleted Core,action:Perpetual Sear,upgrade_rear:Overkill Coprocessor},foregrip:Third Arm,stock:Jetpack Stock}"
+}
