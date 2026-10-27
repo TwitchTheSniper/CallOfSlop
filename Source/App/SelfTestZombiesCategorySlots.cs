@@ -4,8 +4,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Self-test section "Zombies category slots" (Source/Game/ZombiesSlots.cs, ZombiesSlotWin.cs; docs/zombies/ZOMBIES-MODE.md,
-/// "Slot machines"): Zombies Test's Arcade has a machine for every part category, each standing as its own cabinet (a
-/// different silhouette per category); every machine pays only its own category (the nearest tier it has), the blade
+/// "Slot machines"): Zombies Test's Arcade and Blackmoor Asylum have a machine for every part category, each standing as
+/// its own cabinet (its own body shape, the classic footprint, the reel window clear); every machine pays only its own category (the nearest tier it has), the blade
 /// only on the melee categories, keeps its own heat, prices by category, wonder parts in jackpot rounds; a win shows to
 /// the host and every client (the message, the model over the machine, a feed line in the rarity colour); no allocations.
 /// </summary>
@@ -30,26 +30,47 @@ public static partial class SelfTest
                 machines[ztm.SlotMachines[i].SlotCategory] = i;
         var missing = categories.Where(c => machines[(int)c] < 0).ToList();
         var basic = Props.Find(ZombiesMap.MachineProp.SlotMachine);
+        string Shape(PropDef d) => string.Join(";", d.Parts.Select(p => $"{p.Size}{p.Offset}{p.RotationDeg}"));
         var shapes = new HashSet<string>();
         var badProps = new List<string>();
+        var tops = new List<string>();
         foreach (var c in categories)
         {
+            // Its own cabinet: a body shape of its own (not the classic one), the classic footprint (about 0.9 x 0.7 m),
+            // solid, and the face where the game draws the reels (a reel window at y 1.3 in front of the body).
             var name = ZombiesMap.MachineProp.SlotMachineFor((int)c);
-            if (Props.Find(name) is not { } def || basic == null || def.Parts.Count <= basic.Parts.Count)
+            if (Props.Find(name) is not { } def || basic == null || def.Collision != PropCollision.Solid)
             {
                 badProps.Add(name);
                 continue;
             }
-            shapes.Add(string.Join(";", def.Parts.Skip(basic.Parts.Count + 3).Select(p => $"{p.Size}{p.Offset}{p.RotationDeg}")));
+            var b = def.Bounds;
+            var lo = b.Center - b.Half;
+            var hi = b.Center + b.Half;
+            var window = def.Parts.Any(p => MathF.Abs(p.Offset.Y - 1.3f) < 0.01f && p.Size.X >= 0.6f && p.Offset.Z < -0.26f);
+            var inFront = def.Parts.Where(p => p.Bounds is var pb && pb.Center.Y + pb.Half.Y > 1.2f && pb.Center.Y - pb.Half.Y < 1.4f
+                                               && MathF.Abs(pb.Center.X) - pb.Half.X < 0.25f && pb.Center.Z - pb.Half.Z < -0.29f).ToList();
+            if (lo.X < -0.56f || hi.X > 0.56f || lo.Z < -0.45f || hi.Z > 0.45f || hi.Y > 2.9f || !window || inFront.Count > 0 || Shape(def) == Shape(basic))
+                badProps.Add($"{name} (bounds {lo} to {hi}, reel window {window}, {inFront.Count} parts over the reels)");
+            shapes.Add(Shape(def));
+            tops.Add($"{c} {hi.Y:0.00}");
         }
+        // Every map with category machines has one for every part category (a new category needs a cabinet and a machine).
+        var mapsMissing = new List<string>();
+        foreach (var m in Maps.All.Where(m => m.Zombies is { } z && z.SlotMachines.Any(s => s.SlotCategory >= 0)))
+            foreach (var c in categories)
+                if (!m.Zombies!.SlotMachines.Any(s => s.SlotCategory == (int)c))
+                    mapsMissing.Add($"{m.Name}: {c}");
         var arcade = ztm.SlotMachines.Where(s => s.SlotCategory >= 0).Select(s => s.Area).Distinct().ToList();
         var prices = string.Join(" ", categories.Select(c => $"{c} {rules.SlotCost(1, (int)c)}"));
         ZLine($"category slots: Zombies Test has {categories.Length - missing.Count} of {categories.Length} categories (missing: {string.Join(", ", missing)}) in {string.Join(", ", arcade.Select(a => ztm.Areas[a].Name))}; "
-              + $"{shapes.Count} different cabinet silhouettes, bad props [{string.Join(", ", badProps)}]; round 1 prices: {prices}");
+              + $"{shapes.Count} different cabinet bodies (tops: {string.Join(", ", tops)}), bad props [{string.Join(", ", badProps)}]; maps missing a category [{string.Join(", ", mapsMissing)}]; round 1 prices: {prices}");
         if (missing.Count > 0 || arcade.Count != 1)
             Fail("Zombies Test should have a slot machine for every part category, in a row in one area");
         if (badProps.Count > 0 || shapes.Count != categories.Length)
-            Fail("every part category should have its own Reel Cabinet prop with a different silhouette on top");
+            Fail("every part category should have its own solid cabinet prop (tools/zombies/make_slot_cabinets.py) with its own body, the classic footprint and a clear reel window");
+        if (mapsMissing.Count > 0 || !Maps.All.Any(m => m.Name == "Blackmoor Asylum" && m.Zombies is { } z && z.SlotMachines.Count(s => s.SlotCategory >= 0) == categories.Length))
+            Fail("every map with category slot machines (Blackmoor Asylum, Zombies Test) should have one for every part category (tools/zombies/make_blackmoor.py)");
         if (categories.Any(c => rules.SlotCost(1, (int)c) <= 0) || rules.SlotCost(1, -1) != rules.SlotCost(1) || !rules.SlotPaysMelee(-1)
             || categories.Any(c => rules.SlotPaysMelee((int)c) != c is PartCategory.Hilt or PartCategory.Head or PartCategory.MeleeMod))
             Fail("the rules should price every category's machine and put the blade only on the classic and melee machines");

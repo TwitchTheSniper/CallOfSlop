@@ -1,144 +1,41 @@
 {
- "format": "call-of-slop-prop/1",
- "name": "Stock Reel Cabinet",
- "category": "Zombies",
- "description": "A Zombies slot machine that only pays stock parts: the Reel Cabinet with a stock-coloured band and, on top, a skeleton rifle stock with its butt plate and cheek rest. The front faces -Z; the game draws the reels, the heat meter and the topper lights on it.",
- "collision": "solid",
- "collider": [
-  {
-   "size": [
-    0.9,
-    2.32,
-    0.7
-   ]
-  }
- ],
- "scatter": {
-  "randomYaw": false,
-  "yawStep": 90
- },
- "parts": [
-  {
-   "use": "Reel Cabinet",
-   "pos": [
-    0,
-    0,
-    0
-   ]
-  },
-  {
-   "size": [
-    0.76,
-    0.07,
-    0.02
-   ],
-   "offset": [
-    0,
-    1.6,
-    -0.272
-   ],
-   "color": "#9a6b40"
-  },
-  {
-   "size": [
-    0.035,
-    0.9,
-    0.06
-   ],
-   "offset": [
-    -0.435,
-    1.05,
-    -0.24
-   ],
-   "color": "#9a6b40"
-  },
-  {
-   "size": [
-    0.035,
-    0.9,
-    0.06
-   ],
-   "offset": [
-    0.435,
-    1.05,
-    -0.24
-   ],
-   "color": "#9a6b40"
-  },
-  {
-   "size": [
-    0.07,
-    0.34,
-    0.15
-   ],
-   "offset": [
-    0.36,
-    2.11,
-    0
-   ],
-   "color": "#16181b"
-  },
-  {
-   "size": [
-    0.62,
-    0.05,
-    0.07
-   ],
-   "offset": [
-    0.04,
-    2.24,
-    0
-   ],
-   "color": "#3a3d42",
-   "rotation": [
-    0,
-    0,
-    -6
-   ]
-  },
-  {
-   "size": [
-    0.62,
-    0.05,
-    0.07
-   ],
-   "offset": [
-    0.04,
-    1.99,
-    0
-   ],
-   "color": "#3a3d42",
-   "rotation": [
-    0,
-    0,
-    6
-   ]
-  },
-  {
-   "size": [
-    0.05,
-    0.25,
-    0.07
-   ],
-   "offset": [
-    -0.26,
-    2.11,
-    0
-   ],
-   "color": "#3a3d42"
-  },
-  {
-   "size": [
-    0.26,
-    0.06,
-    0.12
-   ],
-   "offset": [
-    0.12,
-    2.29,
-    0
-   ],
-   "color": "#9a6b40"
-  }
- ]
+  "format": "call-of-slop-prop/1",
+  "name": "Stock Reel Cabinet",
+  "category": "Zombies",
+  "description": "A Zombies slot machine that only pays stock parts: the Reel Cabinet's face (reel window, heat meter, bet lamps, topper lights and lever) on a rifle stock standing on its butt pad, its top a sloped wedge with a cheek comb. The front faces -Z; the game draws the reels, the heat meter and the topper lights on it.",
+  "collision": "solid",
+  "collider": [{"size": [0.9, 2.02, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.8, 0.12, 0.72], "offset": [0, 0.06, 0.04], "color": "black"},
+    {"size": [0.82, 0.03, 0.04], "offset": [0, 0.08, -0.18], "color": "#222222"},
+    {"size": [0.82, 0.03, 0.04], "offset": [0, 0.08, 0.04], "color": "#222222"},
+    {"size": [0.82, 0.03, 0.04], "offset": [0, 0.08, 0.26], "color": "#222222"},
+    {"size": [0.74, 0.62, 0.66], "offset": [0, 0.43, 0.05], "color": "#5a3a20"},
+    {"size": [0.72, 1.3, 0.22], "offset": [0, 1.37, -0.1], "color": "#5a3a20"},
+    {"size": [0.72, 0.47, 0.23], "offset": [0, 0.975, 0.115], "color": "#5a3a20"},
+    {"size": [0.72, 1.322, 0.2], "offset": [0, 1.34, 0.085], "color": "#5a3a20", "rotation": [-17.61, 0.0, 0.0]},
+    {"size": [0.3, 1.058, 0.06], "offset": [0, 1.376, 0.199], "color": "#9a6b40", "rotation": [-17.61, 0.0, 0.0]},
+    {"size": [0.1, 0.12, 0.041], "offset": [0.0, 0.5, 0.36], "color": "#8a9099", "rotation": [0.0, 0.0, 90.0]},
+    {"size": [0.1, 0.12, 0.041], "offset": [0.0, 0.5, 0.36], "color": "#8a9099", "rotation": [-45.0, 0.0, 90.0]},
+    {"size": [0.1, 0.12, 0.041], "offset": [0.0, 0.5, 0.36], "color": "#8a9099", "rotation": [-90.0, 90.0, 0.0]},
+    {"size": [0.1, 0.12, 0.041], "offset": [0.0, 0.5, 0.36], "color": "#8a9099", "rotation": [-45.0, 180.0, -90.0]},
+    {"size": [0.74, 0.04, 0.04], "offset": [0, 2.0, -0.2], "color": "#9a6b40"},
+    {"size": [0.74, 1.32, 0.055], "offset": [0, 1.26, -0.228], "color": "#2a1a0e", "material": "metal"},
+    {"size": [0.72, 0.18, 0.004], "offset": [0, 1.8, -0.257], "color": "#2a1608"},
+    {"size": [0.7, 0.07, 0.02], "offset": [0, 1.6, -0.264], "color": "#9a6b40"},
+    {"size": [0.68, 0.36, 0.02], "offset": [0, 1.3, -0.265], "color": "chrome"},
+    {"size": [0.62, 0.3, 0.02], "offset": [0, 1.3, -0.275], "color": "black"},
+    {"size": [0.76, 0.06, 0.16], "offset": [0, 0.97, -0.32], "color": "chrome"},
+    {"size": [0.12, 0.03, 0.06], "offset": [-0.22, 1.01, -0.34], "color": "#b02020"},
+    {"size": [0.12, 0.03, 0.06], "offset": [0.0, 1.01, -0.34], "color": "#20a040"},
+    {"size": [0.12, 0.03, 0.06], "offset": [0.22, 1.01, -0.34], "color": "#2050c0"},
+    {"size": [0.66, 0.3, 0.06], "offset": [0, 0.74, -0.27], "color": "#2a1a0e", "material": "metal"},
+    {"size": [0.52, 0.1, 0.02], "offset": [0, 0.76, -0.305], "color": "black"},
+    {"size": [0.035, 1.3, 0.05], "offset": [-0.38, 1.26, -0.235], "color": "#9a6b40"},
+    {"size": [0.035, 1.3, 0.05], "offset": [0.38, 1.26, -0.235], "color": "#9a6b40"},
+    {"size": [0.1, 0.14, 0.14], "offset": [0.44, 1.18, -0.2], "color": "darkgrey", "material": "metal"},
+    {"size": [0.04, 0.44, 0.04], "offset": [0.47, 1.43, -0.2], "color": "chrome"},
+    {"size": [0.1, 0.1, 0.1], "offset": [0.47, 1.67, -0.2], "color": "#c01818"}
+  ]
 }

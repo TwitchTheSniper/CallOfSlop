@@ -373,7 +373,9 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 - **Placement**: Map key `"slots"` (spots like a perk machine's: `at`, `yaw`, `power`, `cost`, and an optional
   `category`, below), at most 24; with machine props each stands as a solid **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall,
   its front facing the yaw), a category machine as its own cabinet. Blackmoor Asylum: the classic machine in the
-  Receiving Hall and ten category machines round the map (below); Zombies Test: two classic ones (the start room, and the
+  Receiving Hall and one machine for every part category round the map (below; `tools/zombies/make_blackmoor.py`
+  refuses to write the map while a `Parts/<Category>` folder has no machine, and "Zombies category slots" fails while a
+  map with category machines lacks one); Zombies Test: two classic ones (the start room, and the
   Power Room on the power) and the **Arcade** (behind the West Wing, the Arcade Door, 750) with one machine for every
   category in a row.
 
@@ -400,16 +402,28 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
   0.9, Ammo 0.8, Stock 0.8, Grip 1.0, Optic 1.0, Muzzle 0.8, Utility 0.8, Receiver Upgrade 1.2, Damage Multiplier 1.4,
   Hilt 0.9, Head 0.9, Melee Mod 0.8, Action 1.1; `melee` turns the blade on or off per category. A map spot's `cost`
   still overrides the price.
-- **Shapes.** Each category has its own cabinet: the classic Reel Cabinet (a prefab `use`, so the reels and lights line
-  up) with a band and side stripes in the category colour and an original silhouette on top: a barrel with a muzzle
-  ring and shroud, a scope with bells and turrets, three cartridges, a curved magazine, a skeleton stock, a raked pistol
-  grip, a ported brake, a laser on a rail, a cog, a cross between two power cells, a manifold with three tubes, a
-  receiver block, a sword hilt, an axe head, a nailed club, a bolt with its spring. Zombies Test (no machine props)
+- **Shapes (own bodies, 2026-10-27).** Each category has its own cabinet BODY round the classic machine's face: the reel
+  window, category band, topper marquee, heat meter, bet lamps, button shelf and lever sit exactly where they are on the
+  Reel Cabinet (the game draws the reels and lamps there), on a plate whose front is at z -0.255, and the body round and
+  behind it is the category's own shape, built from boxes (round parts are regular 12-sided prisms: six boxes turned 30
+  degrees apart): **Receiver** a chunky boxy receiver with a top rail, a charging handle and its ejection port open on
+  one side; **Barrel** a fluted barrel standing on end with its muzzle crown, bore and front sight; **Splitter** a Y
+  fork (a trunk, a manifold and two arms with nozzle caps); **Feed** a drum on its edge with a curved box magazine rising
+  from it and a round in its feed lips; **Ammo** a giant cartridge (rim, case, shoulder, copper bullet); **Stock** a stock
+  standing on its butt pad, its back a sloped wedge with a cheek comb; **Grip** a raked pistol grip with finger grooves
+  under a frame, the trigger in its open guard; **Optic** a scope lying across it in rings, round lens ends; **Muzzle**
+  a flared skirt, a stem and a ported bell; **Utility** a red tool chest on casters with a top box, a carry handle and a
+  spanner; **Receiver Upgrade** a spur gear on its axle with an upright gear on top; **Damage Multiplier** a stepped
+  tower with chevrons and a big "x2"; **Hilt** a sword hilt (pommel, wrapped grip, curled guard, blade stub); **Head** an
+  axe head on its haft in a chopping block; **Melee Mod** a nail-studded club; **Action** a bolt on a coil spring with
+  its handle and lugs. All keep the classic footprint (about 0.9 x 0.7 m) and are solid; they stand 1.9 to 2.7 m tall.
+  Zombies Test (no machine props)
   draws the same cabinet without collision. Over each machine within 9 m a label names it ("BARREL SLOTS", "SLOTS:
   ANY PART") in the category colour; the prompt says "Hold [E] to pull the Barrel slot machine".
 - **The win, for everyone.** When a machine pays a part or a melee build the server sends `Msg.ZSlotWin` (protocol 55:
   machine, player, result, the part or build index, tier, scrapped flag) to every client. Every PC then shows for
-  `winSeconds` (4 s) the won part's **own model** turning over the machine with a halo of glow boxes and a beam in the
+  `winSeconds` (4 s) the won part's **own model** turning over the machine (0.95 m over the cabinet's tallest point,
+  so it clears every body; the labels go over it) with a halo of glow boxes and a beam in the
   rarity colour, a label "Name: a Rare Long Barrel" over it (within 25 m), and a kill-feed line in the rarity colour
   ("Name won a Rare Long Barrel on the Barrel slot machine!"); legendary and wonder wins add a light pillar, sparks
   spiralling up and a sound heard across the map. A duplicate turned into scrap says so. The old feed lines for slot

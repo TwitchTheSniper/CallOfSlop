@@ -1043,8 +1043,9 @@ public sealed class GunBuilder
             case "drum":
             {
                 var r = (cap < 60 || att == "Drum Mag" ? 0.13f : 0.15f) * (att == "Extended Mag" ? 1.12f : 1f);
-                Box(0.06f, r, r, 0, my - 0.02f - r * 0.5f, mz, c);
-                Box(0.06f, r, r, 0, my - 0.02f - r * 0.5f, mz, c * 0.92f, rx: PI / 4);
+                // A round drum standing sideways (axis along X): a twelve-sided prism, six boxes turned 30 degrees apart.
+                for (var k = 0; k < 6; k++)
+                    Box(0.06f, r, r * 0.268f, 0, my - 0.02f - r * 0.5f, mz, (k & 1) == 0 ? c : c * 0.94f, rx: k * PI / 6);
                 Box(0.066f, r * 0.3f, r * 0.3f, 0, my - 0.02f - r * 0.5f, mz, Metal * 0.6f);
                 Box(0.03f, 0.05f, 0.035f, 0, my - 0.012f, mz, c * 0.8f);
                 return new Vector3(0, my, mz);

@@ -1,12 +1,14 @@
 {
   "format": "call-of-slop-fragment/1",
   "name": "Drum Shell",
-  "about": "A drum magazine hanging below y = 0 (an octagonal drum with a hub cap on each side).",
+  "about": "A drum magazine hanging below y = 0 (a twelve-sided drum: six boxes turned 30 degrees apart, with a hub cap on each side).",
   "model": [
-    {"size": [0.05, 0.11, 0.0456], "pos": [0, -0.055, 0], "color": "black"},
-    {"size": [0.05, 0.0456, 0.11], "pos": [0, -0.055, 0], "color": "black"},
-    {"size": [0.05, 0.0456, 0.11], "pos": [0, -0.055, 0], "rot": [45, 0, 0], "color": "black"},
-    {"size": [0.05, 0.0456, 0.11], "pos": [0, -0.055, 0], "rot": [-45, 0, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "rot": [30, 0, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "rot": [60, 0, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "rot": [90, 0, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "rot": [120, 0, 0], "color": "black"},
+    {"size": [0.05, 0.11, 0.0295], "pos": [0, -0.055, 0], "rot": [150, 0, 0], "color": "black"},
     {"size": [0.056, 0.03, 0.03], "pos": [0, -0.055, 0], "color": "gunmetal"},
     {"size": [0.02, 0.02, 0.03], "pos": [0, -0.005, 0], "color": "black"}
   ]

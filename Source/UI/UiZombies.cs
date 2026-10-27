@@ -252,10 +252,11 @@ public sealed partial class Ui
                     SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinScrapped ? " (scrapped)" : "")}";
                 }
                 var fade = (float)Math.Clamp((game.ZRules.SlotWinSeconds - (now - m.WinAt)) * 2, 0, 1);
-                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, 3.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
+                // Over the turning part (Program.DrawSlotWin: it floats Program.SlotWinOver over the cabinet's top and rises 0.35 m).
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + Program.SlotWinOver + 1.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
             }
             else if (d2 <= 9 * 9)
-                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, 2.75f, 0), Game.SlotMachineLabel(spot.SlotCategory), Game.SlotCategoryColor(spot.SlotCategory), 0.9f, 13f * _scale);
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + 0.8f, 0), Game.SlotMachineLabel(spot.SlotCategory), Game.SlotCategoryColor(spot.SlotCategory), 0.9f, 13f * _scale);
         }
     }
 }
