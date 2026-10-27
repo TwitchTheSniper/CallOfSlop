@@ -404,7 +404,7 @@ public sealed partial class Game
     /// <summary>
     /// The lobby state (protocol 32): version, flags, the map (name + fingerprint), mode, score limit choice, time
     /// limit, bots wanted and their difficulty, auto-start, gravity (protocol 48), bot gear (protocol 52; destruction, voice
-    /// and dead chat are flags), then every player's ping. About 30 bytes + 3 per player.
+    /// and dead chat are flags), the Zombies start round and flags (protocol 59), then every player's ping. About 32 bytes + 3 per player.
     /// </summary>
     public void WriteLobbyState(PacketWriter w)
     {
@@ -414,7 +414,8 @@ public sealed partial class Game
         w.Begin(Msg.LobbyState).U16(LobbyVersion).U8(flags).Str(World.Map.Name).U32(World.Map.ContentHash)
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
             .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent) // (protocol 48: gravity, GameGravity.cs)
-            .U8((byte)BotGearMode); // (protocol 52: bot gear, BotGear.cs)
+            .U8((byte)BotGearMode) // (protocol 52: bot gear, BotGear.cs)
+            .U8((byte)ZStartRound).U8((byte)(ZTestKit ? 1 : 0)); // (protocol 59: Zombies start round and test kit, ZombiesStartRound.cs)
         var countAt = w.Length;
         w.U8(0);
         byte n = 0;
@@ -470,7 +471,9 @@ public sealed partial class Game
         var auto = r.U16();
         var gravity = r.U8();
         var gear = (BotGearMode)r.U8();
-        int n = r.U8();
+        int startRound = r.Has(2) ? r.U8() : 1;
+        var zflags = r.Has(1) ? r.U8() : 0;
+        int n = r.Has(1) ? r.U8() : 0;
         Array.Clear(PingMs);
         for (var i = 0; i < n && r.Has(3); i++)
         {
@@ -491,6 +494,8 @@ public sealed partial class Game
         DestructionEnabled = (flags & LobbyFlagDestruction) != 0; // (shown in the lobby; the server decides what breaks)
         DeadChatPrivate = (flags & LobbyFlagDeadChat) != 0; // (shown; the server routes the chat)
         BotGearMode = Enum.IsDefined(gear) ? gear : BotGearMode.MatchPlayers; // (shown; the server draws the loadouts)
+        ZStartRound = startRound; // (shown; the server runs the rounds)
+        ZTestKit = (zflags & 1) != 0;
         var voice = (flags & LobbyFlagVoice) != 0;
         if (voice != VoiceAllowed)
         {

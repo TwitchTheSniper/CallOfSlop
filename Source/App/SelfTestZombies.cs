@@ -15,7 +15,8 @@ public static partial class SelfTest
     private static Map? ZTestMap => Maps.Find("Zombies Test");
 
     /// <summary>A Zombies game on Zombies Test (offline), live and playing, with the given rules tweaks.</summary>
-    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true, BotDifficulty skill = BotDifficulty.Normal, Map? onMap = null)
+    private static Game ZGame(int bots, ref double now, uint seed = 1234, Action<ZombiesRules>? tweak = null, bool hostIn = true, BotDifficulty skill = BotDifficulty.Normal, Map? onMap = null,
+        Action<Game>? setup = null)
     {
         var map = onMap ?? ZTestMap!;
         World.SetMap(map);
@@ -29,6 +30,7 @@ public static partial class SelfTest
         g.ZSeed = seed;
         g.ZHostSitsOut = !hostIn;
         g.Mode = GameMode.Zombies;
+        setup?.Invoke(g); // (before the run starts: the start round, the test kit)
         Run(g, ref now, Game.CountdownSeconds + 0.2);
         if (hostIn)
         {

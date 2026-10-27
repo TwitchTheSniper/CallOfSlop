@@ -47,6 +47,8 @@
   },
   "points": {
     "start": 500,
+    "startRoundPerZombie": 90,
+    "startRoundKeep": 0.12,
     "hit": 10,
     "kill": 60,
     "headshotKill": 100,

@@ -25,6 +25,7 @@ public sealed class ZombiesModule : GameModeModule
     public override bool HasTimeLimit => false; // the run ends when everyone is down
     public override bool ShowsRespawnMessage => false; // the Zombies HUD says it itself: back next round
     public override bool ShowsKillNotices => false;
+    public override bool HostPanelInMatch => true; // Esc > HOST: bots, the next round now or a skip to any round (testing; ZombiesStartRound.cs)
     public override MapNeeds Needs => MapNeeds.ZombiesSection;
     // UsesThrowables stays true and FixedPerks null: the server-side start gear (ZombiesOnSpawn) takes the multiplayer
     // perks and the loadout's grenades away itself, while the local client keeps its grenade count as it always has.
