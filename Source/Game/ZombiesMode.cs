@@ -930,9 +930,7 @@ public sealed partial class Game
                 var ob = StandardBuilds.All[BoxBuild];
                 GiveBuild(p, ob.IsMelee ? 4 : TargetSlot(p), ob.Build(), full: true);
                 ZFeedTo(p, $"You took the {ob.Name} ({PartDef.RarityName(ob.Tier)}).", Sfx.LevelUp);
-                BoxState = ZBoxState.Idle;
-                BoxBuild = -1;
-                BoxOwner = byte.MaxValue;
+                CloseBox();
                 break;
             }
             case ZUseKind.Perk:
@@ -1270,7 +1268,8 @@ public sealed partial class Game
     /// Server: a workbench change from <paramref name="p"/> (in <see cref="Msg.ZBench"/>, or the host's own): 0 = put
     /// <paramref name="text"/> in slot <paramref name="slot"/> (the parts it adds must be in their loose parts; parts it
     /// drops go back there), 1 = break a loose part down for scrap, 2 = craft a part with scrap, 3 = take the build in
-    /// <paramref name="slot"/> apart into your loose parts (<see cref="BenchDisassemble"/>). Returns why not, or null.
+    /// <paramref name="slot"/> apart into your loose parts (<see cref="BenchDisassemble"/>), 5 = at the mystery box, take
+    /// its offered build apart (<see cref="BenchBoxDisassemble"/>). Returns why not, or null.
     /// </summary>
     public string? ServerBench(Player p, int kind, int slot, string text)
     {
@@ -1278,14 +1277,10 @@ public sealed partial class Game
             return "Not now.";
         if (kind == BenchSlotBet)
             return ServerSlotBet(p, slot); // a slot machine's bet (ZombiesSlots.cs), not a workbench change
+        if (kind == BenchBoxDisassemble)
+            return ServerBoxDisassemble(p, ZP(p)); // the mystery box's OFFERED build, at the box (ZombiesDisassemble.cs)
         if (!AtWorkbench(p))
-        {
-            // Taking the build in a slot apart works at the mystery box too (ZombiesDisassemble.cs); everything else needs a bench.
-            if (kind != BenchDisassemble)
-                return "You're not at a workbench.";
-            if (BoxDisassembleRefusal(p) is { } notAtBox)
-                return notAtBox;
-        }
+            return "You're not at a workbench.";
         var zp = ZP(p);
         switch (kind)
         {

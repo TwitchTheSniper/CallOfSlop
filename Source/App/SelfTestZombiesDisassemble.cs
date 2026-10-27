@@ -173,54 +173,11 @@ public static partial class SelfTest
                 Fail("disassembling should only work at a workbench");
         }
 
-        // ---- At the mystery box: exactly what the workbench gives (board item, 2026-10-26) ----
+        // ---- At the mystery box: the OFFERED build comes apart, never the gun in your hands (board bug, 2026-10-26) ----
         if (zm.BoxSpots.Count == 0)
             Fail("disassemble at the box: the test map needs a mystery box");
         else
-        {
-            Dictionary<string, int> GainedAt(bool atBox, ref double t, out string? why, out bool emptied, out string state)
-            {
-                using var g = ZGame(0, ref t, tweak: r => r.FirstRoundDelay = 9999);
-                var me = g.Local!;
-                var zp = g.ZP(me);
-                g.GiveBuild(me, 0, multi.Build(), full: true);
-                zp.Parts["Red Dot"] = 1;
-                var spot = zm.BoxSpots[Math.Clamp(g.BoxSpot, 0, zm.BoxSpots.Count - 1)];
-                me.Teleport(atBox ? spot.At + new Vector3(0, 0, -1.2f) : zm.Benches[0].At + new Vector3(0, 0, -1.2f));
-                var before = new Dictionary<string, int>(zp.Parts, StringComparer.OrdinalIgnoreCase);
-                why = g.ServerBench(me, Game.BenchDisassemble, 0, "");
-                emptied = zp.Slots[0] == null && Game.IsEmptyGun(me.BuiltPrimary);
-                var gained = DisGained(before, zp.Parts);
-                state = "";
-                if (atBox)
-                {
-                    // The other bench actions still need a bench; a teddy-bear box (moving) refuses; the client's key and prompt.
-                    var salvage = g.ServerBench(me, 1, 0, "Red Dot");
-                    g.GiveBuild(me, 1, wall.Build(), full: true);
-                    g.BoxState = ZBoxState.Teddy;
-                    var teddy = g.ServerBench(me, Game.BenchDisassemble, 1, "");
-                    g.BoxState = ZBoxState.Spinning;
-                    var prompt = g.BoxDisassemblePrompt("G", t);
-                    g.BoxDisassembleKey(t); // first press: armed
-                    var armedKept = zp.Slots[1] != null && g.BoxDisassembleArmed(1, t);
-                    g.BoxDisassembleKey(t + 0.5); // second press: the request (the host runs it at once)
-                    var spinning = zp.Slots[1] == null;
-                    me.Teleport(spot.At + new Vector3(0, 0, -(Game.BoxDisassembleRange + 1.5f)));
-                    g.GiveBuild(me, 1, wall.Build(), full: true);
-                    var away = g.ServerBench(me, Game.BenchDisassemble, 1, "");
-                    state = $"salvage at the box '{salvage}', teddy '{teddy}', prompt '{prompt}', key arms first {armedKept}, while spinning {spinning}, away '{away}'";
-                    if (salvage == null || teddy == null || away == null || !armedKept || !spinning || prompt == null)
-                        Fail("at the box only Disassemble works (not salvage), not while the box moves (teddy) or away from it; the key takes two presses");
-                }
-                return gained;
-            }
-            var atBench = GainedAt(false, ref now, out var whyBench, out var emptyBench, out _);
-            var atBox = GainedAt(true, ref now, out var whyBox, out var emptyBox, out var boxState);
-            var same = whyBench == null && whyBox == null && emptyBench && emptyBox && DisSame(atBench, atBox) && atBench.Values.Sum() == multi.Build().Nodes.Count();
-            ZLine($"disassemble at the box: '{multi.Name}' -> {whyBox ?? "ok"}, {atBox.Values.Sum()} parts, the same as at a workbench ({atBench.Values.Sum()}) {same}; {boxState}");
-            if (!same)
-                Fail("disassembling at the mystery box should give exactly what the workbench gives and leave the slot empty");
-        }
+            CheckBoxOfferDisassemble(zm, multi, wall, box, ref now);
 
         // ---- Co-op: the server's messages leave a client (and a joiner) with the same slots and parts ----
         using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
@@ -265,6 +222,143 @@ public static partial class SelfTest
                 Fail("disassembling in co-op should leave the client with the server's slots (empty), loose parts and weapon in hand");
             if (!joinerOk || ServerInfo.ProtocolVersion < 41)
                 Fail("a joiner should see a disassembled slot as empty (protocol 41 or later)");
+        }
+    }
+
+    /// <summary>What each of a player's five slots holds (build text, or "-"), plus the weapon in hand.</summary>
+    private static string DisSlots(Game g, Player p) =>
+        string.Join("|", g.ZP(p).Slots.Select(b => b?.ToText() ?? "-")) + $"|hand {p.Weapon}|{p.MeleeBuild?.Name}";
+
+    /// <summary>
+    /// The box's offer taken apart (ZBench kind 5, protocol 54): exactly the offered build's parts, the box closes, every slot
+    /// and the gun in hand stay as they were (a gun in hand, empty hands, all four slots full); refused with no offer,
+    /// someone else's offer, away from the box; kind 3 is a bench-only action; a client's request does the same.
+    /// </summary>
+    private static void CheckBoxOfferDisassemble(ZombiesMap zm, StandardBuild multi, StandardBuild wall, StandardBuild box, ref double now)
+    {
+        var boxIdx = Array.IndexOf(StandardBuilds.All, box);
+        var expect = DisParts(box.Build());
+        Vector3 AtBox(Game g) => zm.BoxSpots[Math.Clamp(g.BoxSpot, 0, zm.BoxSpots.Count - 1)].At + new Vector3(0, 0, -1.2f);
+        void Offer(Game g, Player to)
+        {
+            g.BoxState = ZBoxState.Offering;
+            g.BoxBuild = boxIdx;
+            g.BoxOwner = to.Id;
+        }
+        bool Closed(Game g) => g.BoxState == ZBoxState.Idle && g.BoxBuild == -1 && g.BoxOwner == byte.MaxValue;
+
+        // Three holds: the multi-receiver gun in hand; empty hands (slots 1-2 taken apart at a bench); all four slots full.
+        foreach (var hold in new[] { "gun in hand", "empty hands", "full slots" })
+        {
+            using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
+            var me = g.Local!;
+            var zp = g.ZP(me);
+            g.GiveBuild(me, 0, multi.Build(), full: true);
+            if (hold == "empty hands")
+            {
+                me.Teleport(zm.Benches[0].At + new Vector3(0, 0, -1.2f));
+                g.ServerBench(me, Game.BenchDisassemble, 0, "");
+                g.ServerBench(me, Game.BenchDisassemble, 1, "");
+            }
+            else if (hold == "full slots")
+            {
+                me.ExtraSlots = true;
+                g.GiveBuild(me, 2, wall.Build(), full: true);
+                g.GiveBuild(me, 3, wall.Build(), full: true);
+                g.SwitchTo(0, now);
+            }
+            me.Teleport(AtBox(g));
+            var slotsBefore = DisSlots(g, me);
+            var noOffer = g.BoxDisassemblePrompt("G", now) == null && g.BoxDisassembleOffer() < 0;
+            g.BoxDisassembleKey(now); // no offer: nothing happens
+            g.BoxDisassembleKey(now + 0.2);
+            var idleSame = DisSlots(g, me) == slotsBefore && g.ServerBench(me, Game.BenchBoxDisassemble, 0, "") != null;
+            Offer(g, me);
+            var prompt = g.BoxDisassemblePrompt("G", now);
+            var take = g.FindZUse(me) is { Kind: ZUseKind.BoxTake }; // the take prompt is still there (E)
+            var kind3 = g.ServerBench(me, Game.BenchDisassemble, Math.Max(0, g.ActiveSlot), ""); // the old request at the box: bench only now
+            var before = new Dictionary<string, int>(zp.Parts, StringComparer.OrdinalIgnoreCase);
+            g.BoxDisassembleKey(now); // first press: armed, nothing moves
+            var armed = g.BoxDisassembleArmed(now) && !Closed(g) && DisSame(before, zp.Parts);
+            g.BoxDisassembleKey(now + 0.5); // second press: the host runs it at once
+            var gained = DisGained(before, zp.Parts);
+            var exact = DisSame(gained, expect) && gained.Values.Sum() == box.Build().Nodes.Count();
+            var untouched = DisSlots(g, me) == slotsBefore;
+            var closed = Closed(g) && g.BoxDisassemblePrompt("G", now + 1) == null;
+            ZLine($"disassemble at the box ({hold}): offer '{box.Name}' ({expect.Values.Sum()} parts), prompt '{prompt}', E take still offered {take}, kind 3 at the box '{kind3}', "
+                  + $"armed first {armed}, gained exactly its parts {exact}, slots and hand untouched {untouched}, box closed {closed}; with no offer: nothing {noOffer && idleSame}");
+            if (!exact || !untouched || !closed)
+                Fail($"disassembling at the box ({hold}) should give exactly the offered {box.Name}'s parts, close the box and leave the held weapon and every slot alone");
+            if (prompt == null || !take || !armed || kind3 == null)
+                Fail("at the box the offer's prompt (G twice) sits beside the take (E), the first press only arms it, and a slot's disassembly needs a workbench");
+            if (!noOffer || !idleSame)
+                Fail("with no offer, G at the box should do nothing (no prompt, no request accepted)");
+        }
+
+        // Refusals: someone else's offer, too far away, spinning, the teddy bear.
+        using (var g = ZGame(1, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            var me = g.Local!;
+            var other = g.Players.Values.First(p => p != me);
+            me.Teleport(AtBox(g));
+            Offer(g, other);
+            var notYours = g.ServerBench(me, Game.BenchBoxDisassemble, 0, "");
+            var noPrompt = g.BoxDisassemblePrompt("G", now) == null;
+            Offer(g, me);
+            me.Teleport(AtBox(g) + new Vector3(0, 0, -(Game.BoxDisassembleRange + 1.5f)));
+            var far = g.ServerBench(me, Game.BenchBoxDisassemble, 0, "");
+            me.Teleport(AtBox(g));
+            g.BoxState = ZBoxState.Spinning;
+            var spinning = g.ServerBench(me, Game.BenchBoxDisassemble, 0, "");
+            g.BoxState = ZBoxState.Teddy;
+            var teddy = g.ServerBench(me, Game.BenchBoxDisassemble, 0, "");
+            ZLine($"disassemble at the box, refusals: someone else's offer '{notYours}' (no prompt {noPrompt}), too far '{far}', spinning '{spinning}', teddy '{teddy}'");
+            if (notYours == null || !noPrompt || far == null || spinning == null || teddy == null)
+                Fail("taking the box's offer apart should need your own offer, at the box");
+        }
+
+        // A client: sees the offer in ZWorld, its key sends ZBench kind 5, the server moves the parts, the client's ZRun and ZWorld follow.
+        using (var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999))
+        {
+            var gl = g.Local!;
+            var zp = g.ZP(gl);
+            using var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
+            var w = new PacketWriter();
+            g.GiveBuild(gl, 0, multi.Build(), full: true);
+            Game.SelfTestWriteBuild(w, gl, 0, zp.Slots[0]!);
+            c.SelfTestApplyBuild(w.Span.ToArray());
+            gl.Teleport(AtBox(g));
+            c.Local!.Teleport(AtBox(g));
+            Offer(g, gl);
+            byte[] Ents()
+            {
+                g.WriteZEnts(w);
+                return w.Span.ToArray();
+            }
+            byte[] WorldMsg()
+            {
+                g.WriteZWorld(w);
+                return w.Span.ToArray();
+            }
+            c.SelfTestReadZombies(Ents(), WorldMsg());
+            var clientBefore = DisSlots(c, c.Local);
+            var seen = c.BoxState == ZBoxState.Offering && c.BoxBuild == boxIdx && c.BoxDisassemblePrompt("G", now) != null;
+            var first = c.BoxDisassembleConfirmed(now);
+            var second = c.BoxDisassembleConfirmed(now + 0.5);
+            Game.WriteBenchRequest(w, Game.BenchBoxDisassemble, 0, ""); // what BenchRequest sends to the server
+            var before = new Dictionary<string, int>(zp.Parts, StringComparer.OrdinalIgnoreCase);
+            var serverBefore = DisSlots(g, gl);
+            var why = g.SelfTestBenchPacket(gl, w.Span.ToArray());
+            var serverOk = why == null && DisSame(DisGained(before, zp.Parts), expect) && DisSlots(g, gl) == serverBefore && Closed(g);
+            g.SelfTestWriteRun(w, gl);
+            c.SelfTestReadRun(w.Span.ToArray());
+            c.SelfTestReadZombies(Ents(), WorldMsg());
+            var cz = c.ZP(c.Local);
+            var clientOk = DisSame(cz.Parts, zp.Parts) && DisSlots(c, c.Local) == clientBefore && c.BoxState == ZBoxState.Idle && c.BoxDisassemblePrompt("G", now + 1) == null;
+            ZLine($"disassemble at the box (co-op): client sees the offer {seen}, key arms then sends {!first && second}, server '{why ?? "ok"}' ({serverOk}), "
+                  + $"client parts match and slots untouched, box closed {clientOk}; protocol {ServerInfo.ProtocolVersion}");
+            if (!seen || first || !second || !serverOk || !clientOk || ServerInfo.ProtocolVersion < 54)
+                Fail("a client's box disassembly (ZBench kind 5, protocol 54) should give the offer's parts and leave its slots as they were");
         }
     }
 }

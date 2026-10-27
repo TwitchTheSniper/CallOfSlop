@@ -294,10 +294,32 @@ public sealed partial class Game
                 LoadoutNotice = $"Workbench: {why}";
             return;
         }
+        WriteBenchRequest(_w, kind, slot, text);
+        Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    /// <summary>A client's <see cref="Msg.ZBench"/>: the kind, the slot and the text (a build, a part name, or empty).</summary>
+    public static void WriteBenchRequest(PacketWriter w, int kind, int slot, string text)
+    {
         var bytes = Encoding.UTF8.GetBytes(text);
         var n = Math.Min(bytes.Length, 6000);
-        _w.Begin(Msg.ZBench).U8((byte)kind).U8((byte)slot).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
-        Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
+        w.Begin(Msg.ZBench).U8((byte)kind).U8((byte)slot).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
+    }
+
+    /// <summary>Server: runs a <see cref="Msg.ZBench"/> from <paramref name="p"/> (after the message id); returns why not, or null.</summary>
+    private string? OnBenchRequest(Player p, ref PacketReader r)
+    {
+        var kind = r.U8();
+        var slot = r.U8();
+        var text = ReadLong(ref r);
+        return ServerBench(p, kind, slot, text);
+    }
+
+    /// <summary>Self-test: the server receives <paramref name="msg"/> (a whole <see cref="Msg.ZBench"/>) from player <paramref name="p"/>.</summary>
+    public string? SelfTestBenchPacket(Player p, ReadOnlySpan<byte> msg)
+    {
+        var r = new PacketReader(msg[1..]);
+        return OnBenchRequest(p, ref r);
     }
 
     // ---- Packets ------------------------------------------------------------------------------------------
@@ -313,10 +335,7 @@ public sealed partial class Game
             case (byte)Msg.ZBench when IsServer && r.Has(2):
                 if (_clients.TryGetValue(sender.G, out var bc) && Players.TryGetValue(bc.Id, out var bp))
                 {
-                    var kind = r.U8();
-                    var slot = r.U8();
-                    var text = ReadLong(ref r);
-                    if (ServerBench(bp, kind, slot, text) is { } why)
+                    if (OnBenchRequest(bp, ref r) is { } why)
                         ZFeedTo(bp, $"Workbench: {why}", Sfx.DryFire);
                 }
                 break;
