@@ -268,7 +268,9 @@ def _rounded(bl, h, radius, long_only, segments, flat):
         n = norm(d)
         return add(q, mul(n, r)), n
 
-    for axis in range(3):
+    if flat:
+        _chamfer(bl, h, e)
+    for axis in range(3 if not flat else 0):
         u, v = (axis + 1) % 3, (axis + 2) % 3
         for sign in (-1, 1):
             face = [0.0, 0.0, 0.0]
@@ -295,6 +297,32 @@ def _rounded(bl, h, radius, long_only, segments, flat):
     for sx in (-1, 1):
         for sy in (-1, 1):
             bl.proxy(_v(sx * (e[0] + q * 0.5), sy * (e[1] + q * 0.5), 0), (q, q, 2 * e[2]))
+
+
+def _chamfer(bl, h, e):
+    """A bevelled box face by face (PartShapes.Chamfer): faces cut back to the inner box, edge strips, corner triangles."""
+    o = _v(0, 0, 0)
+    for a in range(3):
+        b, c = (a + 1) % 3, (a + 2) % 3
+        eb, ec = e[b], e[c]
+        for sa in (-1, 1):
+            def P(sb, sc):
+                p = [0.0, 0.0, 0.0]
+                p[a], p[b], p[c] = sa * h[a], sb * eb, sc * ec
+                return p
+            bl.flat_quad(P(-1, -1), P(1, -1), P(1, 1), P(-1, 1), o)
+            for sb in (-1, 1):
+                def Q(tb, tc):
+                    p = [0.0, 0.0, 0.0]
+                    p[a] = sa * (h[a] if tb > 0 else e[a])
+                    p[b] = sb * (eb if tb > 0 else h[b])
+                    p[c] = tc
+                    return p
+                bl.flat_quad(Q(1, -ec), Q(1, ec), Q(-1, ec), Q(-1, -ec), o)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            for sz in (-1, 1):
+                bl.flat(_v(sx * h[0], sy * e[1], sz * e[2]), _v(sx * e[0], sy * h[1], sz * e[2]), _v(sx * e[0], sy * e[1], sz * h[2]), o)
 
 
 def _capsule(bl, h, n, sphere):

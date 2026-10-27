@@ -436,7 +436,9 @@ public static class PartShapes
             n = Vector3.Normalize(d);
             return q + n * r;
         }
-        for (var axis = 0; axis < 3; axis++)
+        if (flat)
+            Chamfer(bl, h, e);
+        for (var axis = 0; axis < 3 && !flat; axis++)
         {
             var u = (axis + 1) % 3;
             var v = (axis + 2) % 3;
@@ -476,6 +478,50 @@ public static class PartShapes
         foreach (var sx in new[] { -1f, 1f })
             foreach (var sy in new[] { -1f, 1f })
                 bl.Proxy(new Vector3(sx * (e.X + q * 0.5f), sy * (e.Y + q * 0.5f), 0), new Vector3(q, q, 2 * e.Z));
+    }
+
+    /// <summary>
+    /// A bevelled box, face by face: the six faces cut back to the inner box <paramref name="e"/>, a strip across each
+    /// edge and a triangle on each corner (44 triangles; with the Z edges only, e.Z = h.Z, the end faces come out as
+    /// octagons from the same pieces).
+    /// </summary>
+    private static void Chamfer(Builder bl, Vector3 h, Vector3 e)
+    {
+        Vector3 P(int axis, float sa, int b, float sb, int c, float sc)
+        {
+            var p = Vector3.Zero;
+            Set(ref p, axis, sa * Get(h, axis));
+            Set(ref p, b, sb);
+            Set(ref p, c, sc);
+            return p;
+        }
+        for (var a = 0; a < 3; a++)
+        {
+            int b = (a + 1) % 3, c = (a + 2) % 3;
+            float eb = Get(e, b), ec = Get(e, c);
+            foreach (var sa in new[] { -1f, 1f })
+            {
+                // The face, cut back to the inner box.
+                bl.FlatQuad(P(a, sa, b, -eb, c, -ec), P(a, sa, b, eb, c, -ec), P(a, sa, b, eb, c, ec), P(a, sa, b, -eb, c, ec), Vector3.Zero);
+                // The strip between this face and the next axis's face, along the third axis.
+                foreach (var sb in new[] { -1f, 1f })
+                {
+                    Vector3 Q(float tb, float tc)
+                    {
+                        var p = Vector3.Zero;
+                        Set(ref p, a, sa * (tb > 0 ? Get(h, a) : Get(e, a)));
+                        Set(ref p, b, sb * (tb > 0 ? eb : Get(h, b)));
+                        Set(ref p, c, tc);
+                        return p;
+                    }
+                    bl.FlatQuad(Q(1, -ec), Q(1, ec), Q(-1, ec), Q(-1, -ec), Vector3.Zero);
+                }
+            }
+        }
+        foreach (var sx in new[] { -1f, 1f })
+            foreach (var sy in new[] { -1f, 1f })
+                foreach (var sz in new[] { -1f, 1f })
+                    bl.Flat(new Vector3(sx * h.X, sy * e.Y, sz * e.Z), new Vector3(sx * e.X, sy * h.Y, sz * e.Z), new Vector3(sx * e.X, sy * e.Y, sz * h.Z), Vector3.Zero);
     }
 
     private static float Get(Vector3 v, int i) => i == 0 ? v.X : i == 1 ? v.Y : v.Z;

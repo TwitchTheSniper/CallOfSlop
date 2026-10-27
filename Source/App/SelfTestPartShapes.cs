@@ -4,6 +4,9 @@ namespace CallOfSlop;
 
 public static partial class SelfTest
 {
+    /// <summary>Most triangles a standard build may draw (Parts/README.md, "Shapes": a gun is drawn a few times a frame at most).</summary>
+    private const int BuildTriangleBudget = 30000;
+
     /// <summary>
     /// Part shapes (board item dev-part-models-pm01): the contoured model shapes (cylinder, tube, wedge, bevel, rounded,
     /// capsule, sphere, arc; Source/Zombies/PartShapes.cs) read from part files with their settings, stay inside their box
@@ -122,6 +125,22 @@ public static partial class SelfTest
                     Fail($"part shapes: the refusal of {model} should say \"{want}\": {e.Message}");
             }
         }
+
+        // Triangle budgets: every shipped part within its limit, every standard build within the build budget.
+        var maxPart = Parts.All.MaxBy(p => p.Triangles);
+        if (maxPart != null && maxPart.Triangles > PartFile.MaxTriangles)
+            Fail($"part shapes: {maxPart.Name} draws {maxPart.Triangles} triangles (limit {PartFile.MaxTriangles})");
+        var heaviest = (Name: "", Tris: 0, Pieces: 0);
+        foreach (var sb in StandardBuilds.All)
+        {
+            var mesh = BuildModel.Build(sb.Build(), Vector3.One).Mesh;
+            var tris = mesh.Parts.Sum(x => PartShapes.Triangles(x.Shape));
+            if (tris > heaviest.Tris)
+                heaviest = (sb.Name, tris, mesh.Parts.Length);
+        }
+        Line($"triangles: heaviest part {maxPart?.Name} {maxPart?.Triangles}; heaviest standard build {heaviest.Name}: {heaviest.Tris} triangles in {heaviest.Pieces} pieces (budget {BuildTriangleBudget})");
+        if (heaviest.Tris > BuildTriangleBudget)
+            Fail($"part shapes: the standard build {heaviest.Name} draws {heaviest.Tris} triangles, over the {BuildTriangleBudget} budget");
 
         // The shape reaches the built gun, its scene nodes and the draw list.
         if (Parts.Find("Rifle Grip") is { } rg && Parts.Find("Workhorse Receiver") is { } wh)

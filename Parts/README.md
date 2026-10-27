@@ -43,8 +43,8 @@ degrees about Y; a suppressor a `tube` with `"ends": "back"` and a bevelled or r
 
 **Cost.** Each distinct shape (shape, settings and size) is made once when the parts load and shared by every part and
 build that uses it; it is drawn with one draw call like a box, and nothing is made per frame. Typical shapes are 12 to
-150 triangles (a box is 12; a 12-sided cylinder 48, a tube 96-108, a rounded box 100-300). A part may draw at most 6000
-triangles in all; `--check-part` prints the count. Keep small pieces (screws, pins, sights) as plain boxes.
+150 triangles (a box is 12; a bevelled box 44; a 12-sided cylinder 48, a tube 96-108, a rounded box 100-300). A part may draw at most 6000
+triangles in all and a standard build 30000 (the self-test "Part shapes"); `--check-part` prints the count. Keep small pieces (screws, pins, sights) as plain boxes.
 
 **Connectivity.** Every part must be one connected piece, and a contoured shape only counts where it really is: a
 tube touches through its wall, an arc along its band, not anywhere in their boxes (the self-test "Model connectivity"
