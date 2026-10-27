@@ -130,9 +130,14 @@ public sealed partial class Map
     /// shut), window glass in place. Zombies doors stay as they are now. The nav graph is built from these
     /// (<see cref="NavGraph"/>, BotNav.cs), so what broke or opened while it was being built never changes it.
     /// </summary>
-    public Box[] AsBuiltSolid()
+    public Box[] AsBuiltSolid() => AsBuiltSolid(Solid.ToArray());
+
+    /// <summary>
+    /// <see cref="AsBuiltSolid()"/> from <paramref name="boxes"/>, a copy of <see cref="Solid"/> taken earlier, made as built
+    /// in place and returned. Any thread: it reads only what is fixed once the map is built (the nav bake key, BotNavBake.cs).
+    /// </summary>
+    public Box[] AsBuiltSolid(Box[] boxes)
     {
-        var boxes = Solid.ToArray();
         foreach (var (k, b) in _propOriginal)
             if ((uint)k < (uint)boxes.Length)
                 boxes[k] = b;

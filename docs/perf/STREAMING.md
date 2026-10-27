@@ -427,7 +427,7 @@ movers, objectives) with the same "exactly matches" rule: worth it only if 6.3's
 | London | 357 / 350 ms | 133 / 6 ms | |
 | Sprawl, Old Town, Timberline (Cluttered) | 150-164 ms | 79-90 ms | Clutter-heavy |
 | Stress grid 400 m, 10k Clutter props | 1,371 ms (container, 2.1) | 68 ms | 2.4k / 12k props (with 400 / 2,000 Prop ops): 64 / 160 ms |
-| Nav graph, Paris Quarter: build / read baked | 753-833 ms of work (13-14 s of play at 3 ms a tick) | 1.3-2.1 ms read on a worker, ready in 2 ticks | key 2-6 ms on the game thread, once |
+| Nav graph, Paris Quarter: build / read baked | 753-833 ms of work (13-14 s of play at 3 ms a tick) | 1.3-2.1 ms read on a worker, ready in 2 ticks | key 2-10 ms (Building Yard: up to 42) hashed on the worker too; the game thread only copies the boxes (under 1 ms) |
 | Nav graph, Building Yard / Pocket Planet / Keelhaul Yard | 256 / 186 / 377 ms | 1.0 / 0.3 / 0.2 ms | files 349 / 358 / 134 KB |
 | Box draw calls, Downtown (most map boxes) | 1,245 a frame | 1 with all in view, at most 57 | 1.4 MB of instances over all 110 maps |
 

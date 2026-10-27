@@ -65,10 +65,21 @@ public static class NavBake
     }
 
     /// <summary>
-    /// The SHA-256 of everything <paramref name="map"/>'s nav graph is built from, as built (broken props whole, doors as they
-    /// start). Game thread: it reads the map's boxes.
+    /// The one input of the key that changes during a match: the map's boxes as they are now (a copy, a plain memory copy).
+    /// Game thread. Everything else <see cref="KeyOf(Map, uint, Box[])"/> reads is fixed once the map is built, so the
+    /// hashing itself runs on a worker (BotNav.cs, PumpGraph) and no tick pays for it: it takes up to tens of ms on a big map.
     /// </summary>
-    public static byte[] KeyOf(Map map, uint contentHash)
+    public static Box[] TakeBoxes(Map map) => map.Solid.ToArray();
+
+    /// <summary>The key of <paramref name="map"/> now (<see cref="TakeBoxes"/> and <see cref="KeyOf(Map, uint, Box[])"/> in one go). Game thread.</summary>
+    public static byte[] KeyOf(Map map, uint contentHash) => KeyOf(map, contentHash, TakeBoxes(map));
+
+    /// <summary>
+    /// The SHA-256 of everything <paramref name="map"/>'s nav graph is built from, as built (broken props whole, doors as they
+    /// start). Any thread: <paramref name="boxesNow"/> is <see cref="TakeBoxes"/>'s copy (made as built here, in place), and
+    /// the rest (spawns, links, box kinds, meshes, movers...) is only ever written while the map is being built.
+    /// </summary>
+    public static byte[] KeyOf(Map map, uint contentHash, Box[] boxesNow)
     {
         using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
         var buf = new byte[4];
@@ -89,7 +100,7 @@ public static class NavBake
         U(contentHash);
         F(map.HalfX);
         F(map.HalfZ);
-        var boxes = map.AsBuiltSolid();
+        var boxes = map.AsBuiltSolid(boxesNow);
         U((uint)boxes.Length);
         sha.AppendData(MemoryMarshal.AsBytes(boxes.AsSpan()));
         var kinds = new byte[boxes.Length];
