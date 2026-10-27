@@ -856,6 +856,29 @@ public sealed partial class Map
         return true;
     }
 
+    /// <summary>
+    /// Does a body walking a -> b go through a logic door's doorway? The nav graph's door links do (switched on only while
+    /// the door is open, GameLogicNav.cs): the "Nav edge walks" audit, which walks the map as built (doors shut), leaves them out.
+    /// </summary>
+    public bool CrossesLogicDoor(Vector3 a, Vector3 b)
+    {
+        if (_logicOriginal.Count == 0)
+            return false;
+        const float r = World.PlayerRadius + 0.05f;
+        foreach (var box in _logicOriginal.Values)
+        {
+            var grown = new Box(box.Center, box.Half + new Vector3(r, 0, r));
+            var d = b - a;
+            var len = d.Length();
+            if (len < 1e-4f)
+                continue;
+            var lo = a with { Y = MathF.Min(a.Y, b.Y) + 0.3f };
+            if (grown.Raycast(lo, new Vector3(d.X, 0, d.Z) / MathF.Max(1e-4f, new Vector2(d.X, d.Z).Length()), new Vector2(d.X, d.Z).Length()) != null)
+                return true;
+        }
+        return false;
+    }
+
     /// <summary>The box the fingerprint uses for a logic door: shut.</summary>
     internal bool LogicHashBox(int i, out Box b) => _logicOriginal.TryGetValue(i, out b);
 }
