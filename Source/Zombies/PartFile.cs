@@ -137,8 +137,7 @@ public static class PartFile
                 : throw new WeaponFileException($"{where}: \"requiresAction\" should be a list like [\"auto\", \"chain\"]");
         if (Get("weight") is { } we)
             part.Weight = Range(WeaponFile.Number(we, $"{where}: \"weight\""), 0, 30, $"{where}: \"weight\" (kg)");
-        if (Get("scrap") is { } sc)
-            part.ScrapValue = (int)Range(WeaponFile.Int(sc, $"{where}: \"scrap\""), 0, 10000, $"{where}: \"scrap\"");
+        // ("scrap" is still accepted and ignored: Zombies has no scrap since 2026-10-27, and older part files may carry it.)
         if (Get("flags") is { } fg)
             part.Flags = WeaponFile.TextList(fg, $"{where}: \"flags\"").Select(x => x.ToLowerInvariant()).ToArray();
         if (Get("hand") is { } ha)

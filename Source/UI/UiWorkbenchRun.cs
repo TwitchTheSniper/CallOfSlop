@@ -13,8 +13,8 @@ public sealed class ZBenchSession
 /// <summary>
 /// The workbench in a Zombies run (docs/zombies/ZOMBIES-MODE.md, "Workbench"): the same editor, but only with the parts
 /// you own this run (your loose parts plus the ones on the slot's current build), your own slots instead of the saved
-/// builds, standard builds as plans (with what you'd be missing), and scrap: break loose parts down, or craft parts up to
-/// the tier the round allows, including every missing part of a build in one go. Apply sends the build's text to the
+/// builds, standard builds as plans (with what you'd be missing), and your loose parts (Zombies has no scrap since
+/// 2026-10-27: parts come from zombie drops, salvage piles, the slot machines and taking builds apart). Apply sends the build's text to the
 /// server, which checks the parts again (it is the authority) and puts it in your slot.
 /// </summary>
 public sealed partial class Ui
@@ -104,29 +104,6 @@ public sealed partial class Ui
                 MissingBadge(Bm.Missing.Total);
         }
         var ready = Bm.CanFinalize;
-        var missing = Bm.Missing;
-        var scrap = zp?.Scrap ?? 0;
-        if (missing.Total > 0 && Bm.Asm.Problems.Count == 0)
-        {
-            // Missing parts can be crafted with scrap (the workbench's economy), if the round allows their tier.
-            var cap = game.CraftTierCap(game.ZRound);
-            var cost = missing.CraftCost(cap);
-            ImGui.BeginDisabled(cost < 0 || scrap < cost);
-            var craft = ImGui.Button(cost >= 0 ? $"CRAFT MISSING & APPLY ({cost} scrap)" : "CRAFT MISSING (not possible)", new float2(-1, 34 * _scale));
-            ImGui.EndDisabled();
-            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
-                ImGuiSafe.SetTooltip(missing.Text() + (cost < 0 ? $"\nSome of them can't be crafted (wonder parts, or above {PartDef.RarityName(cap)}: round {game.ZRound} crafts up to that tier)."
-                    : scrap < cost ? $"\nNot enough scrap: you have {scrap}, it costs {cost}." : $"\nCrafts them for {cost} scrap, then puts the build in the slot."));
-            if (craft && cost >= 0 && scrap >= cost)
-            {
-                foreach (var m in missing.Parts)
-                    for (var k = 0; k < m.Count; k++)
-                        game.BenchRequest(2, 0, m.Part.Name); // the server checks scrap and tier again
-                game.BenchRequest(0, run.Slot, b.ToText());
-                _runStockKey = int.MinValue;
-                WbSay($"Crafted {missing.Total} part(s) for {cost} scrap and sent '{b.Name}' to {(run.Slot == 4 ? "the melee slot" : $"slot {run.Slot + 1}")}.");
-            }
-        }
         ImGui.BeginDisabled(!ready);
         if (ImGui.Button($"APPLY TO {(run.Slot == 4 ? "THE MELEE SLOT" : $"SLOT {run.Slot + 1}")}", new float2(-1, 34 * _scale)) && ready)
         {
@@ -142,34 +119,13 @@ public sealed partial class Ui
                 DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
         ImGui.Separator();
 
-        ImGuiSafe.TextColored(Orange, $"SCRAP: {scrap}");
-        if (ImGui.CollapsingHeader("Loose parts (break down for scrap)"u8, ImGuiTreeNodeFlags.None) && zp != null)
+        if (ImGui.CollapsingHeader("Loose parts"u8, ImGuiTreeNodeFlags.None) && zp != null)
         {
             if (zp.Parts.Count == 0)
-                ImGui.TextColored(Dim, "None yet: zombies drop parts, later rounds rarer ones."u8);
-            foreach (var (name, n) in zp.Parts.ToList())
-            {
-                if (Parts.Find(name) is not { } part)
-                    continue;
-                ImGuiSafe.TextColored(WbCol(PartDef.RarityColor(part.Rarity)), $"{name} x{n}");
-                ImGui.SameLine();
-                if (ImGui.SmallButton($"scrap +{Scrap.SalvageValue(part)}##salv{name}"))
-                    game.BenchRequest(1, 0, name);
-            }
-        }
-        if (ImGui.CollapsingHeader("Craft a part (scrap)"u8, ImGuiTreeNodeFlags.None))
-        {
-            var cap = game.CraftTierCap(game.ZRound);
-            ImGuiSafe.TextColored(Dim, $"Round {game.ZRound} crafts up to {PartDef.RarityName(cap)} parts.");
-            var cat = _wbFilter >= 0 ? (PartCategory)_wbFilter : (PartCategory?)null;
-            foreach (var part in Parts.All.Where(p => (cat == null || p.Category == cat) && p.IsMeleePart == _wbMelee && p.Rarity <= cap && Scrap.CraftCost(p) > 0))
-            {
-                var cost = Scrap.CraftCost(part);
-                ImGui.BeginDisabled(scrap < cost);
-                if (ImGui.SmallButton($"craft {part.Name} ({cost})##craft{part.Name}"))
-                    game.BenchRequest(2, 0, part.Name);
-                ImGui.EndDisabled();
-            }
+                ImGui.TextColored(Dim, "None yet: zombies drop parts (later rounds rarer ones); so do salvage piles and the slot machines."u8);
+            foreach (var (name, n) in zp.Parts)
+                if (Parts.Find(name) is { } part)
+                    ImGuiSafe.TextColored(WbCol(PartDef.RarityColor(part.Rarity)), $"{name} x{n}");
         }
         ImGui.TextColored(Dim, "The zombies don't wait while you work."u8);
         return null;
@@ -209,7 +165,7 @@ public sealed partial class Ui
                 ? $"Nothing in {SlotName(run.Slot)} to take apart."
                 : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
                   + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : " (another gun goes in your hands, or nothing: the melee key still works).")
-                  + "\nKey: D. Click twice (or press D twice) to confirm. Undo puts it back while the bench is open. Scrap is separate: break loose parts down below.");
+                  + "\nKey: D. Click twice (or press D twice) to confirm. Undo puts it back while the bench is open.");
         if (clicked && current != null)
             BenchDisassemble(run, current);
     }

@@ -10,7 +10,8 @@ public enum ZSlotState : byte
     /// <summary>The reels spin (the result is already rolled: clients stop the reels on it one by one).</summary>
     Spinning,
 
-    /// <summary>The result shows for a moment (paid at the start of it); then the machine takes another pull.</summary>
+    /// <summary>A win shows for a moment (paid at the start of it); then the machine takes another pull. A pull that wins
+    /// nothing skips this: the machine is free the moment its reels stop (developer request, 2026-10-27).</summary>
     Showing,
 }
 
@@ -18,7 +19,8 @@ public enum ZSlotState : byte
 public enum ZSlotResult : byte
 {
     Nothing,
-    Scrap,
+
+    // (1 was scrap until protocol 56: Zombies has no scrap since 2026-10-27; the wire values after it moved down.)
     Points,
     Part,
 
@@ -60,16 +62,16 @@ public sealed class ZSlotMachine
     /// <summary>The price paid for this pull (points back pay a share of it).</summary>
     public int Paid;
 
-    /// <summary>The paid part was turned into scrap (you already held <see cref="ZombiesRules.SlotAutoScrapAt"/> of it loose).</summary>
-    public bool AutoScrapped;
+    /// <summary>The paid part came back as points instead (you already held <see cref="ZombiesRules.SlotDupePointsAt"/> of it loose).</summary>
+    public bool Refunded;
 
     // The last win, as everyone saw it (Msg.ZSlotWin, protocol 55): who, what (a part or a melee build: an index as in
-    // Part), its rarity, whether it was scrapped, and when it came in (this PC's clock). WinSeq counts wins (0: none yet).
+    // Part), its rarity, whether it was refunded as points, and when it came in (this PC's clock). WinSeq counts wins (0: none yet).
     public byte WinSeq, WinPlayer = byte.MaxValue;
     public ZSlotResult WinResult;
     public short WinIndex = -1;
     public Rarity WinTier;
-    public bool WinScrapped;
+    public bool WinRefunded;
     public double WinAt = -1e9;
 
     // Client animation (Program.ZombiesSlots.cs): when the spin seen started, and how many reels have clicked to a stop.
@@ -91,13 +93,13 @@ public sealed class ZSlotMachine
         Tier = Rarity.Common;
         Part = -1;
         Paid = 0;
-        AutoScrapped = false;
+        Refunded = false;
         WinSeq = 0;
         WinPlayer = byte.MaxValue;
         WinResult = ZSlotResult.Nothing;
         WinIndex = -1;
         WinTier = Rarity.Common;
-        WinScrapped = false;
+        WinRefunded = false;
         WinAt = -1e9;
         SeenSpin = 0;
         SpinStart = -1e9;
@@ -108,7 +110,8 @@ public sealed class ZSlotMachine
 /// <summary>
 /// Zombies slot machines (board item "Zombies slots", 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Slot machines"): gamble
 /// points for loose weapon-builder parts. Walk up, hold the interact key, pay; three reels spin and pay a part (into your
-/// loose parts, for the workbench), scrap, points back or nothing. Three levers raise the rarity, all data: the round
+/// loose parts, for the workbench), points back or nothing (a nothing frees the machine at once: pull again).
+/// Zombies has no scrap since 2026-10-27 (developer: "the gambling machines replace the need"). Three levers raise the rarity, all data: the round
 /// (DropTables.json "slotTiers"), the machine's heat (every pull without a rare-or-better part adds one; every
 /// <see cref="ZombiesRules.SlotHeatStep"/> heat moves the part odds one tier up) and jackpot rounds (every
 /// <see cref="ZombiesRules.SlotJackpotEvery"/>th: the wonder symbol is on the reels and legendary / wonder get a bonus).
@@ -117,11 +120,12 @@ public sealed class ZSlotMachine
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>Reel symbols: a skull (nothing), a cog (scrap), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier),
-    /// then a blade (<see cref="SlotSymBlade"/>: two blades and a gem pay a melee build of the gem's rarity).</summary>
-    public const byte SlotSymSkull = 0, SlotSymScrap = 1, SlotSymCoin = 2, SlotSymGem = 3, SlotSymBlade = SlotSymGem + (int)Rarity.Wonder + 1;
+    /// <summary>Reel symbols: a skull (nothing), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier),
+    /// then a blade (<see cref="SlotSymBlade"/>: two blades and a gem pay a melee build of the gem's rarity). The scrap cog
+    /// went with scrap (protocol 56): the symbols after it moved down one.</summary>
+    public const byte SlotSymSkull = 0, SlotSymCoin = 1, SlotSymGem = 2, SlotSymBlade = SlotSymGem + (int)Rarity.Wonder + 1;
 
-    /// <summary>Is <paramref name="s"/> a gem (not a skull, cog, coin or blade)?</summary>
+    /// <summary>Is <paramref name="s"/> a gem (not a skull, coin or blade)?</summary>
     public static bool IsSlotGem(byte s) => s >= SlotSymGem && s < SlotSymBlade;
 
     /// <summary>Every machine's state (only the first <see cref="ZombiesMap.SlotMachines"/>.Count are used).</summary>
@@ -233,11 +237,10 @@ public sealed partial class Game
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
     public string SlotResultText(ZSlotMachine m) => m.Result switch
     {
-        ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.AutoScrapped
-            ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: scrapped for {Scrap.SalvageValue(Parts.All[m.Part])})"
+        ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.Refunded
+            ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)"
             : $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!",
         ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length => $"{PartDef.RarityName(m.Tier)} melee: the {StandardBuilds.All[m.Part].Name}!",
-        ZSlotResult.Scrap => $"Scrap: +{ZRules.SlotScrap}",
         ZSlotResult.Points => $"Coins: +{SlotPointsBack(m.Paid)} points",
         _ => "Nothing. Better luck next pull.",
     };
@@ -255,12 +258,12 @@ public sealed partial class Game
         m.Owner = p.Id;
         m.SpinId++;
         m.Paid = cost;
-        m.AutoScrapped = false;
+        m.Refunded = false;
         var jackpot = ZRules.SlotJackpot(ZRound);
         var category = zm.SlotMachines[i].SlotCategory;
         var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext(), ZRules.SlotBetStep(m.Bet));
         if (result == ZSlotResult.Nothing && ZRules.SlotMaxNothing > 0 && zp.SlotNothing[i] >= ZRules.SlotMaxNothing)
-            result = ZSlotResult.Scrap; // bad-luck protection: never more than maxNothing blanks in a row
+            result = ZSlotResult.Points; // bad-luck protection: never more than maxNothing blanks in a row (coins: points back)
         if (result == ZSlotResult.Melee && !ZRules.SlotPaysMelee(category))
             result = ZSlotResult.Part; // no blade on a gun category's reels: a part of the same tier (the same odds of a win)
         m.Part = -1;
@@ -268,7 +271,7 @@ public sealed partial class Game
         {
             m.Part = PickSlotPart(tier, ZNext(), category, jackpot);
             if (m.Part < 0)
-                result = ZSlotResult.Scrap; // no part of that tier (a modded part set): scrap instead
+                result = ZSlotResult.Points; // no part of that tier (a modded part set): points back instead
             else
                 tier = Parts.All[m.Part].Rarity; // (a category without that tier pays its nearest: the reels show what's paid)
         }
@@ -276,7 +279,7 @@ public sealed partial class Game
         {
             m.Part = PickSlotMelee(tier, jackpot, zp.Slots[4]?.Name, ZNext());
             if (m.Part < 0)
-                result = ZSlotResult.Scrap; // no "slots" melee builds (a modded set): scrap instead
+                result = ZSlotResult.Points; // no "slots" melee builds (a modded set): points back instead
             else
                 tier = StandardBuilds.All[m.Part].Tier; // (the nearest tier when that one had none: the reels show what's paid)
         }
@@ -378,7 +381,10 @@ public sealed partial class Game
         return -1;
     }
 
-    /// <summary>Server, every tick: a spin that ends pays out; a result that has shown long enough frees the machine.</summary>
+    /// <summary>
+    /// Server, every tick: a spin that ends pays out; a win that has shown long enough frees the machine. A spin that wins
+    /// nothing frees it the moment the reels stop (no show, no cooldown: pull again at once; developer request, 2026-10-27).
+    /// </summary>
     private void TickSlots(ZombiesMap zm, double now)
     {
         for (var i = 0; i < zm.SlotMachines.Count && i < ZSlots.Length; i++)
@@ -386,9 +392,17 @@ public sealed partial class Game
             var m = ZSlots[i];
             if (m.State == ZSlotState.Spinning && now >= m.Until)
             {
-                m.State = ZSlotState.Showing;
-                m.Until = now + ZRules.SlotShowSeconds;
                 PaySlot(zm, i, m, now);
+                if (m.Result == ZSlotResult.Nothing)
+                {
+                    m.State = ZSlotState.Idle; // a loss: the machine is free at once (the reels stay on the skull until the next pull)
+                    m.Owner = byte.MaxValue;
+                }
+                else
+                {
+                    m.State = ZSlotState.Showing;
+                    m.Until = now + ZRules.SlotShowSeconds;
+                }
             }
             else if (m.State == ZSlotState.Showing && now >= m.Until)
             {
@@ -413,7 +427,7 @@ public sealed partial class Game
         {
             var m = ZSlots[i];
             w.U8((byte)m.State).U8(m.Heat).U8(m.Owner).U8(m.SpinId).U8(m.Symbols[0]).U8(m.Symbols[1]).U8(m.Symbols[2])
-                .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.AutoScrapped ? 128 : 0))).U16((ushort)m.Part)
+                .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.Refunded ? 128 : 0))).U16((ushort)m.Part)
                 .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255)).U8(m.Bet);
         }
     }
@@ -448,7 +462,7 @@ public sealed partial class Game
             m.Symbols[2] = s2;
             m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Melee);
             m.Tier = (Rarity)Math.Min((res >> 3) & 7, (int)Rarity.Wonder);
-            m.AutoScrapped = (res & 128) != 0;
+            m.Refunded = (res & 128) != 0;
             m.Part = part;
             m.Left = left;
         }
@@ -470,10 +484,10 @@ public sealed partial class Game
             case ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length:
             {
                 var part = Parts.All[m.Part];
-                if (ZRules.SlotAutoScrapAt > 0 && zp.Parts.GetValueOrDefault(part.Name) >= ZRules.SlotAutoScrapAt)
+                if (ZRules.SlotDupePointsAt > 0 && zp.Parts.GetValueOrDefault(part.Name) >= ZRules.SlotDupePointsAt)
                 {
-                    m.AutoScrapped = true;
-                    zp.Scrap += Scrap.SalvageValue(part);
+                    m.Refunded = true; // you hold plenty of it loose: the coin payout instead ("dupePointsAt")
+                    AddPoints(p, SlotPointsBack(m.Paid));
                 }
                 else
                     zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1;
@@ -496,11 +510,6 @@ public sealed partial class Game
                 ServerSlotWin(i, m, p);
                 break;
             }
-            case ZSlotResult.Scrap:
-                zp.Scrap += ZRules.SlotScrap;
-                SendZRun(p);
-                ZFeedTo(p, $"Slot machine: {SlotResultText(m)} ({zp.Scrap} now)", Sfx.BreakMetal);
-                break;
             case ZSlotResult.Points:
                 AddPoints(p, SlotPointsBack(m.Paid));
                 ZFeedTo(p, $"Slot machine: {SlotResultText(m)}", Sfx.HitTick);
@@ -546,7 +555,6 @@ public sealed partial class Game
         return k switch
         {
             RunTables.SlotNothing => (ZSlotResult.Nothing, Rarity.Common),
-            RunTables.SlotScrap => (ZSlotResult.Scrap, Rarity.Common),
             RunTables.SlotPoints => (ZSlotResult.Points, Rarity.Common),
             RunTables.SlotMelee => (ZSlotResult.Melee, MeleeTier(w, h)),
             _ => (ZSlotResult.Part, (Rarity)(k - RunTables.SlotPart)),
@@ -616,8 +624,8 @@ public sealed partial class Game
 
     /// <summary>
     /// How three reel symbols read (the player-facing rules, also what the reels are made from): three of a gem pay a part
-    /// of its tier; two of a gem pay a part one tier lower (two commons: scrap); otherwise a cog pays scrap, a coin points
-    /// back, and skulls and odd gems nothing.
+    /// of its tier; two of a gem pay a part one tier lower (two commons: points back); otherwise a coin pays points back,
+    /// and skulls and odd gems nothing.
     /// </summary>
     public static (ZSlotResult Result, Rarity Tier) ReadSlotSymbols(ReadOnlySpan<byte> s)
     {
@@ -638,10 +646,7 @@ public sealed partial class Game
         else if (IsSlotGem(s[1]) && s[1] == s[2])
             pair = s[1];
         if (pair != 0)
-            return pair == SlotSymGem ? (ZSlotResult.Scrap, Rarity.Common) : (ZSlotResult.Part, (Rarity)(pair - SlotSymGem - 1));
-        for (var i = 0; i < 3; i++)
-            if (s[i] == SlotSymScrap)
-                return (ZSlotResult.Scrap, Rarity.Common);
+            return pair == SlotSymGem ? (ZSlotResult.Points, Rarity.Common) : (ZSlotResult.Part, (Rarity)(pair - SlotSymGem - 1));
         for (var i = 0; i < 3; i++)
             if (s[i] == SlotSymCoin)
                 return (ZSlotResult.Points, Rarity.Common);
@@ -698,14 +703,14 @@ public sealed partial class Game
                 s[0] = s[1] = s[2] = SlotSymBlade;
                 s[at] = (byte)(SlotSymGem + (int)tier);
                 return;
-            case ZSlotResult.Scrap when Next() % 3 == 0:
+            case ZSlotResult.Points when Next() % 3 == 0:
                 s[0] = s[1] = s[2] = SlotSymGem; // two commons
                 s[at] = Odd(SlotSymGem, SlotSymGem);
                 return;
             default:
             {
-                // One cog (scrap), one coin (points) or one skull (nothing), then two odd symbols that make no pair.
-                var key = r switch { ZSlotResult.Scrap => SlotSymScrap, ZSlotResult.Points => SlotSymCoin, _ => SlotSymSkull };
+                // One coin (points) or one skull (nothing), then two odd symbols that make no pair.
+                var key = r == ZSlotResult.Points ? SlotSymCoin : SlotSymSkull;
                 var a = Gem();
                 var b = Odd(a, a);
                 s[at] = key;

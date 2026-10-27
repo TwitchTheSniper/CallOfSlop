@@ -677,7 +677,6 @@ public sealed partial class Game
         attacker.Kills++;
         FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
         EarnPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints, now);
-        zp.Scrap += ZRules.ScrapPerKill;
         RollDrop(z.Position, ZRound, now);
         RollPowerUp(z.Position, now); // ZombiesPowerUps.cs
         Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);

@@ -394,13 +394,13 @@ public sealed partial class Game
         return list;
     }
 
-    /// <summary>Self-test: a client's copy reads a run message (its loose parts and scrap).</summary>
+    /// <summary>Self-test: a client's copy reads a run message (its loose parts).</summary>
     public void SelfTestReadRun(ReadOnlySpan<byte> msg)
     {
         var r = new PacketReader(msg[1..]);
         ReadZRun(ref r);
     }
 
-    /// <summary>Self-test: the run message the server would send <paramref name="p"/> (its loose parts and scrap).</summary>
+    /// <summary>Self-test: the run message the server would send <paramref name="p"/> (its loose parts).</summary>
     public void SelfTestWriteRun(PacketWriter w, Player p) => WriteZRun(w, ZP(p));
 }

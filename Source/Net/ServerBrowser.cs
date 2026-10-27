@@ -111,7 +111,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     is ignored); kind 3 (a slot's build) now only works at a workbench.
     // 55: per-category Zombies slot machines (Source/Game/ZombiesSlotWin.cs): Msg.ZSlotWin (machine, player, result, part or
     //     melee build index, tier, flags) shows every win to everyone; a map's slot machine may name a part "category".
-    public const byte ProtocolVersion = 55;
+    // 56: Zombies without scrap (2026-10-27): Msg.ZRun loses its scrap count (just the loose parts); a slot machine result
+    //     has no scrap value (0 nothing, 1 points, 2 part, 3 melee) and its reels no cog (0 skull, 1 coin, 2-7 gems, 8 blade);
+    //     the result byte's bit 7 (and Msg.ZSlotWin's flag bit 0) now means a part you held plenty of paid points instead;
+    //     Msg.ZBench kinds 1 and 2 (break down, craft) are gone.
+    public const byte ProtocolVersion = 56;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

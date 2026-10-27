@@ -48,7 +48,7 @@ public enum Msg : byte
     ZEnts, // server -> all: Zombies: every zombie (id, position, yaw, state, health) with snapshots while any exist (unreliable sequenced)
     ZWorld, // server -> all: Zombies: round, doors, boards, mystery box, every player's points / downs / perks, parts on the floor (~10 Hz, unreliable)
     ZEvent, // server -> one client or all: Zombies: a feed line, an ammo refill, a banner (reliable)
-    ZRun, // server -> one client: Zombies: your loose parts and scrap (reliable)
+    ZRun, // server -> one client: Zombies: your loose parts (reliable; no scrap since protocol 56)
     ZBuild, // server -> all: Zombies: a built weapon went into player X's slot (the build's text) (reliable)
     ZBench, // client -> server: Zombies: a workbench change (put a build in a slot, salvage a part, craft a part) (reliable)
     ZPickup, // server -> all (and each joiner): Zombies: a dropped build appeared (where, seconds left, owner, build text) or went (picked up by X / despawned) (reliable)

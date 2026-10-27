@@ -26,8 +26,8 @@ public enum ZEventKind : byte
 /// <summary>
 /// Zombies networking (protocol 18; power-ups and special ammo effects since 40; the messages are at the end of <see cref="Msg"/>): the zombies (<see cref="Msg.ZEnts"/>,
 /// with every snapshot), the run state (<see cref="Msg.ZWorld"/>, 10 times a second: round, doors, boards, the box,
-/// every player's points, downs and perks, parts on the floor), events (<see cref="Msg.ZEvent"/>), a player's parts and
-/// scrap (<see cref="Msg.ZRun"/>), built weapons (<see cref="Msg.ZBuild"/>: the build's text, so every PC assembles the
+/// every player's points, downs and perks, parts on the floor), events (<see cref="Msg.ZEvent"/>), a player's loose
+/// parts (<see cref="Msg.ZRun"/>), built weapons (<see cref="Msg.ZBuild"/>: the build's text, so every PC assembles the
 /// same weapon and co-op clients can see and fire built guns), and from clients the interact key (<see cref="Msg.ZUse"/>)
 /// and workbench changes (<see cref="Msg.ZBench"/>).
 /// </summary>
@@ -188,7 +188,7 @@ public sealed partial class Game
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
     }
 
-    /// <summary>Server: <paramref name="p"/>'s loose parts and scrap (to that player).</summary>
+    /// <summary>Server: <paramref name="p"/>'s loose parts (to that player).</summary>
     private void SendZRun(Player p)
     {
         if (p.Id == LocalId || p.Bot != null || Net.IsOffline || GuidOf(p) is not { } g)
@@ -199,18 +199,17 @@ public sealed partial class Game
 
     private static void WriteZRun(PacketWriter w, ZPlayer zp)
     {
-        w.Begin(Msg.ZRun).U32((uint)zp.Scrap).U8((byte)Math.Min(zp.Parts.Count, 200));
+        w.Begin(Msg.ZRun).U8((byte)Math.Min(zp.Parts.Count, 200));
         foreach (var (name, n) in zp.Parts.Take(200))
             w.Str(name).U8((byte)Math.Min(n, 255));
     }
 
-    /// <summary>Client: your loose parts and scrap (<see cref="Msg.ZRun"/>, after the message id).</summary>
+    /// <summary>Client: your loose parts (<see cref="Msg.ZRun"/>, after the message id; no scrap since protocol 56).</summary>
     private void ReadZRun(ref PacketReader r)
     {
-        if (!r.Has(5))
+        if (!r.Has(1))
             return;
         var zp = ZP(LocalId);
-        zp.Scrap = (int)r.U32();
         int n = r.U8();
         zp.Parts.Clear();
         for (var i = 0; i < n && r.Has(2); i++)

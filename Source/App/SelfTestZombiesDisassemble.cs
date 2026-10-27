@@ -152,21 +152,15 @@ public static partial class SelfTest
             if (!meleeOk)
                 Fail("the melee build should come apart into its hilt, head and mods, leaving the standard melee strike");
 
-            // 5. Nothing duplicated or lost; salvage is still its own action; one Undo puts a build back.
+            // 5. Nothing duplicated or lost; one Undo puts a build back.
             var conserved = DisSame(DisOwned(zp), owned);
-            var scrap = zp.Scrap;
-            var salvage = g.ServerBench(me, 1, 0, "Red Dot");
-            var salvaged = salvage == null && zp.Scrap > scrap && zp.Parts.GetValueOrDefault("Red Dot") == 1;
-            zp.Parts["Red Dot"] = 2;
             var undo = g.ServerBench(me, 0, 0, multi.Build().ToText()); // what the bench's Undo sends
             var undone = undo == null && zp.Slots[0]?.ToText() == multi.Build().ToText() && !Game.IsEmptyGun(me.BuiltPrimary) && DisSame(DisOwned(zp), owned);
             me.Teleport(new Vector3(-30, 0, -30));
             var away = g.ServerBench(me, Game.BenchDisassemble, 0, "");
-            ZLine($"disassemble: parts conserved {conserved} ({owned.Values.Sum()} owned), salvage separate {salvaged}, undo {undo ?? "ok"} ({undone}), away from a bench '{away}'");
+            ZLine($"disassemble: parts conserved {conserved} ({owned.Values.Sum()} owned), undo {undo ?? "ok"} ({undone}), away from a bench '{away}'");
             if (!conserved)
                 Fail("disassembling should never duplicate or lose parts (loose + on builds stays the same)");
-            if (!salvaged)
-                Fail("salvaging a loose part for scrap should still work after disassembling");
             if (!undone)
                 Fail("putting a disassembled build back (Undo) should restore it from the loose parts");
             if (away == null || zp.Slots[0] == null)

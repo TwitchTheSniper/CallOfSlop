@@ -78,7 +78,7 @@ public static unsafe partial class Program
                 {
                     // Spinning: symbols roll past (a blur strip and a symbol stepping down the reel).
                     var roll = k * 18f + r * 0.37f;
-                    var sym = (byte)((int)roll % 8);
+                    var sym = (byte)((int)roll % 7); // skull, coin and the gems up to legendary
                     var dy = (roll - MathF.Floor(roll) - 0.5f) * 0.22f;
                     DrawSlotSymbol(place, x, 1.3f - dy, front - 0.012f, sym, lit, 0.7f);
                     Part(0.16f, 0.03f, 0.005f, x, 1.3f + dy * 0.5f, front - 0.02f, new Vector3(1f), 0.35f, 2);
@@ -175,13 +175,13 @@ public static unsafe partial class Program
         var y = 2.3f + 0.35f * k + 0.05f * MathF.Sin(t * 3);
         var spin = Matrix4x4.CreateRotationY(t * 1.6f);
         var at = Matrix4x4.CreateTranslation(0, y, -0.05f) * place;
-        if (SlotWinDefs[i] is { } def && !m.WinScrapped)
+        if (SlotWinDefs[i] is { } def && !m.WinRefunded)
         {
             var scale = (m.WinResult == ZSlotResult.Melee ? 0.9f : 2.4f) * (big ? 1.25f : 1f) * grow;
             DrawGun(def, Matrix4x4.CreateScale(scale) * spin * at, false);
         }
         else
-            Gfx.Draw(Matrix4x4.CreateScale(0.22f * grow) * spin * at, c, fade, mode: 2); // scrapped (or no model): a glowing tile
+            Gfx.Draw(Matrix4x4.CreateScale(0.22f * grow) * spin * at, c, fade, mode: 2); // refunded (or no model): a glowing tile
         // The halo and a faint beam down to the machine.
         var n = big ? 14 : 10;
         for (var b = 0; b < n; b++)
@@ -218,13 +218,6 @@ public static unsafe partial class Program
                 Box(0.06f, 0.04f, 0, -0.045f, new Vector3(0.95f, 0.93f, 0.88f));
                 Box(0.025f, 0.03f, -0.025f, 0.02f, new Vector3(0.05f));
                 Box(0.025f, 0.03f, 0.025f, 0.02f, new Vector3(0.05f));
-                break;
-            case Game.SlotSymScrap:
-                Box(0.1f, 0.03f, 0, 0, new Vector3(0.55f, 0.57f, 0.6f));
-                Box(0.1f, 0.03f, 0, 0, new Vector3(0.55f, 0.57f, 0.6f), MathF.PI / 2);
-                Box(0.1f, 0.03f, 0, 0, new Vector3(0.45f, 0.47f, 0.5f), MathF.PI / 4);
-                Box(0.1f, 0.03f, 0, 0, new Vector3(0.45f, 0.47f, 0.5f), -MathF.PI / 4);
-                Box(0.04f, 0.04f, 0, 0, new Vector3(0.2f));
                 break;
             case Game.SlotSymBlade:
                 // A sword: blade, guard and grip (two blades and a gem: a melee build of the gem's rarity).

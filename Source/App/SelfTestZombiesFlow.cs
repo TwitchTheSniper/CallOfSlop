@@ -73,7 +73,7 @@ public static partial class SelfTest
             // Nothing to buy or use while down: next to the start room's workbench and a wall buy, the prompt is empty and the bench refuses.
             me.Teleport(zm.Benches[0].At + new Vector3(0, 0, -1.2f));
             var benchUse = g.FindZUse(me);
-            var bench = g.ServerBench(me, 1, 0, "Hot Load Kit");
+            var bench = g.ServerBench(me, 0, 0, g.ZP(me).Slots[0]?.ToText() ?? "");
             var wb = zm.WallBuys[0];
             me.Teleport(wb.At with { Y = 0 } + World.FlatForward(wb.Yaw) * 0.7f);
             var buyUse = g.FindZUse(me);

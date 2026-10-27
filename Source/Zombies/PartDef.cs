@@ -43,7 +43,7 @@ public enum PartCategory : byte
     Action,
 }
 
-/// <summary>How rare (and how strong) a part is. Later rounds drop rarer parts; scrap values follow the tier.</summary>
+/// <summary>How rare (and how strong) a part is. Later rounds drop rarer parts.</summary>
 public enum Rarity : byte
 {
     Common,
@@ -384,9 +384,6 @@ public sealed class PartDef
 
     public float Weight = 0.3f;
 
-    /// <summary>Scrap you get for breaking it down (0 in the file = the tier default, see <see cref="Scrap"/>).</summary>
-    public int ScrapValue;
-
     public PartSocket[] Sockets = [];
     public PartBox[] Boxes = [];
     public AttachmentEffect[] Effects = [];
@@ -449,8 +446,6 @@ public sealed class PartDef
     /// <summary>The file it came from, relative to the Parts folder.</summary>
     public string? SourceFile;
 
-    public int Scrap => ScrapValue > 0 ? ScrapValue : CallOfSlop.Scrap.TierValue(Rarity);
-
     public bool FitsBore(string bore) => Bores.Length == 0 || Bores.Contains(bore, StringComparer.OrdinalIgnoreCase);
 
     public override string ToString() => $"{Name} ({Category}, {Rarity})";
@@ -487,37 +482,4 @@ public sealed class PartDef
         Rarity.Legendary => new(1f, 0.6f, 0.15f),
         _ => new(1f, 0.3f, 0.3f),
     };
-}
-
-/// <summary>
-/// Scrap economy hooks (proposed numbers, open for the user; see docs/zombies/WEAPON-BUILDER.md): breaking a part down
-/// gives its scrap value, crafting a part costs three times that, and upgrading a part to the next tier costs the
-/// difference in craft cost minus half the old part's value.
-/// </summary>
-public static class Scrap
-{
-    /// <summary>Default scrap value per tier.</summary>
-    public static int TierValue(Rarity r) => r switch
-    {
-        Rarity.Common => 5,
-        Rarity.Uncommon => 12,
-        Rarity.Rare => 25,
-        Rarity.Epic => 50,
-        Rarity.Legendary => 100,
-        _ => 150,
-    };
-
-    /// <summary>Scrap gained by breaking the part down.</summary>
-    public static int SalvageValue(PartDef p) => p.Scrap;
-
-    /// <summary>Scrap needed to craft the part at a workbench (wonder parts can't be crafted: -1).</summary>
-    public static int CraftCost(PartDef p) => p.Rarity == Rarity.Wonder ? -1 : p.Scrap * 3;
-
-    /// <summary>Scrap to turn <paramref name="from"/> into <paramref name="to"/> (same category, higher tier), or -1 if not allowed.</summary>
-    public static int UpgradeCost(PartDef from, PartDef to)
-    {
-        if (from.Category != to.Category || to.Rarity <= from.Rarity || to.Rarity == Rarity.Wonder)
-            return -1;
-        return Math.Max(1, CraftCost(to) - CraftCost(from) - from.Scrap / 2);
-    }
 }

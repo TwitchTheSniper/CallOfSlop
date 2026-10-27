@@ -122,7 +122,7 @@ public static partial class SelfTest
             {
                 zp.Points = 1_000_000;
                 foreach (var name in zp.Parts.Keys.ToList())
-                    zp.Parts[name] = 0; // (no auto-scrapping: every part won stays a part)
+                    zp.Parts[name] = 0; // (no duplicate refunds: every part won stays a part)
                 now += 0.01;
                 g.SelfTestUse(me, now);
                 var m = g.ZSlots[i];

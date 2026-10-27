@@ -93,7 +93,7 @@ public sealed class ZSpot
     /// <summary>Perk machines: the perk (a key in the rules file); salvage: unused.</summary>
     public string Perk = "";
 
-    /// <summary>Price (slot upgrade), or scrap (salvage); 0 = the rules' default.</summary>
+    /// <summary>Price (slot upgrade, slot machines); 0 = the rules' default. Salvage piles ignore it (they gave that much scrap before 2026-10-27; now they give parts).</summary>
     public int Cost;
 
     /// <summary>Doesn't work until the power is on.</summary>
@@ -130,7 +130,7 @@ public sealed class ZombiesMap
     public ZSpot? Power;
     public readonly List<ZSpot> Salvage = new();
 
-    /// <summary>Slot machines (ZombiesSlots.cs): pull for a loose part, scrap, points back or nothing. A spot's cost overrides the rules' price.</summary>
+    /// <summary>Slot machines (ZombiesSlots.cs): pull for a loose part, points back or nothing. A spot's cost overrides the rules' price.</summary>
     public readonly List<ZSpot> SlotMachines = new();
 
     /// <summary>
