@@ -247,7 +247,8 @@ public static partial class SelfTest
     /// </summary>
     private static void CheckBoxBuilds()
     {
-        var box = StandardBuilds.From("box").ToList();
+        // The box gives guns only; the slot machines pay the melee builds (2026-10-26): both pools get the tier checks.
+        var box = StandardBuilds.From("box").Concat(StandardBuilds.From("slots")).Distinct().ToList();
         // Per tier, common .. wonder: most body damage per trigger pull and body DPS for a gun, most damage for a melee hit.
         float[] maxPull = [250, 250, 450, 900, 2000, 2000];
         float[] maxDps = [600, 600, 1200, 2500, 6000, 8000];
@@ -279,12 +280,11 @@ public static partial class SelfTest
         }
         for (var t = Rarity.Uncommon; t <= Rarity.Wonder; t++)
         {
-            var pool = box.Where(b => b.Tier == t).ToList();
-            var guns = pool.Count(b => !b.IsMelee);
-            if (pool.Count < 6 || guns < 3)
-                Fail($"the mystery box has only {pool.Count} {t} builds ({guns} guns); every tier it rolls wants 6 or more, 3 of them guns");
+            var guns = box.Count(b => b.Tier == t && b.Sources.Contains("box") && !b.IsMelee);
+            if (guns < 5)
+                Fail($"the mystery box has only {guns} {t} guns; every tier it rolls wants 5 or more");
         }
-        Line($"box pool: {box.Count} builds, " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {box.Count(b => b.Tier == r)} ({box.Count(b => b.Tier == r && b.IsMelee)} melee)")));
+        Line($"box and slot pools: {box.Count} builds, " + string.Join(", ", Enum.GetValues<Rarity>().Select(r => $"{r} {box.Count(b => b.Tier == r && !b.IsMelee)} guns + {box.Count(b => b.Tier == r && b.IsMelee)} melee")));
     }
 
     private static void CheckDropTables()

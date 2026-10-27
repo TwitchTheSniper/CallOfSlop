@@ -3,7 +3,7 @@
   "name": "Sledgehammer",
   "tier": "rare",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "Slow, heavy, and everything it hits stops moving for a second.",
   "build": "Long Haft{head:Sledgehammer Head,mod_1:Grip Tape}"

@@ -86,7 +86,7 @@ public sealed class ZombiesRules
     /// </summary>
     public bool ReadyUp = true;
 
-    public float ReadyFallbackSeconds = 180f, ReadyGoSeconds = 3f;
+    public float ReadyFallbackSeconds = 300f, ReadyGoSeconds = 3f;
 
     // ---- Zombies ------------------------------------------------------------------------------------------
     /// <summary>A zombie's swipe: damage, reach (from its centre to yours), the windup before it lands, and the time between swipes.</summary>
@@ -134,13 +134,54 @@ public sealed class ZombiesRules
     /// <summary>How long the interact key is held to buy something (seconds).</summary>
     public float BuyHoldSeconds = 0.25f;
 
-    public int MaxPerks = 4;
+    /// <summary>A hard cap on perks held (8: every perk; there's no real cap since 2026-10-26).</summary>
+    public int MaxPerks = 8;
+
+    /// <summary>Perks beyond this many held cost more (developer answer, 2026-10-26): the next perk costs its price x
+    /// <see cref="ExtraPerkFactor"/> to the power (perks held - this + 1), so with 4 the 5th costs 2x, the 6th 4x, the
+    /// 7th 8x. Every perk, Second Wind too. 0 = never.</summary>
+    public int FullPricePerks = 4;
+
+    public float ExtraPerkFactor = 2f;
+
+    /// <summary>What a perk listed at <paramref name="price"/> costs someone holding <paramref name="held"/> perks.</summary>
+    public int PerkPrice(int price, int held)
+    {
+        if (FullPricePerks <= 0 || held < FullPricePerks)
+            return price;
+        var m = Math.Pow(ExtraPerkFactor, held - FullPricePerks + 1);
+        return (int)Math.Min(int.MaxValue / 2, Math.Round(price * m));
+    }
     public readonly List<ZombiePerkDef> Perks = new();
 
     /// <summary>Mystery box: the box moves after this many uses (rolled between the two), the spin, and how long the gun is offered.</summary>
     public int BoxMoveMin = 4, BoxMoveMax = 8;
 
     public float BoxSpinSeconds = 4f, BoxOfferSeconds = 10f, BoxMoveSeconds = 3f;
+
+    // ---- Co-op bots spending their points (ZombieBotsShop.cs; developer answer, 2026-10-26) --------------------
+    /// <summary>Bots buy doors, wall guns, the box, perks, the slot upgrade and slot pulls with their own points.</summary>
+    public bool BotsBuy = true;
+
+    /// <summary>Points a bot keeps back; a zombie this close (m) mid-round stops its shopping; how far from its post (m) it shops.</summary>
+    public int BotReserve = 250;
+
+    public float BotQuietRange = 10f, BotShopRange = 40f;
+
+    /// <summary>The perks a bot wants, most wanted first (rules keys).</summary>
+    public string[] BotPerkOrder = ["jugg", "revive", "speed", "doubletap", "secondwind"];
+
+    /// <summary>Spare points (over the price, the reserve and what it saves for its next perk) before a bot spins the box / pulls a slot machine.</summary>
+    public int BotBoxSurplus = 500, BotSlotSurplus = 2500;
+
+    /// <summary>A wall gun is worth buying when its damage per second is this many times the gun in hand's.</summary>
+    public float BotWallBetter = 1.15f;
+
+    /// <summary>Bots open doors (between rounds only, one door a break for the whole team).</summary>
+    public bool BotDoors = true;
+
+    /// <summary>How often a bot thinks about shopping (s), and how long it tries to reach something before giving up (s).</summary>
+    public float BotThinkSeconds = 0.5f, BotGiveUpSeconds = 15f;
 
     // ---- Slot machines (ZombiesSlots.cs; the odds by round are DropTables.json "slotTiers") ---------------------
     /// <summary>A pull's price: <see cref="SlotCostBase"/> + <see cref="SlotCostPerRound"/> a round after the first, at most <see cref="SlotCostMax"/>.</summary>
@@ -175,6 +216,21 @@ public sealed class ZombiesRules
     /// <summary>The price of a pull in <paramref name="round"/>.</summary>
     public int SlotCost(int round) => Math.Min(SlotCostMax, SlotCostBase + SlotCostPerRound * Math.Max(0, round - 1));
 
+    /// <summary>
+    /// Bet levels (developer answer to open question 13, 2026-10-26): a pull costs the price x <see cref="SlotBets"/>[bet],
+    /// and its part odds move <see cref="SlotBetSteps"/>[bet] tiers up the ladder (on top of the machine's heat). The
+    /// blanks, scrap and coin weights don't change: a higher bet never guarantees a reward.
+    /// </summary>
+    public float[] SlotBets = [1f, 2f, 5f];
+
+    public int[] SlotBetSteps = [0, 1, 2];
+
+    /// <summary>The price of a pull at bet level <paramref name="bet"/> on a machine whose 1x price is <paramref name="price"/> (to the nearest 10).</summary>
+    public int SlotBetCost(int price, int bet) => SlotBets.Length == 0 ? price : (int)MathF.Round(price * SlotBets[Math.Clamp(bet, 0, SlotBets.Length - 1)] / 10f) * 10;
+
+    /// <summary>The tier steps of bet level <paramref name="bet"/>.</summary>
+    public int SlotBetStep(int bet) => SlotBetSteps.Length == 0 ? 0 : SlotBetSteps[Math.Clamp(bet, 0, SlotBetSteps.Length - 1)];
+
     /// <summary>Is <paramref name="round"/> a jackpot round?</summary>
     public bool SlotJackpot(int round) => SlotJackpotEvery > 0 && round > 0 && round % SlotJackpotEvery == 0;
 
@@ -193,8 +249,17 @@ public sealed class ZombiesRules
     public int ScrapPerKill = 1, SalvageScrap = 25;
 
     // ---- Power-ups (World at War style; ZombiesPowerUps.cs) ---------------------------------------------
-    /// <summary>Chance a zombie kill drops a power-up, and the most that drop in one round.</summary>
-    public float PowerDropChance = 0.04f;
+    /// <summary>
+    /// The drop schedule (World at War style; developer answer, 2026-10-26): a power-up becomes due once the TEAM has
+    /// earned <see cref="PowerFirstAt"/> points (hits, kills, boards; Double Points counted as paid), and the next kill by a
+    /// player drops it; then the next one is due <see cref="PowerFirstAt"/> x <see cref="PowerStepGrowth"/> to the power
+    /// (drops so far) points later (at most <see cref="PowerStepMax"/>; 0 = no cap), so the steps rise over the game.
+    /// <see cref="PowerDropChance"/>: an extra flat chance per kill on top (0 by default: the schedule replaced the old 4
+    /// percent roll). At most <see cref="PowerMaxPerRound"/> a round either way (a due drop waits for the next round).
+    /// </summary>
+    public float PowerFirstAt = 1800f, PowerStepGrowth = 1.02f, PowerStepMax = 4000f;
+
+    public float PowerDropChance;
 
     public int PowerMaxPerRound = 4;
 
@@ -287,10 +352,16 @@ public sealed class ZombiesRules
         return r;
     }
 
-    public ZombiePerkDef? Perk(string keyOrName) =>
-        Perks.FirstOrDefault(p => p.Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase));
+    public ZombiePerkDef? Perk(string keyOrName) => PerkIndex(keyOrName) is var i and >= 0 ? Perks[i] : null;
 
-    public int PerkIndex(string keyOrName) => Perks.FindIndex(p => p.Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || p.Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase));
+    /// <summary>The perk with this key or name, or -1 (no allocation: the bots look perks up every think).</summary>
+    public int PerkIndex(string keyOrName)
+    {
+        for (var i = 0; i < Perks.Count; i++)
+            if (Perks[i].Key.Equals(keyOrName, StringComparison.OrdinalIgnoreCase) || Perks[i].Name.Equals(keyOrName, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
+    }
 
     // ---- The round curve ----------------------------------------------------------------------------------
 
@@ -330,7 +401,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -452,6 +523,8 @@ public sealed class ZombiesRules
                         {
                             case "holdSeconds": r.BuyHoldSeconds = Real(v, w, 0, 3); break;
                             case "maxPerks": r.MaxPerks = Whole(v, w, 0, 8); break;
+                            case "fullPricePerks": r.FullPricePerks = Whole(v, w, 0, 8); break;
+                            case "extraPerkFactor": r.ExtraPerkFactor = Real(v, w, 1, 10); break;
                             default: return false;
                         }
                         return true;
@@ -515,6 +588,9 @@ public sealed class ZombiesRules
                         {
                             case "note": break;
                             case "dropChance": r.PowerDropChance = Real(v, w, 0, 1); break;
+                            case "firstAt": r.PowerFirstAt = Real(v, w, 0, 1000000); break;
+                            case "stepGrowth": r.PowerStepGrowth = Real(v, w, 1, 3); break;
+                            case "stepMax": r.PowerStepMax = Real(v, w, 0, 1000000); break;
                             case "maxPerRound": r.PowerMaxPerRound = Whole(v, w, 0, 100); break;
                             case "lifetime": r.PowerLifetime = Real(v, w, 1, 600); break;
                             case "blinkSeconds": r.PowerBlinkSeconds = Real(v, w, 0, 600); break;
@@ -595,6 +671,16 @@ public sealed class ZombiesRules
                             case "showSeconds": r.SlotShowSeconds = Real(v, w, 0.2f, 10); break;
                             case "heatStep": r.SlotHeatStep = Whole(v, w, 1, 100); break;
                             case "heatMaxSteps": r.SlotHeatMaxSteps = Whole(v, w, 0, 5); break;
+                            case "bets":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() is < 1 or > 5)
+                                    throw new WeaponFileException($"{w}: a list of 1 to 5 price multipliers (1, 2, 5)");
+                                r.SlotBets = v.EnumerateArray().Select(x => Real(x, w, 0.1f, 100)).ToArray();
+                                break;
+                            case "betSteps":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() is < 1 or > 5)
+                                    throw new WeaponFileException($"{w}: a list of 1 to 5 tier steps (0, 1, 2), one per bet");
+                                r.SlotBetSteps = v.EnumerateArray().Select(x => Whole(x, w, 0, 5)).ToArray();
+                                break;
                             case "pityTier":
                                 r.SlotPityTier = Enum.TryParse<Rarity>(WeaponFile.Text(v, w), true, out var tier) && Enum.IsDefined(tier)
                                     ? tier : throw new WeaponFileException($"{w}: a rarity (common, uncommon, rare, epic, legendary, wonder)");
@@ -606,6 +692,32 @@ public sealed class ZombiesRules
                             case "scrapPayout": r.SlotScrap = Whole(v, w, 0, 10000); break;
                             case "pointsBack": r.SlotPointsBack = Real(v, w, 0, 20); break;
                             case "autoScrapAt": r.SlotAutoScrapAt = Whole(v, w, 0, 100); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
+                case "bots":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "buy": r.BotsBuy = Flag(v, w); break;
+                            case "reserve": r.BotReserve = Whole(v, w, 0, 100000); break;
+                            case "quietRange": r.BotQuietRange = Real(v, w, 0, 100); break;
+                            case "shopRange": r.BotShopRange = Real(v, w, 1, 500); break;
+                            case "perkOrder":
+                                if (v.ValueKind != JsonValueKind.Array)
+                                    throw new WeaponFileException($"{w}: a list of perk keys");
+                                r.BotPerkOrder = v.EnumerateArray().Select(x => WeaponFile.Text(x, w)).ToArray();
+                                break;
+                            case "boxSurplus": r.BotBoxSurplus = Whole(v, w, 0, 100000); break;
+                            case "slotSurplus": r.BotSlotSurplus = Whole(v, w, 0, 100000); break;
+                            case "wallBetter": r.BotWallBetter = Real(v, w, 1, 10); break;
+                            case "doors": r.BotDoors = Flag(v, w); break;
+                            case "thinkSeconds": r.BotThinkSeconds = Real(v, w, 0.05f, 10); break;
+                            case "giveUpSeconds": r.BotGiveUpSeconds = Real(v, w, 1, 120); break;
                             default: return false;
                         }
                         return true;

@@ -563,6 +563,12 @@ public sealed class Player
     /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
     public double StunnedUntil;
 
+    /// <summary>Server: a burn or bleed from special ammo (AmmoEffectsPlayers.cs): until when, the next tick, damage a tick, who lit it and with what.</summary>
+    public double BurnUntil, BurnNext;
+
+    public float BurnPerTick;
+    public byte BurnBy = byte.MaxValue, BurnKillId;
+
     /// <summary>Sprinting right now, and ticks left of the after-sprint spread recovery (Source/Game/SprintSpread.cs). Server and local prediction.</summary>
     public bool Sprinting;
     public int SprintRecoverTicks;

@@ -3,7 +3,7 @@
   "name": "Shock Katana",
   "tier": "rare",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "A katana with a shock coil in the guard. Every cut arcs to the zombies standing next to it.",
   "build": "Sword Hilt{head:Katana Blade,mod_1:Shock Coil}"

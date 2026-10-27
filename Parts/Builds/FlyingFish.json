@@ -3,7 +3,7 @@
   "name": "Flying Fish",
   "tier": "wonder",
   "source": [
-    "box"
+    "slots"
   ],
   "flavor": "A frozen fish on a sword hilt with a rocket booster and a whoopee cushion. Slap, squeak, and off they go.",
   "build": "Sword Hilt{head:Frozen Fish,mod_1:Rocket Booster,mod_2:Whoopee Cushion}"

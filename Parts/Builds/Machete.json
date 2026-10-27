@@ -4,7 +4,7 @@
   "tier": "common",
   "source": [
     "start",
-    "box"
+    "slots"
   ],
   "flavor": "A wooden handle and a machete blade: the starting melee weapon of a run.",
   "build": "Wooden Handle{head:Machete Blade}"

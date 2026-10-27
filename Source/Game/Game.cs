@@ -973,6 +973,7 @@ public sealed partial class Game : IDisposable
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
+        ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
@@ -1373,6 +1374,9 @@ public sealed partial class Game : IDisposable
         laterals.Clear();
         var zHead = false;
         _shotPenetrated = false;
+        var pfx = HasPlayerEffects(def.BuildFlags) && !nested; // special ammo on players (AmmoEffectsPlayers.cs)
+        if (pfx)
+            _pFxRays.Clear();
 
         foreach (var ray in rays)
         {
@@ -1433,12 +1437,16 @@ public sealed partial class Game : IDisposable
                 var dmg = ray.Damage * def.DamageMultAt(dist) * (head ? def.HeadMult : 1f) * pen
                           * Perks.AttackMult(shooter.Perks, dist, d, h.At.Yaw, h.P.Health, melee: false);
                 AddShotDamage(damage, h.P, dmg);
+                if (pfx)
+                    NotePlayerFxRay(h.P, o, d, dist);
                 _bloodShotPart.TryAdd(h.P, BloodMarks.Classify(h.At.Position, h.At.Stance, h.At.Yaw, GravityFrames.PointToLocal(h.At.Position, end))); // the first pellet's body part (BodyBlood.cs)
                 if (head)
                     headshotOn.Add(h.P);
             }
         }
 
+        if (pfx)
+            _pFxHits.Clear();
         for (var di = 0; di < damage.Count; di++)
         {
             var (victim, dmg) = damage[di];
@@ -1451,11 +1459,22 @@ public sealed partial class Game : IDisposable
             var head = headshotOn.Contains(victim);
             if (head)
                 flags |= 2;
+            if (pfx)
+                dmg = BayonetPlayer(def.BuildFlags, shooter, victim, dmg);
             _bloodPending = _bloodShotPart.GetValueOrDefault(victim);
-            if (DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet))
+            var healthBefore = victim.Health;
+            var killed = DamagePlayer(shooter, victim, (int)MathF.Round(dmg), head, def.Id, now, DamageKind.Bullet);
+            if (killed)
                 flags |= 4;
             _bloodPending = BloodPart.None;
+            if (pfx && (killed || victim.Health < healthBefore))
+            {
+                var ray = PlayerFxRay(shooter, victim);
+                _pFxHits.Add(new PFxHit(victim, (int)MathF.Round(dmg), killed, ray.O, ray.D, ray.Dist));
+            }
         }
+        if (pfx && _pFxHits.Count > 0)
+            ApplyPlayerEffects(shooter, def.BuildFlags, _pFxHits, def.Id, now); // the gun's special ammo on the players it hurt
 
         if (Horde.Count > 0)
             flags |= ZombieShotApply(shooter, def, now); // one damage event per zombie per trigger pull (then the gun's special ammo effects)
@@ -1876,10 +1895,18 @@ public sealed partial class Game : IDisposable
                 OnKnock(r.U32(), r.Vec()); // a blast pushed the local player (Knockback.cs)
                 break;
             default:
+            {
+                var handled = false;
                 foreach (var m in _modules.Values) // a mode's own messages (Zombies: ZUse, ZEnts...; GameModeModule.HandlePacket)
                     if (m.HandlePacket(this, id, ref r, sender, now))
+                    {
+                        handled = true;
                         break;
+                    }
+                if (!handled && id == (byte)Msg.ZEvent)
+                    OnZombiesPacket(id, ref r, sender, now); // special ammo flashes in any mode (AmmoEffectsPlayers.cs)
                 break;
+            }
         }
     }
 

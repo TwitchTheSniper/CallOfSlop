@@ -21,6 +21,9 @@ public enum ZSlotResult : byte
     Scrap,
     Points,
     Part,
+
+    /// <summary>A complete melee build into the melee slot (developer answer, 2026-10-26: melee comes from the slots, not the box).</summary>
+    Melee,
 }
 
 /// <summary>One slot machine on the map: its state, heat (the pity timer) and the last pull's reels and result.</summary>
@@ -39,6 +42,9 @@ public sealed class ZSlotMachine
     /// <summary>Pulls since the last rare-or-better part (<see cref="ZombiesRules.SlotPityTier"/>).</summary>
     public byte Heat;
 
+    /// <summary>The bet level (an index into <see cref="ZombiesRules.SlotBets"/>): set at the machine with the second key, kept until changed (shared, like the heat).</summary>
+    public byte Bet;
+
     /// <summary>Counts pulls (wrapping), so a client sees a new spin even when the state byte didn't change between two messages.</summary>
     public byte SpinId;
 
@@ -48,7 +54,7 @@ public sealed class ZSlotMachine
     public ZSlotResult Result;
     public Rarity Tier;
 
-    /// <summary>The part paid (an index into <see cref="Parts.All"/>), or -1.</summary>
+    /// <summary>The part paid (an index into <see cref="Parts.All"/>; a melee build: into <see cref="StandardBuilds.All"/>), or -1.</summary>
     public short Part = -1;
 
     /// <summary>The price paid for this pull (points back pay a share of it).</summary>
@@ -69,6 +75,7 @@ public sealed class ZSlotMachine
         Left = 0;
         Owner = byte.MaxValue;
         Heat = 0;
+        Bet = 0;
         SpinId = 0;
         Symbols[0] = Symbols[1] = Symbols[2] = 0;
         Result = ZSlotResult.Nothing;
@@ -94,8 +101,12 @@ public sealed class ZSlotMachine
 /// </summary>
 public sealed partial class Game
 {
-    /// <summary>Reel symbols: a skull (nothing), a cog (scrap), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier).</summary>
-    public const byte SlotSymSkull = 0, SlotSymScrap = 1, SlotSymCoin = 2, SlotSymGem = 3;
+    /// <summary>Reel symbols: a skull (nothing), a cog (scrap), a coin (points back), then a gem per rarity (<see cref="SlotSymGem"/> + the tier),
+    /// then a blade (<see cref="SlotSymBlade"/>: two blades and a gem pay a melee build of the gem's rarity).</summary>
+    public const byte SlotSymSkull = 0, SlotSymScrap = 1, SlotSymCoin = 2, SlotSymGem = 3, SlotSymBlade = SlotSymGem + (int)Rarity.Wonder + 1;
+
+    /// <summary>Is <paramref name="s"/> a gem (not a skull, cog, coin or blade)?</summary>
+    public static bool IsSlotGem(byte s) => s >= SlotSymGem && s < SlotSymBlade;
 
     /// <summary>Every machine's state (only the first <see cref="ZombiesMap.SlotMachines"/>.Count are used).</summary>
     public readonly ZSlotMachine[] ZSlots = MakeSlots();
@@ -114,8 +125,45 @@ public sealed partial class Game
             m.Reset();
     }
 
-    /// <summary>The price of a pull on machine <paramref name="i"/> this round (the map's own price, or the rules' rising one).</summary>
-    public int SlotCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count && zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound);
+    /// <summary>The 1x price of a pull on machine <paramref name="i"/> this round (the map's own price, or the rules' rising one).</summary>
+    public int SlotBaseCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count && zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound);
+
+    /// <summary>The price of a pull on machine <paramref name="i"/> at its bet.</summary>
+    public int SlotCost(ZombiesMap zm, int i) => ZRules.SlotBetCost(SlotBaseCost(zm, i), i >= 0 && i < ZSlots.Length ? ZSlots[i].Bet : 0);
+
+    /// <summary>"2x" for bet level <paramref name="bet"/>.</summary>
+    public string SlotBetName(int bet) => ZRules.SlotBets.Length == 0 ? "1x" : $"{ZRules.SlotBets[Math.Clamp(bet, 0, ZRules.SlotBets.Length - 1)]:0.#}x";
+
+    /// <summary>The workbench message kind (<see cref="Msg.ZBench"/>) that moves a slot machine's bet up a level (wrapping round); its slot byte is the machine.</summary>
+    public const int BenchSlotBet = 4;
+
+    /// <summary>
+    /// Server: <paramref name="p"/> changes machine <paramref name="i"/>'s bet (the next level, wrapping round to 1x).
+    /// Only standing at an idle machine. Returns why not, or null.
+    /// </summary>
+    public string? ServerSlotBet(Player p, int i)
+    {
+        if (ZMap is not { } zm || i < 0 || i >= zm.SlotMachines.Count || i >= ZSlots.Length)
+            return "That's not a slot machine.";
+        if (Flat(zm.SlotMachines[i].At - p.Position) > UseRange + 0.3f)
+            return "You're not at the slot machine.";
+        var m = ZSlots[i];
+        if (m.State != ZSlotState.Idle)
+            return "Wait for the reels to stop.";
+        var levels = Math.Max(1, Math.Min(ZRules.SlotBets.Length, 255));
+        m.Bet = (byte)((m.Bet + 1) % levels);
+        ZFeedTo(p, $"Slot machine bet: {SlotBetName(m.Bet)} ({SlotCost(zm, i)} a pull; rarer parts, no sure win)", Sfx.HitTick);
+        return null;
+    }
+
+    /// <summary>Local: the second key at a slot machine changes its bet (the host does it, a client asks).</summary>
+    public bool SlotBetKey()
+    {
+        if (Local is not { } me || FindZUse(me) is not { Kind: ZUseKind.SlotMachine } u)
+            return false;
+        BenchRequest(BenchSlotBet, u.Index, "");
+        return true;
+    }
 
     /// <summary>The interact prompt at machine <paramref name="i"/> (FindZUse).</summary>
     private ZUse SlotUse(ZombiesMap zm, int i)
@@ -129,7 +177,8 @@ public sealed partial class Game
         var step = Math.Max(1, ZRules.SlotHeatStep);
         var steps = Math.Min(ZRules.SlotHeatMaxSteps, m.Heat / step);
         var heat = steps >= ZRules.SlotHeatMaxSteps ? "heat MAX" : $"heat {m.Heat % step}/{step}{(steps > 0 ? $" (+{steps})" : "")}";
-        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the slot machine [{cost}] - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
+        var bet = ZRules.SlotBets.Length > 1 ? $" - bet {SlotBetName(m.Bet)} ([G] to change)" : "";
+        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the slot machine [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
     }
 
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
@@ -138,6 +187,7 @@ public sealed partial class Game
         ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.AutoScrapped
             ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: scrapped for {Scrap.SalvageValue(Parts.All[m.Part])})"
             : $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!",
+        ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length => $"{PartDef.RarityName(m.Tier)} melee: the {StandardBuilds.All[m.Part].Name}!",
         ZSlotResult.Scrap => $"Scrap: +{ZRules.SlotScrap}",
         ZSlotResult.Points => $"Coins: +{SlotPointsBack(m.Paid)} points",
         _ => "Nothing. Better luck next pull.",
@@ -158,7 +208,7 @@ public sealed partial class Game
         m.Paid = cost;
         m.AutoScrapped = false;
         var jackpot = ZRules.SlotJackpot(ZRound);
-        var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext());
+        var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext(), ZRules.SlotBetStep(m.Bet));
         if (result == ZSlotResult.Nothing && ZRules.SlotMaxNothing > 0 && zp.SlotNothing[i] >= ZRules.SlotMaxNothing)
             result = ZSlotResult.Scrap; // bad-luck protection: never more than maxNothing blanks in a row
         m.Part = -1;
@@ -167,6 +217,14 @@ public sealed partial class Game
             m.Part = PickSlotPart(tier, ZNext());
             if (m.Part < 0)
                 result = ZSlotResult.Scrap; // no part of that tier (a modded part set): scrap instead
+        }
+        else if (result == ZSlotResult.Melee)
+        {
+            m.Part = PickSlotMelee(tier, jackpot, zp.Slots[4]?.Name, ZNext());
+            if (m.Part < 0)
+                result = ZSlotResult.Scrap; // no "slots" melee builds (a modded set): scrap instead
+            else
+                tier = StandardBuilds.All[m.Part].Tier; // (the nearest tier when that one had none: the reels show what's paid)
         }
         m.Result = result;
         m.Tier = tier;
@@ -191,6 +249,50 @@ public sealed partial class Game
         return -1;
     }
 
+    private static StandardBuild[]? _slotMeleeFor;
+    private static int[] _slotMelee = [];
+
+    /// <summary>The standard builds a slot machine can pay (tagged "slots": melee builds), as indices into <see cref="StandardBuilds.All"/>.</summary>
+    public static int[] SlotMeleeBuilds()
+    {
+        var all = StandardBuilds.All;
+        if (!ReferenceEquals(_slotMeleeFor, all))
+        {
+            _slotMelee = Enumerable.Range(0, all.Length).Where(i => all[i].Sources.Contains("slots") && all[i].IsMelee).ToArray();
+            _slotMeleeFor = all;
+        }
+        return _slotMelee;
+    }
+
+    /// <summary>
+    /// A melee build of <paramref name="tier"/> for a slot payout (not the one called <paramref name="held"/>): that tier,
+    /// else the nearest tier with one (never wonder outside a jackpot round), else -1. An index into <see cref="StandardBuilds.All"/>.
+    /// </summary>
+    public static short PickSlotMelee(Rarity tier, bool jackpot, string? held, uint seed)
+    {
+        var all = StandardBuilds.All;
+        var pool = SlotMeleeBuilds();
+        var top = (int)(jackpot ? Rarity.Wonder : Rarity.Legendary);
+        for (var step = 0; step <= (int)Rarity.Wonder; step++)
+            for (var side = 0; side < (step == 0 ? 1 : 2); side++)
+            {
+                var t = (int)tier + (side == 0 ? -step : step);
+                if (t < 0 || t > top)
+                    continue;
+                var n = 0;
+                foreach (var i in pool)
+                    if ((int)all[i].Tier == t && !all[i].Name.Equals(held, StringComparison.OrdinalIgnoreCase))
+                        n++;
+                if (n == 0)
+                    continue;
+                var k = (int)((seed * 2654435761u >> 5) % (uint)n);
+                foreach (var i in pool)
+                    if ((int)all[i].Tier == t && !all[i].Name.Equals(held, StringComparison.OrdinalIgnoreCase) && k-- == 0)
+                        return (short)i;
+            }
+        return -1;
+    }
+
     /// <summary>Server, every tick: a spin that ends pays out; a result that has shown long enough frees the machine.</summary>
     private void TickSlots(ZombiesMap zm, double now)
     {
@@ -201,7 +303,7 @@ public sealed partial class Game
             {
                 m.State = ZSlotState.Showing;
                 m.Until = now + ZRules.SlotShowSeconds;
-                PaySlot(zm, i, m);
+                PaySlot(zm, i, m, now);
             }
             else if (m.State == ZSlotState.Showing && now >= m.Until)
             {
@@ -214,8 +316,8 @@ public sealed partial class Game
 
     // ---- Network (protocol 51: the end of Msg.ZWorld) ------------------------------------------------------
 
-    /// <summary>Bytes per machine at the end of <see cref="Msg.ZWorld"/>.</summary>
-    public const int ZSlotBytes = 11;
+    /// <summary>Bytes per machine at the end of <see cref="Msg.ZWorld"/> (12 since protocol 53: the bet).</summary>
+    public const int ZSlotBytes = 12;
 
     /// <summary>Server: every machine (state, heat, owner, spin counter, the three symbols, result and tier, the part, tenths of a second left).</summary>
     private void WriteSlots(PacketWriter w)
@@ -227,7 +329,7 @@ public sealed partial class Game
             var m = ZSlots[i];
             w.U8((byte)m.State).U8(m.Heat).U8(m.Owner).U8(m.SpinId).U8(m.Symbols[0]).U8(m.Symbols[1]).U8(m.Symbols[2])
                 .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.AutoScrapped ? 128 : 0))).U16((ushort)m.Part)
-                .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255));
+                .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255)).U8(m.Bet);
         }
     }
 
@@ -248,8 +350,10 @@ public sealed partial class Game
             var res = r.U8();
             var part = (short)r.U16();
             var left = r.U8() / 10f;
+            var bet = r.U8();
             if (m == null)
                 continue;
+            m.Bet = bet;
             m.State = state;
             m.Heat = heat;
             m.Owner = owner;
@@ -257,7 +361,7 @@ public sealed partial class Game
             m.Symbols[0] = s0;
             m.Symbols[1] = s1;
             m.Symbols[2] = s2;
-            m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Part);
+            m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Melee);
             m.Tier = (Rarity)Math.Min((res >> 3) & 7, (int)Rarity.Wonder);
             m.AutoScrapped = (res & 128) != 0;
             m.Part = part;
@@ -265,10 +369,10 @@ public sealed partial class Game
         }
     }
 
-    private void PaySlot(ZombiesMap zm, int i, ZSlotMachine m)
+    private void PaySlot(ZombiesMap zm, int i, ZSlotMachine m, double now)
     {
         // Heat: a rare-or-better part resets it, anything else warms the machine up.
-        if (m.Result == ZSlotResult.Part && m.Tier >= ZRules.SlotPityTier)
+        if (m.Result is ZSlotResult.Part or ZSlotResult.Melee && m.Tier >= ZRules.SlotPityTier)
             m.Heat = 0;
         else if (m.Heat < 255)
             m.Heat++;
@@ -297,6 +401,25 @@ public sealed partial class Game
                 Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
                 break;
             }
+            case ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length:
+            {
+                // Into the melee slot; the melee build there goes on the floor a few steps in front of the machine (as a
+                // swap would, so you can change your mind; far enough out that the machine's prompt stays the nearest),
+                // unless it's the untouched start one (you get that back with the start gear anyway).
+                var sb = StandardBuilds.All[m.Part];
+                if (zp.Slots[4] is { } old && !IsStartBuild(old))
+                {
+                    var spot = zm.SlotMachines[i];
+                    SpawnWeaponDrop(old, DropSpots(spot.At + World.FlatForward(spot.Yaw) * 3.2f, 1, p.Id)[0], now + ZRules.BuildDropSeconds, p, full: true, now);
+                }
+                GiveBuild(p, 4, sb.Build(), full: true);
+                if (m.Tier >= Rarity.Legendary)
+                    ModeEvent($"{p.Name} won a {PartDef.RarityName(m.Tier)} melee build on a slot machine: the {sb.Name}!", Sfx.StreakReady);
+                else
+                    ZFeedTo(p, $"Slot machine: {SlotResultText(m)} (in your melee slot)", Sfx.LevelUp);
+                Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
+                break;
+            }
             case ZSlotResult.Scrap:
                 zp.Scrap += ZRules.SlotScrap;
                 SendZRun(p);
@@ -320,10 +443,10 @@ public sealed partial class Game
     /// then every <see cref="ZombiesRules.SlotHeatStep"/> heat moves the part weights one tier up (the top tier keeps
     /// what reaches it). Deterministic from <paramref name="seed"/>; no allocation.
     /// </summary>
-    public static (ZSlotResult Result, Rarity Tier) RollSlotOutcome(ZombiesRules rules, RunTables tables, int round, int heat, uint seed)
+    public static (ZSlotResult Result, Rarity Tier) RollSlotOutcome(ZombiesRules rules, RunTables tables, int round, int heat, uint seed, int betSteps = 0)
     {
         Span<float> w = stackalloc float[RunTables.SlotKeys.Length];
-        SlotWeights(rules, tables, round, heat, w);
+        SlotWeights(rules, tables, round, heat, w, betSteps);
         var total = 0f;
         foreach (var x in w)
             total += x;
@@ -349,12 +472,36 @@ public sealed partial class Game
             RunTables.SlotNothing => (ZSlotResult.Nothing, Rarity.Common),
             RunTables.SlotScrap => (ZSlotResult.Scrap, Rarity.Common),
             RunTables.SlotPoints => (ZSlotResult.Points, Rarity.Common),
+            RunTables.SlotMelee => (ZSlotResult.Melee, MeleeTier(w, h)),
             _ => (ZSlotResult.Part, (Rarity)(k - RunTables.SlotPart)),
         };
     }
 
+    /// <summary>A melee payout's rarity: rolled from the same weights as a part's (the round's row, heat and jackpot included).</summary>
+    private static Rarity MeleeTier(ReadOnlySpan<float> w, uint h)
+    {
+        h = (h ^ 0x9E3779B9u) * 2246822519u;
+        h ^= h >> 13;
+        var total = 0f;
+        for (var t = 0; t <= (int)Rarity.Wonder; t++)
+            total += w[RunTables.SlotPart + t];
+        if (total <= 0)
+            return Rarity.Common;
+        var pick = (h % 1000000u) / 1000000f * total;
+        for (var t = 0; t <= (int)Rarity.Wonder; t++)
+        {
+            pick -= w[RunTables.SlotPart + t];
+            if (pick < 0 && w[RunTables.SlotPart + t] > 0)
+                return (Rarity)t;
+        }
+        for (var t = (int)Rarity.Wonder; t > 0; t--)
+            if (w[RunTables.SlotPart + t] > 0)
+                return (Rarity)t;
+        return Rarity.Common;
+    }
+
     /// <summary>The weights a pull rolls from (see <see cref="RollSlotOutcome"/>), into <paramref name="w"/> (<see cref="RunTables.SlotKeys"/> order).</summary>
-    public static void SlotWeights(ZombiesRules rules, RunTables tables, int round, int heat, Span<float> w)
+    public static void SlotWeights(ZombiesRules rules, RunTables tables, int round, int heat, Span<float> w, int betSteps = 0)
     {
         w.Clear();
         RoundRow? row = null;
@@ -380,7 +527,8 @@ public sealed partial class Game
         else
             w[wonder] = 0; // the wonder symbol is only on the reels in jackpot rounds
         var top = jackpot ? wonder : legendary;
-        var steps = Math.Min(rules.SlotHeatMaxSteps, heat / Math.Max(1, rules.SlotHeatStep));
+        // Heat steps (at most heatMaxSteps) plus the bet's steps (2026-10-26): only the part tiers move, never the blanks.
+        var steps = Math.Min(rules.SlotHeatMaxSteps, heat / Math.Max(1, rules.SlotHeatStep)) + Math.Max(0, betSteps);
         for (var s = 0; s < steps; s++)
         {
             w[top] += w[top - 1];
@@ -397,12 +545,21 @@ public sealed partial class Game
     /// </summary>
     public static (ZSlotResult Result, Rarity Tier) ReadSlotSymbols(ReadOnlySpan<byte> s)
     {
-        if (s[0] >= SlotSymGem && s[0] == s[1] && s[1] == s[2])
+        // Two blades (or three): a melee build, of the third symbol's gem (common without one).
+        var blades = (s[0] == SlotSymBlade ? 1 : 0) + (s[1] == SlotSymBlade ? 1 : 0) + (s[2] == SlotSymBlade ? 1 : 0);
+        if (blades >= 2)
+        {
+            for (var i = 0; i < 3; i++)
+                if (IsSlotGem(s[i]))
+                    return (ZSlotResult.Melee, (Rarity)(s[i] - SlotSymGem));
+            return (ZSlotResult.Melee, Rarity.Common);
+        }
+        if (IsSlotGem(s[0]) && s[0] == s[1] && s[1] == s[2])
             return (ZSlotResult.Part, (Rarity)(s[0] - SlotSymGem));
         byte pair = 0;
-        if (s[0] >= SlotSymGem && (s[0] == s[1] || s[0] == s[2]))
+        if (IsSlotGem(s[0]) && (s[0] == s[1] || s[0] == s[2]))
             pair = s[0];
-        else if (s[1] >= SlotSymGem && s[1] == s[2])
+        else if (IsSlotGem(s[1]) && s[1] == s[2])
             pair = s[1];
         if (pair != 0)
             return pair == SlotSymGem ? (ZSlotResult.Scrap, Rarity.Common) : (ZSlotResult.Part, (Rarity)(pair - SlotSymGem - 1));
@@ -417,8 +574,8 @@ public sealed partial class Game
 
     /// <summary>
     /// Reels that read as <paramref name="r"/> / <paramref name="tier"/> (<see cref="ReadSlotSymbols"/>), varied by
-    /// <paramref name="seed"/>: a part comes up as three of its gem or as two of the next gem up; near misses (odd gems)
-    /// fill the rest. The wonder gem only shows in jackpot rounds. No allocation.
+    /// <paramref name="seed"/>: a part comes up as three of its gem or as two of the next gem up, a melee build as two
+    /// blades and its gem; near misses (odd gems, now and then a lone blade) fill the rest. The wonder gem only shows in jackpot rounds. No allocation.
     /// </summary>
     public static void SlotSymbols(ZSlotResult r, Rarity tier, bool jackpot, uint seed, Span<byte> s)
     {
@@ -437,8 +594,8 @@ public sealed partial class Game
         {
             for (var tries = 0; tries < 6; tries++)
             {
-                var g = Next() % 3 == 0 ? SlotSymSkull : Gem();
-                if (g == SlotSymSkull || (g != a && g != b))
+                var g = Next() % 3 == 0 ? (Next() % 4 == 0 && a != SlotSymBlade && b != SlotSymBlade ? SlotSymBlade : SlotSymSkull) : Gem();
+                if (g is SlotSymSkull or SlotSymBlade || (g != a && g != b))
                     return g;
             }
             return SlotSymSkull;
@@ -460,6 +617,11 @@ public sealed partial class Game
                     s[0] = s[1] = s[2] = gem;
                 return;
             }
+            case ZSlotResult.Melee:
+                // Two blades and the build's gem (the gem anywhere on the line).
+                s[0] = s[1] = s[2] = SlotSymBlade;
+                s[at] = (byte)(SlotSymGem + (int)tier);
+                return;
             case ZSlotResult.Scrap when Next() % 3 == 0:
                 s[0] = s[1] = s[2] = SlotSymGem; // two commons
                 s[at] = Odd(SlotSymGem, SlotSymGem);

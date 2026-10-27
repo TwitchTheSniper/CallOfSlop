@@ -240,7 +240,7 @@ receiver. Also: more feed options for heavy, and no part category may have fewer
   eight of 11. A Slug or Sabot (`pellets: 1`) turns a shotgun's eight pellets into one of 112, and is just the bullet on
   a rifle. A pellet *stat* (Dragon's Breath's +2) counts on shotgun bores only, like a barrel's. Everything else is a
   `mul`/`add`, so a Plasma round on a pistol and on an autocannon both read as "that calibre, plus the plasma effect".
-  Flags are unchanged and keep their Zombies effects (ZOMBIES-MODE.md, "Special ammo effects").
+  Flags are unchanged and keep their Zombies effects, which since 2026-10-26 also hurt players wherever such a build meets them, friendly fire respected (ZOMBIES-MODE.md, "Special ammo effects").
 
 | Round type | Tier | Change on the calibre | Flags |
 | --- | --- | --- | --- |
@@ -826,20 +826,21 @@ new box builds from the workbench rework's receivers and 2-8 slot grips):
 | Legendary | Gantry Sixteen (16 receivers, bottomless bucket), Lumberjack, Hammerfall Cannon (autocannon); **Power Grid** (eight Sparkplugs on a Power Bus, Octet Rack), **Siege Battery** (two autocannons with singularity chambers on an ammo can), **Hellfire Minigun** (long barrels, explosive tips, overclock core), **Kitchen Sink** (nine different receivers on one Rifle Grip), **Last Word** (suppressed .50 bolt action, 8x), **Suppressing Fire** (six LMGs on a bottomless bucket) | Rocket Katana, **Rocket Hammer** (sledgehammer, rocket booster, shock coil) |
 | Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol; **Party Cannon** (a toaster-fed launcher through a Peacock splitter, balloons on: explosive, toasty, party), **Seven Shooter** (a revolver behind the Barrel of Barrels), **Sawmill Inferno** (two shotgun chain guns on the Chainsaw Grip, Dragon's Breath), **Drive-Thru** (eight SMGs round the Steering Wheel on a bottomless bucket, with a cup holder: refreshing) | The Codfather (a frozen fish on a rod), **Flying Fish** (a frozen fish with a rocket booster and a whoopee cushion: knockback, stun) |
 
-**The box pool.** The box rolls uncommon to wonder (`boxTiers`), and every one of those tiers has 10 to 16 builds,
-guns and melee: uncommon 10 (3 melee), rare 16 (4), epic 12 (2), legendary 11 (2), wonder 10 (2). Common box builds
-(the Machete) only come up as the nearest-tier fallback, so new low-end box builds are uncommon. The roll picks a build of
-the rolled tier that you **don't already carry**: none of your gun slots, and (2026-10-23) not the melee weapon in your
-melee slot either. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
+**The box pool.** The box rolls uncommon to wonder (`boxTiers`) and gives **guns only** (developer answer, 2026-10-26):
+uncommon 7, rare 12, epic 10, legendary 9, wonder 8 (46 box guns). The melee column above is tagged `"slots"` instead:
+the **slot machines** pay those 14 melee builds as a complete build into the melee slot (ZOMBIES-MODE.md, "Slot
+machines"); the loader refuses a melee build tagged `"box"` and a gun tagged `"slots"`. Melee parts (hilts, heads, mods)
+stay in the part pool (drops, slot parts, crafting). The roll picks a gun of the rolled tier that you **don't already
+carry** in a gun slot. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
 is rare; a wonder part makes it legendary or wonder), placed by what it does next to the others of that tier.
 
 **Self-test** (section "Weapon builder", `CheckBoxBuilds` in SelfTestWeaponBuilder2.cs): every box build is complete and legal and its model has no
-floating boxes (section "Model connectivity"); its tier is within one of its rarest part's; every box tier has 6 or more
-builds, 3 of them guns; and its numbers stay in the tier's band: a gun does 60 DPS or more (body, close range), and at
+floating boxes (section "Model connectivity"); its tier is within one of its rarest part's (slot melee builds too); every
+box tier has 5 or more guns; and its numbers stay in the tier's band: a gun does 60 DPS or more (body, close range), and at
 most 250 / 250 / 450 / 900 / 2000 / 2000 body damage per trigger pull and 600 / 600 / 1200 / 2500 / 6000 / 8000 DPS
 (common to wonder); a melee build does 30 DPS or more and at most 150 / 150 / 200 / 250 / 400 / 400 damage a hit. The
-Zombies section checks the box never offers a build you carry (gun or melee) and offers 6 or more different builds of
-every tier. Approximate numbers (CI's log lists them all as `box ...` lines):
+Zombies section checks the box never offers a gun you carry nor any melee build, and offers 5 or more different guns of
+every tier; "Zombies slots" checks the melee payouts. Approximate numbers (CI's log lists them all as `box ...` lines):
 
 | Build | Tier | Per pull | RPM | DPS | Mag |
 | --- | --- | --- | --- | --- | --- |

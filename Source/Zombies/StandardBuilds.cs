@@ -12,7 +12,8 @@ public sealed class StandardBuild
     public required string Name;
     public Rarity Tier;
 
-    /// <summary>Where it shows up: "box" (mystery box), "wall" (wall weapon), "start" (starting gear of a run).</summary>
+    /// <summary>Where it shows up: "box" (mystery box: guns only), "wall" (wall weapon), "start" (starting gear of a run),
+    /// "slots" (a slot machine's melee payout: melee builds only; developer answer, 2026-10-26).</summary>
     public string[] Sources = [];
 
     public string Flavor = "";
@@ -38,7 +39,7 @@ public static class StandardBuilds
     public const string Format = "call-of-slop-build/1";
 
     /// <summary>Where a standard build can show up.</summary>
-    public static readonly string[] SourceNames = ["box", "wall", "start"];
+    public static readonly string[] SourceNames = ["box", "wall", "start", "slots"];
 
     private static readonly object LoadLock = new();
     private static StandardBuild[]? _all;
@@ -73,7 +74,7 @@ public static class StandardBuilds
 
     public static StandardBuild? Find(string name) => All.FirstOrDefault(b => b.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
 
-    /// <summary>The builds that can come from <paramref name="source"/> ("box", "wall", "start").</summary>
+    /// <summary>The builds that can come from <paramref name="source"/> ("box", "wall", "start", "slots").</summary>
     public static IEnumerable<StandardBuild> From(string source) => All.Where(b => b.Sources.Contains(source));
 
     /// <summary>Reads one standard build file and checks it assembles into a complete, legal weapon.</summary>
@@ -132,6 +133,11 @@ public static class StandardBuilds
         var asm = WeaponBuilder.Assemble(build);
         if (!asm.Ok)
             throw new WeaponFileException($"{source} ('{name}'): not a complete, legal build: {string.Join("; ", asm.Problems.Select(x => x.Message))}");
+        // The mystery box gives guns only; melee builds come from the slot machines (developer answer, 2026-10-26).
+        if (build.IsMelee && sources.Contains("box"))
+            throw new WeaponFileException($"{source} ('{name}'): a melee build can't be a \"box\" build (the box gives guns only; use \"slots\")");
+        if (!build.IsMelee && sources.Contains("slots"))
+            throw new WeaponFileException($"{source} ('{name}'): only melee builds can be \"slots\" builds (the slot machines pay melee builds, guns come from the box)");
         return b;
     }
 

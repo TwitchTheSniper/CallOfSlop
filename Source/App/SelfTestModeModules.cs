@@ -111,7 +111,7 @@ public static partial class SelfTest
         (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x60AAFE4F8D6CB936),
         (GameMode.GunGame, 7, 0, 4105, 20, 0xC225FD53DFE7A5E4),
         // Zombies re-recorded for milestone 3: kills roll for power-ups (one more random draw each; ZombiesPowerUps.cs).
-        (GameMode.Zombies, 2, 0, 4106, 20, 0x331A7AEF90245AF6),
+        (GameMode.Zombies, 2, 0, 4106, 20, 0xAEA5EBE353E956D9), // (re-recorded 2026-10-26: bots shop, the power-up schedule)
     ];
 
     private static readonly List<string> ModeNotes = new();

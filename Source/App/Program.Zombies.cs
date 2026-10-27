@@ -425,6 +425,11 @@ public static unsafe partial class Program
                     break;
             }
         }
+    }
+
+    /// <summary>Special ammo flashes (a splash, a chain, a burn...): Zombies, and any mode where an effect gun hits players (AmmoEffectsPlayers.cs).</summary>
+    private static void DrawAmmoFx(double now)
+    {
         foreach (var (time, kind, pos) in _game.ZFxList)
         {
             var age = (float)(now - time);
@@ -456,8 +461,8 @@ public static unsafe partial class Program
         if (_game.Mode != GameMode.Zombies)
             return;
         _game.SetUseHeld(_mouseCaptured && Down(GameAction.Interact) || _zSmokeUseHeld, now); // (_zSmokeUseHeld: the smoke step's box spin)
-        if (_mouseCaptured && Pressed(GameAction.Grenade))
-            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the gun in your hands apart (no grenades in Zombies)
+        if (_mouseCaptured && Pressed(GameAction.Grenade) && !_game.SlotBetKey())
+            _game.BoxDisassembleKey(now); // at the mystery box: G twice takes the gun in your hands apart (no grenades in Zombies); at a slot machine G changes the bet
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);

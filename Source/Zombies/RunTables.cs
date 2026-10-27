@@ -26,15 +26,16 @@ public sealed class RunTables
 
     /// <summary>
     /// What a slot machine pull pays, by round (ZombiesSlots.cs): weights indexed by <see cref="SlotNothing"/>,
-    /// <see cref="SlotScrap"/>, <see cref="SlotPoints"/>, then a part of each rarity (<see cref="SlotPart"/> + the tier).
+    /// <see cref="SlotScrap"/>, <see cref="SlotPoints"/>, then a part of each rarity (<see cref="SlotPart"/> + the tier),
+    /// then <see cref="SlotMelee"/>: a complete melee build (its rarity rolled from the same row's part weights).
     /// The wonder weight only counts in jackpot rounds.
     /// </summary>
     public List<RoundRow> SlotTiers = new();
 
-    public const int SlotNothing = 0, SlotScrap = 1, SlotPoints = 2, SlotPart = 3;
+    public const int SlotNothing = 0, SlotScrap = 1, SlotPoints = 2, SlotPart = 3, SlotMelee = 9;
 
     /// <summary>The outcome keys of a "slotTiers" row (after "fromRound"), in index order.</summary>
-    public static readonly string[] SlotKeys = ["nothing", "scrap", "points", "common", "uncommon", "rare", "epic", "legendary", "wonder"];
+    public static readonly string[] SlotKeys = ["nothing", "scrap", "points", "common", "uncommon", "rare", "epic", "legendary", "wonder", "melee"];
 
     /// <summary>Points prices (proposed): the mystery box, the weapon-slot upgrade (2 -> 4 slots, once per run), a wall weapon.</summary>
     public int BoxCost = 950, SlotUpgradeCost = 4000, WallCost = 500;
