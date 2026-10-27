@@ -1491,6 +1491,9 @@ public sealed partial class Game
 
     public void SelfTestDown(Player p, double now) => Down(p, ZP(p), now);
 
+    /// <summary>Self-test: a downed <paramref name="p"/> is revived.</summary>
+    public void SelfTestRevive(Player p, double now) => Revive(p, null, now);
+
     /// <summary>Self-test: a shot from <paramref name="p"/>'s gun in hand through the server's shot path (no spread).</summary>
     public void SelfTestServerShot(Player p, Vector3 origin, Vector3 dir, double now) => ServerResolveShot(p, p.WeaponDef, origin, dir, 0f, 1, ServerTick, now);
 
