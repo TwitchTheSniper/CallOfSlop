@@ -23,9 +23,11 @@ public readonly record struct BarrelLeaf(BuildNode Barrel, int Muzzle, float Spl
 /// <item>Each receiver on its own: its bore's calibre, its action and fire rate, then its parts in stages (receiver, ammo,
 /// feed, splitters), then each barrel path (barrel + muzzle device) on its own copy. Splitter rule: every output gets
 /// the incoming shot's damage x the splitter's outputMult (nested splitters multiply; 1/N conserves the shot).</item>
-/// <item>The receivers combine by the grip's fire style. Volley: the slowest fire rate, the smallest feed, recoil adds
-/// up (root of the sum of squares). Rotate: fire rates add, feeds add, recoil averages. Both: the strictest trigger
-/// (semi beats burst beats auto) and the longest reload plus a per-receiver penalty.</item>
+/// <item>The receivers combine by the grip's fire style. Volley: every receiver fires at its own rate, with its own feed
+/// (<see cref="WeaponDef.FireGroups"/>; the combined rate is the fastest's, magazines add up), recoil adds up per shot
+/// (root of the sum of squares), and the combined trigger is the loosest (auto beats burst beats semi). Rotate: fire rates
+/// add, feeds add, recoil averages, the strictest trigger (semi beats burst beats auto). Both: the longest reload plus a
+/// per-receiver penalty (a full reload; a volley receiver that runs dry reloads its own feed alone).</item>
 /// <item>The grip and what's on it: grip, stock, foregrips, optic, utility parts.</item>
 /// <item>Weight against the grip's carry: mobility, aim and draw time, recoil; then the frame's own mobility.</item>
 /// <item>Everything is clamped to the ranges weapon files allow.</item>
@@ -338,13 +340,19 @@ public static class BuildStats
         var w = lead.Def.Clone();
         var count = per.Count;
         var rotate = style == FireStyle.Rotate && count > 1;
+        // Volley with several receivers: each fires at its own rate (developer decision, 2026-10-27: independent fire
+        // rates are the volley, the default; chain fire is the staggered alternative). The combined numbers below are
+        // for everything that sees the weapon as one gun (bots' reach, the stat bars); FireGroups is the real trigger.
+        var independent = !rotate && count > 1;
 
         // ---- Combine the receivers ----
         var defs = per.Select(p => p.Def).ToList();
-        w.Mode = defs.Any(d => d.Mode == FireMode.Semi) ? FireMode.Semi : defs.Any(d => d.Mode == FireMode.Burst) ? FireMode.Burst : FireMode.Auto;
+        w.Mode = independent
+            ? defs.Any(d => d.Mode == FireMode.Auto) ? FireMode.Auto : defs.Any(d => d.Mode == FireMode.Burst) ? FireMode.Burst : FireMode.Semi // holding fires the loosest
+            : defs.Any(d => d.Mode == FireMode.Semi) ? FireMode.Semi : defs.Any(d => d.Mode == FireMode.Burst) ? FireMode.Burst : FireMode.Auto;
         if (defs.FirstOrDefault(d => d.Mode == FireMode.Burst) is { } burst)
             (w.BurstCount, w.BurstDelay) = (burst.BurstCount, burst.BurstDelay);
-        w.Rpm = rotate ? Math.Min(3000, defs.Sum(d => d.Rpm)) : defs.Min(d => d.Rpm);
+        w.Rpm = rotate ? Math.Min(3000, defs.Sum(d => d.Rpm)) : independent ? defs.Max(d => d.Rpm) : defs.Min(d => d.Rpm); // independent: the fastest receiver's
         // Magazines: per-receiver feeds as before (volley: the smallest, they run dry together; rotate: they add up). A
         // shared feed is one pool: in a volley each pull takes a round per receiver it feeds, so it lasts pool / k pulls;
         // rotating, each shot takes one round, and the pool counts once.
@@ -352,7 +360,7 @@ public static class BuildStats
         var own = per.Where(p => !p.SharedFed || p.Action.Chamber > 0).Select(p => p.Def.Mag).ToList();
         var pooled = per.Where(p => p.SharedFed && p.Action.Chamber == 0).ToList();
         var pool = pooled.Count > 0 ? pooled[0].Def.Mag : 0;
-        if (rotate)
+        if (rotate || independent) // independent: every magazine is its own, the pool counts once
             w.Mag = Math.Min(1000, own.Sum() + pool);
         else
         {
@@ -377,6 +385,8 @@ public static class BuildStats
         var spooling = per.Where(p => p.Action.SpoolTime > 0).Select(p => p.Action).ToList();
         w.SpoolTime = spooling.Count > 0 ? spooling.Max(r => r.SpoolTime) : 0f;
         w.SpoolStart = spooling.Count > 0 ? spooling.Min(r => r.SpoolStart) : 1f;
+        // What the grip, its parts and the weight do to the combined rate, reload and recoil, they do to each receiver's.
+        var (rpm0, reload0) = (w.Rpm, w.Reload);
 
         // ---- The grip and what's on it (including receivers' utility rails) ----
         var gripParts = b.Nodes.Where(n => n.ReceiverNode() == null || n.Part.Category == PartCategory.Utility).ToList();
@@ -433,7 +443,48 @@ public static class BuildStats
         w.Kit = 0;
 
         Clamp(w);
+        if (independent)
+            w.FireGroups = FireGroupsOf(per, rpm0 > 0 ? w.Rpm / (float)rpm0 : 1f, reload0 > 0 ? w.Reload / reload0 : 1f);
         return w;
+    }
+
+    /// <summary>
+    /// Each receiver's own trigger for an independent volley (<see cref="WeaponDef.FireGroups"/>): its action's mode, burst
+    /// and spool, its own rate (scaled like the combined rate by the grip's parts), and its magazine: its own, or the
+    /// shared feed's one pool (a chambered action keeps its own chamber). Recoil shares: its recoil squared over the sum.
+    /// </summary>
+    private static ReceiverFire[] FireGroupsOf(List<ReceiverResult> per, float rpmMult, float reloadMult)
+    {
+        var groups = new ReceiverFire[Math.Min(per.Count, ReceiverFire.Max)];
+        var sumSq = 0f;
+        foreach (var p in per)
+            sumSq += p.Def.RecoilDeg * p.Def.RecoilDeg;
+        var poolFeed = -1;
+        var (poolReload, poolMag) = (0f, 0);
+        foreach (var p in per)
+            if (p.SharedFed && p.Action.Chamber == 0)
+            {
+                poolReload = MathF.Max(poolReload, p.Def.Reload);
+                if (poolMag == 0)
+                    poolMag = p.Def.Mag; // the pool counts the first fed receiver's magazine, as the combined Mag does
+            }
+        var feeds = 0;
+        for (var g = 0; g < groups.Length; g++)
+        {
+            var p = per[g];
+            var d = p.Def;
+            var pooled = p.SharedFed && p.Action.Chamber == 0;
+            int feed;
+            if (pooled)
+                feed = poolFeed >= 0 ? poolFeed : poolFeed = feeds++;
+            else
+                feed = feeds++;
+            var rpm = Math.Clamp((int)MathF.Round(d.Rpm * rpmMult), 1, 3000);
+            groups[g] = new ReceiverFire(rpm, d.Mode, d.BurstCount, d.BurstDelay, p.Action.SpoolTime, p.Action.SpoolTime > 0 ? p.Action.SpoolStart : 1f,
+                feed, Math.Max(1, pooled ? poolMag : d.Mag), Math.Clamp((pooled ? poolReload : d.Reload) * reloadMult, 0.1f, 20f),
+                sumSq > 0 ? d.RecoilDeg * d.RecoilDeg / sumSq : 1f / groups.Length, p.Action.FireType);
+        }
+        return groups;
     }
 
     private static void Apply(PartDef p, WeaponDef w)

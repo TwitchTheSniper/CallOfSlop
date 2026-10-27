@@ -467,12 +467,24 @@ and the same muzzle positions, and the self-test checks this by assembling every
 
 | | Volley (Chain fire off) | Chain fire (on; "rotate" in files and saves) |
 | --- | --- | --- |
-| A trigger pull | Fires every receiver at once | Fires the next receiver in turn |
-| Fire rate | The slowest receiver's (they are linked) | The receivers' rates add up (max 3000 rpm) |
-| Magazine | Per-receiver feeds, shown as the smallest (all run dry together); a shared pool lasts pool / receivers it feeds | Feeds add up; a shared pool counts once |
-| Recoil | Root of the sum of squares (3 receivers = 1.7x one) | The average |
-| Trigger | The strictest: semi beats burst beats auto | Same |
-| Reload | The longest feed, plus 0.2-0.35 s per extra receiver (the grip sets it); every feed is swapped at once | Same |
+| A trigger pull | Every receiver fires by its own trigger; the ready ones fire on the same tick | Fires the next receiver in turn |
+| Fire rate | Each receiver its own (the stat bar shows the fastest; DPS adds them up) | The receivers' rates add up (max 3000 rpm) |
+| Magazine | Each receiver its own feed (shown added up); a shared pool counts once, a round per receiver that fires | Feeds add up; a shared pool counts once |
+| Recoil | Adds up per shot: root of the sum of squares of the receivers that fired (all 3 = 1.7x one) | The average |
+| Trigger | Each receiver's own: auto keeps firing while held, burst fires its burst and waits for the next pull, semi/pump/bolt/lever fire once a pull at their own cycle, rotary/chain spool up on their own | The strictest: semi beats burst beats auto |
+| Reload | A receiver that runs dry reloads its own feed (its own time) while the others fire; a full reload (R, or all dry) takes the longest feed plus 0.2-0.35 s per extra receiver (the grip sets it) | The full reload only |
+
+**Independent fire rates (developer decision, 2026-10-27, board item fr01).** A volley used to link its receivers: the
+slowest set the rate and the strictest set the trigger. Now each receiver keeps its own action: a 100 rpm cannon beside a
+900 rpm SMG fires 2 and 15-16 shots in a second, both on the first tick. This is the volley, and the default;
+chain fire stays the staggered alternative. In code: `WeaponDef.FireGroups` (one `ReceiverFire` per receiver, from
+`BuildStats.FireGroupsOf`: its rate scaled like the combined rate by the grip's parts, its mode, burst, spool and feed),
+fired by `FireGroupState` (`Source/Game/GameFireGroups.cs`) for the local player and bots (fixed arrays, no
+allocations). The Fire message carries a 16-bit mask of the receivers that fired (protocol 64) and the server budgets each
+receiver at its own rate, dropping one that claims a shot too early. The workbench lists each receiver's rate, trigger,
+magazine and DPS; the HUD shows each magazine under the ammo count. "Independent fire rates" self-tests it. Of the
+standard builds, only Gantry Sixteen (x1.05: its two receiver types differ in rate) and Kitchen Sink (x4.4: nine mixed
+actions, no longer held to its 70 rpm pump) change DPS; their tier bands still hold.
 
 ### Grips and Chain fire (2026-10-23)
 
@@ -546,9 +558,10 @@ the new frames and the cart; not the pistol grips). Per-receiver feeds are still
 - A receiver is fed only if its bore is one the shared feed takes, its action is one the feed needs (if any), and the
   shared feed's ammo fits it.
 - Ammo in the shared feed's `ammo` socket is **shared**: fed receivers need no ammo of their own.
-- The magazine is **one pool** (its `mag` stat): in a volley, each pull takes a round per fed receiver, so it lasts
-  pool / k pulls (next to any own magazines, the smallest wins); rotating, each shot takes one round and the pool
-  counts once next to the receivers' own magazines. The reload is the longest feed's, as before.
+- The magazine is **one pool** (its `mag` stat): in a volley, every fed receiver that fires takes a round from it (each at
+  its own rate; all firing together it lasts pool / k volleys), and it counts once next to the receivers' own magazines;
+  rotating, each shot takes one round. The full reload is the longest feed's, as before; a dry pool reloads on its own
+  (the longest fed receiver's time) while receivers with their own magazines keep firing.
 
 | Shared feed | Tier | Feeds | Bores | Pool | Reload |
 | --- | --- | --- | --- | --- | --- |
@@ -1417,7 +1430,7 @@ Milestone 2 (the user's decisions):
 
 ## Decided (2026-10-21)
 
-1. **Volley or rotate?** Fixed by the grip.
+1. **Volley or rotate?** Fixed by the grip. (Since: a per-build Chain fire checkbox; a volley's receivers fire at their own rates, 2026-10-27.)
 2. **Feeds?** Per-receiver feeds plus shared feeds.
 3. **Scaling?** Weight is the main limiter; huge guns come late (rarer frames, weight relief).
 4. **The cart and the chainsaw?** The cart is a real pushed object; parked, it's a gun you man and fire yourself (not a

@@ -576,7 +576,7 @@ tables), `Source/Game/ZombiesCasinoNet.cs` (the wire), `Source/UI/UiCasino.cs` (
 - **Server-authoritative and seeded.** Each round (a deal, a spin, a hand) is seeded from the run's seed, so the same
   run seed and the same moves give the same cards; the self-test checks the payout maths exactly. The tables' tick
   allocates nothing. **Bots ignore the tables** (they never bet).
-- **Network (protocol 63).** `Msg.ZCasino` (server to everyone, reliable, on a change and to each joiner): a table's
+- **Network (protocol 66).** `Msg.ZCasino` (server to everyone, reliable, on a change and to each joiner): a table's
   whole state (game, phase, round, tenths of a second left, the last big win, every seat's player, bet, flags, outcome,
   payout and cards, the dealer's cards with the hole card hidden, the pot and guesses, the dice, point and roll
   counter, the pocket, every chip). `Msg.ZCasinoAct` (client to server): table, act (bet, hit, stand, double, higher,
@@ -783,6 +783,35 @@ coming away with them; the body leaning over the sill with the hands planted whi
 ground zombies clawing out; the shamble / jog / sprint and the limps; the swipe landing as you take the hit; shots
 at a zombie tearing boards landing from a steep side angle (the hit box follows the step in).
 
+## Dismemberment (board item, 2026-10-27)
+
+Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-test "Zombie dismemberment".
+
+- **Limb health.** Each arm and leg has `healthFraction` of the zombie's health (at least `healthMin`), times its type's
+  `healthMult` (`types`: walk, run, sprint today; brutes and specials get their own entries when they exist, and
+  `"severs": false` makes a type ignore dismemberment). The head stays the kill shot and has no limb health.
+- **Hits.** A standing zombie's hit box is split: below the hips (0.88 m) a leg by side, at the shoulders (0.85-1.4 m)
+  and at least 0.2 m out to the side an arm, the rest the body. A pellet on a limb takes `damageShare` of its damage off
+  that limb as well as the zombie's health as before. A blast (grenades, launchers, landmines) takes `blastShare` off every
+  limb in reach, each by its own distance: a grenade at the feet takes both legs. A shotgun's pellets add up per limb,
+  so one pull can take several. Melee and the special ammo effects count on the body only.
+- **States.** One arm: swipes with the other, `oneArmDamage` / `oneArmWindup` / `oneArmSwing`. No arms: a bite and a
+  lunge (`biteDamage`, `biteReach`, `biteWindup`). One leg: a hop and a limp at `oneLegSpeed`. No legs: a crawler at
+  `crawlSpeed`, with a prone-sized hit box (long and low: a chest-high shot passes over it, its arms are the front of the
+  box), `crawlReach`, `crawlDamage`, it only reaches a target within `crawlAttackHeight` of its feet (stand on something),
+  and it climbs in through windows `crawlClimb` times slower. Players already walk through zombies, so you can step over
+  one. Crawlers still path with the horde (the same flow fields and mover; the horde isn't held up by its slow members).
+  Bots aim low at crawlers.
+- **Gore.** A severed limb flies off as pooled gibs (its two parts in the zombie's colours and a little meat that leaves
+  a splat, `Gibs.SpawnLimb`), at most `goreCap` limb pieces at once (the oldest reused), each gone after `goreSeconds`,
+  with a squelch on the gore bus. Nothing flies with gore off (a flesh hit sound instead). A ragdoll leaves the lost
+  limbs off; the living body draws a raw stump at the joint.
+- **Points.** `limbPoints` per limb shot off a living zombie (0 by default: the developer's call).
+- **Network (protocol 65).** Zombie ids are 15 bits; the top bit of an entry's id in `ZEnts` says one more byte follows
+  with the lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler), so an intact zombie
+  costs nothing more and a dismembered one 1 byte. A limb coming off sends the zombie at once (like a death). Clients throw
+  each limb's gore once when its bit first appears; a zombie first heard of already without limbs throws none.
+
 ## Sound (zombie voices and footsteps, 2026-10-26)
 
 Before this zombies only borrowed generic sounds (a melee hit when they strike you, a flesh hit when shot, wood
@@ -870,7 +899,7 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment)
 
 Protocol 58 (hordes, see "Hordes"): `ZEnts` per client, interest-managed, at most 80 zombies a packet, 16-bit horde size
 and entry count, the window byte only outside, at a window or swiping (11 or 12 bytes a zombie), unreliable (not

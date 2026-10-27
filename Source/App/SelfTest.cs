@@ -321,12 +321,14 @@ public static partial class SelfTest
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
         Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
         Section("GPU timers", CheckGpuStampRing); // SelfTestSmokeFixes.cs: the prop renderer's timestamp timer, scene build frames
+        Section("Shot origins", CheckShotOrigins); // SelfTestShotOrigins.cs: every tracer and flash leaves the muzzle of the barrel that fired (view model and world model), classic guns and every standard build
         Section("Weapon builder", CheckWeaponBuilder); // SelfTestWeaponBuilder.cs: Zombies parts, builds, rules, multi-barrel shots
         Section("Workbench UI", CheckWorkbenchUi); // SelfTestWorkbenchUi.cs: one-receiver first-tier grips, linear list, snapping, swaps, copy assembly, missing parts, saves, no per-frame allocations
         Section("Workbench barrels and grips", CheckWorkbenchBarrels); // SelfTestWorkbenchBarrels.cs: barrels fit every receiver (sized by it), per-receiver rules, double-click removal, Chain fire, slot counts 1..9, new receivers
         Section("Model connectivity", CheckModelConnectivity); // SelfTestModelConnectivity.cs: no part box floats free of its part or of an assembled weapon (allow-list), irons and with:SOCKET drawing rules
         Section("Parts mechanics", CheckPartsMechanics); // SelfTestPartsMechanics.cs: vertical/grid/rosette and offset splitters, bullet size and speed barrels (a seeded server shot), stronger muzzles, no allocations
         Section("Optic mounts", CheckOpticMounts); // SelfTestOpticMounts.cs: every optic sits on top of every receiver on every grip, never inside it; the aim point follows
+        Section("Independent fire rates", CheckIndependentFireRates); // SelfTestFireRates.cs: volley receivers each at their own rate, trigger, feed, spool and burst; the server's per-receiver budget; bots; no allocations
         Section("Workbench actions", CheckWorkbenchActions); // SelfTestActions.cs: the fire type is an Action part: sockets, migration, fire timing per type, old builds' feel kept
         Section("Action placement", CheckActionPlacement); // SelfTestActionPlacement.cs: trigger groups under the receiver, pump/ramrod at the front, bolts and drives on the side; no cutting into handle, foregrip or magazine
         Section("Workbench incompatible parts", CheckWorkbenchIncompat); // SelfTestWorkbenchIncompat.cs: "Show incompatible parts" filtering, counts, short reasons, setting, no allocations
@@ -350,6 +352,7 @@ public static partial class SelfTest
         Section("Zombie bots shoot", CheckZombieBotsShoot); // SelfTestZombieBotsShoot.cs: co-op bots fire, hit, kill and reload with the start gun, a bought gun and after a reload
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
+        Section("Zombie dismemberment", CheckZombieLimbs); // SelfTestZombieLimbs.cs: limb hits route to limbs, severing (shotgun, blast), one arm / no arms / one leg / crawler movement and attacks, the crawler hit box, a mixed horde keeps going, the gore cap, client sync, poses, no allocations
         Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network
         Section("Zombie hordes", CheckZombieHordes); // SelfTestZombieHordes.cs: 24/100/300-zombie hordes on Blackmoor: tick cost, allocations, snapshot bytes, client cost; the alive curve; the horde controller
         Section("Zombies start round", CheckZombiesStartRound); // SelfTestZombiesStartRound.cs: Horde Test, a run started at round 30 with the test kit (economy, fill time, tick cost), the host's round skip, the settings reaching a client

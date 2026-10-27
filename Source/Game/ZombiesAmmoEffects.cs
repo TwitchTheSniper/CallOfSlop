@@ -300,7 +300,7 @@ public sealed partial class Game
         {
             if (z.State == ZState.Dead || InHits(hits, z))
                 continue;
-            if (World.Hitbox(z.Position, Stance.Stand, z.Yaw).Raycast(o, d, end) is { } t && t > dist)
+            if (ZombieBox(z, z.Position, z.Yaw).Raycast(o, d, end) is { } t && t > dist)
                 _zFxNear.Add((z, t));
         }
         if (_zFxNear.Count == 0)

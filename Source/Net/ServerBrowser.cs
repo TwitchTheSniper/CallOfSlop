@@ -129,9 +129,16 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     joiner's full flags); movers can be started and stopped, so their pose follows that clock.
     // 62: Grenades in Zombies (2026-10-27): every player entry in Msg.ZWorld ends with the grenade kind and how many
     //     are left (the server tops them up every round; ZombiesRules.json "grenades").
-    // 63: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
+    // 63: Shots leave the muzzle that fired (Source/Game/GameMuzzle.cs): Msg.Shot from a built gun with several barrels
+    //     ends with a count and each end's barrel index (one byte each), after the ends and the wall origin.
+    // 64: independent receiver fire rates (Source/Game/GameFireGroups.cs): Msg.Fire ends with the lock-target byte (0xFF
+    //     when none) and a u16 mask of the receivers that fired on a volley build (0 = all); the server budgets each one.
+    // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
+    //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
+    //     a crawler), 11-13 bytes a zombie.
+    // 66: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
     //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
-    public const byte ProtocolVersion = 63;
+    public const byte ProtocolVersion = 66;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

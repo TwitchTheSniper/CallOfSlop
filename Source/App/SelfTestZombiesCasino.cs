@@ -389,7 +389,7 @@ public static partial class SelfTest
         Tick(rules.CasinoShowSeconds + 0.5);
         ZLine($"blackjack: two seats at once {twoSeats} (the bot paid {botPaid}); going down forfeits {forfeited} (bet lost {lostBet}); the client's copy {syncOk}, hole card hidden {holeHidden} then shown {turned}");
         if (!forfeited || !lostBet || !syncOk || !holeHidden || !turned || !botPaid || (bot is { Alive: true } && !twoSeats))
-            Fail("a blackjack hand should be forfeit when its player goes down, other seats play on, and clients should see the table as the server has it with the dealer's hole card hidden until it's turned (protocol 63)");
+            Fail("a blackjack hand should be forfeit when its player goes down, other seats play on, and clients should see the table as the server has it with the dealer's hole card hidden until it's turned (protocol 66)");
 
         // ---- Roulette: several players' chips on one spin, each paid exactly what the board says ----
         var ro = Table(CasinoGame.Roulette);
@@ -570,7 +570,7 @@ public static partial class SelfTest
         ZLine($"big win: a {big} natural announced {bigWin} ({t0.WinAmount} over the bet, shown from {rules.CasinoAnnounceAt}), the client showed it {clientSaw}; points never below zero {neverNegative} (broke: '{broke}'); the tables' tick allocated {alloc} bytes in 600 ticks");
         if (!bigWin || !clientSaw || !neverNegative || alloc > 0)
             Fail("a big casino win should reach every client, points should never go below zero, and the tables' tick should allocate nothing");
-        if (ServerInfo.ProtocolVersion < 63)
-            Fail("the casino tables changed the wire: the protocol should be at least 63");
+        if (ServerInfo.ProtocolVersion < 66)
+            Fail("the casino tables changed the wire: the protocol should be at least 66");
     }
 }

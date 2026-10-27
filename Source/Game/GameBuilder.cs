@@ -46,8 +46,10 @@ public sealed partial class Game
     /// picks whose turn it is on rotating grips and rotary receivers, so client prediction and the server agree.
     /// Each barrel starts at the eye moved sideways/up by its muzzle's offset from the barrels' centre (in view space), is
     /// turned by its splay, and gets its own pellets (seeded by a running pellet index) with its own spread and damage.
+    /// <paramref name="fireMask"/>: only those receivers' barrels (bit g = group g; 0 = all), for builds whose receivers
+    /// fire at their own rates (<see cref="WeaponDef.FireGroups"/>).
     /// </summary>
-    public static List<ShotRay> ShotRays(WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, List<ShotRay>? into = null)
+    public static List<ShotRay> ShotRays(WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, List<ShotRay>? into = null, ushort fireMask = 0)
     {
         var rays = into ?? new List<ShotRay>(def.Pellets);
         rays.Clear();
@@ -73,7 +75,7 @@ public sealed partial class Game
         var pellet = 0;
         for (var g = 0; g < groups; g++)
         {
-            if (turnGroup >= 0 && g != turnGroup)
+            if (turnGroup >= 0 && g != turnGroup || fireMask != 0 && g < 16 && (fireMask & (1 << g)) == 0)
                 continue;
             var n = 0;
             var rotary = false;
@@ -105,18 +107,6 @@ public sealed partial class Game
             }
         }
         return rays;
-    }
-
-    /// <summary>Where a built weapon's barrel shows its tracer: the usual muzzle point moved by the barrel's offset.</summary>
-    public static Vector3 MuzzleWorld(Player p, Vector2 lateral)
-    {
-        var m = MuzzleWorld(p);
-        if (lateral == Vector2.Zero)
-            return m;
-        var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
-        var right = Vector3.Normalize(Vector3.Cross(fwd, MathF.Abs(fwd.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY));
-        var up = Vector3.Cross(right, fwd);
-        return m + right * lateral.X + up * lateral.Y;
     }
 
     private double _testShotClock;

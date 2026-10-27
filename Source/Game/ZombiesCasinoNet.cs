@@ -3,7 +3,7 @@ using Brutal.RakNetApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// The casino tables on the wire (protocol 63; ZombiesCasino.cs): the server sends a table's whole state in
+/// The casino tables on the wire (protocol 66; ZombiesCasino.cs): the server sends a table's whole state in
 /// <see cref="Msg.ZCasino"/> whenever it changes (and every table to a joiner); a client's moves go up in
 /// <see cref="Msg.ZCasinoAct"/> (table, act, arg, amount), and the server checks everything again. The dealer's hole card
 /// goes out as <see cref="Casino.NoCard"/> until it's turned over, and the deck never goes out at all.

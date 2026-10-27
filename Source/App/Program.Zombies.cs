@@ -310,7 +310,7 @@ public static unsafe partial class Program
         var lod = camDist > ZombieAnim.LodRange;
         BodyBloodRender.PlaceZombie(z, pose, a.Yaw); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
         BodyBloodRender.Bind(Gfx);
-        var boxes = ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead);
+        var boxes = ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead, z.Limbs); // (lost limbs: stumps, ZombieLimbs.cs)
         BodyBloodRender.Unbind(Gfx);
         if (a.Mode == ZAnimMode.Rising && a.Phase < 0.9f)
         {

@@ -49,6 +49,9 @@ public sealed class RagdollBody
     public bool Live;
     public RagdollLook Look;
 
+    /// <summary>A zombie body's lost limbs (<see cref="Zombie.Limbs"/>): not drawn (Source/Game/ZombieLimbs.cs).</summary>
+    public byte ZLimbs;
+
     /// <summary>The body was blown apart (<see cref="Gibs"/>): this slot only carries its hat, flying off as one more gib.</summary>
     public bool Gibbed;
 
@@ -391,6 +394,7 @@ public static class Ragdolls
         }
         var body = Alloc(true);
         body.Look = RagdollLook.Zombie;
+        body.ZLimbs = z.Limbs;
         body.Owner = 255;
         body.Hat = null;
         (body.ZShirt, body.ZSkin, body.ZPants) = (ZombieShirt, ZombieSkin, ZombiePants);
@@ -586,6 +590,7 @@ public static class Ragdolls
         _now = now;
         var body = Alloc(look == RagdollLook.Zombie);
         body.Look = look;
+        body.ZLimbs = 0;
         body.Owner = d.Victim;
         body.Hat = hat;
         if (look == RagdollLook.Soldier)
@@ -992,6 +997,8 @@ public static class Ragdolls
             sink.Blood = Bleed(side == 0 ? BloodPart.LegR : BloodPart.LegL);
             if (b.Look == RagdollLook.Zombie)
             {
+                if ((b.ZLimbs & (4 << side)) != 0)
+                    continue; // that leg came off (ZombieLimbs.cs)
                 var thigh = Vector3.Distance(hip, knee);
                 var shin = Vector3.Distance(knee, foot);
                 sink.Box(new Vector3(0.22f, 0.24f, thigh + 0.08f), new Vector3(0, 0, -thigh / 2), bones[0], b.ZPants);
@@ -1016,6 +1023,8 @@ public static class Ragdolls
             sink.Blood = Bleed(side == 0 ? BloodPart.ArmR : BloodPart.ArmL);
             if (b.Look == RagdollLook.Zombie)
             {
+                if ((b.ZLimbs & (1 << side)) != 0)
+                    continue; // that arm came off (ZombieLimbs.cs)
                 var skin = b.ZSkin * 0.92f;
                 sink.Box(new Vector3(0.13f, 0.13f, u + 0.04f), new Vector3(0, 0, -u / 2), ua, skin);
                 sink.Box(new Vector3(0.12f, 0.12f, fl + 0.06f), new Vector3(0, 0, -fl / 2), fa, skin);
