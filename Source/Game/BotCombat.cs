@@ -222,9 +222,23 @@ public sealed partial class Game
             || (dist >= def.RangeM * 3f && def.Class != WeaponClass.Sniper))
             return;
 
+        ushort groups = 0;
+        if (def.FireGroups != null && (groups = BotFireGroups(b, p, def, now, ref b.NextFire)) == 0)
+            return; // receivers at their own rates (GameFireGroups.cs): none ready yet
         var spread = BotShotSpread(p, def, aim.Ads, b.Skill) // Steady Aim, sprint penalty (SprintSpread.cs)
                      * FrenzyBuffs.ConeMult(p, def, aim.Ads ? 1f : 0f); // the Shotgun and Sniper frenzy buffs
-        ServerResolveShot(p, def, p.Eye, GravityFrames.Forward(p.Position, aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now);
+        ServerResolveShot(p, def, p.Eye, GravityFrames.Forward(p.Position, aim.Yaw, aim.Pitch), spread, (uint)_rng.Next(), ServerTick, now, groups);
+        if (groups != 0)
+        {
+            b.Ammo = Math.Max(0, b.Ammo - GroupCount(groups)); // a round per receiver; BotFireGroups set the next shot
+            var (gp, gy) = Recoil.BotKick(def, _rng);
+            var gs = FireGroupState.RecoilScale(def.FireGroups!, groups) * FrenzyBuffs.Value(p, def, FrenzyStat.Recoil);
+            b.AimErrPitch += gp * gs * BotKickPitchScale;
+            b.AimErrYaw += gy * gs;
+            BotStats.Shots[(int)b.Personality]++;
+            BotStats.ShotDistance[(int)b.Personality] += dist;
+            return;
+        }
         b.Ammo--;
         b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p);
         BotStats.Shots[(int)b.Personality]++;

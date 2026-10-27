@@ -124,7 +124,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and a Zombies flags byte (bit 0: the test kit).
     // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
     //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
-    public const byte ProtocolVersion = 60;
+    // 64: independent receiver fire rates (Source/Game/GameFireGroups.cs): Msg.Fire ends with the lock-target byte (0xFF
+    //     when none) and a u16 mask of the receivers that fired on a volley build (0 = all); the server budgets each one.
+    public const byte ProtocolVersion = 64;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

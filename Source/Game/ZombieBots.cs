@@ -190,15 +190,18 @@ public sealed partial class Game
         // Shoot.
         if (b.Ammo <= 0 && b.ReloadUntil == 0)
             BotReload(p, def, now);
-        if (aimed && target != null && b.Ammo > 0 && b.ReloadUntil == 0 && now >= b.NextFire && DamageEnabled && !use)
+        ushort groups = 0;
+        if (aimed && target != null && b.Ammo > 0 && b.ReloadUntil == 0 && now >= b.NextFire && DamageEnabled && !use
+            && (def.FireGroups == null || (groups = BotFireGroups(b, p, def, now, ref b.NextFire)) != 0)) // receivers at their own rates (GameFireGroups.cs)
         {
             var dir = World.Forward(yaw, pitch);
             var scoped = Flat(target.Position - p.Position) > 8f;
             var spread = def.HipSpreadRad * (scoped ? def.AdsSpreadMult : 1f) * FrenzyBuffs.ConeMult(p, def, scoped ? 1f : 0f); // the frenzy buffs
-            ServerResolveShot(p, def, p.Eye, dir, spread, ZNext(), ServerTick, now);
+            ServerResolveShot(p, def, p.Eye, dir, spread, ZNext(), ServerTick, now, groups);
             if (!InfiniteAmmoOn(now))
-                b.Ammo--; // (Infinite Ammo: the magazine stays full)
-            b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p) + (def.Mode == FireMode.Semi ? b.TriggerDelay : 0);
+                b.Ammo = Math.Max(0, b.Ammo - (groups != 0 ? GroupCount(groups) : 1)); // (Infinite Ammo: the magazine stays full); a round per receiver
+            if (groups == 0)
+                b.NextFire = now + def.FireInterval * ZombieFireIntervalMult(p) + (def.Mode == FireMode.Semi ? b.TriggerDelay : 0);
         }
 
         // Move: the wish direction turned into the input's relative buttons.
