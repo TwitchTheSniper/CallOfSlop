@@ -116,6 +116,12 @@ public sealed class HordeGroup
 
     public double CheckAt;
 
+    /// <summary>
+    /// Where the group's target was when progress was last checked: a target that walked off since isn't a blocked group
+    /// (the members were chasing it, not stuck), so the check starts again instead of regrouping.
+    /// </summary>
+    public Vector3 CheckTarget;
+
     /// <summary>Times this group regrouped, split members off and took members in (self-test and log).</summary>
     public int Regroups, SplitOut, Joined;
 
