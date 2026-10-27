@@ -27,7 +27,7 @@
     "breakSeconds": 10,
     "firstRoundDelay": 4,
     "readyUp": true,
-    "readyFallbackSeconds": 180,
+    "readyFallbackSeconds": 300,
     "readyGoSeconds": 3
   },
   "zombie": {

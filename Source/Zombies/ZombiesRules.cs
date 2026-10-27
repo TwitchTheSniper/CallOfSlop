@@ -86,7 +86,7 @@ public sealed class ZombiesRules
     /// </summary>
     public bool ReadyUp = true;
 
-    public float ReadyFallbackSeconds = 180f, ReadyGoSeconds = 3f;
+    public float ReadyFallbackSeconds = 300f, ReadyGoSeconds = 3f;
 
     // ---- Zombies ------------------------------------------------------------------------------------------
     /// <summary>A zombie's swipe: damage, reach (from its centre to yours), the windup before it lands, and the time between swipes.</summary>

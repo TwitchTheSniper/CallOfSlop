@@ -80,7 +80,7 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
   Bots count as ready; the dead (and a host sitting out, in the self-tests) don't block. When everyone is ready the
   next round starts `rounds.readyGoSeconds` (3 s) later, with its banner and sound as before ("ROUND 4", the whistle).
   The HUD shows "Press [F3] when ready - 1/2 ready" (centre) and "Break: 1/2 ready" in the match bar; the scoreboard
-  (Tab) tags each player [READY] / [not ready]. **Safety valve**: `rounds.readyFallbackSeconds` (180 s = 3 minutes,
+  (Tab) tags each player [READY] / [not ready]. **Safety valve**: `rounds.readyFallbackSeconds` (300 s = 5 minutes,
   0 = off) after the round ended it starts anyway (the bar counts it down); the **host** can force it: once ready, press
   F3 again ("host: press [F3] again to start now"). Walking about, buying and the workbench all work during the break.
   `rounds.readyUp: false` brings back the plain `breakSeconds` timer, which bots-only runs (nobody to ready up) still
@@ -96,7 +96,7 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
 | Rules (`Parts/Tables/ZombiesRules.json`) | Default | What |
 | --- | --- | --- |
 | `rounds.readyUp` | true | ready-up between rounds (false: the `breakSeconds` timer) |
-| `rounds.readyFallbackSeconds` | 180 | start anyway this long after the round ended (0 = never; the host can still force it) |
+| `rounds.readyFallbackSeconds` | 300 | start anyway this long after the round ended (0 = never; the host can still force it) |
 | `rounds.readyGoSeconds` | 3 | the countdown once everyone is ready |
 | `rounds.breakSeconds` | 10 | the break when ready-up is off or nobody can ready up (bots only) |
 | `downs.crawlSpeed` | 0.8 | crawl speed, as a fraction of the prone speed |
