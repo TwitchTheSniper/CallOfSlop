@@ -110,13 +110,13 @@ public sealed partial class Ui
         try
         {
             if (ImGui.InputTextWithHint("Server lists"u8, "e.g. 203.0.113.45, mylist.example.com:27051"u8, _masterInput!))
-                s.MasterServer = Settings.CleanMasterList(_masterInput!.ToString());
+                s.MasterServer = Settings.CleanMasterList(ImGuiSafe.Text(_masterInput!));
         }
         catch (Exception ex)
         {
             ImGuiSafe.FieldFailed("server lists", ex);
         }
-        if (!ImGui.IsItemActive() && _masterInput!.ToString() != s.MasterServer)
+        if (!ImGui.IsItemActive() && ImGuiSafe.Text(_masterInput!) != s.MasterServer)
             ImGuiSafe.SetInput(_masterInput, s.MasterServer); // a list learned from an invite shows up here
         ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 700 * _scale);
         ImGui.TextColored(Dim, "Server lists show your friends' games in the server browser. You rarely need to type one: joining a friend by invite code (or on your network) adds their list here, and hosting runs one when none answers. Separate several with commas."u8);

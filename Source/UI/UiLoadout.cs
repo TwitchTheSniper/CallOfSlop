@@ -572,7 +572,7 @@ public sealed partial class Ui
                 ImGui.SameLine();
                 if (ImGui.Button("OK"u8) || enter)
                 {
-                    l.Name = LoadoutStore.CleanName(_renameInput!.ToString());
+                    l.Name = LoadoutStore.CleanName(ImGuiSafe.Text(_renameInput!));
                     LoadoutStore.Save();
                     _renaming = false;
                 }

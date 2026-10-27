@@ -124,7 +124,7 @@ public sealed partial class Ui
         {
             try
             {
-                SafeClipboard.Sink(mix.ToJson(_mixPresetName?.ToString() is { Length: > 0 } n ? n : null, AudioMix.GameVersion(), DateTime.UtcNow));
+                SafeClipboard.Sink(mix.ToJson((_mixPresetName is { } box_ ? ImGuiSafe.Text(box_) : null) is { Length: > 0 } n ? n : null, AudioMix.GameVersion(), DateTime.UtcNow));
                 MixMessage("copied the mix as JSON to the clipboard", now);
             }
             catch (Exception ex)
@@ -147,7 +147,7 @@ public sealed partial class Ui
         ImGui.SameLine();
         if (ImGui.Button("Save as..."u8))
         {
-            var name = AudioMix.CleanPresetName(_mixPresetName!.ToString());
+            var name = AudioMix.CleanPresetName(ImGuiSafe.Text(_mixPresetName!));
             if (name.Length == 0)
                 MixMessage("type a preset name first (letters, digits, space, - and _)", now);
             else

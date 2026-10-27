@@ -260,7 +260,7 @@ public sealed partial class Ui
         if (send)
         {
             _chatInput.EvaluateLength(); // (the box only updates its length itself when Enter is pressed)
-            var text = ChatRules.Clean(_chatInput.ToString());
+            var text = ChatRules.Clean(ImGuiSafe.Text(_chatInput));
             if (text.Length > 0)
             {
                 var why = game.SendChat(text, now);
@@ -627,7 +627,7 @@ public sealed partial class Ui
         {
             if (ImGui.InputTextWithHint("Server name##room"u8, s.ServerNameOrDefault, _serverNameInput!))
             {
-                s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                s.ServerName = Settings.CleanServerName(ImGuiSafe.Text(_serverNameInput!));
                 game.ServerName = s.ServerNameOrDefault; // the server info is rebuilt every second (ServerAdvert.cs)
             }
         }

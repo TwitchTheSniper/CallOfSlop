@@ -185,7 +185,7 @@ public sealed partial class Ui
             if (send)
             {
                 _hudChatInput.EvaluateLength(); // (the box only updates its length itself when Enter is pressed)
-                var text = ChatRules.Clean(_hudChatInput.ToString());
+                var text = ChatRules.Clean(ImGuiSafe.Text(_hudChatInput));
                 var why = text.Length > 0 ? game.SendChat(text, now, ChatTeam) : null;
                 if (why is { Length: > 0 })
                 {

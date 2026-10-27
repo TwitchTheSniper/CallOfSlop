@@ -218,14 +218,14 @@ public static partial class SelfTest
                     var box = new ImInputString(f.Capacity);
                     ImGuiSafe.SetInput(box, "start ");
                     SimulatePaste(box, HookPaste(source, name));
-                    var value = f.Read(box.ToString());
+                    var value = f.Read(ImGuiSafe.Text(box));
                     if (!IsPrintableAscii(value) || value.Length > f.Max || (!f.Spaces && value.Contains(' ')))
                     {
                         if (bad++ < 3)
                             Fail($"{f.Name}: pasting {name} gave \"{value}\" (printable ASCII, at most {f.Max})");
                     }
                     ImGuiSafe.SetInput(box, value); // the box is refilled from the stored value (next time the screen opens)
-                    if (box.ToString() != value || f.Read(value) != value)
+                    if (ImGuiSafe.Text(box) != value || f.Read(value) != value)
                     {
                         if (bad++ < 3)
                             Fail($"{f.Name}: \"{value}\" doesn't survive a round trip through the box");
@@ -267,6 +267,8 @@ public static partial class SelfTest
             Fail($"ImGuiSafe.SetInput threw: {ex.Message}");
         }
 
+        CheckInputReadBack();
+
         // Copy (Ctrl+C / Ctrl+X) goes through the other hook.
         string? copied = null;
         SafeClipboard.Sink = s => copied = s;
@@ -285,6 +287,66 @@ public static partial class SelfTest
         // GLFW's error callback: an image paste raises FormatUnavailable each time; logged, rate-limited, never thrown.
         for (var i = 0; i < 100; i++)
             SafeClipboard.LogGlfwError(GlfwErrorCode.FormatUnavailable, "Win32: Failed to convert clipboard to string");
+    }
+
+    /// <summary>
+    /// Text boxes are read with <see cref="ImGuiSafe.Text"/>, not <c>ImInputString.ToString()</c>: BRUTAL's ToString
+    /// pools strings by a 32-bit hash of their bytes, so two texts with the same hash read back as one (the hash seed
+    /// is random per process; main's Windows run 40433164286 hit it: a player name read back as another string).
+    /// This finds two texts with the same hash in this process and puts both through a box.
+    /// </summary>
+    private static void CheckInputReadBack()
+    {
+        static int Hash(ReadOnlySpan<byte> b)
+        {
+            var h = new HashCode();
+            h.AddBytes(b);
+            return h.ToHashCode();
+        }
+        var seen = new Dictionary<int, int>(1 << 17);
+        // 12 printable letters from a 60-bit odd-multiplier scramble of i (distinct for every i), so ~77k tries find a pair.
+        static void Letters(long i, Span<byte> b)
+        {
+            var x = (ulong)i * 0x9E3779B97F4A7C15UL;
+            for (var k = 0; k < 12; k++)
+                b[k] = (byte)('A' + (int)(x >> (k * 5) & 31));
+        }
+        Span<byte> buf = stackalloc byte[12];
+        Span<byte> other = stackalloc byte[12];
+        string? first = null, second = null;
+        for (var i = 0; i < 2_000_000 && first == null; i++)
+        {
+            Letters(i, buf);
+            var h = Hash(buf);
+            if (seen.TryGetValue(h, out var j) && j != i)
+            {
+                Letters(j, other);
+                first = Encoding.ASCII.GetString(other);
+                second = Encoding.ASCII.GetString(buf);
+            }
+            else
+                seen[h] = i;
+        }
+        if (first == null || second == null)
+        {
+            Fail("no two texts with the same hash found (the read-back check didn't run)");
+            return;
+        }
+        var a = new ImInputString(32);
+        var b = new ImInputString(32);
+        ImGuiSafe.SetInput(a, first);
+        ImGuiSafe.SetInput(b, second);
+        var pooledA = a.ToString(); // BRUTAL's pooled read: the first text seen for this hash wins
+        var pooledB = b.ToString();
+        var safeA = ImGuiSafe.Text(a);
+        var safeB = ImGuiSafe.Text(b);
+        if (safeA != first || safeB != second)
+            Fail($"ImGuiSafe.Text read \"{safeA}\" and \"{safeB}\" from boxes holding \"{first}\" and \"{second}\"");
+        ImGuiSafe.SetInput(b, first);
+        if (ImGuiSafe.Text(b) != first || !ReferenceEquals(ImGuiSafe.Text(b), ImGuiSafe.Text(b)))
+            Fail("ImGuiSafe.Text didn't follow a box's change, or allocated again for unchanged text");
+        Line($"text boxes: \"{first}\" and \"{second}\" share a hash ({seen.Count} texts tried); BRUTAL's ToString read back " +
+             $"\"{pooledA}\" and \"{pooledB}\"{(pooledB == second ? "" : " (the pooled-string bug)")}; ImGuiSafe.Text read both right");
     }
 
     /// <summary>What ImGui does with a paste in a single-line box: appends as many bytes as fit (leaving the NUL), then the box re-reads its length.</summary>
