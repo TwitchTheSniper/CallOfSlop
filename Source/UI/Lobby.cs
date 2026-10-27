@@ -993,8 +993,16 @@ public sealed partial class Ui
                     ImGui.PopStyleColor();
                 }
                 ImGui.Spacing();
-                if (BigButton(game.IsServer && !game.Net.IsOffline ? "END MATCH (back to lobby)" : "LEAVE MATCH (back to lobby)"))
-                    action = PauseAction.Leave;
+                var exits = PauseExits(game.IsServer, game.Net.IsOffline, game.CanReturnToLobby);
+                if (exits.BackToLobby != null)
+                {
+                    if (BigButton(exits.BackToLobby))
+                        action = PauseAction.BackToLobby; // Game.ReturnToLobbyNow: the lobby room, everyone still connected (HostControls.cs)
+                    ImGuiSafe.TextColored(Dim, "Ends the match: everyone stays connected and goes to the lobby room.");
+                }
+                if (BigButton(exits.Leave))
+                    action = PauseAction.Leave; // EndSession: the main menu
+                ImGuiSafe.TextColored(Dim, exits.LeaveHint);
                 if (BigButton("QUIT GAME"))
                     action = PauseAction.Quit;
             }
@@ -1013,4 +1021,19 @@ public sealed partial class Ui
     }
 
     public void ResetLobby() => _page = Page.Main;
+
+    /// <summary>
+    /// The pause menu's two ways out, kept apart: BACK TO LOBBY (the host, hosting with the lobby room: the match ends,
+    /// the server and every connection stay) and LEAVE GAME (the main menu: for the host that closes the server, for a
+    /// client only they leave). <c>BackToLobby</c> is null when that option isn't there (clients, single player).
+    /// </summary>
+    internal static (string? BackToLobby, string Leave, string LeaveHint) PauseExits(bool isServer, bool offline, bool canReturnToLobby)
+    {
+        if (offline)
+            return (null, "LEAVE MATCH (main menu)", "Back to the main menu.");
+        if (isServer)
+            return (canReturnToLobby ? "BACK TO LOBBY (end match, keep everyone)" : null, "LEAVE GAME (main menu, closes the server)",
+                "Disconnects everyone and goes to the main menu.");
+        return (null, "LEAVE GAME (disconnect, main menu)", "Only you leave: the match goes on. The host can take everyone back to the lobby.");
+    }
 }
