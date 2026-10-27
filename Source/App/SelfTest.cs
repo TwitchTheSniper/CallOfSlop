@@ -287,6 +287,7 @@ public static partial class SelfTest
         Section("Score scaling", CheckScoreScaling); // SelfTestScoreScaling.cs: score limits that scale with the player count
         Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
         Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
+        Section("Return to lobby", CheckReturnToLobby); // SelfTestReturnToLobby.cs: the host's BACK TO LOBBY over loopback (clients stay, teams/loadouts/bots kept, a client leaving, a new match, Zombies cleared), the pause menu's exits
         Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
         Section("Arms", CheckArms);
         Section("Gun models", CheckGunModels); // SelfTestGunModels.cs
