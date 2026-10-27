@@ -110,7 +110,7 @@ def prism(centre, axis, a, length, color, sides=12, material=None, spin=0.0):
     out = []
     for i in range(k):
         r = mul(axis, ry(spin + i * 180.0 / k))
-        out.append(b([2 * a, length, w], centre, color, r, material))
+        out.append(b([2 * a, abs(length), w], centre, color, r, material))
     return out
 
 
