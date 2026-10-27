@@ -36,6 +36,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 - Version scheme: `0.YYYY.MDD.N` (`BuildInfo.cs`).
 - The Azure signing step is present but off (`vars.SIGNING_ENABLED`).
 - The release notes append `tools/MIGRATING.md`.
+- A Mac (Apple Silicon) job is present but OFF (`mac` input / `vars.MAC_RELEASE_ENABLED`): `CallOfSlop.app` via `tools/mac/package_mac.sh`, an `osx-arm64` entry in `update.json`'s `platforms`; data in `Contents/Resources`, logs in `~/Library/Logs` (`Source/App/AppFolders.cs`). README "Mac (Apple Silicon)".
 - It bakes every shipped map (the built map, `Source/Maps/MapBake.cs`) and its nav graph (`Source/Game/BotNavBake.cs`) with the packaged exe (`--bake DIR`); dev builds cache their own in the save folder's `Cache/`.
 
 ## Layout

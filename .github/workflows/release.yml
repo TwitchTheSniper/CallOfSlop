@@ -275,10 +275,10 @@ jobs:
           set -e
           log="$dir/selftest.log"
           if [ -f "$log" ]; then
-            done_line=$(grep '^DONE' "$log" | tail -1)
+            done_line=$({ grep '^DONE' "$log" || true; } | tail -1)
             [ -n "$done_line" ] && echo "::notice title=Mac self-test::$done_line"
             if [ -z "$done_line" ] || echo "$done_line" | grep -q FILTERED; then echo "::error title=Mac self-test::the release needs a complete, unfiltered self-test run"; code=1; fi
-            grep 'FAIL:' "$log" | head -60 | while read -r l; do echo "::error title=Mac self-test::$l"; done
+            { grep 'FAIL:' "$log" || true; } | head -60 | while read -r l; do echo "::error title=Mac self-test::$l"; done
           else
             echo "::error title=Mac self-test::selftest.log was not written"; code=1
           fi
@@ -307,7 +307,7 @@ jobs:
           code=$?
           set -e
           if [ -f "$dir/callofslop.log" ]; then
-            grep '\[bake\]' "$dir/callofslop.log" | while read -r l; do
+            { grep '\[bake\]' "$dir/callofslop.log" || true; } | while read -r l; do
               if echo "$l" | grep -q FAILED; then echo "::error title=Bake::$l"; elif echo "$l" | grep -q "maps baked"; then echo "::notice title=Mac bake::$l"; fi
             done
             rm -f "$dir/callofslop.log" # (the package has no logs)
@@ -330,7 +330,7 @@ jobs:
           set -e
           log="$HOME/Library/Logs/CallOfSlop/selftest.log"
           if [ -f "$log" ]; then
-            grep -E '^DONE|FAIL:|^manifests:|^folders:|^install:' "$log" | while read -r l; do
+            { grep -E '^DONE|FAIL:|^manifests:|^folders:|^install:' "$log" || true; } | while read -r l; do
               if echo "$l" | grep -q 'FAIL:'; then echo "::error title=App check::$l"; else echo "::notice title=App check::$l"; fi
             done
           else
@@ -397,7 +397,7 @@ jobs:
           dotnet "$dir/CallOfSlop.dll" --verify-update "$out/update-check.json" "$out/CallOfSlop-$v-mac.zip" --platform osx-arm64
           code=$?
           set -e
-          grep '\[verify-update\]' "$dir/callofslop.log" | while read -r l; do
+          { grep '\[verify-update\]' "$dir/callofslop.log" || true; } | while read -r l; do
             if echo "$l" | grep -q 'PROBLEM:'; then echo "::error title=Mac verify::$l"; else echo "::notice title=Mac verify::$l"; fi
           done
           rm -f "$out/update-check.json"
