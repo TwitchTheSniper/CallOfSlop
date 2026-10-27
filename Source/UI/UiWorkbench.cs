@@ -45,6 +45,10 @@ public sealed partial class Ui
     private string _wbMessage = "";
     private bool _wbMessageBad;
     private double _wbMessageAt = -100;
+    private double _wbRefusedAt = -100; // the last refused Build (the red socket rings pulse for a moment after it)
+    private const float RefusedPulseSeconds = 1.6f;
+    private (int Version, int Spot) _refusedTipKey = (-1, -1);
+    private string _refusedTip = "";
     private ImInputString? _wbNameInput, _wbSearchInput;
     private string _wbSearch = "";
     private int _wbFilter = -1; // part category shown (-1 = all)
@@ -242,6 +246,36 @@ public sealed partial class Ui
         if (!_wbPractice)
             return BenchStock.Unlimited;
         return _wbPracticeStock ??= BenchStock.Practice(Parts.All);
+    }
+
+    /// <summary>After a Build / Save / Apply / Test fire button: a click on it while it's greyed out (the build can't be finalised) refuses the build.</summary>
+    private void WbRefusedClick(bool ready)
+    {
+        if (!ready && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            WbBuildRefused();
+    }
+
+    /// <summary>
+    /// The build was refused: every empty socket it needs gets a red ring on the 3D model (pulsing for a moment, then
+    /// steady until it's filled), and the message says which sockets and what else stops it.
+    /// </summary>
+    internal void WbBuildRefused()
+    {
+        if (_bm == null || Bm.CanFinalize)
+            return;
+        var n = Bm.RefuseBuild();
+        _wbRefusedAt = _wbNow;
+        _wbAudio?.Effect(Sfx.DryFire, 0.5f);
+        if (n == 0)
+        {
+            WbSay("Can't build it yet: " + Bm.FinalizeTip().Replace('\n', ' '), true);
+            return;
+        }
+        var names = new System.Text.StringBuilder();
+        foreach (var s in Bm.Spots)
+            if (s.Refused)
+                names.Append(names.Length > 0 ? ", " : "").Append(SocketLabel(s.Socket).ToLowerInvariant());
+        WbSay($"Can't build it yet: {n} empty socket{(n == 1 ? " needs" : "s need")} a part ({names}). They're circled red on the gun: hover one to see what goes there, click it for those parts.", true);
     }
 
     private void WbSay(string text, bool bad = false)
@@ -853,6 +887,8 @@ public sealed partial class Ui
                     _dragStart = mouse;
                     _dragHome = _spotScreen[_hoverSpot];
                 }
+                else if (_hoverSpot >= 0 && (spot.Refused || spot.Needed))
+                    WbShowSocketParts(spot.Socket); // a red (refused) or yellow (needed) ring: its parts
                 else
                     _orbiting = true;
             }
@@ -891,8 +927,21 @@ public sealed partial class Ui
         DlText(dl, new float2(_viewMin.X + 10 * _scale, _viewMax.Y - 22 * _scale), new ImColor8(120, 122, 132, 255), "drag: turn - wheel: zoom - double-click a part: take it off - double-click elsewhere: reset");
         if (!_dragging && _hoverSpot >= 0 && Bm.Spots[_hoverSpot] is var hs)
         {
-            var label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
-            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing ? Red8 : White8, label);
+            string label;
+            if (hs.Refused)
+            {
+                if (_refusedTipKey != (Bm.Version, _hoverSpot)) // made once per socket and build, not per frame
+                {
+                    _refusedTipKey = (Bm.Version, _hoverSpot);
+                    _refusedTip = $"Needs {SocketNeeds(hs.Socket)} here ({SocketLabel(hs.Socket).ToLowerInvariant()} of the {hs.Parent.Part.Name}) - click: {PartDef.CategoryName(CategoryFor(hs.Socket)).ToLowerInvariant()} parts";
+                }
+                label = _refusedTip;
+            }
+            else
+                label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
+            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing || hs.Refused ? Red8 : White8, label);
+            if (hs.Child == null && (hs.Refused || hs.Needed))
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             if (hs.Child != null)
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
         }
@@ -949,7 +998,19 @@ public sealed partial class Ui
                     DlText(dl, c + new float2(15 * _scale, -9 * _scale), col, swap ? $"swap: {SocketLabel(s.Socket)} ({s.Child!.Part.Name})" : $"{SocketLabel(s.Socket)} of the {s.Parent.Part.Name}");
                 continue;
             }
-            if (s.Missing)
+            if (s.Refused)
+            {
+                // A refused Build: a red ring on each empty socket it needs, a big pulse for a moment, then a steady beat
+                // until it's filled. Drawn over the 3D view, so it shows through the model from any angle.
+                var since = (float)(_wbNow - _wbRefusedAt);
+                var burst = since < RefusedPulseSeconds ? 1f - since / RefusedPulseSeconds : 0f;
+                var beat = 0.5f + 0.5f * MathF.Sin(since * 10f);
+                var r = (11f + burst * beat * 10f + pulse * 1.5f) * _scale;
+                dl.AddCircle(c, r + 3f * _scale, WbFade(Red8, 0.3f + 0.5f * burst), 28, 4f * _scale);
+                dl.AddCircle(c, r, Red8, 28, (2.5f + burst) * _scale);
+                dl.AddCircleFilled(c, 3.5f * _scale, Red8, 10);
+            }
+            else if (s.Missing)
             {
                 dl.AddCircleFilled(c, 5f * _scale, Red8, 12);
                 dl.AddCircle(c, (8f + pulse * 2f) * _scale, WbFade(Red8, 0.8f), 16, 2f * _scale);
@@ -1134,16 +1195,7 @@ public sealed partial class Ui
                     }
                 }
                 else if (r.Socket != null)
-                {
-                    var cat = CategoryFor(r.Socket);
-                    if (_inv.Shows(cat))
-                    {
-                        _wbFilter = (int)cat;
-                        WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
-                    }
-                    else // the category is hidden (nothing spare fits): picking it would only fall back to All
-                        WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(r.Socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
-                }
+                    WbShowSocketParts(r.Socket);
             }
             if (rclicked && r.Node != null)
             {
@@ -1152,6 +1204,20 @@ public sealed partial class Ui
             }
         }
         ImGui.EndChild();
+    }
+
+    /// <summary>A click on an empty socket (a "needs" row, or a red / yellow ring on the gun): the parts list shows that socket's category.</summary>
+    private void WbShowSocketParts(PartSocket socket)
+    {
+        var cat = CategoryFor(socket);
+        if (_inv.Shows(cat))
+        {
+            _wbFilter = (int)cat;
+            _wbInvScrollTop = true;
+            WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(socket).ToLowerInvariant()} socket.");
+        }
+        else // the category is hidden (nothing spare fits): picking it would only fall back to All
+            WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
     }
 
     /// <summary>
@@ -1175,6 +1241,9 @@ public sealed partial class Ui
     }
 
     /// <summary>What a socket type is for, from the part registry ("" if it says nothing).</summary>
+    /// <summary>What goes in an empty socket, for "Needs ... here": "ammo", "an action", "a barrel".</summary>
+    internal static string SocketNeeds(PartSocket s) => s.Type == "ammo" ? "ammo" : ("aeiou".Contains(s.Type[0]) ? "an " : "a ") + s.Type;
+
     private static string SocketAbout(string type) => Parts.Registry.About.TryGetValue(type, out var a) ? a : "";
 
     /// <summary>The build with the dragged part (or part being moved) in spot <paramref name="spot"/>, cached per hovered spot.</summary>
@@ -1742,6 +1811,7 @@ public sealed partial class Ui
                 WbSay($"Saved '{b.Name}' to the melee slot.");
             }
             ImGui.EndDisabled();
+            WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetTooltip(Bm.FinalizeTip());
             ImGui.SameLine();
@@ -1778,6 +1848,7 @@ public sealed partial class Ui
                 WbSay($"Saved '{b.Name}' to slot {BuildStore.Selected + 1}.");
             }
             ImGui.EndDisabled();
+            WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetTooltip(Bm.FinalizeTip());
             ImGui.SameLine();
@@ -1837,6 +1908,7 @@ public sealed partial class Ui
             }
         }
         ImGui.EndDisabled();
+        WbRefusedClick(ready);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGuiSafe.SetTooltip(ready ? $"Opens the Workbench Range with your builds ({Keybinds.NameOf(_hudSettings, GameAction.Interact)}: park / push a cart, buy the slot upgrade)." : Bm.FinalizeTip());
         return launch;

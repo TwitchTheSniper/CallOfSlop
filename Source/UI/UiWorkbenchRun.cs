@@ -134,6 +134,7 @@ public sealed partial class Ui
             WbSay($"Sent '{b.Name}' to slot {(run.Slot == 4 ? "melee" : (run.Slot + 1).ToString())}. Parts you took off go back to your loose parts.");
         }
         ImGui.EndDisabled();
+        WbRefusedClick(ready); // a click on the greyed-out Apply: red rings on the empty sockets that need a part
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGuiSafe.SetTooltip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
         if (ImGui.Button("Revert"u8))
