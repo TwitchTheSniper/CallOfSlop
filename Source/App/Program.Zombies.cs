@@ -12,6 +12,25 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
+    private const float WallGunScale = 0.9f;
+    private static readonly Dictionary<string, float> WallGunOuts = new();
+
+    /// <summary>
+    /// How far out from the chalk (local z, negative = out of the wall) a wall-buy gun is drawn so no part of it sits
+    /// inside the wall: its deepest point on the wall side clears the wall by 1 cm.
+    /// </summary>
+    internal static float WallGunOut(string build, WeaponDef def)
+    {
+        if (WallGunOuts.TryGetValue(build, out var z))
+            return z;
+        var minX = 0f;
+        foreach (var part in GunModel.RecordParts(def, 0f))
+            minX = MathF.Min(minX, part.Min.X);
+        z = WallGunScale * minX - 0.01f; // the chalk sits 2 cm off the wall: the gun clears the wall by 3 cm and the chalk by 1 cm
+        WallGunOuts[build] = z;
+        return z;
+    }
+
     private static readonly Vector3 ZSkin = new(0.36f, 0.52f, 0.3f), ZShirt = new(0.33f, 0.3f, 0.26f), ZPants = new(0.18f, 0.2f, 0.27f);
 
     /// <summary>Everything the Zombies mode draws in the world (nothing outside Zombies maps).</summary>
@@ -109,7 +128,10 @@ public static unsafe partial class Program
             if (StandardBuilds.Find(wb.Build) is { } sb && Game.AssembleCached(sb.Build()).PreviewDef is { } def)
             {
                 var side = Matrix4x4.CreateRotationY(MathF.PI / 2); // the gun lies along the wall
-                DrawGun(def, Matrix4x4.CreateScale(0.9f) * side * Matrix4x4.CreateTranslation(0, -0.05f, 0.08f) * rot * Matrix4x4.CreateTranslation(at), false);
+                // Local -z points out of the wall (rot maps +z to -FlatForward), and the side turn puts the gun's -x
+                // (its left side) against the wall: push it out by that side's depth so the whole gun stands proud of
+                // the wall, however wide its splitters, drums or grips are (cached per build: RecordParts allocates).
+                DrawGun(def, Matrix4x4.CreateScale(WallGunScale) * side * Matrix4x4.CreateTranslation(0, -0.05f, WallGunOut(wb.Build, def)) * rot * Matrix4x4.CreateTranslation(at), false);
             }
         }
 

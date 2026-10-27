@@ -112,6 +112,18 @@ public static partial class SelfTest
         foreach (var wb in zm.WallBuys)
             if (StandardBuilds.Find(wb.Build) is not { } sb || !sb.Sources.Contains("wall"))
                 Fail($"wall buy '{wb.Build}' isn't a standard build tagged \"wall\"");
+        // Every wall gun (any map's, and every "wall" preset) is drawn proud of the wall: its model has boxes on both
+        // sides of its centre line and the chalk pushes it out by its wall-side depth (the developer's screenshot showed
+        // a gun sunk into the wall behind its outline).
+        foreach (var sb in StandardBuilds.From("wall"))
+            if (Game.AssembleCached(sb.Build()).PreviewDef is { } def)
+            {
+                var parts = GunModel.RecordParts(def, 0f);
+                var minX = parts.Count == 0 ? 0f : parts.Min(p => p.Min.X);
+                var z = Program.WallGunOut(sb.Name, def);
+                if (parts.Count == 0 || minX >= 0 || z > 0.9f * minX - 0.009f)
+                    Fail($"wall gun '{sb.Name}' would sink into the wall ({parts.Count} boxes, deepest {minX:0.000}, drawn at {z:0.000})");
+            }
         foreach (var m in zm.PerkMachines)
             if (rules.Perk(m.Perk) == null)
                 Fail($"perk machine '{m.Perk}' isn't a perk in the rules");
