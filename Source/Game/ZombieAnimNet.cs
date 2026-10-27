@@ -39,6 +39,13 @@ public sealed partial class Zombie
     public ZombieTargets AnimTargets;
 
     public double AnimSmoothAt = -1e9;
+
+    /// <summary>Drawing: the last pose, where the body was for it, its state and the frame it was worked out (animation level of detail).</summary>
+    public ZombiePose AnimPose;
+
+    public Vector3 AnimPoseAt;
+    public ZState AnimPoseState = (ZState)255;
+    public long AnimPoseFrame = -100;
 }
 
 /// <summary>

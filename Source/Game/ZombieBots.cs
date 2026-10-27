@@ -10,6 +10,9 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Game
 {
+    private float[] _zBotKey = new float[64];
+    private int[] _zBotIdx = new int[64];
+
     /// <summary>What a downed player can't do: jump (so no mantling), sprint, crouch or stand up.</summary>
     private const Buttons ZDownedStrip = Buttons.Jump | Buttons.Sprint | Buttons.Crouch;
 
@@ -70,28 +73,58 @@ public sealed partial class Game
         if (now >= b.NextScan || b.Target == byte.MaxValue)
         {
             b.NextScan = now + 0.15;
-            var best = float.MaxValue;
-            foreach (var z in Horde)
+            // Nearest first, and only until one is in a clear line of fire: a horde of hundreds costs a few ray casts, not hundreds.
+            var n = 0;
+            if (_zBotKey.Length < Horde.Count)
             {
+                _zBotKey = new float[Math.Max(Horde.Count, _zBotKey.Length * 2)];
+                _zBotIdx = new int[_zBotKey.Length];
+            }
+            for (var i = 0; i < Horde.Count; i++)
+            {
+                var z = Horde[i];
                 if (z.State == ZState.Dead)
                     continue;
                 var d = Vector3.DistanceSquared(z.Position, p.Position);
+                if (d >= 45f * 45f)
+                    continue;
                 if (b.Insane && d > 36f && ZTargetTaken(p, z.Id))
                     d *= 2.5f; // Insane: spread the fire, a zombie a teammate already shoots at counts as further away
-                if (d < best && d < 45f * 45f && ZClearShot(p.Eye, z.Position + new Vector3(0, 1.2f, 0)))
+                _zBotKey[n] = d + z.Id * 1e-6f; // (ties by id, as before)
+                _zBotIdx[n] = i;
+                n++;
+            }
+            if (n > 1)
+                Array.Sort(_zBotKey, _zBotIdx, 0, n);
+            for (var k = 0; k < n; k++)
+            {
+                var z = Horde[_zBotIdx[k]];
+                if (ZClearShot(p.Eye, z.Position + new Vector3(0, 1.2f, 0)))
                 {
-                    best = d;
                     target = z;
+                    break;
                 }
             }
             b.Target = target != null ? (byte)(target.Id & 0xFF) : byte.MaxValue;
             _zBotTarget[p.Id] = target?.Id ?? 0;
         }
         else if (_zBotTarget.TryGetValue(p.Id, out var tid) && tid != 0)
-            target = Horde.FirstOrDefault(z => z.Id == tid && z.State != ZState.Dead);
+            target = _zById.TryGetValue(tid, out var tz) && tz.State != ZState.Dead ? tz : null;
 
         // Where to go: away from a zombie that's close, to a downed teammate, to a window that needs boards, or home.
-        var nearest = Horde.Where(z => z.State != ZState.Dead).OrderBy(z => Vector3.DistanceSquared(z.Position, p.Position)).ThenBy(z => z.Id).FirstOrDefault();
+        Zombie? nearest = null;
+        var nearBest = float.MaxValue;
+        foreach (var z in Horde)
+        {
+            if (z.State == ZState.Dead)
+                continue;
+            var d = Vector3.DistanceSquared(z.Position, p.Position);
+            if (d < nearBest || (d == nearBest && nearest != null && z.Id < nearest.Id))
+            {
+                nearBest = d;
+                nearest = z;
+            }
+        }
         var nearD = nearest != null ? Flat(nearest.Position - p.Position) : float.MaxValue;
         Vector3? goal = null;
         var use = false;
@@ -117,7 +150,7 @@ public sealed partial class Game
             for (var i = 0; i < zm.Windows.Count; i++)
             {
                 var w = zm.Windows[i];
-                if (w.Area != area || i >= ZBoards.Length || ZBoards[i] >= w.Boards || Horde.Any(z => z.State != ZState.Dead && Flat(z.Position - w.Outside) < 1.2f))
+                if (w.Area != area || i >= ZBoards.Length || ZBoards[i] >= w.Boards || HordeAI.Grid.Any(w.Outside, 1.2f))
                     continue;
                 if (Flat(w.Inside - p.Position) > 1.1f)
                     goal = w.Inside;

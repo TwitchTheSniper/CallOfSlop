@@ -856,4 +856,7 @@ public sealed partial class Game
     // ---- Self-test hooks ------------------------------------------------------------------------------
 
     public Zombie SelfTestSpawnZombie(int spawner, double now) => SpawnZombie(World.Map.Zombies!, spawner, now);
+
+    /// <summary>Self-test: a blast from <paramref name="owner"/> (damage and the horde's reaction).</summary>
+    public void SelfTestBlast(Player owner, Vector3 at, float radius, float damage, double now) => BlastZombies(owner, at, radius, damage, now);
 }

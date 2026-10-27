@@ -39,6 +39,11 @@ public sealed partial class Game
     /// </summary>
     public int HostHordeCap = MaxZombies;
 
+    /// <summary>The choices the lobby offers for <see cref="HostHordeCap"/> (the last: no extra limit), and the least it can be.</summary>
+    public static readonly int[] HordeCapChoices = [48, 100, 150, 200, 300, 400, MaxZombies];
+
+    public const int MinHordeCap = 24;
+
     private Map? _hordeMap;
     private ZombiesRules? _hordeRules;
     private int[] _zDoorNode = [];

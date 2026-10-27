@@ -165,7 +165,7 @@ public static partial class SelfTest
     private static void CheckZombieRuns(Map map, ZombiesMap zm, ref double now)
     {
         // ---- Spawners only in unlocked areas; the alive cap and the queue ----
-        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 0.5f; r.SpawnDelay = 0.1f; r.SpawnDelayMin = 0.05f; }))
+        using (var g = ZGame(0, ref now, tweak: r => { r.FirstRoundDelay = 0.5f; r.SpawnDelay = 0.1f; r.SpawnDelayMin = 0.05f; r.CountBase = 60; })) // (round 9 sends more than its alive cap)
         {
             var me = g.Local!;
             me.ImmuneUntil = 1e9;
@@ -197,12 +197,13 @@ public static partial class SelfTest
                 maxAlive = Math.Max(maxAlive, g.AliveZombies);
             }
             var hall = zm.AreaIndex("Hall");
-            ZLine($"spawners: closed doors -> areas {string.Join(",", seenAreas.Select(a => zm.Areas[a].Name))}; {seen.Count} spawned; alive at most {maxAlive} (cap {g.ZRules.MaxAlive}), {g.SelfTestToSpawn} still queued in round 9");
+            var cap = g.ZAliveCap();
+            ZLine($"spawners: closed doors -> areas {string.Join(",", seenAreas.Select(a => zm.Areas[a].Name))}; {seen.Count} spawned; alive at most {maxAlive} (round 9 cap {cap}, rules cap {g.ZRules.MaxAlive}), {g.SelfTestToSpawn} still queued in round 9");
             if (!startOnly)
                 Fail("with every door shut, zombies came from outside the start area");
             if (!seenAreas.Contains(hall) || seenAreas.Any(a => !g.AreaOpen(a)))
                 Fail("opening the Hall door should bring its spawners in (and only unlocked areas spawn)");
-            if (maxAlive > g.ZRules.MaxAlive || g.SelfTestToSpawn <= 0)
+            if (maxAlive > cap || maxAlive < cap - 2 || g.SelfTestToSpawn <= 0)
                 Fail("the alive cap or the spawn queue doesn't work");
         }
 

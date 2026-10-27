@@ -834,6 +834,13 @@ public sealed partial class Game
         ReadZWorld(ref r2, 0);
     }
 
+    /// <summary>Self-test: a client's copy reads one <see cref="Msg.ZEnts"/> (the message id included) at local time <paramref name="now"/>.</summary>
+    public void SelfTestReadEnts(ReadOnlySpan<byte> ents, double now)
+    {
+        var r = new PacketReader(ents[1..]);
+        ReadZEnts(ref r, now);
+    }
+
     /// <summary>Self-test: a client's copy applies a build message.</summary>
     public bool SelfTestApplyBuild(ReadOnlySpan<byte> msg)
     {

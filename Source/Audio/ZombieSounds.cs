@@ -56,6 +56,18 @@ public sealed class ZombieSounds
     /// <summary>The idle groan budget: this many a second on average, at most <see cref="GroanBurst"/> at once.</summary>
     public const float GroansPerSecond = 3f, GroanBurst = 4f;
 
+    /// <summary>
+    /// A big horde groans more (but never a wall of noise): past <see cref="GroanHordeFrom"/> living zombies the budget
+    /// grows with the square root of the horde, up to <see cref="GroanScaleMax"/> times (300 zombies: 2x, 6 a second).
+    /// The voice caps don't change.
+    /// </summary>
+    public const int GroanHordeFrom = 48;
+
+    public const float GroanScaleMax = 2f;
+
+    /// <summary>The groan budget's scale for a horde of <paramref name="alive"/>.</summary>
+    public static float GroanScale(int alive) => alive <= GroanHordeFrom ? 1f : MathF.Min(GroanScaleMax, MathF.Sqrt(alive / (float)GroanHordeFrom));
+
     /// <summary>A flinch within this many server ticks of a head hit is a headshot.</summary>
     public const double HeadWindowTicks = 8;
 
@@ -142,7 +154,12 @@ public sealed class ZombieSounds
         if (!(dt > 0f))
             return;
         Clock += dt;
-        _tokens = MathF.Min(GroanBurst, _tokens + dt * GroansPerSecond);
+        var alive = 0;
+        for (var i = 0; i < horde.Count; i++)
+            if (horde[i].State != ZState.Dead)
+                alive++;
+        var scale = GroanScale(alive);
+        _tokens = MathF.Min(GroanBurst * scale, _tokens + dt * GroansPerSecond * scale);
         var listener = audio.ListenerPosition;
         for (var i = 0; i < horde.Count; i++)
             Update(audio, horde[i], listener);

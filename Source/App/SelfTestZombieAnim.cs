@@ -342,7 +342,7 @@ public static partial class SelfTest
             g.WriteZWorld(w2);
             c.SelfTestReadZombies(ents2, w2.Span.ToArray());
 
-            var bytesPer = (ents.Length - 6) / Math.Max(1, g.Horde.Count);
+            var bytesPer = (ents.Length - Game.ZEntsHeader) / (double)Math.Max(1, g.Horde.Count); // 11 or 12 a zombie (the window byte only at a window: protocol 58)
             int same = 0, total = 0;
             var worstPhase = 0f;
             g.SelfTestAnimTick = c.SelfTestAnimTick = g.ServerTick - 0.5;
@@ -368,12 +368,12 @@ public static partial class SelfTest
             var ctear = c.Horde.FirstOrDefault(x => x.Id == tear.Id);
             g.ZombieAnimInputFor(tear, 10, out var tearIn);
             Line($"network: {same}/{total} zombies animate the same on a client (tearing at {tearIn.Phase:0.00} of a board, climbing, rising, swiping, chasing; phase worst {worstPhase:0.000}), "
-                 + $"flinch tick {ctear?.FlinchTick ?? -1} vs {tear.FlinchTick}; {bytesPer} bytes a zombie, protocol {ServerInfo.ProtocolVersion}");
+                 + $"flinch tick {ctear?.FlinchTick ?? -1} vs {tear.FlinchTick}; {bytesPer:0.0} bytes a zombie, protocol {ServerInfo.ProtocolVersion}");
             g.SelfTestAnimTick = c.SelfTestAnimTick = null;
             if (same != total || total != 5 || ctear == null || ctear.FlinchTick != tear.FlinchTick || tear.FlinchTick < 0)
                 Fail("a client doesn't see the zombies' animation state the host sees");
-            if (bytesPer != Game.ZEntBytes || Game.ZEntBytes != 12 || ServerInfo.ProtocolVersion < 43)
-                Fail($"ZEnts should stay at 12 bytes a zombie (got {bytesPer}) with protocol 43 or later");
+            if (bytesPer > Game.ZEntBytes || bytesPer < Game.ZEntBytes - 1 || Game.ZEntBytes != 12 || ServerInfo.ProtocolVersion < 58)
+                Fail($"ZEnts should be 11-12 bytes a zombie (got {bytesPer:0.0}) with protocol 58 or later");
             if (MathF.Abs(tearIn.Phase - 0.6f) > 0.03f)
                 Fail($"the tearing zombie's board cycle should be 0.6 (got {tearIn.Phase:0.00})");
 
