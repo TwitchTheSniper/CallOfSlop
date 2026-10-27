@@ -80,6 +80,8 @@ public static partial class SelfTest
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
         SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
         NavBake.Enabled = false; // every nav graph built live, whatever an earlier run cached ("Nav bake" turns it on in a temp folder)
+        MapBake.Enabled = false; // every map built live too, and nothing cached ("Map bake" turns both on in a temp folder)
+        MapBake.CacheWrites = false;
         using (_log = new StreamWriter(path, false))
         {
             Line($"Call of Slop self-test {DateTime.Now}");
@@ -231,6 +233,7 @@ public static partial class SelfTest
         Section("Kill notices", CheckKillNotices); // SelfTestKillNotices.cs: the killer's notice, kill feed, sentry armour
         Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
         Section("Matches", CheckMatches);
+        Section("Map bake", CheckMapBake); // SelfTestMapBake.cs: every shipped map read back from its bake = the live build, cache and baked folder, keys, mismatched or damaged files refused
         Section("Nav bake", CheckNavBake); // SelfTestNavBake.cs: baked and cached nav graphs = the live build, cache and baked folder, mismatched or damaged files refused, never a stalled tick
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
         Section("Bots", CheckBots, "Matches"); // judges the bot stats of the Matches section's games

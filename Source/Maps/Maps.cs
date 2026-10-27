@@ -774,6 +774,9 @@ public static partial class Maps
             j.Map.ValidateMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
             if (j.Built is not { Key: { } key } built || !(cache || bakeOut != null))
                 return;
+            var toCache = cache && (read || !MapBake.CacheHas(built.Rel, key)); // ("Refresh maps": an unchanged map is cached already)
+            if (!toCache && bakeOut == null)
+                return;
             try
             {
                 var index = indexes.GetOrAdd(built.PackDir, d => new Lazy<MapGraph.MapLibraryIndex>(() => MapBake.IndexFor(d.Length > 0 ? d : null))).Value;
@@ -783,7 +786,7 @@ public static partial class Maps
                     Directory.CreateDirectory(bakeOut);
                     File.WriteAllBytes(Path.Combine(bakeOut, MapBake.FileName(built.Rel)), file);
                 }
-                if (cache)
+                if (toCache)
                     MapBake.WriteCache(built.Rel, file);
             }
             catch (Exception ex) // (whatever goes wrong baking a map, it has loaded: it is simply not cached)

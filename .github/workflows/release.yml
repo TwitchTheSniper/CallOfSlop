@@ -8,7 +8,7 @@
 #
 # What it does (Windows runner): build with the version stamped into the exe, run the headless self-test, package with
 # tools/package.ps1 (self-contained win-x64 zip, no personal files, READ ME FIRST.txt), optionally code-sign the exe,
-# bake every shipped map's nav graph (--bake), check the package with the game's own updater (CallOfSlop.exe --verify-update), then publish a GitHub Release with
+# bake every shipped map and its nav graph (--bake), check the package with the game's own updater (CallOfSlop.exe --verify-update), then publish a GitHub Release with
 # the zip and update.json (version, build, git sha, protocol, zip URL, size, SHA-256, notes, minimum updater version).
 # Uses only the built-in GITHUB_TOKEN. NuGet packages come from the Actions cache (same approach as build.yml); a cold
 # Windows cache restores once from nuget.org. Nothing here contacts the BRUTAL author's own servers.
@@ -114,10 +114,12 @@ jobs:
         shell: pwsh
         run: ./tools/package.ps1 -Version "${{ steps.ver.outputs.version }}" -Sha "${{ github.sha }}" -Tag "${{ steps.ver.outputs.tag }}" -Step publish
 
-      # Baked nav graphs (Source/Game/BotNavBake.cs): the packaged game itself builds every shipped map's bot nav graph once
-      # and writes Baked/Nav, so players' bots are ready the moment a map starts. A bake carries this exact build's id, so it
-      # is never used by any other build (stale bakes are impossible), and a map whose bake is missing just builds live.
-      - name: Bake nav graphs
+      # Baked maps and nav graphs (Source/Maps/MapBake.cs, Source/Game/BotNavBake.cs): the packaged game itself builds every
+      # shipped map once and writes Baked/Maps (the built maps, so the game starts without building them) and Baked/Nav (each
+      # map's bot nav graph, so players' bots are ready the moment a map starts). Every map bake is read back and checked
+      # against the live build first. A bake carries this exact build's id, so it is never used by any other build (stale
+      # bakes are impossible), and a map whose bake is missing just builds live.
+      - name: Bake maps and nav graphs
         shell: pwsh
         run: |
           $dir = "bin/package/CallOfSlop"

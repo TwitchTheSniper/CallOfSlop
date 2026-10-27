@@ -34,7 +34,7 @@ public sealed class MapBakeException(string message) : Exception(message);
 /// Bodies are written breadth first (an object's header where it is first met, its fields later), so a long chain of
 /// objects never recurses deeply.
 /// </summary>
-internal static class MapGraph
+internal static partial class MapGraph
 {
     // ---- Tags -----------------------------------------------------------------------------------
 
@@ -261,11 +261,9 @@ internal static class MapGraph
             }
         }
 
-        public override void ReadBody(Reader r, object o)
-        {
-            foreach (var f in _fields)
-                f.SetValue(o, r.Slot(f.FieldType));
-        }
+        private Action<Reader, object>? _read;
+
+        public override void ReadBody(Reader r, object o) => (_read ??= EmitClass(Type))(r, o); // (MapBakeRead.cs)
 
         public override object? Step(object o, int step) => step < _fields.Length ? _fields[step].GetValue(o) : null;
 
@@ -281,6 +279,10 @@ internal static class MapGraph
                 c.Slot(f.FieldType, f.GetValue(a), f.GetValue(b), path + "." + f.Name);
         }
     }
+
+    /// <summary>The bytes of an array of a type without references (checked by the caller).</summary>
+    private static Span<byte> Bytes<T>(T[] a) =>
+        a.Length == 0 ? [] : MemoryMarshal.CreateSpan(ref Unsafe.As<T, byte>(ref MemoryMarshal.GetArrayDataReference(a)), a.Length * Unsafe.SizeOf<T>());
 
     private static string FirstDifference<T>(ReadOnlySpan<T> x, ReadOnlySpan<T> y) where T : struct
     {
@@ -336,7 +338,7 @@ internal static class MapGraph
         {
             var a = (T[])o;
             for (var i = 0; i < a.Length; i++)
-                a[i] = (T)r.Slot(typeof(T))!;
+                a[i] = FieldReader<T>.Read(r);
         }
 
         public override object? Step(object o, int step) => step < ((T[])o).Length ? ((T[])o)[step] : null;
@@ -411,7 +413,7 @@ internal static class MapGraph
         {
             var s = CollectionsMarshal.AsSpan((List<T>)o);
             for (var i = 0; i < s.Length; i++)
-                s[i] = (T)r.Slot(typeof(T))!;
+                s[i] = FieldReader<T>.Read(r);
         }
 
         public override object? Step(object o, int step) => step < ((List<T>)o).Count ? ((List<T>)o)[step] : null;
@@ -501,10 +503,22 @@ internal static class MapGraph
             return new Dictionary<TK, TV>(r.Count(1), c);
         }
 
+        private static readonly bool Raw = !RuntimeHelpers.IsReferenceOrContainsReferences<TK>() && !RuntimeHelpers.IsReferenceOrContainsReferences<TV>();
+
         public override void WriteBody(Writer w, object v)
         {
             var d = (Dictionary<TK, TV>)v;
             w.Count(d.Count);
+            if (Raw) // (keys then values as raw bytes)
+            {
+                var keys = new TK[d.Count];
+                var values = new TV[d.Count];
+                d.Keys.CopyTo(keys, 0);
+                d.Values.CopyTo(values, 0);
+                w.Raw(Bytes(keys));
+                w.Raw(Bytes(values));
+                return;
+            }
             foreach (var (k, x) in d)
             {
                 w.Slot(typeof(TK), k);
@@ -517,11 +531,17 @@ internal static class MapGraph
             var n = r.Count(1);
             var keys = new TK[n];
             var values = new TV[n];
-            for (var i = 0; i < n; i++)
+            if (Raw)
             {
-                keys[i] = (TK)r.Slot(typeof(TK))!;
-                values[i] = (TV)r.Slot(typeof(TV))!;
+                r.Raw(Bytes(keys));
+                r.Raw(Bytes(values));
             }
+            else
+                for (var i = 0; i < n; i++)
+                {
+                    keys[i] = FieldReader<TK>.Read(r);
+                    values[i] = FieldReader<TV>.Read(r);
+                }
             var d = (Dictionary<TK, TV>)o;
             r.Later(() =>
             {
@@ -585,10 +605,19 @@ internal static class MapGraph
             return new HashSet<T>(r.Count(1), c);
         }
 
+        private static readonly bool Raw = !RuntimeHelpers.IsReferenceOrContainsReferences<T>();
+
         public override void WriteBody(Writer w, object v)
         {
             var s = (HashSet<T>)v;
             w.Count(s.Count);
+            if (Raw)
+            {
+                var items = new T[s.Count];
+                s.CopyTo(items);
+                w.Raw(Bytes(items));
+                return;
+            }
             foreach (var e in s)
                 w.Slot(typeof(T), e);
         }
@@ -597,8 +626,11 @@ internal static class MapGraph
         {
             var n = r.Count(1);
             var items = new T[n];
-            for (var i = 0; i < n; i++)
-                items[i] = (T)r.Slot(typeof(T))!;
+            if (Raw)
+                r.Raw(Bytes(items));
+            else
+                for (var i = 0; i < n; i++)
+                    items[i] = FieldReader<T>.Read(r);
             var s = (HashSet<T>)o;
             r.Later(() =>
             {
@@ -661,8 +693,8 @@ internal static class MapGraph
             var values = new TV[n];
             for (var i = 0; i < n; i++)
             {
-                keys[i] = (TK)r.Slot(typeof(TK))!;
-                values[i] = (TV)r.Slot(typeof(TV))!;
+                keys[i] = FieldReader<TK>.Read(r);
+                values[i] = FieldReader<TV>.Read(r);
             }
             var d = (SortedDictionary<TK, TV>)o;
             r.Later(() =>
@@ -724,7 +756,13 @@ internal static class MapGraph
         public override void WriteHeader(Writer w, object v)
         {
             var m = (MeshAsset)v;
-            w.Byte(MeshLibrary.IsPrimitive(m) ? (byte)1 : (byte)0);
+            if (MeshLibrary.IsPrimitive(m) && m.Spec is { } spec)
+            {
+                w.Byte(1); // a library primitive: its shape is enough
+                CodecFor(typeof(PrimitiveSpec)).WriteValue(w, spec);
+                return;
+            }
+            w.Byte(0);
             w.String(m.Key);
             w.Byte(m.DoubleSided ? (byte)1 : (byte)0);
             w.String(m.LodSource);
@@ -733,13 +771,13 @@ internal static class MapGraph
 
         public override object Create(Reader r)
         {
-            var primitive = r.Byte() != 0;
+            if (r.Byte() != 0)
+                return MeshLibrary.Primitive((PrimitiveSpec)CodecFor(typeof(PrimitiveSpec)).ReadValue(r)!); // (the same asset every map gets; built once if it isn't yet)
             var key = r.String() ?? throw new FormatException("mesh key");
             var doubleSided = r.Byte() != 0;
             var lodSource = r.String() ?? throw new FormatException("mesh LODs");
             var lods = r.Inline() as MeshData[] ?? throw new FormatException("mesh LODs");
-            var asset = new MeshAsset(key, lods, doubleSided, lodSource);
-            return primitive ? MeshLibrary.InternPrimitive(asset) : asset;
+            return new MeshAsset(key, lods, doubleSided, lodSource);
         }
 
         public override void Compare(GraphComparer c, object a, object b, string path)
@@ -752,7 +790,7 @@ internal static class MapGraph
                     c.Diff(path, "not the library's mesh");
                 return;
             }
-            if (x.Key != y.Key || x.DoubleSided != y.DoubleSided || x.LodSource != y.LodSource)
+            if (x.Key != y.Key || x.DoubleSided != y.DoubleSided || x.LodSource != y.LodSource || x.Spec != y.Spec)
                 c.Diff(path, $"mesh {x.Key} != {y.Key}");
             c.Slot(typeof(MeshData[]), x.Lods, y.Lods, path + ".Lods");
         }
@@ -770,15 +808,24 @@ internal static class MapGraph
         private readonly List<string> _stringList = new();
         private readonly Dictionary<Type, int> _types = new();
         private readonly List<Type> _typeList = new();
-        private readonly Queue<(Codec Codec, object Obj)> _queue = new();
+        private readonly Queue<(Codec Codec, object Obj, string Label)> _queue = new();
+        private string _label = "";
+        /// <summary>Bytes written per field of the map (what each part of a map costs on disk; the bake log).</summary>
+        public readonly Dictionary<string, long> Sizes = new();
         private int _inline;
 
         public byte[] Run()
         {
             _ids[root] = 0;
             CodecFor(typeof(Map)).WriteBody(this, root);
+            _inRoot = false;
             while (_queue.TryDequeue(out var job))
+            {
+                _label = job.Label;
+                var p0 = _pos;
                 job.Codec.WriteBody(this, job.Obj);
+                Sizes[_label] = Sizes.GetValueOrDefault(_label) + _pos - p0;
+            }
             // Tables first: types, strings, then the body.
             var body = _buf.AsSpan(0, _pos).ToArray();
             _pos = 0;
@@ -858,7 +905,20 @@ internal static class MapGraph
             return id;
         }
 
-        public void Field(FieldInfo f, object? v) => Slot(f.FieldType, v);
+        public void Field(FieldInfo f, object? v)
+        {
+            if (!_inRoot || f.DeclaringType != typeof(Map))
+            {
+                Slot(f.FieldType, v);
+                return;
+            }
+            _label = f.Name; // (a field of the map itself: what it holds is counted under its name)
+            var p0 = _pos;
+            Slot(f.FieldType, v);
+            Sizes[_label] = Sizes.GetValueOrDefault(_label) + _pos - p0;
+        }
+
+        private bool _inRoot = true;
 
         /// <summary>A value of declared type <paramref name="declared"/>: value types as themselves, everything else by reference.</summary>
         public void Slot(Type declared, object? v)
@@ -942,7 +1002,7 @@ internal static class MapGraph
             if (_inline > 0)
                 codec.WriteBody(this, v);
             else
-                _queue.Enqueue((codec, v));
+                _queue.Enqueue((codec, v, _label));
         }
 
         /// <summary>An object and everything it holds written here and now (a procedural mesh's LODs).</summary>
@@ -962,7 +1022,7 @@ internal static class MapGraph
 
     // ---- Reading -------------------------------------------------------------------------------
 
-    internal sealed class Reader
+    internal sealed partial class Reader
     {
         private readonly byte[] _buf;
         private int _pos;

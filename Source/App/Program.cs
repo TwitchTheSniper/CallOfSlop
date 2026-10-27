@@ -106,8 +106,6 @@ public static unsafe partial class Program
             return PartTools.Export(partDir, args.Any(a => a.Equals("--resolved", StringComparison.OrdinalIgnoreCase))); // part files normalised (or resolved)
         if (args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)))
             return MasterServerApp.Run(args); // public server list, see ServerBrowser.cs
-        if (args.Any(a => a == "--map-bake-describe"))
-            return MapBakeDescribe.Run(); // TEMPORARY
         if (args.SkipWhile(a => !a.Equals("--bake", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } bakeDir)
             return NavBake.BakeAll(bakeDir); // Release workflow: every shipped map's nav graph, built once and shipped (BotNavBake.cs)
         if (args.SkipWhile(a => !a.Equals("--verify-update", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var manifestFile, var zipFile])

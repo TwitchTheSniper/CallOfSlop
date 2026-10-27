@@ -289,10 +289,14 @@ public static class MapBake
     /// payload (the console lines its build and validation wrote, the map) and a SHA-256 of the payload. Throws
     /// <see cref="MapBakeException"/> if the map holds something that can't be baked.
     /// </summary>
-    internal static byte[] Write(Map map, string rel, byte[] key, string loadLog, string validateLog, MapGraph.MapLibraryIndex? index = null)
+    internal static byte[] Write(Map map, string rel, byte[] key, string loadLog, string validateLog, MapGraph.MapLibraryIndex? index = null, Dictionary<string, long>? sizes = null)
     {
         index ??= IndexFor(map.PackDir);
-        var graph = new MapGraph.Writer(index, map).Run();
+        var writer = new MapGraph.Writer(index, map);
+        var graph = writer.Run();
+        if (sizes != null)
+            foreach (var (k, v) in writer.Sizes)
+                sizes[k] = sizes.GetValueOrDefault(k) + v;
         using var payload = new MemoryStream(graph.Length + loadLog.Length * 2 + 64);
         using (var w = new BinaryWriter(payload, Encoding.UTF8, leaveOpen: true))
         {
@@ -312,7 +316,7 @@ public static class MapBake
             w.Write(key);
             w.Write(body.Length);
             w.Write(body);
-            w.Write(SHA256.HashData(body));
+            w.Write(XxHash64.Hash(body)); // (whole and undamaged: keys are SHA-256, this check only needs to be fast)
         }
         return ms.ToArray();
     }
@@ -340,10 +344,10 @@ public static class MapBake
                 return Fail("the map or what it uses changed", out why);
             var n = r.ReadInt32();
             var start = (int)r.BaseStream.Position;
-            if (n < 0 || n > file.Length - start - 32)
+            if (n < 0 || n > file.Length - start - 8 || start + n + 8 != file.Length)
                 return Fail("damaged or cut short", out why);
-            if (!file.AsSpan(start + n, 32).SequenceEqual(SHA256.HashData(file.AsSpan(start, n))) || start + n + 32 != file.Length)
-                return Fail("damaged or cut short", out why);
+            if (BitConverter.ToUInt64(file, start + n) != XxHash64.Hash(file.AsSpan(start, n)))
+                return Fail("damaged", out why);
             loadLog = r.ReadString();
             validateLog = r.ReadString();
             var g = r.ReadInt32();
@@ -402,6 +406,24 @@ public static class MapBake
         return null;
     }
 
+    /// <summary>Does the cache hold this map file's bake for exactly this key (the header only is read)?</summary>
+    public static bool CacheHas(string rel, byte[] key)
+    {
+        try
+        {
+            var path = Path.Combine(CacheFolder, FileName(rel));
+            if (!File.Exists(path))
+                return false;
+            using var r = new BinaryReader(File.OpenRead(path), Encoding.UTF8);
+            return r.ReadBytes(Magic.Length).AsSpan().SequenceEqual(Magic) && r.ReadInt32() == FormatVersion && r.ReadString() == NavBake.BuildId
+                   && r.ReadString() == rel.Replace('\\', '/') && r.ReadBytes(32).AsSpan().SequenceEqual(key);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or EndOfStreamException or FormatException)
+        {
+            return false;
+        }
+    }
+
     private static readonly List<Task> Pending = new();
 
     /// <summary>Writes a map to the cache in the background (atomically: a temp file, then a rename). Errors are logged, never thrown.</summary>
@@ -441,6 +463,58 @@ public static class MapBake
     }
 
     internal static void NoteSummary(string s) => LastSummary = s;
+
+    /// <summary>
+    /// <c>--bake</c> (the release workflow), after <see cref="Maps.All"/> was built live with <see cref="BakeOutFolder"/>
+    /// set: every map's bake must exist, read back with this build and equal the live map field for field. A bad file is
+    /// deleted (that map then builds live for players). Returns the number of maps that failed.
+    /// </summary>
+    public static int CheckBakes(string folder)
+    {
+        var inputs = InputsHash(Maps.Folder);
+        var failed = 0;
+        long bytes = 0;
+        foreach (var m in Maps.All)
+        {
+            var rel = m.SourceFile;
+            if (rel == null)
+                continue;
+            var path = Path.Combine(folder, FileName(rel));
+            string? problem;
+            try
+            {
+                var file = File.ReadAllBytes(path);
+                bytes += file.Length;
+                var key = KeyOf(rel, SHA256.HashData(Encoding.UTF8.GetBytes(File.ReadAllText(Path.Combine(Maps.Folder, rel)))), inputs);
+                var t = System.Diagnostics.Stopwatch.GetTimestamp();
+                var back = Read(file, rel, key, m.PackDir, out _, out _, out var why);
+                var ms = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+                problem = back == null ? $"doesn't read back ({why})" : Difference(m, back);
+                if (problem == null)
+                    Console.WriteLine($"[bake] map {m.Name}: {file.Length / 1024} KB, read in {ms:0.0} ms");
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                problem = ex.Message;
+            }
+            if (problem == null)
+                continue;
+            failed++;
+            Console.WriteLine($"[bake] map {m.Name}: FAILED: {problem}");
+            try
+            {
+                File.Delete(path);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+            }
+        }
+        lock (Unbakeable)
+            foreach (var u in Unbakeable)
+                Console.WriteLine($"[bake] map {u}: FAILED: can't be baked");
+        Console.WriteLine($"[bake] {Maps.All.Length - failed} of {Maps.All.Length} maps baked to {folder} ({bytes / 1024} KB); {failed} failed");
+        return failed;
+    }
 
     /// <summary>Compares a baked map with the live one (null: the same, field for field).</summary>
     public static string? Difference(Map live, Map baked)
