@@ -426,7 +426,7 @@ public sealed class ZombiesRules
         }
     }
 
-    /// <summary>The built-in rules (the same numbers the shipped file has) with the four World at War perks.</summary>
+    /// <summary>The built-in rules (the same numbers the shipped file has) with all twelve perks.</summary>
     public static ZombiesRules Defaults()
     {
         var r = new ZombiesRules();
