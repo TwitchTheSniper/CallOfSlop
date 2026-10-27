@@ -101,7 +101,27 @@
     "jackpotWonder": 4,
     "scrapPayout": 40,
     "pointsBack": 1.5,
-    "autoScrapAt": 3
+    "autoScrapAt": 3,
+    "winSeconds": 4,
+    "machines": {
+      "note": "PROPOSED per-category slot machines (2026-10-26; a map's slots entry with \"category\"): each only pays parts of its category, with the same odds table, heat, bets and jackpot rounds as the classic machine but its own heat. price is a multiple of the classic machine's price (to the nearest 10); melee: the blade (a whole melee build) is on its reels (default: the melee categories only; elsewhere a melee result pays a part of that tier).",
+      "Receiver": {"price": 1.2},
+      "Barrel": {"price": 0.9},
+      "Splitter": {"price": 1.3},
+      "Feed": {"price": 0.9},
+      "Ammo": {"price": 0.8},
+      "Stock": {"price": 0.8},
+      "Grip": {"price": 1.0},
+      "Optic": {"price": 1.0},
+      "Muzzle": {"price": 0.8},
+      "Utility": {"price": 0.8},
+      "Upgrade": {"price": 1.2},
+      "Multiplier": {"price": 1.4},
+      "Hilt": {"price": 0.9, "melee": true},
+      "Head": {"price": 0.9, "melee": true},
+      "MeleeMod": {"price": 0.8, "melee": true},
+      "Action": {"price": 1.1}
+    }
   },
   "ammo": {
     "reserveMags": 6,

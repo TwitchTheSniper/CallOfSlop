@@ -73,6 +73,7 @@ public sealed class ZombiesModule : GameModeModule
             case (byte)Msg.ZBuild:
             case (byte)Msg.ZBench:
             case (byte)Msg.ZPickup:
+            case (byte)Msg.ZSlotWin:
                 game.OnZombiesPacket(id, ref r, sender, now);
                 return true;
             default:

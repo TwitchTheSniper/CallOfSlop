@@ -382,15 +382,17 @@ public static partial class SelfTest
                 Fail($"the slot machines' tick and rolls should allocate nothing ({alloc} bytes)");
         }
 
-        // ---- Blackmoor Asylum: two machines, one behind the power, standing as Reel Cabinet props ----
+        // ---- Blackmoor Asylum: the classic machine in the start room and per-category machines round the map, each standing as its prop ----
         if (Maps.Find("Blackmoor Asylum") is { Zombies: { } bm } bmap)
         {
-            var props = bm.SlotMachines.Count(s => bmap.PropInstances.Any(p => p.Def.Name == ZombiesMap.MachineProp.SlotMachine && Vector2.Distance(new Vector2(p.Position.X, p.Position.Z), new Vector2(s.At.X, s.At.Z)) < 0.01f));
-            var early = bm.SlotMachines.Count(s => s.Area == bm.StartArea && !s.NeedsPower);
+            var props = bm.SlotMachines.Count(s => bmap.PropInstances.Any(p => p.Def.Name == ZombiesMap.MachineProp.SlotMachineFor(s.SlotCategory) && Vector2.Distance(new Vector2(p.Position.X, p.Position.Z), new Vector2(s.At.X, s.At.Z)) < 0.01f));
+            var early = bm.SlotMachines.Count(s => s.Area == bm.StartArea && !s.NeedsPower && s.SlotCategory < 0);
             var powered = bm.SlotMachines.Count(s => s.NeedsPower);
-            ZLine($"Blackmoor Asylum: {bm.SlotMachines.Count} slot machines ({early} in {bm.Areas[bm.StartArea].Name}, {powered} on the power), {props} standing as the {ZombiesMap.MachineProp.SlotMachine} prop");
-            if (bm.SlotMachines.Count != 2 || early != 1 || powered != 1 || props != 2)
-                Fail("Blackmoor Asylum should have two slot machines (one in the start room, one behind the power), each a Reel Cabinet prop");
+            var cats = bm.SlotMachines.Where(s => s.SlotCategory >= 0).Select(s => s.SlotCategory).ToList();
+            var areas = bm.SlotMachines.Select(s => s.Area).Distinct().Count();
+            ZLine($"Blackmoor Asylum: {bm.SlotMachines.Count} slot machines ({early} classic in {bm.Areas[bm.StartArea].Name}, {cats.Count} per category: {string.Join(", ", cats.Select(c => (PartCategory)c))}; {powered} on the power) in {areas} areas, {props} standing as their props");
+            if (early != 1 || powered < 1 || cats.Count < 8 || cats.Distinct().Count() != cats.Count || areas < 6 || props != bm.SlotMachines.Count)
+                Fail("Blackmoor Asylum should have the classic slot machine in the start room and a spread of different per-category machines round the map (some behind the power), each its own cabinet prop");
         }
         else
             Fail("Blackmoor Asylum is missing");

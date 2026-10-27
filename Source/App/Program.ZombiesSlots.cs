@@ -30,10 +30,17 @@ public static unsafe partial class Program
                 Gfx.Draw(Matrix4x4.CreateScale(sx, sy, sz) * Matrix4x4.CreateTranslation(x, y, z) * place, c, alpha, mode);
             if (!zm.MachineProps)
             {
-                // No props (Zombies Test): a plain cabinet with its topper.
-                Part(0.8f, 1.6f, 0.6f, 0, 0.8f, 0, new Vector3(0.42f, 0.1f, 0.12f));
-                Part(0.86f, 0.28f, 0.52f, 0, 1.8f, 0.02f, new Vector3(0.78f, 0.58f, 0.12f));
-                Part(0.62f, 0.3f, 0.02f, 0, 1.3f, -0.305f, new Vector3(0.02f));
+                // No props (Zombies Test): the machine's cabinet prop drawn without collision (a category machine's own
+                // shape), or a plain cabinet with its topper if the prop is missing.
+                if (SlotProp(zm, i) is { } def)
+                    foreach (var pp in def.Parts)
+                        Gfx.Draw(Matrix4x4.CreateScale(pp.Size) * Matrix4x4.CreateFromQuaternion(pp.Rotation) * Matrix4x4.CreateTranslation(pp.Offset) * place, pp.Color);
+                else
+                {
+                    Part(0.8f, 1.6f, 0.6f, 0, 0.8f, 0, new Vector3(0.42f, 0.1f, 0.12f));
+                    Part(0.86f, 0.28f, 0.52f, 0, 1.8f, 0.02f, new Vector3(0.78f, 0.58f, 0.12f));
+                    Part(0.62f, 0.3f, 0.02f, 0, 1.3f, -0.305f, new Vector3(0.02f));
+                }
             }
             var lit = !spot.NeedsPower || _game.ZPower;
             if (!live)
@@ -116,21 +123,84 @@ public static unsafe partial class Program
                 Part(0.06f, 0.06f, 0.01f, -0.3f + b * 0.1f, 1.8f, -0.258f, on ? c : c * 0.25f, 1f, on ? 2 : 0);
             }
 
-            // A part won floats over the machine for a moment.
-            if (m.State == ZSlotState.Showing && m.Result == ZSlotResult.Part && !m.AutoScrapped)
+            // The last win, for everyone (Msg.ZSlotWin, ZombiesSlotWin.cs): the won part's own model over the machine.
+            if (_game.SlotWinShowing(i, now))
+                DrawSlotWin(i, m, place, now);
+        }
+    }
+
+    private static Map? _slotPropsFor;
+    private static readonly PropDef?[] SlotProps = new PropDef?[ZombiesMap.MaxSlotMachines];
+
+    /// <summary>The cabinet prop machine <paramref name="i"/> stands as (looked up once per map; null if it's missing).</summary>
+    private static PropDef? SlotProp(ZombiesMap zm, int i)
+    {
+        if (!ReferenceEquals(_slotPropsFor, World.Map))
+        {
+            _slotPropsFor = World.Map;
+            for (var k = 0; k < SlotProps.Length; k++)
+                SlotProps[k] = k < zm.SlotMachines.Count ? World.Map.PropScope.Find(ZombiesMap.MachineProp.SlotMachineFor(zm.SlotMachines[k].SlotCategory)) : null;
+        }
+        return i < SlotProps.Length ? SlotProps[i] : null;
+    }
+
+    private static readonly byte[] SlotWinSeen = new byte[ZombiesMap.MaxSlotMachines];
+    private static readonly WeaponDef?[] SlotWinDefs = new WeaponDef?[ZombiesMap.MaxSlotMachines];
+
+    /// <summary>
+    /// A machine's win over it: the part (or the melee build) as its own model, turning and bobbing up, a halo of rarity-
+    /// coloured glow boxes round it and a beam; legendary and wonder add a light pillar and sparks spiralling up. It
+    /// rises in and fades out over <see cref="ZombiesRules.SlotWinSeconds"/>. The model is assembled once per win.
+    /// </summary>
+    private static void DrawSlotWin(int i, ZSlotMachine m, Matrix4x4 place, double now)
+    {
+        if (SlotWinSeen[i] != m.WinSeq)
+        {
+            SlotWinSeen[i] = m.WinSeq;
+            SlotWinDefs[i] = m.WinResult switch
             {
-                var up = 2.1f + 0.3f * Math.Clamp(1f - m.Left / Math.Max(0.1f, _game.ZRules.SlotShowSeconds), 0, 1);
-                Gfx.Draw(Matrix4x4.CreateScale(0.22f) * Matrix4x4.CreateRotationY(t * 3) * Matrix4x4.CreateTranslation(0, up, -0.1f) * place, PartDef.RarityColor(m.Tier), 1f, mode: 2);
-            }
-            else if (m.State == ZSlotState.Showing && m.Result == ZSlotResult.Melee)
-            {
-                // A melee build won: a glowing blade in its rarity colour, turning over the machine.
-                var up = 2.1f + 0.3f * Math.Clamp(1f - m.Left / Math.Max(0.1f, _game.ZRules.SlotShowSeconds), 0, 1);
-                var wonAt = Matrix4x4.CreateRotationY(t * 3) * Matrix4x4.CreateTranslation(0, up, -0.1f) * place;
-                Gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.5f, 0.02f) * Matrix4x4.CreateTranslation(0, 0.12f, 0) * wonAt, PartDef.RarityColor(m.Tier), 1f, mode: 2);
-                Gfx.Draw(Matrix4x4.CreateScale(0.2f, 0.04f, 0.04f) * Matrix4x4.CreateTranslation(0, -0.15f, 0) * wonAt, new Vector3(0.3f, 0.2f, 0.1f));
-                Gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.16f, 0.04f) * Matrix4x4.CreateTranslation(0, -0.25f, 0) * wonAt, new Vector3(0.3f, 0.2f, 0.1f));
-            }
+                ZSlotResult.Part when m.WinIndex >= 0 && m.WinIndex < Parts.All.Length => Game.AssembleCached(new WeaponBuild(Parts.All[m.WinIndex].Name, Parts.All[m.WinIndex])).PreviewDef,
+                ZSlotResult.Melee when m.WinIndex >= 0 && m.WinIndex < StandardBuilds.All.Length => Game.AssembleCached(StandardBuilds.All[m.WinIndex].Build()).PreviewDef,
+                _ => null,
+            };
+        }
+        var age = (float)(now - m.WinAt);
+        var life = Math.Max(0.5f, _game.ZRules.SlotWinSeconds);
+        var k = Math.Clamp(age / life, 0, 1);
+        var grow = Math.Clamp(age / 0.35f, 0, 1); // pops in
+        var fade = Math.Clamp((1 - k) * 4, 0, 1); // fades over the last quarter
+        var big = m.WinTier >= Rarity.Legendary;
+        var c = PartDef.RarityColor(m.WinTier);
+        var t = (float)now;
+        var y = 2.3f + 0.35f * k + 0.05f * MathF.Sin(t * 3);
+        var spin = Matrix4x4.CreateRotationY(t * 1.6f);
+        var at = Matrix4x4.CreateTranslation(0, y, -0.05f) * place;
+        if (SlotWinDefs[i] is { } def && !m.WinScrapped)
+        {
+            var scale = (m.WinResult == ZSlotResult.Melee ? 0.9f : 2.4f) * (big ? 1.25f : 1f) * grow;
+            DrawGun(def, Matrix4x4.CreateScale(scale) * spin * at, false);
+        }
+        else
+            Gfx.Draw(Matrix4x4.CreateScale(0.22f * grow) * spin * at, c, fade, mode: 2); // scrapped (or no model): a glowing tile
+        // The halo and a faint beam down to the machine.
+        var n = big ? 14 : 10;
+        for (var b = 0; b < n; b++)
+        {
+            var a = t * (big ? 2.2f : 1.4f) + b * MathF.Tau / n;
+            var r = (big ? 0.55f : 0.42f) * grow;
+            Gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.025f, 0.06f) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(MathF.Sin(a) * r, -0.2f + 0.04f * MathF.Sin(a * 2 + t * 4), MathF.Cos(a) * r) * at, c, 0.9f * fade, mode: 2);
+        }
+        Gfx.Draw(Matrix4x4.CreateScale(0.05f, y - 1.95f, 0.05f) * Matrix4x4.CreateTranslation(0, (y + 1.95f) / 2, -0.05f) * place, c, 0.3f * fade, mode: 2);
+        if (!big)
+            return;
+        // Legendary and wonder: a tall pillar of light and sparks spiralling up round it.
+        Gfx.Draw(Matrix4x4.CreateScale(0.22f + 0.05f * MathF.Sin(t * 8), 8f, 0.22f + 0.05f * MathF.Sin(t * 8)) * Matrix4x4.CreateTranslation(0, 4f + 1.9f, -0.05f) * place, c, 0.22f * fade, mode: 2);
+        for (var s = 0; s < 16; s++)
+        {
+            var u = (age * 0.6f + s / 16f) % 1f;
+            var a = s * 2.4f + t * 3f;
+            var r = 0.3f + 0.6f * u;
+            Gfx.Draw(Matrix4x4.CreateScale(0.05f) * Matrix4x4.CreateTranslation(MathF.Sin(a) * r, 1.9f + u * 3.5f, -0.05f + MathF.Cos(a) * r) * place, Vector3.Lerp(c, Vector3.One, 0.4f), (1 - u) * fade, mode: 2);
         }
     }
 

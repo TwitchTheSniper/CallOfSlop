@@ -165,7 +165,8 @@ public sealed partial class Ui : IDisposable
             foreach (var f in game.Feed)
             {
                 var fade = (float)Math.Clamp(8 - (now - f.Time), 0, 1); // lines leave after 8 s: fade over the last one
-                ImGuiSafe.TextColored(f.Mine ? new float4(Orange.X, Orange.Y, Orange.Z, fade) : new float4(1, 1, 1, 0.9f * fade), f.Text);
+                ImGuiSafe.TextColored(f.Colour != default ? new float4(f.Colour.X, f.Colour.Y, f.Colour.Z, fade) // a coloured line (a slot machine win in its rarity colour)
+                    : f.Mine ? new float4(Orange.X, Orange.Y, Orange.Z, fade) : new float4(1, 1, 1, 0.9f * fade), f.Text);
             }
         }
         ImGui.End();

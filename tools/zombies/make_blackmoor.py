@@ -6,7 +6,7 @@ Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
 buys, five perk machines, the power switch (it gates three perks and the lab shutter), two workbenches, four salvage
-piles, the weapon-slot upgrade and two slot machines (the start room, and the lab on the power). Every machine is a solid prop ("machineProps": true). The script also checks its own
+piles, the weapon-slot upgrade and eleven slot machines (the classic one in the start room; ten per-category ones round the map, two in the lab on the power). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
 Plan (north is -Z, east is +X):
@@ -226,9 +226,18 @@ PERKS = [
 ]
 SLOT = {"at": [22.65, 6.5], "yaw": -90, "cost": 4000}
 POWER = {"at": [18, -25.8], "yaw": 180}
-SLOTS = [  # slot machines (Reel Cabinet props): one in the start room, one in the lab behind the power
+SLOTS = [  # slot machines: the classic one (any part) in the start room; per-category machines (2026-10-26) spread round the map
     {"at": [6.6, -6.2], "yaw": -90},
-    {"at": [22.6, 8.4], "yaw": -90, "power": True},
+    {"at": [22.6, 8.4], "yaw": -90, "power": True, "category": "Receiver"},   # lab, behind the power
+    {"at": [11.8, 3.6], "yaw": 0, "category": "Barrel"},                       # ward, south wall
+    {"at": [-14.6, -7.6], "yaw": 180, "category": "Grip"},                     # offices, north wall
+    {"at": [-7.7, 2.7], "yaw": -90, "category": "Stock"},                      # offices, by the start room wall
+    {"at": [5.0, -8.7], "yaw": 0, "category": "Ammo"},                         # courtyard, the hall's back wall
+    {"at": [-5.0, -8.7], "yaw": 0, "category": "Feed"},                        # courtyard, the hall's back wall
+    {"at": [25.6, -14.2], "yaw": -90, "category": "Action"},                   # generator house, east wall
+    {"at": [-6.7, 7.0], "yaw": -90, "category": "Hilt"},                       # chapel, east wall
+    {"at": [-11.6, 15.6], "yaw": 0, "category": "Head"},                       # chapel, south wall
+    {"at": [6.7, 5.2], "yaw": 90, "power": True, "category": "Optic"},         # lab, west wall, behind the power
 ]
 SALVAGE = [{"at": [12.2, 1.2]}, {"at": [6, -25.5]}, {"at": [23.5, -22]}, {"at": [13.2, 12.6]}]
 

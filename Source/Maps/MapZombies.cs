@@ -98,6 +98,12 @@ public sealed class ZSpot
 
     /// <summary>Doesn't work until the power is on.</summary>
     public bool NeedsPower;
+
+    /// <summary>
+    /// Slot machines: the part category it pays (a <see cref="PartCategory"/> as a number, from "category" in the map
+    /// file), or -1 for the classic machine that pays any part (ZombiesSlots.cs, "per-category machines").
+    /// </summary>
+    public int SlotCategory = -1;
 }
 
 /// <summary>
@@ -139,12 +145,17 @@ public sealed class ZombiesMap
     public static class MachineProp
     {
         public const string Perk = "Perk Machine", BoxSpot = "Mystery Box Crate", Bench = "Zombies Workbench", Power = "Power Switch Box", Slots = "Weapon Locker", SlotMachine = "Reel Cabinet";
+
+        private static readonly string[] CategoryCabinets = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c)} {SlotMachine}").ToArray();
+
+        /// <summary>The prop a slot machine of part category <paramref name="category"/> stands as ("Barrel Reel Cabinet"; -1: the classic "Reel Cabinet").</summary>
+        public static string SlotMachineFor(int category) => category >= 0 && category < CategoryCabinets.Length ? CategoryCabinets[category] : SlotMachine;
     }
 
     /// <summary>The section as it was in the file (written back unchanged).</summary>
     public string Raw = "{}";
 
-    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 8;
+    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24;
 
     /// <summary>The area <paramref name="p"/> is in (the nearest one if it's in none).</summary>
     public int AreaAt(Vector3 p)
@@ -334,7 +345,20 @@ public sealed class ZombiesMap
                 z.Salvage.Add(Spot(map, z, s, $"{where}.salvage"));
         if (Get(e, "slots") is { } sm)
             foreach (var s in List(sm, $"{where}.slots"))
-                z.SlotMachines.Add(Spot(map, z, s, $"{where}.slots"));
+            {
+                var spot = Spot(map, z, s, $"{where}.slots", "category");
+                if (spot.Perk.Length > 0)
+                {
+                    // A per-category machine: it pays parts of this category only ("Barrel", "Optic", "Melee Mod"...).
+                    var cat = Enum.GetValues<PartCategory>().Where(c => c.ToString().Equals(spot.Perk, StringComparison.OrdinalIgnoreCase)
+                                                                          || PartDef.BuiltInCategoryName(c).Equals(spot.Perk, StringComparison.OrdinalIgnoreCase)).ToArray();
+                    if (cat.Length != 1)
+                        throw new MapFileException($"{where}.slots: unknown part category \"{spot.Perk}\" (one of {string.Join(", ", Enum.GetValues<PartCategory>())})");
+                    spot.SlotCategory = (int)cat[0];
+                    spot.Perk = "";
+                }
+                z.SlotMachines.Add(spot);
+            }
         if (z.SlotMachines.Count > MaxSlotMachines)
             throw new MapFileException($"{where}: at most {MaxSlotMachines} slot machines");
         if (Get(e, "machineProps") is { } mp)
@@ -374,7 +398,7 @@ public sealed class ZombiesMap
         if (Power is { } pw)
             yield return (MachineProp.Power, pw);
         foreach (var s in SlotMachines)
-            yield return (MachineProp.SlotMachine, s); // (last: maps without them place the same props as before)
+            yield return (MachineProp.SlotMachineFor(s.SlotCategory), s); // (last: maps without them place the same props as before)
     }
 
     private static ZSpot Spot(Map map, ZombiesMap z, JsonElement s, string w, string extra = "")

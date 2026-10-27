@@ -25,7 +25,7 @@ public sealed class WeaponState(WeaponDef def)
     public double ReloadStarted;
 }
 
-public readonly record struct FeedEntry(double Time, string Text, bool Mine);
+public readonly record struct FeedEntry(double Time, string Text, bool Mine, System.Numerics.Vector3 Colour = default);
 
 /// <summary>
 /// Multiplayer game session with prediction-based netcode and weapon loadouts.
