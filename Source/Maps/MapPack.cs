@@ -5,6 +5,7 @@ namespace CallOfSlop;
 public sealed partial class Map
 {
     /// <summary>The pack (top-level folder in Maps) the map was loaded from. Local presentation only: the network never sees it.</summary>
+    [NotBaked] // (set by Maps.LoadFolder)
     public MapPack? Pack;
 }
 

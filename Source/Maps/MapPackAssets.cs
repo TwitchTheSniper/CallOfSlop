@@ -18,6 +18,7 @@ public sealed partial class Map
     /// The pack folder (absolute) this map's assets are looked up in first, or null for a map outside any pack (or built
     /// in code). Set from the map file's location when it loads, before any op runs.
     /// </summary>
+    [NotBaked] // (an absolute path: a baked map gets the folder it is loaded from, MapBake.cs)
     public string? PackDir;
 
     /// <summary>The props this map can name (its pack's own props, then the global ones).</summary>

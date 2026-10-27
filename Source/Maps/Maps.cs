@@ -8,6 +8,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed partial class Map
 {
+    [NotBaked] // (set by Maps.LoadFolder: a position in the list)
     public byte Id;
     public required string Name;
     public required string Description;
@@ -21,9 +22,11 @@ public sealed partial class Map
     public byte[] SourceTextHash { get; init; } = [];
 
     /// <summary>Wall-clock ms <see cref="MapFile.Load"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/> (0 otherwise).</summary>
+    [NotBaked]
     public double LoadMs;
 
     /// <summary>Wall-clock ms <see cref="Validate"/> took for this map in <see cref="Maps.LoadFolder(string, List{string}, bool)"/>.</summary>
+    [NotBaked]
     public double ValidateMs;
     public readonly List<Vector3> Colors = new();
     public readonly List<Vector3> Spawns = new();
@@ -544,7 +547,7 @@ public static partial class Maps
         Buildings.Reload(); // and buildings from the Buildings folder
         MaterialDestruction.Reload(); // and how building materials break (Materials/destruction.json)
         MapPack.ForgetDestructibleDefaults();
-        var fresh = LoadAll();
+        var fresh = LoadAll(reload: true); // built live (MapBake: cached for the next start)
         _all = fresh;
         Generation++;
         Map? Was(Map m) => old.FirstOrDefault(o => o.Name.Equals(m.Name, StringComparison.OrdinalIgnoreCase));
@@ -570,9 +573,9 @@ public static partial class Maps
     /// The shipped maps are ordinary map files too (in Maps/Legacy and the other pack folders).
     /// Ids are positions in this list (local only: the network refers to maps by name + fingerprint).
     /// </summary>
-    private static Map[] LoadAll()
+    private static Map[] LoadAll(bool reload = false)
     {
-        var (maps, packs) = LoadFolder(Folder, LoadErrors);
+        var (maps, packs) = LoadFolder(Folder, LoadErrors, ParallelLoad, reload ? BakeUse.WriteOnly : BakeUse.ReadWrite);
         if (maps.Length == 0)
         {
             // No map files (or none valid): fall back to the one map built into the code so the game still starts.
@@ -607,10 +610,40 @@ public static partial class Maps
     public static bool ParallelLoad = true;
 
     /// <summary><see cref="LoadFolder(string, List{string})"/>, the files built on worker threads or one after another.</summary>
-    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors, bool parallel)
+    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors, bool parallel) => LoadFolder(folder, errors, parallel, BakeUse.None);
+
+    /// <summary>What a load does with baked maps (MapBake.cs): nothing (tests, tools), read and write (start-up), or only
+    /// write the cache ("Refresh maps": the files just changed, so they're built live).</summary>
+    public enum BakeUse : byte
     {
+        None,
+        ReadWrite,
+        WriteOnly,
+    }
+
+    /// <summary>Is <paramref name="file"/> a map file of the maps folder <paramref name="folder"/> (what <see cref="LoadFolder(string, List{string})"/> loads)?</summary>
+    public static bool IsMapFile(string folder, string file)
+    {
+        if (!file.EndsWith(".json", StringComparison.OrdinalIgnoreCase) || Path.GetFileName(file).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase))
+            return false;
+        var rel = Path.GetRelativePath(folder, file).Replace('\\', '/');
+        var slash = rel.IndexOf('/');
+        if (slash < 0)
+            return true; // a loose map
+        return !rel.StartsWith('.') && !InPackAssetFolder(Path.Combine(folder, rel[..slash]), file);
+    }
+
+    /// <summary><see cref="LoadFolder(string, List{string}, bool)"/>, with baked maps used as <paramref name="bakes"/> says.</summary>
+    public static (Map[] Maps, MapPack[] Packs) LoadFolder(string folder, List<string> errors, bool parallel, BakeUse bakes)
+    {
+        var read = bakes == BakeUse.ReadWrite && MapBake.Enabled;
+        var cache = bakes != BakeUse.None && MapBake.CacheWrites;
+        var bakeOut = bakes != BakeUse.None ? MapBake.BakeOutFolder : null;
+        var keyed = read || cache || bakeOut != null;
+        var tStart = System.Diagnostics.Stopwatch.GetTimestamp();
         var maps = new List<Map>();
         var packs = new List<MapPack>();
+        var byJob = new Dictionary<Map, LoadJob>(ReferenceEqualityComparer.Instance);
         if (!Directory.Exists(folder))
             return ([], []);
         static bool IsMapFile(string f) => !Path.GetFileName(f).Equals(MapPack.FileName, StringComparison.OrdinalIgnoreCase);
@@ -653,17 +686,37 @@ public static partial class Maps
         var tFiles = System.Diagnostics.Stopwatch.GetTimestamp();
         // Build every file (in parallel: each map is built alone from its own text; the shared libraries are loaded
         // first and only read after that), then take the results in file order, exactly as one-by-one loading did.
+        byte[]? inputs = null;
+        if (keyed)
+            inputs = MapBake.InputsHash(folder); // (everything else a map reads while it is built: one key part for every map)
+        var inputsMs = System.Diagnostics.Stopwatch.GetElapsedTime(tStart).TotalMilliseconds;
         RunJobs(jobs, parallel, j =>
         {
             var t = System.Diagnostics.Stopwatch.GetTimestamp();
-            j.Map = MapFile.Load(File.ReadAllText(j.File), j.Rel, j.PackDir); // packDir: the pack's own props and models come first
+            var text = File.ReadAllText(j.File);
+            var packDir = j.PackDir.Length > 0 ? j.PackDir : null;
+            if (inputs != null)
+            {
+                j.Key = MapBake.KeyOf(j.Rel, System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(text)), inputs);
+                if (read && MapBake.TryLoad(j.Rel, j.Key, packDir, out var loadLog, out var validateLog, out var how) is { } baked)
+                {
+                    Console.Write(loadLog); // (what building it wrote, as if it had been built)
+                    j.Map = baked;
+                    j.ValidateLog = validateLog;
+                    j.From = how;
+                    j.Map.LoadMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+                    return;
+                }
+            }
+            j.Map = MapFile.Load(text, j.Rel, j.PackDir); // packDir: the pack's own props and models come first
             j.Map.LoadMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
-        }, warm: true);
+        }, warm: true, route: keyed);
         var tBuilt = System.Diagnostics.Stopwatch.GetTimestamp();
         foreach (var j in jobs)
         {
             if (j.Log.Length > 0)
                 Console.Write(j.Log);
+            j.LoadLog = j.Log;
             j.Log = "";
             try
             {
@@ -685,6 +738,7 @@ public static partial class Maps
                 }
                 m.Pack = j.Pack;
                 maps.Add(m);
+                byJob[m] = j;
             }
             catch (Exception ex) when (ex is MapFileException or IOException)
             {
@@ -702,14 +756,42 @@ public static partial class Maps
         for (var i = 0; i < sorted.Length; i++)
             sorted[i].Id = (byte)i;
         // Validate each map (it only moves that map's own spawns and waypoints), in parallel too; the log in list order.
-        var checks = sorted.Select(m => new LoadJob(null!, "", m.SourceFile ?? m.Name, false, "") { Map = m }).ToList();
+        var checks = sorted.Select(m => new LoadJob(null!, "", m.SourceFile ?? m.Name, false, "") { Map = m, Built = byJob.GetValueOrDefault(m) }).ToList();
         var tValidate = System.Diagnostics.Stopwatch.GetTimestamp();
+        // Library indexes for writing bakes, one per pack folder, made once every map is built (flag variants and models
+        // are added to the libraries while maps build).
+        var indexes = new System.Collections.Concurrent.ConcurrentDictionary<string, Lazy<MapGraph.MapLibraryIndex>>(StringComparer.OrdinalIgnoreCase);
         RunJobs(checks, parallel, j =>
         {
             var t = System.Diagnostics.Stopwatch.GetTimestamp();
+            if (j.Built is { From: not null } b)
+            {
+                Console.Write(b.ValidateLog); // a baked map was validated before it was baked
+                j.Map!.ValidateMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+                return;
+            }
             j.Map!.Validate();
             j.Map.ValidateMs = System.Diagnostics.Stopwatch.GetElapsedTime(t).TotalMilliseconds;
-        }, warm: false);
+            if (j.Built is not { Key: { } key } built || !(cache || bakeOut != null))
+                return;
+            try
+            {
+                var index = indexes.GetOrAdd(built.PackDir, d => new Lazy<MapGraph.MapLibraryIndex>(() => MapBake.IndexFor(d.Length > 0 ? d : null))).Value;
+                var file = MapBake.Write(j.Map, built.Rel, key, built.LoadLog, JobConsole.Current?.ToString() ?? "", index);
+                if (bakeOut != null)
+                {
+                    Directory.CreateDirectory(bakeOut);
+                    File.WriteAllBytes(Path.Combine(bakeOut, MapBake.FileName(built.Rel)), file);
+                }
+                if (cache)
+                    MapBake.WriteCache(built.Rel, file);
+            }
+            catch (Exception ex) // (whatever goes wrong baking a map, it has loaded: it is simply not cached)
+            {
+                lock (MapBake.Unbakeable)
+                    MapBake.Unbakeable.Add($"{built.Rel}: {(ex is MapBakeException ? "" : ex.GetType().Name + ": ")}{ex.Message}");
+            }
+        }, warm: false, route: keyed);
         var tEnd = System.Diagnostics.Stopwatch.GetTimestamp();
         LastLoadTimes = (System.Diagnostics.Stopwatch.GetElapsedTime(tFiles, tBuilt).TotalMilliseconds - _warmMs, _warmMs,
             System.Diagnostics.Stopwatch.GetElapsedTime(tValidate, tEnd).TotalMilliseconds);
@@ -719,6 +801,27 @@ public static partial class Maps
                 Console.Write(j.Log);
             if (j.Error != null)
                 System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(j.Error).Throw();
+        }
+        if (keyed)
+        {
+            int baked = 0, cached = 0;
+            foreach (var j in checks)
+            {
+                if (j.Built?.From == "baked")
+                    baked++;
+                else if (j.Built?.From == "cached")
+                    cached++;
+            }
+            Interlocked.Add(ref MapBake.Baked, baked);
+            Interlocked.Add(ref MapBake.Cached, cached);
+            Interlocked.Add(ref MapBake.Built, sorted.Length - baked - cached);
+            var summary = $"{sorted.Length} maps: {baked} baked, {cached} cached, {sorted.Length - baked - cached} built, in {System.Diagnostics.Stopwatch.GetElapsedTime(tStart).TotalMilliseconds:0} ms "
+                + $"(inputs key {inputsMs:0} ms)";
+            MapBake.NoteSummary(summary);
+            Console.WriteLine("[maps] " + summary);
+            lock (MapBake.Unbakeable)
+                foreach (var u in MapBake.Unbakeable)
+                    Console.WriteLine($"[maps] not baked: {u}");
         }
         foreach (var p in packs)
         {
@@ -742,6 +845,10 @@ public static partial class Maps
         public readonly bool Loose = loose;
         public Map? Map;
         public Exception? Error;
+        public byte[]? Key; // the map's bake key (MapBake.cs; null: no bakes this load)
+        public string? From; // "baked" or "cached": read from that file instead of being built
+        public string LoadLog = "", ValidateLog = "";
+        public LoadJob? Built; // (a validation job: the job that built the map)
         public string Log = ""; // what the job wrote to the console, printed in order afterwards
     }
 
@@ -751,7 +858,7 @@ public static partial class Maps
     /// the shared libraries every map reads (props, decals, buildings, materials, flags, the packs' own folders) are
     /// loaded first, on this thread.
     /// </summary>
-    private static void RunJobs(List<LoadJob> jobs, bool parallel, Action<LoadJob> work, bool warm)
+    private static void RunJobs(List<LoadJob> jobs, bool parallel, Action<LoadJob> work, bool warm, bool route = false)
     {
         void Run(LoadJob j)
         {
@@ -766,7 +873,8 @@ public static partial class Maps
         }
         if (warm)
             _warmMs = 0;
-        if (!parallel || jobs.Count < 2 || Environment.ProcessorCount < 2)
+        var serial = !parallel || jobs.Count < 2 || Environment.ProcessorCount < 2;
+        if (serial && !route)
         {
             foreach (var j in jobs)
                 Run(j);
@@ -795,7 +903,7 @@ public static partial class Maps
         {
             // Biggest files first, so one large map doesn't start last and leave the other cores idle.
             var order = Enumerable.Range(0, jobs.Count).OrderByDescending(i => jobs[i].File.Length > 0 ? new FileInfo(jobs[i].File).Length : jobs[i].Map?.Solid.Count ?? 0).ThenBy(i => i).ToArray();
-            System.Threading.Tasks.Parallel.ForEach(order, new ParallelOptions { MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 8) }, i =>
+            System.Threading.Tasks.Parallel.ForEach(order, new ParallelOptions { MaxDegreeOfParallelism = serial ? 1 : Math.Min(Environment.ProcessorCount, 8) }, i =>
             {
                 var j = jobs[i];
                 var sb = new StringWriter();

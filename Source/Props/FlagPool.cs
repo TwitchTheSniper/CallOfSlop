@@ -177,6 +177,13 @@ public static class FlagPool
         }
     }
 
+    /// <summary>Every flag variant built so far: its base prop, design id and the variant (a baked map refers to them, MapBake.cs).</summary>
+    public static (PropDef Base, string Id, PropDef Variant)[] BuiltVariants()
+    {
+        lock (Lock)
+            return Variants.Where(kv => kv.Value != null).Select(kv => (kv.Key.Item1, kv.Key.Item2, kv.Value!)).ToArray();
+    }
+
     /// <summary>The prop <paramref name="def"/> flying design <paramref name="id"/> (cached), or null if it has no cloth or there is no such design.</summary>
     public static PropDef? Variant(PropDef def, string id)
     {

@@ -133,6 +133,35 @@ public static class MeshLibrary
         }
     }
 
+    /// <summary>Is <paramref name="asset"/> the library's primitive for its key (MapBake.cs)?</summary>
+    public static bool IsPrimitive(MeshAsset asset)
+    {
+        lock (Gate)
+            return Primitives.TryGetValue(asset.Key, out var hit) && ReferenceEquals(hit, asset);
+    }
+
+    /// <summary>
+    /// A primitive read from a baked map: the library's own one for its key when it has one (the same shape, built by the
+    /// same build), else <paramref name="asset"/>, which joins the library.
+    /// </summary>
+    public static MeshAsset InternPrimitive(MeshAsset asset)
+    {
+        lock (Gate)
+        {
+            if (Primitives.TryGetValue(asset.Key, out var hit))
+                return hit;
+            Primitives[asset.Key] = asset;
+            return asset;
+        }
+    }
+
+    /// <summary>Every model loaded so far, with its full path (a baked map refers to models by path, MapBake.cs).</summary>
+    public static (string Path, ModelAsset Model)[] LoadedModels()
+    {
+        lock (Gate)
+            return Models.Select(kv => (kv.Key, kv.Value.Model)).OrderBy(m => m.Key, StringComparer.Ordinal).ToArray();
+    }
+
     /// <summary>
     /// The (cached) model in <paramref name="file"/>: a path relative to the game folder ("Models/barrel.glb") or absolute.
     /// Reloaded when the file changed. Throws <see cref="ModelException"/> with a readable message. <paramref name="display"/>

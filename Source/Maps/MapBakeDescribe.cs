@@ -8,6 +8,39 @@ public static class MapBakeDescribe
 {
     public static int Run()
     {
+        MapBake.Enabled = false; MapBake.CacheWrites = false;
+        var sw0 = System.Diagnostics.Stopwatch.StartNew();
+        _ = Maps.All;
+        Console.WriteLine($"[describe] cold Maps.All {sw0.ElapsedMilliseconds} ms; build/libs/validate {Maps.LastLoadTimes}");
+        sw0.Restart();
+        Maps.LoadFolder(Maps.Folder, new List<string>());
+        Console.WriteLine($"[describe] warm LoadFolder {sw0.ElapsedMilliseconds} ms; build/libs/validate {Maps.LastLoadTimes}");
+        if (Environment.GetEnvironmentVariable("DESCRIBE_TIME_ONLY") == "1") return 0;
+        if (Environment.GetEnvironmentVariable("DESCRIBE_BAKE") == "1")
+        {
+            var tmp = Path.Combine(Path.GetTempPath(), "mapbake-try");
+            MapBake.CacheFolderOverride = tmp;
+            MapBake.BakedFolderOverride = Path.Combine(tmp, "nope");
+            MapBake.Enabled = true; MapBake.CacheWrites = true;
+            sw0.Restart();
+            var (live, _) = Maps.LoadFolder(Maps.Folder, new List<string>(), true, Maps.BakeUse.WriteOnly);
+            MapBake.FlushWrites();
+            Console.WriteLine($"[describe] write pass {sw0.ElapsedMilliseconds} ms: {MapBake.LastSummary}; written {MapBake.Written}");
+            foreach (var u in MapBake.Unbakeable) Console.WriteLine($"[describe] unbakeable {u}");
+            for (var k = 0; k < 2; k++)
+            {
+                sw0.Restart();
+                var (baked, _) = Maps.LoadFolder(Maps.Folder, new List<string>(), true, Maps.BakeUse.ReadWrite);
+                Console.WriteLine($"[describe] read pass {sw0.ElapsedMilliseconds} ms: {MapBake.LastSummary}; {Maps.LastLoadTimes}");
+                if (k == 1)
+                    for (var i = 0; i < live.Length; i++)
+                    {
+                        var d = MapBake.Difference(live[i], baked[i]);
+                        Console.WriteLine($"[describe] {live[i].Name}: {(d ?? "same")}");
+                    }
+            }
+            return 0;
+        }
         var counts = new Dictionary<Type, int>();
         var firstPath = new Dictionary<Type, string>();
         var seen = new HashSet<object>(ReferenceEqualityComparer.Instance);
