@@ -139,6 +139,7 @@ public sealed class CaptureTheFlagModule : GameModeModule
                 Flags[enemy].Home = false;
                 carrying = enemy;
                 game.ModeEvent($"{p.Name} took the {GameModes.TeamNames[enemy]} flag!", Sfx.ReconBeep);
+                game.LogicObjective(LogicEvent.FlagTaken, enemy, p); // map logic: match.flagTaken (GameLogic.cs)
             }
             // Touching your own dropped flag sends it home.
             if (Flags[own].Dropped && Touches(p.Position, Flags[own].Position))
@@ -151,6 +152,7 @@ public sealed class CaptureTheFlagModule : GameModeModule
                 Flags[enemy].Home = true;
                 Flags[enemy].Position = stands[enemy];
                 game.ModeEvent($"{p.Name} CAPTURED the {GameModes.TeamNames[enemy]} flag! ({GameModes.TeamNames[own]} {game.TeamScore[own]}-{game.TeamScore[enemy]})", Sfx.LevelUp);
+                game.LogicObjective(LogicEvent.FlagCaptured, own, p); // map logic: match.flagCaptured, n = the team that scored
             }
         }
     }

@@ -164,7 +164,7 @@ public sealed partial class Game
     /// </summary>
     private void SpawnTick(ZombiesMap zm, double now)
     {
-        if (_zToSpawn <= 0 || now < _zNextSpawn)
+        if (_zToSpawn <= 0 || now < _zNextSpawn || _logicSpawnPaused) // (map logic can pause the spawning: zombies.pause)
             return;
         var cap = ZAliveCap();
         if (_zAlive >= cap)

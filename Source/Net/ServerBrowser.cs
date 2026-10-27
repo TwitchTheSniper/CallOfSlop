@@ -122,7 +122,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     entry carries the window byte only outside, at a window or swiping (11 or 12 bytes).
     // 59: Zombies start round and test kit (Source/Game/ZombiesStartRound.cs): Msg.LobbyState ends with the start round
     //     and a Zombies flags byte (bit 0: the test kit).
-    public const byte ProtocolVersion = 59;
+    // 60: map logic (Source/Game/GameLogic.cs, Maps/README.md "Map logic"): Msg.Logic at the end of Msg (a LogicMsgKind byte
+    //     first: entity flags, a button or lever used, a mover's control clock as three doubles, a sound, a notice, the
+    //     joiner's full flags); movers can be started and stopped, so their pose follows that clock.
+    public const byte ProtocolVersion = 60;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

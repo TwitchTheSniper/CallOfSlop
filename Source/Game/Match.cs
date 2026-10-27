@@ -240,6 +240,8 @@ public sealed partial class Game
     {
         World.Map.RestoreProps(); // breakable props are whole again every match
         if (!IsServer)
+            ResetLogicForMatch(); // map logic as the map starts it (the server resets on its next tick and sends the state)
+        if (!IsServer)
             ClientModeMatchStart(); // every mode's client-side reset (Zombies: doors shut, boards up, no zombies; the server resets its run in ResetModeForMatch)
         PropDebris.Clear();
         Gibs.Clear();

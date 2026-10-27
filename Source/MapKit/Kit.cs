@@ -84,6 +84,11 @@ public sealed class Kit
 
     public string Name => Top.Str("name") ?? "";
 
+    private LogicKit? _logic;
+
+    /// <summary>The map's "logic" section (Maps/README.md, "Map logic"): entities and the wires between them. Written by <see cref="ToDocument"/>.</summary>
+    public LogicKit Logic => _logic ??= new LogicKit();
+
     // ---- the header -------------------------------------------------------------------------------------------------
 
     /// <summary>The map's description, order (the pack's convention: Space 600 + NN), player limit and, for a void map, the fall-kill height.</summary>
@@ -922,7 +927,7 @@ public sealed class Kit
     private static readonly string[] TopOrder =
     [
         "format", "name", "description", "author", "order", "prototypeGrid", "penetration", "destructible", "fallKill", "maxPlayers", "test", "flagPool",
-        "halfX", "halfZ", "sky", "skybox", "boundary", "gravity", "terrain", "teamSpawns", "hills", "flags", "foliage", "movers", "zombies",
+        "halfX", "halfZ", "sky", "skybox", "boundary", "gravity", "terrain", "teamSpawns", "hills", "flags", "foliage", "movers", "zombies", "logic",
     ];
 
     /// <summary>
@@ -938,6 +943,8 @@ public sealed class Kit
     /// <summary>The whole map file as a JSON tree: the top-level fields in the usual order, the objectives, then the ops.</summary>
     public JObject ToDocument()
     {
+        if (_logic is { } logic && !logic.IsEmpty)
+            Top.Set("logic", logic.ToJson());
         var doc = new JObject();
         var objectives = new JObject();
         if (TeamSpawns[0].Count + TeamSpawns[1].Count > 0 && !Top.Has("teamSpawns"))

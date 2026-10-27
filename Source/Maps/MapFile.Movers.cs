@@ -7,7 +7,7 @@ namespace CallOfSlop;
 /// <summary>Reading and writing a map file's optional "movers" section (see Maps/README.md, "Movers").</summary>
 public static partial class MapFile
 {
-    private static readonly string[] MoverKeys = ["type", "name", "at", "points", "rise", "speed", "spin", "yaw", "dwell", "loop", "phase", "color", "boxes"];
+    private static readonly string[] MoverKeys = ["type", "name", "at", "points", "rise", "speed", "spin", "yaw", "dwell", "loop", "phase", "color", "boxes", "running"];
     private static readonly string[] MoverBoxKeys = ["size", "offset", "yaw", "color"];
 
     /// <summary>Most movers a map may have, and most boxes per mover (they're collided and drawn one by one).</summary>
@@ -52,6 +52,8 @@ public static partial class MapFile
                 parts.Add($"\"dwell\": {Num(m.Dwell)}");
             if (m.Phase != 0)
                 parts.Add($"\"phase\": {Num(m.Phase)}");
+            if (!m.StartsRunning)
+                parts.Add("\"running\": false");
             var boxes = m.Parts.Select(p =>
             {
                 var bp = new List<string> { $"\"size\": {Vec(p.Half * 2)}" };
@@ -130,6 +132,8 @@ public static partial class MapFile
             m.Yaw0 = Opt("yaw", 0f) * Deg;
             m.Dwell = MathF.Max(0f, Opt("dwell", kind == MoverKind.Elevator ? 2f : kind == MoverKind.Slide ? 1f : 0f));
             m.Phase = Opt("phase", 0f);
+            m.StartsRunning = Prop(me, "running") is not { ValueKind: JsonValueKind.False }; // false: stands still until map logic starts it (MapLogic.cs)
+            m.ResetControl();
             var color = Prop(me, "color") is { } ce ? ToColour(ce, $"{where} (color)", "") : new Vector3(0.85f, 0.6f, 0.15f);
 
             if (Prop(me, "boxes") is not { } be)
