@@ -106,7 +106,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 52: lobby settings in the lobby room (Source/UI/UiLobbyRoom.cs): Msg.LobbyState's flags gain Destruction (32), Allow
     //     voice chat (64) and dead players' chat private (128), and a bot gear byte follows the gravity byte.
     // 53: Zombies answers (2026-10-26): a slot machine's result can be 4 (a melee build: its part field is then an index into
-    //     the standard builds) and the reels gain the blade symbol (9); power-up drops follow a team points schedule.
+    //     the standard builds) and the reels gain the blade symbol (9).
     public const byte ProtocolVersion = 53;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 

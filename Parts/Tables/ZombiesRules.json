@@ -113,8 +113,11 @@
     "salvageScrap": 25
   },
   "powerUps": {
-    "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23). A kill drops one with dropChance, at most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
-    "dropChance": 0.04,
+    "note": "World at War style power-ups (milestone 3; Infinite Ammo and the weights 2026-10-23; the points schedule 2026-10-26). A drop becomes due once the team has earned firstAt points (hits, kills, boards), and the next kill drops it; each later one is due a step later that grows x stepGrowth a drop (at most stepMax). dropChance is an extra flat chance per kill (0: off). At most maxPerRound a round; it floats for lifetime seconds (blinking for the last blinkSeconds). The timed ones (Insta-Kill, Double Points, Infinite Ammo) last their durations entry, or duration seconds. Max Ammo is the most common drop (about 38 percent).",
+    "firstAt": 1800,
+    "stepGrowth": 1.02,
+    "stepMax": 4000,
+    "dropChance": 0,
     "maxPerRound": 4,
     "lifetime": 30,
     "blinkSeconds": 10,

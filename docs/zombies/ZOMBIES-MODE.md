@@ -408,8 +408,17 @@ your player has died. And if you can't get to them in time, will despawn after 5
 
 ## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
 
-- **Drops.** Every zombie a player kills may drop one: `dropChance` 4 percent, at most `maxPerRound` (4) a round (the
-  count resets when a round starts). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
+- **Drops: a team points schedule** (World at War style; developer answer, 2026-10-26, replacing the flat 4 percent a
+  kill roll, so rewards come more evenly). Every point the team **earns** (hits, kills, boards; Double Points counted as
+  paid; not the Nuke's, the Carpenter's or a slot machine's coins) goes into one shared tally. When it passes
+  `firstAt` (1800) a drop is **due**, and the next zombie a player kills drops it; the next one is due a step later
+  (from the points at that drop), and each step is `stepGrowth` (1.02) x the one before, at most `stepMax` (4000): 1836,
+  then 2194 by the 10th drop, 3260 by the 30th. At most `maxPerRound` (4) a round (the count resets when a round
+  starts): a drop due at the cap waits for the next round's first kill. `dropChance` adds an optional flat chance per
+  kill on top (0: off). Tuning: a scripted model of solo and 4-player runs to round 30 (the real round curve, hits per
+  kill from zombie health against a gun that improves) gives the same number of drops as the old rule (x1.00: 12 by
+  round 10 solo, 91 by round 30), more evenly spread; self-test "Zombies mode" ("power-up schedule", "power-up rate").
+  Server-only (no wire change). The kind is rolled from `weights` (Max Ammo 2.5, Insta-Kill 1, Double Points 1,
   Nuke 0.8, Carpenter 0.8, Infinite Ammo 0.5: Max Ammo is about 38 percent of drops, 43 with every board up, and
   Infinite Ammo about 8); the Carpenter only drops while a board is down. A zombie killed outside (at a window) drops
   it at that window's inside spot. Kills by a burn, a splash or a chain drop like any kill; the Nuke's kills drop nothing.
@@ -436,7 +445,7 @@ fill their own magazines from it.
 **Decision (user, 2026-10-23):** add Max Ammo as one of the most common drops and an Infinite Ammo one. Read as
 power-up drops (not perk machines). Max Ammo's weight went 1.2 -> 2.5 (about 38 percent, up from 25) and `dropChance`
 3 -> 4 percent, so a round of 24 kills shows about one power-up instead of 0.7 (still at most 4 a round); Infinite
-Ammo is timed, 30 s, weight 0.5.
+Ammo is timed, 30 s, weight 0.5. (2026-10-26: the per-kill chance became the points schedule above, at the same average rate.)
 
 ## Special ammo effects (milestone 3; proposed numbers in "ammoEffects")
 

@@ -55,6 +55,14 @@ public sealed partial class Game
     public const int MaxPowerUps = 16;
 
     private int _zPowerThisRound;
+
+    /// <summary>The drop schedule (server): points the team has earned this run, the total at which the next drop is due, the current step.</summary>
+    private double _zPowerEarned, _zPowerDueAt, _zPowerStep;
+
+    /// <summary>Self-test and HUD-free info: the team's points earned this run and when the next power-up is due.</summary>
+    public double PowerEarned => _zPowerEarned;
+
+    public double PowerDueAt => _zPowerDueAt > 0 ? _zPowerDueAt : Math.Max(1, ZRules.PowerFirstAt);
     private ushort _zNextPower = 1;
 
     /// <summary>The name players see.</summary>
@@ -109,22 +117,61 @@ public sealed partial class Game
         ZPowerUps.Clear();
         ZInstaKillUntil = ZDoublePointsUntil = ZInfiniteAmmoUntil = 0;
         _zPowerThisRound = 0;
+        _zPowerEarned = 0;
+        _zPowerStep = _zPowerDueAt = 0; // (set from the rules on the first kill: StartPowerSchedule)
     }
 
-    /// <summary>Server: points a player earned (hits, kills, boards): twice as many under Double Points.</summary>
-    private void EarnPoints(Player p, int amount, double now) => AddPoints(p, now < ZDoublePointsUntil ? amount * 2 : amount);
+    private void StartPowerSchedule()
+    {
+        if (_zPowerStep <= 0)
+            _zPowerStep = _zPowerDueAt = Math.Max(1, ZRules.PowerFirstAt);
+    }
 
-    /// <summary>Server: a zombie died at <paramref name="at"/> (a kill by a player): maybe a power-up drops there.</summary>
+    /// <summary>Server: points a player earned (hits, kills, boards): twice as many under Double Points. They count toward the team's power-up schedule.</summary>
+    private void EarnPoints(Player p, int amount, double now)
+    {
+        var paid = now < ZDoublePointsUntil ? amount * 2 : amount;
+        AddPoints(p, paid);
+        if (paid > 0)
+            _zPowerEarned += paid;
+    }
+
+    /// <summary>
+    /// Server: a zombie died at <paramref name="at"/> (a kill by a player): a power-up drops there when the team's points
+    /// schedule says one is due (<see cref="ZombiesRules.PowerFirstAt"/>), or on the optional flat chance; at most the
+    /// round's cap (a due drop then waits).
+    /// </summary>
     private void RollPowerUp(Vector3 at, double now)
     {
-        if (_zPowerThisRound >= ZRules.PowerMaxPerRound || ZRules.PowerDropChance <= 0)
+        StartPowerSchedule();
+        if (_zPowerThisRound >= ZRules.PowerMaxPerRound)
             return;
-        if (ZRand() >= ZRules.PowerDropChance)
+        var due = ZRules.PowerFirstAt > 0 && _zPowerEarned >= _zPowerDueAt;
+        if (!due && (ZRules.PowerDropChance <= 0 || ZRand() >= ZRules.PowerDropChance))
             return;
+        if (due)
+            AdvancePowerSchedule();
         var kind = PickPowerKind(ZRand());
         if (kind != ZPowerKind.COUNT)
             SpawnPowerUp(kind, at, now);
     }
+
+    /// <summary>A scheduled drop happened: the next is due one (rising) step after the points earned so far.</summary>
+    private void AdvancePowerSchedule()
+    {
+        _zPowerStep = NextPowerStep(ZRules, _zPowerStep);
+        _zPowerDueAt = _zPowerEarned + _zPowerStep;
+    }
+
+    /// <summary>The step after <paramref name="step"/>: x <see cref="ZombiesRules.PowerStepGrowth"/>, at most <see cref="ZombiesRules.PowerStepMax"/> (0: no cap).</summary>
+    public static double NextPowerStep(ZombiesRules r, double step)
+    {
+        var next = step * r.PowerStepGrowth;
+        return r.PowerStepMax > 0 ? Math.Min(next, Math.Max(r.PowerStepMax, r.PowerFirstAt)) : next;
+    }
+
+    /// <summary>Self-test: points earned the way play earns them (Double Points and the power-up schedule included).</summary>
+    public void SelfTestEarn(Player p, int amount, double now) => EarnPoints(p, amount, now);
 
     /// <summary>A power-up kind from the rules' weights (<paramref name="roll"/> in 0-1); the Carpenter only when a board is down. COUNT: none.</summary>
     public ZPowerKind PickPowerKind(float roll)

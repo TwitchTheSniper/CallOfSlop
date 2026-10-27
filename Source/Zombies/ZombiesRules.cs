@@ -210,8 +210,17 @@ public sealed class ZombiesRules
     public int ScrapPerKill = 1, SalvageScrap = 25;
 
     // ---- Power-ups (World at War style; ZombiesPowerUps.cs) ---------------------------------------------
-    /// <summary>Chance a zombie kill drops a power-up, and the most that drop in one round.</summary>
-    public float PowerDropChance = 0.04f;
+    /// <summary>
+    /// The drop schedule (World at War style; developer answer, 2026-10-26): a power-up becomes due once the TEAM has
+    /// earned <see cref="PowerFirstAt"/> points (hits, kills, boards; Double Points counted as paid), and the next kill by a
+    /// player drops it; then the next one is due <see cref="PowerFirstAt"/> x <see cref="PowerStepGrowth"/> to the power
+    /// (drops so far) points later (at most <see cref="PowerStepMax"/>; 0 = no cap), so the steps rise over the game.
+    /// <see cref="PowerDropChance"/>: an extra flat chance per kill on top (0 by default: the schedule replaced the old 4
+    /// percent roll). At most <see cref="PowerMaxPerRound"/> a round either way (a due drop waits for the next round).
+    /// </summary>
+    public float PowerFirstAt = 1800f, PowerStepGrowth = 1.02f, PowerStepMax = 4000f;
+
+    public float PowerDropChance;
 
     public int PowerMaxPerRound = 4;
 
@@ -534,6 +543,9 @@ public sealed class ZombiesRules
                         {
                             case "note": break;
                             case "dropChance": r.PowerDropChance = Real(v, w, 0, 1); break;
+                            case "firstAt": r.PowerFirstAt = Real(v, w, 0, 1000000); break;
+                            case "stepGrowth": r.PowerStepGrowth = Real(v, w, 1, 3); break;
+                            case "stepMax": r.PowerStepMax = Real(v, w, 0, 1000000); break;
                             case "maxPerRound": r.PowerMaxPerRound = Whole(v, w, 0, 100); break;
                             case "lifetime": r.PowerLifetime = Real(v, w, 1, 600); break;
                             case "blinkSeconds": r.PowerBlinkSeconds = Real(v, w, 0, 600); break;
