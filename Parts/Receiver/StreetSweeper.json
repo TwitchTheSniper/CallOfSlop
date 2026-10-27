@@ -23,7 +23,7 @@
     {"use": "Drum Shell", "pos": [0.036, 0.06, -0.04], "rot": [0, 0, 90], "scale": [0.6, 0.6, 0.6], "color": "olive"}
   ],
   "stats": [
-    {"stat": "hipSpreadDeg", "set": 5.5},
+    {"stat": "hipSpreadDeg", "set": 0.8},
     {"stat": "adsSpreadMult", "set": 0.85},
     {"stat": "reload", "set": 3.6}
   ]

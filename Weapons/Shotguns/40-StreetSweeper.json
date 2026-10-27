@@ -15,7 +15,7 @@
   "burstDelay": 0.25,
   "mag": 20,
   "reload": 3.5,
-  "hipSpreadDeg": 7,
+  "hipSpreadDeg": 1.01,
   "adsSpreadMult": 0.85,
   "recoilDeg": 1.8,
   "recoil": {

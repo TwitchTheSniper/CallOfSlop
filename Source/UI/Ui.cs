@@ -659,7 +659,7 @@ public sealed partial class Ui : IDisposable
         Bar("Fire rate", w.Rpm / 1500f, $"{w.Rpm} rpm");
         Bar("Damage / sec", w.Dps / 1100f, $"{w.Dps:0}");
         Bar("Range", StatBars.Range(w), $"{w.RangeM:0} m full damage");
-        Bar("Accuracy", StatBars.Accuracy(w), $"{w.HipSpreadDeg:0.0} deg hip, {w.HipSpreadDeg * w.AdsSpreadMult:0.00} aimed");
+        Bar("Accuracy", StatBars.Accuracy(w), $"{w.HipSpreadDeg:0.0#} deg hip, {w.HipSpreadDeg * w.AdsSpreadMult:0.00} aimed");
         Bar("Control", StatBars.Control(w), $"{Recoil.ControlText(w)} deg kick");
         Bar("Mobility", (w.Mobility - 0.7f) / 0.45f, $"{w.Mobility * 100:0}% speed");
         Bar("Magazine", StatBars.Magazine(w), $"{w.Mag} rounds");
