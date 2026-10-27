@@ -469,6 +469,8 @@ public sealed partial class Game
     {
         if (!hold && MannedCart == null && TryUseDoor(now))
             return; // looking at a building door: open or shut it (GameBuildings.cs)
+        if (!hold && MannedCart == null && TryUseLogic(now))
+            return; // looking at a map logic button or lever (GameLogic.cs)
         if (Local is not { Alive: true } me || Phase != MatchPhase.Playing)
             return;
         if (IsServer)
@@ -491,6 +493,8 @@ public sealed partial class Game
             return null;
         if (DoorHint() is { } door)
             return door; // a building door (GameBuildings.cs)
+        if (LogicHint() is { } logic)
+            return logic; // a map logic button or lever (GameLogic.cs)
         if (SlotStation is { } st && !me.ExtraSlots && Vector3.Distance(st, me.Position) <= StationRange)
             return "unlock weapon slots 3-4 (free in the sandbox)";
         if (!Carts.TryGetValue(LocalId, out var c))

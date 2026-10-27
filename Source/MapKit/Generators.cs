@@ -27,6 +27,7 @@ public static class GeneratorRegistry
     [
         new Generators.TwinShard(),
         new Generators.HordeTest(),
+        new Generators.LogicTest(),
     ];
 
     private static IMapGenerator[]? _all;

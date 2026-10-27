@@ -76,6 +76,103 @@ public sealed class MoverDef : IMoverPose
     public float Rise;
     public MoverPart[] Parts = [];
 
+    /// <summary>
+    /// false ("running": false in the map file): it stands still at the start of its loop until map logic starts it
+    /// (Maps/README.md, "Map logic"). Every mover can be started, stopped and advanced by map logic.
+    /// </summary>
+    public bool StartsRunning = true;
+
+    // The control state (map logic, GameLogic.cs): the mover's own clock is RunBase seconds at tick RunSince, running
+    // forward from then, and stops when it reaches RunStop (+infinity: never). The default (0, 0, +infinity) is the clock
+    // every mover always had, the server tick, so a mover nothing controls moves exactly as before. Set by the server's
+    // logic and sent to clients (Msg.Logic), so the pose stays a pure function of the tick for prediction.
+    [NotBaked] public double RunBase;
+    [NotBaked] public double RunSince;
+    [NotBaked] public double RunStop = double.PositiveInfinity;
+
+    /// <summary>The mover's own clock (seconds) at a server tick.</summary>
+    public double TimeAt(double tick) => RunSince == 0 && RunBase == 0 && double.IsPositiveInfinity(RunStop)
+        ? tick / World.TickRate // (nothing controls it: exactly the clock it always had)
+        : Math.Min(RunBase + Math.Max(0.0, tick - RunSince) / World.TickRate, RunStop);
+
+    /// <summary>Is it moving along its loop at <paramref name="tick"/> (not stopped by map logic)?</summary>
+    public bool RunningAt(double tick) => TimeAt(tick) < RunStop;
+
+    /// <summary>Back to how the map starts it: running on the server clock, or stopped at the start of its loop.</summary>
+    public void ResetControl()
+    {
+        RunBase = 0;
+        RunSince = 0;
+        RunStop = StartsRunning ? double.PositiveInfinity : 0;
+    }
+
+    /// <summary>Map logic: starts it at tick <paramref name="at"/> (from where it stands). False if it's already running.</summary>
+    public bool ControlStart(double at)
+    {
+        if (RunningAt(at) && double.IsPositiveInfinity(RunStop))
+            return false;
+        var t = TimeAt(at);
+        RunBase = t;
+        RunSince = at;
+        RunStop = double.PositiveInfinity;
+        return true;
+    }
+
+    /// <summary>Map logic: stops it where it is at tick <paramref name="at"/>. False if it's already stopped then.</summary>
+    public bool ControlStop(double at)
+    {
+        if (!RunningAt(at))
+            return false;
+        var t = TimeAt(at);
+        RunBase = t;
+        RunSince = at;
+        RunStop = t;
+        return true;
+    }
+
+    /// <summary>Map logic: back to the start of its loop at tick <paramref name="at"/> (running or stopped, as the map starts it).</summary>
+    public void ControlReset(double at)
+    {
+        RunBase = 0;
+        RunSince = at;
+        RunStop = StartsRunning ? double.PositiveInfinity : 0;
+    }
+
+    /// <summary>
+    /// Map logic: travels to its next stop (the next point of its path, for an elevator the other end) from tick
+    /// <paramref name="at"/>, skipping the wait there, and stops. Returns the tick it arrives, or -1 (a mover that only spins).
+    /// </summary>
+    public double ControlAdvance(double at)
+    {
+        if (_legs == null)
+            Prepare();
+        if (_cycle <= 1e-6)
+            return -1;
+        var t = TimeAt(at);
+        var c = (t + Phase) % _cycle;
+        if (c < 0)
+            c += _cycle;
+        foreach (var leg in _legs!)
+        {
+            var travelStart = leg.Start + leg.Pause;
+            var end = travelStart + leg.Travel;
+            if (end <= c + 1e-6)
+                continue; // (stopped right at the end of this leg: the next one)
+            var from = c < travelStart && Spin == 0 ? t + (travelStart - c) : t; // (a mover that spins keeps its wait: skipping it would jump its turn)
+            RunBase = from;
+            RunSince = at;
+            RunStop = t + (end - c);
+            return at + (RunStop - from) * World.TickRate;
+        }
+        // At the very end of the loop: the first leg of the next one.
+        var first = _legs![0];
+        var start = t + (_cycle - c) + (Spin == 0 ? first.Start + first.Pause : 0);
+        RunBase = start;
+        RunSince = at;
+        RunStop = t + (_cycle - c) + first.Start + first.Pause + first.Travel;
+        return at + (RunStop - start) * World.TickRate;
+    }
+
     private (Vector3 From, Vector3 To, double Start, double Pause, double Travel)[]? _legs;
     private double _cycle;
 
@@ -125,7 +222,7 @@ public sealed class MoverDef : IMoverPose
     {
         if (_legs == null)
             Prepare();
-        var time = tick / World.TickRate;
+        var time = TimeAt(tick); // (tick / TickRate unless map logic stopped or started it)
         var origin = Points[0];
         if (_cycle > 1e-6)
         {
@@ -223,6 +320,8 @@ public sealed partial class Map
                     Mix(p.X); Mix(p.Y); Mix(p.Z);
                 }
                 Mix(m.Speed); Mix(m.Spin); Mix(m.Yaw0); Mix(m.Dwell); Mix(m.Loop ? 1 : 0); Mix(m.Phase);
+                if (!m.StartsRunning)
+                    Mix(-1); // (movers that start running keep their old fingerprint)
                 foreach (var p in m.Parts)
                 {
                     Mix(p.Center.X); Mix(p.Center.Y); Mix(p.Center.Z);

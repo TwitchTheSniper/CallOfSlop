@@ -132,6 +132,8 @@ public static partial class SelfTest
                 var b = nav.Nodes[j];
                 if (NavGraph.CrossesDoor(m, a, b))
                     continue; // through a shut door: bots open it, the walker can't
+                if (m.CrossesLogicDoor(a, b))
+                    continue; // through a map logic door: on only while it's open (GameLogicNav.cs), and the walk is of the map as built, shut
                 if (nav.EdgeFlags[e] != 0 || (MathF.Abs(a.Y - b.Y) > 0.3f && !(EdgeWalkOnTerrain(terrain, a) && EdgeWalkOnTerrain(terrain, b))) || (terrain != null && EdgeWalkSloped(terrain, a, b)))
                     interesting.Add(e);
                 else

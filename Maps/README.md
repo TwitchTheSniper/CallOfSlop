@@ -65,6 +65,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `ops` | **yes** | The list of building steps, run in order. |
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
+| `logic` | no | Map events: buttons, levers, pressure plates, zones and timers wired to doors, lamps, movers, sounds and the Zombies run, with delays and logic gates. See [Map logic](#map-logic). |
 | `test` | no | What the self-test (and `--check-map`) must find true of this map: shape, dressing floors, symmetry, fair walks, deck probes, a short bot match. Not part of the fingerprint. See [Testing a map](#testing-a-map). |
 
 Trash cans, crates, litter and other props are placed with ops; see [Props](#props).
@@ -450,6 +451,7 @@ Players standing on a mover ride it: a turning platform carries them round and t
 | `yaw` | Starting angle in degrees. |
 | `phase` | Seconds to offset the timing, so movers sharing a route don't move in step. |
 | `color` | Default colour for its boxes. |
+| `running` | `false`: it stands still at the start of its loop until [map logic](#map-logic) starts or advances it. |
 | `boxes` | 1 to 16 boxes in the mover's own frame: `size` `[w, h, d]`, optional `offset` `[x, y, z]` (the box's centre relative to `at`; default `[0, -h/2, 0]`, so the box's top is at `at`), optional `yaw` in degrees (turn a box within the mover, e.g. two squares at 0 and 45 make a near-round disc) and `color`. |
 
 Movement eases into and out of every point (no jolts), and a map may have up to 32 movers.
@@ -464,6 +466,159 @@ Movement eases into and out of every point (no jolts), and a map may have up to 
 - A platform top 0.3 to 0.5 m above the floor can simply be stepped onto. Parts that stick up more than 0.55 m (a bar on a disc) are walls that sweep players along; players can jump 0.95 m.
 - Overlapping boxes with the same top look fine when they're the same colour. Different colours on the same top surface flicker, so make markers stick up (posts) instead.
 - Movers are drawn lit but without the surface texture (a texture would slide over a moving surface), so use colours and posts to make the motion visible.
+
+## Map logic
+
+A map can wire things together in an optional top-level `"logic"` section: a button opens a gate, walking into a
+courtyard lights its lamps, a timer runs a lift, two levers and an AND gate open a vault, turning on the Zombies power
+starts a lift and opens a shutter, breaking a wall sets off a cave-in. It works in every mode. `Maps/Dev/LogicTest.json`
+(the **Dev** pack's "Logic Test", written by the C# map kit: `Source/MapKit/Generators/LogicTest.cs`) has one of each.
+
+```json
+"logic": {
+  "entities": [
+    { "type": "door", "name": "Gate", "box": [-15, 0, -1.2, -14.7, 2.6, 1.2], "color": "#b0763c" },
+    { "type": "button", "name": "GateButton", "at": [-14.64, 1.3, 2.3], "yaw": 90, "prompt": "open the gate",
+      "outputs": { "pressed": ["Gate.open", { "to": "Gate.close", "delay": 8 }] } },
+    { "type": "zone", "name": "Courtyard", "box": [-6, 0, -6, 6, 3, 6] },
+    { "type": "lamp", "name": "Lamp1", "box": [-6.25, 2.6, -6.25, -5.75, 3, -5.75], "color": "#ffd873" }
+  ],
+  "wires": [
+    { "from": "Courtyard.occupied", "to": "Lamp1.turnOn" },
+    { "from": "Courtyard.empty", "to": "Lamp1.turnOff", "delay": 2 }
+  ]
+}
+```
+
+### The signal model
+
+- **Entities** are named things (names are 1 to 32 letters, digits, `_` or `-`, unique, any case). Each has **events**
+  (outputs: something happened to it) and **actions** (inputs: what it can be told to do).
+- A **wire** joins one entity's event to another's action: `"from": "Entity.event"`, `"to": "Entity.action"`. Write
+  wires in `"wires"`, or inside the entity that sends them, as `"outputs": { "event": ["Other.action", { "to": ..., ... }] }`.
+  Both are the same thing.
+- What travels on a wire is a **signal**: a value (true for most events; false for `off`, `released`, `left`, `empty`,
+  `closed`, `stopped`; the new state for `changed` and a gate's `out`), a number (a counter's count, a round, a team, a
+  zone's head count, a timer's fire count) and who set it off (the player, if anyone). Actions such as `set` or a gate's
+  inputs use the value; `teleport.send` and `text` with `"to": "activator"` use the player.
+- A wire may add `"delay"` (seconds, 0 to 3600), `"once": true` (it passes one signal a match), `"value": true/false`
+  or `"n": 5` (send that instead), and `"when": 5` (pass only a signal whose number is 5: `zombies.roundStarted` with
+  `"when": 10` fires on round 10).
+- Every entity takes `enable` and `disable`; a disabled entity ignores everything else (a disabled button can't be
+  pressed, a disabled zone doesn't count anyone, a disabled timer doesn't fire, a disabled `zdoor` can't be bought).
+  `"enabled": false` starts it disabled.
+- **Timing.** The server runs the logic in its fixed tick order. Signals wait in a queue for their tick and are
+  delivered in the order they were sent; a zero-delay wire is delivered later in the same tick. At most 256 signals
+  are delivered a tick, the rest the next tick, so a loop of zero-delay wires can't stall the game (give a loop a delay).
+  Nothing is polled except zones and pressure plates (each tick, every living player's feet against their boxes), so a
+  map can have a lot of logic for free. The same match plays the same logic on every run.
+- **Multiplayer.** Only the server decides. Clients get what they draw (doors, lamps, levers, buttons cooling down,
+  plates) and the movers' clocks; a mover map logic starts or stops changes course 0.1 s after the server decides, so
+  the platform under a player doesn't jump. Someone joining mid-match gets it all.
+
+This is the model the planned sandbox construct mode's logic is meant to share: typed nodes with named outputs and
+inputs, boolean-and-number signals, wires with a delay, and a deterministic queue. A node type added for one (a new
+interactable, a gate) fits the other.
+
+### Entities
+
+Positions are world coordinates, `[x, y, z]` (or `[x, z]` on the ground); a box is `[x0, y0, z0, x1, y1, z1]`.
+
+| Type | Fields | Events | Actions |
+|---|---|---|---|
+| `button` | `at`, `yaw` (its face looks that way: 0 north, 90 east), `reach` (2.2 m), `prompt` (the hint), `cost` (Zombies points; free in other modes), `cooldown` (1 s), `once`, `power` (needs the Zombies power), `draw` (false: you dress it yourself), `color` | `pressed` | `press` |
+| `lever` | as `button`, plus `on` (starts on); `cooldown` 0.5 s | `on`, `off`, `changed` | `toggle`, `turnOn`, `turnOff`, `set` |
+| `plate` | `box` (a pressure plate: drawn as a pad at its bottom), `who`, `draw`, `color` | `pressed` (the first body on), `released` (the last off), `changed` | |
+| `zone` | `box`, `who` (`players`: everyone alive, `humans`, `bots`) | `entered`, `left` (each player), `occupied` (the first in), `empty` (the last out), `changed` | |
+| `timer` | `interval` (s), `repeat` (true), `running` (true: it runs from the start of the match) | `fired` (n: how many times) | `start`, `stop`, `toggle`, `reset` (start counting again) |
+| `relay` | | `out` | `trigger` (passes the signal on: with `enable`/`disable`, a switch in a chain) |
+| `and`, `or` | `inputs` (2 to 4) | `out` (on a change), `true`, `false` | `a`, `b`, `c`, `d` (each input is the signal's value), `reset` |
+| `not` | | `out`, `true`, `false` (on a change; it starts true) | `in` |
+| `counter` | `target`, `repeat` (start again at 0 on reaching it) | `reached`, `changed` (n: the count) | `add`, `subtract` (by the signal's n, or 1), `set` (to n), `reset` |
+| `random` | `choices` (2 to 8) | `out1` ... `out8` (one at random, seeded: the same every run) | `trigger` |
+| `door` | `box`, `open` (starts open), `color`, `nav` | `opened`, `closed` | `open`, `close`, `toggle`, `set` |
+| `lamp` | `box`, `on`, `color` (lit), `offColor` (dark) | `on`, `off` | `turnOn`, `turnOff`, `toggle`, `set` |
+| `mover` | `mover` (a named mover in `"movers"`) | `started`, `stopped`, `arrived` | `start`, `stop`, `toggle`, `advance` (to its next stop: an elevator goes up, then down), `reset` |
+| `sound` | `at`, `sound` (a game sound: `reconBeep`, `breakMetal`, `mortarWhistle`, `levelUp`...; the error lists them), `volume` (0-2), `range` (40 m; 0: heard everywhere) | | `play` |
+| `text` | `text` (ASCII, up to 100), `to` (`all`: the kill feed; `activator`: only whoever set it off) | | `show` |
+| `teleport` | `at`, `yaw` | `sent` | `send` (moves whoever set the signal off) |
+| `breakable` | `at` (the breakable prop placed nearest it, within 1.5 m) | `destroyed` (however it broke) | `destroy` |
+| `zdoor` | `door` (a Zombies door or debris by name) | `opened` (bought or opened) | `open` (free); `disable` locks it |
+| `zmachine` | `machine` (`power`, `box`, `perk`, `slotUpgrade`, `slotMachine`, `wallBuy`, `bench`, `salvage`), `at` (which one, when there are several) | `used` (a buy went through) | `disable` locks it |
+| `challenge` | `seconds` (to survive), `zone` (a zone or plate its players must stay in; leave it out: anywhere), `who`, `reward` (Zombies points each survivor gets) | `started` (n: how many took it on: everyone alive, standing and in the zone), `survived` (the time ran out with someone still in it; n: how many), `failed` (everyone in it went down, died or left the zone, or `fail`), `ended` (value: survived) | `start`, `stop` / `fail` (it fails), `win` (it's survived now) |
+| `reward` | `points` (Zombies points), `powerUp` (`random`, `maxAmmo`, `instaKill`, `doublePoints`, `nuke`, `carpenter`, `infiniteAmmo`) dropped at `at` | `given` | `give` (points to whoever set it off, and the power-up), `giveAll` (points to everyone standing, and the power-up), `drop` (only the power-up) |
+
+Two entities are always there: **`match`** (events `started`, `ended`, `flagTaken` and `flagCaptured` with n the team,
+`hillTaken` (n: the team), `hillMoved` (n: the hill)) and, on maps with a `"zombies"` section, **`zombies`** (events
+`power`, `roundStarted` and `roundEnded` with n the round; actions `power` (turn it on), `spawn` (add n zombies to this
+round: needs `"n"`), `pause` and `resume` (the spawning)).
+
+**Doors** are solid boxes (bodies, bullets, grenades) while shut and gone while open; drawn as a panel with a band that
+sinks into the floor as it opens. A door won't shut on someone standing in it: it shuts the moment the doorway is clear.
+Its `"nav"` (default true) is a link for bots through the doorway, across its thin side, 0.9 m out each side on the floor
+of the box (or give the two ends: `"nav": [[x, y, z], [x, y, z]]`; `false`: none). The nav graph is built with every
+logic door shut, so it is the same whatever the doors do; the link is switched on while the door is open and off while
+it's shut, and bots and zombies route by it. Opening doors never changes the map's fingerprint.
+
+**Movers** with `"running": false` stand at the start of their loop until map logic starts them (or advances them a
+stop at a time); every mover can be stopped and started. Their pose is still worked out from the clock, so nothing but
+the start and stop moments is sent.
+
+### Zombies: a bell that calls the horde (a challenge)
+
+Ringing the bell is a challenge, not a purchase: it floods the horde up the tower, and holding the tower until the bell
+stops pays out. A `challenge` counts everyone alive and standing in its zone when it starts; it's survived when its time
+runs out with any of them still standing there, and failed when the last of them goes down, dies or leaves.
+
+```json
+{ "type": "zone", "name": "Belfry", "box": [-4, 12, -24, 4, 16, -16] },
+{ "type": "button", "name": "Bell", "at": [0, 13.4, -20], "yaw": 180, "prompt": "ring the bell", "cooldown": 300, "power": true,
+  "outputs": { "pressed": ["Siege.start", { "to": "zombies.spawn", "n": 24 }, "BellSound.play"] } },
+{ "type": "challenge", "name": "Siege", "seconds": 60, "zone": "Belfry", "reward": 1500,
+  "outputs": { "started": "SiegeText.show", "survived": ["Spoils.drop", "Won.show"], "failed": "Lost.show" } },
+{ "type": "reward", "name": "Spoils", "powerUp": "random", "at": [0, 12, -20] },
+{ "type": "sound", "name": "BellSound", "at": [0, 15, -20], "sound": "mortarWhistle", "range": 0 },
+{ "type": "text", "name": "SiegeText", "text": "The bell tolls. Hold the belfry!" },
+{ "type": "text", "name": "Won", "text": "The belfry held." },
+{ "type": "text", "name": "Lost", "text": "The belfry fell." }
+```
+
+A `button` can also simply cost points (`"cost": 500`). The power switch can drive the rest of the map: `zombies.power`
+to `Lift.start` and `Shutter.open`; a `zdoor`'s `opened` to a `lamp`; `zombies.roundStarted` with `"when": 5` to a
+`door`. Disable a `zdoor` or `zmachine` to lock it ("Locked") until something enables it. Points and power-ups are the
+Zombies mode's: in other modes a reward only sends `given` (a challenge still starts, ends and sends its events).
+
+### Checking it
+
+`--check-map` refuses a logic section with the reason: an unknown type, field, entity, event or action (with the
+nearest name), an event used as an action or the other way round, a mover or Zombies door that isn't there, a sound
+the game doesn't have, text that isn't ASCII. The map's `"test"` block can play the logic through (the Map contract
+and `--check-map` run it on a server of its own): `"events"` is a list of steps, each doing at most one thing, waiting,
+then checking.
+
+```json
+"events": [
+  { "use": "GateButton", "expect": ["GateButton.pressed", "Gate.opened"], "on": ["Gate"] },
+  { "wait": 8.5, "expect": ["Gate.closed"], "off": ["Gate"] },
+  { "enter": "Courtyard", "expect": ["Lamp1.on"] },
+  { "leave": "Courtyard", "wait": 2.5, "expect": ["Courtyard.empty"], "off": ["Lamp1"] },
+  { "do": "LiftTimer.reset", "wait": 9, "expect": ["LiftControl.arrived"] }
+]
+```
+
+| Key | What it does |
+|---|---|
+| `use` | a player stands 0.9 m in front of the button or lever and uses it |
+| `do` | `"Entity.action"`: delivered as if a wire did |
+| `send` | `"Entity.event"`: sent as if it happened |
+| `enter`, `leave` | the player stands in the zone or plate (`enter`), or back at the first spawn (`leave`) |
+| `wait` | seconds to run after it (0.5 by default) |
+| `expect`, `expectNot` | `"Entity.event"`s that must (must not) have gone out during the step |
+| `on`, `off` | entities that must be on (open, lit, pulled, true, running) or off afterwards |
+
+The "Map logic" self-test section covers the engine itself (the refusals, doors, nav links, mover control, that the
+same steps give the same events, that the logic allocates nothing while it runs, and a host and two clients over a
+real network connection).
 
 ## Boundaries
 
@@ -1113,4 +1268,6 @@ the weapon-slot upgrade, the power switch, salvage piles and slot machines. The 
 example and `Zombies/01-BlackmoorAsylum.json` (the **Zombies** pack, written by `tools/zombies/make_blackmoor.py`) a
 full map. With `"machineProps": true` in the section every machine stands as a solid prop from `Props/Zombies`, placed
 by the section itself (leave room for each: see the doc). `"testKit": true` lets the host's Test kit setting act on the map (`Dev/HordeTest.json`, written by the C# map kit, is the big-horde test map). Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
-unchanged when a map is saved, and opening doors never changes the map's fingerprint.
+unchanged when a map is saved, and opening doors never changes the map's fingerprint. The doors, debris, power switch and machines can drive and be driven by the map's
+[logic](#map-logic) (`zdoor`, `zmachine` and the built-in `zombies` entity: a bell that calls the horde, the power
+starting a lift).

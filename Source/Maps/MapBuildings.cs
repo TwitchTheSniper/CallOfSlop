@@ -105,12 +105,12 @@ public sealed partial class Map
     /// Does anything in a match change this map's boxes (breakable props, building doors and windows, destructible chunks)?
     /// Zombies doors don't count: each mode sets those at the start of a run.
     /// </summary>
-    public bool HasChangingBoxes => _propOriginal.Count > 0 || BuildingDoors.Count > 0 || BuildingWindows.Count > 0 || Destruction != null;
+    public bool HasChangingBoxes => _propOriginal.Count > 0 || BuildingDoors.Count > 0 || BuildingWindows.Count > 0 || Destruction != null || _logicOriginal.Count > 0;
 
     /// <summary>Is the map as at the start of a match (no prop, window or chunk broken, every building door as it starts)?</summary>
     public bool IsAsBuilt()
     {
-        if (_brokenProps.Count > 0)
+        if (_brokenProps.Count > 0 || !LogicIsAsBuilt())
             return false;
         foreach (var d in BuildingDoors)
             if (d.Broken || d.Open != d.Plan.StartOpen)
@@ -148,6 +148,7 @@ public sealed partial class Map
         if (Destruction is { } dest)
             for (var c = 0; c < dest.Count; c++)
                 boxes[dest.Solid[c]] = dest.Original[c];
+        LogicAsBuilt(boxes); // logic doors shut: their nav links are switched on while they're open (GameLogicNav.cs)
         return boxes;
     }
 
