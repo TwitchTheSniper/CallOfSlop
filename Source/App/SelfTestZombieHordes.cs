@@ -228,13 +228,12 @@ public static partial class SelfTest
         var hostNow = now;
         using var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
         World.SetMap(map);
-        foreach (var pk in packets)
-            c.SelfTestReadZombies(pk, world);
+        c.SelfTestReadZombies(packets[0], world);
         var readMs = ThreadCpu.TimeMs(() =>
         {
-            foreach (var pk in packets)
-                c.SelfTestReadEnts(pk, hostNow);
-        }) / packets.Count;
+            for (var k = 1; k < packets.Count; k++)
+                c.SelfTestReadEnts(packets[k], hostNow);
+        }) / Math.Max(1, packets.Count - 1);
         var rec = new DrawRecorder { Keep = false };
         var gfx = new Renderer { Recorder = rec };
         var frame = 0;
@@ -632,8 +631,11 @@ public static partial class SelfTest
         var nearStaleWorst = 0.0;
         var clientFrameMs = 0.0;
         var frames = 0;
+        var wall0 = clock.Elapsed.TotalSeconds;
         for (var t = 0.0; t < 4.0; t += dt)
         {
+            while (clock.Elapsed.TotalSeconds - wall0 < t)
+                Thread.Sleep(1); // real time: the network simulator's lag and loss are in wall-clock time
             now += dt;
             server.Update(now, dt);
             var c0 = ThreadCpu.NowMs();
@@ -646,8 +648,6 @@ public static partial class SelfTest
                 foreach (var z in a.Horde)
                     if (z.Alive && ZFlat(z.Position - me.Position) < Game.ZEntNear * 0.8f)
                         nearStaleWorst = Math.Max(nearStaleWorst, now - z.LastHeard);
-            if (frames % 4 == 0)
-                Thread.Sleep(1);
         }
         var seconds = now - t0;
         var bytesPerSec = (server.ZEntsBytesSent - bytes0) / seconds;

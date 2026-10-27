@@ -84,7 +84,7 @@ public sealed partial class Game
                     _zViews[guid.G] = view = new ZEntView(); // (once per client)
                 var at = Players.TryGetValue(id, out var cp) ? cp.Position : Vector3.Zero;
                 WriteZEntsFor(_w, view, at);
-                Net.SendTo(guid, _w.Span, PacketReliability.UnreliableSequenced);
+                Net.SendTo(guid, _w.Span, PacketReliability.Unreliable); // (not sequenced: a late packet still has news of the zombies the next one left out)
                 ZEntsBytesSent += _w.Length;
                 ZEntsPacketsSent++;
             }
@@ -569,9 +569,9 @@ public sealed partial class Game
         if (!r.Has(8))
             return;
         var tick = r.U32();
-        if (tick < _zEntsTick)
-            return;
-        _zEntsTick = tick;
+        var latest = tick >= _zEntsTick;
+        if (latest)
+            _zEntsTick = tick;
         ZEntsRead++;
         if (_zEntsReadAt > 0)
             ZEntsGapWorst = Math.Max(ZEntsGapWorst, now - _zEntsReadAt);
@@ -588,6 +588,10 @@ public sealed partial class Game
             var health = r.U8();
             var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
+            if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)
+                continue; // a late packet: this zombie already has newer news
+            if (!latest && known == null)
+                continue; // (a late packet doesn't bring back one the newer ones dropped)
             if (!_zById.TryGetValue(id, out var z))
             {
                 z = new Zombie { Id = id };
@@ -630,12 +634,13 @@ public sealed partial class Game
             if (z.Snaps.Count > 6)
                 z.Snaps.RemoveAt(0);
         }
-        if (total == 0 && Horde.Count > 0)
+        if (latest && total == 0 && Horde.Count > 0)
         {
             Horde.Clear(); // the server has none left
             _zById.Clear();
         }
-        ZEntsLastTotal = total;
+        if (latest)
+            ZEntsLastTotal = total;
     }
 
     /// <summary>Client: the server's horde size in the last <see cref="Msg.ZEnts"/> (it may send fewer than that).</summary>
