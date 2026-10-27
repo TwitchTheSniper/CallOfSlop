@@ -61,6 +61,13 @@ public static partial class SelfTest
             var t = Stopwatch.GetTimestamp();
             key = NavBake.KeyOf(map, map.ContentHash); // (timed the second time: the first pays the JIT)
             var keyMs = Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+            // In a match the key is hashed on a worker from the boxes taken on the game thread (BotNav.cs, PumpGraph): the
+            // same bytes. The tick's share (taking the boxes) is measured in NavBakeNeverWaits.
+            var boxes = NavBake.TakeBoxes(map);
+            var hash = map.ContentHash;
+            var workerKey = Task.Run(() => NavBake.KeyOf(map, hash, boxes)).Result;
+            if (!workerKey.AsSpan().SequenceEqual(key))
+                Fail($"Nav bake: {name}: the key hashed on a worker isn't the one hashed on the game thread");
             var file = NavBake.Write(live, map, key);
             t = Stopwatch.GetTimestamp();
             var back = NavBake.Read(file, map.Name, map.ContentHash, key, out var why);
@@ -80,11 +87,9 @@ public static partial class SelfTest
             var la = search.Find(live, live.Nearest(s0), live.Nearest(s1, needSight: false), pa);
             var lb = search.Find(back, back.Nearest(s0), back.Nearest(s1, needSight: false), pb);
             same &= la == lb && pa.AsSpan(0, la).SequenceEqual(pb.AsSpan(0, lb));
-            Line($"{name,-16} {live.Nodes.Length,5} nodes {live.EdgeCount,6} edges: built in {live.BuildMs,5:0} ms, key {keyMs:0.0} ms, file {file.Length / 1024,4} KB read in {readMs:0.0} ms; same graph: {same}");
+            Line($"{name,-16} {live.Nodes.Length,5} nodes {live.EdgeCount,6} edges: built in {live.BuildMs,5:0} ms, key {keyMs:0.0} ms (a worker's, in a match), file {file.Length / 1024,4} KB read in {readMs:0.0} ms; same graph: {same}");
             if (!same)
                 Fail($"Nav bake: {name}: the graph read back isn't the one built");
-            if (keyMs > 25)
-                Fail($"Nav bake: {name}: the bake key took {keyMs:0} ms (it runs in a server tick's slice)");
         }
     }
 
@@ -180,11 +185,20 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>In a match (a small budget per tick), looking for a bake never stalls a tick: the read runs on a worker.</summary>
+    /// <summary>
+    /// In a match (a small budget per tick), looking for a bake never stalls a tick: the key is hashed and the file read on
+    /// a worker. Measured as the game thread's CPU time per tick where that can be measured (Windows: TickCpu), so a runner
+    /// that pauses the thread doesn't fail it; the maps where the key costs most (boxes, building nav points, solid meshes).
+    /// </summary>
     private static void NavBakeNeverWaits(string cache)
     {
-        if (Maps.Find("Paris Quarter") is not { } map)
-            return;
+        foreach (var name in new[] { "Paris Quarter", "Building Yard", "Pocket Planet" })
+            if (Maps.Find(name) is { } map)
+                NavBakeNeverWaits(cache, map);
+    }
+
+    private static void NavBakeNeverWaits(string cache, Map map)
+    {
         World.SetMap(map);
         NavGraph.Forget(map);
         NavGraph.Pump(double.MaxValue); // built (and cached)
@@ -194,20 +208,25 @@ public static partial class SelfTest
         NavGraph.Forget(map);
         double worst = 0;
         var ticks = 0;
+        var cpu = new TickCpu();
         while (NavGraph.Current == NavGraph.Empty && ticks < 600)
         {
             var t = Stopwatch.GetTimestamp();
+            cpu.Start();
             NavGraph.Pump(3);
-            worst = Math.Max(worst, Stopwatch.GetElapsedTime(t).TotalMilliseconds);
+            var ms = Stopwatch.GetElapsedTime(t).TotalMilliseconds;
+            cpu.Stop(ms, count: true);
+            worst = Math.Max(worst, ms);
             ticks++;
             if (NavGraph.Current == NavGraph.Empty)
                 Thread.Sleep(1);
         }
         var g = NavGraph.Current;
-        Line($"Paris Quarter in a match: ready after {ticks} ticks ({g.Origin}), the longest tick's share {worst:0.0} ms");
+        Line($"{map.Name} in a match: ready after {ticks} ticks ({g.Origin}), the longest tick's share {worst:0.0} ms wall, {cpu.WorstText} CPU"
+            + (TickCpu.Available ? $" ({cpu.WorstDetail})" : ""));
         if (g.Origin != "cached" || NavFingerprint(g) != built)
-            Fail($"Nav bake: Paris Quarter in a match came out {g.Origin} ({NavBake.LastResult})");
-        if (TickCpu.Available && worst > 8)
-            Fail($"Nav bake: looking for the bake took {worst:0.0} ms of one tick (budget 8 ms)");
+            Fail($"Nav bake: {map.Name} in a match came out {g.Origin} ({NavBake.LastResult})");
+        if (TickCpu.Available && cpu.WorstMs > MaxTickWorkMs)
+            Fail($"Nav bake: {map.Name}: looking for the bake took {cpu.WorstMs:0.0} ms of one tick's CPU (budget {MaxTickWorkMs:0} ms; {cpu.WorstDetail})");
     }
 }
