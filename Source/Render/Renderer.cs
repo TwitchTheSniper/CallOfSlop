@@ -195,6 +195,7 @@ public sealed unsafe class Renderer
         Native.glUniform1i(_locTex, 0);
         Enable(GlCapability.DepthTest);
         Native.glDisable(GlCapability.Blend);
+        _blendOn = false;
     }
 
     public void SetCamera(Matrix4x4 view, Matrix4x4 proj)
