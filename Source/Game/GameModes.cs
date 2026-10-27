@@ -457,6 +457,13 @@ public sealed partial class Game
     /// <summary>Self-test: spawn a player the normal way (team spawns, Gun Game weapon...).</summary>
     public void SelfTestSpawn(Player p) => Spawn(p, ServerTick, 0);
 
+    /// <summary>Self-test: <paramref name="p"/> leaves the game (as a disconnect does on the server).</summary>
+    public void SelfTestRemovePlayer(Player p)
+    {
+        if (Players.Remove(p.Id, out var left))
+            OnModePlayerLeave(left);
+    }
+
     /// <summary>Self-test: a pretend remote person (no network), waiting to deploy like a real joiner.</summary>
     public Player SelfTestAddHuman()
     {
