@@ -65,7 +65,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 
 | Field | Meaning | Default | Usual | Allowed |
 | --- | --- | --- | --- | --- |
-| `damage` | Damage per bullet (per pellet for shotguns) inside `rangeM`. Players have 100 health. | required | 6-140 | 1-1000 |
+| `damage` | Damage per bullet (per pellet for shotguns) inside `rangeM`. Players have 120 health. | required | 6-140 | 1-1000 |
 | `headMult` | Headshot multiplier. | `2` | 1.5-3 | 0.5-10 |
 | `pellets` | Bullets per shot. Above 1 makes a shotgun spread. | `1` | 1-10 | 1-50 |
 | `rangeM` | Metres of full damage. Past it, damage falls off linearly until 3x this distance. | required | 5-300 | 0.5-1000 |
@@ -81,7 +81,7 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `burstDelay` | Seconds of pause after each burst. | `0.25` | 0.2-0.3 | 0-5 |
 | `mag` | Magazine size. | required | 1-200 | 1-1000 |
 | `reload` | Reload time in seconds. | required | 1.3-7 | 0.1-20 |
-| `hipSpreadDeg` | Hip-fire cone, in degrees. Firing blooms it up to about 2.5x. | required | 0.8-7 | 0.01-45 |
+| `hipSpreadDeg` | Hip-fire cone (half-angle), in degrees. Firing blooms it up to about 2.5x. For shotguns it is the pellet pattern: see "Shotgun patterns" below. | required | 0.5-7 | 0.01-45 |
 | `adsSpreadMult` | Spread while aiming, as a fraction of hip spread. `0` = perfectly accurate when scoped. | `0.3` | 0-0.85 | 0-2 |
 | `recoilDeg` | Overall recoil: view kick per shot, in degrees. The `recoil` block's kicks are fractions of it, and attachments that change it scale everything. | `0.7` | 0.1-5.5 | 0-20 |
 | `recoil` | How the gun kicks: its spray pattern, recovery and camera shake. See "Recoil" below. Any field you leave out (or the whole block) gets the default of the weapon's `class`. | class defaults | | |
@@ -89,6 +89,33 @@ A number outside the allowed range is rejected. The "usual" column is what the s
 | `adsZoom` | Zoom when aiming down sights (the field of view is divided by this) with no optic fitted. 1.8 or more on a long gun means a built-in scope (the DMRs); below that it's iron sights. The snipers use 1.5 for their iron sights, since they start with a scope attachment (`defaultOptic`) that sets its own zoom. | `1.35` | 1.1-2.2 | 1-10 |
 | `equipTime` | Seconds to draw the weapon. | `0.45` | 0.25-1.1 | 0.05-5 |
 | `adsTime` | Seconds to fully aim down sights (kitted guns are clamped to 0.08-0.5). | `0.16` | 0.16 | 0.05-2 |
+
+### Shotgun patterns
+
+For a gun with more than one pellet, `hipSpreadDeg` is the pellet pattern: each pellet goes somewhere evenly inside a cone of that half-angle (`Weapons.SpreadDirection`), so the pattern's full width at distance `d` is `2 d tan(hipSpreadDeg)`. Aiming multiplies it by `adsSpreadMult`; moving, jumping, bloom and sprinting add to it as for any gun.
+
+The shipped buckshot guns use a real, unchoked (cylinder-bore) pattern as their baseline. Shotgun patterns are usually given as inches of total spread per yard of distance: the old rule of thumb is about 1 inch per yard from a cylinder bore, and measured 00 buck from 18-inch cylinder and improved-cylinder barrels lands between about 0.4 and 1 inch per yard ([Texas Fish & Game, 2014](https://fishgame.com/2014/07/myth-busting-1″-per-yard-shotgun-pattern-spreads/): Remington cylinder 12 in at 20 yd, about 0.6 in/yd; [Lucky Gunner](https://www.luckygunner.com/lounge/choke-tubes-for-home-defense-shotguns/): cylinder 10.5 in at 15 yd and about 19 in at 25 yd; [Athlon Outdoors](https://athlonoutdoors.com/article/00-buckshot-ammo-test/): 9-11.5 in at 25 yd). The game takes the 1 inch per yard rule for the Breacher Pump, the upper end of the measurements, since the game has no separate aiming wobble for a shotgun:
+
+```
+half-angle = atan((S / 2) / 36)        S = inches of spread per yard, 36 inches in a yard
+S = 1.0  ->  atan(0.5 / 36) = 0.80 deg  (a 0.42 m wide pattern at 15 m)
+```
+
+The other guns keep the old patterns' proportions to the Breacher (each old value times 0.80 / 5.5 = 0.145), so their order and character stay the same: the Scattergun Lever (its built-in tight choke) is the tightest, the short-barrelled Double Barrel and Street Sweeper the widest.
+
+| Gun | Pellets | Spread per yard | `hipSpreadDeg` (was) | With Choke (x0.6) | With Full Choke (x0.5) |
+| --- | --- | --- | --- | --- | --- |
+| Scattergun Lever | 9 | 0.73 in | 0.58 (4) | 0.348 | 0.29 |
+| Breacher Pump | 9 | 1.0 in | 0.80 (5.5) | 0.48 | 0.40 |
+| Thunder Auto | 8 | 1.09 in | 0.87 (6) | 0.522 | 0.435 |
+| Double Barrel | 10 | 1.27 in | 1.01 (7) | 0.606 | 0.505 |
+| Street Sweeper | 8 | 1.27 in | 1.01 (7) | 0.606 | 0.505 |
+
+The Slug Pump fires one slug, so its `hipSpreadDeg` (1.2) is hip-fire aim, as on a rifle, and stays as it was. The Zombies weapon builder's shell receivers use the same factor (Farmhand Pump 0.65, Gravedigger 0.72, Street Sweeper 0.8, Sawmill 0.87); its barrels, muzzles and ammo still scale those by their own percentages.
+
+The Choke (-40% spread, +22% range) and Full Choke (-50% spread, +35% range) keep their percentages; they now apply to the real baseline. (For comparison, the standard 30-inch circle at 40 yards holds about 40% of a cylinder's pellets and 70% of a full choke's ([Wikipedia, "Choke (firearms)"](https://en.wikipedia.org/wiki/Choke_(firearms))). For a roughly round-normal pattern that means a full choke's pattern is about 35% narrower than a cylinder's, so the game's chokes are a little stronger than real ones.)
+
+With the pattern this tight nearly every pellet lands on a body out to 15 m or more, so damage falloff (`rangeM`, then down to `minDamageMult` at 3x `rangeM`) is what keeps shotguns short-ranged. Standing still and hip-firing at the chest of a standing player, the Breacher Pump's one-shot kill reaches about 8 m (it was about 6 m) and its two-shot kill about 16 m (was 9 m); past 3x `rangeM` (21 m) a full pattern does at most 19 damage. The self-test section "Shotgun patterns" checks the baseline, the choke percentages and these limits.
 
 ### Recoil
 
