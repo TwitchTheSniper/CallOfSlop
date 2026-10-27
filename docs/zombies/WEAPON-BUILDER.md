@@ -27,7 +27,7 @@ builds in `Parts/Builds/*.json`, drop tables in `Parts/Tables/DropTables.json`, 
 | 3 | The push cart is a **real pushed object**; parked, it's a **gun you man and fire yourself** (user, 2026-10-21: "A turret would be a little too strong. A turret can be added later, but it'd be a separate thing.") | Server-side cart physics (rolls with you, collides, step and slope limits, holds you at the bar), hands on the bar, F parks it, tap F at its bar to man its gun (aim within traverse limits, fire it by hand), hold F to push it again. No auto turret. Replicated (protocol 17). |
 | 4 | **Splitters conserve total damage**; rarity buys spread/accuracy/outputs. Add **damage multiplier** parts and **receiver upgrade** parts on new receiver sockets | Every splitter gives 1/N per output (the file key `outputMult` is gone and refused); rarer splitters have `spreadMult` below 1 and more outputs. New categories: Damage Multiplier (6, one `amp` socket per receiver) and Receiver Upgrade (8, `upgrade_rear` and `upgrade_side` sockets). |
 | 5 | A **shared feed** that feeds several receivers; per-receiver feeds still allowed | Five shared feeds on a grip's `hopper` socket, with rules for which receivers they feed, a pooled magazine and shared ammo. |
-| 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 64 standard builds by tier (59 in the box) with where they come from (box, wall, start); the workbench loads them as presets. |
+| 6 | **Mystery box = complete builds only** | `Parts/Builds/*.json`: 140 standard builds by tier (98 box guns, 32 slot melee builds) with where they come from (box, wall, start, slots); the workbench loads them as presets. |
 | 7 | Weapon slots **2 -> 4** via an on-map upgrade, per run; the mode is a **roguelite** | Slots 3-4 exist in the game (keys 3 / 4, the swap key and wheel cycle them), unlocked per player per run (a flag the server owns); the range has a station (F) and the workbench a toggle. Drop tables by round are proposed data. |
 | 8 | The chainsaw grip is just a grip; add a **melee slot** built from melee-only parts | Hilts, heads and mods (21 parts) build melee weapons with damage, swing time, reach, cleave and stun; the melee key swings them (in the range / Zombies only), with their own workbench section. |
 
@@ -753,7 +753,7 @@ The curve as it stands (the best part of each tier and its score; CI's log lists
 
 Commons are as before; the top tiers stack (a receiver x multiplier x two upgrades x ammo), so a late Bunker Buster with a
 Tripler Chamber, two Doom Hammers and Depleted Core would do 255 x 3 x 1.75 x 1.75 x 1.7 = about 4000 a round, and
-reaches the cap every weapon has (1000 damage a projectile). Zombie health is about 2100 at round 30 and 3800 at round 40.
+used to reach the 1000-a-projectile cap; builds have no cap now (below, "No damage cap for builds"). Zombie health is about 2100 at round 30 and 3800 at round 40.
 
 **Rescaled existing parts.** Receivers: below. Actions: Buzzsaw Sear common -> uncommon (it was the Buzzbox's stock
 action), Hair Trigger 650 -> 800 rpm, Binary Trigger 900 rpm / 0.12 s -> 1800 / 0.05 s and damage x1.05, Hyperburst
@@ -1106,8 +1106,9 @@ The mystery box gives **complete builds only** (decided). They live in `Parts/Bu
 `source` says where it shows up: `box` (mystery box), `wall` (wall weapon), `start` (a run's starting gear). Every file
 must assemble into a complete, legal build with today's parts, or it's refused with the reason (self-test). The
 workbench lists them under **Standard builds** and loads one as a preset into the editor. An optional `"chainFire": true`
-(or false) sets the Chain fire checkbox; without it the build uses the grip's default. The 64 shipped (2026-10-23: 34
-new box builds from the workbench rework's receivers and 2-8 slot grips):
+(or false) sets the Chain fire checkbox; without it the build uses the grip's default. The first 64 (2026-10-23: 34
+new box builds from the workbench rework's receivers and 2-8 slot grips; 76 more followed on 2026-10-27, see "The prefab
+builds" below, 140 in all):
 
 | Tier | Guns | Melee |
 | --- | --- | --- |
@@ -1119,8 +1120,8 @@ new box builds from the workbench rework's receivers and 2-8 slot grips):
 | Wonder | Shopping Spree (the push cart), Toaster Duck, Hydra Platter, Pepperbox Pistol; **Party Cannon** (a toaster-fed launcher through a Peacock splitter, balloons on: explosive, toasty, party), **Seven Shooter** (a revolver behind the Barrel of Barrels), **Sawmill Inferno** (two shotgun chain guns on the Chainsaw Grip, Dragon's Breath), **Drive-Thru** (eight SMGs round the Steering Wheel on a bottomless bucket, with a cup holder: refreshing) | The Codfather (a frozen fish on a rod), **Flying Fish** (a frozen fish with a rocket booster and a whoopee cushion: knockback, stun) |
 
 **The box pool.** The box rolls uncommon to wonder (`boxTiers`) and gives **guns only** (developer answer, 2026-10-26):
-uncommon 7, rare 12, epic 10, legendary 9, wonder 8 (46 box guns). The melee column above is tagged `"slots"` instead:
-the **slot machines** pay those 14 melee builds as a complete build into the melee slot (ZOMBIES-MODE.md, "Slot
+uncommon 17, rare 22, epic 20, legendary 20, wonder 19 (98 box guns, since the prefab builds of 2026-10-27). The melee column above is tagged `"slots"` instead:
+the **slot machines** pay those melee builds (32 with the prefab builds) as a complete build into the melee slot (ZOMBIES-MODE.md, "Slot
 machines"); the loader refuses a melee build tagged `"box"` and a gun tagged `"slots"`. Melee parts (hilts, heads, mods)
 stay in the part pool (drops, slot parts, salvage piles). The roll picks a gun of the rolled tier that you **don't already
 carry** in a gun slot. How a build is tiered: within one tier of its rarest part (a build of common parts on a rare grip
@@ -1143,13 +1144,144 @@ every tier; "Zombies slots" checks the melee payouts. Approximate numbers (CI's 
 | Demolition Marksman / Grenade Organ / Rail Battery | epic | 81 / 139 / 1188 | 270 / 240 / 45 | 365 / 556 / 891 | 30 / 4 / 40 |
 | Power Grid / Siege Battery / Hellfire Minigun / Suppressing Fire | legendary | 416 / 748 / 52 / 180 | 720 / 200 / 3000 / 600 | 4992 / 2493 / 2600 / 1800 | 50 / 150 / 400 / 150 |
 | Kitchen Sink / Last Word | legendary | 451 / 343 | 70 / 76 | 526 / 434 | 6 / 10 |
-| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 139 / 112 / 450 / 18 | 90 / 150 / 360 / 3000 | 209 / 280 / 2700 / 900 | 2 / 10 / 20 / 900 |
+| Party Cannon / Seven Shooter / Sawmill Inferno / Drive-Thru | wonder | 713 / 581 / 450 / 40 | 162 / 150 / 360 / 3000 | 1925 / 1453 / 2700 / 2000 | 2 / 10 / 20 / 900 |
 
 New melee: Barbed Slugger 69 dmg, 0.72 s, cleave 2; Shock Katana 68, 0.40 s; Big Bonk 75, 1.14 s, stun 1.8 s; Lawnmower
 85, 0.61 s, cleave 5; Rocket Hammer 125, 1.07 s, stun 1.6 s; Flying Fish 58, 0.35 s, stun 2.5 s.
 
 The build files are plain data in today's format (receivers carry their own fire type), so a later migration that
 moves fire types into parts can rewrite them like any other build.
+
+### The prefab builds (developer request, 2026-10-27)
+
+The developer: "make 50 to 100 more new prefabricated weapons to go along with this" (the splitters, barrels, muzzles and
+late-game parts of the same day). 76 new standard builds, data only (`Parts/Builds`), spread over every tier: everyday
+guns at common and uncommon that show off the new splitters (side by side, stacked, staircases, offsets), the bullet-size
+barrels (heavy bore, bloat, squeeze bore, needle) and the stronger muzzles; and late guns built on the late-game parts
+(Parade Cannon, Sunbeam Lance, Bunker Buster, Clown Car Hopper, Parade Float, All-Seeing Eye, Five-Alarm Chamber, Bowling
+Ball, Pocket Sun, Perpetual Sear, Rosette and Wall splitters, Cannon Sleeve, Dragon Mouth...). The commons are tagged
+`"wall"` (presets a map can put on a wall; the box rolls uncommon and up), the guns from uncommon up `"box"`, the melee
+builds `"slots"`. The drop, box and slot tables needed no change: they roll a tier, and each tier's pool simply grew.
+
+**Rules each build keeps** (self-tests "Weapon builder" and the new **Standard builds**, `SelfTestStandardBuilds.cs`):
+complete and legal (BuildRules: carry weight, parts, barrels, splitter depth), one connected model ("Model connectivity"),
+its tier within one of its rarest part's, inside its tier's band per trigger pull and DPS (above), and: every part the
+splitters/barrels/muzzles and late-game passes added is in at least one build (69 of 69); names unique even ignoring case,
+spaces and punctuation; descriptions of 160 characters at most; at least 8 / 15 / 20 / 18 / 18 / 18 guns and 3 / 5 / 6 /
+4 / 4 / 5 melee builds per tier (common to wonder); the median gun power and the median melee power (`PowerCurve.GunPower`
+/ `MeleePower`) rise tier by tier, and every wonder box gun is stronger than the median epic one. The medians now: guns
+66 / 134 / 160 / 404 / 1028 / 1757, melee 114 / 136 / 227 / 431 / 573 / 1727.
+
+**The old wonder box guns, raised** so wonder feels like wonder (they were weaker than the median epic gun): Hydra Platter
+(perpetual sear, pocket suns, spite amplifier: 295 -> 6050 DPS), Toaster Duck (two parade cannons firing ducks: 141 ->
+810), Party Cannon (a parade cannon and an overkill coprocessor: 209 -> 1925), Pepperbox Pistol (pocket suns, overkill
+coprocessor: 320 -> 2268), Seven Shooter (depleted core, tripler chamber: 280 -> 1453), Shopping Spree (pocket suns: 4320
+-> 9600) and Drive-Thru (pocket suns: 900 -> 2000).
+
+**Model fixes found on the way.** A new check in "Standard builds" fits every multiplier and upgrade into every receiver's
+sockets and checks the model connects: the Thumper Chain Gun's amp and side-upgrade sockets, the Bunker Buster's (it
+extends the Thumper) and the Hellwheel's amp socket sat 2 to 3.5 cm off the receiver's body, so any part there floated.
+They now sit on the body's sides (`Parts/Receiver/ThumperChainGun.json`, `HellwheelRotary.json`).
+
+**No damage cap for builds** (developer decision, 2026-10-27: "Remove it for builds"). A built gun's damage a projectile
+is no longer clamped to the weapon files' 1000 (`BuildStats.Clamp`; only a bound of 1,000,000, `BuildStats.MaxDamage`,
+far below int overflow once headshots and perks multiply it). Weapon files (multiplayer guns) keep the 1000 cap
+(`WeaponFile.Ranges`). Damage never goes on the wire (builds replicate as build text; no message carries a damage number), zombie and player
+health are ints, so nothing overflows; no protocol change. The box bands per pull and DPS still hold every box build.
+Over 1000 a projectile among the standard builds: **The Oracle** (1201 a bolt). "Standard builds" checks a fully stacked
+Bunker Buster build does more than 1000 a projectile (26443) while a weapon file asking for 5000 is refused.
+
+| Build | Source | Numbers (body damage, close range) |
+| --- | --- | --- |
+| **Common** | | |
+| Pea Shooter | wall | 1 rec, 13 a pull, 400 rpm, 87 DPS |
+| Sawn-Off Special | wall | 1 rec, 168 a pull, 120 rpm, 336 DPS |
+| Coach Gun | wall | 1 rec, 128 a pull, 70 rpm, 149 DPS |
+| Wide Load | wall | 1 rec, 23 a pull, 720 rpm, 276 DPS |
+| High Rider | wall | 1 rec, 26 a pull, 400 rpm, 173 DPS |
+| Paper Route | wall | 1 rec, 21 a pull, 900 rpm, 315 DPS |
+| Weed Whacker | slots | melee: 62 a hit, 0.53 s, cleave 2, 118 DPS |
+| Batting Practice | slots | melee: 49 a hit, 0.65 s, cleave 1, 76 DPS |
+| **Uncommon** | | |
+| Heavy Hitter | box | 1 rec, 31 a pull, 600 rpm, 310 DPS |
+| Skinny Dipper | box | 1 rec, 21 a pull, 720 rpm, 252 DPS [penetrating] |
+| Bunk Bed | box | 1 rec, 35 a pull, 285 rpm, 166 DPS |
+| Staircase | box | 1 rec, 18 a pull, 900 rpm, 270 DPS |
+| Diagonal Argument | box | 1 rec, 64 a pull, 150 rpm, 160 DPS |
+| Low Rider | box | 1 rec, 26 a pull, 600 rpm, 260 DPS |
+| Sidewinder | box | 1 rec, 26 a pull, 720 rpm, 312 DPS |
+| Riot Control | box | 1 rec, 112 a pull, 200 rpm, 373 DPS |
+| Prairie Lever | box | 1 rec, 64 a pull, 110 rpm, 117 DPS |
+| Pea Souper | box | 1 rec, 12 a pull, 1100 rpm, 220 DPS |
+| Fence Post | slots | melee: 72 a hit, 1.04 s, cleave 3, 69 DPS |
+| Bait and Tackle | slots | melee: 69 a hit, 0.81 s, cleave 2, 85 DPS |
+| Hedge Trimmer | slots | melee: 74 a hit, 0.65 s, cleave 3, 114 DPS |
+| **Rare** | | |
+| Gutbuster | box | 1 rec, 44 a pull, 600 rpm, 440 DPS |
+| Sewing Kit | box | 1 rec, 34 a pull, 300 rpm, 170 DPS |
+| Tower of Power | box | 1 rec, 26 a pull, 750 rpm, 325 DPS |
+| Pyramid Scheme | box | 1 rec, 120 a pull, 200 rpm, 400 DPS |
+| Line Dance | box | 1 rec, 18 a pull, 1100 rpm, 330 DPS |
+| Cant Stop | box | 1 rec, 35 a pull, 400 rpm, 233 DPS |
+| Dogleg Express | box | 1 rec, 30 a pull, 672 rpm, 336 DPS |
+| Tumble Dryer | box | 1 rec, 96 a pull, 260 rpm, 416 DPS |
+| Heavy Pockets | box | 3 rec, 69 a pull, 720 rpm, 828 DPS |
+| Choke Hold | box | 2 rec, 112 a pull, 140 rpm, 261 DPS |
+| Kendo Club | slots | melee: 53 a hit, 0.45 s, cleave 1, 118 DPS |
+| Pan Handler | slots | melee: 85 a hit, 1.04 s, cleave 3, 82 DPS |
+| Paper Cut | slots | melee: 66 a hit, 0.45 s, cleave 3, 147 DPS |
+| **Epic** | | |
+| Totem Pole | box | 1 rec, 33 a pull, 900 rpm, 495 DPS |
+| Crossroads | box | 1 rec, 76 a pull, 450 rpm, 570 DPS [penetrating] |
+| Lighthouse Keeper | box | 1 rec, 77 a pull, 300 rpm, 385 DPS |
+| Steady Eddie | box | 1 rec, 37 a pull, 900 rpm, 555 DPS [plasma] |
+| Forked Tongue | box | 2 rec, 96 a pull, 800 rpm, 1280 DPS |
+| Flechette Storm | box | 1 rec, 96 a pull, 390 rpm, 624 DPS |
+| Trench Party | box | 2 rec, 158 a pull, 120 rpm, 316 DPS [explosive] |
+| Backbone | box | 3 rec, 105 a pull, 900 rpm, 1575 DPS |
+| Slingshot Squad | box | 7 rec, 126 a pull, 720 rpm, 1512 DPS |
+| Whisper Network | box | 6 rec, 192 a pull, 400 rpm, 1280 DPS [suppressed] |
+| Zap Happy | slots | melee: 73 a hit, 0.72 s, cleave 1, 101 DPS |
+| Motor Axe | slots | melee: 84 a hit, 0.54 s, cleave 3, 155 DPS |
+| Lightning Rod | slots | melee: 82 a hit, 0.78 s, cleave 3, 105 DPS |
+| **Legendary** | | |
+| Ground Breaker | box | 1 rec, 883 a pull, 200 rpm, 2943 DPS [penetrating] |
+| Clap Back | box | 1 rec, 384 a pull, 300 rpm, 1920 DPS [penetrating] |
+| Snowball Effect | box | 3 rec, 78 a pull, 2400 rpm, 1733 DPS |
+| Hot Takes | box | 1 rec, 1080 a pull, 200 rpm, 3600 DPS [explosive,incendiary] |
+| Titan's Tantrum | box | 12 rec, 76 a pull, 3000 rpm, 3800 DPS [penetrating] |
+| Fire Escape | box | 1 rec, 636 a pull, 200 rpm, 2120 DPS [penetrating] |
+| Library Card | box | 1 rec, 146 a pull, 300 rpm, 730 DPS [penetrating,suppressed] |
+| Helping Hand | box | 1 rec, 45 a pull, 2400 rpm, 1800 DPS [explosive,incendiary] |
+| Hat Trick | box | 1 rec, 184 a pull, 800 rpm, 1162 DPS |
+| Grain Elevator | box | 6 rec, 1056 a pull, 200 rpm, 3520 DPS [explosive,incendiary] |
+| Conga Line | box | 2 rec, 118 a pull, 2688 rpm, 5286 DPS [penetrating] |
+| Street Light | slots | melee: 115 a hit, 0.54 s, cleave 4, 213 DPS |
+| Wrecking Crew | slots | melee: 182 a hit, 1.52 s, cleave 5, 120 DPS |
+| Last Orders | slots | melee: 164 a hit, 1.55 s, cleave 3, 106 DPS |
+| **Wonder** | | |
+| Grand Marshal | box | 8 rec, 3168 a pull, 90 rpm, 4752 DPS [explosive,party,toasty] |
+| Sixteen Clowns | box | 16 rec, 432 a pull, 1100 rpm, 7920 DPS [incendiary,party,plasma] |
+| The Oracle | box | 1 rec, 1201 a pull, 300 rpm, 6005 DPS [incendiary,marks,penetrating,plasma] |
+| Five-Alarm Chili | box | 2 rec, 1500 a pull, 252 rpm, 6300 DPS [chainsaw,incendiary] |
+| Gutter Ball | box | 3 rec, 1014 a pull, 128 rpm, 2163 DPS [bouncy,launch] |
+| Bouquet | box | 1 rec, 139 a pull, 3000 rpm, 6950 DPS [incendiary,party,plasma] |
+| Brick Wall | box | 1 rec, 1850 a pull, 140 rpm, 4317 DPS [explosive,incendiary] |
+| Dragon's Hoard | box | 1 rec, 2512 a pull, 200 rpm, 8373 DPS [incendiary,plasma] |
+| Perpetual Motion | box | 1 rec, 106 a pull, 3000 rpm, 5300 DPS [penetrating] |
+| Clown Car | box | 8 rec, 120 a pull, 2080 rpm, 4160 DPS [incendiary] |
+| Perfect Game | box | 1 rec, 936 a pull, 170 rpm, 2652 DPS [bouncy,explosive,launch,party] |
+| Sushi Chef | slots | melee: 160 a hit, 0.25 s, cleave 7, 640 DPS |
+| Time Out | slots | melee: 264 a hit, 1.69 s, cleave 6, 157 DPS |
+| Blender | slots | melee: 94 a hit, 0.28 s, cleave 6, 337 DPS |
+| Cuckoo Clock | slots | melee: 207 a hit, 1.03 s, cleave 5, 200 DPS |
+| Hydra Platter (raised) | box | 1 rec, 165 a pull, 2200 rpm, 6050 DPS [incendiary,plasma] |
+| Toaster Duck (raised) | box | 2 rec, 540 a pull, 90 rpm, 810 DPS [bouncy,explosive,party,squeaky,toasty] |
+| Party Cannon (raised) | box | 1 rec, 713 a pull, 162 rpm, 1925 DPS [explosive,party,toasty] |
+| Pepperbox Pistol (raised) | box | 1 rec, 126 a pull, 1080 rpm, 2268 DPS [incendiary,plasma] |
+| Seven Shooter (raised) | box | 1 rec, 581 a pull, 150 rpm, 1452 DPS [penetrating] |
+| Shopping Spree (raised) | box | 16 rec, 640 a pull, 900 rpm, 9600 DPS [cart,incendiary,plasma] |
+| Drive-Thru (raised) | box | 8 rec, 40 a pull, 3000 rpm, 2000 DPS [incendiary,plasma,refreshing] |
 
 ## Weapon slots: 2 -> 4 (decided: an on-map upgrade, per run)
 
@@ -1312,7 +1444,6 @@ Milestone 2 (the user's decisions):
    on players (off today).
 5. **The power curve (2026-10-27):** are the floors right (the best part of a tier x1 / x1 / x1.1 / x1.3 / x1.6 / x2.2
    the best common in the damage rows), and the arrival rounds (legendary drops from 18, wonder from 25; slots capped at
-   epic before round 20)? Each projectile still caps at 1000 damage, so a fully stacked late gun (about 4000 a round)
-   hits the cap: raise it for builds? A jetpack-hop stock needs the jump on the wire (a protocol change), so the Jetpack
+   epic before round 20)? (The 1000-a-projectile cap is gone for builds: decided 2026-10-27.) A jetpack-hop stock needs the jump on the wire (a protocol change), so the Jetpack
    Stock gives speed instead: worth doing the hop? Should the Thumper and Sawmill (named for chain fire) go the way of
    the burst receivers too? There is no wonder muzzle device yet.
