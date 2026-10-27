@@ -7,8 +7,10 @@ namespace CallOfSlop;
 /// each door's nav link (MapLogic.NavGates, also a declared link in Map.NavLinks) joins its two sides without a walk. While
 /// a door is shut its link's edges are switched off (<see cref="NavGraph.EdgeOff"/>, which A* and the horde's flow fields
 /// already skip), and on while it is open. So the graph itself never changes and "Nav determinism" builds the same one; only
-/// the switches follow the doors. A graph that was swapped, or whose switches were reset (destruction's patches), gets them
-/// again on the next tick.
+/// the switches follow the doors. A graph that was swapped, or whose switches were reset (destruction's patches, or the
+/// map restored: <see cref="NavGraph.ClearLogicGates"/>), gets them again on the next tick. The switches are runtime state
+/// like destruction's patches, never part of the graph as built: a restored map's cached graphs have none, so a baked
+/// graph and the live one read the same.
 /// </summary>
 public sealed partial class Game
 {
@@ -105,5 +107,20 @@ public sealed partial class Game
         SyncNavGates(s);
         var g = NavGraph.Current;
         return _navGateEdges.Select(es => (es.Length, es.Count(e => g.EdgeOff.Length == 0 || !g.EdgeOff[e]))).ToArray();
+    }
+}
+
+public sealed partial class NavGraph
+{
+    /// <summary>
+    /// The map is back as it starts (<see cref="Map.RestoreLogic"/>): its cached graphs lose the logic doors' switches, so
+    /// they are exactly as built again (the game switches them back on its next tick). A graph that destruction has patched
+    /// is left to <see cref="ResetPatches"/>, which clears everything.
+    /// </summary>
+    public static void ClearLogicGates(Map map)
+    {
+        foreach (var g in Cache.Values)
+            if (g.MapName == map.Name && g.PatchVersion == 0 && g.EdgeOff.Length != 0)
+                g.EdgeOff = [];
     }
 }

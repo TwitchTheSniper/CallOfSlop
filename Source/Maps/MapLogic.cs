@@ -895,6 +895,8 @@ public sealed partial class Map
             return;
         foreach (var d in l.Doors)
             SetLogicDoor(d, l.Entities[d].StartOn);
+        if (l.NavGates.Count > 0)
+            NavGraph.ClearLogicGates(this); // the nav graph as built too: no door switched off (GameLogicNav.cs)
     }
 
     /// <summary>Every logic door shut, as the nav graph is built (<see cref="AsBuiltSolid(Box[])"/>).</summary>
