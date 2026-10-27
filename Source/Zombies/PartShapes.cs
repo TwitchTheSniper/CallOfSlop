@@ -470,6 +470,11 @@ public static class PartShapes
         bl.Proxy(Vector3.Zero, new Vector3(2 * e.X, 2 * h.Y, 2 * e.Z));
         if (!longOnly)
             bl.Proxy(Vector3.Zero, new Vector3(2 * e.X, 2 * e.Y, 2 * h.Z));
+        // ...and a square in each rounded corner along Z (inside the arc, or inside the bevel's cut).
+        var q = flat ? r * 0.5f : r / MathF.Sqrt(2);
+        foreach (var sx in new[] { -1f, 1f })
+            foreach (var sy in new[] { -1f, 1f })
+                bl.Proxy(new Vector3(sx * (e.X + q * 0.5f), sy * (e.Y + q * 0.5f), 0), new Vector3(q, q, 2 * e.Z));
     }
 
     private static float Get(Vector3 v, int i) => i == 0 ? v.X : i == 1 ? v.Y : v.Z;

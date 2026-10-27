@@ -15,9 +15,9 @@
     {"name": "barrel_6", "type": "barrel", "pos": [-0.0433, 0.025, -0.06], "accepts": ["barrel", "splitter"]}
   ],
   "model": [
-    {"shape": "rod", "size": [0.135, 0.135, 0.05], "pos": [0, 0, -0.035], "color": "brass"},
-    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"},
-    {"shape": "rod", "size": [0.04, 0.04, 0.052], "pos": [0, 0, -0.035], "color": "accent"}
+    {"shape": "cylinder", "size": [0.135, 0.135, 0.05], "pos": [0, 0, -0.035], "color": "brass", "segments": 16},
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black", "segments": 12},
+    {"shape": "cylinder", "size": [0.04, 0.04, 0.052], "pos": [0, 0, -0.035], "color": "accent", "segments": 16}
   ],
   "stats": []
 }

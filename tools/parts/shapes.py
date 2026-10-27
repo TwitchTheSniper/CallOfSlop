@@ -290,6 +290,10 @@ def _rounded(bl, h, radius, long_only, segments, flat):
     bl.proxy(_v(0, 0, 0), (2 * e[0], 2 * h[1], 2 * e[2]))
     if not long_only:
         bl.proxy(_v(0, 0, 0), (2 * e[0], 2 * e[1], 2 * h[2]))
+    q = r * 0.5 if flat else r / math.sqrt(2)
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            bl.proxy(_v(sx * (e[0] + q * 0.5), sy * (e[1] + q * 0.5), 0), (q, q, 2 * e[2]))
 
 
 def _capsule(bl, h, n, sphere):
