@@ -39,6 +39,7 @@ public enum GameAction
     AudioMixer, // the Audio mixer debug window (UiAudioMixer.cs)
     SpectateNext, // binds version 5: Zombies, watching a teammate after bleeding out (Program.Zombies.cs)
     SpectatePrev,
+    WeaponTweaks, // binds version 6: the weapon tweak debug window (UiWeaponTweaks.cs)
     COUNT,
 }
 
@@ -89,6 +90,7 @@ public static class Keybinds
         Key(GlfwKey.F8), // Audio mixer: binds version 4
         Key(GlfwKey.Right), // Spectate next (Zombies): binds version 5 (Fire also works while spectating)
         Key(GlfwKey.Left), // Spectate previous (Aim also works)
+        Key(GlfwKey.F7), // Weapon tweaks (dev window): binds version 6
     ];
 
     /// <summary>
@@ -96,8 +98,9 @@ public static class Keybinds
     /// <see cref="Migrate"/>d once on load. 1 (no line in the file): Equipment F, Interact E. 2: Interact F, Equipment E.
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
     /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
+    /// 6: Weapon tweaks F7 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 5;
+    public const int DefaultsVersion = 6;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -112,6 +115,7 @@ public static class Keybinds
         (4, GameAction.AudioMixer, Unbound, Key(GlfwKey.F8)),
         (5, GameAction.SpectateNext, Unbound, Key(GlfwKey.Right)),
         (5, GameAction.SpectatePrev, Unbound, Key(GlfwKey.Left)),
+        (6, GameAction.WeaponTweaks, Unbound, Key(GlfwKey.F7)),
     ];
 
     /// <summary>
@@ -194,6 +198,7 @@ public static class Keybinds
             GameAction.AudioMixer => "Audio mixer (debug window)",
             GameAction.SpectateNext => "Spectate next player (Zombies, out)",
             GameAction.SpectatePrev => "Spectate previous player (Zombies, out)",
+            GameAction.WeaponTweaks => "Weapon tweaks (debug window)",
             _ => a.ToString(),
         };
 

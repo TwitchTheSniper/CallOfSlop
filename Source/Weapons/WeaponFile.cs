@@ -646,7 +646,11 @@ public static class WeaponSet
     private static uint? _weaponsHash, _attachmentsHash;
 
     /// <summary>FNV-1a over every loaded weapon, written out canonically (so line endings and spacing don't matter).</summary>
-    public static uint WeaponsHash => _weaponsHash ??= Fnv(Weapons.All.Select(WeaponFile.ToJson));
+    /// Always the weapons as their files have them (<see cref="WeaponTweaks.FileDef"/>): live tweaks never change it.
+    public static uint WeaponsHash => _weaponsHash ??= Fnv(Weapons.All.Select(w => WeaponFile.ToJson(WeaponTweaks.FileDef(w))));
+
+    /// <summary>Forgets the fingerprints (the weapon tweak window just saved weapon files: they are the new baseline).</summary>
+    internal static void ResetHashes() => _weaponsHash = null;
 
     /// <summary>FNV-1a over every loaded attachment, in slot and index order.</summary>
     public static uint AttachmentsHash => _attachmentsHash ??= Fnv(Attachments.BySlot.SelectMany(s => s).Select(a => a.Rule != null ? AttachmentFile.ToJson(a) : a.Name));

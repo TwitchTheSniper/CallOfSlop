@@ -839,6 +839,12 @@ public sealed partial class Ui
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
+            if (BuildInfo.IsRelease)
+            {
+                ImGui.Checkbox("Allow the weapon tweak window"u8, ref s.AllowWeaponTweaks);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip($"A debug window ({Keybinds.Name(s.Bind(GameAction.WeaponTweaks))}) for changing weapon stats live while you host. Dev builds always have it.");
+            }
             ImGui.EndChild();
             ImGui.EndTabItem();
         }

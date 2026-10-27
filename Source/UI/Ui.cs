@@ -331,7 +331,11 @@ public sealed partial class Ui : IDisposable
             CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
 
         if (ShowScoreboard || SmokeScoreboard)
+        {
             DrawScoreboard(game, size, pos);
+            if (game.WeaponsTweaked)
+                DrawTweakedBadge(size, pos); // the host's weapon tweak window changed stats (UiWeaponTweaks.cs)
+        }
     }
 
     /// <summary>Top-centre: clock, your score vs the best other score, and the win condition.</summary>
