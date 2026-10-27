@@ -265,7 +265,8 @@ public sealed partial class Game
             var zp = ZP(p);
             w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
-                .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535));
+                .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535))
+                .U8((byte)p.Grenade).U8((byte)Math.Clamp(p.GrenadesLeft, 0, 255)); // the grenade and how many are left (protocol 63)
         }
         var drops = ZDrops.Take(32).ToList();
         w.U8((byte)drops.Count);
@@ -720,7 +721,7 @@ public sealed partial class Game
         if (!r.Has(1))
             return;
         int n = r.U8();
-        for (var i = 0; i < n && r.Has(15); i++)
+        for (var i = 0; i < n && r.Has(17); i++)
         {
             var id = r.U8();
             var zp = ZP(id);
@@ -740,6 +741,13 @@ public sealed partial class Game
             zp.Kills = r.U16();
             zp.Downs = r.U16();
             zp.Revives = r.U16();
+            var grenade = r.U8();
+            var grenades = r.U8();
+            if (Players.TryGetValue(id, out var gp))
+            {
+                gp.Grenade = Enum.IsDefined((ThrowableKind)grenade) ? (ThrowableKind)grenade : ThrowableKind.None;
+                gp.GrenadesLeft = grenades; // yours: SyncZombiesGrenades takes it over when it changes
+            }
         }
         if (!r.Has(1))
             return;
@@ -759,6 +767,28 @@ public sealed partial class Game
 
     // ---- Both sides, every frame ------------------------------------------------------------------------
 
+    private ThrowableKind _zSyncGrenade = ThrowableKind.None;
+    private int _zSyncGrenades = -1;
+
+    /// <summary>
+    /// Both sides, every frame in Zombies: the server's grenade count for you (your <see cref="Player"/>: the server's
+    /// own on the host, from <see cref="Msg.ZWorld"/> on a client) becomes the HUD's and the grenade key's whenever it
+    /// changes, so a throw counts down at once (<see cref="TryThrow"/>) and a round's refill shows up; and a second
+    /// after your last throw it wins anyway (a throw the server refused gives the grenade back).
+    /// </summary>
+    private void SyncZombiesGrenades(double now)
+    {
+        if (Local is not { } me)
+            return;
+        var changed = me.Grenade != _zSyncGrenade || me.GrenadesLeft != _zSyncGrenades;
+        if (!changed && (now < _nextThrow + 0.5 || (LocalGrenade == me.Grenade && GrenadesLeft == me.GrenadesLeft)))
+            return;
+        _zSyncGrenade = me.Grenade;
+        _zSyncGrenades = me.GrenadesLeft;
+        LocalGrenade = me.Grenade;
+        GrenadesLeft = me.GrenadesLeft;
+    }
+
     /// <summary>Where every zombie is drawn this frame (the host blends ticks; clients interpolate snapshots like players), the points popups, late builds.</summary>
     private void UpdateZombiesFrame(double now, float dt)
     {
@@ -770,6 +800,7 @@ public sealed partial class Game
         }
         if (!IsServer)
             DropStaleZombies(now);
+        SyncZombiesGrenades(now);
         foreach (var z in Horde)
         {
             if (IsServer)

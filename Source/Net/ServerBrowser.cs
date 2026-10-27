@@ -124,7 +124,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and a Zombies flags byte (bit 0: the test kit).
     // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
     //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
-    public const byte ProtocolVersion = 60;
+    // 63: Grenades in Zombies (2026-10-27): every player entry in Msg.ZWorld ends with the grenade kind and how many
+    //     are left (the server tops them up every round; ZombiesRules.json "grenades").
+    public const byte ProtocolVersion = 63;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -148,6 +148,26 @@ public sealed class ZombiesRules
     /// <summary>A spawner rests this long (seconds) after a zombie came out of it (spreads a burst over the spawners).</summary>
     public float SpawnerCooldown = 0.35f;
 
+    // ---- Grenades ("grenades" section) -------------------------------------------------------------------------
+
+    /// <summary>The grenade every Zombies player carries (a lethal one: Frag or Impact). The multiplayer loadout's throwables don't apply.</summary>
+    public ThrowableKind GrenadeKind = ThrowableKind.Frag;
+
+    /// <summary>Grenades at round 1, and how many rounds each extra one takes: see <see cref="GrenadesForRound"/>.</summary>
+    public int GrenadeStart = 1, GrenadeRoundsPerExtra = 3;
+
+    /// <summary>
+    /// The grenades a player is topped up to at the start of round <paramref name="round"/> (and given on a spawn in it):
+    /// start + floor((round - 1) / roundsPerExtra), so 1, 1, 1, 2, 2, 2, 3 ... with the shipped numbers (no cap;
+    /// roundsPerExtra 0 keeps it at start). Never below 0.
+    /// </summary>
+    public int GrenadesForRound(int round)
+    {
+        var r = Math.Max(1, round);
+        var n = (long)GrenadeStart + (GrenadeRoundsPerExtra > 0 ? (r - 1) / GrenadeRoundsPerExtra : 0);
+        return (int)Math.Clamp(n, 0, 255); // (a byte in Msg.ZWorld)
+    }
+
     /// <summary>The horde controller's numbers (the "horde" section; Source/Game/Horde/HordeController.cs).</summary>
     public HordeTuning Horde = new();
 
@@ -690,6 +710,24 @@ public sealed class ZombiesRules
                         r.Perks.Add(ReadPerk(pe, at, r.Perks));
                     if (r.Perks.Count > MaxPerkCount)
                         throw new WeaponFileException($"{at}: at most {MaxPerkCount} perks (they're sent as 16 bits of flags)");
+                    break;
+                case "grenades":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "kind":
+                                if (!Enum.TryParse<ThrowableKind>(WeaponFile.Text(v, w), true, out var kind) || kind is not (ThrowableKind.Frag or ThrowableKind.Impact))
+                                    throw new WeaponFileException($"{w}: \"Frag\" or \"Impact\" (a grenade that hurts zombies)");
+                                r.GrenadeKind = kind;
+                                break;
+                            case "start": r.GrenadeStart = Whole(v, w, 0, 50); break;
+                            case "roundsPerExtra": r.GrenadeRoundsPerExtra = Whole(v, w, 0, 1000); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
                     break;
                 case "box":
                     Fields(p.Value, at, (k, v, w) =>

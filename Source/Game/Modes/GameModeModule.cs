@@ -68,6 +68,12 @@ public abstract class GameModeModule
     /// <summary>Grenades and equipment from the loadout apply (false: none are handed out, on the server and the local client).</summary>
     public virtual bool UsesThrowables => true;
 
+    /// <summary>
+    /// The server decides each player's grenade and count (Zombies: one grenade kind, topped up every round) and every
+    /// client's grenade key and HUD follow it, instead of the client's own loadout choice; no equipment.
+    /// </summary>
+    public virtual bool ServerSetsThrowables => false;
+
     /// <summary>The server decides everyone's weapons (<see cref="OnSpawn"/>): a loadout request never swaps the guns in hand.</summary>
     public virtual bool ServerPicksWeapons => false;
 
