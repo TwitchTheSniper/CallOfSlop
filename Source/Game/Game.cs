@@ -53,6 +53,9 @@ public sealed partial class Game : IDisposable
 
     public readonly Dictionary<byte, Player> Players = new();
     public readonly List<Tracer> Tracers = new();
+
+    /// <summary>Client: how many other players' shots (Msg.Shot) arrived, by shooter id (the "Zombie bots shoot" self-test).</summary>
+    public readonly int[] ShotsSeen = new int[256];
     public readonly List<FeedEntry> Feed = new();
 
     // ---- Local player -----------------------------------------------------
@@ -1867,6 +1870,7 @@ public sealed partial class Game : IDisposable
                 }
                 if (!Players.TryGetValue(shooter, out var sp))
                     break;
+                ShotsSeen[shooter]++;
                 Audio.Shot(def, sp.RenderEye);
                 var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
                 foreach (var end in shotEnds)
