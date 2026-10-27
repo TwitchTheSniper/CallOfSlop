@@ -115,7 +115,7 @@ public static partial class SelfTest
         me.Health = World.MaxHealth;
         me.ImmuneUntil = 0;
 
-        CheckPerkEffects(g, me, zp, zm, ref now);
+        CheckPerkEffects(g, me, zp, zm, now);
     }
 
     /// <summary>What a tick does for a player with perks (the lookups and the player's own tick).</summary>
@@ -125,7 +125,7 @@ public static partial class SelfTest
         return g.ZombieMoveMult(me) + g.ZombieReloadMult(me) + g.ZombieFireIntervalMult(me) + Game.PerkCount(g.ZP(me));
     }
 
-    private static void CheckPerkEffects(Game g, Player me, ZPlayer zp, ZombiesMap zm, ref double now)
+    private static void CheckPerkEffects(Game g, Player me, ZPlayer zp, ZombiesMap zm, double now)
     {
         var R = g.ZRules;
         void Only(params string[] keys)
