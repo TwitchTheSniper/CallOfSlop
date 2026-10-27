@@ -222,6 +222,8 @@ public static class UpdateInstaller
                 }
                 if (rel.Split('/')[^1].StartsWith(BuildMarker.FileName, StringComparison.OrdinalIgnoreCase))
                     continue; // only the updater writes markers
+                if (rel.StartsWith("__MACOSX/", StringComparison.Ordinal))
+                    continue; // a Mac zip's extended attributes (Archive Utility's business; nothing the game runs)
                 Directory.CreateDirectory(Path.GetDirectoryName(dest)!);
                 e.ExtractToFile(dest, overwrite: false);
             }

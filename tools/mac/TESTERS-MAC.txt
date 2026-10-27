@@ -1,0 +1,48 @@
+CALL OF SLOP - tester build for Mac
+===================================
+
+Thanks for testing! This is the Mac version: Apple Silicon Macs only (M1 or newer), macOS 14 Sonoma or newer.
+Intel Macs aren't supported.
+
+Running it
+- Unzip the zip (double-click it). You get a CallOfSlop folder with CallOfSlop.app in it.
+- Move the CallOfSlop folder out of Downloads with Finder first (for example into your Applications or
+  Documents folder). macOS runs apps straight from Downloads in a read-only copy, which the updater can't use.
+- The app isn't signed by a registered Apple developer, so the FIRST time you open it macOS stops it:
+    - macOS 15 Sequoia and newer: double-click CallOfSlop.app, click Done, then open
+      System Settings > Privacy & Security, scroll down and click "Open Anyway" next to Call of Slop,
+      and confirm with your password.
+    - macOS 14 Sonoma: right-click (or Control-click) CallOfSlop.app > Open, then Open again.
+  After that it opens normally.
+- If macOS says the app "is damaged and can't be opened", open Terminal and run (with your own path):
+      xattr -dr com.apple.quarantine ~/Applications/CallOfSlop/CallOfSlop.app
+  then open it again. (That removes the "downloaded from the internet" flag; nothing else changes.)
+- No install needed; .NET is included.
+- macOS asks once whether Call of Slop may use the microphone (only for voice chat; say no if you don't want it)
+  and, when you host, whether it may find devices on your local network (for UPnP and LAN games).
+- Cmd+Q quits. Text boxes use Cmd+C / Cmd+V like any Mac app.
+
+Updates
+- The game tells you when there's an update (a banner on the main menu); click Install.
+  It downloads the Mac build, checks it, unzips it into
+  ~/Library/Application Support/CallOfSlop/Builds/CallOfSlop-<version>/ and opens it. Your saves carry over.
+- A release with no Mac download yet just says so; your build keeps working.
+
+Playing together
+- Everyone should use the SAME build version, Mac or Windows: Macs and PCs play together.
+- One person hosts from the Multiplayer screen and sends the INVITE CODE from their lobby; friends use
+  Multiplayer > "Join by code or address".
+- If macOS asks whether Call of Slop may accept incoming network connections when you host, click Allow.
+- Single player against bots works offline.
+
+Your saves (see also MOVING YOUR SAVES.txt, which describes the Windows folders)
+- Settings, progression, loadouts and workbench builds are saved in
+  ~/Library/Application Support/CallOfSlop  (Finder: Go > Go to Folder..., or Settings > Player > Open save folder)
+  so every new build sees them.
+
+Reporting bugs
+- Say what you were doing, which map and mode, and attach callofslop.log from ~/Library/Logs/CallOfSlop
+  (Finder: Go > Go to Folder... and paste that). It's written fresh each time the game starts.
+- Screenshots help a lot (Cmd+Shift+4).
+
+Credits and licences are in NOTICE.txt.
