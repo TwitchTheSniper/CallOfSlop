@@ -220,6 +220,9 @@ public struct SocketSpot
 
     /// <summary>The part in it is missing (not in your parts).</summary>
     public bool Missing;
+
+    /// <summary>A refused Build marked it (<see cref="BenchModel.RefuseBuild"/>): drawn as a red ring until it is filled.</summary>
+    public bool Refused;
 }
 
 /// <summary>The camera of the workbench's big 3D view: orbit (yaw, pitch) and zoom around the gun's middle.</summary>
@@ -388,7 +391,96 @@ public sealed class BenchModel
         }
         Build = b;
         _copied = null;
+        _refused.Clear(); // another build (new weapon, load, regrip): the marks of a refused Build go
         Changed();
+    }
+
+    // ---- A refused Build: the empty sockets that need a part --------------------------------------------------
+
+    /// <summary>The sockets a refused Build marked (parent path, socket name); each drops out once it's filled.</summary>
+    private readonly List<(string Path, string Socket)> _refused = new();
+
+    /// <summary>How many sockets a refused Build has marked that are still empty.</summary>
+    public int RefusedCount { get; private set; }
+
+    /// <summary>
+    /// The spots that are required but empty (<see cref="SocketSpot.Needed"/>: every receiver subtree's barrel, feed, ammo,
+    /// action, a splitter's outputs, whatever <see cref="BuildRules.NeedsFilling"/> says), in list order, into
+    /// <paramref name="into"/>. Optional sockets (stock, optic, muzzle, utility, foregrip...) are never in it. A grip with no
+    /// receiver yet gives only its first empty receiver slot (one receiver is what it needs).
+    /// </summary>
+    public void RequiredEmpty(List<int> into)
+    {
+        into.Clear();
+        var receiverSlot = false;
+        for (var i = 0; i < Spots.Count; i++)
+        {
+            var s = Spots[i];
+            if (!s.Needed)
+                continue;
+            if (s.Socket.Type == "receiver" && s.Parent == Build.Root)
+            {
+                if (receiverSlot)
+                    continue;
+                receiverSlot = true;
+            }
+            into.Add(i);
+        }
+    }
+
+    private readonly List<int> _refuseScratch = new();
+
+    /// <summary>
+    /// The Build / Save / Apply button was pressed on a build that can't be finalised: marks every required-but-empty
+    /// socket (<see cref="RequiredEmpty"/>) as <see cref="SocketSpot.Refused"/>. The marks stay while the socket is empty
+    /// (undo and redo keep them, matched by path) and clear one by one as the sockets are filled, or all at once when
+    /// another build is loaded. Returns how many were marked (0: what stops it is something else, a missing part or a rule).
+    /// </summary>
+    public int RefuseBuild()
+    {
+        RequiredEmpty(_refuseScratch);
+        _refused.Clear();
+        foreach (var i in _refuseScratch)
+            _refused.Add((Spots[i].ParentPath, Spots[i].Socket.Name));
+        MarkRefused();
+        return RefusedCount;
+    }
+
+    /// <summary>Clears the marks of a refused Build.</summary>
+    public void ClearRefused()
+    {
+        _refused.Clear();
+        MarkRefused();
+    }
+
+    /// <summary>Sets <see cref="SocketSpot.Refused"/> on the spots still marked and still empty; forgets the marks that were filled.</summary>
+    private void MarkRefused()
+    {
+        var n = 0;
+        for (var i = 0; i < Spots.Count; i++)
+        {
+            var s = Spots[i];
+            var on = false;
+            if (s.Needed && _refused.Count > 0)
+                foreach (var (path, socket) in _refused)
+                    if (path == s.ParentPath && socket == s.Socket.Name)
+                    {
+                        on = true;
+                        break;
+                    }
+            if (on)
+                n++;
+            if (s.Refused != on)
+            {
+                s.Refused = on;
+                Spots[i] = s;
+            }
+        }
+        if (n < _refused.Count)
+            for (var k = _refused.Count - 1; k >= 0; k--)
+                if (SpotOf(_refused[k].Path, _refused[k].Socket) is var j && (j < 0 || !Spots[j].Refused))
+                    _refused.RemoveAt(k);
+        RefusedCount = n;
     }
 
     /// <summary>
@@ -463,6 +555,7 @@ public sealed class BenchModel
         FireType = Build.IsMelee ? "" : BuildStats.FireTypeText(Build);
         BuildRows();
         BuildSpots();
+        MarkRefused();
         if (bump)
             Version++;
     }
@@ -1166,4 +1259,64 @@ public sealed class BenchInventory
         AllLabel = $"All {total}";
         return true;
     }
+}
+
+/// <summary>
+/// The workbench's grip picker (step 1) as a list: the grips (or hilts, for the melee slot) ordered by receiver slots,
+/// then rarity. With "Show all grips" off (the default) only the ones you own are listed; on, every one in the game is,
+/// with <see cref="Owned"/> false for the ones you don't have (drawn dimmed). In the sandbox every grip is owned, so both
+/// show everything. Rebuilt only when its inputs change: calling <see cref="Refresh"/> every frame allocates nothing.
+/// </summary>
+public sealed class BenchGrips
+{
+    public readonly List<PartDef> Items = new();
+
+    /// <summary>Per item: you own at least one.</summary>
+    public readonly List<bool> Owned = new();
+
+    /// <summary>Per item: its receiver slot count (cached; the card shows it).</summary>
+    public readonly List<int> Slots = new();
+
+    /// <summary>Grips left out because you don't own them (the toggle is off).</summary>
+    public int Hidden { get; private set; }
+
+    private BenchStock? _stock;
+    private object? _all; // the part library (a hot reload swaps it)
+    private (int Stock, bool Melee, bool ShowAll) _key;
+
+    /// <summary>Rebuilds the list if anything changed; true when it did.</summary>
+    public bool Refresh(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll)
+    {
+        var key = (stock.Fingerprint, melee, showAll);
+        if (ReferenceEquals(stock, _stock) && ReferenceEquals(all, _all) && key == _key)
+            return false;
+        _stock = stock;
+        _all = all;
+        _key = key;
+        Rebuild(stock, all, melee, showAll);
+        return true;
+    }
+
+    private void Rebuild(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll) // its own method: the filter's closure is allocated only on a rebuild
+    {
+        Items.Clear();
+        Owned.Clear();
+        Slots.Clear();
+        Hidden = 0;
+        foreach (var p in all.Where(p => melee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity))
+        {
+            var have = stock.Owned(p) > 0;
+            if (!have && !showAll)
+            {
+                Hidden++;
+                continue;
+            }
+            Items.Add(p);
+            Owned.Add(have);
+            Slots.Add(p.ReceiverCapacity);
+        }
+    }
+
+    /// <summary>Whether a click on <paramref name="grip"/> picks it: always in the sandbox (plan with it, it shows missing), only an owned one where the session uses an inventory (a Zombies run's bench).</summary>
+    public static bool CanPick(BenchStock stock, PartDef grip, bool inventory) => !inventory || stock.Owned(grip) > 0;
 }

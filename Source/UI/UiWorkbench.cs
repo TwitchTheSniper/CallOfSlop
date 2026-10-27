@@ -45,6 +45,10 @@ public sealed partial class Ui
     private string _wbMessage = "";
     private bool _wbMessageBad;
     private double _wbMessageAt = -100;
+    private double _wbRefusedAt = -100; // the last refused Build (the red socket rings pulse for a moment after it)
+    private const float RefusedPulseSeconds = 1.6f;
+    private (int Version, int Spot) _refusedTipKey = (-1, -1);
+    private string _refusedTip = "";
     private ImInputString? _wbNameInput, _wbSearchInput;
     private string _wbSearch = "";
     private int _wbFilter = -1; // part category shown (-1 = all)
@@ -102,6 +106,10 @@ public sealed partial class Ui
 
     // The inventory list, cached until the build, stock, filter or search changes.
     private readonly BenchInventory _inv = new();
+
+    // The grip picker's list, cached until the stock, the slot kind or "Show all grips" changes.
+    private readonly BenchGrips _grips = new();
+    private static readonly ImColor8 LockShade8 = new(14, 15, 18, 150);
 
     /// <summary>The settings the "Show incompatible parts" checkbox lives in (saved to settings.txt); set by Program.</summary>
     public Settings? BenchSettings;
@@ -238,6 +246,36 @@ public sealed partial class Ui
         if (!_wbPractice)
             return BenchStock.Unlimited;
         return _wbPracticeStock ??= BenchStock.Practice(Parts.All);
+    }
+
+    /// <summary>After a Build / Save / Apply / Test fire button: a click on it while it's greyed out (the build can't be finalised) refuses the build.</summary>
+    private void WbRefusedClick(bool ready)
+    {
+        if (!ready && ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled) && ImGui.IsMouseClicked(ImGuiMouseButton.Left))
+            WbBuildRefused();
+    }
+
+    /// <summary>
+    /// The build was refused: every empty socket it needs gets a red ring on the 3D model (pulsing for a moment, then
+    /// steady until it's filled), and the message says which sockets and what else stops it.
+    /// </summary>
+    internal void WbBuildRefused()
+    {
+        if (_bm == null || Bm.CanFinalize)
+            return;
+        var n = Bm.RefuseBuild();
+        _wbRefusedAt = _wbNow;
+        _wbAudio?.Effect(Sfx.DryFire, 0.5f);
+        if (n == 0)
+        {
+            WbSay("Can't build it yet: " + Bm.FinalizeTip().Replace('\n', ' '), true);
+            return;
+        }
+        var names = new System.Text.StringBuilder();
+        foreach (var s in Bm.Spots)
+            if (s.Refused)
+                names.Append(names.Length > 0 ? ", " : "").Append(SocketLabel(s.Socket).ToLowerInvariant());
+        WbSay($"Can't build it yet: {n} empty socket{(n == 1 ? " needs" : "s need")} a part ({names}). They're circled red on the gun: hover one to see what goes there, click it for those parts.", true);
     }
 
     private void WbSay(string text, bool bad = false)
@@ -414,7 +452,10 @@ public sealed partial class Ui
 
     private void DrawGripPicker(float width, float height, float2 winPos, float2 winSize)
     {
-        var grips = Parts.All.Where(p => _wbMelee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity); // by slot count: 1, 2, 3 ... 9 and the big frames
+        // OFF (default): the grips you own. ON: every grip in the game, the ones you don't own dimmed (locked at a run's bench).
+        var showAll = BenchSettings?.WorkbenchShowAllGrips ?? false;
+        _grips.Refresh(Bm.Stock, Parts.All, _wbMelee, showAll); // by slot count: 1, 2, 3 ... 9 and the big frames; cached
+        var inventory = BenchRun != null; // a Zombies run's bench: only grips you own can be picked
         ImGui.PushFont(default, 18);
         ImGuiSafe.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT" : "CHANGE THE GRIP") : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON" : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"));
         ImGui.PopFont();
@@ -428,7 +469,22 @@ public sealed partial class Ui
             if (ImGui.SmallButton("Back to the build"u8))
                 _wbPicking = false;
         }
-        if (!ImGui.BeginChild("##wbgrips"u8, new float2(width, height - 50 * _scale), ImGuiChildFlags.None))
+        if (ImGui.Checkbox(_wbMelee ? "Show all hilts"u8 : "Show all grips"u8, ref showAll) && BenchSettings != null)
+        {
+            BenchSettings.WorkbenchShowAllGrips = showAll;
+            BenchSettings.Save();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip(showAll
+                ? (inventory ? "Showing every grip in the game. The dimmed ones you don't own yet: see what they do, but you can't pick them until you find one."u8
+                    : "Showing every grip in the game. The dimmed ones you don't own: you can still plan with them (they show as missing)."u8)
+                : "Showing only the grips you own. Tick to see every grip in the game, and which ones you're missing."u8);
+        if (_grips.Hidden > 0)
+        {
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, WbHiddenText[Math.Min(_grips.Hidden, WbHiddenText.Length - 1)]);
+        }
+        if (!ImGui.BeginChild("##wbgrips"u8, new float2(width, height - 76 * _scale), ImGuiChildFlags.None))
         {
             ImGui.EndChild();
             return;
@@ -438,9 +494,11 @@ public sealed partial class Ui
         var cardH = 232 * _scale;
         var gap = 12 * _scale;
         var cols = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (cardW + gap)));
-        var i = 0;
-        foreach (var g in grips)
+        if (_grips.Items.Count == 0)
+            ImGui.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
+        for (var i = 0; i < _grips.Items.Count; i++)
         {
+            var g = _grips.Items[i];
             if (i % cols != 0)
                 ImGui.SameLine(0, gap);
             var p0 = ImGui.GetCursorScreenPos();
@@ -448,12 +506,13 @@ public sealed partial class Ui
             var hot = ImGui.IsItemHovered();
             var p1 = p0 + new float2(cardW, cardH);
             var owned = Bm.Stock.Owned(g);
-            var have = owned > 0;
+            var have = _grips.Owned[i];
+            var locked = !BenchGrips.CanPick(Bm.Stock, g, inventory);
             var rc = PartDef.RarityColor(g.Rarity);
             dl.AddRectFilled(p0, p1, hot ? Hover8 : Card8, 6 * _scale);
             dl.AddRectFilled(p0, new float2(p1.X, p0.Y + 4 * _scale), WbC8(rc, have ? 1f : 0.4f), 6 * _scale);
             if (hot)
-                dl.AddRect(p0, p1, Orange8, 6 * _scale, ImDrawFlags.None, 2f);
+                dl.AddRect(p0, p1, locked ? Dim8 : Orange8, 6 * _scale, ImDrawFlags.None, 2f);
             var imgMin = p0 + new float2(8 * _scale, 10 * _scale);
             var imgMax = new float2(p1.X - 8 * _scale, p0.Y + cardH * 0.5f);
             DrawPartIcon(dl, g, imgMin, imgMax, !have);
@@ -464,7 +523,7 @@ public sealed partial class Ui
             y += 22 * _scale;
             if (g.Frame is { } f)
             {
-                var cap = g.ReceiverCapacity;
+                var cap = _grips.Slots[i];
                 ImGui.PushFont(default, 20);
                 DlText(dl, new float2(x, y), cap == 1 ? White8 : Orange8, cap == 1 ? "1 RECEIVER SLOT" : $"{cap} RECEIVER SLOTS");
                 ImGui.PopFont();
@@ -483,14 +542,20 @@ public sealed partial class Ui
                 y += 18 * _scale;
                 DlText(dl, new float2(x, y), Dim8, $"{h.Hands}-handed{(h.Stun > 0 ? $", stun {h.Stun:0.0} s" : "")}");
             }
-            var ownTxt = Bm.Stock.IsUnlimited ? "sandbox" : have ? $"{owned} owned" : "none owned";
+            var ownTxt = Bm.Stock.IsUnlimited ? "sandbox" : have ? $"{owned} owned" : locked ? "LOCKED - none owned" : "none owned";
             DlText(dl, new float2(x, p1.Y - 22 * _scale), have ? Green8 : Red8, ownTxt);
+            if (locked)
+                dl.AddRectFilled(p0, p1, LockShade8, 6 * _scale); // dimmed: stats still readable, not pickable
             if (hot)
                 ImGuiSafe.SetTooltip($"{g.Name} - {PartDef.RarityName(g.Rarity)}\n{g.Flavor}\n{PartSummary(g)}"
-                                     + (have ? "" : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
+                                     + (have ? "" : locked ? "\nYou don't own one yet: find or craft one to build on it." : "\nYou don't own one: you can plan with it, but it shows as missing until you do."));
             if (clicked)
-                PickGrip(g);
-            i++;
+            {
+                if (locked)
+                    WbSay($"You don't own a {g.Name} yet, so you can't build on it here.", true);
+                else
+                    PickGrip(g);
+            }
         }
         ImGui.EndChild();
     }
@@ -822,6 +887,8 @@ public sealed partial class Ui
                     _dragStart = mouse;
                     _dragHome = _spotScreen[_hoverSpot];
                 }
+                else if (_hoverSpot >= 0 && (spot.Refused || spot.Needed))
+                    WbShowSocketParts(spot.Socket); // a red (refused) or yellow (needed) ring: its parts
                 else
                     _orbiting = true;
             }
@@ -860,8 +927,21 @@ public sealed partial class Ui
         DlText(dl, new float2(_viewMin.X + 10 * _scale, _viewMax.Y - 22 * _scale), new ImColor8(120, 122, 132, 255), "drag: turn - wheel: zoom - double-click a part: take it off - double-click elsewhere: reset");
         if (!_dragging && _hoverSpot >= 0 && Bm.Spots[_hoverSpot] is var hs)
         {
-            var label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
-            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing ? Red8 : White8, label);
+            string label;
+            if (hs.Refused)
+            {
+                if (_refusedTipKey != (Bm.Version, _hoverSpot)) // made once per socket and build, not per frame
+                {
+                    _refusedTipKey = (Bm.Version, _hoverSpot);
+                    _refusedTip = $"Needs {SocketNeeds(hs.Socket)} here ({SocketLabel(hs.Socket).ToLowerInvariant()} of the {hs.Parent.Part.Name}) - click: {PartDef.CategoryName(CategoryFor(hs.Socket)).ToLowerInvariant()} parts";
+                }
+                label = _refusedTip;
+            }
+            else
+                label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
+            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing || hs.Refused ? Red8 : White8, label);
+            if (hs.Child == null && (hs.Refused || hs.Needed))
+                ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             if (hs.Child != null)
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
         }
@@ -918,7 +998,19 @@ public sealed partial class Ui
                     DlText(dl, c + new float2(15 * _scale, -9 * _scale), col, swap ? $"swap: {SocketLabel(s.Socket)} ({s.Child!.Part.Name})" : $"{SocketLabel(s.Socket)} of the {s.Parent.Part.Name}");
                 continue;
             }
-            if (s.Missing)
+            if (s.Refused)
+            {
+                // A refused Build: a red ring on each empty socket it needs, a big pulse for a moment, then a steady beat
+                // until it's filled. Drawn over the 3D view, so it shows through the model from any angle.
+                var since = (float)(_wbNow - _wbRefusedAt);
+                var burst = since < RefusedPulseSeconds ? 1f - since / RefusedPulseSeconds : 0f;
+                var beat = 0.5f + 0.5f * MathF.Sin(since * 10f);
+                var r = (11f + burst * beat * 10f + pulse * 1.5f) * _scale;
+                dl.AddCircle(c, r + 3f * _scale, WbFade(Red8, 0.3f + 0.5f * burst), 28, 4f * _scale);
+                dl.AddCircle(c, r, Red8, 28, (2.5f + burst) * _scale);
+                dl.AddCircleFilled(c, 3.5f * _scale, Red8, 10);
+            }
+            else if (s.Missing)
             {
                 dl.AddCircleFilled(c, 5f * _scale, Red8, 12);
                 dl.AddCircle(c, (8f + pulse * 2f) * _scale, WbFade(Red8, 0.8f), 16, 2f * _scale);
@@ -1103,16 +1195,7 @@ public sealed partial class Ui
                     }
                 }
                 else if (r.Socket != null)
-                {
-                    var cat = CategoryFor(r.Socket);
-                    if (_inv.Shows(cat))
-                    {
-                        _wbFilter = (int)cat;
-                        WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(r.Socket).ToLowerInvariant()} socket.");
-                    }
-                    else // the category is hidden (nothing spare fits): picking it would only fall back to All
-                        WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(r.Socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
-                }
+                    WbShowSocketParts(r.Socket);
             }
             if (rclicked && r.Node != null)
             {
@@ -1121,6 +1204,20 @@ public sealed partial class Ui
             }
         }
         ImGui.EndChild();
+    }
+
+    /// <summary>A click on an empty socket (a "needs" row, or a red / yellow ring on the gun): the parts list shows that socket's category.</summary>
+    private void WbShowSocketParts(PartSocket socket)
+    {
+        var cat = CategoryFor(socket);
+        if (_inv.Shows(cat))
+        {
+            _wbFilter = (int)cat;
+            _wbInvScrollTop = true;
+            WbSay($"Showing {PartDef.CategoryName(cat).ToLowerInvariant()} parts: drag one onto the {SocketLabel(socket).ToLowerInvariant()} socket.");
+        }
+        else // the category is hidden (nothing spare fits): picking it would only fall back to All
+            WbSay($"None of your spare {PartDef.CategoryName(cat).ToLowerInvariant()} parts fit the {SocketLabel(socket).ToLowerInvariant()} socket. Tick \"Show incompatible parts\" to see them all.");
     }
 
     /// <summary>
@@ -1144,6 +1241,9 @@ public sealed partial class Ui
     }
 
     /// <summary>What a socket type is for, from the part registry ("" if it says nothing).</summary>
+    /// <summary>What goes in an empty socket, for "Needs ... here": "ammo", "an action", "a barrel".</summary>
+    internal static string SocketNeeds(PartSocket s) => s.Type == "ammo" ? "ammo" : ("aeiou".Contains(s.Type[0]) ? "an " : "a ") + s.Type;
+
     private static string SocketAbout(string type) => Parts.Registry.About.TryGetValue(type, out var a) ? a : "";
 
     /// <summary>The build with the dragged part (or part being moved) in spot <paramref name="spot"/>, cached per hovered spot.</summary>
@@ -1711,6 +1811,7 @@ public sealed partial class Ui
                 WbSay($"Saved '{b.Name}' to the melee slot.");
             }
             ImGui.EndDisabled();
+            WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetTooltip(Bm.FinalizeTip());
             ImGui.SameLine();
@@ -1747,6 +1848,7 @@ public sealed partial class Ui
                 WbSay($"Saved '{b.Name}' to slot {BuildStore.Selected + 1}.");
             }
             ImGui.EndDisabled();
+            WbRefusedClick(ready); // a click on the greyed-out button: red rings on the empty sockets that need a part
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetTooltip(Bm.FinalizeTip());
             ImGui.SameLine();
@@ -1806,6 +1908,7 @@ public sealed partial class Ui
             }
         }
         ImGui.EndDisabled();
+        WbRefusedClick(ready);
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGuiSafe.SetTooltip(ready ? $"Opens the Workbench Range with your builds ({Keybinds.NameOf(_hudSettings, GameAction.Interact)}: park / push a cart, buy the slot upgrade)." : Bm.FinalizeTip());
         return launch;

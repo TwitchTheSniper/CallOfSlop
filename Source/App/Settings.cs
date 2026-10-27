@@ -77,6 +77,9 @@ public sealed class Settings
     /// <summary>Workbench inventory: list parts that fit nowhere on the build too (dimmed). Off by default; old files get off.</summary>
     public bool WorkbenchShowIncompatible;
 
+    /// <summary>Workbench grip picker: list every grip in the game, the ones you don't own dimmed. Off by default (only owned grips).</summary>
+    public bool WorkbenchShowAllGrips;
+
     /// <summary>Set by the settings screen when display options change; Program applies them.</summary>
     [NonSerialized] public bool DisplayDirty;
 
@@ -396,6 +399,7 @@ public sealed class Settings
                     case "name_tags" when Enum.TryParse<NameTagMode>(v, out var nt) && Enum.IsDefined(nt): s.NameTags = nt; break;
                     case "name_tag_health": s.NameTagHealth = v == "1"; break;
                     case "wb_show_incompatible": s.WorkbenchShowIncompatible = v == "1"; break;
+                    case "wb_show_all_grips": s.WorkbenchShowAllGrips = v == "1"; break;
                     case "head_bob" when int.TryParse(v, out var i): s.HeadBob = Math.Clamp(i, 0, 100); break;
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
@@ -507,6 +511,7 @@ public sealed class Settings
                     $"name_tags={NameTags}",
                     $"name_tag_health={(NameTagHealth ? 1 : 0)}",
                     $"wb_show_incompatible={(WorkbenchShowIncompatible ? 1 : 0)}",
+                    $"wb_show_all_grips={(WorkbenchShowAllGrips ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
                 ],
