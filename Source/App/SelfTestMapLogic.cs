@@ -92,8 +92,31 @@ public static partial class SelfTest
         ok &= good.ContentHash == shut && good.IsLogicDoorOpen(good.Logic.Find("Gate")) && !good.IsAsBuilt() && good.AsBuiltSolid()[d.SolidIndex] == d.Box;
         good.RestoreProps();
         ok &= !good.IsLogicDoorOpen(good.Logic.Find("Gate")) && good.IsAsBuilt();
+        // The README's Zombies examples load on a Zombies map: a bell (cost, cooldown, power) calling the horde, the power driving a door, a locked zdoor and a perk machine.
+        var ztext = File.ReadAllText(Path.Combine(Maps.Folder, "Dev", "ZombiesTest.json")).TrimEnd();
+        const string zlogic = ", \"logic\": { \"entities\": [ "
+            + "{ \"type\": \"button\", \"name\": \"Bell\", \"at\": [0, 1.4, -2], \"yaw\": 180, \"prompt\": \"ring the bell\", \"cost\": 500, \"cooldown\": 90, \"power\": true, "
+            + "\"outputs\": { \"pressed\": [{ \"to\": \"zombies.spawn\", \"n\": 12 }, \"BellSound.play\", \"BellText.show\"] } }, "
+            + "{ \"type\": \"sound\", \"name\": \"BellSound\", \"at\": [0, 6, -2], \"sound\": \"mortarWhistle\", \"range\": 0 }, "
+            + "{ \"type\": \"text\", \"name\": \"BellText\", \"text\": \"The bell tolls. They are coming.\" }, "
+            + "{ \"type\": \"zdoor\", \"name\": \"Shutter\", \"door\": \"the Hall Shutter\", \"enabled\": false }, "
+            + "{ \"type\": \"zmachine\", \"name\": \"Switch\", \"machine\": \"power\" } ], "
+            + "\"wires\": [ { \"from\": \"zombies.power\", \"to\": \"Shutter.enable\" }, { \"from\": \"zombies.roundStarted\", \"to\": \"Shutter.open\", \"when\": 5 }, "
+            + "{ \"from\": \"Switch.used\", \"to\": \"BellText.show\", \"delay\": 1 } ] }";
+        var zok = false;
+        try
+        {
+            var zm = MapFile.Load(ztext[..ztext.LastIndexOf('}')] + zlogic + "}", "Dev/ZombiesTestLogic.json");
+            zok = zm.Logic is { ZombiesEntity: >= 0 } zl && zl.Find("Shutter") >= 0 && zl.Entities[zl.Find("Bell")].Cost == 500 && zl.Wires.Length == 6;
+        }
+        catch (MapFileException ex)
+        {
+            Fail($"map logic: the Zombies examples don't load: {ex.Message}");
+        }
+        if (!zok)
+            Fail("map logic: the Zombies examples loaded wrong");
         Line($"refusals: {refused}/{cases.Length} bad sections refused for the right reason; a good one round-trips (same fingerprint, the door solid and undrawn, "
-             + $"opening it keeps the fingerprint and the as-built boxes, a restore shuts it): {ok}");
+             + $"opening it keeps the fingerprint and the as-built boxes, a restore shuts it): {ok}; the Zombies bell, power and lock examples load {zok}");
         if (!ok)
             Fail("map logic: a good logic section doesn't load, round-trip or restore as it should");
     }

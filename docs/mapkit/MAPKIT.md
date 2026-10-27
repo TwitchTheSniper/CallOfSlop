@@ -109,6 +109,24 @@ waypoints every 4 m. `Lane(path, spacing, offset, place)` drops cover along a pa
 beam, trolley and hook), `DomeTower`. A group of props a map places again and again should become a **prefab prop**
 instead: a prop file whose parts `use` other props (Props/README.md "Prefabs"; `Props/Space/Prefabs/LandingPadSet.json`).
 
+**Map logic** (`kit.Logic`, `Source/MapKit/Logic.cs`; the format and the signal model are in Maps/README.md, "Map
+logic"). `Door`, `Lamp`, `Button`, `Lever`, `Plate`, `Zone`, `Timer`, `Mover` (a named mover in `kit.Top["movers"]`),
+`Sound`, `Text`, `Gate` ("and", "or", "not"), `Counter`, `Relay`, `Random`, `Entity(type, name, fields...)` for anything
+else (a `zdoor`, a `zmachine`, a `teleport`, a `breakable`), and `Wire("A.event", "B.action", delay, once, value, n, when)`;
+every helper returns the builder, so wires chain. The kit refuses two entities with one name; the rest (unknown events
+and actions, missing movers) is refused by the real reader when `--gen-map` loads the map back. Give the map's `test`
+block an `"events"` list so the Map contract plays the logic through. Logic Test (`Generators/LogicTest.cs`,
+`Maps/Dev/LogicTest.json`) is the worked example:
+
+```csharp
+var l = kit.Logic;
+l.Door("Gate", -15, 0, -1.2, -14.7, 2.6, 1.2, color: "#b0763c");
+l.Button("GateButton", -14.64, 1.3, 2.3, yaw: 90, prompt: "open the gate");
+l.Wire("GateButton.pressed", "Gate.open").Wire("GateButton.pressed", "Gate.close", delay: 8);
+l.Lever("LeverA", -4, 1.2, 14.98).Lever("LeverB", 4, 1.2, 14.98).Gate("and", "Both");
+l.Wire("LeverA.changed", "Both.a").Wire("LeverB.changed", "Both.b").Wire("Both.true", "VaultDoor.open");
+```
+
 **Plan.** `Plan.Draw(map, "plan.png", lanes)` is the picture `--gen-plan` makes; `PngWriter` writes any RGB raster.
 
 ## Rules of the road
