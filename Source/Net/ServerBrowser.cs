@@ -131,7 +131,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     are left (the server tops them up every round; ZombiesRules.json "grenades").
     // 63: Shots leave the muzzle that fired (Source/Game/GameMuzzle.cs): Msg.Shot from a built gun with several barrels
     //     ends with a count and each end's barrel index (one byte each), after the ends and the wall origin.
-    public const byte ProtocolVersion = 63;
+    // 64: independent receiver fire rates (Source/Game/GameFireGroups.cs): Msg.Fire ends with the lock-target byte (0xFF
+    //     when none) and a u16 mask of the receivers that fired on a volley build (0 = all); the server budgets each one.
+    public const byte ProtocolVersion = 64;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -159,9 +159,10 @@ public static partial class SelfTest
     {
         var triplets = WeaponBuilder.Assemble(BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},hopper:Manifold Hopper{ammo:FMJ}}"));
         var fed = triplets.Build.HopperFed().Count;
-        Line($"shared feed: Manifold Hopper feeds {fed} receivers, volley mag {triplets.Def?.Mag} (pool 120 / 3), problems: {string.Join("; ", triplets.Problems.Select(p => p.Message))}");
-        if (triplets.Def == null || fed != 3 || triplets.Def.Mag != 40)
-            Fail("shared feed: three receivers on a Manifold Hopper should be complete with a volley magazine of 120 / 3 = 40");
+        Line($"shared feed: Manifold Hopper feeds {fed} receivers, volley mag {triplets.Def?.Mag} (one pool of 120, a round per receiver that fires), feeds {(triplets.Def?.FireGroups is { } tfg ? string.Join(",", tfg.Select(f => f.Feed)) : "-")}, problems: {string.Join("; ", triplets.Problems.Select(p => p.Message))}");
+        // Independent fire rates (2026-10-27): the pool counts once (120 rounds, 40 full volleys), all three on one feed.
+        if (triplets.Def == null || fed != 3 || triplets.Def.Mag != 120 || triplets.Def.FireGroups is not { Length: 3 } tg || tg.Any(f => f.Feed != 0 || f.FeedMag != 120))
+            Fail("shared feed: three receivers on a Manifold Hopper should be complete with one pooled magazine of 120 that all three draw on");
         // Capacity: a fourth receiver needs its own feed.
         var four = BuildOf("Mule Frame{receiver_1:Workhorse Receiver{barrel:Standard Barrel},receiver_2:Workhorse Receiver{barrel:Standard Barrel},receiver_3:Workhorse Receiver{barrel:Standard Barrel},receiver_4:Workhorse Receiver{barrel:Standard Barrel,ammo:FMJ},hopper:Manifold Hopper{ammo:FMJ}}");
         var p4 = BuildRules.Check(four);

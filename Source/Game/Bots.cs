@@ -55,6 +55,9 @@ public sealed partial class BotBrain
     public double ReloadUntil;
     public double NextFire;
     public int BurstLeft;
+
+    /// <summary>Its receivers' own triggers on a built weapon that fires them at their own rates (GameFireGroups.cs).</summary>
+    public FireGroupState? FireGroups;
     public bool CoverReload; // this reload should happen behind cover
     public byte MeleeTarget = byte.MaxValue; // who we've been within melee reach of (Melee.cs: BotTryMelee)
     public double MeleeCloseSince; // ...since then (the wind-up before a swing)
@@ -332,6 +335,7 @@ public sealed partial class Game
         var b = p.Bot!;
         b.ReloadUntil = now + def.Reload * StreakReloadMult(p, now) * Perks.ReloadMult(p.Perks) * FrenzyBuffs.Value(p, def, FrenzyStat.Reload); // Overdrive, Sleight of Hand, the LMG frenzy buff
         b.BurstLeft = 0;
+        b.FireGroups?.StopBursts();
         Audio.Reload(def, p.RenderEye);
         Net.Broadcast(ReloadFx(p.Id, def.Id), PacketReliability.Unreliable);
     }

@@ -610,6 +610,7 @@ public sealed class Player
     public double RespawnAt;
     public double LastShotTime = -10;
     public double ShotClock; // fire-rate budget (see Game.ServerResolveShot)
+    public readonly double[] GroupShotClock = new double[ReceiverFire.Max]; // per receiver, for builds that fire them at their own rates (GameFireGroups.cs)
     public double LastCombatTime = -100; // last time they shot or were shot (for instant loadout swaps)
     public byte WantPrimary = Weapons.DefaultPrimary.Id; // requested loadout, applied on (re)spawn
     public byte WantSecondary = Weapons.DefaultSecondary.Id;
