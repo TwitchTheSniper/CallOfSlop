@@ -36,7 +36,8 @@ public static partial class SelfTest
         var tops = new List<string>();
         foreach (var c in categories)
         {
-            // Its own cabinet: a body shape of its own (not the classic one), the classic footprint (about 0.9 x 0.7 m),
+            // Its own cabinet: a body shape of its own (not the classic one), the classic footprint (its back 0.4 m from a
+            // wall, 0.93 m from the next machine in the Arcade; tools/zombies/make_slot_cabinets.py checks the same),
             // solid, and the face where the game draws the reels (a reel window at y 1.3 in front of the body).
             var name = ZombiesMap.MachineProp.SlotMachineFor((int)c);
             if (Props.Find(name) is not { } def || basic == null || def.Collision != PropCollision.Solid)
@@ -50,7 +51,7 @@ public static partial class SelfTest
             var window = def.Parts.Any(p => MathF.Abs(p.Offset.Y - 1.3f) < 0.01f && p.Size.X >= 0.6f && p.Offset.Z < -0.26f);
             var inFront = def.Parts.Where(p => p.Bounds is var pb && pb.Center.Y + pb.Half.Y > 1.2f && pb.Center.Y - pb.Half.Y < 1.4f
                                                && MathF.Abs(pb.Center.X) - pb.Half.X < 0.25f && pb.Center.Z - pb.Half.Z < -0.29f).ToList();
-            if (lo.X < -0.56f || hi.X > 0.56f || lo.Z < -0.45f || hi.Z > 0.45f || hi.Y > 2.9f || !window || inFront.Count > 0 || Shape(def) == Shape(basic))
+            if (lo.X < -0.475f || hi.X > 0.535f || lo.Z < -0.415f || hi.Z > 0.405f || hi.Y > 2.9f || !window || inFront.Count > 0 || Shape(def) == Shape(basic))
                 badProps.Add($"{name} (bounds {lo} to {hi}, reel window {window}, {inFront.Count} parts over the reels)");
             shapes.Add(Shape(def));
             tops.Add($"{c} {hi.Y:0.00}");
