@@ -335,7 +335,7 @@ public sealed partial class Game
     private static Stance StanceOf(PveEnemy e) => e.Crouched ? Stance.Crouch : Stance.Stand;
 
     /// <summary>Server, per ray of a shot: the nearest living enemy the ray hits before <paramref name="dist"/> (rewound), or null.</summary>
-    private PveEnemy? PveRayHit(Vector3 o, Vector3 d, ref float dist, double rewindTo, out bool head)
+    private PveEnemy? PveRayHit(Vector3 o, Vector3 d, ref float dist, double rewindTo, out bool head, float grow = 0f)
     {
         head = false;
         PveEnemy? hit = null;
@@ -345,7 +345,7 @@ public sealed partial class Game
                 continue;
             var at = EnemyAt(e, rewindTo);
             var stance = StanceOf(e);
-            if (World.Hitbox(at, stance, e.Yaw).Raycast(o, d, dist) is { } t && t < dist)
+            if (World.Hitbox(at, stance, e.Yaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist) // grow: a fat round's radius
             {
                 dist = t;
                 hit = e;
@@ -480,14 +480,14 @@ public sealed partial class Game
     // ---- Client: hit prediction against what you see ------------------------------------------------------------
 
     /// <summary>Client: how far a ray goes before it hits an enemy as drawn (tracers, the hit marker), or <paramref name="dist"/>.</summary>
-    public float PveRayDrawn(Vector3 o, Vector3 d, float dist, out bool hit)
+    public float PveRayDrawn(Vector3 o, Vector3 d, float dist, out bool hit, float grow = 0f)
     {
         hit = false;
         foreach (var e in Enemies)
         {
             if (!e.Alive)
                 continue;
-            if (World.Hitbox(e.RenderPos, StanceOf(e), e.RenderYaw).Raycast(o, d, dist) is { } t && t < dist)
+            if (World.Hitbox(e.RenderPos, StanceOf(e), e.RenderYaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist)
             {
                 dist = t;
                 hit = true;

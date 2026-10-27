@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Marksman Barrel",
+  "category": "barrel",
+  "rarity": "epic",
+  "flavor": "A heavy free-floated match tube. The round leaves half again as fast and dead true: half the hip spread, much tighter aimed, slow to swing.",
+  "weight": 1.0,
+  "hand": [0, -0.03, -0.2],
+  "muzzles": [[0, 0, -0.5]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.5]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.028, 0.028, 0.5], "pos": [0, 0, -0.25], "color": "black"},
+    {"shape": "rod", "size": [0.034, 0.034, 0.08], "pos": [0, 0, -0.04], "color": "gunmetal"}
+  ],
+  "stats": [
+    {"stat": "bulletSpeed", "mul": 1.5},
+    {"stat": "hipSpreadDeg", "mul": 0.55},
+    {"stat": "adsSpreadMult", "mul": 0.65},
+    {"stat": "recoilDeg", "mul": 0.9},
+    {"stat": "adsTime", "add": 0.05},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

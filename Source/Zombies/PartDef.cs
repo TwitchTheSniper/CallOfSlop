@@ -443,6 +443,25 @@ public sealed class PartDef
     /// <summary>How many receivers a root grip holds (its "receiver" sockets).</summary>
     public int ReceiverCapacity => Sockets.Count(s => s.Type == "receiver");
 
+    /// <summary>How many barrel outputs this part has (a splitter's outputs; no allocation).</summary>
+    public int BarrelOutputs
+    {
+        get
+        {
+            var n = 0;
+            foreach (var s in Sockets)
+                if (s.Type == "barrel")
+                    n++;
+            return n;
+        }
+    }
+
+    /// <summary>
+    /// An offset splitter: a splitter with one output. It moves (and may turn) the barrel socket without adding barrels:
+    /// the whole shot goes through (1/1), there is no splay, and it never counts towards the splitter stacking limit.
+    /// </summary>
+    public bool IsOffset => Category == PartCategory.Splitter && BarrelOutputs == 1;
+
     /// <summary>The file it came from, relative to the Parts folder.</summary>
     public string? SourceFile;
 

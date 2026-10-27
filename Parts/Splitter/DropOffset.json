@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Drop Offset",
+  "category": "splitter",
+  "rarity": "uncommon",
+  "flavor": "Drops the barrel 4 cm, in line with your wrist. Same shot, less flip, slower to bring up.",
+  "weight": 0.3,
+  "split": {"splay": 0},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0, -0.04, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.034, 0.074, 0.05], "pos": [0, -0.02, -0.035], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 0.92},
+    {"stat": "adsTime", "add": 0.01}
+  ]
+}

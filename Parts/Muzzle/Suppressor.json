@@ -3,7 +3,7 @@
   "name": "Suppressor",
   "category": "muzzle",
   "rarity": "rare",
-  "flavor": "A can on the end. Quiet shots, dim flash, slightly less reach.",
+  "flavor": "A can on the end. Much quieter shots, dim flash, a touch less kick and reach.",
   "weight": 0.35,
   "flags": ["suppressed"],
   "muzzles": [[0, 0, -0.18]],
@@ -11,7 +11,8 @@
     {"shape": "rod", "size": [0.04, 0.04, 0.18], "pos": [0, 0, -0.09], "color": "gunmetal"}
   ],
   "stats": [
-    {"stat": "loudness", "mul": 0.5},
-    {"stat": "rangeM", "mul": 0.9}
+    {"stat": "loudness", "mul": 0.35},
+    {"stat": "recoilDeg", "mul": 0.9},
+    {"stat": "rangeM", "mul": 0.88}
   ]
 }

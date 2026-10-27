@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Needle Barrel",
+  "category": "barrel",
+  "rarity": "rare",
+  "flavor": "A long hair-thin bore. Rounds come out as needles at nearly twice the speed: they reach far, go through doors and barely kick, but each one stings less.",
+  "weight": 0.5,
+  "hand": [0, -0.03, -0.176],
+  "muzzles": [[0, 0, -0.44]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.44]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.026, 0.026, 0.06], "pos": [0, 0, -0.03], "color": "steel"},
+    {"shape": "rod", "size": [0.014, 0.014, 0.38], "pos": [0, 0, -0.25], "color": "steel"},
+    {"shape": "rod", "size": [0.02, 0.02, 0.02], "pos": [0, 0, -0.31], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "bulletSize", "mul": 0.5},
+    {"stat": "bulletSpeed", "mul": 1.7},
+    {"stat": "damage", "mul": 0.78},
+    {"stat": "penetrationMult", "mul": 1.8},
+    {"stat": "hipSpreadDeg", "mul": 0.75},
+    {"stat": "adsSpreadMult", "mul": 0.8},
+    {"stat": "recoilDeg", "mul": 0.75},
+    {"stat": "adsTime", "add": 0.02}
+  ]
+}

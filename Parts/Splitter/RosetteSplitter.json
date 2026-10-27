@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rosette Splitter",
+  "category": "splitter",
+  "rarity": "wonder",
+  "flavor": "Six outputs round a ring like the petals of a flower. A sixth each, and the pattern blooms as it flies.",
+  "weight": 1.5,
+  "split": {"splay": 3, "spreadMult": 0.55},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0.0, 0.05, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0.0433, 0.025, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [0.0433, -0.025, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0.0, -0.05, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [-0.0433, -0.025, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_6", "type": "barrel", "pos": [-0.0433, 0.025, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.135, 0.135, 0.05], "pos": [0, 0, -0.035], "color": "brass"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"},
+    {"shape": "rod", "size": [0.04, 0.04, 0.052], "pos": [0, 0, -0.035], "color": "accent"}
+  ],
+  "stats": []
+}

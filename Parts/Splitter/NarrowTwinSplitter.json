@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Narrow Twin Splitter",
+  "category": "splitter",
+  "rarity": "common",
+  "flavor": "Two outputs almost touching. Half a shot each, landing nearly in the same hole.",
+  "weight": 0.5,
+  "split": {"splay": 0, "spreadMult": 0.95},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [-0.018, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0.018, 0, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.08, 0.044, 0.05], "pos": [0.0, 0.0, -0.035], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": []
+}

@@ -66,12 +66,12 @@ public sealed class BuildNode
                 yield return n;
     }
 
-    /// <summary>Splitters between this node and the receiver.</summary>
+    /// <summary>Splitters between this node and the receiver (offset splitters, one output, don't count).</summary>
     public int SplitterDepth()
     {
         var d = 0;
         for (var p = Parent; p != null; p = p.Parent)
-            if (p.Part.Category == PartCategory.Splitter)
+            if (p.Part.Category == PartCategory.Splitter && !p.Part.IsOffset) // offset splitters only move the barrel
                 d++;
         return d;
     }

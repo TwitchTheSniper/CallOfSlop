@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Heavy Bore Barrel",
+  "category": "barrel",
+  "rarity": "uncommon",
+  "flavor": "A fat bore that throws a fatter, slower round: hits harder and wider, kicks more, gives up on walls sooner.",
+  "weight": 0.8,
+  "hand": [0, -0.03, -0.104],
+  "muzzles": [[0, 0, -0.26]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.26]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.034, 0.034, 0.26], "pos": [0, 0, -0.13], "color": "black"},
+    {"shape": "rod", "size": [0.04, 0.04, 0.06], "pos": [0, 0, -0.23], "color": "gunmetal"}
+  ],
+  "stats": [
+    {"stat": "bulletSize", "mul": 1.5},
+    {"stat": "bulletSpeed", "mul": 0.8},
+    {"stat": "damage", "mul": 1.2},
+    {"stat": "recoilDeg", "mul": 1.15},
+    {"stat": "penetrationMult", "mul": 0.8}
+  ]
+}

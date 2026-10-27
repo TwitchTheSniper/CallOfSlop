@@ -2,8 +2,8 @@ using System.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>One projectile of a shot: where it starts, where it goes, its damage and which barrel fired it.</summary>
-public readonly record struct ShotRay(Vector3 Origin, Vector3 Dir, float Damage, Vector2 Lateral, int Barrel);
+/// <summary>One projectile of a shot: where it starts, where it goes, its damage, which barrel fired it and how big the round is (<see cref="WeaponDef.BulletSize"/>).</summary>
+public readonly record struct ShotRay(Vector3 Origin, Vector3 Dir, float Damage, Vector2 Lateral, int Barrel, float Size = 1f);
 
 /// <summary>
 /// Firing support for built weapons (Zombies weapon builder): several barrels per weapon, each firing its own pellets
@@ -14,6 +14,32 @@ public sealed partial class Game
 {
     /// <summary>A barrel this far or more off the bore line (sideways or up) is pulled in to it (keeps rays out of walls next to you).</summary>
     public const float MaxBarrelOffset = 0.45f;
+
+    /// <summary>Metres of hit radius per unit of bullet size above 1 (a size-2 slug clips targets 6 cm off its line).</summary>
+    public const float RadiusPerSize = 0.06f;
+
+    /// <summary>The most hit radius any round gets (a size-4 cannon ball: 18 cm).</summary>
+    public const float MaxBulletRadius = 0.18f;
+
+    /// <summary>
+    /// How far off its line a round of <paramref name="size"/> (<see cref="WeaponDef.BulletSize"/>) still hits: 0 for the
+    /// stock round and anything smaller, then <see cref="RadiusPerSize"/> per unit of size. The server grows every target's
+    /// hit box by it for that ray (players, zombies, co-op enemies), and the shooter's drawn tracer does the same.
+    /// </summary>
+    public static float BulletRadius(float size) => Math.Clamp((size - 1f) * RadiusPerSize, 0f, MaxBulletRadius);
+
+    /// <summary>Metres per second a tracer of a stock-speed round would travel at if it were drawn travelling.</summary>
+    public const float TracerBaseSpeed = 320f;
+
+    /// <summary>
+    /// The speed (m/s) a round of <paramref name="speed"/> (<see cref="WeaponDef.BulletSpeed"/>) is drawn travelling at, or 0
+    /// for the usual instant streak. Only slow rounds (below 0.95) travel visibly: a Bloat Barrel's slug at 0.5 crawls out at
+    /// 160 m/s. The damage still lands at once (shots are hitscan); this is how a slow round reads.
+    /// </summary>
+    public static float TracerSpeed(float speed) => speed < 0.95f ? TracerBaseSpeed * MathF.Max(0.1f, speed) : 0f;
+
+    /// <summary>How much wider a round of <paramref name="size"/> draws its tracer and impact mark (1 for the stock round; 0.6x to 2.2x).</summary>
+    public static float SizeLook(float size) => Math.Clamp(MathF.Pow(MathF.Max(0.01f, size), 0.75f), 0.6f, 2.2f);
 
     /// <summary>
     /// The projectiles of one shot. <paramref name="seed"/> is the shot's seed (the client's shot counter), which also
@@ -28,7 +54,7 @@ public sealed partial class Game
         if (def.MuzzlePoints is not { Length: > 0 } pts)
         {
             for (var i = 0; i < def.Pellets; i++)
-                rays.Add(new ShotRay(origin, Weapons.SpreadDirection(dir, spread, seed, i), def.Damage, Vector2.Zero, 0));
+                rays.Add(new ShotRay(origin, Weapons.SpreadDirection(dir, spread, seed, i), def.Damage, Vector2.Zero, 0, def.BulletSize));
             return rays;
         }
 
@@ -75,7 +101,7 @@ public sealed partial class Game
                     d = Vector3.Normalize(dir + right * MathF.Tan(p.YawDeg * MathF.PI / 180f) + up * MathF.Tan(p.PitchDeg * MathF.PI / 180f));
                 var s = spread * p.SpreadMult;
                 for (var j = 0; j < p.Pellets; j++)
-                    rays.Add(new ShotRay(o, Weapons.SpreadDirection(d, s, seed, pellet++), def.Damage * p.DamageMult, lat, b));
+                    rays.Add(new ShotRay(o, Weapons.SpreadDirection(d, s, seed, pellet++), def.Damage * p.DamageMult, lat, b, p.Size));
             }
         }
         return rays;

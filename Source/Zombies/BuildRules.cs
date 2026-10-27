@@ -304,6 +304,15 @@ public static class BuildRules
     /// <summary>Splitters may feed splitters, but only this deep.</summary>
     public const int MaxSplitterDepth = 2;
 
+    /// <summary>
+    /// Whether <paramref name="part"/> (a splitter) under <paramref name="parent"/> would stack splitters more than
+    /// <see cref="MaxSplitterDepth"/> deep. Offset splitters (one output: they move the barrel, they don't split the shot)
+    /// never count, either as the new part or on the way up.
+    /// </summary>
+    public static bool SplitterTooDeep(BuildNode parent, PartDef part) =>
+        part.Category == PartCategory.Splitter && !part.IsOffset
+        && parent.SplitterDepth() + (parent.Part.Category == PartCategory.Splitter && !parent.Part.IsOffset ? 1 : 0) >= MaxSplitterDepth;
+
     /// <summary>Most projectiles one trigger pull may fire (barrels x pellets; a shot packet carries a byte count).</summary>
     public const int MaxProjectiles = 240;
 
@@ -394,7 +403,7 @@ public static class BuildRules
             if (hopper != null && part.Bores.Length > 0 && hopper.Part.Bores.Length > 0 && !part.Bores.Intersect(hopper.Part.Bores).Any())
                 return $"{part.Name} is made for {ListOr(part.Bores)} rounds; the {hopper.Part.Name} feeds {ListOr(hopper.Part.Bores)} rounds.";
         }
-        if (part.Category == PartCategory.Splitter && parent.SplitterDepth() + (parent.Part.Category == PartCategory.Splitter ? 1 : 0) >= MaxSplitterDepth)
+        if (SplitterTooDeep(parent, part))
             return $"Splitters only stack {MaxSplitterDepth} deep: the shot gets too thin.";
         return null;
     }
@@ -435,7 +444,7 @@ public static class BuildRules
             if (hopper != null && part.Bores.Length > 0 && hopper.Part.Bores.Length > 0 && !part.Bores.Intersect(hopper.Part.Bores).Any())
                 return $"needs {Article(part.Bores[0])} {ListOr(part.Bores)} bore shared feed";
         }
-        if (part.Category == PartCategory.Splitter && parent.SplitterDepth() + (parent.Part.Category == PartCategory.Splitter ? 1 : 0) >= MaxSplitterDepth)
+        if (SplitterTooDeep(parent, part))
             return $"splitters already stack {MaxSplitterDepth} deep";
         return null;
     }
@@ -518,10 +527,13 @@ public static class BuildRules
         var per = new List<int>();
         foreach (var r in b.Receivers)
         {
-            var barrels = WeaponBuild.BarrelsOf(r);
+            // Each barrel's own pellets (its barrel and muzzle device can split the round: a Fork Crown doubles it);
+            // rotary receivers fire one barrel per shot: the busiest one.
+            var pellets = BuildStats.PelletsPerBarrel(r);
             if (WeaponBuild.ActionOf(r)?.Kind == ActionKind.Rotary)
-                barrels = Math.Min(barrels, 1);
-            per.Add(barrels * BuildStats.PelletsOf(r));
+                per.Add(pellets.Count > 0 ? pellets.Max() : 0);
+            else
+                per.Add(pellets.Sum());
         }
         if (per.Count == 0)
             return 0;
