@@ -17,7 +17,7 @@ public static class Buildings
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder building folders are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Buildings");
+    public static string Folder => Path.Combine(AppFolders.Data, "Buildings");
 
     /// <summary>The folder name of the furnishing rules (Buildings/Furnishing).</summary>
     public const string FurnishingFolder = "Furnishing";

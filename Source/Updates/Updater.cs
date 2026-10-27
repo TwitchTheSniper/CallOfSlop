@@ -59,6 +59,12 @@ public sealed class Updater
     /// <summary>Can this platform start CallOfSlop.exe (Windows; the self-test turns it on with a fake <see cref="Launcher"/>)?</summary>
     public bool CanLaunchExe = OperatingSystem.IsWindows();
 
+    /// <summary>Can this platform open CallOfSlop.app (macOS; the self-test turns it on with a fake <see cref="Launcher"/>)?</summary>
+    public bool CanLaunchApp = OperatingSystem.IsMacOS();
+
+    /// <summary>Which download in update.json this build installs (UpdateManifest.CurrentPlatform; the self-test plays a Mac).</summary>
+    public string Platform = UpdateManifest.CurrentPlatform;
+
     /// <summary>The installed build started: the game should save and quit (Program polls it).</summary>
     public volatile bool QuitRequested;
 
@@ -200,7 +206,13 @@ public sealed class Updater
             return;
         }
         var release = ReleaseInfo.Parse(cache.ReleaseJson, out var why);
-        var manifest = release == null ? null : UpdateManifest.Parse(cache.ManifestJson, out why);
+        var manifest = release == null ? null : UpdateManifest.Parse(cache.ManifestJson, out why, Platform);
+        if (release != null && manifest == null && why.StartsWith(UpdateManifest.NoDownloadForPlatform, StringComparison.Ordinal))
+        {
+            // A Windows-only release seen from a Mac: nothing to install here (not an error).
+            Set(UpdateState.UpToDate, $"The newest release ({release.Tag}) has no download for this computer yet; you have v{BuildInfo.Version}.");
+            return;
+        }
         if (release == null || manifest == null)
         {
             Set(UpdateState.Failed, $"The newest release can't be used by the updater ({why}).");
@@ -211,7 +223,7 @@ public sealed class Updater
             Set(UpdateState.Failed, $"The newest release's tag ({release.Tag}) doesn't match its update.json (v{manifest.Version}).");
             return;
         }
-        if (release.ZipAssetName == manifest.FileName && release.ZipAssetSize > 0 && release.ZipAssetSize != manifest.Size)
+        if (release.ZipSize(manifest.FileName) is > 0 and var assetSize && assetSize != manifest.Size)
         {
             Set(UpdateState.Failed, "The newest release's zip isn't the size its update.json says.");
             return;
@@ -309,6 +321,12 @@ public sealed class Updater
             Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)}; start it yourself (this isn't Windows).");
             return;
         }
+        if (!CanLaunchApp && game.EndsWith(".app", StringComparison.OrdinalIgnoreCase))
+        {
+            Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)}; start it yourself (this isn't a Mac).");
+            return;
+        }
+        var name = Path.GetFileName(game);
         Set(UpdateState.Launching, $"Starting v{m.Version}...");
         bool started;
         try
@@ -317,12 +335,12 @@ public sealed class Updater
         }
         catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException or IOException)
         {
-            Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)} but couldn't start it ({Short(ex)}). Start CallOfSlop.exe there yourself.");
+            Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)} but couldn't start it ({Short(ex)}). Start {name} there yourself.");
             return;
         }
         if (!started)
         {
-            Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)} but couldn't start it. Start CallOfSlop.exe there yourself.");
+            Set(UpdateState.Failed, $"Installed v{m.Version} in {Path.GetDirectoryName(game)} but couldn't start it. Start {name} there yourself.");
             return;
         }
         Console.WriteLine($"[update] started {game}; this build quits now (the new build removes old versions once it reaches its menu, see UpdateCleanup.cs)");

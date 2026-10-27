@@ -26,7 +26,7 @@ public static partial class Props
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder prop files are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Props");
+    public static string Folder => Path.Combine(AppFolders.Data, "Props");
 
     /// <summary>Goes up by one on every <see cref="Reload"/> (the renderer rebuilds its meshes).</summary>
     public static int Generation { get; private set; }

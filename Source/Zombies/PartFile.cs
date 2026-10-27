@@ -735,7 +735,7 @@ public static partial class Parts
     /// <summary>Problems found while loading (bad files are skipped). Shown on the workbench and in the log.</summary>
     public static readonly List<string> LoadErrors = new();
 
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Parts");
+    public static string Folder => Path.Combine(AppFolders.Data, "Parts");
 
     /// <summary>Every part, sorted by category, tier, then name.</summary>
     public static PartDef[] All

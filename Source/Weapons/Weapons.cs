@@ -358,7 +358,7 @@ public static class Weapons
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder weapon files are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Weapons");
+    public static string Folder => Path.Combine(AppFolders.Data, "Weapons");
 
     /// <summary>
     /// The weapon ids before weapons became files (ids were positions in the old code list). Old progress.txt

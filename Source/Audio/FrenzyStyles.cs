@@ -82,7 +82,7 @@ public static class FrenzyStyles
     public const string Format = "call-of-slop-frenzy-classes/1";
 
     /// <summary>The per-class data file.</summary>
-    public static string FilePath => Path.Combine(AppContext.BaseDirectory, "Weapons", "Frenzy", "classes.json");
+    public static string FilePath => Path.Combine(AppFolders.Data, "Weapons", "Frenzy", "classes.json");
 
     /// <summary>Problems found by the last <see cref="Load"/> (for the log and the self-test).</summary>
     public static readonly List<string> LoadErrors = new();

@@ -109,7 +109,7 @@ public static class UpdateCleanup
     /// <summary>The build folder this exe lives in: the install root's child that holds it.</summary>
     public static string CurrentBuildFolder(string exeFolder)
     {
-        var self = Path.TrimEndingDirectorySeparator(Path.GetFullPath(exeFolder));
+        var self = Path.TrimEndingDirectorySeparator(Path.GetFullPath(UpdateInstaller.GameFolder(exeFolder))); // a Mac bundle: the folder holding the .app
         var root = UpdateInstaller.InstallRoot(self);
         return Path.GetDirectoryName(self) is { } parent && !SavePaths.SameFolder(parent, root) ? parent : self;
     }

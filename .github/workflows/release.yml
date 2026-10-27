@@ -12,6 +12,15 @@
 # the zip and update.json (version, build, git sha, protocol, zip URL, size, SHA-256, notes, minimum updater version).
 # Uses only the built-in GITHUB_TOKEN. NuGet packages come from the Actions cache (same approach as build.yml); a cold
 # Windows cache restores once from nuget.org. Nothing here contacts the BRUTAL author's own servers.
+#
+# Mac (Apple Silicon) download, SWITCHED OFF: the "mac" job only runs when this run's "mac" box is ticked or the repository
+# variable MAC_RELEASE_ENABLED is 'true' (neither is, until the developer says go). Off, the run is exactly the Windows
+# release above. On, a macos-latest job runs alongside the Windows one: build, the full headless self-test, a
+# self-contained osx-arm64 publish wrapped as CallOfSlop.app (tools/mac/package_mac.sh), baked maps, a check of the app
+# itself, the zip and the game's own --verify-update; then "publish-mac" (only after the Windows release is published, and
+# never on a dry run) attaches CallOfSlop-<version>-mac.zip and adds its "platforms": {"osx-arm64": ...} entry to the
+# release's update.json, which Mac builds read and Windows builds ignore. A dry run with the box ticked (Run workflow on
+# any branch, dry run + mac) proves the Mac path without publishing anything.
 name: Release
 
 on:
@@ -27,6 +36,10 @@ on:
         default: ""
       dry_run:
         description: "Dry run: build, test, package and verify, but don't publish a release"
+        type: boolean
+        default: false
+      mac:
+        description: "Also build the Mac (Apple Silicon) download. OFF until the developer says go; with dry run it only builds and tests"
         type: boolean
         default: false
   push:
@@ -204,3 +217,229 @@ jobs:
             -R "${{ github.repository }}" --title "Call of Slop v$v" --notes-file release-notes.md --target "${{ github.sha }}" --latest
           if ($LASTEXITCODE -ne 0) { exit 1 }
           Write-Output "::notice title=Released::https://github.com/${{ github.repository }}/releases/tag/${{ steps.ver.outputs.tag }}"
+
+  # ---- Mac (Apple Silicon), switched off ------------------------------------------------------------------------------
+  # Runs alongside the Windows job (it never waits for it, and the Windows job never waits for this one). Off unless this
+  # run's "mac" input is ticked or the repository variable MAC_RELEASE_ENABLED is 'true'.
+  mac:
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.mac) || vars.MAC_RELEASE_ENABLED == 'true' }}
+    runs-on: macos-latest
+    env:
+      DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) }}
+      INPUT_VERSION: ${{ inputs.version }}
+      PACKAGE_SHA: ${{ github.sha }}
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      # Its own cache key (the osx-arm64 runtime packs); a cold cache restores once from nuget.org.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: nuget-${{ runner.os }}-publish-${{ hashFiles('**/*.csproj') }}
+          restore-keys: nuget-${{ runner.os }}-
+
+      # The same version as the Windows job (same tag, input or date + run number; publish-mac checks they match).
+      - name: Version
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then v="${GITHUB_REF_NAME#[vV]}"
+          elif [ -n "$(echo "$INPUT_VERSION" | tr -d '[:space:]')" ]; then v="$(echo "$INPUT_VERSION" | tr -d '[:space:]')"; v="${v#[vV]}"
+          else v="0.$(date -u +%Y).$(( $(date -u +%-m) * 100 + $(date -u +%-d) )).${{ github.run_number }}"; fi
+          if ! echo "$v" | grep -Eq '^0\.20[2-9][0-9]\.[1-9][0-9]{2,3}\.(0|[1-9][0-9]*)$'; then
+            echo "::error title=Version::'$v' isn't 0.YYYY.MDD.N"; exit 1
+          fi
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "tag=v$v" >> "$GITHUB_OUTPUT"
+          echo "::notice title=Mac version::v$v (dry run: $DRY_RUN)"
+
+      # The csproj targets x64 (Windows, Linux); Apple Silicon builds override it on the command line (the csproj and
+      # its package references stay as they are).
+      - name: Build
+        run: dotnet build CallOfSlop.csproj -c Release -nologo -p:PlatformTarget=arm64 -p:Version=${{ steps.ver.outputs.version }} -p:InformationalVersion=${{ steps.ver.outputs.version }}
+
+      - name: Self-test
+        shell: bash
+        run: |
+          # Always the FULL suite (never --selftest-only). The exit code is the failure count.
+          dir=bin/Release/net10.0
+          set +e
+          dotnet "$dir/CallOfSlop.dll" --selftest
+          code=$?
+          set -e
+          log="$dir/selftest.log"
+          if [ -f "$log" ]; then
+            done_line=$({ grep '^DONE' "$log" || true; } | tail -1)
+            [ -n "$done_line" ] && echo "::notice title=Mac self-test::$done_line"
+            if [ -z "$done_line" ] || echo "$done_line" | grep -q FILTERED; then echo "::error title=Mac self-test::the release needs a complete, unfiltered self-test run"; code=1; fi
+            { grep 'FAIL:' "$log" || true; } | head -60 | while read -r l; do echo "::error title=Mac self-test::$l"; done
+          else
+            echo "::error title=Mac self-test::selftest.log was not written"; code=1
+          fi
+          if [ "$code" -ne 0 ]; then echo "::error title=Mac self-test::exit code $code, no Mac download"; exit 1; fi
+
+      - name: Upload self-test log
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: mac-selftest-${{ steps.ver.outputs.version }}
+          path: |
+            bin/Release/net10.0/selftest.log
+            bin/Release/net10.0/callofslop.log
+          if-no-files-found: ignore
+
+      - name: Package (publish osx-arm64)
+        run: tools/mac/package_mac.sh publish "${{ steps.ver.outputs.version }}" "${{ steps.ver.outputs.tag }}"
+
+      # Baked maps and nav graphs, as on Windows (the bakes carry the build id and platform, so these are the Mac's own).
+      - name: Bake maps and nav graphs
+        shell: bash
+        run: |
+          dir=bin/package-mac/CallOfSlop
+          set +e
+          "$dir/CallOfSlop" --bake "$dir/Baked"
+          code=$?
+          set -e
+          if [ -f "$dir/callofslop.log" ]; then
+            { grep '\[bake\]' "$dir/callofslop.log" || true; } | while read -r l; do
+              if echo "$l" | grep -q FAILED; then echo "::error title=Bake::$l"; elif echo "$l" | grep -q "maps baked"; then echo "::notice title=Mac bake::$l"; fi
+            done
+            rm -f "$dir/callofslop.log" # (the package has no logs)
+          fi
+          if [ "$code" -ne 0 ]; then echo "::error title=Bake::$code map(s) failed to bake"; exit 1; fi
+
+      - name: Make CallOfSlop.app
+        run: tools/mac/package_mac.sh bundle "${{ steps.ver.outputs.version }}" "${{ steps.ver.outputs.tag }}"
+
+      # The app as players get it: its own program finds its data in Contents/Resources, writes its logs to
+      # ~/Library/Logs/CallOfSlop and its saves to ~/Library/Application Support (never into the bundle: the signature
+      # must still verify afterwards), and runs a few sections that load every map, the natives and the Mac rules.
+      - name: Check the app
+        shell: bash
+        run: |
+          app=bin/package-mac/CallOfSlop/CallOfSlop.app
+          set +e
+          "$app/Contents/MacOS/CallOfSlop" --selftest-only "Mac release, Branding, Maps, Map bake, Packets, Sound"
+          code=$?
+          set -e
+          log="$HOME/Library/Logs/CallOfSlop/selftest.log"
+          if [ -f "$log" ]; then
+            { grep -E '^DONE|FAIL:|^manifests:|^folders:|^install:' "$log" || true; } | while read -r l; do
+              if echo "$l" | grep -q 'FAIL:'; then echo "::error title=App check::$l"; else echo "::notice title=App check::$l"; fi
+            done
+          else
+            echo "::error title=App check::no selftest.log in ~/Library/Logs/CallOfSlop"; code=1
+          fi
+          codesign --verify --deep --strict --verbose=2 "$app" || { echo "::error title=App check::the bundle changed while it ran (its signature no longer verifies)"; code=1; }
+          lipo -archs "$app/Contents/MacOS/CallOfSlop"
+          spctl --assess --type execute --verbose=4 "$app" 2>&1 || echo "::notice title=Gatekeeper::not notarised (expected: players confirm the first launch, READ ME FIRST.txt)"
+          if [ "$code" -ne 0 ]; then exit 1; fi
+
+      # Optional Developer ID signing and notarisation, so macOS opens the app without the first-launch prompt. SKIPPED
+      # unless the repository variable MAC_SIGNING_ENABLED is 'true'. To turn it on (an Apple Developer account), add:
+      #   Repository variables: MAC_SIGNING_ENABLED = true, MAC_SIGNING_IDENTITY ("Developer ID Application: Name (TEAMID)")
+      #   Repository secrets:   MAC_CERT_P12_BASE64 (the Developer ID certificate + key, base64), MAC_CERT_PASSWORD,
+      #                         MAC_NOTARY_APPLE_ID, MAC_NOTARY_TEAM_ID, MAC_NOTARY_PASSWORD (an app-specific password)
+      # It re-signs every file with the hardened runtime and tools/mac/CallOfSlop.entitlements, notarises and staples.
+      - name: Sign and notarise CallOfSlop.app (optional)
+        if: ${{ vars.MAC_SIGNING_ENABLED == 'true' }}
+        shell: bash
+        env:
+          CERT_P12: ${{ secrets.MAC_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+          IDENTITY: ${{ vars.MAC_SIGNING_IDENTITY }}
+          NOTARY_APPLE_ID: ${{ secrets.MAC_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.MAC_NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MAC_NOTARY_PASSWORD }}
+        run: |
+          app=bin/package-mac/CallOfSlop/CallOfSlop.app
+          kc="$RUNNER_TEMP/signing.keychain-db"
+          echo "$CERT_P12" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p ci "$kc" && security set-keychain-settings "$kc" && security unlock-keychain -p ci "$kc"
+          security import "$RUNNER_TEMP/cert.p12" -k "$kc" -P "$CERT_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k ci "$kc"
+          security list-keychains -d user -s "$kc"
+          find "$app/Contents/MacOS" -type f ! -path "$app/Contents/MacOS/CallOfSlop" -print0 \
+            | xargs -0 -n 50 codesign --force --timestamp --options runtime --entitlements tools/mac/CallOfSlop.entitlements --sign "$IDENTITY"
+          codesign --force --timestamp --options runtime --entitlements tools/mac/CallOfSlop.entitlements --sign "$IDENTITY" "$app"
+          ditto -c -k --keepParent "$app" "$RUNNER_TEMP/notarise.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarise.zip" --apple-id "$NOTARY_APPLE_ID" --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+          xcrun stapler staple "$app"
+
+      - name: Package (zip)
+        run: tools/mac/package_mac.sh zip "${{ steps.ver.outputs.version }}" "${{ steps.ver.outputs.tag }}"
+
+      - name: Verify with the game's updater
+        shell: bash
+        run: |
+          # The game's own updater checks the Mac zip as a Mac would: the manifest's osx-arm64 entry, size, SHA-256, a safe
+          # unzip, an executable program in CallOfSlop.app, the data in Contents/Resources, Info.plist with this version.
+          v="${{ steps.ver.outputs.version }}"
+          out=bin/package-mac
+          python3 - "$out/update-mac.json" "$v" > "$out/update-check.json" <<'PY'
+          import json, re, sys
+          mac = json.load(open(sys.argv[1]))
+          src = open("Source/Net/ServerBrowser.cs").read()
+          protocol = int(re.search(r"ProtocolVersion = (\d+);", src).group(1))
+          v = sys.argv[2]
+          print(json.dumps({"format": 1, "version": v, "build": int(v.split(".")[3]), "protocol": protocol,
+                            "url": mac["url"], "size": mac["size"], "sha256": mac["sha256"], "notes": "check", "minUpdater": 1,
+                            "platforms": {"osx-arm64": mac}}, indent=2))
+          PY
+          dir=bin/Release/net10.0
+          set +e
+          dotnet "$dir/CallOfSlop.dll" --verify-update "$out/update-check.json" "$out/CallOfSlop-$v-mac.zip" --platform osx-arm64
+          code=$?
+          set -e
+          { grep '\[verify-update\]' "$dir/callofslop.log" || true; } | while read -r l; do
+            if echo "$l" | grep -q 'PROBLEM:'; then echo "::error title=Mac verify::$l"; else echo "::notice title=Mac verify::$l"; fi
+          done
+          rm -f "$out/update-check.json"
+          exit $code
+
+      - name: Upload Mac package
+        uses: actions/upload-artifact@v6
+        with:
+          name: CallOfSlop-${{ steps.ver.outputs.version }}-mac
+          path: |
+            bin/package-mac/CallOfSlop-${{ steps.ver.outputs.version }}-mac.zip
+            bin/package-mac/update-mac.json
+
+  # Attaches the Mac zip to the release the Windows job just published and adds its entry to update.json. Only when the
+  # Mac download is switched on, both jobs passed and this isn't a dry run. If the Mac job failed, the Windows release
+  # stands as it is (Macs are told there's no Mac download).
+  publish-mac:
+    needs: [release, mac]
+    if: ${{ ((github.event_name == 'workflow_dispatch' && inputs.mac) || vars.MAC_RELEASE_ENABLED == 'true') && !((github.event_name == 'workflow_dispatch' && inputs.dry_run) || (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/'))) }}
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      V: ${{ needs.mac.outputs.version }}
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: CallOfSlop-${{ needs.mac.outputs.version }}-mac
+          path: mac
+
+      - name: Attach the Mac download
+        shell: bash
+        run: |
+          tag="v$V"
+          gh release download "$tag" -R "${{ github.repository }}" -p update.json -D windows
+          if [ "$(jq -r .version windows/update.json)" != "$V" ]; then
+            echo "::error title=Mac::the release's update.json is v$(jq -r .version windows/update.json), the Mac build v$V (built either side of midnight UTC?); no Mac download attached"
+            exit 1
+          fi
+          jq --slurpfile mac mac/update-mac.json '.platforms = ((.platforms // {}) + {"osx-arm64": $mac[0]})' windows/update.json > update.json
+          gh release upload "$tag" -R "${{ github.repository }}" "mac/CallOfSlop-$V-mac.zip"
+          gh release upload "$tag" -R "${{ github.repository }}" update.json --clobber
+          gh release view "$tag" -R "${{ github.repository }}" --json body -q .body > notes.md
+          printf '\n\n**Mac (Apple Silicon, macOS 14+):** download CallOfSlop-%s-mac.zip, unzip it and read READ ME FIRST.txt (the first launch needs one confirmation). Macs and PCs on the same version play together.\n' "$V" >> notes.md
+          gh release edit "$tag" -R "${{ github.repository }}" --notes-file notes.md
+          echo "::notice title=Mac::attached CallOfSlop-$V-mac.zip and its update.json entry"

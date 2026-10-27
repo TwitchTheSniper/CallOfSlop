@@ -89,6 +89,7 @@ public static partial class SelfTest
     {
         var temp = Path.Combine(Path.GetTempPath(), $"callofslop-selftest-updates-{Guid.NewGuid():N}");
         Directory.CreateDirectory(temp);
+        UpdateManifest.PlatformOverride = "win-x64"; // the same checks on every runner, a Mac's included (SelfTestMac.cs has the Mac's own)
         try
         {
             UpVersions();
@@ -101,6 +102,7 @@ public static partial class SelfTest
         }
         finally
         {
+            UpdateManifest.PlatformOverride = null;
             try
             {
                 Directory.Delete(temp, recursive: true); // the self-test's own temp folder

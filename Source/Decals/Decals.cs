@@ -28,7 +28,7 @@ public static partial class Decals
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder decal files are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Decals");
+    public static string Folder => Path.Combine(AppFolders.Data, "Decals");
 
     /// <summary>Goes up by one on every <see cref="Reload"/> (the renderer rebuilds its atlas and the maps' decal meshes).</summary>
     public static int Generation { get; private set; }

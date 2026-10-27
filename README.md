@@ -15,6 +15,7 @@ Pick a loadout from 50 weapons and a map from 8 blocky prototype maps, then frag
 
 - .NET 10 SDK
 - Windows x64 or Linux x64, a GPU with OpenGL 4.1, and speakers or headphones
+- macOS: Apple Silicon (M1 or newer) with macOS 14 or newer. The Mac download is built and tested but **not shipped yet**; see [Mac (Apple Silicon)](#mac-apple-silicon-not-yet-shipped)
 - Internet access the first time you build (NuGet restores the BRUTAL packages)
 
 ## Play
@@ -940,18 +941,30 @@ Release builds check GitHub for a newer release and can install it from inside t
 
 Code signing (optional, off): set the repository variable `SIGNING_ENABLED=true`, the variables `AZURE_SIGNING_ENDPOINT`, `AZURE_SIGNING_ACCOUNT`, `AZURE_SIGNING_PROFILE` and the secrets `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET` (details in the workflow's comments).
 
-`update.json` fields: `version`, `build`, `sha` (git commit), `protocol` (ServerInfo.ProtocolVersion), `url` (the zip's release URL), `size`, `sha256`, `notes`, `minUpdater` (a release that needs a newer updater than the player's game is offered as a manual download), `published`.
+`update.json` fields: `version`, `build`, `sha` (git commit), `protocol` (ServerInfo.ProtocolVersion), `url` (the zip's release URL), `size`, `sha256`, `notes`, `minUpdater` (a release that needs a newer updater than the player's game is offered as a manual download), `published`. The top-level `url` / `size` / `sha256` are always the Windows zip. A release with a Mac download also has `"platforms": {"osx-arm64": {"url", "size", "sha256"}}`: Mac builds take that entry (checked exactly like the top-level one) and never the Windows zip, and say "no download for this computer yet" when a release has none; Windows builds ignore it.
+
+### Mac (Apple Silicon): not yet shipped
+
+The Mac build is ready but **switched off**: releases are Windows only until the developer turns it on.
+
+- **What players get:** `CallOfSlop-<version>-mac.zip` holding a `CallOfSlop` folder with `CallOfSlop.app`, `READ ME FIRST.txt` (`tools/mac/TESTERS-MAC.txt`), `MOVING YOUR SAVES.txt` and `NOTICE.txt`. Apple Silicon only (osx-arm64, self-contained, no Intel build), macOS 14 or newer.
+- **Inside the app:** the program, .NET and the BRUTAL natives (GLFW, OpenGL loader, ImGui, OpenAL Soft, RakNet, meshoptimizer, stb...) in `Contents/MacOS`; the game data (`Maps`, `Weapons`, `Parts`, `Props`, `Baked`, ...) in `Contents/Resources`, where `Source/App/AppFolders.cs` finds it; `Info.plist` with the version, the icon (`tools/mac/AppIcon.png`, drawn by `tools/mac/make_icon.py`), and the microphone (voice chat) and local network (UPnP) prompts. A plain build folder on a Mac (dev builds, CI) keeps everything side by side, as on Linux.
+- **Where things go on a Mac:** saves in `~/Library/Application Support/CallOfSlop`, logs (`callofslop.log`, `selftest.log`) in `~/Library/Logs/CallOfSlop` (the app never writes into its own bundle: a downloaded app may run from a read-only copy), updates in `~/Library/Application Support/CallOfSlop/Builds`. **Settings > Player > Open save folder** opens Finder.
+- **Not signed by Apple (yet):** the bundle is ad-hoc signed, so the first launch needs one confirmation: macOS 15+ **System Settings > Privacy & Security > Open Anyway**, macOS 14 right-click > **Open** (READ ME FIRST.txt has the steps, and the `xattr -dr com.apple.quarantine` fallback). Moving the folder out of Downloads with Finder first stops macOS running it from a read-only copy.
+- **Platform details:** OpenGL 4.1 core with `#version 330` shaders (the most macOS offers; nothing newer is used). Retina: the 3D view renders at the full framebuffer size, and the menus scale with the window height in points, so a Retina Mac gets the same UI size as a 1x screen, drawn sharp. Text boxes use Cmd+C / Cmd+V (ImGui's Mac behaviour); game binds are the same keys as on Windows (Left Ctrl crouches). The mouse is captured with GLFW's disabled cursor (no raw mouse motion on macOS). UPnP and STUN are plain sockets and work unchanged. The updater downloads the Mac zip, unzips it, makes sure the program is executable and opens the new `CallOfSlop.app` with `open -n`.
+- **Building on a Mac:** `dotnet build -c Release -p:PlatformTarget=arm64` (the csproj says x64 for Windows and Linux; the command line overrides it, so the csproj stays untouched), then `dotnet bin/Release/net10.0/CallOfSlop.dll`. The app: `tools/mac/package_mac.sh publish|bundle|zip <version>` (needs pwsh; see the script's header).
+- **Release workflow:** the `mac` job in `.github/workflows/release.yml` runs on `macos-latest` alongside the Windows job when the run's **mac** box is ticked or the repository variable `MAC_RELEASE_ENABLED` is `true`: build, the full self-test, publish, bake, `CallOfSlop.app`, a check of the app itself (a few self-test sections run by the app's own program, then its signature must still verify), zip, and the game's own `--verify-update ... --platform osx-arm64`. `publish-mac` then attaches the zip and adds the `platforms.osx-arm64` entry to the release's `update.json` (never on a dry run). Off, the release is exactly the Windows one. To try it without publishing: **Run workflow** with **Dry run** and **mac** ticked. Developer ID signing and notarisation is a skipped step like the Windows one (`MAC_SIGNING_ENABLED`, details in the workflow's comments, entitlements in `tools/mac/CallOfSlop.entitlements`).
 
 ## Where your saves live
 
 Your own files (`progress.txt` with level, XP, weapon XP and prestige; `loadout.txt` with loadouts; `appearance.txt` with your hat and look; `settings.txt`; `workbench.txt`; audio mixes `audio_mix.json` and `AudioMixes/`) are kept in a **save folder outside the game**, so they **carry over to every new build automatically**:
 
-- **Windows:** `%APPDATA%\CallOfSlop\` (paste that into Explorer's address bar), **Linux:** `~/.local/share/CallOfSlop/`.
+- **Windows:** `%APPDATA%\CallOfSlop\` (paste that into Explorer's address bar), **macOS:** `~/Library/Application Support/CallOfSlop/`, **Linux:** `~/.local/share/CallOfSlop/`.
 - **Settings > Player > Saves** shows the folder and has an **Open save folder** button.
 - **Portable mode:** put an empty `portable.txt` next to `CallOfSlop.exe` and the saves stay next to the game (USB sticks, dev copies). **`--save-dir <path>`** on the command line uses any folder (it wins over both).
 - **Moving from an older build:** older builds kept the saves next to the game. On startup, any save the save folder doesn't have yet is **copied** from next to the game (`[saves] migrated progress.txt from <folder>` in `callofslop.log`); on the very first run of a freshly unzipped build it also looks for your most recent other Call of Slop build beside it (sibling folders, e.g. the previous tester zip) and copies from there. The originals are never moved or deleted. If both have a file, the save folder's copy wins and the other one is left alone (logged).
 - **Safe saving:** every save is written to a temp file and swapped in, so a crash can't leave half a file, and the previous save is kept as `NAME.bak` (e.g. `progress.txt.bak`). A damaged save loads its backup (the damaged copy is kept as `NAME.corrupt`). Each file starts with a `version=1` line; files without one (older builds) load exactly as before, and a save written by a *newer* build than the one you're running is never saved over (the lobby and Settings > Player say so).
-- Game data (maps, weapons, props, `classes.json`, `hats.json`, ...) stays next to the game, as does `callofslop.log`. The smoke test (`--smoketest`) plays with a throwaway copy of your saves in the temp folder, and the self-test uses its own temp folder, so neither can change your progress.
+- Game data (maps, weapons, props, `classes.json`, `hats.json`, ...) stays next to the game, as does `callofslop.log` (in the Mac app: data in `CallOfSlop.app/Contents/Resources`, logs in `~/Library/Logs/CallOfSlop`). The smoke test (`--smoketest`) plays with a throwaway copy of your saves in the temp folder, and the self-test uses its own temp folder, so neither can change your progress.
 
 ## Development and version control
 

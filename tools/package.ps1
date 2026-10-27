@@ -83,6 +83,8 @@ if ($Step -ne "zip") {
         "-o", $folder, "-nologo"
     )
     if ($Sha -ne "") { $publishArgs += "-p:SourceRevisionId=$Sha" }
+    # The csproj says x64 (win-x64, linux-x64); an Apple Silicon publish (tools/mac/package_mac.sh) overrides it here.
+    if ($Runtime -like "*-arm64") { $publishArgs += "-p:PlatformTarget=arm64" }
     $ErrorActionPreference = "Continue" # dotnet may write warnings to stderr; its exit code decides
     & dotnet @publishArgs *> $log
     $publishExit = $LASTEXITCODE
@@ -100,7 +102,7 @@ if ($Step -ne "zip") {
     if (Test-Path (Join-Path $folder "Cache")) { Remove-Item -Recurse -Force (Join-Path $folder "Cache") } # the game's own cache (portable mode: cached maps and nav graphs)
     Copy-Item -Force "tools/TESTERS.txt" (Join-Path $folder "READ ME FIRST.txt")
     Copy-Item -Force "tools/MIGRATING.md" (Join-Path $folder "MOVING YOUR SAVES.txt") # how to bring progression over from an older build
-    Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") # a server list for friends (README, Playing with friends)
+    if ($Runtime -like "win-*") { Copy-Item -Force "tools/RunServerList.bat" (Join-Path $folder "RunServerList.bat") } # a server list for friends (README, Playing with friends)
     Copy-Item -Force "tools/masters.txt" (Join-Path $folder "masters.txt") # server lists shipped with the zip (Settings.ShippedMasters)
     if (-not (Test-Path (Join-Path $folder "CallOfSlop.exe")) -and $Runtime -like "win-*") { Fail "CallOfSlop.exe wasn't published" }
 }

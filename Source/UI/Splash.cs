@@ -85,7 +85,7 @@ public static unsafe class Splash
     private static void Load()
     {
         _loaded = true;
-        var path = Path.Combine(AppContext.BaseDirectory, LogoFile);
+        var path = Path.Combine(AppFolders.Data, LogoFile);
         try
         {
             var (w, h, rgba) = Png.Decode(File.ReadAllBytes(path));

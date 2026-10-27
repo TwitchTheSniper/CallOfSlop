@@ -566,7 +566,7 @@ public static partial class Maps
     public static readonly List<string> LoadErrors = new();
 
     /// <summary>The folder map files are loaded from (next to the game).</summary>
-    public static string Folder => Path.Combine(AppContext.BaseDirectory, "Maps");
+    public static string Folder => Path.Combine(AppFolders.Data, "Maps");
 
     /// <summary>
     /// Every map in the Maps folder, sorted by "order" then name, and the packs they belong to.
