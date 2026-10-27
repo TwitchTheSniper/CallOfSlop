@@ -136,6 +136,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
     //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
     //     a crawler), 11-13 bytes a zombie.
+    // 66: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
+    //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
     // 67: Modular grenades (Source/Game/GameGrenades.cs): builds in the Zombies grenade slot (Msg.ZBuild slot 5);
     //     ThrowableKind.Built; Msg.Throw of a built grenade ends with the cook time (1/50 s), Msg.ProjSpawn with what it is
     //     (thrown, bomblet, aftershock) and Msg.Explode with the payload, radius and duration (tenths) and that byte;

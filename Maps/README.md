@@ -544,7 +544,7 @@ Positions are world coordinates, `[x, y, z]` (or `[x, z]` on the ground); a box 
 | `teleport` | `at`, `yaw` | `sent` | `send` (moves whoever set the signal off) |
 | `breakable` | `at` (the breakable prop placed nearest it, within 1.5 m) | `destroyed` (however it broke) | `destroy` |
 | `zdoor` | `door` (a Zombies door or debris by name) | `opened` (bought or opened) | `open` (free); `disable` locks it |
-| `zmachine` | `machine` (`power`, `box`, `perk`, `slotUpgrade`, `slotMachine`, `wallBuy`, `bench`, `salvage`), `at` (which one, when there are several) | `used` (a buy went through) | `disable` locks it |
+| `zmachine` | `machine` (`power`, `box`, `perk`, `slotUpgrade`, `slotMachine`, `wallBuy`, `bench`, `salvage`, `casino`), `at` (which one, when there are several) | `used` (a buy went through) | `disable` locks it |
 | `challenge` | `seconds` (to survive), `zone` (a zone or plate its players must stay in; leave it out: anywhere), `who`, `reward` (Zombies points each survivor gets) | `started` (n: how many took it on: everyone alive, standing and in the zone), `survived` (the time ran out with someone still in it; n: how many), `failed` (everyone in it went down, died or left the zone, or `fail`), `ended` (value: survived) | `start`, `stop` / `fail` (it fails), `win` (it's survived now) |
 | `reward` | `points` (Zombies points), `powerUp` (`random`, `maxAmmo`, `instaKill`, `doublePoints`, `nuke`, `carpenter`, `infiniteAmmo`) dropped at `at` | `given` | `give` (points to whoever set it off, and the power-up), `giveAll` (points to everyone standing, and the power-up), `drop` (only the power-up) |
 

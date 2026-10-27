@@ -181,6 +181,8 @@ public static unsafe partial class Program
 
         DrawSlotMachines(zm, live, now); // slot machines: reels, heat meter, topper lights (Program.ZombiesSlots.cs)
 
+        DrawCasinoTables(zm, live, now); // casino tables: cards, the roulette wheel and chips, dice (Program.ZombiesCasino.cs)
+
         // The weapon-slot upgrade (a crate with two gun racks), the power switch, workbenches, salvage piles.
         if (zm.SlotUpgrade is { } su)
         {
@@ -506,6 +508,7 @@ public static unsafe partial class Program
                 _game.BoxDisassembleKey(now);
             }
         }
+        CasinoInput(interactPressed); // at a casino table: open its panel (Program.ZombiesCasino.cs)
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);

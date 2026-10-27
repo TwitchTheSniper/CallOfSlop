@@ -111,6 +111,12 @@ public sealed class ZSpot
     /// file), or -1 for the classic machine that pays any part (ZombiesSlots.cs, "per-category machines").
     /// </summary>
     public int SlotCategory = -1;
+
+    /// <summary>Casino tables (ZombiesCasino.cs): the game (a <see cref="CasinoGame"/> as a number, from "game"); -1 for anything else.</summary>
+    public int Game = -1;
+
+    /// <summary>Casino tables: the table's own smallest and largest bet ("min" / "max"); 0 = the rules' limits for its game.</summary>
+    public int BetMin, BetMax;
 }
 
 /// <summary>
@@ -139,6 +145,9 @@ public sealed class ZombiesMap
 
     /// <summary>Slot machines (ZombiesSlots.cs): pull for a loose part, points back or nothing. A spot's cost overrides the rules' price.</summary>
     public readonly List<ZSpot> SlotMachines = new();
+
+    /// <summary>Casino tables (ZombiesCasino.cs): blackjack, roulette, high-low and dice, betting points ("casino" in the map file).</summary>
+    public readonly List<ZSpot> CasinoTables = new();
 
     /// <summary>
     /// "machineProps": true: every machine stands as a solid prop from <c>Props/Zombies</c> (<see cref="MachineProp"/>):
@@ -170,12 +179,17 @@ public sealed class ZombiesMap
 
         /// <summary>The prop a slot machine of part category <paramref name="category"/> stands as ("Barrel Reel Cabinet"; -1: the classic "Reel Cabinet").</summary>
         public static string SlotMachineFor(int category) => category >= 0 && category < CategoryCabinets.Length ? CategoryCabinets[category] : SlotMachine;
+
+        /// <summary>The prop each casino game's table stands as (Props/Zombies/Casino, written by tools/zombies/make_casino_tables.py), by <see cref="CasinoGame"/>.</summary>
+        public static readonly string[] CasinoTables = ["Blackjack Table", "Roulette Table", "High-Low Table", "Dice Table"];
+
+        public static string CasinoTableFor(int game) => CasinoTables[Math.Clamp(game, 0, CasinoTables.Length - 1)];
     }
 
     /// <summary>The section as it was in the file (written back unchanged).</summary>
     public string Raw = "{}";
 
-    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24;
+    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8;
 
     /// <summary>The area <paramref name="p"/> is in (the nearest one if it's in none).</summary>
     public int AreaAt(Vector3 p)
@@ -209,7 +223,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "machineProps", "testKit"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "machineProps", "testKit"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -389,6 +403,31 @@ public sealed class ZombiesMap
             }
         if (z.SlotMachines.Count > MaxSlotMachines)
             throw new MapFileException($"{where}: at most {MaxSlotMachines} slot machines");
+        if (Get(e, "casino") is { } cas)
+            foreach (var t in List(cas, $"{where}.casino"))
+            {
+                var w = $"{where}.casino";
+                Only(t, w, "game", "at", "yaw", "power", "min", "max");
+                var game = Text(Need(t, "game", w), $"{w}.game");
+                var k = Array.FindIndex(CasinoGames.Keys, g => g.Equals(game, StringComparison.OrdinalIgnoreCase));
+                if (k < 0)
+                    throw new MapFileException($"{w}: unknown game \"{game}\" (one of {string.Join(", ", CasinoGames.Keys)})");
+                var spot = new ZSpot
+                {
+                    At = Point(map, Need(t, "at", w), $"{w}.at"),
+                    Yaw = Get(t, "yaw") is { } y ? Num(y, $"{w}.yaw") * MathF.PI / 180f : 0,
+                    NeedsPower = Get(t, "power") is { ValueKind: JsonValueKind.True },
+                    Game = k,
+                    BetMin = Get(t, "min") is { } mn ? Whole(mn, $"{w}.min", 1, 1000000) : 0,
+                    BetMax = Get(t, "max") is { } mx ? Whole(mx, $"{w}.max", 1, 1000000) : 0,
+                };
+                if (spot.BetMin > 0 && spot.BetMax > 0 && spot.BetMax < spot.BetMin)
+                    throw new MapFileException($"{w}: max is below min");
+                spot.Area = z.AreaAt(spot.At);
+                z.CasinoTables.Add(spot);
+            }
+        if (z.CasinoTables.Count > MaxCasinoTables)
+            throw new MapFileException($"{where}: at most {MaxCasinoTables} casino tables");
         if (Get(e, "machineProps") is { } mp)
             z.MachineProps = mp.ValueKind switch
             {
@@ -434,6 +473,8 @@ public sealed class ZombiesMap
             yield return (MachineProp.Power, pw);
         foreach (var s in SlotMachines)
             yield return (MachineProp.SlotMachineFor(s.SlotCategory), s); // (last: maps without them place the same props as before)
+        foreach (var t in CasinoTables)
+            yield return (MachineProp.CasinoTableFor(t.Game), t); // (after the slot machines: maps without tables place the same props as before)
     }
 
     private static ZSpot Spot(Map map, ZombiesMap z, JsonElement s, string w, string extra = "")

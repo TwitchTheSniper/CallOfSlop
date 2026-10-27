@@ -344,6 +344,7 @@ public static partial class SelfTest
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
         Section("Zombies flow", CheckZombiesFlow); // SelfTestZombiesFlow.cs: crawling while downed, revives vs crawling, spectating the living, ready-up between rounds, respawn at the round's end
         Section("Zombies category slots", CheckZombiesCategorySlots); // SelfTestZombiesCategorySlots.cs: a machine per part category: only its own parts, its own heat, prices, jackpot, distinct cabinets, the win every client sees
+        Section("Zombies casino", CheckZombiesCasino); // SelfTestZombiesCasino.cs: casino tables: payout tables and house edges, blackjack dealer rules, roulette coverage, high-low and dice replays, points never negative, forfeits, the client copy, no allocation
         Section("Zombies slots", CheckZombiesSlots); // SelfTestZombiesSlots.cs: slot machines: the odds by round, heat, jackpot rounds, the reels, payouts, bad-luck protection, pull again at once after a loss, the network copy
         Section("Zombies no scrap", CheckZombiesNoScrap); // SelfTestZombiesNoScrap.cs: no scrap left in the code or tables, old files still load, salvage piles give parts, a seeded run never mentions scrap
         Section("Zombies more perks", CheckZombiesMorePerks); // SelfTestZombiesMorePerks.cs: 12 perks, each on sale at its own machine (both maps), the doubling price, each new perk's effect, lost on down, the wire, no allocation

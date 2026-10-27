@@ -61,6 +61,9 @@ public enum LogicWho : byte
 public enum LogicMachine : byte
 {
     Power, Box, Perk, SlotUpgrade, SlotMachine, WallBuy, Bench, Salvage,
+
+    /// <summary>A casino table (Source/Game/ZombiesCasino.cs): "used" on every bet that goes down; disabled, it takes none.</summary>
+    Casino,
 }
 
 /// <summary>
@@ -682,6 +685,7 @@ public sealed class MapLogic
                     LogicMachine.SlotMachine => zm.SlotMachines.Select(s => s.At).ToArray(),
                     LogicMachine.WallBuy => zm.WallBuys.Select(s => s.At).ToArray(),
                     LogicMachine.Bench => zm.Benches.Select(s => s.At).ToArray(),
+                    LogicMachine.Casino => zm.CasinoTables.Select(s => s.At).ToArray(),
                     _ => zm.Salvage.Select(s => s.At).ToArray(),
                 };
                 if (spots.Length == 0)
