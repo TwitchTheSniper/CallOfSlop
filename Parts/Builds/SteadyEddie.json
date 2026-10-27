@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Steady Eddie",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "An LMG on plasma with a recoil eater and an exo spine. Twin sear speed, laser-level calm.",
+  "build": "Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Standard Barrel{muzzle:Recoil Eater},feed:Drum Mag,ammo:Plasma,action:Full-Auto Sear,upgrade_rear:Twin Sear},foregrip:Vertical Foregrip,stock:Exo Spine Stock}"
+}

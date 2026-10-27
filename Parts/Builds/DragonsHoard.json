@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Dragon's Hoard",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A bunker buster through a cannon sleeve and a dragon mouth on pocket suns. Four burning cannonballs a pull, crawling.",
+  "build": "Rifle Grip{receiver_1:Bunker Buster Receiver{barrel:Cannon Sleeve{muzzle:Dragon Mouth},feed:Heavy Drum,ammo:Pocket Sun,action:Autocannon Drive},foregrip:Third Arm,stock:Gyro Stock}"
+}

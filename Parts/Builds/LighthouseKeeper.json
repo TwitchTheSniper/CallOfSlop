@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Lighthouse Keeper",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "A DMR on a marksman barrel and a velocity booster with a rail accelerator, under a 6x scope. Sees you across the bay.",
+  "build": "Sport Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Marksman Barrel{muzzle:Velocity Booster},feed:Extended Mag,ammo:Match Grade,action:Marksman Trigger,amp:Rail Accelerator},optic:Lighthouse 6x,stock:Recoil Buffer Stock}"
+}

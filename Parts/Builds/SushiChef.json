@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Sushi Chef",
+  "tier": "wonder",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A swordfish on a turbine hilt with a jet engine. Fresh every swing.",
+  "build": "Turbine Hilt{head:Swordfish,mod_1:Jet Engine}"
+}

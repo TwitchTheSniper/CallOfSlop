@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Tumble Dryer",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "An auto shotgun with a tumbler ring: every pellet comes out fat and spinning. Hot wash, no rinse.",
+  "build": "Sport Rifle Grip{receiver_1:Gravedigger Auto Receiver{barrel:Scattermouth Barrel{muzzle:Tumbler Ring},feed:Shell Drum,ammo:Buckshot,action:Heavy Auto Sear},stock:Recoil Buffer Stock}"
+}

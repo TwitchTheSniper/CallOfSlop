@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Sidewinder",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A carbine with its long barrel stepped off to the side. Hollow points and a laser for the hip.",
+  "build": "Sport Rifle Grip{receiver_1:Courier Carbine Receiver{barrel:Sidestep Offset{barrel_1:Long Barrel{muzzle:Vent Collar}},feed:Extended Mag,ammo:Hollow Point,action:Carbine Sear},utility:Laser Sight,stock:Wire Stock}"
+}

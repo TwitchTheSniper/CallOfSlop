@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Grain Elevator",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "Six semi shotguns on a Mule Frame, fed from a shell silo of thermobaric shells. Harvest season.",
+  "build": "Mule Frame{receiver_1:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},receiver_2:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},receiver_3:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},receiver_4:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},receiver_5:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},receiver_6:Street Sweeper Receiver{barrel:Scattermouth Barrel,action:Riot Trigger},hopper:Shell Silo{ammo:Thermobaric},stock:Shoulder Harness}"
+}

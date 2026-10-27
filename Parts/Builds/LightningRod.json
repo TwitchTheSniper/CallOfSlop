@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Lightning Rod",
+  "tier": "epic",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A katana on a long haft with a tesla wrap and a shock coil. Stand back during storms.",
+  "build": "Long Haft{head:Katana Blade,mod_1:Tesla Wrap,mod_2:Shock Coil}"
+}

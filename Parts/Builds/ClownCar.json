@@ -1,0 +1,11 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Clown Car",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Eight auto shotguns round a steering wheel, fired in turn, fed by a clown car hopper of dragon's breath. Honk honk.",
+  "build": "Steering Wheel{receiver_1:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_2:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_3:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_4:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_5:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_6:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_7:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},receiver_8:Farmhand Pump Receiver{barrel:Scattermouth Barrel,action:Heavy Auto Sear},hopper:Clown Car Hopper{ammo:Dragon's Breath}}",
+  "chainFire": true
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Time Out",
+  "tier": "wonder",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A grandfather clock on a lamp post with a counterweight. It's always time for this.",
+  "build": "Lamp Post{head:Grandfather Clock,mod_1:Counterweight}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "The Oracle",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A sunbeam lance on pocket suns and a doom hammer under the all-seeing eye: 1200 a bolt. Knows where every zombie is.",
+  "build": "Sport Rifle Grip{receiver_1:Sunbeam Lance Receiver{barrel:Coil Barrel,feed:Energy Cell,ammo:Pocket Sun,action:Marksman Trigger,upgrade_rear:Doom Hammer},optic:All-Seeing Eye,stock:Jetpack Stock}"
+}

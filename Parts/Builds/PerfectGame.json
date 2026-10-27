@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Perfect Game",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "A parade cannon on a riot trigger, loaded with bowling balls from a revolver cylinder. Strike after strike after strike.",
+  "build": "Rifle Grip{receiver_1:Parade Cannon Receiver{barrel:Launcher Tube,feed:Revolver Cylinder,ammo:Bowling Ball,action:Riot Trigger},stock:Jetpack Stock}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Bait and Tackle",
+  "tier": "uncommon",
+  "source": [
+    "slots"
+  ],
+  "flavor": "An axe head on a fishing rod with a weight on the line. Casts badly, lands hard.",
+  "build": "Fishing Rod Grip{head:Fire Axe Head,mod_1:Counterweight}"
+}

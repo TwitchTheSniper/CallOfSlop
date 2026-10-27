@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Ground Breaker",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A bunker buster through a cannon sleeve on depleted core: a round the size of a fist, crawling out at walking pace.",
+  "build": "Rifle Grip{receiver_1:Bunker Buster Receiver{barrel:Cannon Sleeve,feed:Heavy Box,ammo:Depleted Core,action:Autocannon Drive},foregrip:Third Arm,stock:Gyro Stock}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Totem Pole",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "An LMG through a totem splitter: four stubby barrels stacked straight up, on a twin sear. Carved from lead.",
+  "build": "Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Totem Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear,upgrade_rear:Twin Sear},foregrip:Vertical Foregrip,stock:Exo Spine Stock}"
+}

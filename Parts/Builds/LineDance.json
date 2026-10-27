@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Line Dance",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "An SMG on the buzzsaw sear through four barrels in a row. Step left, step right, everyone falls down.",
+  "build": "Service Rifle Grip{receiver_1:Stampede Receiver{barrel:Quad Line Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel},feed:Drum Mag,ammo:FMJ,action:Buzzsaw Sear},stock:Wire Stock}"
+}

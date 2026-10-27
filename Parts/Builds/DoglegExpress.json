@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Dogleg Express",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "An LMG on a heatsink barrel bent round a dogleg offset. Runs hot, runs fast, runs round corners (it doesn't).",
+  "build": "Sport Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Dogleg Offset{barrel_1:Heatsink Barrel{muzzle:Compensator}},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear},foregrip:Chaingun Handle,stock:Fixed Stock}"
+}

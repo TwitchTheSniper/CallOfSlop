@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Pyramid Scheme",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A semi shotgun through a pyramid splitter: one barrel over two. Everyone below the top gets paid in pellets.",
+  "build": "Sport Rifle Grip{receiver_1:Street Sweeper Receiver{barrel:Pyramid Splitter{barrel_1:Scattermouth Barrel,barrel_2:Scattermouth Barrel,barrel_3:Scattermouth Barrel},feed:Shell Drum,ammo:Buckshot,action:Riot Trigger},stock:Recoil Buffer Stock}"
+}

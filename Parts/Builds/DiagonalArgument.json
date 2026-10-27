@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Diagonal Argument",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A heavy revolver through a diagonal splitter. Makes its point twice, at an angle.",
+  "build": "Service Pistol Grip{receiver_1:Kingpin Revolver Receiver{barrel:Diagonal Splitter{barrel_1:Stub Barrel,barrel_2:Stub Barrel},feed:Heavy Box,ammo:FMJ,action:Revolver Hammer}}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Heavy Pockets",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "Three carbines on one grip with a gravity sock hung off the side for the weight. Fires all three at once.",
+  "build": "Triple Rifle Grip{receiver_1:Courier Carbine Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_2:Courier Carbine Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_3:Courier Carbine Receiver{barrel:Standard Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},utility:Gravity Sock,stock:Wire Stock}"
+}

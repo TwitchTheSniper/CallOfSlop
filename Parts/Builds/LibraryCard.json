@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Library Card",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A DMR behind hush baffles on depleted core and a singularity chamber, 4x rangefinder. Shh.",
+  "build": "Sport Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Marksman Barrel{muzzle:Hush Baffles},feed:Extended Mag,ammo:Depleted Core,action:Marksman Trigger,amp:Singularity Chamber},optic:Rangefinder 4x,stock:Gyro Stock}"
+}

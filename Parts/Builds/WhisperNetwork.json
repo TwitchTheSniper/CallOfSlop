@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Whisper Network",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Six battle rifles behind shrouded cans on subsonic rounds. Six quiet words, one loud silence.",
+  "build": "Hex Rack Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},receiver_2:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},receiver_3:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},receiver_4:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},receiver_5:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},receiver_6:Reaper Battle Rifle Receiver{barrel:Standard Barrel{muzzle:Shrouded Can},feed:Stick Mag,ammo:Subsonic,action:Semi-Auto Trigger},optic:Owl Tube 2x,stock:Fixed Stock}"
+}

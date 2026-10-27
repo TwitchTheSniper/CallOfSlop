@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Kendo Club",
+  "tier": "rare",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A bat on a sword hilt with a shock coil. Proper form, improper bat.",
+  "build": "Sword Hilt{head:Bat Barrel,mod_1:Shock Coil,mod_2:Grip Tape}"
+}

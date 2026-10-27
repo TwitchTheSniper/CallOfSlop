@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Gutter Ball",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Three heavy revolvers on cannon sleeves, loaded with bowling balls. Rolls through the pins, then the alley, then the car park.",
+  "build": "Rifle Grip{receiver_1:Kingpin Revolver Receiver{barrel:Cannon Sleeve,feed:Heavy Box,ammo:Bowling Ball,action:Revolver Hammer},receiver_2:Kingpin Revolver Receiver{barrel:Cannon Sleeve,feed:Heavy Box,ammo:Bowling Ball,action:Revolver Hammer},receiver_3:Kingpin Revolver Receiver{barrel:Cannon Sleeve,feed:Heavy Box,ammo:Bowling Ball,action:Revolver Hammer},stock:Gyro Stock}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Clap Back",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A .50 bolt receiver on a thunderclap hammer: semi-auto at 300 rpm, almost double the hit, depleted core.",
+  "build": "Sport Rifle Grip{receiver_1:Longreach Bolt Receiver{barrel:Fluted Match Barrel,feed:Heavy Drum,ammo:Depleted Core,action:Thunderclap Hammer},optic:Rangefinder 4x,stock:Gyro Stock}"
+}

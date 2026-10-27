@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Sewing Kit",
+  "tier": "rare",
+  "source": [
+    "box"
+  ],
+  "flavor": "A DMR on a needle barrel and a long choke, match rounds, a scout scope. Small holes, very neat ones.",
+  "build": "Sport Rifle Grip{receiver_1:Longbow DMR Receiver{barrel:Needle Barrel{muzzle:Long Choke},feed:Box Mag,ammo:Match Grade,action:Marksman Trigger},optic:Outrider 2x Scout,stock:Fixed Stock}"
+}

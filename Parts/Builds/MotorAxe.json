@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Motor Axe",
+  "tier": "epic",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A fire axe on a motor hilt with a tesla wrap. Revs, sparks, chops.",
+  "build": "Motor Hilt{head:Fire Axe Head,mod_1:Tesla Wrap}"
+}

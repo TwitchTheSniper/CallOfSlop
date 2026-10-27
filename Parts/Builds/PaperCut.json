@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Paper Cut",
+  "tier": "rare",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A machete on a sword hilt with barbed wire and a shock coil. Small cuts, big regrets.",
+  "build": "Sword Hilt{head:Machete Blade,mod_1:Barbed Wire Wrap,mod_2:Shock Coil}"
+}

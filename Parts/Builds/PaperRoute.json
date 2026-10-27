@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Paper Route",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "An SMG with a stock and a foregrip, loaded with hollow points. Delivers before seven, every time.",
+  "build": "Service Rifle Grip{receiver_1:Stampede Receiver{barrel:Standard Barrel{muzzle:Thread Protector},feed:Stick Mag,ammo:Hollow Point,action:Blowback SMG Sear},stock:Wire Stock,foregrip:Vertical Foregrip}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Hot Takes",
+  "tier": "legendary",
+  "source": [
+    "box"
+  ],
+  "flavor": "A semi shotgun through a dragon mouth and a tripler chamber on thermobaric shells. Every opinion is on fire.",
+  "build": "Rifle Grip{receiver_1:Street Sweeper Receiver{barrel:Scattermouth Barrel{muzzle:Dragon Mouth},feed:Shell Drum,ammo:Thermobaric,action:Riot Trigger,amp:Tripler Chamber},stock:Gyro Stock}"
+}

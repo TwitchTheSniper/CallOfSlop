@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Batting Practice",
+  "tier": "common",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A bat with fresh grip tape. Swing early, swing often.",
+  "build": "Bat Grip{head:Bat Barrel,mod_1:Grip Tape}"
+}

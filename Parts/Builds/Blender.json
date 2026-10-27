@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Blender",
+  "tier": "wonder",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A chainsaw bar on a turbine hilt with a tesla wrap and nails. Puree setting.",
+  "build": "Turbine Hilt{head:Chainsaw Blade,mod_1:Tesla Wrap,mod_2:Nail Ring}"
+}

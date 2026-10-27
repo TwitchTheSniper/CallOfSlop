@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Wrecking Crew",
+  "tier": "legendary",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A wrecking ball on a long haft with a counterweight and barbed wire. Demolition, one zombie at a time.",
+  "build": "Long Haft{head:Wrecking Ball,mod_1:Counterweight,mod_2:Barbed Wire Wrap}"
+}

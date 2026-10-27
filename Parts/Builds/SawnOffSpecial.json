@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Sawn-Off Special",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "A pump receiver on a break action and a barrel cut short with a hacksaw. One shell, one bad day for someone.",
+  "build": "Service Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Sawn-Off Barrel,feed:Shell Tube,ammo:Buckshot,action:Break Action}}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Fence Post",
+  "tier": "uncommon",
+  "source": [
+    "slots"
+  ],
+  "flavor": "A bat on a long haft with barbed wire and a counterweight. Keeps the neighbours out.",
+  "build": "Long Haft{head:Bat Barrel,mod_1:Barbed Wire Wrap,mod_2:Counterweight}"
+}

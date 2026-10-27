@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Bunk Bed",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A battle rifle with two barrels stacked over and under. Top bunk, bottom bunk, same zombie.",
+  "build": "Sport Rifle Grip{receiver_1:Reaper Battle Rifle Receiver{barrel:Over-Under Splitter{barrel_1:Standard Barrel,barrel_2:Standard Barrel},feed:Extended Mag,ammo:FMJ,action:Marksman Trigger},stock:Fixed Stock,optic:Pocket 1.8x Prism}"
+}

@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "High Rider",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "A semi rifle with its barrel jacked up on a riser. Looks taller, shoots the same, feels important.",
+  "build": "Service Rifle Grip{receiver_1:Workhorse Receiver{barrel:Riser Offset{barrel_1:Standard Barrel{muzzle:Flash Hider}},feed:Box Mag,ammo:FMJ,action:Semi-Auto Trigger},optic:Red Dot,stock:Fixed Stock}"
+}

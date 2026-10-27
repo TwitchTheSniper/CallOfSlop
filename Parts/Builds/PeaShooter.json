@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Pea Shooter",
+  "tier": "common",
+  "source": [
+    "wall"
+  ],
+  "flavor": "The lightest pistol in the building. Barely kicks, barely hurts, never runs out of enthusiasm.",
+  "build": "Service Pistol Grip{receiver_1:Peashooter Receiver{barrel:Stub Barrel,feed:Stick Mag,ammo:FMJ,action:Semi-Auto Trigger},optic:Bead Rail}"
+}

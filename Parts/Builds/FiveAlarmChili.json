@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Five-Alarm Chili",
+  "tier": "wonder",
+  "source": [
+    "box"
+  ],
+  "flavor": "Two shotgun chain guns on dragon's breath through five-alarm chambers. Too hot. Way too hot.",
+  "build": "Chainsaw Grip{receiver_1:Sawmill Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:Dragon's Breath,action:Bicycle Chain Drive,amp:Five-Alarm Chamber},receiver_2:Sawmill Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:Dragon's Breath,action:Bicycle Chain Drive,amp:Five-Alarm Chamber}}"
+}

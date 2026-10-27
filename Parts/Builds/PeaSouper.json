@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Pea Souper",
+  "tier": "uncommon",
+  "source": [
+    "box"
+  ],
+  "flavor": "A peashooter on the buzzsaw sear through a squeeze bore. A fog of tiny, fast, rude rounds.",
+  "build": "Service Pistol Grip{receiver_1:Peashooter Receiver{barrel:Squeeze Bore Barrel,feed:Extended Mag,ammo:FMJ,action:Buzzsaw Sear},utility:Laser Sight}"
+}

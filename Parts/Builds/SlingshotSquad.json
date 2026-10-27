@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-build/1",
+  "name": "Slingshot Squad",
+  "tier": "epic",
+  "source": [
+    "box"
+  ],
+  "flavor": "Seven carbines on needle barrels, an exo sling to carry them. Seven thin, fast lines of bad news.",
+  "build": "Septet Rack Grip{receiver_1:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_2:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_3:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_4:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_5:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_6:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},receiver_7:Courier Carbine Receiver{barrel:Needle Barrel,feed:Stick Mag,ammo:FMJ,action:Carbine Sear},utility:Exo Sling,stock:Fixed Stock}"
+}

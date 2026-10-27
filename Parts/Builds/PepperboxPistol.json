@@ -5,6 +5,6 @@
   "source": [
     "box"
   ],
-  "flavor": "Four stub barrels on a turning pistol action. It spins, it clicks, it empties.",
-  "build": "Service Pistol Grip{receiver_1:Pepperbox Receiver{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,feed:Stick Mag,ammo:FMJ,action:Hand-Crank Rotary}}"
+  "flavor": "Four stub barrels on a turning pistol action, pocket suns and an overkill coprocessor. It spins, it glows, it empties.",
+  "build": "Service Pistol Grip{receiver_1:Pepperbox Receiver{barrel_1:Stub Barrel,barrel_2:Stub Barrel,barrel_3:Stub Barrel,barrel_4:Stub Barrel,feed:Stick Mag,ammo:Pocket Sun,action:Hand-Crank Rotary,upgrade_rear:Overkill Coprocessor}}"
 }
