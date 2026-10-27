@@ -5,28 +5,24 @@
   "rarity": "epic",
   "flavor": "A suppressor inside a slotted shroud. As quiet as the plain can, keeps nearly all its reach, heavy out front.",
   "weight": 0.6,
-  "flags": [
-    "suppressed"
-  ],
-  "muzzles": [
-    [ 0, 0, -0.17
-    ]
-  ],
+  "flags": ["suppressed"],
+  "muzzles": [[0, 0, -0.17]],
   "model": [
-    {"shape": "rod", "size": [   0.04,   0.04,   0.17 ], "pos": [   0,   0,   -0.085 ], "color": "gunmetal" },
-    {"shape": "rod", "size": [   0.054,   0.054,   0.136 ], "pos": [   0,   0,   -0.085 ], "color": "black" },
-    {"size": [   0.004,   0.06,   0.09 ], "pos": [   0,   0,   -0.085 ], "rot": [   0,   0,   22 ], "color": "#101012" },
-    {"size": [   0.004,   0.06,   0.09 ], "pos": [   0,   0,   -0.085 ], "rot": [   0,   0,   -22 ], "color": "#101012" },
-    {"size": [   0.06,   0.004,   0.09 ], "pos": [   0,   0,   -0.085 ], "rot": [   0,   0,   22 ], "color": "#101012" },
-    {"size": [   0.06,   0.004,   0.09 ], "pos": [   0,   0,   -0.085 ], "rot": [   0,   0,   -22 ], "color": "#101012" },
-    {"shape": "rod", "size": [   0.056,   0.056,   0.008 ], "pos": [   0,   0,   -0.017 ], "color": "steel" },
-    {"shape": "rod", "size": [   0.056,   0.056,   0.008 ], "pos": [   0,   0,   -0.153 ], "color": "steel" }
+    {"shape": "rod", "size": [0.04, 0.04, 0.17], "pos": [0, 0, -0.085], "color": "gunmetal"},
+    {"shape": "rod", "size": [0.054, 0.054, 0.136], "pos": [0, 0, -0.085], "color": "black"},
+    {"size": [0.004, 0.06, 0.09], "pos": [0, 0, -0.085], "rot": [0, 0, 22], "color": "#101012"},
+    {"size": [0.004, 0.06, 0.09], "pos": [0, 0, -0.085], "rot": [0, 0, -22], "color": "#101012"},
+    {"size": [0.06, 0.004, 0.09], "pos": [0, 0, -0.085], "rot": [0, 0, 22], "color": "#101012"},
+    {"size": [0.06, 0.004, 0.09], "pos": [0, 0, -0.085], "rot": [0, 0, -22], "color": "#101012"},
+    {"shape": "rod", "size": [0.056, 0.056, 0.008], "pos": [0, 0, -0.017], "color": "steel"},
+    {"shape": "rod", "size": [0.056, 0.056, 0.008], "pos": [0, 0, -0.153], "color": "steel"}
   ],
   "stats": [
-    {"stat": "loudness", "mul": 0.5 },
-    {"stat": "rangeM", "mul": 0.95 },
-    {"stat": "adsTime", "add": 0.03 },
-    {"stat": "mobility", "add": -0.02 },
-    {"stat": "recoilShake", "mul": 1.1 }
+    {"stat": "loudness", "mul": 0.3},
+    {"stat": "recoilDeg", "mul": 0.88},
+    {"stat": "rangeM", "mul": 0.95},
+    {"stat": "adsTime", "add": 0.03},
+    {"stat": "mobility", "add": -0.02},
+    {"stat": "recoilShake", "mul": 1.1}
   ]
 }

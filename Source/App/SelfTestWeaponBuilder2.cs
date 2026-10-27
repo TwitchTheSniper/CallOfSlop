@@ -73,7 +73,11 @@ public static partial class SelfTest
         const string rx = "Rifle Grip{receiver_1:Workhorse Receiver{barrel:%B%,feed:Box Mag,ammo:FMJ}}";
         var single = WeaponBuilder.Assemble(BuildOf(rx.Replace("%B%", "Stub Barrel"))).Def!;
         var splitters = Parts.InCategory(PartCategory.Splitter).OrderBy(p => p.Rarity).ToList();
-        var lastSpread = float.MaxValue;
+        // Rarity buys accuracy (the user's rule): no splitter is less accurate than one of a commoner tier. Offset
+        // splitters (one output) don't split, so they're out of the ladder.
+        var lowerMin = float.MaxValue;
+        var tierMin = float.MaxValue;
+        Rarity? tier = null;
         foreach (var s in splitters)
         {
             var outs = s.Sockets.Where(x => x.Type == "barrel").Select(x => $"{x.Name}:Stub Barrel");
@@ -88,9 +92,13 @@ public static partial class SelfTest
             Line($"splitter {s.Name} ({s.Rarity}, {n} outputs, spread x{F(s.Split!.SpreadMult)}): {F(d.ShotDamage)} per shot, rays {F(rays)} (one barrel {F(single.ShotDamage)})");
             if (d.BarrelCount != n || MathF.Abs(d.ShotDamage - single.ShotDamage) > 0.5f || MathF.Abs(rays - RayTotal(single)) > 0.5f)
                 Fail($"splitters: the {s.Name} doesn't conserve damage ({F(d.ShotDamage)} vs {F(single.ShotDamage)}, {d.BarrelCount} barrels)");
-            if (s.Split.SpreadMult > lastSpread + 1e-4f)
+            if (s.IsOffset)
+                continue;
+            if (s.Rarity != tier)
+                (lowerMin, tierMin, tier) = (MathF.Min(lowerMin, tierMin), float.MaxValue, s.Rarity);
+            if (s.Split.SpreadMult > lowerMin + 1e-4f)
                 Fail($"splitters: the {s.Name} ({s.Rarity}) is less accurate than a commoner splitter");
-            lastSpread = MathF.Min(lastSpread, s.Split.SpreadMult);
+            tierMin = MathF.Min(tierMin, s.Split.SpreadMult);
         }
         // Nested: a Party Tray of Tridents is still one shot's damage over 12 barrels.
         var tray = Parts.Find("Party Tray Splitter")!;

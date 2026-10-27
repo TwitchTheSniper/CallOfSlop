@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ladder Splitter",
+  "category": "splitter",
+  "rarity": "legendary",
+  "flavor": "Two columns of three: six outputs, a sixth each. The grip feels like carrying a radiator.",
+  "weight": 1.4,
+  "split": {"splay": 1.5, "spreadMult": 0.65},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [-0.03, 0.05, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0.03, 0.05, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [-0.03, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0.03, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [-0.03, -0.05, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_6", "type": "barrel", "pos": [0.03, -0.05, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.104, 0.144, 0.05], "pos": [0.0, 0.0, -0.035], "color": "gunmetal"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilVertical", "mul": 1.1},
+    {"stat": "mobility", "add": -0.02}
+  ]
+}

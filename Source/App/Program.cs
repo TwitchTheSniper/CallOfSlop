@@ -1937,6 +1937,24 @@ public static unsafe partial class Program
             if (len < 0.01f)
                 continue;
             d /= len;
+            if (t.Speed > 0)
+            {
+                // A slow round (Game.TracerSpeed): a fat slug with a short streak behind it travels out to where it hit,
+                // then fades like any tracer.
+                var flown = age * t.Speed;
+                var head = t.From + d * MathF.Min(len, flown);
+                var streak = MathF.Min(MathF.Min(len, flown), MathF.Max(0.6f, t.Speed * 0.012f));
+                var slugAlpha = flown < len ? 1f : Math.Clamp(1f - (age - len / t.Speed) / 0.25f, 0f, 1f);
+                if (slugAlpha <= 0f || streak < 0.01f)
+                    continue;
+                var sy = MathF.Atan2(d.X, -d.Z);
+                var sp = MathF.Asin(Math.Clamp(d.Y, -1f, 1f));
+                Gfx.Draw(Matrix4x4.CreateScale(t.Width * 1.6f, t.Width * 1.6f, streak) * Matrix4x4.CreateRotationX(sp) * Matrix4x4.CreateRotationY(-sy)
+                         * Matrix4x4.CreateTranslation(head - d * (streak * 0.5f)), t.Color, slugAlpha, mode: 2);
+                if (flown >= len)
+                    Gfx.Draw(Matrix4x4.CreateScale(0.1f * (1 + (age - len / t.Speed) * 4)) * Matrix4x4.CreateTranslation(t.To), new Vector3(1f, 0.9f, 0.6f), slugAlpha, mode: 2);
+                continue;
+            }
             var yaw = MathF.Atan2(d.X, -d.Z);
             var pitch = MathF.Asin(Math.Clamp(d.Y, -1f, 1f));
             var model =

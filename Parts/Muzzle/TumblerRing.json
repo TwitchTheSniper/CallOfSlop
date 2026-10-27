@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Tumbler Ring",
+  "category": "muzzle",
+  "rarity": "rare",
+  "flavor": "Spins the round off balance so it tumbles: it hits wider and harder up close, and falls off sooner.",
+  "weight": 0.25,
+  "muzzles": [[0, 0, -0.04]],
+  "model": [
+    {"shape": "rod", "size": [0.04, 0.04, 0.04], "pos": [0, 0, -0.02], "color": "brass"},
+    {"size": [0.046, 0.006, 0.01], "pos": [0, 0, -0.02], "rot": [0, 0, 45], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "bulletSize", "mul": 1.4},
+    {"stat": "damage", "mul": 1.12},
+    {"stat": "rangeM", "mul": 0.8},
+    {"stat": "penetrationMult", "mul": 0.8}
+  ]
+}

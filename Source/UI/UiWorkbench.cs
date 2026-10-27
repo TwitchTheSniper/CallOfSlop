@@ -1734,7 +1734,10 @@ public sealed partial class Ui
                      + (act.Kind == ActionKind.Burst ? $", {act.BurstDelay:0.00} s between bursts" : "")
                      + (act.SpoolTime > 0 ? $", spins up over {act.SpoolTime:0.0} s" : "")
                      + (act.Chamber > 0 ? $", {act.Chamber} round{(act.Chamber == 1 ? "" : "s")} then reload" : "") + "; fits every receiver");
-        if (p.Split is { } s)
+        if (p.Split is { } so && p.IsOffset)
+            bits.Add("offset: moves the barrel socket (no extra barrel, the whole shot goes through; doesn't count towards the splitter stacking limit)"
+                     + (so.SpreadMult != 1 ? $", spread x{so.SpreadMult:0.##}" : ""));
+        else if (p.Split is { } s)
             bits.Add($"{p.Sockets.Count(x => x.Type == "barrel")} outputs at {SplitInfo.OutputMult(p) * 100:0}% damage each (the same total){(s.SpreadMult != 1 ? $", spread x{s.SpreadMult:0.##}" : "")}");
         if (p.Bores.Length > 0 && BuildRules.BoreBound(p.Category))
             bits.Add("holds " + string.Join(", ", p.Bores) + " rounds");

@@ -142,6 +142,27 @@ public sealed partial class WeaponDef
 
     public const float MinLoudness = 0.25f, MaxLoudness = 4f;
 
+    /// <summary>
+    /// How big the round is against the stock round (1): the "bulletSize" stat of barrels and muzzle devices (a Bloat
+    /// Barrel: 2, a Needle Barrel: 0.5). A round above 1 hits with a radius (<see cref="Game.BulletRadius"/>: the target's
+    /// hit box grows by it, so a fat slug clips what a thin bullet would miss); the tracer's width and the impact mark grow
+    /// with it. Damage and wall penetration are the parts' own stats. Not a weapon-file key. Clamped to
+    /// <see cref="MinBulletSize"/>..<see cref="MaxBulletSize"/>.
+    /// </summary>
+    public float BulletSize = 1f;
+
+    public const float MinBulletSize = 0.3f, MaxBulletSize = 4f;
+
+    /// <summary>
+    /// How fast the round flies against the stock round (1): the "bulletSpeed" stat. Shots are hitscan, so the speed is
+    /// what you see and how far it carries: a built weapon's range (full damage distance) is multiplied by it on each barrel
+    /// path (<see cref="BuildStats"/>), and a round below 1 is drawn as a slug that visibly travels (<see cref="Game.TracerSpeed"/>).
+    /// Not a weapon-file key. Clamped to <see cref="MinBulletSpeed"/>..<see cref="MaxBulletSpeed"/>.
+    /// </summary>
+    public float BulletSpeed = 1f;
+
+    public const float MinBulletSpeed = 0.25f, MaxBulletSpeed = 3f;
+
     public uint Kit; // which attachments made this copy (0 = stock weapon)
 
     /// <summary>The fitted optic's "sight" block (null = the default for <see cref="Optic"/>; see <see cref="Sights.Spec"/>). A property, so it isn't a stat.</summary>

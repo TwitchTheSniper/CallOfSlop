@@ -3,13 +3,14 @@
   "name": "Flash Hider",
   "category": "muzzle",
   "rarity": "common",
-  "flavor": "Prongs on the end. Slightly steadier, much cooler looking.",
+  "flavor": "Prongs on the end. Tighter from the hip, less screen shake, much cooler looking.",
   "weight": 0.2,
   "muzzles": [[0, 0, -0.05]],
   "model": [
     {"size": [0.03, 0.03, 0.05], "pos": [0, 0, -0.025], "color": "black"}
   ],
   "stats": [
-    {"stat": "hipSpreadDeg", "mul": 0.95}
+    {"stat": "hipSpreadDeg", "mul": 0.88},
+    {"stat": "recoilShake", "mul": 0.8}
   ]
 }

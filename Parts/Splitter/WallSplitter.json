@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Wall Splitter",
+  "category": "splitter",
+  "rarity": "wonder",
+  "flavor": "A three by three wall of outputs: nine ninths of a shot in a perfect square. Doors stop being a problem.",
+  "weight": 2.0,
+  "split": {"splay": 2, "spreadMult": 0.5},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [-0.045, 0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [0, 0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [0.045, 0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [-0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_5", "type": "barrel", "pos": [0, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_6", "type": "barrel", "pos": [0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_7", "type": "barrel", "pos": [-0.045, -0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_8", "type": "barrel", "pos": [0, -0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_9", "type": "barrel", "pos": [0.045, -0.045, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.134, 0.134, 0.05], "pos": [0.0, 0.0, -0.035], "color": "olive"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 1.1},
+    {"stat": "adsTime", "add": 0.04},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

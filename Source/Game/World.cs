@@ -5,6 +5,9 @@ namespace CallOfSlop;
 /// <summary>Axis-aligned box used for walls, floor, cover and hitboxes.</summary>
 public readonly record struct Box(Vector3 Center, Vector3 Half)
 {
+    /// <summary>This box grown by <paramref name="r"/> on every side (a fat bullet's hit radius); itself for r <= 0.</summary>
+    public Box Grown(float r) => r <= 0f ? this : new(Center, Half + new Vector3(r));
+
     public Vector3 Min => Center - Half;
     public Vector3 Max => Center + Half;
 

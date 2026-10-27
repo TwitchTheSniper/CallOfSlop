@@ -130,7 +130,8 @@ public static partial class SelfTest
         ExpectPartError("""{ "name": "X", "category": "grip", "rarity": "common", "hand": [0,0,0], "frame": { "hands": "one" } }""", "receiver", "a root grip without receiver sockets");
         ExpectPartError("""{ "name": "X", "category": "barrel", "rarity": "common", "bores": ["laser"], "muzzles": [[0,0,-0.2]] }""", "bore", "an unknown bore");
         ExpectPartError("""{ "name": "X", "category": "barrel", "rarity": "common" }""", "muzzles", "a barrel without muzzles");
-        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "splay": 0 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }] }""", "two", "a splitter with one output");
+        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "splay": 0 }, "sockets": [] }""", "outputs", "a splitter with no outputs");
+        ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "splay": 3 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }] }""", "offset", "an offset splitter (one output) with a splay");
         ExpectPartError("""{ "name": "X", "category": "splitter", "rarity": "rare", "split": { "outputMult": 0.7 }, "sockets": [{ "name": "barrel_1", "type": "barrel", "pos": [0,0,0] }, { "name": "barrel_2", "type": "barrel", "pos": [0,0,0] }] }""", "conserves damage", "a splitter that multiplies damage");
         ExpectPartError("""{ "name": "X", "category": "head", "rarity": "common" }""", "melee", "a melee head without a melee block");
         ExpectPartError("""{ "name": "X", "category": "hilt", "rarity": "common", "hand": [0,0,0], "hilt": { "damage": 10 } }""", "head", "a hilt without a head socket");

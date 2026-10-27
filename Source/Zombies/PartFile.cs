@@ -269,8 +269,11 @@ public static class PartFile
         {
             if (p.Split == null)
                 throw new WeaponFileException($"{where}: a splitter needs a \"split\" block (outputMult, splay)");
-            if (p.Sockets.Count(s => s.Type == "barrel") < 2)
-                throw new WeaponFileException($"{where}: a splitter needs at least two \"barrel\" sockets (its outputs)");
+            var outs = p.Sockets.Count(s => s.Type == "barrel");
+            if (outs < 1)
+                throw new WeaponFileException($"{where}: a splitter needs \"barrel\" sockets (its outputs: two or more to split the shot, one for an offset that only moves the barrel)");
+            if (outs == 1 && p.Split.SplayDeg != 0)
+                throw new WeaponFileException($"{where}: an offset splitter (one output) has nothing to fan out: \"splay\" must be 0 (turn its socket with \"rot\" to angle the barrel)");
         }
         else if (p.Split != null)
             throw new WeaponFileException($"{where}: only splitters have a \"split\" block");

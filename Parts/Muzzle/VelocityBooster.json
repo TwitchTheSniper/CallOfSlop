@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Velocity Booster",
+  "category": "muzzle",
+  "rarity": "epic",
+  "flavor": "Magnetic rings that kick the round on its way out: 60% faster, so it carries its full damage 60% further and hits a little harder. It kicks back, too.",
+  "weight": 0.6,
+  "muzzles": [[0, 0, -0.12]],
+  "model": [
+    {"shape": "rod", "size": [0.034, 0.034, 0.12], "pos": [0, 0, -0.06], "color": "white"},
+    {"size": [0.048, 0.048, 0.01], "pos": [0, 0, -0.03], "color": "accent", "tag": "glow"},
+    {"size": [0.048, 0.048, 0.01], "pos": [0, 0, -0.06], "color": "accent", "tag": "glow"},
+    {"size": [0.048, 0.048, 0.01], "pos": [0, 0, -0.09], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "bulletSpeed", "mul": 1.6},
+    {"stat": "damage", "mul": 1.08},
+    {"stat": "recoilDeg", "mul": 1.15},
+    {"stat": "loudness", "mul": 1.3}
+  ]
+}

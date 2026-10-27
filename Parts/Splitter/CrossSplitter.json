@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Cross Splitter",
+  "category": "splitter",
+  "rarity": "epic",
+  "flavor": "Four outputs in a plus sign: up, down, left, right. Each a quarter, all flaring outwards.",
+  "weight": 1.0,
+  "split": {"splay": 3, "spreadMult": 0.7},
+  "sockets": [
+    {"name": "barrel_1", "type": "barrel", "pos": [0, 0.045, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_2", "type": "barrel", "pos": [-0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_3", "type": "barrel", "pos": [0.045, 0, -0.06], "accepts": ["barrel", "splitter"]},
+    {"name": "barrel_4", "type": "barrel", "pos": [0, -0.045, -0.06], "accepts": ["barrel", "splitter"]}
+  ],
+  "model": [
+    {"size": [0.034, 0.124, 0.05], "pos": [0, 0, -0.035], "color": "steel"},
+    {"size": [0.124, 0.034, 0.05], "pos": [0, 0, -0.035], "color": "steel"},
+    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+  ],
+  "stats": []
+}

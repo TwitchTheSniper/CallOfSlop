@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Ported Barrel",
+  "category": "barrel",
+  "rarity": "uncommon",
+  "flavor": "Holes drilled along the top vent the gas upwards. A quarter less kick, a lot more bang.",
+  "weight": 0.4,
+  "hand": [0, -0.03, -0.088],
+  "muzzles": [[0, 0, -0.22]],
+  "sockets": [
+    {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.22]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.024, 0.024, 0.22], "pos": [0, 0, -0.11], "color": "black"},
+    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.14], "color": "#101012"},
+    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.17], "color": "#101012"},
+    {"size": [0.008, 0.006, 0.012], "pos": [0, 0.013, -0.2], "color": "#101012"}
+  ],
+  "stats": [
+    {"stat": "recoilDeg", "mul": 0.75},
+    {"stat": "recoilVertical", "mul": 0.85},
+    {"stat": "loudness", "mul": 1.25},
+    {"stat": "rangeM", "mul": 0.92}
+  ]
+}
