@@ -77,6 +77,7 @@ public enum Msg : byte
     PEvent, // server -> one client or all: Co-op: a banner, kill / objective / mission XP, enemies cleared (reliable)
     ZSlotWin, // server -> all: Zombies: a slot machine paid a part or a melee build (machine, player, result, index, tier, flags): shown over the machine and in the feed (reliable; ZombiesSlotWin.cs)
     WeaponTweaks, // server -> all (on a change) and each joining client: the host's weapon tweak window set: class multipliers and per-weapon stat overrides (reliable; GameWeaponTweaks.cs, protocol 60)
+    Logic, // server <-> clients: map logic (a LogicMsgKind first): entity flags, a button or lever used, a mover's clock, a sound, a notice, the joiner's full state (GameLogic.cs)
     ZCasino, // server -> all (on a change) and each joining client: Zombies: one casino table's whole state (round, seats and hands, the dealer, roulette chips, dice, the last big win) (reliable; ZombiesCasinoNet.cs, protocol 62)
     ZCasinoAct, // client -> server: Zombies: a move at a casino table (table, act, arg, amount): bet, hit, stand, double, higher, lower, cash out, roll, clear, leave (reliable; protocol 62)
 }
@@ -131,6 +132,13 @@ public sealed class PacketWriter
     {
         BinaryPrimitives.WriteUInt32LittleEndian(_buf.AsSpan(Length), v);
         Length += 4;
+        return this;
+    }
+
+    public PacketWriter F64(double v)
+    {
+        BinaryPrimitives.WriteDoubleLittleEndian(_buf.AsSpan(Length), v);
+        Length += 8;
         return this;
     }
 
@@ -231,6 +239,14 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
         Need(4);
         var v = BinaryPrimitives.ReadUInt32LittleEndian(_data[_pos..]);
         _pos += 4;
+        return v;
+    }
+
+    public double F64()
+    {
+        Need(8);
+        var v = BinaryPrimitives.ReadDoubleLittleEndian(_data[_pos..]);
+        _pos += 8;
         return v;
     }
 

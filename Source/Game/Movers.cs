@@ -65,6 +65,16 @@ public static class MoverPhysics
     private static readonly Slot[] Slots = [new(), new(), new(), new()];
     private static int _nextSlot;
 
+    /// <summary>Forgets the posed boxes (map logic started or stopped a mover: the same tick poses differently now).</summary>
+    public static void Invalidate()
+    {
+        foreach (var s in Slots)
+        {
+            s.Map = null;
+            s.Tick = double.NaN;
+        }
+    }
+
     /// <summary>Every mover box of the current map at <paramref name="tick"/>.</summary>
     public static ReadOnlySpan<PosedBox> At(double tick) => At(World.Map, tick);
 

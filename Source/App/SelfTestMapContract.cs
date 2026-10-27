@@ -658,6 +658,11 @@ public static partial class SelfTest
                     Fail($"{m.Name}: falling at {drop} didn't kill");
                 return $"standing at ({safe.X:0},{safe.Z:0}) {(safeAlive ? $"alive at y {safeY:0.0}" : "DEAD")}; dropped at ({drop.X:0},{drop.Z:0}) {(me.Alive ? "still alive" : $"died after {fell:0.00} s")}, fall kills {game.FallKills}";
             });
+        // Map logic: the test block's steps, played through on a server of its own (SelfTestMapLogic.cs).
+        if (t.Events.Length > 0 && m.Id < Maps.All.Length && ReferenceEquals(Maps.All[m.Id], m))
+            MapCheck($"map logic ({t.Events.Length} steps)", verbose, () => MapContractLogic(m, t));
+        else if (t.Events.Length > 0)
+            Line($"  (map logic steps skipped: the map isn't in the loaded list)");
         m.RestoreProps();
         World.SetMap(m);
 

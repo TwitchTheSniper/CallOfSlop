@@ -45,7 +45,7 @@ public sealed partial class Map
         Boundary is { } b ? b.Inside(x, z, margin) : MathF.Abs(x) <= HalfX - margin && MathF.Abs(z) <= HalfZ - margin;
 
     /// <summary>Is box i drawn by the box renderer? (Not prop colliders, nor the ground slab of a map with a boundary, whose floor is a mesh.)</summary>
-    public bool IsDrawnBox(int i) => !IsPropCollider(i) && !(Boundary != null && i == GroundIndex) && !IsZombieBox(i) && !IsBuildingBox(i) && !IsHiddenBox(i); // hidden colliders: MapColliders.cs; Zombies doors and windows: Program.Zombies.cs; buildings: BuildingRenderer
+    public bool IsDrawnBox(int i) => !IsPropCollider(i) && !(Boundary != null && i == GroundIndex) && !IsZombieBox(i) && !IsLogicBox(i) && !IsBuildingBox(i) && !IsHiddenBox(i); // hidden colliders: MapColliders.cs; Zombies doors and windows: Program.Zombies.cs; buildings: BuildingRenderer
 
     /// <summary>
     /// Gives the map a boundary. Must come before the terrain and any op. HalfX / HalfZ become the bounding box of the

@@ -389,11 +389,13 @@ public sealed partial class Game
         }
         ModeEvent($"ROUND {round}", Sfx.MortarWhistle);
         ZBanner($"ROUND {round}");
+        LogicZombies(LogicEvent.RoundStarted, round); // map logic: zombies.roundStarted, n = the round
     }
 
     private void EndRound(double now)
     {
         ZPhase = ZRoundPhase.Break;
+        LogicZombies(LogicEvent.RoundEnded, ZRound); // map logic: zombies.roundEnded, n = the round survived
         RespawnAtRoundEnd(now); // the dead come back now, with the whole break to rebuild (ZombiesFlow.cs)
         if (BeginReadyUp(now)) // the next round waits for everyone's Ready (ZombiesFlow.cs)
             return;
@@ -964,6 +966,8 @@ public sealed partial class Game
             if (i < ZBoards.Length && ZBoards[i] < w.Boards)
                 Consider(Flat(w.Inside - pos) + 0.3f, 1.6f, new ZUse(ZUseKind.Repair, i, 0, "Hold [E] to rebuild the barrier"));
         }
+        if (best is { Blocked: false } b && LogicMachineOf(b.Kind) is var (lk, lm) && LogicLocksZ(lk, lm, b.Index))
+            return b with { Text = "Locked", Blocked = true }; // switched off by map logic (a disabled zdoor or zmachine, GameLogic.cs)
         return best;
     }
 
@@ -1042,6 +1046,7 @@ public sealed partial class Game
                 ZPower = true;
                 ModeEvent($"{p.Name} turned on the power!", Sfx.StreakReady);
                 ZBanner("THE POWER IS ON");
+                LogicZombies(LogicEvent.Power, 0, p); // map logic: zombies.power (GameLogic.cs)
                 break;
             case ZUseKind.Pickup:
                 ClaimWeaponDrop(p, u.Index, now); // ZombiesDrops.cs
@@ -1057,7 +1062,25 @@ public sealed partial class Game
                 break;
             }
         }
+        if (u.Kind != ZUseKind.Door && LogicMachineOf(u.Kind) is (LogicKind.ZMachine, var machine))
+            LogicZMachineUsed(machine, u.Index, p); // map logic: a zmachine's "used" (GameLogic.cs)
     }
+
+    /// <summary>The map logic entity kind (and machine) a Zombies use belongs to, or null.</summary>
+    private static (LogicKind, LogicMachine)? LogicMachineOf(ZUseKind k) => k switch
+    {
+        ZUseKind.Door => (LogicKind.ZDoor, LogicMachine.Power),
+        ZUseKind.Power => (LogicKind.ZMachine, LogicMachine.Power),
+        ZUseKind.Box => (LogicKind.ZMachine, LogicMachine.Box),
+        ZUseKind.Perk => (LogicKind.ZMachine, LogicMachine.Perk),
+        ZUseKind.SlotUpgrade => (LogicKind.ZMachine, LogicMachine.SlotUpgrade),
+        ZUseKind.SlotMachine => (LogicKind.ZMachine, LogicMachine.SlotMachine),
+        ZUseKind.WallBuy or ZUseKind.WallAmmo => (LogicKind.ZMachine, LogicMachine.WallBuy),
+        ZUseKind.Workbench => (LogicKind.ZMachine, LogicMachine.Bench),
+        ZUseKind.Salvage => (LogicKind.ZMachine, LogicMachine.Salvage),
+        ZUseKind.Casino => (LogicKind.ZMachine, LogicMachine.Casino),
+        _ => null,
+    };
 
     /// <summary>Server: opens a door (unlocking the area behind it: its spawners and routes go live).</summary>
     public void OpenDoor(int door, Player? by)
@@ -1068,6 +1091,7 @@ public sealed partial class Game
         var d = zm.Doors[door];
         ModeEvent(by != null ? $"{by.Name} opened {d.Name}: {zm.Areas[d.AreaA].Name} - {zm.Areas[d.AreaB].Name}" : $"{d.Name} opened", d.Debris ? Sfx.BreakWood : Sfx.BreakMetal);
         ZDoorOpenedAt[door] = Brutal.GlfwApi.Glfw.Time;
+        LogicZDoorOpened(door, by); // map logic: a zdoor's "opened" (GameLogic.cs)
     }
 
     /// <summary>When each door opened (client clock), for the opening animation.</summary>

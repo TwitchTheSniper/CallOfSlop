@@ -16,11 +16,8 @@ namespace CallOfSlop;
 /// </summary>
 public static partial class SelfTest
 {
-    private static readonly System.Diagnostics.Stopwatch TmpSw = new();
-
     private static void CheckZombiesCasino()
     {
-        TmpSw.Restart();
         var rules = ZombiesRules.Load(File.ReadAllText(ZombiesRules.PathName), "casino rules");
         ZLine($"casino rules: blackjack {rules.CasinoMin[0]}-{rules.CasinoMax[0]}, roulette {rules.CasinoMin[1]}-{rules.CasinoMax[1]}, high-low {rules.CasinoMin[2]}-{rules.CasinoMax[2]} (edge {rules.HighLowEdge}), dice {rules.CasinoMin[3]}-{rules.CasinoMax[3]}; use {rules.CasinoUseRange} m, forfeit past {rules.CasinoLeaveRange} m");
         var refused = 0;
@@ -39,6 +36,46 @@ public static partial class SelfTest
         CasinoMaths(rules);
         CasinoBlackjackRules();
         CasinoTables();
+        CasinoLogic();
+    }
+
+    /// <summary>A casino table is a map logic "zmachine" (machine "casino"): disabled, it's locked and takes no bets; enabled again, it plays.</summary>
+    private static void CasinoLogic()
+    {
+        if (ZTestMap?.Zombies is not { } zt)
+            return;
+        var room = zt.Areas[zt.StartArea];
+        var at = new Vector2((room.X0 + room.X1) / 2 + 1.5f, (room.Z0 + room.Z1) / 2 + 1.5f);
+        var text = File.ReadAllText(Path.Combine(Maps.Folder, "Dev", "ZombiesTest.json")).TrimEnd();
+        text = text.Replace("\"zombies\": {", $"\"zombies\": {{ \"casino\": [{{ \"game\": \"dice\", \"at\": [{at.X}, {at.Y}] }}],");
+        text = text[..text.LastIndexOf('}')] + $", \"logic\": {{ \"entities\": [ {{ \"type\": \"zmachine\", \"name\": \"Dice\", \"machine\": \"casino\", \"at\": [{at.X}, {at.Y}], \"enabled\": false }} ] }} }}";
+        Map map;
+        try
+        {
+            map = MapFile.Load(text, "Dev/ZombiesTestCasino.json");
+        }
+        catch (MapFileException ex)
+        {
+            Fail($"casino logic: the test map doesn't load: {ex.Message}");
+            return;
+        }
+        var now = 0.0;
+        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, setup: game => World.SetMap(map));
+        var me = g.Local!;
+        var zp = g.ZP(me);
+        zp.Points = 1000;
+        me.Teleport(new Vector3(at.X, 0, at.Y - 1.1f));
+        var locked = g.FindZUse(me) is { Kind: ZUseKind.Casino, Text: "Locked", Blocked: true };
+        var refused = g.ServerCasino(me, 0, CasinoAct.Bet, 0, 100, now) != null && zp.Points == 1000;
+        g.SelfTestLogicDeliver(map.Logic!.Find("Dice"), LogicAction.Enable, LogicSignal.Pulse(me.Id));
+        g.SelfTestLogicTick(); // (delivered on the next logic tick)
+        var use = g.FindZUse(me);
+        var bet = g.ServerCasino(me, 0, CasinoAct.Bet, 0, 100, now);
+        var open = use is { Kind: ZUseKind.Casino, Blocked: false } && bet == null && zp.Points == 900;
+        ZLine($"casino logic: a disabled zmachine \"casino\" locks its table {locked} and takes no bet {refused}; enabled, it plays {open}{(open ? "" : $" (prompt '{use?.Text}', bet '{bet}')")}");
+        if (!locked || !refused || !open)
+            Fail("a casino table should be a map logic zmachine: locked while disabled, playable once enabled");
+        World.SetMap(Maps.All[0]);
     }
 
     // ---- The maths: every payout table and house edge, exactly ----
@@ -202,7 +239,6 @@ public static partial class SelfTest
 
     private static void CasinoTables()
     {
-        Line($"TMP a {TmpSw.ElapsedMilliseconds}");
         if (Maps.Find("Blackmoor Asylum") is not { Zombies: { } bm } bmap)
         {
             Fail("Blackmoor Asylum is missing");
@@ -226,22 +262,19 @@ public static partial class SelfTest
                 if (z.CasinoTables is not [{ Game: (int)CasinoGame.HighLow, BetMin: 100, BetMax: 2000, NeedsPower: true }])
                     Fail("a map's casino table should keep its game, limits and power flag");
             }
-            catch (MapFileException ex)
+            catch (MapFileException)
             {
                 mapRefused++;
-                Line($"  refused: {ex.Message}");
             }
         }
         if (mapRefused != 3)
             Fail($"a map with a broken casino table should be refused ({mapRefused}/3)");
-        Line($"TMP b {TmpSw.ElapsedMilliseconds}");
         var now = 0.0;
         using var g = ZGame(1, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: bmap);
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
         var zp = g.ZP(me);
         var rules = g.ZRules;
-        Line($"TMP c {TmpSw.ElapsedMilliseconds}");
         int Table(CasinoGame game) => bm.CasinoTables.FindIndex(t => t.Game == (int)game);
         void StandAt(Player p, int i, float side = 0)
         {
@@ -409,7 +442,6 @@ public static partial class SelfTest
         if (!payOk || numbers.Count < 10 || tooMuch == null || badSpot == null || !cleared || (botBets && bothPaid != spins))
             Fail("roulette should take chips from several players for one spin, pay each exactly as the board says, refuse bets past the table's limit or off the board, and give chips back before the spin");
 
-        Line($"TMP d {TmpSw.ElapsedMilliseconds}");
         // ---- High-low: the pot follows the multipliers; a loss pays nothing; walking away forfeits ----
         var hl = Table(CasinoGame.HighLow);
         var ht = g.ZCasino[hl];

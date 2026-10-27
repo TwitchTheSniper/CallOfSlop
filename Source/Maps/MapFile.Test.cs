@@ -18,7 +18,7 @@ public sealed class MapTestSpec
         "minDecalShare", "minMeshes", "minPlants", "minTrees", "maxDrawnBoxes", "minPackProps", "requireProps", "requireDecals",
         "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricHills", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
         "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
-        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "maxStuckSpots", "spawnsStand", "propsInside", "propsClear", "explosivesClear",
+        "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "maxStuckSpots", "spawnsStand", "propsInside", "propsClear", "explosivesClear", "events",
     ];
 
     /// <summary>"any" (the default), "non-rectangular", or a boundary shape: "rect", "circle", "ellipse", "smooth", "polygon".</summary>
@@ -77,6 +77,12 @@ public sealed class MapTestSpec
     public bool PropsInside = true;
     public bool PropsClear = true;
     public float ExplosivesClear;
+
+    /// <summary>
+    /// Map logic steps (Maps/README.md, "Map logic", "Testing it"): run in order on a server with the map's logic, each one
+    /// doing something, waiting, and checking which events went out meanwhile and which entities are on afterwards.
+    /// </summary>
+    public LogicTestStep[] Events = [];
 
     /// <summary>The block as it was read, written back by <see cref="MapFile.ToJson"/>.</summary>
     public string Raw = "{}";
@@ -182,9 +188,47 @@ public sealed class MapTestSpec
                 case "propsInside": s.PropsInside = Bool(v, at); break;
                 case "propsClear": s.PropsClear = Bool(v, at); break;
                 case "explosivesClear": s.ExplosivesClear = Float(v, at, 0f, 100f); break;
+                case "events":
+                    s.Events = v.ValueKind == JsonValueKind.Array
+                        ? v.EnumerateArray().Select((st, i) => LogicStep(st, $"{at}[{i}]")).ToArray()
+                        : throw new MapFileException($"{at}: a list of steps [ {{ \"use\": \"Button\", \"expect\": [\"Door.opened\"] }} ]");
+                    break;
             }
         }
         return s;
+    }
+
+    private static readonly string[] StepKeys = ["use", "do", "send", "enter", "leave", "wait", "expect", "expectNot", "on", "off"];
+
+    private static LogicTestStep LogicStep(JsonElement v, string at)
+    {
+        if (v.ValueKind != JsonValueKind.Object)
+            throw new MapFileException($"{at}: a step is an object");
+        var st = new LogicTestStep();
+        var doing = 0;
+        foreach (var p in v.EnumerateObject())
+        {
+            var k = StepKeys.FirstOrDefault(x => x.Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+                    ?? throw new MapFileException($"{at}: unknown key \"{p.Name}\" (known: {string.Join(", ", StepKeys)})");
+            var w = $"{at}.{k}";
+            string Name() => p.Value.ValueKind == JsonValueKind.String && p.Value.GetString() is { Length: > 0 } n ? n : throw new MapFileException($"{w}: a name");
+            switch (k)
+            {
+                case "use": st.Use = Name(); doing++; break;
+                case "do": st.Do = Name(); doing++; break;
+                case "send": st.Send = Name(); doing++; break;
+                case "enter": st.Enter = Name(); doing++; break;
+                case "leave": st.Leave = Name(); doing++; break;
+                case "wait": st.Wait = Float(p.Value, w, 0f, 120f); break;
+                case "expect": st.Expect = Words(p.Value, w); break;
+                case "expectNot": st.ExpectNot = Words(p.Value, w); break;
+                case "on": st.On = Words(p.Value, w); break;
+                case "off": st.Off = Words(p.Value, w); break;
+            }
+        }
+        if (doing > 1)
+            throw new MapFileException($"{at}: one of use, do, send, enter, leave per step");
+        return st;
     }
 
     private static string Word(JsonElement v, string at, params string[] allowed) =>
@@ -215,6 +259,20 @@ public sealed class MapTestSpec
         var n = Numbers(v, at, 3);
         return new Vector3(n[0], n[1], n[2]);
     }
+}
+
+/// <summary>
+/// One step of a map's logic test ("test": { "events": [...] }): at most one thing to do (use a button or lever as a
+/// player standing in front of it, deliver an action, send an event, walk a player into a zone or out of every zone),
+/// then <see cref="Wait"/> seconds of server ticks (0.5 by default), then the checks: every event in <see cref="Expect"/>
+/// ("Entity.event") went out during the step, none in <see cref="ExpectNot"/> did, and the entities in <see cref="On"/>
+/// are on (open, lit, pulled, true, running) and those in <see cref="Off"/> aren't.
+/// </summary>
+public sealed class LogicTestStep
+{
+    public string? Use, Do, Send, Enter, Leave;
+    public float Wait = 0.5f;
+    public string[] Expect = [], ExpectNot = [], On = [], Off = [];
 }
 
 public sealed partial class Map

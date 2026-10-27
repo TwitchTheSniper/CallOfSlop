@@ -124,9 +124,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and a Zombies flags byte (bit 0: the test kit).
     // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
     //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
+    // 61: map logic (Source/Game/GameLogic.cs, Maps/README.md "Map logic"): Msg.Logic at the end of Msg (a LogicMsgKind byte
+    //     first: entity flags, a button or lever used, a mover's control clock as three doubles, a sound, a notice, the
+    //     joiner's full flags); movers can be started and stopped, so their pose follows that clock.
     // 62: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
-    //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg. (61 was left for the map-events branch;
-    //     the merger renumbers.)
+    //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
     public const byte ProtocolVersion = 62;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 

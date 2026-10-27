@@ -311,6 +311,8 @@ public sealed partial class Game
             return $"{CasinoGames.Name(spot.Game)}: needs the power on.";
         if (!AtCasinoTable(p, i))
             return "You're not at the table.";
+        if (LogicLocksZ(LogicKind.ZMachine, LogicMachine.Casino, i))
+            return "The table is closed."; // a disabled zmachine (map logic, GameLogic.cs)
         var t = ZCasino[i];
         var zp = ZP(p);
         string? why;
@@ -332,6 +334,7 @@ public sealed partial class Game
             {
                 zp.Points -= amount; // (checked above: never below 0)
                 t.Dirty = true;
+                LogicZMachineUsed(LogicMachine.Casino, i, p); // map logic: a zmachine "casino" sends "used" on every bet (GameLogic.cs)
             }
             return why;
         }

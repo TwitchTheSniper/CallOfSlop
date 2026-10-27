@@ -233,6 +233,7 @@ public sealed partial class Game
         WritePropBreak(_w, i, kind, from);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         OnPropBroken(i, from, kind);
+        LogicPropBroken(i, attacker); // map logic: a breakable's "destroyed" (GameLogic.cs)
         ScheduleRespawn(i, now); // a prop placed with "respawn" comes back later (GameMines.cs)
         var inst = World.Map.PropInstances[i];
         if (inst.Def.Breakable is { ExplodeRadius: > 0 } br)

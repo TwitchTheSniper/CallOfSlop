@@ -93,6 +93,7 @@ public sealed class KingOfTheHillModule : GameModeModule
             _hillAccum = 0;
             if (hills.Count > 1)
                 game.ModeEvent("The hill has moved!", Sfx.ReconBeep);
+            game.LogicObjective(LogicEvent.HillMoved, HillIndex); // map logic: match.hillMoved, n = the hill now live
         }
         HillMoveIn = Math.Max(0, _hillMoveAt - now);
         var hill = hills[HillIndex % hills.Count];
@@ -110,7 +111,10 @@ public sealed class KingOfTheHillModule : GameModeModule
         HillContested = blue && red;
         var owner = blue == red ? Game.NoTeam : blue ? (byte)0 : (byte)1;
         if (owner != HillOwner && owner != Game.NoTeam)
+        {
             game.ModeEvent($"{GameModes.TeamNames[owner]} team has the hill", Sfx.HitTick);
+            game.LogicObjective(LogicEvent.HillTaken, owner); // map logic: match.hillTaken, n = the team
+        }
         HillOwner = owner;
         if (owner == Game.NoTeam)
             return; // empty or contested: nobody scores

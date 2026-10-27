@@ -1,0 +1,920 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Logic Test",
+ "description": "Map logic dev map: a button opens a gate, the courtyard's lamps come on when you walk in, a timer runs the lift, two levers and an AND gate open the vault, and a pressure plate counts to three.",
+ "author": "Call of Slop",
+ "order": 987,
+ "prototypeGrid": true,
+ "maxPlayers": 8,
+ "test": {
+  "maxPlayers": 8,
+  "minHills": 3,
+  "minTeamSpawns": 4,
+  "walkFairness": 0.0,
+  "minMainNavPct": 60,
+  "botMatchSeconds": 6,
+  "events": [
+   {
+    "use": "GateButton",
+    "expect": [
+     "GateButton.pressed",
+     "Gate.opened"
+    ],
+    "on": [
+     "Gate"
+    ]
+   },
+   {
+    "wait": 8.5,
+    "expect": [
+     "Gate.closed"
+    ],
+    "off": [
+     "Gate"
+    ]
+   },
+   {
+    "enter": "Courtyard",
+    "expect": [
+     "Courtyard.entered",
+     "Courtyard.occupied",
+     "Lamp1.on",
+     "Lamp4.on"
+    ],
+    "on": [
+     "Lamp1",
+     "Lamp2",
+     "Lamp3",
+     "Lamp4"
+    ]
+   },
+   {
+    "leave": "Courtyard",
+    "wait": 2.5,
+    "expect": [
+     "Courtyard.left",
+     "Courtyard.empty",
+     "Lamp1.off"
+    ],
+    "off": [
+     "Lamp1",
+     "Lamp4"
+    ]
+   },
+   {
+    "use": "LeverA",
+    "wait": 0.6,
+    "expect": [
+     "LeverA.on"
+    ],
+    "expectNot": [
+     "Both.true",
+     "VaultDoor.opened"
+    ],
+    "on": [
+     "LeverA",
+     "RedLamp",
+     "Neither"
+    ],
+    "off": [
+     "VaultDoor"
+    ]
+   },
+   {
+    "use": "LeverB",
+    "wait": 0.6,
+    "expect": [
+     "Both.true",
+     "VaultDoor.opened",
+     "Neither.false",
+     "RedLamp.off",
+     "GreenLamp.on"
+    ],
+    "on": [
+     "VaultDoor",
+     "GreenLamp"
+    ],
+    "off": [
+     "RedLamp"
+    ]
+   },
+   {
+    "use": "LeverA",
+    "wait": 0.6,
+    "expect": [
+     "LeverA.off",
+     "Both.false",
+     "VaultDoor.closed",
+     "RedLamp.on"
+    ],
+    "off": [
+     "VaultDoor",
+     "GreenLamp"
+    ]
+   },
+   {
+    "do": "LiftTimer.reset",
+    "wait": 9,
+    "expect": [
+     "LiftTimer.fired",
+     "LiftControl.started",
+     "LiftControl.arrived"
+    ]
+   },
+   {
+    "enter": "Plate",
+    "expect": [
+     "Plate.pressed",
+     "Presses.changed"
+    ]
+   },
+   {
+    "leave": "Plate",
+    "expect": [
+     "Plate.released"
+    ]
+   },
+   {
+    "enter": "Plate"
+   },
+   {
+    "leave": "Plate"
+   },
+   {
+    "enter": "Plate",
+    "expect": [
+     "Presses.reached"
+    ]
+   },
+   {
+    "enter": "Courtyard"
+   },
+   {
+    "do": "Trial.start",
+    "wait": 3.5,
+    "expect": [
+     "Trial.started",
+     "Trial.survived",
+     "Trial.ended",
+     "Prize.given"
+    ],
+    "expectNot": [
+     "Trial.failed"
+    ],
+    "off": [
+     "Trial"
+    ]
+   },
+   {
+    "do": "Trial.start",
+    "wait": 0.3,
+    "expect": [
+     "Trial.started"
+    ],
+    "on": [
+     "Trial"
+    ]
+   },
+   {
+    "leave": "Courtyard",
+    "expect": [
+     "Trial.failed",
+     "Trial.ended"
+    ],
+    "expectNot": [
+     "Trial.survived",
+     "Prize.given"
+    ],
+    "off": [
+     "Trial"
+    ]
+   }
+  ]
+ },
+ "halfX": 30.0,
+ "halfZ": 24.0,
+ "sky": "#7d8ea6",
+ "teamSpawns": [
+  [
+   [
+    -8.0,
+    0.0,
+    -19.0
+   ],
+   [
+    -3.0,
+    0.0,
+    -19.0
+   ],
+   [
+    3.0,
+    0.0,
+    -19.0
+   ],
+   [
+    8.0,
+    0.0,
+    -19.0
+   ]
+  ],
+  [
+   [
+    -8.0,
+    0.0,
+    11.0
+   ],
+   [
+    -3.0,
+    0.0,
+    11.0
+   ],
+   [
+    3.0,
+    0.0,
+    11.0
+   ],
+   [
+    8.0,
+    0.0,
+    11.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 0.0,
+   "z": -4.0,
+   "radius": 3.5
+  },
+  {
+   "x": -11.0,
+   "z": -4.0,
+   "radius": 3.0
+  },
+  {
+   "x": 11.0,
+   "z": -4.0,
+   "radius": 3.0
+  }
+ ],
+ "flags": [
+  [
+   0.0,
+   -21.0
+  ],
+  [
+   0.0,
+   13.0
+  ]
+ ],
+ "movers": [
+  {
+   "type": "elevator",
+   "name": "Lift",
+   "at": [
+    20,
+    0.3,
+    -10
+   ],
+   "rise": 3.5,
+   "speed": 1.5,
+   "dwell": 0,
+   "running": false,
+   "boxes": [
+    {
+     "size": [
+      3,
+      0.3,
+      3
+     ],
+     "color": "#4fc36b"
+    }
+   ]
+  }
+ ],
+ "logic": {
+  "entities": [
+   {
+    "type": "door",
+    "name": "Gate",
+    "box": [
+     -15.0,
+     0.0,
+     -1.2,
+     -14.7,
+     2.6,
+     1.2
+    ],
+    "color": "#b0763c"
+   },
+   {
+    "type": "button",
+    "name": "GateButton",
+    "at": [
+     -14.64,
+     1.3,
+     2.3
+    ],
+    "yaw": 90.0,
+    "prompt": "open the gate",
+    "cooldown": 1.0
+   },
+   {
+    "type": "sound",
+    "name": "GateSound",
+    "at": [
+     -14.8,
+     1.3,
+     0.0
+    ],
+    "sound": "breakMetal",
+    "volume": 0.6,
+    "range": 30.0
+   },
+   {
+    "type": "zone",
+    "name": "Courtyard",
+    "box": [
+     -6.0,
+     0.0,
+     -6.0,
+     6.0,
+     3.0,
+     6.0
+    ]
+   },
+   {
+    "type": "sound",
+    "name": "Alarm",
+    "at": [
+     0.0,
+     2.0,
+     0.0
+    ],
+    "sound": "reconBeep",
+    "range": 40.0
+   },
+   {
+    "type": "text",
+    "name": "AlarmText",
+    "text": "You set off the courtyard alarm.",
+    "to": "activator"
+   },
+   {
+    "type": "lamp",
+    "name": "Lamp1",
+    "box": [
+     -6.25,
+     2.6,
+     -6.25,
+     -5.75,
+     3.0,
+     -5.75
+    ],
+    "color": "#ffd873"
+   },
+   {
+    "type": "lamp",
+    "name": "Lamp2",
+    "box": [
+     5.75,
+     2.6,
+     -6.25,
+     6.25,
+     3.0,
+     -5.75
+    ],
+    "color": "#ffd873"
+   },
+   {
+    "type": "lamp",
+    "name": "Lamp3",
+    "box": [
+     -6.25,
+     2.6,
+     5.75,
+     -5.75,
+     3.0,
+     6.25
+    ],
+    "color": "#ffd873"
+   },
+   {
+    "type": "lamp",
+    "name": "Lamp4",
+    "box": [
+     5.75,
+     2.6,
+     5.75,
+     6.25,
+     3.0,
+     6.25
+    ],
+    "color": "#ffd873"
+   },
+   {
+    "type": "mover",
+    "name": "LiftControl",
+    "mover": "Lift"
+   },
+   {
+    "type": "timer",
+    "name": "LiftTimer",
+    "interval": 6.0
+   },
+   {
+    "type": "sound",
+    "name": "LiftBell",
+    "at": [
+     20.0,
+     4.0,
+     -10.0
+    ],
+    "sound": "hitTick",
+    "range": 25.0
+   },
+   {
+    "type": "lever",
+    "name": "LeverA",
+    "at": [
+     -4.0,
+     1.2,
+     14.98
+    ],
+    "prompt": "pull lever A"
+   },
+   {
+    "type": "lever",
+    "name": "LeverB",
+    "at": [
+     4.0,
+     1.2,
+     14.98
+    ],
+    "prompt": "pull lever B"
+   },
+   {
+    "type": "and",
+    "name": "Both"
+   },
+   {
+    "type": "not",
+    "name": "Neither"
+   },
+   {
+    "type": "door",
+    "name": "VaultDoor",
+    "box": [
+     12.0,
+     0.0,
+     13.0,
+     12.3,
+     2.6,
+     15.0
+    ],
+    "color": "#8a6db0"
+   },
+   {
+    "type": "lamp",
+    "name": "GreenLamp",
+    "box": [
+     -1.2,
+     2.0,
+     15.0,
+     -0.4,
+     2.3,
+     15.3
+    ],
+    "color": "#5cff7a"
+   },
+   {
+    "type": "lamp",
+    "name": "RedLamp",
+    "box": [
+     0.4,
+     2.0,
+     15.0,
+     1.2,
+     2.3,
+     15.3
+    ],
+    "on": true,
+    "color": "#ff5c5c"
+   },
+   {
+    "type": "plate",
+    "name": "Plate",
+    "box": [
+     -1.0,
+     0.0,
+     -15.0,
+     1.0,
+     0.3,
+     -13.0
+    ]
+   },
+   {
+    "type": "counter",
+    "name": "Presses",
+    "target": 3,
+    "repeat": true
+   },
+   {
+    "type": "random",
+    "name": "Pick",
+    "choices": 2
+   },
+   {
+    "type": "text",
+    "name": "Heads",
+    "text": "Three presses: heads!"
+   },
+   {
+    "type": "text",
+    "name": "Tails",
+    "text": "Three presses: tails!"
+   },
+   {
+    "type": "challenge",
+    "name": "Trial",
+    "seconds": 3.0,
+    "zone": "Courtyard",
+    "reward": 250
+   },
+   {
+    "type": "reward",
+    "name": "Prize",
+    "points": 100
+   },
+   {
+    "type": "text",
+    "name": "TrialText",
+    "text": "Challenge survived!"
+   }
+  ],
+  "wires": [
+   {
+    "from": "GateButton.pressed",
+    "to": "Gate.open"
+   },
+   {
+    "from": "GateButton.pressed",
+    "to": "Gate.close",
+    "delay": 8.0
+   },
+   {
+    "from": "Gate.opened",
+    "to": "GateSound.play"
+   },
+   {
+    "from": "Courtyard.entered",
+    "to": "Alarm.play"
+   },
+   {
+    "from": "Courtyard.entered",
+    "to": "AlarmText.show"
+   },
+   {
+    "from": "Courtyard.occupied",
+    "to": "Lamp1.turnOn"
+   },
+   {
+    "from": "Courtyard.empty",
+    "to": "Lamp1.turnOff",
+    "delay": 2.0
+   },
+   {
+    "from": "Courtyard.occupied",
+    "to": "Lamp2.turnOn"
+   },
+   {
+    "from": "Courtyard.empty",
+    "to": "Lamp2.turnOff",
+    "delay": 2.0
+   },
+   {
+    "from": "Courtyard.occupied",
+    "to": "Lamp3.turnOn"
+   },
+   {
+    "from": "Courtyard.empty",
+    "to": "Lamp3.turnOff",
+    "delay": 2.0
+   },
+   {
+    "from": "Courtyard.occupied",
+    "to": "Lamp4.turnOn"
+   },
+   {
+    "from": "Courtyard.empty",
+    "to": "Lamp4.turnOff",
+    "delay": 2.0
+   },
+   {
+    "from": "LiftTimer.fired",
+    "to": "LiftControl.advance"
+   },
+   {
+    "from": "LiftControl.arrived",
+    "to": "LiftBell.play"
+   },
+   {
+    "from": "LeverA.changed",
+    "to": "Both.a"
+   },
+   {
+    "from": "LeverB.changed",
+    "to": "Both.b"
+   },
+   {
+    "from": "Both.out",
+    "to": "Neither.in"
+   },
+   {
+    "from": "Both.true",
+    "to": "VaultDoor.open"
+   },
+   {
+    "from": "Both.false",
+    "to": "VaultDoor.close"
+   },
+   {
+    "from": "Both.true",
+    "to": "GreenLamp.turnOn"
+   },
+   {
+    "from": "Both.false",
+    "to": "GreenLamp.turnOff"
+   },
+   {
+    "from": "Neither.true",
+    "to": "RedLamp.turnOn"
+   },
+   {
+    "from": "Neither.false",
+    "to": "RedLamp.turnOff"
+   },
+   {
+    "from": "Plate.pressed",
+    "to": "Presses.add"
+   },
+   {
+    "from": "Presses.reached",
+    "to": "Pick.trigger"
+   },
+   {
+    "from": "Pick.out1",
+    "to": "Heads.show"
+   },
+   {
+    "from": "Pick.out2",
+    "to": "Tails.show"
+   },
+   {
+    "from": "Trial.survived",
+    "to": "Prize.giveAll"
+   },
+   {
+    "from": "Trial.survived",
+    "to": "TrialText.show"
+   }
+  ]
+ },
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#5a5d63"
+  },
+  {
+   "op": "Perimeter",
+   "height": 4.0,
+   "color": "#8a8d93"
+  },
+  {
+   "op": "WallX",
+   "x0": -27.0,
+   "x1": -15.0,
+   "z": -6.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#6d7a8a"
+  },
+  {
+   "op": "WallX",
+   "x0": -27.0,
+   "x1": -15.0,
+   "z": 6.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#6d7a8a"
+  },
+  {
+   "op": "WallZ",
+   "z0": -6.3,
+   "z1": 6.3,
+   "x": -27.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#6d7a8a"
+  },
+  {
+   "op": "WallZ",
+   "z0": -6.3,
+   "z1": 6.3,
+   "x": -15.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#6d7a8a",
+   "holes": [
+    {
+     "center": 6.3,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "Waypoint",
+   "x": -21.0,
+   "z": 0.0
+  },
+  {
+   "op": "Block",
+   "x0": -6.15,
+   "y0": 0.0,
+   "z0": -6.15,
+   "x1": -5.85,
+   "y1": 2.6,
+   "z1": -5.85,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": 5.85,
+   "y0": 0.0,
+   "z0": -6.15,
+   "x1": 6.15,
+   "y1": 2.6,
+   "z1": -5.85,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": -6.15,
+   "y0": 0.0,
+   "z0": 5.85,
+   "x1": -5.85,
+   "y1": 2.6,
+   "z1": 6.15,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": 5.85,
+   "y0": 0.0,
+   "z0": 5.85,
+   "x1": 6.15,
+   "y1": 2.6,
+   "z1": 6.15,
+   "color": "#3a3c40"
+  },
+  {
+   "op": "Block",
+   "x0": 21.6,
+   "y0": 0.0,
+   "z0": -13.0,
+   "x1": 27.0,
+   "y1": 3.8,
+   "z1": -7.0,
+   "color": "#8a7d6a"
+  },
+  {
+   "op": "StairsZ",
+   "x0": 23.0,
+   "x1": 25.0,
+   "z": -2.5,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 3.8,
+   "color": "#8a7d6a"
+  },
+  {
+   "op": "Waypoint",
+   "x": 24.3,
+   "z": -10.0,
+   "y": 3.8
+  },
+  {
+   "op": "WallX",
+   "x0": -10.0,
+   "x1": 10.0,
+   "z": 15.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 2.0,
+   "color": "#8a8d93"
+  },
+  {
+   "op": "WallX",
+   "x0": 12.0,
+   "x1": 22.0,
+   "z": 10.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#7a6d8a"
+  },
+  {
+   "op": "WallX",
+   "x0": 12.0,
+   "x1": 22.0,
+   "z": 18.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#7a6d8a"
+  },
+  {
+   "op": "WallZ",
+   "z0": 10.0,
+   "z1": 18.3,
+   "x": 22.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#7a6d8a"
+  },
+  {
+   "op": "WallZ",
+   "z0": 10.0,
+   "z1": 18.3,
+   "x": 12.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.5,
+   "color": "#7a6d8a",
+   "holes": [
+    {
+     "center": 4.0,
+     "width": 2.0,
+     "bottom": 0.0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "Waypoint",
+   "x": 17.0,
+   "z": 14.0
+  },
+  {
+   "op": "Spawn",
+   "x": -8.0,
+   "z": -19.0
+  },
+  {
+   "op": "Spawn",
+   "x": -8.0,
+   "z": 11.0
+  },
+  {
+   "op": "Spawn",
+   "x": -3.0,
+   "z": -19.0
+  },
+  {
+   "op": "Spawn",
+   "x": -3.0,
+   "z": 11.0
+  },
+  {
+   "op": "Spawn",
+   "x": 3.0,
+   "z": -19.0
+  },
+  {
+   "op": "Spawn",
+   "x": 3.0,
+   "z": 11.0
+  },
+  {
+   "op": "Spawn",
+   "x": 8.0,
+   "z": -19.0
+  },
+  {
+   "op": "Spawn",
+   "x": 8.0,
+   "z": 11.0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 4
+  }
+ ]
+}

@@ -985,6 +985,8 @@ public sealed partial class Game : IDisposable
         AllocProfile.Mark("props, mines, destruction");
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
+        AllocProfile.Mark("map logic");
+        ServerTickLogic(now); // map events: zones, timers, wires (GameLogic.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
@@ -1597,6 +1599,7 @@ public sealed partial class Game : IDisposable
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
                 SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
+                SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)
@@ -1828,6 +1831,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.BuildingEvent:
             case (byte)Msg.BuildingState:
                 OnBuildingPacket(id, ref r, sender, now); // building doors and windows (GameBuildings.cs)
+                break;
+            case (byte)Msg.Logic:
+                OnLogicPacket(ref r, sender, now); // map logic (GameLogic.cs)
                 break;
             case (byte)Msg.StructBreak:
             case (byte)Msg.StructState:
