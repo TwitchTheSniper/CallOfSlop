@@ -1111,5 +1111,5 @@ the weapon-slot upgrade, the power switch, salvage piles and slot machines. The 
 [docs/zombies/ZOMBIES-MODE.md](../docs/zombies/ZOMBIES-MODE.md) ("Map format"); `Dev/ZombiesTest.json` is a worked
 example and `Zombies/01-BlackmoorAsylum.json` (the **Zombies** pack, written by `tools/zombies/make_blackmoor.py`) a
 full map. With `"machineProps": true` in the section every machine stands as a solid prop from `Props/Zombies`, placed
-by the section itself (leave room for each: see the doc). Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
+by the section itself (leave room for each: see the doc). `"testKit": true` lets the host's Test kit setting act on the map (`Dev/HordeTest.json`, written by the C# map kit, is the big-horde test map). Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
 unchanged when a map is saved, and opening doors never changes the map's fingerprint.

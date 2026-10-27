@@ -30,7 +30,7 @@ public sealed class ZombiesModule : GameModeModule
     // UsesThrowables stays true and FixedPerks null: the server-side start gear (ZombiesOnSpawn) takes the multiplayer
     // perks and the loadout's grenades away itself, while the local client keeps its grenade count as it always has.
 
-    public override string MapWarning => "Zombies needs a Zombies map: pick one (Zombies pack: Blackmoor Asylum; Dev pack: Zombies Test), or it plays Free-for-all.";
+    public override string MapWarning => "Zombies needs a Zombies map: pick one (Zombies pack: Blackmoor Asylum; Dev pack: Zombies Test, Horde Test), or it plays Free-for-all.";
 
     public override int MaxPlayers(Map map) => Game.ZombiesMaxPlayers;
 

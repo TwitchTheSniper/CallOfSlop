@@ -303,7 +303,8 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "power": {"at": [x, z], "yaw": -90},
   "salvage": [ {"at": [x, z], "cost": 25} ],
   "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0, "category": "Barrel"} ],
-  "machineProps": true
+  "machineProps": true,
+  "testKit": true
 }
 ```
 
@@ -318,6 +319,9 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   0.9 x 0.7 m, a box crate 1.3 x 0.66, a workbench 1.6 x 0.8, the locker 1.0 x 0.6, the reel cabinet 0.9 x 0.7 and the power box 0.7 x 0.3
   (place it 0.2 m off a wall). They count towards the map's prop fingerprint. Without the key (Zombies Test) machines are drawn
   without collision, as before.
+
+- **Test kit** (`"testKit": true`, a test map: Horde Test): the host's "Test kit" lobby setting works here (see "Horde
+  Test, start round and test kit").
 
 - **Areas** are rectangles; the **area graph** is made by the doors: an area is unlocked when it's the start area or
   one of its doors is open. Zombies route between areas through open doors (a breadth-first search over the doors),
@@ -768,7 +772,7 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit)
 
 Protocol 58 (hordes, see "Hordes"): `ZEnts` per client, interest-managed, at most 80 zombies a packet, 16-bit horde size
 and entry count, the window byte only outside, at a window or swiping (11 or 12 bytes a zombie), unreliable (not
@@ -922,6 +926,57 @@ The self-test checks each of these with short seeded scenarios on Blackmoor: 60 
 over both, 20 at one window queue on its spots and split to the other two, a gunshot turns a group in earshot, a blast
 scatters the zombies near it and their group regroups and goes on, a down sends a group to the other player, a lure
 draws a group and lets it go, a group shut in a room regroups, and the same horde twice plays out the same.
+
+## Horde Test, start round and test kit (developer request, 2026-10-27)
+
+"Add an agent to make a horde test map. Getting a high round in zombies takes a lot of time." Three tools for seeing and
+testing big hordes quickly:
+
+**Horde Test** (`Maps/Dev/HordeTest.json`, Dev pack, order 986): written by the C# map kit
+(`Source/MapKit/Generators/HordeTest.cs`; `CallOfSlop --gen-map "Horde Test"`, never edit the JSON by hand). A 48 x 48 m
+walled arena (the start area) with 15 boarded windows in its south, east and west walls, and two annexes on its north
+side, the **Power Annex** behind the Power Door (750: the power switch, the slot upgrade, a workbench, salvage, a ground
+spawner) and the **Armoury** behind the Armoury Debris (1000: five category slot machines, a box spot, the Coach Gun,
+salvage, a ground spawner), with three windows each: 21 windows, **two spawners behind each** (44 spawners). Outside
+the walls a 5-10 m open strip runs right round the map, so the queues at the windows, the splits to other windows and
+the flanks are easy to watch: from the **dais** in the middle (1.6 m, stairs east and west) or the two railed **lookout
+towers** either side of it (3.2 m), which see over the 3 m walls into the strip. In the arena: **every perk machine in a
+row** along the north wall (seven on the power), the box (three spots), a workbench, four wall buys (Wall Rifle, Wall SMG,
+Wall Pump, Burst Marksman) and a classic slot machine. Every machine is a solid prop. Round 30 fills to its cap of 300 in
+about 28 s. Its `test` block (Maps/README.md, "Testing a map") checks the contract; the outside strip and the annexes are
+nav pockets of their own (the windows and shut doors cut them off), so `minMainNavPct` is 40.
+
+**Start round** (the lobby room's World section, Zombies: 1, 5, 10, 20, 30, 40 or 50; settings key
+`zombie_start_round`; `CallOfSlop host --zombies-round 30`, not saved): the run's first round is that one, with the
+economy of a run that got there (`Source/Game/ZombiesStartRound.cs`):
+- **Points**: the start points plus `points.startRoundKeep` (12 percent) of a player's share of what the skipped rounds
+  paid (`points.startRoundPerZombie`: 90 a zombie, a kill and a few hits); the rest went on doors, perks and guns. Solo:
+  round 5 950, 10 2750, 20 19730, 30 67060, 40 160250; each of 4 players at round 30: 29620. Someone who joins the run
+  later gets the same.
+- **Power-ups**: the team's points schedule is moved on by everything the skipped rounds paid, so the next drop is one
+  of that round's (rising) steps away.
+- The round itself brings the rest as usual: zombie count, health and speeds, the alive cap and spawn bursts, the box's
+  and the drops' tiers, the slot machines' price.
+
+**Test kit** (a checkbox under Start round, only on maps whose section says `"testKit": true`: Horde Test; settings key
+`zombie_test_kit`; `--test-kit`): everyone starts with **every perk**, slots 3-4, the four strongest standard box guns
+(Wonder one-offs left out) and the best melee build, and the power is on, so you can stand on the dais and watch. Perks
+are still lost on a down; bleeding out brings the kit back with the start gear.
+
+**Skipping rounds**: in a Zombies run the host's pause menu has a **HOST** page (Esc > HOST, as in Test Range) with
+**NEXT ROUND NOW** and **SKIP TO IT** (any round 1-100): the zombies up and queued go (no points or drops), the round
+starts at once (a break or ready-up is cut short), and anyone short of that round's start points is raised to them (the
+power-up schedule moves on too). Server-side only: no new message.
+
+**Network (protocol 59).** Both settings are host settings: `Msg.LobbyState` ends with the start round byte and a
+Zombies flags byte (bit 0: the test kit), so clients' lobby rooms show them ("starts at round 30, test kit"). Round 1
+without the kit plays exactly as before (the seeded match digests are unchanged).
+
+Self-test **"Zombies start round"**: the start points by round (solo and 4 players); a run on Horde Test started at round
+30 with the kit (round 29 waiting, the points, every perk, 4 guns and a melee build, the power, the power-up schedule
+moved on); the horde filling to the round-30 cap of 300 (28 s; the user's PC: 0.17 ms a tick mean, 2.0 ms worst; at
+most 35 s, on Windows no tick over 8 ms); the host's skip to round 32 (horde cleared, round started, points raised); the
+settings file; a loopback client seeing the host's start round and kit.
 
 ## Controls
 
