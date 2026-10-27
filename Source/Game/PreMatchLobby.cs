@@ -332,6 +332,25 @@ public sealed partial class Game
         MarkLobbyDirty();
     }
 
+    /// <summary>
+    /// Host, in the lobby: the world and chat rules (Destruction, Allow voice chat, dead players' chat, bot gear), told
+    /// to everyone in the lobby state (protocol 52) so clients see them in the lobby's tabs.
+    /// </summary>
+    public void LobbySetHostRules(bool destruction, bool voice, bool deadChatPrivate, BotGearMode gear)
+    {
+        if (!IsServer)
+            return;
+        if (!Enum.IsDefined(gear))
+            gear = BotGearMode.MatchPlayers;
+        if (destruction == DestructionEnabled && voice == VoiceAllowed && deadChatPrivate == DeadChatPrivate && gear == BotGearMode)
+            return;
+        DestructionEnabled = destruction;
+        VoiceAllowed = voice; // the server stops relaying at once (GameVoice.cs); clients learn it below
+        DeadChatPrivate = deadChatPrivate;
+        BotGearMode = gear; // bots draw their next loadout at the new gear level (BotGear.cs)
+        MarkLobbyDirty();
+    }
+
     /// <summary>Host, in the lobby: team rules (<see cref="SetTeamRules"/>), told to everyone at once.</summary>
     public void LobbySetTeamRules(TeamSelection selection, int maxDiff)
     {
@@ -379,19 +398,23 @@ public sealed partial class Game
 
     // ---- Replication ------------------------------------------------------------------------------------------
 
-    private const byte LobbyFlagOpen = 1, LobbyFlagForced = 2, LobbyFlagReturn = 4, LobbyFlagTrueRandom = 8, LobbyFlagFrenzy = 16;
+    private const byte LobbyFlagOpen = 1, LobbyFlagForced = 2, LobbyFlagReturn = 4, LobbyFlagTrueRandom = 8, LobbyFlagFrenzy = 16,
+        LobbyFlagDestruction = 32, LobbyFlagVoice = 64, LobbyFlagDeadChat = 128; // (protocol 52)
 
     /// <summary>
     /// The lobby state (protocol 32): version, flags, the map (name + fingerprint), mode, score limit choice, time
-    /// limit, bots wanted and their difficulty, auto-start, gravity (protocol 48), then every player's ping. About 30 bytes + 3 per player.
+    /// limit, bots wanted and their difficulty, auto-start, gravity (protocol 48), bot gear (protocol 52; destruction, voice
+    /// and dead chat are flags), then every player's ping. About 30 bytes + 3 per player.
     /// </summary>
     public void WriteLobbyState(PacketWriter w)
     {
         var flags = (byte)((InLobby ? LobbyFlagOpen : 0) | (LobbyForced ? LobbyFlagForced : 0) | (ReturnToLobby ? LobbyFlagReturn : 0)
-                           | (TrueRandom ? LobbyFlagTrueRandom : 0) | (FrenzyBuffsEnabled ? LobbyFlagFrenzy : 0));
+                           | (TrueRandom ? LobbyFlagTrueRandom : 0) | (FrenzyBuffsEnabled ? LobbyFlagFrenzy : 0)
+                           | (DestructionEnabled ? LobbyFlagDestruction : 0) | (VoiceAllowed ? LobbyFlagVoice : 0) | (DeadChatPrivate ? LobbyFlagDeadChat : 0));
         w.Begin(Msg.LobbyState).U16(LobbyVersion).U8(flags).Str(World.Map.Name).U32(World.Map.ContentHash)
             .U8((byte)Mode).U8((byte)ScoreLimitMode).U8((byte)MatchMinutes).U8((byte)Math.Min(WantedBots, 255)).U8((byte)_botSkill)
-            .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent); // (protocol 48: gravity, GameGravity.cs)
+            .U16((ushort)Math.Clamp(AutoStartSeconds, 0, ushort.MaxValue)).U8((byte)GravityPercent) // (protocol 48: gravity, GameGravity.cs)
+            .U8((byte)BotGearMode); // (protocol 52: bot gear, BotGear.cs)
         var countAt = w.Length;
         w.U8(0);
         byte n = 0;
@@ -436,7 +459,7 @@ public sealed partial class Game
             return;
         var flags = r.U8();
         var mapName = r.Str();
-        if (!r.Has(14))
+        if (!r.Has(15))
             return;
         var hash = r.U32();
         var mode = (GameMode)r.U8();
@@ -446,6 +469,7 @@ public sealed partial class Game
         var skill = r.U8();
         var auto = r.U16();
         var gravity = r.U8();
+        var gear = (BotGearMode)r.U8();
         int n = r.U8();
         Array.Clear(PingMs);
         for (var i = 0; i < n && r.Has(3); i++)
@@ -464,6 +488,17 @@ public sealed partial class Game
         ReturnToLobby = (flags & LobbyFlagReturn) != 0;
         TrueRandom = (flags & LobbyFlagTrueRandom) != 0;
         FrenzyBuffsEnabled = (flags & LobbyFlagFrenzy) != 0;
+        DestructionEnabled = (flags & LobbyFlagDestruction) != 0; // (shown in the lobby; the server decides what breaks)
+        DeadChatPrivate = (flags & LobbyFlagDeadChat) != 0; // (shown; the server routes the chat)
+        BotGearMode = Enum.IsDefined(gear) ? gear : BotGearMode.MatchPlayers; // (shown; the server draws the loadouts)
+        var voice = (flags & LobbyFlagVoice) != 0;
+        if (voice != VoiceAllowed)
+        {
+            VoiceAllowed = voice; // as Msg.VoiceInfo does (GameVoice.cs)
+            if (!voice)
+                Voice.ClearAll();
+            SendVoiceCtl();
+        }
         if (GameModeRegistry.IsKnown(mode))
             _mode = mode; // (clients never reset on a mode change: the server's mode state follows)
         ScoreLimitMode = scoreLimit;

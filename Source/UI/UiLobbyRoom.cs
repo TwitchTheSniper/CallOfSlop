@@ -280,7 +280,11 @@ public sealed partial class Ui
         }
     }
 
-    /// <summary>The map, mode and pack card, then (host) the settings, changed live for everyone.</summary>
+    /// <summary>
+    /// The map, mode and pack card, then the match settings in collapsible sections by category (Match, Bots, Teams, World,
+    /// Lobby and chat; the host also has Server). The host changes them live for everyone; clients see the same sections
+    /// read-only, following every change (the lobby state, PreMatchLobby.cs). Hosting opens straight here (Lobby.cs).
+    /// </summary>
     private void DrawRoomMatch(Game game, Settings s)
     {
         ImGui.TextColored(Orange, "NEXT MATCH"u8);
@@ -292,18 +296,36 @@ public sealed partial class Ui
         ImGuiSafe.TextColored(new float4(0.9f, 0.9f, 0.92f, 1f), _room.ModeLine);
         ImGuiSafe.TextColored(Dim, _room.PackLine);
         ImGuiSafe.TextColored(Dim, _room.SettingsLine);
+        ImGuiSafe.TextColored(Dim, _room.RulesLine);
         ImGui.PopTextWrapPos();
         ImGui.Spacing();
-        if (!game.IsServer)
-        {
+        var host = game.IsServer;
+        var locked = game.LobbyCountdown > 0;
+        if (!host)
             ImGui.TextColored(Dim, "The host picks the map, mode and settings; you see every change here as it happens."u8);
-            return;
-        }
-        if (!ImGui.CollapsingHeader("HOST SETTINGS"u8, ImGuiTreeNodeFlags.DefaultOpen))
-            return;
-        ImGui.BeginDisabled(game.LobbyCountdown > 0); // nothing changes under a running countdown
+        else if (locked)
+            ImGui.TextColored(Orange, "Settings are locked while the countdown runs (CANCEL to change them)."u8);
+        ImGui.BeginDisabled(!host || locked); // clients: read-only; nothing changes under a running countdown
+        if (ImGui.CollapsingHeader("MATCH: mode, map, limits##roomsec"u8, ImGuiTreeNodeFlags.DefaultOpen))
+            DrawRoomMatchTab(game, s, host);
+        if (ImGui.CollapsingHeader("BOTS: how many, how good, their gear##roomsec"u8, ImGuiTreeNodeFlags.DefaultOpen))
+            DrawRoomBotsTab(game, s, host);
+        if (game.IsTeamMode && ImGui.CollapsingHeader("TEAMS: selection and balance##roomsec"u8))
+            DrawRoomTeamsTab(game, s, host);
+        if (ImGui.CollapsingHeader("WORLD: gravity, frenzy buffs, destruction##roomsec"u8))
+            DrawRoomWorldSection(game, s, host);
+        if (ImGui.CollapsingHeader("LOBBY AND CHAT: auto-start, between matches, voice##roomsec"u8))
+            DrawRoomLobbySection(game, s, host);
+        ImGui.EndDisabled();
+        if (host && !game.Net.IsOffline && ImGui.CollapsingHeader("SERVER: name, server lists, port##roomsec"u8))
+            DrawRoomServerSection(game, s); // (not locked by the countdown: none of it touches the match)
+    }
 
-        // Mode
+    private float RoomWrap => ImGui.GetCursorPosX() + ImGui.GetContentRegionAvail().X - 8 * _scale;
+
+    /// <summary>Match tab: the mode and its rules, the pack and map list (host), the score and time limits.</summary>
+    private void DrawRoomMatchTab(Game game, Settings s, bool host)
+    {
         ImGui.SetNextItemWidth(240 * _scale);
         if (ImGui.BeginCombo("Mode##room"u8, game.Module.Name))
         {
@@ -311,56 +333,61 @@ public sealed partial class Ui
             {
                 var ok = game.LobbyModeAllowed(m.Id);
                 ImGui.BeginDisabled(!ok);
-                if (ImGui.Selectable(m.Name, m.Id == game.Mode) && game.LobbySetMode(m.Id))
+                if (ImGui.Selectable(m.Name, m.Id == game.Mode) && host && game.LobbySetMode(m.Id))
                     s.Mode = m.Id;
                 ImGui.EndDisabled();
             }
             ImGui.EndCombo();
         }
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, _room.ModeRules);
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
 
-        // Pack and map (maps too small for the people here are greyed out: the vote's rule)
-        var packs = Maps.Packs;
-        if (_roomPack == -2)
-            _roomPack = game.TrueRandom ? -1 : Math.Max(0, Array.FindIndex(packs, p => p == World.Map.Pack || (World.Map.Pack != null && p.Name == World.Map.Pack.Name)));
-        _roomPack = Math.Clamp(_roomPack, -1, packs.Length - 1);
-        ImGui.SetNextItemWidth(240 * _scale);
-        if (ImGui.BeginCombo("Pack##room"u8, _roomPack >= 0 ? packs[_roomPack].Name : MapPack.TrueRandomName))
+        // Pack and map (host; maps too small for the people here are greyed out: the vote's rule)
+        if (host)
         {
-            for (var i = 0; i < packs.Length; i++)
-                if (packs[i].Maps.Count > 0 && ImGui.Selectable(packs[i].Name, i == _roomPack))
-                    _roomPack = i;
-            if (ImGui.Selectable(MapPack.TrueRandomName, _roomPack == -1))
-                _roomPack = -1;
-            ImGui.EndCombo();
-        }
-        ImGui.SameLine();
-        if (ImGui.Button("Random map##room"u8))
-        {
-            var pack = _roomPack >= 0 ? packs[_roomPack] : null;
-            if (game.LobbyRandomMap(pack) is { } picked)
-                RememberMap(s, picked, pack, random: true);
-        }
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("A random map from this pack that takes everyone here (True Random: from every pack). It loads now, so the start is quick."u8);
-        _room.RefreshMapList(game, _roomPack);
-        if (ImGui.BeginChild("##roommaps"u8, new float2(0, 150 * _scale), ImGuiChildFlags.Borders))
-        {
-            foreach (var e in _room.MapList)
+            var packs = Maps.Packs;
+            if (_roomPack == -2)
+                _roomPack = game.TrueRandom ? -1 : Math.Max(0, Array.FindIndex(packs, p => p == World.Map.Pack || (World.Map.Pack != null && p.Name == World.Map.Pack.Name)));
+            _roomPack = Math.Clamp(_roomPack, -1, packs.Length - 1);
+            ImGui.SetNextItemWidth(240 * _scale);
+            if (ImGui.BeginCombo("Pack##room"u8, _roomPack >= 0 ? packs[_roomPack].Name : MapPack.TrueRandomName))
             {
-                ImGui.BeginDisabled(!e.Allowed);
-                if (ImGui.Selectable(e.Label, e.Current) && !e.Current && game.LobbySetMap(e.Map, _roomPack == -1))
-                    RememberMap(s, e.Map, _roomPack >= 0 ? packs[_roomPack] : null, random: false);
-                ImGui.EndDisabled();
+                for (var i = 0; i < packs.Length; i++)
+                    if (packs[i].Maps.Count > 0 && ImGui.Selectable(packs[i].Name, i == _roomPack))
+                        _roomPack = i;
+                if (ImGui.Selectable(MapPack.TrueRandomName, _roomPack == -1))
+                    _roomPack = -1;
+                ImGui.EndCombo();
             }
+            ImGui.SameLine();
+            if (ImGui.Button("Random map##room"u8))
+            {
+                var pack = _roomPack >= 0 ? packs[_roomPack] : null;
+                if (game.LobbyRandomMap(pack) is { } picked)
+                    RememberMap(s, picked, pack, random: true);
+            }
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("A random map from this pack that takes everyone here (True Random: from every pack). It loads now, so the start is quick."u8);
+            _room.RefreshMapList(game, _roomPack);
+            if (ImGui.BeginChild("##roommaps"u8, new float2(0, 150 * _scale), ImGuiChildFlags.Borders))
+            {
+                foreach (var e in _room.MapList)
+                {
+                    ImGui.BeginDisabled(!e.Allowed);
+                    if (ImGui.Selectable(e.Label, e.Current) && !e.Current && game.LobbySetMap(e.Map, _roomPack == -1))
+                        RememberMap(s, e.Map, _roomPack >= 0 ? packs[_roomPack] : null, random: false);
+                    ImGui.EndDisabled();
+                }
+            }
+            ImGui.EndChild();
+            ImGui.Spacing();
         }
-        ImGui.EndChild();
 
-        // Score limit, time limit, auto-start, between matches
+        // Score limit, time limit
         var limitMode = game.ScoreLimitMode;
         var minutes = game.MatchMinutes;
-        var auto = game.AutoStartSeconds;
-        var back = game.ReturnToLobby;
-        var buffs = game.FrenzyBuffsEnabled;
         if (ScoreLimits.HasLimit(game.Mode))
         {
             ImGui.SetNextItemWidth(240 * _scale);
@@ -372,6 +399,9 @@ public sealed partial class Ui
                     limitMode = ScoreLimitMode.Fixed;
                 ImGui.EndCombo();
             }
+            ImGui.PushTextWrapPos(RoomWrap);
+            ImGuiSafe.TextColored(Dim, _room.ScoreLimitText);
+            ImGui.PopTextWrapPos();
         }
         if (game.Module.HasTimeLimit)
         {
@@ -384,53 +414,39 @@ public sealed partial class Ui
                 ImGui.EndCombo();
             }
         }
-        var autoOn = auto > 0;
-        if (ImGui.Checkbox("Auto-start once everyone is ready##room"u8, ref autoOn))
-            auto = autoOn ? 30 : 0;
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("On: the countdown starts by itself once everyone is ready, or this many seconds after the first person readies up. Off: you press START."u8);
-        if (auto > 0)
+        if (host && (limitMode != game.ScoreLimitMode || minutes != game.MatchMinutes))
         {
-            ImGui.SameLine();
-            ImGui.SetNextItemWidth(120 * _scale);
-            ImGui.SliderInt("s##roomauto"u8, ref auto, 5, 120);
-        }
-        ImGui.Checkbox("Return to lobby between matches##room"u8, ref back);
-        if (ImGui.IsItemHovered())
-            ImGui.SetItemTooltip("On: after the results and the map vote everyone comes back here. Off: the next match's warmup starts straight away."u8);
-        ImGui.Checkbox("Frenzy buffs##room"u8, ref buffs);
-        ImGui.SetNextItemWidth(160 * _scale);
-        if (ImGui.BeginCombo("Gravity##room"u8, $"{game.GravityPercent}%"))
-        {
-            foreach (var g in Game.GravityPercentChoices)
-                if (ImGui.Selectable($"{g}%{(g == 100 ? " (the map's own)" : "")}", g == game.GravityPercent))
-                {
-                    game.GravityPercent = g; // told to everyone in the lobby state (GameGravity.cs)
-                    s.Gravity = g;
-                }
-            ImGui.EndCombo();
-        }
-        if (limitMode != game.ScoreLimitMode || minutes != game.MatchMinutes || auto != game.AutoStartSeconds || back != game.ReturnToLobby || buffs != game.FrenzyBuffsEnabled)
-        {
-            game.LobbySetOptions(limitMode, minutes, auto, back, buffs);
+            game.LobbySetOptions(limitMode, minutes, game.AutoStartSeconds, game.ReturnToLobby, game.FrenzyBuffsEnabled);
             s.ScoreLimit = limitMode;
             s.MatchMinutes = minutes;
-            s.AutoStart = auto;
-            s.LobbyReturn = back;
-            s.FrenzyBuffs = buffs;
         }
+    }
 
-        // Bots
+    private static readonly BotDifficulty[] SkillChoices = [BotDifficulty.Easy, BotDifficulty.Normal, BotDifficulty.Hard, BotDifficulty.Insane];
+
+    /// <summary>What a difficulty plays like (the Single player screen and the lobby's Bots tab).</summary>
+    private static string SkillHint(BotDifficulty d) => d switch
+    {
+        BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
+        BotDifficulty.Normal => "A fair fight.",
+        BotDifficulty.Insane => "Hard+ aim. In team modes they work as squads: one pins you down while another flanks you.",
+        _ => "Fast reactions, tight aim, they strafe and go for heads.",
+    };
+
+    /// <summary>Bots tab: how many, how good, what they carry.</summary>
+    private void DrawRoomBotsTab(Game game, Settings s, bool host)
+    {
         var bots = game.WantedBots;
         var maxBots = Math.Max(0, game.MapMaxPlayers - _room.Humans);
-        ImGui.SetNextItemWidth(160 * _scale);
+        ImGui.SetNextItemWidth(200 * _scale);
         var botsChanged = ImGui.SliderInt("Bots##room"u8, ref bots, 0, Math.Max(maxBots, Math.Min(game.WantedBots, Game.MaxPlayers - 1)));
+        ImGuiSafe.TextColored(Dim, _room.BotsLine);
+        ImGui.TextColored(Dim, "People who join take a bot's place."u8);
         var skill = game.BotSkill;
-        ImGui.SameLine();
-        ImGui.SetNextItemWidth(120 * _scale);
-        if (ImGui.BeginCombo("##roomskill"u8, SkillName(skill)))
+        ImGui.SetNextItemWidth(200 * _scale);
+        if (ImGui.BeginCombo("Difficulty##roomskill"u8, SkillName(skill)))
         {
-            foreach (var d in new[] { BotDifficulty.Easy, BotDifficulty.Normal, BotDifficulty.Hard, BotDifficulty.Insane })
+            foreach (var d in SkillChoices)
                 if (ImGui.Selectable(SkillName(d), d == skill))
                 {
                     skill = d;
@@ -438,46 +454,208 @@ public sealed partial class Ui
                 }
             ImGui.EndCombo();
         }
-        if (botsChanged)
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, SkillHint(skill));
+        ImGui.PopTextWrapPos();
+        if (host && botsChanged)
         {
             game.LobbySetBots(bots, skill);
             s.HostBots = Math.Max(0, bots);
             s.Difficulty = skill;
         }
 
-        // Team rules
-        if (game.IsTeamMode)
+        ImGui.Spacing();
+        var gear = (int)game.BotGearMode;
+        ImGui.Text("Bot gear"u8);
+        ImGui.SameLine();
+        ImGui.RadioButton("Match players##roomgear"u8, ref gear, (int)BotGearMode.MatchPlayers);
+        ImGui.SameLine();
+        ImGui.RadioButton("Everything##roomgear"u8, ref gear, (int)BotGearMode.Everything);
+        ImGui.SameLine();
+        ImGui.RadioButton("Starter##roomgear"u8, ref gear, (int)BotGearMode.Starter);
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, BotGearHint((BotGearMode)gear));
+        ImGui.PopTextWrapPos();
+        if (host && gear != (int)game.BotGearMode)
         {
-            var sel = (int)game.TeamSelection;
-            var diff = game.MaxTeamDiff;
-            ImGui.TextColored(Dim, "Team selection:"u8);
+            game.LobbySetHostRules(game.DestructionEnabled, game.VoiceAllowed, game.DeadChatPrivate, (BotGearMode)gear);
+            s.BotGear = game.BotGearMode;
+        }
+        if (game.WantedBots == 0)
+        {
+            ImGui.Spacing();
+            TestModeHint(); // alone with no bots: the clock stops (Lobby.cs)
+        }
+    }
+
+    /// <summary>Teams tab (team modes): who picks the sides, how uneven they may get, and the balancing.</summary>
+    private void DrawRoomTeamsTab(Game game, Settings s, bool host)
+    {
+        var sel = (int)game.TeamSelection;
+        var diff = game.MaxTeamDiff;
+        ImGui.Text("Team selection"u8);
+        ImGui.SameLine();
+        ImGui.RadioButton("Manual##roomteam"u8, ref sel, (int)TeamSelection.Manual);
+        ImGui.SameLine();
+        ImGui.RadioButton("Auto only##roomteam"u8, ref sel, (int)TeamSelection.AutoOnly);
+        if (sel == (int)TeamSelection.Manual)
+        {
+            ImGui.SetNextItemWidth(160 * _scale);
+            ImGui.SliderInt("Max team size difference##room"u8, ref diff, 0, TeamRules.MaxDiffLimit);
+            ImGui.TextColored(Dim, "Players pick Blue, Red or Auto, so friends can play together. Bots and Auto players even it out."u8);
+        }
+        else
+            ImGui.TextColored(Dim, "The game splits the teams and keeps them even."u8);
+        if (host && (sel != (int)game.TeamSelection || diff != game.MaxTeamDiff))
+        {
+            game.LobbySetTeamRules((TeamSelection)sel, diff);
+            s.TeamSelect = game.TeamSelection;
+            s.TeamMaxDiff = game.MaxTeamDiff;
+        }
+        ImGui.Spacing();
+        var balance = game.TeamBalance;
+        var humansTeam = game.HumansTeam;
+        if (TeamBalancePicker(ref balance, ref humansTeam, "room") && host) // Auto / Off / Humans vs Bots (UiTeams.cs, TeamBalance.cs)
+        {
+            game.SetTeamBalance(balance, humansTeam);
+            s.TeamBalance = game.TeamBalance;
+            s.HumansTeam = game.HumansTeam;
+        }
+        ImGui.TextColored(Dim, "SHUFFLE and BALANCE (beside the team buttons) re-split the people here now."u8);
+    }
+
+    private static readonly string[] GravityChoiceLabels = Game.GravityPercentChoices.Select(g => g == 100 ? "100% (the map's own)" : $"{g}%").ToArray();
+
+    /// <summary>World section: gravity, frenzy buffs, destruction.</summary>
+    private void DrawRoomWorldSection(Game game, Settings s, bool host)
+    {
+        ImGui.SetNextItemWidth(200 * _scale);
+        if (ImGui.BeginCombo("Gravity##room"u8, _room.GravityLabel))
+        {
+            var choices = Game.GravityPercentChoices;
+            for (var i = 0; i < choices.Length; i++)
+                if (ImGui.Selectable(GravityChoiceLabels[i], choices[i] == game.GravityPercent) && host)
+                {
+                    game.GravityPercent = choices[i]; // told to everyone in the lobby state (GameGravity.cs)
+                    s.Gravity = choices[i];
+                }
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGuiSafe.SetItemTooltip("Every map's gravity times this: players, grenades, rockets, bodies and debris. 50% jumps twice as high and far; 200% half as high. Planets and gravity zones scale too.");
+        var buffs = game.FrenzyBuffsEnabled;
+        ImGui.Checkbox("Frenzy buffs##room"u8, ref buffs);
+        ImGui.SameLine();
+        if (buffs)
+            ImGui.TextColored(Dim, "a kill frenzy (level 3+) buffs guns of the class you last killed with"u8);
+        else
+            ImGui.TextColored(Dim, "kill frenzies are music and effects only"u8);
+        var destruction = game.DestructionEnabled;
+        ImGui.Checkbox("Destruction##room"u8, ref destruction);
+        ImGui.SameLine();
+        if (World.Map.Destruction == null)
+            ImGui.TextColored(Dim, "(nothing breaks on this map)"u8);
+        else if (!Game.DestructionAllowedIn(game.Mode))
+            ImGui.TextColored(Dim, "(buildings stay whole in this mode)"u8);
+        else if (destruction)
+            ImGui.TextColored(Dim, "explosives blast holes and floors can come down"u8);
+        else
+            ImGui.TextColored(Dim, "buildings stay whole"u8);
+        if (!host)
+            return;
+        if (buffs != game.FrenzyBuffsEnabled)
+        {
+            game.LobbySetOptions(game.ScoreLimitMode, game.MatchMinutes, game.AutoStartSeconds, game.ReturnToLobby, buffs);
+            s.FrenzyBuffs = buffs;
+        }
+        if (destruction != game.DestructionEnabled)
+        {
+            game.LobbySetHostRules(destruction, game.VoiceAllowed, game.DeadChatPrivate, game.BotGearMode);
+            s.Destruction = destruction;
+        }
+    }
+
+    /// <summary>Lobby and chat section: auto-start, return to the lobby between matches, voice, dead players' chat.</summary>
+    private void DrawRoomLobbySection(Game game, Settings s, bool host)
+    {
+        var auto = game.AutoStartSeconds;
+        var autoOn = auto > 0;
+        if (ImGui.Checkbox("Auto-start once everyone is ready##room"u8, ref autoOn))
+            auto = autoOn ? 30 : 0;
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetItemTooltip("On: the countdown starts by itself once everyone is ready, or this many seconds after the first person readies up. Off: the host presses START."u8);
+        if (auto > 0)
+        {
             ImGui.SameLine();
-            ImGui.RadioButton("Manual##roomteam"u8, ref sel, (int)TeamSelection.Manual);
-            ImGui.SameLine();
-            ImGui.RadioButton("Auto only##roomteam"u8, ref sel, (int)TeamSelection.AutoOnly);
-            if (sel == (int)TeamSelection.Manual)
+            ImGui.SetNextItemWidth(120 * _scale);
+            ImGui.SliderInt("s##roomauto"u8, ref auto, 5, 120);
+        }
+        var back = game.ReturnToLobby;
+        ImGui.Checkbox("Return to lobby between matches##room"u8, ref back);
+        if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+            ImGui.SetItemTooltip("On: after the results and the map vote everyone comes back here. Off: the next match's warmup starts straight away."u8);
+        var voice = game.VoiceAllowed;
+        ImGui.Checkbox("Allow voice chat##room"u8, ref voice);
+        var deadChat = game.DeadChatPrivate;
+        ImGui.Checkbox("Dead players' chat reaches only the dead##room"u8, ref deadChat);
+        if (!host)
+            return;
+        if (auto != game.AutoStartSeconds || back != game.ReturnToLobby)
+        {
+            game.LobbySetOptions(game.ScoreLimitMode, game.MatchMinutes, auto, back, game.FrenzyBuffsEnabled);
+            s.AutoStart = auto;
+            s.LobbyReturn = back;
+        }
+        if (voice != game.VoiceAllowed || deadChat != game.DeadChatPrivate)
+        {
+            game.LobbySetHostRules(game.DestructionEnabled, voice, deadChat, game.BotGearMode);
+            s.AllowVoice = voice;
+            s.DeadChatPrivate = deadChat;
+        }
+    }
+
+    /// <summary>
+    /// Server section (host): the server name (live: the browsers and lists see it within a second), sharing on server
+    /// lists (Program restarts the listing when it changes, Program.LobbyRoom.cs), and the port and UPnP, which apply when
+    /// you host (Settings > Multiplayer).
+    /// </summary>
+    private void DrawRoomServerSection(Game game, Settings s)
+    {
+        EnsureInputs(s);
+        ImGui.SetNextItemWidth(300 * _scale);
+        try
+        {
+            if (ImGui.InputTextWithHint("Server name##room"u8, s.ServerNameOrDefault, _serverNameInput!))
             {
-                ImGui.SameLine();
-                ImGui.SetNextItemWidth(110 * _scale);
-                ImGui.SliderInt("max difference##room"u8, ref diff, 0, TeamRules.MaxDiffLimit);
-            }
-            if (sel != (int)game.TeamSelection || diff != game.MaxTeamDiff)
-            {
-                game.LobbySetTeamRules((TeamSelection)sel, diff);
-                s.TeamSelect = game.TeamSelection;
-                s.TeamMaxDiff = game.MaxTeamDiff;
-            }
-            var balance = game.TeamBalance;
-            var humansTeam = game.HumansTeam;
-            if (TeamBalancePicker(ref balance, ref humansTeam, "room")) // Auto / Off / Humans vs Bots (UiTeams.cs, TeamBalance.cs)
-            {
-                game.SetTeamBalance(balance, humansTeam);
-                s.TeamBalance = game.TeamBalance;
-                s.HumansTeam = game.HumansTeam;
+                s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
+                game.ServerName = s.ServerNameOrDefault; // the server info is rebuilt every second (ServerAdvert.cs)
             }
         }
-        ImGui.EndDisabled();
+        catch (Exception ex)
+        {
+            ImGuiSafe.FieldFailed("server name", ex);
+        }
+        HostSharingOptions(s); // server lists and invite codes (UiInvite.cs)
+        if (_portLineFor != (game.GamePort, s.UseUpnp))
+        {
+            _portLineFor = (game.GamePort, s.UseUpnp);
+            _portLine = $"Port {game.GamePort} (UDP), UPnP {(s.UseUpnp ? "on" : "off")}. Both apply when you host: change them in Settings > Multiplayer.";
+        }
+        ImGui.PushTextWrapPos(RoomWrap);
+        ImGuiSafe.TextColored(Dim, _portLine);
+        ImGui.PopTextWrapPos();
     }
+
+    private (ushort, bool) _portLineFor = (0, false);
+    private string _portLine = "";
+
+    /// <summary>What a bot gear choice means (the Single player screen and the lobby's Bots tab).</summary>
+    private static string BotGearHint(BotGearMode m) => m switch
+    {
+        BotGearMode.Everything => "Bots carry any weapon, attachment, perk, equipment and kill streak.",
+        BotGearMode.Starter => "Bots carry only what a level-1 player has.",
+        _ => "Bots carry what the players' average level has unlocked (a few levels either way per bot).",
+    };
 
     private static string SkillName(BotDifficulty d) => d switch
     {

@@ -30,7 +30,20 @@ public static unsafe partial class Program
         }
         _wasLobbyRoom = false;
         _roomLoadoutsOpen = false;
+        _sharingApplied = (_settings.ShareOnLists, _settings.AutoListServer);
         Ui.ResetLobbyRoom();
+    }
+
+    private static (bool Share, bool Auto) _sharingApplied;
+
+    /// <summary>The host ticked "Share on our server lists" (or "Run one") in the lobby's Server section: list again now.</summary>
+    private static void ApplyLobbySharing(Game game)
+    {
+        var want = (_settings.ShareOnLists, _settings.AutoListServer);
+        if (!game.IsServer || game.Net.IsOffline || want == _sharingApplied)
+            return;
+        _sharingApplied = want;
+        StartHostListing(game); // (stops the old listing first; not sharing: just stops it)
     }
 
     /// <summary>Every frame of a session: notices entering and leaving the lobby room. Returns true while in it.</summary>
@@ -117,9 +130,13 @@ public static unsafe partial class Program
             Ui.DrawLobbyLoadouts(AudioSystem, now);
             return;
         }
-        switch (Ui.DrawLobbyRoom(game, _settings, game.IsServer ? _joinAddress : "", now))
+        var roomAction = Ui.DrawLobbyRoom(game, _settings, game.IsServer ? _joinAddress : "", now);
+        ApplyLobbySharing(game);
+        switch (roomAction)
         {
             case LobbyRoomAction.Leave:
+                if (game.IsServer && !_smoke)
+                    _settings.Save(); // the host's lobby choices, for next time, even without a match
                 EndSession("");
                 break;
             case LobbyRoomAction.Loadout:

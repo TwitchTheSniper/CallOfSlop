@@ -197,13 +197,7 @@ public sealed partial class Ui
                     else
                     {
                         DifficultyPicker(ref s.Difficulty);
-                        ImGuiSafe.TextColored(Dim, s.Difficulty switch
-                        {
-                            BotDifficulty.Easy => "Slow to react, wild aim. Good for trying weapons.",
-                            BotDifficulty.Normal => "A fair fight.",
-                            BotDifficulty.Insane => "Hard+ aim. In team modes they work as squads: one pins you down while another flanks you.",
-                            _ => "Fast reactions, tight aim, they strafe and go for heads.",
-                        });
+                        ImGuiSafe.TextColored(Dim, SkillHint(s.Difficulty)); // (UiLobbyRoom.cs)
                         BotGearPicker(s); // UiBotGear.cs
                     }
                     ImGui.Spacing();
@@ -219,16 +213,18 @@ public sealed partial class Ui
                 case Page.Multiplayer:
                     Title($"Multiplayer - up to {Game.MaxPlayers} players over LAN or the internet (each map has its own limit)");
                     ImGui.TextColored(Dim, "Hosting or joining opens the lobby: pick teams and loadouts, chat, ready up; the host starts the match."u8);
+                    if (BigButton("HOST A GAME"))
+                    {
+                        s.Save();
+                        action = LobbyAction.Host; // straight into your lobby: every match setting is there (UiLobbyRoom.cs)
+                        break;
+                    }
+                    HostOpensWith(s);
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
                         {
                             _mpTab = 0;
-                            ImGui.EndTabItem();
-                        }
-                        if (ImGui.BeginTabItem("Host a game"u8))
-                        {
-                            _mpTab = 1;
                             ImGui.EndTabItem();
                         }
                         if (ImGui.BeginTabItem("Join by code or address"u8))
@@ -251,64 +247,7 @@ public sealed partial class Ui
                             _page = Page.Main;
                         break;
                     }
-                    if (_mpTab == 2)
-                    {
-                        DrawDirectJoin(s, ref action);
-                        if (BigButton("BACK"))
-                            _page = Page.Main;
-                        break;
-                    }
-                    ModePicker(s);
-                    TeamRulesPicker(s); // team modes: Manual / Auto only, max difference (UiTeams.cs)
-                    MapPicker(s);
-                    AutoStartPicker(s);
-                    GravityPicker(s); // the host's gravity setting (GameGravity.cs)
-                    ImGui.Checkbox("Frenzy buffs"u8, ref s.FrenzyBuffs); // FrenzyBuffs.cs
-                    ImGuiSafe.TextColored(Dim, s.FrenzyBuffs
-                        ? "On: a kill frenzy (level 3+) gives a small buff to guns of the class you last killed with."
-                        : "Off: kill frenzies are music and effects only.");
-                    ImGui.Checkbox("Destruction"u8, ref s.Destruction); // destructible buildings (GameDestruction.cs)
-                    ImGuiSafe.TextColored(Dim, s.Destruction
-                        ? "On: on maps with destructible buildings (World Tour), explosives blast holes and floors can come down."
-                        : "Off: buildings stay whole (the map is the same, nothing breaks).");
-                    ImGui.Checkbox("Allow voice chat"u8, ref s.AllowVoice); // GameVoice.cs
-                    ImGui.SameLine();
-                    ImGui.Checkbox("Dead players' chat reaches only the dead"u8, ref s.DeadChatPrivate); // LobbyChat.cs
-                    ImGui.SetNextItemWidth(200 * _scale);
-                    if (ImGui.InputInt("Port"u8, ref _portInput, 1, 100))
-                        _portInput = Math.Clamp(_portInput, 1024, 65535);
-                    ImGui.Checkbox("Open the port on my router automatically (UPnP)"u8, ref s.UseUpnp);
-                    var hostMax = s.LobbyMaxPlayers(Maps.Packs, Maps.All);
-                    s.HostBots = Math.Clamp(s.HostBots, 0, Math.Max(0, hostMax - 2)); // room for at least one friend (people replace bots anyway)
-                    ImGui.SetNextItemWidth(260 * _scale);
-                    ImGui.SliderInt("Fill with bots"u8, ref s.HostBots, 0, Math.Max(0, hostMax - 2));
-                    ImGuiSafe.TextColored(Dim, PlayerCountLine(s, s.HostBots + 1, hostMax) + ". People who join take a bot's place.");
-                    if (s.HostBots > 0)
-                    {
-                        DifficultyPicker(ref s.Difficulty);
-                        BotGearPicker(s); // UiBotGear.cs
-                    }
-                    else
-                        TestModeHint();
-                    ImGui.SetNextItemWidth(360 * _scale);
-                    try
-                    {
-                        if (ImGui.InputTextWithHint("Server name"u8, s.ServerNameOrDefault, _serverNameInput!))
-                            s.ServerName = Settings.CleanServerName(_serverNameInput!.ToString());
-                    }
-                    catch (Exception ex)
-                    {
-                        ImGuiSafe.FieldFailed("server name", ex);
-                    }
-                    HostSharingOptions(s); // server lists and invite codes (UiInvite.cs)
-                    ImGui.Checkbox("Return to lobby between matches"u8, ref s.LobbyReturn); // the lobby room (PreMatchLobby.cs)
-                    if (BigButton("HOST GAME"))
-                    {
-                        s.Port = (ushort)_portInput;
-                        s.Save();
-                        action = LobbyAction.Host;
-                    }
-                    ImGui.Spacing();
+                    DrawDirectJoin(s, ref action); // _mpTab 2 (1 was the old Host tab: hosting now opens the lobby straight away)
                     if (BigButton("BACK"))
                         _page = Page.Main;
                     break;
@@ -332,6 +271,27 @@ public sealed partial class Ui
             _browser = null;
         }
         return action;
+    }
+
+    private string _opensWith = "";
+    private (GameMode, string, bool, string, int, BotDifficulty) _opensWithFor;
+
+    /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
+    private void HostOpensWith(Settings s)
+    {
+        s.HostBots = Math.Clamp(s.HostBots, 0, Math.Max(0, s.LobbyMaxPlayers(Maps.Packs, Maps.All) - 2)); // room for at least one friend, as before
+        var key = (s.Mode, s.MapName, s.MapRandom, s.MapPack, s.HostBots, s.Difficulty);
+        if (key != _opensWithFor || _opensWith.Length == 0)
+        {
+            _opensWithFor = key;
+            _opensWith = $"Opens your lobby with {GameModeRegistry.Get(s.Mode).Name} on {MapSelect.ChoiceText(s)}, "
+                         + (s.HostBots > 0 ? $"{s.HostBots} {SkillName(s.Difficulty)} bot{(s.HostBots == 1 ? "" : "s")}" : "no bots")
+                         + " (your last choices). Change anything there before you start.";
+        }
+        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 640 * _scale);
+        ImGuiSafe.TextColored(Dim, _opensWith);
+        ImGui.PopTextWrapPos();
+        ImGui.Spacing();
     }
 
     /// <summary>"8 / 16 players on Quarry" (or, random from a pack, how many of its maps take that many).</summary>
