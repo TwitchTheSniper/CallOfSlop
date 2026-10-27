@@ -4,7 +4,7 @@
 Run from the repository root:  python3 tools/zombies/make_blackmoor.py
 
 Blackmoor Asylum: an abandoned village asylum with a research wing, World at War style. Seven areas (the start room and
-six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, seven wall
+six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, nineteen wall
 buys, twelve perk machines (each perk its own machine), the power switch (it gates seven perks and the lab shutter), two workbenches, four salvage
 piles, the weapon-slot upgrade and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
@@ -207,6 +207,19 @@ WALL_BUYS = [
     {"build": "Burst Marksman", "at": [25.97, -12], "yaw": -90, "cost": 1200},                  # generator house, east wall
     {"build": "Wall SMG", "at": [-22.97, 6.5], "yaw": 90, "cost": 1000},                        # chapel, west wall
     {"build": "Wall Pump", "at": [6.33, 13], "yaw": 90, "cost": 900},                           # lab, west wall
+    # The twelve added 2026-10-27 (box builds tagged "wall" too, and the Bucket Lobber), prices rising with the area.
+    {"build": "Buzzbox Machine Pistol", "at": [6.97, -4.5], "yaw": -90, "cost": 600},          # start room, east wall
+    {"build": "Kingpin Hand Cannon", "at": [7.33, 1.2], "yaw": 90, "cost": 750},               # ward, west wall
+    {"build": "Ratchet PDW", "at": [22.97, -6.9], "yaw": -90, "cost": 1100},                   # ward, east wall
+    {"build": "Courier Carbine", "at": [-22.97, -0.7], "yaw": 90, "cost": 900},                # offices, west wall
+    {"build": "Prairie Lever", "at": [-17.8, 3.97], "yaw": 0, "cost": 1000},                   # offices, south wall
+    {"build": "Riot Control", "at": [-2.6, -8.33], "yaw": 0, "cost": 1250},                    # courtyard, the hall's back wall
+    {"build": "Heavy Hitter", "at": [15.97, -23], "yaw": -90, "cost": 1400},                   # courtyard, the generator house wall
+    {"build": "Bastille Squad LMG", "at": [16.33, -14.8], "yaw": 90, "cost": 2000},            # generator house, west wall
+    {"build": "Elephant Gun", "at": [19.25, -25.97], "yaw": 180, "cost": 1750},                # generator house, south wall
+    {"build": "Reaper Marksman", "at": [-6.33, 11.95], "yaw": -90, "cost": 1500},              # chapel, east wall
+    {"build": "Auto Shotgun", "at": [-16.85, 15.97], "yaw": 0, "cost": 1750},                  # chapel, south wall
+    {"build": "Bucket Lobber", "at": [9.5, 4.33], "yaw": 180, "cost": 2250},                   # lab, north wall
 ]
 
 BOX = [  # the box spots: a solid crate stands at each (machine props)
@@ -390,6 +403,7 @@ def footprint(name, x, z, yaw):
 
 
 placed = []
+every_prop = []  # (name, x, z, yaw, y): every prop, solid or not, for the wall-buy check below
 
 
 def prop(name, x, z, yaw=0, y=None, check=True, **kw):
@@ -400,6 +414,7 @@ def prop(name, x, z, yaw=0, y=None, check=True, **kw):
         o["y"] = y
     o.update(kw)
     ops.append(o)
+    every_prop.append((name, x, z, yaw, 0 if y is None else y))
     fp = footprint(name, x, z, yaw)
     if fp and check:
         mine = []
@@ -554,6 +569,63 @@ op(op="Decal", decal="Handprints", x=-6.98, z=1.5, y=1.4, onto="wall-x", size=1.
 for (x, z) in [(-2.5, -3.5), (2.5, -3.5), (-2.5, 0.5), (2.5, 0.5), (14, -2), (-14, 0), (0, -14), (21, -13), (-12, 9), (12, 11)]:
     op(op="Spawn", x=x, z=z)
 op(op="AutoWaypoints", spacing=3)
+
+
+# ---- Wall buys: each chalk outline (1.3 m wide, 1.0-1.6 m up) sits flat on a solid stretch of its own area's wall,
+# clear of door and window holes, machines, other wall buys and any prop at its height. -------------------------
+def prop_bounds(name, x, z, yaw, y):
+    """The prop's plan rects and its height range (solid or not), from its parts."""
+    d = _props.setdefault(name, load_prop(name))
+    xs, zs, ys = [], [], []
+    for p in d["parts"]:
+        s = p["size"]
+        o = p.get("offset", [0, s[1] / 2, 0])
+        r = max(s[0], s[2]) / 2 if "rotation" in p or "yaw" in p else None
+        hx, hz = (r, r) if r else (s[0] / 2, s[2] / 2)
+        xs += [o[0] - hx, o[0] + hx]
+        zs += [o[2] - hz, o[2] + hz]
+        ys += [o[1] - s[1] / 2, o[1] + s[1] / 2]
+    a = math.radians(yaw)
+    cs, sn = round(math.cos(a), 6), round(math.sin(a), 6)
+    pts = [(px * cs + pz * sn, -px * sn + pz * cs) for px in (min(xs), max(xs)) for pz in (min(zs), max(zs))]
+    return (x + min(q[0] for q in pts), z + min(q[1] for q in pts), x + max(q[0] for q in pts), z + max(q[1] for q in pts)), (y + min(ys), y + max(ys))
+
+
+def overlap(a, b):
+    return a[0] < b[2] and a[2] > b[0] and a[1] < b[3] and a[3] > b[1]
+
+
+def wall_buy_rect(wb, along=0.7, deep=0.4):
+    fx, fz = fwd(wb["yaw"])
+    x, z = wb["at"]
+    if abs(fx) < 0.5:   # on a WallX (faces +-z): the outline runs along x
+        return (x - along, min(z - fz * 0.05, z + fz * deep), x + along, max(z - fz * 0.05, z + fz * deep))
+    return (min(x - fx * 0.05, x + fx * deep), z - along, max(x - fx * 0.05, x + fx * deep), z + along)
+
+
+holes_2d = [(f"door {n}", (b[0] - 0.05, b[2] - 0.4, b[3] + 0.05, b[5] + 0.4) if b[3] - b[0] > b[5] - b[2] else (b[0] - 0.4, b[2] - 0.05, b[3] + 0.4, b[5] + 0.05))
+            for (n, _, _, _, b, _) in DOORS]
+holes_2d += [(f"window {i}", (w["box"][0] - 0.05, w["box"][2] - 0.4, w["box"][3] + 0.05, w["box"][5] + 0.4) if w["box"][3] - w["box"][0] > w["box"][5] - w["box"][2]
+              else (w["box"][0] - 0.4, w["box"][2] - 0.05, w["box"][3] + 0.4, w["box"][5] + 0.05)) for i, w in enumerate(windows)]
+for i, wb in enumerate(WALL_BUYS):
+    r = wall_buy_rect(wb)
+    fx, fz = fwd(wb["yaw"])
+    stand = (wb["at"][0] + fx * 0.8, wb["at"][1] + fz * 0.8)
+    if area_of(*stand) is None or area_of(*stand) != area_of(wb["at"][0] + fx * 0.1, wb["at"][1] + fz * 0.1):
+        problems.append(f"wall buy {wb['build']} at {wb['at']}: its front isn't inside one area")
+    for what, h in holes_2d:
+        if overlap(r, h):
+            problems.append(f"wall buy {wb['build']} at {wb['at']} is over {what}")
+    for kind, s in machines:
+        if overlap(r, rect_for(kind, s)):
+            problems.append(f"wall buy {wb['build']} at {wb['at']} is behind the {kind} at {s['at']}")
+    for j, other in enumerate(WALL_BUYS):
+        if j > i and overlap(wall_buy_rect(wb, 0.8), wall_buy_rect(other, 0.8)):
+            problems.append(f"wall buy {wb['build']} at {wb['at']} overlaps {other['build']} at {other['at']}")
+    for (name, x, z, yaw, y) in every_prop:
+        pr, (py0, py1) = prop_bounds(name, x, z, yaw, y)
+        if py1 > 0.95 and py0 < 1.65 and overlap(r, pr):
+            problems.append(f"wall buy {wb['build']} at {wb['at']} is behind the prop {name} at ({x}, {z})")
 
 # ---- The map ----------------------------------------------------------------------------------------------
 BOUNDARY = [[-31.5, -36], [-10, -37.5], [18, -35.5], [33.5, -32], [34.5, -6], [31, 8], [32, 23], [10, 26], [-12, 25.5], [-30.5, 23], [-34, 4], [-33, -21]]

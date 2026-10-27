@@ -3,7 +3,8 @@
   "name": "Auto Shotgun",
   "tier": "rare",
   "source": [
-    "box"
+    "box",
+    "wall"
   ],
   "flavor": "A full-auto shotgun receiver with a shell drum. Rooms empty quickly.",
   "build": "Sport Rifle Grip{receiver_1:Gravedigger Auto Receiver{barrel:Scattermouth Barrel,feed:Shell Drum,ammo:Buckshot,action:Heavy Auto Sear},stock:Recoil Buffer Stock}"

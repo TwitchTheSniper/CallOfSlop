@@ -3,7 +3,8 @@
   "name": "Riot Control",
   "tier": "uncommon",
   "source": [
-    "box"
+    "box",
+    "wall"
   ],
   "flavor": "A semi pump on slugs with a ported barrel and a recoil hook. Polite, firm, repeated.",
   "build": "Sport Rifle Grip{receiver_1:Farmhand Pump Receiver{barrel:Ported Barrel{muzzle:Recoil Hook},feed:Shell Box,ammo:Slug,action:Riot Trigger},stock:Fixed Stock}"

@@ -367,15 +367,15 @@ the ambient raised so it stays readable, flickering caged lamps, tube lights and
 
 | Area | Way in (price) | What's there |
 | --- | --- | --- |
-| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, box spot 1, **slot machine 1**, a reception desk |
-| **East Ward** | the Ward Door (750) | 2 windows, Ironhide Cider (power), the Wall SMG, salvage, hospital beds |
-| **West Offices** | the Records Debris (750) | 2 windows, Swiftload Seltzer (power), Bloodroot Tonic, the Wall Pistol, box spot 2, **workbench 1**, desks and filing |
-| **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, box spot 3, salvage, Salvage Stout, a fountain |
-| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, salvage, Fleetfoot Fizz and Windfall Soda (power), generators |
-| **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Twinfire Punch and Bulwark Brew (power), the Wall SMG, box spot 4, pews and an altar |
-| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), Marksman Malt (power), the Wall Pump, box spot 5, salvage, consoles |
+| **Receiving Hall** (start) | | 3 windows onto the ambulance bay, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle and the Buzzbox Machine Pistol (600), box spot 1, **slot machine 1**, a reception desk |
+| **East Ward** | the Ward Door (750) | 2 windows, Ironhide Cider (power), the Wall SMG, the Kingpin Hand Cannon (750) and the Ratchet PDW (1100), salvage, hospital beds |
+| **West Offices** | the Records Debris (750) | 2 windows, Swiftload Seltzer (power), Bloodroot Tonic, the Wall Pistol, the Courier Carbine (900) and the Prairie Lever (1000), box spot 2, **workbench 1**, desks and filing |
+| **Courtyard** (open sky) | the Courtyard Gate from the ward (1000) or the Garden Debris from the offices (1250) | 3 boarded gates, 2 ground spawners among the graves, the Wall Pump, Riot Control (1250) and the Heavy Hitter (1400), box spot 3, salvage, Salvage Stout, a fountain |
+| **Generator House** | the Generator Door from the courtyard (1250) | 2 windows, **the power switch**, **workbench 2**, the Burst Marksman, the Elephant Gun (1750) and the Bastille Squad LMG (2000), salvage, Fleetfoot Fizz and Windfall Soda (power), generators |
+| **Chapel** | the Chapel Door from the offices (1500) | 2 windows, a ground spawner, Twinfire Punch and Bulwark Brew (power), the Wall SMG, the Reaper Marksman (1500) and the Auto Shotgun (1750), box spot 4, pews and an altar |
+| **Research Lab** | **the Lab Shutter** from the ward (750, **needs the power**) | 3 windows, a ground spawner, the **weapon-slot upgrade**, **slot machine 2** (needs the power), Marksman Malt (power), the Wall Pump and the Bucket Lobber (a grenade launcher, 2250), box spot 5, salvage, consoles |
 
-Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 7 wall buys, 5 box spots, 12 perk
+Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 19 wall buys (2026-10-27: twelve more, from 600 to 2250, most of them box guns tagged `"wall"` too), 5 box spots, 12 perk
 machines (7 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
 the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
 runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
