@@ -14,6 +14,9 @@ public static class ThirdPersonArms
         public double ReloadAt, ReloadDur, MeleeAt, LastTime;
         public Vector3 LastPos;
         public float Speed, SprintW;
+        public Matrix4x4 GunPose; // the last drawn gun's pose (gun space -> world) and when, for the tracers (Game.TracerStart)
+        public double GunAt;
+        public WeaponDef? GunDef;
     }
 
     private static readonly State[] States = InitStates();
@@ -35,6 +38,12 @@ public static class ThirdPersonArms
     private static ArmAnchorSet _anchors;
     private static WeaponDef? _anchorDef;
     private static ArmColors _colors;
+
+    /// <summary>
+    /// The barrels whose muzzles flash on the player being drawn (<see cref="Game.FlashBarrels"/>; 0: no flash). Program
+    /// sets it around each player's draw and clears it after.
+    /// </summary>
+    public static ulong ShotFlash;
 
     /// <summary>A player started reloading (from Msg.Reload on the server or Msg.ReloadFx on clients).</summary>
     public static void OnReload(byte id, float duration, double now)
@@ -140,7 +149,39 @@ public static class ThirdPersonArms
         Right.Solve(right, body, Vector3.Zero);
         Left.Solve(left, body, Vector3.Zero);
         _colors = ArmColors.For(p.Color * 0.75f);
+        st.GunPose = pose;
+        st.GunAt = now;
+        st.GunDef = def;
         return pose;
+    }
+
+    /// <summary>
+    /// The pose (gun space -> world) <paramref name="def"/> was last drawn at in this player's hands, if it was drawn in
+    /// the last quarter second: shots from another player start at the muzzle of the gun you see them holding.
+    /// </summary>
+    public static bool DrawnGun(byte id, WeaponDef def, double now, out Matrix4x4 pose)
+    {
+        ref readonly var st = ref States[id];
+        pose = st.GunPose;
+        return ReferenceEquals(st.GunDef, def) && now - st.GunAt is >= 0 and < 0.25;
+    }
+
+    /// <summary>
+    /// Where a player's gun sits before the arm animation (the same frame <see cref="PlayerRig"/> and
+    /// <see cref="PlayerRender"/> start from, without the hips' sway): for a gun nobody has drawn yet.
+    /// </summary>
+    public static Matrix4x4 RestGun(Player p)
+    {
+        var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
+        var at = Matrix4x4.CreateTranslation(p.RenderPosition);
+        var body = GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at;
+        var gunAt = p.RenderStance switch
+        {
+            Stance.Prone => new Vector3(0.25f, 0.3f, -0.9f),
+            Stance.Crouch => new Vector3(0.3f, 0.82f, -0.3f),
+            _ => new Vector3(0.3f, 1.3f, -0.25f),
+        };
+        return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * body;
     }
 
     /// <summary>The gun's pose relative to the body from the last <see cref="Animate"/> (its pose = this * body).</summary>

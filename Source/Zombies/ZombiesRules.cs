@@ -171,6 +171,9 @@ public sealed class ZombiesRules
     /// <summary>The horde controller's numbers (the "horde" section; Source/Game/Horde/HordeController.cs).</summary>
     public HordeTuning Horde = new();
 
+    /// <summary>Dismemberment's numbers (the "limbs" section; Source/Game/ZombieLimbs.cs).</summary>
+    public LimbTuning Limbs = new();
+
     /// <summary>The alive cap in round <paramref name="round"/> with <paramref name="players"/> players (the curve, the extra players, the hard cap).</summary>
     public int MaxAliveFor(int round, int players)
     {
@@ -566,7 +569,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots", "horde"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "bots", "horde", "limbs"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -988,6 +991,58 @@ public sealed class ZombiesRules
                     });
                     if (!(h.NearRange <= h.MidRange && h.MidRange <= h.FarRange))
                         throw new WeaponFileException($"{at}: nearRange <= midRange <= farRange");
+                    break;
+                }
+                case "limbs":
+                {
+                    var l = r.Limbs;
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "enabled": l.Enabled = Flag(v, w); break;
+                            case "healthFraction": l.HealthFraction = Real(v, w, 0.01f, 10); break;
+                            case "healthMin": l.HealthMin = Whole(v, w, 1, 100000); break;
+                            case "damageShare": l.DamageShare = Real(v, w, 0, 10); break;
+                            case "blastShare": l.BlastShare = Real(v, w, 0, 10); break;
+                            case "oneArmDamage": l.OneArmDamage = Real(v, w, 0, 2); break;
+                            case "oneArmWindup": l.OneArmWindup = Real(v, w, 0.2f, 5); break;
+                            case "oneArmSwing": l.OneArmSwing = Real(v, w, 0.2f, 5); break;
+                            case "biteDamage": l.BiteDamage = Real(v, w, 0, 2); break;
+                            case "biteReach": l.BiteReach = Real(v, w, 0.2f, 2); break;
+                            case "biteWindup": l.BiteWindup = Real(v, w, 0.2f, 5); break;
+                            case "oneLegSpeed": l.OneLegSpeed = Real(v, w, 0.05f, 1); break;
+                            case "crawlSpeed": l.CrawlSpeed = Real(v, w, 0.05f, 1); break;
+                            case "crawlReach": l.CrawlReach = Real(v, w, 0.2f, 2); break;
+                            case "crawlAttackHeight": l.CrawlAttackHeight = Real(v, w, 0.1f, 2); break;
+                            case "crawlDamage": l.CrawlDamage = Real(v, w, 0, 2); break;
+                            case "crawlClimb": l.CrawlClimb = Real(v, w, 1, 10); break;
+                            case "limbPoints": l.LimbPoints = Whole(v, w, 0, 1000); break;
+                            case "goreSeconds": l.GoreSeconds = Real(v, w, 0.5f, 60); break;
+                            case "goreCap": l.GoreCap = Whole(v, w, 0, Gibs.Capacity); break;
+                            case "types":
+                                Fields(v, w, (tk, tv, tw) =>
+                                {
+                                    if (!Enum.TryParse<ZSpeed>(tk, true, out var sp) || !Enum.IsDefined(sp) || !char.IsLower(tk[0]))
+                                        return false;
+                                    Fields(tv, tw, (fk, fv, fw) =>
+                                    {
+                                        switch (fk)
+                                        {
+                                            case "healthMult": l.HealthMult[(int)sp] = Real(fv, fw, 0.05f, 100); break;
+                                            case "severs": l.Severs[(int)sp] = Flag(fv, fw); break;
+                                            default: return false;
+                                        }
+                                        return true;
+                                    });
+                                    return true;
+                                });
+                                break;
+                            default: return false;
+                        }
+                        return true;
+                    });
                     break;
                 }
                 default:

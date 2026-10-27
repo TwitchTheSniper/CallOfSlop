@@ -204,6 +204,8 @@ public sealed partial class Ui : IDisposable
             else
                 ImGuiSafe.TextColored(Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), Game.IsEmptyGun(w.Def) ? "-" : game.InfiniteAmmoOn(now) ? $"{w.Ammo} | INF" : w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF)
             ImGui.PopFont();
+            if (reload < 0 && w.Def.FireGroups is { } fireGroups && w.Groups is { } groups && FireGroupState.FeedsOf(fireGroups) > 1)
+                ImGuiSafe.TextColored(Dim, FeedLine(fireGroups, groups, now)); // each receiver's own magazine (GameFireGroups.cs)
             ImGui.Text($"{w.Def.Name}");
             ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
             for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade

@@ -1964,6 +1964,7 @@ public static unsafe partial class Program
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
+        _worldFov = fov; // (for your tracers: Program.Muzzle.cs)
 
         // ---- Tracers --------------------------------------------------------
         Gfx.SetBlend(true);
@@ -2201,10 +2202,12 @@ public static unsafe partial class Program
     /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
+        ThirdPersonArms.ShotFlash = _game.FlashBarrels(p.Id, Glfw.Time); // their gun flashes at the barrels that just fired (Program.Muzzle.cs)
         if (ScenePresentation.Enabled)
             ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);
         else
             PlayerRender.DrawImmediate(Gfx, p, Glfw.Time);
+        ThirdPersonArms.ShotFlash = 0;
     }
 
     private static readonly ViewModelAnimator _vmAnim = new();
@@ -2249,15 +2252,20 @@ public static unsafe partial class Program
             _vmAnim.DrawArms(Gfx, armColors); // manning a cart: it's drawn in the world (its gun turns); only your hands on its bar here
             return;
         }
+        RememberViewGun(def, pose, inWorld: false); // your tracers leave this gun's muzzle (Program.Muzzle.cs)
         if (ScenePresentation.Enabled) // camera -> gun -> parts/attachments, camera -> arms (Source/Scene/Rigs/ViewModelRig.cs)
         {
+            GunModel.FlashBarrels = LocalFlashBarrels(now); // only the barrels that fired flash
             ScenePresentation.DrawViewModel(Gfx, _vmAnim, def, GunModel.AdsCutaway, now < _game.MuzzleFlashUntil, (float)Glfw.Time, armColors);
+            GunModel.FlashBarrels = GunModel.AllBarrels;
             if (lens)
                 SightLens.Draw(Gfx);
             return;
         }
         (GunModel.MagOffset, GunModel.MagHidden) = (_vmAnim.MagOffset, _vmAnim.MagHidden); // the magazine comes out during a reload
+        GunModel.FlashBarrels = LocalFlashBarrels(now);
         DrawGun(def, pose, now < _game.MuzzleFlashUntil);
+        GunModel.FlashBarrels = GunModel.AllBarrels;
         (GunModel.MagOffset, GunModel.MagHidden) = (Vector3.Zero, false);
         _vmAnim.DrawArms(Gfx, armColors);
         if (lens)

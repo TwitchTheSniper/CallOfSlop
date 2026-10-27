@@ -29,6 +29,9 @@ public sealed class WeaponState(WeaponDef def)
     public int Reserve = -1;
     public double ReloadUntil;
     public double ReloadStarted;
+
+    /// <summary>Built weapons whose receivers fire at their own rates: each receiver's trigger and feed (GameFireGroups.cs).</summary>
+    public FireGroupState? Groups;
 }
 
 public readonly record struct FeedEntry(double Time, string Text, bool Mine, System.Numerics.Vector3 Colour = default);
@@ -481,6 +484,13 @@ public sealed partial class Game : IDisposable
 
         // Don't bank up shots while idle, but allow several per frame for very fast guns at low FPS.
         NextFireTime = Math.Max(NextFireTime, now - 0.02);
+        if (def.FireGroups != null)
+        {
+            TriggerGroups(w, def, now, held, pressed); // receivers at their own rates (GameFireGroups.cs)
+            if (w.Ammo == 0)
+                StartReload(now);
+            return;
+        }
         UpdateSpool(def, held, now); // miniguns wind up (GameBuilder.cs); 1 for everything else
 
         switch (def.Mode)
@@ -511,15 +521,20 @@ public sealed partial class Game : IDisposable
             StartReload(now);
     }
 
-    private void FireOnce(double now)
+    /// <summary>One shot of the active weapon. <paramref name="groups"/>: the receivers that fire (FireGroups builds, which count their own rounds and rates; 0 for every other gun).</summary>
+    private void FireOnce(double now, ushort groups = 0)
     {
         var me = Local!;
         var w = Active;
         var def = w.Def;
 
-        if (!InfiniteAmmoOn(now))
-            w.Ammo--; // (Zombies' Infinite Ammo: the shot uses none)
-        NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Twinfire Punch
+        if (groups == 0)
+        {
+            if (!InfiniteAmmoOn(now))
+                w.Ammo--; // (Zombies' Infinite Ammo: the shot uses none)
+            NextFireTime += SpooledInterval(def) * ZombieFireIntervalMult(me); // FireInterval unless the gun spools up; Zombies' Twinfire Punch
+        }
+        var recoilScale = def.FireGroups is { } fireGroups && groups != 0 ? FireGroupState.RecoilScale(fireGroups, groups) : 1f; // recoil adds up per receiver that fires
         LastShotTime = now;
         MuzzleFlashUntil = now + 0.05;
         Audio.Shot(def, null);
@@ -530,10 +545,10 @@ public sealed partial class Game : IDisposable
         var seed = _shotSeed++;
 
         // Recoil (the gun's pattern, see Recoil.cs) + bloom
-        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT) * FrenzyBuffs.Value(me, def, FrenzyStat.Recoil)); // Tight Grip; the AR frenzy buff
+        var (kickPitch, kickYaw) = LocalRecoil.Shot(def, me.Sim.Stance, AimT, now, LookPitch, LookYaw, Perks.RecoilMult(me.Perks, AimT) * FrenzyBuffs.Value(me, def, FrenzyStat.Recoil) * recoilScale); // Tight Grip; the AR frenzy buff
         LookPitch = Math.Clamp(LookPitch + kickPitch, -1.5f, 1.5f);
         LookYaw = World.WrapAngle(LookYaw + kickYaw);
-        var kick = def.RecoilDeg * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
+        var kick = def.RecoilDeg * recoilScale * MathF.PI / 180f * (Aiming ? 0.7f : 1f) * World.RecoilOf(me.Sim.Stance);
         Bloom = MathF.Min(Bloom + kick * 0.25f, 0.06f);
 
         if (def.IsLauncher)
@@ -543,13 +558,13 @@ public sealed partial class Game : IDisposable
         }
         if (IsServer)
         {
-            ServerResolveShot(me, def, origin, dir, spread, seed, Math.Max(0.0, (double)ServerTick - 1 + _alpha), now);
+            ServerResolveShot(me, def, origin, dir, spread, seed, Math.Max(0.0, (double)ServerTick - 1 + _alpha), now, groups);
             return;
         }
 
         // Predict every pellet against what we see; the server rewinds to the same tick.
         var predictedHit = false;
-        foreach (var ray in ShotRays(def, origin, dir, spread, seed)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        foreach (var ray in ShotRays(def, origin, dir, spread, seed, _predictRays, groups)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
         {
             var o = ray.Origin;
             var d = ray.Dir;
@@ -577,7 +592,7 @@ public sealed partial class Game : IDisposable
                 dist = PveRayDrawn(o, d, dist, out var eHit, BulletRadius(ray.Size)); // Co-op enemies, as you see them (GamePve.cs)
                 predictedHit |= eHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through, size: ray.Size);
+            AddTracer(TracerStart(me, def, ray.Barrel, now), o + d * dist, def, now, shooter: me, through: through, size: ray.Size); // from the muzzle that fired (GameMuzzle.cs)
         }
         if (predictedHit)
         {
@@ -586,7 +601,8 @@ public sealed partial class Game : IDisposable
         }
 
         var tickBase = (uint)Math.Max(0, Math.Floor(RenderTick));
-        _w.Begin(Msg.Fire).U8(def.Id).Vec(origin).Vec(dir).F32(spread).U32(seed).U32(tickBase).F32((float)(RenderTick - tickBase));
+        _w.Begin(Msg.Fire).U8(def.Id).Vec(origin).Vec(dir).F32(spread).U32(seed).U32(tickBase).F32((float)(RenderTick - tickBase))
+            .U8(byte.MaxValue).U16(groups); // protocol 64: no lock target, then the receivers that fired (GameFireGroups.cs; 0 = all)
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 
@@ -598,6 +614,7 @@ public sealed partial class Game : IDisposable
         w.ReloadStarted = now;
         w.ReloadUntil = now + w.Def.Reload * StreakReloadMult(Local, now) * Perks.ReloadMult(Local!.Perks) * FrenzyBuffs.Value(Local, w.Def, FrenzyStat.Reload); // Overdrive halves it, Sleight of Hand, the LMG frenzy buff
         _burstLeft = 0;
+        StopGroupBursts();
         Audio.Reload(w.Def, null);
 
         if (IsServer)
@@ -629,6 +646,7 @@ public sealed partial class Game : IDisposable
         if (slot == ActiveSlot || slot < 0 || slot >= WeaponSlots || Local is not { Alive: true } || CartRefusesSwitch(slot) || EmptySlotRefusesSwitch(slot))
             return;
         Active.ReloadUntil = 0; // switching cancels a reload
+        StopGroupBursts();
         ActiveSlot = slot;
         _burstLeft = 0;
         EquipUntil = now + Active.Def.EquipTime * FrenzyBuffs.Value(Local, Active.Def, FrenzyStat.EquipTime); // the Pistol frenzy buff
@@ -1333,7 +1351,8 @@ public sealed partial class Game : IDisposable
     }
 
     /// <summary>Hitscan with lag compensation (targets rewound to <paramref name="viewTick"/>), one ray per pellet.</summary>
-    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now)
+    /// <param name="groups">The receivers that fired, on a build that fires them at their own rates (<see cref="WeaponDef.FireGroups"/>; 0 = all). Ignored for every other gun.</param>
+    private void ServerResolveShot(Player shooter, WeaponDef def, Vector3 origin, Vector3 dir, float spread, uint seed, double viewTick, double now, ushort groups = 0)
     {
         // Validation against the weapon's real stats.
         if (!shooter.Alive || !shooter.Owns(def.Id))
@@ -1347,10 +1366,20 @@ public sealed partial class Game : IDisposable
             return; // a push cart only fires while you man it, within its traverse limits (GameZombies.cs)
         // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
         // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
-        shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
-        if (shooter.ShotClock > now + 0.05)
-            return;
-        shooter.ShotClock += def.FireInterval * 0.85 * ZombieFireIntervalMult(shooter); // Zombies' Twinfire Punch fires faster
+        if (def.FireGroups is { } fireGroups)
+        {
+            groups = ServerGroupBudget(shooter, fireGroups, groups, now); // each receiver at its own rate (GameFireGroups.cs)
+            if (groups == 0)
+                return;
+        }
+        else
+        {
+            groups = 0;
+            shooter.ShotClock = Math.Max(shooter.ShotClock, now - 0.3);
+            if (shooter.ShotClock > now + 0.05)
+                return;
+            shooter.ShotClock += def.FireInterval * 0.85 * ZombieFireIntervalMult(shooter); // Zombies' Twinfire Punch fires faster
+        }
         shooter.LastShotTime = now;
         shooter.LastCombatTime = now;
         if (Vector3.Distance(origin, shooter.Eye) > 7.5f) // ~0.5 s of a boosted sprint of client/server drift
@@ -1382,13 +1411,13 @@ public sealed partial class Game : IDisposable
         headshotOn.Clear();
         _bloodShotPart.Clear();
         byte flags = 0;
-        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays); // one per pellet (per barrel on built weapons, GameBuilder.cs)
+        var rays = ShotRays(def, origin, dir, spread, seed, nested ? null : _resolveRays, groups); // one per pellet (per barrel on built weapons, GameBuilder.cs)
         if (rays.Count > 255)
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
         var ends = nested ? new List<Vector3>() : _resolveEnds;
         ends.Clear();
-        var laterals = nested ? new List<Vector2>() : _resolveLaterals;
-        laterals.Clear();
+        var barrels = nested ? new List<int>() : _resolveBarrels;
+        barrels.Clear();
         var zHead = false;
         _shotPenetrated = false;
         var pfx = HasPlayerEffects(def.BuildFlags) && !nested; // special ammo on players (AmmoEffectsPlayers.cs)
@@ -1440,7 +1469,7 @@ public sealed partial class Game : IDisposable
             ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
-            laterals.Add(ray.Lateral);
+            barrels.Add(ray.Barrel);
             if (device != null)
                 flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist) * pen, now);
             if (turret != null)
@@ -1507,13 +1536,14 @@ public sealed partial class Game : IDisposable
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null);
+            AddTracer(TracerStart(shooter, def, barrels[i], now), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null); // from the muzzle that fired (GameMuzzle.cs)
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
             _w.Vec(end);
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
+        WriteShotBarrels(_w, def, barrels); // which barrel fired each end (GameMuzzle.cs)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         _resolveBusy = nested;
     }
@@ -1524,7 +1554,7 @@ public sealed partial class Game : IDisposable
     private readonly HashSet<Player> _resolveHeads = new();
     private readonly List<ShotRay> _resolveRays = new(16);
     private readonly List<Vector3> _resolveEnds = new(16);
-    private readonly List<Vector2> _resolveLaterals = new(16);
+    private readonly List<int> _resolveBarrels = new(16);
     private bool _resolveBusy;
 
     /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
@@ -1696,8 +1726,9 @@ public sealed partial class Game : IDisposable
                 var seed = r.U32();
                 var viewTick = r.U32() + (double)Math.Clamp(r.F32(), 0f, 1f);
                 _launcherLockClaim = r.Has(1) ? r.U8() : byte.MaxValue; // protocol 28: a launcher's lock-on target (GameLaunchers.cs)
+                var groups = r.Has(2) ? r.U16() : (ushort)0; // protocol 64: the receivers that fired (GameFireGroups.cs)
                 if (float.IsFinite(origin.X + origin.Y + origin.Z + dir.X + dir.Y + dir.Z + spread))
-                    ServerResolveShot(p, weapon, origin, dir, spread, seed, viewTick, now);
+                    ServerResolveShot(p, weapon, origin, dir, spread, seed, viewTick, now, groups);
                 break;
             }
             case (byte)Msg.Loadout when IsServer && r.Has(12):
@@ -1896,8 +1927,9 @@ public sealed partial class Game : IDisposable
                 ShotsSeen[shooter]++;
                 Audio.Shot(def, sp.RenderEye);
                 var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
-                foreach (var end in shotEnds)
-                    AddTracer(MuzzleWorld(sp), end, def, now, flags, sp, through);
+                var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length, _shotBarrelsIn ??= new byte[256]); // which barrel fired each (GameMuzzle.cs)
+                for (var i = 0; i < shotEnds.Length; i++)
+                    AddTracer(TracerStart(sp, def, shotBarrels[i], now), shotEnds[i], def, now, flags, sp, through);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

@@ -207,6 +207,13 @@ public sealed partial class WeaponDef
     /// <summary>Built weapons on a "rotate" grip: the receivers (barrel groups) take turns, one per shot.</summary>
     public bool RotateGroups { get; set; }
 
+    /// <summary>
+    /// Built weapons with several receivers firing as a volley: each receiver's own trigger (rate, mode, burst, spool, feed),
+    /// indexed by barrel group. Every ready receiver fires on the same tick; the rest wait for their own next shot. Null for
+    /// standard weapons, single-receiver builds and chain fire (<see cref="RotateGroups"/>), which fire as one trigger.
+    /// </summary>
+    public ReceiverFire[]? FireGroups { get; set; }
+
     /// <summary>Seconds of held trigger to reach the full fire rate (miniguns, chain guns); 0 = none.</summary>
     public float SpoolTime { get; set; }
 
@@ -290,11 +297,40 @@ public sealed partial class WeaponDef
         return float.Lerp(1f, MinDamageMult, t);
     }
 
-    /// <summary>Sustained body-shot damage per second at close range (ignores reloads).</summary>
+    /// <summary>
+    /// Damage one shot of receiver (barrel group) <paramref name="g"/> puts out at close range if every projectile lands
+    /// (a rotary receiver averages its turns). For <see cref="FireGroups"/> builds, where each receiver fires on its own.
+    /// </summary>
+    public float GroupShotDamage(int g)
+    {
+        if (MuzzlePoints is not { Length: > 0 } pts)
+            return Damage * Pellets;
+        float sum = 0;
+        var n = 0;
+        var rotary = false;
+        foreach (var p in pts)
+            if (p.Group == g)
+            {
+                sum += Damage * p.DamageMult * p.Pellets;
+                n++;
+                rotary |= p.Rotary;
+            }
+        return rotary && n > 0 ? sum / n : sum;
+    }
+
+    /// <summary>Sustained body-shot damage per second at close range (ignores reloads and spool-up).</summary>
     public float Dps
     {
         get
         {
+            if (FireGroups is { } fg)
+            {
+                // Every receiver at its own rate (independent fire rates): the receivers' DPS add up.
+                float total = 0;
+                for (var g = 0; g < fg.Length; g++)
+                    total += GroupShotDamage(g) * fg[g].ShotsPerSecond;
+                return total;
+            }
             var perShot = ShotDamage;
             if (Mode != FireMode.Burst)
                 return perShot / FireInterval;

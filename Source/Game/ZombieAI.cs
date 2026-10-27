@@ -248,6 +248,7 @@ public sealed partial class Game
         };
         ZRand(); // (the old first path search delay: keeps the seeded stream in step)
         z.MaxHealth = z.Health;
+        InitLimbs(z); // per-limb health (ZombieLimbs.cs)
         z.Sim = new MoveState { Position = pos, Grounded = true };
         z.PrevPos = z.RenderPos = pos;
         z.Yaw = z.RenderYaw = sp.Window >= 0 ? zm.Windows[sp.Window].Yaw : ZRand() * MathF.Tau;
@@ -262,13 +263,16 @@ public sealed partial class Game
         return z;
     }
 
-    /// <summary>The next zombie id (never 0, and never one still in use: ids wrap after 65535).</summary>
+    /// <summary>The highest zombie id (15 bits: the top bit of the id in <see cref="Msg.ZEnts"/> says a limbs byte follows, protocol 65).</summary>
+    public const ushort MaxZombieId = 0x7FFF;
+
+    /// <summary>The next zombie id (never 0, and never one still in use: ids wrap after <see cref="MaxZombieId"/>).</summary>
     private ushort NextZombieId()
     {
         for (var tries = 0; tries < 70000; tries++)
         {
             var id = _zNextId++;
-            if (_zNextId == 0)
+            if (_zNextId > MaxZombieId)
                 _zNextId = 1;
             if (id != 0 && !_zById.ContainsKey(id))
                 return id;
@@ -335,7 +339,7 @@ public sealed partial class Game
         ZSpeed.Sprint => ZRules.SprintSpeed,
         ZSpeed.Run => ZRules.RunSpeed,
         _ => ZRules.WalkSpeed,
-    }) * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f); // plasma slows (ZombiesAmmoEffects.cs)
+    }) * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f); // plasma slows (ZombiesAmmoEffects.cs); a lost leg limps, both crawl (ZombieLimbs.cs)
 
     private void ThinkZombie(ZombiesMap zm, Zombie z, double now)
     {
@@ -419,9 +423,9 @@ public sealed partial class Game
             }
             case ZState.Climbing:
             {
-                var t = (float)Math.Clamp((now - z.StateAt) / ZRules.ClimbSeconds, 0, 1);
+                var t = (float)Math.Clamp((now - z.StateAt) / ClimbSecondsFor(z), 0, 1); // (a crawler is slow at windows)
                 var p = Vector3.Lerp(z.ClimbFrom, z.ClimbTo, t);
-                p.Y += MathF.Sin(t * MathF.PI) * 0.9f; // up over the sill and down
+                p.Y += MathF.Sin(t * MathF.PI) * (z.Crawler ? 0.6f : 0.9f); // up over the sill and down
                 z.Sim.Position = p;
                 z.Sim.Velocity = Vector3.Zero;
                 z.Sim.Grounded = true;
@@ -624,12 +628,12 @@ public sealed partial class Game
             return false;
         }
         var to = t.Position - z.Position;
-        var reach = ZRules.ZombieReach + (throughWindow ? 0.35f : 0f);
-        if (Flat(to) > reach + World.PlayerRadius || MathF.Abs(to.Y) > 1.4f)
+        var reach = ZombieReachFor(z) + (throughWindow ? 0.35f : 0f); // (a bite or a crawler reaches less: ZombieLimbs.cs)
+        if (Flat(to) > reach + World.PlayerRadius || MathF.Abs(to.Y) > ZombieReachHeight(z, false))
             return false;
         z.Yaw = MathF.Atan2(to.X, -to.Z);
-        z.SwingAt = now + ZRules.ZombieWindup;
-        z.NextSwing = now + ZRules.ZombieSwing;
+        z.SwingAt = now + ZombieWindupFor(z);
+        z.NextSwing = now + ZombieSwingFor(z);
         if (throughWindow)
             z.State = ZState.Attack; // lands from the window spot, then back to tearing (LandSwipe)
         else
@@ -647,10 +651,10 @@ public sealed partial class Game
         if (Players.TryGetValue(z.Target, out var t) && IsStanding(t))
         {
             var to = t.Position - z.Position;
-            var reach = ZRules.ZombieReach + (backToWindow ? 0.35f : 0f) + 0.45f; // a little slack: you can still back away during the windup
-            if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < 1.6f)
+            var reach = ZombieReachFor(z) + (backToWindow ? 0.35f : 0f) + 0.45f; // a little slack: you can still back away during the windup
+            if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < ZombieReachHeight(z, true))
             {
-                ZombieHurt(t, ZRules.ZombieDamage, now, z.Position);
+                ZombieHurt(t, ZombieDamageFor(z), now, z.Position); // (one arm, a bite or a crawler hurts less: ZombieLimbs.cs)
                 Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f, MixBus.Zombies);
             }
         }
@@ -690,11 +694,12 @@ public sealed partial class Game
             if (z.State == ZState.Dead)
                 continue;
             var at = ZombieAt(z, rewindTo);
-            if (World.Hitbox(at, Stance.Stand, z.Yaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist) // grow: a fat round's radius
+            if (ZombieBox(z, at, z.Yaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist) // grow: a fat round's radius; a crawler's box is low (ZombieLimbs.cs)
             {
                 dist = t;
                 hit = z;
-                head = World.IsHeadshot(at, Stance.Stand, z.Yaw, o + d * t);
+                head = World.IsHeadshot(at, ZombieStance(z), z.Yaw, o + d * t);
+                _zLastLimb = head ? -1 : LimbAt(z, at, z.Yaw, o + d * t);
             }
         }
         if (hit != null)
@@ -710,6 +715,8 @@ public sealed partial class Game
     {
         _zShotDamage[z] = _zShotDamage.GetValueOrDefault(z) + damage * (head ? ZRules.ZombieHeadMult : 1f);
         _zShotRay.TryAdd(z, _zLastRay);
+        if (!head)
+            LimbDamage(z, _zLastLimb, damage); // the limb it landed on (ZombieLimbs.cs)
         if (head)
         {
             _zShotHead.Add(z);
@@ -739,6 +746,7 @@ public sealed partial class Game
             var killed = DamageZombie(shooter, z, amount, head, melee: false, now);
             if (killed)
                 flags |= 4;
+            SeverLimbs(z, shooter, now); // limbs out of health come off (a shotgun can take several: ZombieLimbs.cs)
             if (fx)
                 _zFxHits.Add(new ZFxHit(z, amount, killed, _zShotRay.TryGetValue(z, out var ray) ? ray : (shooter.Eye, World.FlatForward(shooter.Yaw), Flat(z.Position - shooter.Position))));
         }
@@ -803,7 +811,7 @@ public sealed partial class Game
         {
             if (z.State == ZState.Dead)
                 continue;
-            var box = World.Hitbox(ZombieAt(z, rewindTo), Stance.Stand, z.Yaw);
+            var box = ZombieBox(z, ZombieAt(z, rewindTo), z.Yaw);
             var closest = Vector3.Clamp(origin, box.Min, box.Max);
             var dist = (closest - origin).Length();
             if (dist > reach)
@@ -862,7 +870,9 @@ public sealed partial class Game
                 continue;
             if (dist > 0.3f && World.Query.Raycast(center, to / dist, dist, QueryFilter.Shots) < dist - 0.05f)
                 continue;
+            BlastLimbs(z, center, radius, maxDamage); // a blast can take several limbs (ZombieLimbs.cs)
             DamageZombie(owner, z, (int)MathF.Round(maxDamage * MathF.Pow(1f - dist / radius, 1.4f)), false, melee: false, now, explosive: true);
+            SeverLimbs(z, owner, now);
         }
     }
 
@@ -877,7 +887,7 @@ public sealed partial class Game
             if (z.State == ZState.Dead)
                 continue;
             var feet = z.RenderPos + ZombieHitShift(z, ZAnimTick, z.RenderPos); // at a window: on the drawn body
-            if (World.Hitbox(feet, Stance.Stand, z.RenderYaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist)
+            if (ZombieBox(z, feet, z.RenderYaw).Grown(grow).Raycast(o, d, dist) is { } t && t < dist)
             {
                 dist = t;
                 hit = true;

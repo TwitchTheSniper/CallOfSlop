@@ -57,6 +57,16 @@ public static class GunModel
     /// <inheritdoc cref="MagOffset"/>
     public static bool MagHidden;
 
+    /// <summary>
+    /// Which barrels' muzzles flash when a flash is drawn (bit i: barrel i, <see cref="ShotRay.Barrel"/>; barrels past 63
+    /// share bit i % 64): only the barrels that fired, not every barrel on a multi-barrel build. Program sets it from
+    /// <see cref="Game.FlashBarrels"/> around a draw and puts it back to <see cref="AllBarrels"/> after.
+    /// </summary>
+    public static ulong FlashBarrels = AllBarrels;
+
+    /// <summary>Every barrel (the default of <see cref="FlashBarrels"/>).</summary>
+    public const ulong AllBarrels = ulong.MaxValue;
+
     private static bool _inMag;
 
     // ---- Scene graph emission (Source/Scene/GunRig.cs) ---------------------------------
@@ -735,9 +745,12 @@ public static class GunModel
         DrawOptic(d, m.Mount, m.OpticZ);
         if (flash && _record == null)
         {
-            if (m.Muzzles.Length > 1 && _emit == null)
-                foreach (var mz in m.Muzzles)
-                    DrawFlash(d, mz.Y, mz.Z, time, mz.X); // a built weapon with several barrels: a flash at each muzzle
+            if (m.Muzzles.Length > 0 && _emit == null)
+            {
+                for (var i = 0; i < m.Muzzles.Length; i++)
+                    if ((FlashBarrels & 1UL << (i & 63)) != 0)
+                        DrawFlash(d, m.Muzzles[i].Y, m.Muzzles[i].Z, time, m.Muzzles[i].X); // a built weapon: a flash at each muzzle that fired
+            }
             else
                 DrawFlash(d, m.Bore, m.MuzzleZ, time);
         }

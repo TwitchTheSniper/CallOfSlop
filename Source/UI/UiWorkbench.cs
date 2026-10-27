@@ -1118,10 +1118,10 @@ public sealed partial class Ui
             if (ImGui.Checkbox("Chain fire"u8, ref chain) && Bm.SetChainFire(chain))
             {
                 _wbAudio?.Effect(Sfx.HitTick, 0.35f);
-                WbSay(chain ? "Chain fire: the receivers fire in turn, one per shot (fire rates add up, recoil averages)." : "Volley: every receiver fires at once (the slowest sets the rate, recoil adds up).");
+                WbSay(chain ? "Chain fire: the receivers fire in turn, one per shot (fire rates add up, recoil averages)." : "Volley: every receiver fires at its own rate, the ready ones together (DPS adds up, so does recoil).");
             }
             if (ImGui.IsItemHovered())
-                WbTip("Off: a volley, every receiver fires together. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
+                WbTip("Off: a volley, every receiver fires at its own rate with its own trigger and magazine. On: chain fire, the receivers take turns (one per shot). Saved with the build."u8);
         }
         if (!ImGui.BeginChild("##wblinear"u8, new float2(0, height), ImGuiChildFlags.Borders))
         {
@@ -1349,7 +1349,22 @@ public sealed partial class Ui
             WbBar("DPS", d.Dps, t?.Dps, MathF.Sqrt(d.Dps / 3000f), t != null ? MathF.Sqrt(t.Dps / 3000f) : null, "0", true);
             WbBar("Reload", d.Reload, t?.Reload, 1 - StatBars.Reload(d), t != null ? 1 - StatBars.Reload(t) : null, "0.0 s", false);
             WbBar("Mobility", d.Mobility, t?.Mobility, StatBars.Mobility(d), t != null ? StatBars.Mobility(t) : null, "0.00", true);
-            if (d.SpoolTime > 0)
+            if (d.FireGroups is { } fg)
+            {
+                // Independent fire rates: each receiver's own rate and trigger (the fire rate bar is the fastest's).
+                WbWrapped(Dim, $"Volley: every receiver at its own rate; DPS {d.Dps:0} adds them up, the fire rate bar is the fastest.");
+                var rs = b.Receivers;
+                for (var g = 0; g < fg.Length; g++)
+                {
+                    var f = fg[g];
+                    var name = g < rs.Count ? rs[g].Part.Name : $"Receiver {g + 1}";
+                    var trigger = f.Mode == FireMode.Burst ? $"{f.FireType}, {f.BurstDelay:0.00} s apart" : f.FireType;
+                    var spool = f.SpoolTime > 0 ? $", spins up over {f.SpoolTime:0.0} s" : "";
+                    var feed = fg.Count(x => x.Feed == f.Feed) > 1 ? $"shared feed {f.FeedMag}" : $"mag {f.FeedMag}";
+                    ImGuiSafe.TextColored(Dim, $"  {g + 1}. {name}: {f.Rpm} rpm {trigger}{spool}, {feed}, {d.GroupShotDamage(g) * f.ShotsPerSecond:0} DPS");
+                }
+            }
+            if (d.SpoolTime > 0 && d.FireGroups == null)
                 WbWrapped(Dim, $"Spins up over {d.SpoolTime:0.0} s from {d.SpoolStart * 100:0}% fire rate.");
             if (d.NoAds)
                 ImGui.TextColored(Yellow, "Hip fire only."u8);
@@ -1735,7 +1750,7 @@ public sealed partial class Ui
     {
         var bits = new List<string>();
         if (p.Frame is { } f)
-            bits.Add($"Holds {p.ReceiverCapacity} receiver{(p.ReceiverCapacity == 1 ? "" : "s")}" + (p.ReceiverCapacity > 1 ? $", fires {(f.Style == FireStyle.Volley ? "a volley (all at once)" : "in a chain (taking turns)")} unless the build's Chain fire box says otherwise" : "")
+            bits.Add($"Holds {p.ReceiverCapacity} receiver{(p.ReceiverCapacity == 1 ? "" : "s")}" + (p.ReceiverCapacity > 1 ? $", fires {(f.Style == FireStyle.Volley ? "a volley (each receiver at its own rate)" : "in a chain (taking turns)")} unless the build's Chain fire box says otherwise" : "")
                      + $", carries {f.Carry:0} kg{(f.Ads ? "" : ", hip fire only")}" + (p.Sockets.Any(s => s.Type == "hopper") ? ", takes a shared feed" : ""));
         if (p.Shared is { } sh)
             bits.Add($"shared feed: feeds up to {sh.Feeds} receivers with no feed of their own (pooled)");

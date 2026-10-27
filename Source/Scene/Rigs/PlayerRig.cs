@@ -200,7 +200,10 @@ public sealed class PlayerRig
         var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * upper;
         ThirdPersonArms.Animate(p, def, gunPose, upper, time);
         Gun.Ensure(def);
-        Gun.Pose(ThirdPersonArms.LastGunLocal, 0f, Vector3.Zero, false, false, (float)time);
+        var shot = ThirdPersonArms.ShotFlash; // the muzzles of their last shot flash (Source/Game/GameMuzzle.cs)
+        GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;
+        Gun.Pose(ThirdPersonArms.LastGunLocal, 0f, Vector3.Zero, false, shot != 0, (float)time);
+        GunModel.FlashBarrels = GunModel.AllBarrels;
         var (r, l) = ThirdPersonArms.Rigs;
         var colors = ThirdPersonArms.Colors;
         Right.Pose(r, upper, colors);
