@@ -7,11 +7,11 @@
   "weight": 0.35,
   "muzzles": [[0, 0, -0.06]],
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
-    {"size": [0.01, 0.01, 0.03], "pos": [0.013, 0.013, -0.045], "color": "gunmetal"},
-    {"size": [0.01, 0.01, 0.03], "pos": [-0.013, 0.013, -0.045], "color": "gunmetal"},
-    {"size": [0.01, 0.01, 0.03], "pos": [0.013, -0.013, -0.045], "color": "gunmetal"},
-    {"size": [0.01, 0.01, 0.03], "pos": [-0.013, -0.013, -0.045], "color": "gunmetal"}
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
+    {"shape": "wedge", "size": [0.01, 0.01, 0.03], "pos": [0.013, 0.013, -0.045], "color": "gunmetal", "taper": 0.45, "shift": [-0.1, -0.1]},
+    {"shape": "wedge", "size": [0.01, 0.01, 0.03], "pos": [-0.013, 0.013, -0.045], "color": "gunmetal", "taper": 0.45, "shift": [0.1, -0.1]},
+    {"shape": "wedge", "size": [0.01, 0.01, 0.03], "pos": [0.013, -0.013, -0.045], "color": "gunmetal", "taper": 0.45, "shift": [-0.1, 0.1]},
+    {"shape": "wedge", "size": [0.01, 0.01, 0.03], "pos": [-0.013, -0.013, -0.045], "color": "gunmetal", "taper": 0.45, "shift": [0.1, 0.1]}
   ],
   "stats": [
     {"stat": "pellets", "mul": 2},

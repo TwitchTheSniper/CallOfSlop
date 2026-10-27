@@ -10,15 +10,11 @@
     ]
   ],
   "model": [
-    {"shape": "rod", "size": [   0.036,   0.036,   0.03 ], "pos": [   0,   0,   -0.015 ], "color": "steel" },
-    {"shape": "rod", "size": [   0.045,   0.045,   0.038 ], "pos": [   0,   0,   -0.049 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.065,   0.065,   0.038 ], "pos": [   0,   0,   -0.087 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.085,   0.085,   0.038 ], "pos": [   0,   0,   -0.125 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.105,   0.105,   0.038 ], "pos": [   0,   0,   -0.163 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.125,   0.125,   0.038 ], "pos": [   0,   0,   -0.201 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.145,   0.145,   0.038 ], "pos": [   0,   0,   -0.239 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.17,   0.17,   0.012 ], "pos": [   0,   0,   -0.264 ], "color": "brass" },
-    {"shape": "rod", "size": [   0.026,   0.026,   0.2 ], "pos": [   0,   0,   -0.14 ], "color": "orange", "tag": "glow" }
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
+    {"shape": "tube", "size": [0.085, 0.085, 0.114], "pos": [0, 0, -0.087], "rot": [0, 180, 0], "color": "brass", "segments": 16, "inner": 0.82, "taper": 0.53},
+    {"shape": "tube", "size": [0.145, 0.145, 0.114], "pos": [0, 0, -0.201], "rot": [0, 180, 0], "color": "brass", "segments": 16, "inner": 0.86, "taper": 0.586},
+    {"shape": "tube", "size": [0.17, 0.17, 0.012], "pos": [0, 0, -0.264], "color": "brass", "segments": 20, "inner": 0.84},
+    {"shape": "cylinder", "size": [0.026, 0.026, 0.2], "pos": [0, 0, -0.14], "color": "orange", "tag": "glow"}
   ],
   "stats": [
     {"stat": "loudness", "mul": 2.5 },

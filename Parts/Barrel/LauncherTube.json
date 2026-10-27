@@ -12,7 +12,7 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.26]}
   ],
   "model": [
-    {"shape": "tube", "size": [0.056, 0.056, 0.26], "pos": [0, 0, -0.13], "color": "olive", "segments": 16, "inner": 0.84, "ends": "back"},
+    {"shape": "tube", "size": [0.056, 0.056, 0.258], "pos": [0, 0, -0.13], "color": "olive", "segments": 16, "inner": 0.84, "ends": "back"},
     {"shape": "tube", "size": [0.06, 0.06, 0.02], "pos": [0, 0, -0.01], "color": "black", "segments": 16, "inner": 0.78},
     {"shape": "tube", "size": [0.06, 0.06, 0.02], "pos": [0, 0, -0.25], "color": "black", "segments": 16, "inner": 0.78},
     {"shape": "bevel", "size": [0.012, 0.004, 0.16], "pos": [0, 0.029, -0.13], "color": "black", "radius": 0.3, "edges": "long"}

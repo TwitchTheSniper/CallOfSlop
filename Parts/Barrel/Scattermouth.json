@@ -17,7 +17,7 @@
     {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.06], "color": "gunmetal"},
     {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.15], "color": "gunmetal"},
     {"size": [0.004, 0.003, 0.006], "pos": [0, 0.0153, -0.24], "color": "gunmetal"},
-    {"shape": "sphere", "size": [0.004, 0.004, 0.004], "pos": [0, 0.0165, -0.29], "color": "brass", "segments": 8}
+    {"shape": "sphere", "size": [0.004, 0.004, 0.004], "pos": [0, 0.0175, -0.29], "color": "brass", "segments": 8}
   ],
   "stats": [
     {"stat": "rangeM", "mul": 1.0}

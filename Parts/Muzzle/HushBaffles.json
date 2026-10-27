@@ -8,11 +8,11 @@
   "flags": ["suppressed"],
   "muzzles": [[0, 0, -0.24]],
   "model": [
-    {"shape": "rod", "size": [0.046, 0.046, 0.24], "pos": [0, 0, -0.12], "color": "black"},
-    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.005], "color": "steel"},
-    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.085], "color": "steel"},
-    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.165], "color": "steel"},
-    {"shape": "rod", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.235], "color": "steel"}
+    {"shape": "tube", "size": [0.046, 0.046, 0.238], "pos": [0, 0, -0.12], "color": "black", "segments": 14, "inner": 0.45, "ends": "back"},
+    {"shape": "tube", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.005], "color": "steel", "segments": 14, "inner": 0.88},
+    {"shape": "tube", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.085], "color": "steel", "segments": 14, "inner": 0.88},
+    {"shape": "tube", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.165], "color": "steel", "segments": 14, "inner": 0.88},
+    {"shape": "tube", "size": [0.05, 0.05, 0.01], "pos": [0, 0, -0.235], "color": "steel", "segments": 14, "inner": 0.88}
   ],
   "stats": [
     {"stat": "loudness", "mul": 0.25},

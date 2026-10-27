@@ -12,7 +12,7 @@
   ],
   "model": [
     {"shape": "tube", "size": [0.024, 0.024, 0.07], "pos": [0, 0, -0.035], "color": "black", "inner": 0.72, "ends": "back"},
-    {"shape": "tube", "size": [0.03, 0.03, 0.008], "pos": [0, 0, -0.066], "color": "steel", "segments": 7, "inner": 0.62}
+    {"shape": "tube", "size": [0.03, 0.03, 0.008], "pos": [0, 0, -0.0655], "color": "steel", "segments": 7, "inner": 0.62}
   ],
   "stats": [
     {"stat": "damage", "mul": 1.15},

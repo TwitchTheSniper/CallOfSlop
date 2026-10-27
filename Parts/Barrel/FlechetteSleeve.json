@@ -11,7 +11,7 @@
     {"name": "muzzle", "type": "muzzle", "pos": [0, 0, -0.32]}
   ],
   "model": [
-    {"shape": "tube", "size": [0.028, 0.028, 0.32], "pos": [0, 0, -0.16], "color": "black", "inner": 0.4, "ends": "back"},
+    {"shape": "tube", "size": [0.028, 0.028, 0.318], "pos": [0, 0, -0.16], "color": "black", "inner": 0.4, "ends": "back"},
     {"shape": "cylinder", "size": [0.036, 0.036, 0.05], "pos": [0, 0, -0.025], "color": "accent", "segments": 8},
     {"shape": "tube", "size": [0.036, 0.036, 0.05], "pos": [0, 0, -0.295], "color": "accent", "segments": 8, "inner": 0.4, "ends": "back"}
   ],

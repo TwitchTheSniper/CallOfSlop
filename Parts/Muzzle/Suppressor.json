@@ -8,7 +8,11 @@
   "flags": ["suppressed"],
   "muzzles": [[0, 0, -0.18]],
   "model": [
-    {"shape": "rod", "size": [0.04, 0.04, 0.18], "pos": [0, 0, -0.09], "color": "gunmetal"}
+    {"shape": "cylinder", "size": [0.034, 0.034, 0.015], "pos": [0, 0, -0.0075], "color": "black", "segments": 8},
+    {"shape": "tube", "size": [0.04, 0.04, 0.16], "pos": [0, 0, -0.095], "color": "gunmetal", "segments": 16, "inner": 0.42, "ends": "back"},
+    {"shape": "cylinder", "size": [0.041, 0.041, 0.003], "pos": [0, 0, -0.06], "color": "black", "segments": 16},
+    {"shape": "cylinder", "size": [0.041, 0.041, 0.003], "pos": [0, 0, -0.13], "color": "black", "segments": 16},
+    {"shape": "tube", "size": [0.04, 0.04, 0.005], "pos": [0, 0, -0.1775], "color": "steel", "segments": 16, "inner": 0.4}
   ],
   "stats": [
     {"stat": "loudness", "mul": 0.35},
