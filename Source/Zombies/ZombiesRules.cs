@@ -34,7 +34,58 @@ public sealed class ZombiePerkDef
     /// <summary>Solo only: being downed with this perk gets you back up on your own after a few seconds (the perk is used up).</summary>
     public bool SelfRevive;
 
+    // ---- The perks added 2026-10-27 (docs/zombies/ZOMBIES-MODE.md, "Perks"). Every field is neutral by default. ----
+
+    /// <summary>Movement speed multiplier on foot (Fleetfoot Fizz: 1.2). The client's prediction and the server's speed check both use it.</summary>
+    public float MoveSpeed = 1f;
+
+    /// <summary>Headshot damage multiplier on zombies (Marksman Malt: 1.5), and extra points for a headshot kill (Marksman Malt: 50).</summary>
+    public float HeadshotDamage = 1f;
+
+    public int HeadshotPoints;
+
+    /// <summary>Melee damage multiplier on zombies (Bloodroot Tonic: 2), and health back for every melee swing that hits a zombie (Bloodroot Tonic: 30).</summary>
+    public float MeleeDamage = 1f;
+
+    public int MeleeHeal;
+
+    /// <summary>An extra flat chance per kill of yours to drop a power-up (Windfall Soda: 0.06), which may go this many over the round's cap (2).</summary>
+    public float PowerUpChance;
+
+    public int PowerUpExtra;
+
+    /// <summary>Barrier rebuild time multiplier (Hammerhand Ale: 0.4), and how many times the board points (and the round's cap on them) pay (2).</summary>
+    public float Repair = 1f;
+
+    public float RepairPoints = 1f;
+
+    /// <summary>Part drop chance multiplier for your kills (Salvage Stout: 2), and extra parts from every salvage pile you search (1).</summary>
+    public float PartDrops = 1f;
+
+    public int SalvageBonus;
+
+    /// <summary>Armour plate (Bulwark Brew: 12): the plate takes a whole zombie hit, then grows back this many seconds later (0: no plate).</summary>
+    public float PlateSeconds;
+
+    /// <summary>The HUD badge's glyph (UiZombiesPerks.cs; "" draws the perk's initial).</summary>
+    public string Icon = "";
+
+    /// <summary>The label over the machine (the name in capitals; made once so the HUD allocates nothing).</summary>
+    public string Label => _label ??= Name.ToUpperInvariant();
+
+    private string? _label;
+
     public int Price(bool solo) => solo && SoloCost > 0 ? SoloCost : Cost;
+}
+
+/// <summary>The glyphs a perk's HUD badge can draw (the rules' "icon"; drawn in UiZombiesPerks.cs).</summary>
+public static class ZombiePerkIcons
+{
+    public static readonly string[] Names = ["heart", "drum", "rounds", "cross", "wind", "chevrons", "target", "fang", "star", "hammer", "gear", "shield"];
+
+    public static bool Known(string name) => Array.IndexOf(Names, name) >= 0;
+
+    public static int Index(string name) => Array.IndexOf(Names, name);
 }
 
 /// <summary>
@@ -134,8 +185,11 @@ public sealed class ZombiesRules
     /// <summary>How long the interact key is held to buy something (seconds).</summary>
     public float BuyHoldSeconds = 0.25f;
 
-    /// <summary>A hard cap on perks held (8: every perk; there's no real cap since 2026-10-26).</summary>
-    public int MaxPerks = 8;
+    /// <summary>The most perks the rules may list: they're sent as 16 bits of flags (protocol 57; one byte before).</summary>
+    public const int MaxPerkCount = 16;
+
+    /// <summary>A hard cap on perks held (16: every perk; there's no real cap since 2026-10-26).</summary>
+    public int MaxPerks = MaxPerkCount;
 
     /// <summary>Perks beyond this many held cost more (developer answer, 2026-10-26): the next perk costs its price x
     /// <see cref="ExtraPerkFactor"/> to the power (perks held - this + 1), so with 4 the 5th costs 2x, the 6th 4x, the
@@ -169,7 +223,7 @@ public sealed class ZombiesRules
     public float BotQuietRange = 10f, BotShopRange = 40f;
 
     /// <summary>The perks a bot wants, most wanted first (rules keys).</summary>
-    public string[] BotPerkOrder = ["jugg", "revive", "speed", "doubletap", "secondwind"];
+    public string[] BotPerkOrder = ["jugg", "revive", "hammerhand", "speed", "doubletap", "secondwind"];
 
     /// <summary>Spare points (over the price, the reserve and what it saves for its next perk) before a bot spins the box / pulls a slot machine.</summary>
     public int BotBoxSurplus = 500, BotSlotSurplus = 2500;
@@ -376,12 +430,26 @@ public sealed class ZombiesRules
     public static ZombiesRules Defaults()
     {
         var r = new ZombiesRules();
-        r.Perks.Add(new ZombiePerkDef { Name = "Juggernog", Key = "jugg", Cost = 2500, DamageTaken = 0.4f, Color = new Vector3(0.85f, 0.15f, 0.15f), Blurb = "Zombie hits do 40 percent of their damage." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Speed Cola", Key = "speed", Cost = 3000, Reload = 0.5f, Color = new Vector3(0.2f, 0.85f, 0.3f), Blurb = "Reload twice as fast." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Double Tap", Key = "doubletap", Cost = 2000, FireRate = 1.33f, Color = new Vector3(0.95f, 0.75f, 0.15f), Blurb = "Fire a third faster." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Quick Revive", Key = "revive", Cost = 1500, Revive = 0.5f, Color = new Vector3(0.3f, 0.6f, 1f), Blurb = "Revive teammates twice as fast." });
-        r.Perks.Add(new ZombiePerkDef { Name = "Second Wind", Key = "secondwind", Cost = 1500, SelfRevive = true, Color = new Vector3(1f, 0.55f, 0.1f), Blurb = "When you go down, you get back up on your own after a few seconds (used up)." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Juggernog", Key = "jugg", Cost = 2500, DamageTaken = 0.4f, Color = new Vector3(0.85f, 0.15f, 0.15f), Icon = "heart", Blurb = "Zombie hits do 40 percent of their damage." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Speed Cola", Key = "speed", Cost = 3000, Reload = 0.5f, Color = new Vector3(0.2f, 0.85f, 0.3f), Icon = "drum", Blurb = "Reload twice as fast." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Double Tap", Key = "doubletap", Cost = 2000, FireRate = 1.33f, Color = new Vector3(0.95f, 0.75f, 0.15f), Icon = "rounds", Blurb = "Fire a third faster." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Quick Revive", Key = "revive", Cost = 1500, Revive = 0.5f, Color = new Vector3(0.3f, 0.6f, 1f), Icon = "cross", Blurb = "Revive teammates twice as fast." });
+        r.Perks.Add(new ZombiePerkDef { Name = "Second Wind", Key = "secondwind", Cost = 1500, SelfRevive = true, Color = new Vector3(1f, 0.55f, 0.1f), Icon = "wind", Blurb = "When you go down, you get back up on your own after a few seconds (used up)." });
+        foreach (var d in MorePerks())
+            r.Perks.Add(d);
         return r;
+    }
+
+    /// <summary>The seven perks added 2026-10-27 (the same numbers the shipped file has).</summary>
+    private static IEnumerable<ZombiePerkDef> MorePerks()
+    {
+        yield return new ZombiePerkDef { Name = "Fleetfoot Fizz", Key = "fleetfoot", Cost = 2000, MoveSpeed = 1.2f, Color = new Vector3(0.25f, 0.9f, 0.9f), Icon = "chevrons", Blurb = "Move 20 percent faster." };
+        yield return new ZombiePerkDef { Name = "Marksman Malt", Key = "marksman", Cost = 2500, HeadshotDamage = 1.5f, HeadshotPoints = 50, Color = new Vector3(0.55f, 0.35f, 0.95f), Icon = "target", Blurb = "Headshots do 50 percent more damage; headshot kills pay 50 more points." };
+        yield return new ZombiePerkDef { Name = "Bloodroot Tonic", Key = "bloodroot", Cost = 2000, MeleeDamage = 2f, MeleeHeal = 30, Color = new Vector3(0.6f, 0.05f, 0.2f), Icon = "fang", Blurb = "Melee does double damage, and every melee hit heals you 30." };
+        yield return new ZombiePerkDef { Name = "Windfall Soda", Key = "windfall", Cost = 3000, PowerUpChance = 0.06f, PowerUpExtra = 2, Color = new Vector3(1f, 0.85f, 0.25f), Icon = "star", Blurb = "Your kills have a 6 percent chance to drop a power-up (up to 2 over the round's limit)." };
+        yield return new ZombiePerkDef { Name = "Hammerhand Ale", Key = "hammerhand", Cost = 1000, Repair = 0.4f, RepairPoints = 2f, Color = new Vector3(0.75f, 0.5f, 0.25f), Icon = "hammer", Blurb = "Rebuild barriers 2.5 times as fast, for double the board points." };
+        yield return new ZombiePerkDef { Name = "Salvage Stout", Key = "salvage", Cost = 2000, PartDrops = 2f, SalvageBonus = 1, Color = new Vector3(0.6f, 0.68f, 0.45f), Icon = "gear", Blurb = "Your kills drop parts twice as often; salvage piles give you a part more." };
+        yield return new ZombiePerkDef { Name = "Bulwark Brew", Key = "bulwark", Cost = 3500, PlateSeconds = 12f, Color = new Vector3(0.45f, 0.6f, 0.8f), Icon = "shield", Blurb = "An armour plate takes a whole zombie hit, then grows back 12 seconds later." };
     }
 
     public ZombiePerkDef? Perk(string keyOrName) => PerkIndex(keyOrName) is var i and >= 0 ? Perks[i] : null;
@@ -554,8 +622,8 @@ public sealed class ZombiesRules
                         switch (k)
                         {
                             case "holdSeconds": r.BuyHoldSeconds = Real(v, w, 0, 3); break;
-                            case "maxPerks": r.MaxPerks = Whole(v, w, 0, 8); break;
-                            case "fullPricePerks": r.FullPricePerks = Whole(v, w, 0, 8); break;
+                            case "maxPerks": r.MaxPerks = Whole(v, w, 0, MaxPerkCount); break;
+                            case "fullPricePerks": r.FullPricePerks = Whole(v, w, 0, MaxPerkCount); break;
                             case "extraPerkFactor": r.ExtraPerkFactor = Real(v, w, 1, 10); break;
                             default: return false;
                         }
@@ -568,8 +636,8 @@ public sealed class ZombiesRules
                         throw new WeaponFileException($"{at}: a list of perks");
                     foreach (var pe in p.Value.EnumerateArray())
                         r.Perks.Add(ReadPerk(pe, at, r.Perks));
-                    if (r.Perks.Count > 8)
-                        throw new WeaponFileException($"{at}: at most 8 perks (they're sent as one byte of flags)");
+                    if (r.Perks.Count > MaxPerkCount)
+                        throw new WeaponFileException($"{at}: at most {MaxPerkCount} perks (they're sent as 16 bits of flags)");
                     break;
                 case "box":
                     Fields(p.Value, at, (k, v, w) =>
@@ -805,7 +873,9 @@ public sealed class ZombiesRules
         string? name = null, key = null, blurb = "";
         int cost = -1, solo = 0;
         var color = new Vector3(0.8f);
-        float dmg = 1, reload = 1, rate = 1, revive = 1;
+        float dmg = 1, reload = 1, rate = 1, revive = 1, move = 1, head = 1, melee = 1, chance = 0, repair = 1, repairPts = 1, parts = 1, plate = 0;
+        int headPts = 0, heal = 0, extra = 0, salvage = 0;
+        var icon = "";
         var self = false;
         foreach (var p in e.EnumerateObject())
         {
@@ -832,17 +902,36 @@ public sealed class ZombiesRules
                 case "fireRate": rate = Real(p.Value, w, 1, 3); break;
                 case "revive": revive = Real(p.Value, w, 0.1f, 1); break;
                 case "selfRevive": self = p.Value.ValueKind == JsonValueKind.True || (p.Value.ValueKind != JsonValueKind.False ? throw new WeaponFileException($"{w}: true or false") : false); break;
-                default: throw new WeaponFileException($"{where}: unknown perk key \"{p.Name}\" (name, key, blurb, cost, soloCost, color, damageTaken, reload, fireRate, revive, selfRevive)");
+                case "moveSpeed": move = Real(p.Value, w, 1, 1.6f); break;
+                case "headshotDamage": head = Real(p.Value, w, 1, 5); break;
+                case "headshotPoints": headPts = Whole(p.Value, w, 0, 10000); break;
+                case "meleeDamage": melee = Real(p.Value, w, 1, 10); break;
+                case "meleeHeal": heal = Whole(p.Value, w, 0, 100); break;
+                case "powerUpChance": chance = Real(p.Value, w, 0, 1); break;
+                case "powerUpExtra": extra = Whole(p.Value, w, 0, 20); break;
+                case "repair": repair = Real(p.Value, w, 0.1f, 1); break;
+                case "repairPoints": repairPts = Real(p.Value, w, 1, 10); break;
+                case "partDrops": parts = Real(p.Value, w, 1, 10); break;
+                case "salvageBonus": salvage = Whole(p.Value, w, 0, 10); break;
+                case "plateSeconds": plate = Real(p.Value, w, 0, 600); break;
+                case "icon": icon = WeaponFile.Text(p.Value, w).ToLowerInvariant(); break;
+                default:
+                    throw new WeaponFileException($"{where}: unknown perk key \"{p.Name}\" (name, key, blurb, cost, soloCost, color, icon, damageTaken, reload, fireRate, revive, selfRevive, "
+                                                  + "moveSpeed, headshotDamage, headshotPoints, meleeDamage, meleeHeal, powerUpChance, powerUpExtra, repair, repairPoints, partDrops, salvageBonus, plateSeconds)");
             }
         }
         if (name == null || key == null || cost < 0)
             throw new WeaponFileException($"{where}: a perk needs \"name\", \"key\" and \"cost\"");
         if (others.Any(o => o.Key == key || o.Name.Equals(name, StringComparison.OrdinalIgnoreCase)))
             throw new WeaponFileException($"{where}: two perks called '{name}' / '{key}'");
+        if (icon.Length > 0 && !ZombiePerkIcons.Known(icon))
+            throw new WeaponFileException($"{where}.icon: unknown icon \"{icon}\" ({string.Join(", ", ZombiePerkIcons.Names)})");
         return new ZombiePerkDef
         {
             Name = name, Key = key, Blurb = blurb, Cost = cost, SoloCost = solo, Color = color, DamageTaken = dmg, Reload = reload, FireRate = rate,
-            Revive = revive, SelfRevive = self,
+            Revive = revive, SelfRevive = self, MoveSpeed = move, HeadshotDamage = head, HeadshotPoints = headPts, MeleeDamage = melee, MeleeHeal = heal,
+            PowerUpChance = chance, PowerUpExtra = extra, Repair = repair, RepairPoints = repairPts, PartDrops = parts, SalvageBonus = salvage, PlateSeconds = plate,
+            Icon = icon,
         };
     }
 

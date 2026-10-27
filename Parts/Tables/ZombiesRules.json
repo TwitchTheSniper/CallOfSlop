@@ -65,16 +65,23 @@
   },
   "buy": {
     "holdSeconds": 0.25,
-    "maxPerks": 8,
+    "maxPerks": 16,
     "fullPricePerks": 4,
     "extraPerkFactor": 2
   },
   "perks": [
-    {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "blurb": "Zombie hits do 40 percent of their damage."},
-    {"name": "Speed Cola", "key": "speed", "cost": 3000, "reload": 0.5, "color": "#33d94d", "blurb": "Reload twice as fast."},
-    {"name": "Double Tap", "key": "doubletap", "cost": 2000, "fireRate": 1.33, "color": "#f2bf26", "blurb": "Fire a third faster."},
-    {"name": "Quick Revive", "key": "revive", "cost": 1500, "revive": 0.5, "color": "#4d99ff", "blurb": "Revive teammates twice as fast."},
-    {"name": "Second Wind", "key": "secondwind", "cost": 1500, "selfRevive": true, "color": "#ff8c1a", "blurb": "When you go down, you get back up on your own after a few seconds (used up)."}
+    {"name": "Juggernog", "key": "jugg", "cost": 2500, "damageTaken": 0.4, "color": "#d92626", "icon": "heart", "blurb": "Zombie hits do 40 percent of their damage."},
+    {"name": "Speed Cola", "key": "speed", "cost": 3000, "reload": 0.5, "color": "#33d94d", "icon": "drum", "blurb": "Reload twice as fast."},
+    {"name": "Double Tap", "key": "doubletap", "cost": 2000, "fireRate": 1.33, "color": "#f2bf26", "icon": "rounds", "blurb": "Fire a third faster."},
+    {"name": "Quick Revive", "key": "revive", "cost": 1500, "revive": 0.5, "color": "#4d99ff", "icon": "cross", "blurb": "Revive teammates twice as fast."},
+    {"name": "Second Wind", "key": "secondwind", "cost": 1500, "selfRevive": true, "color": "#ff8c1a", "icon": "wind", "blurb": "When you go down, you get back up on your own after a few seconds (used up)."},
+    {"name": "Fleetfoot Fizz", "key": "fleetfoot", "cost": 2000, "moveSpeed": 1.2, "color": "#40e6e6", "icon": "chevrons", "blurb": "Move 20 percent faster."},
+    {"name": "Marksman Malt", "key": "marksman", "cost": 2500, "headshotDamage": 1.5, "headshotPoints": 50, "color": "#8c59f2", "icon": "target", "blurb": "Headshots do 50 percent more damage; headshot kills pay 50 more points."},
+    {"name": "Bloodroot Tonic", "key": "bloodroot", "cost": 2000, "meleeDamage": 2, "meleeHeal": 30, "color": "#990d33", "icon": "fang", "blurb": "Melee does double damage, and every melee hit heals you 30."},
+    {"name": "Windfall Soda", "key": "windfall", "cost": 3000, "powerUpChance": 0.06, "powerUpExtra": 2, "color": "#ffd940", "icon": "star", "blurb": "Your kills have a 6 percent chance to drop a power-up (up to 2 over the round's limit)."},
+    {"name": "Hammerhand Ale", "key": "hammerhand", "cost": 1000, "repair": 0.4, "repairPoints": 2, "color": "#bf8040", "icon": "hammer", "blurb": "Rebuild barriers 2.5 times as fast, for double the board points."},
+    {"name": "Salvage Stout", "key": "salvage", "cost": 2000, "partDrops": 2, "salvageBonus": 1, "color": "#99ad73", "icon": "gear", "blurb": "Your kills drop parts twice as often; salvage piles give you a part more."},
+    {"name": "Bulwark Brew", "key": "bulwark", "cost": 3500, "plateSeconds": 12, "color": "#7399cc", "icon": "shield", "blurb": "An armour plate takes a whole zombie hit, then grows back 12 seconds later."}
   ],
   "box": {
     "moveMin": 4,
@@ -180,7 +187,7 @@
     "reserve": 250,
     "quietRange": 10,
     "shopRange": 40,
-    "perkOrder": ["jugg", "revive", "speed", "doubletap", "secondwind"],
+    "perkOrder": ["jugg", "revive", "hammerhand", "speed", "doubletap", "secondwind"],
     "boxSurplus": 500,
     "slotSurplus": 2500,
     "wallBetter": 1.15,

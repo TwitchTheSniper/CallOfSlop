@@ -191,7 +191,7 @@ public sealed partial class Game
             Yaw = yaw,
             Pitch = Math.Clamp(pitch, -1.5f, 1.5f),
             Weapon = p.Weapon,
-            SpeedPct = (byte)Math.Clamp((int)(FrenzyBuffs.Mobility(p, def) * 100), 1, 200), // the LMG frenzy buff
+            SpeedPct = (byte)Math.Clamp((int)(FrenzyBuffs.Mobility(p, def) * ZombieMoveMult(p) * 100), 1, 200), // the LMG frenzy buff; Fleetfoot Fizz
         });
     }
 

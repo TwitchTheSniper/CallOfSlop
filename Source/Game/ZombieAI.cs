@@ -676,9 +676,10 @@ public sealed partial class Game
             zp.Headshots++;
         attacker.Kills++;
         FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
-        EarnPoints(attacker, melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints : ZRules.KillPoints, now);
-        RollDrop(z.Position, ZRound, now);
-        RollPowerUp(z.Position, now); // ZombiesPowerUps.cs
+        var killPoints = melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints; // Marksman Malt
+        EarnPoints(attacker, killPoints, now);
+        RollDrop(z.Position, ZRound, now, PerkMult(zp, static d => d.PartDrops)); // Salvage Stout
+        RollPowerUp(z.Position, now, zp); // ZombiesPowerUps.cs (Windfall Soda)
         Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);
         return true;
     }
@@ -716,6 +717,7 @@ public sealed partial class Game
         var fx = flags is { Length: > 0 } && ZEffectFlags(flags) != 0;
         if (fx)
             _zFxHits.Clear();
+        damage *= ZPerkMult(attacker, static d => d.MeleeDamage); // Bloodroot Tonic
         foreach (var (z, dist) in list.Take(cleave))
         {
             hitFlags |= 1;
@@ -730,6 +732,9 @@ public sealed partial class Game
         }
         if (fx && _zFxHits.Count > 0)
             ApplyZombieEffects(attacker, flags!, _zFxHits, now);
+        if (hitFlags != 0 && attacker.Alive && ZPlayers.TryGetValue(attacker.Id, out var azp) && !azp.Downed
+            && PerkSum(azp, static d => d.MeleeHeal) is var heal and > 0)
+            attacker.Health = Math.Min(World.MaxHealth, attacker.Health + (int)heal); // Bloodroot Tonic: a swing that hits heals you
         return hitFlags;
     }
 
