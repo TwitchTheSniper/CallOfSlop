@@ -62,6 +62,10 @@ public static partial class SelfTest
             (Ents(button) + ", \"wires\": [ { \"from\": \"A.pressed\", \"to\": \"A.press\", \"delay\": -1 } ] }", "\"delay\" is 0 to 3600"),
             (Ents("{ \"type\": \"zdoor\", \"name\": \"Z\", \"door\": \"Front\" }") + " }", "a zdoor needs a map with a \"zombies\" section"),
             (Ents(button) + ", \"wirez\": [] }", "unknown key \"wirez\""),
+            (Ents("{ \"type\": \"challenge\", \"name\": \"C\" }") + " }", "needs \"seconds\""),
+            (Ents(door, "{ \"type\": \"challenge\", \"name\": \"C\", \"seconds\": 30, \"zone\": \"Gate\" }") + " }", "\"zone\" names a zone"),
+            (Ents("{ \"type\": \"reward\", \"name\": \"R\" }") + " }", "needs \"points\" or a \"powerUp\""),
+            (Ents("{ \"type\": \"reward\", \"name\": \"R\", \"powerUp\": \"megaNuke\", \"at\": [0, 1, 0] }") + " }", "\"powerUp\" is \"random\" or one of"),
         };
         var refused = 0;
         foreach (var (logic, expect) in cases)
@@ -94,20 +98,25 @@ public static partial class SelfTest
         ok &= !good.IsLogicDoorOpen(good.Logic.Find("Gate")) && good.IsAsBuilt();
         // The README's Zombies examples load on a Zombies map: a bell (cost, cooldown, power) calling the horde, the power driving a door, a locked zdoor and a perk machine.
         var ztext = File.ReadAllText(Path.Combine(Maps.Folder, "Dev", "ZombiesTest.json")).TrimEnd();
-        const string zlogic = ", \"logic\": { \"entities\": [ "
+        var zlogic = ", \"logic\": { \"entities\": [ "
             + "{ \"type\": \"button\", \"name\": \"Bell\", \"at\": [0, 1.4, -2], \"yaw\": 180, \"prompt\": \"ring the bell\", \"cost\": 500, \"cooldown\": 90, \"power\": true, "
             + "\"outputs\": { \"pressed\": [{ \"to\": \"zombies.spawn\", \"n\": 12 }, \"BellSound.play\", \"BellText.show\"] } }, "
             + "{ \"type\": \"sound\", \"name\": \"BellSound\", \"at\": [0, 6, -2], \"sound\": \"mortarWhistle\", \"range\": 0 }, "
             + "{ \"type\": \"text\", \"name\": \"BellText\", \"text\": \"The bell tolls. They are coming.\" }, "
-            + "{ \"type\": \"zdoor\", \"name\": \"Shutter\", \"door\": \"the Hall Shutter\", \"enabled\": false }, "
-            + "{ \"type\": \"zmachine\", \"name\": \"Switch\", \"machine\": \"power\" } ], "
+            + "{ \"type\": \"zdoor\", \"name\": \"Shutter\", \"door\": \"the Arcade Door\", \"enabled\": false }, "
+            + "{ \"type\": \"zmachine\", \"name\": \"Switch\", \"machine\": \"power\" }, "
+            + "{ \"type\": \"challenge\", \"name\": \"Tower\", \"seconds\": 2, \"reward\": 300 }, "
+            + "{ \"type\": \"reward\", \"name\": \"Ammo\", \"powerUp\": \"maxAmmo\", \"at\": [-11, 0, -12] } ], "
             + "\"wires\": [ { \"from\": \"zombies.power\", \"to\": \"Shutter.enable\" }, { \"from\": \"zombies.roundStarted\", \"to\": \"Shutter.open\", \"when\": 5 }, "
-            + "{ \"from\": \"Switch.used\", \"to\": \"BellText.show\", \"delay\": 1 } ] }";
+            + "{ \"from\": \"Switch.used\", \"to\": \"BellText.show\", \"delay\": 1 }, { \"from\": \"Bell.pressed\", \"to\": \"Tower.start\" }, "
+            + "{ \"from\": \"Tower.survived\", \"to\": \"Ammo.drop\" } ] }";
         var zok = false;
         try
         {
             var zm = MapFile.Load(ztext[..ztext.LastIndexOf('}')] + zlogic + "}", "Dev/ZombiesTestLogic.json");
-            zok = zm.Logic is { ZombiesEntity: >= 0 } zl && zl.Find("Shutter") >= 0 && zl.Entities[zl.Find("Bell")].Cost == 500 && zl.Wires.Length == 6;
+            zok = zm.Logic is { ZombiesEntity: >= 0 } zl && zl.Find("Shutter") >= 0 && zl.Entities[zl.Find("Bell")].Cost == 500 && zl.Wires.Length == 8;
+            if (zok)
+                CheckLogicZombiesRun(zm);
         }
         catch (MapFileException ex)
         {
@@ -119,6 +128,50 @@ public static partial class SelfTest
              + $"opening it keeps the fingerprint and the as-built boxes, a restore shuts it): {ok}; the Zombies bell, power and lock examples load {zok}");
         if (!ok)
             Fail("map logic: a good logic section doesn't load, round-trip or restore as it should");
+    }
+
+    /// <summary>
+    /// The Zombies hooks on a Zombies map with logic: a disabled zdoor is locked until the power (zombies.power) enables
+    /// it; the bell costs points, needs the power, calls the horde (zombies.spawn) and starts a timed challenge whose
+    /// survival pays its reward and drops a power-up.
+    /// </summary>
+    private static void CheckLogicZombiesRun(Map zm)
+    {
+        var now = 0.0;
+        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, setup: game => World.SetMap(zm));
+        var me = g.Local!;
+        var l = zm.Logic!;
+        var zp = g.ZP(me);
+        zp.Points = 2000;
+        var shutter = zm.Zombies!.Doors.FindIndex(d => d.Name == "the Arcade Door");
+        var door = zm.Zombies.Doors[shutter];
+        me.Teleport(door.SideA);
+        var use0 = g.FindZUse(me);
+        var locked = use0 is { Kind: ZUseKind.Door, Text: "Locked", Blocked: true };
+        var bell = l.Find("Bell");
+        var e = l.Entities[bell];
+        me.Teleport((e.At + World.FlatForward(e.Yaw) * 0.9f) with { Y = 0 });
+        var refusedNoPower = !g.ServerUseLogic(me, bell, now) && zp.Points == 2000;
+        g.SelfTestLogicDeliver(l.ZombiesEntity, LogicAction.Power, LogicSignal.Pulse(me.Id));
+        g.SelfTestBeginRound(1, now);
+        Run(g, ref now, 0.2);
+        me.Teleport(door.SideA);
+        var unlocked = g.ZPower && g.FindZUse(me) is { Kind: ZUseKind.Door, Blocked: false };
+        me.Teleport((e.At + World.FlatForward(e.Yaw) * 0.9f) with { Y = 0 });
+        var before = g.SelfTestToSpawn;
+        var used = g.ServerUseLogic(me, bell, now);
+        Run(g, ref now, 0.2);
+        var paid = used && zp.Points == 1500 && g.SelfTestToSpawn >= before + 12 && g.Logic!.On(l.Find("Tower"));
+        var powerUps = g.ZPowerUps.Count;
+        Run(g, ref now, 2.2);
+        var survived = !g.Logic!.On(l.Find("Tower")) && zp.Points >= 1800 && g.ZPowerUps.Count > powerUps;
+        Line($"Zombies: a disabled zdoor is locked {locked} until the power enables it {unlocked}; the bell needs the power {refusedNoPower}, costs 500 and calls 12 more zombies "
+             + $"and starts the tower challenge {paid}; surviving it pays 300 and drops a power-up {survived}");
+        if (!locked || !survived)
+            Line($"  (use at the shutter: {use0?.Kind} {use0?.Text} {use0?.Blocked}; phase {g.Phase}, logic {g.Logic != null}; points {zp.Points}, power-ups {powerUps} -> {g.ZPowerUps.Count}, tower on {g.Logic?.On(l.Find("Tower"))})");
+        if (!locked || !unlocked || !refusedNoPower || !paid || !survived)
+            Fail("map logic: the Zombies hooks (lock, power, the bell, the challenge and its reward) don't work");
+        World.SetMap(Maps.All[0]);
     }
 
     // ---- Mover control ----------------------------------------------------------------------------------------

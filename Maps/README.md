@@ -545,6 +545,8 @@ Positions are world coordinates, `[x, y, z]` (or `[x, z]` on the ground); a box 
 | `breakable` | `at` (the breakable prop placed nearest it, within 1.5 m) | `destroyed` (however it broke) | `destroy` |
 | `zdoor` | `door` (a Zombies door or debris by name) | `opened` (bought or opened) | `open` (free); `disable` locks it |
 | `zmachine` | `machine` (`power`, `box`, `perk`, `slotUpgrade`, `slotMachine`, `wallBuy`, `bench`, `salvage`), `at` (which one, when there are several) | `used` (a buy went through) | `disable` locks it |
+| `challenge` | `seconds` (to survive), `zone` (a zone or plate its players must stay in; leave it out: anywhere), `who`, `reward` (Zombies points each survivor gets) | `started` (n: how many took it on: everyone alive, standing and in the zone), `survived` (the time ran out with someone still in it; n: how many), `failed` (everyone in it went down, died or left the zone, or `fail`), `ended` (value: survived) | `start`, `stop` / `fail` (it fails), `win` (it's survived now) |
+| `reward` | `points` (Zombies points), `powerUp` (`random`, `maxAmmo`, `instaKill`, `doublePoints`, `nuke`, `carpenter`, `infiniteAmmo`) dropped at `at` | `given` | `give` (points to whoever set it off, and the power-up), `giveAll` (points to everyone standing, and the power-up), `drop` (only the power-up) |
 
 Two entities are always there: **`match`** (events `started`, `ended`, `flagTaken` and `flagCaptured` with n the team,
 `hillTaken` (n: the team), `hillMoved` (n: the hill)) and, on maps with a `"zombies"` section, **`zombies`** (events
@@ -562,18 +564,29 @@ it's shut, and bots and zombies route by it. Opening doors never changes the map
 stop at a time); every mover can be stopped and started. Their pose is still worked out from the clock, so nothing but
 the start and stop moments is sent.
 
-### Zombies: a bell to call the horde
+### Zombies: a bell that calls the horde (a challenge)
+
+Ringing the bell is a challenge, not a purchase: it floods the horde up the tower, and holding the tower until the bell
+stops pays out. A `challenge` counts everyone alive and standing in its zone when it starts; it's survived when its time
+runs out with any of them still standing there, and failed when the last of them goes down, dies or leaves.
 
 ```json
-{ "type": "button", "name": "Bell", "at": [0, 1.4, -20], "yaw": 180, "prompt": "ring the bell", "cost": 500, "cooldown": 90, "power": true,
-  "outputs": { "pressed": [{ "to": "zombies.spawn", "n": 12 }, "BellSound.play", "BellText.show"] } },
-{ "type": "sound", "name": "BellSound", "at": [0, 6, -20], "sound": "mortarWhistle", "range": 0 },
-{ "type": "text", "name": "BellText", "text": "The bell tolls. They are coming." }
+{ "type": "zone", "name": "Belfry", "box": [-4, 12, -24, 4, 16, -16] },
+{ "type": "button", "name": "Bell", "at": [0, 13.4, -20], "yaw": 180, "prompt": "ring the bell", "cooldown": 300, "power": true,
+  "outputs": { "pressed": ["Siege.start", { "to": "zombies.spawn", "n": 24 }, "BellSound.play"] } },
+{ "type": "challenge", "name": "Siege", "seconds": 60, "zone": "Belfry", "reward": 1500,
+  "outputs": { "started": "SiegeText.show", "survived": ["Spoils.drop", "Won.show"], "failed": "Lost.show" } },
+{ "type": "reward", "name": "Spoils", "powerUp": "random", "at": [0, 12, -20] },
+{ "type": "sound", "name": "BellSound", "at": [0, 15, -20], "sound": "mortarWhistle", "range": 0 },
+{ "type": "text", "name": "SiegeText", "text": "The bell tolls. Hold the belfry!" },
+{ "type": "text", "name": "Won", "text": "The belfry held." },
+{ "type": "text", "name": "Lost", "text": "The belfry fell." }
 ```
 
-The power switch can drive the rest of the map: `zombies.power` to `Lift.start` and `Shutter.open`; a `zdoor`'s
-`opened` to a `lamp`; `zombies.roundStarted` with `"when": 5` to a `door`. Disable a `zdoor` or `zmachine` to lock it
-until something enables it.
+A `button` can also simply cost points (`"cost": 500`). The power switch can drive the rest of the map: `zombies.power`
+to `Lift.start` and `Shutter.open`; a `zdoor`'s `opened` to a `lamp`; `zombies.roundStarted` with `"when": 5` to a
+`door`. Disable a `zdoor` or `zmachine` to lock it ("Locked") until something enables it. Points and power-ups are the
+Zombies mode's: in other modes a reward only sends `given` (a challenge still starts, ends and sends its events).
 
 ### Checking it
 

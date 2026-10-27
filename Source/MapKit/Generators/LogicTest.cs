@@ -112,6 +112,12 @@ public sealed class LogicTest : IMapGenerator
         l.Text("Tails", "Three presses: tails!");
         l.Wire("Plate.pressed", "Presses.add").Wire("Presses.reached", "Pick.trigger").Wire("Pick.out1", "Heads.show").Wire("Pick.out2", "Tails.show");
 
+        // A timed challenge in the courtyard: stay in it for 3 seconds (it fails if everyone leaves); surviving pays (Zombies points: nothing here).
+        l.Challenge("Trial", 3, zone: "Courtyard", reward: 250);
+        l.Reward("Prize", points: 100);
+        l.Text("TrialText", "Challenge survived!");
+        l.Wire("Trial.survived", "Prize.giveAll").Wire("Trial.survived", "TrialText.show");
+
         k.Test(new JObject(("maxPlayers", 8), ("minHills", 3), ("minTeamSpawns", 4), ("walkFairness", 0.0), ("minMainNavPct", 60), ("botMatchSeconds", 6),
             ("events", new JArray([
                 Step(("use", "GateButton"), ("expect", JArray.Of("GateButton.pressed", "Gate.opened")), ("on", JArray.Of("Gate"))),
@@ -126,7 +132,11 @@ public sealed class LogicTest : IMapGenerator
                 Step(("leave", "Plate"), ("expect", JArray.Of("Plate.released"))),
                 Step(("enter", "Plate")),
                 Step(("leave", "Plate")),
-                Step(("enter", "Plate"), ("expect", JArray.Of("Presses.reached")))]))));
+                Step(("enter", "Plate"), ("expect", JArray.Of("Presses.reached"))),
+                Step(("enter", "Courtyard")),
+                Step(("do", "Trial.start"), ("wait", 3.5), ("expect", JArray.Of("Trial.started", "Trial.survived", "Trial.ended", "Prize.given")), ("expectNot", JArray.Of("Trial.failed")), ("off", JArray.Of("Trial"))),
+                Step(("do", "Trial.start"), ("wait", 0.3), ("expect", JArray.Of("Trial.started")), ("on", JArray.Of("Trial"))),
+                Step(("leave", "Courtyard"), ("expect", JArray.Of("Trial.failed", "Trial.ended")), ("expectNot", JArray.Of("Trial.survived", "Prize.given")), ("off", JArray.Of("Trial")))]))));
     }
 
     private static JObject Step(params (string Key, object? Value)[] items) => new(items);

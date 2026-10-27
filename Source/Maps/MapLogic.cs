@@ -9,6 +9,12 @@ public enum LogicKind : byte
     Button, Lever, Plate, Zone, Timer, Relay, And, Or, Not, Counter, Random, Door, Lamp, Mover, Sound, Text, Teleport, Breakable,
     ZDoor, ZMachine,
 
+    /// <summary>A timed challenge: survive it (standing, in its zone) and it pays its reward.</summary>
+    Challenge,
+
+    /// <summary>Gives Zombies points or drops a power-up.</summary>
+    Reward,
+
     /// <summary>Built in: the Zombies run (power, rounds, spawning). Only on maps with a "zombies" section.</summary>
     Zombies,
 
@@ -20,7 +26,7 @@ public enum LogicKind : byte
 public enum LogicAction : byte
 {
     Enable, Disable, Press, Toggle, TurnOn, TurnOff, Set, Start, Stop, Reset, Trigger, A, B, C, D, In, Add, Subtract,
-    Open, Close, Advance, Play, Show, Send, Destroy, Power, Spawn, Pause, Resume,
+    Open, Close, Advance, Play, Show, Send, Destroy, Power, Spawn, Pause, Resume, Win, Fail, Give, GiveAll, Drop,
 }
 
 /// <summary>An output of an entity: something that happened to it. The name in a map file is the camelCase of the value.</summary>
@@ -29,7 +35,7 @@ public enum LogicEvent : byte
     Pressed, On, Off, Changed, Released, Entered, Left, Occupied, Empty, Fired, Out, True, False, Reached,
     Out1, Out2, Out3, Out4, Out5, Out6, Out7, Out8,
     Opened, Closed, Started, Stopped, Arrived, Sent, Destroyed, Used, Power, RoundStarted, RoundEnded, Ended,
-    FlagTaken, FlagCaptured, HillTaken, HillMoved,
+    FlagTaken, FlagCaptured, HillTaken, HillMoved, Survived, Failed, Given,
 }
 
 /// <summary>
@@ -124,6 +130,12 @@ public sealed class LogicEntity
     /// <summary>Doors: a nav link through the doorway (its two ends), switched on while the door is open. Index into <see cref="MapLogic.NavGates"/>, or -1.</summary>
     public int NavGate = -1;
 
+    /// <summary>Challenges: the zone its players must stay in (an entity index, -1: anywhere); rewards: the power-up it drops (a <see cref="ZPowerKind"/>, COUNT: a random one, -1: none).</summary>
+    public int Zone = -1;
+
+    /// <summary>Challenges: Zombies points each survivor gets; rewards: points each player given it gets.</summary>
+    public int Points;
+
     /// <summary>Doors: the box in <see cref="Map.Solid"/>.</summary>
     public int SolidIndex = -1;
 }
@@ -159,7 +171,7 @@ public sealed class MapLogic
     public readonly List<(Vector3 A, Vector3 B)> NavGates = new();
 
     /// <summary>Entities that are zones or plates (sampled each tick against the players), doors, and the built-ins (-1: none).</summary>
-    public int[] Zones = [], Doors = [];
+    public int[] Zones = [], Doors = [], Challenges = [];
     public int ZombiesEntity = -1, MatchEntity = -1;
 
     /// <summary>The section as read, written back unchanged when a map is saved.</summary>
@@ -209,6 +221,8 @@ public sealed class MapLogic
         LogicKind.Breakable => [LogicAction.Destroy],
         LogicKind.ZDoor => [LogicAction.Open],
         LogicKind.Zombies => [LogicAction.Power, LogicAction.Spawn, LogicAction.Pause, LogicAction.Resume],
+        LogicKind.Challenge => [LogicAction.Start, LogicAction.Stop, LogicAction.Win, LogicAction.Fail],
+        LogicKind.Reward => [LogicAction.Give, LogicAction.GiveAll, LogicAction.Drop],
         _ => [],
     };
 
@@ -233,6 +247,8 @@ public sealed class MapLogic
         LogicKind.ZMachine => [LogicEvent.Used],
         LogicKind.Zombies => [LogicEvent.Power, LogicEvent.RoundStarted, LogicEvent.RoundEnded],
         LogicKind.Match => [LogicEvent.Started, LogicEvent.Ended, LogicEvent.FlagTaken, LogicEvent.FlagCaptured, LogicEvent.HillTaken, LogicEvent.HillMoved],
+        LogicKind.Challenge => [LogicEvent.Started, LogicEvent.Survived, LogicEvent.Failed, LogicEvent.Ended],
+        LogicKind.Reward => [LogicEvent.Given],
         _ => [],
     };
 
@@ -268,6 +284,8 @@ public sealed class MapLogic
         [LogicKind.Breakable] = ["at"],
         [LogicKind.ZDoor] = ["door"],
         [LogicKind.ZMachine] = ["machine", "at"],
+        [LogicKind.Challenge] = ["seconds", "zone", "who", "reward"],
+        [LogicKind.Reward] = ["points", "powerUp", "at"],
     };
 
     private static readonly string[] CommonKeys = ["type", "name", "enabled", "outputs"];
@@ -282,6 +300,7 @@ public sealed class MapLogic
         Only(e, where, Keys);
         var logic = new MapLogic { Raw = e.GetRawText(), Hash = HashText(JsonSerializer.Serialize(e)) };
         var pending = new List<(int From, string Event, JsonElement Wire, string Where)>();
+        var challengeZones = new List<(int Entity, string Zone)>();
 
         if (Get(e, "entities") is not { ValueKind: JsonValueKind.Array } ents)
             throw new MapFileException($"{where}: needs \"entities\": [ {{ \"type\": \"button\", \"name\": \"GateButton\", ... }} ]");
@@ -308,6 +327,8 @@ public sealed class MapLogic
             ent.Enabled = Get(je, "enabled") is not { ValueKind: JsonValueKind.False };
             ReadFields(ent, je, map, w);
             logic.Entities.Add(ent);
+            if (ent.Kind == LogicKind.Challenge && Get(je, "zone") is { } cz)
+                challengeZones.Add((logic.Entities.Count - 1, Text(cz, $"{w} (zone)")));
             if (Get(je, "outputs") is { } outs)
             {
                 if (outs.ValueKind != JsonValueKind.Object)
@@ -322,6 +343,13 @@ public sealed class MapLogic
         }
         if (logic.Entities.Count > MaxEntities)
             throw new MapFileException($"{where}: at most {MaxEntities} entities");
+        foreach (var (ci, zoneName) in challengeZones)
+        {
+            var zi = logic.Ref(zoneName, $"{where}, challenge \"{logic.Entities[ci].Name}\" (zone)");
+            if (logic.Entities[zi].Kind is not (LogicKind.Zone or LogicKind.Plate))
+                throw new MapFileException($"{where}, challenge \"{logic.Entities[ci].Name}\": \"zone\" names a zone, and \"{zoneName}\" is a {KindName(logic.Entities[zi].Kind)}");
+            logic.Entities[ci].Zone = zi;
+        }
         if (map.Zombies != null)
         {
             logic.ZombiesEntity = logic.Entities.Count;
@@ -366,6 +394,7 @@ public sealed class MapLogic
 
         logic.Zones = Enumerable.Range(0, logic.Entities.Count).Where(i => logic.Entities[i].Kind is LogicKind.Zone or LogicKind.Plate).ToArray();
         logic.Doors = Enumerable.Range(0, logic.Entities.Count).Where(i => logic.Entities[i].Kind == LogicKind.Door).ToArray();
+        logic.Challenges = Enumerable.Range(0, logic.Entities.Count).Where(i => logic.Entities[i].Kind == LogicKind.Challenge).ToArray();
         if (logic.Zones.Length > MaxZones)
             throw new MapFileException($"{where}: at most {MaxZones} zones and plates");
         if (logic.Doors.Length > MaxDoors)
@@ -595,6 +624,35 @@ public sealed class MapLogic
                     }
                 }
                 ent.Target = best >= 0 ? best : throw new MapFileException($"{w}: no breakable prop within 1.5 m of ({ent.At.X:0.##}, {ent.At.Y:0.##}, {ent.At.Z:0.##}) (place one with a Prop op first)");
+                break;
+            }
+            case LogicKind.Challenge:
+            {
+                var secs = Opt("seconds", -1);
+                if (secs is < 1 or > 3600)
+                    throw new MapFileException($"{w}: a challenge needs \"seconds\": 1 to 3600 (how long to survive)");
+                ent.Ticks = (int)MathF.Round(secs * World.TickRate);
+                ent.Who = WhoOf();
+                ent.Points = Get(je, "reward") is { } rw ? Whole(rw, $"{w} (reward)", 0, 1000000) : 0;
+                break;
+            }
+            case LogicKind.Reward:
+            {
+                ent.Points = Get(je, "points") is { } pt ? Whole(pt, $"{w} (points)", 0, 1000000) : 0;
+                ent.Zone = -1;
+                if (Get(je, "powerUp") is { } pu)
+                {
+                    var pn = Text(pu, $"{w} (powerUp)");
+                    if (pn.Equals("random", StringComparison.OrdinalIgnoreCase))
+                        ent.Zone = (int)ZPowerKind.COUNT;
+                    else if (Enum.TryParse<ZPowerKind>(pn, true, out var pk) && pk != ZPowerKind.COUNT && Enum.IsDefined(pk) && !int.TryParse(pn, out _))
+                        ent.Zone = (int)pk;
+                    else
+                        throw new MapFileException($"{w}: \"powerUp\" is \"random\" or one of {string.Join(", ", Enum.GetNames<ZPowerKind>().Where(n => n != "COUNT").Select(Camel))}, got \"{pn}\"");
+                    ent.At = Get(je, "at") is { } ra ? Point(map, ra, $"{w} (at)") : throw new MapFileException($"{w}: a power-up reward needs \"at\" (where it drops)");
+                }
+                if (ent.Points == 0 && ent.Zone < 0)
+                    throw new MapFileException($"{w}: a reward needs \"points\" or a \"powerUp\"");
                 break;
             }
             case LogicKind.ZDoor:

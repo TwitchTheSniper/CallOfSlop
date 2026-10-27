@@ -145,6 +145,49 @@
     "expect": [
      "Presses.reached"
     ]
+   },
+   {
+    "enter": "Courtyard"
+   },
+   {
+    "do": "Trial.start",
+    "wait": 3.5,
+    "expect": [
+     "Trial.started",
+     "Trial.survived",
+     "Trial.ended",
+     "Prize.given"
+    ],
+    "expectNot": [
+     "Trial.failed"
+    ],
+    "off": [
+     "Trial"
+    ]
+   },
+   {
+    "do": "Trial.start",
+    "wait": 0.3,
+    "expect": [
+     "Trial.started"
+    ],
+    "on": [
+     "Trial"
+    ]
+   },
+   {
+    "leave": "Courtyard",
+    "expect": [
+     "Trial.failed",
+     "Trial.ended"
+    ],
+    "expectNot": [
+     "Trial.survived",
+     "Prize.given"
+    ],
+    "off": [
+     "Trial"
+    ]
    }
   ]
  },
@@ -490,6 +533,23 @@
     "type": "text",
     "name": "Tails",
     "text": "Three presses: tails!"
+   },
+   {
+    "type": "challenge",
+    "name": "Trial",
+    "seconds": 3.0,
+    "zone": "Courtyard",
+    "reward": 250
+   },
+   {
+    "type": "reward",
+    "name": "Prize",
+    "points": 100
+   },
+   {
+    "type": "text",
+    "name": "TrialText",
+    "text": "Challenge survived!"
    }
   ],
   "wires": [
@@ -609,6 +669,14 @@
    {
     "from": "Pick.out2",
     "to": "Tails.show"
+   },
+   {
+    "from": "Trial.survived",
+    "to": "Prize.giveAll"
+   },
+   {
+    "from": "Trial.survived",
+    "to": "TrialText.show"
    }
   ]
  },

@@ -111,7 +111,8 @@ instead: a prop file whose parts `use` other props (Props/README.md "Prefabs"; `
 
 **Map logic** (`kit.Logic`, `Source/MapKit/Logic.cs`; the format and the signal model are in Maps/README.md, "Map
 logic"). `Door`, `Lamp`, `Button`, `Lever`, `Plate`, `Zone`, `Timer`, `Mover` (a named mover in `kit.Top["movers"]`),
-`Sound`, `Text`, `Gate` ("and", "or", "not"), `Counter`, `Relay`, `Random`, `Entity(type, name, fields...)` for anything
+`Sound`, `Text`, `Gate` ("and", "or", "not"), `Counter`, `Relay`, `Random`, `Challenge` (a timed survival with a
+reward), `Reward` (points, a power-up), `Entity(type, name, fields...)` for anything
 else (a `zdoor`, a `zmachine`, a `teleport`, a `breakable`), and `Wire("A.event", "B.action", delay, once, value, n, when)`;
 every helper returns the builder, so wires chain. The kit refuses two entities with one name; the rest (unknown events
 and actions, missing movers) is refused by the real reader when `--gen-map` loads the map back. Give the map's `test`

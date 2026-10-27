@@ -65,6 +65,14 @@ public sealed class LogicKit
     /// <summary>A gate: "and", "or" (2-4 inputs a..d) or "not" (input "in").</summary>
     public LogicKit Gate(string type, string name, int? inputs = null) => Entity(type, name, ("inputs", inputs));
 
+    /// <summary>A timed challenge: <paramref name="seconds"/> to survive (standing, and in <paramref name="zone"/> if given); <paramref name="reward"/> Zombies points to each survivor.</summary>
+    public LogicKit Challenge(string name, double seconds, string? zone = null, int? reward = null, string? who = null) =>
+        Entity("challenge", name, ("seconds", seconds), ("zone", zone), ("reward", reward), ("who", who));
+
+    /// <summary>A reward: Zombies points (to whoever set it off, or everyone standing) and/or a power-up dropped at (x, y, z) ("random" or a kind).</summary>
+    public LogicKit Reward(string name, int? points = null, string? powerUp = null, double[]? at = null) =>
+        Entity("reward", name, ("points", points), ("powerUp", powerUp), ("at", at == null ? null : P(at[0], at[1], at[2])));
+
     public LogicKit Counter(string name, int target, bool? repeat = null) => Entity("counter", name, ("target", target), ("repeat", repeat));
 
     public LogicKit Relay(string name) => Entity("relay", name);

@@ -986,7 +986,7 @@ public sealed partial class Game : IDisposable
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         AllocProfile.Mark("map logic");
-        ServerTickLogic(); // map events: zones, timers, wires (GameLogic.cs)
+        ServerTickLogic(now); // map events: zones, timers, wires (GameLogic.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
         AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)

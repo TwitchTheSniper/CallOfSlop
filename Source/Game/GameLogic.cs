@@ -31,6 +31,9 @@ public sealed class LogicState
     /// <summary>Per zone (index into <see cref="MapLogic.Zones"/>) and player id: inside it at the last sample.</summary>
     public readonly bool[] Inside;
 
+    /// <summary>Per challenge (index into <see cref="MapLogic.Challenges"/>) and player id: in it (standing when it started, and in its zone).</summary>
+    public readonly bool[] Members;
+
     /// <summary>Signals and timer ticks waiting for their tick: a binary heap ordered by (due tick, sequence).</summary>
     public readonly LogicItem[] Heap = new LogicItem[MaxQueued];
     public int HeapCount;
@@ -56,6 +59,7 @@ public sealed class LogicState
         Gen = new int[n];
         WireUsed = new bool[Def.Wires.Length];
         Inside = new bool[Def.Zones.Length * 256];
+        Members = new bool[Def.Challenges.Length * 256];
     }
 
     public bool On(int e) => (Flags[e] & FlagOn) != 0;
@@ -71,6 +75,7 @@ public enum LogicItemKind : byte
     DoorRetry,
     MoverArrived,
     CoolDown,
+    ChallengeEnd,
 }
 
 public struct LogicItem
@@ -142,6 +147,7 @@ public sealed partial class Game
         Array.Clear(s.Count);
         Array.Clear(s.WireUsed);
         Array.Clear(s.Inside);
+        Array.Clear(s.Members);
         s.HeapCount = 0;
         s.Delivered = s.Sent = s.Dropped = 0;
         s.StartedSent = s.EndedSent = false;
@@ -183,8 +189,9 @@ public sealed partial class Game
     // ---- Server: the tick -------------------------------------------------------------------------------------
 
     /// <summary>Server, every tick: the match events, the zones and plates, then the signals due now.</summary>
-    private void ServerTickLogic()
+    private void ServerTickLogic(double now)
     {
+        _logicNow = now;
         if (EnsureLogic() is not { } s || Phase == MatchPhase.Lobby)
             return;
         if (s.Match != MatchNumber)
@@ -202,6 +209,9 @@ public sealed partial class Game
         }
         if (d.Zones.Length > 0 && Phase is MatchPhase.Playing or MatchPhase.Warmup)
             SampleZones(s);
+        for (var c = 0; c < d.Challenges.Length; c++)
+            if (s.On(d.Challenges[c]) && ChallengeStanding(s, c) == 0)
+                EndChallenge(s, d.Challenges[c], false, LogicSignal.Pulse()); // everyone in it went down, died or left its zone
         var budget = LogicState.MaxPerTick;
         while (s.HeapCount > 0 && s.Heap[0].Due <= ServerTick && budget-- > 0)
             Run(s, Pop(s));
@@ -368,6 +378,9 @@ public sealed partial class Game
             case LogicItemKind.DoorRetry when it.Gen == s.Gen[i] && s.On(i):
                 CloseLogicDoor(s, i, it.Signal);
                 break;
+            case LogicItemKind.ChallengeEnd when it.Gen == s.Gen[i] && s.On(i):
+                EndChallenge(s, i, true, it.Signal); // the time ran out with someone still standing: survived
+                break;
             case LogicItemKind.CoolDown:
                 SetFlag(s, i, LogicState.FlagCooling, false);
                 break;
@@ -515,6 +528,17 @@ public sealed partial class Game
                 if (!World.Map.IsPropBroken(e.Target))
                     ServerBreakProp(e.Target, e.At, PropDamage.Explosion, null, 0, env: true); // (its "destroyed" goes from ServerBreakProp)
                 break;
+            case LogicKind.Challenge:
+                if (a == LogicAction.Start && !s.On(i))
+                    StartChallenge(s, i, sig);
+                else if (a is LogicAction.Stop or LogicAction.Fail && s.On(i))
+                    EndChallenge(s, i, false, sig);
+                else if (a == LogicAction.Win && s.On(i))
+                    EndChallenge(s, i, true, sig);
+                break;
+            case LogicKind.Reward:
+                GiveReward(s, i, a, sig);
+                break;
             case LogicKind.ZDoor when ZMap != null:
                 OpenDoor(e.Target, Players.GetValueOrDefault(sig.Activator)); // (its "opened" goes from OpenDoor)
                 break;
@@ -539,6 +563,104 @@ public sealed partial class Game
                 }
                 break;
         }
+    }
+
+    // ---- Challenges and rewards ------------------------------------------------------------------------------
+
+    private double _logicNow;
+
+    /// <summary>Does <paramref name="p"/> count in challenge <paramref name="e"/> now: alive (in Zombies: standing), the right kind of player, in its zone if it has one?</summary>
+    private bool InChallenge(LogicState s, LogicEntity e, Player p)
+    {
+        if (!p.Alive || (Mode == GameMode.Zombies && ZMap != null && IsDowned(p)))
+            return false;
+        if (e.Who != LogicWho.Players && (e.Who == LogicWho.Bots) != (p.Bot != null))
+            return false;
+        if (e.Zone < 0)
+            return true;
+        var b = s.Def.Entities[e.Zone].Box;
+        var f = p.Position;
+        return f.X >= b.Min.X && f.X <= b.Max.X && f.Z >= b.Min.Z && f.Z <= b.Max.Z && f.Y >= b.Min.Y - 0.1f && f.Y <= b.Max.Y;
+    }
+
+    /// <summary>How many of challenge <paramref name="c"/>'s players still count (a player out of it stays out).</summary>
+    private int ChallengeStanding(LogicState s, int c)
+    {
+        var e = s.Def.Entities[s.Def.Challenges[c]];
+        var n = 0;
+        foreach (var p in Players.Values)
+        {
+            ref var m = ref s.Members[c * 256 + p.Id];
+            if (m && !InChallenge(s, e, p))
+                m = false;
+            if (m)
+                n++;
+        }
+        return n;
+    }
+
+    private void StartChallenge(LogicState s, int i, LogicSignal sig)
+    {
+        var e = s.Def.Entities[i];
+        var c = Array.IndexOf(s.Def.Challenges, i);
+        var n = 0;
+        for (var k = 0; k < 256; k++)
+            s.Members[c * 256 + k] = false;
+        foreach (var p in Players.Values)
+            if (InChallenge(s, e, p))
+            {
+                s.Members[c * 256 + p.Id] = true;
+                n++;
+            }
+        if (n == 0)
+        {
+            Emit(s, i, LogicEvent.Failed, sig with { Value = false, N = 0 }); // nobody to take it on
+            Emit(s, i, LogicEvent.Ended, sig with { Value = false, N = 0 });
+            return;
+        }
+        s.Gen[i]++;
+        SetFlag(s, i, LogicState.FlagOn, true);
+        Queue(s, i, LogicItemKind.ChallengeEnd, 0, sig, e.Ticks, s.Gen[i]);
+        Emit(s, i, LogicEvent.Started, sig with { N = n });
+    }
+
+    /// <summary>Server: a challenge is over: survived pays every player still in it its reward (Zombies points), failed pays nothing.</summary>
+    private void EndChallenge(LogicState s, int i, bool survived, LogicSignal sig)
+    {
+        var e = s.Def.Entities[i];
+        var c = Array.IndexOf(s.Def.Challenges, i);
+        var n = ChallengeStanding(s, c);
+        survived &= n > 0;
+        s.Gen[i]++;
+        SetFlag(s, i, LogicState.FlagOn, false);
+        if (survived && e.Points > 0 && Mode == GameMode.Zombies && ZMap != null)
+            foreach (var p in Players.Values)
+                if (s.Members[c * 256 + p.Id])
+                    AddPoints(p, e.Points);
+        Emit(s, i, survived ? LogicEvent.Survived : LogicEvent.Failed, sig with { Value = survived, N = n });
+        Emit(s, i, LogicEvent.Ended, sig with { Value = survived, N = n });
+    }
+
+    /// <summary>Server: a reward: points to whoever set it off ("give") or to everyone standing ("giveAll"), and/or a Zombies power-up dropped ("drop", or with either).</summary>
+    private void GiveReward(LogicState s, int i, LogicAction a, LogicSignal sig)
+    {
+        var e = s.Def.Entities[i];
+        var zombies = Mode == GameMode.Zombies && ZMap != null;
+        if (zombies && e.Points > 0 && a != LogicAction.Drop) // (points and power-ups are the Zombies mode's: elsewhere only "given" goes out)
+        {
+            if (a == LogicAction.Give)
+            {
+                if (Players.TryGetValue(sig.Activator, out var p))
+                    AddPoints(p, e.Points);
+            }
+            else
+                foreach (var p in Players.Values)
+                    if (IsStanding(p))
+                        AddPoints(p, e.Points);
+        }
+        if (zombies && e.Zone >= 0)
+            SpawnPowerUp(e.Zone >= (int)ZPowerKind.COUNT ? PickPowerKind(ZRand()) is var k && k != ZPowerKind.COUNT ? k : ZPowerKind.MaxAmmo : (ZPowerKind)e.Zone, e.At, _logicNow);
+        Emit(s, i, LogicEvent.Given, sig);
     }
 
     private void GateOut(LogicState s, int i, bool result, LogicSignal sig)
@@ -867,7 +989,7 @@ public sealed partial class Game
     internal void SelfTestLogicTick()
     {
         ServerTick++;
-        ServerTickLogic();
+        ServerTickLogic(_logicNow + 1.0 / World.TickRate);
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------
