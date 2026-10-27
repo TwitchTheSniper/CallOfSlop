@@ -275,10 +275,12 @@ public static partial class SelfTest
         // landed in the measured window, which earlier sections had already paid in the full suite).
         for (var i = 0; i < 1000; i++)
             audio.KitVoiceForTest(kitted);
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 1000; i++)
-            audio.KitVoiceForTest(kitted);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var allocated = SteadyAllocBytes(() =>
+        {
+            for (var i = 0; i < 1000; i++)
+                audio.KitVoiceForTest(kitted);
+        }, warmups: 0);
         if (allocated > 0)
             Fail($"the kit sound colour allocates {allocated} bytes per 1000 shots");
         if (longBarrel != null && shortBarrel != null)

@@ -241,8 +241,13 @@ public static partial class SelfTest
                 Line($"  slot allocations: tick {tick} bytes, all {all} bytes");
                 return all;
             }
-            Measure(sym); // (warm-up: the first calls compile)
-            var alloc = Measure(sym);
+            // Two warm-up rounds (the first calls compile), then the least of three identical ones, as SteadyAllocBytes does
+            // (SelfTestCpuRatio.cs; a loop here: the symbols span can't go in a lambda).
+            Measure(sym);
+            Measure(sym);
+            var alloc = long.MaxValue;
+            for (var round = 0; round < 3; round++)
+                alloc = Math.Min(alloc, Measure(sym));
             ZLine($"slot machine (round 3, {cost} a pull): too poor refused {poorRefused} ('{prompt?.Text}'); 150 pulls: nothing {counts[0]}, scrap {counts[1]}, points {counts[2]}, parts {counts[3]} "
                   + $"(common {tiers[0]}, uncommon {tiers[1]}, rare {tiers[2]}, epic {tiers[3]}, legendary {tiers[4]}, wonder {tiers[5]}); longest run of nothing {worstBlankRun}; spin {spinOk}, paid right {payOk}, heat {heatResetOk}; "
                   + $"builds untouched {buildsKept}; duplicate auto-scrapped {autoScrapped}; power machine '{dark?.Text}' then '{litUse?.Text}'; client copy {netOk} ({Game.ZSlotBytes} bytes a machine, protocol {ServerInfo.ProtocolVersion}); {alloc} bytes allocated");

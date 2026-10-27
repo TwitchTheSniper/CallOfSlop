@@ -22,6 +22,9 @@ public static partial class SelfTest
     private static void CheckBlastPush()
     {
         PushNotes.Clear();
+        // The push curve assumes plain gravity: an earlier section can leave a gravity-zone map loaded (run after
+        // "Frenzy visuals", whose 16-player map has zones, the curve checks failed).
+        World.SetMap(Maps.All[0]);
         try
         {
             BlastPushCurve();
@@ -260,18 +263,20 @@ public static partial class SelfTest
         var center = foe.Position - away * 3f;
         for (var k = 0; k < 10; k++)
             game.SelfTestBlastKnockback(me, center, 9f, 11f);
-        var before = GC.GetAllocatedBytesForCurrentThread();
         var sink = Vector3.Zero;
-        for (var k = 0; k < 500; k++)
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
         {
-            var ms = new MoveState();
-            var v = Knockback.Impulse(center, 9f, 11f, foe.Chest, false, false);
-            Knockback.Apply(ref ms, v);
-            sink += ms.Velocity;
-            foe.Sim.Velocity = Vector3.Zero;
-            game.SelfTestBlastKnockback(me, center, 9f, 11f);
-        }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+            for (var k = 0; k < 500; k++)
+            {
+                var ms = new MoveState();
+                var v = Knockback.Impulse(center, 9f, 11f, foe.Chest, false, false);
+                Knockback.Apply(ref ms, v);
+                sink += ms.Velocity;
+                foe.Sim.Velocity = Vector3.Zero;
+                game.SelfTestBlastKnockback(me, center, 9f, 11f);
+            }
+        }, warmups: 0);
         if (bytes > 0)
             Fail($"blast push ({mode}): the push allocates ({bytes} bytes over 500 blasts)");
         _ = sink;

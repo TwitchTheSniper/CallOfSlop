@@ -245,17 +245,21 @@ public static partial class SelfTest
         var crowd = new MoveState[16];
         for (var i = 0; i < crowd.Length; i++)
             crowd[i] = Settle(Map.SurfaceDir(-60 + i * 8, i * 23) * (TestR + 0.3f), 5);
-        for (var w = 0; w < 120; w++) // warm-up: the same moves (scratch lists reach their size)
-            for (var i = 0; i < crowd.Length; i++)
-                World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (w % 50 == i ? Buttons.Jump : 0), Yaw = i - w * 0.01f, SpeedPct = 100 });
+        const int costTicks = 240;
+        void Ticks(int ticks, int turn)
+        {
+            for (var t = 0; t < ticks; t++)
+                for (var i = 0; i < crowd.Length; i++)
+                    World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (t % 50 == i ? Buttons.Jump : 0), Yaw = i + turn * t * 0.01f, SpeedPct = 100 });
+        }
+        Ticks(120, -1); // warm-up: the same moves through the same loop (scratch lists reach their size, the JIT settles)
         var t0 = Stopwatch.GetTimestamp(); // (not a Stopwatch object: that would be the only allocation counted)
         var alloc0 = GC.GetAllocatedBytesForCurrentThread();
-        const int costTicks = 240;
-        for (var t = 0; t < costTicks; t++)
-            for (var i = 0; i < crowd.Length; i++)
-                World.Simulate(ref crowd[i], new InputCmd { Buttons = Buttons.Forward | Buttons.Sprint | (t % 50 == i ? Buttons.Jump : 0), Yaw = i + t * 0.01f, SpeedPct = 100 });
+        Ticks(costTicks, 1);
         var alloc = GC.GetAllocatedBytesForCurrentThread() - alloc0;
         var us = Stopwatch.GetElapsedTime(t0).TotalMilliseconds * 1000 / costTicks;
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        alloc = RecheckAllocBytes(alloc, () => Ticks(costTicks, 1));
         PlanetLine($"cost: 16 players moving on the planet: {us:0} us per tick, {alloc} bytes allocated in {costTicks} ticks");
         if (alloc != 0)
             Fail($"planet gravity: movement on the planet allocated {alloc} bytes");

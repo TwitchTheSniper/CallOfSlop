@@ -289,18 +289,23 @@ public static partial class SelfTest
             var end = eye0 + dir0 * h0.Distance;
             for (var i = 0; i < 200; i++)
                 ImpactDecals.OnTracer(map, eye0, end + new Vector3(i % 20 * 0.01f, 0, 0), 5, 31 + i * 0.001, false, 1f);
-            var sw = Stopwatch.StartNew();
-            var bytes = GC.GetAllocatedBytesForCurrentThread();
             const int n = 4000;
-            for (var i = 0; i < n; i++)
+            var t = 32.0;
+            void Tracers()
             {
-                var shot = shots[i % shots.Length];
-                ImpactDecals.OnTracer(map, shot.Eye, shot.At + new Vector3(i % 13 * 0.01f, 0, 0), (byte)(i % 8), 32 + i * 0.001, i % 3 == 0, 1.1f);
-                if (i % 100 == 0)
-                    ImpactDecals.OnBlast(map, new Vector3(-20, 0.3f, 9), 6, 32 + i * 0.001);
+                for (var i = 0; i < n; i++)
+                {
+                    var shot = shots[i % shots.Length];
+                    ImpactDecals.OnTracer(map, shot.Eye, shot.At + new Vector3(i % 13 * 0.01f, 0, 0), (byte)(i % 8), t += 0.001, i % 3 == 0, 1.1f);
+                    if (i % 100 == 0)
+                        ImpactDecals.OnBlast(map, new Vector3(-20, 0.3f, 9), 6, t);
+                }
             }
+            // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+            var bytes = SteadyAllocBytes(Tracers, warmups: 0);
+            var sw = Stopwatch.StartNew(); // the time: one more round on its own
+            Tracers();
             var us = sw.Elapsed.TotalMilliseconds * 1000 / n;
-            bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
             if (bytes > 0)
                 Fail($"impact placement allocated {bytes} bytes over {n} tracers (must be allocation-free)");
             DecalLine($"Decal Impacts range: {shots.Length} targets read as expected, {seen.Count} different variants on them, deterministic, blast scorches on floor and wall; "

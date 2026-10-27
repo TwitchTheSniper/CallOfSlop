@@ -732,6 +732,13 @@ public static partial class SelfTest
             Frame(f);
         sw.Stop();
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
+        allocated = RecheckAllocBytes(allocated, () =>
+        {
+            Array.Clear(parts); // (the breakdown below is then the last round's)
+            for (var f = 0; f < frames; f++)
+                Frame(f);
+        });
         if (allocated > 0)
             Fail($"scene graph frames allocate: {allocated} bytes over {frames} frames (animation {parts[0]}, viewmodel pose {parts[1]}, players {parts[2]}, "
                  + $"movers + turret {parts[3]}, update {parts[4]}, flatten {parts[5]})");

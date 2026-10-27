@@ -154,6 +154,29 @@ public static partial class SelfTest
         return least;
     }
 
+    /// <summary>
+    /// <see cref="SteadyAllocBytes(Action, int, int)"/> for rounds that take their own reading (each returns the bytes of
+    /// its measured window, so per-round set-up and wind-down outside the window don't count): the least of
+    /// <paramref name="rounds"/> after <paramref name="warmups"/>.
+    /// </summary>
+    private static long SteadyAllocBytes(Func<long> measuredRound, int warmups, int rounds)
+    {
+        for (var w = 0; w < warmups; w++)
+            measuredRound();
+        var least = long.MaxValue;
+        for (var r = 0; r < rounds; r++)
+            least = Math.Min(least, measuredRound());
+        return least;
+    }
+
+    /// <summary>
+    /// For a probe whose measured loop is costly (or also timed): <paramref name="first"/> is that loop's own reading;
+    /// only when it saw bytes does <paramref name="round"/> (the same work) run <paramref name="rounds"/> more times, and
+    /// the least reading counts. A real per-call allocation still shows in every round; a clean run costs nothing extra.
+    /// </summary>
+    private static long RecheckAllocBytes(long first, Action round, int rounds = 3)
+        => first <= 0 ? first : Math.Min(first, SteadyAllocBytes(round, warmups: 0, rounds: rounds));
+
     /// <summary>The median of a few values (sorts a copy).</summary>
     private static double MedianOf(double[] values)
     {

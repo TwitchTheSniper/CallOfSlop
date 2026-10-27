@@ -466,13 +466,15 @@ public static partial class SelfTest
             game.SelfTestVantagePick(blue[0], now);
             game.SelfTestVantageDecide(blue[1], now);
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread();
-        for (var i = 0; i < 400; i++)
+        // The least of a few identical rounds (SelfTestCpuRatio.cs): a real per-call allocation shows in every round, a one-off runtime allocation in one at most.
+        var bytes = SteadyAllocBytes(() =>
         {
-            game.SelfTestVantagePick(blue[0], now);
-            game.SelfTestVantageDecide(blue[1], now);
-        }
-        bytes = GC.GetAllocatedBytesForCurrentThread() - bytes;
+            for (var i = 0; i < 400; i++)
+            {
+                game.SelfTestVantagePick(blue[0], now);
+                game.SelfTestVantageDecide(blue[1], now);
+            }
+        }, warmups: 0);
         VNote($"400 vantage picks and decisions: {bytes} bytes allocated");
         if (bytes > 0)
             Fail($"vantage picks/decisions allocate ({bytes} bytes over 400 calls)");
