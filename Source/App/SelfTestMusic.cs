@@ -178,6 +178,7 @@ public static partial class SelfTest
             for (var i = 0; i < 44; i++)
                 r.Render(block);
         }
+        LoadAndRender(); // warm-up through the same method (its first call can JIT inside the window)
         var before = GC.GetAllocatedBytesForCurrentThread();
         LoadAndRender();
         // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
@@ -302,6 +303,7 @@ public static partial class SelfTest
                 for (var i = 0; i < 44; i++)
                     r.Render(block);
             }
+            LoadAndRender(); // warm-up through the same method (its first call can JIT inside the window)
             var before = GC.GetAllocatedBytesForCurrentThread();
             LoadAndRender();
             // Only if this window saw bytes: the least of it and three more identical rounds (SelfTestCpuRatio.cs), so a one-off runtime allocation can't fail it.
