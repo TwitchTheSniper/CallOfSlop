@@ -107,18 +107,6 @@ public sealed partial class Game
         return rays;
     }
 
-    /// <summary>Where a built weapon's barrel shows its tracer: the usual muzzle point moved by the barrel's offset.</summary>
-    public static Vector3 MuzzleWorld(Player p, Vector2 lateral)
-    {
-        var m = MuzzleWorld(p);
-        if (lateral == Vector2.Zero)
-            return m;
-        var fwd = GravityFrames.Forward(p.RenderPosition, p.RenderYaw, p.RenderPitch);
-        var right = Vector3.Normalize(Vector3.Cross(fwd, MathF.Abs(fwd.Y) > 0.99f ? Vector3.UnitX : Vector3.UnitY));
-        var up = Vector3.Cross(right, fwd);
-        return m + right * lateral.X + up * lateral.Y;
-    }
-
     private double _testShotClock;
 
     /// <summary>Self-test: resolves one shot of <paramref name="def"/> by the local (host) player through the real server path.</summary>

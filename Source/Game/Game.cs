@@ -577,7 +577,7 @@ public sealed partial class Game : IDisposable
                 dist = PveRayDrawn(o, d, dist, out var eHit, BulletRadius(ray.Size)); // Co-op enemies, as you see them (GamePve.cs)
                 predictedHit |= eHit;
             }
-            AddTracer(MuzzleWorld(me, ray.Lateral), o + d * dist, def, now, shooter: me, through: through, size: ray.Size);
+            AddTracer(TracerStart(me, def, ray.Barrel, now), o + d * dist, def, now, shooter: me, through: through, size: ray.Size); // from the muzzle that fired (GameMuzzle.cs)
         }
         if (predictedHit)
         {
@@ -1385,8 +1385,8 @@ public sealed partial class Game : IDisposable
             rays.RemoveRange(255, rays.Count - 255); // the Shot packet counts ends in a byte (BuildRules caps builds well below)
         var ends = nested ? new List<Vector3>() : _resolveEnds;
         ends.Clear();
-        var laterals = nested ? new List<Vector2>() : _resolveLaterals;
-        laterals.Clear();
+        var barrels = nested ? new List<int>() : _resolveBarrels;
+        barrels.Clear();
         var zHead = false;
         _shotPenetrated = false;
         var pfx = HasPlayerEffects(def.BuildFlags) && !nested; // special ammo on players (AmmoEffectsPlayers.cs)
@@ -1438,7 +1438,7 @@ public sealed partial class Game : IDisposable
             ShotStructures(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), def.Id, now); // destructible chunks: the first one hit chips if it's weak (GameDestruction.cs)
             var end = o + d * dist;
             ends.Add(end);
-            laterals.Add(ray.Lateral);
+            barrels.Add(ray.Barrel);
             if (device != null)
                 flags |= ShotTactical(device, shooter, ray.Damage * def.DamageMultAt(dist) * pen, now);
             if (turret != null)
@@ -1505,13 +1505,14 @@ public sealed partial class Game : IDisposable
         else
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
-            AddTracer(MuzzleWorld(shooter, laterals[i]), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null);
+            AddTracer(TracerStart(shooter, def, barrels[i], now), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null); // from the muzzle that fired (GameMuzzle.cs)
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
             _w.Vec(end);
         if (_shotPenetrated)
             _w.Vec(origin); // after the ends: older clients stop reading before it
+        WriteShotBarrels(def, barrels); // which barrel fired each end (GameMuzzle.cs)
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
         _resolveBusy = nested;
     }
@@ -1522,7 +1523,7 @@ public sealed partial class Game : IDisposable
     private readonly HashSet<Player> _resolveHeads = new();
     private readonly List<ShotRay> _resolveRays = new(16);
     private readonly List<Vector3> _resolveEnds = new(16);
-    private readonly List<Vector2> _resolveLaterals = new(16);
+    private readonly List<int> _resolveBarrels = new(16);
     private bool _resolveBusy;
 
     /// <summary>Adds a pellet's damage to a victim's total for this shot (victims in the order first hit, like the dictionary was).</summary>
@@ -1890,8 +1891,9 @@ public sealed partial class Game : IDisposable
                 ShotsSeen[shooter]++;
                 Audio.Shot(def, sp.RenderEye);
                 var shotEnds = ReadShotEnds(ref r, n, flags, out var through); // and the origin if it went through walls (GamePenetration.cs)
-                foreach (var end in shotEnds)
-                    AddTracer(MuzzleWorld(sp), end, def, now, flags, sp, through);
+                var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length); // which barrel fired each (GameMuzzle.cs)
+                for (var i = 0; i < shotEnds.Length; i++)
+                    AddTracer(TracerStart(sp, def, shotBarrels[i], now), shotEnds[i], def, now, flags, sp, through);
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

@@ -177,7 +177,14 @@ public static unsafe partial class Program
                 }
                 DrawGun(parts.Frame, world, false);
                 if (parts.Gun != null)
-                    DrawGun(parts.Gun, CartGunPose(parts, aimYaw, aimPitch) * world, mine && now < _game.MuzzleFlashUntil);
+                {
+                    var gunPose = CartGunPose(parts, aimYaw, aimPitch) * world;
+                    if (mine)
+                        RememberViewGun(c.Def, gunPose, now, inWorld: true); // manning it: your tracers leave its muzzles (Program.Muzzle.cs)
+                    GunModel.FlashBarrels = mine ? LocalFlashBarrels(now) : GunModel.AllBarrels;
+                    DrawGun(parts.Gun, gunPose, mine && now < _game.MuzzleFlashUntil);
+                    GunModel.FlashBarrels = GunModel.AllBarrels;
+                }
                 continue;
             }
             DrawGun(c.Def, world, false);
