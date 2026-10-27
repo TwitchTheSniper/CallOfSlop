@@ -558,13 +558,17 @@ public sealed unsafe class Renderer
         return scope;
     }
 
-    public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid)
+    /// <summary>
+    /// Draws the unit cube transformed by <paramref name="model"/>, or with <paramref name="shape"/> &gt; 0 a weapon part's
+    /// contoured shape inside it (<see cref="PartShapes"/>; uploaded into the box buffer the first time it's needed).
+    /// </summary>
+    public void Draw(in Matrix4x4 model, Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, int shape = 0)
     {
         if (_tilted)
         {
             var tilted = model * _tilt;
             _tilted = false;
-            Draw(tilted, color, alpha, mode, material);
+            Draw(tilted, color, alpha, mode, material, shape);
             _tilted = true;
             return;
         }
@@ -575,7 +579,7 @@ public sealed unsafe class Renderer
         }
         if (_batching)
         {
-            if (!_bloodOn && !_blendOn && alpha >= 1f)
+            if (!_bloodOn && !_blendOn && alpha >= 1f && shape == 0)
             {
                 // Batched (a zombie horde): one instanced draw per few thousand boxes instead of one draw each.
                 var o = _batchCount * BatchFloats;
@@ -599,7 +603,29 @@ public sealed unsafe class Renderer
         Native.glUniformMatrix4fv(_locModel, 1, false, &m.M11);
         Native.glUniform4f(_locColor, color.X, color.Y, color.Z, alpha);
         Native.glUniform1f(_locMode, mode);
-        Native.glDrawArrays(GL_TRIANGLES, 0, 36);
+        if (shape == 0)
+        {
+            Native.glDrawArrays(GL_TRIANGLES, 0, 36);
+            return;
+        }
+        if (_shapeVersion != PartShapes.Version)
+            UploadShapes();
+        if (shape + 1 < _shapeFirst.Count)
+            Native.glDrawArrays(GL_TRIANGLES, _shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
+    }
+
+    private int _shapeVersion; // PartShapes.Version starts at 0 with no shapes
+    private readonly List<int> _shapeFirst = [];
+
+    /// <summary>Puts the unit cube and every part shape made so far into the box vertex buffer (once per new batch of shapes, at load).</summary>
+    private void UploadShapes()
+    {
+        var data = new List<float>(BuildCube());
+        _shapeVersion = PartShapes.CopyAll(data, _shapeFirst);
+        var arr = data.ToArray();
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        fixed (float* p = arr)
+            Native.glBufferData(GL_ARRAY_BUFFER, arr.Length * sizeof(float), p, GL_STATIC_DRAW);
     }
 
     public void DrawBox(Box box, Vector3 color, int mode = 0, Material material = Material.Grid) =>

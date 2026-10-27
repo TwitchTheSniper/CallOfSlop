@@ -4,7 +4,8 @@ Usage:
     python3 tools/parts/floaters.py [PARTS_DIR] [--tol METRES] [--receiver NAME] [--verbose]
 
 Two boxes touch when they overlap or the gap between them is at most --tol (default 0.0101: 1 cm and 0.1 mm for rounding), tested as oriented
-boxes (separating axes; rods as boxes). A model's boxes are grouped into connected pieces and every box outside the main
+boxes (separating axes; rods as boxes; a contoured shape such as a tube or an arc by the proxy boxes tools/parts/shapes.py
+gives it, as the self-test does with PartShapes.Proxies). A model's boxes are grouped into connected pieces and every box outside the main
 piece is reported (a part on its own: the piece with the most volume; a build: the piece holding the grip's first box).
 
 What is checked (the same as the self-test section "Model connectivity", Source/App/SelfTestModelConnectivity.cs):
@@ -26,6 +27,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import viz  # noqa: E402  (the same part reader the contact sheet uses)
+import shapes  # noqa: E402  (the contoured shapes' proxy boxes, mirrored from Source/Zombies/PartShapes.cs)
 
 # Intentional separated pieces: part name -> why. Their boxes may float when the part is on its own; in a build the
 # part must still connect (that is what the reason says joins them).
@@ -74,6 +76,7 @@ class Box:
             self.ax.append([x / n for x in v])
             self.h.append(n / 2)
         self.label, self.tag, self.part = label, tag, part
+        self.proxies = None  # a contoured shape: the boxes that stand for its volume (shapes.proxies)
 
 
 def dot(a, b):
@@ -85,6 +88,21 @@ def cross(a, b):
 
 
 def touches(a, b, tol):
+    if not obb_touches(a, b, tol):
+        return False
+    if a.proxies is None and b.proxies is None:
+        return True
+    pa = a.proxies if a.proxies is not None else [a]
+    pb = b.proxies if b.proxies is not None else [b]
+    return any(obb_touches(x, y, tol) for x in pa for y in pb)
+
+
+def m_rot_x(a):
+    c, s = math.cos(a), math.sin(a)
+    return [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]]
+
+
+def obb_touches(a, b, tol):
     t = [b.c[i] - a.c[i] for i in range(3)]
     for L in a.ax + b.ax + [cross(x, y) for x in a.ax for y in b.ax]:
         n = math.sqrt(dot(L, L))
@@ -153,7 +171,7 @@ class Lib:
     def part_boxes(self, p, M=IDENT, scale=(1, 1, 1), irons=False, filled=(), label=None):
         """The part's drawn boxes: "irons" only if <irons>, "with:SOCKET" only if SOCKET is in <filled>."""
         out = []
-        for i, (shape, size, pos, R, col, alpha, tag) in enumerate(p["_boxes"]):
+        for i, (shape, size, pos, R, col, alpha, tag, st) in enumerate(p["_boxes"]):
             tag = str(tag or "").lower()
             if tag == "irons" and not irons:
                 continue
@@ -161,8 +179,13 @@ class Lib:
                 continue
             if tag.startswith("with:") and tag[5:] not in [f.lower() for f in filled]:
                 continue
-            m = mmul(M, mmul(m_scale(scale), mmul(m_trans(pos), mmul(m_rot(R), m_scale(size)))))
-            out.append(Box(m, f"{label or p['name']} box #{i + 1} {list(size)} at {list(pos)}" + (f" [{tag}]" if tag else ""), tag, p["name"]))
+            outer = mmul(M, mmul(m_scale(scale), mmul(m_trans(pos), m_rot(R))))
+            m = mmul(outer, m_scale(size))
+            box = Box(m, f"{label or p['name']} box #{i + 1} {shape} {list(size)} at {list(pos)}" + (f" [{tag}]" if tag else ""), tag, p["name"])
+            if shapes.is_shaped({"shape": shape}):
+                box.proxies = [Box(mmul(outer, mmul(m_trans(c), mmul(m_rot_x(rx), m_scale(sz)))), box.label, tag, p["name"])
+                               for (c, sz, rx) in shapes.proxies(dict(st, shape=shape, size=[abs(x) for x in size]))]
+            out.append(box)
         return out
 
 

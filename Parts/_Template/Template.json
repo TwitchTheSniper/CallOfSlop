@@ -33,8 +33,16 @@
     // {"name": "...", "type": "...", "pos": [x, y, z], "rot": [x, y, z], "accepts": ["barrel"], "required": true}
     // "points": {"under": [x, y, z]} names other spots for what plugs in, picked by that part's "placement"
   ],
-  "model": [                                  // boxes: "shape" box (default), rod (octagonal, along Z) or plate
-    {"shape": "rod", "size": [0.022, 0.022, 0.24], "pos": [0, 0, -0.12], "color": "black"},
+  "model": [                                  // boxes: "shape" box (default), rod (octagonal, along Z), plate, or a contoured
+                                              // shape drawn inside the box (Parts/README.md, "Shapes"): cylinder, tube,
+                                              // wedge, bevel, rounded, capsule, sphere, arc, each with its own settings
+    {"shape": "tube", "size": [0.022, 0.022, 0.24], "pos": [0, 0, -0.12], "color": "black", "inner": 0.45, "ends": "back"},
+    // {"shape": "cylinder", "size": [w, h, l], "segments": 12, "taper": 0.8},     // round along Z; taper = front end's size
+    // {"shape": "wedge", "size": [w, h, l], "taper": [1, 0.4], "shift": [0, 0.3]}, // front (-Z) face smaller and moved
+    // {"shape": "bevel", "size": [w, h, l], "radius": 0.2, "edges": "long"},       // edges cut off (all, or the 4 along Z)
+    // {"shape": "rounded", "size": [w, h, l], "radius": 0.3, "segments": 4},       // edges rounded
+    // {"shape": "capsule", "size": [w, h, l]}, {"shape": "sphere", "size": [w, h, l]},
+    // {"shape": "arc", "size": [w, h, l], "angle": 180, "inner": 0.7, "dir": 0},   // a curve in the Y-Z plane (0 = bulges down)
     // A fragment from Parts/_Fragments, moved, turned, scaled and recoloured:
     {"use": "Cooling Fins", "pos": [0, 0, -0.05], "scale": [1, 1, 1.5], "color": "accent"},
     {"use": "Muzzle Ring", "pos": [0, 0, -0.22]}

@@ -161,10 +161,41 @@ public sealed class PartSocket
     public Quaternion Rotation => PartDef.Rot(RotDeg);
 }
 
-/// <summary>One box of a part's model, in the part's space. Shapes: box, rod (octagonal, along Z) and a thin "plate".</summary>
+/// <summary>
+/// One box of a part's model, in the part's space. Shapes: box, rod (octagonal, along Z), a thin "plate", and the
+/// contoured ones (<see cref="PartShapes"/>: cylinder, tube, wedge, bevel, rounded, capsule, sphere, arc), each drawn
+/// inside the box. The shape settings below are unset (their defaults, <see cref="PartShapes"/>) unless the file gives them.
+/// </summary>
 public sealed class PartBox
 {
     public string Shape = "box";
+
+    /// <summary>Segments round (cylinder, tube, capsule, sphere), along (arc) or per rounded corner (rounded); 0 = the shape's default.</summary>
+    public int Segments;
+
+    /// <summary>Inner size as a fraction of the outer (tube, cylinder, arc); -1 = the shape's default.</summary>
+    public float Inner = -1f;
+
+    /// <summary>Capped ends of a cylinder or tube: "closed", "open", "front", "back"; "" = the shape's default.</summary>
+    public string Ends = "";
+
+    /// <summary>Front (-Z) end size as a fraction of the back's [x, y] (wedge, cylinder, tube); negative = the shape's default.</summary>
+    public Vector2 Taper = new(-1f);
+
+    /// <summary>Front (-Z) end's centre moved by this fraction of the size [x, y] (wedge, cylinder, tube).</summary>
+    public Vector2 Shift;
+
+    /// <summary>Bevel or rounding size as a fraction of the smallest side it cuts into (bevel, rounded); 0 = default.</summary>
+    public float Radius;
+
+    /// <summary>Edges a bevel or rounding takes off: "all" or "long" (the four along Z); "" = all.</summary>
+    public string Edges = "";
+
+    /// <summary>An arc's sweep (degrees, 0 = default 90) and the direction its middle points (degrees: 0 down, 90 forward, 180 up, 270 back).</summary>
+    public float Angle, Dir;
+
+    /// <summary>The shape's mesh id (<see cref="PartShapes.For"/>; 0 = a plain box). Set when the part is checked.</summary>
+    public ushort ShapeId;
     public Vector3 Size = new(0.02f);
     public Vector3 Pos;
     public Vector3 RotDeg;
@@ -386,6 +417,9 @@ public sealed class PartDef
 
     public PartSocket[] Sockets = [];
     public PartBox[] Boxes = [];
+
+    /// <summary>Triangles the part's model draws (counted when it is checked; Parts/README.md, "Shapes").</summary>
+    public int Triangles;
     public AttachmentEffect[] Effects = [];
 
     /// <summary>Special-effect flags (incendiary, explosive, penetrating...): carried into the build, gameplay comes later.</summary>

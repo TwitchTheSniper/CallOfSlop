@@ -84,7 +84,8 @@ public static class GunModel
     public interface IPartSink
     {
         /// <summary>One box: its model matrix in gun space and how it's drawn. Shell boxes give their base alpha (before the cutaway fade).</summary>
-        void Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, PartGroup group, EmitFlags flags);
+        /// <paramref name="shape"/>: a built weapon's part shape (0 = the box itself; <see cref="PartShapes"/>).
+        void Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, PartGroup group, EmitFlags flags, int shape);
 
         /// <summary>Where the muzzle flash goes (gun space) and what it looks like. Always emitted last.</summary>
         void Flash(Vector3 muzzle, float size, Vector3 color, float alpha);
@@ -464,7 +465,7 @@ public static class GunModel
         if (_emit != null)
         {
             _emit.Part(m, c, alpha, mode, _inOptic ? PartGroup.Optic : _inMag ? PartGroup.Magazine : _group,
-                (_blendOn ? EmitFlags.Blend : EmitFlags.None) | (_inShell ? EmitFlags.Shell : EmitFlags.None));
+                (_blendOn ? EmitFlags.Blend : EmitFlags.None) | (_inShell ? EmitFlags.Shell : EmitFlags.None), 0);
             return;
         }
         if (_inMag)
@@ -713,7 +714,7 @@ public static class GunModel
                 var group = (pt.Flags & GunPartFlags.Mag) != 0 ? PartGroup.Magazine
                     : (pt.Flags & GunPartFlags.Muzzle) != 0 ? PartGroup.Muzzle
                     : (pt.Flags & GunPartFlags.Underbarrel) != 0 ? PartGroup.Underbarrel : PartGroup.Body;
-                _emit.Part(m.Matrices[i], pt.Color, pt.Alpha, pt.Mode, group, (pt.Flags & GunPartFlags.Blend) != 0 ? EmitFlags.Blend : EmitFlags.None);
+                _emit.Part(m.Matrices[i], pt.Color, pt.Alpha, pt.Mode, group, (pt.Flags & GunPartFlags.Blend) != 0 ? EmitFlags.Blend : EmitFlags.None, pt.Shape);
                 continue;
             }
             var blend = (pt.Flags & GunPartFlags.Blend) != 0;
@@ -726,7 +727,7 @@ public static class GunModel
             }
             if (blend)
                 _g.SetBlend(true);
-            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode);
+            _g.Draw(model * _pose, pt.Color, pt.Alpha, pt.Mode, Material.Grid, pt.Shape);
             if (blend)
                 _g.SetBlend(false);
         }

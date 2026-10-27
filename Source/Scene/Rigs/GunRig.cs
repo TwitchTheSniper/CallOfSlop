@@ -177,7 +177,7 @@ public sealed class GunRig : GunModel.IPartSink
 
     // ---- GunModel.IPartSink -----------------------------------------------------------------
 
-    void GunModel.IPartSink.Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, GunModel.PartGroup group, GunModel.EmitFlags flags)
+    void GunModel.IPartSink.Part(in Matrix4x4 local, Vector3 color, float alpha, int mode, GunModel.PartGroup group, GunModel.EmitFlags flags, int shape)
     {
         switch (_mode)
         {
@@ -207,6 +207,7 @@ public sealed class GunRig : GunModel.IPartSink
         }
         var shell = (flags & GunModel.EmitFlags.Shell) != 0;
         var r = Renderable.Box(color, alpha, mode, Material.Grid, (flags & GunModel.EmitFlags.Blend) != 0 ? RenderFlags.Blend : RenderFlags.None);
+        r.Shape = (ushort)shape;
         var node = _group.Add("part", local, r);
         if (_slotCount == _slots.Length)
             Array.Resize(ref _slots, Math.Max(32, _slotCount * 2));
