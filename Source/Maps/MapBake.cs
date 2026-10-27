@@ -54,7 +54,7 @@ public static class MapBake
     /// <summary>What the last load found, one line (for the log and the self-test).</summary>
     public static string LastSummary { get; private set; } = "";
 
-    /// <summary>Maps the last load couldn't bake, and why (normally empty).</summary>
+    /// <summary>Maps the last load (with bakes) couldn't bake, and why (normally empty).</summary>
     public static readonly List<string> Unbakeable = new();
 
     // ---- Keys -------------------------------------------------------------------------------------

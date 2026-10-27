@@ -641,6 +641,9 @@ public static partial class Maps
         var bakeOut = bakes != BakeUse.None ? MapBake.BakeOutFolder : null;
         var keyed = read || cache || bakeOut != null;
         var tStart = System.Diagnostics.Stopwatch.GetTimestamp();
+        if (keyed)
+            lock (MapBake.Unbakeable)
+                MapBake.Unbakeable.Clear();
         var maps = new List<Map>();
         var packs = new List<MapPack>();
         var byJob = new Dictionary<Map, LoadJob>(ReferenceEqualityComparer.Instance);
