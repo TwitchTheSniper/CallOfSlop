@@ -22,6 +22,7 @@
     {"size": [0.062, 0.01, 0.04], "pos": [0, 0.042, 0.07], "color": "accent"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.4},
     {"stat": "hipSpreadDeg", "set": 4.0},
     {"stat": "adsSpreadMult", "set": 0.0},
     {"stat": "reload", "set": 3.0},

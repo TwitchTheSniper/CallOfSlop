@@ -6,7 +6,7 @@
   "rarity": "rare",
   "flavor": "Goes off if you think about it too hard. Fast, and a little wild.",
   "weight": 0.1,
-  "action": {"kind": "semi", "rpm": 650},
+  "action": {"kind": "semi", "rpm": 800},
   "model": [
     {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
     {"size": [0.004, 0.012, 0.004], "pos": [0, -0.028, 0.006], "color": "yellow"},

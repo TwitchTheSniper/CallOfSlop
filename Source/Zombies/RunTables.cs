@@ -3,7 +3,14 @@ using System.Text.Json;
 namespace CallOfSlop;
 
 /// <summary>One row of a by-round table: from this round on, these weights per tier (or this chance).</summary>
-public sealed record RoundRow(int FromRound, float[] Weights, float Chance);
+public sealed record RoundRow(int FromRound, float[] Weights, float Chance)
+{
+    /// <summary>
+    /// The rarest tier this row can pay (slot rows' "top", default wonder): machine heat, bets and jackpot bonuses that
+    /// would push a pull past it pay this tier instead, so legendary and wonder parts stay late (2026-10-27).
+    /// </summary>
+    public Rarity Top { get; init; } = Rarity.Wonder;
+}
 
 /// <summary>
 /// The roguelite drop tables (Parts/Tables/DropTables.json, format "call-of-slop-drops/1"): proposed data for the
@@ -140,24 +147,33 @@ public sealed class RunTables
             if (row.ValueKind != JsonValueKind.Object)
                 throw new WeaponFileException($"{where}: each row is an object");
             var from = 0;
+            var top = Rarity.Wonder;
             var w = new float[SlotKeys.Length];
             foreach (var p in row.EnumerateObject())
             {
                 var k = Array.IndexOf(SlotKeys, p.Name);
                 if (p.Name == "fromRound")
                     from = WeaponFile.Int(p.Value, $"{where}.fromRound");
+                else if (p.Name == "top")
+                {
+                    if (p.Value.ValueKind != JsonValueKind.String || !Enum.TryParse(p.Value.GetString(), true, out top) || !Enum.IsDefined(top))
+                        throw new WeaponFileException($"{where}.top: a tier name (common .. wonder), the rarest this row pays");
+                }
                 else if (k >= 0)
                     w[k] += WeaponFile.Number(p.Value, $"{where}.{p.Name}");
                 else if (p.Name == "scrap")
                     w[SlotPoints] += WeaponFile.Number(p.Value, $"{where}.scrap"); // (no scrap since 2026-10-27: an older table's scrap weight counts as points, so its win chance stays)
                 else
-                    throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" in a row (fromRound, {string.Join(", ", SlotKeys)})");
+                    throw new WeaponFileException($"{where}: unknown key \"{p.Name}\" in a row (fromRound, top, {string.Join(", ", SlotKeys)})");
             }
             if (from < 1 || (list.Count > 0 && from <= list[^1].FromRound))
                 throw new WeaponFileException($"{where}: rows need \"fromRound\" 1 or more, in increasing order");
             if (w.Any(x => x < 0) || w.Sum() <= 0)
                 throw new WeaponFileException($"{where}: row from round {from} has a negative or empty weight");
-            list.Add(new RoundRow(from, w, 0));
+            for (var t = (int)top + 1; t <= (int)Rarity.Wonder; t++)
+                if (w[SlotPart + t] > 0)
+                    throw new WeaponFileException($"{where}: row from round {from} pays {(Rarity)t} parts, past its \"top\" ({top})");
+            list.Add(new RoundRow(from, w, 0) { Top = top });
         }
         return list;
     }

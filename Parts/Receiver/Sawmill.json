@@ -23,6 +23,7 @@
     {"use": "Cooling Fins", "pos": [0, 0.05, -0.21], "scale": [1.8, 1.8, 1], "color": "steel"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.3},
     {"stat": "hipSpreadDeg", "set": 0.87},
     {"stat": "adsSpreadMult", "set": 0.9},
     {"stat": "reload", "set": 4.4}

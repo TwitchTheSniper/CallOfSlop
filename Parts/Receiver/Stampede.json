@@ -22,6 +22,8 @@
     {"size": [0.052, 0.01, 0.04], "pos": [0, 0.039, 0.07], "color": "accent"}
   ],
   "stats": [
+    {"stat": "recoilDeg", "mul": 0.85},
+    {"stat": "damage", "mul": 0.9},
     {"stat": "hipSpreadDeg", "set": 2.2},
     {"stat": "reload", "set": 1.9},
     {"stat": "mobility", "add": 0.03}

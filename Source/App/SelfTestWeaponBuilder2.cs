@@ -258,8 +258,8 @@ public static partial class SelfTest
         // The box gives guns only; the slot machines pay the melee builds (2026-10-26): both pools get the tier checks.
         var box = StandardBuilds.From("box").Concat(StandardBuilds.From("slots")).Distinct().ToList();
         // Per tier, common .. wonder: most body damage per trigger pull and body DPS for a gun, most damage for a melee hit.
-        float[] maxPull = [250, 250, 450, 900, 2000, 2000];
-        float[] maxDps = [600, 600, 1200, 2500, 6000, 8000];
+        float[] maxPull = [250, 250, 450, 1500, 3000, 5000]; // (epic and up raised with the late-game power curve, 2026-10-27)
+        float[] maxDps = [600, 600, 1200, 3000, 8000, 12000];
         float[] maxMelee = [150, 150, 200, 250, 400, 400];
         foreach (var b in box)
         {

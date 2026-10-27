@@ -63,10 +63,11 @@ public static class BuildStore
         }
         Load(lines, Parts.Find, out _);
         // Builds saved before actions were parts got their receivers' stock actions as they loaded: save them back.
-        var migrated = Slots.Sum(b => b?.ActionsAdded ?? 0);
+        // (And builds on a receiver removed for being only a fire rate load on its replacement: save them back too.)
+        var migrated = Slots.Sum(b => (b?.ActionsAdded ?? 0) + (b?.ReceiversMigrated ?? 0));
         if (migrated > 0)
         {
-            Console.WriteLine($"[workbench] added {migrated} stock action(s) to builds saved before actions were parts; saving");
+            Console.WriteLine($"[workbench] migrated {migrated} part(s) of saved builds (stock actions added, removed receivers replaced); saving");
             Save();
         }
     }
@@ -231,7 +232,7 @@ public static class BuilderExamples
             r.Attach("feed", Need("Backpack Hopper", find));
             r.Attach("ammo", Need("FMJ", find));
             b.Root.Attach("foregrip", Need("Chaingun Handle", find));
-            return new Example(b, 900, 1200, "Six barrels taking turns at 2400 rpm once it has spun up.");
+            return new Example(b, 1050, 1400, "Six barrels taking turns at 2400 rpm once it has spun up.");
         });
         Try(() =>
         {

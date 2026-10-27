@@ -325,7 +325,7 @@ public static partial class SelfTest
         ExpectWhyNot(b, "", "receiver_1", "Red Dot", "mounts on an optic socket");
 
         var rifle = new WeaponBuild("Rules 2", Parts.Find("Rifle Grip")!);
-        var burst = rifle.Root!.Attach("receiver_1", Parts.Find("Triad Burst Receiver")!);
+        var burst = rifle.Root!.Attach("receiver_1", Parts.Find("Reaper Battle Rifle Receiver")!);
         if (BuildRules.WhyNot(rifle, "receiver_1", "feed", Parts.Find("Belt Box")!) is { } noActionYet)
             Fail($"rules: a belt on a receiver with no action yet should go on (the action decides): {noActionYet}");
         burst.Attach("action", Parts.Find("Three-Round Burst Group")!);

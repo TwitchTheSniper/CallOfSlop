@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "All-Seeing Eye",
+  "category": "optic",
+  "rarity": "wonder",
+  "flavor": "A brass sight with an eye in it that never blinks. It marks every zombie on the map, through walls, while you hold the gun.",
+  "weight": 0.5,
+  "flags": ["marks"],
+  "optic": "Hybrid3",
+  "stats": [
+    {"stat": "adsZoom", "set": 3.0},
+    {"stat": "adsSpreadMult", "mul": 0.4},
+    {"stat": "adsTime", "add": 0.04},
+    {"stat": "hipSpreadDeg", "mul": 0.9}
+  ]
+}

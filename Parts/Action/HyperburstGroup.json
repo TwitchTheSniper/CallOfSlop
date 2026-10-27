@@ -6,7 +6,7 @@
   "rarity": "epic",
   "flavor": "Five rounds before the first one lands. Then a breather.",
   "weight": 0.15,
-  "action": {"kind": "burst", "rpm": 1400, "burstCount": 5, "burstDelay": 0.35},
+  "action": {"kind": "burst", "rpm": 2400, "burstCount": 5, "burstDelay": 0.1},
   "model": [
     {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
     {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
@@ -20,6 +20,7 @@
     {"size": [0.003, 0.003, 0.003], "pos": [0.0175, -0.016, 0.009], "color": "accent"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.1},
     {"stat": "recoilDeg", "mul": 1.1}
   ]
 }

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Pocket Sun",
+  "category": "ammo",
+  "rarity": "wonder",
+  "flavor": "Each round is a marble of star. Burns, slows, and does a great deal of damage for something so small.",
+  "weight": 0.0,
+  "flags": ["plasma", "incendiary"],
+  "stats": [
+    {"stat": "damage", "mul": 2.2},
+    {"stat": "minDamageMult", "mul": 1.5, "max": 1},
+    {"stat": "hipSpreadDeg", "mul": 0.85}
+  ]
+}

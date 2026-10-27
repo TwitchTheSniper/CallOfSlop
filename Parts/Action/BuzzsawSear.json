@@ -3,7 +3,7 @@
   "name": "Buzzsaw Sear",
   "category": "action",
   "placement": "under",
-  "rarity": "common",
+  "rarity": "uncommon",
   "flavor": "A featherweight bolt that buzzes. Empties a magazine before you finish the word.",
   "weight": 0.15,
   "action": {"kind": "auto", "rpm": 1100},

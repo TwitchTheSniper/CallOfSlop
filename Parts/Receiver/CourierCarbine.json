@@ -23,6 +23,7 @@
     {"use": "Picatinny Rail", "pos": [0, 0.069, -0.02], "scale": [1, 1, 0.8]}
   ],
   "stats": [
+    {"stat": "damage", "mul": 0.9},
     {"stat": "hipSpreadDeg", "set": 1.6},
     {"stat": "reload", "set": 1.9},
     {"stat": "mobility", "add": 0.02},

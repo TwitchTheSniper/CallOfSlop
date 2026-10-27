@@ -4,9 +4,9 @@
   "category": "action",
   "placement": "under",
   "rarity": "legendary",
-  "flavor": "An automatic sear on a diet of energy drinks. Fourteen hundred a minute, give or take a wrist.",
+  "flavor": "An automatic sear on a diet of energy drinks. Twenty-four hundred a minute, give or take a wrist.",
   "weight": 0.15,
-  "action": {"kind": "auto", "rpm": 1400},
+  "action": {"kind": "auto", "rpm": 2400},
   "model": [
     {"size": [0.032, 0.022, 0.022], "pos": [0, -0.011, 0], "color": "black"},
     {"size": [0.006, 0.012, 0.006], "pos": [0, -0.028, 0.006], "color": "steel"},
@@ -17,6 +17,7 @@
     {"size": [0.002, 0.004, 0.018], "pos": [0.017, -0.019, 0], "color": "accent", "tag": "glow"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.15},
     {"stat": "recoilDeg", "mul": 1.2},
     {"stat": "hipSpreadDeg", "mul": 1.15}
   ]

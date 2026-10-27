@@ -20,6 +20,6 @@
   ],
   "stats": [
     {"stat": "rangeM", "mul": 2.0},
-    {"stat": "damage", "mul": 1.15}
+    {"stat": "damage", "mul": 1.3}
   ]
 }

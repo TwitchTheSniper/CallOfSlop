@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Wrecking Ball",
+  "category": "head",
+  "rarity": "legendary",
+  "flavor": "A small wrecking ball on a short chain. Slow, then very fast; anything it hits leaves the ground.",
+  "weight": 4.5,
+  "flags": ["launch"],
+  "melee": {"damage": 110, "swingMult": 1.35, "stun": 1.2, "cleave": 2},
+  "model": [
+    {"size": [0.02, 0.02, 0.12], "pos": [0, 0, -0.06], "color": "steel"},
+    {"size": [0.14, 0.14, 0.14], "pos": [0, 0, -0.19], "color": "black"},
+    {"size": [0.14, 0.14, 0.14], "pos": [0, 0, -0.19], "rot": [45, 0, 0], "color": "black"},
+    {"size": [0.14, 0.14, 0.14], "pos": [0, 0, -0.19], "rot": [0, 45, 0], "color": "black"},
+    {"size": [0.14, 0.14, 0.14], "pos": [0, 0, -0.19], "rot": [0, 0, 45], "color": "black"}
+  ]
+}

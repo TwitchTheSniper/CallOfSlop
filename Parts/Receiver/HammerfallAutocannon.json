@@ -24,6 +24,7 @@
     {"size": [0.05, 0.05, 0.1], "pos": [0.075, 0.04, -0.05], "color": "black"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 2.2},
     {"stat": "hipSpreadDeg", "set": 3.5},
     {"stat": "reload", "set": 4.8},
     {"stat": "headMult", "set": 1.5},

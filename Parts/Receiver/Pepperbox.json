@@ -28,6 +28,7 @@
     {"size": [0.06, 0.06, 0.02], "pos": [0, 0.042, -0.09], "color": "steel"}
   ],
   "stats": [
+    {"stat": "damage", "mul": 1.6},
     {"stat": "hipSpreadDeg", "set": 2.2},
     {"stat": "reload", "set": 2.8}
   ]

@@ -23,7 +23,7 @@ public sealed partial class Game
     /// <summary>The effects that also work on players.</summary>
     private const ZEffect PlayerEffects = ZEffect.Incendiary | ZEffect.Explosive | ZEffect.Shock | ZEffect.Penetrating | ZEffect.Bouncy | ZEffect.Squeaky
                                           | ZEffect.Toasty | ZEffect.Rocket | ZEffect.Nails | ZEffect.Chainsaw | ZEffect.Bonk | ZEffect.Fish
-                                          | ZEffect.Refreshing | ZEffect.Bayonet;
+                                          | ZEffect.Refreshing | ZEffect.Bayonet | ZEffect.Launch;
 
     private readonly List<PFxHit> _pFxHits = new();
     private readonly List<(Player P, Vector3 O, Vector3 D, float Dist)> _pFxRays = new();
@@ -97,12 +97,13 @@ public sealed partial class Game
                 StunPlayer(p, ZRules.SqueakStun, now);
             if ((e & ZEffect.Bonk) != 0)
                 StunPlayer(p, ZRules.BonkStun, now);
-            if ((e & (ZEffect.Rocket | ZEffect.Fish)) != 0)
+            if ((e & (ZEffect.Rocket | ZEffect.Fish | ZEffect.Launch)) != 0)
             {
                 var away = p.Position - h.O;
                 away.Y = 0;
                 away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : -World.FlatForward(p.Yaw);
-                var speed = (e & ZEffect.Rocket) != 0 ? ZRules.Knockback : ZRules.Knockback * 0.75f;
+                // (a "launch" is only a rocket's knockback on a player: the zombie throw would be silly in PvP)
+                var speed = (e & (ZEffect.Rocket | ZEffect.Launch)) != 0 ? ZRules.Knockback : ZRules.Knockback * 0.75f;
                 Knock(p, away * speed + new Vector3(0, 2.5f, 0));
             }
         }

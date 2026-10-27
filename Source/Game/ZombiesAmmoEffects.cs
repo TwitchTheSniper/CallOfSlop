@@ -52,6 +52,7 @@ public sealed partial class Game
         Party = 8192,
         Refreshing = 16384,
         Bayonet = 32768,
+        Launch = 65536,
     }
 
     /// <summary>The part flags that do something to zombies (the rest, like "suppressed" or "cart", don't).</summary>
@@ -61,7 +62,11 @@ public sealed partial class Game
         ["plasma"] = ZEffect.Plasma, ["bouncy"] = ZEffect.Bouncy, ["squeaky"] = ZEffect.Squeaky, ["toasty"] = ZEffect.Toasty,
         ["rocket"] = ZEffect.Rocket, ["nails"] = ZEffect.Nails, ["chainsaw"] = ZEffect.Chainsaw, ["bonk"] = ZEffect.Bonk,
         ["fish"] = ZEffect.Fish, ["party"] = ZEffect.Party, ["refreshing"] = ZEffect.Refreshing, ["bayonet"] = ZEffect.Bayonet,
+        ["launch"] = ZEffect.Launch,
     };
+
+    /// <summary>The gun in hand has the "marks" flag (the All-Seeing Eye): the HUD marks every zombie through walls (TacticalHud.cs).</summary>
+    public bool MarksZombies => Array.IndexOf(Active.Def.BuildFlags, "marks") >= 0;
 
     /// <summary>The flags with a Zombies effect (for the docs and the self-test).</summary>
     public static IReadOnlyCollection<string> ZombieEffectFlags => EffectByFlag.Keys;
@@ -127,7 +132,9 @@ public sealed partial class Game
                 Stun(z, ZRules.SqueakStun, now);
             if ((e & ZEffect.Bonk) != 0)
                 Stun(z, ZRules.BonkStun, now);
-            if ((e & (ZEffect.Rocket | ZEffect.Fish)) != 0)
+            if ((e & ZEffect.Launch) != 0)
+                Launch(z, h.Ray.O, now); // (the late-game heads and rounds: a much bigger throw than a knockback, up and away)
+            else if ((e & (ZEffect.Rocket | ZEffect.Fish)) != 0)
                 Knock(z, h.Ray.O, (e & ZEffect.Rocket) != 0 ? ZRules.Knockback : ZRules.Knockback * 0.75f, now);
         }
         var at = main.Z.Position + new Vector3(0, 1.2f, 0);
@@ -211,6 +218,19 @@ public sealed partial class Game
         z.Sim.Velocity = away * speed + new Vector3(0, 2.5f, 0);
         z.Sim.Grounded = false;
         Stun(z, 0.5, now);
+    }
+
+    /// <summary>Launch (Wrecking Ball, Swordfish, Grandfather Clock, Jet Engine, Bowling Ball): the zombie is thrown away and up, and stunned while it flies.</summary>
+    private void Launch(Zombie z, Vector3 from, double now)
+    {
+        if (z.State is not (ZState.Chase or ZState.Attack or ZState.ToWindow))
+            return;
+        var away = z.Position - from;
+        away.Y = 0;
+        away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : World.FlatForward(z.Yaw) * -1f;
+        z.Sim.Velocity = away * ZRules.LaunchSpeed + new Vector3(0, ZRules.LaunchUp, 0);
+        z.Sim.Grounded = false;
+        Stun(z, ZRules.LaunchStun, now);
     }
 
     /// <summary>The toaster: the zombie pops up off the floor.</summary>

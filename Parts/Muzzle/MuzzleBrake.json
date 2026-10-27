@@ -10,9 +10,10 @@
     {"size": [0.07, 0.03, 0.07], "pos": [0, 0, -0.035], "color": "steel"}
   ],
   "stats": [
+    {"stat": "hipSpreadDeg", "mul": 0.9},
     {"stat": "recoilHorizontal", "mul": 0.5},
     {"stat": "recoilShake", "mul": 0.45},
-    {"stat": "recoilDeg", "mul": 0.9},
+    {"stat": "recoilDeg", "mul": 0.8},
     {"stat": "loudness", "mul": 1.25}
   ]
 }

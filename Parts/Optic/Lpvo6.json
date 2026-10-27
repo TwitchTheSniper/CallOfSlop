@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Lighthouse 6x",
+  "category": "optic",
+  "rarity": "epic",
+  "flavor": "A variable scope with a lamp's worth of glass. Six times closer, and quick to bring up for its size.",
+  "weight": 0.55,
+  "optic": "Lpvo6",
+  "stats": [
+    {"stat": "adsZoom", "set": 6.0},
+    {"stat": "adsSpreadMult", "mul": 0.42},
+    {"stat": "adsTime", "add": 0.08},
+    {"stat": "mobility", "add": -0.03}
+  ]
+}

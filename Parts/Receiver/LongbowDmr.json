@@ -24,6 +24,8 @@
     {"use": "Screw Head", "pos": [0, 0.07, 0.07]}
   ],
   "stats": [
+    {"stat": "recoilDeg", "mul": 1.15},
+    {"stat": "damage", "mul": 1.65},
     {"stat": "hipSpreadDeg", "set": 2.8},
     {"stat": "adsSpreadMult", "set": 0.1},
     {"stat": "reload", "set": 2.5},

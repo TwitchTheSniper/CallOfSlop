@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Exo Sling",
+  "category": "utility",
+  "rarity": "epic",
+  "flavor": "A motorised sling that takes the weight off your arms: the grip carries 8 kg more, and the gun steadies.",
+  "weight": 0.4,
+  "carry": 8,
+  "model": [
+    {"shape": "rod", "size": [0.025, 0.025, 0.07], "pos": [0.015, 0, 0], "color": "gunmetal"},
+    {"size": [0.028, 0.01, 0.08], "pos": [0.015, -0.016, 0], "color": "olive"},
+    {"size": [0.01, 0.01, 0.01], "pos": [0.03, 0.006, 0.03], "color": "accent", "tag": "glow"}
+  ],
+  "stats": [
+    {"stat": "hipSpreadDeg", "mul": 0.9}
+  ]
+}

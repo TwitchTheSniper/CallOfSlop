@@ -3,7 +3,7 @@
   "name": "Dragon Mouth",
   "category": "muzzle",
   "rarity": "legendary",
-  "flavor": "A snarling iron jaw that turns every round into a short cone of burning shot: four times the projectiles at a third the damage each, slow and fat, gone by ten metres. Sets zombies alight.",
+  "flavor": "A snarling iron jaw that turns every round into a short cone of burning shot: four times the projectiles at a little over half the damage each, slow and fat, gone by ten metres. Sets zombies alight.",
   "weight": 1.1,
   "flags": ["incendiary"],
   "muzzles": [[0, 0, -0.16]],
@@ -17,7 +17,7 @@
   ],
   "stats": [
     {"stat": "pellets", "mul": 4},
-    {"stat": "damage", "mul": 0.34},
+    {"stat": "damage", "mul": 0.55},
     {"stat": "hipSpreadDeg", "mul": 3},
     {"stat": "adsSpreadMult", "mul": 2.5},
     {"stat": "rangeM", "mul": 0.6},

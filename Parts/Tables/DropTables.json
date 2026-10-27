@@ -1,13 +1,13 @@
 {
   "format": "call-of-slop-drops/1",
-  "note": "PROPOSED roguelite tables for the Zombies mode (open for the user). Weights are relative per row; a row applies from its round on. A run starts with wall gear (common) and climbs: rare frames from round 8, legendary carry from round 15, wonder parts and box builds late. slotTiers: what a slot machine pull pays by round (nothing, points back, or a part of a tier, or melee: a complete melee build whose tier is rolled from the same row's part weights; the mystery box gives guns only); the wonder weight only counts in jackpot rounds (ZombiesRules.json slots). There is no scrap since 2026-10-27: its old weight went to points, so a pull wins as often as before.",
+  "note": "PROPOSED roguelite tables for the Zombies mode (open for the user). Weights are relative per row; a row applies from its round on. A run starts with wall gear (common) and climbs (the late-game power curve, 2026-10-27; docs/zombies/WEAPON-BUILDER.md, The power curve): rare parts from round 4, epic from 10, legendary from 18, wonder from 25; box builds legendary from 15, wonder from 22. slotTiers: what a slot machine pull pays by round (nothing, points back, or a part of a tier, or melee: a complete melee build whose tier is rolled from the same row's part weights; the mystery box gives guns only); the wonder weight only counts in jackpot rounds (ZombiesRules.json slots); a row's 'top' (default wonder) is the rarest tier it pays: heat, bets and jackpot bonuses past it pay that tier instead, so slot machines pay epic at most before round 20 and legendary at most before round 25. There is no scrap since 2026-10-27: its old weight went to points, so a pull wins as often as before.",
   "partDrops": [
     {"fromRound": 1, "common": 85, "uncommon": 15},
-    {"fromRound": 3, "common": 60, "uncommon": 32, "rare": 8},
-    {"fromRound": 8, "common": 35, "uncommon": 35, "rare": 24, "epic": 6},
-    {"fromRound": 15, "common": 15, "uncommon": 25, "rare": 32, "epic": 20, "legendary": 7, "wonder": 1},
-    {"fromRound": 25, "common": 5, "uncommon": 15, "rare": 30, "epic": 28, "legendary": 17, "wonder": 5},
-    {"fromRound": 35, "uncommon": 5, "rare": 20, "epic": 35, "legendary": 28, "wonder": 12}
+    {"fromRound": 4, "common": 62, "uncommon": 30, "rare": 8},
+    {"fromRound": 10, "common": 35, "uncommon": 35, "rare": 24, "epic": 6},
+    {"fromRound": 18, "common": 15, "uncommon": 25, "rare": 33, "epic": 22, "legendary": 5},
+    {"fromRound": 25, "common": 5, "uncommon": 14, "rare": 28, "epic": 30, "legendary": 18, "wonder": 5},
+    {"fromRound": 35, "uncommon": 5, "rare": 18, "epic": 34, "legendary": 30, "wonder": 13}
   ],
   "dropChance": [
     {"fromRound": 1, "chance": 0.04},
@@ -17,15 +17,17 @@
   ],
   "boxTiers": [
     {"fromRound": 1, "uncommon": 60, "rare": 35, "epic": 5},
-    {"fromRound": 8, "uncommon": 25, "rare": 45, "epic": 25, "legendary": 5},
-    {"fromRound": 15, "rare": 35, "epic": 40, "legendary": 20, "wonder": 5},
-    {"fromRound": 25, "rare": 15, "epic": 35, "legendary": 35, "wonder": 15}
+    {"fromRound": 8, "uncommon": 30, "rare": 50, "epic": 20},
+    {"fromRound": 15, "uncommon": 10, "rare": 40, "epic": 40, "legendary": 10},
+    {"fromRound": 22, "rare": 30, "epic": 40, "legendary": 25, "wonder": 5},
+    {"fromRound": 30, "rare": 15, "epic": 35, "legendary": 35, "wonder": 15}
   ],
   "slotTiers": [
-    {"fromRound": 1, "nothing": 30, "points": 35, "common": 22, "uncommon": 11, "rare": 2, "melee": 5},
-    {"fromRound": 5, "nothing": 28, "points": 32, "common": 16, "uncommon": 15, "rare": 7, "epic": 2, "melee": 5},
-    {"fromRound": 10, "nothing": 26, "points": 30, "common": 9, "uncommon": 14, "rare": 13, "epic": 6, "legendary": 2, "melee": 5},
-    {"fromRound": 15, "nothing": 24, "points": 28, "common": 4, "uncommon": 10, "rare": 15, "epic": 12, "legendary": 5, "wonder": 2, "melee": 5},
+    {"fromRound": 1, "top": "rare", "nothing": 30, "points": 35, "common": 22, "uncommon": 11, "rare": 2, "melee": 5},
+    {"fromRound": 5, "top": "epic", "nothing": 28, "points": 32, "common": 16, "uncommon": 15, "rare": 7, "epic": 2, "melee": 5},
+    {"fromRound": 10, "top": "epic", "nothing": 26, "points": 30, "common": 9, "uncommon": 14, "rare": 15, "epic": 6, "melee": 5},
+    {"fromRound": 15, "top": "epic", "nothing": 25, "points": 29, "common": 6, "uncommon": 12, "rare": 16, "epic": 10, "melee": 5},
+    {"fromRound": 20, "top": "legendary", "nothing": 24, "points": 28, "common": 4, "uncommon": 10, "rare": 15, "epic": 14, "legendary": 4, "melee": 5},
     {"fromRound": 25, "nothing": 22, "points": 26, "uncommon": 6, "rare": 14, "epic": 16, "legendary": 10, "wonder": 6, "melee": 5},
     {"fromRound": 35, "nothing": 20, "points": 24, "uncommon": 2, "rare": 10, "epic": 18, "legendary": 16, "wonder": 10, "melee": 5}
   ],

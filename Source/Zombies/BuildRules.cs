@@ -114,6 +114,9 @@ public sealed class WeaponBuild
     /// <summary>Stock actions <see cref="Parse"/> added to an old build (one written before actions were parts): it should be saved again.</summary>
     public int ActionsAdded;
 
+    /// <summary>Set by <see cref="Parse"/>: how many removed receivers (<see cref="RemovedReceivers"/>) the text named, now loaded as their replacements.</summary>
+    public int ReceiversMigrated;
+
     /// <summary>The action part in <paramref name="receiver"/>'s action socket (its fire type and rate), or null if it has none.</summary>
     public static ActionInfo? ActionOf(BuildNode receiver) => ActionNodeOf(receiver)?.Part.Action;
 
@@ -176,7 +179,8 @@ public sealed class WeaponBuild
         var pos = 0;
         if (tree.Length == 0)
             return b;
-        var root = ReadNode(tree, ref pos, find, dropped);
+        var removed = new List<(BuildNode Receiver, string Action)>();
+        var root = ReadNode(tree, ref pos, find, dropped, removed);
         if (pos != tree.Length)
             throw new FormatException($"unexpected '{tree[pos]}' at {pos}");
         if (root is { Part.IsRoot: true })
@@ -184,7 +188,20 @@ public sealed class WeaponBuild
         else if (root != null)
             dropped?.Add($"{root.Part.Name} (a build starts from a grip or a hilt)");
         if (migrate)
-            b.ActionsAdded = ActionMigration.FillIfOld(b, find);
+        {
+            // A receiver that was removed for being only a fire rate loads as its replacement; a text from before actions
+            // gives it the action it used to fire with (its old stock action), then the rest their stock actions.
+            var old = ActionMigration.IsOld(b);
+            foreach (var (rn, action) in removed)
+                if (old && rn.Part.Sockets.FirstOrDefault(x => x.Type == "action") is { } sock && rn.Child(sock.Name) == null && find(action) is { Action: not null } a)
+                {
+                    rn.Attach(sock.Name, a);
+                    b.ActionsAdded++;
+                }
+            if (old)
+                b.ActionsAdded += ActionMigration.Fill(b, find);
+        }
+        b.ReceiversMigrated = removed.Count;
         return b;
     }
 
@@ -216,10 +233,23 @@ public sealed class WeaponBuild
         ["Rubber Duck Rounds"] = "Rubber Duck",
     };
 
+    /// <summary>
+    /// Receivers removed because a fire rate or mode was all they were (the fire type is the action's since 2026-10-23):
+    /// old name to (the receiver it loads as, the action it fired with). A build on one loads on the replacement with
+    /// that action, so it fires as before (developer request, 2026-10-27: "remove receivers that were attributed to fire
+    /// rates, such as a burst receiver").
+    /// </summary>
+    public static readonly IReadOnlyDictionary<string, (string Receiver, string Action)> RemovedReceivers = new Dictionary<string, (string, string)>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Ratchet Burst SMG Receiver"] = ("Stampede Receiver", "Ratchet Burst Group"),
+        ["Triad Burst Receiver"] = ("Workhorse Receiver", "Three-Round Burst Group"),
+        ["Buzzbox Machine Pistol Receiver"] = ("Plinker Receiver", "Buzzsaw Sear"),
+    };
+
     /// <summary>How deep <see cref="Parse"/> nests before calling the text garbage (far past <see cref="BuildRules.MaxParts"/>), so a hostile build can't overflow the stack.</summary>
     public const int MaxParseDepth = 256;
 
-    private static BuildNode? ReadNode(string s, ref int pos, Func<string, PartDef?> find, List<string>? dropped, int depth = 0)
+    private static BuildNode? ReadNode(string s, ref int pos, Func<string, PartDef?> find, List<string>? dropped, List<(BuildNode, string)> removed, int depth = 0)
     {
         if (depth > MaxParseDepth)
             throw new FormatException($"parts nested more than {MaxParseDepth} deep");
@@ -230,7 +260,12 @@ public sealed class WeaponBuild
         if (name.Length == 0)
             throw new FormatException($"missing part name at {start}");
         var part = find(name) ?? (Renamed.TryGetValue(name, out var now) ? find(now) : null);
+        var gone = part == null && RemovedReceivers.TryGetValue(name, out var rr) ? rr : default;
+        if (gone.Receiver != null)
+            part = find(gone.Receiver);
         var node = part != null ? new BuildNode(part) : null;
+        if (node != null && gone.Receiver != null)
+            removed.Add((node, gone.Action));
         if (part == null)
             dropped?.Add($"{name} (no such part)");
         if (pos < s.Length && s[pos] == '{')
@@ -243,7 +278,7 @@ public sealed class WeaponBuild
                     throw new FormatException($"expected socket:part at {pos}");
                 var socket = s[pos..colon].Trim();
                 pos = colon + 1;
-                var child = ReadNode(s, ref pos, find, dropped, depth + 1);
+                var child = ReadNode(s, ref pos, find, dropped, removed, depth + 1);
                 if (node != null && child != null)
                 {
                     if (node.Part.Sockets.FirstOrDefault(x => x.Name.Equals(socket, StringComparison.OrdinalIgnoreCase)) is { } sock && sock.Type == child.Part.Mount)

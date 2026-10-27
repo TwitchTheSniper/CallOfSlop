@@ -726,7 +726,7 @@ public static partial class SelfTest
     private static void CheckZombieAmmoEffects(ref double now)
     {
         // Every flag a part carries either has a Zombies effect or is known to have none.
-        var known = new HashSet<string>(Game.ZombieEffectFlags, StringComparer.OrdinalIgnoreCase) { "suppressed", "cart" };
+        var known = new HashSet<string>(Game.ZombieEffectFlags, StringComparer.OrdinalIgnoreCase) { "suppressed", "cart", "marks" }; // (marks: the All-Seeing Eye's HUD marks, client side)
         var unknown = Parts.All.SelectMany(p => p.Flags).Distinct().Where(f => !known.Contains(f)).ToList();
         ZLine($"special ammo: {Game.ZombieEffectFlags.Count} flags with a Zombies effect ({string.Join(", ", Game.ZombieEffectFlags.Order())}); part flags without one: {(unknown.Count == 0 ? "none" : string.Join(", ", unknown))}");
         if (unknown.Count > 0)
@@ -837,6 +837,20 @@ public static partial class SelfTest
             g.SelfTestTickHorde(t += World.TickDt);
         Check("fish / bonk / nails", knocked > 0.4f && bonk.StunnedUntil >= t - 4 + g.ZRules.BonkStun - 0.01 && hb - bleed.Health >= (int)(200 * g.ZRules.BleedFraction) - 4,
             $"knocked back {knocked:0.00} m, bonk stun {g.ZRules.BonkStun:0.0} s, bled {hb - bleed.Health}");
+        Clear();
+
+        // Launch (the late-game heads and the Bowling Ball, 2026-10-27): thrown well up and away, much further than a knockback, and stunned.
+        var l0 = Z(0, 1.5f);
+        var l0p = l0.Position;
+        g.SelfTestEffects(me, ["launch", "fish"], l0, 10, t);
+        var rose = 0f;
+        for (var i = 0; i < 20; i++)
+        {
+            g.SelfTestTickHorde(t += World.TickDt);
+            rose = MathF.Max(rose, l0.Position.Y - l0p.Y);
+        }
+        var thrown = ZFlat(l0.Position - l0p);
+        Check("launch", thrown > knocked * 1.5f && rose > 0.8f && l0.StunnedUntil > t, $"thrown {thrown:0.00} m (a knockback {knocked:0.00} m), up {rose:0.00} m, stunned {l0.StunnedUntil > t}");
         Clear();
 
         // Party and refreshing: a kill floats away on balloons and gives a sip of health.
