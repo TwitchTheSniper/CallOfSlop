@@ -144,6 +144,7 @@ public sealed partial class Ui
             }
             ImGui.End();
         }
+        DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
         foreach (var pu in game.ZPowerUps)
         {
             var dx = pu.At.X - me.Position.X;
@@ -222,5 +223,39 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Orange, $"{game.NameOf(p.Id)} is down: revive them! ({(int)(game.ZP(p).BleedFraction * game.ZRules.BleedoutSeconds)} s)");
         }
         ImGui.End();
+    }
+
+    private readonly byte[] SlotWinLabelSeq = new byte[ZombiesMap.MaxSlotMachines];
+    private readonly string[] SlotWinLabels = new string[ZombiesMap.MaxSlotMachines];
+
+    /// <summary>
+    /// Over each slot machine within 9 m: its category ("BARREL SLOTS", in the category colour); while a win shows (to
+    /// everyone, within 25 m): who won what, in the rarity colour, over the turning part. The win text is made once per win.
+    /// </summary>
+    private void DrawSlotLabels(Game game, Player me, double now)
+    {
+        if (World.Map.Zombies is not { } zm)
+            return;
+        for (var i = 0; i < zm.SlotMachines.Count && i < game.ZSlots.Length; i++)
+        {
+            var spot = zm.SlotMachines[i];
+            var dx = spot.At.X - me.Position.X;
+            var dz = spot.At.Z - me.Position.Z;
+            var d2 = dx * dx + dz * dz;
+            var m = game.ZSlots[i];
+            if (game.SlotWinShowing(i, now) && d2 <= 25 * 25)
+            {
+                if (SlotWinLabelSeq[i] != m.WinSeq || SlotWinLabels[i] == null)
+                {
+                    SlotWinLabelSeq[i] = m.WinSeq;
+                    var who = m.WinPlayer == game.LocalId ? "You" : game.NameOf(m.WinPlayer);
+                    SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinScrapped ? " (scrapped)" : "")}";
+                }
+                var fade = (float)Math.Clamp((game.ZRules.SlotWinSeconds - (now - m.WinAt)) * 2, 0, 1);
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, 3.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
+            }
+            else if (d2 <= 9 * 9)
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, 2.75f, 0), Game.SlotMachineLabel(spot.SlotCategory), Game.SlotCategoryColor(spot.SlotCategory), 0.9f, 13f * _scale);
+        }
     }
 }

@@ -328,6 +328,7 @@ public static partial class SelfTest
         Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
         Section("Zombies mode", CheckZombiesMode); // SelfTestZombies.cs: rounds, spawners, doors, boards, buyables, downs, replication, a bots-only run
         Section("Zombies flow", CheckZombiesFlow); // SelfTestZombiesFlow.cs: crawling while downed, revives vs crawling, spectating the living, ready-up between rounds, respawn at the round's end
+        Section("Zombies category slots", CheckZombiesCategorySlots); // SelfTestZombiesCategorySlots.cs: a machine per part category: only its own parts, its own heat, prices, jackpot, distinct cabinets, the win every client sees
         Section("Zombies slots", CheckZombiesSlots); // SelfTestZombiesSlots.cs: slot machines: the odds by round, heat, jackpot rounds, the reels, payouts, bad-luck protection, the network copy
         Section("Zombies bot shopping", CheckZombiesBotShop); // SelfTestZombiesBotShop.cs: co-op bots spend their points (priorities, reserve, back at their post, safety, revives first, deterministic, no allocation)
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation

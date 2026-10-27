@@ -1,0 +1,189 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Ammo Reel Cabinet",
+ "category": "Zombies",
+ "description": "A Zombies slot machine that only pays ammo parts: the Reel Cabinet with a ammo-coloured band and, on top, three oversized cartridges standing up. The front faces -Z; the game draws the reels, the heat meter and the topper lights on it.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.9,
+    2.44,
+    0.7
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "use": "Reel Cabinet",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.76,
+    0.07,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.6,
+    -0.272
+   ],
+   "color": "#f2bf4d"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    -0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#f2bf4d"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#f2bf4d"
+  },
+  {
+   "size": [
+    0.13,
+    0.3,
+    0.13
+   ],
+   "offset": [
+    -0.22,
+    2.09,
+    0
+   ],
+   "color": "#c8961c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.1,
+    0.12,
+    0.1
+   ],
+   "offset": [
+    -0.22,
+    2.3,
+    0
+   ],
+   "color": "#b06a36"
+  },
+  {
+   "size": [
+    0.15,
+    0.03,
+    0.15
+   ],
+   "offset": [
+    -0.22,
+    1.955,
+    0
+   ],
+   "color": "#a07818"
+  },
+  {
+   "size": [
+    0.13,
+    0.36,
+    0.13
+   ],
+   "offset": [
+    0,
+    2.12,
+    0
+   ],
+   "color": "#c8961c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.1,
+    0.14,
+    0.1
+   ],
+   "offset": [
+    0,
+    2.37,
+    0
+   ],
+   "color": "#b06a36"
+  },
+  {
+   "size": [
+    0.15,
+    0.03,
+    0.15
+   ],
+   "offset": [
+    0,
+    1.955,
+    0
+   ],
+   "color": "#a07818"
+  },
+  {
+   "size": [
+    0.13,
+    0.3,
+    0.13
+   ],
+   "offset": [
+    0.22,
+    2.09,
+    0
+   ],
+   "color": "#c8961c",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.1,
+    0.12,
+    0.1
+   ],
+   "offset": [
+    0.22,
+    2.3,
+    0
+   ],
+   "color": "#b06a36"
+  },
+  {
+   "size": [
+    0.15,
+    0.03,
+    0.15
+   ],
+   "offset": [
+    0.22,
+    1.955,
+    0
+   ],
+   "color": "#a07818"
+  }
+ ]
+}

@@ -75,6 +75,7 @@ public enum Msg : byte
     VoiceInfo, // server -> one client: the host's voice settings (bit 0: voice chat allowed) (reliable)
     PEnts, // server -> each client: Co-op: the enemies near that client (interest-managed, 13 bytes each, 20 Hz) (unreliable sequenced; GamePveNet.cs)
     PEvent, // server -> one client or all: Co-op: a banner, kill / objective / mission XP, enemies cleared (reliable)
+    ZSlotWin, // server -> all: Zombies: a slot machine paid a part or a melee build (machine, player, result, index, tier, flags): shown over the machine and in the feed (reliable; ZombiesSlotWin.cs)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -63,6 +63,15 @@ public sealed class ZSlotMachine
     /// <summary>The paid part was turned into scrap (you already held <see cref="ZombiesRules.SlotAutoScrapAt"/> of it loose).</summary>
     public bool AutoScrapped;
 
+    // The last win, as everyone saw it (Msg.ZSlotWin, protocol 55): who, what (a part or a melee build: an index as in
+    // Part), its rarity, whether it was scrapped, and when it came in (this PC's clock). WinSeq counts wins (0: none yet).
+    public byte WinSeq, WinPlayer = byte.MaxValue;
+    public ZSlotResult WinResult;
+    public short WinIndex = -1;
+    public Rarity WinTier;
+    public bool WinScrapped;
+    public double WinAt = -1e9;
+
     // Client animation (Program.ZombiesSlots.cs): when the spin seen started, and how many reels have clicked to a stop.
     public byte SeenSpin;
     public double SpinStart = -1e9;
@@ -83,6 +92,13 @@ public sealed class ZSlotMachine
         Part = -1;
         Paid = 0;
         AutoScrapped = false;
+        WinSeq = 0;
+        WinPlayer = byte.MaxValue;
+        WinResult = ZSlotResult.Nothing;
+        WinIndex = -1;
+        WinTier = Rarity.Common;
+        WinScrapped = false;
+        WinAt = -1e9;
         SeenSpin = 0;
         SpinStart = -1e9;
         ReelsStopped = 3;
@@ -126,7 +142,40 @@ public sealed partial class Game
     }
 
     /// <summary>The 1x price of a pull on machine <paramref name="i"/> this round (the map's own price, or the rules' rising one).</summary>
-    public int SlotBaseCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count && zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound);
+    public int SlotBaseCost(ZombiesMap zm, int i) => i >= 0 && i < zm.SlotMachines.Count
+        ? zm.SlotMachines[i].Cost > 0 ? zm.SlotMachines[i].Cost : ZRules.SlotCost(ZRound, zm.SlotMachines[i].SlotCategory)
+        : ZRules.SlotCost(ZRound);
+
+    private static readonly string[] SlotNames = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c)} slot machine").ToArray();
+    private static readonly string[] SlotLabels = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c).ToUpperInvariant()} SLOTS").ToArray();
+
+    /// <summary>"Barrel slot machine" (a per-category machine) or "slot machine" (the classic one, any part).</summary>
+    public static string SlotMachineName(int category) => category >= 0 && category < SlotNames.Length ? SlotNames[category] : "slot machine";
+
+    /// <summary>The label over a machine ("BARREL SLOTS"; "SLOTS: ANY PART" for the classic one).</summary>
+    public static string SlotMachineLabel(int category) => category >= 0 && category < SlotLabels.Length ? SlotLabels[category] : "SLOTS: ANY PART";
+
+    /// <summary>A machine's category colour (its label and the plate on its topper; the props use the same colours).</summary>
+    public static Vector3 SlotCategoryColor(int category) => category switch
+    {
+        (int)PartCategory.Receiver => new(0.85f, 0.30f, 0.25f),
+        (int)PartCategory.Barrel => new(0.55f, 0.60f, 0.68f),
+        (int)PartCategory.Splitter => new(0.30f, 0.80f, 0.75f),
+        (int)PartCategory.Feed => new(0.85f, 0.65f, 0.20f),
+        (int)PartCategory.Ammo => new(0.95f, 0.75f, 0.30f),
+        (int)PartCategory.Stock => new(0.60f, 0.42f, 0.25f),
+        (int)PartCategory.Grip => new(0.45f, 0.75f, 0.35f),
+        (int)PartCategory.Optic => new(0.35f, 0.65f, 1.00f),
+        (int)PartCategory.Muzzle => new(1.00f, 0.50f, 0.20f),
+        (int)PartCategory.Utility => new(1.00f, 0.25f, 0.25f),
+        (int)PartCategory.Upgrade => new(0.75f, 0.50f, 1.00f),
+        (int)PartCategory.Multiplier => new(1.00f, 0.85f, 0.25f),
+        (int)PartCategory.Hilt => new(0.70f, 0.50f, 0.30f),
+        (int)PartCategory.Head => new(0.80f, 0.85f, 0.90f),
+        (int)PartCategory.MeleeMod => new(0.60f, 0.90f, 0.40f),
+        (int)PartCategory.Action => new(0.95f, 0.45f, 0.60f),
+        _ => new(1f, 0.78f, 0.2f),
+    };
 
     /// <summary>The price of a pull on machine <paramref name="i"/> at its bet.</summary>
     public int SlotCost(ZombiesMap zm, int i) => ZRules.SlotBetCost(SlotBaseCost(zm, i), i >= 0 && i < ZSlots.Length ? ZSlots[i].Bet : 0);
@@ -171,14 +220,14 @@ public sealed partial class Game
         var m = ZSlots[i];
         var cost = SlotCost(zm, i);
         if (zm.SlotMachines[i].NeedsPower && !ZPower)
-            return new ZUse(ZUseKind.SlotMachine, i, cost, "Slot machine: needs the power on", Blocked: true);
+            return new ZUse(ZUseKind.SlotMachine, i, cost, $"{SlotMachineName(zm.SlotMachines[i].SlotCategory)}: needs the power on", Blocked: true);
         if (m.State != ZSlotState.Idle)
             return new ZUse(ZUseKind.SlotMachine, i, cost, m.State == ZSlotState.Spinning ? "The reels are spinning..." : SlotResultText(m), Blocked: true);
         var step = Math.Max(1, ZRules.SlotHeatStep);
         var steps = Math.Min(ZRules.SlotHeatMaxSteps, m.Heat / step);
         var heat = steps >= ZRules.SlotHeatMaxSteps ? "heat MAX" : $"heat {m.Heat % step}/{step}{(steps > 0 ? $" (+{steps})" : "")}";
         var bet = ZRules.SlotBets.Length > 1 ? $" - bet {SlotBetName(m.Bet)} ([G] to change)" : "";
-        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the slot machine [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
+        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the {SlotMachineName(zm.SlotMachines[i].SlotCategory)} [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
     }
 
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
@@ -208,15 +257,20 @@ public sealed partial class Game
         m.Paid = cost;
         m.AutoScrapped = false;
         var jackpot = ZRules.SlotJackpot(ZRound);
+        var category = zm.SlotMachines[i].SlotCategory;
         var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext(), ZRules.SlotBetStep(m.Bet));
         if (result == ZSlotResult.Nothing && ZRules.SlotMaxNothing > 0 && zp.SlotNothing[i] >= ZRules.SlotMaxNothing)
             result = ZSlotResult.Scrap; // bad-luck protection: never more than maxNothing blanks in a row
+        if (result == ZSlotResult.Melee && !ZRules.SlotPaysMelee(category))
+            result = ZSlotResult.Part; // no blade on a gun category's reels: a part of the same tier (the same odds of a win)
         m.Part = -1;
         if (result == ZSlotResult.Part)
         {
-            m.Part = PickSlotPart(tier, ZNext());
+            m.Part = PickSlotPart(tier, ZNext(), category, jackpot);
             if (m.Part < 0)
                 result = ZSlotResult.Scrap; // no part of that tier (a modded part set): scrap instead
+            else
+                tier = Parts.All[m.Part].Rarity; // (a category without that tier pays its nearest: the reels show what's paid)
         }
         else if (result == ZSlotResult.Melee)
         {
@@ -230,6 +284,37 @@ public sealed partial class Game
         m.Tier = tier;
         SlotSymbols(result, tier, jackpot, ZNext(), m.Symbols);
         Audio.Effect3D(Sfx.StreakCall, zm.SlotMachines[i].At + new Vector3(0, 1.2f, 0), 0.6f);
+    }
+
+    /// <summary>
+    /// A part of category <paramref name="category"/> (-1: any) for a slot payout: of <paramref name="tier"/>, else the
+    /// nearest tier that category has (lower first; wonder only in a jackpot round), as an index into <see cref="Parts.All"/>;
+    /// -1 when the category has no parts. No allocation.
+    /// </summary>
+    public static short PickSlotPart(Rarity tier, uint seed, int category, bool jackpot)
+    {
+        if (category < 0)
+            return PickSlotPart(tier, seed);
+        var all = Parts.All;
+        var top = (int)(jackpot ? Rarity.Wonder : Rarity.Legendary);
+        for (var step = 0; step <= (int)Rarity.Wonder; step++)
+            for (var side = 0; side < (step == 0 ? 1 : 2); side++)
+            {
+                var t = (int)tier + (side == 0 ? -step : step);
+                if (t < 0 || t > Math.Max(top, (int)tier))
+                    continue;
+                var n = 0;
+                foreach (var part in all)
+                    if ((int)part.Category == category && (int)part.Rarity == t)
+                        n++;
+                if (n == 0)
+                    continue;
+                var k = (int)((seed * 2654435761u) % (uint)n);
+                for (var i = 0; i < all.Length; i++)
+                    if ((int)all[i].Category == category && (int)all[i].Rarity == t && k-- == 0)
+                        return (short)i;
+            }
+        return -1;
     }
 
     /// <summary>A part of <paramref name="tier"/> (the same pool as zombie part drops), or -1. No allocation.</summary>
@@ -380,7 +465,6 @@ public sealed partial class Game
             return; // (the player left mid-spin)
         var zp = ZP(p);
         zp.SlotNothing[i] = m.Result == ZSlotResult.Nothing ? (byte)Math.Min(255, zp.SlotNothing[i] + 1) : (byte)0;
-        var at = zm.SlotMachines[i].At + new Vector3(0, 1.2f, 0);
         switch (m.Result)
         {
             case ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length:
@@ -394,11 +478,7 @@ public sealed partial class Game
                 else
                     zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1;
                 SendZRun(p);
-                if (m.Tier >= Rarity.Legendary)
-                    ModeEvent($"{p.Name} hit the jackpot on a slot machine: {PartDef.RarityName(m.Tier)} {part.Name}!", Sfx.StreakReady);
-                else
-                    ZFeedTo(p, $"Slot machine: {SlotResultText(m)}", Sfx.LevelUp);
-                Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
+                ServerSlotWin(i, m, p); // everyone sees it: the part over the machine and a line in the feed (protocol 55)
                 break;
             }
             case ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length:
@@ -413,11 +493,7 @@ public sealed partial class Game
                     SpawnWeaponDrop(old, DropSpots(spot.At + World.FlatForward(spot.Yaw) * 3.2f, 1, p.Id)[0], now + ZRules.BuildDropSeconds, p, full: true, now);
                 }
                 GiveBuild(p, 4, sb.Build(), full: true);
-                if (m.Tier >= Rarity.Legendary)
-                    ModeEvent($"{p.Name} won a {PartDef.RarityName(m.Tier)} melee build on a slot machine: the {sb.Name}!", Sfx.StreakReady);
-                else
-                    ZFeedTo(p, $"Slot machine: {SlotResultText(m)} (in your melee slot)", Sfx.LevelUp);
-                Audio.Effect3D(m.Tier >= Rarity.Epic ? Sfx.StreakReady : Sfx.LevelUp, at, 0.8f);
+                ServerSlotWin(i, m, p);
                 break;
             }
             case ZSlotResult.Scrap:

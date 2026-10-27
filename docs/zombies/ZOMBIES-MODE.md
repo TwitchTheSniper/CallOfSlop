@@ -253,7 +253,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "slotUpgrade": {"at": [x, z], "yaw": -90, "cost": 4000},
   "power": {"at": [x, z], "yaw": -90},
   "salvage": [ {"at": [x, z], "cost": 25} ],
-  "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0} ],
+  "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0, "category": "Barrel"} ],
   "machineProps": true
 }
 ```
@@ -370,10 +370,56 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   client copy.
 - **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
   would-be blank pays scrap instead.
-- **Placement**: Blackmoor Asylum has two (the Receiving Hall, against the east wall by the Ward Door, and the Research
-  Lab, which needs the power); Zombies Test two (the start room, and the Power Room on the power). Map key `"slots"`
-  (spots like a perk machine's: `at`, `yaw`, `power`, `cost`), at most 8; with machine props each stands as a solid
-  **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall, its front facing the yaw).
+- **Placement**: Map key `"slots"` (spots like a perk machine's: `at`, `yaw`, `power`, `cost`, and an optional
+  `category`, below), at most 24; with machine props each stands as a solid **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall,
+  its front facing the yaw), a category machine as its own cabinet. Blackmoor Asylum: the classic machine in the
+  Receiving Hall and ten category machines round the map (below); Zombies Test: two classic ones (the start room, and the
+  Power Room on the power) and the **Arcade** (behind the West Wing, the Arcade Door, 750) with one machine for every
+  category in a row.
+
+### A machine per part category (board item, 2026-10-26)
+
+"A separate slot machine for every weapon part category, each with its own distinct machine shape; each machine only
+rolls parts from its own category; when a player wins a part, a visible display of what they got that nearby teammates
+can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotWin.cs` (the win message),
+`Source/App/Program.ZombiesSlots.cs` (drawing), `Source/UI/UiZombies.cs` (labels); props `Props/Zombies/SlotMachines/`
+(written by `tools/zombies/make_slot_cabinets.py`); self-test section "Zombies category slots".
+
+- **Which categories.** All sixteen part categories (`PartCategory`): Receiver, Barrel, Splitter, Feed, Ammo, Stock, Grip,
+  Optic, Muzzle, Utility, Receiver Upgrade, Damage Multiplier, Hilt, Head, Melee Mod, Action. A map's slot entry names
+  one with `"category"` (the enum name or the display name, case-insensitive; an unknown one refuses the map); without
+  it the machine is the **classic** one and pays any part, as before.
+- **The rules are the classic machine's, per machine.** The same `slotTiers` odds by round, bad-luck protection, bets,
+  jackpot rounds (wonder parts on every machine's reels) and **its own heat** (pulls on one machine never warm another).
+  A part result picks a part of the machine's category of the rolled tier, or the **nearest tier that category has**
+  (lower first; never wonder outside a jackpot round); the reels then show the tier actually paid. The blade (a whole
+  melee build) is only on the classic machine and the **melee categories** (Hilt, Head, Melee Mod); on a gun category's
+  machine a melee result pays a part of that tier instead, so the chance of a win is the same everywhere.
+- **Prices (proposed).** `ZombiesRules.json` `slots.machines.<Category>.price`: a multiple of the classic price (to the
+  nearest 10), so it still rises with the round and the bets multiply it: Receiver 1.2, Barrel 0.9, Splitter 1.3, Feed
+  0.9, Ammo 0.8, Stock 0.8, Grip 1.0, Optic 1.0, Muzzle 0.8, Utility 0.8, Receiver Upgrade 1.2, Damage Multiplier 1.4,
+  Hilt 0.9, Head 0.9, Melee Mod 0.8, Action 1.1; `melee` turns the blade on or off per category. A map spot's `cost`
+  still overrides the price.
+- **Shapes.** Each category has its own cabinet: the classic Reel Cabinet (a prefab `use`, so the reels and lights line
+  up) with a band and side stripes in the category colour and an original silhouette on top: a barrel with a muzzle
+  ring and shroud, a scope with bells and turrets, three cartridges, a curved magazine, a skeleton stock, a raked pistol
+  grip, a ported brake, a laser on a rail, a cog, a cross between two power cells, a manifold with three tubes, a
+  receiver block, a sword hilt, an axe head, a nailed club, a bolt with its spring. Zombies Test (no machine props)
+  draws the same cabinet without collision. Over each machine within 9 m a label names it ("BARREL SLOTS", "SLOTS:
+  ANY PART") in the category colour; the prompt says "Hold [E] to pull the Barrel slot machine".
+- **The win, for everyone.** When a machine pays a part or a melee build the server sends `Msg.ZSlotWin` (protocol 55:
+  machine, player, result, the part or build index, tier, scrapped flag) to every client. Every PC then shows for
+  `winSeconds` (4 s) the won part's **own model** turning over the machine with a halo of glow boxes and a beam in the
+  rarity colour, a label "Name: a Rare Long Barrel" over it (within 25 m), and a kill-feed line in the rarity colour
+  ("Name won a Rare Long Barrel on the Barrel slot machine!"); legendary and wonder wins add a light pillar, sparks
+  spiralling up and a sound heard across the map. A duplicate turned into scrap says so. The old feed lines for slot
+  wins are replaced by this one.
+- **Blackmoor Asylum's spread (proposed).** Receiving Hall: the classic machine; East Ward: Barrel; West Offices: Grip,
+  Stock; Courtyard: Ammo, Feed (against the hall's back wall); Generator House: Action; Chapel: Hilt, Head; Research Lab
+  (on the power): Receiver, Optic. Splitter, Utility, Receiver Upgrade, Damage Multiplier and Melee Mod parts come from
+  the classic machine there (and drops and crafting).
+- **Open questions for the developer.** Every map all machines, or a selection (as now)? The per-category prices above?
+  Should the classic any-part machine stay next to the category ones?
 - **Network (protocol 51).** `ZWorld` ends with the machines: a count, then 11 bytes each (state, heat, owner, a spin
   counter, the three symbols, result / tier / auto-scrapped, the part, tenths of a second left); protocol 53 adds result 4
   (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
@@ -391,6 +437,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
 | `scrapPayout`, `pointsBack`, `autoScrapAt` | 40, 1.5, 3 | scrap for a cog, points back (x the price) for a coin, auto-scrap from this many loose |
 | `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
+| `winSeconds` | 4 | how long a win shows over the machine |
+| `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |
 | `DropTables.json` `slotTiers` `melee` | 5 | the weight of a complete melee build (its tier from the row's part weights) |
 
 ## Dropped builds (user decision, 2026-10-21)

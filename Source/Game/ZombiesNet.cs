@@ -345,6 +345,9 @@ public sealed partial class Game
             case (byte)Msg.ZWorld when !IsServer:
                 ReadZWorld(ref r, now);
                 break;
+            case (byte)Msg.ZSlotWin when !IsServer && r.Has(ZSlotWinBytes):
+                ReadSlotWin(ref r); // a slot machine win: over the machine and in the feed (ZombiesSlotWin.cs)
+                break;
             case (byte)Msg.ZEvent when !IsServer && r.Has(4):
             {
                 var kind = (ZEventKind)r.U8();

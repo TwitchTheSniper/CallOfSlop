@@ -234,6 +234,33 @@ public sealed class ZombiesRules
     /// <summary>Is <paramref name="round"/> a jackpot round?</summary>
     public bool SlotJackpot(int round) => SlotJackpotEvery > 0 && round > 0 && round % SlotJackpotEvery == 0;
 
+    /// <summary>
+    /// Per-category slot machines ("slots.machines" in the rules file; ZombiesSlots.cs): each part category's price as a
+    /// multiple of the classic machine's (indexed by <see cref="PartCategory"/>), and whether its reels carry the blade (a
+    /// whole melee build: on by default for the melee categories only; a gun category's machine pays a part of that
+    /// tier instead). The classic machine (no category) keeps the price and the blade.
+    /// </summary>
+    public float[] SlotCategoryPrice = DefaultCategoryPrices();
+
+    public bool[] SlotCategoryMelee = Enum.GetValues<PartCategory>().Select(c => c is PartCategory.Hilt or PartCategory.Head or PartCategory.MeleeMod).ToArray();
+
+    private static float[] DefaultCategoryPrices()
+    {
+        var a = new float[Enum.GetValues<PartCategory>().Length];
+        Array.Fill(a, 1f);
+        return a;
+    }
+
+    /// <summary>How long a slot machine's win shows over it (the won part's model) for everyone near, in seconds.</summary>
+    public float SlotWinSeconds = 4f;
+
+    /// <summary>The 1x price of a pull in <paramref name="round"/> on a machine of <paramref name="category"/> (-1: the classic machine), to the nearest 10.</summary>
+    public int SlotCost(int round, int category) =>
+        category < 0 || category >= SlotCategoryPrice.Length ? SlotCost(round) : (int)MathF.Round(SlotCost(round) * SlotCategoryPrice[category] / 10f) * 10;
+
+    /// <summary>Does a machine of <paramref name="category"/> (-1: classic) pay whole melee builds?</summary>
+    public bool SlotPaysMelee(int category) => category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category];
+
     /// <summary>Reserve ammo: magazines of reserve a bought gun comes with (the start guns get fewer), and the wall ammo price as a share of the gun's.</summary>
     public int ReserveMags = 6, StartReserveMags = 4;
 
@@ -692,6 +719,27 @@ public sealed class ZombiesRules
                             case "scrapPayout": r.SlotScrap = Whole(v, w, 0, 10000); break;
                             case "pointsBack": r.SlotPointsBack = Real(v, w, 0, 20); break;
                             case "autoScrapAt": r.SlotAutoScrapAt = Whole(v, w, 0, 100); break;
+                            case "winSeconds": r.SlotWinSeconds = Real(v, w, 0.5f, 30); break;
+                            case "machines":
+                                Fields(v, w, (ck, cv, cw) =>
+                                {
+                                    if (ck == "note")
+                                        return true;
+                                    if (!Enum.TryParse<PartCategory>(ck, false, out var cat) || !Enum.IsDefined(cat))
+                                        throw new WeaponFileException($"{cw}: not a part category ({string.Join(", ", Enum.GetValues<PartCategory>())})");
+                                    Fields(cv, cw, (mk, mv, mw) =>
+                                    {
+                                        switch (mk)
+                                        {
+                                            case "price": r.SlotCategoryPrice[(int)cat] = Real(mv, mw, 0.1f, 20); break;
+                                            case "melee": r.SlotCategoryMelee[(int)cat] = Flag(mv, mw); break;
+                                            default: return false;
+                                        }
+                                        return true;
+                                    });
+                                    return true;
+                                });
+                                break;
                             default: return false;
                         }
                         return true;

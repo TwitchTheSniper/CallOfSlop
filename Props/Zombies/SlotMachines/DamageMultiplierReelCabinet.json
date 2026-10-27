@@ -1,0 +1,198 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Damage Multiplier Reel Cabinet",
+ "category": "Zombies",
+ "description": "A Zombies slot machine that only pays damage multiplier parts: the Reel Cabinet with a damage multiplier-coloured band and, on top, a big cross mark between two power cells. The front faces -Z; the game draws the reels, the heat meter and the topper lights on it.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.9,
+    2.22,
+    0.7
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "use": "Reel Cabinet",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.76,
+    0.07,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.6,
+    -0.272
+   ],
+   "color": "#ffd940"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    -0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#ffd940"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#ffd940"
+  },
+  {
+   "size": [
+    0.44,
+    0.08,
+    0.07
+   ],
+   "offset": [
+    0,
+    2.18,
+    0
+   ],
+   "color": "#ffd940",
+   "rotation": [
+    0,
+    0,
+    45
+   ]
+  },
+  {
+   "size": [
+    0.44,
+    0.08,
+    0.07
+   ],
+   "offset": [
+    0,
+    2.18,
+    0
+   ],
+   "color": "#ffd940",
+   "rotation": [
+    0,
+    0,
+    -45
+   ]
+  },
+  {
+   "size": [
+    0.06,
+    0.1,
+    0.06
+   ],
+   "offset": [
+    0,
+    1.99,
+    0
+   ],
+   "color": "#3a3d42"
+  },
+  {
+   "size": [
+    0.1,
+    0.22,
+    0.1
+   ],
+   "offset": [
+    -0.33,
+    2.05,
+    0
+   ],
+   "color": "#3a3d42",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.05,
+    0.04,
+    0.05
+   ],
+   "offset": [
+    -0.33,
+    2.18,
+    0
+   ],
+   "color": "#8a9099"
+  },
+  {
+   "size": [
+    0.1,
+    0.22,
+    0.1
+   ],
+   "offset": [
+    0.33,
+    2.05,
+    0
+   ],
+   "color": "#3a3d42",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.05,
+    0.04,
+    0.05
+   ],
+   "offset": [
+    0.33,
+    2.18,
+    0
+   ],
+   "color": "#8a9099"
+  },
+  {
+   "size": [
+    0.02,
+    0.12,
+    0.01
+   ],
+   "offset": [
+    -0.33,
+    2.05,
+    -0.055
+   ],
+   "color": "#ffd940"
+  },
+  {
+   "size": [
+    0.02,
+    0.12,
+    0.01
+   ],
+   "offset": [
+    0.33,
+    2.05,
+    -0.055
+   ],
+   "color": "#ffd940"
+  }
+ ]
+}

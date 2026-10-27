@@ -109,7 +109,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     the standard builds) and the reels gain the blade symbol (9).
     // 54: Zombies box disassembly fix (2026-10-26): Msg.ZBench kind 5 takes the mystery box's OFFERED build apart (the slot byte
     //     is ignored); kind 3 (a slot's build) now only works at a workbench.
-    public const byte ProtocolVersion = 54;
+    // 55: per-category Zombies slot machines (Source/Game/ZombiesSlotWin.cs): Msg.ZSlotWin (machine, player, result, part or
+    //     melee build index, tier, flags) shows every win to everyone; a map's slot machine may name a part "category".
+    public const byte ProtocolVersion = 55;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

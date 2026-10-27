@@ -1,0 +1,181 @@
+{
+ "format": "call-of-slop-prop/1",
+ "name": "Splitter Reel Cabinet",
+ "category": "Zombies",
+ "description": "A Zombies slot machine that only pays splitter parts: the Reel Cabinet with a splitter-coloured band and, on top, a manifold block splitting into three tubes that fan out. The front faces -Z; the game draws the reels, the heat meter and the topper lights on it.",
+ "collision": "solid",
+ "collider": [
+  {
+   "size": [
+    0.9,
+    2.46,
+    0.7
+   ]
+  }
+ ],
+ "scatter": {
+  "randomYaw": false,
+  "yawStep": 90
+ },
+ "parts": [
+  {
+   "use": "Reel Cabinet",
+   "pos": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "size": [
+    0.76,
+    0.07,
+    0.02
+   ],
+   "offset": [
+    0,
+    1.6,
+    -0.272
+   ],
+   "color": "#4dccbf"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    -0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#4dccbf"
+  },
+  {
+   "size": [
+    0.035,
+    0.9,
+    0.06
+   ],
+   "offset": [
+    0.435,
+    1.05,
+    -0.24
+   ],
+   "color": "#4dccbf"
+  },
+  {
+   "size": [
+    0.24,
+    0.2,
+    0.24
+   ],
+   "offset": [
+    0,
+    2.04,
+    0
+   ],
+   "color": "#3a3d42",
+   "material": "metal"
+  },
+  {
+   "size": [
+    0.09,
+    0.3,
+    0.09
+   ],
+   "offset": [
+    0,
+    2.28,
+    0
+   ],
+   "color": "#4dccbf"
+  },
+  {
+   "size": [
+    0.09,
+    0.32,
+    0.09
+   ],
+   "offset": [
+    -0.15,
+    2.24,
+    0
+   ],
+   "color": "#4dccbf",
+   "rotation": [
+    0,
+    0,
+    35
+   ]
+  },
+  {
+   "size": [
+    0.09,
+    0.32,
+    0.09
+   ],
+   "offset": [
+    0.15,
+    2.24,
+    0
+   ],
+   "color": "#4dccbf",
+   "rotation": [
+    0,
+    0,
+    -35
+   ]
+  },
+  {
+   "size": [
+    0.12,
+    0.04,
+    0.12
+   ],
+   "offset": [
+    0,
+    2.44,
+    0
+   ],
+   "color": "#8a9099"
+  },
+  {
+   "size": [
+    0.12,
+    0.04,
+    0.12
+   ],
+   "offset": [
+    -0.25,
+    2.38,
+    0
+   ],
+   "color": "#8a9099",
+   "rotation": [
+    0,
+    0,
+    35
+   ]
+  },
+  {
+   "size": [
+    0.12,
+    0.04,
+    0.12
+   ],
+   "offset": [
+    0.25,
+    2.38,
+    0
+   ],
+   "color": "#8a9099",
+   "rotation": [
+    0,
+    0,
+    -35
+   ]
+  }
+ ]
+}

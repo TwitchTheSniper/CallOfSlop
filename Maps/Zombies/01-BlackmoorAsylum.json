@@ -2727,7 +2727,81 @@
      8.4
     ],
     "yaw": -90,
-    "power": true
+    "power": true,
+    "category": "Receiver"
+   },
+   {
+    "at": [
+     11.8,
+     3.6
+    ],
+    "yaw": 0,
+    "category": "Barrel"
+   },
+   {
+    "at": [
+     -14.6,
+     -7.6
+    ],
+    "yaw": 180,
+    "category": "Grip"
+   },
+   {
+    "at": [
+     -7.7,
+     2.7
+    ],
+    "yaw": -90,
+    "category": "Stock"
+   },
+   {
+    "at": [
+     5.0,
+     -8.7
+    ],
+    "yaw": 0,
+    "category": "Ammo"
+   },
+   {
+    "at": [
+     -5.0,
+     -8.7
+    ],
+    "yaw": 0,
+    "category": "Feed"
+   },
+   {
+    "at": [
+     25.6,
+     -14.2
+    ],
+    "yaw": -90,
+    "category": "Action"
+   },
+   {
+    "at": [
+     -6.7,
+     7.0
+    ],
+    "yaw": -90,
+    "category": "Hilt"
+   },
+   {
+    "at": [
+     -11.6,
+     15.6
+    ],
+    "yaw": 0,
+    "category": "Head"
+   },
+   {
+    "at": [
+     6.7,
+     5.2
+    ],
+    "yaw": 90,
+    "power": true,
+    "category": "Optic"
    }
   ]
  }
