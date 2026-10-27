@@ -159,8 +159,9 @@ public sealed partial class Game
             foreach (var s in _zActive)
             {
                 var best = float.MaxValue;
-                for (var t = 0; t < HordeAI.TargetCount; t++)
-                    best = MathF.Min(best, Vector3.DistanceSquared(HordeAI.Targets[t].Pos, zm.Spawners[s].At));
+                for (var t = 0; t < HordeController<Zombie>.MaxTargets; t++)
+                    if (HordeAI.Targets[t].Live)
+                        best = MathF.Min(best, Vector3.DistanceSquared(HordeAI.Targets[t].Pos, zm.Spawners[s].At));
                 _zSpawnKey[s] = best;
             }
             // Insertion sort by distance, then index (a few dozen spawners at most; no allocation).
@@ -457,7 +458,7 @@ public sealed partial class Game
         // Its group's target (the horde controller spreads the horde over the players); a lure draws it instead.
         var lured = m.Group == ai.LureGroup && ai.LureUntil >= 0;
         Player? target = null;
-        if (m.TargetSlot >= 0 && m.TargetSlot < ai.TargetCount)
+        if (ai.IsLive(m.TargetSlot))
             Players.TryGetValue(ai.Targets[m.TargetSlot].Id, out target);
         z.Target = target?.Id ?? byte.MaxValue;
         if (target == null && !lured)

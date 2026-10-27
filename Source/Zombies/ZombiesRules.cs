@@ -140,10 +140,10 @@ public sealed class ZombiesRules
     public float MaxAlivePerExtraPlayer = 0.15f;
 
     /// <summary>Zombies that come out at once per spawn (late rounds fill a big cap faster), by round.</summary>
-    public RoundCurve SpawnBurstCurve = new([(1, 1), (12, 1), (20, 2), (30, 3), (40, 4)]);
+    public RoundCurve SpawnBurstCurve = new([(1, 1), (12, 1), (20, 3), (30, 5), (40, 6)]);
 
     /// <summary>How many of the spawners nearest the players are used, by round (late rounds spread a horde over more of them).</summary>
-    public RoundCurve ActiveSpawnersCurve = new([(1, 4), (15, 4), (25, 6), (35, 8)]);
+    public RoundCurve ActiveSpawnersCurve = new([(1, 4), (15, 4), (25, 7), (35, 10)]);
 
     /// <summary>A spawner rests this long (seconds) after a zombie came out of it (spreads a burst over the spawners).</summary>
     public float SpawnerCooldown = 0.6f;

@@ -160,6 +160,7 @@ public static partial class SelfTest
         long bytes = 0;
         var biggest = 0;
         var alloc = 0L;
+        int nearAgeWorst = 0, nearCount = 0;
         for (var t = 0; t < 60 * 3; t++)
         {
             now += World.TickDt;
@@ -183,8 +184,16 @@ public static partial class SelfTest
                 alloc += GC.GetAllocatedBytesForCurrentThread() - b0;
                 bytes += w.Length;
                 biggest = Math.Max(biggest, w.Length);
+                if (t > 30)
+                    foreach (var z in g.Horde)
+                        if (z.Hm.Slot >= 0 && ZFlat(z.Position - me.Position) < Game.ZEntNear * 0.8f)
+                        {
+                            nearAgeWorst = Math.Max(nearAgeWorst, view.Age[z.Hm.Slot]);
+                            nearCount = Math.Max(nearCount, 1);
+                        }
             }
         }
+        var nearNow = g.Horde.Count(z => ZFlat(z.Position - me.Position) < Game.ZEntNear * 0.8f);
         // The least of a few more identical seconds if this one saw bytes (a one-off runtime allocation can't fail it).
         var tNow = now;
         alloc = RecheckAllocBytes(alloc, () =>
@@ -270,7 +279,7 @@ public static partial class SelfTest
         }) / 20;
         var clientMs = readMs * 30 / 60 + poseMs + soundMs; // per 60 Hz frame: half a snapshot read, the posing and drawing, the sounds
         HLine($"horde {count}: {g.AliveZombies} alive, server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
-              + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}); "
+              + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}; {nearNow} within {Game.ZEntNear * 0.8f:0} m at the end, the longest a near one waited {nearAgeWorst} snapshots); "
               + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
         if (g.AliveZombies != count)
             Fail($"horde {count}: zombies died or vanished in the scripted horde ({g.AliveZombies} alive)");
@@ -487,7 +496,7 @@ public static partial class SelfTest
         var nearBlast = g.Horde.Where(z => ZFlat(z.Position - centre) < 4f).ToList();
         var d0 = nearBlast.Count > 0 ? nearBlast.Average(z => (double)ZFlat(z.Position - centre)) : 0;
         g.SelfTestBlast(mate, centre + new Vector3(0, 0.3f, 0), 3f, 1f, now);
-        ZTicks(g, ref now, 0.5);
+        ZTicks(g, ref now, g.ZRules.Horde.ExplosionStagger + g.ZRules.Horde.ScatterSeconds); // staggered, then away
         var d1 = nearBlast.Count > 0 ? nearBlast.Average(z => (double)ZFlat(z.Position - centre)) : 0;
         var gi = g.HordeAI.TargetGroup(Math.Max(0, g.HordeAI.SlotOf(mate.Id)));
         var regrouping = g.HordeAI.Groups[gi].Mode == HordeGroupMode.Regroup;
@@ -497,7 +506,7 @@ public static partial class SelfTest
         // The mate goes down: everyone after them goes for the host.
         var onMate = g.Horde.Count(z => z.Target == mate.Id);
         g.SelfTestDown(mate, now);
-        ZTicks(g, ref now, 0.2);
+        ZTicks(g, ref now, g.ZRules.ZombieWindup + 0.2); // (a swipe already under way lands first)
         var afterDown = g.Horde.Count(z => z.Target == mate.Id);
         var alive = g.Horde.Count(z => z.Alive);
         var onHost = g.Horde.Count(z => z.Target == me.Id);
@@ -532,9 +541,16 @@ public static partial class SelfTest
         me.Teleport(FreeSpot(map, zm.Areas[zm.StartArea]));
         var lab = zm.AreaIndex("Research Lab");
         HordePlace(g, map, zm, 12, now, 99u, _ => lab);
-        ZTicks(g, ref now, 8.0);
+        var trace = new List<string>();
+        for (var k = 0; k < 24; k++)
+        {
+            ZTicks(g, ref now, 0.5);
+            var tg = g.HordeAI.Groups[g.HordeAI.TargetGroup(Math.Max(0, g.HordeAI.SlotOf(me.Id)))];
+            if (k % 2 == 1)
+                trace.Add($"{tg.MeanDist:0.0}{(tg.Mode == HordeGroupMode.Regroup ? "R" : "")}");
+        }
         var gi = g.HordeAI.TargetGroup(Math.Max(0, g.HordeAI.SlotOf(me.Id)));
-        HLine($"blocked: 12 zombies shut in the {zm.Areas[lab].Name} (every door shut), the host out of reach: the group regrouped {g.HordeAI.Groups[gi].Regroups} time(s) in 8 s");
+        HLine($"blocked: 12 zombies shut in the {zm.Areas[lab].Name} (every door shut), the host out of reach: the group regrouped {g.HordeAI.Groups[gi].Regroups} time(s) in 12 s (mean distance each second: {string.Join(" ", trace)}; R regrouping)");
         if (g.HordeAI.Groups[gi].Regroups < 1)
             Fail("a group getting nowhere should regroup");
     }

@@ -67,6 +67,9 @@ public enum HordeStimulusKind : byte
 /// <summary>Something the horde can go for: a standing player, with its zone (Zombies area).</summary>
 public struct HordeTarget
 {
+    /// <summary>A target this tick (the slot is in use), and last tick.</summary>
+    public bool Live, WasLive;
+
     public byte Id;
     public Vector3 Pos;
     public int Area;

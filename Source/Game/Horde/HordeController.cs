@@ -85,10 +85,18 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     public readonly HordeGrid Grid = new();
     public readonly HordeFlowFields Flow = new();
 
-    /// <summary>What the horde can go for this tick (the game fills it with <see cref="ClearTargets"/> / <see cref="AddTarget"/>).</summary>
+    /// <summary>
+    /// What the horde can go for this tick (the game fills it with <see cref="ClearTargets"/> / <see cref="AddTarget"/>).
+    /// Slots are stable: a player keeps their slot (and so their group) while they stay a target; a slot that isn't
+    /// <see cref="HordeTarget.Live"/> this tick is empty.
+    /// </summary>
     public readonly HordeTarget[] Targets = new HordeTarget[MaxTargets];
 
+    /// <summary>Live targets this tick.</summary>
     public int TargetCount;
+
+    /// <summary>Is slot <paramref name="slot"/> a live target this tick?</summary>
+    public bool IsLive(int slot) => (uint)slot < MaxTargets && Targets[slot].Live;
 
     /// <summary>The barriers (Zombies windows), set once per map (<see cref="Setup"/>); the game keeps <see cref="HordePortal.Open"/> current.</summary>
     public HordePortal[] Portals = [];
@@ -156,19 +164,47 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             g.CheckAt = 0;
             g.Regroups = g.SplitOut = g.Joined = 0;
         }
+        Array.Clear(Targets);
         TargetCount = 0;
     }
 
-    public void ClearTargets() => TargetCount = 0;
+    public void ClearTargets()
+    {
+        for (var i = 0; i < MaxTargets; i++)
+        {
+            Targets[i].WasLive = Targets[i].Live;
+            Targets[i].Live = false;
+        }
+        TargetCount = 0;
+    }
 
     /// <summary>A target for this tick (players standing, in id order). Keeps its nav node while it stays near it.</summary>
     public void AddTarget(byte id, Vector3 pos, int area)
     {
-        if (TargetCount >= MaxTargets)
+        // Its slot from last tick, else a slot nobody had last tick, else any free one.
+        var slot = -1;
+        for (var i = 0; i < MaxTargets && slot < 0; i++)
+            if (Targets[i].WasLive && !Targets[i].Live && Targets[i].Id == id)
+                slot = i;
+        for (var i = 0; i < MaxTargets && slot < 0; i++)
+            if (!Targets[i].WasLive && !Targets[i].Live)
+                slot = i;
+        for (var i = 0; i < MaxTargets && slot < 0; i++)
+            if (!Targets[i].Live)
+                slot = i;
+        if (slot < 0)
             return;
-        var slot = TargetCount++;
+        TargetCount++;
         ref var t = ref Targets[slot];
-        var keep = t.Id == id && t.Node >= 0 && t.Node < _nav.Nodes.Length;
+        var same = t.WasLive && t.Id == id;
+        if (!same && Groups.Length > TargetGroup(slot))
+        {
+            var g = Groups[TargetGroup(slot)]; // someone new in this slot: its group starts afresh
+            g.Mode = HordeGroupMode.Advance;
+            g.CheckDist = float.MaxValue;
+        }
+        t.Live = true;
+        var keep = same && t.Node >= 0 && t.Node < _nav.Nodes.Length;
         t.Id = id;
         t.Pos = pos;
         t.Area = area;
@@ -182,8 +218,8 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     /// <summary>The target slot for player <paramref name="id"/>, or -1.</summary>
     public int SlotOf(byte id)
     {
-        for (var i = 0; i < TargetCount; i++)
-            if (Targets[i].Id == id)
+        for (var i = 0; i < MaxTargets; i++)
+            if (Targets[i].Live && Targets[i].Id == id)
                 return i;
         return -1;
     }
@@ -244,9 +280,11 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         }
         Grid.Build(_pos.AsSpan(0, n), _active.AsSpan(0, n));
 
-        for (var t = 0; t < TargetCount; t++)
+        for (var t = 0; t < MaxTargets; t++)
         {
             ref var tg = ref Targets[t];
+            if (!tg.Live)
+                continue;
             if (tg.Node < 0 && nav.Nodes.Length > 0)
                 tg.Node = nav.Nearest(tg.Pos, needSight: false);
             tg.Pressure = tg.Engaged = 0;
@@ -276,8 +314,10 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             var pos = _pos[i];
             var nearest = float.MaxValue;
             var nearSlot = -1;
-            for (var t = 0; t < TargetCount; t++)
+            for (var t = 0; t < MaxTargets; t++)
             {
+                if (!Targets[t].Live)
+                    continue;
                 var d = Flat(Targets[t].Pos - pos);
                 if (d < nearest)
                 {
@@ -300,7 +340,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
                 m.TargetSlot = nearSlot; // (swipes at whoever is near the lure)
             else
             {
-                var valid = m.Group >= Portals.Length && m.Group < Portals.Length + TargetCount && m.Group != LureGroup;
+                var valid = m.Group >= Portals.Length && m.Group != LureGroup && IsLive(m.Group - Portals.Length);
                 if (!valid)
                 {
                     if (m.Group >= Portals.Length && m.Group != LureGroup && TargetCount > 0)
@@ -315,7 +355,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
                     if (best >= 0 && best != cur && Score(pos, best, cur) < Score(pos, cur, cur) * 0.8f - 1f)
                         Join(m, best, now);
                 }
-                m.TargetSlot = m.Group >= Portals.Length && m.Group < Portals.Length + TargetCount ? m.Group - Portals.Length : -1;
+                m.TargetSlot = m.Group >= Portals.Length && m.Group != LureGroup && IsLive(m.Group - Portals.Length) ? m.Group - Portals.Length : -1;
             }
             if (m.Group < 0 || m.Group >= Groups.Length)
                 continue;
@@ -364,7 +404,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         if (gi == LureGroup)
             return LurePos;
         var slot = gi - Portals.Length;
-        return slot < TargetCount ? Targets[slot].Pos : default;
+        return IsLive(slot) ? Targets[slot].Pos : default;
     }
 
     private void Join(HordeMember m, int targetSlot, double now)
@@ -384,8 +424,10 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     {
         var best = -1;
         var bestScore = float.MaxValue;
-        for (var t = 0; t < TargetCount; t++)
+        for (var t = 0; t < MaxTargets; t++)
         {
+            if (!Targets[t].Live)
+                continue;
             var s = Score(pos, t, current);
             if (s < bestScore)
             {
@@ -525,7 +567,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             return;
         }
         var slot = g.Index - Portals.Length;
-        if (slot < TargetCount && Targets[slot].Engaged > 0)
+        if (IsLive(slot) && Targets[slot].Engaged > 0)
         {
             g.CheckDist = g.MeanDist;
             g.CheckAt = now;
@@ -598,7 +640,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
                     {
                         var a = agents[_scratch[j]];
                         var m = a.Member;
-                        m.FleeUntil = now + tu.ScatterSeconds;
+                        m.FleeUntil = now + tu.ExplosionStagger + tu.ScatterSeconds; // (staggered first, then away)
                         m.FleeFrom = st.Pos;
                         m.Node = -1;
                         Scattered++;
@@ -607,10 +649,10 @@ public sealed class HordeController<T> where T : class, IHordeAgent
                         if (m.Group >= Portals.Length && m.Group < Groups.Length && m.Group != LureGroup)
                         {
                             var g = Groups[m.Group];
-                            if (g.Mode != HordeGroupMode.Regroup || g.ModeUntil < now + tu.ScatterSeconds + tu.RegroupSeconds)
+                            if (g.Mode != HordeGroupMode.Regroup || g.ModeUntil < now + tu.ExplosionStagger + tu.ScatterSeconds + tu.RegroupSeconds)
                             {
                                 g.Mode = HordeGroupMode.Regroup; // after the scatter: close up again
-                                g.ModeUntil = now + tu.ScatterSeconds + tu.RegroupSeconds;
+                                g.ModeUntil = now + tu.ExplosionStagger + tu.ScatterSeconds + tu.RegroupSeconds;
                                 g.Regroups++;
                                 Regrouped++;
                             }
@@ -629,7 +671,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
                         var m = a.Member;
                         if (a.HordePortal >= 0 || m.Group == LureGroup)
                             continue;
-                        if (m.TargetSlot < 0 || m.TargetSlot >= TargetCount || Targets[m.TargetSlot].Id == st.Source)
+                        if (!IsLive(m.TargetSlot) || Targets[m.TargetSlot].Id == st.Source)
                         {
                             Join(m, BestTarget(a.Position, a.HordeId, -1), now);
                             m.Node = -1;
