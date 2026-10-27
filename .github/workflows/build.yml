@@ -3,8 +3,11 @@
 # attachments, packets, full bot matches, the map vote and the server browser. See Source/App/SelfTest.cs.
 name: Build and self-test
 
-# To save Actions minutes (private repo, Windows runner minutes bill at 2x): docs-only and tool-script-only pushes don't
-# run, a newer push to the same branch cancels the older run, and a commit message containing [skip ci] skips the run.
+# Which jobs run: main runs BOTH Linux and Windows on every push (the repo is public, so Actions minutes are free, and some
+# checks - CPU-time tick work, GC pauses, stuck spots - only measure on Windows, so they must be caught at merge, not at
+# release). Branch pushes run Linux only, for speed; add [windows ci] to a branch commit message (Windows only) or run the
+# workflow by hand (both) to test Windows there. Docs-only and tool-script-only pushes don't run, a newer push to the same
+# branch cancels the older run, and a commit message containing [skip ci] skips the run.
 #
 # Focused tests: on a push to a branch other than main, a "[tests: Section A, Section B]" tag in the head commit's message
 # runs only those self-test sections (CallOfSlop --selftest-only "Section A, Section B"; names as --selftest-list prints
@@ -32,9 +35,9 @@ concurrency:
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
-  # Default: Linux (1x minutes; Windows bills 2x). Same build and headless self-test as the Windows job.
+  # Linux: every push to main, every branch push without [windows ci], and manual runs. Same build and self-test as Windows.
   linux:
-    if: ${{ !contains(github.event.head_commit.message, '[windows ci]') }}
+    if: ${{ github.ref == 'refs/heads/main' || !contains(github.event.head_commit.message, '[windows ci]') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -173,9 +176,9 @@ jobs:
             bin/Release/net10.0/callofslop.log
           if-no-files-found: ignore
 
-  # Windows (2x minutes): only when a commit message asks for it (the tag is: windows ci in brackets), or run by hand.
+  # Windows: every push to main, a branch commit message with the tag (windows ci in brackets), or a manual run.
   windows:
-    if: ${{ contains(github.event.head_commit.message, '[windows ci]') || github.event_name == 'workflow_dispatch' }}
+    if: ${{ github.ref == 'refs/heads/main' || contains(github.event.head_commit.message, '[windows ci]') || github.event_name == 'workflow_dispatch' }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5

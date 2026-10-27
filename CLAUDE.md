@@ -26,7 +26,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 
 **CI** (`.github/workflows/build.yml`):
 - Every push builds and runs the self-test on Linux. A newer push to the same BRANCH cancels the older run; on `main` every run finishes (a burst of merges must still end with a full green result), and manual runs never cancel anything.
-- Windows runs only when the commit message contains `[windows ci]`, or on a manual run.
+- `main` runs **both Linux and Windows on every push** (public repo, minutes are free; Windows-only checks must be caught at merge). Branches run Linux only, unless the commit message has `[windows ci]` (Windows only) or the run is manual (both).
 - On non-main branches, `[tests: A, B]` in the head commit message runs only those sections. `main` always runs everything, and fails if the log says `FILTERED`.
 - NuGet packages come from the Actions cache.
 
@@ -127,7 +127,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Seeded digests.**
   - `SelfTestModeModules.cs` holds the seeded match digests per mode. They change whenever nav, bot or gameplay timing changes, and are then re-recorded from the failure message.
   - `SelfTestPackAssets.cs` pins map and prop hashes, including some Windows-only pins. Editing a prop or map changes them.
-- **Windows-only checks.** CPU-time tick checks only measure on Windows (`SelfTestTiming.Available`), so some failures only show up with `[windows ci]`. That includes GC pauses on big maps, stuck-spot counts and tick work.
+- **Windows-only checks.** CPU-time tick checks only measure on Windows (`SelfTestTiming.Available`), so some failures only show up on Windows runs (every push to `main`, or `[windows ci]` on a branch). That includes GC pauses on big maps, stuck-spot counts and tick work.
 - **Baked maps** (`Source/Maps/MapBake*.cs`, docs/perf/STREAMING.md section 7) write every instance field of everything a built `Map` holds, generically. A field the game sets after a map is built (like `Id`, `Pack`) is marked `[NotBaked]`; a runtime cache that is still empty after `Validate` needs nothing. A new kind of shared library object (like props or models) needs a root in `MapBake.IndexFor`. "Map bake" checks every shipped map reads back exactly as built.
 - **Nav graph building must stay deterministic.** It builds from an as-built copy of the map. Destruction patches are reset when a map is restored. "Nav determinism" tests this, and "Nav edge walks" walks risky edges with the real mover.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
