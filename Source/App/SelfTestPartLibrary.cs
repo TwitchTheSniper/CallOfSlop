@@ -85,11 +85,11 @@ public static partial class SelfTest
         var viaBase = PartFile.Load($$"""{ "extends": "Base Barrel", "name": "Standard Barrel", "flavor": {{WeaponFile.Str(sb.Flavor)}} }""", "Barrel/StandardBarrel.json", lib);
         if (PartDigest.Of(viaBase) != PartDigest.Of(sb))
             Fail("extends: 'Base Barrel' + name + flavor isn't identical to the Standard Barrel");
-        // A fragment holding the Box Mag's box, used at the origin: identical to the box written in place.
+        // A fragment holding the Box Mag's body (a curved arc, settings and all), used at the origin: identical to the box written in place.
         var flib = PartLibrary.Empty;
-        flib.AddFragment("""{ "name": "Mag", "model": [{"size": [0.024, 0.12, 0.05], "pos": [0, -0.06, 0], "color": "accent"}] }""", "_Fragments/Mag.json");
+        flib.AddFragment("""{ "name": "Mag", "model": [{"shape": "arc", "size": [0.024, 0.12, 0.05], "pos": [0, -0.06126, -0.00469], "rot": [9, 0, 0], "color": "accent", "segments": 6, "inner": 0.78, "angle": 26, "dir": 270}] }""", "_Fragments/Mag.json");
         var text = File.ReadAllText(Path.Combine(Parts.Folder, box.SourceFile!));
-        var usesMag = text.Replace("""{"size": [0.024, 0.12, 0.05], "pos": [0, -0.06, 0], "color": "accent"}""", """{"use": "Mag"}""");
+        var usesMag = text.Replace("""{"shape": "arc", "size": [0.024, 0.12, 0.05], "pos": [0, -0.06126, -0.00469], "rot": [9, 0, 0], "color": "accent", "segments": 6, "inner": 0.78, "angle": 26, "dir": 270}""", """{"use": "Mag"}""");
         if (usesMag == text)
             Fail("fragments: Box Mag's model box isn't where the test expects it");
         else if (PartDigest.Of(PartFile.Load(usesMag, box.SourceFile!, flib)) != PartDigest.Of(box))

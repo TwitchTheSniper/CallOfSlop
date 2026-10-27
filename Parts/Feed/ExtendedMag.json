@@ -9,7 +9,9 @@
   "hand": [0, -0.085, 0],
   "feed": "box",
   "model": [
-    {"size": [0.024, 0.17, 0.05], "pos": [0, -0.085, 0], "color": "black"}
+    {"shape": "arc", "size": [0.024, 0.17, 0.05], "pos": [0, -0.08544, -0.00811], "rot": [11, 0, 0], "color": "black", "segments": 6, "inner": 0.78, "angle": 32, "dir": 270},
+    {"shape": "bevel", "size": [0.028, 0.008, 0.041], "pos": [0, -0.16488, -0.02733], "rot": [11, 0, 0], "color": "gunmetal", "radius": 0.35, "edges": "long"},
+    {"size": [0.0192, 0.006, 0.035], "pos": [0, -0.003, 0], "color": "black"}
   ],
   "stats": [
     {"stat": "mag", "set": 45},

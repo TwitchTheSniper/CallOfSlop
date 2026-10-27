@@ -9,17 +9,10 @@
   "hand": [0, -0.065, 0],
   "feed": "drum",
   "model": [
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "color": "black"},
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "rot": [30, 0, 0], "color": "black"},
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "rot": [60, 0, 0], "color": "black"},
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "rot": [90, 0, 0], "color": "black"},
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "rot": [120, 0, 0], "color": "black"},
-    {"size": [0.07, 0.12, 0.0322], "pos": [0, -0.065, 0], "rot": [150, 0, 0], "color": "black"},
-    {"size": [0.076, 0.0432, 0.0179], "pos": [0, -0.065, 0], "color": "gunmetal"},
-    {"size": [0.076, 0.0432, 0.0179], "pos": [0, -0.065, 0], "rot": [45, 0, 0], "color": "gunmetal"},
-    {"size": [0.076, 0.0432, 0.0179], "pos": [0, -0.065, 0], "rot": [90, 0, 0], "color": "gunmetal"},
-    {"size": [0.076, 0.0432, 0.0179], "pos": [0, -0.065, 0], "rot": [135, 0, 0], "color": "gunmetal"},
-    {"size": [0.03, 0.02, 0.04], "pos": [0, -0.005, 0], "color": "black"}
+    {"shape": "cylinder", "size": [0.12, 0.12, 0.07], "pos": [0, -0.065, 0], "rot": [0, 90, 0], "color": "black", "segments": 16},
+    {"shape": "cylinder", "size": [0.048, 0.048, 0.076], "pos": [0, -0.065, 0], "rot": [0, 90, 0], "color": "gunmetal", "segments": 10},
+    {"shape": "rounded", "size": [0.006, 0.0144, 0.006], "pos": [0.04, -0.065, 0], "color": "steel", "segments": 2, "radius": 0.4},
+    {"shape": "bevel", "size": [0.03, 0.02, 0.04], "pos": [0, -0.005, 0], "color": "black", "radius": 0.3}
   ],
   "stats": [
     {"stat": "mag", "set": 30},

@@ -9,7 +9,8 @@
   "hand": [0, -0.015, 0],
   "feed": "single",
   "model": [
-    {"size": [0.03, 0.03, 0.04], "pos": [0, -0.015, 0], "color": "olive"}
+    {"shape": "bevel", "size": [0.03, 0.03, 0.04], "pos": [0, -0.015, 0], "color": "olive", "radius": 0.25},
+    {"shape": "cylinder", "size": [0.018, 0.018, 0.004], "pos": [0, -0.015, 0.0205], "color": "brass", "segments": 10}
   ],
   "stats": [
     {"stat": "mag", "set": 1},
