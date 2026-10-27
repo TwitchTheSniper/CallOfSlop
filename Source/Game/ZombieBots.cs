@@ -99,7 +99,7 @@ public sealed partial class Game
             for (var k = 0; k < n; k++)
             {
                 var z = Horde[_zBotIdx[k]];
-                if (ZClearShot(p.Eye, z.Position + new Vector3(0, 1.2f, 0)))
+                if (ZClearShot(p.Eye, z.Position + new Vector3(0, z.Crawler ? ZombieAimHeight(z, false) : 1.2f, 0)))
                 {
                     target = z;
                     break;
@@ -175,7 +175,7 @@ public sealed partial class Game
         var aimed = false;
         if (target != null)
         {
-            var aimAt = target.Position + new Vector3(0, b.Skill >= BotDifficulty.Hard ? 1.6f : 1.25f, 0);
+            var aimAt = target.Position + new Vector3(0, ZombieAimHeight(target, b.Skill >= BotDifficulty.Hard), 0); // (a crawler is low: ZombieLimbs.cs)
             var to = aimAt - p.Eye;
             var wantYaw = MathF.Atan2(to.X, -to.Z);
             var wantPitch = MathF.Atan2(to.Y, Flat(to));

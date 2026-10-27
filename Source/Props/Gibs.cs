@@ -96,6 +96,7 @@ public static class Gibs
         Wool,
         Fur,
         Part, // a body part (torso, head, boot...)
+        Limb, // a zombie's severed limb (SpawnLimb: its own cap and life)
     }
 
     private struct Piece
@@ -309,6 +310,101 @@ public static class Gibs
         Add(ref rng, pos, size, color, vel, k, owner, splat, torso);
     }
 
+    // ---- Zombie limbs ---------------------------------------------------------------------------------------------
+
+    /// <summary>Limb pieces alive right now (a severed zombie limb is two of them plus a little meat), and the most at once since the last <see cref="Clear"/>.</summary>
+    public static int LimbPieces
+    {
+        get
+        {
+            var n = 0;
+            for (var i = 0; i < _count; i++)
+                if (Pool[i].Kind == Kind.Limb)
+                    n++;
+            return n;
+        }
+    }
+
+    /// <summary>Limbs thrown since start-up (self-test).</summary>
+    public static long LimbsThrown { get; private set; }
+
+    /// <summary>
+    /// A zombie's limb comes off (Source/Game/ZombieLimbs.cs): its upper and lower part (in the zombie's colours: skin for
+    /// an arm, trousers for a leg) and a little meat fly out to its side and up, then lie about for <paramref name="life"/>
+    /// seconds; the meat leaves a splat where it lands (Full gore). Limb pieces have their own cap (<paramref name="cap"/>:
+    /// past it the oldest limb piece is reused), inside the pool's. Nothing on Off gore. Seeded: every PC throws the same.
+    /// Returns the pieces thrown.
+    /// </summary>
+    public static int SpawnLimb(Vector3 feet, float yaw, int limb, bool crawler, Vector3 skin, Vector3 pants, uint seed, float life, int cap)
+    {
+        if (Mode == GoreMode.Off || cap <= 0 || limb is < 0 or > 3)
+            return 0;
+        var rng = new Foliage.Rng(seed ^ 0x11b5u);
+        var arm = limb < 2;
+        var side = limb is 0 or 2 ? 1f : -1f;
+        var toWorld = Matrix4x4.CreateRotationY(-yaw) * Matrix4x4.CreateTranslation(feet);
+        var right = Vector3.TransformNormal(Vector3.UnitX, toWorld);
+        Vector3 a, b, sa, sb, c;
+        if (arm)
+        {
+            (a, b) = crawler ? (new Vector3(side * 0.38f, 0.32f, -0.55f), new Vector3(side * 0.42f, 0.12f, -0.85f)) : (new Vector3(side * 0.42f, 1.2f, 0), new Vector3(side * 0.45f, 0.82f, -0.12f));
+            (sa, sb, c) = (new Vector3(0.14f, 0.4f, 0.14f), new Vector3(0.12f, 0.44f, 0.12f), skin * 0.92f);
+        }
+        else
+        {
+            (a, b) = (new Vector3(side * 0.15f, 0.64f, 0), new Vector3(side * 0.15f, 0.24f, 0.02f));
+            (sa, sb, c) = (new Vector3(0.21f, 0.47f, 0.23f), new Vector3(0.17f, 0.43f, 0.18f), pants);
+        }
+        BeginBurst();
+        LimbsThrown++;
+        var out0 = right * side;
+        var full = Mode == GoreMode.Full;
+        var meat = full ? 2 : 1;
+        for (var i = 0; i < 2 + meat; i++)
+        {
+            Vector3 local, size, color;
+            if (i < 2)
+                (local, size, color) = i == 0 ? (a, sa, c) : (b, sb, c * 0.95f);
+            else
+            {
+                local = (i == 2 ? a : b) + new Vector3(0, 0.05f, 0);
+                var g = 0.07f + rng.Next() * 0.05f;
+                size = new Vector3(g * 1.1f, g * 0.8f, g);
+                color = MeatColor(ref rng);
+            }
+            var vel = out0 * (2.2f + rng.Next() * 1.6f) + new Vector3(rng.Next() - 0.5f, 2f + rng.Next() * 1.5f, rng.Next() - 0.5f);
+            var slot = -1;
+            if (_count >= Capacity || LimbPieces >= cap)
+                slot = OldestLimb(cap);
+            Add(ref rng, Vector3.Transform(local, toWorld), size, color, vel, Kind.Limb, 254, full && i == 2, false, slot);
+            Pool[slot >= 0 ? slot : _count - 1].Life = life + rng.Next() * 0.5f;
+        }
+        return LastBurstCount;
+    }
+
+    /// <summary>The slot a new limb piece takes when the limb cap (or the pool) is full: the oldest limb piece, else the oldest piece.</summary>
+    private static int OldestLimb(int cap)
+    {
+        var best = -1;
+        var most = float.MinValue;
+        var limbs = 0;
+        for (var i = 0; i < _count; i++)
+        {
+            if (Pool[i].Kind != Kind.Limb)
+                continue;
+            limbs++;
+            var left = Pool[i].Age - Pool[i].Life;
+            if (left > most)
+            {
+                most = left;
+                best = i;
+            }
+        }
+        if (limbs >= cap && best >= 0)
+            return best;
+        return _count < Capacity ? -1 : Oldest();
+    }
+
     // ---- Pool ----------------------------------------------------------------------------------------------------
 
     private static Vector3 MeatColor(ref Foliage.Rng rng)
@@ -332,10 +428,15 @@ public static class Gibs
         _hash = (_hash ^ (uint)BitConverter.SingleToInt32Bits(v.Z)) * 16777619u;
     }
 
-    private static void Add(ref Foliage.Rng rng, Vector3 pos, Vector3 size, Vector3 color, Vector3 vel, Kind k, byte owner, bool splat, bool torso)
+    private static void Add(ref Foliage.Rng rng, Vector3 pos, Vector3 size, Vector3 color, Vector3 vel, Kind k, byte owner, bool splat, bool torso, int forceSlot = -1)
     {
         int slot;
-        if (_count < Capacity)
+        if (forceSlot >= 0)
+        {
+            slot = forceSlot;
+            Recycled++;
+        }
+        else if (_count < Capacity)
             slot = _count++;
         else
         {

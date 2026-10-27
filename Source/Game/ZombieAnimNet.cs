@@ -81,7 +81,7 @@ public sealed partial class Game
         if (z.State == ZState.Tearing)
             z.AnimByte = (byte)MathF.Round(Math.Clamp(1f - (float)((z.NextTear - now) / Math.Max(0.05, ZRules.BoardTearSeconds)), 0f, 1f) * 255f);
         else if (z.State == ZState.Climbing)
-            z.AnimByte = (byte)MathF.Round(Math.Clamp((float)((now - z.StateAt) / Math.Max(0.05, ZRules.ClimbSeconds)), 0f, 1f) * 255f);
+            z.AnimByte = (byte)MathF.Round(Math.Clamp((float)((now - z.StateAt) / Math.Max(0.05, ClimbSecondsFor(z))), 0f, 1f) * 255f);
         else
             z.AnimByte = 0;
         z.AnimByteTick = ServerTick;
@@ -129,10 +129,10 @@ public sealed partial class Game
         }
         z.AnimPrevPos = z.RenderPos;
         z.AnimPrevSet = true;
-        z.AnimMove = Math.Clamp(z.AnimSpeed / MathF.Max(0.3f, 0.6f * ZombieNominalSpeed(z.Speed)), 0f, 1f);
+        z.AnimMove = Math.Clamp(z.AnimSpeed / MathF.Max(0.3f, 0.6f * ZombieNominalSpeed(z.Speed) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f)), 0f, 1f);
         if (z.State is ZState.ToWindow or ZState.Chase or ZState.Attack)
         {
-            z.Gait += dt * z.AnimSpeed * MathF.Tau / (4f * ZombieAnim.StrideHalf(z.Speed) * MathF.Max(0.35f, z.AnimMove));
+            z.Gait += dt * z.AnimSpeed * MathF.Tau / (4f * ZombieAnim.StrideHalf(z.Speed, z.Limbs) * MathF.Max(0.35f, z.AnimMove));
             if (z.Gait > 1000f)
                 z.Gait -= MathF.Tau * 150; // keep it small (a whole number of cycles)
         }
@@ -181,7 +181,8 @@ public sealed partial class Game
         a.Move = z.AnimMove;
         a.SinceState = MathF.Max(0, (float)((rt - z.AnimStateTick) * dt));
         a.Time = (float)(now % 4096.0) + z.Id * 0.37f;
-        a.Windup = ZRules.ZombieWindup;
+        a.Windup = ZombieWindupFor(z); // (one arm, a bite: ZombieLimbs.cs)
+        a.Limbs = z.Limbs;
         a.TearSeconds = ZRules.BoardTearSeconds;
         var attack = (float)((rt - z.AttackTick) * dt);
         a.Attack = attack >= 0 && attack < 2f ? attack : -1f;
@@ -204,7 +205,7 @@ public sealed partial class Game
                 return;
             case ZState.Climbing when win != null:
                 a.Mode = ZAnimMode.Vaulting;
-                a.Phase = Math.Clamp(z.AnimByte / 255f + (float)((rt - z.AnimByteTick) * dt / MathF.Max(0.05f, ZRules.ClimbSeconds)), 0f, 1f);
+                a.Phase = Math.Clamp(z.AnimByte / 255f + (float)((rt - z.AnimByteTick) * dt / MathF.Max(0.05f, ClimbSecondsFor(z))), 0f, 1f);
                 a.Yaw = win.Yaw;
                 a.SetWindow(win, Boards(z.Window));
                 return;

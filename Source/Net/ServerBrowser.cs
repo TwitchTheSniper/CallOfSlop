@@ -124,7 +124,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     and a Zombies flags byte (bit 0: the test kit).
     // 60: Weapon tweak window (Source/UI/UiWeaponTweaks.cs): Msg.WeaponTweaks (class multipliers: count, then class, stat,
     //     value; per-weapon overrides: u16 count, then weapon id, field index, value), sent on a change and to joiners.
-    public const byte ProtocolVersion = 60;
+    // 65: Zombie dismemberment (Source/Game/ZombieLimbs.cs): zombie ids are 15 bits, and in Msg.ZEnts the top bit of an
+    //     entry's id says a limbs byte follows the entry (bits 0-3: right arm, left arm, right leg, left leg lost; both legs is
+    //     a crawler), 11-13 bytes a zombie. (61-64 are other branches' numbers; the merger renumbers.)
+    public const byte ProtocolVersion = 65;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
