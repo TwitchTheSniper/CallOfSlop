@@ -64,7 +64,10 @@ public sealed partial class Ui
     private ServerBrowser? _browser;
     private int _mpTab; // 0 browser, 1 host, 2 direct
 
-    private bool BigButton(string label, float width = 360)
+    /// <summary>A main-menu button's width in layout pixels. The main menu panel is this wide (text wraps at it, never widens it).</summary>
+    internal const float MenuButtonWidth = 360;
+
+    private bool BigButton(string label, float width = MenuButtonWidth)
     {
         ImGui.PushFont(default, 20);
         var clicked = ImGui.Button(label, new float2(width * _scale, 52 * _scale));
@@ -150,6 +153,7 @@ public sealed partial class Ui
                 case Page.Main:
                     Title($"{Weapons.All.Length} weapons. {Maps.All.Length} maps. No mercy.");
                     UpdateBanner(s); // "Update available" (UiUpdates.cs)
+                    ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + MenuButtonWidth * _scale); // long text wraps at the button width instead of widening the panel
                     if (message.Length > 0)
                     {
                         ImGuiSafe.TextColored(Red, message);
@@ -157,12 +161,11 @@ public sealed partial class Ui
                     }
                     if (WeaponSet.ErrorSummary is { } weaponErrors)
                     {
-                        ImGui.PushTextWrapPos(ImGui.GetCursorPosX() + 560 * _scale); // long file paths: wrap instead of widening the panel
-                        ImGuiSafe.TextColored(Red, weaponErrors);
-                        ImGui.PopTextWrapPos();
+                        ImGuiSafe.TextColored(Red, weaponErrors); // long file paths
                         ImGui.Spacing();
                     }
-                    LevelSummary();
+                    ImGui.PopTextWrapPos();
+                    LevelSummary(compact: true);
                     if (BigButton("SINGLE PLAYER"))
                         _page = Page.SinglePlayer;
                     if (BigButton("MULTIPLAYER"))
@@ -456,22 +459,36 @@ public sealed partial class Ui
         ImGui.Spacing();
     }
 
-    private void LevelSummary()
+    /// <summary>
+    /// The level heading, XP bar, prestige button and next unlock. The main menu passes <paramref name="compact"/>: every
+    /// line wraps at the button width (so a long unlock name can't stretch the panel) and the XP values and the
+    /// "every level unlocks" blurb are left to the Loadouts > Progression page, which draws the full version.
+    /// </summary>
+    private void LevelSummary(bool compact = false)
     {
         var p = Progress;
+        var wrapFrom = ImGui.GetCursorPosX();
+        if (compact)
+            ImGui.PushTextWrapPos(wrapFrom + MenuButtonWidth * _scale);
         ImGui.PushFont(default, 22);
         ImGuiSafe.TextColored(Orange, $"{PrestigePrefix(p)}LEVEL {p.Level}");
         ImGui.PopFont();
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, p.Level >= CallOfSlop.Progress.MaxLevel
-            ? $"  max level - {p.Xp} XP, {p.Kills} kills, {p.Headshots} headshots"
+            ? (compact ? $"  max level - {p.Xp} XP" : $"  max level - {p.Xp} XP, {p.Kills} kills, {p.Headshots} headshots")
             : $"  {p.XpIntoLevel} / {CallOfSlop.Progress.XpForNext(p.Level)} XP to level {p.Level + 1}");
         ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
-        ImGui.ProgressBar(p.LevelFraction, new float2(360 * _scale, 10 * _scale), ""u8);
+        ImGui.ProgressBar(p.LevelFraction, new float2(MenuButtonWidth * _scale, 10 * _scale), ""u8);
         ImGui.PopStyleColor();
-        PrestigeButton(); // UiPrestige.cs
+        PrestigeButton(compact); // UiPrestige.cs
         if (p.NextUnlock is { } next)
             ImGuiSafe.TextColored(Dim, $"Next unlock: {next.Name} ({next.Kind.ToLowerInvariant()}) at level {next.Level}");
+        if (compact)
+        {
+            ImGui.PopTextWrapPos();
+            ImGui.Spacing();
+            return;
+        }
         ImGuiSafe.TextColored(Dim, $"Kill +{CallOfSlop.Progress.KillXp} XP   Headshot kill +{CallOfSlop.Progress.HeadshotBonus}   Grenade kill +{CallOfSlop.Progress.GrenadeBonus}   Match +{CallOfSlop.Progress.MatchXp}   Win +{CallOfSlop.Progress.WinXp}");
         ImGuiSafe.TextColored(Dim, $"Every level unlocks something: weapons, grenades, perks and up to {CallOfSlop.Progress.MaxLoadoutSlots} loadout slots. Each gun also earns its own weapon XP for attachments (3-7 matches to max one out).");
         ImGui.Spacing();

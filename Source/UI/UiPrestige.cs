@@ -14,7 +14,8 @@ public sealed partial class Ui
     /// <summary>The level heading's prestige prefix: "P2  " (empty before the first prestige).</summary>
     private static string PrestigePrefix(Progress p) => p.Prestige > 0 ? $"P{p.Prestige}  " : "";
 
-    private void PrestigeButton()
+    /// <param name="compact">Main menu: the reason goes on its own line under the button (wrapped by the caller).</param>
+    private void PrestigeButton(bool compact = false)
     {
         var p = Progress;
         var can = p.CanPrestige;
@@ -23,7 +24,8 @@ public sealed partial class Ui
         if (ImGui.Button(label, new float2(180 * _scale, 30 * _scale)))
             ImGui.OpenPopup(PrestigePopup);
         ImGui.EndDisabled();
-        ImGui.SameLine();
+        if (!compact)
+            ImGui.SameLine();
         var next = Cosmetics.Get(Cosmetics.HatForPrestige(p.Prestige + 1));
         ImGuiSafe.TextColored(can ? Orange : Dim,
             p.Prestige >= Cosmetics.MaxPrestige ? "Max prestige: every hat unlocked."
