@@ -169,7 +169,7 @@ public static partial class SelfTest
         }
         var plainWalk = Walk(plainMove);
         var fleetWalk = Walk(fleetMove);
-        ZLine($"Fleetfoot Fizz: speed x{fleetMove:0.00} (x{plainMove:0.00} without); a second's walk {fleetWalk:0.00} m vs {plainWalk:0.00} m");
+        ZLine($"Fleetfoot Fizz: speed x{fleetMove:0.00} (x{plainMove:0.00} without); half a second's walk {fleetWalk:0.00} m vs {plainWalk:0.00} m");
         if (MathF.Abs(fleetMove - 1.2f) > 0.001f || plainMove != 1f || fleetWalk < plainWalk * 1.15f)
             Fail("Fleetfoot Fizz should make you move 20 percent faster");
 
