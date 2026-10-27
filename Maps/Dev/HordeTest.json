@@ -1,0 +1,2327 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Horde Test",
+ "description": "Zombies dev map for big hordes: a walled arena with 21 boarded windows (two spawners behind each) and an open strip right round it, a raised dais and two lookout towers to watch the horde queue, split and flank from, every perk in a row, the box, workbenches, wall buys, slot machines and the power. Pair it with the lobby's Start round and Test kit settings.",
+ "author": "Call of Slop",
+ "order": 986,
+ "maxPlayers": 8,
+ "test": {
+  "maxPlayers": 8,
+  "minHills": 1,
+  "minTeamSpawns": 4,
+  "symmetry": "mirrorZ",
+  "walkFairness": 0.12,
+  "minMainNavPct": 40,
+  "minSolidProps": 20,
+  "requireProps": [
+   "Mystery Box Crate",
+   "Zombies Workbench",
+   "Power Switch Box",
+   "Weapon Locker",
+   "Reel Cabinet"
+  ],
+  "probes": [
+   [
+    "dais",
+    0,
+    0,
+    1.6
+   ],
+   [
+    "west tower",
+    -14,
+    0,
+    3.2
+   ],
+   [
+    "east tower",
+    14,
+    0,
+    3.2
+   ]
+  ],
+  "botMatchSeconds": 8,
+  "spawnsStand": true
+ },
+ "halfX": 33.0,
+ "halfZ": 35.5,
+ "sky": "#56606e",
+ "teamSpawns": [
+  [
+   [
+    -6.0,
+    0.0,
+    -9.0
+   ],
+   [
+    -2.5,
+    0.0,
+    -9.0
+   ],
+   [
+    2.5,
+    0.0,
+    -9.0
+   ],
+   [
+    6.0,
+    0.0,
+    -9.0
+   ]
+  ],
+  [
+   [
+    -6.0,
+    0.0,
+    9.0
+   ],
+   [
+    -2.5,
+    0.0,
+    9.0
+   ],
+   [
+    2.5,
+    0.0,
+    9.0
+   ],
+   [
+    6.0,
+    0.0,
+    9.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": 19.5,
+   "z": 0.0,
+   "radius": 2.5
+  }
+ ],
+ "flags": [
+  [
+   0.0,
+   -15.0
+  ],
+  [
+   0.0,
+   15.0
+  ]
+ ],
+ "zombies": {
+  "start": "Arena",
+  "machineProps": true,
+  "testKit": true,
+  "areas": [
+   {
+    "name": "Arena",
+    "rect": [
+     -24.0,
+     -24.0,
+     24.0,
+     24.0
+    ]
+   },
+   {
+    "name": "Power Annex",
+    "rect": [
+     -24.0,
+     24.3,
+     -0.3,
+     29.5
+    ]
+   },
+   {
+    "name": "Armoury",
+    "rect": [
+     0,
+     24.3,
+     24.0,
+     29.5
+    ]
+   }
+  ],
+  "doors": [
+   {
+    "name": "the Power Door",
+    "kind": "door",
+    "cost": 750,
+    "box": [
+     -13.2,
+     0,
+     24.0,
+     -10.8,
+     2.6,
+     24.3
+    ],
+    "areas": [
+     "Arena",
+     "Power Annex"
+    ]
+   },
+   {
+    "name": "the Armoury Debris",
+    "kind": "debris",
+    "cost": 1000,
+    "box": [
+     10.8,
+     0,
+     23.85,
+     13.2,
+     2.6,
+     24.45
+    ],
+    "areas": [
+     "Arena",
+     "Armoury"
+    ]
+   }
+  ],
+  "windows": [
+   {
+    "area": "Arena",
+    "box": [
+     -16.8,
+     0.9,
+     -24.3,
+     -15.2,
+     2.1,
+     -24.0
+    ],
+    "outside": [
+     -16.0,
+     -25.4
+    ],
+    "inside": [
+     -16.0,
+     -23.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -8.8,
+     0.9,
+     -24.3,
+     -7.2,
+     2.1,
+     -24.0
+    ],
+    "outside": [
+     -8.0,
+     -25.4
+    ],
+    "inside": [
+     -8.0,
+     -23.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -0.8,
+     0.9,
+     -24.3,
+     0.8,
+     2.1,
+     -24.0
+    ],
+    "outside": [
+     0.0,
+     -25.4
+    ],
+    "inside": [
+     0.0,
+     -23.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     7.2,
+     0.9,
+     -24.3,
+     8.8,
+     2.1,
+     -24.0
+    ],
+    "outside": [
+     8.0,
+     -25.4
+    ],
+    "inside": [
+     8.0,
+     -23.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     15.2,
+     0.9,
+     -24.3,
+     16.8,
+     2.1,
+     -24.0
+    ],
+    "outside": [
+     16.0,
+     -25.4
+    ],
+    "inside": [
+     16.0,
+     -23.1
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     24.0,
+     0.9,
+     -16.8,
+     24.3,
+     2.1,
+     -15.2
+    ],
+    "outside": [
+     25.4,
+     -16.0
+    ],
+    "inside": [
+     23.1,
+     -16.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     24.0,
+     0.9,
+     -8.8,
+     24.3,
+     2.1,
+     -7.2
+    ],
+    "outside": [
+     25.4,
+     -8.0
+    ],
+    "inside": [
+     23.1,
+     -8.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     24.0,
+     0.9,
+     -0.8,
+     24.3,
+     2.1,
+     0.8
+    ],
+    "outside": [
+     25.4,
+     0.0
+    ],
+    "inside": [
+     23.1,
+     0.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     24.0,
+     0.9,
+     7.2,
+     24.3,
+     2.1,
+     8.8
+    ],
+    "outside": [
+     25.4,
+     8.0
+    ],
+    "inside": [
+     23.1,
+     8.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     24.0,
+     0.9,
+     15.2,
+     24.3,
+     2.1,
+     16.8
+    ],
+    "outside": [
+     25.4,
+     16.0
+    ],
+    "inside": [
+     23.1,
+     16.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -24.3,
+     0.9,
+     -16.8,
+     -24.0,
+     2.1,
+     -15.2
+    ],
+    "outside": [
+     -25.4,
+     -16.0
+    ],
+    "inside": [
+     -23.1,
+     -16.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -24.3,
+     0.9,
+     -8.8,
+     -24.0,
+     2.1,
+     -7.2
+    ],
+    "outside": [
+     -25.4,
+     -8.0
+    ],
+    "inside": [
+     -23.1,
+     -8.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -24.3,
+     0.9,
+     -0.8,
+     -24.0,
+     2.1,
+     0.8
+    ],
+    "outside": [
+     -25.4,
+     0.0
+    ],
+    "inside": [
+     -23.1,
+     0.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -24.3,
+     0.9,
+     7.2,
+     -24.0,
+     2.1,
+     8.8
+    ],
+    "outside": [
+     -25.4,
+     8.0
+    ],
+    "inside": [
+     -23.1,
+     8.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Arena",
+    "box": [
+     -24.3,
+     0.9,
+     15.2,
+     -24.0,
+     2.1,
+     16.8
+    ],
+    "outside": [
+     -25.4,
+     16.0
+    ],
+    "inside": [
+     -23.1,
+     16.0
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Power Annex",
+    "box": [
+     -19.8,
+     0.9,
+     29.5,
+     -18.2,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     -19.0,
+     30.9
+    ],
+    "inside": [
+     -19.0,
+     28.6
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Power Annex",
+    "box": [
+     -12.8,
+     0.9,
+     29.5,
+     -11.2,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     -12.0,
+     30.9
+    ],
+    "inside": [
+     -12.0,
+     28.6
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Power Annex",
+    "box": [
+     -5.8,
+     0.9,
+     29.5,
+     -4.2,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     -5.0,
+     30.9
+    ],
+    "inside": [
+     -5.0,
+     28.6
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Armoury",
+    "box": [
+     4.2,
+     0.9,
+     29.5,
+     5.8,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     5.0,
+     30.9
+    ],
+    "inside": [
+     5.0,
+     28.6
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Armoury",
+    "box": [
+     11.2,
+     0.9,
+     29.5,
+     12.8,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     12.0,
+     30.9
+    ],
+    "inside": [
+     12.0,
+     28.6
+    ],
+    "boards": 6
+   },
+   {
+    "area": "Armoury",
+    "box": [
+     18.2,
+     0.9,
+     29.5,
+     19.8,
+     2.1,
+     29.8
+    ],
+    "outside": [
+     19.0,
+     30.9
+    ],
+    "inside": [
+     19.0,
+     28.6
+    ],
+    "boards": 6
+   }
+  ],
+  "spawners": [
+   {
+    "window": 0,
+    "at": [
+     -17.5,
+     -29.0
+    ]
+   },
+   {
+    "window": 0,
+    "at": [
+     -14.5,
+     -32.5
+    ]
+   },
+   {
+    "window": 1,
+    "at": [
+     -9.5,
+     -29.0
+    ]
+   },
+   {
+    "window": 1,
+    "at": [
+     -6.5,
+     -32.5
+    ]
+   },
+   {
+    "window": 2,
+    "at": [
+     -1.5,
+     -29.0
+    ]
+   },
+   {
+    "window": 2,
+    "at": [
+     1.5,
+     -32.5
+    ]
+   },
+   {
+    "window": 3,
+    "at": [
+     6.5,
+     -29.0
+    ]
+   },
+   {
+    "window": 3,
+    "at": [
+     9.5,
+     -32.5
+    ]
+   },
+   {
+    "window": 4,
+    "at": [
+     14.5,
+     -29.0
+    ]
+   },
+   {
+    "window": 4,
+    "at": [
+     17.5,
+     -32.5
+    ]
+   },
+   {
+    "window": 5,
+    "at": [
+     28.0,
+     -17.5
+    ]
+   },
+   {
+    "window": 5,
+    "at": [
+     31.0,
+     -14.5
+    ]
+   },
+   {
+    "window": 6,
+    "at": [
+     28.0,
+     -9.5
+    ]
+   },
+   {
+    "window": 6,
+    "at": [
+     31.0,
+     -6.5
+    ]
+   },
+   {
+    "window": 7,
+    "at": [
+     28.0,
+     -1.5
+    ]
+   },
+   {
+    "window": 7,
+    "at": [
+     31.0,
+     1.5
+    ]
+   },
+   {
+    "window": 8,
+    "at": [
+     28.0,
+     6.5
+    ]
+   },
+   {
+    "window": 8,
+    "at": [
+     31.0,
+     9.5
+    ]
+   },
+   {
+    "window": 9,
+    "at": [
+     28.0,
+     14.5
+    ]
+   },
+   {
+    "window": 9,
+    "at": [
+     31.0,
+     17.5
+    ]
+   },
+   {
+    "window": 10,
+    "at": [
+     -28.0,
+     -14.5
+    ]
+   },
+   {
+    "window": 10,
+    "at": [
+     -31.0,
+     -17.5
+    ]
+   },
+   {
+    "window": 11,
+    "at": [
+     -28.0,
+     -6.5
+    ]
+   },
+   {
+    "window": 11,
+    "at": [
+     -31.0,
+     -9.5
+    ]
+   },
+   {
+    "window": 12,
+    "at": [
+     -28.0,
+     1.5
+    ]
+   },
+   {
+    "window": 12,
+    "at": [
+     -31.0,
+     -1.5
+    ]
+   },
+   {
+    "window": 13,
+    "at": [
+     -28.0,
+     9.5
+    ]
+   },
+   {
+    "window": 13,
+    "at": [
+     -31.0,
+     6.5
+    ]
+   },
+   {
+    "window": 14,
+    "at": [
+     -28.0,
+     17.5
+    ]
+   },
+   {
+    "window": 14,
+    "at": [
+     -31.0,
+     14.5
+    ]
+   },
+   {
+    "window": 15,
+    "at": [
+     -20.2,
+     31.5
+    ]
+   },
+   {
+    "window": 15,
+    "at": [
+     -17.8,
+     33.0
+    ]
+   },
+   {
+    "window": 16,
+    "at": [
+     -13.2,
+     31.5
+    ]
+   },
+   {
+    "window": 16,
+    "at": [
+     -10.8,
+     33.0
+    ]
+   },
+   {
+    "window": 17,
+    "at": [
+     -6.2,
+     31.5
+    ]
+   },
+   {
+    "window": 17,
+    "at": [
+     -3.8,
+     33.0
+    ]
+   },
+   {
+    "window": 18,
+    "at": [
+     3.8,
+     31.5
+    ]
+   },
+   {
+    "window": 18,
+    "at": [
+     6.2,
+     33.0
+    ]
+   },
+   {
+    "window": 19,
+    "at": [
+     10.8,
+     31.5
+    ]
+   },
+   {
+    "window": 19,
+    "at": [
+     13.2,
+     33.0
+    ]
+   },
+   {
+    "window": 20,
+    "at": [
+     17.8,
+     31.5
+    ]
+   },
+   {
+    "window": 20,
+    "at": [
+     20.2,
+     33.0
+    ]
+   },
+   {
+    "area": "Power Annex",
+    "at": [
+     -16.0,
+     27.0
+    ]
+   },
+   {
+    "area": "Armoury",
+    "at": [
+     21.5,
+     27.2
+    ]
+   }
+  ],
+  "wallBuys": [
+   {
+    "build": "Wall Rifle",
+    "at": [
+     -23.97,
+     -12.0
+    ],
+    "yaw": 90,
+    "cost": 500,
+    "ammoCost": 250
+   },
+   {
+    "build": "Wall SMG",
+    "at": [
+     -12.0,
+     -23.97
+    ],
+    "yaw": 180,
+    "cost": 1000
+   },
+   {
+    "build": "Wall Pump",
+    "at": [
+     12.0,
+     -23.97
+    ],
+    "yaw": 180,
+    "cost": 900
+   },
+   {
+    "build": "Burst Marksman",
+    "at": [
+     23.97,
+     -12.0
+    ],
+    "yaw": -90,
+    "cost": 1200
+   },
+   {
+    "build": "Coach Gun",
+    "at": [
+     0.03,
+     27.0
+    ],
+    "yaw": 90,
+    "cost": 1500
+   }
+  ],
+  "box": {
+   "cost": 950,
+   "start": 0,
+   "spots": [
+    {
+     "at": [
+      -9.0,
+      -11.0
+     ],
+     "yaw": 180.0
+    },
+    {
+     "at": [
+      9.0,
+      11.0
+     ],
+     "yaw": 0.0
+    },
+    {
+     "at": [
+      8.0,
+      27.5
+     ],
+     "yaw": 180.0
+    }
+   ]
+  },
+  "workbenches": [
+   {
+    "at": [
+     9.0,
+     -11.0
+    ],
+    "yaw": 180.0
+   },
+   {
+    "at": [
+     -8.0,
+     25.2
+    ],
+    "yaw": 180.0
+   }
+  ],
+  "perks": [
+   {
+    "perk": "revive",
+    "at": [
+     -7.15,
+     23.5
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "secondwind",
+    "at": [
+     -5.85,
+     23.5
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "hammerhand",
+    "at": [
+     -4.55,
+     23.5
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "bloodroot",
+    "at": [
+     -3.25,
+     23.5
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "salvage",
+    "at": [
+     -1.95,
+     23.5
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "jugg",
+    "at": [
+     -0.65,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "speed",
+    "at": [
+     0.65,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "doubletap",
+    "at": [
+     1.95,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "fleetfoot",
+    "at": [
+     3.25,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "marksman",
+    "at": [
+     4.55,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "windfall",
+    "at": [
+     5.85,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   },
+   {
+    "perk": "bulwark",
+    "at": [
+     7.15,
+     23.5
+    ],
+    "yaw": 0,
+    "power": true
+   }
+  ],
+  "slotUpgrade": {
+   "at": [
+    -0.65,
+    27.0
+   ],
+   "yaw": -90.0,
+   "cost": 4000
+  },
+  "power": {
+   "at": [
+    -23.65,
+    27.0
+   ],
+   "yaw": 90.0
+  },
+  "salvage": [
+   {
+    "at": [
+     -2.5,
+     26.5
+    ]
+   },
+   {
+    "at": [
+     15.5,
+     27.5
+    ]
+   }
+  ],
+  "slots": [
+   {
+    "at": [
+     -23.55,
+     -4.0
+    ],
+    "yaw": 90.0
+   },
+   {
+    "at": [
+     1.2,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Receiver"
+   },
+   {
+    "at": [
+     2.15,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Barrel"
+   },
+   {
+    "at": [
+     3.1,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Splitter"
+   },
+   {
+    "at": [
+     4.05,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Feed"
+   },
+   {
+    "at": [
+     5.0,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Ammo"
+   },
+   {
+    "at": [
+     5.95,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Stock"
+   },
+   {
+    "at": [
+     6.9,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Grip"
+   },
+   {
+    "at": [
+     14.2,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Optic"
+   },
+   {
+    "at": [
+     15.15,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Muzzle"
+   },
+   {
+    "at": [
+     16.1,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Utility"
+   },
+   {
+    "at": [
+     17.05,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Upgrade"
+   },
+   {
+    "at": [
+     18.0,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Multiplier"
+   },
+   {
+    "at": [
+     18.95,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Hilt"
+   },
+   {
+    "at": [
+     19.9,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Head"
+   },
+   {
+    "at": [
+     20.85,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "MeleeMod"
+   },
+   {
+    "at": [
+     21.8,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Action"
+   }
+  ]
+ },
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#4b4a45"
+  },
+  {
+   "op": "Perimeter",
+   "height": 3.5,
+   "color": "#3c3a36"
+  },
+  {
+   "op": "WallX",
+   "x0": -24.3,
+   "x1": 24.3,
+   "z": -24.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#76705f",
+   "holes": [
+    {
+     "center": -16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": -8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -24.3,
+   "z1": 24.3,
+   "x": 24.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#76705f",
+   "holes": [
+    {
+     "center": -16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": -8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": -24.3,
+   "z1": 24.3,
+   "x": -24.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#76705f",
+   "holes": [
+    {
+     "center": -16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": -8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 0.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 8.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 16.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -24.3,
+   "x1": 24.3,
+   "z": 24.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#6a6656",
+   "holes": [
+    {
+     "center": -12.0,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.6
+    },
+    {
+     "center": 12.0,
+     "width": 2.4,
+     "bottom": 0.0,
+     "top": 2.6
+    }
+   ]
+  },
+  {
+   "op": "WallX",
+   "x0": -24.3,
+   "x1": 24.3,
+   "z": 29.5,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#5f6b5a",
+   "holes": [
+    {
+     "center": -19.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": -12.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": -5.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 5.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 12.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    },
+    {
+     "center": 19.0,
+     "width": 1.6,
+     "bottom": 0.9,
+     "top": 2.1
+    }
+   ]
+  },
+  {
+   "op": "WallZ",
+   "z0": 24.3,
+   "z1": 29.8,
+   "x": -24.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#5f6b5a"
+  },
+  {
+   "op": "WallZ",
+   "z0": 24.3,
+   "z1": 29.8,
+   "x": 24.0,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#5a5f6b"
+  },
+  {
+   "op": "WallZ",
+   "z0": 24.3,
+   "z1": 29.5,
+   "x": -0.3,
+   "t": 0.3,
+   "y0": 0.0,
+   "y1": 3.0,
+   "color": "#6a6656"
+  },
+  {
+   "op": "Block",
+   "x0": -5.0,
+   "y0": 0.0,
+   "z0": -5.0,
+   "x1": 5.0,
+   "y1": 1.6,
+   "z1": 5.0,
+   "color": "#8a8070"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.2,
+   "z1": 1.2,
+   "x": 6.8,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 1.6,
+   "color": "#8a8070"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.2,
+   "z1": 1.2,
+   "x": -6.8,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 1.6,
+   "color": "#8a8070"
+  },
+  {
+   "op": "Block",
+   "x0": -16.0,
+   "y0": 0.0,
+   "z0": -2.0,
+   "x1": -12.0,
+   "y1": 3.2,
+   "z1": 2.0,
+   "color": "#7d7466"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.0,
+   "z1": 1.0,
+   "x": -8.4,
+   "dir": -1,
+   "y0": 0.0,
+   "height": 3.2,
+   "color": "#7d7466"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -16.0,
+   "z": 0.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -16.0,
+   "z": 0.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -16.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -16.0,
+   "z": 0.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -16.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": -16.06,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": -15.94,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -14.0,
+   "z": -2.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -180.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -14.0,
+   "z": -2.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -180.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -14.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -16.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": -16.06,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": -11.94,
+   "y1": 4.3,
+   "z1": -1.94
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -14.0,
+   "z": 2.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -180.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -14.0,
+   "z": 2.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -180.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -14.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -16.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": -16.06,
+   "y0": 3.65,
+   "z0": 1.94,
+   "x1": -11.94,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -12.0,
+   "z": -1.55,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 0.92,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -12.0,
+   "z": -1.55,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 0.92,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": -1.1,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": -12.06,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": -11.94,
+   "y1": 4.3,
+   "z1": -1.04
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -12.0,
+   "z": 1.55,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 0.92,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": -12.0,
+   "z": 1.55,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 0.92,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 1.1,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": -12.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": -12.06,
+   "y0": 3.65,
+   "z0": 1.04,
+   "x1": -11.94,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Block",
+   "x0": 12.0,
+   "y0": 0.0,
+   "z0": -2.0,
+   "x1": 16.0,
+   "y1": 3.2,
+   "z1": 2.0,
+   "color": "#7d7466"
+  },
+  {
+   "op": "StairsX",
+   "z0": -1.0,
+   "z1": 1.0,
+   "x": 8.4,
+   "dir": 1,
+   "y0": 0.0,
+   "height": 3.2,
+   "color": "#7d7466"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 16.0,
+   "z": 0.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 16.0,
+   "z": 0.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 16.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 16.0,
+   "z": 0.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 16.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": 15.94,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": 16.06,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 14.0,
+   "z": -2.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 14.0,
+   "z": -2.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 14.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 16.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": 11.94,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": 16.06,
+   "y1": 4.3,
+   "z1": -1.94
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 14.0,
+   "z": 2.0,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 4.02,
+   "height": 0.55,
+   "depth": 0.05,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 14.0,
+   "z": 2.0,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 4.02,
+   "height": 0.1,
+   "depth": 0.14,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 14.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 16.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": 11.94,
+   "y0": 3.65,
+   "z0": 1.94,
+   "x1": 16.06,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 12.0,
+   "z": -1.55,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 0.92,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 12.0,
+   "z": -1.55,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 0.92,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": -1.1,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": 11.94,
+   "y0": 3.65,
+   "z0": -2.06,
+   "x1": 12.06,
+   "y1": 4.3,
+   "z1": -1.04
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 12.0,
+   "z": 1.55,
+   "y": 3.65,
+   "color": "#b8ad99",
+   "width": 0.92,
+   "height": 0.55,
+   "depth": 0.05,
+   "yaw": -90.0,
+   "material": ""
+  },
+  {
+   "op": "Mesh",
+   "mesh": "box",
+   "x": 12.0,
+   "z": 1.55,
+   "y": 4.22,
+   "color": "#8d7458",
+   "width": 0.92,
+   "height": 0.1,
+   "depth": 0.14,
+   "yaw": -90.0,
+   "material": "Metal"
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": 1.1,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Mesh",
+   "mesh": "cylinder",
+   "x": 12.0,
+   "z": 2.0,
+   "y": 3.2,
+   "color": "#6c6f73",
+   "width": 0.1,
+   "height": 1.12,
+   "depth": 0.1,
+   "segments": 8
+  },
+  {
+   "op": "Collider",
+   "x0": 11.94,
+   "y0": 3.65,
+   "z0": 1.04,
+   "x1": 12.06,
+   "y1": 4.3,
+   "z1": 2.06
+  },
+  {
+   "op": "Block",
+   "x0": -29.6,
+   "y0": 0.0,
+   "z0": -31.6,
+   "x1": -28.4,
+   "y1": 0.9,
+   "z1": -30.4,
+   "color": "#5a4632"
+  },
+  {
+   "op": "Block",
+   "x0": 28.4,
+   "y0": 0.0,
+   "z0": -31.6,
+   "x1": 29.6,
+   "y1": 0.9,
+   "z1": -30.4,
+   "color": "#5a4632"
+  },
+  {
+   "op": "Block",
+   "x0": -29.6,
+   "y0": 0.0,
+   "z0": 31.4,
+   "x1": -28.4,
+   "y1": 0.9,
+   "z1": 32.6,
+   "color": "#5a4632"
+  },
+  {
+   "op": "Block",
+   "x0": 28.4,
+   "y0": 0.0,
+   "z0": 31.4,
+   "x1": 29.6,
+   "y1": 0.9,
+   "z1": 32.6,
+   "color": "#5a4632"
+  },
+  {
+   "op": "Spawn",
+   "x": -6.0,
+   "z": -9.0
+  },
+  {
+   "op": "Spawn",
+   "x": -6.0,
+   "z": 9.0
+  },
+  {
+   "op": "Spawn",
+   "x": -2.5,
+   "z": -9.0
+  },
+  {
+   "op": "Spawn",
+   "x": -2.5,
+   "z": 9.0
+  },
+  {
+   "op": "Spawn",
+   "x": 2.5,
+   "z": -9.0
+  },
+  {
+   "op": "Spawn",
+   "x": 2.5,
+   "z": 9.0
+  },
+  {
+   "op": "Spawn",
+   "x": 6.0,
+   "z": -9.0
+  },
+  {
+   "op": "Spawn",
+   "x": 6.0,
+   "z": 9.0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 4
+  }
+ ]
+}

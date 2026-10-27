@@ -11,7 +11,8 @@ generator finds out at its desk what used to come back from CI on main.
 Namespace `CallOfSlop.MapKit`. The committed map files stay the product: the game loads `Maps/<Pack>/*.json`, never a
 generator, so a generator's output is committed and the "Map kit" self-test checks the committed file still matches.
 Twin Shard (`Source/MapKit/Generators/TwinShard.cs`, the port of the old `tools/space/twinshard.py`) is the worked
-example; `tools/mapkit/new_map.py <Pack> <NN> "<Name>"` scaffolds a new one from a template.
+example, and Horde Test (`Generators/HordeTest.cs`: a Zombies map, its "zombies" section built as a JSON tree in
+`kit.Top`; `Number => 0` writes a Dev-style file with no number, `Maps/Dev/HordeTest.json`) a second one; `tools/mapkit/new_map.py <Pack> <NN> "<Name>"` scaffolds a new one from a template.
 
 ## Writing a generator
 
@@ -52,7 +53,7 @@ Register it in `GeneratorRegistry.All` (`Source/MapKit/Generators.cs`), then:
 
 | Command | What it does |
 |---|---|
-| `CallOfSlop --gen-map "Orbital Foundry" [--out DIR] [--plan]` | Runs the generator, writes `Maps/Space/13-OrbitalFoundry.json` (in the repository's Maps folder when the game runs from a checkout, else DIR), loads it back and prints the `MapChecks` report; `--plan` also writes a top-down PNG next to the exe. Exit 0 when the map loads and passes. |
+| `CallOfSlop --gen-map "Orbital Foundry" [--out DIR] [--plan]` | Runs the generator, writes `Maps/Space/13-OrbitalFoundry.json` (in the repository's Maps folder when the game runs from a checkout, else DIR), loads it back and prints the `MapChecks` report; `--plan` also writes a top-down PNG next to the exe. Exit 0 when the map loads and passes (a map's `test` block may lower the main-area share with `minMainNavPct`). |
 | `CallOfSlop --gen-maps [--out DIR]` | Runs every generator and says for each whether its output is identical to the committed file, the same map in different text (same fingerprint), or different. |
 | `CallOfSlop --gen-plan <map.json> <out.png>` | A plan of any map file: outline, boxes shaded by height (hidden colliders bluer), solid meshes, props, waypoints, spawns by team, hills, flags. |
 

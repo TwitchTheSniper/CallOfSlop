@@ -189,6 +189,16 @@ public sealed class ZombiesRules
     // ---- Points -------------------------------------------------------------------------------------------
     public int StartPoints = 500, HitPoints = 10, KillPoints = 60, HeadshotKillPoints = 100, MeleeKillPoints = 130;
 
+    /// <summary>
+    /// A run started at a later round (the lobby's "Start round", Source/Game/ZombiesStartRound.cs): each player gets
+    /// <see cref="StartPoints"/> plus <see cref="StartRoundKeep"/> of what a typical player earned in the skipped rounds
+    /// (their share of the zombies times <see cref="StartRoundPerZombie"/>: a kill and a few hits), the rest having gone
+    /// on doors, perks and guns. The team's power-up schedule is moved on by the whole of what was earned.
+    /// </summary>
+    public int StartRoundPerZombie = 90;
+
+    public float StartRoundKeep = 0.12f;
+
     /// <summary>Points per board put back, and the most a player earns from boards in one round.</summary>
     public int RepairPoints = 10, RepairCapPerRound = 500;
 
@@ -623,6 +633,8 @@ public sealed class ZombiesRules
                         switch (k)
                         {
                             case "start": r.StartPoints = Whole(v, w, 0, 1000000); break;
+                            case "startRoundPerZombie": r.StartRoundPerZombie = Whole(v, w, 0, 10000); break;
+                            case "startRoundKeep": r.StartRoundKeep = Real(v, w, 0, 1); break;
                             case "hit": r.HitPoints = Whole(v, w, 0, 10000); break;
                             case "kill": r.KillPoints = Whole(v, w, 0, 10000); break;
                             case "headshotKill": r.HeadshotKillPoints = Whole(v, w, 0, 10000); break;

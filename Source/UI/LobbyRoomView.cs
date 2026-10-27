@@ -99,6 +99,7 @@ public sealed class LobbyRoomView
         h = Mix(h, game.GravityPercent | (game.MatchMinutes << 8) | ((int)game.BotSkill << 16) | ((int)game.BotGearMode << 20) | ((int)game.ScoreLimitMode << 24));
         h = Mix(h, game.WantedBots | (game.AutoStartSeconds << 8) | ((game.DestructionEnabled ? 1 : 0) << 24) | ((game.VoiceAllowed ? 1 : 0) << 25)
                    | ((game.DeadChatPrivate ? 1 : 0) << 26) | ((game.ReturnToLobby ? 1 : 0) << 27) | ((game.FrenzyBuffsEnabled ? 1 : 0) << 28));
+        h = Mix(h, game.ZStartRound | ((game.ZTestKit ? 1 : 0) << 8));
         h = Mix(h, game.Players.Count);
         foreach (var p in game.Players.Values)
         {
@@ -179,6 +180,10 @@ public sealed class LobbyRoomView
         SettingsLine = $"{limitText}, {game.MatchMinutes} min, {auto}, {(game.ReturnToLobby ? "back to the lobby after each match" : "next match straight after the vote")}";
         if (game.EffectiveGravityPercent != 100)
             SettingsLine += ", " + Game.GravityLabel(game.EffectiveGravityPercent) + (game.EffectiveGravityPercent != game.GravityPercent ? $" (the lowest this map plays at; set {game.GravityPercent}%)" : "");
+        if (game.Mode == GameMode.Zombies && game.ZStartRound > 1)
+            SettingsLine += $", starts at round {game.ZStartRound}";
+        if (game.Mode == GameMode.Zombies && game.TestKitOn)
+            SettingsLine += ", test kit (every perk, 4 slots, strong guns)";
         if (game.IsTeamMode && game.TeamBalance != TeamBalance.Auto)
             SettingsLine += game.HumansVsBots ? $", Humans vs Bots (people on {GameModes.TeamNames[game.HumansTeam]})" : ", team balancing off";
         ModeRules = mode.Rules();

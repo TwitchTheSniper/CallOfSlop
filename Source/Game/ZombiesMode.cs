@@ -189,7 +189,7 @@ public sealed partial class Game
     public ZPlayer ZP(byte id)
     {
         if (!ZPlayers.TryGetValue(id, out var z))
-            ZPlayers[id] = z = new ZPlayer { Points = ZRules.StartPoints };
+            ZPlayers[id] = z = new ZPlayer { Points = ZJoinPoints }; // (more in a run started at a later round: ZombiesStartRound.cs)
         return z;
     }
 
@@ -259,6 +259,7 @@ public sealed partial class Game
         ZFxList.Clear();
         ZPlayers.Clear();
         ZRound = 0;
+        _zRunStartPoints = 0;
         ZPhase = ZRoundPhase.Waiting;
         ZPhaseLeft = 0;
         ZRemaining = 0;
@@ -299,7 +300,8 @@ public sealed partial class Game
                     GiveStartGear(p);
             }
         }
-        ModeEvent($"Zombies on {World.Map.Name}: survive as long as you can. Round 1 in {ZRules.FirstRoundDelay:0} seconds.", Sfx.StreakCall);
+        ApplyStartRound(); // the lobby's Start round and Test kit (ZombiesStartRound.cs; nothing at round 1 without the kit)
+        ModeEvent($"Zombies on {World.Map.Name}: survive as long as you can. Round {ZRound + 1} in {ZRules.FirstRoundDelay:0} seconds.", Sfx.StreakCall);
         Console.WriteLine($"[zombies] run started: {Players.Count} player(s), seed {_zRng:x8}, {World.Map.Zombies!.Spawners.Count} spawners, {World.Map.Zombies.Doors.Count} doors");
     }
 
@@ -534,6 +536,8 @@ public sealed partial class Game
         }
         if (starts.FirstOrDefault(b => b.IsMelee) is { } melee)
             GiveBuild(p, 4, melee.Build(), full: true, start: true);
+        if (TestKitOn)
+            GiveTestKit(p); // every perk, 4 slots, strong guns (ZombiesStartRound.cs)
         p.Weapon = p.Primary;
         if (p.Bot is { } brain)
         {

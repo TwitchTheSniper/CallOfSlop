@@ -395,6 +395,8 @@ public static partial class SelfTest
         var navWait = Stopwatch.StartNew();
         for (var wait = 0; wait < 4000 && NavGraph.Current == NavGraph.Empty; wait++)
             NavGraph.Pump(50);
+        if (NavGraph.Current == NavGraph.Empty)
+            NavGraph.Pump(double.MaxValue); // (a cached graph read on a worker returns at once from a sliced pump: --check-map spun through the loop and checked an empty graph)
         var g = NavGraph.Current;
         var phys = World.Physics;
         float Floor(float x, float z, float fromY, float depth = 3f)

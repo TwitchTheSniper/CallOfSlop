@@ -148,6 +148,12 @@ public sealed class ZombiesMap
     /// </summary>
     public bool MachineProps;
 
+    /// <summary>
+    /// "testKit": true: a test map (Dev/HordeTest.json). The host's "Test kit" lobby setting works here only: everyone
+    /// starts with every perk, the slot upgrade and strong late builds (Source/Game/ZombiesStartRound.cs).
+    /// </summary>
+    public bool TestKit;
+
     /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
     public static class MachineProp
     {
@@ -203,7 +209,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "machineProps"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "machineProps", "testKit"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -389,6 +395,13 @@ public sealed class ZombiesMap
                 JsonValueKind.True => true,
                 JsonValueKind.False => false,
                 _ => throw new MapFileException($"{where}.machineProps: true or false"),
+            };
+        if (Get(e, "testKit") is { } tk)
+            z.TestKit = tk.ValueKind switch
+            {
+                JsonValueKind.True => true,
+                JsonValueKind.False => false,
+                _ => throw new MapFileException($"{where}.testKit: true or false"),
             };
         if (z.MachineProps)
             foreach (var (name, _) in z.Machines())
