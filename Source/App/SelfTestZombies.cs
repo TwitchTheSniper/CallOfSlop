@@ -86,7 +86,7 @@ public static partial class SelfTest
                 Fail($"the round curve goes down at round {i + 1}");
         if (rules.SpeedMix(4).Sprint > 0 || rules.SpeedMix(5).Sprint <= 0 || rules.SpeedMix(2).Run > 0 || rules.ZombieCount(1, 4) <= counts[0])
             Fail("sprinters should start at round 5 and runners at round 3, and more players should mean more zombies");
-        if (rules.Perks.Count != 5 || rules.Perk("jugg")?.DamageTaken >= 1 || rules.Perk("speed")?.Reload >= 1 || rules.Perk("doubletap")?.FireRate <= 1 || rules.Perk("revive") is not { SelfRevive: false, Revive: < 1f }
+        if (rules.Perks.Count != 12 || rules.Perk("jugg")?.DamageTaken >= 1 || rules.Perk("speed")?.Reload >= 1 || rules.Perk("doubletap")?.FireRate <= 1 || rules.Perk("revive") is not { SelfRevive: false, Revive: < 1f }
             || rules.Perk("secondwind") is not { SelfRevive: true })
             Fail("the four World at War perks and Second Wind (the only self-revive) aren't in the rules as expected");
         foreach (var bad in new[] { """{"format": "call-of-slop-zombies/1", "rounds": {"countBase": -3}}""", """{"format": "call-of-slop-zombies/1", "zombie": {"bite": 3}}""", """{"format": "x"}""" })
@@ -350,7 +350,7 @@ public static partial class SelfTest
                 Fail("perk machines should need the power, Juggernog should cut zombie damage, and going down should lose every perk");
             // Speed Cola and Double Tap change the reload and the fire rate.
             zp.Downed = false;
-            zp.Perks = (byte)((1 << g.ZRules.PerkIndex("speed")) | (1 << g.ZRules.PerkIndex("doubletap")));
+            zp.Perks = (ushort)((1 << g.ZRules.PerkIndex("speed")) | (1 << g.ZRules.PerkIndex("doubletap")));
             if (g.ZombieReloadMult(me) >= 1 || g.ZombieFireIntervalMult(me) >= 1)
                 Fail("Speed Cola / Double Tap don't change reload / fire rate");
             // No hard cap on perks (developer answer, 2026-10-26): beyond the 4th each costs double the step before.
@@ -363,7 +363,7 @@ public static partial class SelfTest
                     zp.Perks = 0;
                     for (var i = 0; i < r.Perks.Count && Game.PerkCount(zp) < r.FullPricePerks; i++)
                         if (i != swk)
-                            zp.Perks |= (byte)(1 << i);
+                            zp.Perks |= (ushort)(1 << i);
                     var held = Game.PerkCount(zp);
                     me.Teleport(sw.At + World.FlatForward(sw.Yaw) * 1.0f);
                     zp.Points = 100000;
@@ -587,7 +587,7 @@ public static partial class SelfTest
                     ok &= bought && downed && used && stillDown && up;
                 }
                 // Without it: down stays down (solo: the game over; Quick Revive doesn't self-revive any more).
-                zp.Perks = (byte)(1 << g.ZRules.PerkIndex("revive"));
+                zp.Perks = (ushort)(1 << g.ZRules.PerkIndex("revive"));
                 g.SelfTestBeginRound(1, now); // (the game over needs a round on)
                 g.SelfTestDown(me, now);
                 ZTicks(g, ref now, g.ZRules.SelfReviveSeconds + 0.3);

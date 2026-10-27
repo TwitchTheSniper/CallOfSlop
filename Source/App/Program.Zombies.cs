@@ -155,21 +155,7 @@ public static unsafe partial class Program
             }
         }
 
-        // Perk machines: tall coloured cabinets (lit when the power is on, or when they don't need it).
-        foreach (var m in zm.PerkMachines)
-        {
-            var perk = _game.ZRules.Perk(m.Perk);
-            var c = perk?.Color ?? new Vector3(0.6f);
-            var lit = !m.NeedsPower || _game.ZPower;
-            var rot = Matrix4x4.CreateRotationY(-m.Yaw);
-            if (zm.MachineProps)
-                Gfx.Draw(Matrix4x4.CreateScale(0.8f, 0.97f, 0.01f) * Matrix4x4.CreateTranslation(0, 0, -0.337f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.9f, 0)), c * 0.6f); // the perk's colour on the Perk Machine prop's front
-            else
-                Gfx.Draw(Matrix4x4.CreateScale(0.9f, 2.0f, 0.7f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1f, 0)), c * 0.55f);
-            Gfx.Draw(Matrix4x4.CreateScale(0.7f, 0.5f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 1.62f, 0)),
-                lit ? c * (1.1f + 0.15f * MathF.Sin(t * 3)) : c * 0.3f, 1f, mode: lit ? 2 : 0);
-            Gfx.Draw(Matrix4x4.CreateScale(0.25f, 0.4f, 0.02f) * Matrix4x4.CreateTranslation(0, 0, -0.36f) * rot * Matrix4x4.CreateTranslation(m.At + new Vector3(0, 0.8f, 0)), new Vector3(0.1f, 0.1f, 0.1f));
-        }
+        DrawPerkMachines(zm, now); // perk machines: each perk's own machine, its lit sign and lamps (Program.ZombiesPerks.cs)
 
         DrawSlotMachines(zm, live, now); // slot machines: reels, heat meter, topper lights (Program.ZombiesSlots.cs)
 

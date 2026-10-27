@@ -35,7 +35,7 @@ public static partial class SelfTest
             var rich = g.SelfTestBotPlan(bot, now);
             zp.Perks = 0;
             for (var i = 0; i < g.ZRules.Perks.Count; i++)
-                zp.Perks |= (byte)(1 << i);
+                zp.Perks |= (ushort)(1 << i);
             var allPerks = g.SelfTestBotPlan(bot, now);
             g.ZRules.BotsBuy = false;
             var off = g.SelfTestBotPlan(bot, now);

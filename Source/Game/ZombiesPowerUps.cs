@@ -141,13 +141,21 @@ public sealed partial class Game
     /// schedule says one is due (<see cref="ZombiesRules.PowerFirstAt"/>), or on the optional flat chance; at most the
     /// round's cap (a due drop then waits).
     /// </summary>
-    private void RollPowerUp(Vector3 at, double now)
+    /// <remarks>
+    /// <paramref name="killer"/>'s perks (Windfall Soda) add a flat chance of their own, whose drops may go up to the
+    /// perk's "powerUpExtra" over the round's cap. (Its roll only happens while the killer holds it, so runs without
+    /// the perk roll exactly as before.)
+    /// </remarks>
+    private void RollPowerUp(Vector3 at, double now, ZPlayer? killer = null)
     {
         StartPowerSchedule();
-        if (_zPowerThisRound >= ZRules.PowerMaxPerRound)
+        var luck = killer != null ? PerkSum(killer, static d => d.PowerUpChance) : 0f;
+        var cap = ZRules.PowerMaxPerRound;
+        if (_zPowerThisRound >= cap && (luck <= 0 || _zPowerThisRound >= cap + (int)PerkSum(killer!, static d => d.PowerUpExtra)))
             return;
-        var due = ZRules.PowerFirstAt > 0 && _zPowerEarned >= _zPowerDueAt;
-        if (!due && (ZRules.PowerDropChance <= 0 || ZRand() >= ZRules.PowerDropChance))
+        var due = _zPowerThisRound < cap && ZRules.PowerFirstAt > 0 && _zPowerEarned >= _zPowerDueAt;
+        var flat = _zPowerThisRound < cap && ZRules.PowerDropChance > 0;
+        if (!due && !(flat && ZRand() < ZRules.PowerDropChance) && !(luck > 0 && ZRand() < luck))
             return;
         if (due)
             AdvancePowerSchedule();

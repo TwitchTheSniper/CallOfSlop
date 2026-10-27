@@ -67,8 +67,14 @@ public sealed class ZPlayer
     public bool Downed;
     public double DownedAt, BleedAt, SelfReviveAt = -1;
 
-    /// <summary>Perks held, one bit per perk in the rules' list.</summary>
-    public byte Perks;
+    /// <summary>Perks held, one bit per perk in the rules' list (16 bits since protocol 57: <see cref="ZombiesRules.MaxPerkCount"/>).</summary>
+    public ushort Perks;
+
+    /// <summary>Server: an armour plate perk (Bulwark Brew) takes the next zombie hit from this time on (it grows back after a hit). Clients: <see cref="PlateReady"/>.</summary>
+    public double PlateReadyAt;
+
+    /// <summary>The plate is up (both sides: the server works it out, clients get it in <see cref="Msg.ZWorld"/> for the HUD).</summary>
+    public bool PlateReady;
 
     /// <summary>The interact key is held (sent by the client in <see cref="Msg.ZUse"/>), since when, and whether this hold already bought something.</summary>
     public bool UseHeld, UseDone;
@@ -539,6 +545,7 @@ public sealed partial class Game
         }
         zp.Spawned = true;
         _zAnySpawned = true;
+        zp.PlateReady = zp.Perks != 0 && PlateUp(zp, now); // (the HUD's plate badge; sent in ZWorld)
         if (zp.Downed)
         {
             zp.BleedFraction = (float)Math.Clamp((zp.BleedAt - now) / ZRules.BleedoutSeconds, 0, 1);
@@ -590,7 +597,7 @@ public sealed partial class Game
                     zp.Reviving = (byte)u.Index;
                     zp.ReviveProgress = 0;
                 }
-                var mult = PerkMult(zp, d => d.Revive);
+                var mult = PerkMult(zp, static d => d.Revive);
                 zp.ReviveProgress += World.TickDt / MathF.Max(0.05f, ZRules.ReviveSeconds * mult);
                 if (Players.TryGetValue((byte)u.Index, out var downed))
                 {
@@ -612,12 +619,14 @@ public sealed partial class Game
                 zp.ReviveProgress = 0;
                 if (now >= zp.RepairNext && ZBoards[u.Index] < zm.Windows[u.Index].Boards)
                 {
-                    zp.RepairNext = now + ZRules.RepairSeconds;
+                    zp.RepairNext = now + ZRules.RepairSeconds * PerkMult(zp, static d => d.Repair); // Hammerhand Ale: faster
                     ZBoards[u.Index]++;
-                    if (zp.RepairPointsThisRound + ZRules.RepairPoints <= ZRules.RepairCapPerRound)
+                    var boardMult = PerkMult(zp, static d => d.RepairPoints); // Hammerhand Ale: more points a board, and a cap raised to match
+                    var boardPoints = (int)MathF.Round(ZRules.RepairPoints * boardMult);
+                    if (zp.RepairPointsThisRound + boardPoints <= (int)MathF.Round(ZRules.RepairCapPerRound * boardMult))
                     {
-                        zp.RepairPointsThisRound += ZRules.RepairPoints;
-                        EarnPoints(p, ZRules.RepairPoints, now); // (Double Points doubles boards too)
+                        zp.RepairPointsThisRound += boardPoints;
+                        EarnPoints(p, boardPoints, now); // (Double Points doubles boards too)
                     }
                     Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
                 }
@@ -658,21 +667,44 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>A perk effect multiplied over the perks held (1 with none).</summary>
+    /// <summary>A perk effect multiplied over the perks held (1 with none). <paramref name="f"/> is a static lambda: no allocation.</summary>
     private float PerkMult(ZPlayer zp, Func<ZombiePerkDef, float> f)
     {
         var m = 1f;
+        if (zp.Perks == 0)
+            return m;
         for (var i = 0; i < ZRules.Perks.Count; i++)
             if (zp.Has(i))
                 m *= f(ZRules.Perks[i]);
         return m;
     }
 
+    /// <summary>A perk effect added up over the perks held (0 with none).</summary>
+    private float PerkSum(ZPlayer zp, Func<ZombiePerkDef, float> f)
+    {
+        var m = 0f;
+        if (zp.Perks == 0)
+            return m;
+        for (var i = 0; i < ZRules.Perks.Count; i++)
+            if (zp.Has(i))
+                m += f(ZRules.Perks[i]);
+        return m;
+    }
+
+    /// <summary>A Zombies perk multiplier for <paramref name="p"/> (1 outside Zombies, or for a player with no run).</summary>
+    private float ZPerkMult(Player? p, Func<ZombiePerkDef, float> f) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) ? PerkMult(z, f) : 1f;
+
     /// <summary>Reload time multiplier from Zombies perks (Speed Cola) for <paramref name="p"/> (1 outside Zombies).</summary>
-    public float ZombieReloadMult(Player? p) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) ? PerkMult(z, d => d.Reload) : 1f;
+    public float ZombieReloadMult(Player? p) => ZPerkMult(p, static d => d.Reload);
 
     /// <summary>Fire interval multiplier from Zombies perks (Double Tap) for <paramref name="p"/> (1 outside Zombies).</summary>
-    public float ZombieFireIntervalMult(Player? p) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) ? 1f / PerkMult(z, d => d.FireRate) : 1f;
+    public float ZombieFireIntervalMult(Player? p) => 1f / ZPerkMult(p, static d => d.FireRate);
+
+    /// <summary>
+    /// Movement speed multiplier from Zombies perks (Fleetfoot Fizz) for <paramref name="p"/> (1 outside Zombies, and
+    /// while downed: the crawl stays a crawl). The client's input, the bots' input and the server's speed check use it.
+    /// </summary>
+    public float ZombieMoveMult(Player? p) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) && !z.Downed ? PerkMult(z, static d => d.MoveSpeed) : 1f;
 
     /// <summary>Server: points for <paramref name="p"/> (the host's own +N popups come straight from here; clients see the change).</summary>
     public void AddPoints(Player p, int amount)
@@ -689,7 +721,16 @@ public sealed partial class Game
         var zp = ZP(p);
         if (!p.Alive || zp.Downed || !DamageEnabled || now < p.ImmuneUntil)
             return;
-        var dmg = Math.Max(1, (int)MathF.Round(damage * PerkMult(zp, d => d.DamageTaken)));
+        if (zp.Perks != 0 && PlateUp(zp, now))
+        {
+            // Bulwark Brew: the plate takes the whole hit and grows back later.
+            zp.PlateReadyAt = now + PerkSum(zp, static d => d.PlateSeconds);
+            zp.PlateReady = false;
+            p.LastCombatTime = now;
+            Audio.Effect3D(Sfx.BreakMetal, p.Position + new Vector3(0, 1.2f, 0), 0.7f, MixBus.Zombies);
+            return;
+        }
+        var dmg = Math.Max(1, (int)MathF.Round(damage * PerkMult(zp, static d => d.DamageTaken)));
         p.Health -= dmg;
         BloodOnSwipe(p, from ?? p.Position + World.FlatForward(p.Yaw)); // blood marks (BodyBlood.cs)
         p.LastHurtTime = now;
@@ -697,6 +738,9 @@ public sealed partial class Game
         if (p.Health <= 0)
             Down(p, zp, now);
     }
+
+    /// <summary>Server: <paramref name="zp"/> holds an armour plate perk and its plate is up.</summary>
+    private bool PlateUp(ZPlayer zp, double now) => now >= zp.PlateReadyAt && PerkSum(zp, static d => d.PlateSeconds) > 0;
 
     private void Down(Player p, ZPlayer zp, double now)
     {
@@ -707,7 +751,7 @@ public sealed partial class Game
                 selfPerk = i;
         var selfRevive = selfPerk >= 0;
         if (selfRevive)
-            zp.Perks &= (byte)~(1 << selfPerk); // consumed (even if perks were kept on down)
+            zp.Perks &= (ushort)~(1 << selfPerk); // consumed (even if perks were kept on down)
         zp.Downed = true;
         zp.Downs++;
         zp.DownedAt = now;
@@ -958,7 +1002,9 @@ public sealed partial class Game
             {
                 var k = ZRules.PerkIndex(zm.PerkMachines[u.Index].Perk);
                 zp.Points -= u.Cost;
-                zp.Perks |= (byte)(1 << k);
+                zp.Perks |= (ushort)(1 << k);
+                if (ZRules.Perks[k].PlateSeconds > 0)
+                    zp.PlateReadyAt = now; // the plate is up at once
                 ModeEvent($"{p.Name} drank {ZRules.Perks[k].Name}", Sfx.LevelUp);
                 break;
             }
@@ -1252,10 +1298,10 @@ public sealed partial class Game
     // ---- Parts: drops and the workbench ------------------------------------------------------------------
 
     /// <summary>Server: a zombie died at <paramref name="at"/> in round <paramref name="round"/>: maybe a part drops (DropTables.json).</summary>
-    private void RollDrop(Vector3 at, int round, double now)
+    private void RollDrop(Vector3 at, int round, double now, float chanceMult = 1f)
     {
         var tables = RunTables.Current;
-        var chance = RunTables.RowFor(tables.DropChance, round)?.Chance ?? 0;
+        var chance = (RunTables.RowFor(tables.DropChance, round)?.Chance ?? 0) * chanceMult; // Salvage Stout: the killer's perks
         if (ZRand() >= chance)
             return;
         var tier = RunTables.Roll(tables.PartDrops, round, ZNext());
@@ -1279,7 +1325,8 @@ public sealed partial class Game
     {
         var got = 0;
         PartDef? last = null;
-        for (var k = 0; k < ZRules.SalvageParts; k++)
+        var count = ZRules.SalvageParts + (int)PerkSum(zp, static d => d.SalvageBonus); // Salvage Stout: a part more
+        for (var k = 0; k < count; k++)
         {
             var i = PickSlotPart(RunTables.Roll(RunTables.Current.PartDrops, round, ZNext()), ZNext());
             if (i < 0)
@@ -1414,4 +1461,13 @@ public sealed partial class Game
     public int SelfTestToSpawn => _zToSpawn;
 
     public void SelfTestRollDrop(Vector3 at, int round, double now) => RollDrop(at, round, now);
+
+    /// <summary>Self-test: a melee swing from <paramref name="p"/>'s eye along <paramref name="dir"/> against zombies (2 m reach, one zombie).</summary>
+    public byte SelfTestZombieMelee(Player p, Vector3 dir, float damage, double now) => ZombieMelee(p, p.Eye, dir, 2f, 0.5f, damage, 1, 0, ServerTick, now);
+
+    /// <summary>Self-test: the round's power-up count back to none (a new round's cap).</summary>
+    public void SelfTestResetPowerCount() => _zPowerThisRound = 0;
+
+    /// <summary>Self-test: one server tick of <paramref name="p"/>'s Zombies state (the interact key, the plate, bleeding out).</summary>
+    public void SelfTestPerkTick(Player p, double now) => TickZPlayer(p, ZP(p), ZMap!, now);
 }

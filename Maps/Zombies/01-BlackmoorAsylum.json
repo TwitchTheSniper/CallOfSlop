@@ -1,7 +1,7 @@
 {
  "format": "call-of-slop-map/1",
  "name": "Blackmoor Asylum",
- "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, five perks, a slot machine for every part category, the power in the generator house.",
+ "description": "Zombies: an abandoned village asylum and its research wing at night. Seven areas, eighteen boarded windows, the mystery box in five spots, twelve perks, a slot machine for every part category, the power in the generator house.",
  "author": "Call of Slop",
  "order": 960,
  "maxPlayers": 8,
@@ -2667,6 +2667,66 @@
     "at": [
      -6.7,
      13.5
+    ],
+    "yaw": -90,
+    "power": true
+   },
+   {
+    "perk": "hammerhand",
+    "at": [
+     -6.6,
+     -4.9
+    ],
+    "yaw": 90
+   },
+   {
+    "perk": "bloodroot",
+    "at": [
+     -12.4,
+     3.6
+    ],
+    "yaw": 0
+   },
+   {
+    "perk": "salvage",
+    "at": [
+     12.5,
+     -27.6
+    ],
+    "yaw": 180
+   },
+   {
+    "perk": "fleetfoot",
+    "at": [
+     25.6,
+     -21.5
+    ],
+    "yaw": -90,
+    "power": true
+   },
+   {
+    "perk": "marksman",
+    "at": [
+     6.7,
+     15.1
+    ],
+    "yaw": 90,
+    "power": true
+   },
+   {
+    "perk": "windfall",
+    "at": [
+     23.6,
+     -8.7
+    ],
+    "yaw": 180,
+    "power": true
+   },
+   {
+    "perk": "bulwark",
+    "at": [
+     -6.7,
+     5.4
     ],
     "yaw": -90,
     "power": true
