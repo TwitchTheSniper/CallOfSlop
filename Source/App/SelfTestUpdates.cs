@@ -513,7 +513,7 @@ public static partial class SelfTest
     // ---- Server browser ---------------------------------------------------------------------------
     private static void UpServerBrowser()
     {
-        var info = new ServerInfo("Host", "Harbor", 3, 16, 2, MatchPhase.Playing, 60123, ServerInfo.ProtocolVersion, GameMode.FreeForAll, PhysicsMode.Swept, "", Build: UpVersion);
+        var info = new ServerInfo("Host", "Harbor", 3, 16, 2, MatchPhase.Playing, 26123, ServerInfo.ProtocolVersion, GameMode.FreeForAll, PhysicsMode.Swept, "", Build: UpVersion);
         var back = ServerInfo.Find([0x1c, 1, 2, .. info.Encode()]);
         var withRot = info with { Rotation = MapPack.TrueRandomName };
         var backRot = ServerInfo.Find(withRot.Encode());

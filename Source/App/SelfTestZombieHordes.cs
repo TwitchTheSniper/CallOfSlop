@@ -724,7 +724,7 @@ public static partial class SelfTest
     /// <summary>A loopback host with 300 zombies and a client with 80 ms of lag and 3 percent loss: it knows them all, the near ones fresh.</summary>
     private static void HordeLoopback(Map map, ZombiesMap zm)
     {
-        const ushort port = 60271;
+        const ushort port = 26271;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);

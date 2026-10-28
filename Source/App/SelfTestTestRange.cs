@@ -44,7 +44,7 @@ public static partial class SelfTest
             if (m.ScoreboardColumns != ("Kills", "Deaths"))
                 Fail("Test Range scoreboard should count kills and deaths");
         }
-        var info = new ServerInfo("Range", "Courtyard", 2, 8, 1, MatchPhase.Playing, 60124, ServerInfo.ProtocolVersion, GameMode.TestRange);
+        var info = new ServerInfo("Range", "Courtyard", 2, 8, 1, MatchPhase.Playing, 26124, ServerInfo.ProtocolVersion, GameMode.TestRange);
         if (ServerInfo.Find(info.Encode()) != info)
             Fail("Test Range didn't survive the server info");
     }
@@ -243,7 +243,7 @@ public static partial class SelfTest
                 Fail("single player (no lobby room) should refuse BACK TO LOBBY");
         }
         var map = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60193;
+        const ushort port = 26193;
         var clock = System.Diagnostics.Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);

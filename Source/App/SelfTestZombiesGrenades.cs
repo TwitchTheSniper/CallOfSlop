@@ -192,7 +192,7 @@ public static partial class SelfTest
     {
         var map = ZTestMap!;
         var zm = map.Zombies!;
-        const ushort port = 60297;
+        const ushort port = 26297;
         var now = 0.0;
         World.SetMap(map);
         using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id)

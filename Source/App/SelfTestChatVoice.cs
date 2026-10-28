@@ -377,7 +377,7 @@ public static partial class SelfTest
     private static void CheckChatVoiceLoopback()
     {
         var small = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60213;
+        const ushort port = 26213;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);

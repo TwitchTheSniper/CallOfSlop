@@ -22,7 +22,7 @@ public static partial class SelfTest
     private static void CheckLobbyLoopback()
     {
         var small = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60191;
+        const ushort port = 26191;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);
@@ -303,7 +303,7 @@ public static partial class SelfTest
     private static void CheckTeamBalance()
     {
         var map = FindMap("Courtyard", m => m.MaxPlayers >= 12) ?? FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60192;
+        const ushort port = 26192;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);

@@ -264,7 +264,7 @@ public static partial class SelfTest
     private static void StrengthNetwork()
     {
         var small = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60247;
+        const ushort port = 26247;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);
