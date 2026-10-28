@@ -177,7 +177,9 @@ public static partial class SelfTest
             }
             else if (v is System.Collections.IList list && ft.IsGenericType)
                 list.Add(PoolJunk(ft.GetGenericArguments()[0]));
-            else if (ft.IsClass && v != null && depth < 2)
+            else if (ft == typeof(ZombieTypeDef))
+                f.SetValue(o, new ZombieTypeDef { Key = "junk" }); // (a shared type definition is never written to: the reset puts the walker back; ZombieTypes.cs)
+            else if (ft.IsClass && v != null && depth < 2 && ft != typeof(string))
                 PoolScribble(v, depth + 1);
             else if (ft.IsValueType)
                 f.SetValue(o, PoolJunk(ft));
