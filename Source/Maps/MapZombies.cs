@@ -178,7 +178,11 @@ public sealed class ZombiesMap
         private static readonly string[] CategoryCabinets = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c)} {SlotMachine}").ToArray();
 
         /// <summary>The prop a slot machine of part category <paramref name="category"/> stands as ("Barrel Reel Cabinet"; -1: the classic "Reel Cabinet").</summary>
-        public static string SlotMachineFor(int category) => category >= 0 && category < CategoryCabinets.Length ? CategoryCabinets[category] : SlotMachine;
+        public static string SlotMachineFor(int category) => category == SlotCategoryGrenade ? GrenadeCabinet
+            : category >= 0 && category < CategoryCabinets.Length ? CategoryCabinets[category] : SlotMachine;
+
+        /// <summary>The grenade parts machine's cabinet (Props/Zombies/SlotMachines, tools/zombies/make_slot_cabinets.py).</summary>
+        public const string GrenadeCabinet = "Grenade Parts Reel Cabinet";
 
         /// <summary>The prop each casino game's table stands as (Props/Zombies/Casino, written by tools/zombies/make_casino_tables.py), by <see cref="CasinoGame"/>.</summary>
         public static readonly string[] CasinoTables = ["Blackjack Table", "Roulette Table", "High-Low Table", "Dice Table"];
@@ -191,6 +195,14 @@ public sealed class ZombiesMap
 
     /// <summary>A slot machine's category for the grenade parts machine (any casing, fuse, payload or grenade mod; "category": "grenade" in a map).</summary>
     public const int SlotCategoryGrenade = 64;
+
+    /// <summary>
+    /// The categories slot machines come in (the part categories, except that the four grenade ones share the grenade
+    /// parts machine, <see cref="SlotCategoryGrenade"/>): maps with category machines have one of each.
+    /// </summary>
+    public static readonly int[] SlotCategories = Enum.GetValues<PartCategory>()
+        .Where(c => c is not (PartCategory.Casing or PartCategory.Fuse or PartCategory.Payload or PartCategory.GrenadeMod))
+        .Select(c => (int)c).Append(SlotCategoryGrenade).ToArray();
 
     public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8;
 

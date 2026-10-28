@@ -1270,6 +1270,14 @@
     ],
     "yaw": 180.0,
     "category": "Action"
+   },
+   {
+    "at": [
+     22.75,
+     24.7
+    ],
+    "yaw": 180.0,
+    "category": "Grenade"
    }
   ]
  },

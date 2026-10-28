@@ -143,9 +143,11 @@ public sealed class HordeTest : IMapGenerator
         var slots = new JArray([Spot(-A + 0.45, -4, 90)]);
         // A slot machine for every part category (as every map with category machines has), in a row along the
         // Armoury's south wall either side of the debris, facing into the room.
-        var cats = Enum.GetValues<PartCategory>();
+        // (The four grenade categories share the grenade parts machine, last in the row: ZombiesMap.SlotCategories.)
+        var cats = ZombiesMap.SlotCategories;
         for (var i = 0; i < cats.Length; i++)
-            slots.Add(Spot(i < 7 ? 1.2 + 0.95 * i : 14.2 + 0.95 * (i - 7), A + T + 0.4, 180, ("category", cats[i].ToString())));
+            slots.Add(Spot(i < 7 ? 1.2 + 0.95 * i : 14.2 + 0.95 * (i - 7), A + T + 0.4, 180,
+                ("category", cats[i] == ZombiesMap.SlotCategoryGrenade ? "Grenade" : ((PartCategory)cats[i]).ToString())));
 
         return new JObject(
             ("start", "Arena"),

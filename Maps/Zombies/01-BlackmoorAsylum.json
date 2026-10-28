@@ -2910,6 +2910,14 @@
     ],
     "yaw": 90,
     "category": "Muzzle"
+   },
+   {
+    "at": [
+     -22.6,
+     8.0
+    ],
+    "yaw": 90,
+    "category": "Grenade"
    }
   ],
   "casino": [

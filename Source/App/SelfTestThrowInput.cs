@@ -124,7 +124,7 @@ public static partial class SelfTest
 
         // Every throwable, from the slot it goes in, with the loadout applied by a spawn (the HUD refills from it).
         var results = new List<string>();
-        var kinds = Throwables.All.Where(d => d.Kind != ThrowableKind.None)
+        var kinds = Throwables.All.Where(d => d.Kind != ThrowableKind.None && d.InLoadouts)
             .OrderBy(d => TacticalGear.UseOf(d.Kind) is TacticalUse.Placed or TacticalUse.Self ? 1 : 0).ThenBy(d => d.Kind).ToList();
         foreach (var def in kinds)
         {
