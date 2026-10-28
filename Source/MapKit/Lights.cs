@@ -30,14 +30,20 @@ public sealed partial class Kit
         return this;
     }
 
-    /// <summary>A point light at (x, y, z) (y above the ground on terrain maps): a candle, a bulb, a brazier.</summary>
-    public JObject Light(double x, double y, double z, Color color, double intensity = 1, double range = 8, bool flicker = false, string? anchor = null)
+    /// <summary>
+    /// A point light at (x, y, z) (y above the ground on terrain maps): a candle, a bulb, a brazier. A flickering light
+    /// wavers in its own way; <paramref name="flickerSpeed"/> (0.25-4) and <paramref name="flickerAmount"/> (0-3) tune it (1: a flame).
+    /// </summary>
+    public JObject Light(double x, double y, double z, Color color, double intensity = 1, double range = 8, bool flicker = false, string? anchor = null,
+        double flickerSpeed = 1, double flickerAmount = 1)
     {
         Count("lights");
         var o = new JObject(("op", "LightSource"), ("x", R(x)), ("y", R(y)), ("z", R(z)), ("color", color.Node));
         if (intensity != 1) o.Add("intensity", R(intensity));
         if (range != 8) o.Add("range", R(range));
         if (flicker) o.Add("flicker", true);
+        if (flickerSpeed != 1) o.Add("flickerSpeed", R(flickerSpeed));
+        if (flickerAmount != 1) o.Add("flickerAmount", R(flickerAmount));
         if (anchor != null) o.Add("anchor", anchor);
         return Emit(o);
     }
@@ -46,7 +52,8 @@ public sealed partial class Kit
     /// A spotlight at (x, y, z) pointing at compass <paramref name="yaw"/> (0 = north, -Z; 90 = east) and
     /// <paramref name="pitch"/> degrees below the horizontal (90 = straight down), <paramref name="cone"/> degrees wide.
     /// </summary>
-    public JObject SpotLight(double x, double y, double z, Color color, double yaw = 0, double pitch = 90, double cone = 60, double intensity = 1, double range = 10, bool flicker = false)
+    public JObject SpotLight(double x, double y, double z, Color color, double yaw = 0, double pitch = 90, double cone = 60, double intensity = 1, double range = 10, bool flicker = false,
+        double flickerSpeed = 1, double flickerAmount = 1)
     {
         Count("lights");
         var o = new JObject(("op", "LightSource"), ("x", R(x)), ("y", R(y)), ("z", R(z)), ("color", color.Node), ("type", "spot"));
@@ -56,6 +63,8 @@ public sealed partial class Kit
         if (pitch != 90) o.Add("pitch", R(pitch, 1));
         if (cone != 60) o.Add("cone", R(cone, 1));
         if (flicker) o.Add("flicker", true);
+        if (flickerSpeed != 1) o.Add("flickerSpeed", R(flickerSpeed));
+        if (flickerAmount != 1) o.Add("flickerAmount", R(flickerAmount));
         return Emit(o);
     }
 
