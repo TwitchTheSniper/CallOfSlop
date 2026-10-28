@@ -38,6 +38,7 @@ public static partial class SelfTest
         MassDeterminism(map, ref now);
         MassRigs();
         MassCombat(map, ref now);
+        MassSurface(map, ref now);
         Line("::warning title=Mass horde (results)::" + string.Join("%0A", MassNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
@@ -346,6 +347,161 @@ public static partial class SelfTest
             Fail($"a blast should roll at most {Game.CrowdBlastDrops} drops for its crowd kills ({drops})");
         if (!sumOk)
             Fail("the counts should add up after shots and blasts in the crowd");
+    }
+
+    /// <summary>
+    /// The crowd as ground (ZombiesCrowdSurface.cs): a player put on the floor in the densest cell is lifted onto the crowd
+    /// and stands there; one on the crowd's edge slides down its slope towards thinner crowd; a client's picture gives the
+    /// same heights as the server's counts; nothing is allocated; off the crowd the surface does nothing.
+    /// </summary>
+    private static void MassSurface(Map map, ref double now)
+    {
+        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        var me = g.Local!;
+        me.ImmuneUntil = 1e9;
+        me.Teleport(Vector3.Zero);
+        g.CrowdOverride = 2000;
+        g.SelfTestBeginRound(1, now);
+        for (var t = 0; t < 30; t++)
+            g.SelfTestZombiesTick(now += World.TickDt);
+        var cell = g.ZRules.Crowd.NetCell;
+        var (cols, rows) = g.Crowd.DensitySize(cell);
+        // A packed blob (scripted: the crowd takes a while to bunch up): 120 particles in each of 3 x 3 open cells (the middle
+        // one flat on top, the outer ones sloping down to the floor), far from the player (they hold their ground past the promote range only when thinking; the few ticks here hardly move them).
+        var blob = Vector3.Zero;
+        for (var r = rows - 3; r >= 2 && blob == Vector3.Zero; r--)
+            for (var c = 2; c < cols - 2; c++)
+            {
+                var p = new Vector3(g.Crowd.MinX + (c + 0.5f) * cell, g.Crowd.Y, g.Crowd.MinZ + (r + 0.5f) * cell);
+                var clear = true;
+                for (var dz = -2; dz <= 2 && clear; dz++)
+                    for (var dx = -2; dx <= 2 && clear; dx++)
+                        clear = g.Crowd.Walkable(p.X + dx * cell, p.Z + dz * cell) && !World.Blocked(new Vector3(p.X + dx * cell, p.Y + 0.05f, p.Z + dz * cell));
+                if (clear && p.Length() > 40)
+                {
+                    blob = p;
+                    break;
+                }
+            }
+        if (blob == Vector3.Zero)
+        {
+            Fail("no open 20 x 20 m patch on Mass Horde Test for the crowd surface check");
+            return;
+        }
+        for (var k = 0; k < 9 * 120; k++)
+        {
+            var h = HordeCrowd.Hash((uint)k * 31u + 7);
+            var ox = (h & 0xFFF) / 4096f * cell * 0.9f - cell * 0.45f;
+            var oz = (h >> 12 & 0xFFF) / 4096f * cell * 0.9f - cell * 0.45f;
+            g.Crowd.Add(blob.X + ox + (k % 3 - 1) * cell, blob.Z + oz + (k / 3 % 3 - 1) * cell, 0, 0, (uint)k, g.ServerTick, 100);
+        }
+        g.SelfTestZombiesTick(now += World.TickDt); // (the cells counted: NetEvery divides the tick below)
+        for (var t = 0; t < g.ZRules.Crowd.NetEvery; t++)
+            g.SelfTestZombiesTick(now += World.TickDt);
+        // The densest cell whose middle is open floor, and the edge cell (dense, an empty neighbour on one side) with the steepest slope.
+        var best = -1f;
+        var at = Vector3.Zero;
+        var steep = 0f;
+        var edge = Vector3.Zero;
+        var edgeSlope = Vector2.Zero;
+        for (var r = 0; r < rows; r++)
+            for (var c = 0; c < cols; c++)
+            {
+                var p = new Vector3(g.Crowd.MinX + (c + 0.5f) * cell, g.Crowd.Y, g.Crowd.MinZ + (r + 0.5f) * cell);
+                if (World.Blocked(p + new Vector3(0, 0.05f, 0)))
+                    continue;
+                var h = g.SelfTestCrowdSurfaceHeight(p.X, p.Z);
+                if (h > best)
+                {
+                    best = h;
+                    at = p;
+                }
+                var (sx, sz) = g.CrowdGround.SlopeAt(p.X, p.Z);
+                var s = MathF.Sqrt(sx * sx + sz * sz);
+                if (h >= g.CrowdGround.MinHeight && s > steep)
+                {
+                    steep = s;
+                    edge = p;
+                    edgeSlope = new Vector2(sx, sz);
+                }
+            }
+        var floor = g.Crowd.Y;
+        // Lifted: from the floor in the blob's middle cell (flat on top: full cells either side) up onto it, in a few seconds, and standing there.
+        at = blob;
+        best = g.SelfTestCrowdSurfaceHeight(at.X, at.Z);
+        me.Teleport(at);
+        var still = new InputCmd();
+        var lifted = 0f;
+        for (var t = 0; t < 180; t++)
+        {
+            g.SelfTestCrowdSurfaceMove(me, ref me.Sim, still);
+            lifted = MathF.Max(lifted, me.Sim.Position.Y - floor);
+        }
+        var stayed = me.Sim.Position.Y - floor;
+        var grounded = me.Sim.Grounded;
+        var lifts = g.CrowdLifts;
+        var stands = g.CrowdStands;
+        // No allocation standing there.
+        var a0 = GC.GetAllocatedBytesForCurrentThread();
+        for (var t = 0; t < 60; t++)
+            g.SelfTestCrowdSurfaceMove(me, ref me.Sim, still);
+        var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+        // Slid: put on top at the edge, carried down the slope.
+        me.Teleport(edge + new Vector3(0, g.SelfTestCrowdSurfaceHeight(edge.X, edge.Z), 0));
+        for (var t = 0; t < 60; t++)
+            g.SelfTestCrowdSurfaceMove(me, ref me.Sim, still);
+        var moved = new Vector2(me.Sim.Position.X - edge.X, me.Sim.Position.Z - edge.Z);
+        var downhill = edgeSlope.LengthSquared() > 0 ? -Vector2.Dot(moved, Vector2.Normalize(edgeSlope)) : 0;
+        var slides = g.CrowdSlides;
+        // A client's picture: the same surface.
+        var view = new Game.CrowdNetView();
+        var w = new PacketWriter(32 * 1024);
+        g.CrowdCount();
+        g.WriteZCrowdFor(w, view, me.Position);
+        var t1 = now;
+        using var cl = ZGame(0, ref t1, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        cl.SelfTestReadCrowd(w.Span);
+        var worst = 0f;
+        for (var k = 0; k < 40; k++)
+        {
+            var x = (HordeCrowd.Hash((uint)k * 7u) & 0xFFFF) / 65535f * 150f - 75f;
+            var z = (HordeCrowd.Hash((uint)k * 13u + 5) & 0xFFFF) / 65535f * 150f - 75f;
+            worst = MathF.Max(worst, MathF.Abs(g.SelfTestCrowdSurfaceHeight(x, z) - cl.SelfTestCrowdSurfaceHeight(x, z)));
+        }
+        // Off the crowd: open floor, nothing done.
+        var farY = 0f;
+        var stands0 = g.CrowdStands;
+        var lifts0 = g.CrowdLifts;
+        var open = Vector3.Zero;
+        for (var r = 0; r < rows && farY == 0; r++)
+            for (var c = 0; c < cols; c++)
+            {
+                var p = new Vector3(g.Crowd.MinX + (c + 0.5f) * cell, floor, g.Crowd.MinZ + (r + 0.5f) * cell);
+                if (World.Blocked(p + new Vector3(0, 0.05f, 0)) || g.SelfTestCrowdSurfaceHeight(p.X, p.Z) > 0)
+                    continue;
+                open = p;
+                farY = 1;
+                break;
+            }
+        me.Teleport(open);
+        for (var t = 0; t < 30; t++)
+            g.SelfTestCrowdSurfaceMove(me, ref me.Sim, still);
+        var openMoved = (me.Sim.Position - open).Length();
+        World.SetMap(map);
+        MassLine($"surface: the blob's middle cell {best:0.00} m high at ({at.X:0},{at.Z:0}); from the floor there the player rose {lifted:0.00} m in 3 s (ended {stayed:0.00} m up, grounded {grounded}, {lifts} lifts, {stands} stands), {alloc} bytes allocated standing; "
+                 + $"on the edge (slope {steep:0.00}) slid {downhill:0.00} m downhill in 1 s ({slides} slides); client picture vs server heights differ by {worst:0.000} m at most; on open floor moved {openMoved:0.000} m");
+        if (best < g.CrowdGround.MinHeight)
+            Fail($"4,000 crowd zombies should make a surface somewhere ({best:0.00} m at most)");
+        if (lifted < best * 0.8f || stayed < best * 0.5f || !grounded || lifts == 0)
+            Fail($"a player inside the crowd should be lifted onto it and stay there ({lifted:0.00} of {best:0.00} m, ended {stayed:0.00} m up, grounded {grounded})");
+        if (alloc > 0)
+            Fail($"standing on the crowd allocated {alloc} bytes");
+        if (steep > 0.05f && (downhill < 0.3f || slides == 0))
+            Fail($"a player on the crowd's edge should slide down its slope ({downhill:0.00} m, slope {steep:0.00})");
+        if (worst > 0.05f)
+            Fail($"a client's crowd surface should match the server's ({worst:0.000} m off)");
+        if (openMoved > 0.01f || g.CrowdStands != stands0 || g.CrowdLifts != lifts0)
+            Fail($"the surface should do nothing on open floor (moved {openMoved:0.000} m)");
     }
 
     /// <summary>The baked crowd rigs (CrowdRig.cs): the same boxes every frame, the near rig fuller than the mid, an animated walk, finite numbers.</summary>

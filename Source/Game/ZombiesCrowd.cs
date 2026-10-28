@@ -146,6 +146,8 @@ public sealed partial class Game
 
         var room = Math.Max(0, CrowdIndividualCap - alive);
         Crowd.Tick(ServerTick, _crowdTX.AsSpan(0, targets), _crowdTZ.AsSpan(0, targets), room);
+        if (ServerTick % Math.Max(1, tuning.NetEvery) == 0)
+            CrowdCount(); // the cells' counts: the network's (ZombiesCrowdNet.cs) and the crowd surface's (ZombiesCrowdSurface.cs)
 
         // Promote this tick's nearest candidates (removed from the crowd highest index first, so the others keep theirs).
         var n = Math.Min(Crowd.CandidateCount, Math.Min(room, _crowdPick.Length));

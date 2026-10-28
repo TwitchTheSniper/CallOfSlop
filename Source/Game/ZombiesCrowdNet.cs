@@ -48,8 +48,7 @@ public sealed partial class Game
     private void ServerSendCrowd()
     {
         if (!CrowdOn || !Crowd.Ready || ServerTick % Math.Max(1, ZRules.Crowd.NetEvery) != 0)
-            return;
-        CrowdCount();
+            return; // (CrowdTick counted the cells this tick)
         foreach (var (guid, id) in _clients.Values)
         {
             if (!_crowdViews.TryGetValue(guid.G, out var view))
@@ -71,7 +70,7 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>Server: this send's per-cell counts and headings (once per send, shared by every client).</summary>
+    /// <summary>Server: the per-cell counts and headings (every NetEvery ticks from <see cref="CrowdTick"/>, offline too: the crowd surface reads them; shared by every client's send).</summary>
     public void CrowdCount()
     {
         var cell = ZRules.Crowd.NetCell;

@@ -58,6 +58,16 @@ public sealed class CrowdTuning
     public float MassRange = 50f, MassHysteresis = 10f;
 
     public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
+
+    /// <summary>
+    /// The crowd as ground (ZombiesCrowdSurface.cs): on; a cell packed at <see cref="SurfacePacked"/> zombies a square
+    /// metre is <see cref="SurfaceHeight"/> m high, thinner than <see cref="SurfaceMin"/> m it is no ground; a player
+    /// within <see cref="SurfaceStep"/> m of its top stands on it, slid down its slope at <see cref="SurfacePush"/> m/s
+    /// per unit of slope; one deep inside is lifted onto it at <see cref="SurfaceLift"/> m/s.
+    /// </summary>
+    public bool Surface = true;
+
+    public float SurfaceHeight = 1.3f, SurfacePacked = 2f, SurfaceMin = 0.3f, SurfaceStep = 0.45f, SurfacePush = 3f, SurfaceLift = 0.8f;
 }
 
 /// <summary>

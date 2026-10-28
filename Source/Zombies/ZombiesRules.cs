@@ -1167,6 +1167,13 @@ public sealed class ZombiesRules
                             case "massPerTick": c.MassPerTick = Whole(v, w, 1, 256); break;
                             case "massCapacity": c.MassCapacity = Whole(v, w, 1, 255); break;
                             case "drawCap": c.DrawCap = Whole(v, w, 1, 255); break;
+                            case "surface": c.Surface = Flag(v, w); break;
+                            case "surfaceHeight": c.SurfaceHeight = Real(v, w, 0.2f, 3); break;
+                            case "surfacePacked": c.SurfacePacked = Real(v, w, 0.2f, 10); break;
+                            case "surfaceMin": c.SurfaceMin = Real(v, w, 0, 3); break;
+                            case "surfaceStep": c.SurfaceStep = Real(v, w, 0, 2); break;
+                            case "surfacePush": c.SurfacePush = Real(v, w, 0, 50); break;
+                            case "surfaceLift": c.SurfaceLift = Real(v, w, 0, 10); break;
                             default: return false;
                         }
                         return true;
