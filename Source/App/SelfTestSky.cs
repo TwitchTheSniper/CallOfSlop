@@ -310,7 +310,7 @@ public static partial class SelfTest
                 Fail($"sky uniform {name} is declared but never used");
         foreach (var (what, src) in new[] { ("sky vertex", SkyRenderer.VertexSource), ("sky fragment", fs) })
         {
-            if (!src.StartsWith("#version 330 core") || !src.Contains("void main()") || src.Any(c => c > 126 || (c < 32 && c != '\n' && c != '\r' && c != '\t'))
+            if (!src.StartsWith(RenderCaps.SourceVersion) || !src.Contains("void main()") || src.Any(c => c > 126 || (c < 32 && c != '\n' && c != '\r' && c != '\t'))
                 || src.Count(c => c == '{') != src.Count(c => c == '}') || src.Count(c => c == '(') != src.Count(c => c == ')'))
                 Fail($"{what} shader source is malformed (version line, main, ASCII, balanced brackets)");
         }

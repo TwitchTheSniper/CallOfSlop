@@ -94,7 +94,7 @@ public static unsafe partial class Program
             var v = _legsSmokeState.Velocity;
             Console.WriteLine($"[smoke] legs {run.Shot["legs_".Length..],-12} at {SmokeVec(p.RenderPosition)}: {new Vector2(v.X, v.Z).Length():0.0} m/s, gait run weight {legs.Run:0.00}, "
                 + $"phase {legs.Phase:0.00}, feet reached {legs.Reached[0]}/{legs.Reached[1]}, planted {legs.Planted[0]}/{legs.Planted[1]}, pelvis drop {legs.Drop * 100:0.0} cm, "
-                + $"foot IK {legs.GroundIk}; [legs] {LegAnimator.Stats}; {_legsSmokeFrames / Math.Max(t, 1e-6):0} fps, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                + $"foot IK {legs.GroundIk}; [legs] {LegAnimator.Stats}; {_legsSmokeFrames / Math.Max(t, 1e-6):0} fps, GL error 0x{GlDebug.Error():X}");
             return;
         }
         if (!_legsSmokeShot || now - _legsSmokeShotAt < 0.15)

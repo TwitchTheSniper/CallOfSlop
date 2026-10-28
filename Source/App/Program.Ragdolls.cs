@@ -96,7 +96,7 @@ public static unsafe partial class Program
                 break;
             case 4 when t > 3.6:
                 SmokeShot("ragdolls");
-                Console.WriteLine($"[smoke] ragdolls: {Ragdolls.Stats}; GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] ragdolls: {Ragdolls.Stats}; GL error 0x{GlDebug.Error():X}");
                 HatRender.TestOverride = null;
                 _smokeStepStart += t; // give the usual steps their clock back
                 _smokeRagdollStep = 9;

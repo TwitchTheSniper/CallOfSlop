@@ -26,7 +26,7 @@ namespace CallOfSlop;
 public sealed unsafe class DecalRenderer
 {
     private const string StaticVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec2 aUv;
@@ -62,7 +62,7 @@ public sealed unsafe class DecalRenderer
         """;
 
     private const string ImpactVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec2 aCorner;     // -1..1
         layout(location = 1) in vec4 iPosSize;    // per instance: position, size (0: empty slot)
         layout(location = 2) in vec4 iNormalRot;  // normal, turn (radians)
@@ -106,7 +106,7 @@ public sealed unsafe class DecalRenderer
 
     // Alpha decals: the decal's colour, lit like the boxes (same rim term), over the surface by its alpha.
     // Multiply decals: the surface times the decal's colour by its alpha, fading to no effect in the fog.
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -341,7 +341,7 @@ public sealed unsafe class DecalRenderer
                 + $"impacts {pool.Showing()} showing / {pool.Count} in ring / {pool.Capacity} cap ({quality}; added {pool.Added}, merged {pool.Merged}, popped {pool.Popped}, "
                 + $"player-capped {pool.PlayerFaded}, removed {pool.Removed}), {_log.AvgDraws:0.0} draw calls, {_log.AvgTriangles:0} triangles, "
                 + $"CPU {_log.AvgCpuMs:0.000} ms, GPU {(_log.AvgGpuMs >= 0 ? $"{_log.AvgGpuMs:0.000} ms" : "n/a")}, {fps:0} fps, atlas {_atlasLayers} layers, "
-                + $"GL error 0x{(uint)Native.glGetError():X}");
+                + $"GL error 0x{GlDebug.Error():X}");
             _log = new Stats { Start = now };
         }
     }
@@ -575,14 +575,15 @@ public sealed unsafe class DecalRenderer
 
     // ---- GPU resources ------------------------------------------------------------------------------------------
 
-    private static GlProgram Link(string vertex, string fragment)
+    private static GlProgram Link(string vertex, string fragment, string label)
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(vertex).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(fragment).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vertex)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fragment)).Compile();
         var program = CreateProgram();
         Native.glAttachShader(program, vs);
         Native.glAttachShader(program, fs);
         Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, "DecalRenderer." + label);
         int linked;
         Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
         if (linked == 0)
@@ -610,14 +611,14 @@ public sealed unsafe class DecalRenderer
     {
         try
         {
-            _static = Link(StaticVertexSrc, FragmentSrc);
+            _static = Link(StaticVertexSrc, FragmentSrc, "static");
             Native.glUniform1i(Uniform(_static, "uAlive\0"u8), (int)AliveUnit);
             _sLocViewProj = Uniform(_static, "uViewProj\0"u8);
             _sLocCam = Uniform(_static, "uCam\0"u8);
             _sLocFog = Uniform(_static, "uFog\0"u8);
             _sLocFogRange = Uniform(_static, "uFogRange\0"u8);
             _sLocMultiply = Uniform(_static, "uMultiply\0"u8);
-            _impact = Link(ImpactVertexSrc, FragmentSrc);
+            _impact = Link(ImpactVertexSrc, FragmentSrc, "impact");
             _iLocViewProj = Uniform(_impact, "uViewProj\0"u8);
             _iLocCam = Uniform(_impact, "uCam\0"u8);
             _iLocFog = Uniform(_impact, "uFog\0"u8);
@@ -674,7 +675,7 @@ public sealed unsafe class DecalRenderer
 
             if (GlGpuStamps.Create(GpuStampRing.QueryCount(1, QueryRing)) is { } stamps)
                 _timer = new GpuStampRing(1, QueryRing, stamps, OnGpuSample);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[decals] GL error 0x{err:X} while setting up (continuing)");
             Console.WriteLine($"[decals] renderer ready, GPU timer {(_timer != null ? "on (timestamps)" : "unavailable")}");

@@ -26,7 +26,7 @@ namespace CallOfSlop;
 public sealed unsafe class PropRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec3 aColor;
@@ -79,7 +79,7 @@ public sealed unsafe class PropRenderer
     /// shader, so static props render exactly as before.
     /// </summary>
     private const string AnimVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec3 aColor;
@@ -218,7 +218,7 @@ public sealed unsafe class PropRenderer
         """;
 
     private const string DebrisVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec4 iPosFade;    // per piece: position, fade
@@ -286,7 +286,7 @@ public sealed unsafe class PropRenderer
             float rim = 0.12 * (1.0 - abs(n.y));
             """);
 
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -482,6 +482,7 @@ public sealed unsafe class PropRenderer
                 else
                     DrawChunks(d, cam, def.FadeDistance, 0f, float.PositiveInfinity, 0f, ref draws, ref instances);
             }
+            FlushIndirect(ref draws); // 4.6 path: every type's runs in one glMultiDrawElementsIndirect (nothing queued otherwise)
         }
 
         var debris = PropDebris.Write(_debrisData);
@@ -532,12 +533,16 @@ public sealed unsafe class PropRenderer
                 // Moving parts can leave the rest-pose bounds: grow the cull box by how far they reach (times the largest scatter scale).
                 var def = _meshes.Defs[d];
                 DrawChunks(d, cam, def.FadeDistance, 0f, _anim.FreezeDistance[d], _anim.Reach[d] * MathF.Max(def.ScaleMax, 1f), ref animDraws, ref animInstances);
+                FlushIndirect(ref animDraws); // one indirect draw a type (uFreeze is a per-type uniform)
             }
             _timer?.EndPass(PassAnim);
             draws += animDraws;
         }
         _timer?.EndFrame();
         gfx.Rebind();
+        LastDraws = draws;
+        LastRuns = _frameRuns;
+        _frameRuns = 0;
 
         var cpuMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         Accumulate(ref _log, now, draws, instances + animInstances, debris, cpuMs);
@@ -606,6 +611,7 @@ public sealed unsafe class PropRenderer
     private void DrawChunks(int d, Vector3 cam, float fadeEnd, float nearMin, float nearMax, float margin, ref long draws, ref long instances)
     {
         var mesh = _meshes!.Ranges[d];
+        var indirect = RenderCaps.MultiDrawIndirectProps; // queue the runs for one multi-draw instead of a draw each
         var ranged = fadeEnd > 0 || nearMin > 0 || nearMax < float.PositiveInfinity;
         var grow = new Vector3(margin);
         int runStart = -1, runCount = 0;
@@ -623,8 +629,14 @@ public sealed unsafe class PropRenderer
             }
             if (runStart >= 0)
             {
-                DrawRun(mesh, runStart, runCount);
-                draws++;
+                if (indirect)
+                    QueueRun(mesh, runStart, runCount);
+                else
+                {
+                    DrawRun(mesh, runStart, runCount);
+                    draws++;
+                }
+                _frameRuns++;
                 instances += runCount;
                 runStart = -1;
             }
@@ -636,10 +648,70 @@ public sealed unsafe class PropRenderer
         }
         if (runStart >= 0)
         {
-            DrawRun(mesh, runStart, runCount);
-            draws++;
+            if (indirect)
+                QueueRun(mesh, runStart, runCount);
+            else
+            {
+                DrawRun(mesh, runStart, runCount);
+                draws++;
+            }
+            _frameRuns++;
             instances += runCount;
         }
+    }
+
+    // ---- Multi-draw indirect (4.6 path, RenderCaps.MultiDrawIndirectProps) ---------------------------------------
+    // Each visible run becomes one DrawElementsIndirectCommand {count, instanceCount, firstIndex, baseVertex,
+    // baseInstance}; the base instance offsets the instanced attributes (4-5, pointed at offset 0), so the vertex
+    // shader is the same and the per-run glVertexAttribPointer calls go away. The commands stream through a small
+    // orphaned GL_DRAW_INDIRECT_BUFFER; one glMultiDrawElementsIndirect draws them all.
+
+    private const int CmdUints = 5;
+    private uint[] _cmds = new uint[CmdUints * 256];
+    private int _cmdCount;
+    private GlBuffer _indirectVbo;
+    private int _indirectCap;
+
+    /// <summary>Last frame's GL draw calls and visible runs (a run is one draw on the 4.1 path; many runs share a multi-draw on the 4.6 path).</summary>
+    public long LastDraws, LastRuns;
+
+    private long _frameRuns;
+
+    private void QueueRun(PropMeshes.Range mesh, int start, int count)
+    {
+        if ((_cmdCount + 1) * CmdUints > _cmds.Length)
+            Array.Resize(ref _cmds, _cmds.Length * 2);
+        var k = _cmdCount * CmdUints;
+        _cmds[k] = (uint)mesh.IndexCount;
+        _cmds[k + 1] = (uint)count;
+        _cmds[k + 2] = (uint)mesh.FirstIndex;
+        _cmds[k + 3] = 0; // indices are absolute into the shared mesh buffer
+        _cmds[k + 4] = (uint)start;
+        _cmdCount++;
+    }
+
+    /// <summary>Draws the queued runs in one glMultiDrawElementsIndirect (no-op when none are queued).</summary>
+    private void FlushIndirect(ref long draws)
+    {
+        if (_cmdCount == 0)
+            return;
+        const int stride = PropBatches.FloatsPerInstance * sizeof(float);
+        Native.glVertexAttribPointer(4, 4, GL_FLOAT, false, stride, (void*)0); // DrawRun (the 4.1 path, or the bench's A/B) may have moved them
+        Native.glVertexAttribPointer(5, 4, GL_FLOAT, false, stride, (void*)(4 * sizeof(float)));
+        if (_indirectVbo.Id == 0)
+        {
+            _indirectVbo = GenBuffer();
+            GlDebug.Label(GL_BUFFER, _indirectVbo.Id, "PropRenderer.indirect");
+        }
+        Native.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirectVbo);
+        var bytes = _cmdCount * CmdUints * sizeof(uint);
+        _indirectCap = Math.Max(_indirectCap, _cmds.Length);
+        Native.glBufferData(GL_DRAW_INDIRECT_BUFFER, _indirectCap * sizeof(uint), null, GL_STREAM_DRAW); // orphan: no stall on the last frame's copy
+        fixed (uint* p = _cmds)
+            Native.glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, bytes, p);
+        Native.glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, null, _cmdCount, 0);
+        draws++;
+        _cmdCount = 0;
     }
 
     private static void Accumulate(ref Stats s, double now, long draws, long instances, int debris, double cpuMs)
@@ -701,14 +773,15 @@ public sealed unsafe class PropRenderer
 
     // ---- GPU resources ------------------------------------------------------------------------
 
-    private GlProgram Link(string vertex, string fragment)
+    private GlProgram Link(string vertex, string fragment, string label)
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(vertex).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(fragment).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vertex)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fragment)).Compile();
         var program = CreateProgram();
         Native.glAttachShader(program, vs);
         Native.glAttachShader(program, fs);
         Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, "PropRenderer." + label);
         int linked;
         Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
         if (linked == 0)
@@ -736,12 +809,12 @@ public sealed unsafe class PropRenderer
     {
         try
         {
-            _program = Link(VertexSrc, FragmentSrc);
+            _program = Link(VertexSrc, FragmentSrc, "program");
             _locViewProj = Uniform(_program, "uViewProj\0"u8);
             _locCam = Uniform(_program, "uCam\0"u8);
             _locFog = Uniform(_program, "uFog\0"u8);
             _locFogRange = Uniform(_program, "uFogRange\0"u8);
-            _debrisProgram = Link(DebrisVertexSrc, DebrisFragmentSrc);
+            _debrisProgram = Link(DebrisVertexSrc, DebrisFragmentSrc, "debrisProgram");
             _dLocViewProj = Uniform(_debrisProgram, "uViewProj\0"u8);
             _dLocCam = Uniform(_debrisProgram, "uCam\0"u8);
             _dLocFog = Uniform(_debrisProgram, "uFog\0"u8);
@@ -799,7 +872,7 @@ public sealed unsafe class PropRenderer
 
             if (GlGpuStamps.Create(GpuStampRing.QueryCount(2, QueryRing)) is { } stamps)
                 _timer = new GpuStampRing(2, QueryRing, stamps, OnGpuSample);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[props] GL error 0x{err:X} while setting up (continuing)");
             Console.WriteLine($"[props] renderer ready, GPU timer {(_timer != null ? "on (timestamps)" : "unavailable")}, animated props {(_animReady ? "on" : "off (drawn still)")}");
@@ -822,7 +895,7 @@ public sealed unsafe class PropRenderer
     {
         try
         {
-            _animProgram = Link(AnimVertexSrc, AnimFragmentSrc);
+            _animProgram = Link(AnimVertexSrc, AnimFragmentSrc, "animProgram");
             _aLocViewProj = Uniform(_animProgram, "uViewProj\0"u8);
             _aLocCam = Uniform(_animProgram, "uCam\0"u8);
             _aLocFog = Uniform(_animProgram, "uFog\0"u8);
@@ -867,7 +940,7 @@ public sealed unsafe class PropRenderer
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
             Native.glActiveTexture(GL_TEXTURE0);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 throw new InvalidOperationException($"GL error 0x{err:X}");
             _animReady = true;
@@ -903,7 +976,7 @@ public sealed unsafe class PropRenderer
             fixed (float* p = records)
                 Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA32F, PropAnimData.RecordTexels, Math.Max(_anim.RecordCount, 1), 0, GL_RGBA, GL_FLOAT, p);
             Native.glActiveTexture(GL_TEXTURE0);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
             {
                 Console.WriteLine($"[props] GL error 0x{err:X} uploading the animation data: animated props drawn still");

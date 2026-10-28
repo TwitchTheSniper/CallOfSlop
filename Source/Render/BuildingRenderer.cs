@@ -27,7 +27,7 @@ public sealed unsafe class BuildingRenderer
     public const float SwingSeconds = 0.35f;
 
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec4 iCenterYaw;   // box centre, turn about the pivot (radians, doors)
@@ -60,7 +60,7 @@ public sealed unsafe class BuildingRenderer
         }
         """;
 
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -221,7 +221,7 @@ public sealed unsafe class BuildingRenderer
             Console.WriteLine($"[buildings] {map.Name}: {map.PlacedBuildings.Count} buildings, {Boxes} shell boxes, {map.BuildingDoors.Count} doors, {map.BuildingWindows.Count} windows"
                               + (map.Destruction is { } dd ? $", {dd.Count} destructible chunks ({dd.Structures.Sum(st => st.BrokenCount)} broken, {_destructionUploads} run uploads)" : "") + "; "
                               + $"avg {_statInstances / (double)_statFrames:0} boxes drawn in {_statDraws / (double)_statFrames:0.0} draw calls, CPU {_cpuMs / _statFrames:0.000} ms/frame, "
-                              + $"GL error 0x{(uint)Native.glGetError():X}");
+                              + $"GL error 0x{GlDebug.Error():X}");
             _statStart = now;
             _statFrames = _statDraws = _statInstances = 0;
             _cpuMs = 0;
@@ -451,12 +451,13 @@ public sealed unsafe class BuildingRenderer
     {
         try
         {
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram();
             Native.glAttachShader(_program, vs);
             Native.glAttachShader(_program, fs);
             Native.glLinkProgram(_program);
+            GlDebug.Label(GL_PROGRAM, _program.Id, "BuildingRenderer");
             int linked;
             Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -497,7 +498,7 @@ public sealed unsafe class BuildingRenderer
                 EnableVertexAttribArray(2 + a);
                 Native.glVertexAttribDivisor(2 + a, 1);
             }
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[buildings] GL error 0x{err:X} while setting up (continuing)");
             Console.WriteLine("[buildings] renderer ready (instanced boxes)");

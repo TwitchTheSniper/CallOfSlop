@@ -84,7 +84,7 @@ public static unsafe class Lighting
 
     /// <summary>
     /// GLSL shared by the scene shaders: uniforms plus ApplyLight (hemisphere ambient + wrapped sun diffuse),
-    /// SkyGradient and ApplyFog. Paste it after "#version 330 core".
+    /// SkyGradient and ApplyFog. Paste it after the "#version 410 core" line (RenderCaps.Glsl swaps that line for the context's prelude).
     /// </summary>
     public const string Glsl = """
         uniform vec3 uSunDir;     // towards the sun

@@ -119,7 +119,7 @@ public static unsafe class PartThumbs
         }
         Rendered += n;
         _ms += sw.Elapsed.TotalMilliseconds;
-        var err = (uint)Native.glGetError();
+        var err = GlDebug.Error();
         if (err != 0)
             Console.WriteLine($"[workbench] GL error 0x{err:X} after part pictures");
         if (Queue.Count == 0 && n > 0)
@@ -167,7 +167,7 @@ public static unsafe class PartThumbs
             Native.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth);
             Native.glBindFramebuffer(GL_FRAMEBUFFER, new GlFramebuffer((uint)prev));
             _fbo = fbo;
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (fbo.Id == 0 || depth.Id == 0 || err != 0)
                 throw new InvalidOperationException($"framebuffer {fbo.Id}, depth buffer {depth.Id}, GL error 0x{err:X}");
             _glReady = true;

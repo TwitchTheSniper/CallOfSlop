@@ -27,7 +27,7 @@ namespace CallOfSlop;
 public static unsafe class SightLens
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         uniform mat4 uMVP;
         uniform vec2 uQuad; // half size of the quad on the lens plane (metres)
         out vec2 vP;
@@ -43,7 +43,7 @@ public static unsafe class SightLens
     // crosshair, 8 stadia crosshair, 9 mil-dot, 10 rangefinder (a dot between brackets, a range ladder). Reticle sizes are in pixels (uScale = px per design unit), measured from
     // uRet, the screen point the optic's axis points at (a reticle at infinity), so they're crisp at any resolution.
     private const string FragmentSrc = """
-        #version 330 core
+        #version 410 core
         in vec2 vP;
         uniform sampler2D uWorld;
         uniform float uWorldA;   // how much the view behind the lens replaces the gun
@@ -382,7 +382,7 @@ public static unsafe class SightLens
         if (!EnsureTarget(w, h, drawFb, readFb))
             return;
         if (!_copyChecked)
-            while ((uint)Native.glGetError() != 0) { } // only our own error counts below
+            while (GlDebug.Error() != 0) { } // only our own error counts below
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, new GlFramebuffer((uint)drawFb));
         Native.glBindFramebuffer(GL_DRAW_FRAMEBUFFER, new GlFramebuffer(_fbo));
         Native.glBlitFramebuffer(r.X0, r.Y0, r.X1, r.Y1, r.X0, r.Y0, r.X1, r.Y1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
@@ -390,7 +390,7 @@ public static unsafe class SightLens
         Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, new GlFramebuffer((uint)readFb));
         if (_copyChecked)
             return;
-        var err = (uint)Native.glGetError();
+        var err = GlDebug.Error();
         if (err == 0)
         {
             _copyChecked = true;
@@ -452,9 +452,10 @@ public static unsafe class SightLens
             return _ready;
         try
         {
-            using var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            using var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            using var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            using var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram().Attach(vs, fs).Link();
+            GlDebug.Label(GL_PROGRAM, _program.Id, "SightLens");
             DetachShader(_program, vs);
             DetachShader(_program, fs);
             _vao = GenVertexArray(); // core profile needs a bound VAO even with no vertex buffers
@@ -478,7 +479,7 @@ public static unsafe class SightLens
             _locVig = Uniform("uVig\0"u8);
             Timer.Init();
             _ready = true;
-            Console.WriteLine($"[optics] sight lens shader ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, GL error 0x{(uint)Native.glGetError():X}");
+            Console.WriteLine($"[optics] sight lens shader ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, GL error 0x{GlDebug.Error():X}");
         }
         catch (Exception ex)
         {
@@ -581,8 +582,9 @@ public static unsafe class SightLens
                 Native.glGetQueryObjectiv(Queries[s * Stamps + DrawEnd].Id, GL_QUERY_RESULT_AVAILABLE, &available);
                 if (available == 0)
                     continue;
-                ulong w, c0, c1, d0, d1;
-                Native.glGetQueryObjectui64v(Queries[s * Stamps + World].Id, GL_QUERY_RESULT, &w);
+                ulong w = 0, c0, c1, d0, d1;
+                if (HasWorld[s]) // a query never stamped is not a query object yet: reading it is GL_INVALID_OPERATION (found by KHR_debug)
+                    Native.glGetQueryObjectui64v(Queries[s * Stamps + World].Id, GL_QUERY_RESULT, &w);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + CopyStart].Id, GL_QUERY_RESULT, &c0);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + CopyEnd].Id, GL_QUERY_RESULT, &c1);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + DrawStart].Id, GL_QUERY_RESULT, &d0);

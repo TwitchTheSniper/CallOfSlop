@@ -139,6 +139,12 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   `Map.Validate` (`Source/Maps/LightBaker.cs`), kept in the map bake; every scene shader lights through `ApplyLightAt`
   (`Lighting.Glsl`) and the `LitFrame` block (`Source/Render/LightGrid.cs`, binding 7, texture units 12-14: don't reuse
   them). Unlit maps take the old path unchanged. Props carry lights in a `"lights"` list.
+- **OpenGL 4.6 / 4.1** (docs/render/OPENGL46.md). The game asks for a 4.6 core context and falls back to 4.1 (always on
+  macOS; `--gl41` forces it). Every shader source starts with `#version 410 core` and goes through `RenderCaps.Glsl`
+  (the "GL 4.6" section checks); 4.6-only GLSL sits in `#if GL46`; 4.6-only code checks a `RenderCaps` flag and keeps
+  the 4.1 branch. `--gl-bench` measures the experiments (`--gl-on=` / `--gl-no=`); under xvfb, llvmpipe gives 4.5 so
+  set `MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460` to test the 4.6 path. Dev builds get KHR_debug
+  output with stack traces (`[gl] error` lines in the log).
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**
