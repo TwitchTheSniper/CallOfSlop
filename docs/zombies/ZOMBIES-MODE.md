@@ -358,6 +358,10 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 - **Test kit** (`"testKit": true`, a test map: Horde Test): the host's "Test kit" lobby setting works here (see "Horde
   Test, start round and test kit").
 
+- **Crowd** (`"crowd": 10000`, the mass horde spike's dev map: Mass Horde Test): each round is that many zombies, almost all
+  of them crowd particles that become full zombies near the players and go back to the crowd far from them. Off on
+  every other map. See [MASS-HORDE.md](MASS-HORDE.md).
+
 - **Areas** are rectangles, optionally with a height band and extra boxes, for maps with floors over each other:
   `{"name": "Crypt", "rect": [x0, z0, x1, z1], "y": [y0, y1], "more": [[x0, z0, x1, z1, y0, y1], ...]}`. A point is in
   the area when it's in the rectangle and the band (`"y"`, at least 2 m tall; leave it out: any height) or in one of the

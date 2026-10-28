@@ -119,6 +119,8 @@ public static unsafe partial class Program
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
+        _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
+        _shotTool |= _crowdShots;
         if (_shotTool || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
@@ -180,7 +182,9 @@ public static unsafe partial class Program
                 StartSession(LobbyAction.Join);
             }
 
-            if (_shotTool)
+            if (_crowdShots)
+                RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
+            else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
                 RunLoop();

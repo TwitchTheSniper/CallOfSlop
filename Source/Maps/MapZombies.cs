@@ -194,6 +194,16 @@ public sealed class ZombiesMap
     /// </summary>
     public bool TestKit;
 
+    /// <summary>
+    /// "crowd": N (a mass-horde test map: Dev/MassHordeTest.json; 0, the default: off). Each round is N zombies, nearly all
+    /// of them crowd particles (Source/Game/Horde/HordeCrowd.cs) that become full zombies near the players and go back to
+    /// the crowd far from them. The spike of the mass horde (docs/zombies/MASS-HORDE.md).
+    /// </summary>
+    public int Crowd;
+
+    /// <summary>The most a map's <see cref="Crowd"/> can ask for.</summary>
+    public const int MaxCrowd = 32000;
+
     /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
     public static class MachineProp
     {
@@ -269,7 +279,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "machineProps", "testKit"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "machineProps", "testKit", "crowd"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -514,6 +524,12 @@ public sealed class ZombiesMap
                 JsonValueKind.False => false,
                 _ => throw new MapFileException($"{where}.testKit: true or false"),
             };
+        if (Get(e, "crowd") is { } cr)
+        {
+            if (cr.ValueKind != JsonValueKind.Number || !cr.TryGetInt32(out var n) || n < 0 || n > MaxCrowd)
+                throw new MapFileException($"{where}.crowd: a whole number of zombies from 0 to {MaxCrowd}");
+            z.Crowd = n;
+        }
         if (z.MachineProps)
             foreach (var (name, _) in z.Machines())
                 if (map.PropScope.Find(name) == null)

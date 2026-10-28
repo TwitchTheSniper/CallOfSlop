@@ -324,6 +324,8 @@ public sealed partial class Game
             }
             alive++;
         }
+        if (zm.Crowd > 0)
+            CrowdTick(zm, now); // a mass-horde map: demote, the crowd's tick, promote (ZombiesCrowd.cs)
         ZBlockGatherPlayers(); // the standing players' bodies, which walking zombies are held off (ZombieBlock.cs)
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
         ClimbTick(); // a siege up a climbable face: the pyramid's places (ZombiesClimb.cs)
@@ -815,6 +817,7 @@ public sealed partial class Game
         z.Health = 0;
         z.KilledByHead = head;
         SetZState(z, ZState.Dead, now);
+        CrowdNoteKill(); // (a crowd map's conservation count: ZombiesCrowd.cs)
         var zp = ZP(attacker);
         zp.Kills++;
         if (head)
