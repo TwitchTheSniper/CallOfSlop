@@ -542,13 +542,14 @@ public sealed partial class Kit
             }
     }
 
-    /// <summary>A spawn point for team 0 (Blue) or 1 (Red), recorded for "teamSpawns" too.</summary>
+    /// <summary>A spawn point for team 0 (Blue) or 1 (Red), recorded for "teamSpawns" too (call <see cref="Terrain"/> first on a terrain map).</summary>
     public JObject Spawn(int team, double x, double z, double y = 0)
     {
         if (team is not (0 or 1))
             throw new MapKitException("team is 0 (Blue) or 1 (Red)");
         Count("spawns");
-        TeamSpawns[team].Add([R(x), R(y), R(z)]);
+        // (On terrain a spawn without a height is on the ground: [x, z]; [x, y, z] would be absolute.)
+        TeamSpawns[team].Add(y == 0 && Top.Get("terrain") != null ? [R(x), R(z)] : [R(x), R(y), R(z)]);
         var o = new JObject(("op", "Spawn"), ("x", R(x)), ("z", R(z)));
         if (y != 0) o.Add("y", R(y));
         return Emit(o);
@@ -847,8 +848,8 @@ public sealed partial class Kit
         for (var i = spawns0; i < TeamSpawns[0].Count; i++)
         {
             var s = TeamSpawns[0][i];
-            var (x, z) = TwinPoint(s[0], s[2], sym);
-            TeamSpawns[1].Add([R(x), s[1], R(z)]);
+            var (x, z) = TwinPoint(s[0], s[^1], sym);
+            TeamSpawns[1].Add(s.Length == 2 ? [R(x), R(z)] : [R(x), s[1], R(z)]);
         }
         var newHills = Hills.Skip(hills0).ToList();
         foreach (var h in newHills)

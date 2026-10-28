@@ -177,21 +177,34 @@ public sealed partial class HordeCrowd
                         hz = (fz[t] - cz) / l;
                     }
                 }
+                if (best < _mCell * _mCell * 0.5f)
+                    hx = hz = 0; // (the target is in this cell: they're there)
             }
             MassVX[c] = hx * Tuning.Speed;
             MassVZ[c] = hz * Tuning.Speed;
             int dc = MathF.Abs(hx) > 0.38f ? Math.Sign(hx) : 0, dr = MathF.Abs(hz) > 0.38f ? Math.Sign(hz) : 0;
             if (dc == 0 && dr == 0)
                 continue;
-            int ux = c % _mCols + dc, uz = c / _mCols + dr;
-            if (ux < 0 || uz < 0 || ux >= _mCols || uz >= _mRows)
-                continue;
-            var u = uz * _mCols + ux;
-            if (!_mWalk[u])
-                continue;
             // A cell's zombies cross it in cell / speed seconds: that share of them a tick.
             _mFlux[c] += m * Tuning.Speed * dt / (_mCell * (dc != 0 && dr != 0 ? 1.41421356f : 1f));
-            var move = Math.Min((int)_mFlux[c], Math.Min(_mNext[c], Math.Max(0, cap - _mNext[u])));
+            if ((int)_mFlux[c] <= 0)
+                continue;
+            // Downstream: the heading's neighbour; when that one is full (or a wall), the neighbour 45 degrees either side
+            // (the side nearer the heading first) if it is further down the field, so a horde spreads round a jam and
+            // packs like a fluid instead of queueing in single file behind it.
+            var u = MassDownstream(c, dc, dr, cap);
+            if (u < 0)
+            {
+                var ring = RingIndex(dc, dr);
+                int ra = (ring + 1) & 7, rb = (ring + 7) & 7;
+                if (RingX[ra] * hx + RingZ[ra] * hz < RingX[rb] * hx + RingZ[rb] * hz)
+                    (ra, rb) = (rb, ra);
+                var own = fc >= 0 ? _cost[fc] : float.PositiveInfinity;
+                u = MassSideways(c, RingX[ra], RingZ[ra], cap, own);
+                if (u < 0)
+                    u = MassSideways(c, RingX[rb], RingZ[rb], cap, own);
+            }
+            var move = u < 0 ? 0 : Math.Min((int)_mFlux[c], Math.Min(_mNext[c], Math.Max(0, cap - _mNext[u])));
             if (move <= 0)
             {
                 _mFlux[c] = MathF.Min(_mFlux[c], 1.5f); // (held back: no backlog building up)
@@ -243,6 +256,37 @@ public sealed partial class HordeCrowd
                 left--;
             }
         }
+    }
+
+    // The eight directions round the compass, in order (a turn of 45 degrees is the next one).
+    private static readonly int[] RingX = [1, 1, 0, -1, -1, -1, 0, 1], RingZ = [0, 1, 1, 1, 0, -1, -1, -1];
+
+    private static int RingIndex(int dc, int dr)
+    {
+        for (var k = 0; k < 8; k++)
+            if (RingX[k] == dc && RingZ[k] == dr)
+                return k;
+        return 0;
+    }
+
+    /// <summary>The mass cell (dc, dr) from <paramref name="c"/> if it is walkable and has room this tick (-1: not).</summary>
+    private int MassDownstream(int c, int dc, int dr, int cap)
+    {
+        int ux = c % _mCols + dc, uz = c / _mCols + dr;
+        if (ux < 0 || uz < 0 || ux >= _mCols || uz >= _mRows)
+            return -1;
+        var u = uz * _mCols + ux;
+        return _mWalk[u] && _mNext[u] < cap ? u : -1;
+    }
+
+    /// <summary><see cref="MassDownstream"/>, and only if the flow field there is cheaper than <paramref name="own"/> (sideways, but still downhill).</summary>
+    private int MassSideways(int c, int dc, int dr, int cap, float own)
+    {
+        var u = MassDownstream(c, dc, dr, cap);
+        if (u < 0 || float.IsPositiveInfinity(own))
+            return -1;
+        var fc = CellOf(MinX + (u % _mCols + 0.5f) * _mCell, MinZ + (u / _mCols + 0.5f) * _mCell);
+        return fc >= 0 && _cost[fc] < own ? u : -1;
     }
 
     /// <summary>

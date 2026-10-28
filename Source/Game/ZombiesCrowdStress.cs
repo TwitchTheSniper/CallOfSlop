@@ -68,7 +68,13 @@ public sealed partial class Game
     /// <summary>The share of the crowd near the rally point at the last check (self-test, perf window).</summary>
     public float StressNearShare { get; private set; }
 
-    private double _stressNextWave, _stressDescentAt;
+    private double _stressNextWave, _stressDescentAt, _stressBestAt;
+    private float _stressBestMean;
+    private int[] _stressQueue = [], _stressSeen = [];
+    private int _stressStamp;
+
+    /// <summary>The hordes count as merged once one blob holds most of the crowd and its mean distance to the rally point hasn't fallen for this long (s).</summary>
+    public const double StressSettleSeconds = 10;
 
     /// <summary>Is this a stress map round on the server?</summary>
     public bool StressOn => IsServer && StressState != StressPhase.Off && ZMap is { Stress: not null };
@@ -103,7 +109,14 @@ public sealed partial class Game
         Crowd.SetGoal(true, st.Rally.X, st.Rally.Y);
         Crowd.Hold = st.Countdown > 0;
         StressState = st.Countdown > 0 ? StressPhase.Staging : StressPhase.Gather;
-        StressPhaseAt = _stressDescentAt = now;
+        StressPhaseAt = _stressDescentAt = _stressBestAt = now;
+        _stressBestMean = float.MaxValue;
+        if (_stressQueue.Length != Crowd.MassCount.Length)
+        {
+            _stressQueue = new int[Crowd.MassCount.Length]; // (once per map: the merge check's flood fill)
+            _stressSeen = new int[Crowd.MassCount.Length];
+            _stressStamp = 0;
+        }
         _stressNextWave = now + st.Countdown + st.WaveSeconds;
         StressResetStats(round, n);
         Console.WriteLine($"[stress] round {round}: {Crowd.Total} zombies on {st.Staging.Count} staging areas ({Crowd.MassTotal} in the mass tier), "
@@ -146,19 +159,25 @@ public sealed partial class Game
             case StressPhase.Staging when now - StressPhaseAt >= st.Countdown:
                 Crowd.Hold = false;
                 StressState = StressPhase.Gather;
-                StressPhaseAt = _stressDescentAt = now;
+                StressPhaseAt = _stressDescentAt = _stressBestAt = now;
+                _stressBestMean = float.MaxValue;
                 Console.WriteLine($"[stress] the hordes descend: {Crowd.Total} zombies");
                 break;
             case StressPhase.Gather when ServerTick % 30 == 0:
-                StressNearShare = StressShareNear(st.Rally);
-                if (StressNearShare >= st.Gather || now - StressPhaseAt >= st.GatherSeconds)
+                var mean = StressMergeCheck(st.Rally);
+                if (mean < _stressBestMean - 1f)
+                    (_stressBestMean, _stressBestAt) = (mean, now);
+                // Merged: one blob at the rally point holds most of the crowd and it has stopped closing in (packed, the
+                // tail queueing into it), or the wait is over.
+                var merged = StressNearShare >= st.Gather && now - _stressBestAt >= StressSettleSeconds;
+                if (merged || now - StressPhaseAt >= st.GatherSeconds)
                 {
                     StressMergeSeconds = now - _stressDescentAt;
                     Crowd.SetGoal(false);
                     StressState = StressPhase.Advance;
                     StressPhaseAt = now;
-                    Console.WriteLine($"[stress] {(StressNearShare >= st.Gather ? "merged" : "gave up waiting")} at the rally point after {StressMergeSeconds:0} s "
-                                      + $"({StressNearShare * 100:0}% of {Crowd.Total} near it): advancing on the players");
+                    Console.WriteLine($"[stress] {(merged ? "merged" : "gave up waiting")} at the rally point after {StressMergeSeconds:0} s "
+                                      + $"({StressNearShare * 100:0}% of {Crowd.Total} in one blob there, {mean:0} m from it on average): advancing on the players");
                 }
                 break;
         }
@@ -177,36 +196,71 @@ public sealed partial class Game
         }
     }
 
-    /// <summary>The share of the crowd (particles and mass) within the merge radius of the rally point: a radius the whole crowd would pack into loosely.</summary>
-    private float StressShareNear(Vector2 rally)
+    /// <summary>
+    /// The merge check (every half second while gathering): the share of the crowd in the one blob of touching mass
+    /// cells (8 ways) that holds the rally point's cell, into <see cref="StressNearShare"/>; returns the crowd's mean
+    /// distance to the rally point (m). A flood fill over the mass grid; no allocation.
+    /// </summary>
+    private float StressMergeCheck(Vector2 rally)
     {
         var total = Crowd.Total;
-        if (total == 0)
-            return 1f;
-        var density = Math.Max(1, Crowd.Tuning.MassCapacity) / (Crowd.MassCell * Crowd.MassCell) * 0.6f; // (zombies a square metre, loosely packed)
-        var r = MathF.Max(30f, MathF.Sqrt(total / density / MathF.PI));
-        var r2 = r * r;
-        var near = 0;
-        for (var i = 0; i < Crowd.Count; i++)
-        {
-            var dx = Crowd.X[i] - rally.X;
-            var dz = Crowd.Z[i] - rally.Y;
-            if (dx * dx + dz * dz <= r2)
-                near++;
-        }
-        var cols = Crowd.MassCols;
+        var counts = Crowd.MassCount;
+        int cols = Crowd.MassCols, rows = Crowd.MassRows;
         var size = Crowd.MassCell;
-        for (var c = 0; c < Crowd.MassCount.Length; c++)
+        if (total == 0 || counts.Length == 0 || _stressQueue.Length != counts.Length)
         {
-            var m = Crowd.MassCount[c];
-            if (m == 0)
-                continue;
-            var dx = Crowd.MinX + (c % cols + 0.5f) * size - rally.X;
-            var dz = Crowd.MinZ + (c / cols + 0.5f) * size - rally.Y;
-            if (dx * dx + dz * dz <= r2)
-                near += m;
+            StressNearShare = total == 0 ? 1f : 0f;
+            return 0;
         }
-        return near / (float)total;
+        double sum = 0;
+        for (var c = 0; c < counts.Length; c++)
+            if (counts[c] > 0)
+                sum += counts[c] * Vector2.Distance(new Vector2(Crowd.MinX + (c % cols + 0.5f) * size, Crowd.MinZ + (c / cols + 0.5f) * size), rally);
+        for (var i = 0; i < Crowd.Count; i++)
+            sum += Vector2.Distance(new Vector2(Crowd.X[i], Crowd.Z[i]), rally);
+        // The blob: from the rally point's cell (or, if it is empty, the fullest of its neighbours).
+        var rc = Math.Clamp((int)((rally.X - Crowd.MinX) / size), 0, cols - 1);
+        var rr = Math.Clamp((int)((rally.Y - Crowd.MinZ) / size), 0, rows - 1);
+        var start = -1;
+        for (var dr = -1; dr <= 1; dr++)
+            for (var dc = -1; dc <= 1; dc++)
+            {
+                int c = rc + dc, r = rr + dr;
+                if (c >= 0 && r >= 0 && c < cols && r < rows && counts[r * cols + c] > 0 && (start < 0 || counts[r * cols + c] > counts[start] || (dc == 0 && dr == 0)))
+                    start = r * cols + c;
+            }
+        var blob = 0;
+        if (start >= 0)
+        {
+            if (++_stressStamp == int.MaxValue)
+            {
+                Array.Clear(_stressSeen);
+                _stressStamp = 1;
+            }
+            int head = 0, tail = 0;
+            _stressQueue[tail++] = start;
+            _stressSeen[start] = _stressStamp;
+            while (head < tail)
+            {
+                var k = _stressQueue[head++];
+                blob += counts[k];
+                int kc = k % cols, kr = k / cols;
+                for (var dr = -1; dr <= 1; dr++)
+                    for (var dc = -1; dc <= 1; dc++)
+                    {
+                        int c = kc + dc, r = kr + dr;
+                        if (c < 0 || r < 0 || c >= cols || r >= rows)
+                            continue;
+                        var u = r * cols + c;
+                        if (counts[u] == 0 || _stressSeen[u] == _stressStamp)
+                            continue;
+                        _stressSeen[u] = _stressStamp;
+                        _stressQueue[tail++] = u;
+                    }
+            }
+        }
+        StressNearShare = blob / (float)total;
+        return (float)(sum / total);
     }
 
     // ---- Measurement ------------------------------------------------------------------------------------------------

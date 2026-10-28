@@ -34,7 +34,7 @@ public sealed class HordeStress : IMapGenerator
         k.Skybox("overcast");
         k.Terrain(Terrain());
         k.Test(new JObject(("maxPlayers", 8), ("minHills", 1), ("minTeamSpawns", 4), ("symmetry", "mirrorZ"), ("walkFairness", 0.12), ("minMainNavPct", 90),
-            ("probes", new JArray([JArray.Of("overlook", OverlookX, 0, OverlookY), JArray.Of("rally point", 0, 0, -12)])),
+            ("probes", new JArray([JArray.Of("overlook", OverlookX, 0, OverlookY), JArray.Of("rally point", 0, 6, -12)])),
             ("botMatchSeconds", 8), ("spawnsStand", true)));
 
         k.Ground("#56703f");

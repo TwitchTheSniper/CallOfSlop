@@ -122,7 +122,8 @@ public static unsafe partial class Program
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
-        _shotTool |= _crowdShots;
+        _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
+        _shotTool |= _crowdShots | _stressShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -190,6 +191,8 @@ public static unsafe partial class Program
                 StartPerfShot(); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
             if (_glBench)
                 RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
+            else if (_stressShots)
+                RunStressShots(args); // --stress-shots: Horde Stress's hordes staging, descending, merged and advancing, then quit (Program.StressShots.cs)
             else if (_crowdShots)
                 RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
             else if (_shotTool)
