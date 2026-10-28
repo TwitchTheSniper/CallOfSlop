@@ -387,9 +387,9 @@ public sealed class AshgraveCathedral : IMapGenerator
         // Walls: the north aisle wall (windows east of the tower; the tower door and, at the roof walk, the roof door),
         // the south aisle wall (the cloister door), the west front (the west doors), the rood screen (debris to the crossing).
         WallX(-34, 4, -16, T, G, 12, StoneW,
-            DoorX("the Tower Door", false, 1250, "Nave", "Bell Tower", -28.5, -17, 1.6, 1.6, 2.6),
+            DoorX("the Tower Door", false, 1250, "Nave", "Bell Tower", -28.5, -17, 1.6, 1.8, 2.6),
             WinX("Nave", -19, -16, T, 1), WinX("Nave", -12, -16, T, 1), WinX("Nave", -5, -16, T, 1), WinX("Nave", 1.0, -16, T, 1),
-            Kit.Hole(-25.8, 1.2, Roof, 12)); // (the roof door: its box spans this wall and the tower's, DoorX in Tower())
+            Kit.Hole(-26.0, 2.0, Roof, 12)); // (the roof door: its box spans this wall and the tower's, DoorX in Tower())
         WallX(-34, 4, 3.4, T, G, 12, StoneW, DoorX("the Cloister Door", false, 750, "Nave", "Cloister", -6, 3.4, T, 2.0, 3.0));
         WallZ(-16, 4, -34, T, G, 18, StoneL, DoorZ("the West Doors", false, 750, "Nave", "Close", -6, -34, T, 3.0, 4.2));
         WallZ(-15.4, 3.4, 3.4, T, G, 18, StoneW, DoorZ("the Rood Screen", true, 1000, "Nave", "Transept", -6, 3.4, T, 3.0, 4.0));
@@ -402,13 +402,16 @@ public sealed class AshgraveCathedral : IMapGenerator
         // Gallery floors (y 6): north and south over the aisles, the organ loft over the west door; the loft stair comes up
         // through the south gallery (its landing is the nave's, behind the Loft Stair debris).
         k.Slab(-33.4, -15.4, 3.4, -10.5, Gal, 0.5, FlagDark);
-        k.Slab(-33.4, -1.5, 3.4, 3.4, Gal, 0.5, FlagDark, (-18.75, 1.4, -12.0, 3.4));
+        k.Slab(-33.4, -1.5, 3.4, 3.4, Gal, 0.5, FlagDark, (-19.35, 1.4, -12.6, 3.4));
         k.Slab(-33.4, -10.5, -27.0, -1.5, Gal, 0.5, FlagDark);
-        k.StairsX(1.5, 3.1, -12.0, -1, G, Gal, StoneD); // the loft stair, up westwards in the south aisle (15 steps: top at x -18.75)
-        k.Waypoint(-11.2, 2.3); k.Waypoint(-15.4, 2.3, 3.0); k.Waypoint(-19.5, 2.3, Gal);
-        WallX(-20.6, -12.0, 1.0, 0.4, Gal, 10.4, StoneD); // the screen between the stair's landing and the rest of the gallery
-        WallZ(1.4, 3.4, -20.6, 0.4, Gal, 10.4, StoneD, DoorZ("the Loft Stair", true, 1000, "Organ Loft", "Nave", 2.4, -20.6, 0.4, 1.8, 2.4, Gal));
-        Structures.Railing(k, -12.0, 1.4, Gal, -12.0, 3.4);
+        // The loft stair: in a walled alcove along the south aisle (the Loft Stair debris across its mouth at the east end),
+        // up westwards to the south gallery (15 of the game's steps: top at x -19.35).
+        k.StairsX(1.4, 3.4, -12.6, -1, G, Gal, StoneD);
+        k.Waypoint(-12.0, 2.4); k.Waypoint(-16.0, 2.4, 3.2); k.Waypoint(-20.2, 2.4, Gal);
+        WallX(-20.6, -11.0, 1.0, 0.4, G, Gal - 0.5, StoneD); // the alcove's wall along the aisle (up to the gallery floor)
+        WallZ(1.4, 3.4, -11.4, 0.4, G, Gal - 0.5, StoneD, DoorZ("the Loft Stair", true, 1000, "Organ Loft", "Nave", 2.4, -11.4, 0.4, 1.8, 2.6));
+        Structures.Railing(k, -19.35, 1.2, Gal, -12.4, 1.2);
+        Structures.Railing(k, -12.4, 1.4, Gal, -12.4, 3.4);
         // Pillars of the arcades (and the gallery piers over them), the gallery and loft railings.
         foreach (var x in new[] { -27.0, -21.0, -15.0, -9.0, -3.0, 2.4 })
             foreach (var z in new[] { -10.5, -1.5 })
@@ -422,8 +425,10 @@ public sealed class AshgraveCathedral : IMapGenerator
         Structures.Railing(k, -27.0, -1.4, Gal, 3.4, -1.4);
         Structures.Railing(k, -26.9, -10.5, Gal, -26.9, -1.5);
 
-        Area("Nave", Box(-33.4, -15.4, 3.4, 3.4, -0.5, 5.4), Box(-20.6, 1.4, -11.8, 3.4, -0.5, 7.6));
-        Area("Organ Loft", Box(-33.4, -15.4, 3.4, -10.5, 5.5, 10.3), Box(-33.4, -1.5, 3.4, 3.4, 5.5, 10.3), Box(-33.4, -10.5, -27.0, -1.5, 5.5, 10.3));
+        // (The organ loft first: its stair alcove lies inside the nave's box, and the first area listed wins.)
+        Area("Organ Loft", Box(-33.4, -15.4, 3.4, -10.5, 5.5, 10.3), Box(-33.4, -1.5, 3.4, 3.4, 5.5, 10.3), Box(-33.4, -10.5, -27.0, -1.5, 5.5, 10.3),
+            Box(-20.6, 1.4, -11.4, 3.4, -0.5, 7.6));
+        Area("Nave", Box(-33.4, -15.4, 3.4, 3.4, -0.5, 5.4));
 
         // ---- The nave's dressing: pews, the start room's machines, confessionals and the high-low table ----
         for (var x = -22.0; x <= -6.1; x += 1.25)
@@ -437,11 +442,11 @@ public sealed class AshgraveCathedral : IMapGenerator
         BoxSpot(-9.0, G, -15.03, 180);
         Slot(null, -2.5, G, -14.65, 180);
         SProp("Confessional Booth", -22.8, -14.7, G, 0, 1.4, 0.7);
-        SProp("Confessional Booth", -16.0, -14.7, G, 0, 1.4, 0.7);
-        Casino("highLow", -19.4, G, -12.3, 180);
+        SProp("Confessional Booth", -25.6, -14.7, G, 0, 1.4, 0.7);
+        Casino("highLow", -18.2, G, -12.6, 180);
         WallBuy("Wall Rifle", 500, -33.37, G, 0.5, 90, 250);
         WallBuy("Wall Pistol", 300, 3.37, G, -12.5, -90, 150);
-        WallBuy("Buzzbox Machine Pistol", 600, -10.0, G, 3.37, 0);
+        WallBuy("Buzzbox Machine Pistol", 600, -8.5, G, 3.37, 0);
         SProp("Stone Pulpit", 1.2, -8.8, G, -90, 0.8, 0.8);
         SProp("Brass Lectern", 1.4, -3.2, G, -90, 0.3, 0.25);
         SProp("Votive Candle Stand", -30.5, -14.9, G, 0, 0.65, 0.25);
@@ -508,8 +513,8 @@ public sealed class AshgraveCathedral : IMapGenerator
         const double t = 1.0;
         // The shaft walls (solid to the belfry's parapet at 19.2), then the belfry stage with an arch on every side.
         WallX(-34, -24, -26, t, G, 19.2, StoneW);
-        WallX(-34, -24, -17, t, G, 19.2, StoneW, Kit.Door(-28.5, 1.6, 2.6),
-            DoorX("the Roof Door", false, 1500, "Roof Walk", "Bell Tower", -25.8, -17, 1.6, 1.2, 2.4, Roof));
+        WallX(-34, -24, -17, t, G, 19.2, StoneW, Kit.Door(-28.5, 1.8, 2.6),
+            DoorX("the Roof Door", false, 1500, "Roof Walk", "Bell Tower", -26.0, -17, 1.6, 2.0, 2.4, Roof)); // (wider than the two walls are thick: the door's thin side is across them)
         WallZ(-26, -16, -34, t, G, 19.2, StoneW);
         WallZ(-26, -16, -25, t, G, 19.2, StoneW);
         WallX(-34, -24, -26, t, 19.2, 22.6, StoneL, Kit.Hole(-29, 5.0, 19.2, 21.8));
@@ -543,9 +548,9 @@ public sealed class AshgraveCathedral : IMapGenerator
         Structures.Railing(k, -26.5, -18.3, G, -26.5, -23.45, Up(G, 5.15));
         Structures.Railing(k, -26.55, -23.5, Up(rise, 0.25), -31.45, -23.5, Up(rise, 5.15));
         Structures.Railing(k, -31.5, -23.45, Up(2 * rise, 0.25), -31.5, -18.3, Roof);
-        Structures.Railing(k, -31.3, -23.45, Roof, -31.3, -18.6);
+        Structures.Railing(k, -31.3, -23.45, Roof, -31.3, -19.2);
         Structures.Railing(k, -33.0, -23.9, Roof, -31.6, -23.9);
-        Structures.Railing(k, -31.45, -18.5, Up(Roof, 0.25), -26.55, -18.5, Up(Roof, 5.15));
+        Structures.Railing(k, -30.2, -18.5, Up(Roof, 1.5), -26.55, -18.5, Up(Roof, 5.15)); // (open over its first steps: the way from the landing into the chamber)
         Structures.Railing(k, -26.5, -18.55, Up(Roof + rise, 0.25), -26.5, -23.7, Belfry);
         Structures.Railing(k, -26.7, -23.7, Belfry, -26.7, -18.3);
         Structures.Railing(k, -26.3, -18.1, Belfry, -25.0, -18.1);
@@ -983,7 +988,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         Slot("Hilt", 15.25, Crypt, -0.5, -90);
         Slot("MeleeMod", 15.25, Crypt, -1.5, -90);
         BoxSpot(4.33, Crypt, -3.0, 90);
-        WallBuy("Wall Pump", 900, 3.97, Crypt, 1.5, 90);
+        WallBuy("Wall Pump", 900, 4.03, Crypt, 1.5, 90);
         GroundSpawner("Ossuary", 7.0, Crypt, -8.0);
         foreach (var (x, z) in new[] { (6.0, -5.0), (13.0, -12.0), (12.8, -7.0) })
             k.Prop("Skull Heap", x, z, Crypt);
@@ -1107,7 +1112,7 @@ public sealed class AshgraveCathedral : IMapGenerator
             k.Prop("Gnarled Dead Tree", x, z);
             Solid(x - 0.3, z - 0.3, x + 0.3, z + 0.3, G, "tree");
         }
-        foreach (var (x, z) in new[] { (-40.0, -30.0), (-18.0, -30.0), (10.0, -36.0), (30.0, -22.0), (-58.0, -20.0), (56.0, -10.0), (-20.0, 50.0), (30.0, 50.0) })
+        foreach (var (x, z) in new[] { (-40.0, -30.0), (-18.0, -30.0), (10.0, -36.0), (30.0, -22.0), (-58.0, -20.0), (59.0, -4.0), (-20.0, 50.0), (30.0, 50.0) })
             k.Prop("Lantern Street Lamp", x, z);
         k.DecalScatter(["Mud Patch", "Leaf Litter", "Puddle", "Dry Grass", "Gib Smear"], -63, -55, 63, -17, 70, 171, gap: 2.0);
         k.DecalScatter(["Mud Patch", "Leaf Litter", "Puddle"], -63, 45, 63, 55, 24, 172, gap: 2.0);

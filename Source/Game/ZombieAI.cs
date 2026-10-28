@@ -569,7 +569,7 @@ public sealed partial class Game
         {
             var door = zm.Doors[z.Door];
             var outSide = door.SideOut(z.Area);
-            if (Flat(outSide - z.Position) < 0.6f || !World.Map.IsDoorOpen(z.Door))
+            if (Flat(outSide - z.Position) < 0.6f && MathF.Abs(outSide.Y - z.Position.Y) < 1.2f || !World.Map.IsDoorOpen(z.Door)) // (on its floor: the Cathedral has doors over each other)
             {
                 z.Area = door.Other(z.Area);
                 z.Door = -1;
@@ -587,7 +587,7 @@ public sealed partial class Game
             if (d >= 0)
             {
                 var inSide = zm.Doors[d].SideIn(z.Area);
-                if (Flat(inSide - z.Position) < 0.7f)
+                if (Flat(inSide - z.Position) < 0.7f && MathF.Abs(inSide.Y - z.Position.Y) < 1.2f)
                 {
                     z.Door = d;
                     goal = zm.Doors[d].SideOut(z.Area);

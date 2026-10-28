@@ -58,15 +58,16 @@ def glass(size, offset, color, glow=0.9, period=6.0):
 # ---- the props ------------------------------------------------------------------------------------------------
 
 def pew():
-    p = [b([3.6, 0.07, 0.46], [0, 0.45, 0.05], OAK, material="wood"),
-         b([3.6, 0.55, 0.06], [0, 0.78, -0.2], OAK, material="wood"),
-         b([3.6, 0.06, 0.1], [0, 1.08, -0.2], DOAK),
-         b([3.6, 0.2, 0.05], [0, 0.6, 0.3], DOAK)]  # the kneeler rail of the next row
-    for x in (-1.78, 0, 1.78):
+    p = [b([3.0, 0.07, 0.46], [0, 0.45, 0.05], OAK, material="wood"),
+         b([3.0, 0.55, 0.06], [0, 0.78, -0.2], OAK, material="wood"),
+         b([3.0, 0.06, 0.1], [0, 1.08, -0.2], DOAK),
+         b([3.0, 0.2, 0.05], [0, 0.6, 0.3], DOAK)]  # the kneeler rail of the next row
+    for x in (-1.46, 0, 1.46):
         p.append(b([0.08, 0.98, 0.56], [x, 0.49, 0.0], DOAK, material="wood"))
-    for x in (-1.78, 1.78):
+    for x in (-1.46, 1.46):
         p.append(b([0.1, 0.18, 0.3], [x, 1.05, -0.12], DOAK))
-    return p, [{"size": [3.6, 0.5, 0.56], "offset": [0, 0.25, 0.02]}, {"size": [3.6, 1.1, 0.12], "offset": [0, 0.55, -0.2]}]
+    # One box over the whole pew: too tall to step onto, so nobody (and no zombie) walks along the seats.
+    return p, [{"size": [3.0, 1.12, 0.6], "offset": [0, 0.56, 0.02]}]
 
 
 def altar():
@@ -462,7 +463,7 @@ def gibbet():
 
 
 PROPS = [
-    ("Cathedral Pew", "An oak pew with a high back and a kneeler rail behind; long along X, sitting faces +Z.", pew),
+    ("Cathedral Pew", "A 3 m oak pew with a high back and a kneeler rail behind; long along X, sitting faces +Z.", pew),
     ("Gothic High Altar", "A stone altar under a white cloth and a red frontal, a gold cross and four lit candles.", altar),
     ("Iron Candelabrum", "A tall iron candle stand with five lit candles.", candelabrum),
     ("Votive Candle Stand", "A three-tiered iron rack of red votive candles, lit, with an offering box.", votive_stand),

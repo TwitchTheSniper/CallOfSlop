@@ -1077,6 +1077,7 @@ public sealed class ZombiesRules
                             case "layers": c.Layers = Whole(v, w, 1, 30); break;
                             case "baseRows": c.BaseRows = Whole(v, w, 0, 4); break;
                             case "climbEvery": c.ClimbEvery = Whole(v, w, 0, 100); break;
+                            case "layerShrink": c.LayerShrink = Whole(v, w, 0, 10); break;
                             case "settleSpeed": c.SettleSpeed = Real(v, w, 0.5f, 20); break;
                             case "pileClimbSpeed": c.PileClimbSpeed = Real(v, w, 0.2f, 20); break;
                             case "wallClimbSpeed": c.WallClimbSpeed = Real(v, w, 0.1f, 20); break;
@@ -1290,6 +1291,9 @@ public sealed class ClimbTuning
     public float LayerHeight = 1.3f, ColumnSpacing = 0.75f;
 
     public int Layers = 10, BaseRows = 2;
+
+    /// <summary>Each layer up has this many fewer columns than the one under it (a pyramid; at least one column).</summary>
+    public int LayerShrink = 2;
 
     /// <summary>One zombie in this many reaching the foot climbs straight up the wall instead of joining the pyramid (0: only once it's full).</summary>
     public int ClimbEvery = 3;

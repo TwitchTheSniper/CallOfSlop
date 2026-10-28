@@ -118,7 +118,7 @@ public sealed partial class Game
             var y = _climbWall.Y + layer * c.LayerHeight;
             if (y + 1.9f > _climbTopY)
                 break; // (a body this high already reaches the top)
-            var n = Math.Max(1, cols - layer);
+            var n = Math.Max(1, cols - c.LayerShrink * layer);
             var rows = layer < c.BaseRows ? 2 : 1;
             for (var row = 0; row < rows; row++)
                 for (var k = 0; k < n; k++)
@@ -436,4 +436,16 @@ public sealed partial class Game
 
     /// <summary>Self-test: the pyramid's places.</summary>
     public ReadOnlySpan<Vector3> SelfTestClimbSlots => _climbSlots;
+
+    /// <summary>Self-test: one server tick of the map logic and the Zombies run (the bell, the climb, the horde) at <paramref name="now"/>.</summary>
+    public void SelfTestSiegeTick(double now)
+    {
+        ServerTick++;
+        ServerTickLogic(now);
+        if (Phase == MatchPhase.Playing)
+            ServerTickZombies(now);
+    }
+
+    /// <summary>Self-test: a map logic entity's index by name (-1: none).</summary>
+    public int SelfTestLogicIndex(string name) => Logic?.Def.Find(name) ?? -1;
 }
