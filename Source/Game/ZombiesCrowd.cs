@@ -38,6 +38,7 @@ public sealed partial class Game
         Crowd.Tuning = ZRules.Crowd; // (the rules file's "crowd" section)
         Crowd.Setup(World.Map, floor.Y0 > -1e5f && floor.Y0 < 1e5f ? floor.Y0 : 0f, n);
         Crowd.Clear();
+        _crowdRound = (_crowdRound + 1) & 0xFFFF; // (clients get a keyframe: ZombiesCrowdNet.cs)
         _zToSpawn = 0;
         _zRoundTotal = n;
         CrowdRoundTotal = n;

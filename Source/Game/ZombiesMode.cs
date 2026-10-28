@@ -281,6 +281,7 @@ public sealed partial class Game
     {
         ClearHorde();
         CrowdRoundTotal = CrowdRoundKills = 0;
+        CrowdSeen.Clear(); // (a client's picture of the crowd)
         ZDrops.Clear();
         ZWeaponDrops.Clear();
         ZPartDrops.Clear(); // ZombiesDropItems.cs

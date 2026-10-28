@@ -83,6 +83,7 @@ public enum Msg : byte
     ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
     ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 70)
     ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 70)
+    ZCrowd, // server -> each client: Zombies mass horde: the crowd's per-cell counts and headings that changed, or a keyframe (reliable ordered; ZombiesCrowdNet.cs, protocol 71)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

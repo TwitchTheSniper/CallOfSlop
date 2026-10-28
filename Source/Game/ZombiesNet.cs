@@ -94,6 +94,7 @@ public sealed partial class Game
             if (_zViews.Count > _clients.Count)
                 ForgetGoneViews();
         }
+        ServerSendCrowd(); // a mass-horde map: the crowd's cells (ZombiesCrowdNet.cs)
         if (ServerTick % (World.SnapshotEvery * 3) == 0)
         {
             WriteZWorld(_w);
@@ -529,6 +530,9 @@ public sealed partial class Game
                 break;
             case (byte)Msg.ZWorld when !IsServer:
                 ReadZWorld(ref r, now);
+                break;
+            case (byte)Msg.ZCrowd when !IsServer:
+                ReadZCrowd(ref r); // the mass horde's crowd (ZombiesCrowdNet.cs)
                 break;
             case (byte)Msg.ZCasino when !IsServer:
                 ReadCasino(ref r); // a casino table's state (ZombiesCasinoNet.cs)

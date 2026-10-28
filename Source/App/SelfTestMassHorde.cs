@@ -6,8 +6,8 @@ namespace CallOfSlop;
 /// <summary>
 /// Self-test section "Mass horde" (docs/zombies/MASS-HORDE.md, the spike): Mass Horde Test's crowd of 5,000, 10,000 and
 /// 20,000 zombies for 4 seconds each (short and seeded): the server tick's CPU mean and worst (Windows thread cycles:
-/// 10,000 must stay under the 8 ms budget), allocations, memory, the network sketch's bytes per client (per-cell
-/// density deltas), promotion and demotion (the player walks off: far individuals go back to the crowd, near particles
+/// 10,000 must stay under the 8 ms budget), allocations, memory, Msg.ZCrowd's bytes per client (per-cell
+/// counts and headings) read into a client, promotion and demotion (the player walks off: far individuals go back to the crowd, near particles
 /// come out), counts adding up every tick (crowd + alive + killed = the round's total) with kills from shots, the
 /// same seed giving the same crowd, and the crowd tier off on every other map.
 /// </summary>
@@ -34,7 +34,7 @@ public static partial class SelfTest
         var rows = new List<string>();
         foreach (var n in new[] { 5000, 10000, 20000 })
             rows.Add(MassMeasure(map, zm, n, ref now));
-        MassLine("table (crowd | server tick ms CPU mean / worst (Windows) | crowd ms | KB/s per client (sketch) | MB): " + string.Join("; ", rows));
+        MassLine("table (crowd | server tick ms CPU mean / worst (Windows) | crowd ms | ZCrowd KB/s per client | MB): " + string.Join("; ", rows));
         MassDeterminism(map, ref now);
         Line("::warning title=Mass horde (results)::" + string.Join("%0A", MassNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
@@ -73,14 +73,19 @@ public static partial class SelfTest
         var badText = "";
         long alloc = 0;
         var maxAlive = 0;
-        // The network sketch: per-cell counts (4 m cells) every snapshot, sent as the cells that changed.
-        const float cell = 4f;
-        var (cols, rows) = g.Crowd.DensitySize(cell);
-        var dens = new ushort[cols * rows];
-        var prev = new ushort[cols * rows];
-        long sketchBytes = 0;
-        var sketchSnaps = 0;
+        // The network (Msg.ZCrowd, protocol 71): what one client at the player gets, recorded to replay into a client.
+        var (cols, rows) = g.Crowd.DensitySize(g.ZRules.Crowd.NetCell);
+        var view = new Game.CrowdNetView();
+        var cw = new PacketWriter(32 * 1024);
+        var packets = new List<byte[]>();
+        long netBytes = 0;
         var keyframe = 0;
+        var biggest = 0;
+        double netMs = 0;
+        var netSends = 0;
+        long netAlloc = 0;
+        var lastSum = 0;
+        var serverAtSend = 0;
         void Check(string when)
         {
             var sum = g.Crowd.Count + g.AliveZombies + g.CrowdRoundKills;
@@ -124,29 +129,33 @@ public static partial class SelfTest
                     }
                 Check($"after shots at tick {t}");
             }
-            if (g.ServerTick % World.SnapshotEvery == 0 && measure)
+            if (g.ServerTick % g.ZRules.Crowd.NetEvery == 0)
             {
-                g.Crowd.Density(cell, dens);
-                var changed = 0;
-                var nonzero = 0;
-                for (var i = 0; i < dens.Length; i++)
+                var b0 = GC.GetAllocatedBytesForCurrentThread();
+                var n0 = ThreadCpu.NowMs();
+                g.CrowdCount();
+                g.WriteZCrowdFor(cw, view, me.Position);
+                netMs += ThreadCpu.NowMs() - n0;
+                netSends++;
+                if (packets.Count > 0)
+                    netAlloc += GC.GetAllocatedBytesForCurrentThread() - b0; // (the first: the view's arrays)
+                if (packets.Count == 0)
+                    keyframe = cw.Length;
+                else if (measure)
                 {
-                    if (dens[i] != prev[i])
-                        changed++;
-                    if (dens[i] != 0)
-                        nonzero++;
+                    netBytes += cw.Length;
+                    biggest = Math.Max(biggest, cw.Length);
                 }
-                // A changed cell: its index as a gap from the last (a varint, 1 byte mostly) and the new count's delta (1 byte); 4 bytes of header.
-                sketchBytes += 4 + changed * 2;
-                sketchSnaps++;
-                keyframe = Math.Max(keyframe, 4 + nonzero * 3);
-                Array.Copy(dens, prev, dens.Length);
+                packets.Add(cw.Span.ToArray());
+                lastSum = 0;
+                foreach (var c in view.Count)
+                    lastSum += c;
+                serverAtSend = g.Crowd.Count;
             }
         }
         // 1 s warm-up (the crowd closes in, the first promotions, JIT), then 3 s measured.
         for (var t = 0; t < 60; t++)
             Tick(t, false);
-        g.Crowd.Density(cell, prev);
         for (var t = 60; t < 240; t++)
             Tick(t, true);
         var promoted = g.Crowd.Promoted;
@@ -156,7 +165,7 @@ public static partial class SelfTest
         var crowdMs = g.Crowd.TickMs / Math.Max(1, g.Crowd.Ticks);
         var flow = $"{g.Crowd.FlowBuilds} flow fields, {g.Crowd.FlowMs / Math.Max(1, g.Crowd.FlowBuilds):0.00} ms each over several ticks (the most in one tick {g.Crowd.FlowWorstMs:0.00} ms)";
         var meanCpu = sumCpu / Math.Max(1, ticks);
-        var kbs = sketchBytes / 3.0 / 1024;
+        var kbs = netBytes / 3.0 / 1024;
         var bytes = g.Crowd.Bytes;
         // Steady state: a one-off growth (the zombie body grid's first build when the first ones arrive) can't fail it.
         alloc = RecheckAllocBytes(alloc, () =>
@@ -182,9 +191,38 @@ public static partial class SelfTest
             if (g.Crowd.Demoted - d0 < 20 || g.Crowd.Promoted - p0 < 20)
                 Fail($"crowd {count}: walking off should send the far individuals back to the crowd and bring near particles out ({walk})");
         }
+        // The client: every message read in order; its picture must hold what the server's record says it was sent.
+        var t1 = now;
+        using var c = ZGame(0, ref t1, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        var readMs = ThreadCpu.TimeMs(() =>
+        {
+            foreach (var pk in packets)
+                c.SelfTestReadCrowd(pk);
+        }) / Math.Max(1, packets.Count);
+        var seen = c.CrowdSeen.Total;
+        // Filling the picture (every crowd zombie's spot and yaw for drawing), once: the client's cost a frame.
+        var fillMs = ThreadCpu.TimeMs(() =>
+        {
+            var pic = c.CrowdSeen;
+            var sum = 0f;
+            for (var i = 0; i < pic.Count.Length; i++)
+                for (var k = 0; k < pic.Count[i]; k++)
+                    sum += pic.Place(i, k, now, 1.5f, out _).X;
+            if (sum == 12345.678f)
+                Line("(never)");
+        });
+        World.SetMap(map);
+        var net = $"ZCrowd {kbs:0.0} KB/s per client ({netSends} sends, every {g.ZRules.Crowd.NetEvery} ticks, {g.ZRules.Crowd.NetCell:0} m cells {cols}x{rows}; keyframe {keyframe} bytes, biggest change {biggest} bytes; "
+                  + $"server {netMs / Math.Max(1, netSends):0.000} ms a send, {netAlloc} bytes allocated); client read {readMs:0.000} ms a message, picture {seen} zombies (sent {lastSum}), fill {fillMs:0.00} ms";
+        if (seen != lastSum || c.CrowdSeen.Reads != packets.Count)
+            Fail($"crowd {count}: the client's picture should match what it was sent ({seen} vs {lastSum}, {c.CrowdSeen.Reads} of {packets.Count} messages read)");
+        if (netAlloc > 0)
+            Fail($"crowd {count}: writing Msg.ZCrowd allocated {netAlloc} bytes (want none)");
+        if (Math.Abs(lastSum - serverAtSend) > serverAtSend / 50 + 50) // (far cells lag a send or two)
+            Fail($"crowd {count}: the last ZCrowd sent {lastSum} crowd zombies, the server had {serverAtSend}");
         MassLine($"crowd {count}: seeded {seeded} ({bytes / 1024} KB of crowd arrays, {mem / 1024 / 1024.0:0.0} MB managed for the game and crowd); server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), crowd {crowdMs:0.00} ms a tick, {flow}; "
               + $"{alloc} bytes allocated in the steady state; individuals {alive} (most {maxAlive}, cap {g.CrowdIndividualCap}), {near} held near, {promoted} promoted, {demoted0} demoted, {g.CrowdRoundKills} killed ({kills} by the test's shots), counts off on {bad} ticks{(badText.Length > 0 ? " (" + badText + ")" : "")}; "
-              + $"network sketch {kbs:0.0} KB/s per client (4 m cells, {cols}x{rows}; keyframe {keyframe} bytes){walk}");
+              + $"{net}{walk}");
         if (seeded != count)
             Fail($"crowd {count}: only {seeded} seeded");
         if (alloc > 0)

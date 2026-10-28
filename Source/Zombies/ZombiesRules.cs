@@ -1157,6 +1157,10 @@ public sealed class ZombiesRules
                             case "flowCell": c.FlowCell = Real(v, w, 0.5f, 8); break;
                             case "flowRefreshTicks": c.FlowRefreshTicks = Whole(v, w, 2, 600); break;
                             case "flowCellsPerTick": c.FlowCellsPerTick = Whole(v, w, 64, 1000000); break;
+                            case "netCell": c.NetCell = Real(v, w, 1, 16); break;
+                            case "netEvery": c.NetEvery = Whole(v, w, 1, 60); break;
+                            case "netFarRange": c.NetFarRange = Real(v, w, 0, 1000); break;
+                            case "netFarEvery": c.NetFarEvery = Whole(v, w, 1, 30); break;
                             default: return false;
                         }
                         return true;

@@ -150,7 +150,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 70: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
-    public const byte ProtocolVersion = 70;
+    // 71: The mass horde's crowd (docs/zombies/MASS-HORDE.md, Source/Game/ZombiesCrowdNet.cs): Msg.ZCrowd at the end of Msg
+    //     (per-cell crowd counts and headings, changes or a keyframe), sent only on maps with a "crowd".
+    public const byte ProtocolVersion = 71;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

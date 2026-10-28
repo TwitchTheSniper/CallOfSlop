@@ -37,6 +37,15 @@ public sealed class CrowdTuning
 
     /// <summary>The field is built over several ticks, about this many cells a tick (Dijkstra pops, then headings), into a second buffer.</summary>
     public int FlowCellsPerTick = 1600;
+
+    /// <summary>
+    /// The network (Msg.ZCrowd, protocol 71): per-cell counts and headings in cells of <see cref="NetCell"/> m, every
+    /// <see cref="NetEvery"/> ticks; cells further than <see cref="NetFarRange"/> from the client only every
+    /// <see cref="NetFarEvery"/>th time.
+    /// </summary>
+    public float NetCell = 4f, NetFarRange = 60f;
+
+    public int NetEvery = 6, NetFarEvery = 3;
 }
 
 /// <summary>
@@ -723,7 +732,58 @@ public sealed class HordeCrowd
         }
     }
 
-    public (int Cols, int Rows) DensitySize(float cell) => (Math.Max(1, (int)MathF.Ceiling(_halfX * 2 / cell)), Math.Max(1, (int)MathF.Ceiling(_halfZ * 2 / cell)));
+    private float[] _dvx = [], _dvz = [];
+
+    /// <summary>
+    /// The network's picture of the crowd: per cell of <paramref name="cell"/> m (<see cref="DensitySize"/>) the particles
+    /// in it (at most 255) and their mean heading as a byte (1-255 round the compass, World.FlatForward's yaw; 0 when
+    /// standing). No allocation once sized.
+    /// </summary>
+    public void DensityHeading(float cell, byte[] counts, byte[] headings)
+    {
+        var (cols, rows) = DensitySize(cell);
+        var n = cols * rows;
+        if (_dvx.Length < n)
+        {
+            _dvx = new float[n];
+            _dvz = new float[n];
+        }
+        Array.Clear(counts, 0, n);
+        Array.Clear(_dvx, 0, n);
+        Array.Clear(_dvz, 0, n);
+        for (var i = 0; i < Count; i++)
+        {
+            var c = Math.Clamp((int)((X[i] + _halfX) / cell), 0, cols - 1);
+            var r = Math.Clamp((int)((Z[i] + _halfZ) / cell), 0, rows - 1);
+            var k = r * cols + c;
+            if (counts[k] < 255)
+                counts[k]++;
+            _dvx[k] += VX[i];
+            _dvz[k] += VZ[i];
+        }
+        for (var k = 0; k < n; k++)
+        {
+            var l2 = _dvx[k] * _dvx[k] + _dvz[k] * _dvz[k];
+            headings[k] = counts[k] == 0 || l2 < 1e-4f ? (byte)0 : HeadingByte(MathF.Atan2(_dvx[k], -_dvz[k]));
+        }
+    }
+
+    /// <summary>A yaw (radians) as a byte round the compass, 1-255 (0 means standing), and back.</summary>
+    public static byte HeadingByte(float yaw)
+    {
+        var f = yaw / MathF.Tau;
+        f -= MathF.Floor(f);
+        return (byte)(1 + Math.Min(254, (int)(f * 255f)));
+    }
+
+    public static float HeadingYaw(byte b) => b == 0 ? 0f : (b - 0.5f) / 255f * MathF.Tau;
+
+    /// <summary>The map's lower corner (the network grid's origin).</summary>
+    public float MinX => -_halfX;
+
+    public float MinZ => -_halfZ;
+
+    public (int Cols, int Rows) DensitySize(float cell) => (Math.Clamp((int)MathF.Ceiling(_halfX * 2 / cell), 1, 255), Math.Clamp((int)MathF.Ceiling(_halfZ * 2 / cell), 1, 255));
 
     /// <summary>Order-dependent digest of every particle (self-test: determinism).</summary>
     public ulong Digest()
