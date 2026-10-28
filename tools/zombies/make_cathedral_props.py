@@ -510,7 +510,7 @@ LIGHTS = {
     "Wall Torch": [{"pos": [0, 0.64, 0.46], "color": "#ffa850", "intensity": 1.5, "range": 8, "flicker": True}],
     "Iron Brazier": [{"pos": [0, 1.3, 0], "color": "#ff8a3a", "intensity": 2.4, "range": 10, "flicker": True}],
     "Iron Candelabrum": [{"pos": [0, 1.95, 0], "color": CANDLE, "intensity": 1.1, "range": 7, "flicker": True}],
-    "Iron Chandelier": [{"pos": [0, 1.1, 0], "color": CANDLE, "intensity": 2.2, "range": 13, "flicker": True}],
+    "Iron Chandelier": [{"pos": [0, 1.1, 0], "color": CANDLE, "intensity": 2.2, "range": 16, "flicker": True}],
     "Votive Candle Stand": [{"pos": [0, 1.4, 0.15], "color": "#ffa860", "intensity": 0.9, "range": 6, "flicker": True}],
     "Gothic High Altar": [{"pos": [0, 1.85, -0.25], "color": CANDLE, "intensity": 0.9, "range": 6, "flicker": True}],
     "Organ Console": [{"pos": [0, 2.0, -0.5], "color": CANDLE, "intensity": 0.6, "range": 5, "flicker": True}],
