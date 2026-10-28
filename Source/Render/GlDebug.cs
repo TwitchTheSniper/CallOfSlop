@@ -27,7 +27,7 @@ public static unsafe class GlDebug
 
     private static uint _pendingError;
     private static readonly Dictionary<uint, int> PerId = new();
-    private const int MaxPerId = 3, MaxLogged = 200;
+    private const int MaxPerId = 3, MaxLogged = 200, MaxTraces = 5;
 
     /// <summary>Installs the KHR_debug callback (4.6 path, dev builds). Notifications are muted; everything else is logged.</summary>
     public static void Install()
@@ -62,6 +62,8 @@ public static unsafe class GlDebug
             Logged++;
             var text = length > 0 ? Encoding.UTF8.GetString(message, length) : new string((sbyte*)message);
             Console.WriteLine($"[gl] {Kind(type)} ({SeverityName(severity)}, id {id}): {text.TrimEnd()}");
+            if (type == GL_DEBUG_TYPE_ERROR && Errors <= MaxTraces)
+                Console.WriteLine(Environment.StackTrace); // synchronous: the frames above Callback are the call that failed
         }
         catch
         {

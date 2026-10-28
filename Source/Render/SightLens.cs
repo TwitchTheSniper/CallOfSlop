@@ -581,8 +581,9 @@ public static unsafe class SightLens
                 Native.glGetQueryObjectiv(Queries[s * Stamps + DrawEnd].Id, GL_QUERY_RESULT_AVAILABLE, &available);
                 if (available == 0)
                     continue;
-                ulong w, c0, c1, d0, d1;
-                Native.glGetQueryObjectui64v(Queries[s * Stamps + World].Id, GL_QUERY_RESULT, &w);
+                ulong w = 0, c0, c1, d0, d1;
+                if (HasWorld[s]) // a query never stamped is not a query object yet: reading it is GL_INVALID_OPERATION (found by KHR_debug)
+                    Native.glGetQueryObjectui64v(Queries[s * Stamps + World].Id, GL_QUERY_RESULT, &w);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + CopyStart].Id, GL_QUERY_RESULT, &c0);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + CopyEnd].Id, GL_QUERY_RESULT, &c1);
                 Native.glGetQueryObjectui64v(Queries[s * Stamps + DrawStart].Id, GL_QUERY_RESULT, &d0);
