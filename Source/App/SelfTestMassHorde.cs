@@ -338,7 +338,7 @@ public static partial class SelfTest
         sumOk &= c.Total + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
         sumOk &= c.Total + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
         var credited = zp.Kills - kills0;
-        MassLine($"combat: 80 head shots into the crowd killed {shotKills} ({3000 - afterShots} out of the crowd); a blast took {blastKills - massKills} out of the crowd ({inRange} within 3 m), {drops} drops rolled; a blast in the mass killed {massKills} ({massBefore} -> {c.MassTotal} in the mass); "
+        MassLine($"combat: 80 head shots into the crowd killed {shotKills} ({afterShots} particles left, the rest in the mass); a blast took {blastKills - massKills} out of the crowd ({inRange} within 3 m), {drops} drops rolled; a blast in the mass killed {massKills} ({massBefore} -> {c.MassTotal} in the mass); "
                  + $"kills credited {credited} (crowd round kills {g.CrowdRoundKills}), points {points0} -> {zp.Points}; counts add up {sumOk}");
         if (shotKills < 5)
             Fail($"shots into the crowd should kill crowd zombies ({shotKills} of 20 targets)");
