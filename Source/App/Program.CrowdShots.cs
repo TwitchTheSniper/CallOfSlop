@@ -49,6 +49,8 @@ public static unsafe partial class Program
             ("near", new Vector3(-2, 6, 14), new Vector3(0, 0, -20)),
         };
         var simulated = 0.0;
+        var cw = new PacketWriter(32 * 1024);
+        var cview = new Game.CrowdNetView();
         foreach (var at in new[] { 0.0, 3.0, 8.0, 16.0 })
         {
             for (; simulated < at; simulated += World.TickDt)
@@ -59,22 +61,35 @@ public static unsafe partial class Program
                     z.RenderPos = z.Position; // (no client interpolation here)
             }
             Console.WriteLine($"[crowdshots] {at:0} s: crowd {g.Crowd.Count} ({g.Crowd.Near} near), individuals {g.AliveZombies}, promoted {g.Crowd.Promoted}, demoted {g.Crowd.Demoted}; {g.HordeSummary()}");
-            foreach (var view in views)
-                for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
-                {
-                    Glfw.PollEvents();
-                    var fb = _window.FramebufferSize;
-                    Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
-                    Gfx.SetCamera(Matrix4x4.CreateLookAt(view.Eye, view.Target, Vector3.UnitY),
-                        Matrix4x4.CreatePerspectiveFieldOfView(1.1f, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
-                    Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
-                    DrawArena();
-                    DrawZombiesMode(now);
-                    Gfx.SetFog(map.Sky, 0, 0);
-                    if (frame == 2)
-                        SaveScreenshot($"crowd_{view.Name}_{at:0}s");
-                    _window.SwapBuffers();
-                }
+            // Three looks: the crowd as the host draws it, with the tier colours, and as a client draws it from Msg.ZCrowd.
+            g.CrowdCount();
+            g.WriteZCrowdFor(cw, cview, me.Position);
+            g.SelfTestReadCrowd(cw.Span);
+            foreach (var look in new[] { "host", "tiers", "client" })
+            {
+                CrowdTiers = look == "tiers";
+                CrowdAsClient = look == "client";
+                foreach (var view in views)
+                    for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
+                    {
+                        Glfw.PollEvents();
+                        var fb = _window.FramebufferSize;
+                        Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
+                        Gfx.SetCamera(Matrix4x4.CreateLookAt(view.Eye, view.Target, Vector3.UnitY),
+                            Matrix4x4.CreatePerspectiveFieldOfView(1.1f, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
+                        Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
+                        DrawArena();
+                        DrawZombiesMode(now);
+                        Gfx.SetFog(map.Sky, 0, 0);
+                        if (frame == 2)
+                        {
+                            SaveScreenshot($"crowd_{look}_{view.Name}_{at:0}s");
+                            Console.WriteLine($"[crowdshots] {look} {view.Name}: {CrowdInst.Count[0]}/{CrowdInst.Count[1]}/{CrowdInst.Count[2]} near/mid/far, {CrowdInst.Culled} culled, prep {CrowdPrepMs:0.00} ms; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
+                        }
+                        _window.SwapBuffers();
+                    }
+            }
+            CrowdTiers = CrowdAsClient = false;
         }
         _session = null;
         g.Dispose();

@@ -36,6 +36,7 @@ public static partial class SelfTest
             rows.Add(MassMeasure(map, zm, n, ref now));
         MassLine("table (crowd | server tick ms CPU mean / worst (Windows) | crowd ms | ZCrowd KB/s per client | MB): " + string.Join("; ", rows));
         MassDeterminism(map, ref now);
+        MassRigs();
         Line("::warning title=Mass horde (results)::" + string.Join("%0A", MassNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
@@ -211,6 +212,43 @@ public static partial class SelfTest
             if (sum == 12345.678f)
                 Line("(never)");
         });
+        // Drawing (CPU side): this frame's instances, every crowd zombie in view (no frustum: the worst case), by level of
+        // detail, from the host's particles and from the client's picture; nothing allocated once warm.
+        ZombieAnim.ClearFrustum();
+        var inst = new CrowdInstances();
+        var cam = me.Position + new Vector3(0, 1.6f, 0);
+        void HostPrep()
+        {
+            inst.Begin();
+            inst.FromHost(g.Crowd, cam);
+        }
+        void ClientPrep()
+        {
+            inst.Begin();
+            inst.FromPicture(c.CrowdSeen, cam, now, g.ZRules.Crowd.Speed);
+        }
+        HostPrep();
+        ClientPrep();
+        var prepAlloc = GC.GetAllocatedBytesForCurrentThread();
+        HostPrep();
+        ClientPrep();
+        prepAlloc = GC.GetAllocatedBytesForCurrentThread() - prepAlloc;
+        var hostPrepMs = ThreadCpu.TimeMs(() =>
+        {
+            for (var k = 0; k < 5; k++)
+                HostPrep();
+        }) / 5;
+        var hostLods = $"{inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]}";
+        var clientPrepMs = ThreadCpu.TimeMs(() =>
+        {
+            for (var k = 0; k < 5; k++)
+                ClientPrep();
+        }) / 5;
+        var draw = $"; drawing prep {hostPrepMs:0.00} ms host ({hostLods} near/mid/far), {clientPrepMs:0.00} ms client ({inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]}), {prepAlloc} bytes allocated";
+        if (prepAlloc > 0)
+            Fail($"crowd {count}: preparing the crowd's instances allocated {prepAlloc} bytes once warm");
+        if (inst.Total != c.CrowdSeen.Total)
+            Fail($"crowd {count}: the client's instances ({inst.Total}) should be every zombie in its picture ({c.CrowdSeen.Total}) with no frustum");
         World.SetMap(map);
         var net = $"ZCrowd {kbs:0.0} KB/s per client ({netSends} sends, every {g.ZRules.Crowd.NetEvery} ticks, {g.ZRules.Crowd.NetCell:0} m cells {cols}x{rows}; keyframe {keyframe} bytes, biggest change {biggest} bytes; "
                   + $"server {netMs / Math.Max(1, netSends):0.000} ms a send, {netAlloc} bytes allocated); client read {readMs:0.000} ms a message, picture {seen} zombies (sent {lastSum}), fill {fillMs:0.00} ms";
@@ -222,7 +260,7 @@ public static partial class SelfTest
             Fail($"crowd {count}: the last ZCrowd sent {lastSum} crowd zombies, the server had {serverAtSend}");
         MassLine($"crowd {count}: seeded {seeded} ({bytes / 1024} KB of crowd arrays, {mem / 1024 / 1024.0:0.0} MB managed for the game and crowd); server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), crowd {crowdMs:0.00} ms a tick, {flow}; "
               + $"{alloc} bytes allocated in the steady state; individuals {alive} (most {maxAlive}, cap {g.CrowdIndividualCap}), {near} held near, {promoted} promoted, {demoted0} demoted, {g.CrowdRoundKills} killed ({kills} by the test's shots), counts off on {bad} ticks{(badText.Length > 0 ? " (" + badText + ")" : "")}; "
-              + $"{net}{walk}");
+              + $"{net}{draw}{walk}");
         if (seeded != count)
             Fail($"crowd {count}: only {seeded} seeded");
         if (alloc > 0)
@@ -237,6 +275,25 @@ public static partial class SelfTest
             Fail($"crowd {count}: a server tick did {cpuTimer.WorstMs:0.00} ms of work (budget {MaxTickWorkMs} ms): {cpuTimer.WorstDetail}");
         clock = now;
         return $"{count} | {meanCpu:0.00} / {cpuTimer.WorstText} | {crowdMs:0.00} | {kbs:0.0} | {bytes / 1024 / 1024.0:0.0}";
+    }
+
+    /// <summary>The baked crowd rigs (CrowdRig.cs): the same boxes every frame, the near rig fuller than the mid, an animated walk, finite numbers.</summary>
+    private static void MassRigs()
+    {
+        var rigs = Enumerable.Range(0, CrowdInstances.Lods).Select(l => CrowdRig.Bake(l)).ToArray();
+        var moves = new float[rigs.Length];
+        for (var r = 0; r < rigs.Length; r++)
+        {
+            var rig = rigs[r];
+            var w = rig.Width * 4;
+            for (var f = 1; f < rig.Frames; f++)
+                for (var k = 0; k < w; k++)
+                    moves[r] = MathF.Max(moves[r], MathF.Abs(rig.Texels[f * w + k] - rig.Texels[k]));
+        }
+        var finite = rigs.All(r => r.Texels.All(float.IsFinite));
+        MassLine($"rigs: {string.Join(", ", rigs.Select((r, i) => $"{r.Name} {r.Boxes} boxes x {r.Frames} frames ({r.Texels.Length * 4 / 1024.0:0.0} KB, moves {moves[i]:0.00})"))}, walk cycle {rigs[0].CycleMetres:0.00} m, finite {finite}");
+        if (!finite || rigs[0].Boxes <= rigs[1].Boxes || rigs[1].Boxes <= rigs[2].Boxes || rigs[0].Frames < 8 || moves[0] < 0.05f || moves[1] < 0.05f)
+            Fail("the crowd rigs should bake a walk cycle: near fuller than mid fuller than far, the limbs moving, finite numbers");
     }
 
     /// <summary>The same seed, the same crowd: two runs of 2 s with 3,000 particles end with the same digest.</summary>

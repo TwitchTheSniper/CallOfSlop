@@ -121,6 +121,7 @@ public static unsafe partial class Program
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _shotTool |= _crowdShots;
+        CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
