@@ -151,3 +151,117 @@ The server tick includes the 300 individuals' full AI (about 1.2 ms on its own i
 tier on, most of a 20,000 crowd is counts, which is why 20,000 costs little more than 10,000. Managed memory for the
 whole game with the crowd is 7 MB; the crowd's arrays are 0.9-1.8 MB. The spike's Windows figures (before the mass
 tier: every zombie a particle) were 2.34 ms mean / 3.70 ms worst at 20,000.
+
+## Horde Stress
+
+Board item `dev-horde-stress-map-hs01` (2026-10-28). `Maps/Dev/HordeStress.json`, written by the map kit generator
+`Source/MapKit/Generators/HordeStress.cs`; the round logic is `Source/Game/ZombiesCrowdStress.cs`, the lobby settings
+`Source/UI/UiLobbyStress.cs`.
+
+### The map
+
+A 460 x 400 m valley on terrain (2 m samples, 40 m margin), mirror-symmetric about z = 0, `order` 988 (last in the Dev
+pack). x runs across the valley:
+
+- **The Overlook** (x = -175): a raised bench 30 x 130 m at 17 m on the west rise, gentle sides (the horde comes up
+  them), low kerbs along its valley edge. The players' spawns, the hill and the box are here.
+- **The valley floor** (x = 0): 12 m down, sandy, with the **rally point** (a yellow post) on a level patch.
+- **The far slope** rising to a 24 m ridge at x = 185, with three **staging pads** at x = 150, z = -125, 0, 125 (red
+  posts), kept apart by two low knolls. Nothing in between: the whole horde is in view from the Overlook.
+
+### A round
+
+The zombies section's `"stress"` (Maps/README.md, docs/zombies/ZOMBIES-MODE.md "Map format"):
+
+1. **Staging.** The round's crowd (the host's **Horde size**, else the map's `"crowd"`, 2,500) is seeded in the mass
+   tier, split evenly between the pads: each a round blob of cells packed to the mass capacity (40 a 4 m cell), so
+   100,000 makes three blobs of about 90 m. The crowd is **held** (`HordeCrowd.Hold`: particles don't walk, the mass
+   doesn't flow) for the countdown (10 s).
+2. **Descent.** The crowd's **goal** (`HordeCrowd.SetGoal`) is the rally point: the flow field leads there instead of
+   to the players (promotion, merging into the mass and release still go by the players). The hordes pour down the
+   slope in streams.
+3. **Merge.** Every half second a flood fill over the mass grid finds the blob of touching cells at the rally point.
+   When it holds `"gather"` (75%) of the crowd and the crowd's mean distance to the rally point has stopped falling for
+   10 s (packed, the tails queued in), the hordes have merged; after `"gatherSeconds"` (300 s) they go anyway.
+4. **Advance.** The goal is cleared: the field leads to the players, and the merged horde comes up the west slope;
+   near the players they become full zombies as on every crowd map (promoted crowd zombies are walkers).
+5. **Endless** (lobby): another wave of the same size on the pads every `"waveSeconds"` (60 s), heading straight for
+   the players, while the live horde stays under 200,000 (`Game.StressMax`).
+
+At the crowd's 1.5 m/s the descent and merge take about two minutes and the advance another two.
+
+### The crowd on terrain
+
+The crowd tier was one floor height. On a terrain map now (a flat map keeps its one floor):
+
+- Each flow cell is walkable where a body stands on the ground at its middle; a step to a neighbouring cell more than
+  1.1 m up or down per metre (`HordeCrowd.MaxSlope`, about 48 degrees) is a wall for the field and for a particle's
+  walk (`CanMove`).
+- A crowd zombie stands on the ground under it (`GroundAt`): promotion, shots (the capsule from the ground), blasts,
+  mass blasts, kill credit, the instances drawn (host and client: the client samples its own copy of the terrain, so
+  `Msg.ZCrowd` is unchanged), the crowd surface (it rises from the ground there) and the roar.
+
+### Changes to the mass horde found on the way
+
+- **Packing.** Particles had no density limit: pressure from behind squeezed hundreds into a 4 m cell near the player
+  (a cell's count saturated at 255 on the network, so 15,000 of a 100,000 crowd vanished from the clients' picture).
+  Now a particle doesn't step into a separation cell (0.7 m) already holding 3 (`PackedCell`, about 6 a square metre),
+  and the mass doesn't let a zombie out where it would land in one.
+- **Sideways spill.** The mass moved each cell's share one cell along the field's heading and held it back when that
+  cell was full, so a jam made single-file queues along the grid's eight directions. Now a full downstream cell sends
+  the flow to the cell 45 degrees either side if that one is further down the field: the crowd spreads round a jam and
+  packs like a fluid.
+- **The separation grid** is sorted only over the window round the particles and individuals each tick (its size was
+  the whole map's: on a 460 x 400 m map 375,000 cells a tick), and may cover up to 4,096 cells a side.
+- **The host drew nothing** while the whole crowd was in the mass tier (it only drew from the particles when there were
+  some); now it draws the mass cells too.
+- **`Msg.ZCrowd`'s gaps** are 15 bits; a grid with more than 32,768 unchanged cells between two changes would have
+  overflowed. The server now writes a filler entry (what the client already has, 32,768 cells on). No wire change.
+
+### Limits (what holds at 50,000-100,000)
+
+| What | Limit | At 100,000 on Horde Stress |
+| --- | --- | --- |
+| A stress round's size | 200,000 (`Game.StressMax`; presets to 100,000, custom to 200,000) | |
+| A map's `"crowd"` | 32,000 (`ZombiesMap.MaxCrowd`; the stress size isn't bound by it) | |
+| Particles at once | 40,000 (`HordeCrowd.ParticleCap`): the rest stays in the mass | 27,000-34,000 near the Overlook |
+| Mass and network grid | 255 x 255 cells of 4 m: maps up to 1,020 m a side | 115 x 100 cells |
+| Flow field | 1,024 x 1,024 cells of 2 m: 2,048 m | 230 x 200 = 46,000 cells, a new field every ~1.5 s |
+| Separation grid | 4,096 cells of 0.7 m a side (2,867 m), windowed | |
+| A mass cell | 40 zombies (`massCapacity`): 100,000 needs 2,500 cells (40,000 m2) | the merged blob fills the valley floor |
+| Count a network cell | 255 (a byte); packing keeps it under ~140 | 40 at most in the mass, 0 cells saturated |
+| One `Msg.ZCrowd` | 16 KB (`ZCrowdMaxBytes`; the rest next time) | keyframe 7.5 KB; 6-12 KB per 3 sends (~20-40 KB/s per client) |
+| Instances drawn | no hard limit (arrays and GL buffers double); a mass cell draws its top 28 (`drawCap`) | 70,000-74,000 a frame (prep 2-7 ms CPU on the cloud box) |
+| Individuals | 300 (`individualCap`) and the host's horde cap | 300 |
+| Memory | the crowd's arrays | 6.9 MB |
+
+Cloud box (2 shared cores, Mesa software GL, `--stress-shots 100000` at 3x speed): the zombies tick averages 0.5 ms
+while the hordes descend and 1.6-1.9 ms while 27,000-34,000 particles and 300 individuals press on the Overlook; single
+ticks reach 9-12 ms on that box (the first tick, about 9 ms, is the JIT). The Windows figures are the developer's to
+take: the F9 window and the `[stress]` summary.
+
+### Measurement
+
+- **F9 window** (Counters): the tiers (individuals, crowd particles and how many are near, mass, killed of the round's
+  total), the crowd's tick (mean and worst over the last second), the flow field's worst step, the crowd's bytes per
+  client a second, the instances drawn per level of detail and the CPU to prepare them, and on a stress round its
+  phase, wave and how much of the crowd is in the rally blob. The corner overlay has a one-line version.
+- **Log summary** (`[stress] summary` and one line per size bracket, at a round's end, a new round, the run's or the
+  session's end): per bracket of the live horde (under 1,000, 1,000+, 2,500+, ... 100,000+) the server tick's average
+  and worst (wall clock), fps and the worst frame and frames under 30 fps, the peak particles, mass, individuals and
+  instances drawn, and KB/s per client (all traffic, and the crowd's share). With endless waves the brackets show
+  where the PC started to suffer.
+- **Pictures**: `--stress-shots [size] [--stress-speed N]` (default 10,000 at 3x) runs an offline round and saves
+  `smoke_stress_<above|eye|plan>_<staging|descending|merged|advancing>.bmp`, logging the counts, the zombies tick, the
+  instances and what one client on the Overlook would be sent. In the container: `xvfb-run -a -s "-screen 0
+  1280x720x24"`.
+
+### Self-test
+
+Section **"Horde stress"** (`Source/App/SelfTestHordeStress.cs`, about a second): 600 zombies at 6x speed with a 2 s
+countdown: 200 on each pad, held through the countdown, descended and merged at the rally point within a minute,
+advancing on the player on the Overlook (mean distance 190 m to 70 m) and promoted there standing on the terrain, the
+counts adding up every tick, no allocation over half a second of the descent, and an endless wave adding another 300.
+The map's own checks (loads, the Overlook and rally point probes, nav, symmetry, a bot match) are its test block in
+"Map contract". Nothing big runs in the self-test.
+

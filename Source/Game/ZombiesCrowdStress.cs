@@ -10,8 +10,8 @@ namespace CallOfSlop;
 /// Dev/HordeStress.json). Each round's crowd, of the size the host picks in the lobby (<see cref="StressSize"/>), is
 /// seeded in the mass tier on the map's staging areas, split evenly. It waits there for the countdown
 /// (<see cref="StressPhase.Staging"/>: the crowd is held), then descends with the flow field leading to the rally point
-/// (<see cref="StressPhase.Gather"/>: the crowd's goal), and once most of it is near the rally point, the hordes have
-/// merged and it advances on the players (<see cref="StressPhase.Advance"/>: the goal cleared, the field leads to the
+/// (<see cref="StressPhase.Gather"/>: the crowd's goal), and once one blob at the rally point holds most of it and has
+/// stopped closing in (<see cref="StressMergeCheck"/>), the hordes have merged and it advances on the players (<see cref="StressPhase.Advance"/>: the goal cleared, the field leads to the
 /// players as on every crowd map). Zombies are otherwise the mass horde's: promoted near the players, fighting, dying.
 /// With <see cref="StressEndless"/> another wave of the same size comes from the staging areas every
 /// <see cref="ZombiesStress.WaveSeconds"/> (straight at the players), up to <see cref="StressMax"/> at once.
@@ -65,7 +65,7 @@ public sealed partial class Game
     /// <summary>The individuals alive (the perf window's count; the server's own).</summary>
     public int StressIndividuals => _zAlive;
 
-    /// <summary>The share of the crowd near the rally point at the last check (self-test, perf window).</summary>
+    /// <summary>The share of the crowd in the blob at the rally point at the last merge check (self-test, perf window).</summary>
     public float StressNearShare { get; private set; }
 
     private double _stressNextWave, _stressDescentAt, _stressBestAt;

@@ -94,7 +94,7 @@ public static unsafe partial class Program
             while ((sends < g.ZRules.Crowd.NetFarEvery || cw.Length >= Game.ZCrowdMaxBytes - 64) && sends < 64);
             Console.WriteLine($"[stressshots] {moment}: Msg.ZCrowd to a client: {bytes} B in {sends} message(s), biggest {biggest} B; the client's picture holds {g.CrowdSeen.Total} of the crowd's {c.Total}");
             Console.WriteLine($"[stressshots] {moment} at {simulated:0} s: {g.StressState}, live {g.StressLive} (individuals {g.AliveZombies}, particles {c.Count}, mass {c.MassTotal}), "
-                              + $"{g.StressNearShare * 100:0}% at the rally point; zombies tick avg {(ticks > 0 ? tickMs / ticks : 0):0.00} ms, worst {worstTick:0.00} ms over {ticks}");
+                              + $"{g.StressNearShare * 100:0}% in the blob at the rally point; zombies tick avg {(ticks > 0 ? tickMs / ticks : 0):0.00} ms, worst {worstTick:0.00} ms over {ticks}");
             (tickMs, ticks, worstTick) = (0, 0, 0);
             foreach (var view in views)
                 for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)

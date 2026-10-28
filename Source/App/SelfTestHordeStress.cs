@@ -110,7 +110,7 @@ public static partial class SelfTest
                 merged = now - t0;
         }
         var left = st.Staging.Sum(s => NearAt(s, 30));
-        Line($"merged after {merged:0.0} s (game time from the countdown's start, 6x speed): {g.StressNearShare * 100:0}% near the rally point, {left} left on the pads, merge {g.StressMergeSeconds:0.0} s");
+        Line($"merged after {merged:0.0} s (game time from the countdown's start, 6x speed): {g.StressNearShare * 100:0}% in the blob at the rally point, {left} left on the pads, merge {g.StressMergeSeconds:0.0} s");
         if (merged < 0 || g.StressNearShare < st.Gather || left > size / 10)
             Fail("the three hordes should descend from their pads and merge at the rally point within a minute (at 6x speed)");
 
