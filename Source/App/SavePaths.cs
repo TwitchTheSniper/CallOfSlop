@@ -28,7 +28,7 @@ public static class SavePaths
     public const string SaveDirFlag = "--save-dir";
 
     /// <summary>The player's own files (copied over by the migration). Everything else next to the game is game data.</summary>
-    public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", "audio_mix.json", AppearanceStore.FileName];
+    public static readonly string[] SaveFiles = ["progress.txt", "loadout.txt", "settings.txt", "workbench.txt", BlueprintStore.FileName, "audio_mix.json", AppearanceStore.FileName];
 
     // Also in the save folder but not save files (never migrated; safe to delete): update_check.txt (UpdateCache.cs) and
     // update.log (what the updater's cleanup removed, UpdateCleanup.cs), the Cache folder (cached nav graphs, BotNavBake.cs) and the Logs folder (stuck-spot reports, StuckSpots.cs).

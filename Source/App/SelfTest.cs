@@ -79,6 +79,7 @@ public static partial class SelfTest
         }
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
         SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
+        BlueprintStore.ReadOnly = true; // the blueprint library is only written by its own section, into a temp folder
         NavBake.Enabled = false; // every nav graph built live, whatever an earlier run cached ("Nav bake" turns it on in a temp folder)
         MapBake.Enabled = false; // every map built live too, and nothing cached ("Map bake" turns both on in a temp folder)
         MapBake.CacheWrites = false;
@@ -337,6 +338,7 @@ public static partial class SelfTest
         Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
         Section("Workbench grip list", CheckWorkbenchGrips); // SelfTestWorkbenchGrips.cs: "Show all grips" off = owned grips, on = every grip (unowned flagged, locked in Zombies), setting, no allocations
         Section("Workbench refused build", CheckWorkbenchRefused); // SelfTestWorkbenchRefused.cs: Build on an incomplete weapon marks exactly the required empty sockets (red rings), they clear as filled, no allocations
+        Section("Workbench blueprints", CheckWorkbenchBlueprints); // SelfTestBlueprints.cs: the blueprint library (blueprints.txt, temp folder only): migration of the old slots once, edits round-trip and survive a restart, kinds, removed parts dropped, Zombies loads fill only owned parts and mark the rest (red rings), no allocations
         Section("Workbench row names", CheckWorkbenchNames); // SelfTestWorkbenchNames.cs: the list names each row by its own socket and part after opening builds in turn (unique model versions), every receiver with every socket filled
         Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
         Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
