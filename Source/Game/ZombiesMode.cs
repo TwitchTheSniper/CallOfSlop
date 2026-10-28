@@ -420,6 +420,7 @@ public sealed partial class Game
         ModeEvent($"ROUND {round}", Sfx.MortarWhistle);
         ZBanner($"ROUND {round}");
         LogicZombies(LogicEvent.RoundStarted, round); // map logic: zombies.roundStarted, n = the round
+        WarmZombiePool(); // the round's zombies made now, not as they spawn (ZombiePool.cs)
     }
 
     /// <summary>The players a round is sized for: everyone in the run (bots count), less a host who sits out; at least 1.</summary>
@@ -445,6 +446,7 @@ public sealed partial class Game
         Console.WriteLine($"[zombies] round {ZRound}: {_zRoundPlayers} -> {n} players, total {_zRoundTotal}, {outAlready} out already, {_zToSpawn} -> {left} to spawn, alive cap {ZAliveCap()}");
         _zToSpawn = left;
         _zRoundPlayers = n;
+        WarmZombiePool(); // (the alive cap follows the player count)
     }
 
     private void EndRound(double now)
