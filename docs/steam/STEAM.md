@@ -3,6 +3,13 @@
 The plan (which features, in which order) is the project doc `claude/steam-integration.md`. This file says what Phase 1
 built and how the later phases (transport, lobbies, stats, Workshop, Steam Input) plug into it.
 
+## The App ID
+
+Call of Slop's Steam App ID is **1750920** (`SteamPlatform.CallOfSlopAppId`; from the Steamworks partner site, not a
+secret). A Steam build is `dotnet publish ... -p:SteamAppId=1750920`; a developer's run puts `1750920` in
+`steam_appid.txt` next to the exe (uncommitted). A plain build never assumes it, and a bare `--steam` uses Valve's
+Spacewar placeholder 480, only ever for local testing.
+
 ## Where
 
 | What | Where |
@@ -21,7 +28,7 @@ built and how the later phases (transport, lobbies, stats, Workshop, Steam Input
 Nothing touches the Steamworks binding unless `SteamPlatform.Plan` says to start Steam. The decision, in order:
 
 1. `--no-steam`: off.
-2. A Steam build: `dotnet build|publish -p:SteamAppId=NNN` stamps the App ID into the assembly (`AssemblyMetadata`),
+2. A Steam build: `dotnet build|publish -p:SteamAppId=1750920` stamps the App ID into the assembly (`AssemblyMetadata`),
    `SteamPlatform.IsSteamBuild` is true, the GitHub updater is off, and `SteamAPI_RestartAppIfNecessary` relaunches the
    game through Steam when it was started directly (Main returns 0 without a window).
 3. `--steam` (the Spacewar placeholder App ID 480, marked as such in the log: local testing only) or `--steam=NNN`. The
@@ -71,9 +78,20 @@ sides are on Steam (`LobbyRoomView.Row.SteamId`, `UiLobbyRoom.cs`).
 - Every phase: a section in `SelfTest.cs` driving the layer on the recorded backend, and nothing that runs when
   `Available` is false, so the suite stays green without Steam.
 
-## Developer steps outside the code
+## The manual test (developer, Windows PC with Steam installed)
 
-The App ID (the Steamworks partner site), `steam_appid.txt` with it for local runs, and a manual run with Steam
-installed: start the game with Steam running and `steam_appid.txt` (or `--steam` for Spacewar) and check the log's
-`[steam] running:` line, the name in Settings > Player, Shift+Tab (the overlay pauses), and the avatar in a lobby with
-a second Steam account.
+1. Build the branch: `dotnet build -c Release` (or `Start.bat`, which also launches it; close it again).
+2. Write the App ID into a file next to the exe: in `bin\Release\net10.0\` make `steam_appid.txt` holding one line,
+   `1750920`. (Git ignores it. `480` instead means Spacewar: Steam then shows you playing Spacewar.)
+3. Start Steam and sign in. Start the game (`bin\Release\net10.0\CallOfSlop.exe`, or `Start.bat`).
+4. Expected, in order:
+   - `callofslop.log` (in the save folder, `%APPDATA%\CallOfSlop`) has `[steam] starting: steam_appid.txt: App ID 1750920`
+     then `[steam] running: App ID 1750920, <your Steam name> (<your Steam ID>), overlay on`. An `[steam] unavailable:`
+     line names the problem instead (Steam not running; the App ID not in your account: Steam then refuses).
+   - Main menu > Settings > Player shows "Use my Steam name" ticked and `Steam: <your Steam name> (App ID 1750920)`.
+   - Host a single-player match, then Shift+Tab: the overlay opens, the mouse is free, and the pause menu is up when
+     the overlay closes; Resume carries on.
+   - With a second PC on Steam joining (invite code or LAN address, both on this build), the pre-match lobby's player
+     list shows each Steam player's avatar before their name, and their Steam name.
+   - Quit: the log ends with `[steam] shut down`.
+5. Report the `[steam]` lines if anything differs.

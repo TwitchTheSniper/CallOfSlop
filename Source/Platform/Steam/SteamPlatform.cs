@@ -25,7 +25,11 @@ public enum SteamState : byte
 /// </summary>
 public static partial class SteamPlatform
 {
-    /// <summary>Spacewar, Valve's public test App ID: local testing with --steam only, never a real build.</summary>
+    /// <summary>Call of Slop's Steam App ID (the Steamworks partner site; not secret). A Steam build is made with
+    /// dotnet publish -p:SteamAppId=1750920, and steam_appid.txt holds it for a developer's run; a plain build never
+    /// assumes it, so GitHub builds, LAN games and the self-test stay off Steam.</summary>
+    public const uint CallOfSlopAppId = 1750920;
+    /// <summary>Spacewar, Valve's public test App ID: local testing with a bare --steam only, never a real build.</summary>
     public const uint PlaceholderAppId = 480;
     public const string AppIdFileName = "steam_appid.txt";
 

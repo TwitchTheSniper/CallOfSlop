@@ -37,9 +37,10 @@
   </ItemGroup>
 
   <PropertyGroup>
-    <!-- A Steam build: dotnet build/publish -p:SteamAppId=NNN stamps the App ID into the assembly (SteamPlatform reads
-         it): the game then starts Steam, restarts through Steam when launched directly, and turns the GitHub updater
-         off. Empty (the default, every GitHub/tester build and CI): no Steam unless steam_appid.txt or the steam flag says so. -->
+    <!-- A Steam build: dotnet build/publish -p:SteamAppId=1750920 (Call of Slop's App ID, SteamPlatform.CallOfSlopAppId)
+         stamps the App ID into the assembly: the game then starts Steam, restarts through Steam when launched directly,
+         and turns the GitHub updater off. Empty (the default, every GitHub/tester build and CI): no Steam unless
+         steam_appid.txt or the steam flag says so. -->
     <SteamAppId Condition="'$(SteamAppId)' == ''"></SteamAppId>
   </PropertyGroup>
   <ItemGroup>

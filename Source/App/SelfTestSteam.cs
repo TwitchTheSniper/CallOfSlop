@@ -69,7 +69,7 @@ public static partial class SelfTest
                     Fail($"plan {what}: expected {reason} app {appId} start {start} restart {restart}");
             }
             Expect("nothing", SteamPlatform.Plan(["host"], folder, NoEnv, 0), SteamStartReason.None, 0, false);
-            Expect("Steam build", SteamPlatform.Plan([], folder, NoEnv, 123456), SteamStartReason.SteamBuild, 123456, true, restart: true);
+            Expect("Steam build", SteamPlatform.Plan([], folder, NoEnv, SteamPlatform.CallOfSlopAppId), SteamStartReason.SteamBuild, 1750920, true, restart: true);
             Expect("--no-steam beats a Steam build", SteamPlatform.Plan(["--no-steam"], folder, NoEnv, 123456), SteamStartReason.Disabled, 0, false);
             Expect("--steam placeholder", SteamPlatform.Plan(["--steam"], folder, NoEnv, 0), SteamStartReason.Flag, SteamPlatform.PlaceholderAppId, true);
             if (!SteamPlatform.Plan(["--steam"], folder, NoEnv, 0).Detail.Contains("PLACEHOLDER"))
