@@ -20,6 +20,9 @@ public static class PropFile
     /// <summary>The largest a prop may be in any direction (metres, before an instance's scale). 24 m fits a parked transport plane (Props/Military/Vehicles).</summary>
     public const float MaxSize = 24f;
 
+    /// <summary>How much of a <c>"glass": true</c> part is drawn (<see cref="PropPart.Glass"/>).</summary>
+    public const float DefaultGlass = 0.4f;
+
     /// <summary>Named colours a part can use instead of [r, g, b] or "#rrggbb".</summary>
     public static readonly Dictionary<string, Vector3> Colors = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -292,6 +295,8 @@ public static class PropFile
                 Color = part.Color,
                 Layer = part.Layer,
                 TexScale = part.TexScale,
+                Glass = part.Glass,
+                Glow = part.Glow,
                 Anim = part.Anim,
                 Corners = part.Corners?.Select(c => pos + Vector3.Transform(c * scale, q)).ToArray(),
             };
@@ -461,12 +466,25 @@ public static class PropFile
                 case "anim":
                     part.Anim = PropAnimFile.Read(p.Value, where);
                     break;
+                case "glass":
+                    part.Glass = p.Value.ValueKind switch
+                    {
+                        JsonValueKind.True => DefaultGlass,
+                        JsonValueKind.False => 0f,
+                        _ => Range(Num(p.Value, w), 0.1f, 0.9f, w),
+                    };
+                    break;
+                case "glow":
+                    part.Glow = MathF.Round(Range(Num(p.Value, w), 0f, 4f, w) * 10f) / 10f;
+                    break;
                 default:
-                    throw new PropFileException($"{w}: unknown key. A part uses: size, offset, rotation (or yaw / pitch / roll), color, material, texScale, anim");
+                    throw new PropFileException($"{w}: unknown key. A part uses: size, offset, rotation (or yaw / pitch / roll), color, material, texScale, glass, glow, anim");
             }
         }
         if (!hasSize)
             throw new PropFileException($"{where}: needs \"size\": [w, h, d] in metres");
+        if ((part.Glass > 0 || part.Glow > 0) && part.Layer >= 0)
+            throw new PropFileException($"{where}: a \"glass\" or \"glow\" part is a plain colour; leave out \"material\"");
         part.Offset = offset ?? new Vector3(0, part.Size.Y / 2, 0);
         if (part.RotationDeg != Vector3.Zero && (MathF.Abs(part.RotationDeg.X) > 360 || MathF.Abs(part.RotationDeg.Y) > 360 || MathF.Abs(part.RotationDeg.Z) > 360))
             throw new PropFileException($"{where}: rotation angles are degrees, -360 to 360");

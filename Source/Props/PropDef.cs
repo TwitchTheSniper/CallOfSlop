@@ -47,6 +47,18 @@ public sealed class PropPart
 
     public float TexScale = 1f;
 
+    /// <summary>
+    /// The part's "glass" key: how much of it is drawn (0.1 to 0.9) for a see-through pane (lamp glass), or 0 for a
+    /// solid part. Drawn with an ordered dither in the prop shader (like the cosmetic fade), so no sorting or blending.
+    /// </summary>
+    public float Glass;
+
+    /// <summary>
+    /// The part's "glow" key: light of its own colour added on top of the sun and shade (0 to 4, steps of 0.1), for a
+    /// lamp's bulb that is always on. Unlike an "anim" light it needs no animation, so the prop stays a still prop.
+    /// </summary>
+    public float Glow;
+
     /// <summary>The part's "anim" block (cosmetic motion or light, see <see cref="PropAnimFile"/>), or null for a still part.</summary>
     public PropPartAnim? Anim;
 
