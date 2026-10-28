@@ -150,8 +150,15 @@ public static class LightBaker
         foreach (var l in lights)
             yMax = MathF.Max(yMax, l.Pos.Y + 1f);
         yMax = MathF.Min(yMax, yMin + 96f);
+        if (spec.Top > 0f)
+            yMax = MathF.Max(spec.Top, yMin + 2f);
         var min = new Vector3(-m.HalfX - 1f, yMin, -m.HalfZ - 1f);
         var size = new Vector3(m.HalfX * 2 + 2f, yMax - yMin, m.HalfZ * 2 + 2f);
+        if (spec.Region != Vector4.Zero) // (just the lit part of the map)
+        {
+            min = new Vector3(spec.Region.X, yMin, spec.Region.Y);
+            size = new Vector3(spec.Region.Z - spec.Region.X, yMax - yMin, spec.Region.W - spec.Region.Y);
+        }
         var cell = spec.Cell;
         int nx, ny, nz;
         while (true)

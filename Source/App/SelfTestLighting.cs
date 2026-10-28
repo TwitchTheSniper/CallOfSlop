@@ -184,6 +184,19 @@ public static partial class SelfTest
         if (twin == null || twin.Num("x") != -3 || twin.Num("yaw") != 330)
             Fail($"Baked lighting: a spot light's x mirror is {twin}, expected x -3 and yaw 330");
 
+        // ---- A region: the grid covers only it (and the kit writes one the game reads) ----
+        var regionText = LightScene().Replace("\"op\": \"BakedLighting\", \"cell\": 0.5,", "\"op\": \"BakedLighting\", \"cell\": 0.5, \"region\": { \"x0\": -4, \"z0\": -4, \"x1\": 6, \"z1\": 4 }, \"top\": 5,");
+        var regional = MapFile.Load(regionText, "Dev/LightScene.json", "");
+        regional.Validate();
+        if (regional.LightBake is not { } rb || rb.Origin.X != -4 || rb.Origin.Z != -4 || MathF.Abs(rb.NX * rb.Cell - 10) > rb.Cell || rb.Max.Y > 5.01f)
+            Fail($"Baked lighting: a 10 x 8 m region up to 5 m gave a grid from {regional.LightBake?.Origin} to {regional.LightBake?.Max}");
+        else if (MathF.Abs(Lum(rb, new Vector3(3, 2, 0)) - open) > 0.01f)
+            Fail($"Baked lighting: inside its region the grid differs from the whole map's ({Lum(rb, new Vector3(3, 2, 0)):0.000} vs {open:0.000})");
+        var kit = new Kit("Region", "", 1000);
+        kit.BakedLighting(region: (-4, -4, 6, 4), top: 5);
+        if (kit.Ops[^1].Get("region") is not JObject)
+            Fail("Baked lighting: the kit's BakedLighting region isn't written");
+
         // ---- The shipped light test map ----
         if (Maps.Find("Light Test") is { LightBake: { } lt } ltMap)
             Line($"Light Test: grid {lt.NX} x {lt.NY} x {lt.NZ} at {lt.Cell:0.##} m, {lt.Sources.Length} lights ({ltMap.Lights.Count} ops), {lt.Bytes / 1024} KB, baked in {lt.BakeMs:0} ms");
