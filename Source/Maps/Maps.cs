@@ -428,8 +428,17 @@ public sealed partial class Map
         return false;
     }
 
-    /// <summary>Moves any spawn or waypoint that ended up inside geometry to the nearest free spot.</summary>
+    /// <summary>
+    /// Moves any spawn or waypoint that ended up inside geometry to the nearest free spot, then bakes a lit map's light
+    /// (MapLights.cs; unlit maps skip it).
+    /// </summary>
     public void Validate()
+    {
+        ValidatePoints();
+        BakeLighting();
+    }
+
+    private void ValidatePoints()
     {
         if (PointGravity != null)
         {
