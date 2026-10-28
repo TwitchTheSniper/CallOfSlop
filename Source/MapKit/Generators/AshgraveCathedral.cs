@@ -1265,11 +1265,13 @@ public sealed class AshgraveCathedral : IMapGenerator
             k.Op(("op", "Spawn"), ("x", Kit.R(x)), ("z", Kit.R(z)));
         k.Waypoint(-28, -6);
         // For the other modes on a Zombies map (every door open: one big map), team spawns, a hill and flags out in the
-        // paupers' field round the precinct: Blue west, Red east, the hill north, each flag near its team.
+        // paupers' field round the precinct: Blue west, Red east, the hill north, each flag near its team. The team spawns
+        // are "teamSpawns" only, not spawn ops: free-for-all spawns in the nave (the nav graph is built with the doors shut,
+        // so the precinct's rooms are pockets to it, and bots need every plain spawn's far partner within reach).
         foreach (var z in new[] { -6.0, 0.0, 6.0, 12.0 })
         {
-            k.Spawn(0, -59.0, z);
-            k.Spawn(1, 58.5, z);
+            k.TeamSpawns[0].Add([-59.0, G, z]);
+            k.TeamSpawns[1].Add([58.5, G, z]);
         }
         k.Hill(0.0, -45.0, 4.0);
         k.Flag(-59.0, -32.0);
