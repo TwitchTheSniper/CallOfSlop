@@ -246,6 +246,22 @@ public sealed class ZombiesRules
 
     public float BuildDropSeconds = 300f, BuildDropWarnSeconds = 30f;
 
+    // ---- Things a player drops on purpose (the drop key, the parts inventory; ZombiesDropItems.cs) -------------
+    /// <summary>
+    /// A gun or loose parts a player drops on purpose lie on the floor until the end of the round after the one they
+    /// were dropped in (<see cref="PlayerDropRounds"/> rounds on; 0: no round limit), or for <see cref="PlayerDropSeconds"/>,
+    /// whichever comes first.
+    /// </summary>
+    public float PlayerDropSeconds = 600f;
+
+    public int PlayerDropRounds = 1;
+
+    /// <summary>The most loose-part pickups on a map at once; past it a drop is refused (nothing is lost).</summary>
+    public int MaxPartDrops = 48;
+
+    /// <summary>The most parts one part pickup holds (you pick how many of a kind to drop).</summary>
+    public int MaxPartsPerDrop = 50;
+
     // ---- Buyables -----------------------------------------------------------------------------------------
     /// <summary>How long the interact key is held to buy something (seconds).</summary>
     public float BuyHoldSeconds = 0.25f;
@@ -594,7 +610,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -711,6 +727,21 @@ public sealed class ZombiesRules
                             case "dropBuildsOnBleedout": r.DropBuildsOnBleedout = Flag(v, w); break;
                             case "buildDropSeconds": r.BuildDropSeconds = Real(v, w, 5, 3600); break;
                             case "buildDropWarnSeconds": r.BuildDropWarnSeconds = Real(v, w, 0, 600); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
+                case "playerDrops":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "seconds": r.PlayerDropSeconds = Real(v, w, 5, 7200); break;
+                            case "rounds": r.PlayerDropRounds = Whole(v, w, 0, 100); break;
+                            case "maxPartDrops": r.MaxPartDrops = Whole(v, w, 1, 255); break;
+                            case "maxPartsPerDrop": r.MaxPartsPerDrop = Whole(v, w, 1, 255); break;
                             default: return false;
                         }
                         return true;

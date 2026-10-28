@@ -70,6 +70,13 @@
     "buildDropSeconds": 300,
     "buildDropWarnSeconds": 30
   },
+  "playerDrops": {
+    "note": "A gun dropped with the drop key, or loose parts dropped from the parts inventory or the workbench, lie on the floor until the end of the round after the one they were dropped in (rounds; 0 = no round limit) or for seconds, whichever comes first. At most maxPartDrops part pickups on the map at once (past it a drop is refused, nothing is lost), each holding up to maxPartsPerDrop parts of one kind.",
+    "seconds": 600,
+    "rounds": 1,
+    "maxPartDrops": 48,
+    "maxPartsPerDrop": 50
+  },
   "buy": {
     "holdSeconds": 0.25,
     "maxPerks": 16,

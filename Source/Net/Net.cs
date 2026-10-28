@@ -81,6 +81,8 @@ public enum Msg : byte
     ZCasino, // server -> all (on a change) and each joining client: Zombies: one casino table's whole state (round, seats and hands, the dealer, roulette chips, dice, the last big win) (reliable; ZombiesCasinoNet.cs, protocol 66)
     ZCasinoAct, // client -> server: Zombies: a move at a casino table (table, act, arg, amount): bet, hit, stand, double, higher, lower, cash out, roll, clear, leave (reliable; protocol 66)
     ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
+    ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 69)
+    ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 69)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

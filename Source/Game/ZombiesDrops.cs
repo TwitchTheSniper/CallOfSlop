@@ -31,6 +31,15 @@ public sealed class ZWeaponDrop
 
     /// <summary>A melee build (goes to the melee slot).</summary>
     public bool Melee;
+
+    /// <summary>
+    /// Dropped on purpose (the drop key, ZombiesDropItems.cs): it also despawns when round <see cref="ExpireRound"/> ends
+    /// (0: only <see cref="Until"/> counts, as for a bleed-out drop).
+    /// </summary>
+    public int ExpireRound;
+
+    /// <summary>The build's rarity for its label and ring: its rarest part (both sides work it out from the text).</summary>
+    public Rarity Rarity;
 }
 
 /// <summary>Dropped builds in Zombies: bleeding out drops every built weapon where you went down; hold the interact key to pick one up.</summary>
@@ -78,7 +87,7 @@ public sealed partial class Game
     }
 
     /// <summary>Server: a build goes on the floor (and every client hears it).</summary>
-    private ZWeaponDrop SpawnWeaponDrop(WeaponBuild b, Vector3 at, double until, Player? owner, bool full, double now)
+    private ZWeaponDrop SpawnWeaponDrop(WeaponBuild b, Vector3 at, double until, Player? owner, bool full, double now, int expireRound = 0)
     {
         while (ZWeaponDrops.Count >= MaxWeaponDrops)
         {
@@ -88,7 +97,7 @@ public sealed partial class Game
         var d = new ZWeaponDrop
         {
             Id = _zNextWeaponDrop++, Build = b.Clone(), At = at, Until = until, Owner = owner?.Id ?? byte.MaxValue, OwnerName = owner?.Name ?? "",
-            Full = full, Melee = b.IsMelee,
+            Full = full, Melee = b.IsMelee, ExpireRound = expireRound, Rarity = BuildRarity(b),
         };
         if (_zNextWeaponDrop == 0)
             _zNextWeaponDrop = 1;
@@ -175,7 +184,7 @@ public sealed partial class Game
             return false;
         }
         if (replaced != null)
-            SpawnWeaponDrop(replaced, d.At, d.Until, p, full: false, now);
+            SpawnWeaponDrop(replaced, d.At, d.Until, p, full: false, now, d.ExpireRound); // (the same time left and the same last round)
         var whose = d.Owner == p.Id ? "your" : d.OwnerName.Length > 0 ? $"{d.OwnerName}'s" : "the";
         ZFeedTo(p, $"Picked up {whose} {d.Build.Name}{(replaced != null ? $", left your {replaced.Name} there" : "")}.", Sfx.LevelUp);
         if (d.Owner != p.Id && Players.TryGetValue(d.Owner, out var owner))
@@ -244,13 +253,27 @@ public sealed partial class Game
 
     // ---- Network ----------------------------------------------------------------------------------------
 
-    /// <summary>A dropped build appeared: id, where, seconds left, the owner, flags (1 full ammo, 2 melee), the owner's name, the build's text.</summary>
+    /// <summary>A dropped build's rarity: its rarest part.</summary>
+    public static Rarity BuildRarity(WeaponBuild b)
+    {
+        var r = Rarity.Common;
+        foreach (var n in b.Nodes)
+            if (n.Part.Rarity > r)
+                r = n.Part.Rarity;
+        return r;
+    }
+
+    /// <summary>
+    /// A dropped build appeared: id, where, seconds left, the owner, flags (1 full ammo, 2 melee), the owner's name, the
+    /// build's text, and (protocol 69) the round it lasts to (0: time only).
+    /// </summary>
     public static void WriteWeaponDrop(PacketWriter w, ZWeaponDrop d, double secondsLeft)
     {
         var bytes = Encoding.UTF8.GetBytes(d.Build.ToText());
         var n = Math.Min(bytes.Length, 6000);
         w.Begin(Msg.ZPickup).U8(0).U16(d.Id).F32(d.At.X).F32(d.At.Y).F32(d.At.Z).F32((float)Math.Max(0, secondsLeft)).U8(d.Owner)
-            .U8((byte)((d.Full ? 1 : 0) | (d.Melee ? 2 : 0))).Str(d.OwnerName.Length > 32 ? d.OwnerName[..32] : d.OwnerName).U16((ushort)n).Bytes(bytes.AsSpan(0, n));
+            .U8((byte)((d.Full ? 1 : 0) | (d.Melee ? 2 : 0))).Str(d.OwnerName.Length > 32 ? d.OwnerName[..32] : d.OwnerName).U16((ushort)n).Bytes(bytes.AsSpan(0, n))
+            .U16((ushort)Math.Clamp(d.ExpireRound, 0, ushort.MaxValue));
     }
 
     /// <summary>A dropped build is gone: picked up by player <paramref name="by"/>, or despawned (255).</summary>
@@ -294,6 +317,7 @@ public sealed partial class Game
         var flags = r.U8();
         var name = r.Text(32);
         var text = ReadLong(ref r);
+        int expire = r.Has(2) ? r.U16() : 0;
         if (!float.IsFinite(at.X + at.Y + at.Z + left))
             return; // garbage
         WeaponBuild b;
@@ -306,7 +330,8 @@ public sealed partial class Game
             return;
         }
         ZWeaponDrops.RemoveAll(x => x.Id == id);
-        ZWeaponDrops.Add(new ZWeaponDrop { Id = id, Build = b, At = at, Until = now + left, Owner = owner, OwnerName = name, Full = (flags & 1) != 0, Melee = (flags & 2) != 0 });
+        ZWeaponDrops.Add(new ZWeaponDrop { Id = id, Build = b, At = at, Until = now + left, Owner = owner, OwnerName = name, Full = (flags & 1) != 0, Melee = (flags & 2) != 0,
+            ExpireRound = expire, Rarity = BuildRarity(b) });
     }
 
     // ---- Self-test hooks ----------------------------------------------------------------------------------

@@ -252,6 +252,25 @@ public static unsafe partial class Program
                 DrawGun(def, Matrix4x4.CreateRotationZ(MathF.PI / 2 * 0.9f) * Matrix4x4.CreateRotationY(spin) * Matrix4x4.CreateTranslation(wd.At + new Vector3(0, 0.35f + 0.06f * MathF.Sin(t * 2 + wd.Id), 0)), false);
         }
 
+        // Loose parts a player dropped (ZombiesDropItems.cs): the part's own boxes, small and turning, over a ring of dashes
+        // in its rarity colour with a faint beam; blinking in their last seconds.
+        foreach (var pd in _game.ZPartDrops)
+        {
+            var warn = pd.Until - now < _game.ZRules.BuildDropWarnSeconds;
+            if (warn && ((int)(now * 4) & 1) == 0)
+                continue;
+            var glow = PartDef.RarityColor(pd.Part.Rarity);
+            var ring = warn ? new Vector3(1f, 0.2f, 0.15f) : glow;
+            var spin = t * 1.1f + pd.Id;
+            for (var k = 0; k < 6; k++)
+            {
+                var a = spin * 0.5f + k * MathF.Tau / 6;
+                Gfx.Draw(Matrix4x4.CreateScale(0.1f, 0.015f, 0.04f) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(pd.At + new Vector3(MathF.Sin(a) * 0.26f, 0.03f, MathF.Cos(a) * 0.26f)), ring, 0.9f, mode: 2);
+            }
+            Gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.7f, 0.04f) * Matrix4x4.CreateTranslation(pd.At + new Vector3(0, 0.35f, 0)), ring, 0.2f, mode: 2);
+            DrawLoosePart(pd.Part, Matrix4x4.CreateRotationY(spin) * Matrix4x4.CreateTranslation(pd.At + new Vector3(0, 0.3f + 0.04f * MathF.Sin(t * 3 + pd.Id), 0)), glow);
+        }
+
         // The zombies: one instanced draw for the whole horde's opaque boxes (Renderer.BeginBatch).
         _zFrame++;
         Gfx.BeginBatch();
@@ -261,6 +280,48 @@ public static unsafe partial class Program
     }
 
     private static long _zFrame;
+
+    private static readonly Dictionary<PartDef, (Vector3 Centre, float Scale)> LoosePartFits = new();
+
+    /// <summary>
+    /// A loose part's own model at <paramref name="world"/> (its boxes, centred, scaled so the longest side is about
+    /// 0.3 m; contoured shapes drawn as their shapes). A part without boxes is a small box in its rarity colour.
+    /// </summary>
+    private static void DrawLoosePart(PartDef part, Matrix4x4 world, Vector3 accent)
+    {
+        if (part.Boxes.Length == 0)
+        {
+            Gfx.Draw(Matrix4x4.CreateScale(0.16f) * world, accent, 1f, mode: 2);
+            return;
+        }
+        if (!LoosePartFits.TryGetValue(part, out var fit))
+        {
+            var min = new Vector3(float.MaxValue);
+            var max = new Vector3(float.MinValue);
+            foreach (var bx in part.Boxes)
+            {
+                var h = bx.Size * 0.5f;
+                for (var c = 0; c < 8; c++)
+                {
+                    var corner = Vector3.Transform(new Vector3((c & 1) != 0 ? h.X : -h.X, (c & 2) != 0 ? h.Y : -h.Y, (c & 4) != 0 ? h.Z : -h.Z), bx.Rotation) + bx.Pos;
+                    min = Vector3.Min(min, corner);
+                    max = Vector3.Max(max, corner);
+                }
+            }
+            var size = max - min;
+            var longest = MathF.Max(size.X, MathF.Max(size.Y, size.Z));
+            fit = ((min + max) * 0.5f, longest > 1e-4f ? Math.Clamp(0.3f / longest, 0.5f, 4f) : 1f);
+            LoosePartFits[part] = fit;
+        }
+        var place = Matrix4x4.CreateTranslation(-fit.Centre) * Matrix4x4.CreateScale(fit.Scale) * world;
+        foreach (var bx in part.Boxes)
+        {
+            if (bx.Tag.StartsWith("with:", StringComparison.Ordinal) || bx.Tag.StartsWith("irons", StringComparison.Ordinal))
+                continue; // (only drawn on a build)
+            Gfx.Draw(Matrix4x4.CreateScale(bx.Size) * Matrix4x4.CreateFromQuaternion(bx.Rotation) * Matrix4x4.CreateTranslation(bx.Pos) * place,
+                bx.Color.Resolve(accent), bx.Alpha, bx.Tag == "glow" ? 2 : 0, shape: bx.ShapeId);
+        }
+    }
 
     /// <summary>
     /// A zombie, posed by <see cref="ZombieAnim"/> (Source/Render/ZombieAnim.cs): a shamble, jog or sprint keyed to its speed,
@@ -509,6 +570,23 @@ public static unsafe partial class Program
             }
         }
         CasinoInput(interactPressed); // at a casino table: open its panel (Program.ZombiesCasino.cs)
+        // The drop key: the gun in your hands goes on the floor as a pickup (never your last gun; ZombiesDropItems.cs).
+        if (_mouseCaptured && Pressed(GameAction.DropItem))
+            _game.DropItemRequest(Game.DropGun);
+        // The inventory key: the parts inventory (drop loose parts), the mouse free for it; again (or Esc) closes it.
+        if (Pressed(GameAction.Inventory) && !Ui.PauseOpen && !Ui.WorkbenchOpen && !Ui.CasinoOpen && !Ui.MenuOpen)
+        {
+            if (Ui.InventoryOpen)
+            {
+                Ui.CloseInventory();
+                SetMouseCaptured(true);
+            }
+            else if (_game.Local is { Alive: true } && _game.Phase == MatchPhase.Playing)
+            {
+                Ui.OpenInventory();
+                SetMouseCaptured(false);
+            }
+        }
         if (interactPressed && _game.Local is { } me && _game.FindZUse(me) is { Kind: ZUseKind.Workbench })
         {
             Ui.OpenBench(_game);
@@ -550,6 +628,23 @@ public static unsafe partial class Program
         eye = ZSpectate.ShoulderEye(t.RenderEye, t.RenderYaw, t.RenderPitch, (o, d, max) => World.Query.Raycast(o, d, max, QueryFilter.All));
         fwd = World.Forward(t.RenderYaw, Math.Clamp(t.RenderPitch, -1.2f, 1.2f));
         return true;
+    }
+
+    /// <summary>The parts inventory over the match; it closes (and the mouse goes back to aiming) when you go down, die or the run ends.</summary>
+    private static void DrawInventoryInMatch()
+    {
+        if (!Ui.InventoryOpen)
+            return;
+        var gone = _session == null || _game.Mode != GameMode.Zombies || _game.Local is not { Alive: true } me || _game.IsDowned(me) || _game.Phase != MatchPhase.Playing || Ui.WorkbenchOpen;
+        if (!gone)
+            Ui.DrawZInventory(_game, _settings);
+        if (gone || !Ui.InventoryOpen)
+        {
+            Ui.CloseInventory();
+            if (!Ui.PauseOpen && !Ui.WorkbenchOpen)
+                SetMouseCaptured(true);
+            _swallowClick = true;
+        }
     }
 
     /// <summary>The workbench in a run, over the match (Esc or Close goes back to it).</summary>

@@ -21,8 +21,9 @@ public static partial class SelfTest
         var now = 0.0;
         GrenadeFusesAndPayloads(ref now);
         GrenadeLoopbackBuilt();
-        if ((byte)Msg.ZGrenade != (byte)Enum.GetValues<Msg>().Max() || ServerInfo.ProtocolVersion < 67)
-            Fail("modular grenades: Msg.ZGrenade should be the last message and the protocol 67 or later");
+        int zg = (byte)Msg.ZGrenade, act = (byte)Msg.ZCasinoAct, protocol = ServerInfo.ProtocolVersion; // (locals: constants would fold at compile time)
+        if (zg != act + 1 || protocol < 67)
+            Fail("modular grenades: Msg.ZGrenade should come right after Msg.ZCasinoAct and the protocol be 67 or later");
     }
 
     /// <summary>A grenade build from part names (null when one is missing).</summary>

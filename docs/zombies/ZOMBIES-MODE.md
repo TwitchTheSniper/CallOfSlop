@@ -655,6 +655,40 @@ your player has died. And if you can't get to them in time, will despawn after 5
   them as the new holder's, like any build in their slots).
 - `downs.dropBuildsOnBleedout: false` brings back the old rule (builds lost).
 
+## Dropping things (board item "drop items", 2026-10-27)
+
+The developer's note: a drop key drops the held build as a world pickup with its own model, anyone takes it with the
+use key (swapping if their slots are full); loose parts drop from the part inventory (the workbench and a quick
+inventory view, picking part and amount) as small labelled pickups with a rarity glow. Code: Source/Game/ZombiesDropItems.cs,
+Source/UI/UiZombiesInventory.cs; self-test "Zombies drop items".
+
+- **Drop item (T, rebindable; G stays the grenade key)** drops the gun in your hands as a dropped build (above: its own
+  model over a gold ring, a world label, hold F to pick up, a swap if the picker's slots are full). The next gun comes
+  up. Only a build drops (not empty hands), and **never your last gun** (proposed default: "can't drop your last weapon";
+  the developer may want to allow it). The melee build and the grenade build don't drop with the key (proposed).
+  The dropped gun comes back with a magazine and the picker's slot reserve, like a gun left by a swap (no free ammo).
+- **Parts inventory (I, rebindable)** opens a small window over the match (the mouse is free; I or Esc closes it):
+  your loose parts in rarity colours; click one, pick how many (1 to `playerDrops.maxPartsPerDrop`, 50) and DROP. The
+  workbench's Loose parts list has the same picker. The parts land about 0.7 m in front of you (placed like dropped
+  builds: never in a wall, in reach, in your area) as **one pickup** holding that many: the part's own boxes, small and
+  turning, over a ring of dashes in its rarity colour with a faint beam.
+- **Picking up**: hold F (as a buy). Parts go to your loose parts; the dropper hears who took them. In a pile, the
+  pickup **you look at** comes first. Looking at a pickup (within 6 m) or standing by it names it with its rarity,
+  its owner and how long it stays.
+- **How long**: things dropped on purpose last **to the end of the round after the one they were dropped in**
+  (dropped in round 3 or in the break after it: gone when round 4 ends) or `playerDrops.seconds` (600 s), whichever is
+  first (`playerDrops.rounds: 0` keeps only the time). They blink red in their last `downs.buildDropWarnSeconds`.
+  A build swapped out by picking one up keeps the picked one's time and last round. Bleed-out drops keep their own rule.
+- **Cap**: at most 40 dropped builds and `playerDrops.maxPartDrops` (48) part pickups on the map; past it a drop is
+  **refused** with a message and you keep the item (a bleed-out drop still pushes out the oldest build).
+- **Server-authoritative**: a client asks with `Msg.ZDropItem`; the server checks it (you have the part and the amount,
+  the gun is a build and not your last) and takes the item from you in the same step as the pickup appears, so nothing
+  is ever in two places. A pickup is removed before it is given, so when two players grab it in the same tick the first
+  (in player order) gets it and the second finds nothing. Clients get part pickups in `Msg.ZPartDrop` (joiners get
+  every one); `Msg.ZPickup` carries the dropped build's last round (protocol 69).
+- **Co-op bots ignore pickups** (no prompt, and the server refuses their claims), bleed-out drops included (proposed;
+  ask before letting bots share).
+
 ## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
 
 - **Drops: a team points schedule** (World at War style; developer answer, 2026-10-26, replacing the flat 4 percent a

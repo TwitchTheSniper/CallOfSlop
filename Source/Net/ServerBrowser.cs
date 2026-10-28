@@ -142,7 +142,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     ThrowableKind.Built; Msg.Throw of a built grenade ends with the cook time (1/50 s), Msg.ProjSpawn with what it is
     //     (thrown, bomblet, aftershock) and Msg.Explode with the payload, radius and duration (tenths) and that byte;
     //     Msg.ZGrenade at the end of Msg (remote detonation, a lure's closing bang).
-    public const byte ProtocolVersion = 67;
+    // 69: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
+    //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
+    //     message ends with the round the dropped build lasts to (u16, 0 = time only). (68 left for another branch.)
+    public const byte ProtocolVersion = 69;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
