@@ -60,9 +60,9 @@ public sealed partial class Game
     private void InitLimbs(Zombie z)
     {
         var lt = ZRules.Limbs;
-        var hp = !lt.Enabled || !lt.Severs[(int)z.Speed]
+        var hp = !lt.Enabled || !lt.Severs[(int)z.Speed] || !z.Kind.Severs
             ? float.PositiveInfinity
-            : MathF.Max(lt.HealthMin, z.MaxHealth * lt.HealthFraction) * lt.HealthMult[(int)z.Speed];
+            : MathF.Max(lt.HealthMin, z.MaxHealth * lt.HealthFraction) * lt.HealthMult[(int)z.Speed] * z.Kind.LimbHealthMult; // (its type's limbs: ZombieTypes.cs)
         for (var i = 0; i < 4; i++)
             z.LimbHp[i] = hp;
         z.Limbs = 0;
@@ -72,11 +72,29 @@ public sealed partial class Game
     /// <summary>The stance a zombie's hit box has: a crawler's is a prone body's (long and low along its facing).</summary>
     public static Stance ZombieStance(Zombie z) => z.Crawler ? Stance.Prone : Stance.Stand;
 
-    /// <summary>A zombie's hit box with its feet at <paramref name="feet"/>.</summary>
-    public static Box ZombieBox(Zombie z, Vector3 feet, float yaw) => World.Hitbox(feet, ZombieStance(z), yaw);
+    /// <summary>A zombie's hit box with its feet at <paramref name="feet"/>: a player's, scaled about the feet by its type's width and height (ZombieTypes.cs).</summary>
+    public static Box ZombieBox(Zombie z, Vector3 feet, float yaw)
+    {
+        var b = World.Hitbox(feet, ZombieStance(z), yaw);
+        var k = z.Kind;
+        if (k.Width == 1f && k.Height == 1f)
+            return b;
+        var c = b.Center - feet;
+        return new Box(feet + new Vector3(c.X * k.Width, c.Y * k.Height, c.Z * k.Width), new Vector3(b.Half.X * k.Width, b.Half.Y * k.Height, b.Half.Z * k.Width));
+    }
 
-    /// <summary>Where bots aim on a zombie (feet up): the chest or the head, a crawler's low body.</summary>
-    public static float ZombieAimHeight(Zombie z, bool head) => z.Crawler ? (head ? 0.35f : 0.28f) : head ? 1.6f : 1.25f;
+    /// <summary>A hit point on zombie <paramref name="z"/> in a plain-sized body's frame (its type's scale about the feet undone), for the head and limb tests.</summary>
+    public static Vector3 ZombieUnscale(Zombie z, Vector3 feet, Vector3 point)
+    {
+        var k = z.Kind;
+        if (k.Width == 1f && k.Height == 1f)
+            return point;
+        var r = point - feet;
+        return feet + new Vector3(r.X / k.Width, r.Y / k.Height, r.Z / k.Width);
+    }
+
+    /// <summary>Where bots aim on a zombie (feet up): the chest or the head, a crawler's low body; scaled by its type's height.</summary>
+    public static float ZombieAimHeight(Zombie z, bool head) => (z.Crawler ? (head ? 0.35f : 0.28f) : head ? 1.6f : 1.25f) * z.Kind.Height;
 
     /// <summary>
     /// Which limb a hit at <paramref name="point"/> landed on (-1: the torso or head). Standing: below the hips a leg (by
@@ -185,7 +203,7 @@ public sealed partial class Game
             if ((news & (1 << l)) == 0)
                 continue;
             ZLimbsShown++;
-            Gibs.SpawnLimb(pos, yaw, l, z.Crawler, ZSkinColor, ZPantsColor, Gibs.SeedFor(z.Id * 4 + l, pos), lt.GoreSeconds, lt.GoreCap);
+            Gibs.SpawnLimb(pos, yaw, l, z.Crawler, z.Type == 0 ? ZSkinColor : z.Kind.Skin, z.Type == 0 ? ZPantsColor : z.Kind.Pants, Gibs.SeedFor(z.Id * 4 + l, pos), lt.GoreSeconds, lt.GoreCap);
         }
         Audio.Effect3D(Gibs.Mode == GoreMode.Off ? Sfx.FleshHit3D : Sfx.GibSquelch, pos + new Vector3(0, z.Crawler ? 0.3f : 1f, 0), 0.85f, MixBus.Gore);
     }
@@ -204,15 +222,15 @@ public sealed partial class Game
     };
 
     /// <summary>The swipe's windup for this zombie (both sides: the animation times the strike by it): one arm is slower, a bite a little.</summary>
-    public float ZombieWindupFor(Zombie z) => ZRules.ZombieWindup * (z.ArmsLeft switch
+    public float ZombieWindupFor(Zombie z) => ZRules.ZombieWindup * z.Kind.WindupMult * (z.ArmsLeft switch
     {
         2 => 1f,
         1 => ZRules.Limbs.OneArmWindup,
         _ => ZRules.Limbs.BiteWindup,
     });
 
-    /// <summary>Seconds between swipes for this zombie (one arm: slower).</summary>
-    private float ZombieSwingFor(Zombie z) => ZRules.ZombieSwing * (z.ArmsLeft == 1 ? ZRules.Limbs.OneArmSwing : 1f);
+    /// <summary>Seconds between swipes for this zombie (one arm: slower; its type's: ZombieTypes.cs).</summary>
+    private float ZombieSwingFor(Zombie z) => ZRules.ZombieSwing * z.Kind.SwingMult * (z.ArmsLeft == 1 ? ZRules.Limbs.OneArmSwing : 1f);
 
     /// <summary>A swipe's (or bite's) damage for this zombie: one arm or none hurts less, a crawler a little less again.</summary>
     private int ZombieDamageFor(Zombie z)
@@ -221,19 +239,19 @@ public sealed partial class Game
         var m = z.ArmsLeft switch { 2 => 1f, 1 => lt.OneArmDamage, _ => lt.BiteDamage };
         if (z.Crawler)
             m *= lt.CrawlDamage;
-        return Math.Max(1, (int)MathF.Round(ZRules.ZombieDamage * m));
+        return Math.Max(1, (int)MathF.Round(ZRules.ZombieDamage * z.Kind.DamageMult * m)); // (its type's damage: ZombieTypes.cs)
     }
 
-    /// <summary>How far this zombie reaches: a bite is short, a crawler shorter.</summary>
-    private float ZombieReachFor(Zombie z)
+    /// <summary>How far this zombie reaches: its type's reach (never past <see cref="ZombieTypeDef.MaxReach"/>); a bite is short, a crawler shorter.</summary>
+    public float ZombieReachFor(Zombie z)
     {
         var lt = ZRules.Limbs;
-        var r = ZRules.ZombieReach * (z.ArmsLeft == 0 ? lt.BiteReach : 1f);
+        var r = z.Kind.ReachFor(ZRules) * (z.ArmsLeft == 0 ? lt.BiteReach : 1f);
         return z.Crawler ? r * lt.CrawlReach : r;
     }
 
-    /// <summary>How far above or below its feet a target can be and still be hit (a crawler only reaches low: stand on something).</summary>
-    private float ZombieReachHeight(Zombie z, bool landing) => z.Crawler ? ZRules.Limbs.CrawlAttackHeight : landing ? 1.6f : 1.4f;
+    /// <summary>How far above or below its feet a target can be and still be hit (a crawler only reaches low: stand on something; a tall type higher).</summary>
+    private float ZombieReachHeight(Zombie z, bool landing) => z.Crawler ? ZRules.Limbs.CrawlAttackHeight : (landing ? 1.6f : 1.4f) * z.Kind.Height;
 
     /// <summary>Seconds this zombie takes to climb in through a window (both sides: the climb's progress byte): a crawler is slow.</summary>
     public float ClimbSecondsFor(Zombie z) => ZRules.ClimbSeconds * (z.Crawler ? ZRules.Limbs.CrawlClimb : 1f);

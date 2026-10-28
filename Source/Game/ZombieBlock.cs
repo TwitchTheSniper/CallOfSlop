@@ -31,12 +31,15 @@ public sealed partial class Game
     public const float ZBlockDeep = 0.35f;
 
     private const int ZBlockQueryMax = 32;
-    private const float ZBlockContact = World.PlayerRadius + ZBlockRadius;
 
     private readonly HordeGrid _zBlockGrid = new();
     private Vector3[] _zBlockPos = new Vector3[MaxZombies]; // (sized for the most zombies at once, so a growing horde never allocates mid-round)
     private float[] _zBlockHeight = new float[MaxZombies];
+    private float[] _zBlockRadius = new float[MaxZombies]; // (a type's width scales its body: ZombieTypes.cs)
     private bool[] _zBlockOn = new bool[MaxZombies];
+
+    /// <summary>The widest a type's body may be (a 2.5x type): the grid is asked this far round a player.</summary>
+    private const float ZBlockMaxRadius = ZBlockRadius * 2.5f;
     private int _zBlockCount;
 
     /// <summary>Standing players' feet and heights (for zombies walking; rebuilt each horde tick).</summary>
@@ -65,6 +68,7 @@ public sealed partial class Game
             var cap = Math.Max(n, _zBlockPos.Length * 2);
             _zBlockPos = new Vector3[cap];
             _zBlockHeight = new float[cap];
+            _zBlockRadius = new float[cap];
             _zBlockOn = new bool[cap];
         }
         for (var i = 0; i < n; i++)
@@ -72,7 +76,8 @@ public sealed partial class Game
             var z = Horde[i];
             _zBlockOn[i] = z.State != ZState.Dead;
             _zBlockPos[i] = client && z.Snaps.Count > 0 ? z.Snaps[^1].Pos : z.Sim.Position;
-            _zBlockHeight[i] = z.Crawler ? ZBlockCrawlHeight : World.PlayerHeight;
+            _zBlockHeight[i] = (z.Crawler ? ZBlockCrawlHeight : World.PlayerHeight) * z.Kind.Height;
+            _zBlockRadius[i] = ZBlockRadius * z.Kind.Width;
         }
         _zBlockCount = n;
         _zBlockGrid.Setup(World.Map.HalfX, World.Map.HalfZ);
@@ -115,7 +120,7 @@ public sealed partial class Game
         var feet = s.Position;
         var h = World.HeightOf(s.Stance);
         Span<int> near = stackalloc int[ZBlockQueryMax];
-        var n = _zBlockGrid.Query(feet, ZBlockContact, near);
+        var n = _zBlockGrid.Query(feet, World.PlayerRadius + ZBlockMaxRadius, near);
         if (n == 0)
             return;
         var push = Vector3.Zero;
@@ -127,10 +132,11 @@ public sealed partial class Game
             var top = zp.Y + _zBlockHeight[i];
             if (feet.Y >= top - 0.05f || feet.Y + h <= zp.Y + 0.05f)
                 continue; // over its head, or under it
+            var contact = World.PlayerRadius + _zBlockRadius[i];
             var dx = feet.X - zp.X;
             var dz = feet.Z - zp.Z;
             var d2 = dx * dx + dz * dz;
-            if (d2 >= ZBlockContact * ZBlockContact)
+            if (d2 >= contact * contact)
                 continue;
             float nx, nz, d;
             if (d2 < 1e-6f)
@@ -146,8 +152,8 @@ public sealed partial class Game
                 nx = dx / d;
                 nz = dz / d;
             }
-            push.X += nx * (ZBlockContact - d);
-            push.Z += nz * (ZBlockContact - d);
+            push.X += nx * (contact - d);
+            push.Z += nz * (contact - d);
             if (d >= ZBlockDeep)
             {
                 // Held: no velocity into it (what is left slides along it).
@@ -209,7 +215,8 @@ public sealed partial class Game
         if (_zBlockPlayers == 0)
             return;
         var feet = z.Sim.Position;
-        var h = z.Crawler ? ZBlockCrawlHeight : World.PlayerHeight;
+        var h = (z.Crawler ? ZBlockCrawlHeight : World.PlayerHeight) * z.Kind.Height;
+        var contact = World.PlayerRadius + ZBlockRadius * z.Kind.Width; // (its type's width: ZombieTypes.cs)
         var push = Vector3.Zero;
         var vel = z.Sim.Velocity;
         for (var k = 0; k < _zBlockPlayers; k++)
@@ -220,13 +227,13 @@ public sealed partial class Game
             var dx = feet.X - pp.X;
             var dz = feet.Z - pp.Z;
             var d2 = dx * dx + dz * dz;
-            if (d2 >= ZBlockContact * ZBlockContact || d2 < 1e-6f)
+            if (d2 >= contact * contact || d2 < 1e-6f)
                 continue; // (right on top: the player's own push sorts it out)
             var d = MathF.Sqrt(d2);
             var nx = dx / d;
             var nz = dz / d;
-            push.X += nx * (ZBlockContact - d);
-            push.Z += nz * (ZBlockContact - d);
+            push.X += nx * (contact - d);
+            push.Z += nz * (contact - d);
             var into = vel.X * nx + vel.Z * nz;
             if (into < 0)
             {

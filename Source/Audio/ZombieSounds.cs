@@ -271,7 +271,7 @@ public sealed class ZombieSounds
             return;
         }
         var sfx = SfxOf(kind);
-        var pitch = VoicePitch(z.Id) * (0.96f + 0.08f * R());
+        var pitch = VoicePitch(z.Id) * z.Kind.VoicePitch * (0.96f + 0.08f * R()); // (its type's voice: a brute deep, a skitterer shrill; ZombieTypes.cs)
         var seconds = Synth.ZombieSeconds(sfx) / pitch;
         var idle = kind is ZSound.Groan or ZSound.Growl;
         int v;
@@ -296,7 +296,7 @@ public sealed class ZombieSounds
         var variant = n <= 1 ? 0 : z.VoxLast < n ? (z.VoxLast + 1 + (int)(R() * (n - 1))) % n : (int)(R() * n);
         z.VoxLast = (byte)variant;
         Played[(int)kind]++;
-        audio.ZombieSound(v, sfx, variant, mouth, Gain(kind) * (0.92f + 0.16f * R()), pitch);
+        audio.ZombieSound(v, sfx, variant, mouth, Gain(kind) * z.Kind.VoiceGain * (0.92f + 0.16f * R()), pitch);
     }
 
     private void Step(Audio audio, Zombie z, Vector3 feet, float dist)
@@ -308,7 +308,7 @@ public sealed class ZombieSounds
             return;
         }
         var sfx = SfxOf(kind);
-        var pitch = (0.92f + 0.16f * (VoicePitch(z.Id) - 0.84f) / 0.32f) * (0.95f + 0.1f * R()); // heavier and lighter zombies
+        var pitch = (0.92f + 0.16f * (VoicePitch(z.Id) - 0.84f) / 0.32f) * MathF.Sqrt(z.Kind.VoicePitch) * (0.95f + 0.1f * R()); // heavier and lighter zombies (and types)
         var v = Steps.Acquire(Clock, dist, Synth.ZombieSeconds(sfx) / pitch);
         if (v < 0)
         {
@@ -316,7 +316,7 @@ public sealed class ZombieSounds
             return;
         }
         Played[(int)kind]++;
-        audio.ZombieSound(v, sfx, (int)(R() * Synth.VariantCount(sfx)), feet, StepGain(z.Speed) * (0.85f + 0.3f * R()), pitch);
+        audio.ZombieSound(v, sfx, (int)(R() * Synth.VariantCount(sfx)), feet, StepGain(z.Speed) * MathF.Sqrt(z.Kind.VoiceGain) * (0.85f + 0.3f * R()), pitch);
     }
 
     /// <summary>Totals over the kinds (self-test, logs).</summary>

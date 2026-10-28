@@ -91,6 +91,20 @@ public sealed partial class Zombie
         LimbHp = default;
         LimbsShown = 0;
 
+        // ZombieTypes.cs
+        Type = 0;
+        Kind = ZombieTypeDef.DefaultWalker;
+        Plates = 0;
+        PlateHpHead = PlateHpChest = 0;
+        Grabbing = false;
+        GrabUntil = GrabNext = 0;
+        PounceUntil = PounceReadyAt = 0;
+        PounceYaw = 0;
+        FreeClimb = false;
+        ClimbOut = default;
+        ClimbTopY = 0;
+        ClimbRetryAt = 0;
+
         // Source/Audio/ZombieSounds.cs
         HeadHitTick = -1e9;
         VoxInit = VoxDead = false;
@@ -128,12 +142,13 @@ public sealed partial class Game
 
     /// <summary>
     /// Server, at a round's start (and when the player count moves its cap): enough zombies made up front for the round's
-    /// alive cap plus a quarter for bodies still lying there, so the round's spawning allocates nothing mid-round.
+    /// alive cap plus half again for bodies still lying there (a pack of zombie types comes out in one burst and a siege
+    /// kills fast: Source/Game/ZombieTypes.cs), so the round's spawning allocates nothing mid-round.
     /// </summary>
     private void WarmZombiePool()
     {
         var cap = ZAliveCap();
-        var want = Math.Min(MaxZombies, cap + cap / 4);
+        var want = Math.Min(MaxZombies, cap + cap / 2);
         for (var n = Horde.Count + _zPool.Count; n < want; n++)
             _zPool.Push(new Zombie());
     }

@@ -85,6 +85,12 @@ public sealed class ZPlayer
     /// <summary>The plate is up (both sides: the server works it out, clients get it in <see cref="Msg.ZWorld"/> for the HUD).</summary>
     public bool PlateReady;
 
+    /// <summary>Held by a grabber (Source/Game/ZombieTypes.cs): which zombie and until when (server); held at all (both sides: in <see cref="Msg.ZWorld"/>, protocol 73; movement is stopped by it).</summary>
+    public ushort HeldBy; // (0: nobody; zombie ids are never 0)
+
+    public double HeldUntil;
+    public bool Held;
+
     /// <summary>The interact key is held (sent by the client in <see cref="Msg.ZUse"/>), since when, and whether this hold already bought something.</summary>
     public bool UseHeld, UseDone;
 
@@ -417,6 +423,7 @@ public sealed partial class Game
         if (World.Map.Zombies is { Crowd: > 0 } czm)
             CrowdBeginRound(czm, round, now); // a mass-horde map: the round is its crowd (ZombiesCrowd.cs)
         _zNextSpawn = now + 1.0;
+        TypesBeginRound(round); // a boss round queues its boss (ZombieTypes.cs)
         _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
         foreach (var p in Players.Values)
         {
@@ -826,7 +833,10 @@ public sealed partial class Game
     /// Movement speed multiplier from Zombies perks (Fleetfoot Fizz) for <paramref name="p"/> (1 outside Zombies, and
     /// while downed: the crawl stays a crawl). The client's input, the bots' input and the server's speed check use it.
     /// </summary>
-    public float ZombieMoveMult(Player? p) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) && !z.Downed ? PerkMult(z, static d => d.MoveSpeed) : 1f;
+    public float ZombieMoveMult(Player? p) => p != null && Mode == GameMode.Zombies && ZPlayers.TryGetValue(p.Id, out var z) && !z.Downed ? (z.Held ? HeldMoveMult : PerkMult(z, static d => d.MoveSpeed)) : 1f;
+
+    /// <summary>Held by a grabber: the movement speed left (a shuffle in its arms; the server's speed check and the client's prediction agree on it).</summary>
+    public const float HeldMoveMult = 0.02f;
 
     /// <summary>Server: points for <paramref name="p"/> (the host's own +N popups come straight from here; clients see the change).</summary>
     public void AddPoints(Player p, int amount)
@@ -837,12 +847,12 @@ public sealed partial class Game
         zp.Points = Math.Max(0, zp.Points + amount);
     }
 
-    /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>.</summary>
-    public void ZombieHurt(Player p, int damage, double now, Vector3? from = null)
+    /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>. False: it did nothing (immune, down, or an armour plate took it), so a type's special doesn't follow.</summary>
+    public bool ZombieHurt(Player p, int damage, double now, Vector3? from = null)
     {
         var zp = ZP(p);
         if (!p.Alive || zp.Downed || !DamageEnabled || now < p.ImmuneUntil)
-            return;
+            return false;
         if (zp.Perks != 0 && PlateUp(zp, now))
         {
             // Bulwark Brew: the plate takes the whole hit and grows back later.
@@ -850,7 +860,7 @@ public sealed partial class Game
             zp.PlateReady = false;
             p.LastCombatTime = now;
             Audio.Effect3D(Sfx.BreakMetal, p.Position + new Vector3(0, 1.2f, 0), 0.7f, MixBus.Zombies);
-            return;
+            return false;
         }
         var dmg = Math.Max(1, (int)MathF.Round(damage * PerkMult(zp, static d => d.DamageTaken)));
         p.Health -= dmg;
@@ -859,6 +869,7 @@ public sealed partial class Game
         p.LastCombatTime = now;
         if (p.Health <= 0)
             Down(p, zp, now);
+        return true;
     }
 
     /// <summary>Server: <paramref name="zp"/> holds an armour plate perk and its plate is up.</summary>

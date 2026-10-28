@@ -72,6 +72,13 @@ public sealed class HordeFlowFields
             }
         }
         BuildReverse(g);
+        if (_heapNode.Length < g.Nodes.Length)
+        {
+            // The open list sized for the graph once (a build's heap can hold every node), so a field built mid-round
+            // never grows it (a 4 KB allocation inside a tick: the "Zombies cathedral" siege check).
+            _heapNode = new int[g.Nodes.Length];
+            _heapKey = new float[g.Nodes.Length];
+        }
     }
 
     /// <summary>Forget every field (a new run; the graph is kept).</summary>

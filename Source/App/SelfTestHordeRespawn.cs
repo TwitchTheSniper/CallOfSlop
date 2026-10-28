@@ -148,9 +148,9 @@ public static partial class SelfTest
         void Step(string name, double seconds, Func<bool>? onMeOk = null)
         {
             var r = HordeRun(g, map, ref now, t0, seconds, prev, me, mate);
-            var alive = g.Horde.Count(z => z.Alive);
-            var targeted = g.Horde.Count(z => z.Alive && z.Target != byte.MaxValue);
-            results.Add($"{name} {r.Mean:0.0} (fewest {r.Low:0.0}; {targeted} of {alive} with a target)");
+            var alive = g.Horde.Count(z => z.Alive && z.Window < 0); // (inside: a fresh spawn outside has no target until it tears in, and a pack brings four at once; ZombieTypes.cs)
+            var targeted = g.Horde.Count(z => z.Alive && z.Window < 0 && z.Target != byte.MaxValue);
+            results.Add($"{name} {r.Mean:0.0} (fewest {r.Low:0.0}; {targeted} of {alive} inside with a target)");
             if (r.Mean < before.Mean * 0.6 || r.Low < 3 || targeted < alive - 2 || g.Phase != MatchPhase.Playing || (onMeOk != null && !onMeOk()))
                 bad.Add(name);
         }

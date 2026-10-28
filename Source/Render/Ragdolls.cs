@@ -241,7 +241,7 @@ public static class Ragdolls
             SpawnPlayer(game, p, Kills[p.Id], now);
         }
         foreach (var z in game.Horde)
-            if (z.State == ZState.Dead && !z.Ragdolled)
+            if (z.State == ZState.Dead && !z.Ragdolled && ZombieFits(z))
             {
                 z.Ragdolled = true;
                 SpawnZombie(game, z, now);
@@ -353,6 +353,9 @@ public static class Ragdolls
         Spawn(body, d, now, PlayerLife);
     }
 
+    /// <summary>A ragdoll is a plain-sized body: a type much bigger or smaller (Source/Game/ZombieTypes.cs) tips over as drawn instead.</summary>
+    public static bool ZombieFits(Zombie z) => z.Kind.Height is >= 0.8f and <= 1.25f && z.Kind.Width is >= 0.8f and <= 1.25f;
+
     private static void SpawnZombie(Game game, Zombie z, double now)
     {
         var vel = z.Sim.Velocity;
@@ -397,7 +400,7 @@ public static class Ragdolls
         body.ZLimbs = z.Limbs;
         body.Owner = 255;
         body.Hat = null;
-        (body.ZShirt, body.ZSkin, body.ZPants) = (ZombieShirt, ZombieSkin, ZombiePants);
+        (body.ZShirt, body.ZSkin, body.ZPants) = z.Type == 0 ? (ZombieShirt, ZombieSkin, ZombiePants) : (z.Kind.Shirt, z.Kind.Skin, z.Kind.Pants); // (its type's colours)
         SetBlood(body, 0x10000u + z.Id, 0);
         Spawn(body, d, now, ZombieLife);
     }

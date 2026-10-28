@@ -230,6 +230,7 @@ public static partial class SelfTest
         string fallNote = "";
         long allocBefore = 0, allocAfter = 0;
         var spawnTicks = 0;
+        long allocSpawn = 0;
         double tickMs = 0;
         var tickN = 0;
         var seconds = full ? 80.0 : 20.0;
@@ -246,9 +247,13 @@ public static partial class SelfTest
                 tickMs += Stopwatch.GetElapsedTime(sw).TotalMilliseconds;
                 tickN++;
                 // Every tick counts, spawns too: a zombie coming out is taken from the pool (Source/Game/ZombiePool.cs).
-                allocAfter += GC.GetAllocatedBytesForCurrentThread() - a0;
+                var got = GC.GetAllocatedBytesForCurrentThread() - a0;
+                allocAfter += got;
                 if (g.ZSpawns != spawns0)
+                {
                     spawnTicks++;
+                    allocSpawn += got;
+                }
             }
             maxOn = Math.Max(maxOn, g.ClimbCount);
             maxPile = MathF.Max(maxPile, g.ClimbPileHeight);
@@ -295,7 +300,7 @@ public static partial class SelfTest
               + $"at most {maxOn} on it ({maxSlots} places in the pyramid, {maxPile:0.0} m high); first over the parapet after {reachedAt:0.0} s ({g.ClimbOver} over, reached event {Saw(climb, LogicEvent.Reached)}); {g.ClimbFell} fell");
         ZLine($"  {fallNote}");
         ZLine($"  end: survived {survived}, reward given {given} (+{gained} points, +{parts} parts, Max Ammo on the belfry {ammo}), climb stopped {stopped}, {stillOn} still on the face, {g.ClimbReturned} sent back to the windows");
-        ZLine($"  climb tick: {tickMs / Math.Max(1, tickN):0.000} ms a tick mean over {tickN} ticks mid-siege ({g.AliveZombies} alive), {allocAfter - allocBefore} bytes allocated ({spawnTicks} ticks with a spawn)");
+        ZLine($"  climb tick: {tickMs / Math.Max(1, tickN):0.000} ms a tick mean over {tickN} ticks mid-siege ({g.AliveZombies} alive), {allocAfter - allocBefore} bytes allocated ({spawnTicks} ticks with a spawn, {allocSpawn} bytes of it in those; {g.ZombiePoolCount} left in the pool, {g.Horde.Count} in the horde)");
         if (!Saw(climb, LogicEvent.Started) || !Saw(siege, LogicEvent.Started) || extra < c.ExtraFor(10) - 1)
             Fail($"{map.Name}: ringing the bell didn't start the siege (climb {Saw(climb, LogicEvent.Started)}, challenge {Saw(siege, LogicEvent.Started)}, {extra} zombies added)");
         if (recruited < 20 || g.ClimbJoined < 15 || maxPile < 2f || reachedAt < 0 || !Saw(climb, LogicEvent.Reached))
