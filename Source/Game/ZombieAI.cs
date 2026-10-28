@@ -322,6 +322,7 @@ public sealed partial class Game
             }
             alive++;
         }
+        ZBlockGatherPlayers(); // the standing players' bodies, which walking zombies are held off (ZombieBlock.cs)
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
         ClimbTick(); // a siege up a climbable face: the pyramid's places (ZombiesClimb.cs)
         foreach (var z in Horde)
@@ -342,6 +343,7 @@ public sealed partial class Game
             // The hit box for lag-compensated shots: at a window it sits on the drawn body (the step in to the boards).
             z.History[ServerTick % z.History.Length] = z.Sim.Position + ZombieHitShift(z, ServerTick, z.Sim.Position);
         }
+        ZBlockBuild(client: false); // the bodies players are pushed out of this tick (ZombieBlock.cs)
         if (alive > 0)
         {
             ZAiMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -638,6 +640,8 @@ public sealed partial class Game
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(SpeedOf(z) / World.WalkSpeed * 100f), 1, 200),
         };
         World.Simulate(ref z.Sim, cmd);
+        if (walk)
+            ZBlockZombie(z); // held off standing players' bodies (ZombieBlock.cs)
         if (!float.IsFinite(z.Sim.Position.X + z.Sim.Position.Y + z.Sim.Position.Z))
             z.Sim = new MoveState { Position = z.PrevPos, Grounded = true };
     }

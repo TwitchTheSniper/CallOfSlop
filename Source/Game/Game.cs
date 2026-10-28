@@ -835,8 +835,12 @@ public sealed partial class Game : IDisposable
             _pendingInputs.RemoveAt(0);
 
         me.PrevPosition = me.Position;
+        ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
         if (me.Alive)
+        {
             World.Simulate(ref me.Sim, cmd);
+            ZBlockPlayer(me, ref me.Sim); // predicted like the server
+        }
         SprintSpread.Tick(me, cmd.Buttons); // predicted sprint inaccuracy, the same rule as the server's (SprintSpread.cs)
 
         var count = Math.Min(InputRedundancy, _pendingInputs.Count);
@@ -864,6 +868,7 @@ public sealed partial class Game : IDisposable
             foreach (var cmd in _pendingInputs)
             {
                 World.Simulate(ref state, cmd);
+                ZBlockPlayer(me, ref state); // (the zombies as last heard)
                 if (_pendingKnocks.Count > 0)
                     ApplyPendingKnocks(cmd.Seq, ref state); // a push the server put in right after this input
             }
@@ -1032,7 +1037,10 @@ public sealed partial class Game : IDisposable
                 p.Pitch = cmd.Pitch;
                 p.Weapon = cmd.Weapon;
                 if (p.Alive)
+                {
                     World.Simulate(ref p.Sim, cmd);
+                    ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
+                }
                 SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
             }
             else if (p.Bot != null)
@@ -1086,7 +1094,10 @@ public sealed partial class Game : IDisposable
         if (p.Owns(cmd.Weapon))
             p.Weapon = cmd.Weapon;
         if (p.Alive)
+        {
             World.Simulate(ref p.Sim, cmd);
+            ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
+        }
         SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
     }
 
