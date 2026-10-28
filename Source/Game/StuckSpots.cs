@@ -395,7 +395,7 @@ public sealed class StuckSpots
             if (output == null)
                 Console.WriteLine(line);
         }
-        var ownLog = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "callofslop.log")); // this run's own log: nothing to read
+        var ownLog = Path.GetFullPath(Path.Combine(AppFolders.Logs, "callofslop.log")); // this run's own log: nothing to read
         var all = new StuckSpots();
         var files = File.Exists(dir) ? [dir] : Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories).Order(StringComparer.Ordinal).ToArray();
         int reports = 0, logs = 0, logLines = 0, bad = 0;
