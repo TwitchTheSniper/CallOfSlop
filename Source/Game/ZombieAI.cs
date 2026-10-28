@@ -115,12 +115,15 @@ public sealed partial class Zombie
 public sealed partial class Game
 {
     /// <summary>Every zombie in the world, alive or falling over (by id).</summary>
-    public readonly List<Zombie> Horde = new();
+    public readonly List<Zombie> Horde = new(MaxZombies); // (sized for the most at once: a growing horde never allocates mid-round)
 
     /// <summary>The zombies' voices and footsteps on this PC (client side, every frame: Source/Audio/ZombieSounds.cs).</summary>
     public readonly ZombieSounds ZSounds = new();
 
     private ushort _zNextId = 1;
+
+    /// <summary>Zombies spawned on this server so far (self-tests: a spawn is a new object, so allocation probes leave those ticks out).</summary>
+    public long ZSpawns;
 
     /// <summary>Zombie AI cost: total and ticks measured (the self-test reports the cost per zombie per tick).</summary>
     public double ZAiTicks, ZAiZombieTicks, ZAiMs;
@@ -275,6 +278,7 @@ public sealed partial class Game
         HordeController<Zombie>.Joined(z);
         Horde.Add(z);
         _zById[z.Id] = z;
+        ZSpawns++;
         return z;
     }
 

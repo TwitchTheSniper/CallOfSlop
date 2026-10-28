@@ -709,7 +709,7 @@ public sealed partial class Game
     private double _zEntsReadAt;
 
     /// <summary>Every zombie by id (both sides: the client's lookup for each entry, the server's ids in use).</summary>
-    private readonly Dictionary<ushort, Zombie> _zById = new();
+    private readonly Dictionary<ushort, Zombie> _zById = new(MaxZombies);
 
     /// <summary>Client: drops zombies the server stopped sending (gone, or long dead).</summary>
     private void DropStaleZombies(double now)

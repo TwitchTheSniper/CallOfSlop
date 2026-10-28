@@ -34,9 +34,9 @@ public sealed partial class Game
     private const float ZBlockContact = World.PlayerRadius + ZBlockRadius;
 
     private readonly HordeGrid _zBlockGrid = new();
-    private Vector3[] _zBlockPos = new Vector3[64];
-    private float[] _zBlockHeight = new float[64];
-    private bool[] _zBlockOn = new bool[64];
+    private Vector3[] _zBlockPos = new Vector3[MaxZombies]; // (sized for the most zombies at once, so a growing horde never allocates mid-round)
+    private float[] _zBlockHeight = new float[MaxZombies];
+    private bool[] _zBlockOn = new bool[MaxZombies];
     private int _zBlockCount;
 
     /// <summary>Standing players' feet and heights (for zombies walking; rebuilt each horde tick).</summary>
@@ -76,6 +76,7 @@ public sealed partial class Game
         }
         _zBlockCount = n;
         _zBlockGrid.Setup(World.Map.HalfX, World.Map.HalfZ);
+        _zBlockGrid.Reserve(MaxZombies); // (once: a growing horde never allocates mid-round)
         _zBlockGrid.Build(_zBlockPos.AsSpan(0, n), _zBlockOn.AsSpan(0, n));
     }
 
