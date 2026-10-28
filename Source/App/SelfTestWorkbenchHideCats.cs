@@ -57,7 +57,7 @@ public static partial class SelfTest
         inv.Refresh(pistol, Parts.All, (int)PartCategory.Feed, "", false, true);
         var keptFeed = inv.Filter == (int)PartCategory.Feed && inv.Items.Count > 0 && inv.Items.All(p => p.Category == PartCategory.Feed && !inv.Fits[inv.Items.IndexOf(p)]);
         inv.Refresh(pistol, Parts.All, -1, "", false, true);
-        var owned = Parts.All.Where(p => !p.IsRoot && !p.IsMeleePart).Select(p => p.Category).Distinct().ToList();
+        var owned = Parts.All.Where(p => !p.IsRoot && p.Kind == BuildKind.Gun).Select(p => p.Category).Distinct().ToList();
         var missing = owned.Where(c => !inv.Shows(c) || !inv.Cats.Contains(c)).ToList();
         Line($"toggle on, empty Pistol Grip: chips {Names(inv)} ({owned.Count} gun categories, missing: {string.Join(" ", missing)}); chip Feed kept {keptFeed}");
         if (missing.Count > 0 || !keptFeed || Disagree(inv) > 0)

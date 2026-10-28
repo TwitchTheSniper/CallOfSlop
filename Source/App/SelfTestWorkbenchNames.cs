@@ -53,7 +53,7 @@ public static partial class SelfTest
 
         // Every receiver, every socket filled with the first part (by name) that fits it, each opened after the last.
         var grips = Parts.All.Where(p => p.Frame != null && !p.IsMeleePart).OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
-        var fillers = Parts.All.Where(p => !p.IsRoot && !p.IsMeleePart).OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
+        var fillers = Parts.All.Where(p => !p.IsRoot && p.Kind == BuildKind.Gun).OrderBy(p => p.Name, StringComparer.Ordinal).ToList();
         var receivers = 0;
         foreach (var rp in Parts.InCategory(PartCategory.Receiver).OrderBy(p => p.Name, StringComparer.Ordinal))
         {
