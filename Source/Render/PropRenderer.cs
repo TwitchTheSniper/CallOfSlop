@@ -306,14 +306,20 @@ public sealed unsafe class PropRenderer
 
         void main()
         {
-            if (vFade < 1.0 && Bayer(ivec2(gl_FragCoord.xy) + ivec2(int(vHash * 7.0), int(vHash * 53.0))) >= vFade)
+            // Glass and glowing parts (layer -2 - glass share - 10 * glow, PropMeshes.LayerOf): the glass is see-through by
+            // the same ordered dither as the fade, and the glow is light of the part's own colour.
+            float code = vLayer < -1.5 ? -2.0 - vLayer : 0.0;
+            float ownGlow = floor(code + 0.001);
+            float glass = code - ownGlow;
+            float keep = glass > 0.05 ? vFade * glass : vFade;
+            if (keep < 1.0 && Bayer(ivec2(gl_FragCoord.xy) + ivec2(int(vHash * 7.0), int(vHash * 53.0))) >= keep)
                 discard;
             vec3 n = normalize(vNormal);
             vec3 col = vColor;
             if (vLayer >= 0.0)
                 col *= texture(uTex, vec3(vUv, vLayer)).r * 1.25;
             float rim = 0.12 * (1.0 - abs(n.y));
-            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
+            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb + vColor * (ownGlow * 0.1);
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;

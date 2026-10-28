@@ -12,6 +12,8 @@ ossuary's niche walls and skull heaps, cages and cell bars, a rack and a pillory
 glass (lancets and a rose window), headstones and a mourning angel, the great bell in its headstock, a scriptorium
 desk, a mason's bench, horse stalls, churchyard railings, a dead tree and a tapestry. Candles, coals, torches and
 glass glow (flicker / pulse lights: the prop shader, no CPU cost). Things for a wall have their back at -Z (face +Z).
+The flames also carry baked lights (a "lights" list, LIGHTS below; Props/README.md "Lights"): on a lit map (Ashgrave
+Cathedral, docs/render/LIGHTING.md section 8) every torch, brazier, candle stand and chandelier placed lights the room.
 Round shapes are polygon prisms (the helpers in make_slot_cabinets.py).
 """
 import json
@@ -502,6 +504,19 @@ PROPS = [
     ("Gibbet Cage", "An iron cage hanging on a chain with a skull inside (place it with y; looks only).", gibbet),
 ]
 
+# Baked lights (prop frame; flames flicker). Warm candlelight for the candles, a hotter orange for torches and coals.
+CANDLE = "#ffc878"
+LIGHTS = {
+    "Wall Torch": [{"pos": [0, 0.64, 0.46], "color": "#ffa850", "intensity": 1.5, "range": 8, "flicker": True}],
+    "Iron Brazier": [{"pos": [0, 1.3, 0], "color": "#ff8a3a", "intensity": 2.4, "range": 10, "flicker": True}],
+    "Iron Candelabrum": [{"pos": [0, 1.95, 0], "color": CANDLE, "intensity": 1.1, "range": 7, "flicker": True}],
+    "Iron Chandelier": [{"pos": [0, 1.1, 0], "color": CANDLE, "intensity": 2.2, "range": 16, "flicker": True}],
+    "Votive Candle Stand": [{"pos": [0, 1.4, 0.15], "color": "#ffa860", "intensity": 0.9, "range": 6, "flicker": True}],
+    "Gothic High Altar": [{"pos": [0, 1.85, -0.25], "color": CANDLE, "intensity": 0.9, "range": 6, "flicker": True}],
+    "Organ Console": [{"pos": [0, 2.0, -0.5], "color": CANDLE, "intensity": 0.6, "range": 5, "flicker": True}],
+    "Scriptorium Desk": [{"pos": [-0.5, 1.45, -0.3], "color": CANDLE, "intensity": 0.4, "range": 4, "flicker": True}],
+}
+
 COSMETIC = {"Iron Chandelier", "Stone Gargoyle", "Skull Heap", "Wall Torch", "Lancet Window Blue", "Lancet Window Red", "Rose Window",
             "Hanging Tapestry", "Gibbet Cage"}
 
@@ -526,8 +541,12 @@ def main():
         fn = "".join(ch for ch in name if ch.isalnum()) + ".json"
         parts_json = ",\n".join("    " + json.dumps(q) for q in parts)
         head = "{\n" + ",\n".join(f"  {json.dumps(k)}: {json.dumps(v)}" for k, v in prop.items())
+        tail = "\n  ]"
+        if name in LIGHTS:
+            tail += ',\n  "lights": [\n' + ",\n".join("    " + json.dumps(q) for q in LIGHTS[name]) + "\n  ]"
         with open(os.path.join(OUT, fn), "w") as f:
-            f.write(head + ',\n  "parts": [\n' + parts_json + "\n  ]\n}\n")
+            f.write(head + ',\n  "parts": [\n' + parts_json + tail + "\n}\n")
+    assert set(LIGHTS) <= names, set(LIGHTS) - names
     print(f"wrote {len(PROPS)} props to {OUT}")
 
 

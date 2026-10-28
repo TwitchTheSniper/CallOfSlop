@@ -389,11 +389,14 @@ public static partial class SelfTest
             worstMs = Math.Max(worstMs, topMs);
             parts.Add($"{c} {c4.CandMs / seconds:0.00}/{c6.CandMs / seconds:0.00} = {c4.Ratio:0.00}x/{c6.Ratio:0.00}x");
             if (top > FrenzyCpuRatio)
-                Fail($"{c}: the frenzy costs {top:0.00}x the heaviest track ({heaviest.Name}; medians {topMs:0.00} vs {c4.RefMs / seconds:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
+            {
+                var w = c6.Ratio >= c4.Ratio ? c6 : c4; // (the worse comparison's own pair of runs)
+                Fail($"{c}: the frenzy costs {top:0.00}x the heaviest track ({heaviest.Name}; level {(w == c6 ? 6 : 4)}, quickest runs {w.CandMs / seconds:0.00} vs {w.RefMs / seconds:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
+            }
             if (topMs > MusicBudgetMsPerSecond)
                 Fail($"{c}: the frenzy costs {topMs:0.0} ms per s (budget {MusicBudgetMsPerSecond})");
         }
-        ClassLine($"CPU per class ({ThreadCpu.Kind}, median of interleaved pairs), ms per s of audio at level 4/6 and the ratio to the heaviest hardbass track "
+        ClassLine($"CPU per class ({ThreadCpu.Kind}, quickest of interleaved runs), ms per s of audio at level 4/6 and the ratio to the heaviest hardbass track "
                   + $"({heaviest.Name}, {heaviestCost:0.00}): {string.Join(", ", parts)}; worst {worst:0.00}x ({worstAt}; allowed {FrenzyCpuRatio}x) = {worstMs / 10:0.00}% of a core");
         CpuRatioNotes.Add($"frenzy classes: worst {worst:0.00}x ({worstAt}) of {heaviest.Name}");
         ClassLine($"music CPU ratios ({ThreadCpu.Kind}; the user's rule: at most {FrenzyCpuRatio}x): {string.Join("; ", CpuRatioNotes)}");

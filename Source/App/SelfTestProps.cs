@@ -22,6 +22,7 @@ public static partial class SelfTest
         CheckOutdoorProps(); // the outdoor folders and Prop Gallery 2 (SelfTestPropsOutdoor.cs)
         CheckGeneratedGalleries(); // the gallery maps match tools/props/gallery.py (SelfTestPropGallery.cs)
         CheckPropFileErrors();
+        CheckGlassLamps();
         CheckPrefabProps(); // props composed of other props ("use" parts): the union of the pieces, cycles refused
         CheckPropCollision();
         CheckClutter();
@@ -161,6 +162,40 @@ public static partial class SelfTest
             Fail("prop meshes have a NaN");
     }
 
+    /// <summary>
+    /// Glass parts (the part's "glass" key: a see-through pane, dithered by the prop shader), glowing parts (its "glow"
+    /// key: a still bulb's own light) and the lamps built with them: "glass": true is 0.4 drawn, a number is kept, a glow
+    /// is whole tenths, and the mesh's layer value carries both (-2 - share - 10 * glow); every lamp and
+    /// lantern head (fix/lamp-glass) has glass panes and a glowing bulb or flame inside them.
+    /// </summary>
+    private static void CheckGlassLamps()
+    {
+        var def = PropFile.Load("""{ "name": "Glass Test", "parts": [ { "size": [1, 1, 0.02], "glass": true }, { "size": [1, 1, 0.02], "glass": 0.6 }, { "size": [0.2, 0.2, 0.2] }, { "size": [0.1, 0.1, 0.1], "glow": 1.84 }, { "size": [1, 1, 0.02], "glass": 0.3, "glow": 0.2 } ] }""", "glass.json");
+        if (def.Parts[0].Glass != PropFile.DefaultGlass || def.Parts[1].Glass != 0.6f || def.Parts[2].Glass != 0)
+            Fail($"glass parts read {def.Parts[0].Glass}, {def.Parts[1].Glass}, {def.Parts[2].Glass} (expected {PropFile.DefaultGlass}, 0.6, 0)");
+        var meshes = PropMeshes.Build([def]);
+        float LayerAt(int part) => meshes.Vertices[part * 24 * PropMeshes.FloatsPerVertex + 11]; // 24 vertices a box part
+        if (def.Parts[3].Glow != 1.8f)
+            Fail($"a glow of 1.84 read as {def.Parts[3].Glow} (glows are whole tenths: 1.8)");
+        if (MathF.Abs(LayerAt(0) + 2.4f) > 1e-5f || MathF.Abs(LayerAt(1) + 2.6f) > 1e-5f || LayerAt(2) != -1f
+            || MathF.Abs(LayerAt(3) + 20f) > 1e-4f || MathF.Abs(LayerAt(4) + 4.3f) > 1e-4f)
+            Fail($"glass/glow layer values {LayerAt(0)}, {LayerAt(1)}, {LayerAt(2)}, {LayerAt(3)}, {LayerAt(4)} (expected -2.4, -2.6, -1, -20, -4.3)");
+        var lamps = new[] { "Heritage Lamp Post", "Street Lamp", "Lantern Street Lamp", "Flickering Street Lamp", "Hanging Lantern", "Caged Bulkhead Lamp" };
+        foreach (var name in lamps)
+        {
+            if (Props.Find(name) is not { } lamp)
+            {
+                Fail($"glass lamps: \"{name}\" didn't load");
+                continue;
+            }
+            var panes = lamp.Parts.Count(p => p.Glass > 0);
+            var bulbs = lamp.Parts.Count(p => p.Glass == 0 && (p.Glow >= 1.5f || p.Anim is { IsLight: true, Glow: >= 1.5f }));
+            if (panes == 0 || bulbs == 0 || lamp.Lights.Length == 0)
+                Fail($"glass lamps: \"{name}\" has {panes} glass parts, {bulbs} glowing bulbs and {lamp.Lights.Length} lights (each needs some)");
+        }
+        Line($"glass lamps: {lamps.Length} lamps each have glass panes, a glowing bulb or flame and their light");
+    }
+
     private static void CheckPropFileErrors()
     {
         (string Json, string Expect)[] cases =
@@ -175,6 +210,9 @@ public static partial class SelfTest
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [30, 1, 1] } ] }", "0.001 to 24"),
             ("{ \"name\": \"X\", \"format\": \"call-of-slop-prop/9\", \"parts\": [ { \"size\": [1, 1, 1] } ] }", "different version"),
             ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"material\": \"cheese\" } ] }", "unknown material"),
+            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"glass\": 1 } ] }", "outside 0.1 to 0.9"),
+            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"glass\": true, \"material\": \"metal\" } ] }", "leave out \"material\""),
+            ("{ \"name\": \"X\", \"parts\": [ { \"size\": [1, 1, 1], \"glow\": 5 } ] }", "outside 0 to 4"),
         ];
         var ok = 0;
         foreach (var (json, expect) in cases)

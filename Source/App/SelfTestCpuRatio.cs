@@ -7,8 +7,16 @@ namespace CallOfSlop;
 /// CPU comparisons that a noisy CI runner can't fake: "does B cost more than X times A?". Both sides are timed on
 /// this thread's own CPU clock (so time the OS spends running something else doesn't count), interleaved in one loop
 /// (A, B, B, A, A, B...: a slow patch of the machine hits both alike), after a warm-up with identical work, and the
-/// answer is the median of the per-pair ratios. Every music CPU rule (frenzy, frenzy classes, harder and weird
+/// answer is the ratio of each side's quickest run. Every music CPU rule (frenzy, frenzy classes, harder and weird
 /// tracks) goes through <see cref="CompareCpu"/>. Also <see cref="SteadyAllocBytes"/> for the allocation probes.
+/// <para>
+/// Why the quickest run (2026-10-28, fix/windows-flaky-checks): every run does identical, deterministic work, so a
+/// run can only be slowed by the machine (the other hyperthread of a 2-vCPU runner busy, cache and memory traffic of
+/// other threads, a VM's stolen cycles: Windows' thread cycle counter counts those), never sped up. The median of the
+/// per-pair ratios let that noise through on the Windows runners: the same Launcher level-6 comparison read 1.51x,
+/// 1.38x and 1.07x on three main runs of one commit, against 1.37-1.38x every time on Linux, where the per-pair
+/// ratios sit within +-0.03. The quickest run of each side is the cost of the work itself.
+/// </para>
 /// </summary>
 public static partial class SelfTest
 {
@@ -16,15 +24,16 @@ public static partial class SelfTest
     private static readonly List<string> CpuRatioNotes = new();
 
     /// <summary>
-    /// The result of <see cref="CompareCpu"/>: the median of the per-pair cost ratios (candidate / reference), the
-    /// median CPU ms of one run of each side, and the spread of the ratios (largest minus smallest), for the log.
+    /// The result of <see cref="CompareCpu"/>: the cost ratio (candidate / reference, each side's quickest run), the
+    /// CPU ms of each side's quickest run, and the spread of the per-pair ratios (largest minus smallest), for the log.
     /// </summary>
     private readonly record struct CpuCompare(double Ratio, double RefMs, double CandMs, double Spread);
 
     /// <summary>
     /// Times <paramref name="reference"/> against <paramref name="candidate"/>. Each is a setup that runs untimed and
     /// returns the work to time (e.g. load a track at its drop, then render two seconds of it), so every timed run does
-    /// identical work. Two warm-up pairs, then <paramref name="pairs"/> timed pairs, alternating which side goes first.
+    /// identical work. Two warm-up pairs, then <paramref name="pairs"/> timed pairs, alternating which side goes first;
+    /// the ratio is the candidate's quickest run over the reference's.
     /// </summary>
     private static CpuCompare CompareCpu(Func<Action> reference, Func<Action> candidate, int pairs = 9)
     {
@@ -51,7 +60,9 @@ public static partial class SelfTest
             ratios[i] = candMs[i] / Math.Max(1e-9, refMs[i]);
         }
         Array.Sort(ratios);
-        return new CpuCompare(ratios[pairs / 2], MedianOf(refMs), MedianOf(candMs), ratios[^1] - ratios[0]);
+        var refBest = refMs.Min();
+        var candBest = candMs.Min();
+        return new CpuCompare(candBest / Math.Max(1e-9, refBest), refBest, candBest, ratios[^1] - ratios[0]);
     }
 
     /// <summary>

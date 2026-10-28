@@ -12,10 +12,11 @@ public sealed partial class Kit
     /// Turns baked lighting on (Maps/README.md "Lighting"): grid <paramref name="cell"/> in metres, the ambient left in fully
     /// enclosed places (<paramref name="indoor"/>, 0-1), sun shadows and prop lights. Only the values that differ from the
     /// defaults are written. A map with LightSource ops is lit even without it. <paramref name="region"/> (x0, z0, x1, z1)
-    /// limits the grid to the lit part of a big map (finer cells for the same memory); <paramref name="top"/> caps its height.
+    /// limits the grid to the lit part of a big map (finer cells for the same memory); <paramref name="top"/> caps its height;
+    /// <paramref name="cellY"/> makes the cells taller than wide (a tall map with several floors keeps fine cells across).
     /// </summary>
     public Kit BakedLighting(double cell = 0.5, double indoor = 0.25, bool sunShadows = true, bool propLights = true,
-        (double X0, double Z0, double X1, double Z1)? region = null, double top = 0)
+        (double X0, double Z0, double X1, double Z1)? region = null, double top = 0, double cellY = 0)
     {
         var o = new JObject(("op", "BakedLighting"));
         if (cell != 0.5) o.Add("cell", R(cell));
@@ -24,6 +25,7 @@ public sealed partial class Kit
         if (!propLights) o.Add("propLights", false);
         if (region is { } g) o.Add("region", new JObject(("x0", R(g.X0)), ("z0", R(g.Z0)), ("x1", R(g.X1)), ("z1", R(g.Z1))));
         if (top != 0) o.Add("top", R(top));
+        if (cellY != 0) o.Add("cellY", R(cellY));
         Emit(o);
         return this;
     }

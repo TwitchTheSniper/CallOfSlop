@@ -46,7 +46,7 @@ public static unsafe class LightGrid
     public struct FrameBlock
     {
         public Vector4 Mode;    // x: 0 off, 1 grid, 2 probe; y: time; z: normal offset (m); w: dynamic lights
-        public Vector4 Origin;  // grid min corner
+        public Vector4 Origin;  // grid min corner; w: the normal offset up and down (cells can be taller than wide)
         public Vector4 Scale;   // 1 / grid size
         public Vector4 ProbeA;  // probe: light rgb, flicker share
         public Vector4 ProbeB;  // probe: direction (view space), ambient
@@ -169,7 +169,7 @@ public static unsafe class LightGrid
         _uploaded = bake;
         GpuBytes = bake.Bytes;
         Uploads++;
-        Console.WriteLine($"[lighting] light grid {bake.NX} x {bake.NY} x {bake.NZ} at {bake.Cell:0.##} m, {bake.Sources.Length} lights, {bake.Bytes / 1024} KB uploaded");
+        Console.WriteLine($"[lighting] light grid {bake.NX} x {bake.NY} x {bake.NZ} at {bake.Cell:0.##} m{(bake.CellY != bake.Cell ? $" ({bake.CellY:0.##} m tall)" : "")}, {bake.Sources.Length} lights, {bake.Bytes / 1024} KB uploaded");
     }
 
     // ---- Dynamic lights ---------------------------------------------------------------------------------------------
@@ -233,6 +233,9 @@ public static unsafe class LightGrid
     /// <summary>How far along its normal a pixel samples the grid (a little over half a cell, so a wall reads the air in front of it).</summary>
     public static float NormalOffset(LightBake bake) => bake.Cell * 0.6f;
 
+    /// <summary>The same up and down (taller cells: a floor reads the air a little over half a cell above it).</summary>
+    public static float NormalOffsetY(LightBake bake) => bake.CellY * 0.6f;
+
     /// <summary>Fills the world pass's block (no GL: the self-test runs it; no allocation).</summary>
     public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol)
     {
@@ -243,8 +246,8 @@ public static unsafe class LightGrid
         }
         var n = Math.Min(dynamic, MaxDynamic);
         b.Mode = new Vector4(1f, PropAnim.ShaderTime(time), NormalOffset(bake), n);
-        b.Origin = new Vector4(bake.Origin, 0f);
-        b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.Cell), 1f / (bake.NZ * bake.Cell), 0f);
+        b.Origin = new Vector4(bake.Origin, NormalOffsetY(bake));
+        b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.CellY), 1f / (bake.NZ * bake.Cell), 0f);
         b.Dyn0 = n > 0 ? dynPos[0] : default;
         b.Dyn1 = n > 1 ? dynPos[1] : default;
         b.Dyn2 = n > 2 ? dynPos[2] : default;

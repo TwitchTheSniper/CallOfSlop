@@ -121,7 +121,7 @@ public static unsafe class Lighting
         layout(std140) uniform LitFrame
         {
             vec4 uLitMode;   // x: 0 classic light, 1 the grid at the pixel, 2 the probe below (first-person gun); y: time; z: normal offset; w: dynamic lights
-            vec4 uLitOrigin; // the grid's min corner
+            vec4 uLitOrigin; // the grid's min corner; w: the normal offset up and down
             vec4 uLitScale;  // 1 / the grid's size
             vec4 uProbeA;    // mode 2: light rgb, flicker share
             vec4 uProbeB;    // mode 2: light direction (view space), ambient
@@ -154,7 +154,7 @@ public static unsafe class Lighting
             vec4 c;
             if (uLitMode.x < 1.5)
             {
-                vec3 uvw = (p + n * uLitMode.z - uLitOrigin.xyz) * uLitScale.xyz;
+                vec3 uvw = (p + n * vec3(uLitMode.z, uLitOrigin.w, uLitMode.z) - uLitOrigin.xyz) * uLitScale.xyz;
                 a = texture(uLitA, uvw);
                 b = texture(uLitB, uvw);
                 c = texture(uLitC, uvw);

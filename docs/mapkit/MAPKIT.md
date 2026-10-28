@@ -131,8 +131,8 @@ l.Wire("LeverA.changed", "Both.a").Wire("LeverB.changed", "Both.b").Wire("Both.t
 ```
 
 **Lights** (`Source/MapKit/Lights.cs`; the ops and what they do are in Maps/README.md "Lighting", the design in
-docs/render/LIGHTING.md). `kit.BakedLighting(cell, indoor, sunShadows, propLights, region, top)` turns baked lighting on
-(a `region` (x0, z0, x1, z1) bakes only the lit part of a big map, at finer cells); `kit.Light(x, y, z, color, intensity,
+docs/render/LIGHTING.md). `kit.BakedLighting(cell, indoor, sunShadows, propLights, region, top, cellY)` turns baked lighting on
+(a `region` (x0, z0, x1, z1) bakes only the lit part of a big map, at finer cells; `cellY` makes the cells taller than wide, for a tall map); `kit.Light(x, y, z, color, intensity,
 range, flicker, anchor, flickerSpeed, flickerAmount)` a point light, `kit.SpotLight(..., yaw, pitch, cone)` a cone (compass yaw, pitch degrees down),
 `kit.AreaLight(..., w, d, yaw, pitch)` a glowing rectangle. Layouts: `Lights.Row` (lights evenly along a line: an aisle,
 a corridor), `Lights.Ring` (round a circle: a chandelier's candles, braziers round a pit), `Lights.Fittings` (a lit prop

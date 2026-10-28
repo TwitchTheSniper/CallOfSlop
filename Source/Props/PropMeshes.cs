@@ -8,7 +8,7 @@ namespace CallOfSlop;
 ///
 /// Vertex layout (12 floats): position (3, prop frame), normal (3), colour (3, with a little baked ground shadow),
 /// texture coordinates (2, metres along the part's own faces / 2, like the map boxes) and the texture layer (1, -1 for a
-/// plain colour).
+/// plain colour, -2 and below for glass and glow: <see cref="LayerOf"/>).
 /// </summary>
 public sealed class PropMeshes
 {
@@ -82,7 +82,7 @@ public sealed class PropMeshes
                     ao *= 0.7f;
                 var col = part.Color * ao;
                 v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, col.X, col.Y, col.Z,
-                    su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, part.Layer]);
+                    su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, LayerOf(part)]);
             }
             idx.AddRange([baseVertex, baseVertex + 1, baseVertex + 2, baseVertex, baseVertex + 2, baseVertex + 3]);
         }
@@ -124,11 +124,19 @@ public sealed class PropMeshes
                     ao *= 0.7f;
                 var col = part.Color * ao;
                 v.AddRange([pos.X, pos.Y, pos.Z, normal.X, normal.Y, normal.Z, col.X, col.Y, col.Z,
-                    su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, part.Layer]);
+                    su * uLen * 0.5f * part.TexScale, sw * wLen * 0.5f * part.TexScale, LayerOf(part)]);
             }
             idx.AddRange([baseVertex, baseVertex + 1, baseVertex + 2, baseVertex, baseVertex + 2, baseVertex + 3]);
         }
     }
+
+    /// <summary>
+    /// The vertex's layer value: the texture layer, -1 for a plain colour, or for a glass or glowing part (both plain
+    /// colours) -2 - <see cref="PropPart.Glass"/> - 10 * <see cref="PropPart.Glow"/>: the prop shader dithers the glass
+    /// share (the fraction) and adds the glow (the whole tenths).
+    /// </summary>
+    public static float LayerOf(PropPart part) =>
+        part.Glass > 0 || part.Glow > 0 ? -2f - part.Glass - MathF.Round(part.Glow * 10f) : part.Layer;
 
     private static float SmoothStep(float a, float b, float x)
     {

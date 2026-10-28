@@ -78,9 +78,9 @@ public static partial class SelfTest
             var whole = stats[Array.IndexOf(all, t)].MsPerSecond;
             costLine.Append($" {t.Name} drop {c:0.0} ms/s = {cmp.Ratio:0.00}x, whole track {whole:0.0} ms/s = {whole / heaviestWhole:0.00}x;");
             if (cmp.Ratio > HarderCpuRatioMax)
-                Fail($"{t.Name}: its drop costs {cmp.Ratio:0.00}x the most expensive older drop ({refTrack.Name}; medians {c:0.0} vs {refCost:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
+                Fail($"{t.Name}: its drop costs {cmp.Ratio:0.00}x the most expensive older drop ({refTrack.Name}; quickest runs {c:0.0} vs {refCost:0.0} ms/s; want <= {HarderCpuRatioMax}x)");
         }
-        notes.Add($"harder: CPU ({ThreadCpu.Kind}, median of interleaved pairs) against the most expensive older drop ({refTrack.Name}, {refCost:0.0} ms/s) and the heaviest older whole track ({heaviestWhole:0.0} ms/s):{costLine} worst {worstRatio:0.00}x");
+        notes.Add($"harder: CPU ({ThreadCpu.Kind}, quickest of interleaved runs) against the most expensive older drop ({refTrack.Name}, {refCost:0.0} ms/s) and the heaviest older whole track ({heaviestWhole:0.0} ms/s):{costLine} worst {worstRatio:0.00}x");
         CpuRatioNotes.Add($"harder drops: worst {worstRatio:0.00}x of {refTrack.Name}");
 
         CheckHarderVoices(notes);

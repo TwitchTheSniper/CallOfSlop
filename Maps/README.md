@@ -159,7 +159,7 @@ A map must have at least one spawn.
 | Op | Parameters | What it does |
 |---|---|---|
 | `LightSource` | x, y, z, color, intensity = 1, range = 8, type = "point", yaw = 0, pitch = 90, cone = 60, w = 1, d = 1, flicker = false, flickerSpeed = 1, flickerAmount = 1 | A static light baked into the map: a point, a `"spot"` cone or an `"area"` rectangle. |
-| `BakedLighting` | cell = 0.5, indoor = 0.25, sunShadows = true, propLights = true, region = null, top = 0 | Turns baked lighting on and sets it up. |
+| `BakedLighting` | cell = 0.5, indoor = 0.25, sunShadows = true, propLights = true, region = null, top = 0, cellY = 0 | Turns baked lighting on and sets it up. |
 
 ## Terrain
 
@@ -1124,8 +1124,9 @@ even with lamp props on it. Lights are looks only (not in the fingerprint), so l
 | `indoor` | 0-1: how much sky light reaches a fully enclosed place (default 0.25). Lower is darker inside, where your lights matter. |
 | `sunShadows` | `false`: no sun shadows (the sun lights everything as before). |
 | `propLights` | `false`: props' own lights are left out. |
-| `region` | `{ "x0", "z0", "x1", "z1" }`: bake only this rectangle (a big map with one lit building); outside it is the classic light. |
+| `region` | `{ "x0", "z0", "x1", "z1" }`: bake only this rectangle (a big map with one lit building). On screen the light at its edge carries on outside it (put the edge in open air, just past the lit buildings); the first-person gun outside it gets the classic light. |
 | `top` | The grid's top height in metres (0: just above the tallest box or light). |
+| `cellY` | The cells' height, 0.25-4 m (0, the default: as `cell`). A tall map with several floors can keep fine cells across with taller ones (Ashgrave Cathedral: 0.5 m across, 1 m up). |
 
 **Props bring their lights.** A prop with a `"lights"` list (Props/README.md, "Lights") lights a lit map wherever it is
 placed, turned and scaled with it: the `Lighting` props (**Iron Torch**, **Candle Stand**, **Altar Candles**,

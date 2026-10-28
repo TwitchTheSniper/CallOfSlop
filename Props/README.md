@@ -72,6 +72,8 @@ A cosmetic prop with `"concealment": true` (the **Corn Patch A** and **Corn Patc
 | `material` | A surface texture: `concrete`, `brick`, `wood`, `metal`, `tiles`, `dirt`, `grid`, or `none` (default: plain colour). |
 | `texScale` | How many times denser the texture is (default 1: one repeat per 2 m, like the map boxes). |
 | `anim` | Makes the part move or light up (optional, see [Animation](#animation)). |
+| `glass` | A see-through pane: `true` (0.4 of it drawn) or how much of it is drawn, 0.1 to 0.9. Lamp glass, a lantern's panes. It is drawn with an ordered dither (like the fade of small props), so what is behind it (a bulb, the sky) shows through and nothing needs sorting. A plain colour: no `material`. |
+| `glow` | Light of the part's own colour added on top of the sun and shade, 0 to 4 (in tenths): a lamp's bulb that is always on, or a faint 0.2 in its glass. Unlike a light `anim` it keeps the prop still. A plain colour: no `material`. |
 
 Colour names: black, rubber, darkgrey, grey, lightgrey, white, paper, newsprint, concrete, steel, galvanized, chrome, rust, brick, wood, darkwood, lightwood, pallet, cardboard, tape, red, orange, yellow, green, darkgreen, olive, blue, navy, tan, sand, brown, glass, amber.
 
@@ -412,7 +414,9 @@ A prop can carry **lights** that light maps with baked lighting (Maps/README.md 
 a torch brings its flame's light, a street lamp its pool of light. They are given in the prop's own frame and turn,
 move and scale with the placed prop; a prefab (`use`) brings the used prop's lights too. On a map without baked lighting
 they do nothing, so adding lights to a prop never changes how existing maps look. Give the visible flame or bulb a light
-type anim (`flicker`, `glow`) as well: the light lights the room, the glow makes the source itself bright.
+type anim (`flicker`) or a `glow` as well: the light lights the room, the glow makes the source itself bright. A lamp is
+a bulb or flame with a `glow` (about 2) inside `glass` panes held by thin dark frame bars (the **Heritage Lamp Post**,
+**Street Lamp**, **Lantern Street Lamp**, **Hanging Lantern**).
 
 ```json
 "lights": [
