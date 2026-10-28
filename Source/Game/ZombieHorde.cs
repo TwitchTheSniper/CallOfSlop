@@ -91,6 +91,7 @@ public sealed partial class Game
             portals[i] = new HordePortal { Front = w.Outside, In = inward, Area = w.Area, Spots = spots.ToArray() };
         }
         HordeAI.Setup(World.Map.HalfX, World.Map.HalfZ, portals);
+        HordeAI.Reserve(MaxZombies); // (a horde growing past 64 or 128 mid-round allocates nothing)
         HordeAI.SetZones(p => World.Map.Zombies?.AreaAt(p) ?? 0);
         HordeAI.SetPortalMover(MoveToWindow);
         _zClimbing = new bool[zm.Windows.Count];

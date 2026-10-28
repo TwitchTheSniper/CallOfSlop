@@ -384,7 +384,10 @@ public sealed partial class Game
     {
         _pendingInputs.Add(cmd);
         if (Local is { Alive: true } me)
+        {
             World.Simulate(ref me.Sim, cmd);
+            ZBlockPlayer(me, ref me.Sim); // (as ClientTickStep)
+        }
     }
 
     /// <summary>Self-test: a snapshot's acknowledged state arriving on a client (the reconciliation it triggers).</summary>

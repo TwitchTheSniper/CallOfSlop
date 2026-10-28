@@ -968,6 +968,38 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
   costs nothing more and a dismembered one 1 byte. A limb coming off sends the zombie at once (like a death). Clients throw
   each limb's gore once when its bit first appears; a zombie first heard of already without limbs throws none.
 
+## Zombie bodies (developer request, 2026-10-27)
+
+Zombies are solid to players, so a horde is a wall and you can't run through it (`Source/Game/ZombieBlock.cs`,
+self-test section "Zombie bodies").
+
+- **The collider.** Each zombie that isn't dead is an upright cylinder at its feet: radius 0.35 m (a little under a
+  player's 0.4 m), as tall as a standing player (1.8 m). A crawler (no legs, see Dismemberment) is a low cylinder,
+  0.6 m tall, so a jump clears it. Zombies climbing through a window or on the bell tower's face count too.
+- **Players.** After each tick of a player's movement the body is pushed out of every cylinder it overlaps, at most
+  0.3 m a tick, and the part of its velocity going into a zombie is taken away. So a sprint into a horde stops at the
+  bodies, a single zombie is slid round, and a gap of about 1.5 m between zombie centres lets you squeeze through
+  (zombies keep about 0.9 m apart, so a packed horde has no gaps).
+- **Never trapped.** A push that would put the body into a wall is cut to one axis or dropped. A player more than
+  halfway into a zombie (one that rose or climbed in right on them) is only pushed out and never held, so they can
+  always walk out.
+- **Heads.** Landing on a zombie's head slides you off: the cylinder pushes sideways while your feet are below its top.
+  There is no standing on the horde.
+- **Downed players** neither block nor are blocked.
+- **Zombies.** A walking zombie is held off standing players in the same way (server only). So a chasing horde stops
+  at your body instead of shoving you, and zombies standing still don't push. Their reach (1.25 m plus your radius) is
+  longer than the contact distance (0.75 m), so swipes still land.
+- **Bots** (co-op bots are players) are blocked like people. The nav graph doesn't know about zombies, and the
+  stuck watch handles the rest.
+- **Prediction.** The client runs the same push after each predicted tick and after each replayed tick. It uses the
+  newest position each zombie had in `ZEnts`, quantised to 3 cm, so there is no wire change. A packed horde stands
+  still, so prediction and the server agree to within a few centimetres; with moving zombies the usual smoothing
+  covers the difference.
+- **Cost.** A uniform grid of the bodies is rebuilt each tick (counting sort, no allocation). With 600 zombies the
+  rebuild plus four players' pushes measured about 0.03 ms a tick. The 600-zombie horde tick went from about 1.97 to
+  2.1 ms.
+- **Not covered.** Co-op (PvE) enemies run their own movement and aren't blocked (they're few and they shoot).
+
 ## Sound (zombie voices and footsteps, 2026-10-26)
 
 Before this zombies only borrowed generic sounds (a melee hit when they strike you, a flesh hit when shot, wood
