@@ -1,6 +1,6 @@
 {
   "format": "call-of-slop-prop/1",
-  "name": "Wall Torch",
+  "name": "Iron Torch",
   "category": "Lighting",
   "description": "A burning torch in an iron bracket. Its back is at -Z: put it against a wall and lift it with y. It lights lit maps.",
   "collision": "cosmetic",

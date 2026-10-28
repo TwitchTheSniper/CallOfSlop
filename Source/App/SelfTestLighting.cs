@@ -26,7 +26,7 @@ public static partial class SelfTest
             { "op": "LightSource", "x": 0, "y": 2, "z": 0, "color": [1, 1, 1], "intensity": {{intensity.ToString(System.Globalization.CultureInfo.InvariantCulture)}}, "range": 8 },
             { "op": "LightSource", "x": 0, "y": 6, "z": 10, "color": [1, 0.9, 0.8], "type": "spot", "pitch": 90, "cone": 30, "range": 9, "intensity": 2 },
             { "op": "LightSource", "x": -10, "y": 2, "z": 10, "color": [0.6, 0.7, 1], "type": "area", "yaw": 90, "pitch": 0, "w": 1.5, "d": 1.5, "range": 6, "intensity": 2 },
-            { "op": "Prop", "name": "Wall Torch", "x": 10, "z": 10, "y": 2, "yaw": 90 },
+            { "op": "Prop", "name": "Iron Torch", "x": 10, "z": 10, "y": 2, "yaw": 90 },
             { "op": "Spawn", "x": 12, "z": -12 },
             { "op": "Spawn", "x": -12, "z": 12 }
           ]
@@ -98,9 +98,9 @@ public static partial class SelfTest
         Line($"spot: {inCone:0.000} in the cone, {outCone:0.0000} outside; area: {front:0.000} in front, {behind:0.0000} behind");
 
         // ---- Prop lights: turned with the prop, only on lit maps, and the option turns them off ----
-        var torch = Props.Find("Wall Torch");
+        var torch = Props.Find("Iron Torch");
         if (torch == null || torch.Lights.Length != 1)
-            Fail("Baked lighting: the Wall Torch prop carries no light");
+            Fail("Baked lighting: the Iron Torch prop carries no light");
         else
         {
             var placed = m.BakeLights().LastOrDefault();
@@ -110,7 +110,7 @@ public static partial class SelfTest
             if (LightSceneMap(propLights: false).BakeLights().Count != 3)
                 Fail("Baked lighting: \"propLights\": false still bakes the props' lights");
         }
-        var plain = MapFile.Load("""{ "name": "Unlit", "halfX": 8, "halfZ": 8, "ops": [ { "op": "Ground", "color": [0.5, 0.5, 0.5] }, { "op": "Prop", "name": "Wall Torch", "x": 0, "z": 0, "y": 2 }, { "op": "Spawn", "x": 3, "z": 3 } ] }""", "Dev/Unlit.json", "");
+        var plain = MapFile.Load("""{ "name": "Unlit", "halfX": 8, "halfZ": 8, "ops": [ { "op": "Ground", "color": [0.5, 0.5, 0.5] }, { "op": "Prop", "name": "Iron Torch", "x": 0, "z": 0, "y": 2 }, { "op": "Spawn", "x": 3, "z": 3 } ] }""", "Dev/Unlit.json", "");
         plain.Validate();
         if (plain.IsLit || plain.LightBake != null)
             Fail("Baked lighting: a map with a lit prop but no LightSource or BakedLighting op got a light bake (it must look as before)");

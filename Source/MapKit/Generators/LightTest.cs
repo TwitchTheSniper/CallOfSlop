@@ -49,9 +49,9 @@ public sealed class LightTest : IMapGenerator
 
         // The chandelier over the nave, torches down both long walls (backs to the wall).
         k.Prop("Chandelier", -5, -2, y: 7 - 1.2);
-        Lights.Fittings(k, "Wall Torch", -12, -7.6, 4, -7.6, 4, y: 2.2, yaw: 0);
-        Lights.Fittings(k, "Wall Torch", -12, 3.6, -6, 3.6, 6, y: 2.2, yaw: 180);
-        k.Prop("Wall Torch", 4, 3.6, y: 2.2, yaw: 180);
+        Lights.Fittings(k, "Iron Torch", -12, -7.6, 4, -7.6, 4, y: 2.2, yaw: 0);
+        Lights.Fittings(k, "Iron Torch", -12, 3.6, -6, 3.6, 6, y: 2.2, yaw: 180);
+        k.Prop("Iron Torch", 4, 3.6, y: 2.2, yaw: 180);
 
         // Stained glass: coloured light falling in through the west windows (they face west, the light shines east).
         Lights.Window(k, -13.9, 4.25, -5, 1.6, 2.5, 90, "#6f8cff", intensity: 1.2);
