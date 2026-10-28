@@ -418,7 +418,13 @@ spawner, stair or wall buy, every slot category present). An original gothic cat
 112 m (the precinct about 104 x 60), on five levels: the dungeons (2 m), the crypt and ossuary (7), the ground (12),
 the galleries and organ loft (18) and the roof walk and ringing chamber (22.8), with the belfry at 30. (The whole map is
 built at ground 0 and lifted 12 m, because a map without terrain keeps players above -5 m and counts anything under the
-ground as fallen.) Plan PNGs per level: `--gen-plan` with `--level y0,y1` (docs/mapkit/MAPKIT.md).
+ground as fallen.) Architectural detail (board item cd01, 2026-10-28; `AshgraveCathedral.Detail.cs`): responds at a bay
+rhythm carry quadripartite rib vaults with bosses in the nave, aisles, transept, choir, Lady Chapel, crypt and ossuary;
+plinths, string courses and cornices divide the walls; blind arcades, niches (saints, candles, reliquaries), wall tombs,
+plaques and banners fill the bays; the windows get frames and surrounds; the vestry, chapter house and dungeons get
+timber beams or coffers and transverse arches; a chequered band runs up the processional way, ledger stones lie in the
+floors. All of it is looks only (the props in `Props/Gothic`, ribs and mouldings as meshes) except three wall tombs
+placed through the layout check; the nav graph is unchanged. Plan PNGs per level: `--gen-plan` with `--level y0,y1` (docs/mapkit/MAPKIT.md).
 
 | Area | Way in (price) | What's there |
 | --- | --- | --- |

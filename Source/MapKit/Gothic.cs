@@ -43,7 +43,8 @@ public static class Gothic
         // The box's local X runs along the piece: roll lifts it, then yaw turns it (a yaw of a turns +X to (cos a, -sin a)).
         var yaw = horiz < 1e-9 ? 0 : Math.Atan2(-dz, dx) * 180 / Math.PI;
         var roll = Math.Atan2(dy, horiz) * 180 / Math.PI;
-        k.MeshAt("box", (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, color, yaw: Kit.R(yaw, 2), roll: Kit.R(roll, 2), width: Kit.R(len + thick * 0.5),
+        // (Lengths in steps of 0.25 m, centred on the run, so the pieces of every rib share a few meshes: one draw call each.)
+        k.MeshAt("box", (x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2, color, yaw: Kit.R(yaw, 2), roll: Kit.R(roll, 2), width: Quant(len + thick * 0.5),
             height: thick, depth: depth, material: material);
     }
 
@@ -106,16 +107,30 @@ public static class Gothic
         }
     }
 
+    /// <summary>A length rounded up to the next 0.25 m (pieces of the same size are one instanced mesh).</summary>
+    public static double Quant(double len) => Math.Ceiling(len / 0.25 - 1e-6) * 0.25;
+
+    /// <summary>
+    /// A band from s0 to s1 laid as standard pieces (2 m, or 1, 0.5 or 0.25 m for a short run), the last one pulled back
+    /// to end at s1 (overlapping the one before: the same stone), so every band on a map shares a few meshes.
+    /// </summary>
     static void Band(Kit k, bool alongX, double face, int facing, double s0, double s1, double y, double h, double d, Color color)
     {
         var c = face + facing * (d / 2 - 0.02);
-        if (alongX)
-            k.MeshAt("box", (s0 + s1) / 2, y + h / 2, c, color, width: s1 - s0, height: h, depth: d + 0.04, material: "Concrete");
-        else
-            k.MeshAt("box", c, y + h / 2, (s0 + s1) / 2, color, width: d + 0.04, height: h, depth: s1 - s0, material: "Concrete");
+        var r = s1 - s0;
+        var q = r >= 2 ? 2.0 : r >= 1 ? 1.0 : r >= 0.5 ? 0.5 : 0.25;
+        var n = Math.Max(1, (int)Math.Ceiling(r / q - 1e-6));
+        for (var i = 0; i < n; i++)
+        {
+            var a = Math.Min(s0 + i * q, s1 - q) + q / 2;
+            if (alongX)
+                k.MeshAt("box", a, y + h / 2, c, color, width: q, height: h, depth: d + 0.04, material: "Concrete");
+            else
+                k.MeshAt("box", c, y + h / 2, a, color, width: d + 0.04, height: h, depth: q, material: "Concrete");
+        }
     }
 
-    /// <summary>The pieces of [a0, a1] outside the gaps (pieces under 0.15 m dropped).</summary>
+    /// <summary>The pieces of [a0, a1] outside the gaps (pieces under 0.25 m dropped).</summary>
     public static List<(double A0, double A1)> Runs(double a0, double a1, IEnumerable<(double A0, double A1)>? gaps)
     {
         var runs = new List<(double A0, double A1)> { (a0, a1) };
@@ -134,7 +149,7 @@ public static class Gothic
             }
             runs = next;
         }
-        return runs.Where(r => r.A1 - r.A0 >= 0.15).ToList();
+        return runs.Where(r => r.A1 - r.A0 >= 0.25).ToList();
     }
 
     /// <summary>
