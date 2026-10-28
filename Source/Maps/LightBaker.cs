@@ -251,14 +251,18 @@ public static class LightBaker
     /// <summary>Luminance weights for "how bright" (direction and flicker shares are weighted by it).</summary>
     private static readonly Vector3 Lum = new(0.2126f, 0.7152f, 0.0722f);
 
-    /// <summary>The smooth falloff: 1 at the light, 0 at <paramref name="range"/> (<c>(1 - (d/r)^2)^2</c>).</summary>
+    /// <summary>
+    /// The falloff: 1 at the light, 0 at <paramref name="range"/>: an inverse-square-like core (pools of light, not flat
+    /// washes) times a smooth window so it reaches nothing past the range, <c>(1 - (d/r)^2)^2 / (1 + 8 (d/r)^2)</c>
+    /// (about 0.59 a quarter of the way out, 0.19 half way, 0.03 at three quarters).
+    /// </summary>
     public static float Falloff(float dist, float range)
     {
         if (dist >= range)
             return 0f;
         var q = dist / range;
         var a = 1f - q * q;
-        return a * a;
+        return a * a / (1f + 8f * q * q);
     }
 
     private static void Cell(LightBake bake, int idx, Vector3 p, Tracer tr, MapLight[] lights, LightBins bins, LightingSpec spec, Vector3 sunDir, float skyVis)

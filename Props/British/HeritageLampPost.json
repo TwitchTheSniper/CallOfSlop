@@ -318,5 +318,8 @@
    ],
    "color": "#7a6a2a"
   }
- ]
+ ],
+  "lights": [
+    {"pos": [0, 4.17, 0], "color": "#ffe0a0", "intensity": 1.8, "range": 12}
+  ]
 }

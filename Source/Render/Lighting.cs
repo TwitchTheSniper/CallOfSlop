@@ -116,6 +116,71 @@ public static unsafe class Lighting
             return albedo * (amb + uSunColor * diff);
         }
 
+        // ---- Baked lighting (docs/render/LIGHTING.md, Source/Render/LightGrid.cs) ----
+        // The map's light grid as three 3D textures, and one block of per-pass values shared by every program.
+        layout(std140) uniform LitFrame
+        {
+            vec4 uLitMode;   // x: 0 classic light, 1 the grid at the pixel, 2 the probe below (first-person gun); y: time; z: normal offset; w: dynamic lights
+            vec4 uLitOrigin; // the grid's min corner
+            vec4 uLitScale;  // 1 / the grid's size
+            vec4 uProbeA;    // mode 2: light rgb, flicker share
+            vec4 uProbeB;    // mode 2: light direction (view space), ambient
+            vec4 uProbeC;    // mode 2: sun, flicker phase
+            vec4 uDynPos[4]; // dynamic lights: position, range
+            vec4 uDynCol[4]; // colour * intensity
+        };
+        uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
+        uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
+        uniform sampler3D uLitC; // r: sun reaching the cell, g: flicker phase
+        float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
+
+        float LitFlicker(float t, float phase)
+        {
+            float x = t * 7.3 + phase * 6.2831853; // (one cycle across the phase: neighbouring flames' phases blend smoothly)
+            return 0.5 + 0.25 * sin(x) + 0.15 * sin(x * 2.17 + 1.3) + 0.1 * sin(x * 5.03 + 4.1);
+        }
+
+        // ApplyLight plus the baked light at world position p (mode 0: exactly ApplyLight).
+        vec3 ApplyLightAt(vec3 albedo, vec3 n, float wrap, vec3 p)
+        {
+            gLitAmb = 1.0;
+            if (uLitMode.x < 0.5)
+                return ApplyLight(albedo, n, wrap);
+            vec4 a;
+            vec4 b;
+            vec2 c;
+            if (uLitMode.x < 1.5)
+            {
+                vec3 uvw = (p + n * uLitMode.z - uLitOrigin.xyz) * uLitScale.xyz;
+                a = texture(uLitA, uvw);
+                b = texture(uLitB, uvw);
+                c = texture(uLitC, uvw).rg;
+            }
+            else
+            {
+                a = uProbeA;
+                b = uProbeB;
+                c = uProbeC.xy;
+            }
+            gLitAmb = b.w;
+            float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
+            vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
+            vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
+            float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0) * c.r;
+            float facing = (1.0 - min(length(b.xyz), 1.0)) * 0.6 + max((dot(n, b.xyz) + wrap) / (1.0 + wrap), 0.0);
+            vec3 lit = a.rgb * facing * (1.0 - a.a * 0.6 * LitFlicker(uLitMode.y, c.g));
+            int nd = uLitMode.x < 1.5 ? int(uLitMode.w + 0.5) : 0;
+            for (int i = 0; i < nd; i++) // at most 4 (LightGrid.MaxDynamic)
+            {
+                vec3 l = uDynPos[i].xyz - p;
+                float d = length(l);
+                float q = clamp(d / uDynPos[i].w, 0.0, 1.0);
+                float f = (1.0 - q * q) * (1.0 - q * q);
+                lit += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
+            }
+            return albedo * (amb + uSunColor * diff + lit);
+        }
+
         // The sky's colour in direction d (unit) without sun, moon, stars or clouds (SkySettings.Gradient in C#).
         vec3 SkyGradient(vec3 d)
         {
@@ -168,6 +233,7 @@ public static unsafe class Lighting
         program.Use();
         if (!Programs.Contains(program.Id))
             Programs.Add(program.Id);
+        LightGrid.Register(program); // the baked light's block and textures (LightGrid.cs)
         Send(program.Id, Current);
         // A neutral sky until the first SetFog, so menus drawn before any map (gun previews) aren't tinted.
         Native.glUniform3f(Loc(program.Id, "uFog\0"u8), DefaultSky.X, DefaultSky.Y, DefaultSky.Z);
@@ -231,7 +297,7 @@ public static unsafe class Lighting
 
     /// <summary>The uniform names <see cref="Glsl"/> declares (the self-test checks the shader and the C# agree); the array uOuterR is apart.</summary>
     public static readonly string[] UniformNames =
-        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog"];
+        ["uSunDir", "uSunColor", "uAmbSky", "uAmbGround", "uSkyTint", "uFogMax", "uCam", "uFog", "uFogRange", "uSkyFog", "uSkyZenith", "uSkyHorizon", "uSkyGround", "uSkyHazeDir", "uSkyHaze", "uOuterFog", "uLitA", "uLitB", "uLitC"];
 
     /// <summary>
     /// C# mirror of <see cref="Glsl"/>'s SkyGradient under <paramref name="l"/> (the self-test checks horizons with it).

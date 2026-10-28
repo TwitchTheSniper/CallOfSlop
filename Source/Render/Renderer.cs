@@ -100,7 +100,7 @@ public sealed unsafe class Renderer
 
             // Hemisphere ambient + sun, plus a little rim light on the sides so box edges read.
             float rim = 0.12 * (1.0 - abs(n.y));
-            col = ApplyLight(col, n, 0.0) + col * rim;
+            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             // Distance haze towards the sky colour, so big maps fade out instead of ending abruptly.
             FragColor = vec4(ApplyFog(col, vWorld), uColor.a);
         }
@@ -196,6 +196,7 @@ public sealed unsafe class Renderer
         Enable(GlCapability.DepthTest);
         Native.glDisable(GlCapability.Blend);
         _blendOn = false;
+        LightGrid.Off(); // each frame starts with the classic light; the world pass turns a lit map's grid on (LightGrid.cs)
     }
 
     public void SetCamera(Matrix4x4 view, Matrix4x4 proj)

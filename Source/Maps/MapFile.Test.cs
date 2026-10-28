@@ -19,6 +19,7 @@ public sealed class MapTestSpec
         "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricHills", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
         "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
         "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "maxStuckSpots", "spawnsStand", "propsInside", "propsClear", "explosivesClear", "events",
+        "lightProbes",
     ];
 
     /// <summary>"any" (the default), "non-rectangular", or a boundary shape: "rect", "circle", "ellipse", "smooth", "polygon".</summary>
@@ -63,6 +64,12 @@ public sealed class MapTestSpec
 
     /// <summary>Deck probes: (name, x, z, y): the floor at (x, z) is at y (within 0.1 m) and the nav graph's main area reaches it.</summary>
     public (string Name, float X, float Z, float Y)[] Probes = [];
+
+    /// <summary>
+    /// Baked light probes (Maps/README.md "Lighting"): the static light's brightness (luminance of the baked colour, as a
+    /// surface facing it sees it) at each point must be at least Min and at most Max. The map must be lit.
+    /// </summary>
+    public (Vector3 At, float? Min, float? Max)[] LightProbes = [];
 
     /// <summary>The fall kill: a player dropped at Drop dies within 4 s; one put at Safe stands and lives.</summary>
     public (Vector3 Drop, Vector3 Safe)? FallKill;
@@ -162,6 +169,27 @@ public sealed class MapTestSpec
                         if (pr.ValueKind != JsonValueKind.Array || pr.GetArrayLength() != 4 || pr[0].ValueKind != JsonValueKind.String)
                             throw new MapFileException($"{pa}: [\"name\", x, z, y]");
                         return (pr[0].GetString()!, Float(pr[1], pa), Float(pr[2], pa), Float(pr[3], pa));
+                    }).ToArray();
+                    break;
+                case "lightProbes":
+                    if (v.ValueKind != JsonValueKind.Array)
+                        throw new MapFileException($"{at}: a list of {{ \"at\": [x, y, z], \"min\": 0.2, \"max\": 2 }} probes");
+                    s.LightProbes = v.EnumerateArray().Select((pr, i) =>
+                    {
+                        var pa = $"{at}[{i}]";
+                        if (pr.ValueKind != JsonValueKind.Object || !pr.TryGetProperty("at", out var pat) || pat.ValueKind != JsonValueKind.Array || pat.GetArrayLength() != 3)
+                            throw new MapFileException($"{pa}: {{ \"at\": [x, y, z], \"min\": ..., \"max\": ... }}");
+                        float? lo = null, hi = null;
+                        foreach (var q in pr.EnumerateObject())
+                            if (q.Name.Equals("min", StringComparison.OrdinalIgnoreCase))
+                                lo = Float(q.Value, pa);
+                            else if (q.Name.Equals("max", StringComparison.OrdinalIgnoreCase))
+                                hi = Float(q.Value, pa);
+                            else if (!q.Name.Equals("at", StringComparison.OrdinalIgnoreCase))
+                                throw new MapFileException($"{pa}: unknown key \"{q.Name}\" (at, min, max)");
+                        if (lo == null && hi == null)
+                            throw new MapFileException($"{pa}: give \"min\", \"max\" or both");
+                        return (new Vector3(Float(pat[0], pa), Float(pat[1], pa), Float(pat[2], pa)), lo, hi);
                     }).ToArray();
                     break;
                 case "fallKill":

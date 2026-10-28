@@ -118,7 +118,8 @@ public static unsafe partial class Program
 
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
-        if (args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
+        if (_shotTool || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
@@ -179,7 +180,10 @@ public static unsafe partial class Program
                 StartSession(LobbyAction.Join);
             }
 
-            RunLoop();
+            if (_shotTool)
+                RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
+            else
+                RunLoop();
         }
         catch (Exception ex)
         {
@@ -193,7 +197,7 @@ public static unsafe partial class Program
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_shotTool) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
@@ -1351,6 +1355,8 @@ public static unsafe partial class Program
     {
         var map = World.Map;
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
+        (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
+        LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs,
         // Program.Buildings.cs). Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
         if (!BuildingGfx.Draw(map, Gfx, Glfw.Time))
@@ -1925,6 +1931,7 @@ public static unsafe partial class Program
         var view = Matrix4x4.CreateLookAt(eye, eye + fwd, camUp);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(fov, w / h, 0.05f, World.Map.FarPlane);
         Gfx.SetCamera(view, proj);
+        _worldEye = eye; // the first-person gun samples the baked light here (LightGrid.BeginViewModel)
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
         UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
 
@@ -1932,6 +1939,7 @@ public static unsafe partial class Program
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
         ScenePresentation.BeginFrame(MeshGfx);
         UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
+        AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
         DrawArena();
         DrawRagdollsFallback();
 
@@ -2235,9 +2243,12 @@ public static unsafe partial class Program
     private static bool _camUpAlive;
     private static Map? _camUpMap;
 
+    private static Vector3 _worldEye;
+
     private static void DrawViewModel(double now, Matrix4x4 proj)
     {
         Gfx.ClearDepthBuffer();
+        LightGrid.BeginViewModel(World.Map, _worldEye, _worldView, now); // the gun is drawn in camera space: lit by one sample at the eye
         // The viewmodel always uses the un-zoomed FOV so the gun doesn't balloon when aiming.
         var fb = _window.FramebufferSize;
         var vmProj = Sights.ViewModelProjection(fb.X / (float)fb.Y);

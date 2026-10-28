@@ -437,5 +437,8 @@
       ],
       "color": "#1f3328"
     }
+  ],
+  "lights": [
+    {"pos": [0, 3.9, 0], "color": "#ffd890", "intensity": 1.8, "range": 12, "flicker": true}
   ]
 }

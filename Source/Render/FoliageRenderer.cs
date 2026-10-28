@@ -122,7 +122,7 @@ public sealed unsafe class FoliageRenderer
             float t = Bayer(px);
             if (uMat.x < 0.5 ? t < vLod : t >= vLod)
                 discard;
-            vec3 col = ApplyLight(vColor, normalize(vNormal), uMat.z);
+            vec3 col = ApplyLightAt(vColor, normalize(vNormal), uMat.z, vWorld);
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;

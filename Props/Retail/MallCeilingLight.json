@@ -9,5 +9,8 @@
     {"size": [1.5, 0.03, 0.5], "offset": [0, 0.02, 0], "color": "#ffffff", "anim": {"type": "pulse", "period": 6, "color": "#fffbf0", "off": "#b7b4ac", "glow": 1.1}},
     {"size": [0.03, 0.6, 0.03], "offset": [-0.6, 0.39, 0], "color": "#606068"},
     {"size": [0.03, 0.6, 0.03], "offset": [0.6, 0.39, 0], "color": "#606068"}
+  ],
+  "lights": [
+    {"pos": [0, -0.03, 0], "color": "#ffffff", "intensity": 1.6, "range": 9, "type": "area", "w": 1.5, "d": 0.5}
   ]
 }

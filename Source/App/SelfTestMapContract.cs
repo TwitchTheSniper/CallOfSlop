@@ -600,6 +600,29 @@ public static partial class SelfTest
                 return $"{t.Probes.Length} probes at {ys.Min():0.0}-{ys.Max():0.0} m, floor and nav where expected";
             });
 
+        // Baked light probes (Maps/README.md "Lighting"): bright where the lights are, dark where they aren't.
+        if (t.LightProbes.Length > 0)
+            MapCheck("light probes", verbose, () =>
+            {
+                if (m.LightBake is not { } lb)
+                {
+                    Fail($"{m.Name}: \"lightProbes\" given but the map isn't lit (no LightSource or BakedLighting op)");
+                    return "not lit";
+                }
+                var bad = new List<string>();
+                var seen = new List<string>();
+                foreach (var (at, lo, hi) in t.LightProbes)
+                {
+                    var v = LightProbe(lb, at);
+                    seen.Add($"{v:0.00}");
+                    if (lo is { } a && v < a || hi is { } b && v > b)
+                        bad.Add($"({at.X:0.#},{at.Y:0.#},{at.Z:0.#}): {v:0.00}, expected {(lo is { } a2 ? $">= {a2:0.00}" : "")}{(lo != null && hi != null ? " and " : "")}{(hi is { } b2 ? $"<= {b2:0.00}" : "")}");
+                }
+                if (bad.Count > 0)
+                    Fail($"{m.Name}: baked light probes out of range: {string.Join("; ", bad.Take(6))}");
+                return $"{t.LightProbes.Length} probes ({string.Join(", ", seen)}); grid {lb.NX}x{lb.NY}x{lb.NZ} at {lb.Cell:0.##} m, {lb.Sources.Length} lights, baked in {lb.BakeMs:0} ms";
+            });
+
         // The horizon (the all-maps "Map horizons" section's per-map check, here too so a focused run sees it).
         MapCheck("horizon", verbose, () =>
         {
@@ -763,5 +786,12 @@ public static partial class SelfTest
             Fail($"{m.Name}: a {t.BotMatchMode} server tick did {cpu.WorstMs:0.0} ms of work (over {MaxTickWorkMs} ms; {cpu.WorstDetail})");
         m.RestoreProps();
         return text;
+    }
+
+    /// <summary>A light probe's value: the luminance of the static baked light at <paramref name="at"/> (as a surface facing it sees it).</summary>
+    public static float LightProbe(LightBake lb, Vector3 at)
+    {
+        lb.Sample(at, out var light, out _, out _);
+        return light.X * 0.2126f + light.Y * 0.7152f + light.Z * 0.0722f;
     }
 }

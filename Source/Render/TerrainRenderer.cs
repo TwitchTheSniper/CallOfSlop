@@ -61,7 +61,7 @@ public sealed unsafe class TerrainRenderer
                      + texture(uTex, vec3(vWorld.xy * 0.25, uRockLayer)).r * w.z;
             }
             vec3 col = vColor.rgb * mix(ground, rock, vColor.a) * 1.25;
-            FragColor = vec4(ApplyFog(ApplyLight(col, n, 0.0), vWorld), 1.0);
+            FragColor = vec4(ApplyFog(ApplyLightAt(col, n, 0.0, vWorld), vWorld), 1.0);
         }
         """;
 
