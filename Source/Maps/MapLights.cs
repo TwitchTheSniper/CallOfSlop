@@ -22,7 +22,7 @@ public enum MapLightType : byte
 /// </summary>
 /// <param name="Pos">Where it is (for an area light, the rectangle's centre).</param>
 /// <param name="Color">Its colour (0-1 each), times nothing: <see cref="Intensity"/> is apart.</param>
-/// <param name="Intensity">How bright: 1 lights a white wall facing it at its centre about as much as full sun does.</param>
+/// <param name="Intensity">How bright: at 1 a white surface right by it is lit about twice as brightly as by full sun; the light falls off from there to nothing at <see cref="Range"/>.</param>
 /// <param name="Range">Metres: the light fades to nothing here (a smooth curve, no hard edge).</param>
 /// <param name="Dir">Spot and area: the unit direction it shines in (area: the side of the rectangle that glows).</param>
 /// <param name="CosOuter">Spot: cosine of half the cone angle (outside: no light).</param>
