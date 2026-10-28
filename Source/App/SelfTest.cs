@@ -79,6 +79,7 @@ public static partial class SelfTest
         }
         Brutal.GlfwApi.Glfw.Init(); // only for the clock (Glfw.Time); no window is created
         SavePaths.UseFolder(SelfTestSaveFolder, "self-test"); // never the real save folder (SelfTestSaves.cs)
+        BlueprintStore.ReadOnly = true; // the blueprint library is only written by its own section, into a temp folder
         NavBake.Enabled = false; // every nav graph built live, whatever an earlier run cached ("Nav bake" turns it on in a temp folder)
         MapBake.Enabled = false; // every map built live too, and nothing cached ("Map bake" turns both on in a temp folder)
         MapBake.CacheWrites = false;
@@ -338,6 +339,7 @@ public static partial class SelfTest
         Section("Workbench hidden categories", CheckWorkbenchHideCats); // SelfTestWorkbenchHideCats.cs: categories nothing fits are hidden, fallback to All, receiver brings them back, toggle shows all
         Section("Workbench grip list", CheckWorkbenchGrips); // SelfTestWorkbenchGrips.cs: "Show all grips" off = owned grips, on = every grip (unowned flagged, locked in Zombies), setting, no allocations
         Section("Workbench refused build", CheckWorkbenchRefused); // SelfTestWorkbenchRefused.cs: Build on an incomplete weapon marks exactly the required empty sockets (red rings), they clear as filled, no allocations
+        Section("Workbench blueprints", CheckWorkbenchBlueprints); // SelfTestBlueprints.cs: the blueprint library (blueprints.txt, temp folder only): migration of the old slots once, edits round-trip and survive a restart, kinds, removed parts dropped, Zombies loads fill only owned parts and mark the rest (red rings), no allocations
         Section("Workbench row names", CheckWorkbenchNames); // SelfTestWorkbenchNames.cs: the list names each row by its own socket and part after opening builds in turn (unique model versions), every receiver with every socket filled
         Section("Part library", CheckPartLibrary); // SelfTestPartLibrary.cs: registry, fragments, extends, checks, normaliser, hot reload
         Section("Part coverage", CheckPartCoverage); // SelfTestPartCoverage.cs: 3+ feeds per bore (2 common/uncommon), universal ammo on every calibre, 3+ parts per category
@@ -349,16 +351,20 @@ public static partial class SelfTest
         Section("Zombies category slots", CheckZombiesCategorySlots); // SelfTestZombiesCategorySlots.cs: a machine per part category: only its own parts, its own heat, prices, jackpot, distinct cabinets, the win every client sees
         Section("Zombies casino", CheckZombiesCasino); // SelfTestZombiesCasino.cs: casino tables: payout tables and house edges, blackjack dealer rules, roulette coverage, high-low and dice replays, points never negative, forfeits, the client copy, no allocation
         Section("Zombies slots", CheckZombiesSlots); // SelfTestZombiesSlots.cs: slot machines: the odds by round, heat, jackpot rounds, the reels, payouts, bad-luck protection, pull again at once after a loss, the network copy
+        Section("Zombies slot consolation", CheckZombiesSlotConsolation); // SelfTestZombiesSlotConsolation.cs: a blank pays a consolation part (tier by bet, never nothing, heat kept, client copy); unlimited banked parts (300 copies, every kind on the wire)
         Section("Zombies no scrap", CheckZombiesNoScrap); // SelfTestZombiesNoScrap.cs: no scrap left in the code or tables, old files still load, salvage piles give parts, a seeded run never mentions scrap
         Section("Zombies more perks", CheckZombiesMorePerks); // SelfTestZombiesMorePerks.cs: 12 perks, each on sale at its own machine (both maps), the doubling price, each new perk's effect, lost on down, the wire, no allocation
         Section("Zombies bot shopping", CheckZombiesBotShop); // SelfTestZombiesBotShop.cs: co-op bots spend their points (priorities, reserve, back at their post, safety, revives first, deterministic, no allocation)
+        Section("Zombies box free for all", CheckZombiesBoxGrab); // SelfTestZombiesBoxGrab.cs: the box offer's last seconds are anyone's: the window from the rules, reserved early, free late, one winner in a tick and no accidental spin, the buyer late, a client, co-op bots
         Section("Zombie bots shoot", CheckZombieBotsShoot); // SelfTestZombieBotsShoot.cs: co-op bots fire, hit, kill and reload with the start gun, a bought gun and after a reload
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations
         Section("Zombie dismemberment", CheckZombieLimbs); // SelfTestZombieLimbs.cs: limb hits route to limbs, severing (shotgun, blast), one arm / no arms / one leg / crawler movement and attacks, the crawler hit box, a mixed horde keeps going, the gore cap, client sync, poses, no allocations
         Section("Zombie sounds", CheckZombieSounds); // SelfTestZombieSounds.cs: zombie voices and footsteps: synthesis, mixer rows, events, voice caps with a horde, no allocations, the head bit over the network
         Section("Zombie hordes", CheckZombieHordes); // SelfTestZombieHordes.cs: 24/100/300-zombie hordes on Blackmoor: tick cost, allocations, snapshot bytes, client cost; the alive curve; the horde controller
+        Section("Zombies player scaling", CheckZombiesPlayerScaling); // SelfTestZombiesPlayerScaling.cs: round totals and alive caps for 1-4 players, a join mid-round raises them at once, a leave lowers them without ending the round
         Section("Zombies start round", CheckZombiesStartRound); // SelfTestZombiesStartRound.cs: Horde Test, a run started at round 30 with the test kit (economy, fill time, tick cost), the host's round skip, the settings reaching a client
+        Section("Zombies cathedral", CheckZombiesCathedral); // SelfTestZombiesCathedral.cs: Ashgrave Cathedral: the full set on six floors (areas with heights), windows and doors walked, the bell siege (the horde climbs the tower in a pyramid, falls when shot; the reward), a client copy, a replay
         Section("Horde targets", CheckHordeTargets); // SelfTestHordeTargets.cs: a kited horde never turns together to a wrong spot (no false regroup; regrouping only closes up from behind), field drops
         Section("Horde respawn", CheckHordeRespawn); // SelfTestHordeRespawn.cs: the chased player goes down, is revived, bleeds out, respawns, leaves, rejoins (and Second Wind solo): the horde never stalls
         Section("Zombies grenades", CheckZombiesGrenades); // SelfTestZombiesGrenades.cs: the Zombies grenade thrown by the key (host and loopback client) kills a zombie cluster with credit and points, the blast reaction, the per-round refill 1 + floor((round - 1) / 3)

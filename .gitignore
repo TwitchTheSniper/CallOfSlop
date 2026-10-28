@@ -12,6 +12,7 @@ progress*.txt
 settings.txt
 loadout*.txt
 workbench.txt
+blueprints.txt
 appearance.txt
 audio_mix.json
 AudioMixes/

@@ -328,29 +328,47 @@ public sealed partial class Game
     {
         if (p.Id == LocalId || p.Bot != null || Net.IsOffline || GuidOf(p) is not { } g)
             return;
-        WriteZRun(_w, ZP(p));
-        Net.SendTo(g, _w.Span, PacketReliability.ReliableOrdered);
+        WriteZRun(_wRun, ZP(p));
+        Net.SendTo(g, _wRun.Span, PacketReliability.ReliableOrdered);
     }
 
+    /// <summary>Msg.ZRun's own writer: loose parts have no cap (2026-10-27), so every kind a player holds must fit (RakNet splits it).</summary>
+    private readonly PacketWriter _wRun = new(64 * 1024);
+
+    /// <summary>
+    /// Your loose parts: a u16 count of kinds, then each part's name and a u32 count (protocol 71: no cap on how many you
+    /// bank; until 70 it was at most 200 kinds of at most 255 each). Kinds stop only if the writer would overflow.
+    /// </summary>
     private static void WriteZRun(PacketWriter w, ZPlayer zp)
     {
-        w.Begin(Msg.ZRun).U8((byte)Math.Min(zp.Parts.Count, 200));
-        foreach (var (name, n) in zp.Parts.Take(200))
-            w.Str(name).U8((byte)Math.Min(n, 255));
+        w.Begin(Msg.ZRun);
+        var at = w.Length;
+        w.U16(0);
+        var kinds = 0;
+        foreach (var (name, n) in zp.Parts)
+        {
+            if (n <= 0)
+                continue;
+            if (w.Length + 1 + 255 + 4 > w.Capacity || kinds == ushort.MaxValue)
+                break; // (only a hand-made save with thousands of kinds gets here: parts files have far fewer)
+            w.Str(name).U32((uint)n);
+            kinds++;
+        }
+        w.PatchU16(at, (ushort)kinds);
     }
 
     /// <summary>Client: your loose parts (<see cref="Msg.ZRun"/>, after the message id; no scrap since protocol 56).</summary>
     private void ReadZRun(ref PacketReader r)
     {
-        if (!r.Has(1))
+        if (!r.Has(2))
             return;
         var zp = ZP(LocalId);
-        int n = r.U8();
+        int n = r.U16();
         zp.Parts.Clear();
-        for (var i = 0; i < n && r.Has(2); i++)
+        for (var i = 0; i < n && r.Has(1); i++)
         {
             var name = r.Str();
-            var count = r.Has(1) ? r.U8() : 0;
+            var count = r.Has(4) ? (int)Math.Min(r.U32(), int.MaxValue) : 0;
             if (count > 0)
                 zp.Parts[name] = count;
         }
@@ -616,7 +634,7 @@ public sealed partial class Game
             var yaw = yawByte / 256f * MathF.Tau;
             var sb = r.U8();
             var health = r.U8();
-            var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
+            var state = (ZState)(sb & 7); // (7: on a climbable face, protocol 68)
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
             var limbs = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? (byte)(r.U8() & AllLimbs) : (byte)0; // (protocol 65)
             if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)

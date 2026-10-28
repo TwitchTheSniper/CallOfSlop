@@ -36,6 +36,9 @@ public static class BuildStore
 
     private static bool _loaded;
 
+    /// <summary>workbench.txt (or its backup) was there to load: the blueprint library copies its builds in once (<see cref="BlueprintStore"/>).</summary>
+    public static bool FromFile { get; private set; }
+
     private static string PathName => SavePaths.PathOf("workbench.txt");
 
     /// <summary>The <c>version=</c> line written to workbench.txt (files without one load the same).</summary>
@@ -64,6 +67,7 @@ public static class BuildStore
             Melee = BuilderExamples.Melee().Select(m => m.Build).FirstOrDefault();
             return;
         }
+        FromFile = true;
         Load(lines, Parts.Find, out _);
         // Builds saved before actions were parts got their receivers' stock actions as they loaded: save them back.
         // (And builds on a receiver removed for being only a fire rate load on its replacement: save them back too.)

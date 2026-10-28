@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Scriptorium Desk",
+  "category": "Cathedral",
+  "description": "A sloped writing desk with an open book, an inkwell, a candle and a stool.",
+  "collision": "solid",
+  "collider": [{"size": [1.3, 1.2, 0.8]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.3, 0.06, 0.7], "offset": [0, 1.0, 0], "color": "#5b3a20", "rotation": [-18.0, 0.0, 0.0]},
+    {"size": [1.3, 0.8, 0.06], "offset": [0, 0.4, -0.3], "color": "#3b2614"},
+    {"size": [1.3, 0.06, 0.25], "offset": [0, 1.14, -0.3], "color": "#5b3a20"},
+    {"size": [0.07, 0.95, 0.65], "offset": [-0.6, 0.48, 0], "color": "#3b2614"},
+    {"size": [0.07, 0.95, 0.65], "offset": [0.6, 0.48, 0], "color": "#3b2614"},
+    {"size": [0.7, 0.04, 0.48], "offset": [0, 1.06, 0.05], "color": "#e6dfcc", "rotation": [-18.0, 0.0, 0.0]},
+    {"size": [0.02, 0.05, 0.46], "offset": [0, 1.08, 0.05], "color": "#3b2614", "rotation": [-18.0, 0.0, 0.0]},
+    {"size": [0.06, 0.08, 0.06], "offset": [0.5, 1.2, -0.3], "color": "#2c2c30"},
+    {"size": [0.01, 0.16, 0.01], "offset": [0.5, 1.3, -0.28], "color": "#e8e0d0"},
+    {"size": [0.05, 0.14, 0.05], "offset": [-0.5, 1.24, -0.3], "color": "#efe6cc"},
+    {"size": [0.045000000000000005, 0.077, 0.045000000000000005], "offset": [-0.5, 1.35, -0.3], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.5, 0.45, 0.5], "offset": [0, 0.225, 0.55], "color": "#3b2614"}
+  ]
+}

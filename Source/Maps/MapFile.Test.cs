@@ -17,7 +17,7 @@ public sealed class MapTestSpec
         "shape", "area", "size", "maxPlayers", "minProps", "minSolidProps", "minCosmeticProps", "minBreakableProps", "minDecals",
         "minDecalShare", "minMeshes", "minPlants", "minTrees", "maxDrawnBoxes", "minPackProps", "requireProps", "requireDecals",
         "symmetry", "symmetryTolerance", "unpairedSpawns", "symmetricHills", "symmetricProps", "minHills", "minTeamSpawns", "handPlaced",
-        "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
+        "walkFairness", "hillWalks", "maxNavBuildMs", "minMainNavPct", "navPockets", "minNavNodesAbove", "void", "voidAt", "probes", "fallKill",
         "botMatchSeconds", "botMatchMode", "botMatchPlayers", "maxStuckBots", "maxStuckSpots", "spawnsStand", "propsInside", "propsClear", "explosivesClear", "events",
         "lightProbes",
     ];
@@ -56,6 +56,12 @@ public sealed class MapTestSpec
     public string HillWalks = "centre";
     public int MaxNavBuildMs = 3000;
     public int MinMainNavPct = 75;
+
+    /// <summary>
+    /// The map's rooms are nav pockets of their own (a Zombies map with floors and rooms behind closed doors and boarded
+    /// windows: the Cathedral): spawns, objectives and deck probes need a nav node near them, not one on the main area.
+    /// </summary>
+    public bool NavPockets;
     public (float Height, int Count)? MinNavNodesAbove;
 
     /// <summary>A void map (no nav link over the void, nothing below the fall-kill height). Null: fallKill set, no ground slab, no terrain.</summary>
@@ -150,6 +156,7 @@ public sealed class MapTestSpec
                 case "hillWalks": s.HillWalks = Word(v, at, "centre", "zone"); break;
                 case "maxNavBuildMs": s.MaxNavBuildMs = Int(v, at, 0); break;
                 case "minMainNavPct": s.MinMainNavPct = Int(v, at, 0, 100); break;
+                case "navPockets": s.NavPockets = Bool(v, at); break;
                 case "minNavNodesAbove":
                     var above = Numbers(v, at, 2);
                     s.MinNavNodesAbove = (above[0], (int)above[1]);

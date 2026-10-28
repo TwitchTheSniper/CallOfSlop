@@ -547,6 +547,7 @@ Positions are world coordinates, `[x, y, z]` (or `[x, z]` on the ground); a box 
 | `zmachine` | `machine` (`power`, `box`, `perk`, `slotUpgrade`, `slotMachine`, `wallBuy`, `bench`, `salvage`, `casino`), `at` (which one, when there are several) | `used` (a buy went through) | `disable` locks it |
 | `challenge` | `seconds` (to survive), `zone` (a zone or plate its players must stay in; leave it out: anywhere), `who`, `reward` (Zombies points each survivor gets) | `started` (n: how many took it on: everyone alive, standing and in the zone), `survived` (the time ran out with someone still in it; n: how many), `failed` (everyone in it went down, died or left the zone, or `fail`), `ended` (value: survived) | `start`, `stop` / `fail` (it fails), `win` (it's survived now) |
 | `reward` | `points` (Zombies points), `powerUp` (`random`, `maxAmmo`, `instaKill`, `doublePoints`, `nuke`, `carpenter`, `infiniteAmmo`) dropped at `at` | `given` | `give` (points to whoever set it off, and the power-up), `giveAll` (points to everyone standing, and the power-up), `drop` (only the power-up) |
+| `zclimb` | `box` (the foot of the wall the horde climbs: zombies pile up in it), `top` (where they come over: at least 2 m above the box's floor, beside it), `over` (how far past the top they land, 0-6 m: 1.2) | `started` (n: the round), `reached` (the first zombie came over the top), `stopped`, `given` | `start` (Zombies only, during a round: the horde climbs), `stop`, `giveAll` (the climb's reward, from the rules' `"climb"`, to everyone standing) |
 
 Two entities are always there: **`match`** (events `started`, `ended`, `flagTaken` and `flagCaptured` with n the team,
 `hillTaken` (n: the team), `hillMoved` (n: the hill)) and, on maps with a `"zombies"` section, **`zombies`** (events
@@ -582,6 +583,25 @@ runs out with any of them still standing there, and failed when the last of them
 { "type": "text", "name": "Won", "text": "The belfry held." },
 { "type": "text", "name": "Lost", "text": "The belfry fell." }
 ```
+
+**A horde that climbs the tower** (`zclimb`, Ashgrave Cathedral): wire the bell to a `zclimb` as well as the
+challenge. While it runs, zombies at the windows leave them for the foot of the wall (`box`), pile up into a ramp or
+pyramid against it a layer at a time, and the rest climb the pile and then the wall to the `top`, vault the parapet and
+chase whoever is up there; a shot zombie on the pile falls off (and the ones above it move down a place). `started` adds
+the rules' extra zombies to the round. The challenge's `survived` should fire the climb's `giveAll` (the reward is the
+rules' `"climb"` section, scaled by the round), and its `ended` the climb's `stop` (everyone still on the wall falls off
+and goes back to the windows). The climb is the server's; clients see the climbers' positions and a climbing pose.
+
+```json
+{ "type": "button", "name": "Bell", "at": [-28.3, 31.3, -20.25], "yaw": 180, "prompt": "ring the bell", "cooldown": 240,
+  "outputs": { "pressed": "Climb.start" } },
+{ "type": "challenge", "name": "Siege", "seconds": 75, "zone": "Belfry",
+  "outputs": { "survived": "Climb.giveAll", "ended": "Climb.stop" } },
+{ "type": "zclimb", "name": "Climb", "box": [-33.6, 12, -30, -24.4, 14.5, -26.02], "top": [-29, 30, -23.6], "over": 1.6,
+  "outputs": { "started": "Siege.start" } }
+```
+
+(The cathedral's own entities are in its map file, written by its generator's `BellLogic`.)
 
 A `button` can also simply cost points (`"cost": 500`). The power switch can drive the rest of the map: `zombies.power`
 to `Lift.start` and `Shutter.open`; a `zdoor`'s `opened` to a `lamp`; `zombies.roundStarted` with `"when": 5` to a
@@ -1240,6 +1260,7 @@ stops anyone joining.
 | `hillWalks` | `"centre"` | `"zone"`: the walk to a hill ends at the nearest nav node anywhere in the zone at the hill's height (hills on raised decks). |
 | `maxNavBuildMs` | 3000 | The nav graph must build within this (0: not checked). |
 | `minMainNavPct` | 75 | At least this percentage of nav nodes in the main area (pockets bots can't leave fail it). |
+| `navPockets` | false | The map is meant to have pockets (Zombies maps whose doors are shut while the nav graph is built): spawns, objectives and probes need a nav node near them, not one in the main area. |
 | `minNavNodesAbove` | – | `[height, count]`: at least `count` main-area nodes above `height` (the raised floors are on the graph). |
 | `void` | fallKill set, no `Ground`, no terrain | A void map: no nav link crosses the void (floor under every half metre of every link), no nav node below the fall-kill height. Any map with `fallKill` also fails if a nav link leads below it. |
 | `voidAt` | `[]` | `[[x, z], ...]`: open to the void there (no floor from the top of the map down to the fall-kill height). |
@@ -1267,7 +1288,7 @@ the weapon-slot upgrade, the power switch, salvage piles and slot machines. The 
 [docs/zombies/ZOMBIES-MODE.md](../docs/zombies/ZOMBIES-MODE.md) ("Map format"); `Dev/ZombiesTest.json` is a worked
 example and `Zombies/01-BlackmoorAsylum.json` (the **Zombies** pack, written by `tools/zombies/make_blackmoor.py`) a
 full map. With `"machineProps": true` in the section every machine stands as a solid prop from `Props/Zombies`, placed
-by the section itself (leave room for each: see the doc). `"testKit": true` lets the host's Test kit setting act on the map (`Dev/HordeTest.json`, written by the C# map kit, is the big-horde test map). Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
+by the section itself (leave room for each: see the doc). `"testKit": true` lets the host's Test kit setting act on the map (`Dev/HordeTest.json`, written by the C# map kit, is the big-horde test map). `Zombies/02-AshgraveCathedral.json` (written by the C# map kit's `Ashgrave Cathedral` generator) is a map on five levels: its areas have heights (`"y"`) and extra boxes (`"more"`), see the doc. Doors are solid boxes until bought; window openings block bodies but not bullets. The section is written back
 unchanged when a map is saved, and opening doors never changes the map's fingerprint. The doors, debris, power switch and machines can drive and be driven by the map's
 [logic](#map-logic) (`zdoor`, `zmachine` and the built-in `zombies` entity: a bell that calls the horde, the power
 starting a lift).

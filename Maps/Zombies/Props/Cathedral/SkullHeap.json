@@ -1,0 +1,29 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Skull Heap",
+  "category": "Cathedral",
+  "description": "A heap of skulls and long bones (looks only).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.2, 0.19, 0.22], "offset": [0.0, 0.1, 0.42], "color": "#d8cfb4"},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.328, 0.1, 0.262], "color": "#d8cfb4", "rotation": [0.0, 37.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.409, 0.1, -0.093], "color": "#d8cfb4", "rotation": [0.0, 74.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.182, 0.1, -0.378], "color": "#d8cfb4", "rotation": [0.0, 21.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [-0.182, 0.1, -0.378], "color": "#d8cfb4", "rotation": [0.0, 58.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [-0.409, 0.1, -0.093], "color": "#d8cfb4", "rotation": [0.0, 5.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [-0.328, 0.1, 0.262], "color": "#d8cfb4", "rotation": [0.0, 42.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.271, 0.28, 0.07], "color": "#d8cfb4"},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.15, 0.28, -0.236], "color": "#d8cfb4", "rotation": [0.0, 37.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [-0.178, 0.28, -0.216], "color": "#d8cfb4", "rotation": [0.0, 74.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [-0.26, 0.28, 0.103], "color": "#d8cfb4", "rotation": [0.0, 21.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.018, 0.28, 0.279], "color": "#d8cfb4", "rotation": [0.0, 58.0, 0.0]},
+    {"size": [0.2, 0.19, 0.22], "offset": [0.0, 0.45, -0.0], "color": "#d8cfb4"},
+    {"size": [0.5, 0.06, 0.07], "offset": [0.0, 0.04, 0.5], "color": "#d8cfb4"},
+    {"size": [0.5, 0.06, 0.07], "offset": [0.482, 0.04, 0.134], "color": "#d8cfb4", "rotation": [0.0, 47.0, 0.0]},
+    {"size": [0.5, 0.06, 0.07], "offset": [0.258, 0.04, -0.428], "color": "#d8cfb4", "rotation": [0.0, 94.0, 0.0]},
+    {"size": [0.5, 0.06, 0.07], "offset": [-0.344, 0.04, -0.363], "color": "#d8cfb4", "rotation": [0.0, 141.0, 0.0]},
+    {"size": [0.5, 0.06, 0.07], "offset": [-0.442, 0.04, 0.234], "color": "#d8cfb4", "rotation": [0.0, 188.0, 0.0]}
+  ]
+}

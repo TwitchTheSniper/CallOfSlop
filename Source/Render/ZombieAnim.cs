@@ -23,6 +23,13 @@ public enum ZAnimMode : byte
 
     /// <summary>Dead without a ragdoll: tips over backwards (<see cref="ZombieAnimInput.Phase"/>: seconds since it died).</summary>
     Dead,
+
+    /// <summary>
+    /// On a climbable face, facing the wall (ZombiesClimb.cs): <see cref="ZombieAnimInput.Move"/> 0 is a body braced in
+    /// the pyramid (arms up holding the one above, legs set), 1 climbing hand over hand (<see cref="ZombieAnimInput.Gait"/>:
+    /// the climbing cycle, one per 0.9 m climbed).
+    /// </summary>
+    Scaling,
 }
 
 /// <summary>
@@ -339,6 +346,9 @@ public static class ZombieAnim
                 break;
             case ZAnimMode.Rising:
                 RiseTargets(a, look, out t);
+                break;
+            case ZAnimMode.Scaling:
+                ScaleTargets(a, look, out t);
                 break;
             default:
                 if ((a.Limbs & 12) == 12)
@@ -688,6 +698,37 @@ public static class ZombieAnim
         var toRest = Smoothstep(0.66f, 0.9f, r);
         t.HandR = Vector3.Lerp(Vector3.Lerp(upR, plantR, toPlant), restR, toRest);
         t.HandL = Vector3.Lerp(Vector3.Lerp(upL, plantL, toPlant), restL, toRest);
+    }
+
+    /// <summary>
+    /// On a climbable face, facing the wall: braced in the pyramid (arms up over the head holding the one above, legs set
+    /// apart, a slow sway), or climbing (hands reaching up the wall in turn, the opposite foot stepping up with each).
+    /// </summary>
+    private static void ScaleTargets(in ZombieAnimInput a, in ZombieLook look, out ZombieTargets t)
+    {
+        var m = Math.Clamp(a.Move, 0f, 1f);
+        var s = MathF.Sin(a.Gait);
+        var sway = MathF.Sin(a.Time * 1.7f) * 0.05f * (1 - m);
+        t = default;
+        t.Pelvis = new Vector3(sway, PelvisY - 0.1f - 0.06f * m, 0.05f);
+        t.Pitch = 0.18f + 0.12f * m;
+        t.Roll = sway * 0.8f;
+        t.HeadNod = -0.35f + look.HeadNod * 0.3f;
+        t.HeadRoll = look.HeadRoll * 0.5f;
+        // Braced: both hands high, a little forward (on the shoulders of the one above); climbing: one hand up, one down, in turn.
+        var braceR = new Vector3(0.24f, 1.98f, -0.22f);
+        var braceL = new Vector3(-0.24f, 1.98f, -0.22f);
+        var climbR = new Vector3(0.24f, 1.72f + 0.32f * s, -0.42f);
+        var climbL = new Vector3(-0.24f, 1.72f - 0.32f * s, -0.42f);
+        t.HandR = Vector3.Lerp(braceR, climbR, m);
+        t.HandL = Vector3.Lerp(braceL, climbL, m);
+        // Feet: set apart braced; climbing, the foot opposite the high hand steps up the wall.
+        var setR = new Vector3(0.26f, 0f, 0.06f);
+        var setL = new Vector3(-0.26f, 0f, 0.06f);
+        var stepR = new Vector3(0.17f, 0.12f + 0.34f * MathF.Max(0, -s), -0.3f);
+        var stepL = new Vector3(-0.17f, 0.12f + 0.34f * MathF.Max(0, s), -0.3f);
+        t.FootR = Vector3.Lerp(setR, stepR, m);
+        t.FootL = Vector3.Lerp(setL, stepL, m);
     }
 
     /// <summary>The swipe: the arm winds up behind, strikes across right as the damage lands (at the windup), then recovers.</summary>

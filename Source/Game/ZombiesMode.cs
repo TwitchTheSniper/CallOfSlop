@@ -142,8 +142,14 @@ public sealed partial class Game
     /// <summary>Zombies is co-op for up to this many players (people and bots).</summary>
     public const int ZombiesMaxPlayers = 4;
 
-    /// <summary>The most zombies that can be alive at once (the rules file's cap and curve go up to this; protocol 58 sends any number).</summary>
-    public const int MaxZombies = 512;
+    /// <summary>
+    /// The most zombies that can be alive at once (the rules file's cap and curve go up to this; protocol 58 sends any
+    /// number). 600 since the player scaling (2026-10-27): the shipped maxAlive, so "Zombie hordes" measures the budget at it.
+    /// </summary>
+    public const int MaxZombies = 600;
+
+    /// <summary>The old <see cref="MaxZombies"/>: a settings file's horde cap at or above it was "no limit" and stays so.</summary>
+    public const int OldMaxZombies = 512;
 
     /// <summary>The rules (Parts/Tables/ZombiesRules.json).</summary>
     public ZombiesRules ZRules = ZombiesRules.Current;
@@ -169,6 +175,12 @@ public sealed partial class Game
     public readonly List<ZDrop> ZDrops = new();
 
     private int _zToSpawn;
+
+    /// <summary>
+    /// The round's total (its count for <see cref="_zRoundPlayers"/> players, plus map logic's extra spawns) and the player
+    /// count it was worked out for. A join or leave mid-round rescales it (<see cref="RescaleRoundForPlayers"/>).
+    /// </summary>
+    private int _zRoundTotal, _zRoundPlayers;
     private double _zPhaseUntil, _zNextSpawn, _boxUntil;
     private int _boxMoveAfter;
     private uint _zRng = 1;
@@ -337,6 +349,7 @@ public sealed partial class Game
                 BeginRound(ZRound + 1, now);
                 break;
             case ZRoundPhase.Round:
+                RescaleRoundForPlayers(); // someone joined or left (bots too): the round's total follows at once
                 SpawnTick(zm, now);
                 if (_zToSpawn == 0 && AliveZombies == 0)
                     EndRound(now);
@@ -385,7 +398,8 @@ public sealed partial class Game
         ZPhase = ZRoundPhase.Round;
         ZWaitingReady = false;
         _zForceRound = false;
-        _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0)));
+        _zRoundPlayers = ZRoundPlayerCount();
+        _zToSpawn = _zRoundTotal = ZRules.ZombieCount(round, _zRoundPlayers);
         _zNextSpawn = now + 1.0;
         _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
         foreach (var p in Players.Values)
@@ -401,6 +415,31 @@ public sealed partial class Game
         ModeEvent($"ROUND {round}", Sfx.MortarWhistle);
         ZBanner($"ROUND {round}");
         LogicZombies(LogicEvent.RoundStarted, round); // map logic: zombies.roundStarted, n = the round
+    }
+
+    /// <summary>The players a round is sized for: everyone in the run (bots count), less a host who sits out; at least 1.</summary>
+    private int ZRoundPlayerCount() => Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0));
+
+    /// <summary>
+    /// Server, every tick of a round (2026-10-27, the player scaling): when the player count has changed since the round's
+    /// total was worked out (a join, a leave, a bot added or a player dropping), the total becomes the round's count for
+    /// the new number (map logic's extra spawns kept) and the zombies still to spawn become that total less the ones
+    /// already out (killed or alive), never below 0. A leave never ends the round there and then: with nobody alive and
+    /// zombies still owed, at least one more comes. The alive cap (<see cref="ZAliveCap"/>) reads the player count live.
+    /// </summary>
+    private void RescaleRoundForPlayers()
+    {
+        var n = ZRoundPlayerCount();
+        if (n == _zRoundPlayers)
+            return;
+        var outAlready = _zRoundTotal - _zToSpawn; // killed + alive
+        _zRoundTotal = Math.Max(0, _zRoundTotal + ZRules.ZombieCount(ZRound, n) - ZRules.ZombieCount(ZRound, _zRoundPlayers));
+        var left = Math.Max(0, _zRoundTotal - outAlready);
+        if (left == 0 && _zToSpawn > 0 && AliveZombies == 0)
+            left = 1; // (the round still ends the usual way: its last zombie killed)
+        Console.WriteLine($"[zombies] round {ZRound}: {_zRoundPlayers} -> {n} players, total {_zRoundTotal}, {outAlready} out already, {_zToSpawn} -> {left} to spawn, alive cap {ZAliveCap()}");
+        _zToSpawn = left;
+        _zRoundPlayers = n;
     }
 
     private void EndRound(double now)
@@ -930,9 +969,18 @@ public sealed partial class Game
                 case ZBoxState.Idle:
                     Consider(d, 1.9f, new ZUse(ZUseKind.Box, BoxSpot, cost, $"Hold [E] to spin the mystery box [{cost}]"));
                     break;
-                case ZBoxState.Offering when BoxOwner == p.Id && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
-                    Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Hold [E] to take the {StandardBuilds.All[BoxBuild].Name}"));
+                case ZBoxState.Offering when BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
+                {
+                    // The buyer's alone at first; the last part of the offer is anyone's (board item 2026-10-27).
+                    var name = StandardBuilds.All[BoxBuild].Name;
+                    if (BoxOwner == p.Id)
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, BoxFreeForAll ? $"Hold [E] to take the {name} (free for all now)" : $"Hold [E] to take the {name}"));
+                    else if (BoxFreeForAll)
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Free for all - hold [E] to take the {name}"));
+                    else
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Reserved for {NameOf(BoxOwner)}: the {name}", Blocked: true));
                     break;
+                }
             }
         }
         for (var i = 0; i < zm.PerkMachines.Count; i++)
@@ -1059,11 +1107,14 @@ public sealed partial class Game
                 zp.Points -= u.Cost;
                 SpinBox(p, zm, now);
                 break;
-            case ZUseKind.BoxTake when BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
+            case ZUseKind.BoxTake when CanTakeBox(p): // (server-authoritative: the first valid take wins, the box is closed for the rest)
             {
                 var ob = StandardBuilds.All[BoxBuild];
+                var owner = BoxOwner;
                 GiveBuild(p, ob.IsMelee ? 4 : TargetSlot(p), ob.Build(), full: true);
                 ZFeedTo(p, $"You took the {ob.Name} ({PartDef.RarityName(ob.Tier)}).", Sfx.LevelUp);
+                if (owner != p.Id && Players.TryGetValue(owner, out var buyer))
+                    ZFeedTo(buyer, $"{p.Name} took the {ob.Name} from your box spin.", Sfx.HitTick);
                 CloseBox();
                 break;
             }
@@ -1310,8 +1361,36 @@ public sealed partial class Game
 
     // ---- The mystery box -----------------------------------------------------------------------------
 
+    /// <summary>
+    /// Both sides: is the box's offer open to everyone now? The last <see cref="ZombiesRules.BoxFreeSeconds"/> of the offer
+    /// (board item 2026-10-27), or at once when its buyer has left. Clients work it out from the replicated
+    /// <see cref="BoxLeft"/> (no wire change).
+    /// </summary>
+    public bool BoxFreeForAll => BoxState == ZBoxState.Offering && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length
+                                 && ((ZRules.BoxFreeSeconds > 0 && BoxLeft <= ZRules.BoxFreeSeconds + 1e-4) || !Players.ContainsKey(BoxOwner));
+
+    /// <summary>Both sides: may <paramref name="p"/> take the box's offer now (its buyer, or anyone in the free-for-all window)?</summary>
+    public bool CanTakeBox(Player p) => BoxState == ZBoxState.Offering && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length && (BoxOwner == p.Id || BoxFreeForAll);
+
+    /// <summary>
+    /// Server, just before the offer goes (taken, taken apart or timed out): everyone else still holding the key on the box
+    /// has that hold used up, so the closed box doesn't turn their hold into a spin they didn't ask for (let go, press again).
+    /// </summary>
+    private void SpendBoxHolds()
+    {
+        if (BoxState != ZBoxState.Offering)
+            return;
+        foreach (var o in Players.Values)
+            if (ZPlayers.TryGetValue(o.Id, out var oz) && oz.UseHeld && !oz.UseDone && FindZUse(o) is { Kind: ZUseKind.BoxTake })
+                oz.UseDone = true;
+    }
+
+    /// <summary>Server: counts box spins this run (each offer its own number; bots remember which free offers they let go).</summary>
+    public int BoxOfferSeq { get; private set; }
+
     private void SpinBox(Player p, ZombiesMap zm, double now)
     {
+        BoxOfferSeq++;
         BoxUses++;
         BoxOwner = p.Id;
         BoxState = ZBoxState.Spinning;
@@ -1372,9 +1451,7 @@ public sealed partial class Game
                 }
                 break;
             case ZBoxState.Offering when now >= _boxUntil:
-                BoxState = ZBoxState.Idle;
-                BoxBuild = -1;
-                BoxOwner = byte.MaxValue;
+                CloseBox();
                 break;
             case ZBoxState.Teddy when now >= _boxUntil:
             {
@@ -1566,6 +1643,9 @@ public sealed partial class Game
     }
 
     public int SelfTestToSpawn => _zToSpawn;
+
+    /// <summary>Self-test: the round's total as worked out for the current players (<see cref="RescaleRoundForPlayers"/>).</summary>
+    public int SelfTestRoundTotal => _zRoundTotal;
 
     public void SelfTestRollDrop(Vector3 at, int round, double now) => RollDrop(at, round, now);
 

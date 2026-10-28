@@ -2,8 +2,9 @@
   "format": "call-of-slop-zombies/1",
   "note": "PROPOSED World at War style numbers for the Zombies mode (open for the user, see docs/zombies/ZOMBIES-MODE.md). Round 1 sends a handful of slow zombies; health grows by 100 a round to round 9, then 10 percent a round; runners from round 3, sprinters from round 5. Points: 10 a hit, 60 a kill, 100 a headshot kill, 130 a melee kill, 10 a board.",
   "rounds": {
+    "note": "Player scaling (2026-10-27): a round sends (countBase + countPerExtraPlayer x (players - 1)) x the round's fraction; the alive cap is maxAliveCurve x (1 + maxAlivePerExtraPlayer x (players - 1)), never over maxAlive (at most 600, the code's limit). Bots count as players; a host who sits out doesn't. A join or leave mid-round works both out again at once for the new count: the zombies already killed or alive stay counted, so the rest is the new total less those (never below 0), and a leave never ends the round on the spot.",
     "countBase": 24,
-    "countPerExtraPlayer": 6,
+    "countPerExtraPlayer": 12,
     "earlyFractions": [0.25, 0.3, 0.5, 0.7, 0.9],
     "lateFromRound": 10,
     "latePerRound": 0.15,
@@ -23,10 +24,10 @@
     "spawnDelay": 2.0,
     "spawnDelayMult": 0.95,
     "spawnDelayMin": 0.25,
-    "maxAlive": 400,
-    "maxAliveCurve": [[1, 24], [5, 24], [10, 60], [20, 150], [30, 300], [40, 400]],
-    "maxAlivePerExtraPlayer": 0.15,
-    "spawnBurstCurve": [[1, 1], [12, 1], [20, 3], [30, 5], [40, 6]],
+    "maxAlive": 600,
+    "maxAliveCurve": [[1, 24], [5, 40], [10, 90], [20, 220], [30, 400], [40, 600]],
+    "maxAlivePerExtraPlayer": 0.5,
+    "spawnBurstCurve": [[1, 1], [12, 1], [20, 4], [30, 7], [40, 9]],
     "activeSpawnersCurve": [[1, 4], [15, 4], [25, 7], [35, 10]],
     "spawnerCooldown": 0.35,
     "breakSeconds": 10,
@@ -97,14 +98,17 @@
     "roundsPerExtra": 3
   },
   "box": {
+    "note": "The last part of each offer is free for all (2026-10-27): for the final freeFraction of offerSeconds or the last freeSeconds, whichever is longer, anyone can take the gun (the first take wins); before that only the buyer can. Taking it apart stays the buyer's. Both 0: buyer only.",
     "moveMin": 4,
     "moveMax": 8,
     "spinSeconds": 4,
     "offerSeconds": 10,
-    "moveSeconds": 3
+    "moveSeconds": 3,
+    "freeFraction": 0.3,
+    "freeSeconds": 4
   },
   "slots": {
-    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and a win shows showSeconds (a pull that wins nothing frees the machine at once: pull again). A part you already hold dupePointsAt of loose pays pointsBack instead (0: always keep it). The odds by round are DropTables.json slotTiers. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank and coin weights stay: no sure win). At most maxNothing nothing-results in a row per player per machine. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
+    "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and a win shows showSeconds. A part you already hold dupePointsAt of loose pays pointsBack instead (0: always keep it; 0 since 2026-10-27: loose parts have no cap, bank as many as you like; pointsBack still pays the coin result). The odds by round are DropTables.json slotTiers. No pull pays nothing (2026-10-27): a blank (the skull, slotTiers 'nothing') pays a consolation part of the machine's own category, its rarity from consolation[bet level] (weights per rarity; not the round's table, so commons stay in late rounds; never rarer than the main roll's lowest part tier at that bet); it frees the machine at once, never resets the heat and doesn't count as a pity win. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank and coin weights stay: no sure big win). maxNothing (at most that many nothing-results in a row) is unused since consolation parts: kept so it can come back. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",
     "costBase": 500,
     "costPerRound": 25,
     "costMax": 1250,
@@ -116,11 +120,16 @@
     "betSteps": [0, 1, 2],
     "pityTier": "rare",
     "maxNothing": 3,
+    "consolation": [
+      {"common": 100},
+      {"common": 60, "uncommon": 40},
+      {"uncommon": 85, "rare": 15}
+    ],
     "jackpotEvery": 5,
     "jackpotLegendary": 6,
     "jackpotWonder": 4,
     "pointsBack": 1.5,
-    "dupePointsAt": 3,
+    "dupePointsAt": 0,
     "winSeconds": 4,
     "machines": {
       "note": "PROPOSED per-category slot machines (2026-10-26; a map's slots entry with \"category\"): each only pays parts of its category, with the same odds table, heat, bets and jackpot rounds as the classic machine but its own heat. price is a multiple of the classic machine's price (to the nearest 10); melee: the blade (a whole melee build) is on its reels (default: the melee categories only; elsewhere a melee result pays a part of that tier).",
@@ -292,5 +301,29 @@
       "run": { "healthMult": 1.0, "severs": true },
       "sprint": { "healthMult": 1.2, "severs": true }
     }
+  },
+  "climb": {
+    "note": "The bell siege (docs/zombies/ZOMBIES-MODE.md, The bell: a siege up the tower; Source/Game/ZombiesClimb.cs): ringing the Cathedral's bell starts a 75 s survival challenge in the belfry. The horde outside leaves the windows for the tower's north face, piles up against it in a living pyramid (layers layerHeight apart, columns columnSpacing apart, each layer layerShrink columns narrower than the one under it, the bottom baseRows layers two deep, at most layers high) and climbs over it and up the bare wall (one in climbEvery goes straight up from the start); a shot zombie lets go and falls, dazed fallStun seconds where it lands, and the bodies above a shot one slide down. The siege adds extraZombies + extraPerRound a round (at most extraMax) to the round. Surviving pays every player standing rewardPoints + rewardPerRound a round (at most rewardMax), rewardParts loose parts rolled as if it were rewardRoundBonus rounds later (rarer), and drops rewardPowerUp on the belfry.",
+    "layerHeight": 1.3,
+    "columnSpacing": 0.75,
+    "layers": 10,
+    "baseRows": 1,
+    "layerShrink": 2,
+    "climbEvery": 3,
+    "settleSpeed": 3.0,
+    "pileClimbSpeed": 2.0,
+    "wallClimbSpeed": 0.8,
+    "vaultSeconds": 0.8,
+    "fallStun": 1.2,
+    "fallPush": 2.5,
+    "extraZombies": 12,
+    "extraPerRound": 2,
+    "extraMax": 80,
+    "rewardPoints": 1500,
+    "rewardPerRound": 100,
+    "rewardMax": 6000,
+    "rewardParts": 2,
+    "rewardRoundBonus": 10,
+    "rewardPowerUp": "maxAmmo"
   }
 }

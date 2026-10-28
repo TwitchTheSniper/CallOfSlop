@@ -694,6 +694,35 @@ receiver assembly when you're missing the parts, and a way to see which parts ar
   list, the sockets, what's missing); the per-frame calls (camera, projection, the ray pick, the stock fingerprint)
   allocate nothing (self-test). Part pictures render 8 per frame at most, once per part per session.
 
+### Blueprints (developer request, 2026-10-27)
+
+A named library of builds beside the slots, in the side panel of the sandbox workbench and of a Zombies bench
+(**Blueprints**, a collapsing section; `BlueprintStore`, `BlueprintFit` in `Source/Zombies/Blueprints.cs`, the UI in
+`Source/UI/UiWorkbenchBlueprints.cs`).
+
+- **Any number** (up to 500) of guns, melee weapons and grenades. The list shows the kind being built (a gun slot lists
+  gun blueprints, the melee slot melee ones, the grenade slot grenades), scrolls past eight rows, and badges each with
+  how many parts you'd be missing against the parts you have.
+- **Save as blueprint** works at any time, in the sandbox and in a run, and on unfinished builds too (a plan). A name
+  already in the library gets " 2", " 3"... **Save over** (two clicks) puts the build you're editing in place of the
+  selected blueprint, keeping its name; **Rename**; **Duplicate** (the copy goes right after it); **Delete** (two clicks).
+- **Load** (or double-click): in the sandbox the whole build opens (your current build stays as an Undo step). In a
+  Zombies run the build is put together from **the parts you own only**: your loose parts plus the slot's current build,
+  exactly what the server accepts for Apply, taken in the build's order (two Scattermouth Barrels wanted, one owned: the
+  first gets it). A part you don't have leaves its socket **empty with a red ring** (a steady one, like a refused
+  Build's), the parts that would sit on it are left off with it, and a red list under the gun names each one and where it
+  goes. Hover a ring for the part; click it for that socket's parts. A ring clears for good when the socket is filled
+  with anything, and they all go when another build is loaded. It never makes a part you don't have, and a blueprint
+  whose grip, hilt or casing you don't own isn't loaded at all (it says so). Parts on your *other* slots are not
+  borrowed: take that build apart first (Disassemble) and its parts count.
+- **Saved** in `blueprints.txt` in the save folder (a save file: atomic, `.bak`, in `SavePaths.SaveFiles`, kept out of
+  the tester zip), one `bp=Name|style|Grip{...}` line each. A part that no longer exists loads dropped, the rest of the
+  blueprint kept. The first time the library opens with no `blueprints.txt` it copies in the builds from `workbench.txt`
+  (its four slots, the melee and the grenade line) and writes `migrated=1`, so that happens once; `workbench.txt` and
+  its slots are unchanged (the slots are still what the range and Test fire use).
+- No wire change: a load in a run is a client-side edit, and Apply goes through `ZBench` as before.
+- Self-test "Workbench blueprints" (temp save folder only).
+
 ## Rarity tiers
 
 | Tier | Colour | Where it comes from (proposed) |

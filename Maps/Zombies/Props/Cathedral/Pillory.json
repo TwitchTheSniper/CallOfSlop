@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Pillory",
+  "category": "Cathedral",
+  "description": "Wooden stocks on a post.",
+  "collision": "solid",
+  "collider": [{"size": [0.3, 2.0, 0.3]}, {"size": [1.4, 0.4, 0.2], "offset": [0, 1.5, 0.04]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.16, 2.0, 0.16], "offset": [0, 1.0, 0], "color": "#5b3a20"},
+    {"size": [1.4, 0.18, 0.12], "offset": [0, 1.6, 0.04], "color": "#5b3a20"},
+    {"size": [1.4, 0.18, 0.12], "offset": [0, 1.4, 0.04], "color": "#3b2614"},
+    {"size": [0.9, 0.12, 0.9], "offset": [0, 0.06, 0], "color": "#6a665e"},
+    {"size": [0.08, 0.06, 0.02], "offset": [-0.45, 1.5, 0.11], "color": "#0e0c0a"},
+    {"size": [0.12, 0.06, 0.02], "offset": [0, 1.5, 0.11], "color": "#0e0c0a"},
+    {"size": [0.08, 0.06, 0.02], "offset": [0.45, 1.5, 0.11], "color": "#0e0c0a"}
+  ]
+}

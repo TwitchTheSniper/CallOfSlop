@@ -170,7 +170,8 @@ public static partial class SelfTest
                     if (m.WinSeq == seq || m.WinIndex != m.Part || m.WinTier != m.Tier || m.WinPlayer != me.Id || !g.SlotWinShowing(i, clock))
                         notShown++;
                     var line = g.Feed.Count > 0 ? g.Feed[^1] : default;
-                    feedOk &= line.Colour == PartDef.RarityColor(m.Tier) && line.Text.Contains(m.Result == ZSlotResult.Part ? Parts.All[m.Part].Name : StandardBuilds.All[m.Part].Name) && line.Text.Contains(Game.SlotMachineName(c));
+                    feedOk &= line.Colour == PartDef.RarityColor(m.Tier) && line.Text.Contains(m.Result == ZSlotResult.Part ? Parts.All[m.Part].Name : StandardBuilds.All[m.Part].Name)
+                              && (m.Consolation ? line.Text.StartsWith("Consolation: ") : line.Text.Contains(Game.SlotMachineName(c))); // (a consolation: a short line, yours only)
                     // Every client: the message, then the same win over the same machine and the same coloured line.
                     g.SelfTestWriteSlotWin(w, i);
                     var msg = w.Span.ToArray();
@@ -181,7 +182,8 @@ public static partial class SelfTest
                         var cm = cl.ZSlots[i];
                         var cline = cl.Feed.Count > 0 ? cl.Feed[^1] : default;
                         clientsOk &= cm.WinSeq != before && cm.WinIndex == m.Part && cm.WinTier == m.Tier && cm.WinResult == m.Result && cm.WinPlayer == me.Id && cl.SlotWinShowing(i, Brutal.GlfwApi.Glfw.Time)
-                                     && cline.Colour == PartDef.RarityColor(m.Tier) && cline.Text.Contains(Game.SlotMachineName(c));
+                                     && cm.WinConsolation == m.Consolation
+                                     && (m.Consolation || (cline.Colour == PartDef.RarityColor(m.Tier) && cline.Text.Contains(Game.SlotMachineName(c)))); // (a teammate's consolation: over the machine, not in your feed)
                     }
                 }
                 now += rules.SlotShowSeconds + 0.01;

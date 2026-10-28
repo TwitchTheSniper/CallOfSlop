@@ -79,6 +79,101 @@ public static class Plan
         PngWriter.Write(pngPath, img.Width, img.Height, img.Rgb);
     }
 
+    /// <summary>
+    /// One level of a map with floors over each other (the Cathedral: crypt, ground, galleries, tower): only what is
+    /// between <paramref name="y0"/> and <paramref name="y1"/>. Floors (box tops in the band) are shaded by height, walls
+    /// (boxes through the band) drawn dark, with the props, waypoints and nav-free outline as in <see cref="Draw"/>, plus
+    /// the Zombies section: areas (white outlines), doors (orange), windows (cyan), spawners (red), machines (green), wall
+    /// buys (violet) and map logic zones (yellow).
+    /// </summary>
+    public static void DrawLevel(Map m, string pngPath, float y0, float y1, double scale = 5)
+    {
+        var (hx, hz) = (m.HalfX + 4, m.HalfZ + 4);
+        int w = Math.Clamp((int)(2 * hx * scale), 64, 4096), h = Math.Clamp((int)(2 * hz * scale), 64, 4096);
+        var img = new Canvas(w, h, (18, 20, 26));
+        (int X, int Y) P(double x, double z) => ((int)Math.Round(w / 2.0 + x * scale), (int)Math.Round(h / 2.0 + z * scale));
+        bool In(float y) => y >= y0 && y <= y1;
+        var order = Enumerable.Range(0, m.Solid.Count).OrderBy(i => m.Solid[i].Center.Y + m.Solid[i].Half.Y).ToList();
+        foreach (var i in order)
+        {
+            var b = m.Solid[i];
+            if (b.Half.X > 400 || b.Half.Z > 400 || m.IsZombieBox(i))
+                continue;
+            float top = b.Center.Y + b.Half.Y, bot = b.Center.Y - b.Half.Y;
+            (int, int, int) col;
+            if (In(top) && top - y0 < 2.4f)
+            {
+                var c = (int)Math.Clamp(70 + (top - y0) * 40, 60, 200);
+                col = m.IsHiddenBox(i) ? (c * 2 / 3, c * 2 / 3, c) : (c, c, c - 12); // a floor (or a low thing on it)
+            }
+            else if (bot < y0 + 1.8f && top > y0 + 1.8f)
+                col = m.IsHiddenBox(i) ? (70, 70, 120) : (215, 205, 180); // a wall at head height
+            else
+                continue;
+            var a = P(b.Center.X - b.Half.X, b.Center.Z - b.Half.Z);
+            var e = P(b.Center.X + b.Half.X, b.Center.Z + b.Half.Z);
+            img.FillRect(a.X, a.Y, Math.Max(e.X, a.X + 1), Math.Max(e.Y, a.Y + 1), col);
+        }
+        foreach (var p in m.PropInstances)
+            if (In(p.Position.Y + 0.05f))
+            {
+                var q = P(p.Position.X, p.Position.Z);
+                img.FillRect(q.X - 1, q.Y - 1, q.X + 1, q.Y + 1, (230, 180, 60));
+            }
+        foreach (var wp in m.Waypoints)
+            if (In(wp.Y + 0.05f))
+            {
+                var q = P(wp.X, wp.Z);
+                img.Set(q.X, q.Y, (80, 200, 255));
+            }
+        if (m.Logic is { } lg)
+            foreach (var e in lg.Entities)
+                if (e.Kind is LogicKind.Zone or LogicKind.ZClimb && e.Box.Max.Y >= y0 && e.Box.Min.Y <= y1)
+                    img.Rect(P(e.Box.Min.X, e.Box.Min.Z).X, P(e.Box.Min.X, e.Box.Min.Z).Y, P(e.Box.Max.X, e.Box.Max.Z).X, P(e.Box.Max.X, e.Box.Max.Z).Y, (255, 230, 60), 2);
+        if (m.Zombies is { } zm)
+        {
+            foreach (var a in zm.Areas)
+            {
+                if (a.Y1 >= y0 && a.Y0 <= y1)
+                    img.Rect(P(a.X0, a.Z0).X, P(a.X0, a.Z0).Y, P(a.X1, a.Z1).X, P(a.X1, a.Z1).Y, (250, 250, 250));
+                foreach (var b in a.More)
+                    if (b.Max.Y >= y0 && b.Min.Y <= y1)
+                        img.Rect(P(b.Min.X, b.Min.Z).X, P(b.Min.X, b.Min.Z).Y, P(b.Max.X, b.Max.Z).X, P(b.Max.X, b.Max.Z).Y, (200, 200, 200));
+            }
+            void Box(Box b, (int, int, int) c)
+            {
+                if (b.Max.Y < y0 || b.Min.Y > y1)
+                    return;
+                var a = P(b.Min.X - 0.2, b.Min.Z - 0.2);
+                var e = P(b.Max.X + 0.2, b.Max.Z + 0.2);
+                img.FillRect(a.X, a.Y, e.X, e.Y, c);
+            }
+            foreach (var d in zm.Doors)
+                Box(d.Box, d.Debris ? (200, 120, 40) : (255, 140, 30));
+            foreach (var wi in zm.Windows)
+                Box(wi.Opening, (60, 220, 255));
+            foreach (var sp in zm.Spawners)
+                if (In(sp.At.Y + 0.05f))
+                {
+                    var q = P(sp.At.X, sp.At.Z);
+                    img.FillCircle(q.X, q.Y, 3, (255, 60, 60));
+                }
+            foreach (var (_, spot) in zm.Machines())
+                if (In(spot.At.Y + 0.05f))
+                {
+                    var q = P(spot.At.X, spot.At.Z);
+                    img.FillCircle(q.X, q.Y, 3, (80, 255, 110));
+                }
+            foreach (var wb in zm.WallBuys)
+                if (In(wb.At.Y - 1.25f))
+                {
+                    var q = P(wb.At.X, wb.At.Z);
+                    img.FillRect(q.X - 2, q.Y - 2, q.X + 2, q.Y + 2, (200, 120, 255));
+                }
+        }
+        PngWriter.Write(pngPath, img.Width, img.Height, img.Rgb);
+    }
+
     /// <summary>A plain RGB raster with the few drawing calls the plan needs.</summary>
     public sealed class Canvas
     {

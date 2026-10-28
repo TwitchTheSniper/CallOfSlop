@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Headstone",
+  "category": "Cathedral",
+  "description": "A pointed stone headstone with a carved cross.",
+  "collision": "solid",
+  "collider": [{"size": [0.75, 1.25, 0.3]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.62, 0.95, 0.14], "offset": [0, 0.475, 0], "color": "#8f8a80", "material": "concrete"},
+    {"size": [0.44, 0.2, 0.14], "offset": [0, 1.02, 0], "color": "#8f8a80"},
+    {"size": [0.2, 0.14, 0.14], "offset": [0, 1.18, 0], "color": "#8f8a80"},
+    {"size": [0.75, 0.08, 0.3], "offset": [0, 0.04, 0], "color": "#6a665e"},
+    {"size": [0.06, 0.32, 0.02], "offset": [0, 0.82, 0.075], "color": "#6a665e"},
+    {"size": [0.22, 0.06, 0.02], "offset": [0, 0.88, 0.075], "color": "#6a665e"}
+  ]
+}
