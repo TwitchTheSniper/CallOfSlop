@@ -239,11 +239,13 @@ public sealed partial class Ui
                 {
                     SlotWinLabelSeq[i] = m.WinSeq;
                     var who = m.WinPlayer == game.LocalId ? "You" : game.NameOf(m.WinPlayer);
-                    SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinRefunded ? " (points instead)" : "")}";
+                    SlotWinLabels[i] = m.WinConsolation && m.WinIndex >= 0 && m.WinIndex < Parts.All.Length
+                        ? $"{who}: Consolation: {Parts.All[m.WinIndex].Name}{(m.WinRefunded ? " (points instead)" : "")}" // a blank's small win (2026-10-27)
+                        : $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinRefunded ? " (points instead)" : "")}";
                 }
                 var fade = (float)Math.Clamp((game.ZRules.SlotWinSeconds - (now - m.WinAt)) * 2, 0, 1);
                 // Over the turning part (Program.DrawSlotWin: it floats Program.SlotWinOver over the cabinet's top and rises 0.35 m).
-                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + Program.SlotWinOver + 1.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + Program.SlotWinOver + 1.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinConsolation ? 13f : m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
             }
             else if (d2 <= 9 * 9)
                 Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + 0.8f, 0), Game.SlotMachineLabel(spot.SlotCategory), Game.SlotCategoryColor(spot.SlotCategory), 0.9f, 13f * _scale);

@@ -165,7 +165,7 @@ public sealed partial class Game
         var total = 0;
         foreach (var (name, n) in PartCounts(ob.Build()))
         {
-            zp.Parts[name] = zp.Parts.GetValueOrDefault(name) + n; // no cap on loose parts (the wire's own limits are 200 kinds, 255 each)
+            zp.Parts[name] = zp.Parts.GetValueOrDefault(name) + n; // no cap on loose parts (nor on the wire since protocol 71)
             total += n;
         }
         CloseBox();

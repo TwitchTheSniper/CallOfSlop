@@ -89,6 +89,8 @@ public static unsafe partial class Program
             var winning = m.State == ZSlotState.Showing && m.Result != ZSlotResult.Nothing;
             if (winning && ((int)(t * 6) & 1) == 0)
                 Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.055f, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? PartDef.RarityColor(m.Tier) : SlotGold, 0.35f, 2);
+            else if (m.Consolation && m.State == ZSlotState.Idle && m.WinConsolation && now - m.WinAt < 1.2 && ((int)(t * 4) & 1) == 0)
+                Part(0.64f, 0.32f, 0.005f, 0, 1.3f, front - 0.055f, PartDef.RarityColor(m.Tier), 0.18f, 2); // a consolation: a brief soft glow (a small win, not a loss)
 
             // The heat meter: segments towards the next rarity step; flashing red at the top step.
             var step = Math.Max(1, _game.ZRules.SlotHeatStep);
@@ -204,7 +206,7 @@ public static unsafe partial class Program
         var at = Matrix4x4.CreateTranslation(0, y, -0.05f) * place;
         if (SlotWinDefs[i] is { } def && !m.WinRefunded)
         {
-            var scale = (m.WinResult == ZSlotResult.Melee ? 0.9f : 2.4f) * (big ? 1.25f : 1f) * grow;
+            var scale = (m.WinResult == ZSlotResult.Melee ? 0.9f : 2.4f) * (big ? 1.25f : m.WinConsolation ? 0.7f : 1f) * grow;
             DrawGun(def, Matrix4x4.CreateScale(scale) * spin * at, false);
         }
         else

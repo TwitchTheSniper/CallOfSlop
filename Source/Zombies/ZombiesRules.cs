@@ -318,8 +318,23 @@ public sealed class ZombiesRules
 
     public Rarity SlotPityTier = Rarity.Rare;
 
-    /// <summary>Bad-luck protection: at most this many "nothing" results in a row per player per machine (the next one pays coins: points back).</summary>
+    /// <summary>
+    /// Bad-luck protection from before consolation parts: at most this many "nothing" results in a row per player per
+    /// machine. Unused since 2026-10-27 (no pull pays nothing: a blank pays a <see cref="SlotConsolation"/> part); kept so
+    /// older rules files load and it can come back.
+    /// </summary>
     public int SlotMaxNothing = 3;
+
+    /// <summary>
+    /// Consolation parts (board item, 2026-10-27): a pull that rolls a blank pays a part of the machine's own category
+    /// instead. Its rarity ignores the round's odds table: <see cref="SlotConsolation"/>[bet level] holds the weights per
+    /// rarity (common first), and the result is never rarer than the main roll's lowest part tier at that bet. A
+    /// consolation never resets the heat (it isn't a pity-tier win) and frees the machine at once.
+    /// </summary>
+    public float[][] SlotConsolation = [[100f], [60f, 40f], [0f, 85f, 15f]];
+
+    /// <summary>The consolation weights per rarity for bet level <paramref name="bet"/> (the last level's for higher ones).</summary>
+    public float[] SlotConsolationFor(int bet) => SlotConsolation.Length == 0 ? [] : SlotConsolation[Math.Clamp(bet, 0, SlotConsolation.Length - 1)];
 
     /// <summary>Every Nth round is a jackpot round: the wonder symbol is on the reels and these weights are added to legendary and wonder.</summary>
     public int SlotJackpotEvery = 5;
@@ -328,11 +343,12 @@ public sealed class ZombiesRules
 
     /// <summary>
     /// Payouts: points back (times the price) for a coin; and a part you already hold this many of loose pays the coin
-    /// payout instead ("dupePointsAt"; 0 = always keep the part). Zombies has no scrap since 2026-10-27.
+    /// payout instead ("dupePointsAt"; 0 = always keep the part, the shipped value since 2026-10-27: loose parts have no
+    /// cap, so you can bank as many copies as you like). Zombies has no scrap since 2026-10-27.
     /// </summary>
     public float SlotPointsBack = 1.5f;
 
-    public int SlotDupePointsAt = 3;
+    public int SlotDupePointsAt = 0;
 
     /// <summary>The price of a pull in <paramref name="round"/>.</summary>
     public int SlotCost(int round) => Math.Min(SlotCostMax, SlotCostBase + SlotCostPerRound * Math.Max(0, round - 1));
@@ -907,6 +923,11 @@ public sealed class ZombiesRules
                                     ? tier : throw new WeaponFileException($"{w}: a rarity (common, uncommon, rare, epic, legendary, wonder)");
                                 break;
                             case "maxNothing": r.SlotMaxNothing = Whole(v, w, 0, 100); break;
+                            case "consolation":
+                                if (v.ValueKind != JsonValueKind.Array || v.GetArrayLength() is < 1 or > 5)
+                                    throw new WeaponFileException($"{w}: a list of 1 to 5 rarity weights, one per bet ({{\"common\": 60, \"uncommon\": 40}})");
+                                r.SlotConsolation = v.EnumerateArray().Select((x, n) => ConsolationRow(x, $"{w}[{n}]")).ToArray();
+                                break;
                             case "jackpotEvery": r.SlotJackpotEvery = Whole(v, w, 0, 100); break;
                             case "jackpotLegendary": r.SlotJackpotLegendary = Real(v, w, 0, 1000); break;
                             case "jackpotWonder": r.SlotJackpotWonder = Real(v, w, 0, 1000); break;
@@ -1210,6 +1231,22 @@ public sealed class ZombiesRules
         foreach (var p in e.EnumerateObject())
             if (!set(p.Name, p.Value, $"{where}.{p.Name}"))
                 throw new WeaponFileException($"{where}: unknown key \"{p.Name}\"");
+    }
+
+    /// <summary>One bet level's consolation weights ({"common": 60, "uncommon": 40}), per rarity (common first).</summary>
+    private static float[] ConsolationRow(JsonElement e, string where)
+    {
+        var row = new float[(int)Rarity.Wonder + 1];
+        Fields(e, where, (k, v, w) =>
+        {
+            if (!Enum.TryParse<Rarity>(k, true, out var t) || !Enum.IsDefined(t))
+                return false;
+            row[(int)t] = Real(v, w, 0, 1000);
+            return true;
+        });
+        if (row.Sum() <= 0)
+            throw new WeaponFileException($"{where}: give at least one rarity a weight above 0");
+        return row;
     }
 
     private static int Whole(JsonElement e, string where, int min, int max)

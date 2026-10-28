@@ -90,7 +90,13 @@ public sealed class PacketWriter
     /// The buffer is roomy so a big message (a 32-player roster, many kill-streak entities) can never overflow it;
     /// RakNet splits anything over the MTU. Messages sent many times a second keep under <see cref="Mtu"/> themselves.
     /// </summary>
-    private readonly byte[] _buf = new byte[8192];
+    private readonly byte[] _buf;
+
+    /// <summary>A writer with the usual 8 KB buffer, or a bigger one for a rare big message (Msg.ZRun: every loose part kind).</summary>
+    public PacketWriter(int capacity = 8192) => _buf = new byte[Math.Max(64, capacity)];
+
+    /// <summary>The buffer's size: a message never grows past it.</summary>
+    public int Capacity => _buf.Length;
 
     /// <summary>The payload budget for one unsplit datagram (RakNet's MTU is ~1400 with headers; this leaves room).</summary>
     public const int Mtu = 1200;

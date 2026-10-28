@@ -65,13 +65,20 @@ public sealed class ZSlotMachine
     /// <summary>The paid part came back as points instead (you already held <see cref="ZombiesRules.SlotDupePointsAt"/> of it loose).</summary>
     public bool Refunded;
 
+    /// <summary>
+    /// The part is a consolation (2026-10-27): the pull rolled a blank, so it paid a part of the machine's own category at
+    /// the bet level's consolation rarity (<see cref="ZombiesRules.SlotConsolation"/>). It frees the machine at once and
+    /// never resets the heat. <see cref="Result"/> is <see cref="ZSlotResult.Part"/>; the reels show the skull.
+    /// </summary>
+    public bool Consolation;
+
     // The last win, as everyone saw it (Msg.ZSlotWin, protocol 55): who, what (a part or a melee build: an index as in
     // Part), its rarity, whether it was refunded as points, and when it came in (this PC's clock). WinSeq counts wins (0: none yet).
     public byte WinSeq, WinPlayer = byte.MaxValue;
     public ZSlotResult WinResult;
     public short WinIndex = -1;
     public Rarity WinTier;
-    public bool WinRefunded;
+    public bool WinRefunded, WinConsolation;
     public double WinAt = -1e9;
 
     // Client animation (Program.ZombiesSlots.cs): when the spin seen started, and how many reels have clicked to a stop.
@@ -94,12 +101,14 @@ public sealed class ZSlotMachine
         Part = -1;
         Paid = 0;
         Refunded = false;
+        Consolation = false;
         WinSeq = 0;
         WinPlayer = byte.MaxValue;
         WinResult = ZSlotResult.Nothing;
         WinIndex = -1;
         WinTier = Rarity.Common;
         WinRefunded = false;
+        WinConsolation = false;
         WinAt = -1e9;
         SeenSpin = 0;
         SpinStart = -1e9;
@@ -110,12 +119,13 @@ public sealed class ZSlotMachine
 /// <summary>
 /// Zombies slot machines (board item "Zombies slots", 2026-10-26; docs/zombies/ZOMBIES-MODE.md, "Slot machines"): gamble
 /// points for loose weapon-builder parts. Walk up, hold the interact key, pay; three reels spin and pay a part (into your
-/// loose parts, for the workbench), points back or nothing (a nothing frees the machine at once: pull again).
+/// loose parts, for the workbench; there is no cap on how many you bank), points back or, on a blank, a consolation part
+/// of the machine's own category (2026-10-27: no pull pays nothing; a consolation frees the machine at once: pull again).
 /// Zombies has no scrap since 2026-10-27 (developer: "the gambling machines replace the need"). Three levers raise the rarity, all data: the round
 /// (DropTables.json "slotTiers"), the machine's heat (every pull without a rare-or-better part adds one; every
 /// <see cref="ZombiesRules.SlotHeatStep"/> heat moves the part odds one tier up) and jackpot rounds (every
 /// <see cref="ZombiesRules.SlotJackpotEvery"/>th: the wonder symbol is on the reels and legendary / wonder get a bonus).
-/// At most <see cref="ZombiesRules.SlotMaxNothing"/> nothing-results in a row per player per machine. The server rolls,
+/// The consolation's rarity comes from the bet level (<see cref="ZombiesRules.SlotConsolation"/>), not the round. The server rolls,
 /// clients animate the reels (they get the symbols in <see cref="Msg.ZWorld"/>, protocol 51). Nothing here allocates per tick.
 /// </summary>
 public sealed partial class Game
@@ -244,6 +254,9 @@ public sealed partial class Game
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
     public string SlotResultText(ZSlotMachine m) => m.Result switch
     {
+        ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length && m.Consolation => m.Refunded
+            ? $"Consolation: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)"
+            : $"Consolation: {Parts.All[m.Part].Name}",
         ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.Refunded
             ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)"
             : $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!",
@@ -266,11 +279,18 @@ public sealed partial class Game
         m.SpinId++;
         m.Paid = cost;
         m.Refunded = false;
+        m.Consolation = false;
         var jackpot = ZRules.SlotJackpot(ZRound);
         var category = zm.SlotMachines[i].SlotCategory;
         var (result, tier) = RollSlotOutcome(ZRules, RunTables.Current, ZRound, m.Heat, ZNext(), ZRules.SlotBetStep(m.Bet));
-        if (result == ZSlotResult.Nothing && ZRules.SlotMaxNothing > 0 && zp.SlotNothing[i] >= ZRules.SlotMaxNothing)
-            result = ZSlotResult.Points; // bad-luck protection: never more than maxNothing blanks in a row (coins: points back)
+        if (result == ZSlotResult.Nothing)
+        {
+            // No pull pays nothing (2026-10-27): a blank pays a consolation part of this machine's category, its rarity from
+            // the bet level (not the round's table, so commons stay in late rounds). The reels still show the skull.
+            m.Consolation = true;
+            result = ZSlotResult.Part;
+            tier = RollSlotConsolation(ZRules, RunTables.Current, ZRound, m.Bet, ZNext());
+        }
         if (result == ZSlotResult.Melee && !ZRules.SlotPaysMelee(category))
             result = ZSlotResult.Part; // no blade on a gun category's reels: a part of the same tier (the same odds of a win)
         m.Part = -1;
@@ -290,9 +310,11 @@ public sealed partial class Game
             else
                 tier = StandardBuilds.All[m.Part].Tier; // (the nearest tier when that one had none: the reels show what's paid)
         }
+        if (result != ZSlotResult.Part)
+            m.Consolation = false;
         m.Result = result;
         m.Tier = tier;
-        SlotSymbols(result, tier, jackpot, ZNext(), m.Symbols);
+        SlotSymbols(m.Consolation ? ZSlotResult.Nothing : result, tier, jackpot, ZNext(), m.Symbols);
         Audio.Effect3D(Sfx.StreakCall, zm.SlotMachines[i].At + new Vector3(0, 1.2f, 0), 0.6f);
     }
 
@@ -389,8 +411,9 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Server, every tick: a spin that ends pays out; a win that has shown long enough frees the machine. A spin that wins
-    /// nothing frees it the moment the reels stop (no show, no cooldown: pull again at once; developer request, 2026-10-27).
+    /// Server, every tick: a spin that ends pays out; a win that has shown long enough frees the machine. A consolation
+    /// (or, with a modded table, nothing) frees it the moment the reels stop (no show, no cooldown: pull again at once;
+    /// developer requests, 2026-10-27).
     /// </summary>
     private void TickSlots(ZombiesMap zm, double now)
     {
@@ -400,9 +423,9 @@ public sealed partial class Game
             if (m.State == ZSlotState.Spinning && now >= m.Until)
             {
                 PaySlot(zm, i, m, now);
-                if (m.Result == ZSlotResult.Nothing)
+                if (m.Result == ZSlotResult.Nothing || m.Consolation)
                 {
-                    m.State = ZSlotState.Idle; // a loss: the machine is free at once (the reels stay on the skull until the next pull)
+                    m.State = ZSlotState.Idle; // a consolation: the machine is free at once (the reels stay on the skull until the next pull)
                     m.Owner = byte.MaxValue;
                 }
                 else
@@ -434,7 +457,7 @@ public sealed partial class Game
         {
             var m = ZSlots[i];
             w.U8((byte)m.State).U8(m.Heat).U8(m.Owner).U8(m.SpinId).U8(m.Symbols[0]).U8(m.Symbols[1]).U8(m.Symbols[2])
-                .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.Refunded ? 128 : 0))).U16((ushort)m.Part)
+                .U8((byte)((byte)m.Result | ((byte)m.Tier << 3) | (m.Consolation ? 64 : 0) | (m.Refunded ? 128 : 0))).U16((ushort)m.Part)
                 .U8((byte)Math.Clamp((int)MathF.Ceiling(m.Left * 10), 0, 255)).U8(m.Bet);
         }
     }
@@ -470,6 +493,7 @@ public sealed partial class Game
             m.Result = (ZSlotResult)Math.Min(res & 7, (int)ZSlotResult.Melee);
             m.Tier = (Rarity)Math.Min((res >> 3) & 7, (int)Rarity.Wonder);
             m.Refunded = (res & 128) != 0;
+            m.Consolation = (res & 64) != 0 && m.Result == ZSlotResult.Part; // (bit 6, protocol 71: a consolation part)
             m.Part = part;
             m.Left = left;
         }
@@ -477,8 +501,9 @@ public sealed partial class Game
 
     private void PaySlot(ZombiesMap zm, int i, ZSlotMachine m, double now)
     {
-        // Heat: a rare-or-better part resets it, anything else warms the machine up.
-        if (m.Result is ZSlotResult.Part or ZSlotResult.Melee && m.Tier >= ZRules.SlotPityTier)
+        // Heat: a rare-or-better part resets it, anything else warms the machine up (a consolation too, even a rare one:
+        // it isn't a pity-tier win).
+        if (m.Result is ZSlotResult.Part or ZSlotResult.Melee && !m.Consolation && m.Tier >= ZRules.SlotPityTier)
             m.Heat = 0;
         else if (m.Heat < 255)
             m.Heat++;
@@ -493,13 +518,13 @@ public sealed partial class Game
                 var part = Parts.All[m.Part];
                 if (ZRules.SlotDupePointsAt > 0 && zp.Parts.GetValueOrDefault(part.Name) >= ZRules.SlotDupePointsAt)
                 {
-                    m.Refunded = true; // you hold plenty of it loose: the coin payout instead ("dupePointsAt")
+                    m.Refunded = true; // you hold plenty of it loose: the coin payout instead ("dupePointsAt"; 0, the default: always keep it)
                     AddPoints(p, SlotPointsBack(m.Paid));
                 }
                 else
-                    zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1;
+                    zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1; // no cap: bank as many as you like
                 SendZRun(p);
-                ServerSlotWin(i, m, p); // everyone sees it: the part over the machine and a line in the feed (protocol 55)
+                ServerSlotWin(i, m, p); // everyone sees it: the part over the machine (a consolation: smaller, and only your feed; protocol 55)
                 break;
             }
             case ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length:
@@ -566,6 +591,47 @@ public sealed partial class Game
             RunTables.SlotMelee => (ZSlotResult.Melee, MeleeTier(w, h)),
             _ => (ZSlotResult.Part, (Rarity)(k - RunTables.SlotPart)),
         };
+    }
+
+    /// <summary>
+    /// A consolation part's rarity (a blank, 2026-10-27): rolled from <see cref="ZombiesRules.SlotConsolationFor"/>(bet
+    /// level), never from the round's table, but never rarer than the main roll's lowest part tier at that bet (the round's
+    /// row with the bet's steps and no heat): weight above that floor pays the floor. Deterministic; no allocation.
+    /// </summary>
+    public static Rarity RollSlotConsolation(ZombiesRules rules, RunTables tables, int round, int bet, uint seed)
+    {
+        Span<float> w = stackalloc float[RunTables.SlotKeys.Length];
+        SlotWeights(rules, tables, round, 0, w, rules.SlotBetStep(bet));
+        var floor = (int)Rarity.Wonder;
+        for (var t = 0; t <= (int)Rarity.Wonder; t++)
+            if (w[RunTables.SlotPart + t] > 0)
+            {
+                floor = t;
+                break;
+            }
+        Span<float> c = stackalloc float[(int)Rarity.Wonder + 1];
+        c.Clear();
+        var row = rules.SlotConsolationFor(bet);
+        for (var t = 0; t < row.Length && t < c.Length; t++)
+            c[Math.Min(t, floor)] += Math.Max(0, row[t]);
+        var total = 0f;
+        foreach (var x in c)
+            total += x;
+        if (total <= 0)
+            return Rarity.Common;
+        var h = (seed ^ 0x85EBCA6Bu) * 2654435761u;
+        h ^= h >> 15;
+        var pick = (h % 1000000u) / 1000000f * total;
+        for (var t = 0; t < c.Length; t++)
+        {
+            pick -= c[t];
+            if (pick < 0 && c[t] > 0)
+                return (Rarity)t;
+        }
+        for (var t = c.Length - 1; t > 0; t--)
+            if (c[t] > 0)
+                return (Rarity)t;
+        return Rarity.Common;
     }
 
     /// <summary>A melee payout's rarity: rolled from the same weights as a part's (the round's row, heat and jackpot included).</summary>
@@ -643,7 +709,8 @@ public sealed partial class Game
     /// <summary>
     /// How three reel symbols read (the player-facing rules, also what the reels are made from): three of a gem pay a part
     /// of its tier; two of a gem pay a part one tier lower (two commons: points back); otherwise a coin pays points back,
-    /// and skulls and odd gems nothing.
+    /// and skulls and odd gems read as <see cref="ZSlotResult.Nothing"/>, which the server pays as a consolation part
+    /// (2026-10-27).
     /// </summary>
     public static (ZSlotResult Result, Rarity Tier) ReadSlotSymbols(ReadOnlySpan<byte> s)
     {

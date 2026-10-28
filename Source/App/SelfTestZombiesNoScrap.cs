@@ -43,7 +43,7 @@ public static partial class SelfTest
         // ---- Older files still load ----
         var legacyRules = File.ReadAllText(ZombiesRules.PathName)
             .Replace("\"salvageParts\": 1", "\"scrapPerKill\": 1, \"salvageScrap\": 25")
-            .Replace("\"dupePointsAt\": 3,", "\"scrapPayout\": 40, \"autoScrapAt\": 3,");
+            .Replace("\"dupePointsAt\": 0,", "\"scrapPayout\": 40, \"autoScrapAt\": 3,");
         string? legacyRulesWhy = null;
         try
         {
@@ -118,22 +118,22 @@ public static partial class SelfTest
             texts.Add(g.Feed[i].Text);
         var said = texts.Where(t => t.Contains("scrap", StringComparison.OrdinalIgnoreCase)).Distinct().ToList();
 
-        // The run message: only the loose parts (protocol 56), and a client reads them back.
+        // The run message: only the loose parts (protocol 56; a u16 count of kinds and a u32 count each since protocol 71), and a client reads them back.
         var w = new PacketWriter();
         g.SelfTestWriteRun(w, me);
         var msg = w.Span.ToArray();
-        var expect = 2 + zp.Parts.Sum(kv => { var cw = new PacketWriter(); cw.Begin(Msg.ZRun).Str(kv.Key); return cw.Span.Length - 1 + 1; });
+        var expect = 3 + zp.Parts.Sum(kv => { var cw = new PacketWriter(); cw.Begin(Msg.ZRun).Str(kv.Key); return cw.Span.Length - 1 + 4; });
         using var c = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999);
         c.SelfTestReadRun(msg);
         var cp = c.ZP(c.LocalId);
-        var same = cp.Parts.Count == zp.Parts.Count && zp.Parts.All(kv => cp.Parts.GetValueOrDefault(kv.Key) == Math.Min(kv.Value, 255));
+        var same = cp.Parts.Count == zp.Parts.Count && zp.Parts.All(kv => cp.Parts.GetValueOrDefault(kv.Key) == kv.Value);
         ZLine($"no scrap run (seed 4242, 2 bots, round {g.ZRound}): salvage pile '{pilePrompt?.Text}' -> a part {gotPart}, then '{picked?.Text}'; {pulls} slot pulls; {texts.Count} prompts and feed lines, "
               + $"{said.Count} saying scrap [{string.Join(" | ", said)}]; run message {msg.Length} bytes (parts only: {expect}), client copy {same}; protocol {ServerInfo.ProtocolVersion}");
         if (pilePrompt is not { Kind: ZUseKind.Salvage, Blocked: false } || !gotPart || picked is not { Kind: ZUseKind.Salvage, Blocked: true })
             Fail("a salvage pile should give a loose part once a round, then be picked clean");
         if (said.Count > 0 || pulls < 5)
             Fail("a Zombies run should never mention scrap (prompts, slot results, the feed)");
-        if (msg.Length != expect || !same || ServerInfo.ProtocolVersion < 56)
+        if (msg.Length != expect || !same || ServerInfo.ProtocolVersion < 71)
             Fail("the run message should carry only the loose parts (protocol 56) and reach the client intact");
     }
 }

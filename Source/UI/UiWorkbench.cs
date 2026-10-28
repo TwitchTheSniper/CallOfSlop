@@ -152,7 +152,7 @@ public sealed partial class Ui
 
     private void WbTip(ImString text) => ImGuiSafe.WrappedTooltip(text, PartTextWidth * _scale);
 
-    private static readonly string[] WbCountText = Enumerable.Range(0, 100).Select(i => $"x{i}").ToArray();
+    private static readonly string[] WbCountText = Enumerable.Range(0, 1000).Select(i => $"x{i}").ToArray();
     private static readonly string[] WbHiddenText = Enumerable.Range(0, 1000).Select(i => $"({i} hidden)").ToArray();
 
     private BenchModel Bm => _bm!;
