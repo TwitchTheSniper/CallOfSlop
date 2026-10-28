@@ -75,6 +75,12 @@ public sealed class GunMesh
     /// <summary>Top of the highest permanent part under the rail: an optic's rail sits on it.</summary>
     public float Mount;
 
+    /// <summary>
+    /// Built weapons: the bottom of the bridge an optic's rail stands on when no receiver is under it (only receivers
+    /// off to the side: the bridge rests on their tops, from <see cref="RiserLeft"/> to <see cref="RiserRight"/>). NaN = none.
+    /// </summary>
+    public float RiserLow = float.NaN, RiserLeft, RiserRight;
+
     /// <summary>Iron sight line height.</summary>
     public float Iron;
 

@@ -236,6 +236,42 @@ public static class GunModel
         return list;
     }
 
+    private static readonly (float HalfWidth, float Front, float Back)?[] Footprints = new (float, float, float)?[32];
+
+    /// <summary>
+    /// Where optic <paramref name="k"/>'s feet stand, relative to its mount point (x = 0, z = the optic's z): the half
+    /// width and the front and back z (negative = forward) of every box that rests on its rail (bottom within the rail's
+    /// thickness of the mount), such as a scope's rings past the rail's ends. Built weapons seat the optic on whatever
+    /// of the gun lies under this (<see cref="BuildModel"/>). Cached per kind; (0, 0, 0) for iron sights.
+    /// </summary>
+    public static (float HalfWidth, float Front, float Back) OpticFootprint(OpticKind k)
+    {
+        var i = (int)k;
+        if (k == OpticKind.Iron || i >= Footprints.Length)
+            return (0, 0, 0);
+        if (Footprints[i] is { } f)
+            return f;
+        var probe = new WeaponDef
+        {
+            Name = "optic footprint", Class = WeaponClass.AssaultRifle, Damage = 1, RangeM = 1, Rpm = 60, Mag = 1, Reload = 1, HipSpreadDeg = 1,
+            Optic = k, BuiltMesh = new GunMesh(),
+        };
+        float hw = 0, front = 0, back = 0;
+        foreach (var p in RecordParts(probe, 0f))
+            if (p.Optic && !p.Clear && p.Min.Y < RailThickness + 1e-4f)
+            {
+                hw = MathF.Max(hw, MathF.Max(-p.Min.X, p.Max.X));
+                front = MathF.Min(front, p.Min.Z);
+                back = MathF.Max(back, p.Max.Z);
+            }
+        var r = (hw, front, back);
+        Footprints[i] = r;
+        return r;
+    }
+
+    /// <summary>How thick an optic's rail is (it stands on the mount; <see cref="DrawRail"/>).</summary>
+    public const float RailThickness = 0.008f;
+
     // ---- Built models (weapons with a "model" block) ----------------------------------------
 
     private static readonly ConditionalWeakTable<WeaponDef, GunMesh> Meshes = new();
@@ -348,7 +384,7 @@ public static class GunModel
     }
 
     /// <summary>How far each optic's sight line sits above the mount (0 = no optic).</summary>
-    private static float OpticRise(OpticKind k) => k switch
+    public static float OpticRise(OpticKind k) => k switch
     {
         OpticKind.RedDot => 0.035f,
         OpticKind.MiniDot => 0.026f,
@@ -742,7 +778,22 @@ public static class GunModel
                 _g.SetBlend(false);
         }
         if (d.Optic != OpticKind.Iron)
+        {
             DrawRail(m.RailWidth, m.Mount, m.RailFront, m.RailBack);
+            if (m.RiserLow < m.Mount)
+            {
+                // A bridge across the receivers' tops when none of them is under the optic's rail (side slots), and a riser
+                // up to the rail when the sight line has to clear something in front (BuildModel.OpticSeat).
+                _inOptic = true;
+                var plate = MathF.Min(RailThickness, m.Mount - m.RiserLow);
+                Box(m.RiserRight - m.RiserLeft, plate, m.RailBack - m.RailFront, (m.RiserLeft + m.RiserRight) / 2, m.RiserLow + plate / 2,
+                    (m.RailFront + m.RailBack) / 2, Dark * 1.5f);
+                if (m.Mount - m.RiserLow > plate + 1e-4f)
+                    Box(m.RailWidth, m.Mount - m.RiserLow - plate, m.RailBack - m.RailFront, 0, (m.RiserLow + plate + m.Mount) / 2, (m.RailFront + m.RailBack) / 2,
+                        Dark * 1.4f);
+                _inOptic = false;
+            }
+        }
         DrawOptic(d, m.Mount, m.OpticZ);
         if (flash && _record == null)
         {
@@ -761,7 +812,7 @@ public static class GunModel
     private static void DrawRail(float width, float mount, float front, float back)
     {
         _inOptic = true;
-        Box(width, 0.008f, back - front, 0, mount + 0.004f, (front + back) / 2, Dark * 1.5f);
+        Box(width, RailThickness, back - front, 0, mount + RailThickness / 2, (front + back) / 2, Dark * 1.5f);
         _inOptic = false;
     }
 
