@@ -549,9 +549,11 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | X (hold) | Push to talk (once you've turned your microphone on in Settings > Audio) |
 | F8 | Open / close the Audio mixer debug window (see Audio mixer) |
 | F7 | Open / close the weapon tweak debug window (dev builds; see Weapon tweak window) |
+| T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
+| I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, and `binds_version=6` the weapon tweak window on F7.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, and `binds_version=7` Drop item T and the Parts inventory I (Zombies).
 
 ### Display
 

@@ -74,6 +74,7 @@ public sealed partial class Game
             if (Players.TryGetValue(id, out var me))
                 SendZRun(me);
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
+            SendPartDropsTo(guid, now); // and the loose parts players dropped (ZombiesDropItems.cs)
             SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
@@ -545,6 +546,16 @@ public sealed partial class Game
             }
             case (byte)Msg.ZRun when !IsServer && r.Has(5):
                 ReadZRun(ref r);
+                break;
+            case (byte)Msg.ZDropItem when IsServer && r.Has(2):
+                if (_clients.TryGetValue(sender.G, out var dc) && Players.TryGetValue(dc.Id, out var dp))
+                {
+                    if (OnDropRequest(dp, ref r, now) is { } why)
+                        ZFeedTo(dp, why, Sfx.DryFire);
+                }
+                break;
+            case (byte)Msg.ZPartDrop when !IsServer:
+                ReadPartDrop(ref r, now); // a part pickup appeared or went (ZombiesDropItems.cs)
                 break;
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
