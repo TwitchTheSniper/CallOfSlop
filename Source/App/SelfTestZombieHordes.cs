@@ -397,17 +397,27 @@ public static partial class SelfTest
         }
         Pose();
         rec.Reset();
-        var poseMs = ThreadCpu.TimeMs(() =>
-        {
-            for (var k = 0; k < 20; k++)
-                Pose();
-        }) / 20;
-        var draws = rec.Count / 20.0;
-        var soundMs = ThreadCpu.TimeMs(() =>
-        {
-            for (var k = 0; k < 20; k++)
-                c.ZSounds.Frame(c.Audio, c.Horde, 1 / 60f);
-        }) / 20;
+        // The posing and the sounds are each timed as the quickest of five blocks of 20 frames (2026-10-28,
+        // fix/client-zombie-cost). Every block does the same work: the pose staggering (PoseEvery: 1, 2 or 4 frames)
+        // repeats every 4 frames and the horde stands still, so a block can only be slowed by the machine, never sped
+        // up. One block timed once let a busy patch of a shared 2-vCPU Windows runner through (its thread cycle
+        // counter counts the core's stalls on the other hyperthread): 600 read 5.47 ms on one main run against
+        // 1.0 ms on Linux and a pass on every other main run of the same client code (SelfTestCpuRatio.cs: the same fix).
+        var poseMs = double.MaxValue;
+        for (var b = 0; b < 5; b++)
+            poseMs = Math.Min(poseMs, ThreadCpu.TimeMs(() =>
+            {
+                for (var k = 0; k < 20; k++)
+                    Pose();
+            }) / 20);
+        var draws = rec.Count / 100.0;
+        var soundMs = double.MaxValue;
+        for (var b = 0; b < 5; b++)
+            soundMs = Math.Min(soundMs, ThreadCpu.TimeMs(() =>
+            {
+                for (var k = 0; k < 20; k++)
+                    c.ZSounds.Frame(c.Audio, c.Horde, 1 / 60f);
+            }) / 20);
         var clientMs = readMs * 30 / 60 + poseMs + soundMs; // per 60 Hz frame: half a snapshot read, the posing and drawing, the sounds
         HLine($"horde {count}: {g.AliveZombies} alive, server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
               + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}; {nearNow} within {Game.ZEntNear * 0.8f:0} m at the end, the longest a near one waited {nearAgeWorst} snapshots); "
