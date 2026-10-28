@@ -18,6 +18,7 @@ Once your saves are there, every future update keeps them automatically. You onl
 | `loadout.txt` | Your loadouts |
 | `settings.txt` | Your settings and keybinds |
 | `workbench.txt` | Your workbench weapon builds |
+| `blueprints.txt` | Your workbench blueprint library (newer builds; the first time it opens it copies in the builds from `workbench.txt`) |
 | `audio_mix.json` and the `AudioMixes` folder | Your audio mixer levels and presets |
 | `appearance.txt` | Your soldier's look and hat (newer builds; older ones kept the hat in `loadout.txt`) |
 
@@ -47,6 +48,7 @@ Use this if the automatic copy didn't find your old build, for example because i
    - `loadout.txt`
    - `settings.txt`
    - `workbench.txt`
+   - `blueprints.txt` (if you have it)
    - `audio_mix.json`
    - `appearance.txt` (if you have it)
    - the `AudioMixes` folder
@@ -72,6 +74,10 @@ The **Classic**, **Collision Point** and **High Ground** map packs are now one p
 ### Workbench builds on removed receivers
 
 Three weapon-builder receivers that were only a fire rate are gone: the **Ratchet Burst SMG**, **Triad Burst** and **Buzzbox Machine Pistol** receivers (the burst or buzzsaw is the Action part now). A saved build in `workbench.txt` that uses one loads on the **Stampede**, **Workhorse** or **Plinker** receiver with the **Ratchet Burst Group**, **Three-Round Burst Group** or **Buzzsaw Sear** action, so it fires as before, and the file is saved back that way. Nothing else in your builds changes; receiver damage numbers did change with the late-game power curve (docs/zombies/WEAPON-BUILDER.md, "The power curve").
+
+### Workbench blueprints
+
+The workbench now has a **blueprint library** (`blueprints.txt` in your save folder): any number of saved guns, melee weapons and grenades. The first time you open the workbench on this build, the builds already in your `workbench.txt` slots (and your melee and grenade) are copied into the library, once. Your slots in `workbench.txt` stay as they were.
 
 ### Keeping saves on a USB stick (portable mode)
 

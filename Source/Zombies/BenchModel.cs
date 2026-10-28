@@ -206,6 +206,9 @@ public struct SocketSpot
 
     /// <summary>A refused Build marked it (<see cref="BenchModel.RefuseBuild"/>): drawn as a red ring until it is filled.</summary>
     public bool Refused;
+
+    /// <summary>A blueprint loaded in a Zombies run wants this part here and you don't have it (<see cref="BenchModel.SetGaps"/>): a red ring until it is filled.</summary>
+    public PartDef? Gap;
 }
 
 /// <summary>The camera of the workbench's big 3D view: orbit (yaw, pitch) and zoom around the gun's middle.</summary>
@@ -381,7 +384,53 @@ public sealed class BenchModel
         Build = b;
         _copied = null;
         _refused.Clear(); // another build (new weapon, load, regrip): the marks of a refused Build go
+        _gaps.Clear(); // and a blueprint's missing sockets
         Changed();
+    }
+
+    // ---- A blueprint loaded in a Zombies run: the sockets it wants parts in that you don't have -----------------
+
+    private readonly List<BlueprintGap> _gaps = new();
+
+    /// <summary>The blueprint's parts still missing (their sockets still empty), in the build's order.</summary>
+    public IReadOnlyList<BlueprintGap> Gaps => _gaps;
+
+    /// <summary>
+    /// Marks the empty sockets a blueprint wanted parts in (<see cref="BlueprintFit.Fit"/>) as <see cref="SocketSpot.Gap"/>:
+    /// red rings until each is filled (with any part), kept through undo and redo (matched by path), all gone when
+    /// another build is loaded. Call after <see cref="SetBuild"/> with the fitted build.
+    /// </summary>
+    public void SetGaps(IEnumerable<BlueprintGap> gaps)
+    {
+        _gaps.Clear();
+        _gaps.AddRange(gaps);
+        MarkGaps();
+        Version = Interlocked.Increment(ref s_lastVersion);
+    }
+
+    /// <summary>Sets <see cref="SocketSpot.Gap"/> on the spots still wanted and still empty; forgets the gaps that were filled or went.</summary>
+    private void MarkGaps()
+    {
+        for (var i = 0; i < Spots.Count; i++)
+        {
+            var s = Spots[i];
+            PartDef? want = null;
+            if (s.Child == null && _gaps.Count > 0)
+                foreach (var g in _gaps)
+                    if (g.ParentPath == s.ParentPath && g.Socket == s.Socket.Name)
+                    {
+                        want = g.Part;
+                        break;
+                    }
+            if (s.Gap != want)
+            {
+                s.Gap = want;
+                Spots[i] = s;
+            }
+        }
+        for (var k = _gaps.Count - 1; k >= 0; k--)
+            if (SpotOf(_gaps[k].ParentPath, _gaps[k].Socket) is var j && (j < 0 || Spots[j].Gap == null))
+                _gaps.RemoveAt(k);
     }
 
     // ---- A refused Build: the empty sockets that need a part --------------------------------------------------
@@ -545,6 +594,7 @@ public sealed class BenchModel
         BuildRows();
         BuildSpots();
         MarkRefused();
+        MarkGaps();
         if (bump)
             Version = Interlocked.Increment(ref s_lastVersion);
     }

@@ -875,7 +875,7 @@ public sealed partial class Ui
 
         // The view.
         var origin = ImGui.GetCursorScreenPos();
-        var stripH = 58 * _scale;
+        var stripH = (58 + (Bm.Gaps.Count > 0 ? 17 * (Math.Min(Bm.Gaps.Count, 6) + (Bm.Gaps.Count > 6 ? 2 : 1)) : 0)) * _scale; // room for a blueprint's missing parts
         var viewSize = new float2(width, MathF.Max(120 * _scale, height - (origin.Y - ImGui.GetWindowPos().Y) - stripH));
         ImGui.InvisibleButton("##wbview"u8, viewSize, ImGuiButtonFlags.MouseButtonLeft | ImGuiButtonFlags.MouseButtonRight);
         _viewMin = origin;
@@ -931,8 +931,8 @@ public sealed partial class Ui
                     _dragStart = mouse;
                     _dragHome = _spotScreen[_hoverSpot];
                 }
-                else if (_hoverSpot >= 0 && (spot.Refused || spot.Needed))
-                    WbShowSocketParts(spot.Socket); // a red (refused) or yellow (needed) ring: its parts
+                else if (_hoverSpot >= 0 && (spot.Refused || spot.Needed || spot.Gap != null))
+                    WbShowSocketParts(spot.Socket); // a red (refused, or a blueprint's missing part) or yellow (needed) ring: its parts
                 else
                     _orbiting = true;
             }
@@ -981,10 +981,19 @@ public sealed partial class Ui
                 }
                 label = _refusedTip;
             }
+            else if (hs.Gap != null && hs.Child == null)
+            {
+                if (_refusedTipKey != (Bm.Version, _hoverSpot))
+                {
+                    _refusedTipKey = (Bm.Version, _hoverSpot);
+                    _refusedTip = $"The blueprint has the {hs.Gap.Name} here ({SocketLabel(hs.Socket).ToLowerInvariant()} of the {hs.Parent.Part.Name}): you don't have one - click: {PartDef.CategoryName(CategoryFor(hs.Socket)).ToLowerInvariant()} parts";
+                }
+                label = _refusedTip;
+            }
             else
                 label = hs.Child != null ? $"{hs.Child.Part.Name}{(hs.Missing ? "  (MISSING)" : "")}" : $"{SocketLabel(hs.Socket)} of the {hs.Parent.Part.Name}{(hs.Needed ? " (needed)" : " (empty)")}";
-            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing || hs.Refused ? Red8 : White8, label);
-            if (hs.Child == null && (hs.Refused || hs.Needed))
+            DlText(dl, _spotScreen[_hoverSpot] + new float2(14 * _scale, -8 * _scale), hs.Missing || hs.Refused || hs.Gap != null ? Red8 : White8, label);
+            if (hs.Child == null && (hs.Refused || hs.Needed || hs.Gap != null))
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
             if (hs.Child != null)
                 ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
@@ -1054,6 +1063,14 @@ public sealed partial class Ui
                 dl.AddCircle(c, r, Red8, 28, (2.5f + burst) * _scale);
                 dl.AddCircleFilled(c, 3.5f * _scale, Red8, 10);
             }
+            else if (s.Gap != null && s.Child == null)
+            {
+                // A blueprint loaded in a run wants a part here that you don't have: a steady red ring until it's filled.
+                var r = (11f + pulse * 1.5f) * _scale;
+                dl.AddCircle(c, r + 3f * _scale, WbFade(Red8, 0.35f), 28, 3f * _scale);
+                dl.AddCircle(c, r, Red8, 28, 2.5f * _scale);
+                dl.AddCircleFilled(c, 3.5f * _scale, Red8, 10);
+            }
             else if (s.Missing)
             {
                 dl.AddCircleFilled(c, 5f * _scale, Red8, 12);
@@ -1074,6 +1091,7 @@ public sealed partial class Ui
 
     private void DrawMissingStrip()
     {
+        DrawBlueprintGaps(); // a blueprint loaded in a run: the parts you don't have (UiWorkbenchBlueprints.cs)
         var m = Bm.Missing;
         if (m.Total > 0)
         {
@@ -1972,6 +1990,7 @@ public sealed partial class Ui
                 BuildStore.Save();
             }
         }
+        DrawBlueprints(b); // the blueprint library (UiWorkbenchBlueprints.cs)
         DrawWorkbenchPresets();
         ImGui.Separator();
 
