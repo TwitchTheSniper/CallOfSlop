@@ -28,9 +28,14 @@ public enum MapLightType : byte
 /// <param name="CosOuter">Spot: cosine of half the cone angle (outside: no light).</param>
 /// <param name="CosInner">Spot: cosine of the angle within which it's at full strength (the soft edge is between).</param>
 /// <param name="Size">Area: the rectangle's width and depth in metres (across <see cref="Dir"/>).</param>
-/// <param name="Flicker">A cheap animated light (flames, a dodgy bulb): its baked share wavers at draw time.</param>
+/// <param name="Flicker">A cheap animated light (flames, a dodgy bulb): its baked share wavers at draw time (<see cref="LightFlicker"/>).</param>
+/// <param name="FlickerSpeed">Flicker: its pace, 1 by default (0.5: calmer, 2: livelier; <see cref="LightFlicker.MinSpeed"/> to <see cref="LightFlicker.MaxSpeed"/>).</param>
+/// <param name="FlickerAmount">Flicker: how far it wavers, 1 by default (0: steady, up to <see cref="LightFlicker.MaxAmount"/>).</param>
+/// <param name="Seed">Flicker: 0..1, picks its own phase, strength and pace. From its position (<see cref="Make"/>), or for a
+/// prop's light from the prop copy and the light's number (<see cref="Placed"/>), as the prop's flame parts do.</param>
 public readonly record struct MapLight(Vector3 Pos, Vector3 Color, float Intensity, float Range, MapLightType Type = MapLightType.Point,
-    Vector3 Dir = default, float CosOuter = -1f, float CosInner = -1f, Vector2 Size = default, bool Flicker = false)
+    Vector3 Dir = default, float CosOuter = -1f, float CosInner = -1f, Vector2 Size = default, bool Flicker = false,
+    float FlickerSpeed = 1f, float FlickerAmount = 1f, float Seed = 0f)
 {
     public const float MinRange = 0.5f, MaxRange = 40f, MaxIntensity = 20f;
 
@@ -46,7 +51,8 @@ public readonly record struct MapLight(Vector3 Pos, Vector3 Color, float Intensi
     /// Checks and builds one light from the values a map op or prop file gives (throws <see cref="InvalidOperationException"/>
     /// with a readable message). <paramref name="cone"/> is the full cone angle in degrees (spot).
     /// </summary>
-    public static MapLight Make(Vector3 pos, Vector3 color, float intensity, float range, string type, float yaw, float pitch, float cone, float w, float d, bool flicker)
+    public static MapLight Make(Vector3 pos, Vector3 color, float intensity, float range, string type, float yaw, float pitch, float cone, float w, float d, bool flicker,
+        float flickerSpeed = 1f, float flickerAmount = 1f)
     {
         var kind = type.Trim().ToLowerInvariant() switch
         {
@@ -69,21 +75,28 @@ public readonly record struct MapLight(Vector3 Pos, Vector3 Color, float Intensi
             throw new InvalidOperationException("an area light's \"w\" and \"d\" are 0.05 to 20 metres");
         if (!(MathF.Abs(yaw) <= 360 && MathF.Abs(pitch) <= 90))
             throw new InvalidOperationException("light \"yaw\" is -360 to 360 degrees and \"pitch\" -90 (up) to 90 (down)");
+        if (!(flickerSpeed >= LightFlicker.MinSpeed && flickerSpeed <= LightFlicker.MaxSpeed))
+            throw new InvalidOperationException($"light \"flickerSpeed\" is {LightFlicker.MinSpeed} to {LightFlicker.MaxSpeed} (1: the usual flame)");
+        if (!(flickerAmount >= 0 && flickerAmount <= LightFlicker.MaxAmount))
+            throw new InvalidOperationException($"light \"flickerAmount\" is 0 to {LightFlicker.MaxAmount} (1: the usual flame)");
         var dir = kind == MapLightType.Point ? Vector3.Zero : Direction(yaw, pitch);
         var half = cone * 0.5f * (MathF.PI / 180f);
         return new MapLight(pos, color, intensity, range, kind, dir,
             kind == MapLightType.Spot ? MathF.Cos(half) : -1f, kind == MapLightType.Spot ? MathF.Cos(half * 0.75f) : -1f,
-            kind == MapLightType.Area ? new Vector2(w, d) : Vector2.Zero, flicker);
+            kind == MapLightType.Area ? new Vector2(w, d) : Vector2.Zero, flicker, flickerSpeed, flickerAmount, LightFlicker.SeedOf(pos));
     }
 
-    /// <summary>This light (in a prop's frame) on a prop placed at <paramref name="at"/>, turned by <paramref name="yaw"/> radians and scaled.</summary>
-    public MapLight Placed(Vector3 at, float yaw, float scale)
+    /// <summary>
+    /// This light (in a prop's frame) on a prop placed at <paramref name="at"/>, turned by <paramref name="yaw"/> radians and
+    /// scaled; <paramref name="index"/> is its number in the prop's lights (its flicker seed, shared with the prop's flame parts).
+    /// </summary>
+    public MapLight Placed(Vector3 at, float yaw, float scale, int index = 0)
     {
         float cs = MathF.Cos(yaw), sn = MathF.Sin(yaw);
         var p = Pos * scale;
         var world = new Vector3(at.X + p.X * cs + p.Z * sn, at.Y + p.Y, at.Z - p.X * sn + p.Z * cs);
         var dir = Dir == Vector3.Zero ? Dir : new Vector3(Dir.X * cs + Dir.Z * sn, Dir.Y, -Dir.X * sn + Dir.Z * cs);
-        return this with { Pos = world, Dir = dir, Range = Range * scale, Size = Size * scale };
+        return this with { Pos = world, Dir = dir, Range = Range * scale, Size = Size * scale, Seed = LightFlicker.PropLightSeed(PropAnim.Seed(at), index) };
     }
 }
 
@@ -118,14 +131,15 @@ public sealed partial class Map
     /// A static light baked into the map's light grid: a point light at (x, y, z) (y above the ground on terrain maps),
     /// or with <paramref name="type"/> "spot" a cone pointing at compass <paramref name="yaw"/> and <paramref name="pitch"/>
     /// degrees down (90 = straight down) <paramref name="cone"/> degrees wide, or "area" a glowing <paramref name="w"/> x
-    /// <paramref name="d"/> rectangle facing that way. <paramref name="flicker"/> makes it waver (flames). Looks only.
+    /// <paramref name="d"/> rectangle facing that way. <paramref name="flicker"/> makes it waver (flames), each light in its own
+    /// way; <paramref name="flickerSpeed"/> (0.25-4, 1: a flame) and <paramref name="flickerAmount"/> (0-3) tune it. Looks only.
     /// </summary>
     [MapOp]
     public void LightSource(float x, float y, float z, Vector3 color, float intensity = 1f, float range = 8f, string type = "point",
-        float yaw = 0f, float pitch = 90f, float cone = 60f, float w = 1f, float d = 1f, bool flicker = false)
+        float yaw = 0f, float pitch = 90f, float cone = 60f, float w = 1f, float d = 1f, bool flicker = false, float flickerSpeed = 1f, float flickerAmount = 1f)
     {
-        using var __ = Op([x, y, z, color, intensity, range, type, yaw, pitch, cone, w, d, flicker]);
-        Lights.Add(MapLight.Make(new Vector3(x, y + PointGround(x, z), z), color, intensity, range, type, yaw, pitch, cone, w, d, flicker));
+        using var __ = Op([x, y, z, color, intensity, range, type, yaw, pitch, cone, w, d, flicker, flickerSpeed, flickerAmount]);
+        Lights.Add(MapLight.Make(new Vector3(x, y + PointGround(x, z), z), color, intensity, range, type, yaw, pitch, cone, w, d, flicker, flickerSpeed, flickerAmount));
     }
 
     /// <summary>
@@ -165,8 +179,8 @@ public sealed partial class Map
         var all = new List<MapLight>(Lights);
         if (LightingSettings?.PropLights ?? true)
             foreach (var p in PropInstances)
-                foreach (var l in p.Def.Lights)
-                    all.Add(l.Placed(p.Position, p.Yaw, p.Scale));
+                for (var i = 0; i < p.Def.Lights.Length; i++)
+                    all.Add(p.Def.Lights[i].Placed(p.Position, p.Yaw, p.Scale, i));
         if (all.Count > MaxLights)
         {
             Console.WriteLine($"Map '{Name}': {all.Count} lights, only the first {MaxLights} are baked");

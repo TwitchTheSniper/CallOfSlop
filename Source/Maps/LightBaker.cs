@@ -23,7 +23,11 @@ public sealed class LightBake
     /// <summary>4 signed bytes a cell (snorm): x, y, z the lights' average direction (its length: how one-sided the light is), w the ambient left (sky visibility).</summary>
     public sbyte[] Dir = [];
 
-    /// <summary>2 bytes a cell: how much of the sun reaches it (0-255) and the flicker phase of the brightest flickering light.</summary>
+    /// <summary>
+    /// 4 bytes a cell: how much of the sun reaches it (0-255), the flicker phasor (x, y: the luminance-weighted sum of the
+    /// flickering lights' own phasors over all the light reaching the cell, <see cref="LightFlicker.ZByte"/>) and the
+    /// flickering lights' average pace (0-255). See <see cref="LightFlicker"/>.
+    /// </summary>
     public byte[] Sun = [];
 
     /// <summary>The lights baked (LightSource ops, then props' lights), in world space.</summary>
@@ -51,17 +55,17 @@ public sealed class LightBake
 
     /// <summary>
     /// The grid at <paramref name="p"/>, filtered like the GPU does (trilinear between cell centres, clamped at the edges;
-    /// outside the grid: no static light, full sun and ambient): light (rgb, flicker share), direction + ambient, sun + phase.
+    /// outside the grid: no static light, full sun and ambient): light (rgb, flicker share), direction + ambient, sun + flicker (phasor x, y, pace; stored values 0..1 as the GPU reads them).
     /// No allocation (the viewmodel's probe samples this every frame, see LightGrid).
     /// </summary>
-    public void Sample(Vector3 p, out Vector4 light, out Vector4 dir, out Vector2 sun)
+    public void Sample(Vector3 p, out Vector4 light, out Vector4 dir, out Vector4 sun)
     {
         var g = (p - Origin) / Cell - new Vector3(0.5f);
         if (p.X < Origin.X || p.Y < Origin.Y || p.Z < Origin.Z || p.X > Origin.X + NX * Cell || p.Y > Origin.Y + NY * Cell || p.Z > Origin.Z + NZ * Cell)
         {
             light = Vector4.Zero;
             dir = new Vector4(0, 0, 0, 1);
-            sun = new Vector2(1, 0);
+            sun = new Vector4(1, 128f / 255f, 128f / 255f, 0);
             return;
         }
         int x0 = Math.Clamp((int)MathF.Floor(g.X), 0, NX - 1), y0 = Math.Clamp((int)MathF.Floor(g.Y), 0, NY - 1), z0 = Math.Clamp((int)MathF.Floor(g.Z), 0, NZ - 1);
@@ -69,7 +73,7 @@ public sealed class LightBake
         float fx = Math.Clamp(g.X - x0, 0, 1), fy = Math.Clamp(g.Y - y0, 0, 1), fz = Math.Clamp(g.Z - z0, 0, 1);
         light = Vector4.Zero;
         dir = Vector4.Zero;
-        sun = Vector2.Zero;
+        sun = Vector4.Zero;
         for (var c = 0; c < 8; c++)
         {
             int x = (c & 1) == 0 ? x0 : x1, y = (c & 2) == 0 ? y0 : y1, z = (c & 4) == 0 ? z0 : z1;
@@ -78,7 +82,7 @@ public sealed class LightBake
             light += w * new Vector4((float)BitConverter.UInt16BitsToHalf(Light[i * 4]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 1]),
                 (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 2]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 3]));
             dir += w * new Vector4(Snorm(Dir[i * 4]), Snorm(Dir[i * 4 + 1]), Snorm(Dir[i * 4 + 2]), Snorm(Dir[i * 4 + 3]));
-            sun += w * new Vector2(Sun[i * 2] / 255f, Sun[i * 2 + 1] / 255f);
+            sun += w * new Vector4(Sun[i * 4], Sun[i * 4 + 1], Sun[i * 4 + 2], Sun[i * 4 + 3]) / 255f;
         }
     }
 
@@ -173,7 +177,7 @@ public static class LightBaker
         var bake = new LightBake
         {
             Origin = min, Cell = cell, NX = nx, NY = ny, NZ = nz, Spec = spec, Sources = lights, SunDir = sunDir,
-            Light = new ushort[nx * ny * nz * 4], Dir = new sbyte[nx * ny * nz * 4], Sun = new byte[nx * ny * nz * 2],
+            Light = new ushort[nx * ny * nz * 4], Dir = new sbyte[nx * ny * nz * 4], Sun = new byte[nx * ny * nz * 4],
         };
         occ.Index(min - new Vector3(2f), bake.Max + new Vector3(2f));
         var bins = new LightBins(lights, min, bake.Max);
@@ -276,8 +280,8 @@ public static class LightBaker
     {
         var sum = Vector3.Zero;
         var dirSum = Vector3.Zero;
-        float lumSum = 0, flickLum = 0, bestFlick = 0;
-        var bestFlickIndex = -1;
+        float lumSum = 0, flickLum = 0, paceSum = 0;
+        var phasor = Vector2.Zero;
         foreach (var li in bins.At(p))
         {
             ref readonly var l = ref lights[li];
@@ -339,11 +343,9 @@ public static class LightBaker
             if (l.Flicker)
             {
                 flickLum += lum;
-                if (lum > bestFlick)
-                {
-                    bestFlick = lum;
-                    bestFlickIndex = li;
-                }
+                var (z, pace) = LightFlicker.Params(l.Seed, l.FlickerSpeed, l.FlickerAmount);
+                phasor += z * lum;
+                paceSum += pace * lum;
             }
         }
         var o = idx * 4;
@@ -357,8 +359,11 @@ public static class LightBaker
         bake.Dir[o + 2] = Snorm(dir.Z);
         bake.Dir[o + 3] = Snorm(spec.Indoor + (1f - spec.Indoor) * skyVis);
         var sunVis = !spec.SunShadows || !tr.Blocked(p, sunDir, 400f, default, false) ? 1f : 0f;
-        bake.Sun[idx * 2] = (byte)MathF.Round(sunVis * 255f);
-        bake.Sun[idx * 2 + 1] = bestFlickIndex < 0 ? (byte)0 : (byte)(((uint)bestFlickIndex * 2654435761u) >> 24);
+        var zc = lumSum > 0 ? phasor / lumSum : Vector2.Zero; // (a share of all the light here, like the flicker share)
+        bake.Sun[idx * 4] = (byte)MathF.Round(sunVis * 255f);
+        bake.Sun[idx * 4 + 1] = LightFlicker.ZByte(zc.X);
+        bake.Sun[idx * 4 + 2] = LightFlicker.ZByte(zc.Y);
+        bake.Sun[idx * 4 + 3] = (byte)MathF.Round(Math.Clamp(flickLum > 0 ? paceSum / flickLum : 0f, 0f, 1f) * 255f);
     }
 
     private static ushort Half(float v) => BitConverter.HalfToUInt16Bits((Half)Math.Clamp(v, 0f, 1000f));
@@ -388,7 +393,7 @@ public static class LightBaker
             if (k < b.NZ - 1) nb[n++] = idx + b.NX * b.NY;
             var acc = Vector4.Zero;
             var accD = Vector4.Zero;
-            var accS = Vector2.Zero;
+            var accS = Vector4.Zero;
             var open = 0;
             for (var q = 0; q < n; q++)
             {
@@ -399,11 +404,12 @@ public static class LightBaker
                 acc += new Vector4((float)BitConverter.UInt16BitsToHalf(light[c * 4]), (float)BitConverter.UInt16BitsToHalf(light[c * 4 + 1]),
                     (float)BitConverter.UInt16BitsToHalf(light[c * 4 + 2]), (float)BitConverter.UInt16BitsToHalf(light[c * 4 + 3]));
                 accD += new Vector4(dir[c * 4], dir[c * 4 + 1], dir[c * 4 + 2], dir[c * 4 + 3]);
-                accS += new Vector2(sun[c * 2], sun[c * 2 + 1]);
+                accS += new Vector4(sun[c * 4], sun[c * 4 + 1], sun[c * 4 + 2], sun[c * 4 + 3]);
             }
             if (open == 0)
             {
                 b.Dir[idx * 4 + 3] = Snorm(b.Spec.Indoor); // deep inside a wall: dark (never seen)
+                b.Sun[idx * 4 + 1] = b.Sun[idx * 4 + 2] = 128; // and no flicker (128: a zero phasor)
                 continue;
             }
             acc /= open;
@@ -417,8 +423,10 @@ public static class LightBaker
             b.Dir[idx * 4 + 1] = (sbyte)MathF.Round(accD.Y);
             b.Dir[idx * 4 + 2] = (sbyte)MathF.Round(accD.Z);
             b.Dir[idx * 4 + 3] = (sbyte)MathF.Round(accD.W);
-            b.Sun[idx * 2] = (byte)MathF.Round(accS.X);
-            b.Sun[idx * 2 + 1] = (byte)MathF.Round(accS.Y);
+            b.Sun[idx * 4] = (byte)MathF.Round(accS.X);
+            b.Sun[idx * 4 + 1] = (byte)MathF.Round(accS.Y);
+            b.Sun[idx * 4 + 2] = (byte)MathF.Round(accS.Z);
+            b.Sun[idx * 4 + 3] = (byte)MathF.Round(accS.W);
         }
     }
 

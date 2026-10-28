@@ -324,7 +324,7 @@ public static class PropFile
 
     /// <summary>
     /// The "lights" list: [ { "pos": [x, y, z], "color": "amber", "intensity": 1, "range": 6, "flicker": true,
-    /// "type": "point" | "spot" | "area", "yaw", "pitch", "cone", "w", "d" } ], in the prop's frame (Props/README.md "Lights").
+    /// "type": "point" | "spot" | "area", "yaw", "pitch", "cone", "w", "d", "flickerSpeed", "flickerAmount" } ], in the prop's frame (Props/README.md "Lights").
     /// </summary>
     private static void ReadLights(JsonElement e, List<MapLight> into, string where)
     {
@@ -341,6 +341,7 @@ public static class PropFile
             float intensity = 1, range = 6, yaw = 0, pitch = 90, cone = 60, lw = 1, ld = 1;
             var type = "point";
             var flicker = false;
+            float flickerSpeed = 1, flickerAmount = 1;
             foreach (var p in le.EnumerateObject())
             {
                 var pw = $"{w} (\"{p.Name}\")";
@@ -381,15 +382,21 @@ public static class PropFile
                     case "flicker":
                         flicker = Bool(p.Value, pw);
                         break;
+                    case "flickerspeed":
+                        flickerSpeed = Num(p.Value, pw);
+                        break;
+                    case "flickeramount":
+                        flickerAmount = Num(p.Value, pw);
+                        break;
                     default:
-                        throw new PropFileException($"{pw}: unknown key. A light takes: pos, color, intensity, range, type, yaw, pitch, cone, w, d, flicker");
+                        throw new PropFileException($"{pw}: unknown key. A light takes: pos, color, intensity, range, type, yaw, pitch, cone, w, d, flicker, flickerSpeed, flickerAmount");
                 }
             }
             if (pos is not { } at)
                 throw new PropFileException($"{w}: needs \"pos\": [x, y, z] (in the prop's frame)");
             try
             {
-                into.Add(MapLight.Make(at, color, intensity, range, type, yaw, pitch, cone, lw, ld, flicker));
+                into.Add(MapLight.Make(at, color, intensity, range, type, yaw, pitch, cone, lw, ld, flicker, flickerSpeed, flickerAmount));
             }
             catch (InvalidOperationException ex)
             {

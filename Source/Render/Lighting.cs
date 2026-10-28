@@ -125,19 +125,22 @@ public static unsafe class Lighting
             vec4 uLitScale;  // 1 / the grid's size
             vec4 uProbeA;    // mode 2: light rgb, flicker share
             vec4 uProbeB;    // mode 2: light direction (view space), ambient
-            vec4 uProbeC;    // mode 2: sun, flicker phase
+            vec4 uProbeC;    // mode 2: sun, flicker phasor (x, y), flicker pace
             vec4 uDynPos[4]; // dynamic lights: position, range
             vec4 uDynCol[4]; // colour * intensity
         };
         uniform sampler3D uLitA; // rgb: static light reaching the cell, a: the share that flickers
         uniform sampler3D uLitB; // xyz: the light's average direction (length: how one-sided), w: ambient left (sky seen)
-        uniform sampler3D uLitC; // r: sun reaching the cell, g: flicker phase
+        uniform sampler3D uLitC; // r: sun reaching the cell, g, b: flicker phasor (128/255 = 0), a: flicker pace
         float gLitAmb = 1.0;     // the ambient factor the last ApplyLightAt used (the box shaders scale their rim light by it)
 
-        float LitFlicker(float t, float phase)
+        """ + LightFlicker.Glsl + """
+        // The flicker at a spot (LightFlicker.cs): c = the baked (and filtered) uLitC texel, share = the flickering share.
+        // Its average is the old flicker's (1 - 0.3 share); the swing is the cell's blend of each flame's own wave.
+        float LitFlicker(float t, vec4 c, float share)
         {
-            float x = t * 7.3 + phase * 6.2831853; // (one cycle across the phase: neighbouring flames' phases blend smoothly)
-            return 0.5 + 0.25 * sin(x) + 0.15 * sin(x * 2.17 + 1.3) + 0.1 * sin(x * 5.03 + 4.1);
+            vec2 z = (c.gb * 255.0 - 128.0) / 127.0 * 0.6;
+            return max(1.0 - 0.3 * share + FlameWave(z, c.a, t), 0.0);
         }
 
         // ApplyLight plus the baked light at world position p (mode 0: exactly ApplyLight).
@@ -148,19 +151,19 @@ public static unsafe class Lighting
                 return ApplyLight(albedo, n, wrap);
             vec4 a;
             vec4 b;
-            vec2 c;
+            vec4 c;
             if (uLitMode.x < 1.5)
             {
                 vec3 uvw = (p + n * uLitMode.z - uLitOrigin.xyz) * uLitScale.xyz;
                 a = texture(uLitA, uvw);
                 b = texture(uLitB, uvw);
-                c = texture(uLitC, uvw).rg;
+                c = texture(uLitC, uvw);
             }
             else
             {
                 a = uProbeA;
                 b = uProbeB;
-                c = uProbeC.xy;
+                c = uProbeC;
             }
             gLitAmb = b.w;
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
@@ -168,7 +171,7 @@ public static unsafe class Lighting
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
             float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0) * c.r;
             float facing = (1.0 - min(length(b.xyz), 1.0)) * 0.6 + max((dot(n, b.xyz) + wrap) / (1.0 + wrap), 0.0);
-            vec3 lit = a.rgb * facing * (1.0 - a.a * 0.6 * LitFlicker(uLitMode.y, c.g));
+            vec3 lit = a.rgb * facing * LitFlicker(uLitMode.y, c, a.a);
             int nd = uLitMode.x < 1.5 ? int(uLitMode.w + 0.5) : 0;
             for (int i = 0; i < nd; i++) // at most 4 (LightGrid.MaxDynamic)
             {

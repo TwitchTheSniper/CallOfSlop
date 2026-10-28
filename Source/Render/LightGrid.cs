@@ -50,7 +50,7 @@ public static unsafe class LightGrid
         public Vector4 Scale;   // 1 / grid size
         public Vector4 ProbeA;  // probe: light rgb, flicker share
         public Vector4 ProbeB;  // probe: direction (view space), ambient
-        public Vector4 ProbeC;  // probe: sun, phase
+        public Vector4 ProbeC;  // probe: sun, flicker phasor x, y, pace (as stored: LightFlicker)
         public Vector4 Dyn0, Dyn1, Dyn2, Dyn3;     // dynamic lights: position, range
         public Vector4 DynC0, DynC1, DynC2, DynC3; // colour * intensity
     }
@@ -115,10 +115,10 @@ public static unsafe class LightGrid
             _texC = MakeTexture(UnitC);
             var zeroA = stackalloc ushort[4];
             var zeroB = stackalloc sbyte[4];
-            var zeroC = stackalloc byte[2];
+            var zeroC = stackalloc byte[4] { 0, 128, 128, 0 }; // (128: no flicker)
             Upload(_texA, UnitA, 1, 1, 1, GL_RGBA16F, GL_RGBA, GL_HALF_FLOAT, zeroA);
             Upload(_texB, UnitB, 1, 1, 1, GL_RGBA8_SNORM, GL_RGBA, GL_BYTE, zeroB);
-            Upload(_texC, UnitC, 1, 1, 1, GL_RG8, GL_RG, GL_UNSIGNED_BYTE, zeroC);
+            Upload(_texC, UnitC, 1, 1, 1, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, zeroC);
             Native.glActiveTexture(GL_TEXTURE0);
             _lastMode = 0f;
             _ready = true;
@@ -164,7 +164,7 @@ public static unsafe class LightGrid
         fixed (sbyte* b = bake.Dir)
             Upload(_texB, UnitB, bake.NX, bake.NY, bake.NZ, GL_RGBA8_SNORM, GL_RGBA, GL_BYTE, b);
         fixed (byte* c = bake.Sun)
-            Upload(_texC, UnitC, bake.NX, bake.NY, bake.NZ, GL_RG8, GL_RG, GL_UNSIGNED_BYTE, c);
+            Upload(_texC, UnitC, bake.NX, bake.NY, bake.NZ, GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, c);
         Native.glActiveTexture(GL_TEXTURE0);
         _uploaded = bake;
         GpuBytes = bake.Bytes;
@@ -242,7 +242,7 @@ public static unsafe class LightGrid
             return;
         }
         var n = Math.Min(dynamic, MaxDynamic);
-        b.Mode = new Vector4(1f, (float)(time % 3600.0), NormalOffset(bake), n);
+        b.Mode = new Vector4(1f, PropAnim.ShaderTime(time), NormalOffset(bake), n);
         b.Origin = new Vector4(bake.Origin, 0f);
         b.Scale = new Vector4(1f / (bake.NX * bake.Cell), 1f / (bake.NY * bake.Cell), 1f / (bake.NZ * bake.Cell), 0f);
         b.Dyn0 = n > 0 ? dynPos[0] : default;
@@ -265,9 +265,9 @@ public static unsafe class LightGrid
         }
         bake.Sample(eye, out var light, out var dir, out var sun);
         var d = Vector3.TransformNormal(new Vector3(dir.X, dir.Y, dir.Z), view); // world to camera space, as the gun's normals
-        b.Mode = new Vector4(2f, (float)(time % 3600.0), 0f, 0f);
+        b.Mode = new Vector4(2f, PropAnim.ShaderTime(time), 0f, 0f);
         b.ProbeA = light;
         b.ProbeB = new Vector4(d, dir.W);
-        b.ProbeC = new Vector4(sun, 0f, 0f);
+        b.ProbeC = sun; // (the gun flickers with the room)
     }
 }

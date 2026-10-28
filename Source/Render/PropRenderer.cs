@@ -104,6 +104,14 @@ public sealed unsafe class PropRenderer
         const float TAU = 6.2831853;
 
         vec4 Rec(int r, int k) { return texelFetch(uAnim, ivec2(k, r), 0); }
+        """ + LightFlicker.Glsl + """
+        // A flame part's light level: its light's own flicker (PropAnim.FlameLevel), so flame and light move together.
+        float FlameLevel(float seed, float speed, float amount, float t)
+        {
+            vec3 q = FlameParams(seed, speed, amount);
+            float r = length(q.xy);
+            return r < 1e-5 ? 0.72 : clamp(0.72 + 0.28 * FlameWave(q.xy, q.z, t) / r, 0.0, 1.0);
+        }
 
         vec3 Turn(vec3 v, vec3 axis, float a)
         {
@@ -183,7 +191,8 @@ public sealed unsafe class PropRenderer
                         if (type >= 5)
                         {
                             vec4 r4 = Rec(r, 4);
-                            float f = Light(type, u, r4.w, r5.x, r5.y, seed);
+                            float f = type == 7 && r5.x < -0.5 ? FlameLevel(fract(seed + floor(-r5.x - 0.5) * 0.618034), r5.y, r4.w, uTime)
+                                                               : Light(type, u, r4.w, r5.x, r5.y, seed);
                             col = mix(r4.rgb, r3.rgb, f);
                             glow = r3.rgb * (r3.w * f);
                         }
