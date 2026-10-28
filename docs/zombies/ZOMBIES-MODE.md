@@ -1062,7 +1062,7 @@ the others'), `maxAlive` at once (0: no cap) and `pack` (that many more of it ou
 | Armoured | 1.1 | 1.5x | run x0.85 | 1.2x | 10 | 6 | 2x | `armour` 300: a helmet and a chest plate shot off before the body |
 | Grabber | 1 / 1.1 | 1.2x | run x0.95 | 0.5x, then a hold | 12 | 4 | 2x | `grabSeconds` 4, `grabDamage` 12 a second: holds you until it is hit |
 | Pouncer | 0.9 / 0.95 | 0.6x | run x1.15 | 1.1x | 14 | 6 | 1.5x | `pounceRange` 6 m, `pounceSpeed` 9, `pounceCooldown` 4 s: a leap, then a swipe where it lands |
-| Bloater | 1.35 / 1.1 | 1.5x | walk x0.9 | 0.8x | 10 | 3 | 2x | **off** (`"enabled": false`): `burstRadius` 2 m, `burstDamage` 50 when it dies or its swipe lands |
+| Bloater | 1.35 / 1.1 | 1.5x | walk x0.9 | 0.8x | 10 | 3 | 2x | `burstRadius` 2 m, `burstDamage` 50 when it dies or its swipe lands (on since 2026-10-28) |
 | Juggernaut | 1.8 / 2 | 20x | walk x0.8 | 2.5x, reach 1.6x | 10 | 1 | 10x | `bossEvery` 10: one boss every 10 rounds on top of the round, a health bar on the HUD; shoves, stun immune |
 
 - **Spawning.** Each spawn rolls a type from the round's seeded stream: every type that is on, phased in (`firstRound`),
@@ -1093,9 +1093,9 @@ the others'), `maxAlive` at once (0: no cap) and `pack` (that many more of it ou
   `ZState.Scaling` state and climbing pose, moved by `FreeClimbMove` (straight up at `climbSpeed`, then the siege's vault
   over the top onto the landing, then after its prey again). Shot on the wall, it lets go and falls like a siege climber
   (`ClimbFall`: pushed off, dazed), and waits 3 s before another go. Ceilings aren't climbed (no feasible way down).
-- **Bloater.** Off until the developer says a melee-range burst isn't a ranged attack. On, its burst hurts only players
+- **Bloater.** On since 2026-10-28 (the developer: a 2 m burst counts as melee range). Its burst hurts only players
   within `burstRadius` of it and in plain view (`TypeBurst`), when it dies (any cause) or when its swipe lands (then it
-  dies on the spot with no kill credited).
+  dies on the spot with no kill credited). Nothing further off feels it; the self-test checks 1.5 m (hurt) and 4 m (not).
 - **Juggernaut.** A boss: `bossEvery` rounds, one at a time (`maxAlive` 1), `weight` 0 so it never comes from the roll.
   The HUD shows its label and a health bar (`Game.ZBoss`, the health byte on clients). Too big for a ragdoll: it tips over
   as drawn (so does anything more than 25 percent off a player's size).
@@ -1115,8 +1115,8 @@ the others'), `maxAlive` at once (0: no cap) and `pack` (that many more of it ou
 
 - Health scales per round with the type's multiplier (ships). The alternative, a fixed health per type, is
   `"healthFixed": N` on a type (0: scaling).
-- The bloater is implemented but **off**: `"enabled": true` on `types.bloater` switches it on if a 2 m burst counts as
-  melee.
+- ~~The bloater~~: **answered 2026-10-28**: on (a 2 m burst counts as melee range). `"enabled": false` on
+  `types.bloater` switches it off again.
 - Every number in the table (sizes, multipliers, first rounds, weights, caps, points) is proposed.
 
 ## Zombie bodies (developer request, 2026-10-27)
@@ -1542,5 +1542,6 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
 13. ~~Slot machines~~: **answered 2026-10-26**: bet levels added (1x / 2x / 5x the price, each a rarity step up on top
     of the heat; blanks as likely at every bet, so no sure win; see "Bets"); the other numbers stay; no moving machines.
 14. **Zombie types** (2026-10-28): health keeps scaling per round with a type multiplier (`healthMult`, ships) or
-    becomes fixed per type (`healthFixed`)? Is the bloater's 2 m burst on death / on contact a ranged attack? It ships
-    switched off. Every number in the types table is proposed (see "Zombie types").
+    becomes fixed per type (`healthFixed`)? Every number in the types table is proposed (see "Zombie types").
+    ~~Is the bloater's 2 m burst a ranged attack?~~ **Answered 2026-10-28**: no, it counts as melee range; the bloater
+    ships on.
