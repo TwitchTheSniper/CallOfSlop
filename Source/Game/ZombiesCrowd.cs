@@ -55,6 +55,7 @@ public sealed partial class Game
             rng ^= rng << 5;
             return (rng >> 8) / 16777216f;
         }
+        var hp = ZRules.ZombieHealth(Math.Max(1, round));
         var hx = World.Map.HalfX - 1;
         var hz = World.Map.HalfZ - 1;
         for (var tries = 0; Crowd.Count < n && tries < n * 20; tries++)
@@ -65,7 +66,7 @@ public sealed partial class Game
             var dz = z - cz;
             if (dx * dx + dz * dz < keep * keep || !Crowd.Walkable(x, z))
                 continue;
-            Crowd.Add(x, z, 0, 0, (uint)Crowd.Count * 2654435761u ^ rng, ServerTick);
+            Crowd.Add(x, z, 0, 0, (uint)Crowd.Count * 2654435761u ^ rng, ServerTick, hp);
         }
         _zRoundTotal = CrowdRoundTotal = Crowd.Count;
         Console.WriteLine($"[zombies] crowd round {round}: {Crowd.Count} zombies in the crowd ({Crowd.FlowCells} flow cells, {Crowd.Bytes / 1024} KB)");
@@ -115,7 +116,7 @@ public sealed partial class Game
                 if (far)
                 {
                     var v = (pos - z.PrevPos) / World.TickDt;
-                    Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick);
+                    Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick, z.Health);
                     Horde.RemoveAt(i);
                     _zById.Remove(z.Id);
                     FreeZombieSlot(z);
@@ -156,8 +157,10 @@ public sealed partial class Game
             var at = new Vector3(Crowd.X[i], Crowd.Y, Crowd.Z[i]);
             var vx = Crowd.VX[i];
             var vz = Crowd.VZ[i];
+            var hp = Crowd.HP[i];
             Crowd.RemoveAt(i);
             var z = SpawnZombie(zm, spawner, now, at);
+            z.Health = Math.Clamp((int)MathF.Ceiling(hp), 1, z.MaxHealth); // (a crowd zombie hurt by a blast stays hurt)
             z.Window = -1;
             z.Area = zm.AreaAt(at);
             SetZState(z, ZState.Chase, now); // (straight in: no rising out of the ground)
@@ -173,5 +176,150 @@ public sealed partial class Game
     {
         if (CrowdRoundTotal > 0)
             CrowdRoundKills++;
+    }
+
+    // ---- Combat against the crowd (docs/zombies/MASS-HORDE.md, "Combat") --------------------------------------------
+
+    private const int CrowdShotMax = 64;
+    private readonly int[] _crowdShotIdx = new int[CrowdShotMax];
+    private readonly float[] _crowdShotDmg = new float[CrowdShotMax];
+    private readonly bool[] _crowdShotHead = new bool[CrowdShotMax];
+    private int _crowdShotN;
+    private readonly int[] _crowdHits = new int[4096];
+
+    /// <summary>Crowd zombies killed by shots and blasts (log, self-test), and drops rolled for them.</summary>
+    public int CrowdShotKills, CrowdBlastKills, CrowdDropRolls;
+
+    /// <summary>The most drops and power-ups rolled for one blast's crowd kills (a blast in a crowd of hundreds stays readable).</summary>
+    public const int CrowdBlastDrops = 4;
+
+    /// <summary>
+    /// Server, per ray of a shot that hit no individual zombie: the nearest crowd zombie on it (a shot past the front
+    /// into the crowd). Shortens <paramref name="dist"/>. Returns whether it hit one.
+    /// </summary>
+    internal bool CrowdRayHit(Vector3 o, Vector3 d, ref float dist, float damageAt1, float headMult)
+    {
+        if (!CrowdOn || Crowd.Count == 0)
+            return false;
+        var i = Crowd.RayHit(o, d, ref dist, out var head);
+        if (i < 0)
+            return false;
+        var dmg = damageAt1 * (head ? headMult * ZRules.ZombieHeadMult : 1f);
+        for (var k = 0; k < _crowdShotN; k++)
+            if (_crowdShotIdx[k] == i)
+            {
+                _crowdShotDmg[k] += dmg;
+                _crowdShotHead[k] |= head;
+                return true;
+            }
+        if (_crowdShotN < CrowdShotMax)
+        {
+            _crowdShotIdx[_crowdShotN] = i;
+            _crowdShotDmg[_crowdShotN] = dmg;
+            _crowdShotHead[_crowdShotN] = head;
+            _crowdShotN++;
+        }
+        return true;
+    }
+
+    /// <summary>Server: a trigger pull's damage on crowd zombies (one event each, like individuals). Returns hit flags (1 hit, 2 head, 4 kill).</summary>
+    internal byte CrowdShotApply(Player shooter, double now)
+    {
+        byte flags = 0;
+        var n = _crowdShotN;
+        _crowdShotN = 0;
+        if (n == 0)
+            return 0;
+        // Highest index first (removing one moves the last particle into its place).
+        for (var a = 1; a < n; a++)
+            for (var b = a; b > 0 && _crowdShotIdx[b] > _crowdShotIdx[b - 1]; b--)
+            {
+                (_crowdShotIdx[b], _crowdShotIdx[b - 1]) = (_crowdShotIdx[b - 1], _crowdShotIdx[b]);
+                (_crowdShotDmg[b], _crowdShotDmg[b - 1]) = (_crowdShotDmg[b - 1], _crowdShotDmg[b]);
+                (_crowdShotHead[b], _crowdShotHead[b - 1]) = (_crowdShotHead[b - 1], _crowdShotHead[b]);
+            }
+        for (var k = 0; k < n; k++)
+        {
+            var i = _crowdShotIdx[k];
+            if (i >= Crowd.Count)
+                continue;
+            var head = _crowdShotHead[k];
+            flags |= (byte)(head ? 3 : 1);
+            if (CrowdDamage(shooter, i, _crowdShotDmg[k], head, explosive: false, drops: true, now))
+            {
+                flags |= 4;
+                CrowdShotKills++;
+            }
+        }
+        if (Horde.Count == 0)
+            HordeGunfire(shooter, now); // (ZombieShotApply already told the horde otherwise)
+        return flags;
+    }
+
+    /// <summary>
+    /// Server: a blast in the crowd: every crowd zombie in the radius takes the blast's damage falling off with distance
+    /// (as individuals do); the dead are taken out of the crowd by count, each credited to the thrower as a kill.
+    /// </summary>
+    internal void CrowdBlast(Player owner, Vector3 center, float radius, float maxDamage, double now)
+    {
+        if (!CrowdOn || Crowd.Count == 0 || MathF.Abs(center.Y - Crowd.Y) > radius + HordeCrowd.BodyHeight)
+            return;
+        var n = Crowd.Within(center, radius, _crowdHits);
+        Array.Sort(_crowdHits, 0, n);
+        var drops = 0;
+        for (var k = n - 1; k >= 0; k--)
+        {
+            var i = _crowdHits[k];
+            if (i >= Crowd.Count)
+                continue;
+            var to = new Vector3(Crowd.X[i], Crowd.Y + 1.1f, Crowd.Z[i]) - center;
+            var dist = to.Length();
+            if (dist > radius)
+                continue;
+            var dmg = maxDamage * MathF.Pow(1f - dist / radius, 1.4f);
+            if (CrowdDamage(owner, i, dmg, head: false, explosive: true, drops: drops < CrowdBlastDrops, now))
+            {
+                CrowdBlastKills++;
+                drops++;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Server: damage on crowd zombie <paramref name="i"/>: points for the hit, or for the kill exactly as an individual
+    /// (DamageZombie's kill: kills, headshots, frenzy, kill points, drops and power-ups when <paramref name="drops"/>);
+    /// a dead one leaves the crowd. Returns true if it killed.
+    /// </summary>
+    private bool CrowdDamage(Player attacker, int i, float amount, bool head, bool explosive, bool drops, double now)
+    {
+        if (amount <= 0 || !DamageEnabled)
+            return false;
+        if (now < ZInstaKillUntil)
+            amount = MathF.Max(amount, Crowd.HP[i]);
+        Crowd.HP[i] -= MathF.Round(amount);
+        attacker.LastCombatTime = now;
+        if (Crowd.HP[i] > 0)
+        {
+            EarnPoints(attacker, ZRules.HitPoints, now);
+            return false;
+        }
+        var at = new Vector3(Crowd.X[i], Crowd.Y, Crowd.Z[i]);
+        Crowd.RemoveAt(i);
+        CrowdNoteKill();
+        var zp = ZP(attacker);
+        zp.Kills++;
+        if (head)
+            zp.Headshots++;
+        attacker.Kills++;
+        FrenzyOnZombieKill(attacker, head, explosive, now);
+        var killPoints = head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints;
+        EarnPoints(attacker, killPoints, now);
+        if (drops)
+        {
+            CrowdDropRolls++;
+            RollDrop(at, ZRound, now, PerkMult(zp, static d => d.PartDrops));
+            RollPowerUp(at, now, zp);
+        }
+        return true;
     }
 }

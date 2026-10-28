@@ -37,6 +37,7 @@ public static partial class SelfTest
         MassLine("table (crowd | server tick ms CPU mean / worst (Windows) | crowd ms | ZCrowd KB/s per client | MB): " + string.Join("; ", rows));
         MassDeterminism(map, ref now);
         MassRigs();
+        MassCombat(map, ref now);
         Line("::warning title=Mass horde (results)::" + string.Join("%0A", MassNotes.Select(n => n.Replace("%", "%25").Replace("\r", "").Replace("\n", " "))));
     }
 
@@ -275,6 +276,62 @@ public static partial class SelfTest
             Fail($"crowd {count}: a server tick did {cpuTimer.WorstMs:0.00} ms of work (budget {MaxTickWorkMs} ms): {cpuTimer.WorstDetail}");
         clock = now;
         return $"{count} | {meanCpu:0.00} / {cpuTimer.WorstText} | {crowdMs:0.00} | {kbs:0.0} | {bytes / 1024 / 1024.0:0.0}";
+    }
+
+    /// <summary>
+    /// Combat against the crowd: shots into the crowd past the front hurt and kill crowd zombies (kill credit and points as
+    /// for individuals); a blast in the crowd takes out every crowd zombie its damage kills, by count, each a kill for the
+    /// thrower, with only a few drops rolled; the counts add up throughout.
+    /// </summary>
+    private static void MassCombat(Map map, ref double now)
+    {
+        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        var me = g.Local!;
+        me.ImmuneUntil = 1e9;
+        me.Teleport(Vector3.Zero);
+        g.CrowdOverride = 3000;
+        g.SelfTestBeginRound(1, now);
+        g.SelfTestZombiesTick(now += World.TickDt); // (the crowd's grid)
+        var zp = g.ZP(me);
+        var kills0 = zp.Kills;
+        var points0 = zp.Points;
+        var c = g.Crowd;
+        // Shots: at the 20 crowd zombies nearest the player, from the eye at their heads, four trigger pulls each.
+        var order = Enumerable.Range(0, c.Count).OrderBy(i => c.X[i] * c.X[i] + c.Z[i] * c.Z[i]).Take(20).Select(i => new Vector3(c.X[i], c.Y + 1.65f, c.Z[i])).ToList();
+        foreach (var target in order)
+            for (var k = 0; k < 4; k++)
+            {
+                var eye = me.Eye;
+                now += 0.5; // (the gun's fire rate: the crowd doesn't move, nothing ticks)
+                g.SelfTestServerShot(me, eye, Vector3.Normalize(target - eye), now);
+            }
+        var shotKills = g.CrowdShotKills;
+        var afterShots = c.Count;
+        var sumOk = c.Count + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
+        // A blast in the thick of the crowd, far from the player.
+        var far = Enumerable.Range(0, c.Count).OrderByDescending(i => c.X[i] * c.X[i] + c.Z[i] * c.Z[i]).First();
+        var at = new Vector3(c.X[far] * 0.6f, c.Y + 0.5f, c.Z[far] * 0.6f);
+        Span<int> inR = stackalloc int[512];
+        var inRange = c.Within(at, 3f, inR);
+        var before = c.Count;
+        var drops0 = g.CrowdDropRolls;
+        g.SelfTestBlast(me, at, 4f, 100000f, now);
+        var blastKills = before - c.Count;
+        var drops = g.CrowdDropRolls - drops0;
+        sumOk &= c.Count + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
+        var credited = zp.Kills - kills0;
+        MassLine($"combat: 80 head shots into the crowd killed {shotKills} ({3000 - afterShots} out of the crowd); a blast took {blastKills} out of the crowd ({inRange} within 3 m), {drops} drops rolled; "
+                 + $"kills credited {credited} (crowd round kills {g.CrowdRoundKills}), points {points0} -> {zp.Points}; counts add up {sumOk}");
+        if (shotKills < 5)
+            Fail($"shots into the crowd should kill crowd zombies ({shotKills} of 20 targets)");
+        if (blastKills < inRange || blastKills == 0)
+            Fail($"a blast should kill every crowd zombie close to it ({blastKills} out, {inRange} within 3 m)");
+        if (credited != g.CrowdRoundKills || credited != shotKills + blastKills || zp.Points <= points0)
+            Fail($"crowd kills should be credited like individual kills ({credited} credited, {shotKills} + {blastKills} killed, {g.CrowdRoundKills} counted)");
+        if (drops > Game.CrowdBlastDrops)
+            Fail($"a blast should roll at most {Game.CrowdBlastDrops} drops for its crowd kills ({drops})");
+        if (!sumOk)
+            Fail("the counts should add up after shots and blasts in the crowd");
     }
 
     /// <summary>The baked crowd rigs (CrowdRig.cs): the same boxes every frame, the near rig fuller than the mid, an animated walk, finite numbers.</summary>

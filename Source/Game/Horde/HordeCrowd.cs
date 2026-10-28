@@ -73,6 +73,9 @@ public sealed class HordeCrowd
     /// <summary>Inside the promote range but not promoted yet (the individual cap): it holds there.</summary>
     public bool[] Held = [];
 
+    /// <summary>Health (shots and blasts hurt crowd zombies; a promoted one keeps it).</summary>
+    public float[] HP = [];
+
     /// <summary>Particles alive in the crowd (indices 0..Count-1).</summary>
     public int Count;
 
@@ -211,6 +214,7 @@ public sealed class HordeCrowd
         Array.Resize(ref PZ, n);
         Array.Resize(ref Next, n);
         Array.Resize(ref Held, n);
+        Array.Resize(ref HP, n);
         var m = n + Game.MaxZombies;
         _sItem = new int[m];
         _sX = new float[m];
@@ -239,7 +243,7 @@ public sealed class HordeCrowd
     /// Adds a particle at (x, z) with velocity (vx, vz) and returns its index (-1: full). Its speed comes from
     /// <paramref name="seed"/> (a stable per-zombie number), so a zombie keeps its pace across demotion and promotion.
     /// </summary>
-    public int Add(float x, float z, float vx, float vz, uint seed, long tick)
+    public int Add(float x, float z, float vx, float vz, uint seed, long tick, float hp = 100f)
     {
         if (Count >= X.Length)
             return -1;
@@ -256,6 +260,7 @@ public sealed class HordeCrowd
         Spd[i] = Tuning.Speed * (1 + Tuning.SpeedSpread * ((h & 0xFFFF) / 32767.5f - 1));
         Next[i] = tick + 1 + (h >> 16) % (uint)Math.Max(1, Tuning.ThinkMax);
         Held[i] = false;
+        HP[i] = hp;
         return i;
     }
 
@@ -276,6 +281,7 @@ public sealed class HordeCrowd
         PZ[i] = PZ[last];
         Next[i] = Next[last];
         Held[i] = Held[last];
+        HP[i] = HP[last];
     }
 
     public static uint Hash(uint x)
@@ -710,6 +716,114 @@ public sealed class HordeCrowd
             }
         PX[i] = px;
         PZ[i] = pz;
+    }
+
+    // ---- Combat ----------------------------------------------------------------------------------------------
+
+    /// <summary>A crowd zombie's body for shots: a vertical capsule this wide and tall (its head the top <see cref="HeadFrom"/>).</summary>
+    public const float BodyRadius = 0.32f, BodyHeight = 1.8f, HeadFrom = 1.5f;
+
+    /// <summary>
+    /// The nearest crowd zombie a ray hits before <paramref name="dist"/> (-1: none), walking the separation grid along
+    /// the ray (positions as of this tick's start). Shortens <paramref name="dist"/> to the hit; <paramref name="head"/>:
+    /// it hit the head.
+    /// </summary>
+    public int RayHit(Vector3 o, Vector3 d, ref float dist, out bool head)
+    {
+        head = false;
+        if (Count == 0 || _sStart.Length == 0)
+            return -1;
+        var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+        if (flat < 1e-4f)
+            return -1;
+        var best = -1;
+        var bestT = dist;
+        var step = _sCell * 0.5f / flat; // (ray length per half a cell across the floor)
+        var lastCell = -1;
+        for (var t = 0f; t <= bestT + step; t += step)
+        {
+            var p = o + d * t;
+            if (p.Y < Y - 0.5f || p.Y > Y + BodyHeight + 0.5f)
+            {
+                // Above or below the crowd: skip ahead only if the ray is heading away.
+                if ((p.Y > Y + BodyHeight && d.Y >= 0) || (p.Y < Y && d.Y <= 0))
+                    break;
+                continue;
+            }
+            var cell = SCell(p.X, p.Z);
+            if (cell == lastCell)
+                continue;
+            lastCell = cell;
+            var cx = cell % _sCols;
+            var cz = cell / _sCols;
+            for (var rz = Math.Max(0, cz - 1); rz <= Math.Min(_sRows - 1, cz + 1); rz++)
+                for (var rx = Math.Max(0, cx - 1); rx <= Math.Min(_sCols - 1, cx + 1); rx++)
+                {
+                    var c = rz * _sCols + rx;
+                    for (var k = _sStart[c]; k < _sStart[c + 1]; k++)
+                    {
+                        var i = _sItem[k];
+                        if (i >= Count)
+                            continue; // (an individual: they have their own hit boxes)
+                        // Closest approach of the ray to the zombie's vertical axis, on the floor plane.
+                        var qx = X[i] - o.X;
+                        var qz = Z[i] - o.Z;
+                        var tc = (qx * d.X + qz * d.Z) / (flat * flat);
+                        if (tc < 0 || tc > bestT)
+                            continue;
+                        var ex = o.X + d.X * tc - X[i];
+                        var ez = o.Z + d.Z * tc - Z[i];
+                        var miss2 = ex * ex + ez * ez;
+                        if (miss2 > BodyRadius * BodyRadius)
+                            continue;
+                        // Back up to the capsule's surface.
+                        var th = tc - MathF.Sqrt(BodyRadius * BodyRadius - miss2) / flat;
+                        var y = o.Y + d.Y * Math.Max(0, th);
+                        if (y < Y || y > Y + BodyHeight || th >= bestT)
+                            continue;
+                        bestT = Math.Max(0, th);
+                        best = i;
+                        head = y > Y + HeadFrom;
+                    }
+                }
+            if (best >= 0 && t > bestT + _sCell)
+                break;
+        }
+        if (best >= 0)
+            dist = bestT;
+        return best;
+    }
+
+    /// <summary>Every crowd zombie within <paramref name="r"/> (flat) of <paramref name="p"/> into <paramref name="into"/> (up to its length). Returns how many.</summary>
+    public int Within(Vector3 p, float r, Span<int> into)
+    {
+        if (Count == 0 || _sStart.Length == 0)
+            return 0;
+        var c0 = Math.Clamp((int)((p.X - r - _sMinX) / _sCell), 0, _sCols - 1);
+        var c1 = Math.Clamp((int)((p.X + r - _sMinX) / _sCell), 0, _sCols - 1);
+        var r0 = Math.Clamp((int)((p.Z - r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var r1 = Math.Clamp((int)((p.Z + r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var n = 0;
+        var r2 = r * r;
+        for (var cz = r0; cz <= r1; cz++)
+            for (var cx = c0; cx <= c1; cx++)
+            {
+                var cell = cz * _sCols + cx;
+                for (var k = _sStart[cell]; k < _sStart[cell + 1]; k++)
+                {
+                    var i = _sItem[k];
+                    if (i >= Count)
+                        continue;
+                    var dx = X[i] - p.X;
+                    var dz = Z[i] - p.Z;
+                    if (dx * dx + dz * dz > r2)
+                        continue;
+                    if (n == into.Length)
+                        return n;
+                    into[n++] = i;
+                }
+            }
+        return n;
     }
 
     // ---- The network sketch -----------------------------------------------------------------------------

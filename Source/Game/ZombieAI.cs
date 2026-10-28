@@ -911,6 +911,7 @@ public sealed partial class Game
             DamageZombie(owner, z, (int)MathF.Round(maxDamage * MathF.Pow(1f - dist / radius, 1.4f)), false, melee: false, now, explosive: true);
             SeverLimbs(z, owner, now);
         }
+        CrowdBlast(owner, center, radius, maxDamage, now); // the crowd behind the front loses its dead by count (ZombiesCrowd.cs)
     }
 
     // ---- Client: hit prediction against what you see ------------------------------------------------------
