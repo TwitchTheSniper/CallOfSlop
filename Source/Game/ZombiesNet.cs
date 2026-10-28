@@ -131,6 +131,21 @@ public sealed partial class Game
     /// <summary>Bytes and packets of <see cref="Msg.ZEnts"/> sent this run (self-test, logs).</summary>
     public long ZEntsBytesSent, ZEntsPacketsSent;
 
+    /// <summary>
+    /// Server, interest-managed sends (self-test, logs): the most zombies within <see cref="ZEntNear"/> of one viewer, and
+    /// the most snapshots a zombie within 0.8 x <see cref="ZEntNear"/> waited between two sends to that viewer (1: every
+    /// snapshot). While the near zombies fit in one <see cref="Msg.ZEnts"/> they go in every snapshot; beyond that they
+    /// share the <see cref="ZEntsMax"/> places by age.
+    /// </summary>
+    public int ZEntsNearPeak, ZEntsNearWaitWorst;
+
+    private static float ZFlatD2(Vector3 a, Vector3 b)
+    {
+        var dx = a.X - b.X;
+        var dz = a.Z - b.Z;
+        return dx * dx + dz * dz;
+    }
+
     /// <summary>What one client has been sent, by zombie slot: the id there, snapshots since, and the state byte it last got.</summary>
     public sealed class ZEntView
     {
@@ -209,6 +224,23 @@ public sealed partial class Game
         if (view != null && n > ZEntsMax)
             Array.Sort(_zEntKey, _zEntIdx, 0, n);
         var send = Math.Min(n, ZEntsMax);
+        if (view != null)
+        {
+            // Self-test and log figures: how many zombies were near this viewer, and the most snapshots one well inside
+            // the near ring (0.8 x ZEntNear) waited before it went out (1: in every snapshot). No allocation.
+            var near = 0;
+            for (var i = 0; i < count; i++)
+                if (ZFlatD2(Horde[i].Position, viewer) < ZEntNear * ZEntNear)
+                    near++;
+            ZEntsNearPeak = Math.Max(ZEntsNearPeak, near);
+            const float inner2 = ZEntNear * 0.8f * (ZEntNear * 0.8f);
+            for (var k = 0; k < send; k++)
+            {
+                var z = Horde[_zEntIdx[k]];
+                if (z.Hm.Slot is >= 0 and < MaxZombies && view.SentId[z.Hm.Slot] == z.Id && ZFlatD2(z.Position, viewer) < inner2)
+                    ZEntsNearWaitWorst = Math.Max(ZEntsNearWaitWorst, view.Age[z.Hm.Slot] + 1);
+            }
+        }
         w.Begin(Msg.ZEnts).U32(ServerTick).U16((ushort)Math.Min(count, 65535)).U16((ushort)send);
         for (var k = 0; k < send; k++)
         {
