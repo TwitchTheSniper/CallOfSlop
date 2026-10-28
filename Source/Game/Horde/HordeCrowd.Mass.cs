@@ -244,11 +244,11 @@ public sealed partial class HordeCrowd
                     _mRng = Hash(_mRng + 0x9E3779B9u);
                     x = cx + ((_mRng & 0xFFFF) / 65535f - 0.5f) * _mCell * 0.9f;
                     z = cz + ((_mRng >> 16) / 65535f - 0.5f) * _mCell * 0.9f;
-                    if (Walkable(x, z))
+                    if (Walkable(x, z) && !Packed(x, z))
                         break;
                 }
-                if (!Walkable(x, z))
-                    break;
+                if (!Walkable(x, z) || Packed(x, z))
+                    break; // (no room in the cell: they stay in the mass for now)
                 Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, MassHP);
                 MassCount[c]--;
                 MassTotal--;

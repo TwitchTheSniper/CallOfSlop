@@ -118,6 +118,9 @@ public sealed partial class HordeCrowd
     /// <summary>The most particles at once (the rest of a bigger horde stays in the mass tier, which has no limit but its cells' capacity).</summary>
     public const int ParticleCap = 40000;
 
+    /// <summary>The most crowd zombies (and individuals) a separation cell (0.7 m) takes before the next one waits: about 6 a square metre.</summary>
+    public const int PackedCell = 3;
+
     /// <summary>On terrain: the steepest step between neighbouring flow cells the crowd walks (rise per metre: about 48 degrees).</summary>
     public const float MaxSlope = 1.1f;
 
@@ -522,6 +525,19 @@ public sealed partial class HordeCrowd
                     Blocked++;
                 }
             }
+            if (nx != x || nz != z)
+            {
+                // Packed: no stepping into a separation cell already holding PackedCell (this tick's sort), so pressure from
+                // behind can't squeeze a crowd denser than about 6 a square metre (it stands and waits, as the mass does
+                // behind a full cell).
+                var to = SCell(nx, nz);
+                if (to != SCell(x, z) && _sStart[to + 1] - _sStart[to] >= PackedCell)
+                {
+                    nx = x;
+                    nz = z;
+                    vx = vz = 0;
+                }
+            }
             X[i] = Math.Clamp(nx, -_halfX + 0.3f, _halfX - 0.3f);
             Z[i] = Math.Clamp(nz, -_halfZ + 0.3f, _halfZ - 0.3f);
             VX[i] = vx;
@@ -772,6 +788,17 @@ public sealed partial class HordeCrowd
     }
 
     // ---- Separation -------------------------------------------------------------------------------------
+
+    /// <summary>Is the separation cell at (x, z) packed (<see cref="PackedCell"/> or more, as of this tick's sort; outside the window: no)?</summary>
+    private bool Packed(float x, float z)
+    {
+        var c = (int)((x - _sMinX) / _sCell) - _sC0;
+        var r = (int)((z - _sMinZ) / _sCell) - _sR0;
+        if (c < 0 || r < 0 || c >= _sCols || r >= _sRows)
+            return false;
+        var k = r * _sCols + c;
+        return _sStart[k + 1] - _sStart[k] >= PackedCell;
+    }
 
     /// <summary>The window's column and row at x and z (clamped into the window).</summary>
     private int SCol(float x) => Math.Clamp((int)((x - _sMinX) / _sCell) - _sC0, 0, _sCols - 1);

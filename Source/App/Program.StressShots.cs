@@ -82,6 +82,7 @@ public static unsafe partial class Program
             var sends = 0;
             var bytes = 0;
             var biggest = 0;
+            // (Three sends: cells further than the far range go every third one; more while a message is capped.)
             do
             {
                 g.WriteZCrowdFor(cw, cview, me.Position);
@@ -90,7 +91,7 @@ public static unsafe partial class Program
                 biggest = Math.Max(biggest, cw.Length);
                 sends++;
             }
-            while (cw.Length >= Game.ZCrowdMaxBytes - 64 && sends < 64); // (a capped message: the rest goes next time)
+            while ((sends < g.ZRules.Crowd.NetFarEvery || cw.Length >= Game.ZCrowdMaxBytes - 64) && sends < 64);
             Console.WriteLine($"[stressshots] {moment}: Msg.ZCrowd to a client: {bytes} B in {sends} message(s), biggest {biggest} B; the client's picture holds {g.CrowdSeen.Total} of the crowd's {c.Total}");
             Console.WriteLine($"[stressshots] {moment} at {simulated:0} s: {g.StressState}, live {g.StressLive} (individuals {g.AliveZombies}, particles {c.Count}, mass {c.MassTotal}), "
                               + $"{g.StressNearShare * 100:0}% at the rally point; zombies tick avg {(ticks > 0 ? tickMs / ticks : 0):0.00} ms, worst {worstTick:0.00} ms over {ticks}");
