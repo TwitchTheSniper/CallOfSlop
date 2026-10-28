@@ -411,6 +411,9 @@ public static partial class SelfTest
                     Pose();
             }) / 20);
         var draws = rec.Count / 100.0;
+        var poseAlloc = GC.GetAllocatedBytesForCurrentThread();
+        Pose();
+        poseAlloc = GC.GetAllocatedBytesForCurrentThread() - poseAlloc;
         var soundMs = double.MaxValue;
         for (var b = 0; b < 5; b++)
             soundMs = Math.Min(soundMs, ThreadCpu.TimeMs(() =>
@@ -421,7 +424,7 @@ public static partial class SelfTest
         var clientMs = readMs * 30 / 60 + poseMs + soundMs; // per 60 Hz frame: half a snapshot read, the posing and drawing, the sounds
         HLine($"horde {count}: {g.AliveZombies} alive, server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
               + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}; {nearNow} within {Game.ZEntNear * 0.8f:0} m at the end, the longest a near one waited {nearAgeWorst} snapshots); "
-              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
+              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, {poseAlloc} bytes allocated, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
         if (g.AliveZombies != count)
             Fail($"horde {count}: zombies died or vanished in the scripted horde ({g.AliveZombies} alive)");
         if (alloc > 0)
@@ -436,7 +439,7 @@ public static partial class SelfTest
         if (c.Horde.Count < count)
             Fail($"horde {count}: the client knows only {c.Horde.Count} zombies after a second of snapshots");
         if (clientMs > (count >= 600 ? 5.0 : count >= 300 ? 3.0 : 1.5))
-            Fail($"horde {count}: the client's zombie work is {clientMs:0.00} ms a frame");
+            Fail($"horde {count}: the client's zombie work is {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, sounds {soundMs:0.000} ms)");
         return $"{count} | {meanCpu:0.00} / {worstCpu:0.00} | {bytesPerSec / 1024:0.0} | {clientMs:0.00}";
     }
 
