@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Rubber Ball Casing",
+  "category": "casing",
+  "rarity": "uncommon",
+  "flavor": "A hollow dog ball. It bounces everywhere you didn't aim.",
+  "weight": 0.3,
+  "hand": [0, 0, 0],
+  "casing": {"throw": 1.05, "bounce": 0.7},
+  "sockets": [
+    {"name": "fuse", "type": "fuse", "pos": [0, 0.04, 0], "required": true},
+    {"name": "payload", "type": "payload", "pos": [0, 0, -0.04], "required": true},
+    {"name": "gmod_1", "type": "gmod", "pos": [0.04, 0, 0]},
+    {"name": "gmod_2", "type": "gmod", "pos": [-0.04, 0, 0], "rot": [0, 180, 0]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.08, 0.08, 0.08], "pos": [0, 0, 0], "color": "#e24a8a"},
+    {"shape": "rod", "size": [0.084, 0.012, 0.084], "pos": [0, 0, 0], "color": "white"}
+  ]
+}

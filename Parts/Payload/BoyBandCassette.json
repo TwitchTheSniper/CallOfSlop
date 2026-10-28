@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Boy Band Cassette",
+  "category": "payload",
+  "rarity": "wonder",
+  "flavor": "Plays the hit single for twelve seconds. Nothing can resist. Then the encore.",
+  "weight": 0.3,
+  "payload": {"kind": "lure", "damage": 2500, "radius": 9, "duration": 12},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#ff50c0"},
+    {"size": [0.03, 0.018, 0.004], "pos": [0, 0, -0.006], "color": "black"},
+    {"size": [0.006, 0.006, 0.004], "pos": [0.008, 0, -0.009], "color": "white"},
+    {"size": [0.006, 0.006, 0.004], "pos": [-0.008, 0, -0.009], "color": "white"}
+  ]
+}

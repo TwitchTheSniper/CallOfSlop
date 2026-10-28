@@ -72,7 +72,7 @@ public sealed class PartRegistry
     {
         var r = new PartRegistry
         {
-            SocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility", "upgrade", "amp", "hopper", "head", "mod", "action"],
+            SocketTypes = ["receiver", "barrel", "feed", "ammo", "stock", "foregrip", "optic", "muzzle", "utility", "upgrade", "amp", "hopper", "head", "mod", "action", "fuse", "payload", "gmod"],
             Bores = ["pistol", "rifle", "heavy", "shell", "launcher", "energy"],
         };
         foreach (var c in Enum.GetValues<PartCategory>())
@@ -138,7 +138,7 @@ public sealed class PartRegistry
             mount ??= PartFile.BuiltInMount(c);
             if (mount != "" && !sockets.Contains(mount))
                 throw new WeaponFileException($"{where}: \"mount\" \"{mount}\" isn't in \"socketTypes\"");
-            if (c is PartCategory.Grip or PartCategory.Hilt or PartCategory.Receiver or PartCategory.Action && mount != PartFile.BuiltInMount(c))
+            if (c is PartCategory.Grip or PartCategory.Hilt or PartCategory.Receiver or PartCategory.Action or PartCategory.Casing && mount != PartFile.BuiltInMount(c))
                 throw new WeaponFileException($"{where}: \"mount\" must stay \"{PartFile.BuiltInMount(c)}\" (the rules in code build weapons on it)");
             if (display is { Length: 0 or > 24 })
                 throw new WeaponFileException($"{where}: \"display\" must be 1-24 characters");

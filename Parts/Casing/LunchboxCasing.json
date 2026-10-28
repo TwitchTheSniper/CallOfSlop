@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Lunchbox Casing",
+  "category": "casing",
+  "rarity": "rare",
+  "flavor": "Holds a sandwich or a frightening amount of payload. Your choice.",
+  "weight": 0.9,
+  "hand": [0, 0, 0],
+  "casing": {"throw": 0.82, "bounce": 0.2, "damageMult": 1.4, "radiusMult": 1.15},
+  "sockets": [
+    {"name": "fuse", "type": "fuse", "pos": [0, 0.05, 0], "required": true},
+    {"name": "payload", "type": "payload", "pos": [0, 0, -0.03], "required": true},
+    {"name": "gmod_1", "type": "gmod", "pos": [0.07, 0, 0]},
+    {"name": "gmod_2", "type": "gmod", "pos": [-0.07, 0, 0], "rot": [0, 180, 0]},
+    {"name": "gmod_3", "type": "gmod", "pos": [0, -0.05, 0], "rot": [0, 0, -90]}
+  ],
+  "model": [
+    {"size": [0.14, 0.1, 0.06], "pos": [0, 0, 0], "color": "#d23c2c"},
+    {"size": [0.06, 0.012, 0.012], "pos": [0, 0.056, 0], "color": "black"},
+    {"size": [0.144, 0.01, 0.064], "pos": [0, 0.03, 0], "color": "yellow"}
+  ]
+}

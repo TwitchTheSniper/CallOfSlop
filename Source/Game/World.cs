@@ -563,6 +563,9 @@ public sealed class Player
     /// <summary>Workbench Range / Zombies: the built melee weapon used on the melee key (null = the standard knife/butt strike). Host-local.</summary>
     public MeleeDef? MeleeBuild;
 
+    /// <summary>Zombies: the grenade built in the grenade slot (null = the rules' stock grenade). Every client knows everyone's (Msg.ZBuild slot 5), so built grenades fly the same everywhere.</summary>
+    public GrenadeDef? GrenadeBuild;
+
     /// <summary>Stunned by a melee build until then (bots stand still; zombies later).</summary>
     public double StunnedUntil;
 

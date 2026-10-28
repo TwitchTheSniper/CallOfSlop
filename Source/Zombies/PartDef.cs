@@ -41,6 +41,21 @@ public enum PartCategory : byte
     /// the list so the older categories keep their order (network ids are positions in the sorted part list).
     /// </summary>
     Action,
+
+    // Modular grenades (2026-10-27; docs/zombies/WEAPON-BUILDER.md, "Modular grenades"): appended after Action so every
+    // older part keeps its network id.
+
+    /// <summary>Grenades only: the body a grenade is built on (the root of a grenade build): weight, throw, bounce, sticky.</summary>
+    Casing,
+
+    /// <summary>Grenades only: what sets it off (a timer, impact, a proximity sensor, a remote detonator).</summary>
+    Fuse,
+
+    /// <summary>Grenades only: what it does when it goes off (frag, fire, cryo, shock, gas, a lure, healing, ducks).</summary>
+    Payload,
+
+    /// <summary>Grenades only: modifiers on a casing (cluster, a bigger blast, sticky, bouncy, aftershocks, a spare per round).</summary>
+    GrenadeMod,
 }
 
 /// <summary>How rare (and how strong) a part is. Later rounds drop rarer parts.</summary>
@@ -346,6 +361,126 @@ public sealed class MeleeEffects
     public float Stun;
 }
 
+/// <summary>What sets a built grenade off (its fuse part's "fuse" block).</summary>
+public enum FuseKind : byte
+{
+    /// <summary>Goes off <see cref="FuseInfo.Seconds"/> after the throw (a cookable one can be held first).</summary>
+    Timer,
+
+    /// <summary>Goes off the moment it touches anything.</summary>
+    Impact,
+
+    /// <summary>Arms once it has landed and goes off when a zombie comes within <see cref="FuseInfo.Trigger"/> m.</summary>
+    Proximity,
+
+    /// <summary>Waits for its thrower: the grenade key again sets off every remote grenade they have out.</summary>
+    Remote,
+}
+
+/// <summary>What a built grenade does when it goes off (its payload part's "payload" block).</summary>
+public enum PayloadKind : byte
+{
+    /// <summary>A blast: damage falling off with distance.</summary>
+    Frag,
+
+    /// <summary>A small blast and a patch of fire that sets every zombie in it burning.</summary>
+    Incendiary,
+
+    /// <summary>Freezes the zombies in range solid for a moment, then slows them.</summary>
+    Cryo,
+
+    /// <summary>Zaps and stuns every zombie in range.</summary>
+    Shock,
+
+    /// <summary>A cloud that hurts every zombie inside it, a tick at a time.</summary>
+    Gas,
+
+    /// <summary>Zombies come to it while it plays its tune, then it goes off.</summary>
+    Lure,
+
+    /// <summary>Heals the players in range (does nothing to zombies).</summary>
+    Heal,
+
+    /// <summary>Rubber ducks: launches the zombies in range (little damage, lots of air).</summary>
+    Duck,
+}
+
+/// <summary>A grenade casing (the root of a grenade build): the base handling; the payload and mods change the rest.</summary>
+public sealed class CasingInfo
+{
+    /// <summary>Throw speed as a share of the standard throw (heavier casings say less).</summary>
+    public float Throw = 1f;
+
+    /// <summary>How much speed it keeps off a bounce (the standard grenade: 0.35).</summary>
+    public float Bounce = 0.35f;
+
+    /// <summary>Sticks where it first touches something.</summary>
+    public bool Sticky;
+
+    /// <summary>Payload damage and radius multipliers (a bigger casing holds more).</summary>
+    public float DamageMult = 1f, RadiusMult = 1f;
+
+    /// <summary>Extra grenades every round's refill gives (a casing that packs small).</summary>
+    public int Extra;
+}
+
+/// <summary>A fuse part's numbers.</summary>
+public sealed class FuseInfo
+{
+    public FuseKind Kind = FuseKind.Timer;
+
+    /// <summary>Timer: seconds to the bang. Proximity: seconds after landing before it arms. Remote and impact: the longest it waits.</summary>
+    public float Seconds = 2.5f;
+
+    /// <summary>Timer fuses: hold the grenade key to cook it (the fuse runs in your hand), let go to throw.</summary>
+    public bool Cook;
+
+    /// <summary>Proximity fuses: a zombie this close (m) sets it off.</summary>
+    public float Trigger = 2.5f;
+}
+
+/// <summary>A payload part's numbers (damage against zombies, like the Zombies frag's 3x object damage).</summary>
+public sealed class PayloadInfo
+{
+    public PayloadKind Kind = PayloadKind.Frag;
+
+    /// <summary>Damage at the centre against zombies (falling off with distance), or the burn / gas total per zombie.</summary>
+    public float Damage = 300f;
+
+    /// <summary>Blast or cloud radius (m).</summary>
+    public float Radius = 6f;
+
+    /// <summary>Blast knockback at the centre (m/s) on players and loose debris; ducks launch zombies.</summary>
+    public float Knockback;
+
+    /// <summary>Seconds a fire, cloud or lure lasts (and how long a cryo slow holds).</summary>
+    public float Duration;
+
+    /// <summary>Kind-specific: cryo and shock stun seconds; heal: health given.</summary>
+    public float Strength;
+}
+
+/// <summary>A grenade mod's changes ("grenade" block).</summary>
+public sealed class GrenadeModInfo
+{
+    /// <summary>Splits into this many bomblets when it goes off (each a smaller copy of the payload).</summary>
+    public int Cluster;
+
+    public float DamageMult = 1f, RadiusMult = 1f, ThrowMult = 1f, FuseMult = 1f, DurationMult = 1f;
+
+    /// <summary>Added to the casing's bounce (springs and rubber).</summary>
+    public float Bounce;
+
+    /// <summary>Makes the grenade stick where it first touches something.</summary>
+    public bool Sticky;
+
+    /// <summary>Goes off again this many more times (hopping up between bangs).</summary>
+    public int Stages;
+
+    /// <summary>Extra grenades every round's refill gives.</summary>
+    public int Extra;
+}
+
 /// <summary>
 /// Ammo-only data: how the round is cut up. Ammo is universal (every ammo part fits every receiver; the receiver sets
 /// the calibre), so an ammo part only changes the calibre's numbers relatively (its "stats": mul / add) and, with this
@@ -468,14 +603,32 @@ public sealed class PartDef
     /// <summary>Melee heads and modifiers: what they do to the hilt's numbers.</summary>
     public MeleeEffects? Melee;
 
+    /// <summary>Grenade casings only: the root of a grenade build.</summary>
+    public CasingInfo? Casing;
+
+    /// <summary>Grenade fuses only.</summary>
+    public FuseInfo? Fuse;
+
+    /// <summary>Grenade payloads only.</summary>
+    public PayloadInfo? Payload;
+
+    /// <summary>Grenade mods only ("grenade" block).</summary>
+    public GrenadeModInfo? GMod;
+
     /// <summary>Weight relief: kg added to the grip's carry weight while this part is on the build (slings, harnesses, anti-grav).</summary>
     public float CarryBonus;
 
-    /// <summary>True for the parts a build starts from: gun grips (the root of a weapon) and melee hilts (the root of a melee weapon).</summary>
-    public bool IsRoot => Frame != null || Hilt != null;
+    /// <summary>True for the parts a build starts from: gun grips (the root of a weapon), melee hilts (the root of a melee weapon) and grenade casings.</summary>
+    public bool IsRoot => Frame != null || Hilt != null || Casing != null;
 
     /// <summary>A melee-only part (hilt, head or modifier).</summary>
     public bool IsMeleePart => Category is PartCategory.Hilt or PartCategory.Head or PartCategory.MeleeMod;
+
+    /// <summary>A grenade-only part (casing, fuse, payload or grenade mod).</summary>
+    public bool IsGrenadePart => Category is PartCategory.Casing or PartCategory.Fuse or PartCategory.Payload or PartCategory.GrenadeMod;
+
+    /// <summary>Which kind of build the part goes on (a gun, a melee weapon or a grenade).</summary>
+    public BuildKind Kind => IsGrenadePart ? BuildKind.Grenade : IsMeleePart ? BuildKind.Melee : BuildKind.Gun;
 
     /// <summary>How many receivers a root grip holds (its "receiver" sockets).</summary>
     public int ReceiverCapacity => Sockets.Count(s => s.Type == "receiver");
@@ -522,6 +675,7 @@ public sealed class PartDef
         PartCategory.Multiplier => "Damage Multiplier",
         PartCategory.Upgrade => "Receiver Upgrade",
         PartCategory.MeleeMod => "Melee Mod",
+        PartCategory.GrenadeMod => "Grenade Mod",
         _ => c.ToString(),
     };
 

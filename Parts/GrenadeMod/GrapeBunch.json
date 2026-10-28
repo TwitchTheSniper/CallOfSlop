@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Grape Bunch",
+  "category": "grenademod",
+  "rarity": "epic",
+  "flavor": "Eight bomblets that look a lot like grapes. Do not eat.",
+  "weight": 0.3,
+  "grenade": {"cluster": 8, "damageMult": 0.8},
+  "model": [
+    {"size": [0.02, 0.02, 0.02], "pos": [0.008, 0.01, 0], "color": "#7a2a9a"},
+    {"size": [0.02, 0.02, 0.02], "pos": [0.008, -0.01, 0.01], "color": "#7a2a9a"},
+    {"size": [0.02, 0.02, 0.02], "pos": [0.02, 0, -0.01], "color": "#7a2a9a"},
+    {"size": [0.004, 0.016, 0.004], "pos": [0.008, 0.026, 0], "color": "#3a7a2a"}
+  ]
+}

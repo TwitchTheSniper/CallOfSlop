@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Long Burn Canister",
+  "category": "grenademod",
+  "rarity": "rare",
+  "flavor": "Fires, clouds and lures last much longer.",
+  "weight": 0.15,
+  "grenade": {"durationMult": 1.6},
+  "model": [
+    {"shape": "rod", "size": [0.02, 0.02, 0.05], "pos": [0.008, 0, 0], "rot": [90, 0, 0], "color": "#d06020"}
+  ]
+}

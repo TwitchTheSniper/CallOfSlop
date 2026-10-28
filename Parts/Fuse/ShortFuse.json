@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Short Fuse",
+  "category": "fuse",
+  "rarity": "uncommon",
+  "flavor": "A very short bit of string. Cook it and it goes off on the way.",
+  "weight": 0.04,
+  "fuse": {"kind": "timer", "seconds": 1.2, "cook": true},
+  "model": [
+    {"size": [0.03, 0.02, 0.03], "pos": [0, 0.008, 0], "color": "black"},
+    {"size": [0.004, 0.025, 0.004], "pos": [0.004, 0.03, 0], "rot": [0, 0, -20], "color": "tan"}
+  ]
+}

@@ -53,7 +53,8 @@ Source/
               lists), InviteCode.cs, Stun.cs, Upnp.cs
   Zombies/    weapon builder: PartDef/PartFile/PartLibrary (part files), WeaponBuild, BuildRules (what fits), BuildStats
               (stat pipeline), BuildModel (part boxes -> gun mesh), BenchModel (workbench state/filters), StandardBuilds,
-              ActionMigration, ZombiesRules (Parts/Tables/ZombiesRules.json), RunTables, PushCart, MeleeStats
+              ActionMigration, ZombiesRules (Parts/Tables/ZombiesRules.json), RunTables, PushCart, MeleeStats, GrenadeStats (modular grenades;
+              thrown and set off in Source/Game/GameGrenades.cs)
   Render/     Renderer.cs, BodyModel.cs, PlayerRender, ZombieAnim.cs, Ragdolls, Arms/IK, SightLens, Terrain/Foliage/Prop/
               Building/Decal renderers, Mesh/, Sky/, FrenzyFx/
   UI/         Ui.cs (ImGui menus) + Ui*.cs per screen (UiWorkbench, UiLoadout, UiAppearance, UiAudioMixer, UiZombies...)
@@ -66,7 +67,8 @@ Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, 
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.
 Weapons/ Attachments/   one JSON per gun / attachment (Weapons/README.md)
 Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, Muzzle, Optic, Receiver, Splitter, Stock,
-                        Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod); Parts/Builds (141 standard builds);
+                        Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod; grenades: Casing, Fuse, Payload, GrenadeMod);
+                        Parts/Builds (141 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
@@ -83,7 +85,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **66**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **67**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**

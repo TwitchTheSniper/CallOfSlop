@@ -1738,7 +1738,8 @@ public static unsafe partial class Program
                 _interactDownAt = -1;
             }
             if (Pressed(GameAction.Grenade) && !_zGrenadeKeyTaken) // (Zombies: not at a slot machine or the box's offer, Program.Zombies.cs)
-                _game.TryThrow(equipment: false, now);
+                _game.GrenadePress(now); // a throw; a built grenade may cook first or set off its remote ones (GameGrenades.cs)
+            _game.GrenadeCookTick(Down(GameAction.Grenade), now); // a cooking grenade goes when the key comes up
             if (Pressed(GameAction.Equipment))
                 _game.TryThrow(equipment: true, now);
             if (Pressed(GameAction.Melee))
@@ -1952,7 +1953,14 @@ public static unsafe partial class Program
         foreach (var pr in _game.Projectiles.Values)
         {
             var c = Throwables.Get(pr.Kind).Color;
-            var spin = Matrix4x4.CreateRotationY((float)(now - pr.Born) * 9f) * Matrix4x4.CreateRotationX((float)(now - pr.Born) * 7f);
+            var spin = pr.Stuck ? Matrix4x4.Identity : Matrix4x4.CreateRotationY((float)(now - pr.Born) * 9f) * Matrix4x4.CreateRotationX((float)(now - pr.Born) * 7f);
+            if (pr.Grenade is { View.BuiltMesh: { } mesh } g)
+            {
+                // A built grenade: its own model from its parts (bomblets and aftershocks smaller), centred on the hand point.
+                var scale = pr.Gen == 1 ? 0.9f : 1.8f;
+                DrawGun(g.View, Matrix4x4.CreateTranslation(-mesh.Grip) * Matrix4x4.CreateScale(scale) * spin * Matrix4x4.CreateTranslation(pr.Pos), false);
+                continue;
+            }
             Gfx.Draw(Matrix4x4.CreateScale(0.16f, 0.2f, 0.16f) * spin * Matrix4x4.CreateTranslation(pr.Pos), c);
         }
         foreach (var s in _game.Sensors)
@@ -2024,10 +2032,12 @@ public static unsafe partial class Program
             var k = Math.Clamp(age / 0.35f, 0f, 1f);
             var alpha = Math.Clamp(1f - age / 0.6f, 0f, 1f);
             var size = b.Radius * (0.3f + 0.7f * k) * 1.2f;
-            Gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(0.6f) * Matrix4x4.CreateTranslation(b.Pos), new Vector3(1f, 0.55f, 0.15f), alpha * 0.55f, mode: 2);
-            Gfx.Draw(Matrix4x4.CreateScale(size * 0.6f) * Matrix4x4.CreateRotationY(-0.3f) * Matrix4x4.CreateTranslation(b.Pos), new Vector3(1f, 0.9f, 0.5f), alpha * 0.8f, mode: 2);
+            var tint = b.Tint == default ? new Vector3(1f, 0.55f, 0.15f) : b.Tint; // a built grenade's payload colour (GameGrenades.cs)
+            Gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateRotationY(0.6f) * Matrix4x4.CreateTranslation(b.Pos), tint, alpha * 0.55f, mode: 2);
+            Gfx.Draw(Matrix4x4.CreateScale(size * 0.6f) * Matrix4x4.CreateRotationY(-0.3f) * Matrix4x4.CreateTranslation(b.Pos), Vector3.Lerp(tint, Vector3.One, 0.6f), alpha * 0.8f, mode: 2);
             Gfx.Draw(Matrix4x4.CreateScale(size * 0.9f, 0.05f, size * 0.9f) * Matrix4x4.CreateTranslation(b.Pos with { Y = b.Pos.Y + 0.02f }), new Vector3(0.1f, 0.08f, 0.06f), alpha * 0.6f);
         }
+        DrawGrenadeZones(now); // built grenades' fires, gas clouds and lures (Program.Grenades.cs)
         foreach (var cloud in _game.Smokes)
         {
             if (now < cloud.Born)

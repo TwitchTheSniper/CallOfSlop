@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Nesting Doll Shell",
+  "category": "grenademod",
+  "rarity": "legendary",
+  "flavor": "A grenade in a grenade in a grenade: six bomblets and an encore.",
+  "weight": 0.3,
+  "grenade": {"cluster": 6, "stages": 1},
+  "model": [
+    {"size": [0.024, 0.04, 0.024], "pos": [0.01, 0, 0], "color": "#d03030"},
+    {"size": [0.026, 0.016, 0.026], "pos": [0.01, 0.01, 0], "color": "#f0c8a0"}
+  ]
+}

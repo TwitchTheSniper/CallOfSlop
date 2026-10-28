@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Black Powder",
+  "category": "payload",
+  "rarity": "common",
+  "flavor": "Old-fashioned, reliable, smells of fireworks night.",
+  "weight": 0.2,
+  "payload": {"kind": "frag", "damage": 450, "radius": 6.5, "knockback": 10},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "black"},
+    {"size": [0.02, 0.02, 0.004], "pos": [0, 0, -0.006], "color": "white"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Paint Can Casing",
+  "category": "casing",
+  "rarity": "epic",
+  "flavor": "A gallon of something that is very much not paint.",
+  "weight": 1.0,
+  "hand": [0, 0, 0],
+  "casing": {"throw": 0.85, "bounce": 0.25, "damageMult": 1.6, "radiusMult": 1.25},
+  "sockets": [
+    {"name": "fuse", "type": "fuse", "pos": [0, 0.06, 0], "required": true},
+    {"name": "payload", "type": "payload", "pos": [0, 0, -0.055], "required": true},
+    {"name": "gmod_1", "type": "gmod", "pos": [0.055, 0, 0]},
+    {"name": "gmod_2", "type": "gmod", "pos": [-0.055, 0, 0], "rot": [0, 180, 0]},
+    {"name": "gmod_3", "type": "gmod", "pos": [0, -0.06, 0], "rot": [0, 0, -90]}
+  ],
+  "model": [
+    {"shape": "rod", "size": [0.11, 0.11, 0.12], "pos": [0, 0, 0], "rot": [90, 0, 0], "color": "chrome"},
+    {"shape": "rod", "size": [0.114, 0.114, 0.06], "pos": [0, -0.005, 0], "rot": [90, 0, 0], "color": "#3a7bd5"},
+    {"size": [0.004, 0.05, 0.11], "pos": [0, 0.07, 0], "color": "steel"}
+  ]
+}

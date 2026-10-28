@@ -32,8 +32,21 @@ public sealed partial class Ui
 
     private BenchModel? _bm;
 
-    /// <summary>Editing the melee slot (hilts, heads, mods) instead of a gun slot.</summary>
-    private bool _wbMelee;
+    /// <summary>What the editor builds: a gun, the melee slot (hilts, heads, mods) or the grenade slot (casings, fuses, payloads, mods).</summary>
+    private BuildKind _wbKind;
+
+    /// <summary>Editing the melee slot (setting it false goes back to guns).</summary>
+    private bool _wbMelee
+    {
+        get => _wbKind == BuildKind.Melee;
+        set => _wbKind = value ? BuildKind.Melee : BuildKind.Gun;
+    }
+
+    /// <summary>Editing the grenade slot.</summary>
+    private bool _wbGrenade => _wbKind == BuildKind.Grenade;
+
+    /// <summary>The root part's name for the editor's kind: grip, hilt or casing.</summary>
+    private string WbRootWord => _wbKind switch { BuildKind.Melee => "hilt", BuildKind.Grenade => "casing", _ => "grip" };
 
     /// <summary>Step 1: the grip picker is showing. <see cref="_wbPickKeep"/>: it moves the current build onto the new grip.</summary>
     private bool _wbPicking, _wbPickKeep;
@@ -117,7 +130,7 @@ public sealed partial class Ui
     // Missing-part badges on saved builds and presets.
     private readonly int[] _slotMissing = new int[BuildStore.SlotCount + 1];
     private readonly List<(StandardBuild Build, int Missing)> _presetBadges = new();
-    private (int Stock, int Version, bool Melee) _badgeKey = (int.MinValue, -1, false);
+    private (int Stock, int Version, BuildKind Kind) _badgeKey = (int.MinValue, -1, BuildKind.Gun);
 
     private static readonly float4 Yellow = new(1f, 0.85f, 0.3f, 1f);
     private static readonly ImColor8 Yellow8 = new(255, 216, 77, 255);
@@ -156,7 +169,7 @@ public sealed partial class Ui
     /// <summary>Smoke test: shows <paramref name="b"/> on the workbench's assembly screen (not saved).</summary>
     public void SmokeWorkbenchBuild(WeaponBuild b)
     {
-        _wbMelee = b.IsMelee;
+        _wbKind = b.Kind;
         StartEditing(b.Clone(), b.Name);
     }
 
@@ -185,21 +198,21 @@ public sealed partial class Ui
         return Bm.Missing.Text();
     }
 
-    /// <summary>Switches the editor to the melee slot (or back to the selected gun slot).</summary>
-    private void LoadWorkbenchMelee(bool melee)
+    /// <summary>Switches the editor to the melee or grenade slot (or back to the selected gun slot).</summary>
+    private void LoadWorkbenchKind(BuildKind kind)
     {
         if (BenchRun != null)
         {
-            BenchLoad(melee ? 4 : 0); // a Zombies workbench: your own slots (UiWorkbenchRun.cs)
+            BenchLoad(kind switch { BuildKind.Melee => Game.MeleeSlot, BuildKind.Grenade => Game.GrenadeSlot, _ => 0 }); // a Zombies workbench: your own slots (UiWorkbenchRun.cs)
             return;
         }
-        if (!melee)
+        if (kind == BuildKind.Gun)
         {
             LoadWorkbenchSlot(BuildStore.Selected);
             return;
         }
-        _wbMelee = true;
-        StartEditing(BuildStore.Melee?.Clone(), "Melee");
+        _wbKind = kind;
+        StartEditing(kind == BuildKind.Melee ? BuildStore.Melee?.Clone() : BuildStore.Grenade?.Clone(), kind == BuildKind.Melee ? "Melee" : "Grenade");
     }
 
     private void LoadWorkbenchSlot(int slot)
@@ -241,7 +254,7 @@ public sealed partial class Ui
         _runStockKey = int.MinValue;
         _inv.Invalidate();
         _rowVersion = -1;
-        _badgeKey = (int.MinValue, -1, false);
+        _badgeKey = (int.MinValue, -1, BuildKind.Gun);
         _trialKey = (-1, -1, null, null);
         _hoverTrialKey = (-1, null);
         _animRest = _animPart = null;
@@ -420,21 +433,24 @@ public sealed partial class Ui
     private void DrawWbHeader()
     {
         ImGui.PushFont(default, 22);
-        ImGuiSafe.TextColored(Orange, _wbMelee ? "MELEE WORKBENCH" : "WEAPON WORKBENCH");
+        ImGuiSafe.TextColored(Orange, _wbKind switch { BuildKind.Melee => "MELEE WORKBENCH", BuildKind.Grenade => "GRENADE WORKBENCH", _ => "WEAPON WORKBENCH" });
         ImGui.PopFont();
         ImGui.SameLine();
         var step1 = _wbPicking;
-        ImGuiSafe.TextColored(step1 ? Orange : Dim, step1 ? "   [1] PICK A GRIP" : "   1 pick a grip");
+        ImGuiSafe.TextColored(step1 ? Orange : Dim, step1 ? $"   [1] PICK A {WbRootWord.ToUpperInvariant()}" : $"   1 pick a {WbRootWord}");
         ImGui.SameLine();
         ImGuiSafe.TextColored(!step1 ? Orange : Dim, !step1 ? "  >  [2] ASSEMBLE" : "  >  2 assemble");
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, BenchRun != null ? "      Zombies run: only the parts you own" : _wbPractice ? "      Sandbox: practice parts (Zombies rules)" : "      Sandbox: every part unlocked");
-        ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 230 * _scale);
-        if (ImGui.RadioButton("GUNS"u8, !_wbMelee) && _wbMelee)
-            LoadWorkbenchMelee(false);
+        ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 360 * _scale);
+        if (ImGui.RadioButton("GUNS"u8, _wbKind == BuildKind.Gun) && _wbKind != BuildKind.Gun)
+            LoadWorkbenchKind(BuildKind.Gun);
         ImGui.SameLine();
         if (ImGui.RadioButton("MELEE SLOT"u8, _wbMelee) && !_wbMelee)
-            LoadWorkbenchMelee(true);
+            LoadWorkbenchKind(BuildKind.Melee);
+        ImGui.SameLine();
+        if (ImGui.RadioButton("GRENADE SLOT"u8, _wbGrenade) && !_wbGrenade)
+            LoadWorkbenchKind(BuildKind.Grenade);
         ImGui.Separator();
     }
 
@@ -457,7 +473,8 @@ public sealed partial class Ui
         }
         else
             ImGuiSafe.TextColored(Dim, _wbPicking
-                ? "Click a grip to start. The grip sets how many receivers the weapon holds and how they fire."
+                ? _wbGrenade ? "Click a casing to start. The casing sets how far it throws, how it bounces and how much it holds."
+                : "Click a grip to start. The grip sets how many receivers the weapon holds and how they fire."
                 : $"Drag parts onto the gun - click a build row: its category in your parts - double-click: best free socket - right-click a part: remove / copy receiver - Ctrl+Z undo, Ctrl+Y redo - A auto-complete{(BenchRun != null ? " - D disassemble slot" : "")} - Del remove - N new - G grip - R view");
     }
 
@@ -467,14 +484,16 @@ public sealed partial class Ui
     {
         // OFF (default): the grips you own. ON: every grip in the game, the ones you don't own dimmed (locked at a run's bench).
         var showAll = BenchSettings?.WorkbenchShowAllGrips ?? false;
-        _grips.Refresh(Bm.Stock, Parts.All, _wbMelee, showAll); // by slot count: 1, 2, 3 ... 9 and the big frames; cached
+        _grips.Refresh(Bm.Stock, Parts.All, _wbKind, showAll); // by slot count: 1, 2, 3 ... 9 and the big frames; cached
         var inventory = BenchRun != null; // a Zombies run's bench: only grips you own can be picked
         ImGui.PushFont(default, 18);
-        ImGuiSafe.TextColored(Orange, _wbPickKeep ? (_wbMelee ? "CHANGE THE HILT" : "CHANGE THE GRIP") : (_wbMelee ? "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON" : "STEP 1: PICK A GRIP FOR THE NEW WEAPON"));
+        ImGuiSafe.TextColored(Orange, _wbPickKeep ? $"CHANGE THE {WbRootWord.ToUpperInvariant()}"
+            : _wbKind switch { BuildKind.Melee => "STEP 1: PICK A HILT FOR THE NEW MELEE WEAPON", BuildKind.Grenade => "STEP 1: PICK A CASING FOR THE NEW GRENADE", _ => "STEP 1: PICK A GRIP FOR THE NEW WEAPON" });
         ImGui.PopFont();
         ImGuiSafe.TextColored(Dim, _wbPickKeep
             ? "Your parts move onto the new grip: receivers into the same-numbered slots, the rest where the new grip has the socket."
             : _wbMelee ? "The hilt is the handle: it sets the base damage, swing and reach. Heads and mods go on it next."
+            : _wbGrenade ? "The casing is the body: how far it throws, how it bounces or sticks, how much payload it holds. A fuse, a payload and mods go on it next."
             : "The grip is the root of the weapon: it sets how many receivers it holds and how much it carries (the build's Chain fire box picks volley or taking turns). First-tier grips hold one receiver; multi-receiver frames come later in a run.");
         if (Bm.Build.Root != null)
         {
@@ -482,7 +501,7 @@ public sealed partial class Ui
             if (ImGui.SmallButton("Back to the build"u8))
                 _wbPicking = false;
         }
-        if (ImGui.Checkbox(_wbMelee ? "Show all hilts"u8 : "Show all grips"u8, ref showAll) && BenchSettings != null)
+        if (ImGui.Checkbox(_wbMelee ? "Show all hilts"u8 : _wbGrenade ? "Show all casings"u8 : "Show all grips"u8, ref showAll) && BenchSettings != null)
         {
             BenchSettings.WorkbenchShowAllGrips = showAll;
             BenchSettings.Save();
@@ -508,7 +527,8 @@ public sealed partial class Ui
         var gap = 12 * _scale;
         var cols = Math.Max(1, (int)((ImGui.GetContentRegionAvail().X + gap) / (cardW + gap)));
         if (_grips.Items.Count == 0)
-            ImGuiSafe.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
+            ImGuiSafe.TextColored(Dim, _wbMelee ? "You don't own a hilt. Tick \"Show all hilts\" to see them all."u8
+                : _wbGrenade ? "You don't own a casing. Tick \"Show all casings\" to see them all."u8 : "You don't own a grip. Tick \"Show all grips\" to see them all."u8);
         for (var i = 0; i < _grips.Items.Count; i++)
         {
             var g = _grips.Items[i];
@@ -555,6 +575,16 @@ public sealed partial class Ui
                 y += 18 * _scale;
                 DlText(dl, new float2(x, y), Dim8, $"{h.Hands}-handed{(h.Stun > 0 ? $", stun {h.Stun:0.0} s" : "")}");
             }
+            else if (g.Casing is { } cs)
+            {
+                ImGui.PushFont(default, 20);
+                DlText(dl, new float2(x, y), White8, $"x{cs.DamageMult:0.0#} PAYLOAD");
+                ImGui.PopFont();
+                y += 26 * _scale;
+                DlText(dl, new float2(x, y), Dim8, $"Throw x{cs.Throw:0.0#}, bounce {cs.Bounce:0.00}{(cs.Sticky ? ", sticky" : "")}");
+                y += 18 * _scale;
+                DlText(dl, new float2(x, y), Dim8, $"{g.Sockets.Count(s => s.Type == "gmod")} mod slot(s), blast x{cs.RadiusMult:0.0#}{(cs.Extra > 0 ? $", +{cs.Extra} a round" : "")}");
+            }
             var ownTxt = Bm.Stock.IsUnlimited ? "sandbox" : have ? $"{owned} owned" : locked ? "LOCKED - none owned" : "none owned";
             DlText(dl, new float2(x, p1.Y - 22 * _scale), have ? Green8 : Red8, ownTxt);
             if (locked)
@@ -590,6 +620,7 @@ public sealed partial class Ui
         _wbAudio?.Effect(Sfx.DeployDevice, 0.5f);
         var missing = Bm.Stock.Free(grip, Bm.Build) < 0;
         WbSay(grip.Hilt != null ? $"Melee weapon on the {grip.Name}: drag a head onto it."
+            : grip.Casing != null ? $"Grenade in the {grip.Name}: drag a fuse and a payload onto it."
             : $"New weapon on the {grip.Name} ({grip.ReceiverCapacity} receiver slot{(grip.ReceiverCapacity == 1 ? "" : "s")}): drag a receiver onto it."
               + (missing ? " (You don't own this grip: it's missing.)" : ""), missing);
     }
@@ -625,7 +656,7 @@ public sealed partial class Ui
     // ---- Left: your parts --------------------------------------------------------------------------------------
 
     private void RefreshInventory() =>
-        _inv.Refresh(Bm, Parts.All, _wbFilter, _wbSearch, _wbMelee, BenchSettings?.WorkbenchShowIncompatible ?? false);
+        _inv.Refresh(Bm, Parts.All, _wbFilter, _wbSearch, _wbKind, BenchSettings?.WorkbenchShowIncompatible ?? false);
 
     private void DrawInventory(float width)
     {
@@ -799,13 +830,13 @@ public sealed partial class Ui
     {
         var b = Bm.Build;
         // Toolbar.
-        if (ImGui.Button(_wbMelee ? "New melee weapon"u8 : "New weapon"u8))
+        if (ImGui.Button(_wbMelee ? "New melee weapon"u8 : _wbGrenade ? "New grenade"u8 : "New weapon"u8))
         {
             _wbPicking = true;
             _wbPickKeep = false;
         }
         ImGui.SameLine();
-        if (ImGui.Button(_wbMelee ? "Change hilt"u8 : "Change grip"u8))
+        if (ImGui.Button(_wbMelee ? "Change hilt"u8 : _wbGrenade ? "Change casing"u8 : "Change grip"u8))
         {
             _wbPicking = true;
             _wbPickKeep = true;
@@ -934,7 +965,7 @@ public sealed partial class Ui
         {
             var grip = b.Root.Part;
             DlText(dl, _viewMin + new float2(10 * _scale, 8 * _scale), WbC8(PartDef.RarityColor(grip.Rarity)), grip.Name);
-            DlText(dl, _viewMin + new float2(10 * _scale, 26 * _scale), Dim8, b.IsMelee ? "melee weapon"
+            DlText(dl, _viewMin + new float2(10 * _scale, 26 * _scale), Dim8, b.IsMelee ? "melee weapon" : b.IsGrenade ? "grenade"
                 : $"{b.Receivers.Count}/{grip.ReceiverCapacity} receiver slot{(grip.ReceiverCapacity == 1 ? "" : "s")}{(grip.ReceiverCapacity > 1 ? b.ChainFire ? " - chain fire" : " - volley" : "")}");
         }
         DlText(dl, new float2(_viewMin.X + 10 * _scale, _viewMax.Y - 22 * _scale), new ImColor8(120, 122, 132, 255), "drag: turn - wheel: zoom - double-click a part: take it off - double-click elsewhere: reset");
@@ -1052,7 +1083,7 @@ public sealed partial class Ui
         }
         var problems = Bm.Asm.Problems;
         if (problems.Count == 0 && m.Total == 0 && Bm.Build.Root != null)
-            ImGuiSafe.TextColored(Green, Bm.Build.IsMelee ? "Ready to swing." : "Ready to fire.");
+            ImGuiSafe.TextColored(Green, Bm.Build.IsMelee ? "Ready to swing." : Bm.Build.IsGrenade ? "Ready to throw." : "Ready to fire.");
         else if (problems.Count > 0)
         {
             var p = problems[0];
@@ -1315,6 +1346,11 @@ public sealed partial class Ui
         ImGui.Spacing();
         var trial = StatTrial();
         var b = Bm.Build;
+        if (b.IsGrenade)
+        {
+            DrawGrenadeStats(b, Bm.Asm.Grenade, trial);
+            return;
+        }
         if (b.IsMelee)
         {
             var cur = Bm.Asm.Melee;
@@ -1457,7 +1493,7 @@ public sealed partial class Ui
         }
         if (n != Bm.Build.Root && ImGui.Selectable("Take it off (back to your parts)"u8))
             WbRemove(n);
-        if (n == Bm.Build.Root && ImGui.Selectable(_wbMelee ? "Change hilt..."u8 : "Change grip..."u8))
+        if (n == Bm.Build.Root && ImGui.Selectable(_wbMelee ? "Change hilt..."u8 : _wbGrenade ? "Change casing..."u8 : "Change grip..."u8))
         {
             _wbPicking = true;
             _wbPickKeep = true;
@@ -1758,6 +1794,7 @@ public sealed partial class Ui
             bits.Add($"weight relief: the grip carries {p.CarryBonus:0.#} kg more");
         if (p.Hilt is { } hl)
             bits.Add($"melee hilt: {hl.Damage:0} damage, {hl.Swing:0.00} s swing, {hl.Reach:0.0} m reach, cleave {hl.Cleave}{(hl.Stun > 0 ? $", stun {hl.Stun:0.0} s" : "")}, {hl.Hands}-handed");
+        GrenadeSummary(p, bits); // casings, fuses, payloads, grenade mods (UiWorkbenchGrenade.cs)
         if (p.Melee is { } me)
         {
             var mb = new List<string>();
@@ -1812,7 +1849,7 @@ public sealed partial class Ui
     /// <summary>Missing-part counts of the saved slots and presets against the current stock (cached).</summary>
     private void RefreshBadges()
     {
-        var key = (Bm.Stock.Fingerprint, Bm.Version, _wbMelee);
+        var key = (Bm.Stock.Fingerprint, Bm.Version, _wbKind);
         if (key == _badgeKey)
             return;
         _badgeKey = key;
@@ -1823,7 +1860,7 @@ public sealed partial class Ui
         foreach (var sb in StandardBuilds.All)
         {
             var b = sb.Build();
-            if (b.IsMelee == _wbMelee)
+            if (b.Kind == _wbKind)
                 _presetBadges.Add((sb, MissingReport.Of(b, Bm.Stock).Total));
         }
     }
@@ -1862,13 +1899,40 @@ public sealed partial class Ui
                 WbTip(Bm.FinalizeTip());
             ImGui.SameLine();
             if (ImGui.Button("Revert"u8))
-                LoadWorkbenchMelee(true);
+                LoadWorkbenchKind(BuildKind.Melee);
             ImGui.SameLine();
             if (ImGui.Button("Use the standard strike"u8))
             {
                 BuildStore.Melee = null;
                 BuildStore.Save();
                 WbSay("The melee key does the standard knife / butt strike again.");
+            }
+        }
+        else if (_wbGrenade)
+        {
+            ImGui.TextColored(Orange, "GRENADE SLOT"u8);
+            ImGuiSafe.TextColored(Dim, $"Saved: {BuildStore.Grenade?.Name ?? "(none: the stock frag)"}");
+            ImGui.BeginDisabled(!ready);
+            if (ImGui.Button("Save grenade"u8))
+            {
+                BuildStore.Grenade = b.Clone();
+                BuildStore.Save();
+                _badgeKey = default;
+                WbSay($"Saved '{b.Name}' to the grenade slot. In a Zombies run, build it at a workbench to throw it.");
+            }
+            ImGui.EndDisabled();
+            WbRefusedClick(ready);
+            if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
+                WbTip(ready ? "A plan for your Zombies runs: grenades are thrown in Zombies (the range has none)."u8 : Bm.FinalizeTip());
+            ImGui.SameLine();
+            if (ImGui.Button("Revert"u8))
+                LoadWorkbenchKind(BuildKind.Grenade);
+            ImGui.SameLine();
+            if (ImGui.Button("Clear"u8))
+            {
+                BuildStore.Grenade = null;
+                BuildStore.Save();
+                WbSay("The grenade slot is empty: Zombies hands out the stock frag.");
             }
         }
         else
@@ -1948,6 +2012,8 @@ public sealed partial class Ui
             {
                 if (_wbMelee)
                     BuildStore.Melee = b.Clone();
+                else if (_wbGrenade)
+                    BuildStore.Grenade = b.Clone();
                 else
                     BuildStore.Slots[BuildStore.Selected] = b.Clone();
                 BuildStore.Save();
@@ -1993,13 +2059,13 @@ public sealed partial class Ui
     {
         why = "";
         WeaponDef? Gun(int slot) =>
-            !_wbMelee && slot == BuildStore.Selected ? Bm.Asm.Def : BuildStore.Slots[slot] is { IsMelee: false } sb ? WeaponBuilder.Assemble(sb).Def : null;
+            _wbKind == BuildKind.Gun && slot == BuildStore.Selected ? Bm.Asm.Def : BuildStore.Slots[slot] is { Kind: BuildKind.Gun } sb ? WeaponBuilder.Assemble(sb).Def : null;
         var primary = Gun(BuildStore.Selected);
-        if (primary == null && _wbMelee)
+        if (primary == null && _wbKind != BuildKind.Gun)
             primary = Enumerable.Range(0, BuildStore.SlotCount).Select(Gun).FirstOrDefault(d => d != null);
         if (primary == null)
         {
-            why = _wbMelee ? "Save a complete gun to a slot first: the range needs a gun as well as the melee weapon." : "Finish the build first (it needs everything listed).";
+            why = _wbKind != BuildKind.Gun ? "Save a complete gun to a slot first: the range needs a gun as well as the melee weapon." : "Finish the build first (it needs everything listed).";
             return null;
         }
         var second = BuildStore.Second != BuildStore.Selected ? Gun(BuildStore.Second) : null;

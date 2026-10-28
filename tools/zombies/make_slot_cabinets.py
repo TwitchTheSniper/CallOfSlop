@@ -482,6 +482,22 @@ def action(c):
     return p, face(c, "#2a1a22", tray=False)
 
 
+def grenade(c):
+    # A giant ribbed hand grenade standing on its base: the egg in segments (alternate rings proud, the ribs), the
+    # fuse head and its spoon down the left side, the pull ring on top (modular grenades, 2026-10-27).
+    p = plinth()
+    profile = [(0.1, 0.36, 0.2), (0.36, 0.62, 0.27), (0.62, 0.88, 0.3), (0.88, 1.14, 0.31), (1.14, 1.4, 0.31),
+               (1.4, 1.66, 0.3), (1.66, 1.92, 0.27), (1.92, 2.1, 0.2)]
+    for i, (y0, y1, r) in enumerate(profile):
+        p += ring_y(0, 0.06, y0, y1, r + (0.025 if i % 2 else 0), "#4a5a2a" if i % 2 else "#3a4820", 8, "metal")
+    p += ring_y(0, 0.06, 2.1, 2.3, 0.12, "darkgrey", 8, "metal")                       # the fuse head
+    p += [b([0.08, 0.06, 0.1], [-0.16, 2.24, 0.06], "darkgrey", material="metal")]     # the spoon's hinge
+    p += [b([0.05, 1.0, 0.1], [-0.36, 1.72, 0.06], "#9aa0a6", rz(-8), material="metal")]  # the spoon, down the side
+    p += [b([0.03, 0.03, 0.16], [0.0, 2.36, 0.06], c)]                                  # the pin
+    p += ring_z(0.0, 2.48, -0.01, 0.13, 0.09, c, 8)                                     # the pull ring
+    return p, face(c, "#25301a")
+
+
 # name (the category's display name), colour (matches Game.SlotCategoryColor), the body's description, its builder.
 CABINETS = [
     ("Receiver", "#d94d40", "a chunky boxy receiver with a top rail, a charging handle and its ejection port open on the right", receiver),
@@ -500,11 +516,15 @@ CABINETS = [
     ("Head", "#ccd9e6", "an axe head on its haft, standing in a chopping block", head),
     ("Melee Mod", "#99e666", "a nail-studded club with a bright grip wrap", melee_mod),
     ("Action", "#f27399", "a rifle bolt on a coil spring, with its lugs, firing pin and bolt handle", action),
+    ("Grenade Parts", "#8cd94d", "a giant ribbed hand grenade with its fuse head, spoon and pull ring (it pays any casing, fuse, payload or grenade mod)", grenade),
 ]
 
 
 # The PartCategory names (and Parts/<Category> folders) of the display names above that differ from them.
 KEYS = {"Receiver Upgrade": "Upgrade", "Damage Multiplier": "Multiplier", "Melee Mod": "MeleeMod"}
+
+# The four grenade categories share one machine, the grenade parts cabinet (modular grenades, 2026-10-27).
+GRENADE_FOLDERS = {"Casing", "Fuse", "Payload", "GrenadeMod"}
 
 
 def main():
@@ -512,6 +532,7 @@ def main():
     # "Zombies category slots" fails too while one is missing).
     folders = {d for d in os.listdir(os.path.join(ROOT, "Parts")) if not d.startswith("_") and d not in ("Builds", "Tables")
                and os.path.isdir(os.path.join(ROOT, "Parts", d))}
+    folders = (folders - GRENADE_FOLDERS) | {"Grenade Parts"}
     mine = {KEYS.get(n, n) for n, *_ in CABINETS}
     if folders != mine:
         raise SystemExit(f"part categories without a cabinet: {sorted(folders - mine)}; cabinets without a category: {sorted(mine - folders)}")

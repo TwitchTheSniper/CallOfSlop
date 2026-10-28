@@ -96,8 +96,8 @@ public sealed class ZPlayer
     /// <summary>Loose parts (by name), for the workbench. (Zombies has no scrap since 2026-10-27.)</summary>
     public readonly SortedDictionary<string, int> Parts = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>The build in each slot (0-3 guns, 4 the melee weapon), in text form: what the workbench edits and clients assemble.</summary>
-    public readonly WeaponBuild?[] Slots = new WeaponBuild?[5];
+    /// <summary>The build in each slot (0-3 guns, 4 the melee weapon, 5 the grenade), in text form: what the workbench edits and clients assemble.</summary>
+    public readonly WeaponBuild?[] Slots = new WeaponBuild?[Game.BuildSlots];
 
     /// <summary>Slot machines: "nothing" results in a row on each machine (bad-luck protection, ZombiesSlots.cs).</summary>
     public readonly byte[] SlotNothing = new byte[ZombiesMap.MaxSlotMachines];
@@ -246,8 +246,18 @@ public sealed partial class Game
             p.BuiltExtra[0] = p.BuiltExtra[1] = null;
             p.ExtraSlots = false;
             p.MeleeBuild = null;
+            p.GrenadeBuild = null;
         }
     }
+
+    /// <summary>Build slots per player: 0-3 guns, <see cref="MeleeSlot"/> the melee weapon, <see cref="GrenadeSlot"/> the grenade (modular grenades, protocol 67).</summary>
+    public const int MeleeSlot = 4, GrenadeSlot = 5, BuildSlots = 6;
+
+    /// <summary>"slot 2", "melee", "grenade": a slot in the feed's words.</summary>
+    public static string SlotWord(int slot) => slot == MeleeSlot ? "melee" : slot == GrenadeSlot ? "grenade" : (slot + 1).ToString();
+
+    /// <summary>Which kind of build a slot takes.</summary>
+    public static BuildKind SlotKind(int slot) => slot == MeleeSlot ? BuildKind.Melee : slot == GrenadeSlot ? BuildKind.Grenade : BuildKind.Gun;
 
     private bool _zBuildsGiven;
 
@@ -502,12 +512,22 @@ public sealed partial class Game
     /// </summary>
     private void GiveZombiesGrenades(Player p, int count, bool topUp)
     {
-        if (p.Grenade != ZRules.GrenadeKind)
+        // A grenade built in the grenade slot replaces the stock one, and its parts may add to the round's count.
+        var kind = p.GrenadeBuild != null ? ThrowableKind.Built : ZRules.GrenadeKind;
+        count = Math.Clamp(count + (p.GrenadeBuild?.Extra ?? 0), 0, 255);
+        if (p.Grenade != kind)
         {
-            p.Grenade = ZRules.GrenadeKind;
+            p.Grenade = kind;
             p.GrenadesLeft = 0;
         }
         p.GrenadesLeft = topUp ? Math.Max(p.GrenadesLeft, count) : count;
+    }
+
+    /// <summary>Server: <paramref name="p"/>'s grenade changed at a workbench (built, rebuilt or taken apart): they keep the grenades they carry, now of the new kind.</summary>
+    private void SwapZombiesGrenade(Player p, GrenadeDef? build)
+    {
+        p.GrenadeBuild = build;
+        p.Grenade = build != null ? ThrowableKind.Built : ZRules.GrenadeKind;
     }
 
     /// <summary>
@@ -1197,6 +1217,15 @@ public sealed partial class Game
             BroadcastBuild(p, 4, 0, b, full, start);
             return true;
         }
+        if (slot == GrenadeSlot)
+        {
+            if (a.Grenade == null)
+                return false;
+            SwapZombiesGrenade(p, a.Grenade);
+            zp.Slots[GrenadeSlot] = b.Clone();
+            BroadcastBuild(p, GrenadeSlot, 0, b, full, start);
+            return true;
+        }
         if (a.Def == null || slot is < 0 or > 3 || (slot >= 2 && !p.ExtraSlots))
             return false;
         var def = PlaceBuilt(p, slot, a.Def);
@@ -1441,7 +1470,7 @@ public sealed partial class Game
         {
             case 0:
             {
-                if (slot is < 0 or > 4 || (slot is 2 or 3 && !p.ExtraSlots))
+                if (slot is < 0 or >= BuildSlots || (slot is 2 or 3 && !p.ExtraSlots))
                     return "That slot isn't yours.";
                 WeaponBuild nb;
                 var dropped = new List<string>();
@@ -1456,8 +1485,9 @@ public sealed partial class Game
                 if (dropped.Count > 0)
                     return $"Unknown parts: {string.Join(", ", dropped)}";
                 var asm = AssembleCached(nb);
-                if (!asm.Ok || (slot == 4) != nb.IsMelee)
-                    return asm.Problems.Count > 0 && !asm.Ok ? asm.Problems[0].Message : slot == 4 ? "The melee slot takes a melee build." : "Gun slots take a gun build.";
+                if (!asm.Ok || SlotKind(slot) != nb.Kind)
+                    return asm.Problems.Count > 0 && !asm.Ok ? asm.Problems[0].Message
+                        : slot == 4 ? "The melee slot takes a melee build." : slot == GrenadeSlot ? "The grenade slot takes a grenade build." : "Gun slots take a gun build.";
                 // Parts accounting: the new build may use its old parts plus loose ones.
                 var oldCount = PartCounts(zp.Slots[slot]);
                 var newCount = PartCounts(nb);
@@ -1477,7 +1507,7 @@ public sealed partial class Game
                 }
                 GiveBuild(p, slot, nb, full: false);
                 SendZRun(p);
-                ZFeedTo(p, $"Workbench: {nb.Name} is in slot {(slot == 4 ? "melee" : (slot + 1).ToString())}.", Sfx.HitTick);
+                ZFeedTo(p, $"Workbench: {nb.Name} is in slot {SlotWord(slot)}.", Sfx.HitTick);
                 return null;
             }
             case BenchDisassemble:

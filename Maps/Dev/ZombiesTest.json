@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-map/1",
   "name": "Zombies Test",
-  "description": "Zombies test map: a start room and four areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade, the power switch, two classic slot machines (one on the power) and the Arcade behind the West Wing: one slot machine for every part category in a row. The machine props (Props/Zombies) stand in a row outside the west wall.",
+  "description": "Zombies test map: a start room and four areas behind doors and debris, boarded windows, wall buys, a mystery box with three spots, a workbench, perk machines, the weapon-slot upgrade, the power switch, two classic slot machines (one on the power) and the Arcade behind the West Wing: one slot machine for every part category in a row, and the grenade parts machine on its west wall. The machine props (Props/Zombies) stand in a row outside the west wall.",
   "author": "Call of Slop",
   "order": 985,
   "halfX": 24,
@@ -143,7 +143,8 @@
       {"at": [-11.94, -23.2], "yaw": 180, "category": "Hilt"},
       {"at": [-11.01, -23.2], "yaw": 180, "category": "Head"},
       {"at": [-10.08, -23.2], "yaw": 180, "category": "MeleeMod"},
-      {"at": [-9.15, -23.2], "yaw": 180, "category": "Action"}
+      {"at": [-9.15, -23.2], "yaw": 180, "category": "Action"},
+      {"at": [-23.2, -16.0], "yaw": 90, "category": "Grenade"}
     ]
   }
 }

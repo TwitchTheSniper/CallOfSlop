@@ -80,6 +80,7 @@ public enum Msg : byte
     Logic, // server <-> clients: map logic (a LogicMsgKind first): entity flags, a button or lever used, a mover's clock, a sound, a notice, the joiner's full state (GameLogic.cs)
     ZCasino, // server -> all (on a change) and each joining client: Zombies: one casino table's whole state (round, seats and hands, the dealer, roulette chips, dice, the last big win) (reliable; ZombiesCasinoNet.cs, protocol 66)
     ZCasinoAct, // client -> server: Zombies: a move at a casino table (table, act, arg, amount): bet, hit, stand, double, higher, lower, cash out, roll, clear, leave (reliable; protocol 66)
+    ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

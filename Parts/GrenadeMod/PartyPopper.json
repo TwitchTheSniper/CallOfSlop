@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Party Popper",
+  "category": "grenademod",
+  "rarity": "wonder",
+  "flavor": "Twelve bomblets and a shower of confetti. Happy birthday.",
+  "weight": 0.2,
+  "grenade": {"cluster": 12, "damageMult": 1.2},
+  "model": [
+    {"size": [0.012, 0.012, 0.012], "pos": [0.004, 0, 0], "color": "yellow"},
+    {"shape": "rod", "size": [0.04, 0.03, 0.03], "pos": [0.024, 0, 0], "rot": [0, 90, 0], "color": "#ff40a0"}
+  ]
+}

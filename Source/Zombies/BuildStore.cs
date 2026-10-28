@@ -19,6 +19,9 @@ public static class BuildStore
     /// <summary>The melee slot: a melee build (rooted on a hilt), or null for the standard knife/butt strike.</summary>
     public static WeaponBuild? Melee;
 
+    /// <summary>The grenade slot's plan (a grenade build, rooted on a casing; <c>grenade=</c>), or null. Grenades are thrown in Zombies only.</summary>
+    public static WeaponBuild? Grenade;
+
     /// <summary>Sandbox toggle: start the Workbench Range with weapon slots 3-4 unlocked (in Zombies: bought on the map, per run).</summary>
     public static bool ExtraSlotsUnlocked;
 
@@ -78,6 +81,7 @@ public static class BuildStore
         dropped = new List<string>();
         Array.Clear(Slots);
         Melee = null;
+        Grenade = null;
         foreach (var raw in lines)
         {
             var line = raw.Trim();
@@ -109,6 +113,18 @@ public static class BuildStore
                     dropped.Add($"melee: {ex.Message}");
                 }
             }
+            else if (key == "grenade")
+            {
+                try
+                {
+                    var g = WeaponBuild.Parse(value, find, dropped);
+                    Grenade = g.IsGrenade ? g : null;
+                }
+                catch (FormatException ex)
+                {
+                    dropped.Add($"grenade: {ex.Message}");
+                }
+            }
             else if (key == "slots4")
                 ExtraSlotsUnlocked = value.Trim() == "1";
             else if (key == "dummies" && int.TryParse(value, out var dn))
@@ -131,6 +147,8 @@ public static class BuildStore
                 list.Add($"slot{i + 1}={b.ToText()}");
         if (Melee is { } m)
             list.Add($"melee={m.ToText()}");
+        if (Grenade is { } g)
+            list.Add($"grenade={g.ToText()}");
         list.Add($"selected={Selected + 1}");
         list.Add($"second={Second + 1}");
         list.Add($"slots4={(ExtraSlotsUnlocked ? 1 : 0)}");

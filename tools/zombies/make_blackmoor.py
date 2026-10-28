@@ -7,7 +7,7 @@ Blackmoor Asylum: an abandoned village asylum with a research wing, World at War
 six behind doors and debris with rising prices), 18 boarded windows, four ground spawners, five box spots, nineteen wall
 buys, twelve perk machines (each perk its own machine), the power switch (it gates seven perks and the lab shutter), two workbenches, four salvage
 piles, the weapon-slot upgrade, four casino tables (high-low in the start room, blackjack in the offices, roulette in the lab, dice in the
-generator house) and seventeen slot machines (the classic one in the start room and one for every part category round the map, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
+generator house) and eighteen slot machines (the classic one in the start room, one for every part category round the map and the grenade parts machine in the chapel, two in the lab on the power; the script refuses to write the map while a Parts/<Category> folder has no machine). Every machine is a solid prop ("machineProps": true). The script also checks its own
 layout: props keep clear of doors, windows, machines and each other's routes, and every point sits where it should.
 
 Plan (north is -Z, east is +X):
@@ -266,10 +266,13 @@ SLOTS = [  # slot machines: the classic one (any part) in the start room; per-ca
     {"at": [15.6, -13.8], "yaw": -90, "category": "Multiplier"},               # courtyard, the generator house wall
     {"at": [-22.6, 5.2], "yaw": 90, "category": "MeleeMod"},                   # chapel, west wall
     {"at": [-15.6, -12.2], "yaw": 90, "category": "Muzzle"},                   # courtyard, the west garden wall
+    {"at": [-22.6, 8.0], "yaw": 90, "category": "Grenade"},                   # chapel, west wall: the grenade parts machine (any casing, fuse, payload or grenade mod)
 ]
 # Every part category (a Parts/<Category> folder: the PartCategory names) gets a machine; a new category must be placed here.
-PART_CATEGORIES = sorted(d for d in os.listdir(os.path.join(ROOT, "Parts")) if not d.startswith("_") and d not in ("Builds", "Tables")
-                         and os.path.isdir(os.path.join(ROOT, "Parts", d)))
+# The four grenade categories (modular grenades, 2026-10-27) share one machine, "Grenade" (any grenade part).
+GRENADE_FOLDERS = ("Casing", "Fuse", "Payload", "GrenadeMod")
+PART_CATEGORIES = sorted([d for d in os.listdir(os.path.join(ROOT, "Parts")) if not d.startswith("_") and d not in ("Builds", "Tables") + GRENADE_FOLDERS
+                          and os.path.isdir(os.path.join(ROOT, "Parts", d))] + ["Grenade"])
 _placed_cats = [s["category"] for s in SLOTS if "category" in s]
 for c in PART_CATEGORIES:
     if c not in _placed_cats:

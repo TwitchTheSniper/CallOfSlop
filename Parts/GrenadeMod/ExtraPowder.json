@@ -1,0 +1,12 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Extra Powder",
+  "category": "grenademod",
+  "rarity": "common",
+  "flavor": "A second bag taped on. More bang, a bit heavier.",
+  "weight": 0.12,
+  "grenade": {"damageMult": 1.2, "throwMult": 0.95},
+  "model": [
+    {"size": [0.02, 0.04, 0.03], "pos": [0.008, 0, 0], "color": "tan"}
+  ]
+}

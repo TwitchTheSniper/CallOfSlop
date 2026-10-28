@@ -59,6 +59,15 @@ Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tier
   build, G does that machine's thing instead (the bet, the take-apart) and throws nothing. Before the fix the server
   took every grenade away on spawn while the client kept its loadout count, so a throw played its sound, counted down
   and was dropped by the server. Self-test "Zombies grenades".
+- **Built grenades (modular grenades, 2026-10-27).** The workbench's **grenade slot** (slot 5, after the four gun slots
+  and the melee slot) takes a grenade built from a casing, a fuse, a payload and mods (docs/zombies/WEAPON-BUILDER.md,
+  "Modular grenades"). With one in the slot your grenades are that build (`ThrowableKind.Built`) instead of the stock
+  frag; the round's refill above gives the same count **plus the build's extras** (Pocket Clip +1, Bandolier Loop +2,
+  Infinite Pockets +3, a Garden Gnome or Disco Ball casing +1). Applying, rebuilding or taking it apart keeps the grenades
+  you carry, now of the new kind (taken apart: the stock frag again). The grenade build is kept when you bleed out (it
+  never drops on the floor; proposed). Built grenades never hurt players (their thrower included; proposed); the
+  stock frag still does. Grenade parts come from zombie drops, salvage piles, the classic slot machines and the new
+  **grenade parts machine** (below).
 
 ## Between rounds, downs and spectating (user requests, 2026-10-23)
 
@@ -461,10 +470,14 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
 `Source/App/Program.ZombiesSlots.cs` (drawing), `Source/UI/UiZombies.cs` (labels); props `Props/Zombies/SlotMachines/`
 (written by `tools/zombies/make_slot_cabinets.py`); self-test section "Zombies category slots".
 
-- **Which categories.** All sixteen part categories (`PartCategory`): Receiver, Barrel, Splitter, Feed, Ammo, Stock, Grip,
-  Optic, Muzzle, Utility, Receiver Upgrade, Damage Multiplier, Hilt, Head, Melee Mod, Action. A map's slot entry names
-  one with `"category"` (the enum name or the display name, case-insensitive; an unknown one refuses the map); without
-  it the machine is the **classic** one and pays any part, as before.
+- **Which categories.** The sixteen weapon-builder part categories (`PartCategory`): Receiver, Barrel, Splitter, Feed,
+  Ammo, Stock, Grip, Optic, Muzzle, Utility, Receiver Upgrade, Damage Multiplier, Hilt, Head, Melee Mod, Action, and
+  the **grenade parts machine** (`"category": "grenade"`, 2026-10-27: it pays any casing, fuse, payload or grenade mod;
+  the four grenade categories share it, `ZombiesMap.SlotCategories`; its cabinet is a giant ribbed hand grenade). A
+  map's slot entry names one with `"category"` (the enum name or the display name, case-insensitive; an unknown one
+  refuses the map); without it the machine is the **classic** one and pays any part, as before. Blackmoor Asylum has
+  its grenade parts machine on the chapel's west wall, Zombies Test on the Arcade's west wall, Horde Test at the end of
+  the Armoury's row.
 - **The rules are the classic machine's, per machine.** The same `slotTiers` odds by round, bad-luck protection, bets,
   jackpot rounds (wonder parts on every machine's reels) and **its own heat** (pulls on one machine never warm another).
   A part result picks a part of the machine's category of the rolled tier, or the **nearest tier that category has**
@@ -899,7 +912,13 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades)
+
+Protocol 67 (modular grenades, Source/Game/GameGrenades.cs): a grenade build travels in `ZBuild` as slot 5 like any
+build (every client assembles it, so every client flies everyone's built grenades with the same numbers); `ZWorld`'s
+grenade kind byte can be `Built`; `Throw` of a built grenade ends with the cook time, `ProjSpawn` with what it is
+(thrown, bomblet, aftershock) and `Explode` with the payload, radius, duration and that byte; `ZGrenade` (the last
+message) carries a client's remote detonation and a lure's closing bang.
 
 Protocol 58 (hordes, see "Hordes"): `ZEnts` per client, interest-managed, at most 80 zombies a packet, 16-bit horde size
 and entry count, the window byte only outside, at a window or swiping (11 or 12 bytes a zombie), unreliable (not

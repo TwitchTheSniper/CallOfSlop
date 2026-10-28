@@ -380,7 +380,7 @@ public sealed class ZombiesRules
         category < 0 || category >= SlotCategoryPrice.Length ? SlotCost(round) : (int)MathF.Round(SlotCost(round) * SlotCategoryPrice[category] / 10f) * 10;
 
     /// <summary>Does a machine of <paramref name="category"/> (-1: classic) pay whole melee builds?</summary>
-    public bool SlotPaysMelee(int category) => category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category];
+    public bool SlotPaysMelee(int category) => category != ZombiesMap.SlotCategoryGrenade && (category < 0 || category >= SlotCategoryMelee.Length || SlotCategoryMelee[category]);
 
     // ---- Casino tables (ZombiesCasino.cs; docs/zombies/ZOMBIES-MODE.md, "Casino tables") ---------------------------
     /// <summary>Each game's table limits (index: <see cref="CasinoGame"/>), unless a map's table sets its own: the smallest and largest bet (roulette: a player's total on one spin).</summary>

@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Spring Coil",
+  "category": "grenademod",
+  "rarity": "common",
+  "flavor": "Boing. It keeps more of its speed off every bounce.",
+  "weight": 0.06,
+  "grenade": {"bounce": 0.25},
+  "model": [
+    {"size": [0.02, 0.012, 0.012], "pos": [0.008, 0.012, 0], "color": "chrome"},
+    {"size": [0.02, 0.012, 0.012], "pos": [0.008, -0.012, 0], "color": "chrome"},
+    {"size": [0.004, 0.036, 0.012], "pos": [0.016, 0, 0], "color": "chrome"}
+  ]
+}

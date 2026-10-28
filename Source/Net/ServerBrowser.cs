@@ -138,7 +138,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     a crawler), 11-13 bytes a zombie.
     // 66: Zombies casino tables (Source/Game/ZombiesCasino.cs): Msg.ZCasino (a table's state, server -> all) and
     //     Msg.ZCasinoAct (a player's move, client -> server) at the end of Msg, after Msg.Logic.
-    public const byte ProtocolVersion = 66;
+    // 67: Modular grenades (Source/Game/GameGrenades.cs): builds in the Zombies grenade slot (Msg.ZBuild slot 5);
+    //     ThrowableKind.Built; Msg.Throw of a built grenade ends with the cook time (1/50 s), Msg.ProjSpawn with what it is
+    //     (thrown, bomblet, aftershock) and Msg.Explode with the payload, radius and duration (tenths) and that byte;
+    //     Msg.ZGrenade at the end of Msg (remote detonation, a lure's closing bang).
+    public const byte ProtocolVersion = 67;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -154,10 +154,16 @@ public sealed partial class Game
     private static readonly string[] SlotLabels = Enum.GetValues<PartCategory>().Select(c => $"{PartDef.BuiltInCategoryName(c).ToUpperInvariant()} SLOTS").ToArray();
 
     /// <summary>"Barrel slot machine" (a per-category machine) or "slot machine" (the classic one, any part).</summary>
-    public static string SlotMachineName(int category) => category >= 0 && category < SlotNames.Length ? SlotNames[category] : "slot machine";
+    public static string SlotMachineName(int category) => category == ZombiesMap.SlotCategoryGrenade ? "grenade parts slot machine"
+        : category >= 0 && category < SlotNames.Length ? SlotNames[category] : "slot machine";
 
     /// <summary>The label over a machine ("BARREL SLOTS"; "SLOTS: ANY PART" for the classic one).</summary>
-    public static string SlotMachineLabel(int category) => category >= 0 && category < SlotLabels.Length ? SlotLabels[category] : "SLOTS: ANY PART";
+    public static string SlotMachineLabel(int category) => category == ZombiesMap.SlotCategoryGrenade ? "GRENADE PARTS SLOTS"
+        : category >= 0 && category < SlotLabels.Length ? SlotLabels[category] : "SLOTS: ANY PART";
+
+    /// <summary>Does <paramref name="p"/> come out of a machine of <paramref name="category"/> (a part category, or the grenade parts machine: any casing, fuse, payload or grenade mod)?</summary>
+    public static bool InSlotCategory(PartDef p, int category) =>
+        category == ZombiesMap.SlotCategoryGrenade ? p.IsGrenadePart : (int)p.Category == category;
 
     /// <summary>A machine's category colour (its label and the plate on its topper; the props use the same colours).</summary>
     public static Vector3 SlotCategoryColor(int category) => category switch
@@ -178,6 +184,7 @@ public sealed partial class Game
         (int)PartCategory.Head => new(0.80f, 0.85f, 0.90f),
         (int)PartCategory.MeleeMod => new(0.60f, 0.90f, 0.40f),
         (int)PartCategory.Action => new(0.95f, 0.45f, 0.60f),
+        (int)PartCategory.Casing or (int)PartCategory.Fuse or (int)PartCategory.Payload or (int)PartCategory.GrenadeMod or ZombiesMap.SlotCategoryGrenade => new(0.55f, 0.85f, 0.30f),
         _ => new(1f, 0.78f, 0.2f),
     };
 
@@ -308,13 +315,13 @@ public sealed partial class Game
                     continue;
                 var n = 0;
                 foreach (var part in all)
-                    if ((int)part.Category == category && (int)part.Rarity == t)
+                    if (InSlotCategory(part, category) && (int)part.Rarity == t)
                         n++;
                 if (n == 0)
                     continue;
                 var k = (int)((seed * 2654435761u) % (uint)n);
                 for (var i = 0; i < all.Length; i++)
-                    if ((int)all[i].Category == category && (int)all[i].Rarity == t && k-- == 0)
+                    if (InSlotCategory(all[i], category) && (int)all[i].Rarity == t && k-- == 0)
                         return (short)i;
             }
         return -1;

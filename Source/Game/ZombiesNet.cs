@@ -61,7 +61,7 @@ public sealed partial class Game
             _zSynced.Add(guid.G);
             foreach (var p in Players.Values)
                 if (ZPlayers.TryGetValue(p.Id, out var zp))
-                    for (var s = 0; s < 5; s++)
+                    for (var s = 0; s < BuildSlots; s++)
                         if (zp.Slots[s] is { } b)
                         {
                             var w = s switch { 0 => p.Primary, 1 => p.Secondary, 2 => p.BuiltExtra[0]?.Id ?? 0, 3 => p.BuiltExtra[1]?.Id ?? 0, _ => (byte)0 };
@@ -570,6 +570,13 @@ public sealed partial class Game
             p.MeleeBuild = a.Melee;
             if (who == LocalId)
                 ZP(p).Slots[4] = b;
+            return true;
+        }
+        if (slot == GrenadeSlot)
+        {
+            p.GrenadeBuild = a.Grenade; // (the grenade kind and count come in Msg.ZWorld)
+            if (who == LocalId)
+                ZP(p).Slots[GrenadeSlot] = b;
             return true;
         }
         if (a.Def == null || slot is < 0 or > 3)

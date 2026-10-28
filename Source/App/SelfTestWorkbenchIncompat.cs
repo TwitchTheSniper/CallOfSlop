@@ -66,7 +66,7 @@ public static partial class SelfTest
                 badSpare++;
         sample.Refresh(m, Parts.All, -1, "", false, false);
         var offHidden = sample.Hidden;
-        var expectHidden = Parts.All.Count(p => !p.IsRoot && !p.IsMeleePart && stock.Owned(p) > 0 && (!m.FitsAnywhere(p) || stock.Free(p, m.Build) <= 0));
+        var expectHidden = Parts.All.Count(p => !p.IsRoot && p.Kind == BuildKind.Gun && stock.Owned(p) > 0 && (!m.FitsAnywhere(p) || stock.Free(p, m.Build) <= 0));
         Line($"none spare: Flash Hider on the build -> toggle on '{hiderWhy}', {zeroOn} parts with none spare when shown, {badSpare} bad rows; toggle off hides {offHidden} (expected {expectHidden}), lists {sample.Items.Count} all with a spare");
         if (hiderWhy != BenchInventory.NoneSpare || zeroOn == 0 || badSpare > 0 || sample.Items.Contains(hider) || offHidden != expectHidden || sample.Free.Any(f => f <= 0) || sample.Fits.Any(f => !f))
             Fail("workbench incompatible: with the toggle off, parts with none spare should be hidden (counted in the hint); with it on, dimmed with 'none spare'");
@@ -85,7 +85,7 @@ public static partial class SelfTest
             Fail($"workbench incompatible: searching 'shell tube' with the toggle off should list nothing and count 1 hidden (got {sample.Items.Count}, {sample.Hidden})");
         // A part whose socket type isn't on the build at all.
         var types = m.Spots.Select(s => s.Socket.Type).ToHashSet();
-        if (Parts.All.FirstOrDefault(p => !p.IsRoot && !p.IsMeleePart && p.Mount.Length > 0 && !types.Contains(p.Mount)) is { } stray)
+        if (Parts.All.FirstOrDefault(p => !p.IsRoot && p.Kind == BuildKind.Gun && p.Mount.Length > 0 && !types.Contains(p.Mount)) is { } stray)
         {
             var w = m.WhyNowhereShort(stray);
             Line($"{stray.Name} ({stray.Mount}): '{w}'");

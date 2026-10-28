@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Cluster Rack",
+  "category": "grenademod",
+  "rarity": "rare",
+  "flavor": "Five bomblets in a neat little rack.",
+  "weight": 0.25,
+  "grenade": {"cluster": 5},
+  "model": [
+    {"size": [0.02, 0.06, 0.02], "pos": [0.008, 0, 0], "color": "gunmetal"},
+    {"size": [0.016, 0.016, 0.016], "pos": [0.024, 0.02, 0], "color": "olive"},
+    {"size": [0.016, 0.016, 0.016], "pos": [0.024, -0.02, 0], "color": "olive"}
+  ]
+}

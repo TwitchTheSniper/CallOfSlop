@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Car Battery",
+  "category": "payload",
+  "rarity": "rare",
+  "flavor": "Twelve volts, many amps, one surprised horde. Zaps and stuns everything nearby.",
+  "weight": 0.5,
+  "payload": {"kind": "shock", "damage": 250, "radius": 6, "strength": 2},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#2a2a2a"},
+    {"size": [0.008, 0.008, 0.008], "pos": [0.012, 0.014, -0.006], "color": "#d02020"},
+    {"size": [0.008, 0.008, 0.008], "pos": [-0.012, 0.014, -0.006], "color": "black"}
+  ]
+}

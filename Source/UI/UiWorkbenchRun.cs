@@ -3,7 +3,7 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The workbench opened at a Zombies workbench: which match, and which slot is being edited (0-3 guns, 4 melee).</summary>
+/// <summary>The workbench opened at a Zombies workbench: which match, and which slot is being edited (0-3 guns, 4 melee, 5 the grenade).</summary>
 public sealed class ZBenchSession
 {
     public required Game Game;
@@ -54,16 +54,19 @@ public sealed partial class Ui
         if (BenchRun == null)
             return;
         BenchRun.Slot = slot;
-        _wbMelee = slot == 4;
+        _wbKind = Game.SlotKind(slot);
         _runStockKey = int.MinValue;
         var current = BenchPlayer?.Slots[slot];
-        StartEditing(current?.Clone(), _wbMelee ? "Melee" : $"Slot {slot + 1}");
+        StartEditing(current?.Clone(), SlotTitle(slot));
     }
 
     /// <summary>
     /// The run's parts for the slot being edited: loose parts plus the slot's current build (the server hands those back
     /// when the build is replaced). Rebuilt only when your parts or the slot change (a cheap fingerprint per frame).
     /// </summary>
+    /// <summary>A new build's name for a slot: "Slot 2", "Melee", "Grenade".</summary>
+    private static string SlotTitle(int slot) => slot == Game.MeleeSlot ? "Melee" : slot == Game.GrenadeSlot ? "Grenade" : $"Slot {slot + 1}";
+
     private BenchStock BenchRunStock()
     {
         if (BenchRun == null || BenchPlayer is not { } zp)
@@ -92,12 +95,14 @@ public sealed partial class Ui
         ImGui.Separator();
         ImGui.TextColored(Orange, "YOUR SLOTS (THIS RUN)"u8);
         var slots = game.Local is { ExtraSlots: true } ? 4 : 2;
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < Game.BuildSlots; i++)
         {
             if (i >= slots && i < 4)
                 continue;
             var none = i < 4 && game.Local != null && !Game.HasGunIn(game.Local, i) ? "(empty)" : "(a stock gun)"; // empty: taken apart
-            var label = i == 4 ? $"Melee: {zp?.Slots[4]?.Name ?? "(none)"}##bslot4" : $"{i + 1}. {zp?.Slots[i]?.Name ?? none}##bslot{i}";
+            var label = i == 4 ? $"Melee: {zp?.Slots[4]?.Name ?? "(none)"}##bslot4"
+                : i == Game.GrenadeSlot ? $"Grenade: {zp?.Slots[i]?.Name ?? "(the stock frag)"}##bslot5"
+                : $"{i + 1}. {zp?.Slots[i]?.Name ?? none}##bslot{i}";
             if (ImGui.Selectable(label, run.Slot == i))
                 BenchLoad(i);
             if (run.Slot == i)
@@ -105,10 +110,10 @@ public sealed partial class Ui
         }
         var ready = Bm.CanFinalize;
         ImGui.BeginDisabled(!ready);
-        if (ImGui.Button($"APPLY TO {(run.Slot == 4 ? "THE MELEE SLOT" : $"SLOT {run.Slot + 1}")}", new float2(-1, 34 * _scale)) && ready)
+        if (ImGui.Button($"APPLY TO {(run.Slot == 4 ? "THE MELEE SLOT" : run.Slot == Game.GrenadeSlot ? "THE GRENADE SLOT" : $"SLOT {run.Slot + 1}")}", new float2(-1, 34 * _scale)) && ready)
         {
             game.BenchRequest(0, run.Slot, b.ToText());
-            WbSay($"Sent '{b.Name}' to slot {(run.Slot == 4 ? "melee" : (run.Slot + 1).ToString())}. Parts you took off go back to your loose parts.");
+            WbSay($"Sent '{b.Name}' to slot {Game.SlotWord(run.Slot)}. Parts you took off go back to your loose parts.");
         }
         ImGui.EndDisabled();
         WbRefusedClick(ready); // a click on the greyed-out Apply: red rings on the empty sockets that need a part
@@ -144,7 +149,7 @@ public sealed partial class Ui
 
     private bool DisassembleArmed(int slot) => _disArmedSlot == slot && _wbNow - _disArmedAt < DisarmSeconds;
 
-    private static string SlotName(int slot) => slot == 4 ? "the melee slot" : $"slot {slot + 1}";
+    private static string SlotName(int slot) => slot == 4 ? "the melee slot" : slot == Game.GrenadeSlot ? "the grenade slot" : $"slot {slot + 1}";
 
     /// <summary>The DISASSEMBLE button (click twice: it takes the whole build apart) in the workbench's top button row (where Auto-complete is in the sandbox), for the selected slot.</summary>
     private void DrawBenchDisassemble(ZBenchSession run, ZPlayer? zp)
@@ -154,7 +159,7 @@ public sealed partial class Ui
         ImGui.BeginDisabled(current == null);
         if (armed)
             ImGui.PushStyleColor(ImGuiCol.Button, new float4(0.62f, 0.12f, 0.1f, 1f));
-        var slotLabel = run.Slot == 4 ? "melee" : $"slot {run.Slot + 1}";
+        var slotLabel = run.Slot == 4 ? "melee" : run.Slot == Game.GrenadeSlot ? "grenade" : $"slot {run.Slot + 1}";
         var label = current == null ? $"Disassemble {slotLabel}" : armed ? $"CLICK AGAIN: take {slotLabel} apart" : $"Disassemble {slotLabel}";
         var clicked = ImGui.Button($"{label}##wbdisasm");
         if (armed)
@@ -163,8 +168,8 @@ public sealed partial class Ui
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             WbTip(current == null
                 ? $"Nothing in {SlotName(run.Slot)} to take apart."
-                : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
-                  + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : " (another gun goes in your hands, or nothing: the melee key still works).")
+                : $"Takes the {current.Name} completely apart: all {current.Nodes.Count()} parts, the {(current.IsMelee ? "hilt" : current.IsGrenade ? "casing" : "grip")} too, go to your loose parts and {SlotName(run.Slot)} is left empty"
+                  + (run.Slot == 4 ? " (the melee key falls back to the standard strike)." : run.Slot == Game.GrenadeSlot ? " (your grenades are stock frags again; you keep how many you carry)." : " (another gun goes in your hands, or nothing: the melee key still works).")
                   + "\nKey: D. Click twice (or press D twice) to confirm. Undo puts it back while the bench is open.");
         if (clicked && current != null)
             BenchDisassemble(run, current);
@@ -198,7 +203,7 @@ public sealed partial class Ui
             BenchLoad(run.Slot);
             return;
         }
-        StartEditing(null, run.Slot == 4 ? "Melee" : $"Slot {run.Slot + 1}"); // the slot is empty now: start a new build from your parts
+        StartEditing(null, SlotTitle(run.Slot)); // the slot is empty now: start a new build from your parts
         WbSay($"Took the {current.Name} apart: {n} part{(n == 1 ? "" : "s")} went to your loose parts. Undo (Ctrl+Z) puts it back.");
     }
 
@@ -215,7 +220,7 @@ public sealed partial class Ui
         _runStockKey = int.MinValue;
         if (run.Slot != u.Slot)
             run.Slot = u.Slot;
-        _wbMelee = u.Slot == 4;
+        _wbKind = Game.SlotKind(u.Slot);
         StartEditing(u.Build.Clone(), u.Build.Name);
         WbSay($"Put the {u.Build.Name} back together in {SlotName(u.Slot)}.");
         return true;
@@ -238,12 +243,12 @@ public sealed partial class Ui
         if (!_wbPicking)
             return;
         var slots = run.Game.Local is { ExtraSlots: true } ? 4 : 2;
-        for (var i = 0; i < 5; i++)
+        for (var i = 0; i < Game.BuildSlots; i++)
         {
             if (i >= slots && i < 4)
                 continue;
             ImGui.SameLine();
-            if (ImGui.Button(i == 4 ? $"Melee##wbfslot4" : $"Slot {i + 1}##wbfslot{i}", new float2(0, 32 * _scale)) && i != run.Slot)
+            if (ImGui.Button(i == 4 ? $"Melee##wbfslot4" : i == Game.GrenadeSlot ? "Grenade##wbfslot5" : $"Slot {i + 1}##wbfslot{i}", new float2(0, 32 * _scale)) && i != run.Slot)
                 BenchLoad(i);
         }
     }

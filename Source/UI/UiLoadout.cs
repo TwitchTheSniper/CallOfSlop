@@ -815,7 +815,7 @@ public sealed partial class Ui
         var equipmentTab = page == LoadoutPage.Tactical;
         if (ImGui.BeginChild("##list"u8, new float2(listWidth, area.Y), ImGuiChildFlags.Borders))
         {
-            foreach (var t in Throwables.All.Where(t => t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab))
+            foreach (var t in Throwables.All.Where(t => t.InLoadouts && (t.Kind == ThrowableKind.None || t.IsEquipment == equipmentTab)))
             {
                 var unlocked = prog.IsUnlocked(t.Kind);
                 var selected = equipmentTab ? l.Equipment == t.Kind : l.Grenade == t.Kind;

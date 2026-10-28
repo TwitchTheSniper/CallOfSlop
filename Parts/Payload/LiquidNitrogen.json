@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-part/1",
+  "name": "Liquid Nitrogen",
+  "category": "payload",
+  "rarity": "legendary",
+  "flavor": "Freezes a whole room's worth of zombies where they stand.",
+  "weight": 0.4,
+  "payload": {"kind": "cryo", "damage": 400, "radius": 8, "duration": 6, "strength": 4},
+  "model": [
+    {"size": [0.045, 0.04, 0.006], "pos": [0, 0, -0.002], "color": "#c8f0ff"},
+    {"size": [0.03, 0.01, 0.004], "pos": [0, 0.01, -0.006], "color": "#4aa0ff", "tag": "glow"}
+  ]
+}

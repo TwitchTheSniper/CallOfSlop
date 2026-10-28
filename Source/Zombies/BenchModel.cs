@@ -726,7 +726,7 @@ public sealed class BenchModel
     public string WhyNowhere(PartDef part)
     {
         if (part.IsRoot)
-            return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : "A grip starts a new weapon (New weapon, or Change grip).";
+            return part.Hilt != null ? "A hilt starts a new melee weapon (New weapon)." : part.Casing != null ? "A casing starts a new grenade (the grenade slot)." : "A grip starts a new weapon (New weapon, or Change grip).";
         if (NowhereSpot(part, out var socketOk) is var i and >= 0)
             return socketOk ? WhyNot(i, part) ?? "It doesn't fit there." : BuildRules.SocketWhy(Spots[i].Parent, Spots[i].Socket, part) ?? "It doesn't fit there.";
         return $"This build has no {part.Mount} socket for it.";
@@ -761,7 +761,7 @@ public sealed class BenchModel
     public string WhyNowhereShort(PartDef part)
     {
         if (part.IsRoot)
-            return part.Hilt != null ? "starts a new melee weapon" : "starts a new weapon";
+            return part.Hilt != null ? "starts a new melee weapon" : part.Casing != null ? "starts a new grenade" : "starts a new weapon";
         if (NowhereSpot(part, out var socketOk) is var i and >= 0)
             return socketOk ? "fits a socket, but not on this build as it is" : BuildRules.SocketWhyShort(Spots[i].Parent, Spots[i].Socket, part) ?? "doesn't fit";
         return $"no {part.Mount} socket on this build";
@@ -989,7 +989,7 @@ public sealed class BenchModel
     /// </summary>
     public int AutoComplete(IEnumerable<PartDef> candidates)
     {
-        var pool = candidates.Where(p => !p.IsRoot && p.IsMeleePart == Build.IsMelee).ToList();
+        var pool = candidates.Where(p => !p.IsRoot && p.Kind == Build.Kind).ToList();
         // Parts whose own needed sockets something in the pool can fill come first (a heavy receiver with no heavy ammo
         // to hand would be a dead end), then the rarest.
         var list = pool.OrderByDescending(p => Viable(p, pool)).ThenByDescending(p => p.Rarity).ThenBy(p => p.Name, StringComparer.Ordinal).ToList();
@@ -1165,7 +1165,7 @@ public sealed class BenchInventory
     public const string NoneSpare = "none spare";
 
     private BenchModel? _model;
-    private (int Version, int Stock, int Filter, string Search, bool Melee, bool ShowAll) _key = (-1, 0, 0, "", false, false);
+    private (int Version, int Stock, int Filter, string Search, BuildKind Kind, bool ShowAll) _key = (-1, 0, 0, "", BuildKind.Gun, false);
 
     // Per category: something in it can be listed with the toggle as it is (search and chip ignored).
     private readonly bool[] _shown = new bool[Enum.GetValues<PartCategory>().Length];
@@ -1188,9 +1188,13 @@ public sealed class BenchInventory
     /// Rebuilds the list from <paramref name="all"/> if the build, stock, filter (-1 = all), search, kind or toggle
     /// changed. Returns true when it rebuilt.
     /// </summary>
-    public bool Refresh(BenchModel bm, IEnumerable<PartDef> all, int filter, string search, bool melee, bool showIncompatible)
+    public bool Refresh(BenchModel bm, IEnumerable<PartDef> all, int filter, string search, bool melee, bool showIncompatible) =>
+        Refresh(bm, all, filter, search, melee ? BuildKind.Melee : BuildKind.Gun, showIncompatible);
+
+    /// <inheritdoc cref="Refresh(BenchModel, IEnumerable{PartDef}, int, string, bool, bool)"/>
+    public bool Refresh(BenchModel bm, IEnumerable<PartDef> all, int filter, string search, BuildKind kind, bool showIncompatible)
     {
-        var key = (bm.Version, bm.Stock.Fingerprint, filter, search, melee, showIncompatible);
+        var key = (bm.Version, bm.Stock.Fingerprint, filter, search, kind, showIncompatible);
         if (ReferenceEquals(bm, _model) && key == _key)
             return false;
         _model = bm;
@@ -1209,7 +1213,7 @@ public sealed class BenchInventory
         // Each part's fit once; the categories that keep a chip follow from it.
         foreach (var p in bm.Stock.Parts(all))
         {
-            if (p.IsRoot || p.IsMeleePart != melee)
+            if (p.IsRoot || p.Kind != kind)
                 continue;
             var compatible = bm.FitsAnywhere(p);
             var free = bm.Stock.Free(p, bm.Build);
@@ -1282,28 +1286,32 @@ public sealed class BenchGrips
 
     private BenchStock? _stock;
     private object? _all; // the part library (a hot reload swaps it)
-    private (int Stock, bool Melee, bool ShowAll) _key;
+    private (int Stock, BuildKind Kind, bool ShowAll) _key;
 
     /// <summary>Rebuilds the list if anything changed; true when it did.</summary>
-    public bool Refresh(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll)
+    public bool Refresh(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll) =>
+        Refresh(stock, all, melee ? BuildKind.Melee : BuildKind.Gun, showAll);
+
+    /// <summary>Rebuilds the list (grips, hilts or casings by <paramref name="kind"/>) if anything changed; true when it did.</summary>
+    public bool Refresh(BenchStock stock, IReadOnlyCollection<PartDef> all, BuildKind kind, bool showAll)
     {
-        var key = (stock.Fingerprint, melee, showAll);
+        var key = (stock.Fingerprint, kind, showAll);
         if (ReferenceEquals(stock, _stock) && ReferenceEquals(all, _all) && key == _key)
             return false;
         _stock = stock;
         _all = all;
         _key = key;
-        Rebuild(stock, all, melee, showAll);
+        Rebuild(stock, all, kind, showAll);
         return true;
     }
 
-    private void Rebuild(BenchStock stock, IReadOnlyCollection<PartDef> all, bool melee, bool showAll) // its own method: the filter's closure is allocated only on a rebuild
+    private void Rebuild(BenchStock stock, IReadOnlyCollection<PartDef> all, BuildKind kind, bool showAll) // its own method: the filter's closure is allocated only on a rebuild
     {
         Items.Clear();
         Owned.Clear();
         Slots.Clear();
         Hidden = 0;
-        foreach (var p in all.Where(p => melee ? p.Hilt != null : p.Frame != null).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity))
+        foreach (var p in all.Where(p => kind switch { BuildKind.Melee => p.Hilt != null, BuildKind.Grenade => p.Casing != null, _ => p.Frame != null }).OrderBy(p => p.ReceiverCapacity).ThenBy(p => p.Rarity))
         {
             var have = stock.Owned(p) > 0;
             if (!have && !showAll)

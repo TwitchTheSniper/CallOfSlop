@@ -500,7 +500,10 @@ public sealed class AssembledWeapon
     /// <summary>A complete melee build's numbers (melee builds have no <see cref="Def"/>).</summary>
     public MeleeDef? Melee;
 
-    public bool Ok => Def != null || Melee != null;
+    /// <summary>A complete grenade build's numbers (grenade builds have no <see cref="Def"/> either).</summary>
+    public GrenadeDef? Grenade;
+
+    public bool Ok => Def != null || Melee != null || Grenade != null;
 }
 
 /// <summary>Puts builds together: rules, stats, model, muzzle positions (docs/zombies/WEAPON-BUILDER.md).</summary>
@@ -530,6 +533,11 @@ public static class WeaponBuilder
             a.Melee = MeleeStats.Compute(b, shown);
             a.Melee.BuildText = b.ToText();
         }
+        if (b.IsGrenade && problems.Count == 0)
+        {
+            a.Grenade = GrenadeStats.Compute(b, shown);
+            a.Grenade.BuildText = b.ToText();
+        }
         return a;
     }
 
@@ -539,7 +547,7 @@ public static class WeaponBuilder
         var w = new WeaponDef
         {
             Name = WeaponBuild.CleanName(b.Name),
-            Class = b.IsMelee ? WeaponClass.Pistol : b.Receivers.FirstOrDefault()?.Part.Receiver?.Class ?? WeaponClass.AssaultRifle, // melee: the one-handed swing
+            Class = b.IsMelee || b.IsGrenade ? WeaponClass.Pistol : b.Receivers.FirstOrDefault()?.Part.Receiver?.Class ?? WeaponClass.AssaultRifle, // melee: the one-handed swing
             Damage = 1, RangeM = 1, Rpm = 60, Mag = 1, Reload = 1, HipSpreadDeg = 1, Accent = accent, Order = 10000,
         };
         if (b.Nodes.FirstOrDefault(n => n.Part.Category == PartCategory.Optic) is { } o && b.Frame?.Ads != false)
