@@ -187,7 +187,7 @@ public sealed partial class Game
         {
             // At the trader: no hold, the purchase is made outright (a person's panel asks the same way; ZombiesTrader.cs).
             s.TraderVisit = ZTrader.Visit;
-            if (ServerTraderBuy(p, s.Index, ZTrader.Visit, now) == null)
+            if (ServerTraderBuy(p, s.Index, ZTrader.Visit, 1, now) == null)
             {
                 s.Bought++;
                 ZBotPurchases++;
@@ -280,7 +280,7 @@ public sealed partial class Game
             && Pick(ZUseKind.SlotUpgrade, 0, SpotStand(su, 0.9f), su.Area))
             return true;
 
-        // 4b. The trader, while he's here: one part a visit, the rarest it can afford with plenty to spare.
+        // 4b. The trader, while he's here: one part a visit (people have no limit; bots keep to one), the rarest it can afford with plenty to spare.
         if (ZTrader.Here && s.TraderVisit != ZTrader.Visit && BotTraderPick(spare) is var ti and >= 0)
         {
             var area = zm.AreaAt(ZTrader.At);
@@ -343,7 +343,7 @@ public sealed partial class Game
         ZUseKind.Box => BoxState == ZBoxState.Idle && BoxSpot == s.Index && zp.Points >= BoxCost(zm),
         ZUseKind.BoxTake => CanTakeBox(p),
         ZUseKind.SlotMachine => s.Index < ZSlots.Length && (ZSlots[s.Index].State == ZSlotState.Idle || s.Holding) && zp.Points >= SlotCost(zm, s.Index),
-        ZUseKind.Trader => ZTrader.Here && s.TraderVisit != ZTrader.Visit && s.Index < ZTrader.Count && !ZTrader.Stock[s.Index].SoldOut && zp.Points >= ZTrader.Stock[s.Index].Price,
+        ZUseKind.Trader => ZTrader.Here && s.TraderVisit != ZTrader.Visit && s.Index < ZTrader.Count && zp.Points >= ZTrader.Stock[s.Index].Price,
         _ => false,
     };
 

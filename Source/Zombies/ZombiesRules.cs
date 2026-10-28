@@ -459,20 +459,35 @@ public sealed class ZombiesRules
     /// </summary>
     public int TraderEveryRounds = 5, TraderStayRounds = 1;
 
-    /// <summary>Parts on the trader's shelf each visit (shared: first come, first served), at most <see cref="MaxTraderStock"/> less the consumables.</summary>
-    public int TraderStock = 8;
+    /// <summary>
+    /// Parts on the trader's shelf each visit (at most <see cref="MaxTraderStock"/> less the consumables): every one can
+    /// be bought any number of times (developer change, 2026-10-28: no purchase limit, for silly builds). Spread over the
+    /// categories (grenade parts included), one category each while there are categories left.
+    /// </summary>
+    public int TraderStock = 14;
 
     /// <summary>The most things on the shelf at once (parts and consumables); the wire sends up to this many.</summary>
-    public const int MaxTraderStock = 12;
+    public const int MaxTraderStock = 20;
 
     /// <summary>
     /// The shelf's top rarity: the tier the round's part-drop table favours (its heaviest weight; a tie goes to the rarer)
-    /// less <see cref="TraderTiersBelow"/>, kept between <see cref="TraderTopMin"/> and <see cref="TraderTopMax"/>. The
-    /// shelf holds parts from common up to it, spread over the categories.
+    /// less <see cref="TraderTiersBelow"/>, kept between <see cref="TraderTopMin"/> and <see cref="TraderTopMax"/>. Each
+    /// part's rarity is rolled from <see cref="TraderTierWeights"/> up to it.
     /// </summary>
     public int TraderTiersBelow = 1;
 
     public Rarity TraderTopMin = Rarity.Uncommon, TraderTopMax = Rarity.Rare;
+
+    /// <summary>How the shelf leans (weights per rarity, index: <see cref="Rarity"/>; tiers over the top tier don't count): mostly commons and uncommons.</summary>
+    public float[] TraderTierWeights = [60, 32, 8, 0, 0, 0];
+
+    /// <summary>The chance of one extra part a tier above the shelf's top (at most <see cref="TraderExtraMax"/>): the occasional rare.</summary>
+    public float TraderExtraChance = 0.35f;
+
+    public Rarity TraderExtraMax = Rarity.Rare;
+
+    /// <summary>The most of one item a single purchase takes (the panel's x1 / x5 / x10; the server refuses more).</summary>
+    public int TraderMaxPerBuy = 10;
 
     /// <summary>The price of a part by rarity (index: <see cref="Rarity"/>), before the round's mark-up.</summary>
     public int[] TraderPrices = [250, 500, 1000, 2000, 4000, 8000];
@@ -1121,10 +1136,25 @@ public sealed class ZombiesRules
                             case "note": break;
                             case "everyRounds": r.TraderEveryRounds = Whole(v, w, 0, 1000); break;
                             case "stayRounds": r.TraderStayRounds = Whole(v, w, 1, 100); break;
-                            case "stock": r.TraderStock = Whole(v, w, 1, MaxTraderStock); break;
+                            case "stock": r.TraderStock = Whole(v, w, 1, MaxTraderStock - 2); break;
                             case "tiersBelow": r.TraderTiersBelow = Whole(v, w, 0, 5); break;
                             case "topMin": r.TraderTopMin = RarityOf(v, w); break;
                             case "topMax": r.TraderTopMax = RarityOf(v, w); break;
+                            case "tierWeights":
+                                r.TraderTierWeights = new float[(int)Rarity.Wonder + 1];
+                                Fields(v, w, (pk, pv, pw) =>
+                                {
+                                    if (!Enum.TryParse<Rarity>(pk, true, out var t) || !Enum.IsDefined(t))
+                                        return false;
+                                    r.TraderTierWeights[(int)t] = Real(pv, pw, 0, 1000);
+                                    return true;
+                                });
+                                if (r.TraderTierWeights.Sum() <= 0)
+                                    throw new WeaponFileException($"{w}: give at least one rarity a weight above 0");
+                                break;
+                            case "extraChance": r.TraderExtraChance = Real(v, w, 0, 1); break;
+                            case "extraMax": r.TraderExtraMax = RarityOf(v, w); break;
+                            case "maxPerBuy": r.TraderMaxPerBuy = Whole(v, w, 1, 100); break;
                             case "prices":
                                 Fields(v, w, (pk, pv, pw) =>
                                 {

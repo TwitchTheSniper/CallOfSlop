@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>What a thing on the trader's shelf is.</summary>
 public enum ZTraderItemKind : byte
 {
-    /// <summary>A loose part (<see cref="ZTraderItem.Part"/>), one of them; it goes to your loose parts.</summary>
+    /// <summary>A loose part (<see cref="ZTraderItem.Part"/>); it goes to your loose parts. Never runs out.</summary>
     Part,
 
     /// <summary>A grenade refill: the round's count of your Zombies grenade (never more than you'd get at a round's start).</summary>
@@ -24,14 +24,8 @@ public struct ZTraderItem
     /// <summary>The part (an index into <see cref="Parts.All"/>), or -1.</summary>
     public short Part;
 
+    /// <summary>The price of one (the shelf is priced for the round he came in).</summary>
     public int Price;
-
-    /// <summary>How many are left (parts: 1 at first; consumables: <see cref="Unlimited"/>).</summary>
-    public byte Left;
-
-    public const byte Unlimited = 255;
-
-    public readonly bool SoldOut => Left == 0;
 }
 
 /// <summary>The trader as both sides see him (server-owned, mirrored in <see cref="Msg.ZTrader"/>).</summary>
@@ -80,12 +74,13 @@ public sealed class ZTrader
 /// parts dealer who sets up his stall at the start of every <see cref="ZombiesRules.TraderEveryRounds"/>th round at one
 /// of the map's trader spots (a box spot or workbench on maps without any), announced to everyone (a feed line, a sound, a
 /// banner and a waypoint label through the walls), stays <see cref="ZombiesRules.TraderStayRounds"/> rounds and their
-/// breaks, then packs up when the next round begins. The interact key opens his shelf: a shared, limited stock of parts
-/// (first come, first served; a fresh shelf every visit) from the rarity tiers below what the round's drop tables favour,
-/// plus a grenade refill and a full reserve, priced by rarity and round (<see cref="ZombiesRules.TraderPrice"/>).
-/// Server-authoritative: a purchase is a <see cref="Msg.ZTraderBuy"/>, the server checks the visit, the shelf, the range
-/// and the points, and sends the shelf again in <see cref="Msg.ZTrader"/>. He isn't a body: zombies take no notice of
-/// him and nothing can hurt him. Nothing here allocates per tick.
+/// breaks, then packs up when the next round begins. The interact key opens his shelf: a fresh shelf every visit of
+/// lower-level parts spread over the categories (mostly commons and uncommons, the occasional rare), plus a grenade refill
+/// and a full reserve, priced by rarity and round (<see cref="ZombiesRules.TraderPrice"/>). There is no purchase limit
+/// (developer change, 2026-10-28: he's where you stock up for silly builds): anyone buys anything any number of times, up
+/// to <see cref="ZombiesRules.TraderMaxPerBuy"/> at a time. Server-authoritative: a purchase is a
+/// <see cref="Msg.ZTraderBuy"/> (item, visit, count), the server checks the visit, the shelf, the range and the points for
+/// the lot. He isn't a body: zombies take no notice of him and nothing can hurt him. Nothing here allocates per tick.
 /// </summary>
 public sealed partial class Game
 {
@@ -134,7 +129,7 @@ public sealed partial class Game
         t.CameRound = round;
         t.LeaveRound = round + Math.Max(1, ZRules.TraderStayRounds);
         StockTrader(round);
-        ModeEvent($"The trader has set up his stall {where}: {t.Count - TraderConsumables()} parts up to {PartDef.RarityName(ZRules.TraderTopTier(RunTables.Current, round))}. He leaves when round {t.LeaveRound} starts.", Sfx.StreakReady);
+        ModeEvent($"The trader has set up his stall {where}: {t.Count - TraderConsumables()} kinds of parts, as many as you can pay for. He leaves when round {t.LeaveRound} starts.", Sfx.StreakReady);
         ZBanner("THE TRADER IS HERE");
         Audio.Effect3D(Sfx.LevelUp, at + new Vector3(0, 1.4f, 0), 0.8f, MixBus.Zombies);
         BroadcastTrader();
@@ -183,38 +178,93 @@ public sealed partial class Game
         own ? zm.TraderSpots[i] : i < zm.BoxSpots.Count ? zm.BoxSpots[i] : zm.Benches[i - zm.BoxSpots.Count];
 
     /// <summary>
-    /// Server: a fresh shelf for <paramref name="round"/>: the parts first (the rarest tier first, then round and round
-    /// down to common; a random category each, no part twice), then the consumables. Deterministic from the run's seed and the round (the trader's own stream).
+    /// Server: a fresh shelf for <paramref name="round"/>. The categories (<see cref="ZombiesMap.SlotCategories"/>: every
+    /// part category, grenade parts as one) in a shuffled order, one part each while there are categories left (then round
+    /// again), each part's rarity rolled from <see cref="ZombiesRules.TraderTierWeights"/> up to the shelf's top tier (a
+    /// category without that tier gives its nearest lower one; no part twice); with
+    /// <see cref="ZombiesRules.TraderExtraChance"/>, one extra part a tier above the top; then the consumables. Deterministic
+    /// from the run's seed and the round (the trader's own stream); nothing allocated.
     /// </summary>
     private void StockTrader(int round)
     {
         var t = ZTrader;
         var top = (int)ZRules.TraderTopTier(RunTables.Current, round);
-        var parts = Math.Clamp(ZRules.TraderStock, 0, ZombiesRules.MaxTraderStock - TraderConsumables());
+        var room = ZombiesRules.MaxTraderStock - TraderConsumables();
+        var parts = Math.Clamp(ZRules.TraderStock, 0, room);
         t.Count = 0;
         Array.Clear(t.Stock);
         var cats = ZombiesMap.SlotCategories;
+        Span<int> order = stackalloc int[cats.Length];
+        for (var i = 0; i < order.Length; i++)
+            order[i] = cats[i];
+        for (var i = order.Length - 1; i > 0; i--)
+        {
+            var k = TraderRange(i + 1);
+            (order[i], order[k]) = (order[k], order[i]);
+        }
+        var c = 0;
         for (var i = 0; i < parts; i++)
         {
-            var tier = (Rarity)(top - i % (top + 1));
+            var tier = TraderRollTier(top);
             short part = -1;
-            for (var tries = 0; tries < 6 && part < 0; tries++)
-            {
-                var cat = cats[TraderRange(cats.Length)];
-                var cand = PickSlotPart(tier, TraderNext(), cat, jackpot: false);
-                if (cand < 0)
-                    cand = PickSlotPart(tier, TraderNext());
-                if (cand >= 0 && Parts.All[cand].Rarity == tier && !TraderHas(cand))
-                    part = cand;
-            }
-            if (part < 0)
-                continue; // (a modded part set without that tier in any category: the shelf is a little emptier)
-            t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Part, Part = part, Price = ZRules.TraderPrice(tier, round), Left = 1 };
+            for (var tries = 0; tries < order.Length && part < 0; tries++)
+                part = TraderPickPart(tier, order[c++ % order.Length]);
+            if (part >= 0)
+                t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Part, Part = part, Price = ZRules.TraderPrice(Parts.All[part].Rarity, round) };
         }
+        // The occasional extra: one part a tier over the top (never past extraMax), from the next category in line.
+        var extra = Math.Min(top + 1, (int)ZRules.TraderExtraMax);
+        if (extra > top && t.Count < room && (TraderNext() >> 8) / 16777216f < ZRules.TraderExtraChance)
+            for (var tries = 0; tries < order.Length; tries++)
+                if (TraderPickPart((Rarity)extra, order[c++ % order.Length], exact: true) is var part and >= 0)
+                {
+                    t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Part, Part = part, Price = ZRules.TraderPrice(Parts.All[part].Rarity, round) };
+                    break;
+                }
         if (ZRules.TraderGrenadePrice > 0 && t.Count < t.Stock.Length)
-            t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Grenades, Part = -1, Price = ZRules.TraderMarkUp(ZRules.TraderGrenadePrice, round), Left = ZTraderItem.Unlimited };
+            t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Grenades, Part = -1, Price = ZRules.TraderMarkUp(ZRules.TraderGrenadePrice, round) };
         if (ZRules.TraderAmmoPrice > 0 && t.Count < t.Stock.Length)
-            t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Ammo, Part = -1, Price = ZRules.TraderMarkUp(ZRules.TraderAmmoPrice, round), Left = ZTraderItem.Unlimited };
+            t.Stock[t.Count++] = new ZTraderItem { Kind = ZTraderItemKind.Ammo, Part = -1, Price = ZRules.TraderMarkUp(ZRules.TraderAmmoPrice, round) };
+    }
+
+    /// <summary>A rarity for one shelf part: rolled from the rules' weights over common to <paramref name="top"/> (common if they're all 0 there).</summary>
+    private Rarity TraderRollTier(int top)
+    {
+        var w = ZRules.TraderTierWeights;
+        var total = 0f;
+        for (var i = 0; i <= top && i < w.Length; i++)
+            total += w[i];
+        var pick = (TraderNext() >> 8) / 16777216f * total;
+        for (var i = 0; i <= top && i < w.Length; i++)
+        {
+            pick -= w[i];
+            if (pick < 0 && w[i] > 0)
+                return (Rarity)i;
+        }
+        return Rarity.Common;
+    }
+
+    /// <summary>
+    /// A part of category <paramref name="category"/> (a <see cref="ZombiesMap.SlotCategories"/> entry) not on the shelf yet:
+    /// of <paramref name="tier"/>, else (unless <paramref name="exact"/>) the nearest lower tier the category has. -1: none.
+    /// </summary>
+    private short TraderPickPart(Rarity tier, int category, bool exact = false)
+    {
+        var all = Parts.All;
+        for (var t = (int)tier; t >= (exact ? (int)tier : 0); t--)
+        {
+            var n = 0;
+            for (var i = 0; i < all.Length; i++)
+                if ((int)all[i].Rarity == t && InSlotCategory(all[i], category) && !TraderHas((short)i))
+                    n++;
+            if (n == 0)
+                continue;
+            var k = TraderRange(n);
+            for (var i = 0; i < all.Length; i++)
+                if ((int)all[i].Rarity == t && InSlotCategory(all[i], category) && !TraderHas((short)i) && k-- == 0)
+                    return (short)i;
+        }
+        return -1;
     }
 
     private bool TraderHas(short part)
@@ -241,11 +291,13 @@ public sealed partial class Game
     private ZUse TraderUse() => new(ZUseKind.Trader, 0, 0, "Press [E] to see what the trader has");
 
     /// <summary>
-    /// Server: <paramref name="p"/> buys shelf item <paramref name="item"/> of visit <paramref name="visit"/>. Returns why
-    /// not (he's gone, an old shelf, sold out, too far, too poor, nothing to refill), or null when it went through: the
-    /// points are taken, the part goes to the loose parts (or the grenades / reserve are filled) and everyone gets the shelf.
+    /// Server: <paramref name="p"/> buys <paramref name="count"/> of shelf item <paramref name="item"/> of visit
+    /// <paramref name="visit"/> (no limit on how often: the shelf never runs out). Returns why not (he's gone, an old
+    /// shelf, a count of 0 or over <see cref="ZombiesRules.TraderMaxPerBuy"/>, too far, not enough points for the lot,
+    /// grenades already full), taking nothing; or null when it went through: the points for the lot are taken and the parts
+    /// go to the loose parts (a consumable is one at a time: the refill or the reserve).
     /// </summary>
-    public string? ServerTraderBuy(Player p, int item, int visit, double now)
+    public string? ServerTraderBuy(Player p, int item, int visit, int count, double now)
     {
         var t = ZTrader;
         if (ZMap == null || !t.Here)
@@ -254,26 +306,28 @@ public sealed partial class Game
             return "That shelf is gone: the trader has a new one.";
         if (item < 0 || item >= t.Count)
             return "The trader doesn't have that.";
+        if (count < 1 || count > ZRules.TraderMaxPerBuy)
+            return $"The trader sells 1 to {ZRules.TraderMaxPerBuy} at a time.";
         if (!p.Alive || IsDowned(p))
             return "You can't trade now.";
         if (!AtTrader(p))
             return "You're not at the trader.";
         ref var it = ref t.Stock[item];
-        if (it.SoldOut)
-            return $"Sold out: {TraderItemName(it)}.";
+        if (it.Kind != ZTraderItemKind.Part)
+            count = 1; // (a refill is a refill)
         var zp = ZP(p);
-        if (zp.Points < it.Price)
-            return $"Not enough points for {TraderItemName(it)} ({zp.Points} of {it.Price}).";
+        var cost = (long)it.Price * count;
+        if (zp.Points < cost)
+            return $"Not enough points for {(count > 1 ? $"{count} x " : "")}{TraderItemName(it)} ({zp.Points} of {cost}).";
         switch (it.Kind)
         {
             case ZTraderItemKind.Part when it.Part >= 0 && it.Part < Parts.All.Length:
             {
                 var part = Parts.All[it.Part];
-                zp.Points -= it.Price;
-                it.Left--;
-                zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + 1;
+                zp.Points -= (int)cost;
+                zp.Parts[part.Name] = zp.Parts.GetValueOrDefault(part.Name) + count;
                 SendZRun(p);
-                ZFeedTo(p, $"Bought {part.Name} ({PartDef.RarityName(part.Rarity)}) from the trader for {it.Price}. It's in your loose parts.", Sfx.LevelUp);
+                ZFeedTo(p, $"Bought {(count > 1 ? $"{count} x " : "")}{part.Name} ({PartDef.RarityName(part.Rarity)}) from the trader for {cost}. In your loose parts.", Sfx.LevelUp);
                 break;
             }
             case ZTraderItemKind.Grenades:
@@ -281,22 +335,21 @@ public sealed partial class Game
                 var want = Math.Clamp(ZRules.GrenadesForRound(Math.Max(1, ZRound)) + (p.GrenadeBuild?.Extra ?? 0), 0, 255);
                 if (p.GrenadesLeft >= want)
                     return "You have all your grenades already.";
-                zp.Points -= it.Price;
+                zp.Points -= (int)cost;
                 GiveZombiesGrenades(p, ZRules.GrenadesForRound(Math.Max(1, ZRound)), topUp: true);
-                ZFeedTo(p, $"The trader topped up your grenades ({p.GrenadesLeft}) for {it.Price}.", Sfx.HitTick);
+                ZFeedTo(p, $"The trader topped up your grenades ({p.GrenadesLeft}) for {cost}.", Sfx.HitTick);
                 break;
             }
             case ZTraderItemKind.Ammo:
-                zp.Points -= it.Price;
+                zp.Points -= (int)cost;
                 MaxAmmoFor(p); // (ZombiesPowerUps.cs: a full reserve in every slot)
-                ZFeedTo(p, $"The trader filled your reserves for {it.Price}.", Sfx.HitTick);
+                ZFeedTo(p, $"The trader filled your reserves for {cost}.", Sfx.HitTick);
                 break;
             default:
                 return "The trader doesn't have that.";
         }
         Audio.Effect3D(Sfx.HitTick, t.At + new Vector3(0, 1.2f, 0), 0.5f, MixBus.Zombies);
-        BroadcastTrader();
-        return null;
+        return null; // (the shelf hasn't changed: nothing to send; the points go out in ZWorld, the parts in ZRun)
     }
 
     // ---- Co-op bots (ZombieBotsShop.cs) --------------------------------------------------------------------
@@ -313,7 +366,7 @@ public sealed partial class Game
         for (var i = 0; i < ZTrader.Count; i++)
         {
             ref var it = ref ZTrader.Stock[i];
-            if (it.Kind != ZTraderItemKind.Part || it.SoldOut || it.Part < 0 || spare < it.Price + ZRules.TraderBotSurplus)
+            if (it.Kind != ZTraderItemKind.Part || it.Part < 0 || spare < it.Price + ZRules.TraderBotSurplus)
                 continue;
             if (best < 0 || Parts.All[it.Part].Rarity > Parts.All[ZTrader.Stock[best].Part].Rarity)
                 best = i;
@@ -332,12 +385,12 @@ public sealed partial class Game
         for (var i = 0; i < t.Count; i++)
         {
             ref var it = ref t.Stock[i];
-            w.U8((byte)it.Kind).U16((ushort)it.Part).U32((uint)Math.Max(0, it.Price)).U8(it.Left);
+            w.U8((byte)it.Kind).U16((ushort)it.Part).U32((uint)Math.Max(0, it.Price));
         }
     }
 
     /// <summary>Bytes of <see cref="Msg.ZTrader"/> after the id before the items, and per item.</summary>
-    public const int ZTraderHeader = 23, ZTraderItemBytes = 8;
+    public const int ZTraderHeader = 23, ZTraderItemBytes = 7;
 
     /// <summary>Client: a <see cref="Msg.ZTrader"/> (after the id). A short or odd message changes nothing it can't read.</summary>
     private void ReadTrader(ref PacketReader r, double now)
@@ -367,16 +420,15 @@ public sealed partial class Game
             var kind = (ZTraderItemKind)Math.Min(r.U8(), (byte)ZTraderItemKind.Ammo);
             var part = (short)r.U16();
             var price = (int)Math.Min(r.U32(), int.MaxValue);
-            var left = r.U8();
             if (t.Count >= t.Stock.Length || (kind == ZTraderItemKind.Part && (part < 0 || part >= Parts.All.Length)))
                 continue; // (a part this PC doesn't know: not on its shelf)
-            t.Stock[t.Count++] = new ZTraderItem { Kind = kind, Part = part, Price = price, Left = left };
+            t.Stock[t.Count++] = new ZTraderItem { Kind = kind, Part = part, Price = price };
         }
         if (arrived)
             t.ChangedAt = now;
     }
 
-    /// <summary>Server: everyone gets the trader (on an arrival, a departure, a purchase).</summary>
+    /// <summary>Server: everyone gets the trader (on an arrival or a departure; a purchase changes nothing on the shelf).</summary>
     private void BroadcastTrader()
     {
         ZTrader.ChangedAt = Brutal.GlfwApi.Glfw.Time; // (this PC's clock, like the banner: the HUD and the beam count from it)
@@ -393,29 +445,31 @@ public sealed partial class Game
         Net.SendTo(guid, _w.Span, PacketReliability.ReliableOrdered);
     }
 
-    /// <summary>A client's <see cref="Msg.ZTraderBuy"/>: the shelf item and the visit it was seen on.</summary>
-    public static void WriteTraderBuy(PacketWriter w, int item, int visit) => w.Begin(Msg.ZTraderBuy).U8((byte)Math.Clamp(item, 0, 255)).U8((byte)visit);
+    /// <summary>A client's <see cref="Msg.ZTraderBuy"/>: the shelf item, the visit it was seen on and how many.</summary>
+    public static void WriteTraderBuy(PacketWriter w, int item, int visit, int count = 1) =>
+        w.Begin(Msg.ZTraderBuy).U8((byte)Math.Clamp(item, 0, 255)).U8((byte)visit).U8((byte)Math.Clamp(count, 0, 255));
 
     /// <summary>Server: a <see cref="Msg.ZTraderBuy"/> from <paramref name="p"/> (after the id); returns why not, or null.</summary>
     private string? OnTraderBuy(Player p, ref PacketReader r, double now)
     {
         int item = r.U8();
         int visit = r.U8();
-        return ServerTraderBuy(p, item, visit, now);
+        int count = r.U8();
+        return ServerTraderBuy(p, item, visit, count, now);
     }
 
-    /// <summary>The local player buys shelf item <paramref name="item"/>: the host does it now, a client asks the server.</summary>
-    public void TraderBuyRequest(int item)
+    /// <summary>The local player buys <paramref name="count"/> of shelf item <paramref name="item"/>: the host does it now, a client asks the server.</summary>
+    public void TraderBuyRequest(int item, int count = 1)
     {
         if (Local is not { } me || !ZTrader.Here)
             return;
         if (IsServer)
         {
-            if (ServerTraderBuy(me, item, ZTrader.Visit, _zNow) is { } why)
+            if (ServerTraderBuy(me, item, ZTrader.Visit, count, _zNow) is { } why)
                 LoadoutNotice = $"Trader: {why}";
             return;
         }
-        WriteTraderBuy(_w, item, ZTrader.Visit);
+        WriteTraderBuy(_w, item, ZTrader.Visit, count);
         Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
     }
 

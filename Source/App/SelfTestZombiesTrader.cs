@@ -6,11 +6,12 @@ namespace CallOfSlop;
 /// Self-test section "Zombies trader" (Source/Game/ZombiesTrader.cs; docs/zombies/ZOMBIES-MODE.md, "The trader"): the
 /// rules load (a broken trader section is refused); the shelf's top tier follows the round and always sits below what the
 /// round's drop table favours; prices by rarity and round; on Zombies Test (no trader spots: he stands in for a box spot
-/// or workbench) he comes at rounds 5, 10 and 15 and leaves when 6, 11 and 16 start, on a fresh shelf each time with
-/// distinct parts of the right tiers; purchases take the points and give the part (or the grenades, or the reserve),
-/// refusals (sold out, an old shelf, too far, too poor, grenades already full) take nothing; two players buying the last
-/// one in the same tick: one gets it; the client's copy follows every message; a co-op bot shops at him; and nothing is
-/// allocated per tick while he's here.
+/// or workbench) he comes at rounds 5, 10 and 15 and leaves when 6, 11 and 16 start, on a fresh, wide shelf each time
+/// (distinct parts, one category each, mostly commons and uncommons, at most one extra a tier up); no purchase limit:
+/// the same part bought again and again, x5 and x10 lots paid for exactly, refusals (an old shelf, a lot you can't pay
+/// for, a count over the limit, too far, grenades already full) take nothing; two players buying the same thing in one
+/// tick both get it and both pay; the client's copy follows every message; a co-op bot buys one part a visit; and nothing
+/// is allocated per tick while he's here.
 /// </summary>
 public static partial class SelfTest
 {
@@ -19,7 +20,7 @@ public static partial class SelfTest
         var rules = ZombiesRules.Load(File.ReadAllText(ZombiesRules.PathName), "trader rules");
         ZLine($"trader rules: every {rules.TraderEveryRounds} rounds for {rules.TraderStayRounds}, {rules.TraderStock} parts, {rules.TraderTiersBelow} tier(s) below the favoured ({rules.TraderTopMin}-{rules.TraderTopMax}), prices {string.Join("/", rules.TraderPrices)} +{rules.TraderPricePerRound:P0} a round, grenades {rules.TraderGrenadePrice}, ammo {rules.TraderAmmoPrice}");
         var refused = 0;
-        foreach (var bad in new[] { """{"topMin": "rare", "topMax": "common"}""", """{"stock": 99}""", """{"shelf": 3}""" })
+        foreach (var bad in new[] { """{"topMin": "rare", "topMax": "common"}""", """{"stock": 99}""", """{"shelf": 3}""", """{"tierWeights": {"common": 0}}""" })
             try
             {
                 ZombiesRules.Load($$"""{"format": "call-of-slop-zombies/1", "trader": {{bad}}}""", "bad trader");
@@ -28,8 +29,8 @@ public static partial class SelfTest
             {
                 refused++;
             }
-        if (refused != 3 || !rules.TraderComes(5) || rules.TraderComes(4) || rules.TraderComes(0))
-            Fail($"the trader rules should load, and a broken trader section should be refused ({refused}/3 refused)");
+        if (refused != 4 || !rules.TraderComes(5) || rules.TraderComes(4) || rules.TraderComes(0))
+            Fail($"the trader rules should load, and a broken trader section should be refused ({refused}/4 refused)");
 
         // The shelf's top tier by round: below the favoured tier of the round's part drops, within the rules' bounds.
         var tables = RunTables.Current;
@@ -68,6 +69,7 @@ public static partial class SelfTest
         var spotsOk = true;
         var leftOk = true;
         var seenVisits = new HashSet<int>();
+        int lowParts = 0, allParts = 0, extras = 0;
         for (var round = 1; round <= 16; round++)
         {
             g.SelfTestBeginRound(round, now += 1);
@@ -87,16 +89,36 @@ public static partial class SelfTest
             var parts = Enumerable.Range(0, t.Count).Select(i => t.Stock[i]).Where(i => i.Kind == ZTraderItemKind.Part).ToList();
             var names = parts.Select(i => Parts.All[i.Part].Name).ToList();
             var distinct = names.Distinct().Count() == names.Count;
-            var inTier = parts.All(i => Parts.All[i.Part].Rarity <= top && i.Price == g.ZRules.TraderPrice(Parts.All[i.Part].Rarity, round) && i.Left == 1);
+            var extraTier = (Rarity)Math.Min((int)top + 1, (int)g.ZRules.TraderExtraMax);
+            var over = parts.Count(i => Parts.All[i.Part].Rarity > top);
+            var inTier = parts.All(i => (Parts.All[i.Part].Rarity <= top || Parts.All[i.Part].Rarity == extraTier) && i.Price == g.ZRules.TraderPrice(Parts.All[i.Part].Rarity, round)) && over <= 1;
             var consumables = Enumerable.Range(0, t.Count).Select(i => t.Stock[i]).Count(i => i.Kind != ZTraderItemKind.Part);
-            var rarestFirst = parts.Count == 0 || Parts.All[parts[0].Part].Rarity == top;
-            shelfOk &= parts.Count == g.ZRules.TraderStock && distinct && inTier && consumables == 2 && rarestFirst;
-            visits.Add($"r{round}: visit {t.Visit} at {t.At.X:0.0},{t.At.Z:0.0} ({zm.Areas[zm.AreaAt(t.At)].Name}), leaves at {t.LeaveRound}; {parts.Count} parts up to {top} [{string.Join(", ", parts.Select(i => $"{Parts.All[i.Part].Name} {i.Price}"))}] + {consumables} consumables");
+            var cats = parts.Select(i => ZombiesMap.SlotCategories.First(c => Game.InSlotCategory(Parts.All[i.Part], c))).ToList();
+            var wide = parts.Count >= g.ZRules.TraderStock && parts.Count <= g.ZRules.TraderStock + 1 && cats.Take(Math.Min(parts.Count, ZombiesMap.SlotCategories.Length)).Distinct().Count() >= Math.Min(g.ZRules.TraderStock, ZombiesMap.SlotCategories.Length) - 1;
+            lowParts += parts.Count(i => Parts.All[i.Part].Rarity <= Rarity.Uncommon);
+            allParts += parts.Count;
+            extras += over;
+            shelfOk &= distinct && inTier && consumables == 2 && wide;
+            visits.Add($"r{round}: visit {t.Visit} at {t.At.X:0.0},{t.At.Z:0.0} ({zm.Areas[zm.AreaAt(t.At)].Name}), leaves at {t.LeaveRound}; {parts.Count} parts in {cats.Distinct().Count()} categories up to {top} ({over} extra) [{string.Join(", ", parts.Select(i => $"{Parts.All[i.Part].Name} {i.Price}"))}] + {consumables} consumables");
         }
-        ZLine($"visits: here in rounds {string.Join(",", here)}; {string.Join("; ", visits)}");
+        ZLine($"visits: here in rounds {string.Join(",", here)}; {lowParts} of {allParts} parts common or uncommon, {extras} extra(s); {string.Join("; ", visits)}");
         var want = new[] { 5, 10, 15 };
-        if (!here.SequenceEqual(want) || !shelfOk || !spotsOk || !leftOk)
-            Fail("the trader should come at rounds 5, 10 and 15 (and leave when the next round starts) at a box spot or workbench in an open area, with a fresh shelf of distinct parts up to the round's tier");
+        // The occasional extra, forced (extraChance 1): exactly one part a tier over the top (rare at round 5), priced as such.
+        var t2 = 0.0;
+        using (var gx = ZGame(0, ref t2, tweak: r => { r.FirstRoundDelay = 9999; r.TraderExtraChance = 1f; }))
+        {
+            gx.SelfTestBeginRound(5, t2 += 1);
+            var sx = gx.ZTrader;
+            var rares = Enumerable.Range(0, sx.Count).Where(i => sx.Stock[i].Kind == ZTraderItemKind.Part && Parts.All[sx.Stock[i].Part].Rarity == Rarity.Rare).ToList();
+            var extraOk = rares.Count == 1 && sx.Stock[rares[0]].Price == gx.ZRules.TraderPrice(Rarity.Rare, 5)
+                          && Enumerable.Range(0, sx.Count).Count(i => sx.Stock[i].Kind == ZTraderItemKind.Part) == gx.ZRules.TraderStock + 1;
+            ZLine($"forced extra at round 5: {rares.Count} rare ({(rares.Count > 0 ? $"{Parts.All[sx.Stock[rares[0]].Part].Name} {sx.Stock[rares[0]].Price}" : "none")}), {sx.Count} items");
+            if (!extraOk)
+                Fail("the trader's occasional extra should be one part a tier over the shelf's top, on top of the usual parts");
+        }
+        World.SetMap(ZTestMap!);
+        if (!here.SequenceEqual(want) || !shelfOk || !spotsOk || !leftOk || lowParts < allParts * 9 / 10)
+            Fail("the trader should come at rounds 5, 10 and 15 (and leave when the next round starts) at a box spot or workbench in an open area, with a fresh, wide shelf of distinct parts (one category each), mostly commons and uncommons, at most one extra a tier up");
     }
 
     /// <summary>Purchases and refusals, the last item wanted by two at once, and the client's copy.</summary>
@@ -127,58 +149,75 @@ public static partial class SelfTest
         zp.Points = 5000;
         zm.Points = 5000;
         var w = new PacketWriter();
-        string? Buy(Player p, int item, int visit)
+        string? Buy(Player p, int item, int visit, int count)
         {
-            Game.WriteTraderBuy(w, item, visit);
+            Game.WriteTraderBuy(w, item, visit, count);
             return g.SelfTestTraderPacket(p, w.Span, now);
         }
 
-        // The prompt, then a part bought: points taken, the part in the loose parts, the shelf one short.
+        // The prompt, then a part bought, and bought again: no limit; the shelf never changes.
         var prompt = g.FindZUse(me);
         var item0 = t.Stock[0];
         var part0 = Parts.All[item0.Part];
-        var why = Buy(me, 0, t.Visit);
-        var bought = why == null && zp.Points == 5000 - item0.Price && zp.Parts.GetValueOrDefault(part0.Name) == 1 && t.Stock[0].SoldOut;
-        var again = Buy(me, 0, t.Visit);
-        var old = Buy(mate, 1, t.Visit + 1);
-        zm.Points = 10;
-        var poor = Buy(mate, 1, t.Visit);
-        zm.Points = 5000;
-        mate.Teleport(stand + new Vector3(6f, 0, 0));
-        var far = Buy(mate, 1, t.Visit);
-        mate.Teleport(stand + new Vector3(0.3f, 0, 0));
-        var refusals = again != null && old != null && poor != null && far != null && zm.Points == 5000 && !t.Stock[1].SoldOut && zm.Parts.Count == 0;
-        ZLine($"shopping: '{prompt?.Text}'; bought {part0.Name} ({part0.Rarity}) for {item0.Price}: '{why ?? "ok"}', points {zp.Points}, held {zp.Parts.GetValueOrDefault(part0.Name)}; refused: again '{again}', old shelf '{old}', poor '{poor}', far '{far}' (nothing taken {zm.Points == 5000})");
-        if (prompt?.Kind != ZUseKind.Trader || !bought || !refusals)
-            Fail("trader shopping: a purchase should take the points and give the part; a sold-out, old, unaffordable or out-of-reach purchase should be refused taking nothing");
+        var why = Buy(me, 0, t.Visit, 1);
+        var again = Buy(me, 0, t.Visit, 1);
+        var twice = why == null && again == null && zp.Points == 5000 - 2 * item0.Price && zp.Parts.GetValueOrDefault(part0.Name) == 2;
+        // Lots: x5 and x10 paid for exactly.
+        zp.Points = 100000;
+        var five = Buy(me, 0, t.Visit, 5);
+        var ten = Buy(me, 1, t.Visit, 10);
+        var part1 = Parts.All[t.Stock[1].Part];
+        var lots = five == null && ten == null && zp.Points == 100000 - 5 * item0.Price - 10 * t.Stock[1].Price
+                   && zp.Parts.GetValueOrDefault(part0.Name) == 7 && zp.Parts.GetValueOrDefault(part1.Name) == 10 + (part1 == part0 ? 7 : 0);
+        ZLine($"shopping: '{prompt?.Text}'; {part0.Name} ({part0.Rarity}, {item0.Price}) bought twice: '{why ?? "ok"}' / '{again ?? "ok"}'; x5 '{five ?? "ok"}', x10 {part1.Name} '{ten ?? "ok"}': holds {zp.Parts.GetValueOrDefault(part0.Name)} + {zp.Parts.GetValueOrDefault(part1.Name)}, points {zp.Points}");
+        if (prompt?.Kind != ZUseKind.Trader || !twice || !lots)
+            Fail("trader shopping: any item should be buyable again and again (no purchase limit), and a lot of 5 or 10 should cost exactly 5 or 10 times the price");
 
-        // The consumables: grenades only when short (the round's count), the reserve (Max Ammo).
+        // Refusals take nothing: an old shelf, a lot you can't pay for in full, a count of 0 or over the limit, too far.
+        var old = Buy(mate, 1, t.Visit + 1, 1);
+        zm.Points = t.Stock[1].Price * 9;
+        var poorLot = Buy(mate, 1, t.Visit, 10);
+        zm.Points = 5000;
+        var zero = Buy(mate, 1, t.Visit, 0);
+        var tooMany = Buy(mate, 1, t.Visit, g.ZRules.TraderMaxPerBuy + 1);
+        mate.Teleport(stand + new Vector3(6f, 0, 0));
+        var far = Buy(mate, 1, t.Visit, 1);
+        mate.Teleport(stand + new Vector3(0.3f, 0, 0));
+        var refusals = old != null && poorLot != null && zero != null && tooMany != null && far != null && zm.Points == 5000 && zm.Parts.Count == 0;
+        ZLine($"refused: old shelf '{old}', 10 with 9 prices '{poorLot}', 0 '{zero}', {g.ZRules.TraderMaxPerBuy + 1} '{tooMany}', far '{far}' (nothing taken {zm.Points == 5000 && zm.Parts.Count == 0})");
+        if (!refusals)
+            Fail("trader shopping: an old shelf, a lot you can't pay for, a bad count or being out of reach should be refused taking nothing");
+
+        // The consumables: grenades only when short (the round's count), the reserve (Max Ammo); one at a time.
         var gi = Enumerable.Range(0, t.Count).First(i => t.Stock[i].Kind == ZTraderItemKind.Grenades);
         var ai = Enumerable.Range(0, t.Count).First(i => t.Stock[i].Kind == ZTraderItemKind.Ammo);
-        var full = Buy(me, gi, t.Visit);
+        zp.Points = 5000;
+        var full = Buy(me, gi, t.Visit, 1);
         var pts = zp.Points;
         me.GrenadesLeft = 0;
-        var refill = Buy(me, gi, t.Visit);
+        var refill = Buy(me, gi, t.Visit, 1);
         var grenades = me.GrenadesLeft;
-        var ammo = Buy(me, ai, t.Visit);
-        var consumablesOk = full != null && refill == null && grenades == g.ZRules.GrenadesForRound(5) && ammo == null && zp.Points == pts - t.Stock[gi].Price - t.Stock[ai].Price
-                            && !t.Stock[gi].SoldOut && !t.Stock[ai].SoldOut;
-        ZLine($"consumables: grenades when full '{full}', when empty '{refill ?? "ok"}' -> {grenades} (round 5 gives {g.ZRules.GrenadesForRound(5)}); reserve '{ammo ?? "ok"}'; points {pts} -> {zp.Points} ({t.Stock[gi].Price} + {t.Stock[ai].Price}); still on the shelf {!t.Stock[gi].SoldOut && !t.Stock[ai].SoldOut}");
+        var ammo = Buy(me, ai, t.Visit, 5);
+        var ammo2 = Buy(me, ai, t.Visit, 1);
+        var consumablesOk = full != null && refill == null && grenades == g.ZRules.GrenadesForRound(5) && ammo == null && ammo2 == null
+                            && zp.Points == pts - t.Stock[gi].Price - 2 * t.Stock[ai].Price;
+        ZLine($"consumables: grenades when full '{full}', when empty '{refill ?? "ok"}' -> {grenades} (round 5 gives {g.ZRules.GrenadesForRound(5)}); reserve asked x5 '{ammo ?? "ok"}' (charged once), again '{ammo2 ?? "ok"}'; points {pts} -> {zp.Points} ({t.Stock[gi].Price} + 2 x {t.Stock[ai].Price})");
         if (!consumablesOk)
-            Fail("trader shopping: the grenade refill should only sell when you're short, the reserve always, and neither should sell out");
+            Fail("trader shopping: the grenade refill should only sell when you're short, the reserve any time, one at a time");
 
-        // Two players after the last one in the same tick: one gets it, one is told it's gone; exactly one part, one payment.
-        var last = Enumerable.Range(0, t.Count).Last(i => t.Stock[i].Kind == ZTraderItemKind.Part && !t.Stock[i].SoldOut);
+        // Two players buying the same thing in one tick: both get it, both pay.
+        var last = Enumerable.Range(0, t.Count).Last(i => t.Stock[i].Kind == ZTraderItemKind.Part);
         var lastPart = Parts.All[t.Stock[last].Part];
         var price = t.Stock[last].Price;
         zp.Points = zm.Points = 5000;
-        var a = Buy(me, last, t.Visit);
-        var b = Buy(mate, last, t.Visit);
-        var one = (a == null) != (b == null) && zp.Parts.GetValueOrDefault(lastPart.Name) + zm.Parts.GetValueOrDefault(lastPart.Name) == 1
-                  && zp.Points + zm.Points == 10000 - price && t.Stock[last].SoldOut;
-        ZLine($"the last {lastPart.Name}: host '{a ?? "ok"}', mate '{b ?? "ok"}'; parts given {zp.Parts.GetValueOrDefault(lastPart.Name) + zm.Parts.GetValueOrDefault(lastPart.Name)}, paid {10000 - zp.Points - zm.Points} (price {price})");
-        if (!one)
-            Fail("trader shopping: two players buying the last of something in one tick should get exactly one sale");
+        var had = zp.Parts.GetValueOrDefault(lastPart.Name);
+        var a = Buy(me, last, t.Visit, 1);
+        var b = Buy(mate, last, t.Visit, 1);
+        var both = a == null && b == null && zp.Parts.GetValueOrDefault(lastPart.Name) == had + 1 && zm.Parts.GetValueOrDefault(lastPart.Name) == 1
+                   && zp.Points == 5000 - price && zm.Points == 5000 - price;
+        ZLine($"same tick, the same {lastPart.Name}: host '{a ?? "ok"}', mate '{b ?? "ok"}'; points {zp.Points} / {zm.Points} (price {price})");
+        if (!both)
+            Fail("trader shopping: two players buying the same thing in one tick should both get it and both pay");
 
         // The client's copy: the whole shelf as sent, a purchase, then the departure.
         {
@@ -190,7 +229,7 @@ public static partial class SelfTest
             c.SelfTestReadTrader(shelf, 100);
             var ct = c.ZTrader;
             var same = ct.Here && ct.Visit == t.Visit && ct.At == t.At && ct.Yaw == t.Yaw && ct.LeaveRound == t.LeaveRound && ct.CameRound == t.CameRound && ct.Count == t.Count
-                       && Enumerable.Range(0, t.Count).All(i => ct.Stock[i].Kind == t.Stock[i].Kind && ct.Stock[i].Part == t.Stock[i].Part && ct.Stock[i].Price == t.Stock[i].Price && ct.Stock[i].Left == t.Stock[i].Left)
+                       && Enumerable.Range(0, t.Count).All(i => ct.Stock[i].Kind == t.Stock[i].Kind && ct.Stock[i].Part == t.Stock[i].Part && ct.Stock[i].Price == t.Stock[i].Price)
                        && Math.Abs(ct.ChangedAt - 100) < 1e-9;
             var prompted = false;
             if (c.Local is { } cl)
@@ -199,18 +238,18 @@ public static partial class SelfTest
                 prompted = c.FindZUse(cl)?.Kind == ZUseKind.Trader;
             }
             var bw = new PacketWriter();
-            Game.WriteTraderBuy(bw, 1, t.Visit);
+            Game.WriteTraderBuy(bw, 1, t.Visit, 5);
             var cbuy = g.SelfTestTraderPacket(me, bw.Span, now);
-            g.SelfTestWriteTrader(msg);
-            c.SelfTestReadTrader(msg.Span, 101);
-            var soldSeen = cbuy == null && ct.Stock[1].SoldOut && Math.Abs(ct.ChangedAt - 100) < 1e-9; // (a purchase isn't an arrival)
+            var after = new PacketWriter();
+            g.SelfTestWriteTrader(after);
+            var unchanged = cbuy == null && after.Span.SequenceEqual(shelf); // (no limit: a purchase leaves the shelf as it was)
             g.SelfTestBeginRound(6, now += 1);
             g.SelfTestWriteTrader(msg);
             c.SelfTestReadTrader(msg.Span, 102);
             var gone = !t.Here && !ct.Here && ct.Count == 0;
-            ZLine($"client sync: the shelf ({shelf.Length} bytes, {(shelf.Length - 1 - Game.ZTraderHeader) / Game.ZTraderItemBytes} items) same {same}, prompt {prompted}, a sale seen {soldSeen}, gone at round 6 {gone}; protocol {ServerInfo.ProtocolVersion}, Msg.ZTrader {(byte)Msg.ZTrader}");
-            if (!same || !prompted || !soldSeen || !gone)
-                Fail("trader shopping: the client's copy should follow the shelf, its sales and the departure");
+            ZLine($"client sync: the shelf ({shelf.Length} bytes, {(shelf.Length - 1 - Game.ZTraderHeader) / Game.ZTraderItemBytes} items) same {same}, prompt {prompted}, the shelf unchanged by a x5 buy {unchanged}, gone at round 6 {gone}; protocol {ServerInfo.ProtocolVersion}, Msg.ZTrader {(byte)Msg.ZTrader}");
+            if (!same || !prompted || !unchanged || !gone)
+                Fail("trader shopping: the client's copy should follow the shelf and the departure, and a purchase shouldn't change the shelf");
             if (ServerInfo.ProtocolVersion < 73)
                 Fail("the trader changed the wire: the protocol should be at least 73");
         }
@@ -252,9 +291,10 @@ public static partial class SelfTest
             waited = s;
             bought = g.ZBotBought.Any(x => x.Contains("Trader"));
         }
-        var sold = Enumerable.Range(0, t.Count).Count(i => t.Stock[i].Kind == ZTraderItemKind.Part && t.Stock[i].SoldOut);
-        var partOk = bought && zp.Parts.Count == 1 && sold == 1 && zp.Points == pointsBefore - Enumerable.Range(0, t.Count).Where(i => t.Stock[i].SoldOut).Sum(i => t.Stock[i].Price)
-                     && zp.Points >= g.ZRules.BotReserve;
+        var held = zp.Parts.Sum(kv => kv.Value);
+        var paid = zp.Parts.Keys.Sum(n => Enumerable.Range(0, t.Count).Where(i => t.Stock[i].Kind == ZTraderItemKind.Part && Parts.All[t.Stock[i].Part].Name == n).Select(i => t.Stock[i].Price).FirstOrDefault());
+        var sold = held;
+        var partOk = bought && zp.Parts.Count == 1 && held == 1 && zp.Points == pointsBefore - paid && zp.Points >= g.ZRules.BotReserve;
         var planAfter = g.SelfTestBotPlan(bot, now);
         ZLine($"bot: plan with {g.ZRules.TraderBotSurplus} to spare {planKind}, 10 short {planShort}; bought in {waited:0.0} s {bought} ({string.Join(", ", g.ZBotBought)}): {sold} sold, holds {string.Join("+", zp.Parts.Keys)}, points {pointsBefore} -> {zp.Points}; plans again this visit {planAfter}");
         if (planPoor != ZUseKind.Trader || planKind != ZUseKind.Trader || planShort == ZUseKind.Trader || !partOk || planAfter == ZUseKind.Trader)

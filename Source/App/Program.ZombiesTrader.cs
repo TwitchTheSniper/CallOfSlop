@@ -33,8 +33,7 @@ public static partial class Program
             var item = tr.Stock[k];
             var c = item.Kind == ZTraderItemKind.Part && item.Part >= 0 && item.Part < Parts.All.Length ? PartDef.RarityColor(Parts.All[item.Part].Rarity)
                 : item.Kind == ZTraderItemKind.Grenades ? new Vector3(0.35f, 0.4f, 0.3f) : new Vector3(0.75f, 0.65f, 0.3f);
-            var sold = item.SoldOut;
-            Gfx.Draw(L(0.18f, sold ? 0.04f : 0.16f, 0.16f, -0.6f + k * 0.3f, sold ? 0.95f : 1.01f, -0.5f), sold ? c * 0.35f : c, 1f, mode: sold ? 0 : 2);
+            Gfx.Draw(L(0.18f, 0.16f, 0.16f, -0.6f + k * 0.3f, 1.01f, -0.5f), c, 1f, mode: 2);
         }
 
         // The lantern pole at the counter's end, its flame flickering.

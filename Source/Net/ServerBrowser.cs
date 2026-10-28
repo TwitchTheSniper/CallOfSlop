@@ -151,7 +151,7 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
     // 73: The Zombies trader (Source/Game/ZombiesTrader.cs): Msg.ZTrader (the trader and his shelf, server -> all) and
-    //     Msg.ZTraderBuy (a purchase, client -> server) at the end of Msg. (71 and 72 are other branches' bumps of the same day.)
+    //     Msg.ZTraderBuy (a purchase: item, visit, count; no purchase limit, client -> server) at the end of Msg. (71 and 72 are other branches' bumps of the same day.)
     public const byte ProtocolVersion = 73;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 

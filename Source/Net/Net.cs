@@ -83,8 +83,8 @@ public enum Msg : byte
     ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
     ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 70)
     ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 70)
-    ZTrader, // server -> all (on a change) and each joiner: Zombies: the trader (here or gone, visit number, where he stands, the round he leaves, his shelf: kind, part, price, left) (reliable; ZombiesTrader.cs, protocol 73)
-    ZTraderBuy, // client -> server: Zombies: buy shelf item N of visit V from the trader (reliable; protocol 73)
+    ZTrader, // server -> all (he came or went) and each joiner: Zombies: the trader (here or gone, visit number, where he stands, the round he leaves, his shelf: kind, part, price; nothing sells out) (reliable; ZombiesTrader.cs, protocol 73)
+    ZTraderBuy, // client -> server: Zombies: buy C of shelf item N of visit V from the trader (no limit; at most the rules' maxPerBuy at a time) (reliable; protocol 73)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

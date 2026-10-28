@@ -6,8 +6,9 @@ namespace CallOfSlop;
 /// <summary>
 /// The trader's shelf in a Zombies run (Source/Game/ZombiesTrader.cs; docs/zombies/ZOMBIES-MODE.md, "The trader"):
 /// opened with the interact key at his counter, over the match (the world goes on: zombies keep coming and the HUD stays
-/// up). Each shelf item on a row: the part's name in its rarity colour, its category, how many are left, the price and a
-/// BUY button (or SOLD OUT, or the price in red when you can't afford it); then the consumables. The server decides
+/// up). Each shelf item on a row: the part's name in its rarity colour (and how many you hold), its category, the price of
+/// one (red when you can't afford it) and x1 / x5 / x10 buttons (no purchase limit; a lot you can't pay for is greyed);
+/// then the consumables (x1). The server decides
 /// everything: a click asks (<see cref="Game.TraderBuyRequest"/>) and the shelf comes back changed. Esc or Close goes
 /// back to the fight; walking away closes it. Every line is ASCII.
 /// </summary>
@@ -39,18 +40,17 @@ public sealed partial class Ui
             ImGui.PushFont(default, 26);
             ImGuiSafe.TextColored(ZGold, "THE TRADER"u8);
             ImGui.PopFont();
-            ImGuiSafe.TextColored(Dim, $"\"Have a look. First come, first served; I'm gone when round {t.LeaveRound} starts.\"   You have {zp.Points}.");
+            ImGuiSafe.TextColored(Dim, $"\"Take as many as you like. I'm gone when round {t.LeaveRound} starts.\"   You have {zp.Points}.");
             ImGuiSafe.TextColored(Orange, "Bought parts go to your loose parts: fit them at a workbench."u8);
             ImGui.Separator();
             if (t.Count == 0)
                 ImGuiSafe.TextColored(Dim, "The shelf is bare."u8);
-            if (ImGui.BeginTable("##shelf"u8, 5, ImGuiTableFlags.SizingStretchProp))
+            if (ImGui.BeginTable("##shelf"u8, 4, ImGuiTableFlags.SizingStretchProp))
             {
                 ImGui.TableSetupColumn("Item"u8, ImGuiTableColumnFlags.WidthStretch, 3f);
-                ImGui.TableSetupColumn("Kind"u8, ImGuiTableColumnFlags.WidthStretch, 1.6f);
-                ImGui.TableSetupColumn("Left"u8, ImGuiTableColumnFlags.WidthStretch, 0.7f);
-                ImGui.TableSetupColumn("Price"u8, ImGuiTableColumnFlags.WidthStretch, 1f);
-                ImGui.TableSetupColumn("##buy"u8, ImGuiTableColumnFlags.WidthStretch, 1.1f);
+                ImGui.TableSetupColumn("Kind"u8, ImGuiTableColumnFlags.WidthStretch, 1.7f);
+                ImGui.TableSetupColumn("Each"u8, ImGuiTableColumnFlags.WidthStretch, 0.8f);
+                ImGui.TableSetupColumn("##buy"u8, ImGuiTableColumnFlags.WidthStretch, 2.1f);
                 ImGui.TableHeadersRow();
                 for (var i = 0; i < t.Count; i++)
                 {
@@ -60,21 +60,26 @@ public sealed partial class Ui
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGuiSafe.TextColored(new float4(colour.X, colour.Y, colour.Z, 1f), Game.TraderItemName(item));
+                    if (part != null && zp.Parts.GetValueOrDefault(part.Name) is var held and > 0)
+                    {
+                        ImGui.SameLine();
+                        ImGuiSafe.TextColored(Dim, $"(you have {held})");
+                    }
                     ImGui.TableNextColumn();
                     ImGuiSafe.TextColored(Dim, part != null ? $"{PartDef.RarityName(part.Rarity)} {PartDef.CategoryName(part.Category)}" : item.Kind == ZTraderItemKind.Grenades ? "the round's count" : "all your guns");
                     ImGui.TableNextColumn();
-                    ImGuiSafe.TextColored(Dim, item.Left == ZTraderItem.Unlimited ? "-" : item.Left.ToString());
+                    ImGuiSafe.TextColored(zp.Points < item.Price ? Red : new float4(1, 1, 1, 1), item.Price.ToString());
                     ImGui.TableNextColumn();
-                    var poor = zp.Points < item.Price;
-                    ImGuiSafe.TextColored(item.SoldOut ? Dim : poor ? Red : new float4(1, 1, 1, 1), item.Price.ToString());
-                    ImGui.TableNextColumn();
-                    if (item.SoldOut)
-                        ImGuiSafe.TextColored(Dim, "SOLD OUT"u8);
-                    else
+                    // As many as you like (no purchase limit): x1, and for parts x5 / x10 (the server checks the points for the lot).
+                    foreach (var n in item.Kind == ZTraderItemKind.Part ? TraderCounts : TraderOne)
                     {
-                        ImGui.BeginDisabled(poor);
-                        if (ImGui.Button($"BUY##buy{i}", new float2(-1, 0)))
-                            game.TraderBuyRequest(i);
+                        if (n > game.ZRules.TraderMaxPerBuy)
+                            continue;
+                        if (n != 1)
+                            ImGui.SameLine();
+                        ImGui.BeginDisabled((long)item.Price * n > zp.Points);
+                        if (ImGui.Button($"x{n}##buy{i}_{n}", new float2(46 * _scale, 0)))
+                            game.TraderBuyRequest(i, n);
                         ImGui.EndDisabled();
                     }
                 }
@@ -87,6 +92,8 @@ public sealed partial class Ui
         }
         ImGui.End();
     }
+
+    private static readonly int[] TraderCounts = [1, 5, 10], TraderOne = [1];
 
     /// <summary>The trader's waypoint on the HUD: a label over his stall through the walls, or a line with his distance when he's off screen.</summary>
     private void DrawTraderLabel(Game game, Player me, double now)

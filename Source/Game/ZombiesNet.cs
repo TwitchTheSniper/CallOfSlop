@@ -593,7 +593,7 @@ public sealed partial class Game
             case (byte)Msg.ZTrader when !IsServer:
                 ReadTrader(ref r, now); // the trader came, left or sold something (ZombiesTrader.cs)
                 break;
-            case (byte)Msg.ZTraderBuy when IsServer && r.Has(2):
+            case (byte)Msg.ZTraderBuy when IsServer && r.Has(3):
                 if (_clients.TryGetValue(sender.G, out var tc) && Players.TryGetValue(tc.Id, out var tp))
                 {
                     if (OnTraderBuy(tp, ref r, now) is { } why)
