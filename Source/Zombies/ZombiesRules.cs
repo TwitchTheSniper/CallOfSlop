@@ -99,7 +99,7 @@ public sealed class ZombiesRules
 
     // ---- Rounds -------------------------------------------------------------------------------------------
     /// <summary>Zombies in a round at full strength (round 5 to 9, solo), and how many more per extra player.</summary>
-    public int CountBase = 24, CountPerExtraPlayer = 6;
+    public int CountBase = 24, CountPerExtraPlayer = 12;
 
     /// <summary>Rounds 1.. use this fraction of the full count (World at War: a handful in round 1).</summary>
     public float[] EarlyFractions = [0.25f, 0.3f, 0.5f, 0.7f, 0.9f];
@@ -127,20 +127,20 @@ public sealed class ZombiesRules
     /// Most zombies alive at once, whatever the round (the rules' hard cap, up to <see cref="Game.MaxZombies"/>; the rest wait
     /// in a queue). The round's own cap is <see cref="MaxAliveCurve"/>; the host's "Zombie horde cap" setting can lower both.
     /// </summary>
-    public int MaxAlive = 400;
+    public int MaxAlive = 600;
 
     /// <summary>
-    /// The alive cap by round (docs/zombies/ZOMBIES-MODE.md, "Hordes"): 24 early, about 60 by round 10, 150 by round 20,
-    /// 300 by round 30 (straight lines between the points, flat past the ends), plus <see cref="MaxAlivePerExtraPlayer"/>
-    /// of that per extra player.
+    /// The alive cap by round (docs/zombies/ZOMBIES-MODE.md, "Hordes"): 24 early, 40 by round 5, 90 by round 10, 220 by
+    /// round 20, 400 by round 30, 600 by round 40 (straight lines between the points, flat past the ends), plus
+    /// <see cref="MaxAlivePerExtraPlayer"/> of that per extra player (the player scaling, 2026-10-27).
     /// </summary>
-    public RoundCurve MaxAliveCurve = new([(1, 24), (5, 24), (10, 60), (20, 150), (30, 300), (40, 400)]);
+    public RoundCurve MaxAliveCurve = new([(1, 24), (5, 40), (10, 90), (20, 220), (30, 400), (40, 600)]);
 
-    /// <summary>Each extra player adds this share of the round's alive cap (0.15: four players get 45 percent more).</summary>
-    public float MaxAlivePerExtraPlayer = 0.15f;
+    /// <summary>Each extra player adds this share of the round's alive cap (0.5: four players get 2.5 times as many).</summary>
+    public float MaxAlivePerExtraPlayer = 0.5f;
 
     /// <summary>Zombies that come out at once per spawn (late rounds fill a big cap faster), by round.</summary>
-    public RoundCurve SpawnBurstCurve = new([(1, 1), (12, 1), (20, 3), (30, 5), (40, 6)]);
+    public RoundCurve SpawnBurstCurve = new([(1, 1), (12, 1), (20, 4), (30, 7), (40, 9)]); // (raised with the alive caps, 2026-10-27: round 30 still fills in about 30 s)
 
     /// <summary>How many of the spawners nearest the players are used, by round (late rounds spread a horde over more of them).</summary>
     public RoundCurve ActiveSpawnersCurve = new([(1, 4), (15, 4), (25, 7), (35, 10)]);
@@ -645,6 +645,7 @@ public sealed class ZombiesRules
                     {
                         switch (k)
                         {
+                            case "note": break;
                             case "countBase": r.CountBase = Whole(v, w, 1, 500); break;
                             case "countPerExtraPlayer": r.CountPerExtraPlayer = Whole(v, w, 0, 100); break;
                             case "earlyFractions":

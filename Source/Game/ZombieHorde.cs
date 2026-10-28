@@ -56,7 +56,7 @@ public sealed partial class Game
     /// <summary>The alive cap now: the round's curve (with the extra players), the rules' hard cap, the host's setting.</summary>
     public int ZAliveCap()
     {
-        var players = Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0));
+        var players = ZRoundPlayerCount(); // (live: a join or leave mid-round moves the cap at once)
         return Math.Clamp(Math.Min(ZRules.MaxAliveFor(Math.Max(1, ZRound), players), HostHordeCap), 1, MaxZombies);
     }
 

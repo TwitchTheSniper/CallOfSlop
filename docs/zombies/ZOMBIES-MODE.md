@@ -128,12 +128,12 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
 
 | | Formula | Solo | 4 players |
 | --- | --- | --- | --- |
-| Zombies in a round | `(24 + 6 x (players - 1)) x f`; f = 0.25, 0.3, 0.5, 0.7, 0.9 for rounds 1-5, then round / 5; from round 10 also x round x 0.15 | 6, 7, 12, 17, 22, 29, 34, 38, 43, 72 ... | 10, 13, 21, 29, 38 ... |
+| Zombies in a round | `(24 + 12 x (players - 1)) x f`; f = 0.25, 0.3, 0.5, 0.7, 0.9 for rounds 1-5, then round / 5; from round 10 also x round x 0.15; worked out again mid-round when someone joins or leaves ("Player scaling") | 6, 7, 12, 17, 22, 29, 34, 38, 43, 72 ... r20 288, r30 648 | 15, 18, 30, 42, 54 ... r10 180, r20 720 |
 | Zombie health | 150, +60 a round to round 9 (630), then x 1.06 a round (slowed 2026-10-23, was +100 and x 1.1) | r10 668, r20 1196, r30 2142 | the same |
 | Speed | walk 1.3 m/s; runners (3.2 m/s) from round 3 (+15 percent a round, max 90); sprinters (5.2 m/s) from round 5 (+10 percent a round, max 75) | | |
 | Spawn delay | 2 s x 0.95 a round, at least 0.25 s | | |
-| Most alive at once | `maxAliveCurve`: 24 to round 5, 60 at round 10, 150 at 20, 300 at 30, 400 from 40 (straight lines between), +15 percent per extra player (`maxAlivePerExtraPlayer`), never over `maxAlive` (400) or the host's horde cap | r10 60, r20 150, r30 300 | r10 87, r20 218, r30 400 |
-| Spawning | a burst per spawn time (`spawnBurstCurve`: 1 to round 12, 3 at 20, 5 at 30, 6 at 40) from the `activeSpawnersCurve` spawners nearest the players (4 to round 15, 7 at 25, 10 at 35), one per spawner, a spawner resting `spawnerCooldown` (0.35 s) after use | | |
+| Most alive at once | `maxAliveCurve`: 24 at round 1, 40 at 5, 90 at 10, 220 at 20, 400 at 30, 600 from 40 (straight lines between), +50 percent per extra player (`maxAlivePerExtraPlayer`), never over `maxAlive` (600) or the host's horde cap | r10 90, r20 220, r30 400, r40 600 | r10 225, r20 550, r25 on 600 |
+| Spawning | a burst per spawn time (`spawnBurstCurve`: 1 to round 12, 4 at 20, 7 at 30, 9 at 40; raised with the caps 2026-10-27) from the `activeSpawnersCurve` spawners nearest the players (4 to round 15, 7 at 25, 10 at 35), one per spawner, a spawner resting `spawnerCooldown` (0.35 s) after use | | |
 
 Players walk at 6 m/s, so even sprinters can be outrun; zombies swipe for 40 (3 hits from full health).
 
@@ -1078,20 +1078,49 @@ of detail by distance, the grid for separation. The self-test measures 24 zombie
 report line "AI cost"; it includes the per-tick animation update), and "Zombie hordes" 24, 100 and 300 on Blackmoor
 (see "Hordes"). Drawing cost: see "Animation" and "Hordes".
 
+## Player scaling (developer request, 2026-10-27)
+
+The round's size and its alive cap both follow the player count (bots count; a host who sits out doesn't), and since
+2026-10-27 more steeply: each extra player adds 12 zombies to the round's base of 24 (`countPerExtraPlayer`, was 6) and
+half again to the alive cap (`maxAlivePerExtraPlayer` 0.5, was 0.15), on the steeper `maxAliveCurve` above (hard cap
+`maxAlive` 600). All of it is in `Parts/Tables/ZombiesRules.json` "rounds".
+
+| Players | Round 1 / 5 / 10 / 20 / 30 zombies | Alive cap at round 1 / 5 / 10 / 20 / 30 / 40 |
+| --- | --- | --- |
+| 1 | 6 / 22 / 72 / 288 / 648 | 24 / 40 / 90 / 220 / 400 / 600 |
+| 2 | 9 / 32 / 108 / 432 / 972 | 36 / 60 / 135 / 330 / 600 / 600 |
+| 3 | 12 / 43 / 144 / 576 / 1296 | 48 / 80 / 180 / 440 / 600 / 600 |
+| 4 | 15 / 54 / 180 / 720 / 1620 | 60 / 100 / 225 / 550 / 600 / 600 |
+
+**Joining or leaving mid-round** (a person, a bot added or removed, a player dropping) works the round out again at
+once (`Game.RescaleRoundForPlayers`, ZombiesMode.cs): the round's total becomes its count for the new number (map
+logic's extra spawns kept), and the zombies still to spawn become that total less the ones already out (killed or
+alive), never below 0. The alive cap reads the player count live. A leave never ends the round there and then: with
+more out than the smaller round would send, nothing more spawns and the round ends when those still alive are killed;
+with every zombie dead and some still owed, one more comes and its kill ends the round. The server logs a
+`[zombies] round N: A -> B players` line for each change.
+
+**The budget at 600 alive** ("Zombie hordes" measures a scripted 600-zombie horde on Blackmoor besides 24, 100 and
+300): on the 2-core cloud box under load the server tick was 1.8 ms CPU on average (2.2 ms worst; budget 8 ms), no
+allocation, the interest-managed snapshots stay at about 26 KB/s per client (80 zombies a packet, the near ones
+every snapshot), and the client's zombie work (reading, posing, the instanced draw's boxes, the sounds) about 2.3 ms
+a frame for 8400 boxes. GPU time for the instanced draw is not measured headless.
+
 ## Hordes (developer request, 2026-10-27)
 
 "As the rounds progress, I want to see hundreds of zombies all on the map at the same time. Late game." The alive cap
-now rises with the round (`maxAliveCurve` in "rounds"; the round curve table above): 24 early, about 60 by round 10,
-150 by round 20, 300 by round 30, 400 from round 40, more with more players, never over the rules' hard cap
-`maxAlive` (400; the code's own limit is 512, `Game.MaxZombies`). **The host can lower it**: the lobby room's World
+now rises with the round (`maxAliveCurve` in "rounds"; the round curve table above): 24 early, 90 by round 10,
+220 by round 20, 400 by round 30, 600 from round 40 (raised by the player scaling, 2026-10-27; it was 60 / 150 / 300 /
+400), half again per extra player, never over the rules' hard cap `maxAlive` (600, also the code's own limit,
+`Game.MaxZombies`; a settings file's old "no limit" of 512 still reads as no limit). **The host can lower it**: the lobby room's World
 section has **Zombie horde cap** (48, 100, 150, 200, 300, 400 or no limit; settings key `zombie_horde_cap`) for weak
-PCs; the rest of the round waits its turn as before. Round sizes are unchanged (round 30 solo is 648 zombies), so the
-cap is what decides how many are up at once.
+PCs; the rest of the round waits its turn as before. Round 30 solo is 648 zombies, so the cap is what decides how
+many are up at once.
 
 To fill a big cap, late rounds spawn in **bursts** (`spawnBurstCurve`) from **more spawners** (`activeSpawnersCurve`),
 spread out: one zombie per spawner per burst, a spawner rests `spawnerCooldown` after use, and a spawner with someone
 standing on it puts the new zombie on a free spot of a ring round it (0.9 m, then 1.8 m; standable and in view of the
-spawner), never on top of another. Round 30 on Blackmoor fills to 300 in about 28 s.
+spawner), never on top of another. Round 30 on Blackmoor fills to its cap of 400 in about 28 s.
 
 At the windows the horde **queues** instead of jamming: two zombies (`tearers`) work the boards, the rest stand on
 queue spots in rows of three behind the window (checked standable and in view when the map loads), and when a
