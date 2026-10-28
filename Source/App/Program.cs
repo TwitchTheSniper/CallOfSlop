@@ -3,6 +3,8 @@ using Brutal.GlfwApi;
 using Brutal.Numerics;
 using Brutal.OpenGlApi;
 
+using CallOfSlop.Platform.Steam;
+
 namespace CallOfSlop;
 
 /// <summary>
@@ -124,6 +126,10 @@ public static unsafe partial class Program
         else
             SavePaths.Init(args);
         _settings = Settings.Load();
+        // Steam, when this run asks for it (a Steam build, steam_appid.txt, --steam; Program.Steam.cs). A Steam build
+        // started outside Steam hands over to Steam here and quits.
+        if (InitSteam(args))
+            return 0;
         Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
         AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
@@ -133,7 +139,7 @@ public static unsafe partial class Program
         {
             // Update check (Source/Updates): in the background, never blocking startup; release builds only, at most every 6 h.
             Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
-            if (_settings.UpdateCheck && BuildInfo.IsRelease)
+            if (_settings.UpdateCheck && BuildInfo.IsRelease && !SteamPlatform.IsSteamBuild) // Steam builds update through Steam
                 Updater.Shared.Check(manual: false);
             // Old versions the updater installed are removed once this build reaches its menu (UpdateCleanup.cs).
             UpdateCleaner.Shared = new UpdateCleaner(SavePaths.ExeFolder, BuildInfo.ReleaseVersion, SavePaths.PathOf(UpdateCleanup.LogFileName), SavePaths.Folder);
@@ -194,6 +200,7 @@ public static unsafe partial class Program
         {
             EndSession("");
             _manualList?.Dispose(); // "Run a server list for friends" (Program.Listing.cs)
+            ShutdownSteam(); // Program.Steam.cs
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
@@ -1027,7 +1034,7 @@ public static unsafe partial class Program
                     : "[test] network simulator not available in this RakNet build");
 
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
-            _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
+            _session = new Game(net, AudioSystem, DisplayName(), loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 {
                     Progress = _smoke ? SmokeProgress() : _progress, // the smoke test must never touch your real save
@@ -1114,6 +1121,7 @@ public static unsafe partial class Program
         while (!_window.ShouldClose && !_quit)
         {
             Glfw.PollEvents();
+            SteamPlatform.RunCallbacks(); // overlay, persona and avatar callbacks (no-op without Steam)
             var now = Glfw.Time;
             if (_smoke)
                 SmokeTick(now);
@@ -1300,6 +1308,7 @@ public static unsafe partial class Program
         while (!_window.ShouldClose && !_quit)
         {
             Glfw.PollEvents();
+            SteamPlatform.RunCallbacks();
             var now = Glfw.Time;
             if (!Splash.Active(now))
                 break;

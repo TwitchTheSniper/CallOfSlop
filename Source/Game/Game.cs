@@ -1840,6 +1840,7 @@ public sealed partial class Game : IDisposable
                     _w.U8(c);
                 WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
+                SendLocalSteamId(); // my Steam ID, when I am on Steam (GameSteam.cs)
                 SendLoadout();
                 break;
             case (byte)Msg.Roster when !IsServer && r.Has(1):
@@ -1915,6 +1916,9 @@ public sealed partial class Game : IDisposable
                 break;
             case (byte)Msg.WeaponTweaks when !IsServer:
                 ReadWeaponTweaks(ref r); // the host's weapon tweak window (GameWeaponTweaks.cs)
+                break;
+            case (byte)Msg.SteamIds:
+                OnSteamIdsPacket(ref r, sender); // Steam identities, cosmetic (GameSteam.cs)
                 break;
             case (byte)Msg.VoiceUp:
             case (byte)Msg.VoiceDown:

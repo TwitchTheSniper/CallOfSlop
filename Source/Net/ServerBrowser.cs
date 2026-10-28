@@ -150,7 +150,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 70: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
-    public const byte ProtocolVersion = 70;
+    // 74: Steam identities (Source/Game/GameSteam.cs, Phase 1 of the Steam migration): Msg.SteamIds at the end of Msg
+    //     (a client's own Steam ID after its Hello; the server's table of every Steam player's id with each roster, sent
+    //     only when at least one player is on Steam). Nothing else on the wire changed; a game without Steam sends nothing new.
+    public const byte ProtocolVersion = 74;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -1,6 +1,8 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
+using CallOfSlop.Platform.Steam;
+
 namespace CallOfSlop;
 
 public enum LobbyAction
@@ -574,6 +576,13 @@ public sealed partial class Ui
                 ImGuiSafe.FieldFailed("player name", ex);
             }
             ImGui.TextColored(Dim, "Name changes apply to your next match."u8);
+            if (SteamPlatform.Available)
+            {
+                ImGui.Checkbox("Use my Steam name"u8, ref s.SteamName);
+                ImGuiSafe.TextColored(Dim, $"Steam: {SteamPlatform.PersonaName} (App ID {SteamPlatform.AppId})");
+            }
+            else if (SteamPlatform.State == SteamState.Unavailable)
+                ImGuiSafe.TextColored(Dim, $"Steam: unavailable ({SteamPlatform.Reason})");
             ImGui.SetNextItemWidth(w);
             ImGui.SliderFloat("Mouse sensitivity"u8, ref s.Sensitivity, 0.1f, 4f, "%.2fx"u8);
             ImGui.Checkbox("Invert mouse Y"u8, ref s.InvertY);

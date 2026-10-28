@@ -83,6 +83,7 @@ public enum Msg : byte
     ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
     ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 70)
     ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 70)
+    SteamIds, // client -> server: my Steam ID (count 1, id, u64) after the Hello; server -> all: every Steam player's (count, then player id + u64 each), with the roster, only when someone is on Steam (reliable; GameSteam.cs, protocol 74)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
@@ -141,6 +142,13 @@ public sealed class PacketWriter
     {
         BinaryPrimitives.WriteUInt32LittleEndian(_buf.AsSpan(Length), v);
         Length += 4;
+        return this;
+    }
+
+    public PacketWriter U64(ulong v)
+    {
+        BinaryPrimitives.WriteUInt64LittleEndian(_buf.AsSpan(Length), v);
+        Length += 8;
         return this;
     }
 
@@ -248,6 +256,14 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
         Need(4);
         var v = BinaryPrimitives.ReadUInt32LittleEndian(_data[_pos..]);
         _pos += 4;
+        return v;
+    }
+
+    public ulong U64()
+    {
+        Need(8);
+        var v = BinaryPrimitives.ReadUInt64LittleEndian(_data[_pos..]);
+        _pos += 8;
         return v;
     }
 

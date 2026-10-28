@@ -22,6 +22,7 @@ stuck-spots*.json
 portable.txt
 update_check.txt
 update.log
+steam_appid.txt
 .callofslop-build
 *.txt.bak
 *.txt.tmp

@@ -17,7 +17,8 @@ public static class UpdateVerifyCli
 {
     /// <summary>Files that must never be in a shared build (players' saves and logs).</summary>
     public static readonly string[] PersonalFiles =
-        ["settings.txt", "progress.txt", "loadout.txt", "workbench.txt", "audio_mix.json", "portable.txt", "callofslop.log", "selftest.log", "update_check.txt"];
+        ["settings.txt", "progress.txt", "loadout.txt", "workbench.txt", "audio_mix.json", "portable.txt", "callofslop.log", "selftest.log", "update_check.txt",
+         "steam_appid.txt"]; // a developer's Steam file: a package with it would start Steam as that app (SteamPlatform.cs)
 
     public static int Run(string manifestFile, string zipFile, string? platform = null)
     {

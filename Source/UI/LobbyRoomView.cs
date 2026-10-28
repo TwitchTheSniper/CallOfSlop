@@ -20,6 +20,7 @@ public sealed class LobbyRoomView
         public byte Team = Game.NoTeam;
         public bool Picked, Ready, Bot, Host, You;
         public HatId Hat;
+        public ulong SteamId; // the Steam avatar before the name, when both sides are on Steam (SteamAvatars.cs)
         public Vector3 Color;
         public int PingMs;
     }
@@ -106,6 +107,7 @@ public sealed class LobbyRoomView
             h = Mix(h, p.Id | (p.Team << 8) | (p.TeamChoice << 16) | ((p.Ready ? 1 : 0) << 24) | ((p.Bot != null ? 1 : 0) << 25));
             h = Mix(h, p.Name.GetHashCode());
             h = Mix(h, p.Prestige | (p.Level << 8) | ((int)p.Hat << 16));
+            h = Mix(h, p.SteamId.GetHashCode());
             h = Mix(h, p.Id < game.PingMs.Length ? game.PingMs[p.Id] / 5 : 0); // 5 ms steps: no rebuild for 1 ms jitter
         }
         if (prog != null)
@@ -134,6 +136,7 @@ public sealed class LobbyRoomView
             var (prestige, level) = r.You && prog != null ? ((int)prog.Prestige, (int)prog.Level) : ((int)p.Prestige, (int)p.Level);
             r.Rank = r.Bot ? "BOT" : level > 0 ? Progress.RankLabel(prestige, level) : "";
             r.Hat = p.Hat;
+            r.SteamId = r.Bot ? 0 : p.SteamId;
             r.Team = game.IsTeamMode ? p.Team : Game.NoTeam;
             r.Picked = !r.Bot && p.TeamChoice < 2;
             r.Ready = r.Bot || p.Ready;

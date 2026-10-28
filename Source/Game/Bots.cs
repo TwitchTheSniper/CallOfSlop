@@ -383,6 +383,7 @@ public sealed partial class Game
             WriteRosterCosmetics(_w, p); // prestige, level, hat (GameCosmetics.cs)
         }
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
+        BroadcastSteamIds(); // every Steam player's id, when anyone is on Steam (GameSteam.cs)
         RefreshBotGear(); // someone joined, left or levelled up: the bots' gear follows the lobby's level (BotGear.cs)
     }
 

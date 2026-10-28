@@ -965,6 +965,14 @@ Code signing (optional, off): set the repository variable `SIGNING_ENABLED=true`
 
 `update.json` fields: `version`, `build`, `sha` (git commit), `protocol` (ServerInfo.ProtocolVersion), `url` (the zip's release URL), `size`, `sha256`, `notes`, `minUpdater` (a release that needs a newer updater than the player's game is offered as a manual download), `published`. The top-level `url` / `size` / `sha256` are always the Windows zip. A release with a Mac download also has `"platforms": {"osx-arm64": {"url", "size", "sha256"}}`: Mac builds take that entry (checked exactly like the top-level one) and never the Windows zip, and say "no download for this computer yet" when a release has none; Windows builds ignore it.
 
+### Steam (in development): the foundation
+
+The game can run under Steam (`Source/Platform/Steam`, `docs/steam/STEAM.md`), but Steam is **optional**: every GitHub zip, LAN game and self-test runs exactly as before, with the Steam layer off.
+
+- **When Steam starts:** a Steam build (`dotnet build -p:SteamAppId=NNN` stamps the App ID in), a `steam_appid.txt` next to the program (a developer's file; it is in `.gitignore` and never packaged), `--steam` (the Spacewar placeholder App ID 480, local testing only) or `--steam=NNN`, or the Steam client launching the game. `--no-steam` always wins. The log says `[steam] off / unavailable / running` with the reason.
+- **What it does so far:** the Steam persona name is your display name (**Settings > Player > Use my Steam name**), Steam players' avatars show in the pre-match lobby's player list when both sides are on Steam, the Steam overlay frees the mouse and opens the pause menu, a Steam build started outside Steam relaunches through Steam, and a Steam build never checks GitHub for updates (Steam updates it). Steam names and avatars travel as Steam IDs in `Msg.SteamIds` (protocol 74), sent only when someone is on Steam.
+- **Not yet:** Steam networking and lobbies, invites, achievements, Cloud, Workshop, Steam Input. Those are the next phases; the layer's backend interface (`ISteamBackend`) is where they plug in.
+
 ### Mac (Apple Silicon): not yet shipped
 
 The Mac build is ready but **switched off**: releases are Windows only until the developer turns it on.
