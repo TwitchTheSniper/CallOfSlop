@@ -72,7 +72,7 @@ public static partial class SelfTest
                         // Hovering: nothing drawn at all (the receiver, or the grip's own frame) under the rail within MaxGap below it.
                         var below = BuildModel.MountSeat(m.Mesh, at, float.MinValue);
                         var gap = at.Y - MathF.Max(top, below);
-                        // (Multi-receiver frames stand their optic over the whole rack, so a part-filled one has a gap by design.)
+                        // (Multi-receiver grips: "Optic seating" checks those, with every slot alone, to within 2 mm.)
                         if (gap > MaxGap && recvSockets.Count == 1)
                             Fail($"optic mounts: {who}: the optic hovers {gap * 100:0.0} cm above everything under it (mount y {at.Y:0.000}, top of the receiver y {top:0.000}, of the gun y {below:0.000})");
                         if (gap > worstGap)

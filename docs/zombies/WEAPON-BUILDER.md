@@ -893,7 +893,7 @@ you up instead.
   guns. The off hand goes to the foregrip's `hand` if one is fitted, else the grip's `support` point (the chainsaw's
   wrap bar, the cart's push bar, the wheel's rim), else the lead barrel. The reload hand goes to the lead receiver's
   feed.
-- **Sight line:** the optic sits on the grip's `optic` socket; the sight lens uses the mount height and position from
+- **Sight line:** the optic sits at the grip's `optic` socket (on the gun's top there; see "Optic seat" below); the sight lens uses the mount height and position from
   it. Iron-sight boxes (`"tag": "irons"`, or `"irons:SOCKET"` which also needs that socket filled, as on the rack grips; only grips have them) stand on the receiver: they are drawn only when a
   receiver is fitted and no optic is. Grips with `"ads": false` (cart, briefcase) are hip fire only and drop the optic's
   zoom.
@@ -903,6 +903,20 @@ you up instead.
   autocannon, launcher) or its top rail never pokes into the optic. It only raises: iron sights and see-through boxes
   don't count. The mount height is what the rail, the optic, the sight line and the aim point are built from, so ADS
   moves with it. Self-test "Optic mounts" checks every grip x receiver x optic that nothing rises into the optic.
+- **Optic seat (2026-10-27).** The developer: a bot's built gun showed its optic floating at head height. The rack
+  grips' and frames' `optic` sockets are set for their top row (Rifle Grip 0.245, Exo Harness 0.3), so a rack with
+  one receiver stood its optic up to 25 cm above it, and a one-receiver grip's socket could leave 1-2 cm of air over a
+  low receiver. The socket now only says where along the gun the optic goes (and its height on an empty grip, a
+  preview): `BuildModel.OpticSeat` puts the mount ON the highest drawn box under the optic's footprint, up or down.
+  The footprint is the optic's own (`GunModel.OpticFootprint`: everything resting on its rail, such as a scope's rings
+  past the rail's ends; the rail now runs under all of them). If no receiver is under the middle of the rail (a rack's
+  side slots, or twin receivers with the rail over the gap), a thin bridge (`GunMesh.RiserLow`, drawn with the rail,
+  only with an optic) spans from the rail to the middle of the receivers beside it, on the highest thing under it, and
+  the rail stands on that. If anything of the gun in front of the optic sits on its sight line (a frame's cross bar),
+  the optic goes up on a riser until the line clears it. Self-test "Optic seating": every grip x receiver with each
+  slot alone and every slot, and every standard gun build (those without an optic get one), in the view model
+  (`GunModel.Emit`) and the world model (the scene graph gun in a player's hands): the optic's base touches the gun
+  under it within 2 mm, the aim point is inside the optic, and the sight line in front is clear.
 - **Conditional boxes:** `"tag": "with:SOCKET"` draws a box only while that socket of the same part holds something (the
   hopper chute under the rifle and rack grips, the big frames' stock mounts). A part file naming a socket it doesn't
   have is refused.
