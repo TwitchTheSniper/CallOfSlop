@@ -17,6 +17,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Window smoke test | `--smoketest`: drives the real window, writes `smoke_*.bmp` and `[smoke]` log lines. Uses a throwaway save copy |
 | Quick host or join | `CallOfSlop host [port]`, `CallOfSlop join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
 | Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
+| Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch]`: baked lighting on/off BMPs next to the log. Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |
@@ -133,6 +134,10 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Windows-only checks.** CPU-time tick checks only measure on Windows (`SelfTestTiming.Available`), so some failures only show up on Windows runs (every push to `main`, or `[windows ci]` on a branch). That includes GC pauses on big maps, stuck-spot counts and tick work.
 - **Baked maps** (`Source/Maps/MapBake*.cs`, docs/perf/STREAMING.md section 7) write every instance field of everything a built `Map` holds, generically. A field the game sets after a map is built (like `Id`, `Pack`) is marked `[NotBaked]`; a runtime cache that is still empty after `Validate` needs nothing. A new kind of shared library object (like props or models) needs a root in `MapBake.IndexFor`. "Map bake" checks every shipped map reads back exactly as built.
 - **Nav graph building must stay deterministic.** It builds from an as-built copy of the map. Destruction patches are reset when a map is restored. "Nav determinism" tests this, and "Nav edge walks" walks risky edges with the real mover.
+- **Baked lighting** (docs/render/LIGHTING.md). Lit maps (a `BakedLighting` or `LightSource` op) bake a 3D light grid in
+  `Map.Validate` (`Source/Maps/LightBaker.cs`), kept in the map bake; every scene shader lights through `ApplyLightAt`
+  (`Lighting.Glsl`) and the `LitFrame` block (`Source/Render/LightGrid.cs`, binding 7, texture units 12-14: don't reuse
+  them). Unlit maps take the old path unchanged. Props carry lights in a `"lights"` list.
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**

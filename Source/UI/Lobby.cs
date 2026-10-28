@@ -783,6 +783,18 @@ public sealed partial class Ui
             ImGui.TextColored(Dim, "Maps with a sky: Low draws the gradient, sun and moon; High adds drifting clouds and stars."u8);
 
             ImGui.Spacing();
+            ImGui.Text("Lighting"u8);
+            var lightQ = (int)s.Lighting;
+            for (var i = 0; i <= (int)LightingQuality.Full; i++)
+            {
+                if (i > 0)
+                    ImGui.SameLine();
+                if (ImGui.RadioButton(i == (int)LightingQuality.Full ? "Baked + flashes##lighting" : $"{(LightingQuality)i}##lighting", ref lightQ, i))
+                    s.Lighting = (LightingQuality)lightQ;
+            }
+            ImGui.TextColored(Dim, "Maps with lamps, torches and candles: their light is baked into the map, so it costs almost nothing. Baked + flashes also lets muzzle flashes and blasts light them. Off draws every map with the plain light."u8);
+
+            ImGui.Spacing();
             ImGui.Text("Bullet impacts"u8);
             var impacts = (int)s.ImpactDecals;
             for (var i = 0; i <= (int)ImpactDecalQuality.High; i++)

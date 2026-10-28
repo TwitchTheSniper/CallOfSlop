@@ -130,6 +130,30 @@ l.Lever("LeverA", -4, 1.2, 14.98).Lever("LeverB", 4, 1.2, 14.98).Gate("and", "Bo
 l.Wire("LeverA.changed", "Both.a").Wire("LeverB.changed", "Both.b").Wire("Both.true", "VaultDoor.open");
 ```
 
+**Lights** (`Source/MapKit/Lights.cs`; the ops and what they do are in Maps/README.md "Lighting", the design in
+docs/render/LIGHTING.md). `kit.BakedLighting(cell, indoor, sunShadows, propLights, region, top)` turns baked lighting on
+(a `region` (x0, z0, x1, z1) bakes only the lit part of a big map, at finer cells); `kit.Light(x, y, z, color, intensity,
+range, flicker)` a point light, `kit.SpotLight(..., yaw, pitch, cone)` a cone (compass yaw, pitch degrees down),
+`kit.AreaLight(..., w, d, yaw, pitch)` a glowing rectangle. Layouts: `Lights.Row` (lights evenly along a line: an aisle,
+a corridor), `Lights.Ring` (round a circle: a chandelier's candles, braziers round a pit), `Lights.Fittings` (a lit prop
+every few metres along a wall: torches, sconces, street lamps; returns how many) and `Lights.Window` (an upright area
+light just inside a window, in the glass colour, for stained glass or daylight falling in). Colours to start from:
+`Lights.Flame`, `Candle`, `Tungsten`, `Daylight`, `Moon`, `Ember`. Lit props (`Props/Lighting`, the lamps) bring their own
+lights, so most maps need only `Prop` ops and a `BakedLighting`. Light ops twin under `Symmetric` (positions, and a
+spot's or area light's yaw). Put `lightProbes` in the `test` block so the Map contract checks bright and dark spots.
+Light Test (`Generators/LightTest.cs`, `Maps/Dev/LightTest.json`) is the worked example:
+
+```csharp
+k.BakedLighting(cell: 0.5, indoor: 0.22);
+k.Prop("Chandelier", -5, -2, y: 7 - 1.2);
+Lights.Fittings(k, "Iron Torch", -12, -7.6, 4, -7.6, 4, y: 2.2, yaw: 0);
+k.SpotLight(3.3, 6.9, -2.0, "#ffe9c0", pitch: 90, cone: 40, intensity: 2.5, range: 10);
+Lights.Window(k, -13.9, 4.25, 1, 1.6, 2.5, 90, "#ff7a6a", intensity: 1.2);
+```
+
+`CallOfSlop --light-shots "Map Name" --at x,y,z,yaw,pitch` saves on/off pictures to compare (it runs under `xvfb-run`
+with Mesa's software GL in the agent container).
+
 **Plan.** `Plan.Draw(map, "plan.png", lanes)` is the picture `--gen-plan` makes; `PngWriter` writes any RGB raster.
 
 ## Rules of the road

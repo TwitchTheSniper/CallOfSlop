@@ -53,7 +53,7 @@ public enum Symmetry
 /// (railings, stairs, ramps, catwalks), <see cref="Clusters"/> (prop groups), <see cref="Plan"/> (a top-down PNG),
 /// <see cref="Rng"/> (a seeded generator) and <see cref="MapChecks"/> (the real Map, nav graph and movers checking it).
 /// </summary>
-public sealed class Kit
+public sealed partial class Kit
 {
     public readonly List<JObject> Ops = new();
 
@@ -675,6 +675,12 @@ public sealed class Kit
             case "collider":
                 Rect("x0", "x1", "z0", "z1");
                 break;
+            case "lightsource":
+                Point("x", "z");
+                YawKey("yaw", required: (op.Str("type") ?? "point").ToLowerInvariant() != "point" && op.Get("pitch") is JNumber lp && Math.Abs(lp.Value) < 90);
+                break;
+            case "bakedlighting":
+                return null;
             case "mesh":
             case "prop":
             case "waypoint":

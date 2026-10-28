@@ -52,5 +52,8 @@
     {"size": [0.02, 0.26, 0.02], "offset": [0.64, 2.02, -0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
     {"size": [0.02, 0.26, 0.02], "offset": [0.64, 2.02, 0.09], "color": "black", "anim": {"type": "follow", "parent": 5}},
     {"size": [0.15, 0.22, 0.15], "offset": [0.55, 2.01, 0.0], "color": "amber", "anim": {"type": "flicker", "rate": 9, "duty": 0.9, "color": "#ffc860", "off": "#704010", "glow": 1.0, "parent": 5}}
+  ],
+  "lights": [
+    {"pos": [0.55, 2.01, 0], "color": "#ffb45a", "intensity": 1.6, "range": 8, "flicker": true}
   ]
 }

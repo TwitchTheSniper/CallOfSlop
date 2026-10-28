@@ -206,7 +206,11 @@ public static unsafe class SkyRenderer
     public static void Use(Map map) => Lighting.Use(map.Light);
 
     /// <summary>Back to the classic light (gun previews and menus look the same on every map).</summary>
-    public static void UseDefaultLight() => Lighting.Use(Lighting.Default);
+    public static void UseDefaultLight()
+    {
+        Lighting.Use(Lighting.Default);
+        LightGrid.Off(); // gun pictures and previews: no map's baked light either
+    }
 
     // ---- Drawing --------------------------------------------------------------------------------------------------
 

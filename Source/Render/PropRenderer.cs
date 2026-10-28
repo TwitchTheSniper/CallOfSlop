@@ -304,7 +304,7 @@ public sealed unsafe class PropRenderer
             if (vLayer >= 0.0)
                 col *= texture(uTex, vec3(vUv, vLayer)).r * 1.25;
             float rim = 0.12 * (1.0 - abs(n.y));
-            col = ApplyLight(col, n, 0.0) + col * rim;
+            col = ApplyLightAt(col, n, 0.0, vWorld) + col * rim * gLitAmb;
             FragColor = vec4(ApplyFog(col, vWorld), 1.0);
         }
         """;
