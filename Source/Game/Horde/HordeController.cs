@@ -150,6 +150,18 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         Reset();
     }
 
+    /// <summary>Sizes the per-agent arrays (and the grid's) for <paramref name="n"/> agents now, so a growing horde never allocates mid-round.</summary>
+    public void Reserve(int n)
+    {
+        Grid.Reserve(n);
+        if (_pos.Length >= n)
+            return;
+        _pos = new Vector3[n];
+        _active = new bool[n];
+        _keys = new float[n];
+        _idx = new int[n];
+    }
+
     /// <summary>A new run: no stimuli, no lure, counters back to zero (the portals and fields stay).</summary>
     public void Reset()
     {

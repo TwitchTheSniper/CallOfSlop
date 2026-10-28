@@ -54,6 +54,9 @@ public enum ZUseKind : byte
 
     /// <summary>A casino table: press to open its panel (the client opens it; moves go up in Msg.ZCasinoAct; ZombiesCasino.cs).</summary>
     Casino,
+
+    /// <summary>Loose parts a player dropped: pick them up into your loose parts (ZombiesDropItems.cs).</summary>
+    PartPickup,
 }
 
 /// <summary>One thing the interact key can use: what, which one, its price and the prompt.</summary>
@@ -279,6 +282,7 @@ public sealed partial class Game
         ClearHorde();
         ZDrops.Clear();
         ZWeaponDrops.Clear();
+        ZPartDrops.Clear(); // ZombiesDropItems.cs
         ResetPowerUps(); // ZombiesPowerUps.cs
         ResetBotShops(); // ZombieBotsShop.cs
         ZFxList.Clear();
@@ -369,6 +373,7 @@ public sealed partial class Game
         TickCasino(zm, now); // ZombiesCasino.cs
         TickDrops(now);
         TickWeaponDrops(now); // ZombiesDrops.cs
+        TickPartDrops(now); // ZombiesDropItems.cs
         TickPowerUps(now); // ZombiesPowerUps.cs
 
         // The game over: nobody left standing (everyone downed or bled out).
@@ -448,6 +453,7 @@ public sealed partial class Game
     {
         ZPhase = ZRoundPhase.Break;
         LogicZombies(LogicEvent.RoundEnded, ZRound); // map logic: zombies.roundEnded, n = the round survived
+        ExpireDropsAtRoundEnd(ZRound); // things dropped on purpose last to the end of the next round (ZombiesDropItems.cs)
         RespawnAtRoundEnd(now); // the dead come back now, with the whole break to rebuild (ZombiesFlow.cs)
         if (BeginReadyUp(now)) // the next round waits for everyone's Ready (ZombiesFlow.cs)
             return;
@@ -1044,11 +1050,21 @@ public sealed partial class Game
                 ? new ZUse(ZUseKind.Salvage, i, 0, "Picked clean this round", Blocked: true)
                 : new ZUse(ZUseKind.Salvage, i, 0, ZRules.SalvageParts == 1 ? "Hold [E] to search the pile for a part" : $"Hold [E] to search the pile for parts (+{ZRules.SalvageParts})"));
         }
-        foreach (var wd in ZWeaponDrops)
+        if (p.Bot == null) // (co-op bots never pick anything up)
         {
-            var d = Flat(wd.At - pos);
-            if (d <= UseRange && MathF.Abs(wd.At.Y - pos.Y) < 1.5f && d < bestD)
-                Consider(d, UseRange, WeaponDropUse(p, wd)); // ZombiesDrops.cs
+            // Pickups: the nearest, but one you look at comes first in a pile (ZombiesDropItems.cs).
+            foreach (var wd in ZWeaponDrops)
+            {
+                var d = Flat(wd.At - pos);
+                if (d <= UseRange && MathF.Abs(wd.At.Y - pos.Y) < 1.5f && PickupRank(p, wd.At, d) is var rank && rank < bestD)
+                    Consider(rank, UseRange, WeaponDropUse(p, wd)); // ZombiesDrops.cs
+            }
+            foreach (var pd in ZPartDrops)
+            {
+                var d = Flat(pd.At - pos);
+                if (d <= UseRange && MathF.Abs(pd.At.Y - pos.Y) < 1.5f && PickupRank(p, pd.At, d) is var rank && rank < bestD)
+                    Consider(rank, UseRange, PartDropUse(p, pd));
+            }
         }
         for (var i = 0; i < zm.Windows.Count; i++)
         {
@@ -1142,7 +1158,11 @@ public sealed partial class Game
                 LogicZombies(LogicEvent.Power, 0, p); // map logic: zombies.power (GameLogic.cs)
                 break;
             case ZUseKind.Pickup:
-                ClaimWeaponDrop(p, u.Index, now); // ZombiesDrops.cs
+                if (p.Bot == null)
+                    ClaimWeaponDrop(p, u.Index, now); // ZombiesDrops.cs
+                break;
+            case ZUseKind.PartPickup:
+                ClaimPartDrop(p, u.Index); // ZombiesDropItems.cs (first claim wins)
                 break;
             case ZUseKind.SlotMachine when u.Index >= 0 && u.Index < zm.SlotMachines.Count && ZSlots[u.Index].State == ZSlotState.Idle:
                 zp.Points -= u.Cost;

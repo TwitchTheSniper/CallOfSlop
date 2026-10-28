@@ -1204,6 +1204,7 @@ public static unsafe partial class Program
                 }
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
+                DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1370,7 +1371,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen; // (a Zombies workbench too; the lobby room; the Audio mixer and weapon tweak windows)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen; // (a Zombies workbench too; the lobby room; the Audio mixer and weapon tweak windows)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1415,6 +1416,12 @@ public static unsafe partial class Program
             return;
         }
 
+        if (key == GlfwKey.Escape && Ui.InventoryOpen)
+        {
+            Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
+            SetMouseCaptured(true);
+            return;
+        }
         if (key == GlfwKey.Escape && Ui.CasinoOpen)
         {
             Ui.CloseCasino(); // Esc leaves a casino table's panel (back to the fight), not the match (Program.ZombiesCasino.cs)

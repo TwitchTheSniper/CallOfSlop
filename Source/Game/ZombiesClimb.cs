@@ -284,11 +284,11 @@ public sealed partial class Game
         z.Sim.Velocity = Vector3.Zero;
         z.Sim.Grounded = true;
         z.Yaw = MathF.Atan2(-_climbOut.X, _climbOut.Z); // facing the wall
-        if (_climbEnt < 0)
+        if (_climbEnt < 0 && !(z.VaultAt >= 0 && now - z.VaultAt > c.VaultSeconds * 0.5))
         {
             ClimbFall(z, now);
             return;
-        }
+        } // (over the top already when the siege stopped: it finishes the vault, or it would stay on the face for good)
         if (z.VaultAt >= 0)
         {
             // Over the parapet onto the landing.
@@ -310,7 +310,7 @@ public sealed partial class Game
                 z.NextSwing = now + 0.4;
                 SetZState(z, ZState.Chase, now);
                 ClimbOver++;
-                if (!_climbReached && Logic is { } s)
+                if (!_climbReached && _climbEnt >= 0 && Logic is { } s)
                 {
                     _climbReached = true;
                     Emit(s, _climbEnt, LogicEvent.Reached, LogicSignal.Pulse(n: ZRound));

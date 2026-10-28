@@ -42,6 +42,16 @@ public sealed class HordeGrid
         return cz * _cols + cx;
     }
 
+    /// <summary>Sizes the per-agent arrays for <paramref name="n"/> agents now, so a growing horde never allocates mid-round.</summary>
+    public void Reserve(int n)
+    {
+        if (_cellOf.Length >= n)
+            return;
+        _cellOf = new int[n];
+        _items = new int[n];
+        _pos = new Vector3[n];
+    }
+
     /// <summary>Rebuilds from <paramref name="positions"/> (index i is agent i; <paramref name="active"/>[i] false: left out).</summary>
     public void Build(ReadOnlySpan<Vector3> positions, ReadOnlySpan<bool> active)
     {
