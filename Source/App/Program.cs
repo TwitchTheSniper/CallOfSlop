@@ -119,7 +119,8 @@ public static unsafe partial class Program
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
-        if (_shotTool || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
+        if (_shotTool || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
@@ -181,7 +182,9 @@ public static unsafe partial class Program
                 StartSession(LobbyAction.Join);
             }
 
-            if (_shotTool)
+            if (_glBench)
+                RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
+            else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
                 RunLoop();
@@ -198,7 +201,7 @@ public static unsafe partial class Program
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_shotTool) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_shotTool && !_glBench) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
@@ -1391,6 +1394,7 @@ public static unsafe partial class Program
     private static void DrawArena()
     {
         var map = World.Map;
+        BenchPass(0); // (--gl-bench pass timings, Program.GlBench.cs; nothing otherwise)
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
@@ -1400,13 +1404,20 @@ public static unsafe partial class Program
             for (var i = 0; i < map.Solid.Count; i++)
                 if (map.IsDrawnBox(i)) // (no instancing: the boxes one by one, as before)
                     Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+        BenchPass(1);
         DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
         TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
+        BenchPass(2);
         PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
+        BenchPass(3);
         MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
+        BenchPass(4);
         FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
+        BenchPass(5);
         DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world (Program.Decals.cs)
+        BenchPass(6);
         SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
+        BenchPass(7);
     }
 
     // =====================================================================

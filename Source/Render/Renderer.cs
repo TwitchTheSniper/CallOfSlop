@@ -186,6 +186,7 @@ public sealed unsafe class Renderer
 
     public void BeginFrame(int width, int height, Vector3 clear)
     {
+        StreamRing.Frame++; // persistent instance rings move to their next segment (4.6 path)
         Viewport(0, 0, width, height);
         Native.glClearColor(clear.X, clear.Y, clear.Z, 1f);
         Clear(GlClearBit.Color | GlClearBit.Depth);
@@ -296,17 +297,90 @@ public sealed unsafe class Renderer
         Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
         Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
         Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
-        _instVao.Bind();
-        Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
-        Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
-        fixed (float* p = _batch)
-            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
-        Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+        if (RenderCaps.PersistentBuffers && Ring() is { } ring)
+        {
+            // 4.6 path: straight into this frame's segment of the persistent ring, drawn from its base instance
+            // (written first: a write can grow the ring, and the VAO must point at the buffer it ended up in).
+            int first;
+            fixed (float* p = _batch)
+                first = ring.Write(p, _batchCount, BatchFloats);
+            RingVao(ring);
+            Native.glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 36, _batchCount, (uint)first);
+        }
+        else
+        {
+            _instVao.Bind();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+            Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
+            fixed (float* p = _batch)
+                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
+            Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+        }
         BatchDraws++;
         BatchBoxes += _batchCount;
         _batchCount = 0;
         _program.Use();
         _vao.Bind();
+    }
+
+    private StreamRing? _ring;
+    private GlVertexArray _ringVao;
+    private int _ringGen = -1;
+    private bool _ringBroken;
+
+    /// <summary>The persistent instance ring (made on first use), or null if it can't be made (then the batch takes the 4.1 path's orphaned buffer).</summary>
+    private StreamRing? Ring()
+    {
+        if (_ringBroken)
+            return null;
+        try
+        {
+            return _ring ??= new StreamRing(BatchFloats * sizeof(float), BatchMax * 2, "Renderer.batchRing");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] persistent instance ring off: {ex.Message}");
+            _ringBroken = true;
+            return null;
+        }
+    }
+
+    /// <summary>Binds the ring's VAO, made or re-pointed when the ring was (re)made.</summary>
+    private void RingVao(StreamRing ring)
+    {
+        if (_ringVao.Id == 0)
+        {
+            _ringVao = GenVertexArray();
+            GlDebug.Label(GL_VERTEX_ARRAY, _ringVao.Id, "Renderer.batchRing");
+        }
+        _ringVao.Bind();
+        if (_ringGen != ring.Generation)
+        {
+            BoxInstanceAttributes(ring.Buffer);
+            _ringGen = ring.Generation;
+        }
+    }
+
+    /// <summary>The instanced box VAO's attributes: the cube from the box buffer, the instances from <paramref name="instances"/> (bound VAO).</summary>
+    private void BoxInstanceAttributes(GlBuffer instances)
+    {
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        const int stride = 6 * sizeof(float);
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
+        EnableVertexAttribArray(0);
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
+        EnableVertexAttribArray(1);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, instances);
+        const int istride = BatchFloats * sizeof(float);
+        for (uint a = 0; a < 5; a++)
+        {
+            Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, istride, (void*)(a * 4 * sizeof(float)));
+            EnableVertexAttribArray(2 + a);
+            Native.glVertexAttribDivisor(2 + a, 1);
+        }
+        Native.glVertexAttribPointer(7, 2, GL_FLOAT, false, istride, (void*)(20 * sizeof(float)));
+        EnableVertexAttribArray(7);
+        Native.glVertexAttribDivisor(7, 1);
     }
 
     private bool InitInstanced()
@@ -373,25 +447,12 @@ public sealed unsafe class Renderer
 
             _instVao = GenVertexArray();
             _instVao.Bind();
-            Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-            const int stride = 6 * sizeof(float);
-            Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
-            EnableVertexAttribArray(0);
-            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-            EnableVertexAttribArray(1);
+            GlDebug.Label(GL_VERTEX_ARRAY, _instVao.Id, "Renderer.batch");
             _instVbo = GenBuffer();
             Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
             Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW);
-            const int istride = BatchFloats * sizeof(float);
-            for (uint a = 0; a < 5; a++)
-            {
-                Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, istride, (void*)(a * 4 * sizeof(float)));
-                EnableVertexAttribArray(2 + a);
-                Native.glVertexAttribDivisor(2 + a, 1);
-            }
-            Native.glVertexAttribPointer(7, 2, GL_FLOAT, false, istride, (void*)(20 * sizeof(float)));
-            EnableVertexAttribArray(7);
-            Native.glVertexAttribDivisor(7, 1);
+            GlDebug.Label(GL_BUFFER, _instVbo.Id, "Renderer.batch");
+            BoxInstanceAttributes(_instVbo);
             _program.Use();
             _vao.Bind();
             var err = GlDebug.Error();
