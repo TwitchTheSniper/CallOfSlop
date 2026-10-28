@@ -119,7 +119,7 @@ public sealed class LightBake
 /// </summary>
 public static class LightBaker
 {
-    /// <summary>The most cells a grid has (about 14 MB); bigger maps get coarser cells.</summary>
+    /// <summary>The most cells a grid has (16 bytes a cell: about 16 MB); bigger maps get coarser cells.</summary>
     public const int MaxCells = 1 << 20;
 
     /// <summary>Sky visibility: rays per cell and how far one must get to count as seeing the sky.</summary>

@@ -58,7 +58,7 @@ That suits the blocky look; the Cathedral can use `cell: 0.35` in its nave if it
 `LightBaker.Bake(map)` runs at the end of `Map.Validate` for lit maps (so a map read from its bake already has it):
 
 - **Grid:** the playable area plus a metre, from half a metre below the floor (or the terrain's lowest point) to 1.5 m
-  above the tallest box or light (at most 96 m), or the `region` and `top` given. At most 2^20 cells (about 13 MB): a
+  above the tallest box or light (at most 96 m), or the `region` and `top` given. At most 2^20 cells (16 bytes a cell, about 16 MB): a
   bigger map gets coarser cells (each try 25% bigger) unless it gives a region. `cellY` makes the cells taller than wide
   (the shader's scale and its nudge along the normal are per axis: `uLitScale`, and `uLitOrigin.w` the nudge up and down),
   so a tall map with several floors keeps fine cells across. Past the region's sides the GPU clamps to its edge cells
@@ -183,7 +183,7 @@ first lit Zombies map. What it has:
 - **Test block:** 16 `lightProbes`: bright in the nave, the organ loft, by the machines (Juggernog, the revive perks,
   the power switch, a dungeon workbench), the crypt, a cell, the lodge, the barn and the close's brazier; dim in the
   ossuary's and dungeons' corners and the graveyard's far corner.
-- **Cost:** 295 lights; 1.03 million cells, 14 MB (the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
+- **Cost:** 295 lights; 1.03 million cells, 16 MB with the flicker phasor (14 MB before it; the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
   the developer's PC runner, 0.9-1.9 s on the shared 2-core agent box (released builds ship it baked; dev builds cache
   it). "Big maps" gives a light bake its own budget (3 s), apart from the 150 ms validation budget, and lists the bakes. Pictures before and after of each level:
   `--light-shots "Ashgrave Cathedral" --at ...` (the cameras are in the agent's report).
