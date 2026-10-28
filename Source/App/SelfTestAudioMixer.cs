@@ -522,23 +522,23 @@ public static partial class SelfTest
         if (plain.Limiting || !loud.Limiting || !finPlain || !finLoud || peakLoud > MasterLimiter.SafetyCeiling + 1e-6f || !(rmsLoud > rmsPlain * 1.5) || !(rms6 > rmsPlain * 1.3))
             Fail($"audio mixer range: boosted menu music: limiter {(loud.Limiting ? "on" : "OFF")} (default {(plain.Limiting ? "ON" : "off")}), peak {peakLoud:0.000} (ceiling {MasterLimiter.SafetyCeiling}), "
                  + $"RMS {rmsPlain:0.000} -> +6 dB {rms6:0.000} -> +50 dB {rmsLoud:0.000}, finite {finPlain && finLoud}");
-        var tPlain = new List<double>();
-        var tLoud = new List<double>();
-        for (var r = 0; r < 5; r++)
+        // This thread's CPU time, interleaved, each side's quickest round (as CompareCpu, SelfTestCpuRatio.cs): both
+        // players play the same music in step, so a round can only be slowed by the machine, not sped up.
+        var bestPlain = double.MaxValue;
+        var bestLoud = double.MaxValue;
+        for (var r = 0; r < 7; r++)
         {
-            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var t0 = ThreadCpu.NowMs();
             for (var b = 0; b < 5; b++)
                 plain.Mix(block);
-            var t1 = System.Diagnostics.Stopwatch.GetTimestamp();
+            var t1 = ThreadCpu.NowMs();
             for (var b = 0; b < 5; b++)
                 loud.Mix(block);
-            var t2 = System.Diagnostics.Stopwatch.GetTimestamp();
-            tPlain.Add(t1 - t0);
-            tLoud.Add(t2 - t1);
+            var t2 = ThreadCpu.NowMs();
+            bestPlain = Math.Min(bestPlain, t1 - t0);
+            bestLoud = Math.Min(bestLoud, t2 - t1);
         }
-        tPlain.Sort();
-        tLoud.Sort();
-        var cpu = tLoud[2] / Math.Max(1.0, tPlain[2]);
+        var cpu = bestLoud / Math.Max(1e-6, bestPlain);
         if (cpu > 1.5)
             Fail($"audio mixer range: boosted music costs {cpu:0.00}x the default mix (budget 1.5x)");
         Line($"range: {min:+0;-0}..{max:+0;-0} dB on all {levels} level rows; old/new saved values load unclamped ({rep.Clamped} clamped), past the range clamped ({outRep.Clamped}); "

@@ -94,7 +94,8 @@ public readonly record struct MapLight(Vector3 Pos, Vector3 Color, float Intensi
 /// <param name="PropLights">Count the lights props carry (lamps, torches, candles).</param>
 /// <param name="Region">The part of the map the grid covers: min x, min z, max x, max z (all zero: the whole map). Outside it: the classic light.</param>
 /// <param name="Top">The grid's top in metres (0: just above the tallest box or light).</param>
-public readonly record struct LightingSpec(float Cell = 0.5f, float Indoor = 0.25f, bool SunShadows = true, bool PropLights = true, Vector4 Region = default, float Top = 0f);
+/// <param name="CellY">The cells' height in metres (0: <paramref name="Cell"/>): taller cells let a tall map keep fine cells across within the budget.</param>
+public readonly record struct LightingSpec(float Cell = 0.5f, float Indoor = 0.25f, bool SunShadows = true, bool PropLights = true, Vector4 Region = default, float Top = 0f, float CellY = 0f);
 
 /// <summary>Static lights on a map: the LightSource and BakedLighting ops, and the bake run at the end of <see cref="Validate"/>.</summary>
 public sealed partial class Map
@@ -136,19 +137,22 @@ public sealed partial class Map
     /// <remarks>
     /// <paramref name="region"/>: only this rectangle gets a grid (a big map with one lit building: finer cells for the
     /// same memory); outside it everything has the classic light. <paramref name="top"/>: the grid's top height (0: above
-    /// the tallest box or light).
+    /// the tallest box or light). <paramref name="cellY"/>: the cells' height (0: the same as <paramref name="cell"/>); a
+    /// tall map with several floors can keep fine cells across with taller ones (the budget is in cells).
     /// </remarks>
     [MapOp]
     public void BakedLighting(float cell = 0.5f, float indoor = 0.25f, bool sunShadows = true, bool propLights = true,
-        (float X0, float Z0, float X1, float Z1)? region = null, float top = 0f)
+        (float X0, float Z0, float X1, float Z1)? region = null, float top = 0f, float cellY = 0f)
     {
-        using var __ = Op([cell, indoor, sunShadows, propLights, region, top]);
+        using var __ = Op([cell, indoor, sunShadows, propLights, region, top, cellY]);
         if (!(cell >= 0.25f && cell <= 4f))
             throw new InvalidOperationException("\"cell\" is 0.25 to 4 metres");
         if (!(indoor >= 0f && indoor <= 1f))
             throw new InvalidOperationException("\"indoor\" is 0 to 1");
         if (!(top >= 0f && top <= 200f))
             throw new InvalidOperationException("\"top\" is 0 (automatic) to 200 metres");
+        if (!(cellY == 0f || cellY >= 0.25f && cellY <= 4f))
+            throw new InvalidOperationException("\"cellY\" is 0 (the same as \"cell\") or 0.25 to 4 metres");
         var r = Vector4.Zero;
         if (region is { } g)
         {
@@ -156,7 +160,7 @@ public sealed partial class Map
             if (!(r.Z - r.X >= 2f && r.W - r.Y >= 2f))
                 throw new InvalidOperationException("\"region\" is a rectangle at least 2 m each way");
         }
-        LightingSettings = new LightingSpec(cell, indoor, sunShadows, propLights, r, top);
+        LightingSettings = new LightingSpec(cell, indoor, sunShadows, propLights, r, top, cellY);
     }
 
     /// <summary>Every light the bake uses: the LightSource ops' in order, then each placed prop's (when prop lights are on), capped at <see cref="MaxLights"/>.</summary>

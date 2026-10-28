@@ -4,18 +4,26 @@ using System.Runtime.InteropServices;
 namespace CallOfSlop;
 
 /// <summary>
-/// A map's baked light (docs/render/LIGHTING.md): a 3D grid over the map, one cell every <see cref="Cell"/> metres,
+/// A map's baked light (docs/render/LIGHTING.md): a 3D grid over the map, one cell every <see cref="Cell"/> metres
+/// across and <see cref="CellY"/> metres up (the same unless the map asks for taller cells),
 /// uploaded as three small 3D textures and sampled per pixel by every scene shader (<see cref="Lighting.Glsl"/>), so
 /// map boxes, props, buildings, terrain, players, zombies, guns and gibs are all lit by the same light at no per-light
 /// cost. Built once by <see cref="LightBaker"/> when a lit map is validated, and kept in the map's bake (MapBake.cs).
 /// Cells are x fastest, then y, then z (the GL texture layout); cell (i, j, k)'s centre is
-/// <see cref="Origin"/> + (i + 0.5, j + 0.5, k + 0.5) * <see cref="Cell"/>.
+/// <see cref="Origin"/> + (i + 0.5, j + 0.5, k + 0.5) * <see cref="CellSize"/>.
 /// </summary>
 public sealed class LightBake
 {
     public Vector3 Origin;
     public float Cell;
+
+    /// <summary>The cells' height (metres): <see cref="Cell"/>, or taller when the map's BakedLighting op gives "cellY".</summary>
+    public float CellY;
+
     public int NX, NY, NZ;
+
+    /// <summary>A cell's size along x, y and z.</summary>
+    public Vector3 CellSize => new(Cell, CellY, Cell);
 
     /// <summary>4 half floats a cell: the static lights' colour reaching it (r, g, b, as seen by a surface facing them) and the share of it that flickers.</summary>
     public ushort[] Light = [];
@@ -47,7 +55,7 @@ public sealed class LightBake
     public long Bytes => Light.Length * 2L + Dir.Length + Sun.Length;
 
     /// <summary>The grid's far corner.</summary>
-    public Vector3 Max => Origin + new Vector3(NX, NY, NZ) * Cell;
+    public Vector3 Max => Origin + new Vector3(NX, NY, NZ) * CellSize;
 
     /// <summary>
     /// The grid at <paramref name="p"/>, filtered like the GPU does (trilinear between cell centres, clamped at the edges;
@@ -56,8 +64,9 @@ public sealed class LightBake
     /// </summary>
     public void Sample(Vector3 p, out Vector4 light, out Vector4 dir, out Vector2 sun)
     {
-        var g = (p - Origin) / Cell - new Vector3(0.5f);
-        if (p.X < Origin.X || p.Y < Origin.Y || p.Z < Origin.Z || p.X > Origin.X + NX * Cell || p.Y > Origin.Y + NY * Cell || p.Z > Origin.Z + NZ * Cell)
+        var g = (p - Origin) / CellSize - new Vector3(0.5f);
+        var max = Max;
+        if (p.X < Origin.X || p.Y < Origin.Y || p.Z < Origin.Z || p.X > max.X || p.Y > max.Y || p.Z > max.Z)
         {
             light = Vector4.Zero;
             dir = new Vector4(0, 0, 0, 1);
@@ -160,19 +169,22 @@ public static class LightBaker
             size = new Vector3(spec.Region.Z - spec.Region.X, yMax - yMin, spec.Region.W - spec.Region.Y);
         }
         var cell = spec.Cell;
+        var cellY = spec.CellY > 0f ? spec.CellY : spec.Cell; // (taller cells: a tall map keeps fine cells across)
         int nx, ny, nz;
         while (true)
         {
             nx = Math.Max(2, (int)MathF.Ceiling(size.X / cell));
-            ny = Math.Max(2, (int)MathF.Ceiling(size.Y / cell));
+            ny = Math.Max(2, (int)MathF.Ceiling(size.Y / cellY));
             nz = Math.Max(2, (int)MathF.Ceiling(size.Z / cell));
             if ((long)nx * ny * nz <= MaxCells && nx <= 2048 && ny <= 2048 && nz <= 2048)
                 break;
             cell *= 1.25f;
+            cellY *= 1.25f;
         }
+        var cs = new Vector3(cell, cellY, cell);
         var bake = new LightBake
         {
-            Origin = min, Cell = cell, NX = nx, NY = ny, NZ = nz, Spec = spec, Sources = lights, SunDir = sunDir,
+            Origin = min, Cell = cell, CellY = cellY, NX = nx, NY = ny, NZ = nz, Spec = spec, Sources = lights, SunDir = sunDir,
             Light = new ushort[nx * ny * nz * 4], Dir = new sbyte[nx * ny * nz * 4], Sun = new byte[nx * ny * nz * 2],
         };
         occ.Index(min - new Vector3(2f), bake.Max + new Vector3(2f));
@@ -186,7 +198,7 @@ public static class LightBaker
             for (var j = 0; j < cy; j++)
             for (var i = 0; i < cx; i++)
             {
-                var p = min + new Vector3(2 * i + 1, 2 * j + 1, 2 * k + 1) * cell;
+                var p = min + new Vector3(2 * i + 1, 2 * j + 1, 2 * k + 1) * cs;
                 if (!tr.PushOut(ref p))
                 {
                     sky[(k * cy + j) * cx + i] = 0f;
@@ -206,7 +218,7 @@ public static class LightBaker
             for (var i = 0; i < nx; i++)
             {
                 var idx = (k * ny + j) * nx + i;
-                var p = min + new Vector3(i + 0.5f, j + 0.5f, k + 0.5f) * cell;
+                var p = min + new Vector3(i + 0.5f, j + 0.5f, k + 0.5f) * cs;
                 if (!tr.PushOut(ref p))
                 {
                     solid[idx] = true;
@@ -431,7 +443,7 @@ public static class LightBaker
                 h = (h ^ x) * 1099511628211ul;
         }
         Mix(MemoryMarshal.AsBytes(new ReadOnlySpan<int>([b.NX, b.NY, b.NZ])));
-        Mix(MemoryMarshal.AsBytes(new ReadOnlySpan<float>([b.Origin.X, b.Origin.Y, b.Origin.Z, b.Cell])));
+        Mix(MemoryMarshal.AsBytes(new ReadOnlySpan<float>([b.Origin.X, b.Origin.Y, b.Origin.Z, b.Cell, b.CellY])));
         Mix(MemoryMarshal.AsBytes(b.Light.AsSpan()));
         Mix(MemoryMarshal.AsBytes(b.Dir.AsSpan()));
         Mix(b.Sun);

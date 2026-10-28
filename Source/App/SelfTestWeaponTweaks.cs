@@ -225,7 +225,7 @@ public static partial class SelfTest
 
         // Over loopback: a joining client gets the set after its Hello; a later change and a reset reach it too.
         var small = FindMap("Proto Box", m => m.MaxPlayers >= 4)!;
-        const ushort port = 60227;
+        const ushort port = 26227;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);

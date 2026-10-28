@@ -586,12 +586,12 @@ public static partial class SelfTest
         var l1vs4 = CompareCpu(FrenzyWork(WeaponClass.AssaultRifle, 4, seconds), FrenzyWork(WeaponClass.AssaultRifle, 1, seconds));
         double l4 = c4.CandMs / seconds, l6 = c6.CandMs / seconds, l1 = c1.CandMs / seconds, heaviestCost = c4.RefMs / seconds;
         var ratio = Math.Max(c4.Ratio, c6.Ratio);
-        FrenzyLine($"frenzy CPU ({ThreadCpu.Kind}, median of interleaved pairs): level 4 {l4:0.00} ms per s of audio ({c4.Ratio:0.00}x), level 6 {l6:0.00} ({c6.Ratio:0.00}x), "
+        FrenzyLine($"frenzy CPU ({ThreadCpu.Kind}, quickest of interleaved runs): level 4 {l4:0.00} ms per s of audio ({c4.Ratio:0.00}x), level 6 {l6:0.00} ({c6.Ratio:0.00}x), "
              + $"level 1 {l1:0.00} ({c1.Ratio:0.00}x) of the heaviest hardbass track ({heaviest.Name}, {heaviestCost:0.00}); allowed {FrenzyCpuRatio}x; "
              + $"level 6 / level 4 {l6vs4.Ratio:0.00}, level 1 / level 4 {l1vs4.Ratio:0.00}");
         CpuRatioNotes.Add($"frenzy (classic) level 4/6: {c4.Ratio:0.00}x/{c6.Ratio:0.00}x of {heaviest.Name} (spread {Math.Max(c4.Spread, c6.Spread):0.00})");
         if (ratio > FrenzyCpuRatio)
-            Fail($"the frenzy layer costs {ratio:0.00}x the heaviest track ({heaviest.Name}; medians {Math.Max(l4, l6):0.00} vs {heaviestCost:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
+            Fail($"the frenzy layer costs {ratio:0.00}x the heaviest track ({heaviest.Name}; quickest runs {Math.Max(l4, l6):0.00} vs {heaviestCost:0.00} ms per s; allowed {FrenzyCpuRatio}x)");
         if (Math.Max(l4, l6) > MusicBudgetMsPerSecond)
             Fail($"the frenzy layer costs {Math.Max(l4, l6):0.0} ms per s (budget {MusicBudgetMsPerSecond})");
         if (l6vs4.Ratio > 1.25)

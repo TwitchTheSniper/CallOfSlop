@@ -107,7 +107,7 @@ public static partial class SelfTest
         }
 
         // ---- Client: the replicated kill message ------------------------------------------------------------
-        using (var client = new Game(NetPeer.Join("127.0.0.1", 60177), new Audio(), "Guest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
+        using (var client = new Game(NetPeer.Join("127.0.0.1", 26177), new Audio(), "Guest", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
         {
             client.LocalId = 3;
             client.Players[3] = new Player { Id = 3, Name = "Guest" };

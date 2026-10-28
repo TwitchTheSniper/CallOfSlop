@@ -215,7 +215,7 @@ public static partial class SelfTest
     private static void CheckThrowLoopback()
     {
         var small = FindMap("Proto Box", m => m.MaxPlayers >= 4)!;
-        const ushort port = 60233;
+        const ushort port = 26233;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(small);

@@ -301,7 +301,7 @@ public static partial class SelfTest
 
     private static void CheckLogicLoopback(Map map)
     {
-        const ushort port = 60237;
+        const ushort port = 26237;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         map.RestoreProps();

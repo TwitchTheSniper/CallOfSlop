@@ -179,6 +179,136 @@
     12.0
    ]
   ],
+  "lightProbes": [
+   {
+    "at": [
+     -12.0,
+     13.5,
+     -6.0
+    ],
+    "min": 0.4
+   },
+   {
+    "at": [
+     -21.0,
+     13.5,
+     -14.6
+    ],
+    "min": 0.4
+   },
+   {
+    "at": [
+     -31.0,
+     19.5,
+     -6.0
+    ],
+    "min": 0.5
+   },
+   {
+    "at": [
+     -29.0,
+     31.5,
+     -21.0
+    ],
+    "min": 0.1
+   },
+   {
+    "at": [
+     26.5,
+     8.2,
+     -6.8
+    ],
+    "min": 0.2
+   },
+   {
+    "at": [
+     -1.5,
+     3.2,
+     22.0
+    ],
+    "min": 0.1
+   },
+   {
+    "at": [
+     36.0,
+     8.2,
+     -10.0
+    ],
+    "min": 0.5
+   },
+   {
+    "at": [
+     -6.5,
+     3.2,
+     7.8
+    ],
+    "min": 0.25
+   },
+   {
+    "at": [
+     34.5,
+     13.2,
+     -13.9
+    ],
+    "min": 0.5
+   },
+   {
+    "at": [
+     -27.0,
+     13.2,
+     1.8
+    ],
+    "min": 0.45
+   },
+   {
+    "at": [
+     -48.0,
+     13.2,
+     20.0
+    ],
+    "min": 0.3
+   },
+   {
+    "at": [
+     -6.0,
+     13.2,
+     38.0
+    ],
+    "min": 0.15
+   },
+   {
+    "at": [
+     -44.0,
+     13.2,
+     0.0
+    ],
+    "min": 0.3
+   },
+   {
+    "at": [
+     4.4,
+     7.4,
+     -15.0
+    ],
+    "max": 0.2
+   },
+   {
+    "at": [
+     -13.6,
+     2.4,
+     6.4
+    ],
+    "max": 0.2
+   },
+   {
+    "at": [
+     48.0,
+     13.0,
+     42.0
+    ],
+    "max": 0.15
+   }
+  ],
   "botMatchSeconds": 6,
   "spawnsStand": true,
   "propsInside": true,
@@ -13622,28 +13752,28 @@
    "name": "Hanging Lantern",
    "x": -24.0,
    "z": 31.0,
-   "y": 15.4
+   "y": 14.6
   },
   {
    "op": "Prop",
    "name": "Hanging Lantern",
    "x": -12.0,
    "z": 31.0,
-   "y": 15.4
+   "y": 14.6
   },
   {
    "op": "Prop",
    "name": "Hanging Lantern",
    "x": 0.0,
    "z": 31.0,
-   "y": 15.4
+   "y": 14.6
   },
   {
    "op": "Prop",
    "name": "Hanging Lantern",
    "x": 12.0,
    "z": 31.0,
-   "y": 15.4
+   "y": 14.6
   },
   {
    "op": "DecalScatter",
@@ -15021,7 +15151,7 @@
    "name": "Hanging Lantern",
    "x": -48.0,
    "z": 20.0,
-   "y": 14.6
+   "y": 13.6
   },
   {
    "op": "DecalScatter",
@@ -23781,6 +23911,1555 @@
    "x": -28.0,
    "z": -6.0,
    "y": 12.0
+  },
+  {
+   "op": "BakedLighting",
+   "indoor": 0.2,
+   "region": {
+    "x0": -55.0,
+    "z0": -28.5,
+    "x1": 51.0,
+    "z1": 44.6
+   },
+   "top": 32.5,
+   "cellY": 1.0
+  },
+  {
+   "op": "LightSource",
+   "x": -22.5,
+   "y": 26.1,
+   "z": -9.95,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -22.5,
+   "y": 26.1,
+   "z": -2.05,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -14.5,
+   "y": 26.1,
+   "z": -9.95,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -14.5,
+   "y": 26.1,
+   "z": -2.05,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -6.5,
+   "y": 26.1,
+   "z": -9.95,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -6.5,
+   "y": 26.1,
+   "z": -2.05,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 1.5,
+   "y": 26.1,
+   "z": -9.95,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 1.5,
+   "y": 26.1,
+   "z": -2.05,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -33.1,
+   "y": 27.2,
+   "z": -6.0,
+   "color": "#b070d0",
+   "type": "area",
+   "w": 4.0,
+   "d": 4.0,
+   "intensity": 0.7,
+   "range": 13.0,
+   "yaw": 90.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 20.1,
+   "z": -27.65,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 26.1,
+   "z": -27.7,
+   "color": "#b070d0",
+   "type": "area",
+   "w": 4.0,
+   "d": 4.0,
+   "intensity": 0.7,
+   "range": 13.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 27.0,
+   "y": 20.1,
+   "z": -15.15,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 49.1,
+   "y": 21.1,
+   "z": -6.0,
+   "color": "#b070d0",
+   "type": "area",
+   "w": 4.0,
+   "d": 4.0,
+   "intensity": 0.7,
+   "range": 13.0,
+   "yaw": 270.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 17.1,
+   "z": 21.35,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -20.0,
+   "y": 20.7,
+   "z": -15.15,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -12.0,
+   "y": 20.7,
+   "z": -15.15,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -4.0,
+   "y": 20.7,
+   "z": -15.15,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 20.0,
+   "y": 20.1,
+   "z": -15.15,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 34.0,
+   "y": 20.1,
+   "z": -15.15,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 4.85,
+   "y": 19.1,
+   "z": -22.0,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 90.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 15.15,
+   "y": 19.1,
+   "z": -22.0,
+   "color": "#4a68e0",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 270.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": 44.0,
+   "y": 19.1,
+   "z": -15.15,
+   "color": "#d04a3a",
+   "type": "area",
+   "w": 1.3,
+   "d": 3.8,
+   "intensity": 0.5,
+   "range": 9.0,
+   "yaw": 180.0,
+   "pitch": 0.0
+  },
+  {
+   "op": "LightSource",
+   "x": -27.6,
+   "y": 14.3,
+   "z": 1.8,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -26.3,
+   "y": 14.3,
+   "z": 1.8,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -25.0,
+   "y": 14.3,
+   "z": 1.8,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -9.0,
+   "y": 14.3,
+   "z": -13.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -2.5,
+   "y": 14.3,
+   "z": -13.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -18.2,
+   "y": 14.3,
+   "z": -11.125,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -32.47,
+   "y": 14.3,
+   "z": 0.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 2.47,
+   "y": 14.3,
+   "z": -12.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -8.5,
+   "y": 14.3,
+   "z": 2.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -20.0,
+   "y": 20.3,
+   "z": -13.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -4.0,
+   "y": 20.3,
+   "z": 1.94,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -8.0,
+   "y": 20.3,
+   "z": -14.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 0.0,
+   "y": 20.3,
+   "z": 2.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -10.0,
+   "y": 25.1,
+   "z": -12.3,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -2.0,
+   "y": 25.1,
+   "z": -12.26,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -17.0,
+   "y": 25.1,
+   "z": -11.73,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -32.07,
+   "y": 14.3,
+   "z": -21.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -28.9,
+   "y": 25.1,
+   "z": -20.225,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -28.6,
+   "y": 25.1,
+   "z": -23.45,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 14.3,
+   "z": -25.94,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 5.53,
+   "y": 14.3,
+   "z": -18.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 14.47,
+   "y": 14.3,
+   "z": -18.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 14.3,
+   "z": 2.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 34.5,
+   "y": 14.3,
+   "z": -13.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 27.0,
+   "y": 14.3,
+   "z": -13.94,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 18.5,
+   "y": 14.3,
+   "z": 2.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 36.47,
+   "y": 14.3,
+   "z": -12.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 40.0,
+   "y": 14.3,
+   "z": -13.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 43.0,
+   "y": 14.3,
+   "z": 1.94,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 48.47,
+   "y": 14.3,
+   "z": -6.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 21.5,
+   "y": 14.3,
+   "z": 7.775,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 36.1,
+   "y": 14.3,
+   "z": 6.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 33.0,
+   "y": 14.3,
+   "z": 11.7,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 34.0,
+   "y": 14.3,
+   "z": 11.7,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 25.0,
+   "y": 14.3,
+   "z": 4.93,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 6.5,
+   "y": 14.3,
+   "z": 19.7,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 7.6,
+   "y": 14.3,
+   "z": 19.7,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 8.7,
+   "y": 14.3,
+   "z": 19.7,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 12.5,
+   "y": 14.3,
+   "z": 19.8,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 14.1,
+   "y": 14.3,
+   "z": 7.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 4.93,
+   "y": 14.3,
+   "z": 8.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -32.14,
+   "y": 14.3,
+   "z": 15.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -32.67,
+   "y": 14.3,
+   "z": 22.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -22.0,
+   "y": 14.3,
+   "z": 28.67,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 2.67,
+   "y": 14.3,
+   "z": 24.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 10.0,
+   "y": 14.3,
+   "z": 31.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 11.0,
+   "y": 14.3,
+   "z": 31.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 12.0,
+   "y": 14.3,
+   "z": 31.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 13.6,
+   "y": 14.3,
+   "z": 40.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -28.0,
+   "y": 14.3,
+   "z": 31.86,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -32.67,
+   "y": 14.3,
+   "z": 33.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -6.0,
+   "y": 14.3,
+   "z": 30.93,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -35.5,
+   "y": 14.3,
+   "z": -12.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -35.46,
+   "y": 14.3,
+   "z": 8.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -34.93,
+   "y": 14.3,
+   "z": 2.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -51.0,
+   "y": 14.3,
+   "z": 15.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -50.0,
+   "y": 14.3,
+   "z": 15.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -49.0,
+   "y": 14.3,
+   "z": 15.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -48.0,
+   "y": 14.3,
+   "z": 24.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -43.33,
+   "y": 14.3,
+   "z": 16.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 24.0,
+   "y": 14.3,
+   "z": 32.125,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 30.0,
+   "y": 14.3,
+   "z": 15.46,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 20.0,
+   "y": 14.3,
+   "z": 14.93,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 36.0,
+   "y": 14.3,
+   "z": 27.07,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 37.0,
+   "y": 14.3,
+   "z": 35.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 36.4,
+   "y": 14.3,
+   "z": 33.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 36.1,
+   "y": 9.3,
+   "z": -10.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 35.9,
+   "y": 9.3,
+   "z": -3.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 26.0,
+   "y": 9.3,
+   "z": -13.6,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 33.0,
+   "y": 9.3,
+   "z": -13.94,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 20.0,
+   "y": 9.3,
+   "z": -14.47,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 14.1,
+   "y": 9.3,
+   "z": 0.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 14.1,
+   "y": 9.3,
+   "z": -0.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 14.1,
+   "y": 9.3,
+   "z": -1.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 5.46,
+   "y": 9.3,
+   "z": -3.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 4.93,
+   "y": 9.3,
+   "z": 1.5,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -6.5,
+   "y": 4.3,
+   "z": 7.8,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 3.5,
+   "y": 4.3,
+   "z": 24.14,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -13.07,
+   "y": 4.3,
+   "z": 9.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -24.1,
+   "y": 4.3,
+   "z": 9.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -24.1,
+   "y": 4.3,
+   "z": 10.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -25.07,
+   "y": 4.3,
+   "z": 16.0,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": -28.3,
+   "y": 32.4,
+   "z": -20.9,
+   "color": "#ffe2b8",
+   "intensity": 0.8,
+   "range": 4.5
+  },
+  {
+   "op": "LightSource",
+   "x": 18.5,
+   "y": 10.6,
+   "z": -13.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 18.5,
+   "y": 10.6,
+   "z": -6.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 18.5,
+   "y": 10.6,
+   "z": -0.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 24.0,
+   "y": 10.6,
+   "z": -13.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 24.0,
+   "y": 10.6,
+   "z": -6.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 24.0,
+   "y": 10.6,
+   "z": -0.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 29.5,
+   "y": 10.6,
+   "z": -13.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 29.5,
+   "y": 10.6,
+   "z": -6.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 29.5,
+   "y": 10.6,
+   "z": -0.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 35.0,
+   "y": 10.6,
+   "z": -13.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 35.0,
+   "y": 10.6,
+   "z": -6.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 35.0,
+   "y": 10.6,
+   "z": -0.8,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 6.5,
+   "y": 10.6,
+   "z": -12.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 12.5,
+   "y": 10.6,
+   "z": -12.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 6.0,
+   "y": 10.6,
+   "z": -4.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 13.5,
+   "y": 10.6,
+   "z": -4.5,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 6.0,
+   "y": 10.6,
+   "z": 1.5,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 13.8,
+   "y": 10.6,
+   "z": 1.5,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -12.5,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -7.1,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -1.7,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 3.7,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 9.1,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 14.5,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "intensity": 1.1,
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -11.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -11.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -6.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -6.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -1.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -1.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 3.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 3.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 8.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 8.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 13.5,
+   "y": 4.9,
+   "z": 10.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": 13.5,
+   "y": 4.9,
+   "z": 22.0,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 6.5
+  },
+  {
+   "op": "LightSource",
+   "x": -20.0,
+   "y": 5.0,
+   "z": 8.5,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -20.0,
+   "y": 5.0,
+   "z": 16.0,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": -20.0,
+   "y": 5.0,
+   "z": 23.5,
+   "color": "#7088c0",
+   "range": 9.0
+  },
+  {
+   "op": "LightSource",
+   "x": 18.0,
+   "y": 4.3,
+   "z": 21.1,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 7.0
+  },
+  {
+   "op": "LightSource",
+   "x": 23.25,
+   "y": 4.3,
+   "z": 21.1,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 7.0
+  },
+  {
+   "op": "LightSource",
+   "x": 28.5,
+   "y": 4.3,
+   "z": 21.1,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 7.0
+  },
+  {
+   "op": "LightSource",
+   "x": 35.5,
+   "y": 7.8,
+   "z": 21.1,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 7.0
+  },
+  {
+   "op": "LightSource",
+   "x": 42.0,
+   "y": 7.8,
+   "z": 21.1,
+   "color": "#7088c0",
+   "intensity": 0.7,
+   "range": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 18.5,
+   "z": 22.6,
+   "y": 3.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 24.5,
+   "z": 22.6,
+   "y": 3.8,
+   "yaw": 180.0
+  },
+  {
+   "op": "LightSource",
+   "x": 43.0,
+   "y": 13.6,
+   "z": -6.0,
+   "color": "#ffc878",
+   "intensity": 0.8,
+   "range": 7.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": 27.5,
+   "y": 13.6,
+   "z": 8.0,
+   "color": "#ffc878",
+   "intensity": 0.5,
+   "range": 5.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -53.2,
+   "y": 12.7,
+   "z": 20.0,
+   "color": "#ff7a30",
+   "intensity": 1.4,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -32.6,
+   "y": 13.2,
+   "z": 37.0,
+   "color": "#ff7a30",
+   "intensity": 1.2,
+   "range": 9.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -4.0,
+   "y": 14.6,
+   "z": 35.5,
+   "color": "#ffb45a",
+   "range": 10.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -24.0,
+   "y": 15.6,
+   "z": 41.0,
+   "color": "#ffb45a",
+   "intensity": 1.3,
+   "range": 10.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -8.0,
+   "y": 15.6,
+   "z": 41.0,
+   "color": "#ffb45a",
+   "intensity": 1.3,
+   "range": 10.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": 8.0,
+   "y": 15.6,
+   "z": 41.0,
+   "color": "#ffb45a",
+   "intensity": 1.3,
+   "range": 10.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": 38.0,
+   "y": 13.4,
+   "z": 36.6,
+   "color": "#ffc878",
+   "intensity": 0.6,
+   "range": 6.0,
+   "flicker": true
+  },
+  {
+   "op": "LightSource",
+   "x": -27.0,
+   "y": 32.6,
+   "z": -24.0,
+   "color": "#ffb45a",
+   "intensity": 1.2,
+   "range": 9.0,
+   "flicker": true
   }
  ]
 }

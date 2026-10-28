@@ -238,7 +238,7 @@ public static partial class SelfTest
 
         // ---- Server browser tag ---------------------------------------------------------------------
         {
-            var info = new ServerInfo("TR server", "Harbor", 3, 16, 2, MatchPhase.Playing, 60123, ServerInfo.ProtocolVersion, GameMode.FreeForAll, PhysicsMode.Swept, MapPack.TrueRandomName);
+            var info = new ServerInfo("TR server", "Harbor", 3, 16, 2, MatchPhase.Playing, 26123, ServerInfo.ProtocolVersion, GameMode.FreeForAll, PhysicsMode.Swept, MapPack.TrueRandomName);
             var back = ServerInfo.Find([0x1c, 1, 2, 3, .. info.Encode()]);
             if (back != info)
                 Fail($"server info with a rotation didn't round-trip: {back}");

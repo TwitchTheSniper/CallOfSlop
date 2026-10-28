@@ -72,7 +72,8 @@ public static partial class SelfTest
     // quadratic paths this section exists for: those were 5-30x over (docs/perf/STREAMING.md, "Load-path fixes").
     private const double BigMapLoadBudgetMs = 2000; // any one shipped map, warm (Vuorikoski: ~0.3 s on a desktop)
     private const double AllMapsLoadBudgetMs = 15000; // every shipped map, warm, as the game loads them
-    private const double ValidateBudgetMs = 150; // any one shipped map, warm (London was 0.35 s on a desktop before the fixes, 6 ms after)
+    private const double ValidateBudgetMs = 150; // any one shipped map, warm (London was 0.35 s on a desktop before the fixes, 6 ms after), without its light bake
+    private const double LightBakeBudgetMs = 3000; // a lit map's light bake (docs/render/LIGHTING.md; Ashgrave Cathedral: ~0.35 s on CI's 4 cores); released builds ship it baked
     private const double StressLoadBudgetMs = 600; // the 10,000 + 2,000-prop, 400 x 400 m stress map (~70 ms on a desktop; the old paths took seconds)
     private const double StressScalingBudget = 8; // 5x the props on the same yard: linear is under 5, quadratic was 20 or more
     private const int BoxCellBudget = 400; // 24 m cells of map boxes per map: the box draw calls with everything in view apart (Downtown: 57)
@@ -119,8 +120,12 @@ public static partial class SelfTest
             var ms = Math.Min(m.LoadMs, twin.LoadMs);
             if (ms > BigMapLoadBudgetMs)
                 Fail($"Big maps: {m.Name} took {ms:0} ms to load (budget {BigMapLoadBudgetMs:0} ms)");
-            if (Math.Min(m.ValidateMs, twin.ValidateMs) > ValidateBudgetMs)
-                Fail($"Big maps: {m.Name} took {Math.Min(m.ValidateMs, twin.ValidateMs):0} ms to validate (budget {ValidateBudgetMs:0} ms)");
+            // (The light bake at the end of Validate has its own budget: it is a one-off cost released builds ship baked.)
+            double bakeMs = m.LightBake?.BakeMs ?? 0, twinBakeMs = twin.LightBake?.BakeMs ?? 0;
+            if (Math.Min(m.ValidateMs - bakeMs, twin.ValidateMs - twinBakeMs) > ValidateBudgetMs)
+                Fail($"Big maps: {m.Name} took {Math.Min(m.ValidateMs - bakeMs, twin.ValidateMs - twinBakeMs):0} ms to validate, without its light bake (budget {ValidateBudgetMs:0} ms)");
+            if (Math.Min(bakeMs, twinBakeMs) > LightBakeBudgetMs)
+                Fail($"Big maps: {m.Name}'s light bake took {Math.Min(bakeMs, twinBakeMs):0} ms (budget {LightBakeBudgetMs:0} ms)");
             var cells = BoxBatches.Build(m).Runs.Length;
             if (cells > BoxCellBudget)
                 Fail($"Big maps: {m.Name}'s boxes fill {cells} cells (budget {BoxCellBudget}: at most that many box draw calls a frame)");
@@ -130,6 +135,7 @@ public static partial class SelfTest
                 Fail($"Big maps: {m.Name} has {m.DecalCount} decals (limit {MapDecalsLimit})");
         }
         Line($"Slowest validate: {string.Join(", ", serial.OrderByDescending(m => m.ValidateMs).Take(4).Select(m => $"{m.Name} {m.ValidateMs:0.0} ms"))}");
+        Line($"Light bakes: {string.Join(", ", serial.Where(m => m.LightBake != null).Select(m => $"{m.Name} {m.LightBake!.BakeMs:0} ms ({m.LightBake.NX} x {m.LightBake.NY} x {m.LightBake.NZ} cells, {m.LightBake.Sources.Length} lights, {m.LightBake.Bytes / 1024} KB)"))}");
         Line("Biggest maps (warm load ms, one by one / in parallel):");
         foreach (var m in serial.OrderByDescending(m => m.LoadMs).Take(8))
             Line($"  {m.Name,-22} {m.Solid.Count,6} boxes ({DrawnBoxCount(m),4} map boxes)  {m.PropInstances.Count,5} props  {m.FoliageInstances.Length,6} plants  "

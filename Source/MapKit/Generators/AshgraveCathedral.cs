@@ -55,6 +55,9 @@ public sealed class AshgraveCathedral : IMapGenerator
     readonly List<(double X, double Y, double Z, double Yaw, string Build)> _wallBuyList = new();
     readonly List<string> _problems = new();
 
+    // Where to light the machines from (Lighting): a spot in front of each machine and wall buy, and its floor.
+    readonly List<(double X, double Y, double Z)> _fronts = new();
+
     public void Build(Kit kit)
     {
         k = kit;
@@ -94,6 +97,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         Dressing();
         BellLogic();
         Spawns();
+        Lighting();
 
         CheckLayout();
         if (_problems.Count > 0)
@@ -113,10 +117,28 @@ public sealed class AshgraveCathedral : IMapGenerator
                 JArray.Of("tower base", -29, -21, G + O), JArray.Of("ringing chamber", -29, -19, Roof + O), JArray.Of("belfry", -30.5, -23.5, Belfry + O),
                 JArray.Of("crypt", 33, -8, Crypt + O), JArray.Of("ossuary", 6, -10, Crypt + O), JArray.Of("dungeons", 0, 16, Dun + O), JArray.Of("inquisitor", -20, 16, Dun + O),
                 JArray.Of("tunnel", 25, 21, Dun + O), JArray.Of("paupers field", -10, -40, G + O)])),
+            ("lightProbes", new JArray([ // (bright by the lights and machines, dim in the corners; Lighting())
+                LightProbe(-12, G + 1.5, -6, min: 0.4), LightProbe(-21, G + 1.5, -14.6, min: 0.4), LightProbe(-31, Gal + 1.5, -6, min: 0.5),
+                LightProbe(-29, Belfry + 1.5, -21, min: 0.1), LightProbe(26.5, Crypt + 1.2, -6.8, min: 0.2), LightProbe(-1.5, Dun + 1.2, 22, min: 0.1),
+                LightProbe(36.0, Crypt + 1.2, -10, min: 0.5), LightProbe(-6.5, Dun + 1.2, 7.8, min: 0.25), LightProbe(34.5, G + 1.2, -13.9, min: 0.5),
+                LightProbe(-27.0, G + 1.2, 1.8, min: 0.45), LightProbe(-48, G + 1.2, 20, min: 0.3), LightProbe(-6, G + 1.2, 38, min: 0.15),
+                LightProbe(-44, G + 1.2, 0, min: 0.3), LightProbe(4.4, Crypt + 0.4, -15.0, max: 0.2), LightProbe(-13.6, Dun + 0.4, 6.4, max: 0.2),
+                LightProbe(48, G + 1.0, 42, max: 0.15)])),
+
+
             ("botMatchSeconds", 6), ("spawnsStand", true), ("propsInside", true),
             ("events", new JArray([
                 new JObject(("use", "Bell"), ("expect", JArray.Of("Bell.pressed")), ("expectNot", JArray.Of("Climb.started"))),
             ]))));
+    }
+
+    /// <summary>A light probe for the test block (Maps/README.md "lightProbes"): the baked light at (x, y, z) (y before the lift) at least <paramref name="min"/> or at most <paramref name="max"/>.</summary>
+    static JObject LightProbe(double x, double y, double z, double? min = null, double? max = null)
+    {
+        var o = new JObject(("at", P(x, y, z)));
+        if (min != null) o.Add("min", min.Value);
+        if (max != null) o.Add("max", max.Value);
+        return o;
     }
 
     /// <summary>Every op, spawn, hill and flag up by <see cref="O"/> (see there).</summary>
@@ -149,8 +171,11 @@ public sealed class AshgraveCathedral : IMapGenerator
                 case "StairsX" or "StairsZ":
                     Add(op, "y0");
                     break;
-                case "Mesh" or "Prop" or "Waypoint" or "Spawn" or "Decal" or "DecalScatter":
+                case "Mesh" or "Prop" or "Waypoint" or "Spawn" or "Decal" or "DecalScatter" or "LightSource":
                     Add(op, "y");
+                    break;
+                case "BakedLighting":
+                    Add(op, "top", false);
                     break;
                 default:
                     throw new MapKitException($"Lift: an op it doesn't know how to lift ({op.Str("op")})");
@@ -267,6 +292,7 @@ public sealed class AshgraveCathedral : IMapGenerator
             if (v != null)
                 o.Add(key, v);
         k.Waypoint(x + fx * (Size[kind].D / 2 + 1.0), z + fz * (Size[kind].D / 2 + 1.0), y);
+        _fronts.Add((x + fx * (Size[kind].D / 2 + 0.8), y, z + fz * (Size[kind].D / 2 + 0.8)));
         return o;
     }
 
@@ -298,6 +324,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         _wallBuyList.Add((x, y, z, yaw, build));
         var (fx, fz) = Fwd(yaw);
         _keep.Add((x + fx * 0.8, y, z + fz * 0.8, 0.5, $"{build} front"));
+        _fronts.Add((x + fx * 0.9, y, z + fz * 0.9));
     }
 
     void GroundSpawner(string area, double x, double y, double z)
@@ -810,7 +837,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         WallBuy("High Rider", 600, -33.57, G, 33.0, 90);
         WallBuy("Coach Gun", 1500, -6.0, G, 30.03, 180);
         foreach (var x in new[] { -24.0, -12.0, 0.0, 12.0 })
-            k.Prop("Hanging Lantern", x, 31.0, 3.4);
+            k.Prop("Hanging Lantern", x, 31.0, 2.6);
         k.DecalScatter(["Dirt Patch", "Mud Patch", "Leaf Litter", "Gib Smear"], -33, 30.5, 15, 43, 40, 91, gap: 1.3);
         Wp(-33.6, 30.0, 15.6, 43.6, G, 3.0);
     }
@@ -863,7 +890,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         SProp("Steel Rifle Rack", -45.5, 25.6, G, 180, 0.75, 0.23);
         SProp("Wooden Crate", -44.0, 15.0, G, 0, 0.5, 0.5);
         SProp("Cider Barrel", -53.2, 25.0, G, 0, 0.4, 0.4);
-        k.Prop("Hanging Lantern", -48, 20, 2.6);
+        k.Prop("Hanging Lantern", -48, 20, 1.6); // (hung from the roof: its light under the ceiling)
         k.DecalScatter(["Dirt Patch", "Oil Stain", "Mud Patch"], -53.5, 14.5, -43, 25.5, 12, 111, gap: 1.2);
         Wp(-54.0, 14.0, -42.4, 26.0, G, 2.4);
     }
@@ -1234,6 +1261,77 @@ public sealed class AshgraveCathedral : IMapGenerator
     }
 
     bool NearKeep(double x, double y, double z, double r) => _keep.Any(q => Math.Abs(q.Y - y) < 1.5 && (q.X - x) * (q.X - x) + (q.Z - z) * (q.Z - z) < (q.R + r) * (q.R + r));
+
+    // ==== Baked lighting (docs/render/LIGHTING.md section 8) =============================================================
+
+    // Colours: candles and torches warm (the props bring their own), the cold fill under ground, the stained glass.
+    static readonly Color Cold = "#7088c0", MachineLamp = "#ffe2b8", GlassBlue = "#4a68e0", GlassRed = "#d04a3a", GlassRose = "#b070d0";
+
+    /// <summary>
+    /// The light: the torches, braziers, candles and chandeliers placed above bring their own (the pack props' "lights"),
+    /// this adds the stained glass, a cold dim fill under ground (dark but readable: the horde must stay visible), a lamp
+    /// over every machine and wall buy (gameplay first), hearth fires in the outbuildings and a lantern in the belfry.
+    /// Outside, the moon and the sky do the rest (sun shadows: the moon's).
+    /// </summary>
+    void Lighting()
+    {
+        // One grid over the precinct (just outside its walls; past the edge the edge's open-air light carries on) from the
+        // dungeons to the belfry: 0.5 m cells across, 1 m up (floors sit on cell centres: the map's levels are whole
+        // metres apart), 212 x 33 x 147 cells, under the baker's million-cell cap without coarsening.
+        k.BakedLighting(cell: 0.5, cellY: 1.0, indoor: 0.2, region: (-55, -28.5, 51, 44.6), top: Belfry + 2.5);
+
+        // Stained glass: each lancet and rose window throws its colour into the room it faces (props' yaw: face +Z).
+        foreach (var op in k.Ops.ToList())
+        {
+            if (op.Str("op") != "Prop" || op.Str("name") is not { } name || !(name.StartsWith("Lancet Window") || name == "Rose Window"))
+                continue;
+            double x = op.Num("x"), z = op.Num("z"), y = op.Num("y", 0), yaw = op.Num("yaw", 0);
+            double fx = Math.Sin(yaw * Math.PI / 180), fz = Math.Cos(yaw * Math.PI / 180);
+            if (name == "Rose Window")
+                Lights.Window(k, x + fx * 0.3, y + 2.6, z + fz * 0.3, 4.0, 4.0, 180 - yaw, GlassRose, intensity: 0.7, range: 13);
+            else
+                Lights.Window(k, x + fx * 0.25, y + 2.1, z + fz * 0.25, 1.3, 3.8, 180 - yaw, name.EndsWith("Blue") ? GlassBlue : GlassRed, intensity: 0.5, range: 9);
+        }
+
+        // Every machine and wall buy gets a steady lamp in front of it, so it reads from across the room.
+        foreach (var (x, y, z) in _fronts)
+            k.Light(x, y + 2.3, z, MachineLamp, intensity: 0.8, range: 4.5);
+        k.Light(-28.3, Belfry + 2.4, -20.9, MachineLamp, intensity: 0.8, range: 4.5); // (the bell's rope)
+
+        // The crypt and the ossuary: a cold dim fill under the vault, between the pillars.
+        foreach (var x in new[] { 18.5, 24.0, 29.5, 35.0 })
+            foreach (var z in new[] { -13.0, -6.8, -0.8 })
+                k.Light(x, Crypt + 3.6, z, Cold, intensity: 1.0, range: 9);
+        foreach (var (x, z) in new[] { (6.5, -12.0), (12.5, -12.0), (6.0, -4.0), (13.5, -4.5), (6.0, 1.5), (13.8, 1.5) })
+            k.Light(x, Crypt + 3.6, z, Cold, intensity: 1.0, range: 9);
+
+        // The dungeons: the corridor, every cell (a zombie in one stays visible), the inquisitor's chamber, the tunnel.
+        Lights.Row(k, -12.5, 16.0, 14.5, 16.0, Dun + 3.0, 6, Cold, intensity: 1.1, range: 9);
+        foreach (var x0 in new[] { -14.0, -9.0, -4.0, 1.0, 6.0, 11.0 })
+        {
+            k.Light(x0 + 2.5, Dun + 2.9, 10.0, Cold, intensity: 0.7, range: 6.5);
+            k.Light(x0 + 2.5, Dun + 2.9, 22.0, Cold, intensity: 0.7, range: 6.5);
+        }
+        Lights.Row(k, -20.0, 8.5, -20.0, 23.5, Dun + 3.0, 3, Cold, intensity: 1.0, range: 9);
+        Lights.Row(k, 18.0, 21.1, 28.5, 21.1, Dun + 2.3, 3, Cold, intensity: 0.7, range: 7);
+        Lights.Row(k, 35.5, 21.1, 42.0, 21.1, Tun + 2.2, 2, Cold, intensity: 0.7, range: 7);
+        Lights.Fittings(k, "Wall Torch", 18.5, 22.6, 24.5, 22.6, 6.0, Dun + 1.8, 180); // (torches along the tunnel's south wall)
+
+        // Warm light in the chapels: candles before the Lady Chapel's saint and on the vestry's desk.
+        k.Light(43.0, G + 1.6, -6.0, Lights.Candle, intensity: 0.8, range: 7, flicker: true);
+        k.Light(27.5, G + 1.6, 8.0, Lights.Candle, intensity: 0.5, range: 5, flicker: true);
+
+        // Firelight in the outbuildings: the lodge's hearth, a fire at the barn's west end, the mausoleum's candles.
+        k.Light(-53.2, G + 0.7, 20.0, Lights.Ember, intensity: 1.4, range: 8, flicker: true);
+        k.Light(-32.6, G + 1.2, 37.0, Lights.Ember, intensity: 1.2, range: 9, flicker: true);
+        k.Light(-4.0, G + 2.6, 35.5, Lights.Flame, intensity: 1.0, range: 10, flicker: true); // (a lantern on the hay wagon)
+        foreach (var x in new[] { -24.0, -8.0, 8.0 }) // (lanterns on the barn's far beams)
+            k.Light(x, G + 3.6, 41.0, Lights.Flame, intensity: 1.3, range: 10, flicker: true);
+        k.Light(38.0, G + 1.4, 36.6, Lights.Candle, intensity: 0.6, range: 6, flicker: true);
+
+        // The belfry: a lantern hung by the bell (the stage is open to the moon on every side).
+        k.Light(-27.0, Belfry + 2.6, -24.0, Lights.Flame, intensity: 1.2, range: 9, flicker: true);
+    }
 
     // ==== The bell: a siege up the tower (map logic) =====================================================================
 

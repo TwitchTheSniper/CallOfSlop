@@ -802,7 +802,7 @@ public static unsafe partial class Program
         return copy;
     }
 
-    /// <summary>Reads the finished frame back and saves it (half size) as smoke_NAME.bmp next to the game.</summary>
+    /// <summary>Reads the finished frame back and saves it (half size, 2 x 2 averaged) as smoke_NAME.bmp next to the game.</summary>
     private static void SaveScreenshot(string name)
     {
         var fb = _window.FramebufferSize;
@@ -835,10 +835,13 @@ public static unsafe partial class Program
         {
             for (var x = 0; x < ow; x++)
             {
+                // The average of each 2 x 2 block (not one pixel of it), so dithered see-through things (prop glass, faded
+                // litter) show as they look at full size instead of aliasing to solid or empty.
                 var i = ((y * 2) * w + x * 2) * 4;
-                row[x * 3] = pixels[i + 2];
-                row[x * 3 + 1] = pixels[i + 1];
-                row[x * 3 + 2] = pixels[i];
+                var j = i + w * 4;
+                row[x * 3] = (byte)((pixels[i + 2] + pixels[i + 6] + pixels[j + 2] + pixels[j + 6] + 2) >> 2);
+                row[x * 3 + 1] = (byte)((pixels[i + 1] + pixels[i + 5] + pixels[j + 1] + pixels[j + 5] + 2) >> 2);
+                row[x * 3 + 2] = (byte)((pixels[i] + pixels[i + 4] + pixels[j] + pixels[j + 4] + 2) >> 2);
             }
             f.Write(row);
         }

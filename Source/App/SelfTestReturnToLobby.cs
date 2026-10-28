@@ -39,7 +39,7 @@ public static partial class SelfTest
     private static void CheckReturnToLobbyLoopback()
     {
         var map = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
-        const ushort port = 60195;
+        const ushort port = 26195;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
@@ -114,7 +114,7 @@ public static partial class SelfTest
             Fail("no Zombies Test map for the Zombies return to lobby check");
             return;
         }
-        const ushort port = 60196;
+        const ushort port = 26196;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);

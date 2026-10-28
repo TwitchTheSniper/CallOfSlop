@@ -293,8 +293,8 @@ public static partial class SelfTest
         var snaps = game.SelfTestSnapshotFor(human);
         int n1, n2;
         uint b1, b2;
-        using (var c1 = new Game(NetPeer.Join("127.0.0.1", 60181), new Audio(), "A", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
-        using (var c2 = new Game(NetPeer.Join("127.0.0.1", 60182), new Audio(), "B", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
+        using (var c1 = new Game(NetPeer.Join("127.0.0.1", 26181), new Audio(), "A", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
+        using (var c2 = new Game(NetPeer.Join("127.0.0.1", 26182), new Audio(), "B", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id))
         {
             c1.LocalId = 200;
             c2.LocalId = 201;
