@@ -336,6 +336,7 @@ public sealed unsafe class FoliageRenderer
         const int stride = FoliageBatches.FloatsPerInstance * sizeof(float);
         Native.glVertexAttribPointer(3, 4, GL_FLOAT, false, stride, (void*)offset);
         Native.glVertexAttribPointer(4, 4, GL_FLOAT, false, stride, (void*)(offset + 4 * sizeof(float)));
+        PerfCounters.Draw(mesh.IndexCount, count); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawElementsInstanced(GL_TRIANGLES, mesh.IndexCount, GL_UNSIGNED_SHORT, (void*)((nint)mesh.FirstIndex * sizeof(ushort)), count);
     }
 

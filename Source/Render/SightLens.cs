@@ -342,6 +342,7 @@ public static unsafe class SightLens
         Native.glBindTexture(GL_TEXTURE_2D, _tex);
         g.SetBlend(true);
         DepthMask(false);
+        PerfCounters.Draw(4, 1, strip: true); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
         DepthMask(true);
         g.SetBlend(false);

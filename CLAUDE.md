@@ -63,6 +63,7 @@ Source/
   MapKit/     the C# map kit (CallOfSlop.MapKit): JsonTree (ordered map-file JSON), Kit (ops + symmetry + objectives), Geometry,
               Structures (railings/stairs/ramps/catwalks), Clusters (prop groups), Plan (PNG), MapChecks (the real-game report),
               Generators.cs (IMapGenerator, registry, CLI), Generators/<Map>.cs (Twin Shard); docs/mapkit/MAPKIT.md
+  Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.

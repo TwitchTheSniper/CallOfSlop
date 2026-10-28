@@ -340,6 +340,7 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm)
             return;
+        using var perf = Perf.Measure(PerfArea.Zombies); // the perf window (Source/Perf)
         _zNow = now;
         if (_zRunMatch != MatchNumber)
             StartZombiesRun(now);

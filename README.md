@@ -551,11 +551,12 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | X (hold) | Push to talk (once you've turned your microphone on in Settings > Audio) |
 | F8 | Open / close the Audio mixer debug window (see Audio mixer) |
 | F7 | Open / close the weapon tweak debug window (dev builds; see Weapon tweak window) |
+| F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, and `binds_version=7` Drop item T and the Parts inventory I (Zombies).
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), and `binds_version=8` the Performance window on F9.
 
 ### Display
 
@@ -762,6 +763,21 @@ A debug window for balancing weapons live: change any stat of any gun while you 
 **What it never touches:** nothing is saved until you press Save; until then the weapon fingerprint (what decides who can join whom), attachment fits and unlock XP all go by the files, and progress and loadouts are untouched. After a Save the fingerprint follows the new files, so friends need the same files to join.
 
 **Multiplayer:** only the host can change values; on a client the window is read-only and shows the host's. Every change goes to every player (Msg.WeaponTweaks, protocol 60; at most 10 updates a second while a slider is dragged), a joining player gets the current set (the host sends the live numbers wherever they differ from the files as it loaded them, so this also covers values saved during the session), and a client's weapons go back to its own files when it leaves. While the weapons differ from their files the scoreboard says **TWEAKED WEAPONS**. Code: `Source/Weapons/WeaponTweaks.cs` (state, apply, save), `WeaponFilePatch.cs` (the minimal file edit), `Source/UI/UiWeaponTweaks.cs`, `Source/Game/GameWeaponTweaks.cs`; self-test section **Weapon tweaks**.
+
+### Performance window
+
+**Opening it:** press **F9** (rebindable in Settings > Controls as *Performance window*). Each press cycles: the full window, a small corner overlay, off. It works everywhere: the main menu, the lobby, every mode, host or client, and release builds. The full window frees the mouse like the Audio mixer (Esc closes it); the overlay leaves the mouse to the game.
+
+**What it shows:**
+- **Frame time** for the last ~10 s (600 frames) with guide lines at 16.7 ms (60 fps) and 33.3 ms (30 fps); fps, min / avg / max and the 1% low (the average of the slowest 1% of frames) over the graph, and the three worst frames marked in red with how long ago they were.
+- **CPU by area per frame**, stacked in colour under the frame-time line (the gap up to the line is time outside every timed area), and the **server tick** graph: the slowest tick in each frame against the 8 ms budget.
+- **CPU tree** (main thread, over the last second): average, self (minus its children) and peak ms per frame for each area: events, input, the game update (net receive, the host's ticks: match and mode, Zombies and its horde, Co-op, projectiles, props / logic / destruction, player moves, bots and nav, snapshots; a client's prediction; frame state and sounds), audio, every render pass (buildings, terrain, props, meshes, foliage, decals, sky, players, entities, effects, view model, HUD, ragdolls), the ImGui UI, the swap (waiting for vsync or the GPU) and loading (map switches, the collision world build). Sort it as a tree, by average or by peak. The music thread's mixing time is shown beside it.
+- **GPU passes:** the same render passes timed on the GPU with timestamp queries, read back a few frames later so it never stalls; "unavailable" on a driver without timer queries.
+- **Counters:** draw calls, triangles and instances per frame (the 3D renderers; ImGui isn't counted), bytes allocated per frame (main thread and all threads), frames with a garbage collection per generation, the managed heap and working set, players and bots, zombies by speed, co-op soldiers, props (broken), decals, ragdolls, projectiles, tracers, blasts, smoke; online also network in / out per second, snapshots per second and their average size, and ping (client).
+
+**Buttons:** **Pause** freezes the graphs; **Copy snapshot** puts all of it as text on the clipboard (paste it into a bug report); **Write to log** writes the same text to `callofslop.log` as `[perf]` lines; **Corner overlay** switches to the overlay (fps, a small frame graph, the three busiest areas, GPU time, the tick and draw calls).
+
+**Cost:** closed, each timed area is one check of a flag and nothing is recorded but the frame time; open, each area costs two clock reads (tens of nanoseconds on Windows), nothing allocates per frame (the working set is read once a second), and the GPU timer makes no queries until the window first opens. Code: `Source/Perf/` (`Perf.cs` the scopes and history, `PerfGpu.cs` the GPU timer, `PerfCounters.cs`, `PerfStats.cs`), `Source/UI/UiPerf.cs`, `Source/App/Program.Perf.cs`; self-test section **Perf window**. `CallOfSlop.exe --perf-shot` plays a short single-player match, screenshots the window and the overlay (`smoke_perf_window.bmp`, `smoke_perf_overlay.bmp`, full size) and logs `[perf-shot]` lines, then quits (throwaway save copy, like the smoke test).
 
 ### Text chat and voice chat
 

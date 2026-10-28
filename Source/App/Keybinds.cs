@@ -42,6 +42,7 @@ public enum GameAction
     WeaponTweaks, // binds version 6: the weapon tweak debug window (UiWeaponTweaks.cs)
     DropItem, // binds version 7: Zombies, drop the gun in your hands as a pickup (ZombiesDropItems.cs)
     Inventory, // Zombies: the parts inventory (drop loose parts; UiZombiesInventory.cs)
+    PerfWindow, // binds version 8: the performance window / overlay (UiPerf.cs, Program.Perf.cs)
     COUNT,
 }
 
@@ -95,6 +96,7 @@ public static class Keybinds
         Key(GlfwKey.F7), // Weapon tweaks (dev window): binds version 6
         Key(GlfwKey.T), // Drop item (Zombies): binds version 7 (G is the grenade key)
         Key(GlfwKey.I), // Parts inventory (Zombies)
+        Key(GlfwKey.F9), // Performance window: binds version 8
     ];
 
     /// <summary>
@@ -103,8 +105,9 @@ public static class Keybinds
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
     /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
     /// 6: Weapon tweaks F7 added (same rule). 7: Drop item T and Parts inventory I (Zombies) added (same rule).
+    /// 8: Performance window F9 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 7;
+    public const int DefaultsVersion = 8;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -122,6 +125,7 @@ public static class Keybinds
         (6, GameAction.WeaponTweaks, Unbound, Key(GlfwKey.F7)),
         (7, GameAction.DropItem, Unbound, Key(GlfwKey.T)),
         (7, GameAction.Inventory, Unbound, Key(GlfwKey.I)),
+        (8, GameAction.PerfWindow, Unbound, Key(GlfwKey.F9)),
     ];
 
     /// <summary>
@@ -207,6 +211,7 @@ public static class Keybinds
             GameAction.WeaponTweaks => "Weapon tweaks (debug window)",
             GameAction.DropItem => "Drop the gun in your hands (Zombies)",
             GameAction.Inventory => "Parts inventory: drop loose parts (Zombies)",
+            GameAction.PerfWindow => "Performance window (window, corner overlay, off)",
             _ => a.ToString(),
         };
 

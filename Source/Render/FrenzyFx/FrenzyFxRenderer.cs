@@ -177,6 +177,7 @@ public sealed unsafe class FrenzyFxRenderer
         Enable(GlCapability.Blend);
         BlendFunc(GL_ONE, GL_ONE);
         DepthMask(false);
+        PerfCounters.Draw(36, n); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, n);
         DepthMask(true);
         BlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

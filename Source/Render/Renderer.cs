@@ -300,6 +300,7 @@ public sealed unsafe class Renderer
         Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
         fixed (float* p = _batch)
             Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
+        PerfCounters.Draw(36, _batchCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
         BatchDraws++;
         BatchBoxes += _batchCount;
@@ -606,13 +607,17 @@ public sealed unsafe class Renderer
         Native.glUniform1f(_locMode, mode);
         if (shape == 0)
         {
+            PerfCounters.Draw(36); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArrays(GL_TRIANGLES, 0, 36);
             return;
         }
         if (_shapeVersion != PartShapes.Version)
             UploadShapes();
         if (shape + 1 < _shapeFirst.Count)
+        {
+            PerfCounters.Draw(_shapeFirst[shape + 1] - _shapeFirst[shape]); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArrays(GL_TRIANGLES, _shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
+        }
     }
 
     private int _shapeVersion; // PartShapes.Version starts at 0 with no shapes

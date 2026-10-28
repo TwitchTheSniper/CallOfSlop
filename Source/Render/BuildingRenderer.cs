@@ -235,6 +235,7 @@ public sealed unsafe class BuildingRenderer
         const int stride = FloatsPerInstance * sizeof(float);
         for (uint a = 0; a < 4; a++)
             Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, stride, (void*)(offset + a * 4 * sizeof(float)));
+        PerfCounters.Draw(36, count); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, count);
     }
 

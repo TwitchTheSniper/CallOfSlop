@@ -128,6 +128,7 @@ public static unsafe class BloodOverlayRenderer
         Native.glUniform1i(_locMask, 2);
         Native.glActiveTexture(GL_TEXTURE2);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, _tex);
+        PerfCounters.Draw(4, n, strip: true); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, n);
         Native.glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
         Native.glActiveTexture(GL_TEXTURE0);
