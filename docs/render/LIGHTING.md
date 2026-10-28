@@ -35,7 +35,7 @@ air in front of it:
 | --- | --- | --- |
 | A | RGBA16F | rgb: the static lights' colour reaching the cell, as a surface facing them sees it; a: the share that flickers |
 | B | RGBA8 snorm | xyz: the lights' average direction, weighted by brightness (its length says how one-sided the light is); w: ambient left (sky visibility) |
-| C | RG8 | r: how much of the sun reaches the cell; g: the flicker phase of the brightest flickering light |
+| C | RGBA8 | r: how much of the sun reaches the cell; g, b: the flicker phasor (128 = 0, see "Flicker"); a: the flickering lights' average pace |
 
 Why a grid and not per-vertex colours or lightmaps:
 
@@ -58,7 +58,7 @@ That suits the blocky look; the Cathedral can use `cell: 0.35` in its nave if it
 `LightBaker.Bake(map)` runs at the end of `Map.Validate` for lit maps (so a map read from its bake already has it):
 
 - **Grid:** the playable area plus a metre, from half a metre below the floor (or the terrain's lowest point) to 1.5 m
-  above the tallest box or light (at most 96 m), or the `region` and `top` given. At most 2^20 cells (about 13 MB): a
+  above the tallest box or light (at most 96 m), or the `region` and `top` given. At most 2^20 cells (16 bytes a cell, about 16 MB): a
   bigger map gets coarser cells (each try 25% bigger) unless it gives a region. `cellY` makes the cells taller than wide
   (the shader's scale and its nudge along the normal are per axis: `uLitScale`, and `uLitOrigin.w` the nudge up and down),
   so a tall map with several floors keeps fine cells across. Past the region's sides the GPU clamps to its edge cells
@@ -103,8 +103,30 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
 - `ApplyLightAt(albedo, n, wrap, worldPos)` replaces `ApplyLight` in the box, building, prop, mesh, terrain, foliage and
   decal shaders. Mode 0 returns `ApplyLight` exactly; modes 1 and 2 scale the hemisphere ambient by the cell's sky
   visibility, the sun by its sun visibility, and add the baked light times how much the surface faces it, wavering by
-  up to 60% for the flickering share (`LitFlicker`: three sines of time and phase). The box shaders' rim light is scaled
+  around 0.7 for the flickering share (`LitFlicker`, see "Flicker" below). The box shaders' rim light is scaled
   by the same ambient (`gLitAmb`), so it doesn't glow in the dark. Prop glow (lit flames, screens) is added on top as before.
+
+### Flicker
+
+Flickering lights (`"flicker": true`; Source/Maps/LightFlicker.cs) each waver in their own way, slowly and softly:
+
+- **Each light its own.** A light's seed comes from its position (`LightSource` ops) or from its prop copy and its number
+  in the prop's lights. The seed picks its phase, its strength (0.7-1.3 x) and its pace. Its wave is
+  `Re(z e^(i w1 t)) (1 - pace) + Re(z^2/|z| e^(i w2 t)) pace`, with `z` = strength x e^(i phase): a slow wave at 0.5 Hz and
+  a quicker one at about 1.3 Hz (the old flicker ran at 1.16 Hz with a 5.8 Hz ripple). It swings about +-15% of the light
+  (the old one +-30%). Both waves are whole cycles per 4096 s of shader time, so the time wrap never jumps.
+- **Overrides.** `flickerSpeed` (0.25-4, default 1: higher leans on the quicker wave) and `flickerAmount` (0-3, default 1:
+  the swing) on the `LightSource` op and on a prop's light.
+- **Baked as a phasor.** Each cell keeps the sum of the flickering lights' `z`, weighted by how much of the cell's light
+  each gives, plus their average pace. Phasor sums filter linearly, so cells lit by several flames blend smoothly and
+  nothing pops at cell borders. The old bake kept only the brightest flame's phase, and filtering between two phases
+  swept through every phase in between. Right by a flame, the cell's flicker is that flame's own.
+- **Average unchanged.** The shader multiplies the light by `1 - 0.3 x share + wave`. That keeps the old average
+  dimming of the flickering share, so lit maps are as bright on average as before.
+- **Flames follow their light.** A prop part with a `flicker` anim on a prop that carries a flickering light follows the
+  nearest such light (`PropAnim.FlameLevel`, same seed, same clock), so a torch's flame and its light rise and fall together.
+- **Cost.** Two more bytes a cell in texture C (no new texture) and a few ALU ops a pixel. No per-frame CPU work. The
+  first-person gun's probe flickers with the room. The "Light flicker" self-test checks all of this.
 - No per-light loop and no per-frame allocation (the self-test runs the block and probe 2,000 times: 0 bytes). The
   dynamic-light loop runs only in mode 1, at most 4 times.
 
@@ -161,7 +183,7 @@ first lit Zombies map. What it has:
 - **Test block:** 16 `lightProbes`: bright in the nave, the organ loft, by the machines (Juggernog, the revive perks,
   the power switch, a dungeon workbench), the crypt, a cell, the lodge, the barn and the close's brazier; dim in the
   ossuary's and dungeons' corners and the graveyard's far corner.
-- **Cost:** 295 lights; 1.03 million cells, 14 MB (the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
+- **Cost:** 295 lights; 1.03 million cells, 16 MB with the flicker phasor (14 MB before it; the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
   the developer's PC runner, 0.9-1.9 s on the shared 2-core agent box (released builds ship it baked; dev builds cache
   it). "Big maps" gives a light bake its own budget (3 s), apart from the 150 ms validation budget, and lists the bakes. Pictures before and after of each level:
   `--light-shots "Ashgrave Cathedral" --at ...` (the cameras are in the agent's report).

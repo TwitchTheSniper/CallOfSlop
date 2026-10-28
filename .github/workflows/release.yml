@@ -324,6 +324,8 @@ jobs:
         shell: bash
         run: |
           app=bin/package-mac/CallOfSlop/CallOfSlop.app
+          marker="$RUNNER_TEMP/app-check.start"
+          touch "$marker"
           set +e
           "$app/Contents/MacOS/CallOfSlop" --selftest-only "Mac release, Branding, Maps, Map bake, Packets, Sound"
           code=$?
@@ -335,6 +337,12 @@ jobs:
             done
           else
             echo "::error title=App check::no selftest.log in ~/Library/Logs/CallOfSlop"; code=1
+          fi
+          # Anything the run wrote inside the bundle, by name (the signature check below says only that the seal broke).
+          written=$(find "$app" -newer "$marker" -print || true)
+          if [ -n "$written" ]; then
+            echo "$written" | while read -r f; do echo "::error title=App check::written inside the bundle: ${f#"$app"/}"; done
+            code=1
           fi
           codesign --verify --deep --strict --verbose=2 "$app" || { echo "::error title=App check::the bundle changed while it ran (its signature no longer verifies)"; code=1; }
           lipo -archs "$app/Contents/MacOS/CallOfSlop"

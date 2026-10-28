@@ -451,12 +451,21 @@ public static class PropAnim
                     break;
                 default:
                     if (depth == 0 && type >= PropAnimType.Blink)
-                        light = Light(type, u, duty, steps, mask, seed);
+                        light = type == PropAnimType.Flicker && steps < -0.5f ? FlameLevel(LightFlicker.PropLightSeed(seed, (int)(-steps - 0.5f)), mask, duty, t)
+                            : Light(type, u, duty, steps, mask, seed);
                     break;
             }
             r = parent;
         }
         return p;
+    }
+
+    /// <summary>A flame part's light level 0..1 at shader time <paramref name="t"/>: its light's own flicker (<see cref="LightFlicker"/>), 0.72 on average.</summary>
+    public static float FlameLevel(float lightSeed, float speed, float amount, float t)
+    {
+        var (z, mix) = LightFlicker.Params(lightSeed, speed, amount);
+        var r = z.Length();
+        return r < 1e-5f ? 0.72f : Math.Clamp(0.72f + 0.28f * LightFlicker.Wave(z, mix, t) / r, 0f, 1f);
     }
 
     /// <summary>The light level 0..1 of a light type at cycle position <paramref name="u"/>.</summary>
@@ -518,6 +527,25 @@ public sealed class PropAnimData
 
     public int AnimatedTypes, AnimatedParts;
 
+    /// <summary>The number of the flickering light nearest <paramref name="at"/> in the prop's lights, or -1 (none flickers).</summary>
+    public static int FlameLight(PropDef def, Vector3 at)
+    {
+        var best = -1;
+        var bestD = float.MaxValue;
+        for (var k = 0; k < def.Lights.Length; k++)
+        {
+            if (!def.Lights[k].Flicker)
+                continue;
+            var d = Vector3.DistanceSquared(def.Lights[k].Pos, at);
+            if (d < bestD)
+            {
+                bestD = d;
+                best = k;
+            }
+        }
+        return best;
+    }
+
     public static PropAnimData Build(PropMeshes meshes)
     {
         var defs = meshes.Defs;
@@ -553,6 +581,9 @@ public sealed class PropAnimData
             {
                 if (parts[i].Anim is not { } a)
                     continue;
+                // A flickering part on a prop with a flickering light (a torch's flame, a candle) follows that light's own
+                // flicker (the nearest one, LightFlicker), so the flame and the light it throws move together.
+                var flame = a.Type == PropAnimType.Flicker ? FlameLight(def, parts[i].Offset) : -1;
                 data.AnimatedParts++;
                 freeze = MathF.Max(freeze, a.FreezeDistance);
                 var pv = a.Pivot ?? parts[i].Offset;
@@ -572,8 +603,8 @@ public sealed class PropAnimData
                     pv.X, pv.Y, pv.Z, a.Phase,
                     a.Axis.X, a.Axis.Y, a.Axis.Z, a.Jitter,
                     on.X, on.Y, on.Z, glow,
-                    off.X, off.Y, off.Z, a.Type == PropAnimType.Swing ? (a.OneWay ? 1f : 0f) : a.Duty,
-                    a.Steps, a.OnMask, a.Wind, a.RandomPhase ? 1f : 0f,
+                    off.X, off.Y, off.Z, a.Type == PropAnimType.Swing ? (a.OneWay ? 1f : 0f) : flame >= 0 ? def.Lights[flame].FlickerAmount : a.Duty,
+                    flame >= 0 ? -1f - flame : a.Steps, flame >= 0 ? def.Lights[flame].FlickerSpeed : a.OnMask, a.Wind, a.RandomPhase ? 1f : 0f,
                 ]);
             }
             data.FreezeDistance[d] = freeze > 0 ? freeze : PropAnim.DefaultFreezeDistance;

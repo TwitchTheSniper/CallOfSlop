@@ -107,7 +107,7 @@ public static partial class SelfTest
                 Line("");
                 // Every stuck spell of the run's bot matches (the stuck-spot report, StuckSpots.cs), beside this log: CI uploads it,
                 // and --stuck-report pools it with other runs and testers' reports.
-                var spotsFile = Path.Combine(AppContext.BaseDirectory, "stuck-spots.json");
+                var spotsFile = AppFolders.LogPath("stuck-spots.json"); // the log folder: never inside a Mac app bundle (its seal)
                 StuckSpots.Session.Write(spotsFile, only == null ? "self-test (full suite)" : $"self-test (--selftest-only \"{only}\")");
                 Line($"STUCK SPOTS: {StuckSpots.Session.Count} spot(s) on {StuckSpots.Session.Maps.Count()} map(s) in the run's bot matches (stuck-spots.json)");
                 var slowest = _times.OrderByDescending(t => t.Seconds).Take(10).Select(t => $"{t.Name} {t.Seconds:0.0} s");
@@ -242,6 +242,7 @@ public static partial class SelfTest
         Section("Recon reveal colours", CheckReconReveal); // SelfTestRecon.cs
         Section("Matches", CheckMatches);
         Section("Baked lighting", CheckBakedLighting); // SelfTestLighting.cs: a seeded scene baked: shadows, falloff, sun and sky, spot and area lights, prop lights, determinism, map bake read-back, bake key, no per-frame allocation
+        Section("Light flicker", CheckLightFlicker); // SelfTestLightFlicker.cs: each flickering light its own slow soft wave, blended smoothly in the bake, map/prop overrides, flames follow their light
         Section("Map bake", CheckMapBake); // SelfTestMapBake.cs: every shipped map read back from its bake = the live build, cache and baked folder, keys, mismatched or damaged files refused
         Section("Nav bake", CheckNavBake); // SelfTestNavBake.cs: baked and cached nav graphs = the live build, cache and baked folder, mismatched or damaged files refused, never a stalled tick
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices
