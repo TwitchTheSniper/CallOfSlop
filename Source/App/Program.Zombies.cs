@@ -290,6 +290,47 @@ public static unsafe partial class Program
         foreach (var z in _game.Horde)
             DrawZombie(z, now, animDt);
         Gfx.EndBatch();
+        if (live && zm.Crowd > 0)
+            DrawCrowd(now); // a mass-horde map: the crowd, instanced with baked animation (Renderer.Crowd.cs)
+    }
+
+    /// <summary>This frame's crowd instances (reused).</summary>
+    private static readonly CrowdInstances CrowdInst = new();
+
+    /// <summary>"--crowd-tiers": the mass horde's tier colours (crowd yellow, held back orange, a red marker on each individual).</summary>
+    public static bool CrowdTiers;
+
+    /// <summary>Shots: the host draws its own picture of the cells, as a client would (Program.CrowdShots.cs).</summary>
+    public static bool CrowdAsClient;
+
+    /// <summary>CPU ms of the last frame's crowd instances (culling, levels of detail, placing).</summary>
+    public static double CrowdPrepMs;
+
+    private static readonly Vector3 IndividualRed = new(0.95f, 0.12f, 0.1f);
+
+    /// <summary>
+    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles, a client its picture of the
+    /// cells (Msg.ZCrowd); culled by the view, three levels of detail by distance, one instanced draw each.
+    /// </summary>
+    private static void DrawCrowd(double now)
+    {
+        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+        var inst = CrowdInst;
+        inst.DebugMix = CrowdTiers ? 1f : 0f;
+        inst.DrawCap = _game.ZRules.Crowd.DrawCap;
+        inst.MassTime = now;
+        inst.MassSpeed = _game.ZRules.Crowd.Speed;
+        inst.Begin();
+        if (_game.IsServer && _game.Crowd.Count > 0 && !CrowdAsClient)
+            inst.FromHost(_game.Crowd, Gfx.CameraPosition);
+        else
+            inst.FromPicture(_game.CrowdSeen, Gfx.CameraPosition, now, _game.ZRules.Crowd.Speed);
+        CrowdPrepMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        Gfx.DrawCrowd(inst);
+        if (CrowdTiers)
+            foreach (var z in _game.Horde)
+                if (z.Alive)
+                    Gfx.Draw(Matrix4x4.CreateScale(0.25f) * Matrix4x4.CreateTranslation(z.RenderPos + new Vector3(0, 2.25f, 0)), IndividualRed, 1f, mode: 2);
     }
 
     private static long _zFrame;

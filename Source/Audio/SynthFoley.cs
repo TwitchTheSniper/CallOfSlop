@@ -17,6 +17,7 @@ public static partial class Synth
         Sfx.Whizz or Sfx.Crack or Sfx.Ricochet or Sfx.Scuffle or Sfx.LandThud or Sfx.JumpPush => 3,
         Sfx.ImpactConcrete or Sfx.ImpactMetal or Sfx.ImpactWood or Sfx.ImpactDirt => 3,
         >= Sfx.ZombieGroan and <= Sfx.ZombieSprint => ZombieVariants(sfx), // SynthZombie.cs
+        Sfx.CrowdRoar => CrowdRoarVariants,
         _ => 1,
     };
 

@@ -280,6 +280,8 @@ public sealed partial class Game
     internal void ResetZombiesWorld()
     {
         ClearHorde();
+        CrowdRoundTotal = CrowdRoundKills = 0;
+        CrowdSeen.Clear(); // (a client's picture of the crowd)
         ZDrops.Clear();
         ZWeaponDrops.Clear();
         ZPartDrops.Clear(); // ZombiesDropItems.cs
@@ -356,12 +358,12 @@ public sealed partial class Game
             case ZRoundPhase.Round:
                 RescaleRoundForPlayers(); // someone joined or left (bots too): the round's total follows at once
                 SpawnTick(zm, now);
-                if (_zToSpawn == 0 && AliveZombies == 0)
+                if (_zToSpawn == 0 && AliveZombies == 0 && Crowd.Total == 0)
                     EndRound(now);
                 break;
         }
         ZPhaseLeft = ZPhase == ZRoundPhase.Round ? 0 : ZWaitingReady ? ReadyFallbackLeft(now) : Math.Max(0, _zPhaseUntil - now);
-        ZRemaining = _zToSpawn + AliveZombies;
+        ZRemaining = _zToSpawn + AliveZombies + Crowd.Total; // (the crowd: ZombiesCrowd.cs, none off crowd maps)
 
         TickHorde(zm, now); // ZombieAI.cs
         foreach (var zpl in ZPlayers.Values)
@@ -406,6 +408,8 @@ public sealed partial class Game
         _zForceRound = false;
         _zRoundPlayers = ZRoundPlayerCount();
         _zToSpawn = _zRoundTotal = ZRules.ZombieCount(round, _zRoundPlayers);
+        if (World.Map.Zombies is { Crowd: > 0 } czm)
+            CrowdBeginRound(czm, round, now); // a mass-horde map: the round is its crowd (ZombiesCrowd.cs)
         _zNextSpawn = now + 1.0;
         _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
         foreach (var p in Players.Values)
@@ -437,8 +441,8 @@ public sealed partial class Game
     private void RescaleRoundForPlayers()
     {
         var n = ZRoundPlayerCount();
-        if (n == _zRoundPlayers)
-            return;
+        if (n == _zRoundPlayers || CrowdOn)
+            return; // (a crowd round's total is the map's crowd)
         var outAlready = _zRoundTotal - _zToSpawn; // killed + alive
         _zRoundTotal = Math.Max(0, _zRoundTotal + ZRules.ZombieCount(ZRound, n) - ZRules.ZombieCount(ZRound, _zRoundPlayers));
         var left = Math.Max(0, _zRoundTotal - outAlready);

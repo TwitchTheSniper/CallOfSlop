@@ -1489,6 +1489,11 @@ public sealed partial class Game : IDisposable
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
             }
+            if (zombie == null && Crowd.Count > 0 && CrowdRayHit(o, d, ref dist, ray.Damage * def.DamageMultAt(dist) * PenFactor(dist), def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
+            {
+                hit = null; // a crowd zombie past the front (ZombiesCrowd.cs)
+                turret = null;
+            }
             if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead, grow) is { } enemy) // Co-op enemies (GamePve.cs)
             {
                 hit = null;
@@ -1558,7 +1563,8 @@ public sealed partial class Game : IDisposable
             ApplyPlayerEffects(shooter, def.BuildFlags, _pFxHits, def.Id, now); // the gun's special ammo on the players it hurt
 
         if (Horde.Count > 0)
-            flags |= ZombieShotApply(shooter, def, now); // one damage event per zombie per trigger pull (then the gun's special ammo effects)
+            flags |= ZombieShotApply(shooter, def, now);
+        flags |= CrowdShotApply(shooter, now); // crowd zombies hit (ZombiesCrowd.cs; nothing off crowd maps) // one damage event per zombie per trigger pull (then the gun's special ammo effects)
         if (_pveShotCount > 0)
             flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 

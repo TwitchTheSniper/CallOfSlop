@@ -94,6 +94,7 @@ public sealed partial class Game
             if (_zViews.Count > _clients.Count)
                 ForgetGoneViews();
         }
+        ServerSendCrowd(); // a mass-horde map: the crowd's cells (ZombiesCrowdNet.cs)
         if (ServerTick % (World.SnapshotEvery * 3) == 0)
         {
             WriteZWorld(_w);
@@ -530,6 +531,9 @@ public sealed partial class Game
             case (byte)Msg.ZWorld when !IsServer:
                 ReadZWorld(ref r, now);
                 break;
+            case (byte)Msg.ZCrowd when !IsServer:
+                ReadZCrowd(ref r); // the mass horde's crowd (ZombiesCrowdNet.cs)
+                break;
             case (byte)Msg.ZCasino when !IsServer:
                 ReadCasino(ref r); // a casino table's state (ZombiesCasinoNet.cs)
                 break;
@@ -944,6 +948,7 @@ public sealed partial class Game
             ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
         ZSounds.Frame(Audio, Horde, dt); // their voices and footsteps, from what this side knows (Source/Audio/ZombieSounds.cs)
+        CrowdRoarFrame(dt); // a mass-horde map: the crowd's roar by cluster (ZombiesCrowdSound.cs)
         if (Local is { } me)
         {
             var zp = ZP(me);

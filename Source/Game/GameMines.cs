@@ -172,6 +172,7 @@ public sealed partial class Game
                 continue;
             z.Health = 0;
             SetZState(z, ZState.Dead, now);
+            CrowdNoteKill();
             ZombiesKilledByMines++;
         }
     }

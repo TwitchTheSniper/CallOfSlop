@@ -10,7 +10,7 @@ namespace CallOfSlop;
 /// Matrices are System.Numerics (row-vector, M = S * R * T) uploaded untransposed, which GLSL
 /// reads as the transpose, so "uMVP * vec4(p, 1)" in the shader is correct.
 /// </summary>
-public sealed unsafe class Renderer
+public sealed unsafe partial class Renderer
 {
     private const string VertexSrc = """
         #version 410 core

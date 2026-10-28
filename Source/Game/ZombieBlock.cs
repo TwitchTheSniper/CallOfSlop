@@ -104,6 +104,12 @@ public sealed partial class Game
     /// </summary>
     private void ZBlockPlayer(Player p, ref MoveState s)
     {
+        ZBlockOutOfBodies(p, ref s);
+        CrowdSurfacePlayer(p, ref s); // a crowd map: the crowd as ground (ZombiesCrowdSurface.cs)
+    }
+
+    private void ZBlockOutOfBodies(Player p, ref MoveState s)
+    {
         if (_zBlockGrid.Count == 0 || Mode != GameMode.Zombies || s.MantleTicks > 0 || IsDowned(p))
             return;
         var feet = s.Position;
