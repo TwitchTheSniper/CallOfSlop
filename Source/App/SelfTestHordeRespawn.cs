@@ -108,10 +108,12 @@ public static partial class SelfTest
         var standing = g.IsStanding(me);
         var after2 = HordeRun(g, map, ref now, t0, 2.5, prev, me);
         var slot = g.HordeAI.SlotOf(me.Id);
-        var onMe = g.Horde.Count(z => z.Alive && z.Target == me.Id);
-        var alive = g.Horde.Count(z => z.Alive);
+        // (inside: a zombie outside on its way to a window has no target until it climbs in, and a fresh pack of
+        // skitterers comes out four at once; ZombieTypes.cs)
+        var onMe = g.Horde.Count(z => z.Alive && z.Window < 0 && z.Target == me.Id);
+        var alive = g.Horde.Count(z => z.Alive && z.Window < 0);
         Line($"horde respawn, solo, down with Second Wind: {before.Mean:0.0} moving before (fewest {before.Low:0.0} in half a second), {down.Mean:0.0} while down (waiting), "
-             + $"back up {standing}, {after2.Mean:0.0} after (fewest {after2.Low:0.0}), {onMe} of {alive} after the player");
+             + $"back up {standing}, {after2.Mean:0.0} after (fewest {after2.Low:0.0}), {onMe} of {alive} inside after the player");
         if (!playing || !standing || slot < 0)
             Fail("Second Wind should keep a solo run going and get the player back up");
         if (before.Mean < 15 || after2.Mean < before.Mean * 0.6 || after2.Low < 3 || onMe < alive - 2)
