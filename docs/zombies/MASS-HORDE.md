@@ -139,13 +139,13 @@ instance preparation, standing on the crowd, the roar). It also checks the netwo
 promotion and demotion when the player walks off, a seeded replay, the baked rigs, shots and blasts into the crowd and
 the mass, the surface (lift, stand, slide, client agreement) and the roar. The CI run's notice has the numbers.
 
-Linux container (the 2-core cloud box, under load; wall clock):
+Manual CI run on 2026-10-28 (the Windows runner; thread CPU cycles for the tick, thread CPU for the rest):
 
 | Crowd | Server tick CPU mean | Worst | Crowd tick alone | ZCrowd per client | Host prep | Client prep |
 | --- | --- | --- | --- | --- | --- | --- |
-| 5,000 | 0.6 ms | 5 ms | 0.5-0.8 ms | 7.7 KB/s | 0.35 ms | 0.27 ms |
-| 10,000 | 0.8 ms | 1.5 ms | 0.7 ms | 11.8 KB/s | 0.40 ms | 0.38 ms |
-| 20,000 | 1.0 ms | 1.5 ms | 0.9 ms | 14.8 KB/s | 0.84 ms | 0.79 ms |
+| 5,000 | 0.52 ms | 1.08 ms | 0.55 ms | 7.7 KB/s | 0.45 ms | 0.36 ms |
+| 10,000 | 0.84 ms | 1.45 ms | 0.65 ms | 11.8 KB/s | 0.63 ms | 0.58 ms |
+| 20,000 | 1.12 ms | 1.72 ms | 0.90 ms | 14.8 KB/s | 1.17 ms | 1.14 ms |
 
 The server tick includes the 300 individuals' full AI (about 1.2 ms on its own in "Zombie hordes"). With the mass
 tier on, most of a 20,000 crowd is counts, which is why 20,000 costs little more than 10,000. Managed memory for the
