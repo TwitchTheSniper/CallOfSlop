@@ -13,7 +13,7 @@ namespace CallOfSlop;
 /// (docs/render/OPENGL46.md "Measuring"). Opens the window, and for each map draws a few fixed views (the map-select
 /// overview and two spawns, like <c>--light-shots</c>) at one fixed clock, with a synthetic zombie horde of N bodies
 /// (posed by the real animation code, drawn through the real instanced batch) in front of the camera on Zombies maps.
-/// Each view is drawn with every experiment on, with each one off in turn and with all off (the 4.1 path's code), the
+/// Each view is drawn with every experiment on (whatever its default), with each one off in turn and with all off (the 4.1 path's code), the
 /// configurations taking turns frame by frame, and logs per configuration the median
 /// CPU time to submit the frame, the median frame time with glFinish (CPU + GPU, no overlap) and the median GPU time
 /// (timestamp queries). Run it once as is and once with <c>--gl41</c> for the 4.1 path. Uses the smoke test's
@@ -59,10 +59,11 @@ public static unsafe partial class Program
                 Glfw.PollEvents();
         }
         Console.WriteLine($"[glbench] {RenderCaps.Describe()}");
+        Console.WriteLine($"[glbench] compute self-check: {GlCompute.SelfCheck()}"); // the compute hook works (4.6 path) or is off (4.1)
         Console.WriteLine($"[glbench] {frames} frames a view and configuration, horde {horde} on Zombies maps; times are medians in ms");
         var configs = new List<string> { "all on" };
         if (RenderCaps.Gl46)
-            configs.AddRange(RenderCaps.Experiments.Select(e => "no " + e).Append("all off"));
+            configs.AddRange(RenderCaps.Experiments.Select(e => "no " + e.Name).Append("all off"));
         var gpu = GlGpuStamps.Create(2);
         _passGpu = GlGpuStamps.Create(BenchPassNames.Length);
         _passOn = true;
@@ -74,6 +75,7 @@ public static unsafe partial class Program
         var full = new double[frames * configs.Count];
         var gpuMs = new double[frames * configs.Count];
         var totals = new Dictionary<string, (double Cpu, double Full, double Gpu, int Views)>();
+        var pictureFailures = 0;
         foreach (var name in names)
         {
             var map = Maps.Find(name);
@@ -94,16 +96,19 @@ public static unsafe partial class Program
             }
             foreach (var view in views)
             {
+                byte[]? reference = null;
                 // The configurations take turns frame by frame (A B C A B C ...), so load from anything else on the
                 // machine falls on all of them alike instead of on whichever ran during a busy second.
                 var nc = configs.Count;
                 var n = new int[nc];
+                var propDraws = new long[nc];
+                var propRuns = new long[nc];
                 Gfx.BatchBoxes = Gfx.BatchDraws = 0;
                 for (var f = -10 * nc; f < frames * nc && !_window.ShouldClose; f++) // 10 warm-up frames each (render data is built on the first)
                 {
                     var c = (f % nc + nc) % nc;
-                    foreach (var e in RenderCaps.Experiments)
-                        RenderCaps.SetDisabled(e, configs[c] == "all off" || configs[c] == "no " + e);
+                    foreach (var (e, _) in RenderCaps.Experiments)
+                        RenderCaps.Force(e, !(configs[c] == "all off" || configs[c] == "no " + e));
                     Glfw.PollEvents();
                     Native.glFinish();
                     _passMarks = 0;
@@ -115,7 +120,31 @@ public static unsafe partial class Program
                     Native.glFinish();
                     var t2 = Stopwatch.GetTimestamp();
                     if (shots && f >= (frames - 1) * nc)
-                        SaveScreenshot($"bench_{Slug(map.Name)}_{view.Name}_{Slug(configs[c])}"); // the last frame of each configuration
+                    {
+                        // The last frame of each configuration: a picture, and compared pixel by pixel with "all on" (the
+                        // same data drawn another way should give the same picture: a 1-level difference is the
+                        // driver's MSAA resolve or blend order, more is a bug).
+                        SaveScreenshot($"bench_{Slug(map.Name)}_{view.Name}_{Slug(configs[c])}");
+                        var px = ReadFrame();
+                        if (c == 0)
+                            reference = px;
+                        else if (reference != null && reference.Length == px.Length)
+                        {
+                            int differ = 0, maxDelta = 0;
+                            for (var i = 0; i < px.Length; i += 4)
+                            {
+                                var d = Math.Max(Math.Max(Math.Abs(px[i] - reference[i]), Math.Abs(px[i + 1] - reference[i + 1])), Math.Abs(px[i + 2] - reference[i + 2]));
+                                if (d > 0)
+                                    differ++;
+                                maxDelta = Math.Max(maxDelta, d);
+                            }
+                            var total = px.Length / 4;
+                            var bad = maxDelta > 2 || differ > total / 100;
+                            Console.WriteLine($"[glbench] picture {map.Name} {view.Name} {configs[c]} vs all on: {differ} of {total} pixels differ, max channel delta {maxDelta}{(bad ? " PICTURES DIFFER" : "")}");
+                            if (bad)
+                                pictureFailures++;
+                        }
+                    }
                     _window.SwapBuffers();
                     if (f < 0)
                         continue;
@@ -129,6 +158,8 @@ public static unsafe partial class Program
                         }
                         passN[c]++;
                     }
+                    propDraws[c] += PropGfx.LastDraws; // this frame's prop draw calls and visible runs
+                    propRuns[c] += PropGfx.LastRuns;
                     var k = c * frames + n[c]++;
                     cpu[k] = Stopwatch.GetElapsedTime(t0, t1).TotalMilliseconds;
                     full[k] = Stopwatch.GetElapsedTime(t0, t2).TotalMilliseconds;
@@ -138,8 +169,9 @@ public static unsafe partial class Program
                 for (var c = 0; c < nc; c++)
                 {
                     var (mc, mf, mg) = (Median(cpu, c * frames, n[c]), Median(full, c * frames, n[c]), Median(gpuMs, c * frames, n[c]));
+                    var pd = propDraws[c] / Math.Max(n[c], 1.0);
                     Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
-                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")})"));
+                        $"[glbench] {map.Name,-22} {view.Name,-8} {configs[c],-14} cpu {mc,7:0.000}  frame {mf,8:0.000}  gpu {(mg >= 0 ? mg.ToString("0.000", CultureInfo.InvariantCulture) : "n/a"),8}  ({n[c]} frames{(zombies > 0 ? $", {boxes} batched boxes a frame" : "")}{(pd > 0 ? $", props {pd:0.0} draw calls for {propRuns[c] / Math.Max(n[c], 1.0):0.0} runs" : "")})"));
                     var key = $"{map.Name}|{configs[c]}";
                     totals.TryGetValue(key, out var acc);
                     totals[key] = (acc.Cpu + mc, acc.Full + mf, acc.Gpu + Math.Max(mg, 0), acc.Views + 1);
@@ -158,12 +190,23 @@ public static unsafe partial class Program
             }
         }
         _passOn = false;
-        foreach (var e in RenderCaps.Experiments)
-            RenderCaps.SetDisabled(e, false);
+        foreach (var (e, _) in RenderCaps.Experiments)
+            RenderCaps.Force(e, null);
         foreach (var (key, t) in totals)
             Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"[glbench] summary {key.Replace('|', ' '),-40} cpu {t.Cpu / t.Views,7:0.000}  frame {t.Full / t.Views,8:0.000}  gpu {t.Gpu / t.Views,8:0.000}  (mean of {t.Views} views)"));
-        Console.WriteLine($"[glbench] done, GL error 0x{GlDebug.Error():X}");
+        Console.WriteLine($"[glbench] done{(shots ? $", {pictureFailures} picture(s) differ from all on" : "")}, GL error 0x{GlDebug.Error():X}");
+    }
+
+    /// <summary>The finished frame's RGBA pixels (full size).</summary>
+    private static byte[] ReadFrame()
+    {
+        var fb = _window.FramebufferSize;
+        var pixels = new byte[fb.X * fb.Y * 4];
+        Native.glPixelStorei(GL_PACK_ALIGNMENT, 1);
+        fixed (byte* p = pixels)
+            Native.glReadPixels(0, 0, fb.X, fb.Y, GL_RGBA, GL_UNSIGNED_BYTE, p);
+        return pixels;
     }
 
     /// <summary>One bench frame: the arena at the fixed clock, plus the synthetic horde.</summary>

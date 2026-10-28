@@ -14,8 +14,9 @@ namespace CallOfSlop;
 /// which swaps that line for the context's prelude (<c>#version 460 core</c> or <c>#version 410 core</c>, then
 /// <c>#define GL46 1</c> or <c>0</c>), so one source serves both tiers and a 4.6-only block sits in <c>#if GL46</c>.
 ///
-/// Experiments (<see cref="PersistentBuffers"/>, ...) are on only on the 4.6 tier and when measured worth keeping; each
-/// can be turned off with <c>--gl-no=NAME[,NAME]</c> for an A/B (the bench, <c>--gl-bench</c>, does that itself).
+/// Experiments (<see cref="PersistentBuffers"/>, <see cref="MultiDrawIndirectProps"/>) run only on the 4.6 tier; each
+/// has a default (on when measured worth keeping) and <c>--gl-on=NAME[,NAME]</c> / <c>--gl-no=NAME[,NAME]</c> flip it
+/// for an A/B (the bench, <c>--gl-bench</c>, does that itself).
 /// </summary>
 public static unsafe class RenderCaps
 {
@@ -61,28 +62,44 @@ public static unsafe class RenderCaps
 
     /// <summary>
     /// Experiment: per-frame instance data written straight into a persistently mapped, triple-buffered ring (fenced)
-    /// instead of glBufferData orphaning + glBufferSubData. Box batches, props, meshes, frenzy particles.
+    /// instead of glBufferData orphaning + glBufferSubData (the box batch: horde bodies, players, guns). Off by
+    /// default: measured within noise on llvmpipe (docs/render/OPENGL46.md "Measurements"); <c>--gl-on=persistent</c>.
     /// </summary>
-    public static bool PersistentBuffers => BufferStorage && !Disabled("persistent");
+    public static bool PersistentBuffers => BufferStorage && Active("persistent");
 
-    /// <summary>The experiments <c>--gl-no=</c> can name (and the bench toggles).</summary>
-    public static readonly string[] Experiments = { "persistent" };
+    /// <summary>
+    /// Experiment: the prop renderer's visible runs (one instanced draw each on the 4.1 path, with two attribute
+    /// pointer calls before it) queued as indirect commands and drawn with one glMultiDrawElementsIndirect a pass.
+    /// On by default: 90 draw calls become 3 on Ashgrave Cathedral, same picture.
+    /// </summary>
+    public static bool MultiDrawIndirectProps => MultiDrawIndirect && Active("mdi");
 
-    private static readonly HashSet<string> Off = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>The experiments <c>--gl-on=</c> / <c>--gl-no=</c> can name (and the bench toggles), with their defaults.</summary>
+    public static readonly (string Name, bool Default)[] Experiments = { ("persistent", false), ("mdi", true) };
 
-    /// <summary>Is experiment <paramref name="name"/> turned off (<c>--gl-no=</c>, or by the bench)?</summary>
-    public static bool Disabled(string name) => Off.Contains(name);
+    private static readonly Dictionary<string, bool> Forced = new(StringComparer.OrdinalIgnoreCase);
 
-    /// <summary>Turns an experiment off or back on (the bench's A/B; renderers read the flag every frame).</summary>
-    public static void SetDisabled(string name, bool off)
+    /// <summary>Is experiment <paramref name="name"/> on: its default, unless <c>--gl-on=</c>, <c>--gl-no=</c> or the bench said otherwise.</summary>
+    public static bool Active(string name)
     {
-        if (off)
-            Off.Add(name);
-        else
-            Off.Remove(name);
+        if (Forced.TryGetValue(name, out var on))
+            return on;
+        foreach (var (n, d) in Experiments)
+            if (n.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return d;
+        return false;
     }
 
-    /// <summary>Reads <c>--gl41</c> and <c>--gl-no=a,b</c>.</summary>
+    /// <summary>Turns an experiment on or off (the bench's A/B; renderers read the flag every frame), or back to its default with null.</summary>
+    public static void Force(string name, bool? on)
+    {
+        if (on is { } v)
+            Forced[name] = v;
+        else
+            Forced.Remove(name);
+    }
+
+    /// <summary>Reads <c>--gl41</c>, <c>--gl-on=a,b</c> and <c>--gl-no=a,b</c>.</summary>
     public static void ReadArgs(string[] args)
     {
         foreach (var a in args)
@@ -91,7 +108,10 @@ public static unsafe class RenderCaps
                 ForceGl41 = true;
             else if (a.StartsWith("--gl-no=", StringComparison.OrdinalIgnoreCase))
                 foreach (var n in a["--gl-no=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                    Off.Add(n);
+                    Force(n, false);
+            else if (a.StartsWith("--gl-on=", StringComparison.OrdinalIgnoreCase))
+                foreach (var n in a["--gl-on=".Length..].Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    Force(n, true);
         }
     }
 
@@ -147,7 +167,7 @@ public static unsafe class RenderCaps
         if (MultiDrawIndirect) on.Add("multi-draw indirect");
         if (Compute) on.Add("compute");
         if (Dsa) on.Add("DSA");
-        var exps = string.Join(", ", Experiments.Select(e => e + (Disabled(e) ? " off" : " on")));
+        var exps = string.Join(", ", Experiments.Select(e => e.Name + (Active(e.Name) ? " on" : " off")));
         return $"OpenGL {(Gl46 ? "4.6 path" : "4.1 path")} (context {Major}.{Minor}: {Version}; {Renderer})"
                + (Gl46 ? $", features: {(on.Count > 0 ? string.Join(", ", on) : "none")}; experiments: {exps}" : $", fallback: {FallbackReason}");
     }

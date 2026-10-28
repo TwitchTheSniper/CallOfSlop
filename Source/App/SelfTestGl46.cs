@@ -43,9 +43,10 @@ public static partial class SelfTest
                     || s.Split("#version").Length != 2 || !s.EndsWith(src[(src.IndexOf('\n') + 1)..], StringComparison.Ordinal))
                     Fail($"{name}: the {(gl46 ? "4.6" : "4.1")} prelude came out wrong: \"{first}\"");
             }
-            // 4.6-only GLSL must sit behind #if GL46 (the 4.1 path compiles the same source).
+            // 4.6-only GLSL must sit behind #if GL46 (the 4.1 path compiles the same source); a compute shader is 4.6-only whole (GlCompute).
+            var compute = src.Contains("local_size_x");
             foreach (var only46 in new[] { "gl_BaseInstance", "gl_DrawID", "buffer ", "layout(std430", "readonly buffer" })
-                if (src.Contains(only46) && !src.Contains("#if GL46"))
+                if (!compute && src.Contains(only46) && !src.Contains("#if GL46"))
                     Fail($"{name}: uses {only46.Trim()} outside an #if GL46 block");
         }
         RenderCaps.SetTierForTest(false);
@@ -58,11 +59,16 @@ public static partial class SelfTest
         // ---- Flags --------------------------------------------------------------------------------------------------
         var wasForced = RenderCaps.ForceGl41;
         RenderCaps.ForceGl41 = false;
-        RenderCaps.ReadArgs(new[] { "--gl-no=persistent , foo", "--selftest" });
-        if (RenderCaps.ForceGl41 || !RenderCaps.Disabled("persistent") || !RenderCaps.Disabled("foo") || RenderCaps.Disabled("bar"))
-            Fail("--gl-no= should turn the named experiments off, and nothing else");
-        RenderCaps.SetDisabled("persistent", false);
-        RenderCaps.SetDisabled("foo", false);
+        if (RenderCaps.Active("persistent") || !RenderCaps.Active("mdi") || RenderCaps.Active("bar"))
+            Fail("experiment defaults: persistent off (measured as noise), mdi on, unknown names off");
+        RenderCaps.ReadArgs(new[] { "--gl-no=mdi , foo", "--gl-on=persistent", "--selftest" });
+        if (RenderCaps.ForceGl41 || RenderCaps.Active("mdi") || RenderCaps.Active("foo") || !RenderCaps.Active("persistent") || RenderCaps.Active("bar"))
+            Fail("--gl-no= should turn the named experiments off and --gl-on= on, and nothing else");
+        RenderCaps.Force("mdi", null);
+        RenderCaps.Force("foo", null);
+        RenderCaps.Force("persistent", null);
+        if (RenderCaps.Active("persistent") || !RenderCaps.Active("mdi"))
+            Fail("Force(name, null) should give an experiment its default back");
         if (RenderCaps.Want46(out var why) != !OperatingSystem.IsMacOS())
             Fail($"without --gl41 the game should ask for 4.6 (except on macOS): {why}");
         RenderCaps.ReadArgs(new[] { "--GL41" });
@@ -71,6 +77,6 @@ public static partial class SelfTest
         RenderCaps.ForceGl41 = wasForced;
         if (RenderCaps.Gl46 || RenderCaps.PersistentBuffers || RenderCaps.DebugOutput || RenderCaps.MultiDrawIndirect || RenderCaps.Compute || RenderCaps.Dsa)
             Fail("the 4.1 tier must keep every 4.6-only feature off");
-        Line($"  gl46: {sources.Count} shader sources, each turns into a 4.6 and a 4.1 source; flags --gl41 / --gl-no= parsed; 4.1 tier has no 4.6 features");
+        Line($"  gl46: {sources.Count} shader sources, each turns into a 4.6 and a 4.1 source; flags --gl41 / --gl-on= / --gl-no= parsed; 4.1 tier has no 4.6 features");
     }
 }

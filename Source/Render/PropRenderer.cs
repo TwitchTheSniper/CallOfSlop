@@ -482,6 +482,7 @@ public sealed unsafe class PropRenderer
                 else
                     DrawChunks(d, cam, def.FadeDistance, 0f, float.PositiveInfinity, 0f, ref draws, ref instances);
             }
+            FlushIndirect(ref draws); // 4.6 path: every type's runs in one glMultiDrawElementsIndirect (nothing queued otherwise)
         }
 
         var debris = PropDebris.Write(_debrisData);
@@ -531,12 +532,16 @@ public sealed unsafe class PropRenderer
                 // Moving parts can leave the rest-pose bounds: grow the cull box by how far they reach (times the largest scatter scale).
                 var def = _meshes.Defs[d];
                 DrawChunks(d, cam, def.FadeDistance, 0f, _anim.FreezeDistance[d], _anim.Reach[d] * MathF.Max(def.ScaleMax, 1f), ref animDraws, ref animInstances);
+                FlushIndirect(ref animDraws); // one indirect draw a type (uFreeze is a per-type uniform)
             }
             _timer?.EndPass(PassAnim);
             draws += animDraws;
         }
         _timer?.EndFrame();
         gfx.Rebind();
+        LastDraws = draws;
+        LastRuns = _frameRuns;
+        _frameRuns = 0;
 
         var cpuMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         Accumulate(ref _log, now, draws, instances + animInstances, debris, cpuMs);
@@ -605,6 +610,7 @@ public sealed unsafe class PropRenderer
     private void DrawChunks(int d, Vector3 cam, float fadeEnd, float nearMin, float nearMax, float margin, ref long draws, ref long instances)
     {
         var mesh = _meshes!.Ranges[d];
+        var indirect = RenderCaps.MultiDrawIndirectProps; // queue the runs for one multi-draw instead of a draw each
         var ranged = fadeEnd > 0 || nearMin > 0 || nearMax < float.PositiveInfinity;
         var grow = new Vector3(margin);
         int runStart = -1, runCount = 0;
@@ -622,8 +628,14 @@ public sealed unsafe class PropRenderer
             }
             if (runStart >= 0)
             {
-                DrawRun(mesh, runStart, runCount);
-                draws++;
+                if (indirect)
+                    QueueRun(mesh, runStart, runCount);
+                else
+                {
+                    DrawRun(mesh, runStart, runCount);
+                    draws++;
+                }
+                _frameRuns++;
                 instances += runCount;
                 runStart = -1;
             }
@@ -635,10 +647,70 @@ public sealed unsafe class PropRenderer
         }
         if (runStart >= 0)
         {
-            DrawRun(mesh, runStart, runCount);
-            draws++;
+            if (indirect)
+                QueueRun(mesh, runStart, runCount);
+            else
+            {
+                DrawRun(mesh, runStart, runCount);
+                draws++;
+            }
+            _frameRuns++;
             instances += runCount;
         }
+    }
+
+    // ---- Multi-draw indirect (4.6 path, RenderCaps.MultiDrawIndirectProps) ---------------------------------------
+    // Each visible run becomes one DrawElementsIndirectCommand {count, instanceCount, firstIndex, baseVertex,
+    // baseInstance}; the base instance offsets the instanced attributes (4-5, pointed at offset 0), so the vertex
+    // shader is the same and the per-run glVertexAttribPointer calls go away. The commands stream through a small
+    // orphaned GL_DRAW_INDIRECT_BUFFER; one glMultiDrawElementsIndirect draws them all.
+
+    private const int CmdUints = 5;
+    private uint[] _cmds = new uint[CmdUints * 256];
+    private int _cmdCount;
+    private GlBuffer _indirectVbo;
+    private int _indirectCap;
+
+    /// <summary>Last frame's GL draw calls and visible runs (a run is one draw on the 4.1 path; many runs share a multi-draw on the 4.6 path).</summary>
+    public long LastDraws, LastRuns;
+
+    private long _frameRuns;
+
+    private void QueueRun(PropMeshes.Range mesh, int start, int count)
+    {
+        if ((_cmdCount + 1) * CmdUints > _cmds.Length)
+            Array.Resize(ref _cmds, _cmds.Length * 2);
+        var k = _cmdCount * CmdUints;
+        _cmds[k] = (uint)mesh.IndexCount;
+        _cmds[k + 1] = (uint)count;
+        _cmds[k + 2] = (uint)mesh.FirstIndex;
+        _cmds[k + 3] = 0; // indices are absolute into the shared mesh buffer
+        _cmds[k + 4] = (uint)start;
+        _cmdCount++;
+    }
+
+    /// <summary>Draws the queued runs in one glMultiDrawElementsIndirect (no-op when none are queued).</summary>
+    private void FlushIndirect(ref long draws)
+    {
+        if (_cmdCount == 0)
+            return;
+        const int stride = PropBatches.FloatsPerInstance * sizeof(float);
+        Native.glVertexAttribPointer(4, 4, GL_FLOAT, false, stride, (void*)0); // DrawRun (the 4.1 path, or the bench's A/B) may have moved them
+        Native.glVertexAttribPointer(5, 4, GL_FLOAT, false, stride, (void*)(4 * sizeof(float)));
+        if (_indirectVbo.Id == 0)
+        {
+            _indirectVbo = GenBuffer();
+            GlDebug.Label(GL_BUFFER, _indirectVbo.Id, "PropRenderer.indirect");
+        }
+        Native.glBindBuffer(GL_DRAW_INDIRECT_BUFFER, _indirectVbo);
+        var bytes = _cmdCount * CmdUints * sizeof(uint);
+        _indirectCap = Math.Max(_indirectCap, _cmds.Length);
+        Native.glBufferData(GL_DRAW_INDIRECT_BUFFER, _indirectCap * sizeof(uint), null, GL_STREAM_DRAW); // orphan: no stall on the last frame's copy
+        fixed (uint* p = _cmds)
+            Native.glBufferSubData(GL_DRAW_INDIRECT_BUFFER, 0, bytes, p);
+        Native.glMultiDrawElementsIndirect(GL_TRIANGLES, GL_UNSIGNED_INT, null, _cmdCount, 0);
+        draws++;
+        _cmdCount = 0;
     }
 
     private static void Accumulate(ref Stats s, double now, long draws, long instances, int debris, double cpuMs)
