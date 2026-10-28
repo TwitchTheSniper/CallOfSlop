@@ -12,7 +12,8 @@ Namespace `CallOfSlop.MapKit`. The committed map files stay the product: the gam
 generator, so a generator's output is committed and the "Map kit" self-test checks the committed file still matches.
 Twin Shard (`Source/MapKit/Generators/TwinShard.cs`, the port of the old `tools/space/twinshard.py`) is the worked
 example, and Horde Test (`Generators/HordeTest.cs`: a Zombies map, its "zombies" section built as a JSON tree in
-`kit.Top`; `Number => 0` writes a Dev-style file with no number, `Maps/Dev/HordeTest.json`) a second one; `tools/mapkit/new_map.py <Pack> <NN> "<Name>"` scaffolds a new one from a template.
+`kit.Top`; `Number => 0` writes a Dev-style file with no number, `Maps/Dev/HordeTest.json`) a second one, and Ashgrave Cathedral (`Generators/AshgraveCathedral.cs`) a big Zombies map
+on five levels (areas with heights, stairs with landings, map logic for the bell's climb, its own layout checks); `tools/mapkit/new_map.py <Pack> <NN> "<Name>"` scaffolds a new one from a template.
 
 ## Writing a generator
 
@@ -56,6 +57,7 @@ Register it in `GeneratorRegistry.All` (`Source/MapKit/Generators.cs`), then:
 | `CallOfSlop --gen-map "Orbital Foundry" [--out DIR] [--plan]` | Runs the generator, writes `Maps/Space/13-OrbitalFoundry.json` (in the repository's Maps folder when the game runs from a checkout, else DIR), loads it back and prints the `MapChecks` report; `--plan` also writes a top-down PNG next to the exe. Exit 0 when the map loads and passes (a map's `test` block may lower the main-area share with `minMainNavPct`). |
 | `CallOfSlop --gen-maps [--out DIR]` | Runs every generator and says for each whether its output is identical to the committed file, the same map in different text (same fingerprint), or different. |
 | `CallOfSlop --gen-plan <map.json> <out.png>` | A plan of any map file: outline, boxes shaded by height (hidden colliders bluer), solid meshes, props, waypoints, spawns by team, hills, flags. |
+| `CallOfSlop --gen-plan <map.json> <out.png> --level y0,y1` | One level of a map with floors over each other (`Plan.DrawLevel`): the floors whose tops are between y0 and y1, the walls through them, props, waypoints, logic zones, and the Zombies section (areas, doors, windows, spawners, machines, wall buys) on that level. |
 
 The console is written to `callofslop.log` next to the exe. The report looks like
 

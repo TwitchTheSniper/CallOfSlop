@@ -1,7 +1,7 @@
 # Zombies: the game mode (milestone 3)
 
-Status: **playable on its first real map**, **Blackmoor Asylum** (lobby: the **Zombies** pack, then the game mode
-"Zombies"), plus the dev map `Maps/Dev/ZombiesTest.json` ("Zombies Test", Dev pack). Zombies only shows up for maps that
+Status: **playable on two real maps**, **Blackmoor Asylum** and **Ashgrave Cathedral** (lobby: the **Zombies** pack,
+then the game mode "Zombies"), plus the dev map `Maps/Dev/ZombiesTest.json` ("Zombies Test", Dev pack). Zombies only shows up for maps that
 have a `"zombies"` section. Milestone 3 added the map, solid machine props, power-ups and special ammo effects. Styled after Call of
 Duty: World at War's Nazi Zombies: solo or co-op up to 4, rounds that never end, points for every hit and kill,
 boarded windows, doors that open new areas, wall guns, a mystery box, perk machines and the power switch. It's a
@@ -19,7 +19,9 @@ file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbe
 `SelfTestZombiesMap.cs` (milestone 3) and `SelfTestZombieAnim.cs` (animation).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
 `Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by
-`tools/zombies/make_blackmoor.py`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
+`tools/zombies/make_blackmoor.py`), `Maps/Zombies/02-AshgraveCathedral.json` (written by the C# map kit's generator
+`Source/MapKit/Generators/AshgraveCathedral.cs`; its props `Maps/Zombies/Props/Cathedral`, written by
+`tools/zombies/make_cathedral_props.py`; the bell siege `ZombiesClimb.cs`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
 
 ## How a run plays
 
@@ -346,7 +348,14 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 - **Test kit** (`"testKit": true`, a test map: Horde Test): the host's "Test kit" lobby setting works here (see "Horde
   Test, start round and test kit").
 
-- **Areas** are rectangles; the **area graph** is made by the doors: an area is unlocked when it's the start area or
+- **Areas** are rectangles, optionally with a height band and extra boxes, for maps with floors over each other:
+  `{"name": "Crypt", "rect": [x0, z0, x1, z1], "y": [y0, y1], "more": [[x0, z0, x1, z1, y0, y1], ...]}`. A point is in
+  the area when it's in the rectangle and the band (`"y"`, at least 2 m tall; leave it out: any height) or in one of the
+  `more` boxes (a stairwell, an alcove). Where areas overlap the first one listed wins, so list an upper floor before the
+  hall under it. A door's two sides stand on the door box's floor when its bottom is over 0.3 m above the ground (a door
+  on an upper floor or in a cellar). Zombies only count a door side as reached on its own floor (within 1.2 m of its
+  height).
+- The **area graph** is made by the doors: an area is unlocked when it's the start area or
   one of its doors is open. Zombies route between areas through open doors (a breadth-first search over the doors),
   and inside an area along the bots' nav graph (or straight when the player is in plain view).
 - **Doors** are solid boxes (players, zombies, bullets) until bought; opening one parks its box under the world like a
@@ -390,6 +399,83 @@ Seven areas (six to unlock), 17 boarded windows, 21 spawners (4 in the ground), 
 machines (7 on the power), 2 slot machines (1 on the power), every machine a solid prop. Two routes to the courtyard make a loop through the middle of
 the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
 runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
+
+## Ashgrave Cathedral (the Zombies pack, board item zc01, 2026-10-27)
+
+`Maps/Zombies/02-AshgraveCathedral.json`, written by the C# map kit generator `AshgraveCathedral`
+(`--gen-map "Ashgrave Cathedral"`; it checks its own layout: machines inside their area, nothing on a door, window,
+spawner, stair or wall buy, every slot category present). An original gothic cathedral and its precinct at night, 128 x
+112 m (the precinct about 104 x 60), on five levels: the dungeons (2 m), the crypt and ossuary (7), the ground (12),
+the galleries and organ loft (18) and the roof walk and ringing chamber (22.8), with the belfry at 30. (The whole map is
+built at ground 0 and lifted 12 m, because a map without terrain keeps players above -5 m and counts anything under the
+ground as fallen.) Plan PNGs per level: `--gen-plan` with `--level y0,y1` (docs/mapkit/MAPKIT.md).
+
+| Area | Way in (price) | What's there |
+| --- | --- | --- |
+| **Nave** (start) | | 4 windows, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, Wall Pistol and Buzzbox, box spot, **slot machine (classic)**, the **high-low table**, pews, confessionals |
+| **Organ Loft** (galleries over the aisles and the west end) | the Loft Stair debris from the nave (1000) | a ground spawner, Twinfire Punch (power), the Courier Carbine and Prairie Lever, box spot, the organ |
+| **Transept** (the crossing) | the Rood Screen debris (1000) | 4 windows, the Wall SMG, Kingpin and Wall Pump, box spot |
+| **Choir** | the Choir Screen (1250) | 2 windows, Ironhide Cider (power), the Ratchet PDW and Riot Control, box spot, the high altar; the crypt stair |
+| **Lady Chapel** | the Reliquary Grate (1500, **needs the power**) | 3 windows, Bulwark Brew (power), the Bastille LMG, box spot |
+| **Vestry** | the Vestry Door from the choir (1000) | a ground spawner, Swiftload Seltzer (power), the Heavy Hitter, **Ammo and Feed slot machines**, the **blackjack table** |
+| **Bell Tower** | the Tower Door from the nave (1250) or the Roof Door from the roof walk (1500) | stairs up the inside (five flights), 2 ground spawners, the Elephant Gun; the ringing chamber: Marksman Malt (power), the **roulette table**; the belfry: **the great bell** |
+| **Roof Walk** (over the north aisle) | the Roof Door (1500, from the tower) | 2 ground spawners, Windfall Soda (power), the Reaper Marksman, box spot |
+| **Cloister** (open sky) | the Cloister Door from the nave (750) | 2 ground spawners, a well, three cheap wall guns, box spot, salvage |
+| **Chapter House** | the Chapter Door from the cloister (1250) | a ground spawner, Salvage Stout, the Wide Load, **workbench**, **Optic, Utility and Upgrade slot machines** |
+| **Tithe Barn** | the Barn Door from the cloister (1000) or the Barn West Door from the close (750) | 3 windows, the High Rider and Coach Gun, box spot, **workbench**, salvage, **Muzzle, Stock and Grip slot machines** |
+| **Close** (the west precinct, open sky) | the West Doors from the nave (750) | 5 windows (gates), Fleetfoot Fizz (power), the Burst Marksman, box spot, salvage |
+| **Lodge** | the Lodge Door from the close (1000) | 2 windows, the Wall SMG, **workbench**, **Receiver, Action and Barrel slot machines** |
+| **Graveyard** (open sky) | the Sexton's Gate debris from the vestry (1250) or the Chapter Garden Door (1500) | 5 windows, 2 ground spawners among the graves, the Bucket Lobber and Auto Shotgun, box spot, 2 salvage, the **dice table** |
+| **Mausoleum** | the Mausoleum Gate (1750) or the Tomb Stair from the tunnel (1000) | a ground spawner, the **weapon-slot upgrade**, the **grenade slot machine**, sarcophagi |
+| **Crypt** (under the choir) | the Crypt Door at the foot of the crypt stair (1250) | 2 ground spawners, **the power switch**, Bloodroot Tonic, the Ratchet PDW, box spot, **workbench** |
+| **Ossuary** (under the crossing) | the Bone Pile debris from the crypt (1250) | a ground spawner, the Wall Pump, box spot, **Head, Hilt and MeleeMod slot machines**, the dungeon stair |
+| **Dungeons** | the Dungeon Gate from the ossuary (1500) | cells, a guard room, 2 ground spawners, the Wall Rifle, box spot, **workbench**, salvage |
+| **Inquisitor's Chamber** | the Inquisitor's Door (1750) | a ground spawner, the Kingpin, **Multiplier and Splitter slot machines**, a rack and cages |
+| **Smugglers' Tunnel** | the Tunnel Debris from the dungeons (1500) | a ground spawner, salvage; up to the Tomb Stair |
+
+Twenty areas, 22 doors and debris (750 to 1750, one on the power), 28 boarded windows, 75 spawners (19 in the ground,
+on every level), 13 box spots, 28 wall buys, 12 perk machines, 18 slot machines (every category, the grenade one too), 4
+casino tables, 5 workbenches, 7 salvage piles, every machine a solid prop; 37 pack props (`Maps/Zombies/Props/Cathedral`:
+pews, altar, organ, font, confessionals, statues, gargoyles, sarcophagi, ossuary walls, cells, the great bell...).
+Rings: nave - cloister - barn - close - nave on the ground, and choir - vestry - graveyard - chapter house - cloister. Stairs
+are flights of at most 11 steps with landings between (the nav graph links a flight's foot to its top and can't stand a
+node on a tread), and stairwells have walls or tall parapets, not rails a zombie would try to vault. The nav graph is
+built with the doors shut, so its rooms are pockets (the map's test block sets `navPockets`).
+
+### The bell: a siege up the tower
+
+Ringing the great bell (the button at its rope, in the belfry; free, a 240 s cooldown, during a round) starts a
+**survival challenge**, not a purchase: a 75 s challenge for everyone standing in the belfry, and the **climb**
+(`zclimb` map logic, `Source/Game/ZombiesClimb.cs`). The round gains `extraZombies + extraPerRound x round` zombies (at
+most `extraMax`). Zombies at the windows leave them and walk round to the foot of the tower's north face, where they
+pile up against the wall into a living pyramid, a layer at a time (`layerHeight` apart, `columnSpacing` apart, each
+layer `layerShrink` places narrower than the one under it, the bottom `baseRows` layers two deep, at most `layers` high);
+the rest climb the pile and then the bare wall above it (one in `climbEvery` goes straight up the wall from the start),
+vault the belfry's parapet and chase whoever is there. A shot body lets go and falls (pushed out `fallPush` m, dazed
+`fallStun` s where it lands) and the bodies above it slide down a place, so shooting the pile's base holds the climb
+back. When the challenge is survived every player standing gets `rewardPoints + rewardPerRound x round` points (at most
+`rewardMax`), `rewardParts` loose parts rolled as if `rewardRoundBonus` rounds later, and `rewardPowerUp` drops on the
+belfry; when it ends either way the climb stops (whoever is on the face falls, the rest go back to the windows).
+
+Server-authoritative and cheap: the climb keeps one list of climbers and their places (no per-tick allocation; 0.1 ms
+a tick with 60 on the face in the self-test). Clients get nothing new but the zombie state: `Scaling` (state 7) with the
+position, and they draw a braced or climbing pose from the vertical motion. Tuning: the rules file's `"climb"` section.
+
+| Key | Default | What |
+| --- | --- | --- |
+| `layerHeight`, `columnSpacing`, `layers`, `baseRows`, `layerShrink` | 1.3 m, 0.75 m, 10, 1, 2 | the pyramid's shape |
+| `climbEvery` | 3 | one in this many arrivals climbs straight away instead of joining the pile |
+| `settleSpeed`, `pileClimbSpeed`, `wallClimbSpeed`, `vaultSeconds` | 3, 2, 0.8 m/s, 0.8 s | how fast bodies settle into place, climb the pile and the wall, vault the parapet |
+| `fallStun`, `fallPush` | 1.2 s, 2.5 m | a shot climber's fall |
+| `extraZombies`, `extraPerRound`, `extraMax` | 12, 2, 80 | the siege's extra zombies |
+| `rewardPoints`, `rewardPerRound`, `rewardMax` | 1500, 100, 6000 | the points each survivor gets |
+| `rewardParts`, `rewardRoundBonus`, `rewardPowerUp` | 2, 10, `maxAmmo` | the parts and the power-up |
+
+Self-test "Zombies cathedral": the layout (every machine in its area and on its floor, the slot categories, the casino
+games, wall-tagged wall buys), a zombie in through every window, zombies from every area to the belfry and to the
+inquisitor's chamber with every door open (none may get stuck), the siege at round 10 (the climb starts and adds
+zombies, the pyramid forms, a shot body falls and the one above moves down, someone comes over the parapet, the reward is
+paid, the climb stops cleanly, tick time and allocations, a client reads a climber back) and the siege's replay digest.
 
 ## Slot machines (board item "Zombies slots", 2026-10-26)
 
@@ -912,7 +998,10 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades; 68 for the bell's climb)
+
+Protocol 68 (the bell siege, see "Ashgrave Cathedral"): a zombie's state in `ZEnts` can be 7 (`Scaling`: on the climb's
+pile or the tower's face; the low 3 bits); maps can carry `zclimb` logic and areas with heights.
 
 Protocol 67 (modular grenades, Source/Game/GameGrenades.cs): a grenade build travels in `ZBuild` as slot 5 like any
 build (every client assembles it, so every client flies everyone's built grenades with the same numbers); `ZWorld`'s

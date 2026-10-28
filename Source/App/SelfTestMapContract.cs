@@ -468,7 +468,7 @@ public static partial class SelfTest
             void Reach(string what, Vector3 p)
             {
                 var k = g.Nearest(p, needSight: false);
-                if (k < 0 || Vector3.Distance(g.Nodes[k], p) > reach || g.Component[k] != g.MainComponent)
+                if (k < 0 || Vector3.Distance(g.Nodes[k], p) > reach || g.Component[k] != g.MainComponent && !t.NavPockets)
                     missing.Add($"{what} ({p.X:0},{p.Y:0.0},{p.Z:0}){(k < 0 ? " no node" : g.Component[k] != g.MainComponent ? " off the main area" : " no node near")}");
             }
             foreach (var s in m.Spawns)
@@ -589,7 +589,7 @@ public static partial class SelfTest
                         wrong.Add($"{name} ({x:0},{z:0}): floor at {floor:0.00}, expected {y:0.00}");
                     var at = new Vector3(x, y, z);
                     var k = g.Nearest(at, needSight: false);
-                    if (k < 0 || Vector3.Distance(g.Nodes[k], at) > reach || g.Component[k] != g.MainComponent)
+                    if (k < 0 || Vector3.Distance(g.Nodes[k], at) > reach || g.Component[k] != g.MainComponent && !t.NavPockets)
                         unreached.Add($"{name} ({x:0},{y:0.0},{z:0}): {(k < 0 ? "no node" : $"nearest node ({g.Nodes[k].X:0.0},{g.Nodes[k].Y:0.00},{g.Nodes[k].Z:0.0}) {(g.Component[k] != g.MainComponent ? "off the main area" : "too far")}")}");
                 }
                 if (wrong.Count > 0)

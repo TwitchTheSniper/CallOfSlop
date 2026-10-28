@@ -79,6 +79,36 @@ public static partial class SelfTest
         if (zm.PerkMachines.Any(m => m.Perk is "revive" or "secondwind" && (m.NeedsPower || m.Area != zm.StartArea)))
             Fail($"{map.Name}: Mender's Mead and Second Wind should be in the start room without the power");
 
+        ZombiesMapSound(map, zm);
+        if (ZTestMap?.Zombies?.MachineProps != false)
+            Fail("Zombies Test should keep its machines without props");
+        var copy = MapFile.Load(MapFile.ToJson(map), "blackmoor round trip", map.PackDir ?? "");
+        copy.Validate();
+        int FirstDiff<T>(IReadOnlyList<T> x, IReadOnlyList<T> y)
+        {
+            for (var i = 0; i < Math.Min(x.Count, y.Count); i++)
+                if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
+                    return i;
+            return x.Count == y.Count ? -1 : Math.Min(x.Count, y.Count);
+        }
+        var dSolid = FirstDiff(map.Solid, copy.Solid);
+        var dColor = FirstDiff(map.Colors, copy.Colors);
+        var dSpawn = FirstDiff(map.Spawns, copy.Spawns);
+        var dWay = FirstDiff(map.Waypoints, copy.Waypoints);
+        ZLine($"  round trip: hash {copy.ContentHash == map.ContentHash}, first difference: box {dSolid}, colour {dColor}{(dColor >= 0 && dColor < map.Colors.Count && dColor < copy.Colors.Count ? $" ({map.Colors[dColor]} vs {copy.Colors[dColor]})" : "")}, "
+             + $"spawn {dSpawn}{(dSpawn >= 0 && dSpawn < map.Spawns.Count && dSpawn < copy.Spawns.Count ? $" ({map.Spawns[dSpawn]} vs {copy.Spawns[dSpawn]})" : "")}, waypoint {dWay} ({map.Waypoints.Count} vs {copy.Waypoints.Count}), "
+             + $"half {map.HalfX}x{map.HalfZ} vs {copy.HalfX}x{copy.HalfZ}, sky {map.Sky == copy.Sky}");
+        if (copy.ContentHash != map.ContentHash || copy.PropInstances.Count != map.PropInstances.Count || dSolid >= 0 || dColor >= 0 || dSpawn >= 0 || dWay >= 0)
+            Fail($"{map.Name}: the map (with its machine props) didn't survive a map file round trip");
+    }
+
+    /// <summary>
+    /// The parts of a full Zombies map's layout every such map must get right (Blackmoor Asylum, Ashgrave Cathedral): every
+    /// area reachable through the doors, every door a real way through, the spawners and windows sound, every machine
+    /// standing as its solid prop.
+    /// </summary>
+    private static void ZombiesMapSound(Map map, ZombiesMap zm)
+    {
         // Every area is reachable through doors (the door graph), and every door is a real way through (shut: blocked).
         var reach = new HashSet<int> { zm.StartArea };
         for (var grew = true; grew;)
@@ -144,26 +174,6 @@ public static partial class SelfTest
         ZLine($"  machine props: {machines.Count} machines, {matched} with their prop, {machines.Count - notSolid} solid; Zombies Test machine props {ZTestMap?.Zombies?.MachineProps}");
         if (!zm.MachineProps || matched != machines.Count || notSolid > 0)
             Fail($"{map.Name}: every machine should stand as its solid prop ({matched} of {machines.Count} placed, {notSolid} not solid)");
-        if (ZTestMap?.Zombies?.MachineProps != false)
-            Fail("Zombies Test should keep its machines without props");
-        var copy = MapFile.Load(MapFile.ToJson(map), "blackmoor round trip", map.PackDir ?? "");
-        copy.Validate();
-        int FirstDiff<T>(IReadOnlyList<T> x, IReadOnlyList<T> y)
-        {
-            for (var i = 0; i < Math.Min(x.Count, y.Count); i++)
-                if (!EqualityComparer<T>.Default.Equals(x[i], y[i]))
-                    return i;
-            return x.Count == y.Count ? -1 : Math.Min(x.Count, y.Count);
-        }
-        var dSolid = FirstDiff(map.Solid, copy.Solid);
-        var dColor = FirstDiff(map.Colors, copy.Colors);
-        var dSpawn = FirstDiff(map.Spawns, copy.Spawns);
-        var dWay = FirstDiff(map.Waypoints, copy.Waypoints);
-        ZLine($"  round trip: hash {copy.ContentHash == map.ContentHash}, first difference: box {dSolid}, colour {dColor}{(dColor >= 0 && dColor < map.Colors.Count && dColor < copy.Colors.Count ? $" ({map.Colors[dColor]} vs {copy.Colors[dColor]})" : "")}, "
-             + $"spawn {dSpawn}{(dSpawn >= 0 && dSpawn < map.Spawns.Count && dSpawn < copy.Spawns.Count ? $" ({map.Spawns[dSpawn]} vs {copy.Spawns[dSpawn]})" : "")}, waypoint {dWay} ({map.Waypoints.Count} vs {copy.Waypoints.Count}), "
-             + $"half {map.HalfX}x{map.HalfZ} vs {copy.HalfX}x{copy.HalfZ}, sky {map.Sky == copy.Sky}");
-        if (copy.ContentHash != map.ContentHash || copy.PropInstances.Count != map.PropInstances.Count || dSolid >= 0 || dColor >= 0 || dSpawn >= 0 || dWay >= 0)
-            Fail($"{map.Name}: the map (with its machine props) didn't survive a map file round trip");
     }
 
     // ---- Zombies on the map: through every window, through every door, the AI cost ---------------------------
@@ -181,6 +191,13 @@ public static partial class SelfTest
         return z;
     }
 
+    /// <summary>The floor under (x, y, z) within 3 m (y - 3 if none).</summary>
+    private static float FloorBelow(float x, float y, float z)
+    {
+        var d = World.Query.Raycast(new Vector3(x, y, z), -Vector3.UnitY, 3f, QueryFilter.Navigation);
+        return y - MathF.Min(d, 3f);
+    }
+
     /// <summary>A free spot to stand near the middle of <paramref name="a"/> (props and machines stand in the way).</summary>
     private static Vector3 FreeSpot(Map map, ZArea a)
     {
@@ -189,7 +206,7 @@ public static partial class SelfTest
             for (var k = 0; k < 16; k++)
             {
                 var p = new Vector3(c.X + MathF.Sin(k * MathF.Tau / 16) * r, 0, c.Z + MathF.Cos(k * MathF.Tau / 16) * r);
-                p.Y = map.GroundHeight(p.X, p.Z);
+                p.Y = a.Banded ? FloorBelow(p.X, a.Y0 + 2.4f, p.Z) : map.GroundHeight(p.X, p.Z); // (an area with heights: its floor, found from just above it)
                 if (a.Contains(p) && a.Distance(p) <= 0 && p.X > a.X0 + 0.6f && p.X < a.X1 - 0.6f && p.Z > a.Z0 + 0.6f && p.Z < a.Z1 - 0.6f && !World.Blocked(p + new Vector3(0, 0.05f, 0)))
                     return p;
             }

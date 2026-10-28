@@ -616,7 +616,7 @@ public sealed partial class Game
             var yaw = yawByte / 256f * MathF.Tau;
             var sb = r.U8();
             var health = r.U8();
-            var state = (ZState)Math.Min(sb & 7, (int)ZState.Dead);
+            var state = (ZState)(sb & 7); // (7: on a climbable face, protocol 68)
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
             var limbs = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? (byte)(r.U8() & AllLimbs) : (byte)0; // (protocol 65)
             if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)

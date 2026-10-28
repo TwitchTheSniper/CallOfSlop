@@ -32,6 +32,11 @@ public sealed partial class Zombie
     public Vector3 AnimPrevPos;
     public bool AnimPrevSet;
 
+    /// <summary>On a climbable face (drawing): the height last frame and how much it is climbing (0 braced .. 1 climbing).</summary>
+    public float AnimPrevY, AnimClimb;
+
+    public bool AnimPrevSetY;
+
     /// <summary>How much it is moving, 0 standing .. 1 at its speed (scales the stride).</summary>
     public float AnimMove;
 
@@ -130,6 +135,20 @@ public sealed partial class Game
         z.AnimPrevPos = z.RenderPos;
         z.AnimPrevSet = true;
         z.AnimMove = Math.Clamp(z.AnimSpeed / MathF.Max(0.3f, 0.6f * ZombieNominalSpeed(z.Speed) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f)), 0f, 1f);
+        if (z.State == ZState.Scaling)
+        {
+            // On a climbable face: the climbing cycle follows the height climbed (one cycle per 0.9 m), still is braced.
+            var dy = dt > 0 && z.AnimPrevSetY ? MathF.Abs(z.RenderPos.Y - z.AnimPrevY) : 0f;
+            var vy = dt > 0 ? dy / dt : 0f;
+            if (vy > 9f)
+                vy = 0; // (a snap)
+            z.AnimClimb += (MathF.Min(1f, vy / 0.6f) - z.AnimClimb) * MathF.Min(1f, dt * 6f);
+            z.Gait += dy * MathF.Tau / 0.9f;
+            if (z.Gait > 1000f)
+                z.Gait -= MathF.Tau * 150;
+        }
+        z.AnimPrevY = z.RenderPos.Y;
+        z.AnimPrevSetY = true;
         if (z.State is ZState.ToWindow or ZState.Chase or ZState.Attack)
         {
             z.Gait += dt * z.AnimSpeed * MathF.Tau / (4f * ZombieAnim.StrideHalf(z.Speed, z.Limbs) * MathF.Max(0.35f, z.AnimMove));
@@ -198,6 +217,10 @@ public sealed partial class Game
             case ZState.Dead:
                 a.Mode = ZAnimMode.Dead;
                 a.Phase = a.SinceState;
+                return;
+            case ZState.Scaling:
+                a.Mode = ZAnimMode.Scaling;
+                a.Move = z.AnimClimb;
                 return;
             case ZState.Rising:
                 a.Mode = ZAnimMode.Rising;

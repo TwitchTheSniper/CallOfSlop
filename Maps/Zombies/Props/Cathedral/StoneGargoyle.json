@@ -1,0 +1,21 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Stone Gargoyle",
+  "category": "Cathedral",
+  "description": "A crouching winged gargoyle with red eyes (looks only: perch it on a parapet).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.5, 0.25, 0.7], "offset": [0, 0.125, 0], "color": "#6a665e"},
+    {"size": [0.42, 0.45, 0.5], "offset": [0, 0.45, 0.05], "color": "#6a665e", "rotation": [-15.0, 0.0, 0.0]},
+    {"size": [0.3, 0.28, 0.34], "offset": [0, 0.72, 0.35], "color": "#6a665e"},
+    {"size": [0.2, 0.12, 0.2], "offset": [0, 0.66, 0.55], "color": "#6a665e"},
+    {"size": [0.06, 0.18, 0.06], "offset": [-0.1, 0.92, 0.3], "color": "#6a665e", "rotation": [-25.0, 0.0, 0.0]},
+    {"size": [0.06, 0.18, 0.06], "offset": [0.1, 0.92, 0.3], "color": "#6a665e", "rotation": [-25.0, 0.0, 0.0]},
+    {"size": [0.5, 0.3, 0.06], "offset": [-0.32, 0.55, -0.1], "color": "#6a665e", "rotation": [0.0, 30.0, 40.0]},
+    {"size": [0.5, 0.3, 0.06], "offset": [0.32, 0.55, -0.1], "color": "#6a665e", "rotation": [0.0, -30.0, -40.0]},
+    {"size": [0.04, 0.04, 0.02], "offset": [-0.07, 0.78, 0.52], "color": "#ff4020"},
+    {"size": [0.04, 0.04, 0.02], "offset": [0.07, 0.78, 0.52], "color": "#ff4020"}
+  ]
+}

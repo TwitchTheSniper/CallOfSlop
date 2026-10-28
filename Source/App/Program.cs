@@ -95,7 +95,7 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--gen-maps", StringComparison.OrdinalIgnoreCase)))
             return MapKit.MapKitCli.GenMaps(args); // every generator: which outputs differ from the committed files
         if (args.SkipWhile(a => !a.Equals("--gen-plan", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var planMap, var planPng])
-            return MapKit.MapKitCli.GenPlan(planMap, planPng); // a top-down PNG plan of any map file
+            return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
         if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)
             return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
         if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)

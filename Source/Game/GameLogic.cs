@@ -152,6 +152,7 @@ public sealed partial class Game
         s.Delivered = s.Sent = s.Dropped = 0;
         s.StartedSent = s.EndedSent = false;
         _logicSpawnPaused = false;
+        ClimbReset(); // no siege up a face (ZombiesClimb.cs)
         for (var i = 0; i < d.Entities.Count; i++)
         {
             var e = d.Entities[i];
@@ -541,6 +542,9 @@ public sealed partial class Game
                 break;
             case LogicKind.ZDoor when ZMap != null:
                 OpenDoor(e.Target, Players.GetValueOrDefault(sig.Activator)); // (its "opened" goes from OpenDoor)
+                break;
+            case LogicKind.ZClimb when ZMap != null:
+                ClimbAction(s, i, a, sig); // the horde climbs the face (ZombiesClimb.cs)
                 break;
             case LogicKind.Zombies when ZMap != null:
                 switch (a)
