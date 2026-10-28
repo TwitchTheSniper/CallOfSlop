@@ -404,12 +404,24 @@ public static partial class SelfTest
         // counter counts the core's stalls on the other hyperthread): 600 read 5.47 ms on one main run against
         // 1.0 ms on Linux and a pass on every other main run of the same client code (SelfTestCpuRatio.cs: the same fix).
         var poseMs = double.MaxValue;
-        for (var b = 0; b < 5; b++)
-            poseMs = Math.Min(poseMs, ThreadCpu.TimeMs(() =>
+        var procCpu0 = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds;
+        var poseSum = 0.0;
+        var poseWall = Stopwatch.StartNew();
+        var poseRuns = new double[5];
+        for (var b = 0; b < poseRuns.Length; b++)
+        {
+            var ms = ThreadCpu.TimeMs(() =>
             {
                 for (var k = 0; k < 20; k++)
                     Pose();
-            }) / 20);
+            });
+            poseRuns[b] = ms / 20;
+            poseSum += ms;
+            poseMs = Math.Min(poseMs, ms / 20);
+        }
+        // (for the log: the other threads' CPU while this one posed, and the wall time; a busy process or machine shows here)
+        var poseWallMs = poseWall.Elapsed.TotalMilliseconds;
+        var otherCpuMs = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds - procCpu0 - poseSum;
         var draws = rec.Count / 100.0;
         var poseAlloc = GC.GetAllocatedBytesForCurrentThread();
         Pose();
@@ -424,7 +436,7 @@ public static partial class SelfTest
         var clientMs = readMs * 30 / 60 + poseMs + soundMs; // per 60 Hz frame: half a snapshot read, the posing and drawing, the sounds
         HLine($"horde {count}: {g.AliveZombies} alive, server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
               + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}; {nearNow} within {Game.ZEntNear * 0.8f:0} m at the end, the longest a near one waited {nearAgeWorst} snapshots); "
-              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, {poseAlloc} bytes allocated, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
+              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, {poseAlloc} bytes allocated, blocks {string.Join("/", poseRuns.Select(r => r.ToString("0.00")))} ms, other threads {otherCpuMs:0} ms CPU in {poseWallMs:0} ms wall, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
         if (g.AliveZombies != count)
             Fail($"horde {count}: zombies died or vanished in the scripted horde ({g.AliveZombies} alive)");
         if (alloc > 0)
