@@ -73,6 +73,9 @@ public sealed class CrowdTuning
     public bool Roar = true;
 
     public float RoarFull = 240f;
+
+    /// <summary>A copy (a stress map's self-test changes the speed of its own).</summary>
+    public CrowdTuning Copy() => (CrowdTuning)MemberwiseClone();
 }
 
 /// <summary>
@@ -82,8 +85,11 @@ public sealed class CrowdTuning
 /// heading; each reads it every 8-16 ticks and walks it every tick, pushed apart from its neighbours (and from the
 /// individuals) through a uniform grid rebuilt each tick by a counting sort. No hit boxes, no animation state, no
 /// network state: near the players the game promotes particles to full zombies (<see cref="Game.CrowdTick"/>), and
-/// sends far, healthy ones back. Single floor (one height; the spike's dev map is flat). No allocation per tick once
-/// the arrays have grown.
+/// sends far, healthy ones back. One floor height on a flat map; on a terrain map (Dev/HordeStress.json) the crowd walks
+/// the heightfield: each flow cell is walkable where the ground is, a step to a neighbour cell steeper than
+/// <see cref="MaxSlope"/> is a wall, and a crowd zombie stands on the ground under it (<see cref="GroundAt"/>). A map
+/// can give the crowd a <see cref="SetGoal">goal</see> other than the players (a rally point the field leads to) and
+/// <see cref="Hold"/> it in place. No allocation per tick once the arrays have grown.
 /// </summary>
 public sealed partial class HordeCrowd
 {
@@ -106,8 +112,52 @@ public sealed partial class HordeCrowd
     /// <summary>Particles alive in the crowd (indices 0..Count-1).</summary>
     public int Count;
 
-    /// <summary>The floor's height (the spike is one floor).</summary>
+    /// <summary>The floor's height on a flat map (one floor); on a terrain map the ground is <see cref="GroundAt"/>.</summary>
     public float Y;
+
+    /// <summary>The most particles at once (the rest of a bigger horde stays in the mass tier, which has no limit but its cells' capacity).</summary>
+    public const int ParticleCap = 40000;
+
+    /// <summary>The most crowd zombies (and individuals) a separation cell (0.7 m) takes before the next one waits: about 6 a square metre.</summary>
+    public const int PackedCell = 3;
+
+    /// <summary>On terrain: the steepest step between neighbouring flow cells the crowd walks (rise per metre: about 48 degrees).</summary>
+    public const float MaxSlope = 1.1f;
+
+    private TerrainData? _terrain;
+    private float[] _gnd = [];
+
+    /// <summary>The map's terrain (null: flat, every crowd zombie on <see cref="Y"/>).</summary>
+    public TerrainData? Terrain => _terrain;
+
+    /// <summary>The ground a crowd zombie at (x, z) stands on: the terrain there, or the floor on a flat map.</summary>
+    public float GroundAt(float x, float z) => _terrain != null ? _terrain.Sample(x, z) : Y;
+
+    // ---- The goal and the hold (a map's staging: Source/Game/ZombiesCrowdStress.cs) -----------------------
+
+    /// <summary>The flow field leads to this point instead of the players (they still promote, merge and release as ever).</summary>
+    public bool HasGoal { get; private set; }
+
+    public float GoalX { get; private set; }
+
+    public float GoalZ { get; private set; }
+
+    /// <summary>Everyone stands where they are: particles don't walk and the mass doesn't flow (a staging countdown).</summary>
+    public bool Hold;
+
+    private bool _goalDirty;
+    private readonly float[] _goalX = new float[1], _goalZ = new float[1];
+
+    /// <summary>Sets (or clears, <paramref name="on"/> false) the goal; a change starts a new flow field at once.</summary>
+    public void SetGoal(bool on, float x = 0, float z = 0)
+    {
+        if (on == HasGoal && (!on || (x == GoalX && z == GoalZ)))
+            return;
+        HasGoal = on;
+        GoalX = _goalX[0] = x;
+        GoalZ = _goalZ[0] = z;
+        _goalDirty = true;
+    }
 
     // ---- Statistics (self-test, log) -------------------------------------------------------------------
 
@@ -139,7 +189,11 @@ public sealed partial class HordeCrowd
     // ---- The separation grid ---------------------------------------------------------------------------
 
     private float _sMinX, _sMinZ, _sCell = 0.7f;
-    private int _sCols, _sRows;
+
+    // The grid covers the whole map (_sFullCols x _sFullRows), but each tick only the window round the particles and the
+    // individuals is sorted (_sC0, _sR0 its corner, _sCols x _sRows its size): a big map's crowd near the players costs
+    // what a small map's does.
+    private int _sCols, _sRows, _sFullCols, _sFullRows, _sC0, _sR0;
     private int[] _sStart = [], _sFill = [], _sItem = [];
     private float[] _sX = [], _sZ = [];
 
@@ -159,16 +213,17 @@ public sealed partial class HordeCrowd
     /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
     public int FlowCells => _cols * _rows;
 
-    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
     {
-        Reserve(capacity);
+        Reserve(Math.Min(capacity, ParticleCap));
         if (ReferenceEquals(_setupMap, map) && Y == floorY && _cell == MathF.Max(0.5f, Tuning.FlowCell) && _sCell == MathF.Max(0.4f, Tuning.SeparationRadius) && _mCell == MathF.Max(1f, Tuning.NetCell))
             return;
         _setupMap = map;
         Y = floorY;
+        _terrain = map.Terrain;
         _halfX = map.HalfX;
         _halfZ = map.HalfZ;
         _cell = MathF.Max(0.5f, Tuning.FlowCell);
@@ -187,11 +242,15 @@ public sealed partial class HordeCrowd
         Array.Fill(_cost, float.PositiveInfinity);
         _flowPhase = 0;
         _flowReady = false;
+        _gnd = _terrain != null ? new float[n] : [];
         for (var r = 0; r < _rows; r++)
             for (var c = 0; c < _cols; c++)
             {
-                var p = new Vector3(_minX + (c + 0.5f) * _cell, floorY + 0.05f, _minZ + (r + 0.5f) * _cell);
-                _walk[r * _cols + c] = !World.Blocked(p, 1.7f);
+                float x = _minX + (c + 0.5f) * _cell, z = _minZ + (r + 0.5f) * _cell;
+                var y = floorY;
+                if (_terrain != null)
+                    _gnd[r * _cols + c] = y = _terrain.Sample(x, z);
+                _walk[r * _cols + c] = !World.Blocked(new Vector3(x, y + 0.05f, z), 1.7f);
             }
         // Each cell's open neighbours (bit k: _nOff[k] is walkable, and a diagonal cuts no corner), for the field's inner loops.
         _nmask = new byte[n];
@@ -207,6 +266,8 @@ public sealed partial class HordeCrowd
                         continue;
                     if (dc != 0 && dr != 0 && (!_walk[r * _cols + uc] || !_walk[ur * _cols + c]))
                         continue;
+                    if (_gnd.Length > 0 && MathF.Abs(_gnd[ur * _cols + uc] - _gnd[r * _cols + c]) > MaxSlope * _cell * NCost[k])
+                        continue; // (too steep a step: a cliff is a wall to the crowd)
                     m |= (byte)(1 << k);
                 }
                 _nmask[r * _cols + c] = m;
@@ -214,8 +275,9 @@ public sealed partial class HordeCrowd
         _sCell = MathF.Max(0.4f, Tuning.SeparationRadius);
         _sMinX = -map.HalfX - _sCell;
         _sMinZ = -map.HalfZ - _sCell;
-        _sCols = Math.Clamp((int)MathF.Ceiling((map.HalfX * 2 + 2 * _sCell) / _sCell), 1, 2048);
-        _sRows = Math.Clamp((int)MathF.Ceiling((map.HalfZ * 2 + 2 * _sCell) / _sCell), 1, 2048);
+        _sFullCols = _sCols = Math.Clamp((int)MathF.Ceiling((map.HalfX * 2 + 2 * _sCell) / _sCell), 1, 4096);
+        _sFullRows = _sRows = Math.Clamp((int)MathF.Ceiling((map.HalfZ * 2 + 2 * _sCell) / _sCell), 1, 4096);
+        _sC0 = _sR0 = 0;
         _sStart = new int[_sCols * _sRows + 1];
         _sFill = new int[_sCols * _sRows];
         _flowTick = -1_000_000;
@@ -266,6 +328,28 @@ public sealed partial class HordeCrowd
         var c = (int)((x - _minX) / _cell);
         var r = (int)((z - _minZ) / _cell);
         return c >= 0 && r >= 0 && c < _cols && r < _rows && _walk[r * _cols + c];
+    }
+
+    /// <summary>
+    /// May a particle step from (x, z) to (nx, nz)? On a flat map: is (nx, nz) walkable. On terrain also: a step into
+    /// another flow cell must be an open neighbour (not up or down a cliff).
+    /// </summary>
+    private bool CanMove(float x, float z, float nx, float nz)
+    {
+        if (!Walkable(nx, nz))
+            return false;
+        if (_gnd.Length == 0)
+            return true;
+        var c0 = CellOf(x, z);
+        var c1 = CellOf(nx, nz);
+        if (c0 < 0 || c0 == c1)
+            return true;
+        int dc = c1 % _cols - c0 % _cols, dr = c1 / _cols - c0 / _cols;
+        if (dc < -1 || dc > 1 || dr < -1 || dr > 1)
+            return true; // (more than a cell in a tick: not a walk)
+        var k = (dr + 1) * 3 + (dc + 1);
+        k = k < 4 ? k : k - 1; // (the 3 x 3 block less its middle: NDc / NDr's order)
+        return (_nmask[c0] & (1 << k)) != 0;
     }
 
     /// <summary>
@@ -334,16 +418,25 @@ public sealed partial class HordeCrowd
         var t0 = Stopwatch.GetTimestamp();
         Ticks++;
         var targets = Math.Min(tx.Length, _targetCell.Length);
-        // The flow field: due, or a player has moved to another cell.
+        // What the flow field leads to: the goal, else the players.
+        ReadOnlySpan<float> fx = HasGoal ? _goalX : tx[..targets], fz = HasGoal ? _goalZ : tz[..targets];
+        var sources = fx.Length;
+        if (_goalDirty)
+        {
+            _goalDirty = false;
+            _flowPhase = 0; // (a new goal: start again now, not when the current build is done)
+            _flowTick = -1_000_000;
+        }
+        // The flow field: due, or a source has moved to another cell.
         var moved = false;
-        for (var t = 0; t < targets; t++)
-            if (CellOf(tx[t], tz[t]) != _targetCell[t])
+        for (var t = 0; t < sources; t++)
+            if (CellOf(fx[t], fz[t]) != _targetCell[t])
                 moved = true;
-        for (var t = targets; t < _targetCell.Length; t++)
+        for (var t = sources; t < _targetCell.Length; t++)
             if (_targetCell[t] != -1)
                 moved = true;
-        if (_flowPhase == 0 && targets > 0 && (tick - _flowTick >= Tuning.FlowRefreshTicks || (moved && tick - _flowTick >= 10)))
-            StartFlow(tick, tx[..targets], tz[..targets]);
+        if (_flowPhase == 0 && sources > 0 && (tick - _flowTick >= Tuning.FlowRefreshTicks || (moved && tick - _flowTick >= 10)))
+            StartFlow(tick, fx, fz);
         if (_flowPhase != 0)
             StepFlow(Tuning.FlowCellsPerTick); // (until the first field is ready the particles walk straight at the players)
 
@@ -384,7 +477,10 @@ public sealed partial class HordeCrowd
             {
                 Thinks++;
                 Next[i] = tick + Tuning.ThinkMin + Hash((uint)i * 2654435761u ^ (uint)tick) % thinkSpan;
-                Think(i, x, z, bt >= 0 ? tx[bt] : x, bt >= 0 ? tz[bt] : z, best);
+                if (HasGoal)
+                    Think(i, x, z, GoalX, GoalZ, (GoalX - x) * (GoalX - x) + (GoalZ - z) * (GoalZ - z));
+                else
+                    Think(i, x, z, bt >= 0 ? tx[bt] : x, bt >= 0 ? tz[bt] : z, best);
             }
             if (best < pr2)
             {
@@ -401,7 +497,7 @@ public sealed partial class HordeCrowd
             }
             if ((i & 1) == parity)
                 Separate(i, x, z, sepR, sepS);
-            var spd = Held[i] ? 0f : Spd[i];
+            var spd = Held[i] || Hold ? 0f : Spd[i];
             var wx = DX[i] * spd + PX[i];
             var wz = DZ[i] * spd + PZ[i];
             // Ease towards the wanted velocity (a quarter a tick: about 0.07 s to turn).
@@ -409,14 +505,14 @@ public sealed partial class HordeCrowd
             var vz = VZ[i] + (wz - VZ[i]) * 0.25f;
             var nx = x + vx * dt;
             var nz = z + vz * dt;
-            if (!Walkable(nx, nz))
+            if (!CanMove(x, z, nx, nz))
             {
-                if (Walkable(nx, z))
+                if (CanMove(x, z, nx, z))
                 {
                     nz = z;
                     vz = 0;
                 }
-                else if (Walkable(x, nz))
+                else if (CanMove(x, z, x, nz))
                 {
                     nx = x;
                     vx = 0;
@@ -429,12 +525,25 @@ public sealed partial class HordeCrowd
                     Blocked++;
                 }
             }
+            if (nx != x || nz != z)
+            {
+                // Packed: no stepping into a separation cell already holding PackedCell (this tick's sort), so pressure from
+                // behind can't squeeze a crowd denser than about 6 a square metre (it stands and waits, as the mass does
+                // behind a full cell).
+                var to = SCell(nx, nz);
+                if (to != SCell(x, z) && _sStart[to + 1] - _sStart[to] >= PackedCell)
+                {
+                    nx = x;
+                    nz = z;
+                    vx = vz = 0;
+                }
+            }
             X[i] = Math.Clamp(nx, -_halfX + 0.3f, _halfX - 0.3f);
             Z[i] = Math.Clamp(nz, -_halfZ + 0.3f, _halfZ - 0.3f);
             VX[i] = vx;
             VZ[i] = vz;
         }
-        TickMass(tick, tx[..targets], tz[..targets]); // the mass tier: merge, flow, release (HordeCrowd.Mass.cs)
+        TickMass(tick, tx[..targets], tz[..targets], fx, fz); // the mass tier: merge, flow, release (HordeCrowd.Mass.cs)
         TickMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
     }
 
@@ -680,18 +789,54 @@ public sealed partial class HordeCrowd
 
     // ---- Separation -------------------------------------------------------------------------------------
 
-    private int SCell(float x, float z)
+    /// <summary>Is the separation cell at (x, z) packed (<see cref="PackedCell"/> or more, as of this tick's sort; outside the window: no)?</summary>
+    private bool Packed(float x, float z)
     {
-        var c = Math.Clamp((int)((x - _sMinX) / _sCell), 0, _sCols - 1);
-        var r = Math.Clamp((int)((z - _sMinZ) / _sCell), 0, _sRows - 1);
-        return r * _sCols + c;
+        var c = (int)((x - _sMinX) / _sCell) - _sC0;
+        var r = (int)((z - _sMinZ) / _sCell) - _sR0;
+        if (c < 0 || r < 0 || c >= _sCols || r >= _sRows)
+            return false;
+        var k = r * _sCols + c;
+        return _sStart[k + 1] - _sStart[k] >= PackedCell;
     }
 
-    /// <summary>The counting sort: particles then individuals into the separation grid (items past <see cref="Count"/> are individuals).</summary>
+    /// <summary>The window's column and row at x and z (clamped into the window).</summary>
+    private int SCol(float x) => Math.Clamp((int)((x - _sMinX) / _sCell) - _sC0, 0, _sCols - 1);
+
+    private int SRow(float z) => Math.Clamp((int)((z - _sMinZ) / _sCell) - _sR0, 0, _sRows - 1);
+
+    private int SCell(float x, float z) => SRow(z) * _sCols + SCol(x);
+
+    /// <summary>
+    /// The counting sort: particles then individuals into the separation grid (items past <see cref="Count"/> are
+    /// individuals), over the window that holds them all this tick (the whole map's grid when they are spread over it).
+    /// </summary>
     private void BuildSeparation()
     {
-        var cells = _sCols * _sRows;
         var total = Count + Math.Min(BlockCount, BlockX.Length);
+        // The window: every item's cell, a cell of margin round them.
+        int c0 = int.MaxValue, c1 = -1, r0 = int.MaxValue, r1 = -1;
+        for (var i = 0; i < total; i++)
+        {
+            var (x, z) = i < Count ? (X[i], Z[i]) : (BlockX[i - Count], BlockZ[i - Count]);
+            var c = (int)((x - _sMinX) / _sCell);
+            var r = (int)((z - _sMinZ) / _sCell);
+            if (c < c0)
+                c0 = c;
+            if (c > c1)
+                c1 = c;
+            if (r < r0)
+                r0 = r;
+            if (r > r1)
+                r1 = r;
+        }
+        if (c1 < 0)
+            c0 = c1 = r0 = r1 = 0;
+        _sC0 = Math.Clamp(c0 - 1, 0, _sFullCols - 1);
+        _sR0 = Math.Clamp(r0 - 1, 0, _sFullRows - 1);
+        _sCols = Math.Clamp(c1 + 2, 0, _sFullCols - 1) - _sC0 + 1;
+        _sRows = Math.Clamp(r1 + 2, 0, _sFullRows - 1) - _sR0 + 1;
+        var cells = _sCols * _sRows;
         Array.Clear(_sStart, 0, cells + 1);
         for (var i = 0; i < total; i++)
         {
@@ -713,10 +858,10 @@ public sealed partial class HordeCrowd
 
     private void Separate(int i, float x, float z, float r, float strength)
     {
-        var c0 = Math.Clamp((int)((x - r - _sMinX) / _sCell), 0, _sCols - 1);
-        var c1 = Math.Clamp((int)((x + r - _sMinX) / _sCell), 0, _sCols - 1);
-        var r0 = Math.Clamp((int)((z - r - _sMinZ) / _sCell), 0, _sRows - 1);
-        var r1 = Math.Clamp((int)((z + r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var c0 = SCol(x - r);
+        var c1 = SCol(x + r);
+        var r0 = SRow(z - r);
+        var r1 = SRow(z + r);
         float px = 0, pz = 0;
         var seen = 0;
         var r2 = r * r;
@@ -781,10 +926,11 @@ public sealed partial class HordeCrowd
         for (var t = 0f; t <= bestT + step; t += step)
         {
             var p = o + d * t;
-            if (p.Y < Y - 0.5f || p.Y > Y + BodyHeight + 0.5f)
+            var gy = _terrain != null ? _terrain.Sample(p.X, p.Z) : Y;
+            if (p.Y < gy - 0.5f || p.Y > gy + BodyHeight + 0.5f)
             {
-                // Above or below the crowd: skip ahead only if the ray is heading away.
-                if ((p.Y > Y + BodyHeight && d.Y >= 0) || (p.Y < Y && d.Y <= 0))
+                // Above or below the crowd: skip ahead only if the ray is heading away (on terrain the ground may rise to it: go on).
+                if (_terrain == null && ((p.Y > Y + BodyHeight && d.Y >= 0) || (p.Y < Y && d.Y <= 0)))
                     break;
                 continue;
             }
@@ -817,11 +963,12 @@ public sealed partial class HordeCrowd
                         // Back up to the capsule's surface.
                         var th = tc - MathF.Sqrt(BodyRadius * BodyRadius - miss2) / flat;
                         var y = o.Y + d.Y * Math.Max(0, th);
-                        if (y < Y || y > Y + BodyHeight || th >= bestT)
+                        var feet = _terrain != null ? _terrain.Sample(X[i], Z[i]) : Y;
+                        if (y < feet || y > feet + BodyHeight || th >= bestT)
                             continue;
                         bestT = Math.Max(0, th);
                         best = i;
-                        head = y > Y + HeadFrom;
+                        head = y > feet + HeadFrom;
                     }
                 }
             if (best >= 0 && t > bestT + _sCell)
@@ -837,10 +984,10 @@ public sealed partial class HordeCrowd
     {
         if (Count == 0 || _sStart.Length == 0)
             return 0;
-        var c0 = Math.Clamp((int)((p.X - r - _sMinX) / _sCell), 0, _sCols - 1);
-        var c1 = Math.Clamp((int)((p.X + r - _sMinX) / _sCell), 0, _sCols - 1);
-        var r0 = Math.Clamp((int)((p.Z - r - _sMinZ) / _sCell), 0, _sRows - 1);
-        var r1 = Math.Clamp((int)((p.Z + r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var c0 = SCol(p.X - r);
+        var c1 = SCol(p.X + r);
+        var r0 = SRow(p.Z - r);
+        var r1 = SRow(p.Z + r);
         var n = 0;
         var r2 = r * r;
         for (var cz = r0; cz <= r1; cz++)

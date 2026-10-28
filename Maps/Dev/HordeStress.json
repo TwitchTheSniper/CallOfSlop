@@ -1,0 +1,461 @@
+{
+ "format": "call-of-slop-map/1",
+ "name": "Horde Stress",
+ "description": "Horde stress dev map: a wide valley on terrain. You start on the Overlook; three hordes wait on staging pads along the far ridge, pour down into the valley, merge into one and come up for you. The lobby sets the horde's size (1,000 to 100,000) and endless waves; watch the F9 window, and the log has a summary per size.",
+ "author": "Call of Slop",
+ "order": 988,
+ "maxPlayers": 8,
+ "test": {
+  "maxPlayers": 8,
+  "minHills": 1,
+  "minTeamSpawns": 4,
+  "symmetry": "mirrorZ",
+  "walkFairness": 0.12,
+  "minMainNavPct": 90,
+  "probes": [
+   [
+    "overlook",
+    -175.0,
+    0,
+    17.0
+   ],
+   [
+    "rally point",
+    0,
+    6,
+    -12
+   ]
+  ],
+  "botMatchSeconds": 8,
+  "spawnsStand": true
+ },
+ "halfX": 230.0,
+ "halfZ": 200.0,
+ "skybox": {
+  "preset": "overcast"
+ },
+ "terrain": {
+  "cell": 2,
+  "margin": 40,
+  "surface": {
+   "grass": "#5d7a3e",
+   "dirt": "#7a6446",
+   "rock": "#7b7770",
+   "sand": "#a99a72",
+   "sandBelow": -9.5,
+   "rockSlope": 40
+  },
+  "features": [
+   {
+    "type": "noise",
+    "amplitude": 0.5,
+    "scale": 60,
+    "octaves": 2,
+    "seed": 17
+   },
+   {
+    "type": "valley",
+    "points": [
+     [
+      0,
+      -280
+     ],
+     [
+      0,
+      280
+     ]
+    ],
+    "width": 230,
+    "depth": 12
+   },
+   {
+    "type": "ridge",
+    "points": [
+     [
+      185,
+      -280
+     ],
+     [
+      185,
+      280
+     ]
+    ],
+    "width": 150,
+    "height": 24
+   },
+   {
+    "type": "ridge",
+    "points": [
+     [
+      -190,
+      -280
+     ],
+     [
+      -190,
+      280
+     ]
+    ],
+    "width": 130,
+    "height": 10
+   },
+   {
+    "type": "plateau",
+    "x": -175.0,
+    "z": 0,
+    "w": 30,
+    "d": 130,
+    "height": 17.0,
+    "edge": 22,
+    "material": "dirt"
+   },
+   {
+    "type": "hill",
+    "x": 156.0,
+    "z": -62.5,
+    "radius": 20,
+    "height": 6
+   },
+   {
+    "type": "hill",
+    "x": 156.0,
+    "z": 62.5,
+    "radius": 20,
+    "height": 6
+   },
+   {
+    "type": "flatten",
+    "x": 150.0,
+    "z": -125.0,
+    "radius": 22,
+    "edge": 12,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 150.0,
+    "z": 0.0,
+    "radius": 22,
+    "edge": 12,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 150.0,
+    "z": 125.0,
+    "radius": 22,
+    "edge": 12,
+    "material": "dirt"
+   },
+   {
+    "type": "flatten",
+    "x": 0,
+    "z": 0,
+    "radius": 40,
+    "edge": 20,
+    "height": -12
+   }
+  ]
+ },
+ "teamSpawns": [
+  [
+   [
+    -184.0,
+    -48.0
+   ],
+   [
+    -180.0,
+    -48.0
+   ],
+   [
+    -176.0,
+    -48.0
+   ],
+   [
+    -172.0,
+    -48.0
+   ]
+  ],
+  [
+   [
+    -184.0,
+    48.0
+   ],
+   [
+    -180.0,
+    48.0
+   ],
+   [
+    -176.0,
+    48.0
+   ],
+   [
+    -172.0,
+    48.0
+   ]
+  ]
+ ],
+ "hills": [
+  {
+   "x": -175.0,
+   "z": 0.0,
+   "radius": 5.0
+  }
+ ],
+ "flags": [
+  [
+   -130.0,
+   -90.0
+  ],
+  [
+   -130.0,
+   90.0
+  ]
+ ],
+ "zombies": {
+  "start": "Field",
+  "crowd": 2500,
+  "stress": {
+   "staging": [
+    [
+     150.0,
+     -125.0
+    ],
+    [
+     150.0,
+     0.0
+    ],
+    [
+     150.0,
+     125.0
+    ]
+   ],
+   "rally": [
+    0.0,
+    0.0
+   ],
+   "countdown": 10,
+   "gather": 0.75,
+   "gatherSeconds": 300,
+   "waveSeconds": 60
+  },
+  "testKit": true,
+  "areas": [
+   {
+    "name": "Field",
+    "rect": [
+     -230.0,
+     -200.0,
+     230.0,
+     200.0
+    ]
+   }
+  ],
+  "spawners": [
+   {
+    "area": "Field",
+    "at": [
+     60.0,
+     0.0
+    ]
+   }
+  ],
+  "box": {
+   "cost": 950,
+   "start": 0,
+   "spots": [
+    {
+     "at": [
+      -183.0,
+      0.0
+     ],
+     "yaw": 90.0
+    }
+   ]
+  }
+ },
+ "ops": [
+  {
+   "op": "Ground",
+   "color": "#56703f"
+  },
+  {
+   "op": "Perimeter",
+   "height": 6.0,
+   "color": "#5b5a52"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": -18.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": -4.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": -40.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": -26.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": -62.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": -48.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": 4.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": 18.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": 26.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": 40.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -160.4,
+   "y0": 0.0,
+   "z0": 48.0,
+   "x1": -159.6,
+   "y1": 0.7,
+   "z1": 62.0,
+   "color": "#8a8274",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": 149.6,
+   "y0": 0.0,
+   "z0": -125.4,
+   "x1": 150.4,
+   "y1": 4.0,
+   "z1": -124.6,
+   "color": "#a33a2a",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": 149.6,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": 150.4,
+   "y1": 4.0,
+   "z1": 0.4,
+   "color": "#a33a2a",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": 149.6,
+   "y0": 0.0,
+   "z0": 124.6,
+   "x1": 150.4,
+   "y1": 4.0,
+   "z1": 125.4,
+   "color": "#a33a2a",
+   "anchor": "ground"
+  },
+  {
+   "op": "Block",
+   "x0": -0.4,
+   "y0": 0.0,
+   "z0": -0.4,
+   "x1": 0.4,
+   "y1": 3.0,
+   "z1": 0.4,
+   "color": "#c8b048",
+   "anchor": "ground"
+  },
+  {
+   "op": "Spawn",
+   "x": -184.0,
+   "z": -48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -184.0,
+   "z": 48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -180.0,
+   "z": -48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -180.0,
+   "z": 48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -176.0,
+   "z": -48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -176.0,
+   "z": 48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -172.0,
+   "z": -48.0
+  },
+  {
+   "op": "Spawn",
+   "x": -172.0,
+   "z": 48.0
+  },
+  {
+   "op": "AutoWaypoints",
+   "spacing": 12
+  },
+  {
+   "op": "Waypoint",
+   "x": -175.0,
+   "z": 0.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -130.0,
+   "z": -90.0
+  },
+  {
+   "op": "Waypoint",
+   "x": -130.0,
+   "z": 90.0
+  },
+  {
+   "op": "Waypoint",
+   "x": 0.0,
+   "z": 0.0
+  }
+ ]
+}

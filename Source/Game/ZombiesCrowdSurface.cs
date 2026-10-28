@@ -26,6 +26,7 @@ public sealed partial class Game
         CrowdGround.Height = t.SurfaceHeight;
         CrowdGround.Packed = t.SurfacePacked;
         CrowdGround.MinHeight = t.SurfaceMin;
+        CrowdGround.Terrain = World.Map.Terrain; // (a terrain map: the surface rises from the ground under it)
         if (IsServer && CrowdOn && Crowd.Ready)
         {
             if (Crowd.Total == 0 || _crowdCount.Length == 0)
@@ -53,7 +54,7 @@ public sealed partial class Game
         var h = CrowdGround.HeightAt(feet.X, feet.Z);
         if (h < CrowdGround.MinHeight)
             return;
-        var floor = CrowdGround.FloorY;
+        var floor = CrowdGround.FloorAt(feet.X, feet.Z);
         var top = floor + h;
         var t = ZRules.Crowd;
         if (feet.Y > top + 0.05f || feet.Y < floor - 1f)

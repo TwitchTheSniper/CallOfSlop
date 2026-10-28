@@ -363,6 +363,11 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   tiers: full zombies near the players, particles behind them, per-cell counts far out; drawn on the GPU, a crowd
   roar per cluster, and dense crowd is ground players stand on. Off on every other map. See [MASS-HORDE.md](MASS-HORDE.md).
 
+- **Stress** (`"stress": {"staging": [[x, z], ...], "rally": [x, z], "countdown": 10, "gather": 0.75, "gatherSeconds": 300,
+  "waveSeconds": 60}`, with `"crowd"`; the horde stress map: Horde Stress): each round's crowd (the host's lobby size,
+  else `"crowd"`) waits on the staging areas (1-6) for the countdown, descends to the rally point, merges there and
+  advances on the players; endless waves on request. See [MASS-HORDE.md](MASS-HORDE.md), "Horde Stress".
+
 - **Areas** are rectangles, optionally with a height band and extra boxes, for maps with floors over each other:
   `{"name": "Crypt", "rect": [x0, z0, x1, z1], "y": [y0, y1], "more": [[x0, z0, x1, z1, y0, y1], ...]}`. A point is in
   the area when it's in the rectangle and the band (`"y"`, at least 2 m tall; leave it out: any height) or in one of the

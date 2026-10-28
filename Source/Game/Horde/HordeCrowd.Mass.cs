@@ -107,9 +107,10 @@ public sealed partial class HordeCrowd
 
     /// <summary>
     /// After the particle loop: merge this tick's far particles (highest index first), move the mass along the flow
-    /// field, and let particles out of cells near a player. <paramref name="tx"/>/<paramref name="tz"/>: the players.
+    /// field, and let particles out of cells near a player. <paramref name="tx"/>/<paramref name="tz"/>: the players;
+    /// <paramref name="fx"/>/<paramref name="fz"/>: what the flow leads to (the players, or the goal). Held: no flow.
     /// </summary>
-    private void TickMass(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz)
+    private void TickMass(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz, ReadOnlySpan<float> fx, ReadOnlySpan<float> fz)
     {
         if (!Tuning.Mass || MassCount.Length == 0)
         {
@@ -136,6 +137,8 @@ public sealed partial class HordeCrowd
         if (MassTotal == 0)
             return;
 
+        if (Hold)
+            goto Release;
         // Flow: each cell sends a share of its zombies one cell downstream (the flow field's heading at its centre), as far
         // as the next cell has room. Worked out from this tick's counts into the next (no order bias).
         var n = _mCols * _mRows;
@@ -163,32 +166,45 @@ public sealed partial class HordeCrowd
             else
             {
                 var best = float.MaxValue;
-                for (var t = 0; t < tx.Length; t++)
+                for (var t = 0; t < fx.Length; t++)
                 {
-                    var d = (tx[t] - cx) * (tx[t] - cx) + (tz[t] - cz) * (tz[t] - cz);
+                    var d = (fx[t] - cx) * (fx[t] - cx) + (fz[t] - cz) * (fz[t] - cz);
                     if (d < best && d > 1e-4f)
                     {
                         best = d;
                         var l = MathF.Sqrt(d);
-                        hx = (tx[t] - cx) / l;
-                        hz = (tz[t] - cz) / l;
+                        hx = (fx[t] - cx) / l;
+                        hz = (fz[t] - cz) / l;
                     }
                 }
+                if (best < _mCell * _mCell * 0.5f)
+                    hx = hz = 0; // (the target is in this cell: they're there)
             }
             MassVX[c] = hx * Tuning.Speed;
             MassVZ[c] = hz * Tuning.Speed;
             int dc = MathF.Abs(hx) > 0.38f ? Math.Sign(hx) : 0, dr = MathF.Abs(hz) > 0.38f ? Math.Sign(hz) : 0;
             if (dc == 0 && dr == 0)
                 continue;
-            int ux = c % _mCols + dc, uz = c / _mCols + dr;
-            if (ux < 0 || uz < 0 || ux >= _mCols || uz >= _mRows)
-                continue;
-            var u = uz * _mCols + ux;
-            if (!_mWalk[u])
-                continue;
             // A cell's zombies cross it in cell / speed seconds: that share of them a tick.
             _mFlux[c] += m * Tuning.Speed * dt / (_mCell * (dc != 0 && dr != 0 ? 1.41421356f : 1f));
-            var move = Math.Min((int)_mFlux[c], Math.Min(_mNext[c], Math.Max(0, cap - _mNext[u])));
+            if ((int)_mFlux[c] <= 0)
+                continue;
+            // Downstream: the heading's neighbour; when that one is full (or a wall), the neighbour 45 degrees either side
+            // (the side nearer the heading first) if it is further down the field, so a horde spreads round a jam and
+            // packs like a fluid instead of queueing in single file behind it.
+            var u = MassDownstream(c, dc, dr, cap);
+            if (u < 0)
+            {
+                var ring = RingIndex(dc, dr);
+                int ra = (ring + 1) & 7, rb = (ring + 7) & 7;
+                if (RingX[ra] * hx + RingZ[ra] * hz < RingX[rb] * hx + RingZ[rb] * hz)
+                    (ra, rb) = (rb, ra);
+                var own = fc >= 0 ? _cost[fc] : float.PositiveInfinity;
+                u = MassSideways(c, RingX[ra], RingZ[ra], cap, own);
+                if (u < 0)
+                    u = MassSideways(c, RingX[rb], RingZ[rb], cap, own);
+            }
+            var move = u < 0 ? 0 : Math.Min((int)_mFlux[c], Math.Min(_mNext[c], Math.Max(0, cap - _mNext[u])));
             if (move <= 0)
             {
                 _mFlux[c] = MathF.Min(_mFlux[c], 1.5f); // (held back: no backlog building up)
@@ -200,8 +216,10 @@ public sealed partial class HordeCrowd
         }
         Array.Copy(_mNext, MassCount, n);
 
+        Release:
         // Release: cells within the mass range of a player let zombies out as particles (nearest cells first would cost a
         // sort; in index order from a turning start instead, a few a tick).
+        n = _mCols * _mRows;
         var r2 = Tuning.MassRange * Tuning.MassRange;
         var left = Tuning.MassPerTick;
         var start = (int)(tick % n);
@@ -226,11 +244,11 @@ public sealed partial class HordeCrowd
                     _mRng = Hash(_mRng + 0x9E3779B9u);
                     x = cx + ((_mRng & 0xFFFF) / 65535f - 0.5f) * _mCell * 0.9f;
                     z = cz + ((_mRng >> 16) / 65535f - 0.5f) * _mCell * 0.9f;
-                    if (Walkable(x, z))
+                    if (Walkable(x, z) && !Packed(x, z))
                         break;
                 }
-                if (!Walkable(x, z))
-                    break;
+                if (!Walkable(x, z) || Packed(x, z))
+                    break; // (no room in the cell: they stay in the mass for now)
                 Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, MassHP);
                 MassCount[c]--;
                 MassTotal--;
@@ -238,6 +256,37 @@ public sealed partial class HordeCrowd
                 left--;
             }
         }
+    }
+
+    // The eight directions round the compass, in order (a turn of 45 degrees is the next one).
+    private static readonly int[] RingX = [1, 1, 0, -1, -1, -1, 0, 1], RingZ = [0, 1, 1, 1, 0, -1, -1, -1];
+
+    private static int RingIndex(int dc, int dr)
+    {
+        for (var k = 0; k < 8; k++)
+            if (RingX[k] == dc && RingZ[k] == dr)
+                return k;
+        return 0;
+    }
+
+    /// <summary>The mass cell (dc, dr) from <paramref name="c"/> if it is walkable and has room this tick (-1: not).</summary>
+    private int MassDownstream(int c, int dc, int dr, int cap)
+    {
+        int ux = c % _mCols + dc, uz = c / _mCols + dr;
+        if (ux < 0 || uz < 0 || ux >= _mCols || uz >= _mRows)
+            return -1;
+        var u = uz * _mCols + ux;
+        return _mWalk[u] && _mNext[u] < cap ? u : -1;
+    }
+
+    /// <summary><see cref="MassDownstream"/>, and only if the flow field there is cheaper than <paramref name="own"/> (sideways, but still downhill).</summary>
+    private int MassSideways(int c, int dc, int dr, int cap, float own)
+    {
+        var u = MassDownstream(c, dc, dr, cap);
+        if (u < 0 || float.IsPositiveInfinity(own))
+            return -1;
+        var fc = CellOf(MinX + (u % _mCols + 0.5f) * _mCell, MinZ + (u / _mCols + 0.5f) * _mCell);
+        return fc >= 0 && _cost[fc] < own ? u : -1;
     }
 
     /// <summary>
@@ -264,7 +313,7 @@ public sealed partial class HordeCrowd
                     continue;
                 var cx = MinX + (c + 0.5f) * _mCell;
                 var cz = MinZ + (r + 0.5f) * _mCell;
-                var dist = new Vector3(cx - center.X, Y + 1.1f - center.Y, cz - center.Z).Length();
+                var dist = new Vector3(cx - center.X, GroundAt(cx, cz) + 1.1f - center.Y, cz - center.Z).Length();
                 var inside = dist <= radius;
                 var dmg = maxDamage * MathF.Pow(MathF.Max(0f, 1f - MathF.Max(0f, dist - _mCell * 0.5f) / radius), 1.4f);
                 if (dmg < MassHP)
@@ -279,6 +328,44 @@ public sealed partial class HordeCrowd
         return n;
     }
 
-    /// <summary>A mass cell's middle (world, on the floor).</summary>
-    public Vector3 MassCentre(int cell) => new(MinX + (cell % _mCols + 0.5f) * _mCell, Y, MinZ + (cell / _mCols + 0.5f) * _mCell);
+    /// <summary>A mass cell's middle (world, on the ground).</summary>
+    public Vector3 MassCentre(int cell)
+    {
+        float x = MinX + (cell % _mCols + 0.5f) * _mCell, z = MinZ + (cell / _mCols + 0.5f) * _mCell;
+        return new Vector3(x, GroundAt(x, z), z);
+    }
+
+    /// <summary>
+    /// Puts <paramref name="n"/> zombies in the mass round (<paramref name="x"/>, <paramref name="z"/>): walkable cells
+    /// nearest first, each filled to <paramref name="perCell"/>, out to <paramref name="maxRadius"/> m. Returns how many
+    /// went in (a staging area: Source/Game/ZombiesCrowdStress.cs). Allocates nothing; the rings are walked cell by cell.
+    /// </summary>
+    public int SeedMass(float x, float z, int n, int perCell, float maxRadius)
+    {
+        if (MassCount.Length == 0 || n <= 0 || perCell <= 0)
+            return 0;
+        var cc = Math.Clamp((int)((x - MinX) / _mCell), 0, _mCols - 1);
+        var cr = Math.Clamp((int)((z - MinZ) / _mCell), 0, _mRows - 1);
+        var rings = (int)MathF.Ceiling(maxRadius / _mCell);
+        var put = 0;
+        // Square rings round the middle cell, each ring's cells kept only within the radius (a round blob).
+        for (var ring = 0; ring <= rings && put < n; ring++)
+            for (var dr = -ring; dr <= ring && put < n; dr++)
+                for (var dc = -ring; dc <= ring && put < n; dc++)
+                {
+                    if (Math.Max(Math.Abs(dc), Math.Abs(dr)) != ring)
+                        continue;
+                    int c = cc + dc, r = cr + dr;
+                    if (c < 0 || r < 0 || c >= _mCols || r >= _mRows || (dc * dc + dr * dr) * _mCell * _mCell > maxRadius * maxRadius + _mCell * _mCell)
+                        continue;
+                    var k = r * _mCols + c;
+                    if (!_mWalk[k] || MassCount[k] >= perCell)
+                        continue;
+                    var add = Math.Min(perCell - MassCount[k], n - put);
+                    MassCount[k] += add;
+                    MassTotal += add;
+                    put += add;
+                }
+        return put;
+    }
 }

@@ -210,6 +210,13 @@ public sealed class ZombiesMap
     /// <summary>The most a map's <see cref="Crowd"/> can ask for.</summary>
     public const int MaxCrowd = 32000;
 
+    /// <summary>
+    /// "stress": { ... } (with "crowd"; Dev/HordeStress.json): a horde stress map. Each round's crowd waits on the
+    /// staging areas, then descends to the rally point, merges there and advances on the players; the host picks the
+    /// size in the lobby (Source/Game/ZombiesCrowdStress.cs, docs/zombies/MASS-HORDE.md "Horde Stress"). Null: off.
+    /// </summary>
+    public ZombiesStress? Stress;
+
     /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
     public static class MachineProp
     {
@@ -285,7 +292,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "traderSpots", "machineProps", "testKit", "crowd"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "traderSpots", "machineProps", "testKit", "crowd", "stress"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -541,6 +548,38 @@ public sealed class ZombiesMap
                 throw new MapFileException($"{where}.crowd: a whole number of zombies from 0 to {MaxCrowd}");
             z.Crowd = n;
         }
+        if (Get(e, "stress") is { } sx)
+        {
+            var w = $"{where}.stress";
+            if (z.Crowd <= 0)
+                throw new MapFileException($"{w}: needs \"crowd\" (the default horde size)");
+            Only(sx, w, "staging", "rally", "countdown", "gather", "gatherSeconds", "waveSeconds");
+            var stress = new ZombiesStress();
+            foreach (var p in List(Need(sx, "staging", w), $"{w}.staging"))
+            {
+                var v = Nums(p, 2, $"{w}.staging");
+                stress.Staging.Add(new Vector2(v[0], v[1]));
+            }
+            if (stress.Staging.Count is < 1 or > ZombiesStress.MaxStaging)
+                throw new MapFileException($"{w}.staging: 1 to {ZombiesStress.MaxStaging} staging areas, [x, z] each");
+            var rv = Nums(Need(sx, "rally", w), 2, $"{w}.rally");
+            stress.Rally = new Vector2(rv[0], rv[1]);
+            foreach (var at in stress.Staging.Append(stress.Rally))
+                if (MathF.Abs(at.X) > map.HalfX - 2 || MathF.Abs(at.Y) > map.HalfZ - 2)
+                    throw new MapFileException($"{w}: ({at.X:0.#}, {at.Y:0.#}) is outside the map");
+            float Opt(string key, float def, float min, float max)
+            {
+                if (Get(sx, key) is not { } x)
+                    return def;
+                var f = Num(x, $"{w}.{key}");
+                return f >= min && f <= max ? f : throw new MapFileException($"{w}.{key}: from {min} to {max}");
+            }
+            stress.Countdown = Opt("countdown", stress.Countdown, 0, 120);
+            stress.Gather = Opt("gather", stress.Gather, 0.1f, 1f);
+            stress.GatherSeconds = Opt("gatherSeconds", stress.GatherSeconds, 10, 1200);
+            stress.WaveSeconds = Opt("waveSeconds", stress.WaveSeconds, 10, 600);
+            z.Stress = stress;
+        }
         if (z.MachineProps)
             foreach (var (name, _) in z.Machines())
                 if (map.PropScope.Find(name) == null)
@@ -760,4 +799,30 @@ public sealed partial class Map
 
     /// <summary>The box the fingerprint uses for a Zombies box: the closed door (opening it never changes the fingerprint).</summary>
     internal bool ZombieHashBox(int i, out Box b) => _zombieOriginal.TryGetValue(i, out b);
+}
+
+/// <summary>
+/// A horde stress map's staging (the Zombies section's "stress"; Dev/HordeStress.json, Source/Game/ZombiesCrowdStress.cs):
+/// where the hordes wait, where they merge, and the timings.
+/// </summary>
+public sealed class ZombiesStress
+{
+    public const int MaxStaging = 6;
+
+    /// <summary>The staging areas' middles (x, z): the round's crowd is split evenly between them.</summary>
+    public List<Vector2> Staging = new();
+
+    /// <summary>Where the hordes merge (x, z) before they advance on the players.</summary>
+    public Vector2 Rally;
+
+    /// <summary>Seconds the hordes wait on their staging areas at a round's start.</summary>
+    public float Countdown = 10f;
+
+    /// <summary>The hordes have merged when this share of the crowd is near the rally point (or after <see cref="GatherSeconds"/>).</summary>
+    public float Gather = 0.75f;
+
+    public float GatherSeconds = 300f;
+
+    /// <summary>Endless: a new wave from the staging areas this often (seconds).</summary>
+    public float WaveSeconds = 60f;
 }

@@ -19,8 +19,14 @@ public sealed class CrowdSurface
     private float _cell = 4f, _minX, _minZ, _perZombie;
     private byte[] _count = [];
 
-    /// <summary>The floor the surface rises from.</summary>
+    /// <summary>The floor the surface rises from (a flat map), or the terrain's ground (<see cref="Terrain"/>).</summary>
     public float FloorY;
+
+    /// <summary>The map's terrain (null: flat, the floor is <see cref="FloorY"/>).</summary>
+    public TerrainData? Terrain;
+
+    /// <summary>The ground under the surface at (x, z).</summary>
+    public float FloorAt(float x, float z) => Terrain != null ? Terrain.Sample(x, z) : FloorY;
 
     /// <summary>Is there a grid bound?</summary>
     public bool Bound => _count.Length > 0 && _cols > 0 && _rows > 0;

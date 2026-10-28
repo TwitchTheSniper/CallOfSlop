@@ -78,6 +78,7 @@ public sealed partial class Ui
             _perfStats.Update();
         }
         SamplePerfNet(game, now);
+        _perfOverlayGame = game;
         if (PerfMode == PerfView.Overlay)
             DrawPerfOverlay();
         else
@@ -413,6 +414,8 @@ public sealed partial class Ui
         CountEntities(game, out var people, out var bots, out var walk, out var run, out var sprint, out var soldiers);
         var map = World.Map;
         ImGui.Text($"Players {people}, bots {bots}; zombies {walk + run + sprint} (walk {walk}, run {run}, sprint {sprint}); co-op soldiers {soldiers}");
+        if (game.CrowdOn)
+            DrawPerfCrowd(game, walk + run + sprint);
         ImGui.Text($"Props {map.PropInstances.Count} ({map.BrokenProps.Count} broken), decals {map.DecalRequests.Count}, ragdolls {Ragdolls.LiveCount}, projectiles {game.Projectiles.Count}");
         ImGui.Text($"Particles: tracers {game.Tracers.Count}, blasts {game.Blasts.Count}, smoke clouds {game.Smokes.Count}");
         if (game.Net.IsOffline)
@@ -471,6 +474,43 @@ public sealed partial class Ui
         return sb.ToString();
     }
 
+    /// <summary>The session the overlay was last drawn for (its crowd line; set by <see cref="DrawPerf"/>).</summary>
+    private Game? _perfOverlayGame;
+
+    /// <summary>A mass horde map's tiers (Source/Game/ZombiesCrowd*.cs): the counts, the crowd's tick, its bytes, what is drawn.</summary>
+    private static void DrawPerfCrowd(Game game, int individuals)
+    {
+        var c = game.Crowd;
+        if (game.IsServer)
+        {
+            ImGui.Text($"Horde tiers: {c.Total + individuals} live = individuals {individuals}, crowd particles {c.Count} ({c.Near} near, held or promoting), mass {c.MassTotal}; killed {game.CrowdRoundKills} of {game.CrowdRoundTotal}");
+            ImGui.Text($"Crowd tick {game.CrowdTickAvgMs:0.00} ms avg, {game.CrowdTickWorstMs:0.00} worst (last second); flow field worst step {c.FlowWorstMs:0.00} ms; crowd net {game.CrowdBytesPerClient / 1024f:0.0} KB/s per client ({game.CrowdClients} clients)");
+        }
+        else
+            ImGui.Text($"Horde tiers: individuals {individuals}, crowd {game.CrowdSeen.Total} (the server's picture, {game.CrowdSeen.Cols} x {game.CrowdSeen.Rows} cells)");
+        ImGui.Text($"Crowd drawn: {Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar} near/mid/far instances, {Program.CrowdDrawnCulled} culled, prep {Program.CrowdPrepMs:0.00} ms");
+        if (game.StressOn)
+        {
+            ImGui.Text($"Horde stress: {StressPhaseNames[(int)game.StressState]} {game.StressPhaseSeconds:0} s, wave {game.StressWave} of {game.StressWaveSize}, {game.StressNearShare * 100:0}% in the blob at the rally point");
+            if (game.StressMergeSeconds >= 0)
+            {
+                ImGui.SameLine();
+                ImGui.Text($"(merged after {game.StressMergeSeconds:0} s)");
+            }
+        }
+    }
+
+    private static readonly string[] StressPhaseNames = ["off", "staging", "descending", "advancing"];
+
+    private static void DrawPerfCrowdLine(Game game)
+    {
+        var c = game.Crowd;
+        if (game.IsServer)
+            ImGui.Text($"horde {c.Total + game.StressIndividuals} (ind {game.StressIndividuals} crowd {c.Count} mass {c.MassTotal})  crowd {game.CrowdTickAvgMs:0.00} ms  {game.CrowdBytesPerClient / 1024f:0.0} KB/s/client");
+        else
+            ImGui.Text($"horde: crowd {game.CrowdSeen.Total}  drawn {Program.CrowdDrawnNear + Program.CrowdDrawnMid + Program.CrowdDrawnFar}");
+    }
+
     private void DrawPerfOverlay()
     {
         var s = _perfStats;
@@ -502,6 +542,8 @@ public sealed partial class Ui
                 ImGui.Text($"GPU {gpu:0.00} ms  tick {s.TickAvgMs:0.00} (worst {s.TickWorstMs:0.0}/8)  draws {s.Draws:0}");
             else
                 ImGui.Text($"GPU {gpu:0.00} ms  draws {s.Draws:0}  alloc {s.AllocBytes:0} B/frame");
+            if (_perfOverlayGame is { CrowdOn: true } cg)
+                DrawPerfCrowdLine(cg);
         }
         ImGui.End();
     }

@@ -134,6 +134,20 @@ public sealed partial class Game
             }
             if (w.Length > ZCrowdMaxBytes - 8)
                 break; // (the rest next time: the view only records what went)
+            // A gap over 15 bits (a grid of more than 32,768 cells with nothing changed between): a filler entry that
+            // repeats what the client already has, 32,768 cells on.
+            while (i - last - 1 > 0x7FFF && w.Length <= ZCrowdMaxBytes - 8)
+            {
+                var f = last + 0x8000;
+                w.U8(0xFF).U8(0xFF);
+                w.U8(v.Count[f]);
+                if (v.Count[f] > 0)
+                    w.U8(v.Head[f]);
+                last = f;
+                entries++;
+            }
+            if (i - last - 1 > 0x7FFF)
+                break;
             var gap = i - last - 1;
             if (gap < 128)
                 w.U8((byte)gap);

@@ -309,6 +309,9 @@ public static unsafe partial class Program
     /// <summary>CPU ms of the last frame's crowd instances (culling, levels of detail, placing).</summary>
     public static double CrowdPrepMs;
 
+    /// <summary>The last frame's crowd instances per level of detail and those culled (the F9 window).</summary>
+    public static int CrowdDrawnNear, CrowdDrawnMid, CrowdDrawnFar, CrowdDrawnCulled;
+
     private static readonly Vector3 IndividualRed = new(0.95f, 0.12f, 0.1f);
 
     /// <summary>
@@ -323,12 +326,15 @@ public static unsafe partial class Program
         inst.DrawCap = _game.ZRules.Crowd.DrawCap;
         inst.MassTime = now;
         inst.MassSpeed = _game.ZRules.Crowd.Speed;
+        inst.Ground = World.Map.Terrain; // (a terrain map: the crowd stands on the ground)
         inst.Begin();
-        if (_game.IsServer && _game.Crowd.Count > 0 && !CrowdAsClient)
+        if (_game.IsServer && _game.Crowd.Total > 0 && !CrowdAsClient)
             inst.FromHost(_game.Crowd, Gfx.CameraPosition);
         else
             inst.FromPicture(_game.CrowdSeen, Gfx.CameraPosition, now, _game.ZRules.Crowd.Speed);
         CrowdPrepMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        (CrowdDrawnNear, CrowdDrawnMid, CrowdDrawnFar, CrowdDrawnCulled) = (inst.Count[0], inst.Count[1], inst.Count[2], inst.Culled);
+        _game.StressDrawn = inst.Total; // (a horde stress round's summary: the peak drawn)
         Gfx.DrawCrowd(inst);
         if (CrowdTiers)
             foreach (var z in _game.Horde)
