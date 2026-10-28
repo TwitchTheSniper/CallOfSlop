@@ -1,7 +1,7 @@
 # Zombies: the game mode (milestone 3)
 
-Status: **playable on its first real map**, **Blackmoor Asylum** (lobby: the **Zombies** pack, then the game mode
-"Zombies"), plus the dev map `Maps/Dev/ZombiesTest.json` ("Zombies Test", Dev pack). Zombies only shows up for maps that
+Status: **playable on two real maps**, **Blackmoor Asylum** and **Ashgrave Cathedral** (lobby: the **Zombies** pack,
+then the game mode "Zombies"), plus the dev map `Maps/Dev/ZombiesTest.json` ("Zombies Test", Dev pack). Zombies only shows up for maps that
 have a `"zombies"` section. Milestone 3 added the map, solid machine props, power-ups and special ammo effects. Styled after Call of
 Duty: World at War's Nazi Zombies: solo or co-op up to 4, rounds that never end, points for every hit and kill,
 boarded windows, doors that open new areas, wall guns, a mystery box, perk machines and the power switch. It's a
@@ -19,7 +19,9 @@ file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbe
 `SelfTestZombiesMap.cs` (milestone 3) and `SelfTestZombieAnim.cs` (animation).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
 `Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by
-`tools/zombies/make_blackmoor.py`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
+`tools/zombies/make_blackmoor.py`), `Maps/Zombies/02-AshgraveCathedral.json` (written by the C# map kit's generator
+`Source/MapKit/Generators/AshgraveCathedral.cs`; its props `Maps/Zombies/Props/Cathedral`, written by
+`tools/zombies/make_cathedral_props.py`; the bell siege `ZombiesClimb.cs`), `Props/Zombies/*.json` (the machine props), `Maps/Dev/ZombiesTest.json`.
 
 ## How a run plays
 
@@ -126,12 +128,12 @@ section **"Zombies flow"** (`Source/App/SelfTestZombiesFlow.cs`).
 
 | | Formula | Solo | 4 players |
 | --- | --- | --- | --- |
-| Zombies in a round | `(24 + 6 x (players - 1)) x f`; f = 0.25, 0.3, 0.5, 0.7, 0.9 for rounds 1-5, then round / 5; from round 10 also x round x 0.15 | 6, 7, 12, 17, 22, 29, 34, 38, 43, 72 ... | 10, 13, 21, 29, 38 ... |
+| Zombies in a round | `(24 + 12 x (players - 1)) x f`; f = 0.25, 0.3, 0.5, 0.7, 0.9 for rounds 1-5, then round / 5; from round 10 also x round x 0.15; worked out again mid-round when someone joins or leaves ("Player scaling") | 6, 7, 12, 17, 22, 29, 34, 38, 43, 72 ... r20 288, r30 648 | 15, 18, 30, 42, 54 ... r10 180, r20 720 |
 | Zombie health | 150, +60 a round to round 9 (630), then x 1.06 a round (slowed 2026-10-23, was +100 and x 1.1) | r10 668, r20 1196, r30 2142 | the same |
 | Speed | walk 1.3 m/s; runners (3.2 m/s) from round 3 (+15 percent a round, max 90); sprinters (5.2 m/s) from round 5 (+10 percent a round, max 75) | | |
 | Spawn delay | 2 s x 0.95 a round, at least 0.25 s | | |
-| Most alive at once | `maxAliveCurve`: 24 to round 5, 60 at round 10, 150 at 20, 300 at 30, 400 from 40 (straight lines between), +15 percent per extra player (`maxAlivePerExtraPlayer`), never over `maxAlive` (400) or the host's horde cap | r10 60, r20 150, r30 300 | r10 87, r20 218, r30 400 |
-| Spawning | a burst per spawn time (`spawnBurstCurve`: 1 to round 12, 3 at 20, 5 at 30, 6 at 40) from the `activeSpawnersCurve` spawners nearest the players (4 to round 15, 7 at 25, 10 at 35), one per spawner, a spawner resting `spawnerCooldown` (0.35 s) after use | | |
+| Most alive at once | `maxAliveCurve`: 24 at round 1, 40 at 5, 90 at 10, 220 at 20, 400 at 30, 600 from 40 (straight lines between), +50 percent per extra player (`maxAlivePerExtraPlayer`), never over `maxAlive` (600) or the host's horde cap | r10 90, r20 220, r30 400, r40 600 | r10 225, r20 550, r25 on 600 |
+| Spawning | a burst per spawn time (`spawnBurstCurve`: 1 to round 12, 4 at 20, 7 at 30, 9 at 40; raised with the caps 2026-10-27) from the `activeSpawnersCurve` spawners nearest the players (4 to round 15, 7 at 25, 10 at 35), one per spawner, a spawner resting `spawnerCooldown` (0.35 s) after use | | |
 
 Players walk at 6 m/s, so even sprinters can be outrun; zombies swipe for 40 (3 hits from full health).
 
@@ -159,13 +161,13 @@ grey: not possible now (needs the power, already owned...).
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
-| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
+| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it at first; the **last 4 s are free for all** since 2026-10-27: anyone can take it, the first take wins; see below); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
 | **Perk machine** | A perk from the rules file (one machine per perk). No cap: beyond the 4th each perk costs double the step before (the 5th 2x its price, the 6th 4x...); all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
-| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or nothing; a loss frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or (on a blank) a consolation part; a consolation frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 | **Casino table** | Blackjack, roulette, high-low or Bone Dice for points: press the interact key for the table's panel (see "Casino tables") | your bet, within the table's limits |
 
 ### Perks (proposed; "perks", up to 16)
@@ -243,7 +245,7 @@ longer breaks parts down or crafts them (CRAFT MISSING went with it), and the sl
 from zombie drops, salvage piles, the slot machines, and taking builds apart (the mystery box's offer too). What
 replaced what (proposed, all data): the cog's weight in `slotTiers` went to **points** (coins), so a pull wins as
 often as before (round 1: 71.4 percent); bad-luck protection and the "no part of that tier" fallbacks pay coins; two
-common gems read as coins; a part you already hold 3 of loose pays the coin payout instead (`dupePointsAt`); a salvage
+common gems read as coins; a part you already hold 3 of loose paid the coin payout instead (`dupePointsAt`, 0 since 2026-10-27: every copy is kept); a salvage
 pile gives a loose part (`parts.salvageParts`). Older rules and drop tables with the scrap keys still load (an old
 row's scrap weight counts as points); old part files' `"scrap"` is ignored. Protocol 56. Self-test "Zombies no
 scrap".
@@ -291,6 +293,16 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   parts, and sends `ZRun` (your loose parts) to you and a `ZBuild` with flag 4 ("cleared", no text; the weapon id of the
   Empty hands copy for slots 1-2) to everyone, so every PC shows the slot empty and the hands move the same way. Joiners
   get a cleared `ZBuild` for every empty slot 1-2 after the builds. An older build can't join (protocol 40).
+- **The box offer's last seconds are free for all (board item, 2026-10-27).** For the final `box.freeFraction` (0.3) of
+  `offerSeconds` or the last `box.freeSeconds` (4), whichever is longer (`ZombiesRules.json`; both 0 turns it off), anyone
+  can take the offered gun, for nothing; before that other players see "Reserved for <buyer>" and the key does nothing.
+  In the window the box's glow turns orange and flashes, with a rim, a beam and a FREE FOR ALL label over it for
+  everyone, and the prompt reads "Free for all - hold [E] to take ...". The buyer can still take it, or take it apart
+  (which stays the buyer's alone). The server decides: the first valid take in a tick wins (players in id order), and
+  everyone else's held key on the box is used up, so a closed box never turns their hold into a spin. If the buyer has
+  left, the offer is free at once. Clients work the window out from ZWorld's box time (no wire change). Co-op bots take
+  someone else's free offer only when they would have taken it as their own (it beats the gun in hand) and the box is
+  within their shopping range; each bot looks at a free offer once.
 - **At the mystery box: the OFFERED build (board bug fix, 2026-10-26).** The first version (earlier the same day) made
   G twice at the box take apart the **gun in your hands**; testers read the prompt as "take the box's gun apart" and lost
   the gun they were holding. Now, while the box is **offering you a build** (you spun it), a second HUD line under
@@ -346,7 +358,14 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
 - **Test kit** (`"testKit": true`, a test map: Horde Test): the host's "Test kit" lobby setting works here (see "Horde
   Test, start round and test kit").
 
-- **Areas** are rectangles; the **area graph** is made by the doors: an area is unlocked when it's the start area or
+- **Areas** are rectangles, optionally with a height band and extra boxes, for maps with floors over each other:
+  `{"name": "Crypt", "rect": [x0, z0, x1, z1], "y": [y0, y1], "more": [[x0, z0, x1, z1, y0, y1], ...]}`. A point is in
+  the area when it's in the rectangle and the band (`"y"`, at least 2 m tall; leave it out: any height) or in one of the
+  `more` boxes (a stairwell, an alcove). Where areas overlap the first one listed wins, so list an upper floor before the
+  hall under it. A door's two sides stand on the door box's floor when its bottom is over 0.3 m above the ground (a door
+  on an upper floor or in a cellar). Zombies only count a door side as reached on its own floor (within 1.2 m of its
+  height).
+- The **area graph** is made by the doors: an area is unlocked when it's the start area or
   one of its doors is open. Zombies route between areas through open doors (a breadth-first search over the doors),
   and inside an area along the bots' nav graph (or straight when the player is in plain view).
 - **Doors** are solid boxes (players, zombies, bullets) until bought; opening one parks its box under the world like a
@@ -391,6 +410,83 @@ machines (7 on the power), 2 slot machines (1 on the power), every machine a sol
 the map (ward - courtyard - offices) for training zombies. The self-test walks a zombie in through every window and
 runs zombies from every area to the far end through every door (none may get stuck), and measures the AI cost there.
 
+## Ashgrave Cathedral (the Zombies pack, board item zc01, 2026-10-27)
+
+`Maps/Zombies/02-AshgraveCathedral.json`, written by the C# map kit generator `AshgraveCathedral`
+(`--gen-map "Ashgrave Cathedral"`; it checks its own layout: machines inside their area, nothing on a door, window,
+spawner, stair or wall buy, every slot category present). An original gothic cathedral and its precinct at night, 128 x
+112 m (the precinct about 104 x 60), on five levels: the dungeons (2 m), the crypt and ossuary (7), the ground (12),
+the galleries and organ loft (18) and the roof walk and ringing chamber (22.8), with the belfry at 30. (The whole map is
+built at ground 0 and lifted 12 m, because a map without terrain keeps players above -5 m and counts anything under the
+ground as fallen.) Plan PNGs per level: `--gen-plan` with `--level y0,y1` (docs/mapkit/MAPKIT.md).
+
+| Area | Way in (price) | What's there |
+| --- | --- | --- |
+| **Nave** (start) | | 4 windows, Mender's Mead, Second Wind and Hammerhand Ale (no power), the Wall Rifle, Wall Pistol and Buzzbox, box spot, **slot machine (classic)**, the **high-low table**, pews, confessionals |
+| **Organ Loft** (galleries over the aisles and the west end) | the Loft Stair debris from the nave (1000) | a ground spawner, Twinfire Punch (power), the Courier Carbine and Prairie Lever, box spot, the organ |
+| **Transept** (the crossing) | the Rood Screen debris (1000) | 4 windows, the Wall SMG, Kingpin and Wall Pump, box spot |
+| **Choir** | the Choir Screen (1250) | 2 windows, Ironhide Cider (power), the Ratchet PDW and Riot Control, box spot, the high altar; the crypt stair |
+| **Lady Chapel** | the Reliquary Grate (1500, **needs the power**) | 3 windows, Bulwark Brew (power), the Bastille LMG, box spot |
+| **Vestry** | the Vestry Door from the choir (1000) | a ground spawner, Swiftload Seltzer (power), the Heavy Hitter, **Ammo and Feed slot machines**, the **blackjack table** |
+| **Bell Tower** | the Tower Door from the nave (1250) or the Roof Door from the roof walk (1500) | stairs up the inside (five flights), 2 ground spawners, the Elephant Gun; the ringing chamber: Marksman Malt (power), the **roulette table**; the belfry: **the great bell** |
+| **Roof Walk** (over the north aisle) | the Roof Door (1500, from the tower) | 2 ground spawners, Windfall Soda (power), the Reaper Marksman, box spot |
+| **Cloister** (open sky) | the Cloister Door from the nave (750) | 2 ground spawners, a well, three cheap wall guns, box spot, salvage |
+| **Chapter House** | the Chapter Door from the cloister (1250) | a ground spawner, Salvage Stout, the Wide Load, **workbench**, **Optic, Utility and Upgrade slot machines** |
+| **Tithe Barn** | the Barn Door from the cloister (1000) or the Barn West Door from the close (750) | 3 windows, the High Rider and Coach Gun, box spot, **workbench**, salvage, **Muzzle, Stock and Grip slot machines** |
+| **Close** (the west precinct, open sky) | the West Doors from the nave (750) | 5 windows (gates), Fleetfoot Fizz (power), the Burst Marksman, box spot, salvage |
+| **Lodge** | the Lodge Door from the close (1000) | 2 windows, the Wall SMG, **workbench**, **Receiver, Action and Barrel slot machines** |
+| **Graveyard** (open sky) | the Sexton's Gate debris from the vestry (1250) or the Chapter Garden Door (1500) | 5 windows, 2 ground spawners among the graves, the Bucket Lobber and Auto Shotgun, box spot, 2 salvage, the **dice table** |
+| **Mausoleum** | the Mausoleum Gate (1750) or the Tomb Stair from the tunnel (1000) | a ground spawner, the **weapon-slot upgrade**, the **grenade slot machine**, sarcophagi |
+| **Crypt** (under the choir) | the Crypt Door at the foot of the crypt stair (1250) | 2 ground spawners, **the power switch**, Bloodroot Tonic, the Ratchet PDW, box spot, **workbench** |
+| **Ossuary** (under the crossing) | the Bone Pile debris from the crypt (1250) | a ground spawner, the Wall Pump, box spot, **Head, Hilt and MeleeMod slot machines**, the dungeon stair |
+| **Dungeons** | the Dungeon Gate from the ossuary (1500) | cells, a guard room, 2 ground spawners, the Wall Rifle, box spot, **workbench**, salvage |
+| **Inquisitor's Chamber** | the Inquisitor's Door (1750) | a ground spawner, the Kingpin, **Multiplier and Splitter slot machines**, a rack and cages |
+| **Smugglers' Tunnel** | the Tunnel Debris from the dungeons (1500) | a ground spawner, salvage; up to the Tomb Stair |
+
+Twenty areas, 22 doors and debris (750 to 1750, one on the power), 28 boarded windows, 75 spawners (19 in the ground,
+on every level), 13 box spots, 28 wall buys, 12 perk machines, 18 slot machines (every category, the grenade one too), 4
+casino tables, 5 workbenches, 7 salvage piles, every machine a solid prop; 37 pack props (`Maps/Zombies/Props/Cathedral`:
+pews, altar, organ, font, confessionals, statues, gargoyles, sarcophagi, ossuary walls, cells, the great bell...).
+Rings: nave - cloister - barn - close - nave on the ground, and choir - vestry - graveyard - chapter house - cloister. Stairs
+are flights of at most 11 steps with landings between (the nav graph links a flight's foot to its top and can't stand a
+node on a tread), and stairwells have walls or tall parapets, not rails a zombie would try to vault. The nav graph is
+built with the doors shut, so its rooms are pockets (the map's test block sets `navPockets`).
+
+### The bell: a siege up the tower
+
+Ringing the great bell (the button at its rope, in the belfry; free, a 240 s cooldown, during a round) starts a
+**survival challenge**, not a purchase: a 75 s challenge for everyone standing in the belfry, and the **climb**
+(`zclimb` map logic, `Source/Game/ZombiesClimb.cs`). The round gains `extraZombies + extraPerRound x round` zombies (at
+most `extraMax`). Zombies at the windows leave them and walk round to the foot of the tower's north face, where they
+pile up against the wall into a living pyramid, a layer at a time (`layerHeight` apart, `columnSpacing` apart, each
+layer `layerShrink` places narrower than the one under it, the bottom `baseRows` layers two deep, at most `layers` high);
+the rest climb the pile and then the bare wall above it (one in `climbEvery` goes straight up the wall from the start),
+vault the belfry's parapet and chase whoever is there. A shot body lets go and falls (pushed out `fallPush` m, dazed
+`fallStun` s where it lands) and the bodies above it slide down a place, so shooting the pile's base holds the climb
+back. When the challenge is survived every player standing gets `rewardPoints + rewardPerRound x round` points (at most
+`rewardMax`), `rewardParts` loose parts rolled as if `rewardRoundBonus` rounds later, and `rewardPowerUp` drops on the
+belfry; when it ends either way the climb stops (whoever is on the face falls, the rest go back to the windows).
+
+Server-authoritative and cheap: the climb keeps one list of climbers and their places (no per-tick allocation; 0.1 ms
+a tick with 60 on the face in the self-test). Clients get nothing new but the zombie state: `Scaling` (state 7) with the
+position, and they draw a braced or climbing pose from the vertical motion. Tuning: the rules file's `"climb"` section.
+
+| Key | Default | What |
+| --- | --- | --- |
+| `layerHeight`, `columnSpacing`, `layers`, `baseRows`, `layerShrink` | 1.3 m, 0.75 m, 10, 1, 2 | the pyramid's shape |
+| `climbEvery` | 3 | one in this many arrivals climbs straight away instead of joining the pile |
+| `settleSpeed`, `pileClimbSpeed`, `wallClimbSpeed`, `vaultSeconds` | 3, 2, 0.8 m/s, 0.8 s | how fast bodies settle into place, climb the pile and the wall, vault the parapet |
+| `fallStun`, `fallPush` | 1.2 s, 2.5 m | a shot climber's fall |
+| `extraZombies`, `extraPerRound`, `extraMax` | 12, 2, 80 | the siege's extra zombies |
+| `rewardPoints`, `rewardPerRound`, `rewardMax` | 1500, 100, 6000 | the points each survivor gets |
+| `rewardParts`, `rewardRoundBonus`, `rewardPowerUp` | 2, 10, `maxAmmo` | the parts and the power-up |
+
+Self-test "Zombies cathedral": the layout (every machine in its area and on its floor, the slot categories, the casino
+games, wall-tagged wall buys), a zombie in through every window, zombies from every area to the belfry and to the
+inquisitor's chamber with every door open (none may get stuck), the siege at round 10 (the climb starts and adds
+zombies, the pyramid forms, a shot body falls and the one above moves down, someone comes over the parapet, the reward is
+paid, the climb stops cleanly, tick time and allocations, a client reads a climber back) and the siege's replay digest.
+
 ## Slot machines (board item "Zombies slots", 2026-10-26)
 
 "Slot machines: gamble points for weapon-builder parts, with rarity rising as the rounds go on (a per-round odds table,
@@ -403,13 +499,22 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 - **A pull.** Walk up (a machine's prompt: "Hold [F] to pull the slot machine [550] - heat 2/5"), hold F like any buy
   and pay **500 + 25 a round after the first** (at most 1250; a machine's own `cost` overrides it). The three reels spin
   for 2 s and stop one by one (a click each) on what the server rolled. A **win** shows for 2.5 s (the reels flash, a
-  part won floats over the cabinet), then the machine takes the next pull. A pull that **wins nothing** (skulls, odd
-  gems) frees the machine the moment the reels stop: no result time and no cooldown, so you can pull again at once
-  (developer request, 2026-10-27; self-test "Zombies slots"). One player at a time per machine.
+  part won floats over the cabinet), then the machine takes the next pull. **No pull pays nothing** (board item,
+  2026-10-27): a blank (skulls, odd gems) pays a **consolation part** of the machine's own category (the classic machine:
+  any part) and still frees the machine the moment the reels stop: no result time and no cooldown, so you can pull
+  again at once. It shows as a small win: "Consolation: <part>" over the machine for everyone (a smaller model, a brief
+  soft glow on the reels) and in your own feed. Self-tests "Zombies slots" and "Zombies slot consolation". One player at
+  a time per machine.
+- **Consolation parts.** Their rarity ignores the round's table (so commons stay available in late rounds when the
+  main table no longer rolls them) and follows the **bet level** (`slots.consolation`, weights per rarity per level):
+  **1x** common; **2x** common 60 / uncommon 40; **5x** uncommon 85 / rare 15. A consolation is never rarer than the
+  main roll's lowest part tier at that bet (the round's row with the bet's steps, no heat): any weight above it pays that
+  floor. A consolation **never resets the heat**, even a rare one (it isn't a pity-tier win): it adds 1 like any other
+  pull. The real win odds, jackpot rounds and the coin payout are unchanged.
 - **What the reels mean.** Symbols: a **skull**, a **coin** (points back) and a **gem** per rarity in its colour (the
   wonder gem only on jackpot rounds; the scrap cog went with scrap, 2026-10-27). **Three of a gem**: a loose part of
   that rarity; **two of a gem**: a part one tier lower (two commons: coins); otherwise a coin pays **1.5 x the price
-  back** in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
+  back** in points, and skulls and odd gems pay a **consolation part** (above). The server rolls the outcome first and then picks reels that read
   as it (self-test: they always do), so the table, not the reels, sets the odds.
 - **Melee builds (developer answer, 2026-10-26).** The mystery box gives guns only, so melee builds come from here: a
   `"melee"` weight in each `slotTiers` row (5, about 5 percent of pulls) pays a **complete melee build** (the 14
@@ -421,11 +526,13 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   you had goes on the floor 3 m in front of the machine as a dropped build (5 minutes, anyone can pick it up), unless
   it's the untouched start Machete. Melee parts stay in the part pool.
 - **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
-  a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose pays
-  the **coin payout** (1.5 x the price) instead (`dupePointsAt`; 0 keeps every copy). A legendary or wonder part is announced to everyone.
+  a part straight onto a gun) from the same pool as zombie part drops. **Every copy is kept** (board item, 2026-10-27:
+  `dupePointsAt` 0): there is no cap on loose parts anywhere (the server, `ZRun` since protocol 71, the workbench's "x N"
+  counts), so you can bank as many as you like; set `dupePointsAt` above 0 to pay the coin payout (`pointsBack` x the
+  price) for a part you already hold that many of. A legendary or wonder part is announced to everyone.
 - **Rarity rising: three levers that stack.**
   1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 20, 25, 35): weights for nothing,
-     points and each part tier (no scrap since 2026-10-27: its weight went to points); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
+     points and each part tier (no scrap since 2026-10-27: its weight went to points; "nothing" is the blank, which pays a consolation part); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
      common and uncommon, 2 percent rare or better; round 36: about half rare or better).
   2. **Machine heat** (the pity timer): every pull that doesn't pay a **rare-or-better** part (`pityTier`) adds 1 heat;
      every **5** heat (`heatStep`) moves the part weights **one tier up** (at most 3 steps, `heatMaxSteps`); a
@@ -443,7 +550,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   it throws nothing at a machine) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
   (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
   machine's heat (the same shift as a heat step). The nothing and coin weights don't change, so a higher bet
-  **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
+  **never guarantees a big win**: skulls (consolations) come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
   mix goes from 1.9 percent rare-or-better at 1x to 12 at 2x and 33 at 5x). Coins pay 1.5x what you paid. The bet
   belongs to the machine (shared by the team, like the heat) and stays until someone changes it; the prompt shows it
   ("Hold F to pull the slot machine [1100] - bet 2x (G to change)") and so does the cabinet (a lamp per level under the
@@ -451,8 +558,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   byte); the server checks you're at the machine and it's idle. Bots pull at whatever bet is set. Self-test "Zombies
   slots": the rarer mix and the unchanged blanks at every bet over seeded rolls, the price, the prompt, the wrap and the
   client copy.
-- **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
-  would-be blank pays coins (points back) instead.
+- **Bad-luck protection**: was at most **3** "nothing" results in a row per player per machine (`maxNothing`). Unused
+  since consolation parts (no pull pays nothing); the key stays so it can come back.
 - **Placement**: Map key `"slots"` (spots like a perk machine's: `at`, `yaw`, `power`, `cost`, and an optional
   `category`, below), at most 24; with machine props each stands as a solid **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall,
   its front facing the yaw), a category machine as its own cabinet. Blackmoor Asylum: the classic machine in the
@@ -525,7 +632,8 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
   counter, the three symbols, result / tier / a duplicate paid as points, the part, tenths of a second left); protocol 53 adds result 4
   (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
   bet level; protocol 56 drops scrap (results 0 nothing, 1 points, 2 part, 3 melee; symbols 0 skull, 1 coin, 2-7
-  gems, 8 blade). Clients start the reel
+  gems, 8 blade); protocol 71 sets bit 6 of the result byte (and bit 1 of `ZSlotWin`'s flags) for a consolation part
+  (result 2) and widens `ZRun` (a u16 count of kinds, a u32 count each). Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
   come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
   (self-test).
@@ -533,11 +641,12 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
 | Rules (`ZombiesRules.json` "slots") | Default | What |
 | --- | --- | --- |
 | `costBase`, `costPerRound`, `costMax` | 500, 25, 1250 | the price: base + per round after the first, capped |
-| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long a win shows (a loss frees the machine at once) |
+| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long a win shows (a consolation frees the machine at once) |
 | `heatStep`, `heatMaxSteps`, `pityTier` | 5, 3, rare | heat per tier step, the most steps, the tier that resets heat |
-| `maxNothing` | 3 | blanks in a row per player per machine, at most |
+| `maxNothing` | 3 | unused since consolation parts (was: blanks in a row per player per machine, at most) |
+| `consolation` | [{common 100}, {common 60, uncommon 40}, {uncommon 85, rare 15}] | a blank's consolation part: rarity weights per bet level (never above the main roll's floor at that bet) |
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
-| `pointsBack`, `dupePointsAt` | 1.5, 3 | points back (x the price) for a coin; a part you hold this many of loose pays that instead (0: keep it) |
+| `pointsBack`, `dupePointsAt` | 1.5, 0 | points back (x the price) for a coin; a part you hold this many of loose pays that instead (0: keep it) |
 | `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
 | `winSeconds` | 4 | how long a win shows over the machine |
 | `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |
@@ -685,7 +794,7 @@ Source/UI/UiZombiesInventory.cs; self-test "Zombies drop items".
   the gun is a build and not your last) and takes the item from you in the same step as the pickup appears, so nothing
   is ever in two places. A pickup is removed before it is given, so when two players grab it in the same tick the first
   (in player order) gets it and the second finds nothing. Clients get part pickups in `Msg.ZPartDrop` (joiners get
-  every one); `Msg.ZPickup` carries the dropped build's last round (protocol 69).
+  every one); `Msg.ZPickup` carries the dropped build's last round (protocol 70).
 - **Co-op bots ignore pickups** (no prompt, and the server refuses their claims), bleed-out drops included (proposed;
   ask before letting bots share).
 
@@ -946,7 +1055,10 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `doors` | true | bots open doors (between rounds, one a break) |
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
-## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades)
+## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades; 68 for the bell's climb)
+
+Protocol 68 (the bell siege, see "Ashgrave Cathedral"): a zombie's state in `ZEnts` can be 7 (`Scaling`: on the climb's
+pile or the tower's face; the low 3 bits); maps can carry `zclimb` logic and areas with heights.
 
 Protocol 67 (modular grenades, Source/Game/GameGrenades.cs): a grenade build travels in `ZBuild` as slot 5 like any
 build (every client assembles it, so every client flies everyone's built grenades with the same numbers); `ZWorld`'s
@@ -1000,20 +1112,49 @@ of detail by distance, the grid for separation. The self-test measures 24 zombie
 report line "AI cost"; it includes the per-tick animation update), and "Zombie hordes" 24, 100 and 300 on Blackmoor
 (see "Hordes"). Drawing cost: see "Animation" and "Hordes".
 
+## Player scaling (developer request, 2026-10-27)
+
+The round's size and its alive cap both follow the player count (bots count; a host who sits out doesn't), and since
+2026-10-27 more steeply: each extra player adds 12 zombies to the round's base of 24 (`countPerExtraPlayer`, was 6) and
+half again to the alive cap (`maxAlivePerExtraPlayer` 0.5, was 0.15), on the steeper `maxAliveCurve` above (hard cap
+`maxAlive` 600). All of it is in `Parts/Tables/ZombiesRules.json` "rounds".
+
+| Players | Round 1 / 5 / 10 / 20 / 30 zombies | Alive cap at round 1 / 5 / 10 / 20 / 30 / 40 |
+| --- | --- | --- |
+| 1 | 6 / 22 / 72 / 288 / 648 | 24 / 40 / 90 / 220 / 400 / 600 |
+| 2 | 9 / 32 / 108 / 432 / 972 | 36 / 60 / 135 / 330 / 600 / 600 |
+| 3 | 12 / 43 / 144 / 576 / 1296 | 48 / 80 / 180 / 440 / 600 / 600 |
+| 4 | 15 / 54 / 180 / 720 / 1620 | 60 / 100 / 225 / 550 / 600 / 600 |
+
+**Joining or leaving mid-round** (a person, a bot added or removed, a player dropping) works the round out again at
+once (`Game.RescaleRoundForPlayers`, ZombiesMode.cs): the round's total becomes its count for the new number (map
+logic's extra spawns kept), and the zombies still to spawn become that total less the ones already out (killed or
+alive), never below 0. The alive cap reads the player count live. A leave never ends the round there and then: with
+more out than the smaller round would send, nothing more spawns and the round ends when those still alive are killed;
+with every zombie dead and some still owed, one more comes and its kill ends the round. The server logs a
+`[zombies] round N: A -> B players` line for each change.
+
+**The budget at 600 alive** ("Zombie hordes" measures a scripted 600-zombie horde on Blackmoor besides 24, 100 and
+300): on the 2-core cloud box under load the server tick was 1.8 ms CPU on average (2.2 ms worst; budget 8 ms), no
+allocation, the interest-managed snapshots stay at about 26 KB/s per client (80 zombies a packet, the near ones
+every snapshot), and the client's zombie work (reading, posing, the instanced draw's boxes, the sounds) about 2.3 ms
+a frame for 8400 boxes. GPU time for the instanced draw is not measured headless.
+
 ## Hordes (developer request, 2026-10-27)
 
 "As the rounds progress, I want to see hundreds of zombies all on the map at the same time. Late game." The alive cap
-now rises with the round (`maxAliveCurve` in "rounds"; the round curve table above): 24 early, about 60 by round 10,
-150 by round 20, 300 by round 30, 400 from round 40, more with more players, never over the rules' hard cap
-`maxAlive` (400; the code's own limit is 512, `Game.MaxZombies`). **The host can lower it**: the lobby room's World
+now rises with the round (`maxAliveCurve` in "rounds"; the round curve table above): 24 early, 90 by round 10,
+220 by round 20, 400 by round 30, 600 from round 40 (raised by the player scaling, 2026-10-27; it was 60 / 150 / 300 /
+400), half again per extra player, never over the rules' hard cap `maxAlive` (600, also the code's own limit,
+`Game.MaxZombies`; a settings file's old "no limit" of 512 still reads as no limit). **The host can lower it**: the lobby room's World
 section has **Zombie horde cap** (48, 100, 150, 200, 300, 400 or no limit; settings key `zombie_horde_cap`) for weak
-PCs; the rest of the round waits its turn as before. Round sizes are unchanged (round 30 solo is 648 zombies), so the
-cap is what decides how many are up at once.
+PCs; the rest of the round waits its turn as before. Round 30 solo is 648 zombies, so the cap is what decides how
+many are up at once.
 
 To fill a big cap, late rounds spawn in **bursts** (`spawnBurstCurve`) from **more spawners** (`activeSpawnersCurve`),
 spread out: one zombie per spawner per burst, a spawner rests `spawnerCooldown` after use, and a spawner with someone
 standing on it puts the new zombie on a free spot of a ring round it (0.9 m, then 1.8 m; standable and in view of the
-spawner), never on top of another. Round 30 on Blackmoor fills to 300 in about 28 s.
+spawner), never on top of another. Round 30 on Blackmoor fills to its cap of 400 in about 28 s.
 
 At the windows the horde **queues** instead of jamming: two zombies (`tearers`) work the boards, the rest stand on
 queue spots in rows of three behind the window (checked standable and in view when the map loads), and when a

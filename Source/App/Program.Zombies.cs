@@ -154,7 +154,20 @@ public static unsafe partial class Program
             Gfx.Draw(Matrix4x4.CreateScale(0.3f, 0.3f, 0.01f) * Matrix4x4.CreateTranslation(0, 0, -0.33f - grow * 0.6f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.32f, 0)), new Vector3(0.9f, 0.8f, 0.3f), 1f, mode: 2); // the "?"
             if (open)
             {
-                Gfx.Draw(Matrix4x4.CreateScale(1.1f, 0.02f, 0.5f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.62f, 0)), new Vector3(0.6f, 0.9f, 1f), 1f, mode: 2); // the glow inside
+                var free = _game.BoxFreeForAll; // the offer's last seconds: anyone can take it (board item 2026-10-27), so it flashes for everyone
+                var flash = free ? 0.55f + 0.45f * MathF.Abs(MathF.Sin(t * 7)) : 1f;
+                Gfx.Draw(Matrix4x4.CreateScale(1.1f, 0.02f, 0.5f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.62f, 0)), free ? new Vector3(1f, 0.6f, 0.15f) * flash : new Vector3(0.6f, 0.9f, 1f), 1f, mode: 2); // the glow inside
+                if (free)
+                {
+                    // A flashing rim round the open box and a thin beam over it, seen from across the room.
+                    var rim = new Vector3(1f, 0.55f, 0.1f) * flash;
+                    var y = 0.66f + grow * 0.5f;
+                    Gfx.Draw(Matrix4x4.CreateScale(1.4f + grow, 0.04f, 0.04f) * Matrix4x4.CreateTranslation(0, 0, 0.36f + grow * 0.5f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, y, 0)), rim, 1f, mode: 2);
+                    Gfx.Draw(Matrix4x4.CreateScale(1.4f + grow, 0.04f, 0.04f) * Matrix4x4.CreateTranslation(0, 0, -0.36f - grow * 0.5f) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, y, 0)), rim, 1f, mode: 2);
+                    Gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.04f, 0.72f + grow) * Matrix4x4.CreateTranslation(0.7f + grow * 0.5f, 0, 0) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, y, 0)), rim, 1f, mode: 2);
+                    Gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.04f, 0.72f + grow) * Matrix4x4.CreateTranslation(-0.7f - grow * 0.5f, 0, 0) * rot * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, y, 0)), rim, 1f, mode: 2);
+                    Gfx.Draw(Matrix4x4.CreateScale(0.06f, 2.2f, 0.06f) * Matrix4x4.CreateTranslation(spot.At + new Vector3(0, 0.66f + 1.1f, 0)), rim * 0.8f, 1f, mode: 2);
+                }
                 var builds = StandardBuilds.From("box").ToList();
                 var shown = _game.BoxState switch
                 {

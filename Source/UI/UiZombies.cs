@@ -135,6 +135,12 @@ public sealed partial class Ui
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
+        if (game.BoxFreeForAll && game.ZMap is { BoxSpots.Count: > 0 } bzm)
+        {
+            // The box's offer is anyone's now (board item 2026-10-27): a flashing label over it, seen from 25 m.
+            var bs = bzm.BoxSpots[Math.Clamp(game.BoxSpot, 0, bzm.BoxSpots.Count - 1)];
+            Hud.WorldLabel(bs.At + new System.Numerics.Vector3(0, 2.1f, 0), "FREE FOR ALL", new System.Numerics.Vector3(1f, 0.6f, 0.15f), 0.6f + 0.4f * MathF.Abs(MathF.Sin((float)now * 7)), 17f * _scale, 25f);
+        }
         foreach (var pu in game.ZPowerUps)
         {
             var dx = pu.At.X - me.Position.X;
@@ -181,7 +187,8 @@ public sealed partial class Ui
             {
                 var text = use.Text.Replace("[E]", key).Replace("[G]", Keybinds.Name(settings.Bind(GameAction.Grenade)));
                 var poor = !use.Blocked && use.Cost > me2.Points;
-                ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
+                var freeBox = use.Kind == ZUseKind.BoxTake && !use.Blocked && game.BoxFreeForAll; // (the box's free-for-all window: orange)
+                ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : freeBox ? Orange : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
@@ -264,11 +271,13 @@ public sealed partial class Ui
                 {
                     SlotWinLabelSeq[i] = m.WinSeq;
                     var who = m.WinPlayer == game.LocalId ? "You" : game.NameOf(m.WinPlayer);
-                    SlotWinLabels[i] = $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinRefunded ? " (points instead)" : "")}";
+                    SlotWinLabels[i] = m.WinConsolation && m.WinIndex >= 0 && m.WinIndex < Parts.All.Length
+                        ? $"{who}: Consolation: {Parts.All[m.WinIndex].Name}{(m.WinRefunded ? " (points instead)" : "")}" // a blank's small win (2026-10-27)
+                        : $"{who}: {Game.SlotWinWhat(m.WinResult, m.WinIndex, m.WinTier)}{(m.WinRefunded ? " (points instead)" : "")}";
                 }
                 var fade = (float)Math.Clamp((game.ZRules.SlotWinSeconds - (now - m.WinAt)) * 2, 0, 1);
                 // Over the turning part (Program.DrawSlotWin: it floats Program.SlotWinOver over the cabinet's top and rises 0.35 m).
-                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + Program.SlotWinOver + 1.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
+                Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + Program.SlotWinOver + 1.05f, 0), SlotWinLabels[i], PartDef.RarityColor(m.WinTier), fade, (m.WinConsolation ? 13f : m.WinTier >= Rarity.Legendary ? 19f : 16f) * _scale);
             }
             else if (d2 <= 9 * 9)
                 Hud.WorldLabel(spot.At + new System.Numerics.Vector3(0, Program.SlotTopY(zm, i) + 0.8f, 0), Game.SlotMachineLabel(spot.SlotCategory), Game.SlotCategoryColor(spot.SlotCategory), 0.9f, 13f * _scale);

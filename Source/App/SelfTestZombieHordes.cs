@@ -33,7 +33,7 @@ public static partial class SelfTest
         }
         HordeCurve(map, zm, ref now);
         var rows = new List<string>();
-        foreach (var n in new[] { 24, 100, 300 })
+        foreach (var n in new[] { 24, 100, 300, Game.MaxZombies }) // (the last: the most the rules can ask for, 600: the player scaling's budget check)
             rows.Add(HordeMeasure(map, zm, n, ref now));
         HLine("table (zombies | server tick ms CPU mean / worst | ZEnts KB/s per client | client ms a frame): " + string.Join("; ", rows));
         HordeFill(map, zm, ref now);
@@ -58,8 +58,8 @@ public static partial class SelfTest
         HLine($"alive cap by round (solo): {string.Join(" ", rounds.Select((r, i) => $"r{r} {solo[i]}"))}; 4 players: {string.Join(" ", rounds.Select((r, i) => $"r{r} {four[i]}"))}; "
               + $"round sizes solo: {string.Join(" ", rounds.Select((r, i) => $"r{r} {counts[i]}"))}; bursts r1 {rules.SpawnBurstCurve.At(1)} r20 {rules.SpawnBurstCurve.At(20)} r30 {rules.SpawnBurstCurve.At(30)}, "
               + $"active spawners r1 {rules.ActiveSpawnersCurve.At(1)} r30 {rules.ActiveSpawnersCurve.At(30)}; hard cap {rules.MaxAlive} (most {Game.MaxZombies})");
-        if (solo[0] != 24 || solo[2] < 55 || solo[2] > 65 || solo[4] != 150 || solo[6] < 300 || solo.Zip(solo.Skip(1)).Any(p => p.Second < p.First) || four[6] <= solo[6] || four.Any(v => v > rules.MaxAlive))
-            Fail("the alive cap should be 24 early, about 60 by round 10, 150 by round 20 and 300+ by round 30, never falling, more for more players, never over the hard cap");
+        if (solo[0] != 24 || solo[2] < 85 || solo[2] > 95 || solo[4] != 220 || solo[6] < 400 || solo.Zip(solo.Skip(1)).Any(p => p.Second < p.First) || four[6] <= solo[6] || four.Any(v => v > rules.MaxAlive))
+            Fail("the alive cap should be 24 early, about 90 by round 10, 220 by round 20 and 400+ by round 30, never falling, more for more players, never over the hard cap");
         // A broken curve or horde section is refused with a reason.
         string Refused(string from, string to)
         {
@@ -101,8 +101,9 @@ public static partial class SelfTest
         }
         var settings = FromLine("zombie_horde_cap=150");
         var settingsLow = FromLine("zombie_horde_cap=3");
-        HLine($"  round 30 cap {r30}, with the host's horde cap at 100: {host}; settings 'zombie_horde_cap=150' -> {settings.ZombieHordeCap}, '=3' -> {settingsLow.ZombieHordeCap}, default {new Settings().ZombieHordeCap}");
-        if (r30 < 300 || host != 100 || settings.ZombieHordeCap != 150 || settingsLow.ZombieHordeCap != Game.MinHordeCap || new Settings().ZombieHordeCap != Game.MaxZombies)
+        var settingsOld = FromLine("zombie_horde_cap=512"); // (the old "no limit" before the player scaling: still no limit)
+        HLine($"  round 30 cap {r30}, with the host's horde cap at 100: {host}; settings 'zombie_horde_cap=150' -> {settings.ZombieHordeCap}, '=3' -> {settingsLow.ZombieHordeCap}, '=512' (the old no limit) -> {settingsOld.ZombieHordeCap}, default {new Settings().ZombieHordeCap}");
+        if (r30 < 400 || host != 100 || settings.ZombieHordeCap != 150 || settingsLow.ZombieHordeCap != Game.MinHordeCap || settingsOld.ZombieHordeCap != Game.MaxZombies || new Settings().ZombieHordeCap != Game.MaxZombies)
             Fail("the host's Zombie horde cap should lower the alive cap (and load from the settings file)");
     }
 
@@ -286,14 +287,14 @@ public static partial class SelfTest
             Fail($"horde {count}: {alloc} bytes allocated in the steady state (want none per tick)");
         if (TickCpu.Available && cpuTimer.WorstMs > MaxTickWorkMs)
             Fail($"horde {count}: a server tick did {cpuTimer.WorstMs:0.00} ms of work (budget {MaxTickWorkMs} ms): {cpuTimer.WorstDetail}");
-        var linuxBudget = count >= 300 ? 4.0 : count >= 100 ? 2.0 : 1.0; // mean CPU per tick (a Linux runner is noisy: the slack)
+        var linuxBudget = count >= 600 ? 6.0 : count >= 300 ? 4.0 : count >= 100 ? 2.0 : 1.0; // mean CPU per tick (a Linux runner is noisy: the slack)
         if (meanCpu > linuxBudget)
             Fail($"horde {count}: the server tick took {meanCpu:0.00} ms of CPU on average (budget {linuxBudget} ms)");
         if (bytesPerSec > 30 * 1024 || biggest > PacketWriter.Mtu)
             Fail($"horde {count}: ZEnts is {bytesPerSec / 1024:0.0} KB/s per client, biggest {biggest} bytes (budget 30 KB/s, one datagram)");
         if (c.Horde.Count < count)
             Fail($"horde {count}: the client knows only {c.Horde.Count} zombies after a second of snapshots");
-        if (clientMs > (count >= 300 ? 3.0 : 1.5))
+        if (clientMs > (count >= 600 ? 5.0 : count >= 300 ? 3.0 : 1.5))
             Fail($"horde {count}: the client's zombie work is {clientMs:0.00} ms a frame");
         return $"{count} | {meanCpu:0.00} / {worstCpu:0.00} | {bytesPerSec / 1024:0.0} | {clientMs:0.00}";
     }

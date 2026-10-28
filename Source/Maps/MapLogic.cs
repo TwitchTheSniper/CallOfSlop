@@ -20,6 +20,12 @@ public enum LogicKind : byte
 
     /// <summary>Built in: the match (start, end, flags and hills).</summary>
     Match,
+
+    /// <summary>
+    /// A climbable outside face (Zombies: the Cathedral's bell tower): started, the horde outside leaves the windows,
+    /// piles up against the face in a living pyramid and climbs it to the top (Source/Game/ZombiesClimb.cs).
+    /// </summary>
+    ZClimb,
 }
 
 /// <summary>An input of an entity: what a wire asks it to do. The name in a map file is the camelCase of the value.</summary>
@@ -124,7 +130,11 @@ public sealed class LogicEntity
 
     public LogicMachine Machine;
 
-    /// <summary>Sounds: volume (0-2) and how far it carries in metres (0: heard everywhere, not placed).</summary>
+    /// <summary>
+    /// Sounds: volume (0-2) and how far it carries in metres (0: heard everywhere, not placed). Climbable faces
+    /// (zclimb): <see cref="Range"/> is how far over the landing (<see cref="At"/>) climbers clear the parapet; the
+    /// face's foot is <see cref="Box"/>.
+    /// </summary>
     public float Volume = 1f, Range;
 
     /// <summary>Text: true for only the player who set it off (their notice line), false for everyone (the kill feed).</summary>
@@ -226,6 +236,7 @@ public sealed class MapLogic
         LogicKind.Zombies => [LogicAction.Power, LogicAction.Spawn, LogicAction.Pause, LogicAction.Resume],
         LogicKind.Challenge => [LogicAction.Start, LogicAction.Stop, LogicAction.Win, LogicAction.Fail],
         LogicKind.Reward => [LogicAction.Give, LogicAction.GiveAll, LogicAction.Drop],
+        LogicKind.ZClimb => [LogicAction.Start, LogicAction.Stop, LogicAction.GiveAll],
         _ => [],
     };
 
@@ -252,6 +263,7 @@ public sealed class MapLogic
         LogicKind.Match => [LogicEvent.Started, LogicEvent.Ended, LogicEvent.FlagTaken, LogicEvent.FlagCaptured, LogicEvent.HillTaken, LogicEvent.HillMoved],
         LogicKind.Challenge => [LogicEvent.Started, LogicEvent.Survived, LogicEvent.Failed, LogicEvent.Ended],
         LogicKind.Reward => [LogicEvent.Given],
+        LogicKind.ZClimb => [LogicEvent.Started, LogicEvent.Stopped, LogicEvent.Reached, LogicEvent.Given],
         _ => [],
     };
 
@@ -289,6 +301,7 @@ public sealed class MapLogic
         [LogicKind.ZMachine] = ["machine", "at"],
         [LogicKind.Challenge] = ["seconds", "zone", "who", "reward"],
         [LogicKind.Reward] = ["points", "powerUp", "at"],
+        [LogicKind.ZClimb] = ["box", "top", "over"],
     };
 
     private static readonly string[] CommonKeys = ["type", "name", "enabled", "outputs"];
@@ -479,6 +492,7 @@ public sealed class MapLogic
     {
         LogicKind.ZDoor => "zdoor",
         LogicKind.ZMachine => "zmachine",
+        LogicKind.ZClimb => "zclimb",
         _ => k.ToString().ToLowerInvariant(),
     };
 
@@ -713,6 +727,23 @@ public sealed class MapLogic
                     throw new MapFileException($"{w}: the map has {spots.Length} of {PortName(machine)}: say which with \"at\": [x, z]");
                 break;
             }
+        }
+        if (ent.Kind == LogicKind.ZClimb)
+        {
+            // The face's foot (the pile's ground, outside the wall), where climbers come over (the landing on top) and how
+            // far over it they clear the parapet.
+            if (map.Zombies == null)
+                throw new MapFileException($"{w}: a zclimb needs a map with a \"zombies\" section");
+            ent.Box = NeedBox();
+            ent.At = Point(map, Need(je, "top", w), $"{w} (top)");
+            ent.Range = Opt("over", 1.2f);
+            if (ent.Range is < 0 or > 6)
+                throw new MapFileException($"{w}: \"over\" is 0 to 6 m (how far over the landing climbers clear the parapet)");
+            var c = ent.Box.Center;
+            if (ent.At.Y - ent.Box.Min.Y < 2)
+                throw new MapFileException($"{w}: \"top\" must be at least 2 m above the foot's bottom");
+            if (MathF.Abs(ent.At.X - c.X) < ent.Box.Half.X && MathF.Abs(ent.At.Z - c.Z) < ent.Box.Half.Z)
+                throw new MapFileException($"{w}: \"top\" must be off the foot's box (over the wall from it)");
         }
         if (ent.Kind == LogicKind.Door)
             ReadDoorNav(ent, je, map, w);

@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Baptismal Font",
+  "category": "Cathedral",
+  "description": "An octagonal stone font with a wooden lid.",
+  "collision": "solid",
+  "collider": [{"size": [1.2, 1.1, 1.2]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.1, 0.2, 0.456], "offset": [0, 0.1, 0], "color": "#6a665e"},
+    {"size": [1.1, 0.2, 0.456], "offset": [0, 0.1, 0], "color": "#6a665e", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [1.1, 0.2, 0.456], "offset": [0, 0.1, 0], "color": "#6a665e", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [1.1, 0.2, 0.456], "offset": [0, 0.1, 0], "color": "#6a665e", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [0.52, 0.55, 0.215], "offset": [0, 0.475, 0], "color": "#8f8a80"},
+    {"size": [0.52, 0.55, 0.215], "offset": [0, 0.475, 0], "color": "#8f8a80", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.52, 0.55, 0.215], "offset": [0, 0.475, 0], "color": "#8f8a80", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [0.52, 0.55, 0.215], "offset": [0, 0.475, 0], "color": "#8f8a80", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [1.2, 0.3, 0.497], "offset": [0, 0.9, 0], "color": "#b0aa9c"},
+    {"size": [1.2, 0.3, 0.497], "offset": [0, 0.9, 0], "color": "#b0aa9c", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [1.2, 0.3, 0.497], "offset": [0, 0.9, 0], "color": "#b0aa9c", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [1.2, 0.3, 0.497], "offset": [0, 0.9, 0], "color": "#b0aa9c", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [1.0, 0.06, 0.414], "offset": [0, 1.03, 0], "color": "#2a4a5a"},
+    {"size": [1.0, 0.06, 0.414], "offset": [0, 1.03, 0], "color": "#2a4a5a", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [1.0, 0.06, 0.414], "offset": [0, 1.03, 0], "color": "#2a4a5a", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [1.0, 0.06, 0.414], "offset": [0, 1.03, 0], "color": "#2a4a5a", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [0.6, 0.05, 0.6], "offset": [0, 1.08, 0], "color": "#3b2614", "rotation": [0.0, 22.5, 0.0]},
+    {"size": [0.08, 0.5, 0.08], "offset": [0, 1.35, 0], "color": "#3b2614"},
+    {"size": [0.3, 0.06, 0.06], "offset": [0, 1.5, 0], "color": "#3b2614"}
+  ]
+}

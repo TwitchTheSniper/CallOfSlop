@@ -1,0 +1,24 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brass Lectern",
+  "category": "Cathedral",
+  "description": "A brass reading stand with an open book.",
+  "collision": "solid",
+  "collider": [{"size": [0.6, 1.2, 0.5]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.5, 0.1, 0.207], "offset": [0, 0.05, 0], "color": "#9a6a2a"},
+    {"size": [0.5, 0.1, 0.207], "offset": [0, 0.05, 0], "color": "#9a6a2a", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.5, 0.1, 0.207], "offset": [0, 0.05, 0], "color": "#9a6a2a", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [0.5, 0.1, 0.207], "offset": [0, 0.05, 0], "color": "#9a6a2a", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [0.12, 0.95, 0.05], "offset": [0, 0.575, 0], "color": "#9a6a2a"},
+    {"size": [0.12, 0.95, 0.05], "offset": [0, 0.575, 0], "color": "#9a6a2a", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.12, 0.95, 0.05], "offset": [0, 0.575, 0], "color": "#9a6a2a", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [0.12, 0.95, 0.05], "offset": [0, 0.575, 0], "color": "#9a6a2a", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [0.6, 0.06, 0.45], "offset": [0, 1.15, 0.02], "color": "#9a6a2a", "rotation": [-20.0, 0.0, 0.0]},
+    {"size": [0.5, 0.04, 0.36], "offset": [0, 1.2, 0.04], "color": "#e6dfcc", "rotation": [-20.0, 0.0, 0.0]},
+    {"size": [0.03, 0.05, 0.34], "offset": [0, 1.22, 0.04], "color": "#6e1418", "rotation": [-20.0, 0.0, 0.0]},
+    {"size": [0.18, 0.18, 0.22], "offset": [0, 1.0, -0.12], "color": "#c89a2a"},
+    {"size": [0.5, 0.06, 0.14], "offset": [0, 1.02, -0.18], "color": "#c89a2a", "rotation": [0.0, 0.0, 8.0]}
+  ]
+}

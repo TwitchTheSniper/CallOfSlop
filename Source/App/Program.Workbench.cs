@@ -221,6 +221,7 @@ public static unsafe partial class Program
     private static void StartWorkbenchSmoke(double now)
     {
         BuildStore.ReadOnly = true; // never write workbench.txt
+        BlueprintStore.ReadOnly = true; // nor blueprints.txt
         _wbSmokeStage = 1;
         _wbSmokeStart = now;
         Ui.OpenWorkbench();

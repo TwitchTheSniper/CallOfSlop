@@ -121,7 +121,8 @@ public sealed partial class Ui
             WbTip(ready ? "Puts the build in your slot (the server checks you own every part)." : Bm.FinalizeTip());
         if (ImGui.Button("Revert"u8))
             BenchLoad(run.Slot);
-                DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
+        DrawBlueprints(b); // your blueprint library: loads with only the parts you own (UiWorkbenchBlueprints.cs)
+        DrawWorkbenchPresets(); // standard builds as plans, with what you'd be missing
         ImGui.Separator();
 
         if (ImGui.CollapsingHeader("Loose parts"u8, ImGuiTreeNodeFlags.None) && zp != null)

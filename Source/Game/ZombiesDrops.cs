@@ -265,7 +265,7 @@ public sealed partial class Game
 
     /// <summary>
     /// A dropped build appeared: id, where, seconds left, the owner, flags (1 full ammo, 2 melee), the owner's name, the
-    /// build's text, and (protocol 69) the round it lasts to (0: time only).
+    /// build's text, and (protocol 70) the round it lasts to (0: time only).
     /// </summary>
     public static void WriteWeaponDrop(PacketWriter w, ZWeaponDrop d, double secondsLeft)
     {

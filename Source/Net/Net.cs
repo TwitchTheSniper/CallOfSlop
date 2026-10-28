@@ -81,8 +81,8 @@ public enum Msg : byte
     ZCasino, // server -> all (on a change) and each joining client: Zombies: one casino table's whole state (round, seats and hands, the dealer, roulette chips, dice, the last big win) (reliable; ZombiesCasinoNet.cs, protocol 66)
     ZCasinoAct, // client -> server: Zombies: a move at a casino table (table, act, arg, amount): bet, hit, stand, double, higher, lower, cash out, roll, clear, leave (reliable; protocol 66)
     ZGrenade, // server <-> clients: Zombies built grenades (a ZGrenadeMsg first): set off my remote grenades; a lure's closing bang (reliable; GameGrenades.cs, protocol 67)
-    ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 69)
-    ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 69)
+    ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 70)
+    ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 70)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
@@ -92,7 +92,13 @@ public sealed class PacketWriter
     /// The buffer is roomy so a big message (a 32-player roster, many kill-streak entities) can never overflow it;
     /// RakNet splits anything over the MTU. Messages sent many times a second keep under <see cref="Mtu"/> themselves.
     /// </summary>
-    private readonly byte[] _buf = new byte[8192];
+    private readonly byte[] _buf;
+
+    /// <summary>A writer with the usual 8 KB buffer, or a bigger one for a rare big message (Msg.ZRun: every loose part kind).</summary>
+    public PacketWriter(int capacity = 8192) => _buf = new byte[Math.Max(64, capacity)];
+
+    /// <summary>The buffer's size: a message never grows past it.</summary>
+    public int Capacity => _buf.Length;
 
     /// <summary>The payload budget for one unsplit datagram (RakNet's MTU is ~1400 with headers; this leaves room).</summary>
     public const int Mtu = 1200;
