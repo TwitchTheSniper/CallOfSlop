@@ -67,7 +67,7 @@ public static unsafe partial class Program
                 views.Add(($"spawn{i}", s + new Vector3(0, 1.7f, 0), new Vector3(0, 1.5f, 0), 1.2f));
             }
         var b = map.LightBake;
-        Console.WriteLine($"[lightshots] {map.Name}: {(b == null ? "not lit" : $"grid {b.NX}x{b.NY}x{b.NZ} at {b.Cell:0.##} m, {b.Sources.Length} lights, {b.Bytes / 1024} KB, baked in {b.BakeMs:0} ms")}; {views.Count} views");
+        Console.WriteLine($"[lightshots] {map.Name}: {(b == null ? "not lit" : $"grid {b.NX}x{b.NY}x{b.NZ} at {b.Cell:0.##} m{(b.CellY != b.Cell ? $" ({b.CellY:0.##} m tall)" : "")}, {b.Sources.Length} lights, {b.Bytes / 1024} KB, baked in {b.BakeMs:0} ms")}; {views.Count} views");
         var saved = _settings.Lighting;
         foreach (var view in views)
             foreach (var on in new[] { true, false })

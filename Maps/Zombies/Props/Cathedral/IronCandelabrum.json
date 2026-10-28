@@ -29,5 +29,8 @@
     {"size": [0.1, 0.03, 0.1], "offset": [0, 1.62, 0], "color": "#2c2c30"},
     {"size": [0.05, 0.24, 0.05], "offset": [0, 1.755, 0], "color": "#efe6cc"},
     {"size": [0.045000000000000005, 0.077, 0.045000000000000005], "offset": [0, 1.915, 0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}}
+  ],
+  "lights": [
+    {"pos": [0, 1.95, 0], "color": "#ffc878", "intensity": 1.1, "range": 7, "flicker": true}
   ]
 }
