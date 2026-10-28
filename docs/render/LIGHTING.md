@@ -17,7 +17,7 @@ Test** (`Maps/Dev/LightTest.json`, written by `Source/MapKit/Generators/LightTes
   moves and scales its lights. Lamps, lanterns, street lights, a fireplace and the new `Props/Lighting` set (Iron
   Torch, Candle Stand, Altar Candles, Chandelier, Brazier) carry them.
 - **`BakedLighting` op** (optional): grid cell size, how much sky light reaches enclosed places (`indoor`), sun shadows,
-  prop lights on or off, and a `region` and `top` to bake only part of a big map.
+  prop lights on or off, a `region` and `top` to bake only part of a big map, and `cellY` for cells taller than wide.
 
 A map is **lit** when it has a `BakedLighting` or a `LightSource` op. Only lit maps bake anything: every other map,
 including ones with lamp props, draws exactly as before (the shader takes the old path; under Mesa llvmpipe the unlit
@@ -59,7 +59,10 @@ That suits the blocky look; the Cathedral can use `cell: 0.35` in its nave if it
 
 - **Grid:** the playable area plus a metre, from half a metre below the floor (or the terrain's lowest point) to 1.5 m
   above the tallest box or light (at most 96 m), or the `region` and `top` given. At most 2^20 cells (about 13 MB): a
-  bigger map gets coarser cells (each try 25% bigger) unless it gives a region.
+  bigger map gets coarser cells (each try 25% bigger) unless it gives a region. `cellY` makes the cells taller than wide
+  (the shader's scale and its nudge along the normal are per axis: `uLitScale`, and `uLitOrigin.w` the nudge up and down),
+  so a tall map with several floors keeps fine cells across. Past the region's sides the GPU clamps to its edge cells
+  (the light there carries on outward), so put the edge in open air.
 - **Occluders:** `Map.Solid` (map boxes, prop colliders, building walls, foliage trunks, hidden colliders) without the
   boxes that come and go or don't block sight: building doors and glass, Zombies doors and barriers, map logic boxes,
   clip boxes. They are filed in a uniform grid of box lists (cells of 2 m or more) and rays walk it with a 3D DDA, each
@@ -130,14 +133,35 @@ light through. Movers aren't occluders either.
   check: bright where the lights are, dim where they aren't.
 - The log prints `[lighting] light grid ...` when a lit map's grid is uploaded.
 
-## 8. Lighting Ashgrave Cathedral (the follow-up)
+## 8. Ashgrave Cathedral (lit 2026-10-27)
 
-The Cathedral is a kit generator (`Source/MapKit/Generators/AshgraveCathedral.cs`). To light it:
+The Cathedral (`Source/MapKit/Generators/AshgraveCathedral.cs`, `Lighting()`; board item dev-baked-lighting-bl01) is the
+first lit Zombies map. What it has:
 
-1. `k.BakedLighting(cell: 0.5, indoor: 0.15, region: (x0, z0, x1, z1))` round the cathedral and its yard (keep the
-   cells at or below 0.5 m in the nave).
-2. Give its pack props lights (`Maps/Zombies/Props/Cathedral`: Wall Torch, Iron Brazier, Iron Candelabrum, Iron
-   Chandelier, Votive Candle Stand; a `"lights"` list each, flickering), so every one placed brings its light.
-3. Stained glass: `Lights.Window(k, ...)` inside the Lancet and Rose windows, in the glass colour.
-4. Add `lightProbes` to its `test` block for the nave, a crypt corner and the belfry.
-5. Run `--light-shots` on it and `"Baked lighting, Map bake, Map contract, Zombies cathedral"`.
+- **The grid:** `k.BakedLighting(cell: 0.5, cellY: 1.0, indoor: 0.2, region: (-55, -28.5, 51, 44.6), top: 32.5 after the
+  lift)`: the whole walled precinct from the dungeons (y 2) to the belfry floor plus 2.5 m, 212 x 33 x 147 cells. One
+  region with cubic 0.5 m cells could not fit: the precinct is 106 x 73 m and 33 m tall, about 2.1 million cells, and
+  the whole map at the defaults coarsened to 0.98 m. So the cells are 0.5 m across and 1 m up (`cellY`, added for this);
+  the map's floors are whole metres apart, so every floor sits on a row of cell centres. Above 32.5 m (the belfry's
+  arches and roof) and outside the precinct wall (the paupers' field) the edge cells' light carries on.
+- **Prop lights** (`tools/zombies/make_cathedral_props.py`, `LIGHTS`): Wall Torch, Iron Brazier, Iron Candelabrum, Iron
+  Chandelier (range 16: they hang 8-9 m up in the nave), Votive Candle Stand, the high altar's candles, the organ
+  console's and the scriptorium desk's candles; all flicker. The shared Hanging Lantern and Lantern Street Lamp bring
+  theirs. The lodge's lantern was lowered (its light was in the roof).
+- **Stained glass:** every Lancet Window (blue or red) and Rose Window prop gets a `Lights.Window` in its glass colour,
+  found from the placed props.
+- **Gameplay first:** a steady lamp in front of every machine (perks, slots, casino tables, workbenches, box spots, the
+  slot upgrade, the power switch), every wall buy and the bell's rope.
+- **Under ground:** a cold dim fill (`#7088c0`) under the crypt's and ossuary's vaults, along the dungeon corridor, in
+  every cell, the inquisitor's chamber and the tunnel (with torches along the tunnel's wall: `Lights.Fittings`): dark
+  but readable, so the horde stays visible. The torches stay the warm accents.
+- **Outbuildings:** the lodge's hearth, a fire and lanterns in the tithe barn, candles in the mausoleum; the Lady Chapel
+  and the vestry candles. Outside: the moon (sun shadows), the street lamps and braziers. The belfry: a lantern by the
+  bell.
+- **Test block:** 16 `lightProbes`: bright in the nave, the organ loft, by the machines (Juggernog, the revive perks,
+  the power switch, a dungeon workbench), the crypt, a cell, the lodge, the barn and the close's brazier; dim in the
+  ossuary's and dungeons' corners and the graveyard's far corner.
+- **Cost:** 295 lights; 1.03 million cells, 14 MB (the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
+  the developer's PC runner, 0.9-1.9 s on the shared 2-core agent box (released builds ship it baked; dev builds cache
+  it). "Big maps" gives a light bake its own budget (3 s), apart from the 150 ms validation budget, and lists the bakes. Pictures before and after of each level:
+  `--light-shots "Ashgrave Cathedral" --at ...` (the cameras are in the agent's report).

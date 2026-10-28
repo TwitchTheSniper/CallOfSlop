@@ -18,5 +18,8 @@
     {"size": [0.12, 0.204, 0.12], "offset": [0.0, 1.12, 0.12], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}},
     {"size": [0.12, 0.204, 0.12], "offset": [0.104, 1.12, -0.061], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}},
     {"size": [0.12, 0.204, 0.12], "offset": [-0.105, 1.12, -0.059], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}}
+  ],
+  "lights": [
+    {"pos": [0, 1.3, 0], "color": "#ff8a3a", "intensity": 2.4, "range": 10, "flicker": true}
   ]
 }

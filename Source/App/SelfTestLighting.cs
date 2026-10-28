@@ -197,6 +197,26 @@ public static partial class SelfTest
         if (kit.Ops[^1].Get("region") is not JObject)
             Fail("Baked lighting: the kit's BakedLighting region isn't written");
 
+        // ---- Taller cells ("cellY"): fine across, coarse up; the GPU block scales and offsets y by the cell's height ----
+        var tallText = LightScene().Replace("\"op\": \"BakedLighting\", \"cell\": 0.5,", "\"op\": \"BakedLighting\", \"cell\": 0.5, \"cellY\": 1.0,");
+        var tall = MapFile.Load(tallText, "Dev/LightScene.json", "");
+        tall.Validate();
+        if (tall.LightBake is not { } tb || tb.Cell != 0.5f || tb.CellY != 1f || tb.NX != b.NX || Math.Abs(tb.NY * 2 - b.NY) > 1)
+            Fail($"Baked lighting: cellY 1 gave a grid {tall.LightBake?.NX} x {tall.LightBake?.NY} at {tall.LightBake?.Cell} x {tall.LightBake?.CellY} m (square cells: {b.NX} x {b.NY})");
+        else
+        {
+            var tallLum = Lum(tb, new Vector3(3, 2, 0));
+            var tallBlock = new LightGrid.FrameBlock();
+            LightGrid.Fill(ref tallBlock, tb, 0, 0, new Vector4[4], new Vector4[4]);
+            if (MathF.Abs(tallLum - open) > open * 0.35f + 0.01f)
+                Fail($"Baked lighting: with taller cells the light near the lamp is {tallLum:0.000}, square cells {open:0.000}");
+            if (MathF.Abs(tallBlock.Scale.Y * tb.NY * tb.CellY - 1f) > 1e-4f || MathF.Abs(tallBlock.Origin.W - 0.6f) > 1e-4f || MathF.Abs(tallBlock.Mode.Z - 0.3f) > 1e-4f)
+                Fail($"Baked lighting: taller cells' block: scale y {tallBlock.Scale.Y}, offsets {tallBlock.Mode.Z} across and {tallBlock.Origin.W} up");
+            Line($"taller cells: {tb.NX} x {tb.NY} x {tb.NZ} at {tb.Cell} x {tb.CellY} m, {tallLum:0.000} near the lamp (square cells {open:0.000})");
+        }
+        if (kit.BakedLighting(cellY: 1.0).Ops[^1].Num("cellY") != 1.0)
+            Fail("Baked lighting: the kit's BakedLighting cellY isn't written");
+
         // ---- The shipped light test map ----
         if (Maps.Find("Light Test") is { LightBake: { } lt } ltMap)
             Line($"Light Test: grid {lt.NX} x {lt.NY} x {lt.NZ} at {lt.Cell:0.##} m, {lt.Sources.Length} lights ({ltMap.Lights.Count} ops), {lt.Bytes / 1024} KB, baked in {lt.BakeMs:0} ms");
