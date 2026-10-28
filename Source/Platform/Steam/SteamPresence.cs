@@ -21,6 +21,23 @@ public sealed class SteamPresence
     private ISteamBackend? _steam;
     private readonly Dictionary<string, string> _set = new();
 
+    /// <summary>The localisation file the developer uploads (docs/steam/richpresence_english.txt, embedded in the build), "" when missing.</summary>
+    public static string LocalisationText()
+    {
+        try
+        {
+            using var stream = typeof(SteamPresence).Assembly.GetManifestResourceStream("richpresence_english.txt");
+            if (stream == null)
+                return "";
+            using var reader = new StreamReader(stream);
+            return reader.ReadToEnd();
+        }
+        catch
+        {
+            return "";
+        }
+    }
+
     internal void Attach(ISteamBackend steam)
     {
         _steam = steam;

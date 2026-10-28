@@ -326,16 +326,15 @@ public static partial class SelfTest
             if (menu != SteamPresence.TokenMenu || !lobby.Contains("connect=+connect_lobby 109775240000000001") || !lobby.Contains("steam_display=#Status_Lobby") || !lobby.Contains("players=3") || !lobby.Contains("steam_player_group=") || zombies != "#Status_Zombies round 12" || single || rec.RichPresence.Count != 0)
                 Fail("presence: the display token, substitutions and connect key should follow the session");
             // The localisation file (docs/steam/richpresence_english.txt) defines every token with every key it uses.
-            var file = FindRepoFile(Path.Combine("docs", "steam", "richpresence_english.txt"));
-            if (file == null)
+            var text = SteamPresence.LocalisationText();
+            if (text.Length == 0)
             {
-                Fail("presence: docs/steam/richpresence_english.txt is missing (the developer uploads it on the Steamworks site)");
+                Fail("presence: docs/steam/richpresence_english.txt is missing from the build (the developer uploads it on the Steamworks site)");
                 return;
             }
-            var text = File.ReadAllText(file);
             var missing = SteamPresence.Tokens.Where(t => !text.Contains($"\"{t}\"")).ToList();
             var badKeys = System.Text.RegularExpressions.Regex.Matches(text, "%([a-z_]+)%").Select(m => m.Groups[1].Value).Distinct().Where(k => !SteamPresence.Keys.Contains(k)).ToList();
-            Line($"presence file: {Path.GetFileName(file)}, {text.Length} chars; missing tokens {missing.Count}; unknown keys {string.Join(",", badKeys)}; ascii {text.All(c => c < 128)}");
+            Line($"presence file: {text.Length} chars; missing tokens {missing.Count}; unknown keys {string.Join(",", badKeys)}; ascii {text.All(c => c < 128)}");
             if (missing.Count > 0 || badKeys.Count > 0 || !text.Contains("\"english\"") || !text.Contains("\"tokens\"") || !text.All(c => c < 128))
                 Fail($"presence file: every token the game sets must be defined ({string.Join(",", missing)}), using only the keys the game sets, in the Steam 'lang' format, ASCII");
         }
@@ -344,17 +343,6 @@ public static partial class SelfTest
             presence.Detach(rec);
             rec.Shutdown();
         }
-    }
-
-    private static string? FindRepoFile(string relative)
-    {
-        for (var dir = new DirectoryInfo(AppContext.BaseDirectory); dir != null; dir = dir.Parent)
-        {
-            var path = Path.Combine(dir.FullName, relative);
-            if (File.Exists(path))
-                return path;
-        }
-        return null;
     }
 
     /// <summary>Auth tickets end to end: a client on Steam proves itself to a host on Steam over a loopback game (good ticket: verified; bad: kicked with the reason).</summary>

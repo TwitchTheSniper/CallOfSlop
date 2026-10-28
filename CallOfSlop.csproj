@@ -50,6 +50,7 @@
   <ItemGroup>
     <!-- BRUTAL licence section 2.3: ship NOTICE.txt alongside the product. -->
     <None Include="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="docs\steam\richpresence_english.txt" LogicalName="richpresence_english.txt" /> <!-- the Rich Presence tokens the self-test checks against (SteamPresence.cs) -->
     <None Include="Branding\**\*" CopyToOutputDirectory="PreserveNewest" /> <!-- the BRUTAL logo (licence section 2.2) -->
     <!-- Maps are data files: everything in Maps\ is copied next to the game and loaded at startup. -->
     <None Update="Maps\**\*" CopyToOutputDirectory="PreserveNewest" />
