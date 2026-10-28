@@ -247,7 +247,7 @@ The part changes between its `off` and `color` colours and glows (light added on
 |---|---|---|
 | `blink` | On for `duty` of each `period`, then off: warning lights, neon, crossing lamps. | `period`, `duty` (0 to 1, default 0.5) |
 | `pulse` | Fades smoothly on and off: beacons, a glowing vending machine. | `period` |
-| `flicker` | Mostly on, with random dips: a dodgy bulb, a lantern flame, a TV screen. | `rate` (changes a second, default 10), `duty` (how often it's on, e.g. 0.85) |
+| `flicker` | Mostly on, with random dips: a dodgy bulb, a lantern flame, a TV screen. On a prop with a flickering light it follows that light's gentle wave instead (`rate` and `duty` are then unused). | `rate` (changes a second, default 10), `duty` (how often it's on, e.g. 0.85) |
 | `cycle` | The period is cut into `steps`; it's on in the steps listed in `on`: traffic lights, chasing bulbs. | `period`, `steps` (2 to 16), `on` (step numbers, 0 = the first) |
 
 Every light type also takes `color` (on, default the part's colour), `off` (default a dark version of it), `glow` (default 0.6), `phase`, `randomPhase`, `jitter` and `parent` (a light can ride on a moving part).
@@ -426,7 +426,8 @@ type anim (`flicker`, `glow`) as well: the light lights the room, the glow makes
 | `color` | A colour name, `[r, g, b]` or `"#rrggbb"` (default white). |
 | `intensity`, `range` | As the `LightSource` op: 0-20 (1: about twice full sun right by it) and 0.5-40 m (default 1 and 6). |
 | `type`, `yaw`, `pitch`, `cone`, `w`, `d` | `"point"` (default), `"spot"` or `"area"`, aimed in the prop's frame; as the `LightSource` op. |
-| `flicker` | `true`: the light wavers (flames). |
+| `flicker` | `true`: the light wavers (flames). The prop's `flicker` anim parts then follow the nearest flickering light's own wave instead of their random dips, so the flame and its light move together. |
+| `flickerSpeed`, `flickerAmount` | As the `LightSource` op: the flicker's pace (0.25-4) and swing (0-3), default 1. |
 
 At most 16 lights a prop. Keep them few and bright: a chandelier is one light at its centre, not one per candle (each
 light costs bake time, not frame time).

@@ -359,7 +359,8 @@ public static class LightBaker
         bake.Dir[o + 2] = Snorm(dir.Z);
         bake.Dir[o + 3] = Snorm(spec.Indoor + (1f - spec.Indoor) * skyVis);
         var sunVis = !spec.SunShadows || !tr.Blocked(p, sunDir, 400f, default, false) ? 1f : 0f;
-        var zc = lumSum > 0 ? phasor / lumSum : Vector2.Zero; // (a share of all the light here, like the flicker share)
+        // A share of all the light here, like the flicker share (none at a light's very edge, where the light rounds to nothing).
+        var zc = lumSum > 1e-4f ? phasor / lumSum : Vector2.Zero;
         bake.Sun[idx * 4] = (byte)MathF.Round(sunVis * 255f);
         bake.Sun[idx * 4 + 1] = LightFlicker.ZByte(zc.X);
         bake.Sun[idx * 4 + 2] = LightFlicker.ZByte(zc.Y);

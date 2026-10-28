@@ -158,7 +158,7 @@ A map must have at least one spawn.
 
 | Op | Parameters | What it does |
 |---|---|---|
-| `LightSource` | x, y, z, color, intensity = 1, range = 8, type = "point", yaw = 0, pitch = 90, cone = 60, w = 1, d = 1, flicker = false | A static light baked into the map: a point, a `"spot"` cone or an `"area"` rectangle. |
+| `LightSource` | x, y, z, color, intensity = 1, range = 8, type = "point", yaw = 0, pitch = 90, cone = 60, w = 1, d = 1, flicker = false, flickerSpeed = 1, flickerAmount = 1 | A static light baked into the map: a point, a `"spot"` cone or an `"area"` rectangle. |
 | `BakedLighting` | cell = 0.5, indoor = 0.25, sunShadows = true, propLights = true, region = null, top = 0 | Turns baked lighting on and sets it up. |
 
 ## Terrain
@@ -1112,7 +1112,9 @@ even with lamp props on it. Lights are looks only (not in the fingerprint), so l
 | `yaw`, `pitch` | Spot and area: which way it shines: compass `yaw` (0 = north, -Z; 90 = east) and `pitch` degrees below the horizontal (90 = straight down, the default; 0 = level, -90 = up). |
 | `cone` | Spot: the cone's full angle, 1-170 degrees (soft edge in the outer quarter). |
 | `w`, `d` | Area: the rectangle's width and depth (with `pitch` 0 it stands upright: `w` wide, `d` tall), 0.05-20 m. |
-| `flicker` | `true`: its light wavers (flames, a failing bulb). Cheap: the share of each spot's light that flickers is baked, the waver is two sines in the shader. |
+| `flicker` | `true`: its light wavers gently (flames, a failing bulb), each light in its own way (its own phase, strength and pace, from its position). Cheap: the bake keeps each spot's blend of the flames reaching it, the waver is two sines in the shader (docs/render/LIGHTING.md "Flicker"). |
+| `flickerSpeed` | 0.25-4 (default 1): a flickering light's pace. 0.5 is calmer, 2 livelier. |
+| `flickerAmount` | 0-3 (default 1): how far a flickering light wavers (1: about +-15%; 0: steady). |
 
 `BakedLighting` (all optional):
 
