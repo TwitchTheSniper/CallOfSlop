@@ -388,7 +388,7 @@ public sealed class Settings
                     case "mode" when Enum.TryParse<GameMode>(v, out var gm) && Enum.IsDefined(gm): s.Mode = gm; break;
                     case "auto_start" when int.TryParse(v, out var i): s.AutoStart = Math.Clamp(i, 0, 300); break;
                     case "gravity" when int.TryParse(v, out var i): s.Gravity = Math.Clamp(i, Game.MinGravityPercent, Game.MaxGravityPercent); break;
-                    case "zombie_horde_cap" when int.TryParse(v, out var i): s.ZombieHordeCap = Math.Clamp(i, Game.MinHordeCap, Game.MaxZombies); break;
+                    case "zombie_horde_cap" when int.TryParse(v, out var i): s.ZombieHordeCap = i >= Game.OldMaxZombies ? Game.MaxZombies : Math.Clamp(i, Game.MinHordeCap, Game.MaxZombies); break; // (512, the old "no limit", stays no limit)
                     case "zombie_start_round" when int.TryParse(v, out var i): s.ZombieStartRound = Math.Clamp(i, 1, Game.MaxStartRound); break;
                     case "zombie_test_kit": s.ZombieTestKit = v == "1" || v.Equals("true", StringComparison.OrdinalIgnoreCase); break;
                     case "team_select": s.TeamSelect = v == "auto" ? TeamSelection.AutoOnly : TeamSelection.Manual; break;

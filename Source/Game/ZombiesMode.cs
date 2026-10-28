@@ -142,8 +142,14 @@ public sealed partial class Game
     /// <summary>Zombies is co-op for up to this many players (people and bots).</summary>
     public const int ZombiesMaxPlayers = 4;
 
-    /// <summary>The most zombies that can be alive at once (the rules file's cap and curve go up to this; protocol 58 sends any number).</summary>
-    public const int MaxZombies = 512;
+    /// <summary>
+    /// The most zombies that can be alive at once (the rules file's cap and curve go up to this; protocol 58 sends any
+    /// number). 600 since the player scaling (2026-10-27): the shipped maxAlive, so "Zombie hordes" measures the budget at it.
+    /// </summary>
+    public const int MaxZombies = 600;
+
+    /// <summary>The old <see cref="MaxZombies"/>: a settings file's horde cap at or above it was "no limit" and stays so.</summary>
+    public const int OldMaxZombies = 512;
 
     /// <summary>The rules (Parts/Tables/ZombiesRules.json).</summary>
     public ZombiesRules ZRules = ZombiesRules.Current;
@@ -169,6 +175,12 @@ public sealed partial class Game
     public readonly List<ZDrop> ZDrops = new();
 
     private int _zToSpawn;
+
+    /// <summary>
+    /// The round's total (its count for <see cref="_zRoundPlayers"/> players, plus map logic's extra spawns) and the player
+    /// count it was worked out for. A join or leave mid-round rescales it (<see cref="RescaleRoundForPlayers"/>).
+    /// </summary>
+    private int _zRoundTotal, _zRoundPlayers;
     private double _zPhaseUntil, _zNextSpawn, _boxUntil;
     private int _boxMoveAfter;
     private uint _zRng = 1;
@@ -337,6 +349,7 @@ public sealed partial class Game
                 BeginRound(ZRound + 1, now);
                 break;
             case ZRoundPhase.Round:
+                RescaleRoundForPlayers(); // someone joined or left (bots too): the round's total follows at once
                 SpawnTick(zm, now);
                 if (_zToSpawn == 0 && AliveZombies == 0)
                     EndRound(now);
@@ -385,7 +398,8 @@ public sealed partial class Game
         ZPhase = ZRoundPhase.Round;
         ZWaitingReady = false;
         _zForceRound = false;
-        _zToSpawn = ZRules.ZombieCount(round, Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0)));
+        _zRoundPlayers = ZRoundPlayerCount();
+        _zToSpawn = _zRoundTotal = ZRules.ZombieCount(round, _zRoundPlayers);
         _zNextSpawn = now + 1.0;
         _zPowerThisRound = 0; // the per-round power-up cap (ZombiesPowerUps.cs)
         foreach (var p in Players.Values)
@@ -401,6 +415,31 @@ public sealed partial class Game
         ModeEvent($"ROUND {round}", Sfx.MortarWhistle);
         ZBanner($"ROUND {round}");
         LogicZombies(LogicEvent.RoundStarted, round); // map logic: zombies.roundStarted, n = the round
+    }
+
+    /// <summary>The players a round is sized for: everyone in the run (bots count), less a host who sits out; at least 1.</summary>
+    private int ZRoundPlayerCount() => Math.Max(1, Players.Count - (ZHostSitsOut ? 1 : 0));
+
+    /// <summary>
+    /// Server, every tick of a round (2026-10-27, the player scaling): when the player count has changed since the round's
+    /// total was worked out (a join, a leave, a bot added or a player dropping), the total becomes the round's count for
+    /// the new number (map logic's extra spawns kept) and the zombies still to spawn become that total less the ones
+    /// already out (killed or alive), never below 0. A leave never ends the round there and then: with nobody alive and
+    /// zombies still owed, at least one more comes. The alive cap (<see cref="ZAliveCap"/>) reads the player count live.
+    /// </summary>
+    private void RescaleRoundForPlayers()
+    {
+        var n = ZRoundPlayerCount();
+        if (n == _zRoundPlayers)
+            return;
+        var outAlready = _zRoundTotal - _zToSpawn; // killed + alive
+        _zRoundTotal = Math.Max(0, _zRoundTotal + ZRules.ZombieCount(ZRound, n) - ZRules.ZombieCount(ZRound, _zRoundPlayers));
+        var left = Math.Max(0, _zRoundTotal - outAlready);
+        if (left == 0 && _zToSpawn > 0 && AliveZombies == 0)
+            left = 1; // (the round still ends the usual way: its last zombie killed)
+        Console.WriteLine($"[zombies] round {ZRound}: {_zRoundPlayers} -> {n} players, total {_zRoundTotal}, {outAlready} out already, {_zToSpawn} -> {left} to spawn, alive cap {ZAliveCap()}");
+        _zToSpawn = left;
+        _zRoundPlayers = n;
     }
 
     private void EndRound(double now)
@@ -1566,6 +1605,9 @@ public sealed partial class Game
     }
 
     public int SelfTestToSpawn => _zToSpawn;
+
+    /// <summary>Self-test: the round's total as worked out for the current players (<see cref="RescaleRoundForPlayers"/>).</summary>
+    public int SelfTestRoundTotal => _zRoundTotal;
 
     public void SelfTestRollDrop(Vector3 at, int round, double now) => RollDrop(at, round, now);
 

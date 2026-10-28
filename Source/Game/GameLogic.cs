@@ -553,6 +553,7 @@ public sealed partial class Game
                         break;
                     case LogicAction.Spawn when ZPhase == ZRoundPhase.Round && sig.N > 0:
                         _zToSpawn += Math.Min(sig.N, 1000);
+                        _zRoundTotal += Math.Min(sig.N, 1000); // (kept when the players change: ZombiesMode.cs)
                         break;
                     case LogicAction.Pause:
                         _logicSpawnPaused = true;
