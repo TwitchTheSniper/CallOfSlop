@@ -37,6 +37,15 @@ public sealed class Settings
     public float FrenzyVolume = 0.8f; // Settings > Audio > Frenzy volume, on top of the music volume
     public bool VSync = true;
 
+    /// <summary>Settings > Video "Max FPS" (FrameLimiter.cs): 0 unlimited (the default), else 20-1000. Applies with VSync off.</summary>
+    public int MaxFps;
+
+    /// <summary>"Max FPS in menus": the lobby, menus and the pause menu (0: off, the main cap). Applies with VSync on too.</summary>
+    public int MaxFpsMenu;
+
+    /// <summary>"Max FPS in the background": the window unfocused or minimised (0: off). Applies with VSync on too.</summary>
+    public int MaxFpsBackground;
+
     // Voice and chat (Settings > Audio, Source/Audio/Voice). The microphone stays off until the player turns it on.
     public VoiceMode VoiceMode = VoiceMode.Proximity; // how you talk; Off: no voice at all (you hear nobody either)
     public bool VoiceTransmit; // "Use my microphone": off on first run
@@ -349,6 +358,9 @@ public sealed class Settings
                     case "frenzy_music": s.FrenzyMusic = v != "0"; break;
                     case "frenzy_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.FrenzyVolume = Math.Clamp(f, 0f, 1f); break;
                     case "vsync": s.VSync = v == "1"; break;
+                    case "max_fps" when int.TryParse(v, NumberStyles.Integer, inv, out var n): s.MaxFps = FrameCap.Clamp(n); break;
+                    case "max_fps_menu" when int.TryParse(v, NumberStyles.Integer, inv, out var n): s.MaxFpsMenu = FrameCap.Clamp(n); break;
+                    case "max_fps_background" when int.TryParse(v, NumberStyles.Integer, inv, out var n): s.MaxFpsBackground = FrameCap.Clamp(n); break;
                     case "voice_mode" when Enum.TryParse<VoiceMode>(v, true, out var vm) && Enum.IsDefined(vm): s.VoiceMode = vm; break;
                     case "voice_transmit": s.VoiceTransmit = v == "1"; break;
                     case "voice_activation": s.VoiceActivation = v == "1"; break;
@@ -464,6 +476,9 @@ public sealed class Settings
                     $"frenzy_music={(FrenzyMusic ? 1 : 0)}",
                     $"frenzy_volume={FrenzyVolume.ToString(inv)}",
                     $"vsync={(VSync ? 1 : 0)}",
+                    $"max_fps={MaxFps.ToString(inv)}",
+                    $"max_fps_menu={MaxFpsMenu.ToString(inv)}",
+                    $"max_fps_background={MaxFpsBackground.ToString(inv)}",
                     $"voice_mode={VoiceMode}",
                     $"voice_transmit={(VoiceTransmit ? 1 : 0)}",
                     $"voice_activation={(VoiceActivation ? 1 : 0)}",

@@ -850,6 +850,9 @@ public sealed partial class Ui
 
             ImGui.Spacing();
             ImGui.Checkbox("VSync"u8, ref s.VSync);
+            if (ImGui.IsItemHovered())
+                ImGui.SetItemTooltip("Frames wait for the monitor's refresh: no tearing, the frame rate is the refresh rate. With VSync on, the Max FPS cap below is not used (the menu and background caps still are)."u8);
+            DrawFrameCaps(s, w); // Max FPS (UiFrameCap.cs, FrameLimiter.cs)
             ImGui.Checkbox("Show FPS counter"u8, ref s.ShowFps);
             if (BuildInfo.IsRelease)
             {

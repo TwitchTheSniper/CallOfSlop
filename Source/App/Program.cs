@@ -148,6 +148,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+        _frameCapOff = _smoke || _shotTool || perfShot || _glBench; // these measure frame rates: never capped (Program.FrameCap.cs)
         RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
@@ -1371,6 +1372,7 @@ public static unsafe partial class Program
             Perf.Gpu?.EndFrame();
             using (Perf.Measure(PerfArea.Swap))
                 _window.SwapBuffers();
+            LimitFrame(); // Max FPS: waits out the rest of the frame, input is read right after (Program.FrameCap.cs)
             Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
         }
     }
