@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Iron Brazier",
+  "category": "Cathedral",
+  "description": "An iron tripod brazier of glowing coals.",
+  "collision": "solid",
+  "collider": [{"size": [0.7, 1.0, 0.7]}],
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.06, 0.8, 0.06], "offset": [-0.22, 0.4, -0.13], "color": "#2c2c30", "rotation": [0.0, 0.0, 12.0]},
+    {"size": [0.06, 0.8, 0.06], "offset": [0.22, 0.4, -0.13], "color": "#2c2c30", "rotation": [0.0, 0.0, -12.0]},
+    {"size": [0.06, 0.8, 0.06], "offset": [0, 0.4, 0.25], "color": "#2c2c30", "rotation": [12.0, 0.0, 0.0]},
+    {"size": [0.64, 0.2, 0.265], "offset": [0, 0.88, 0], "color": "#2c2c30"},
+    {"size": [0.64, 0.2, 0.265], "offset": [0, 0.88, 0], "color": "#2c2c30", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.64, 0.2, 0.265], "offset": [0, 0.88, 0], "color": "#2c2c30", "rotation": [0.0, 90.0, 0.0]},
+    {"size": [0.64, 0.2, 0.265], "offset": [0, 0.88, 0], "color": "#2c2c30", "rotation": [0.0, 135.0, 0.0]},
+    {"size": [0.5, 0.08, 0.5], "offset": [0, 1.0, 0], "color": "#ff6a20", "anim": {"type": "flicker", "rate": 4, "duty": 0.9, "glow": 1.8, "color": "#ff8a30", "off": "#8a2a08"}},
+    {"size": [0.12, 0.204, 0.12], "offset": [0.0, 1.12, 0.12], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.12, 0.204, 0.12], "offset": [0.104, 1.12, -0.061], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.12, 0.204, 0.12], "offset": [-0.105, 1.12, -0.059], "color": "#ffb848", "anim": {"type": "flicker", "rate": 9, "duty": 0.86, "glow": 2.0, "color": "#ffd070", "off": "#a05a18"}}
+  ]
+}
