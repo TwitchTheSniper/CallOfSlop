@@ -253,17 +253,15 @@ public sealed partial class Game
         var pos = at ?? sp.At;
         var (run, sprint) = ZRules.SpeedMix(Math.Max(1, ZRound));
         var r = ZRand();
-        var z = new Zombie
-        {
-            Id = NextZombieId(),
-            Health = ZRules.ZombieHealth(Math.Max(1, ZRound)),
-            Speed = r < sprint ? ZSpeed.Sprint : r < sprint + run ? ZSpeed.Run : ZSpeed.Walk,
-            Window = sp.Window,
-            Area = sp.Area,
-            State = sp.Window >= 0 ? ZState.ToWindow : ZState.Rising,
-            StateAt = now,
-            SpawnTick = ServerTick,
-        };
+        var z = RentZombie(); // (as new, from the pool once it is warm: ZombiePool.cs)
+        z.Id = NextZombieId();
+        z.Health = ZRules.ZombieHealth(Math.Max(1, ZRound));
+        z.Speed = r < sprint ? ZSpeed.Sprint : r < sprint + run ? ZSpeed.Run : ZSpeed.Walk;
+        z.Window = sp.Window;
+        z.Area = sp.Area;
+        z.State = sp.Window >= 0 ? ZState.ToWindow : ZState.Rising;
+        z.StateAt = now;
+        z.SpawnTick = ServerTick;
         ZRand(); // (the old first path search delay: keeps the seeded stream in step)
         z.MaxHealth = z.Health;
         InitLimbs(z); // per-limb health (ZombieLimbs.cs)

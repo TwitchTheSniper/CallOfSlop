@@ -655,7 +655,8 @@ public sealed partial class Game
             var fresh = false;
             if (!_zById.TryGetValue(id, out var z))
             {
-                z = new Zombie { Id = id };
+                z = RentZombie(); // (ZombiePool.cs)
+                z.Id = id;
                 z.Sim.Position = z.RenderPos = pos;
                 z.RenderYaw = yaw;
                 Horde.Add(z);
@@ -703,6 +704,7 @@ public sealed partial class Game
         }
         if (latest && total == 0 && Horde.Count > 0)
         {
+            ReturnHorde();
             Horde.Clear(); // the server has none left
             _zById.Clear();
         }
@@ -732,6 +734,7 @@ public sealed partial class Game
             {
                 Horde.RemoveAt(i);
                 _zById.Remove(z.Id);
+                ReturnZombie(z);
             }
         }
     }
