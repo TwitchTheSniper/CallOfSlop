@@ -7,8 +7,9 @@ namespace CallOfSlop;
 /// rules and the "slotTiers" table load; the reels always read as what was paid (and the wonder gem only shows in jackpot
 /// rounds); seeded odds by round (the rarity mix rises with the round, nothing outside the table comes up, wonder parts
 /// only in jackpot rounds); heat moves the odds up and resets on a rare part; then a real machine on Zombies Test: the
-/// price, the prompt, the spin, the payouts (parts into your loose parts, points back), at most three blanks in a row,
-/// a loss frees the machine at once (pull again: no cooldown), duplicates paid as points, no builds touched, the power-gated machine, the network copy, and no allocations in the
+/// price, the prompt, the spin, the payouts (parts into your loose parts, points back), no pull pays nothing (a blank pays
+/// a consolation part, which frees the machine at once: pull again, no cooldown, and never resets the heat), every copy of
+/// a part kept (dupePointsAt 0; the coin payout path when it's turned back on), no builds touched, the power-gated machine, the network copy, and no allocations in the
 /// machines' tick or the rolls. Blackmoor Asylum's machines stand as their props.
 /// </summary>
 public static partial class SelfTest
@@ -208,8 +209,7 @@ public static partial class SelfTest
             var meleeDrops = 0;
             var meleeSeen = new List<string>();
             var tiers = new int[6];
-            var worstBlankRun = 0;
-            var blankRun = 0;
+            var nothing = 0;
             var heatResetOk = true;
             var payOk = true;
             var spinOk = true;
@@ -236,9 +236,10 @@ public static partial class SelfTest
                 switch (m.Result)
                 {
                     case ZSlotResult.Part:
-                        tiers[(int)m.Tier]++;
+                        if (!m.Consolation)
+                            tiers[(int)m.Tier]++;
                         payOk &= m.Refunded ? zp.Points > points - cost && zp.Parts.Values.Sum() == loose : zp.Parts.Values.Sum() == loose + 1 && zp.Parts.GetValueOrDefault(Parts.All[m.Part].Name) > 0;
-                        heatResetOk &= m.Tier >= rules.SlotPityTier ? m.Heat == 0 : m.Heat == heat + 1;
+                        heatResetOk &= m.Tier >= rules.SlotPityTier && !m.Consolation ? m.Heat == 0 : m.Heat == heat + 1;
                         break;
                     case ZSlotResult.Melee:
                     {
@@ -260,13 +261,15 @@ public static partial class SelfTest
                         heatResetOk &= m.Heat == heat + 1;
                         break;
                 }
-                payOk &= Game.ReadSlotSymbols(m.Symbols) == (m.Result, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? m.Tier : Rarity.Common);
-                blankRun = m.Result == ZSlotResult.Nothing ? blankRun + 1 : 0;
-                worstBlankRun = Math.Max(worstBlankRun, blankRun);
+                payOk &= m.Consolation
+                    ? Game.ReadSlotSymbols(m.Symbols) == (ZSlotResult.Nothing, Rarity.Common) // (a consolation: the skull's reels)
+                    : Game.ReadSlotSymbols(m.Symbols) == (m.Result, m.Result is ZSlotResult.Part or ZSlotResult.Melee ? m.Tier : Rarity.Common);
                 if (m.Result == ZSlotResult.Nothing)
+                    nothing++; // (never: a blank pays a consolation part since 2026-10-27)
+                if (m.Consolation)
                 {
-                    // A loss (developer request, 2026-10-27): the machine is free the moment the reels stop, so the next
-                    // pull (0.01 s later, at the top of the loop) goes straight in: no result shown, no cooldown.
+                    // A consolation (developer requests, 2026-10-27): the machine is free the moment the reels stop, so the
+                    // next pull (0.01 s later, at the top of the loop) goes straight in: no result shown, no cooldown.
                     instant++;
                     instantOk &= m.State == ZSlotState.Idle && m.Owner == byte.MaxValue && use is { Kind: ZUseKind.SlotMachine, Blocked: false } && m.Left == 0;
                     continue;
@@ -277,23 +280,36 @@ public static partial class SelfTest
                 spinOk &= m.State == ZSlotState.Idle;
             }
             var buildsKept = string.Join("|", zp.Slots.Take(4).Select(b => b?.ToText() ?? "-")) == builds;
-            // A part you already hold plenty of pays the coin payout instead ("dupePointsAt"; no scrap since 2026-10-27).
+            // A part you already hold plenty of is kept (board item, 2026-10-27: "dupePointsAt" 0, no cap); with dupePointsAt
+            // turned back on it pays the coin payout instead (the path stays; no scrap since 2026-10-27).
             var common = Parts.All.First(p => p.Rarity == Rarity.Common);
-            zp.Parts[common.Name] = rules.SlotDupePointsAt;
-            var dupPoints = zp.Points;
             var forced = g.ZSlots[0];
-            forced.Paid = 500;
-            forced.State = ZSlotState.Spinning;
-            forced.Owner = me.Id;
-            forced.Result = ZSlotResult.Part;
-            forced.Tier = Rarity.Common;
-            forced.Part = (short)Array.IndexOf(Parts.All, common);
-            forced.Until = now;
-            g.SelfTestTickSlots(now + 0.01);
-            var refunded = forced.Refunded && zp.Parts[common.Name] == rules.SlotDupePointsAt && zp.Points == dupPoints + (int)MathF.Round(500 * rules.SlotPointsBack / 10f) * 10
+            void Force()
+            {
+                forced.Paid = 500;
+                forced.State = ZSlotState.Spinning;
+                forced.Owner = me.Id;
+                forced.Result = ZSlotResult.Part;
+                forced.Consolation = false;
+                forced.Refunded = false;
+                forced.Tier = Rarity.Common;
+                forced.Part = (short)Array.IndexOf(Parts.All, common);
+                forced.Until = now;
+                g.SelfTestTickSlots(now + 0.01);
+                now += 10;
+                g.SelfTestTickSlots(now);
+            }
+            zp.Parts[common.Name] = 3;
+            var keptPoints = zp.Points;
+            Force();
+            var kept = rules.SlotDupePointsAt == 0 && !forced.Refunded && zp.Parts[common.Name] == 4 && zp.Points == keptPoints && !g.SlotResultText(forced).Contains("points instead");
+            g.ZRules.SlotDupePointsAt = 3; // (turned back on for one pull: the coin payout path still works)
+            var dupPoints = zp.Points;
+            Force();
+            var refunded = forced.Refunded && zp.Parts[common.Name] == 4 && zp.Points == dupPoints + (int)MathF.Round(500 * rules.SlotPointsBack / 10f) * 10
                            && g.SlotResultText(forced).Contains("points instead");
-            now += 10;
-            g.SelfTestTickSlots(now);
+            g.ZRules.SlotDupePointsAt = rules.SlotDupePointsAt;
+            refunded &= kept;
 
             // The power-gated machine; the network copy.
             var pspot = ztm.SlotMachines[1];
@@ -370,9 +386,9 @@ public static partial class SelfTest
             var alloc = long.MaxValue;
             for (var round = 0; round < 3; round++)
                 alloc = Math.Min(alloc, Measure(sym));
-            ZLine($"slot machine (round 3, {cost} a pull): too poor refused {poorRefused} ('{prompt?.Text}'); 150 pulls: nothing {counts[0]} (pulled again at once {instant}: {instantOk}), points {counts[1]}, parts {counts[2]} "
-                  + $"(common {tiers[0]}, uncommon {tiers[1]}, rare {tiers[2]}, epic {tiers[3]}, legendary {tiers[4]}, wonder {tiers[5]}), melee builds {counts[3]} [{string.Join(", ", meleeSeen)}] (into the melee slot {meleeOk}, old ones dropped {meleeDrops}); longest run of nothing {worstBlankRun}; spin {spinOk}, paid right {payOk}, heat {heatResetOk}; "
-                  + $"builds untouched {buildsKept}; duplicate paid as points {refunded}; power machine '{dark?.Text}' then '{litUse?.Text}'; client copy {netOk} ({Game.ZSlotBytes} bytes a machine, protocol {ServerInfo.ProtocolVersion}); {alloc} bytes allocated");
+            ZLine($"slot machine (round 3, {cost} a pull): too poor refused {poorRefused} ('{prompt?.Text}'); 150 pulls: nothing {nothing}, consolations {instant} (pulled again at once: {instantOk}), points {counts[1]}, parts {counts[2]} "
+                  + $"(common {tiers[0]}, uncommon {tiers[1]}, rare {tiers[2]}, epic {tiers[3]}, legendary {tiers[4]}, wonder {tiers[5]}), melee builds {counts[3]} [{string.Join(", ", meleeSeen)}] (into the melee slot {meleeOk}, old ones dropped {meleeDrops}); spin {spinOk}, paid right {payOk}, heat {heatResetOk}; "
+                  + $"builds untouched {buildsKept}; a 4th copy kept {kept}, paid as points with dupePointsAt 3 {refunded}; power machine '{dark?.Text}' then '{litUse?.Text}'; client copy {netOk} ({Game.ZSlotBytes} bytes a machine, protocol {ServerInfo.ProtocolVersion}); {alloc} bytes allocated");
             if (!poorRefused || prompt is not { Kind: ZUseKind.SlotMachine, Blocked: false })
                 Fail("a slot machine should prompt with its price and refuse a pull you can't pay for");
             if (counts[(int)ZSlotResult.Melee] == 0 || !meleeOk)
@@ -380,11 +396,11 @@ public static partial class SelfTest
             if (!spinOk || !payOk || !heatResetOk || counts[(int)ZSlotResult.Part] == 0 || counts[(int)ZSlotResult.Points] == 0)
                 Fail("a slot machine pull should take the price, spin, then pay what its reels show (parts to your loose parts, points back) and keep its heat");
             if (instant == 0 || !instantOk)
-                Fail($"after a pull that wins nothing the machine should be free at once (idle, unblocked prompt, no cooldown) so you can pull again ({instant} losses, ok {instantOk})");
-            if (worstBlankRun > rules.SlotMaxNothing)
-                Fail($"a slot machine gave nothing {worstBlankRun} times in a row (at most {rules.SlotMaxNothing})");
+                Fail($"after a consolation pull the machine should be free at once (idle, unblocked prompt, no cooldown) so you can pull again ({instant} consolations, ok {instantOk})");
+            if (nothing > 0)
+                Fail($"a slot machine pull should never pay nothing (a blank pays a consolation part): {nothing} of 150 did");
             if (!buildsKept || !refunded)
-                Fail("a slot machine should never touch your guns, and a part you hold plenty of should pay points back instead");
+                Fail("a slot machine should never touch your guns, should keep every copy of a part (dupePointsAt 0), and with dupePointsAt turned on pay points back instead");
             if (dark is not { Blocked: true } || litUse is not { Blocked: false })
                 Fail("a slot machine marked \"power\" should only work with the power on");
             if (!netOk)

@@ -167,7 +167,7 @@ grey: not possible now (needs the power, already owned...).
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
 | **Workbench** | Opens the workbench over the match (the zombies don't wait) on your own slots | free |
 | **Salvage pile** | Search it for a loose part (rolled like a zombie's part drop), once per round per pile | free, +1 part (`salvageParts`) |
-| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or nothing; a loss frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
+| **Slot machine** | Three reels spin 2 s and pay a loose part, a complete melee build, points back or (on a blank) a consolation part; a consolation frees the machine at once (see "Slot machines") | 500 + 25 a round after the first, at most 1250 |
 | **Casino table** | Blackjack, roulette, high-low or Bone Dice for points: press the interact key for the table's panel (see "Casino tables") | your bet, within the table's limits |
 
 ### Perks (proposed; "perks", up to 16)
@@ -245,7 +245,7 @@ longer breaks parts down or crafts them (CRAFT MISSING went with it), and the sl
 from zombie drops, salvage piles, the slot machines, and taking builds apart (the mystery box's offer too). What
 replaced what (proposed, all data): the cog's weight in `slotTiers` went to **points** (coins), so a pull wins as
 often as before (round 1: 71.4 percent); bad-luck protection and the "no part of that tier" fallbacks pay coins; two
-common gems read as coins; a part you already hold 3 of loose pays the coin payout instead (`dupePointsAt`); a salvage
+common gems read as coins; a part you already hold 3 of loose paid the coin payout instead (`dupePointsAt`, 0 since 2026-10-27: every copy is kept); a salvage
 pile gives a loose part (`parts.salvageParts`). Older rules and drop tables with the scrap keys still load (an old
 row's scrap weight counts as points); old part files' `"scrap"` is ignored. Protocol 56. Self-test "Zombies no
 scrap".
@@ -489,13 +489,22 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
 - **A pull.** Walk up (a machine's prompt: "Hold [F] to pull the slot machine [550] - heat 2/5"), hold F like any buy
   and pay **500 + 25 a round after the first** (at most 1250; a machine's own `cost` overrides it). The three reels spin
   for 2 s and stop one by one (a click each) on what the server rolled. A **win** shows for 2.5 s (the reels flash, a
-  part won floats over the cabinet), then the machine takes the next pull. A pull that **wins nothing** (skulls, odd
-  gems) frees the machine the moment the reels stop: no result time and no cooldown, so you can pull again at once
-  (developer request, 2026-10-27; self-test "Zombies slots"). One player at a time per machine.
+  part won floats over the cabinet), then the machine takes the next pull. **No pull pays nothing** (board item,
+  2026-10-27): a blank (skulls, odd gems) pays a **consolation part** of the machine's own category (the classic machine:
+  any part) and still frees the machine the moment the reels stop: no result time and no cooldown, so you can pull
+  again at once. It shows as a small win: "Consolation: <part>" over the machine for everyone (a smaller model, a brief
+  soft glow on the reels) and in your own feed. Self-tests "Zombies slots" and "Zombies slot consolation". One player at
+  a time per machine.
+- **Consolation parts.** Their rarity ignores the round's table (so commons stay available in late rounds when the
+  main table no longer rolls them) and follows the **bet level** (`slots.consolation`, weights per rarity per level):
+  **1x** common; **2x** common 60 / uncommon 40; **5x** uncommon 85 / rare 15. A consolation is never rarer than the
+  main roll's lowest part tier at that bet (the round's row with the bet's steps, no heat): any weight above it pays that
+  floor. A consolation **never resets the heat**, even a rare one (it isn't a pity-tier win): it adds 1 like any other
+  pull. The real win odds, jackpot rounds and the coin payout are unchanged.
 - **What the reels mean.** Symbols: a **skull**, a **coin** (points back) and a **gem** per rarity in its colour (the
   wonder gem only on jackpot rounds; the scrap cog went with scrap, 2026-10-27). **Three of a gem**: a loose part of
   that rarity; **two of a gem**: a part one tier lower (two commons: coins); otherwise a coin pays **1.5 x the price
-  back** in points, and skulls and odd gems pay **nothing**. The server rolls the outcome first and then picks reels that read
+  back** in points, and skulls and odd gems pay a **consolation part** (above). The server rolls the outcome first and then picks reels that read
   as it (self-test: they always do), so the table, not the reels, sets the odds.
 - **Melee builds (developer answer, 2026-10-26).** The mystery box gives guns only, so melee builds come from here: a
   `"melee"` weight in each `slotTiers` row (5, about 5 percent of pulls) pays a **complete melee build** (the 14
@@ -507,11 +516,13 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   you had goes on the floor 3 m in front of the machine as a dropped build (5 minutes, anyone can pick it up), unless
   it's the untouched start Machete. Melee parts stay in the part pool.
 - **Parts** go into your **loose parts** (as salvage drops do: use them at the workbench; never a standard build, never
-  a part straight onto a gun) from the same pool as zombie part drops. A part you already hold **3 or more** of loose pays
-  the **coin payout** (1.5 x the price) instead (`dupePointsAt`; 0 keeps every copy). A legendary or wonder part is announced to everyone.
+  a part straight onto a gun) from the same pool as zombie part drops. **Every copy is kept** (board item, 2026-10-27:
+  `dupePointsAt` 0): there is no cap on loose parts anywhere (the server, `ZRun` since protocol 71, the workbench's "x N"
+  counts), so you can bank as many as you like; set `dupePointsAt` above 0 to pay the coin payout (`pointsBack` x the
+  price) for a part you already hold that many of. A legendary or wonder part is announced to everyone.
 - **Rarity rising: three levers that stack.**
   1. **By round** (`DropTables.json` "slotTiers", rows from round 1, 5, 10, 15, 20, 25, 35): weights for nothing,
-     points and each part tier (no scrap since 2026-10-27: its weight went to points); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
+     points and each part tier (no scrap since 2026-10-27: its weight went to points; "nothing" is the blank, which pays a consolation part); the share of blanks falls (30 -> 20 percent) and the part mix climbs (round 1: mostly
      common and uncommon, 2 percent rare or better; round 36: about half rare or better).
   2. **Machine heat** (the pity timer): every pull that doesn't pay a **rare-or-better** part (`pityTier`) adds 1 heat;
      every **5** heat (`heatStep`) moves the part weights **one tier up** (at most 3 steps, `heatMaxSteps`); a
@@ -529,7 +540,7 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   it throws nothing at a machine) moves its bet up a level, wrapping round: **1x / 2x / 5x** the current price
   (`slots.bets`). A pull then moves the part odds `slots.betSteps` (0 / 1 / 2) rarities up the ladder, on top of the
   machine's heat (the same shift as a heat step). The nothing and coin weights don't change, so a higher bet
-  **never guarantees a reward**: skulls come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
+  **never guarantees a big win**: skulls (consolations) come up as often at 5x as at 1x (round 3: 28.6 percent at every bet; the part
   mix goes from 1.9 percent rare-or-better at 1x to 12 at 2x and 33 at 5x). Coins pay 1.5x what you paid. The bet
   belongs to the machine (shared by the team, like the heat) and stays until someone changes it; the prompt shows it
   ("Hold F to pull the slot machine [1100] - bet 2x (G to change)") and so does the cabinet (a lamp per level under the
@@ -537,8 +548,8 @@ self-test section **"Zombies slots"** (`Source/App/SelfTestZombiesSlots.cs`). Ev
   byte); the server checks you're at the machine and it's idle. Bots pull at whatever bet is set. Self-test "Zombies
   slots": the rarer mix and the unchanged blanks at every bet over seeded rolls, the price, the prompt, the wrap and the
   client copy.
-- **Bad-luck protection**: at most **3** "nothing" results in a row per player per machine (`maxNothing`); the next
-  would-be blank pays coins (points back) instead.
+- **Bad-luck protection**: was at most **3** "nothing" results in a row per player per machine (`maxNothing`). Unused
+  since consolation parts (no pull pays nothing); the key stays so it can come back.
 - **Placement**: Map key `"slots"` (spots like a perk machine's: `at`, `yaw`, `power`, `cost`, and an optional
   `category`, below), at most 24; with machine props each stands as a solid **Reel Cabinet** (0.9 x 0.7 m, 1.95 m tall,
   its front facing the yaw), a category machine as its own cabinet. Blackmoor Asylum: the classic machine in the
@@ -611,7 +622,8 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
   counter, the three symbols, result / tier / a duplicate paid as points, the part, tenths of a second left); protocol 53 adds result 4
   (a melee build: the part field is then an index into the standard builds), the blade symbol (9) and a 12th byte, the
   bet level; protocol 56 drops scrap (results 0 nothing, 1 points, 2 part, 3 melee; symbols 0 skull, 1 coin, 2-7
-  gems, 8 blade). Clients start the reel
+  gems, 8 blade); protocol 71 sets bit 6 of the result byte (and bit 1 of `ZSlotWin`'s flags) for a consolation part
+  (result 2) and widens `ZRun` (a u16 count of kinds, a u32 count each). Clients start the reel
   animation when the spin counter changes (worked back from the seconds left, so a joiner mid-spin lines up); the parts
   come in `ZRun` as for any payout. Bots pull now and then with plenty to spare (see "Co-op bots"). Nothing in the machines' tick allocates
   (self-test).
@@ -619,11 +631,12 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
 | Rules (`ZombiesRules.json` "slots") | Default | What |
 | --- | --- | --- |
 | `costBase`, `costPerRound`, `costMax` | 500, 25, 1250 | the price: base + per round after the first, capped |
-| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long a win shows (a loss frees the machine at once) |
+| `spinSeconds`, `showSeconds` | 2, 2.5 | the spin, and how long a win shows (a consolation frees the machine at once) |
 | `heatStep`, `heatMaxSteps`, `pityTier` | 5, 3, rare | heat per tier step, the most steps, the tier that resets heat |
-| `maxNothing` | 3 | blanks in a row per player per machine, at most |
+| `maxNothing` | 3 | unused since consolation parts (was: blanks in a row per player per machine, at most) |
+| `consolation` | [{common 100}, {common 60, uncommon 40}, {uncommon 85, rare 15}] | a blank's consolation part: rarity weights per bet level (never above the main roll's floor at that bet) |
 | `jackpotEvery`, `jackpotLegendary`, `jackpotWonder` | 5, 6, 4 | jackpot rounds and their extra weights |
-| `pointsBack`, `dupePointsAt` | 1.5, 3 | points back (x the price) for a coin; a part you hold this many of loose pays that instead (0: keep it) |
+| `pointsBack`, `dupePointsAt` | 1.5, 0 | points back (x the price) for a coin; a part you hold this many of loose pays that instead (0: keep it) |
 | `bets`, `betSteps` | [1, 2, 5], [0, 1, 2] | the bet levels' price multipliers and their rarity steps |
 | `winSeconds` | 4 | how long a win shows over the machine |
 | `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |

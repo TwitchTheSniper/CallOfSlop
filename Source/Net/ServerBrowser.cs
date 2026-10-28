@@ -144,7 +144,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     Msg.ZGrenade at the end of Msg (remote detonation, a lure's closing bang).
     // 68: The Cathedral's bell siege (Source/Game/ZombiesClimb.cs): zombie state 7 (ZState.Scaling: on a climbable face)
     //     in Msg.ZEnts' state bits; map logic "zclimb" and Zombies areas with heights (map data, not the wire).
-    public const byte ProtocolVersion = 68;
+    // 69: Zombies slot consolations and unlimited loose parts (2026-10-27): Msg.ZRun is a u16 count of kinds, then each
+    //     name and a u32 count (was a byte count of at most 200 kinds, 255 each); a slot machine's result byte in Msg.ZWorld
+    //     uses bit 6 and Msg.ZSlotWin's flags bit 1 for a consolation part (a blank pays one: result 2, the reels' skull).
+    public const byte ProtocolVersion = 69;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
