@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Candle Cluster",
+  "category": "Lighting",
+  "description": "Seven candles on a stepped iron stand, for a shelf, niche or altar. It lights lit maps.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.5, 0.04, 0.28], "offset": [0, 0.02, 0], "color": "#2c2c30"},
+    {"size": [0.36, 0.1, 0.2], "offset": [0, 0.09, 0], "color": "#2c2c30"},
+    {"size": [0.2, 0.1, 0.14], "offset": [0, 0.19, 0], "color": "#2c2c30"},
+    {"size": [0.045, 0.12, 0.045], "offset": [-0.2, 0.1, 0.04], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [-0.2, 0.195, 0.04], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.16, 0.045], "offset": [-0.11, 0.12, 0.0], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [-0.11, 0.235, 0.0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.1, 0.045], "offset": [0.2, 0.09, 0.04], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [0.2, 0.175, 0.04], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.14, 0.045], "offset": [0.11, 0.11, 0.0], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [0.11, 0.215, 0.0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.2, 0.045], "offset": [-0.06, 0.24, 0.0], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [-0.06, 0.375, 0.0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.18, 0.045], "offset": [0.07, 0.23, 0.0], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [0.07, 0.355, 0.0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}},
+    {"size": [0.045, 0.24, 0.045], "offset": [0.0, 0.36, 0.0], "color": "#efe6cc"},
+    {"size": [0.03825, 0.065, 0.03825], "offset": [0.0, 0.515, 0.0], "color": "#ffb848", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "glow": 1.6, "color": "#ffd070", "off": "#a05a18"}}
+  ],
+  "lights": [
+    {"pos": [0, 0.45, 0.15], "color": "#ffc878", "intensity": 0.7, "range": 5, "flicker": true}
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Wall Shaft",
+  "category": "Gothic",
+  "description": "A 2 m wall shaft with a ring, to stack on a Gothic Pilaster (back at -Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.46, 2.0, 0.2], "offset": [0, 1.0, 0.08], "color": "#9a9385", "material": "concrete"},
+    {"size": [0.2, 2.0, 0.2], "offset": [0, 1.0, 0.2], "color": "#9a9385", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.1, 2.0, 0.1], "offset": [-0.25, 1.0, 0.12], "color": "#857f72"},
+    {"size": [0.1, 2.0, 0.1], "offset": [0.25, 1.0, 0.12], "color": "#857f72"},
+    {"size": [0.56, 0.1, 0.36], "offset": [0, 1.0, 0.16], "color": "#857f72"}
+  ]
+}

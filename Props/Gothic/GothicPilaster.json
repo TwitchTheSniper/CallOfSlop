@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Pilaster",
+  "category": "Gothic",
+  "description": "An engaged stone pier with rolls, a moulded base and a capital, 4 m tall (back at -Z; stack shafts on it).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [0.8, 0.45, 0.38], "offset": [0, 0.225, 0.17], "color": "#857f72", "material": "concrete"},
+    {"size": [0.68, 0.12, 0.32], "offset": [0, 0.51, 0.14], "color": "#9a9385"},
+    {"size": [0.46, 3.0, 0.2], "offset": [0, 2.07, 0.08], "color": "#9a9385", "material": "concrete"},
+    {"size": [0.2, 3.0, 0.2], "offset": [0, 2.07, 0.2], "color": "#9a9385", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.1, 3.0, 0.1], "offset": [-0.25, 2.07, 0.12], "color": "#857f72"},
+    {"size": [0.1, 3.0, 0.1], "offset": [0.25, 2.07, 0.12], "color": "#857f72"},
+    {"size": [0.5, 0.08, 0.32], "offset": [0, 3.61, 0.14], "color": "#857f72"},
+    {"size": [0.6, 0.24, 0.36], "offset": [0, 3.77, 0.16], "color": "#9a9385"},
+    {"size": [0.74, 0.12, 0.42], "offset": [0, 3.95, 0.19], "color": "#857f72"}
+  ]
+}

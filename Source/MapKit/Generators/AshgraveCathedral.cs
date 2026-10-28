@@ -22,7 +22,7 @@ namespace CallOfSlop.MapKit.Generators;
 /// the surface is a tiled slab with the stairwells cut out, so the crypt and the dungeons can lie under it.
 /// The generator checks its own layout (machines, wall buys and keep-clear spots) and throws on a clash.
 /// </summary>
-public sealed class AshgraveCathedral : IMapGenerator
+public sealed partial class AshgraveCathedral : IMapGenerator
 {
     public string Name => "Ashgrave Cathedral";
     public string Pack => "Zombies";
@@ -95,6 +95,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         Dungeons();
         PaupersField();
         Dressing();
+        Detail();
         BellLogic();
         Spawns();
         Lighting();
@@ -489,10 +490,10 @@ public sealed class AshgraveCathedral : IMapGenerator
             k.Prop("Wall Torch", x + 3, -15.4, 2.6, 0);
             k.Prop("Wall Torch", x + 3, 3.4, 2.6, 180);
         }
-        foreach (var x in new[] { -24.0, -16.0, -8.0, 0.0 })
+        foreach (var x in NaveBayCentres) // (the clerestory's lancets at the vault bays' centres: AshgraveCathedral.Detail.cs)
         {
-            k.Prop("Lancet Window Blue", x + 1.5, -10.2, 12.0, 0);
-            k.Prop("Lancet Window Red", x + 1.5, -1.8, 12.0, 180);
+            k.Prop("Lancet Window Blue", x, -10.2, 12.0, 0);
+            k.Prop("Lancet Window Red", x, -1.8, 12.0, 180);
         }
         k.Prop("Rose Window", -33.4, -6.0, 12.6, 90);
         k.Prop("Hanging Tapestry", -33.4, -12.5, 1.0, 90);
@@ -645,7 +646,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         SProp("Iron Candelabrum", 6.0, -2.0, G, 0, 0.15, 0.15);
         SProp("Iron Candelabrum", 14.0, -2.0, G, 0, 0.15, 0.15);
         k.Prop("Iron Chandelier", 10, -6, 9.0);
-        k.Prop("Iron Chandelier", 10, -20, 9.0);
+        k.Prop("Iron Chandelier", 10, -18, 9.0);
         k.Prop("Lancet Window Red", 10.0, -27.4, 6.0, 180);
         k.Prop("Rose Window", 10.0, -27.4, 11.5, 180);
         k.DecalScatter(["Floor Cracks", "Water Stain", "Gib Smear", "Dirt Patch"], 4.5, -27, 15, 3, 30, 31, gap: 1.3);
@@ -684,8 +685,8 @@ public sealed class AshgraveCathedral : IMapGenerator
         BoxSpot(27.0, G, -15.07, 180);
         WallBuy("Ratchet PDW", 1100, 18.5, G, 3.37, 0);
         WallBuy("Riot Control", 1250, 37.37, G, -12.0, -90);
-        k.Prop("Iron Chandelier", 21, -6, 8.0);
-        k.Prop("Iron Chandelier", 29, -6, 8.0);
+        k.Prop("Iron Chandelier", 22, -6, 8.0); // (at the vault bays' centres: AshgraveCathedral.Detail.cs)
+        k.Prop("Iron Chandelier", 32, -6, 8.0);
         k.Prop("Lancet Window Blue", 27, -15.4, 6.0, 0);
         k.Prop("Hanging Tapestry", 37.4, -1.5, 1.0, -90);
         k.DecalScatter(["Floor Cracks", "Water Stain", "Gib Spatter", "Dirt Patch"], 16.5, -15, 37, 1.0, 30, 41, gap: 1.3);
@@ -713,8 +714,8 @@ public sealed class AshgraveCathedral : IMapGenerator
             SProp("Cathedral Pew", 46.8, z, G, 90, 1.5, 0.3);
         }
         k.Prop("Rose Window", 49.4, -6.0, 6.5, -90);
-        k.Prop("Iron Chandelier", 44, -10, 7.0);
-        k.Prop("Iron Chandelier", 44, -2, 7.0);
+        k.Prop("Iron Chandelier", 43.7, -12.27, 7.0);
+        k.Prop("Iron Chandelier", 43.7, 0.27, 7.0);
         k.DecalScatter(["Floor Cracks", "Water Stain", "Gib Smear"], 38.5, -15, 49, 3, 16, 51, gap: 1.3);
         Wp(38.0, -15.4, 49.4, 3.4, G, 2.6);
     }
@@ -1212,7 +1213,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         // Stained glass high in the cathedral's outer walls (inside faces), and banners.
         foreach (var x in new[] { -20.0, -12.0, -4.0 })
             k.Prop(x == -12.0 ? "Lancet Window Red" : "Lancet Window Blue", x, -15.4, Gal + 0.6, 0);
-        foreach (var x in new[] { 20.0, 34.0 })
+        foreach (var x in new[] { 22.0, 32.0 })
             k.Prop("Lancet Window Red", x, -15.4, 6.0, 0);
         foreach (var z in new[] { -22.0 })
         {

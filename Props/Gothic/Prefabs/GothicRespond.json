@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Respond",
+  "category": "Gothic",
+  "description": "A Gothic Pilaster with a Gothic Vault Springer on it: an aisle's vault respond, 5.2 m (back at -Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"use": "Gothic Pilaster"},
+    {"use": "Gothic Vault Springer", "pos": [0, 4.0, 0]}
+  ]
+}

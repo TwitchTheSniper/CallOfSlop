@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Niche Reliquary",
+  "category": "Gothic",
+  "description": "A Gothic Wall Niche with a Reliquary Casket on its shelf (back at -Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"use": "Gothic Wall Niche"},
+    {"use": "Reliquary Casket", "pos": [0, 0.55, 0.2]}
+  ]
+}
