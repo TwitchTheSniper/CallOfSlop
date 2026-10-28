@@ -434,7 +434,7 @@ public static partial class SelfTest
             if (!ok || w.Length > 200)
                 Fail("the mode state didn't replicate (or is too big)");
         }
-        var info = new ServerInfo("Modes", "Courtyard", 2, 8, 1, MatchPhase.Warmup, 60123, ServerInfo.ProtocolVersion, GameMode.KingOfTheHill);
+        var info = new ServerInfo("Modes", "Courtyard", 2, 8, 1, MatchPhase.Warmup, 26123, ServerInfo.ProtocolVersion, GameMode.KingOfTheHill);
         if (ServerInfo.Find(info.Encode()) != info)
             Fail("the game mode didn't survive the server info");
 

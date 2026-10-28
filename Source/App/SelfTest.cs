@@ -1137,16 +1137,19 @@ public static partial class SelfTest
     /// <summary>Host + master + browser on loopback: info in pongs, heartbeat, list query, ping.</summary>
     private static void CheckServerBrowser()
     {
-        var info = new ServerInfo("Self-test server", "Harbor", 3, 8, 2, MatchPhase.Playing, 60123, ServerInfo.ProtocolVersion);
+        var info = new ServerInfo("Self-test server", "Harbor", 3, 8, 2, MatchPhase.Playing, 26123, ServerInfo.ProtocolVersion);
         var junk = new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 }.Concat(info.Encode()).ToArray();
         if (ServerInfo.Find(junk) != info)
             Fail("ServerInfo didn't survive encode/find");
 
-        using var host = NetPeer.Host(60123, 4);
-        using var master = NetPeer.Host(60124, 1);
+        // Self-test hosts use fixed ports 26123-26311 (2026-10-28; they were 60123-60311): below every OS's ephemeral
+        // range (Windows and macOS 49152-65535, Linux 32768-60999), so a client socket another check opened can't hold
+        // one ("SocketPortAlreadyInUse", Windows main run 40485419142). New loopback checks pick a free port there.
+        using var host = NetPeer.Host(26123, 4);
+        using var master = NetPeer.Host(26124, 1);
         using var browser = NetPeer.Discovery();
         host.SetOfflineInfo(info.Encode());
-        host.Advertise("127.0.0.1", 60124, MasterServerApp.Heartbeat(60123));
+        host.Advertise("127.0.0.1", 26124, MasterServerApp.Heartbeat(26123));
         var games = new Dictionary<string, (string Ip, ushort Port, DateTime Seen)>();
         List<(string, ushort)>? listed = null;
         ServerInfo? ponged = null;
@@ -1158,7 +1161,7 @@ public static partial class SelfTest
             MasterServerApp.Pump(master, games);
             if (!asked && games.Count > 0)
             {
-                browser.Advertise("127.0.0.1", 60124, MasterServerApp.ListQuery);
+                browser.Advertise("127.0.0.1", 26124, MasterServerApp.ListQuery);
                 asked = true;
             }
             browser.PollRaw((from, data) =>
@@ -1178,7 +1181,7 @@ public static partial class SelfTest
             + $"pong {(ponged is { } p ? $"'{p.Name}' map {p.MapName} {p.Players}/{p.MaxPlayers}" : "none")} after {sw.ElapsedMilliseconds} ms");
         if (games.Count != 1)
             Fail("master didn't record the heartbeat");
-        if (listed is not { Count: 1 } || listed[0].Item2 != 60123)
+        if (listed is not { Count: 1 } || listed[0].Item2 != 26123)
             Fail("browser didn't get the game from the master");
         if (ponged != info)
             Fail("ping didn't return the server info");

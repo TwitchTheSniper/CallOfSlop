@@ -365,7 +365,7 @@ public static partial class SelfTest
 
     private static void CheckAutoServerList()
     {
-        const ushort listBase = 27280, gameA = 60140, gameB = 60141, manualPort = 60165; // list ports an invite can carry: 27050-27304
+        const ushort listBase = 27280, gameA = 26140, gameB = 26141, manualPort = 26165; // list ports an invite can carry: 27050-27304
         var clock = Stopwatch.StartNew();
         HostListing.Config Cfg() => new() { ProbeTimeout = TimeSpan.FromMilliseconds(400), ReprobeSeconds = 1, FirstListPort = listBase, ListPorts = 5, Log = Line };
         bool Wait(Func<bool> done, double seconds, params ListTestHost?[] hosts)

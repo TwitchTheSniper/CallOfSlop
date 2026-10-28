@@ -186,7 +186,7 @@ public static partial class SelfTest
         if (!GameModes.Fits(GameMode.LastManStanding, Maps.All[0]) || GameModes.Fits(GameMode.Zombies, Maps.All[0]) || (ZTestMap != null && !GameModes.Fits(GameMode.Zombies, ZTestMap)))
             Fail("Fits is wrong for Zombies or the template");
         // The server info carries the template's id like any other.
-        var info = new ServerInfo("Modes", "Courtyard", 2, 8, 1, MatchPhase.Warmup, 60123, ServerInfo.ProtocolVersion, GameMode.LastManStanding);
+        var info = new ServerInfo("Modes", "Courtyard", 2, 8, 1, MatchPhase.Warmup, 26123, ServerInfo.ProtocolVersion, GameMode.LastManStanding);
         if (ServerInfo.Find(info.Encode()) != info)
             Fail("the template mode didn't survive the server info");
     }

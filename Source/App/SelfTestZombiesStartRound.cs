@@ -124,7 +124,7 @@ public static partial class SelfTest
     /// <summary>A loopback host on Horde Test sets the start round and the kit in its lobby: a client sees both.</summary>
     private static void StartRoundLoopback(Map map)
     {
-        const ushort port = 60281;
+        const ushort port = 26281;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);

@@ -257,7 +257,7 @@ public static partial class SelfTest
     private static void CheckJoinRefusal()
     {
         var small = Maps.Find("Proto Box") ?? Maps.All.OrderBy(m => m.MaxPlayers).First();
-        const ushort port = 60141;
+        const ushort port = 26141;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         using var server = new Game(NetPeer.Host(port, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
@@ -289,7 +289,7 @@ public static partial class SelfTest
             (16, FindMap("Quarry", m => m.MaxPlayers == 16)),
             (32, FindMap("Farmland", m => m.MaxPlayers == 32)),
         };
-        ushort port = 60150;
+        ushort port = 26150;
         foreach (var (players, map) in cases)
         {
             if (map == null)

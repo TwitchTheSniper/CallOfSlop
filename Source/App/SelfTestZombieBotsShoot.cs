@@ -188,7 +188,7 @@ public static partial class SelfTest
     /// <summary>A loopback host (2 bots) and a client through the lobby, warmup and countdown: the client gets the bots' shots.</summary>
     private static void ZBotsShootLoopback(Map map)
     {
-        const ushort port = 60261;
+        const ushort port = 26261;
         var clock = Stopwatch.StartNew();
         var now = 0.0;
         World.SetMap(map);
