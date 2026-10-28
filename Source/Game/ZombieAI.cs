@@ -301,6 +301,7 @@ public sealed partial class Game
 
     private void TickHorde(ZombiesMap zm, double now)
     {
+        using var perf = Perf.Measure(PerfArea.Horde); // the perf window (Source/Perf)
         var t0 = Stopwatch.GetTimestamp();
         var alive = 0;
         for (var i = Horde.Count - 1; i >= 0; i--)

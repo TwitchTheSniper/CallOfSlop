@@ -279,6 +279,7 @@ public static unsafe class SkyRenderer
             while ((uint)Native.glGetError() != 0) { } // only our own errors count below
         g.SetBlend(false);
         DepthMask(false);
+        PerfCounters.Draw(3); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArrays(GL_TRIANGLES, 0, 3);
         DepthMask(true);
         g.Rebind(); // the box renderer's program, cube and texture array (unit 0) again

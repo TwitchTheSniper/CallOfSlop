@@ -267,6 +267,7 @@ public sealed unsafe partial class MeshRenderer : IMeshDrawer
                     const int stride = FloatsPerInstance * sizeof(float);
                     for (uint a = 0; a < 4; a++)
                         Native.glVertexAttribPointer(5 + a, 4, GL_FLOAT, false, stride, (void*)(offset + a * 4 * sizeof(float)));
+                    PerfCounters.Draw(range.IndexCount, count); // the perf window's counters (Source/Perf/PerfCounters.cs)
                     Native.glDrawElementsInstanced(GL_TRIANGLES, range.IndexCount, GL_UNSIGNED_INT, (void*)((nint)range.FirstIndex * sizeof(uint)), count);
                     draws++;
                     tris += (long)count * range.IndexCount / 3;

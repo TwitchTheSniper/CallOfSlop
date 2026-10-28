@@ -502,6 +502,7 @@ public sealed unsafe class PropRenderer
             Native.glBufferData(GL_ARRAY_BUFFER, _debrisData.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on last frame's copy
             fixed (float* p = _debrisData)
                 Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
+            PerfCounters.Draw(36, debris); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, debris);
             draws++;
         }
@@ -658,6 +659,7 @@ public sealed unsafe class PropRenderer
         const int stride = PropBatches.FloatsPerInstance * sizeof(float);
         Native.glVertexAttribPointer(4, 4, GL_FLOAT, false, stride, (void*)offset);
         Native.glVertexAttribPointer(5, 4, GL_FLOAT, false, stride, (void*)(offset + 4 * sizeof(float)));
+        PerfCounters.Draw(mesh.IndexCount, count); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawElementsInstanced(GL_TRIANGLES, mesh.IndexCount, GL_UNSIGNED_INT, (void*)((nint)mesh.FirstIndex * sizeof(uint)), count);
     }
 

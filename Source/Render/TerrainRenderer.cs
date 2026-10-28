@@ -529,6 +529,7 @@ public sealed unsafe class TerrainRenderer
         if (_caveIndexCount > 0 && Visible(planes, _caveMin, _caveMax))
         {
             _caveVao.Bind();
+            PerfCounters.Draw(_caveIndexCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawElements(GL_TRIANGLES, _caveIndexCount, GL_UNSIGNED_INT, (void*)0);
             _drawCalls++;
             _visibleTris += _caveIndexCount / 3;
@@ -552,6 +553,7 @@ public sealed unsafe class TerrainRenderer
 
     private void DrawRange(int first, int count)
     {
+        PerfCounters.Draw(count); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawElements(GL_TRIANGLES, count, GL_UNSIGNED_INT, (void*)(first * sizeof(uint)));
         _drawCalls++;
     }

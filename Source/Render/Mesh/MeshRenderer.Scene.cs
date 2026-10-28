@@ -114,6 +114,7 @@ public sealed unsafe partial class MeshRenderer
             var offset = (nint)start * stride;
             for (uint a = 0; a < 4; a++)
                 Native.glVertexAttribPointer(5 + a, 4, GL_FLOAT, false, stride, (void*)(offset + a * 4 * sizeof(float)));
+            PerfCounters.Draw(range.IndexCount, end - start); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawElementsInstanced(GL_TRIANGLES, range.IndexCount, GL_UNSIGNED_INT, (void*)((nint)range.FirstIndex * sizeof(uint)), end - start);
             draws++;
             start = end;

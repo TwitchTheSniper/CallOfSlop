@@ -288,6 +288,7 @@ public sealed unsafe class DecalRenderer
                     }
                     if (runStart >= 0)
                     {
+                        PerfCounters.Draw(runCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
                         Native.glDrawArrays(GL_TRIANGLES, runStart, runCount);
                         draws++;
                     }
@@ -296,6 +297,7 @@ public sealed unsafe class DecalRenderer
                 }
                 if (runStart >= 0)
                 {
+                    PerfCounters.Draw(runCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
                     Native.glDrawArrays(GL_TRIANGLES, runStart, runCount);
                     draws++;
                 }
@@ -316,6 +318,7 @@ public sealed unsafe class DecalRenderer
             Native.glUniform1f(_iLocFadeTime, ImpactPool.FadeTime);
             Native.glUniform1f(_iLocDrawDist, ImpactPool.DrawDistanceFor(quality));
             _impactVao.Bind();
+            PerfCounters.Draw(4, impacts, strip: true); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, impacts);
             draws++;
             triangles += impacts * 2;

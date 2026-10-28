@@ -36,7 +36,7 @@ public sealed partial class Game
     private uint _lastPresent;
     private uint _snapCounter;
 
-    /// <summary>Snapshot statistics (server): packets and payload bytes built, and the most parts one snapshot needed.</summary>
+    /// <summary>Snapshot statistics (server): packets and payload bytes built, and the most parts one snapshot needed. A client counts the packets and bytes it receives in the first two (the perf window).</summary>
     public long SnapPackets, SnapBytes;
 
     public int SnapMaxParts, SnapMaxBytes;
