@@ -11,6 +11,12 @@ namespace CallOfSlop;
 /// <see cref="CrowdTuning.MassRange"/> of a player let theirs out as particles again; at most
 /// <see cref="CrowdTuning.MassPerTick"/> each way a tick. Mass zombies are unhurt (only an unhurt particle merges) and all
 /// have <see cref="MassHP"/>. <see cref="Total"/> = particles + mass, always.
+/// <para>
+/// Zombie types (feat/zombie-types): the mass holds one count a cell. When types reach the mass, each cell takes a count
+/// per type (a second index: cell * kinds + kind) at the four places a count moves: <see cref="TickMass"/>'s merge
+/// (the particle's type), flux (each type's share) and release (the type the particle gets back), and
+/// <see cref="BlastMass"/> (kills per type for the credit). Nothing else reads the counts by type.
+/// </para>
 /// </summary>
 public sealed partial class HordeCrowd
 {

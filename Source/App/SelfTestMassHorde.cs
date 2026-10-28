@@ -6,7 +6,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Self-test section "Mass horde" (docs/zombies/MASS-HORDE.md, the spike): Mass Horde Test's crowd of 5,000, 10,000 and
 /// 20,000 zombies for 4 seconds each (short and seeded): the server tick's CPU mean and worst (Windows thread cycles:
-/// 10,000 must stay under the 8 ms budget), allocations, memory, Msg.ZCrowd's bytes per client (per-cell
+/// every count must stay under the 8 ms budget), the CPU a frame spends preparing the crowd's instances, allocations, memory, Msg.ZCrowd's bytes per client (per-cell
 /// counts and headings) read into a client, promotion and demotion (the player walks off: far individuals go back to the crowd, near particles
 /// come out), counts adding up every tick (crowd + alive + killed = the round's total) with kills from shots, the
 /// same seed giving the same crowd, and the crowd tier off on every other map.
@@ -14,6 +14,9 @@ namespace CallOfSlop;
 public static partial class SelfTest
 {
     private static readonly List<string> MassNotes = new();
+
+    /// <summary>The CPU a frame may spend sorting the crowd into instances (Windows; the GPU does the rest).</summary>
+    private const double CrowdPrepBudgetMs = 4;
 
     private static void MassLine(string s)
     {
@@ -276,8 +279,10 @@ public static partial class SelfTest
             Fail($"crowd {count}: the crowd should reach the player and fill the individual tier ({promoted} promoted, at most {maxAlive} alive)");
         if (maxAlive > g.CrowdIndividualCap)
             Fail($"crowd {count}: {maxAlive} individuals, over the cap {g.CrowdIndividualCap}");
-        if (TickCpu.Available && count <= 10000 && cpuTimer.WorstMs > MaxTickWorkMs)
+        if (TickCpu.Available && cpuTimer.WorstMs > MaxTickWorkMs)
             Fail($"crowd {count}: a server tick did {cpuTimer.WorstMs:0.00} ms of work (budget {MaxTickWorkMs} ms): {cpuTimer.WorstDetail}");
+        if (TickCpu.Available && Math.Max(hostPrepMs, clientPrepMs) > CrowdPrepBudgetMs)
+            Fail($"crowd {count}: preparing a frame's crowd instances took {hostPrepMs:0.00} ms on the host, {clientPrepMs:0.00} ms on a client (budget {CrowdPrepBudgetMs} ms of CPU)");
         clock = now;
         return $"{count} | {meanCpu:0.00} / {cpuTimer.WorstText} | {crowdMs:0.00} | {kbs:0.0} | {bytes / 1024 / 1024.0:0.0}";
     }
