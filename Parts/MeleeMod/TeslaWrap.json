@@ -8,7 +8,7 @@
   "flags": ["shock"],
   "melee": {"damage": 12, "stun": 0.9},
   "model": [
-    {"shape": "rod", "size": [0.05, 0.05, 0.05], "pos": [0, 0, 0], "color": "copper"},
-    {"size": [0.054, 0.01, 0.054], "pos": [0, 0, 0], "color": [0.4, 0.8, 1.0], "tag": "glow"}
+    {"shape": "cylinder", "size": [0.05, 0.05, 0.05], "pos": [0, 0, 0], "color": "copper", "segments": 14},
+    {"shape": "tube", "size": [0.054, 0.054, 0.01], "pos": [0, 0, 0], "color": [0.4, 0.8, 1], "tag": "glow", "segments": 14, "inner": 0.88}
   ]
 }

@@ -6,8 +6,8 @@
   "flavor": "A chip that overclocks the cycle and the round at once. It also plays a little tune when it gets a kill.",
   "weight": 0.5,
   "model": [
-    {"size": [0.03, 0.03, 0.05], "pos": [0, 0, 0.02], "color": "black"},
-    {"size": [0.032, 0.008, 0.04], "pos": [0, 0.019, 0.02], "color": [0.2, 0.9, 0.4], "tag": "glow"},
+    {"shape": "bevel", "size": [0.03, 0.03, 0.05], "pos": [0, 0, 0.02], "color": "black", "radius": 0.25},
+    {"shape": "rounded", "size": [0.032, 0.008, 0.04], "pos": [0, 0.019, 0.02], "color": [0.2, 0.9, 0.4], "tag": "glow", "radius": 0.4, "edges": "long", "segments": 2},
     {"size": [0.006, 0.006, 0.006], "pos": [0.012, 0.026, 0.035], "color": "accent"}
   ],
   "stats": [

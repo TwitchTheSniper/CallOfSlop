@@ -8,9 +8,9 @@
   "weight": 0.5,
   "hand": [0, 0.06, 0],
   "model": [
-    {"size": [0.02, 0.08, 0.02], "pos": [0, 0.04, 0.05], "color": "black"},
-    {"size": [0.02, 0.08, 0.02], "pos": [0, 0.04, -0.05], "color": "black"},
-    {"shape": "rod", "size": [0.024, 0.024, 0.13], "pos": [0, 0.08, 0], "color": "black"}
+    {"shape": "bevel", "size": [0.02, 0.08, 0.02], "pos": [0, 0.04, 0.05], "color": "black", "radius": 0.25},
+    {"shape": "bevel", "size": [0.02, 0.08, 0.02], "pos": [0, 0.04, -0.05], "color": "black", "radius": 0.25},
+    {"shape": "capsule", "size": [0.024, 0.024, 0.13], "pos": [0, 0.08, 0], "color": "black", "segments": 10}
   ],
   "stats": [
     {"stat": "recoilHorizontal", "mul": 0.6},

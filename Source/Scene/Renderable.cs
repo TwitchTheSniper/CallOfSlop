@@ -48,6 +48,9 @@ public struct Renderable
     public Material Material;
     public RenderFlags Flags;
 
+    /// <summary>For <see cref="RenderKind.Box"/>: 0 = the unit cube, else a part shape drawn inside it (<see cref="PartShapes"/>).</summary>
+    public ushort Shape;
+
     /// <summary>A unit-cube box (scale it with the node's transform).</summary>
     public static Renderable Box(Vector3 color, float alpha = 1f, int mode = 0, Material material = Material.Grid, RenderFlags flags = RenderFlags.None) =>
         new() { Kind = RenderKind.Box, MeshId = -1, Color = color, Alpha = alpha, Mode = (byte)mode, Material = material, Flags = flags };

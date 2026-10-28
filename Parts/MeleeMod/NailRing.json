@@ -8,8 +8,8 @@
   "flags": ["nails"],
   "melee": {"damage": 12},
   "model": [
-    {"size": [0.08, 0.004, 0.004], "pos": [0, 0, -0.05], "color": "steel"},
-    {"size": [0.004, 0.08, 0.004], "pos": [0, 0, -0.08], "color": "steel"},
-    {"size": [0.06, 0.004, 0.004], "pos": [0, 0.02, -0.12], "rot": [0, 0, 45], "color": "steel"}
+    {"shape": "cylinder", "size": [0.004, 0.004, 0.08], "pos": [0, 0, -0.05], "rot": [0, 90, 0], "color": "steel", "segments": 6},
+    {"shape": "cylinder", "size": [0.004, 0.004, 0.08], "pos": [0, 0, -0.08], "rot": [90, 0, 0], "color": "steel", "segments": 6},
+    {"shape": "cylinder", "size": [0.004, 0.004, 0.06], "pos": [0, 0.02, -0.12], "rot": [0, 90, 45], "color": "steel", "segments": 6}
   ]
 }

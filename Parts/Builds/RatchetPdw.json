@@ -3,7 +3,8 @@
   "name": "Ratchet PDW",
   "tier": "uncommon",
   "source": [
-    "box"
+    "box",
+    "wall"
   ],
   "flavor": "An SMG receiver on a three-round burst group with a wire stock and an angled grip: a pocket carbine for tight corridors.",
   "build": "Service Rifle Grip{receiver_1:Stampede Receiver{barrel:Standard Barrel{muzzle:Compensator},feed:Extended Mag,ammo:FMJ,action:Ratchet Burst Group},stock:Wire Stock,foregrip:Angled Foregrip}"

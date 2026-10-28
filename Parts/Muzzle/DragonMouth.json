@@ -8,12 +8,11 @@
   "flags": ["incendiary"],
   "muzzles": [[0, 0, -0.16]],
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
-    {"shape": "rod", "size": [0.06, 0.06, 0.05], "pos": [0, 0, -0.055], "color": "gunmetal"},
-    {"shape": "rod", "size": [0.085, 0.085, 0.05], "pos": [0, 0, -0.105], "color": "gunmetal"},
-    {"size": [0.1, 0.02, 0.03], "pos": [0, 0.035, -0.145], "color": "black"},
-    {"size": [0.1, 0.02, 0.03], "pos": [0, -0.035, -0.145], "color": "black"},
-    {"shape": "rod", "size": [0.04, 0.04, 0.035], "pos": [0, 0, -0.1375], "color": "orange", "tag": "glow"}
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.03], "pos": [0, 0, -0.015], "color": "steel"},
+    {"shape": "tube", "size": [0.085, 0.085, 0.1], "pos": [0, 0, -0.08], "rot": [0, 180, 0], "color": "gunmetal", "segments": 8, "inner": 0.55, "taper": 0.6},
+    {"shape": "wedge", "size": [0.1, 0.02, 0.03], "pos": [0, 0.035, -0.145], "color": "black", "taper": [0.7, 0.5], "shift": [0, -0.2]},
+    {"shape": "wedge", "size": [0.1, 0.02, 0.03], "pos": [0, -0.035, -0.145], "color": "black", "taper": [0.7, 0.5], "shift": [0, 0.2]},
+    {"shape": "capsule", "size": [0.04, 0.04, 0.035], "pos": [0, 0, -0.1375], "color": "orange", "tag": "glow", "segments": 10}
   ],
   "stats": [
     {"stat": "pellets", "mul": 4},

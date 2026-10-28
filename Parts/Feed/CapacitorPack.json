@@ -9,9 +9,10 @@
   "hand": [0, -0.04, 0],
   "feed": "cell",
   "model": [
-    {"size": [0.04, 0.08, 0.07], "pos": [0, -0.04, 0], "color": "gunmetal"},
-    {"shape": "rod", "size": [0.014, 0.014, 0.06], "pos": [0.015, -0.085, 0], "color": "accent", "tag": "glow"},
-    {"shape": "rod", "size": [0.014, 0.014, 0.06], "pos": [-0.015, -0.085, 0], "color": "accent", "tag": "glow"}
+    {"shape": "bevel", "size": [0.04, 0.08, 0.07], "pos": [0, -0.04, 0], "color": "gunmetal", "radius": 0.15},
+    {"shape": "capsule", "size": [0.014, 0.014, 0.06], "pos": [0.015, -0.085, 0], "color": "accent", "tag": "glow", "segments": 10},
+    {"shape": "capsule", "size": [0.014, 0.014, 0.06], "pos": [-0.015, -0.085, 0], "color": "accent", "tag": "glow", "segments": 10},
+    {"shape": "bevel", "size": [0.044, 0.006, 0.06], "pos": [0, -0.0795, 0], "color": "black", "radius": 0.4, "edges": "long"}
   ],
   "stats": [
     {"stat": "mag", "set": 32},

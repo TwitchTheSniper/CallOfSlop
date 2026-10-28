@@ -35,6 +35,9 @@ public struct GunPart
     public int Mode;
     public GunPartFlags Flags;
 
+    /// <summary>Built weapons: the part shape drawn inside this box (0 = the box itself; <see cref="PartShapes"/>).</summary>
+    public ushort Shape;
+
     /// <summary>Scale, then turn about Z, X and Y, then move: the box's model matrix.</summary>
     public readonly Matrix4x4 Matrix()
     {

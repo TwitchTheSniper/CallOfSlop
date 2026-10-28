@@ -16,6 +16,9 @@ public struct DrawItem
     public byte Mode;
     public Material Material;
     public RenderFlags Flags;
+
+    /// <summary>A box's part shape (0 = the unit cube; <see cref="PartShapes"/>).</summary>
+    public ushort Shape;
 }
 
 /// <summary>
@@ -67,6 +70,7 @@ public sealed class DrawList
         it.Mode = r.Mode;
         it.Material = r.Material;
         it.Flags = r.Flags;
+        it.Shape = r.Shape;
     }
 
     /// <summary>The i-th entry as a self-contained item (copies; for tests and tools).</summary>
@@ -80,7 +84,7 @@ public sealed class DrawList
         return new DrawItem
         {
             World = n._world, Color = r.Color, Alpha = r.Alpha, MeshId = r.Kind == RenderKind.Mesh ? r.MeshId : -1, Mode = r.Mode, Material = r.Material,
-            Flags = r.Flags,
+            Flags = r.Flags, Shape = r.Shape,
         };
     }
 
@@ -202,7 +206,7 @@ public sealed class DrawList
             {
                 ref readonly var r = ref n.Renderable;
                 if (mesh < 0)
-                    g.Draw(n._world, r.Color, r.Alpha, r.Mode, r.Material);
+                    g.Draw(n._world, r.Color, r.Alpha, r.Mode, r.Material, r.Shape);
                 else
                     meshes!.DrawMesh(mesh, n._world, r.Color, r.Alpha, r.Mode, r.Material);
             }
@@ -210,7 +214,7 @@ public sealed class DrawList
             {
                 ref readonly var it = ref _items[i];
                 if (mesh < 0)
-                    g.Draw(it.World, it.Color, it.Alpha, it.Mode, it.Material);
+                    g.Draw(it.World, it.Color, it.Alpha, it.Mode, it.Material, it.Shape);
                 else
                     meshes!.DrawMesh(mesh, it.World, it.Color, it.Alpha, it.Mode, it.Material);
             }

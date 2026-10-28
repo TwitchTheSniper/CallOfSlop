@@ -3,7 +3,7 @@
   "name": "Trigger Guard",
   "about": "A trigger guard and trigger hanging below y = 0, like the rifle grip's.",
   "model": [
-    {"size": [0.03, 0.01, 0.05], "pos": [0, -0.012, 0.01], "color": "black"},
-    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.012, 0.025], "color": "steel"}
+    {"shape": "arc", "size": [0.01, 0.022, 0.05], "pos": [0, -0.011, 0.01], "color": "black", "segments": 8, "inner": 0.7, "angle": 180, "dir": 0},
+    {"shape": "arc", "size": [0.006, 0.018, 0.01], "pos": [0, -0.012, 0.025], "color": "steel", "segments": 4, "inner": 0.4, "angle": 80, "dir": 270}
   ]
 }

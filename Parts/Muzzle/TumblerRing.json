@@ -7,8 +7,8 @@
   "weight": 0.25,
   "muzzles": [[0, 0, -0.04]],
   "model": [
-    {"shape": "rod", "size": [0.04, 0.04, 0.04], "pos": [0, 0, -0.02], "color": "brass"},
-    {"size": [0.046, 0.006, 0.01], "pos": [0, 0, -0.02], "rot": [0, 0, 45], "color": "black"}
+    {"shape": "tube", "size": [0.04, 0.04, 0.04], "pos": [0, 0, -0.02], "color": "brass", "inner": 0.45, "ends": "back"},
+    {"shape": "rounded", "size": [0.046, 0.006, 0.01], "pos": [0, 0, -0.02], "rot": [0, 0, 45], "color": "black", "segments": 2, "radius": 0.5}
   ],
   "stats": [
     {"stat": "bulletSize", "mul": 1.4},

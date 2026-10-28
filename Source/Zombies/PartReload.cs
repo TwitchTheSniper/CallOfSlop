@@ -354,7 +354,8 @@ public static class PartTools
             var p = PartFile.Load(text, rel, lib);
             var errors = new List<string>();
             var all = Parts.LoadDetailed(folder, errors).Parts.Where(x => !x.Name.Equals(p.Name, StringComparison.OrdinalIgnoreCase)).Append(p).ToList();
-            Console.WriteLine($"OK: '{p.Name}' ({PartDef.CategoryName(p.Category)}, {p.Rarity}{(p.Mount != "" ? $", mounts on \"{p.Mount}\"" : ", root")}): {p.Boxes.Length} box(es), "
+            Console.WriteLine($"OK: '{p.Name}' ({PartDef.CategoryName(p.Category)}, {p.Rarity}{(p.Mount != "" ? $", mounts on \"{p.Mount}\"" : ", root")}): {p.Boxes.Length} box(es)"
+                              + $" ({p.Triangles} triangles{(p.Boxes.Any(b => b.ShapeId != 0) ? ": " + string.Join(", ", p.Boxes.Where(b => b.ShapeId != 0).GroupBy(b => b.Shape).Select(g => $"{g.Count()} {g.Key}")) : "")}), "
                               + $"{p.Sockets.Length} socket(s){(p.Muzzles.Length > 0 ? $", {p.Muzzles.Length} muzzle(s)" : "")}, {p.Weight:0.###} kg, "
                               + $"fingerprint {WeaponSet.Fnv([PartDigest.Of(p)]):x8}");
             if (p.Sockets.Length > 0)

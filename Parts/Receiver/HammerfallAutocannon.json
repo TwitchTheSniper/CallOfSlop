@@ -17,11 +17,11 @@
     {"name": "amp", "type": "amp", "pos": [-0.051, 0.071, 0.02]}
   ],
   "model": [
-    {"size": [0.1, 0.1, 0.34], "pos": [0, 0.05, -0.06], "color": "olive"},
-    {"size": [0.05, 0.014, 0.17], "pos": [0, 0.104, -0.056], "color": "black"},
+    {"shape": "bevel", "size": [0.1, 0.1, 0.34], "pos": [0, 0.05, -0.06], "color": "olive", "radius": 0.12, "edges": "long"},
+    {"shape": "bevel", "size": [0.05, 0.014, 0.17], "pos": [0, 0.104, -0.056], "color": "black", "radius": 0.2, "edges": "long"},
     {"size": [0.102, 0.01, 0.04], "pos": [0, 0.06, 0.07], "color": "accent"},
     {"use": "Cooling Fins", "pos": [0, 0.062, -0.23], "scale": [2.2, 2.2, 1], "color": "gunmetal"},
-    {"size": [0.05, 0.05, 0.1], "pos": [0.075, 0.04, -0.05], "color": "black"}
+    {"shape": "bevel", "size": [0.05, 0.05, 0.1], "pos": [0.075, 0.04, -0.05], "color": "black", "radius": 0.12, "edges": "long"}
   ],
   "stats": [
     {"stat": "damage", "mul": 2.2},

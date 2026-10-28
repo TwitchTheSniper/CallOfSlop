@@ -7,7 +7,7 @@
   "weight": 0.6,
   "melee": {"damage": 20, "swingMult": 0.9, "reach": 0.2, "cleave": 1},
   "model": [
-    {"size": [0.006, 0.06, 0.42], "pos": [0, 0.005, -0.21], "color": "steel"},
-    {"size": [0.007, 0.012, 0.42], "pos": [0, -0.025, -0.21], "color": "chrome"}
+    {"shape": "wedge", "size": [0.006, 0.06, 0.42], "pos": [0, 0.005, -0.21], "rot": [0, 180, 0], "color": "steel", "taper": [1, 0.75], "shift": [0, 0.12]},
+    {"shape": "bevel", "size": [0.007, 0.012, 0.42], "pos": [0, -0.025, -0.21], "color": "chrome", "radius": 0.3, "edges": "long"}
   ]
 }

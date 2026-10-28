@@ -54,10 +54,11 @@ public static partial class SelfTest
         foreach (var p in Parts.All)
         {
             var alone = new BuildNode(p);
-            var boxes = p.Boxes.Where(b => BuildModel.Shown(b, alone, false))
-                .Select(b => ModelBox.Of(Matrix4x4.CreateScale(b.Size) * Matrix4x4.CreateFromQuaternion(b.Rotation) * Matrix4x4.CreateTranslation(b.Pos))).ToArray();
+            var shown = p.Boxes.Where(b => BuildModel.Shown(b, alone, false)).ToArray();
+            var mats = shown.Select(b => Matrix4x4.CreateScale(b.Size) * Matrix4x4.CreateFromQuaternion(b.Rotation) * Matrix4x4.CreateTranslation(b.Pos)).ToArray();
+            var boxes = mats.Select(ModelBox.Of).ToArray();
             checkedParts++;
-            var fl = FloatingBoxes(boxes, -1);
+            var fl = FloatingBoxes(boxes, -1, Proxies(mats, shown.Select(b => b.ShapeId).ToArray()));
             if (fl.Count == 0)
                 continue;
             if (AllowedSeparated.TryGetValue(p.Name, out var why))
@@ -174,7 +175,7 @@ public static partial class SelfTest
     {
         var model = BuildModel.Build(b, Vector3.One);
         var boxes = model.Mesh.Matrices.Select(ModelBox.Of).ToArray();
-        var fl = FloatingBoxes(boxes, 0);
+        var fl = FloatingBoxes(boxes, 0, Proxies(model.Mesh.Matrices, model.Mesh.Parts.Select(x => x.Shape).ToArray()));
         if (fl.Count == 0)
             return;
         // Who owns each floating box: the deepest build node whose box range holds it.
@@ -207,8 +208,19 @@ public static partial class SelfTest
     /// The boxes outside the main connected piece: the piece holding box <paramref name="anchor"/>, or (-1) the piece
     /// with the most volume.
     /// </summary>
-    private static List<int> FloatingBoxes(IReadOnlyList<ModelBox> boxes, int anchor)
+    private static List<int> FloatingBoxes(IReadOnlyList<ModelBox> boxes, int anchor, ModelBox[]?[]? proxies = null)
     {
+        // A contoured shape (a tube, an arc...) touches only where its proxy boxes do (PartShapes.Proxies), not anywhere in its box.
+        bool Touch(int i, int j)
+        {
+            if (!boxes[i].Touches(boxes[j], ConnectTolerance))
+                return false;
+            if (proxies?[i] is not { } pi)
+                return proxies?[j] is not { } pj0 || pj0.Any(y => y.Touches(boxes[i], ConnectTolerance));
+            if (proxies[j] is not { } pj)
+                return pi.Any(x => x.Touches(boxes[j], ConnectTolerance));
+            return pi.Any(x => pj.Any(y => x.Touches(y, ConnectTolerance)));
+        }
         var n = boxes.Count;
         var parent = new int[n];
         for (var i = 0; i < n; i++)
@@ -221,7 +233,7 @@ public static partial class SelfTest
         }
         for (var i = 0; i < n; i++)
             for (var j = i + 1; j < n; j++)
-                if (Find(i) != Find(j) && boxes[i].Touches(boxes[j], ConnectTolerance))
+                if (Find(i) != Find(j) && Touch(i, j))
                     parent[Find(i)] = Find(j);
         if (n == 0)
             return [];
@@ -240,6 +252,16 @@ public static partial class SelfTest
             if (Find(i) != main)
                 list.Add(i);
         return list;
+    }
+
+    /// <summary>The proxy boxes of each shaped piece (null for a plain box), from its world matrix and shape id.</summary>
+    private static ModelBox[]?[] Proxies(IReadOnlyList<Matrix4x4> mats, IReadOnlyList<ushort> shapes)
+    {
+        var r = new ModelBox[]?[mats.Count];
+        for (var i = 0; i < mats.Count; i++)
+            if (shapes[i] != 0)
+                r[i] = PartShapes.Proxies(shapes[i]).Select(p => ModelBox.Of(p * mats[i])).ToArray();
+        return r;
     }
 
     /// <summary>An oriented box: centre, unit axes and half extents (from a unit-cube world matrix).</summary>

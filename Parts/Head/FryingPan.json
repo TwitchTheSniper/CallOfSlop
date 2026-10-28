@@ -8,7 +8,7 @@
   "flags": ["bonk"],
   "melee": {"damage": 25, "stun": 1.2, "swingMult": 1.05},
   "model": [
-    {"shape": "rod", "size": [0.22, 0.22, 0.03], "pos": [0, 0, -0.112], "rot": [90, 0, 0], "color": "black"},
-    {"shape": "rod", "size": [0.2, 0.2, 0.032], "pos": [0, 0.005, -0.112], "rot": [90, 0, 0], "color": "gunmetal"}
+    {"shape": "tube", "size": [0.22, 0.22, 0.03], "pos": [0, 0, -0.112], "rot": [90, 0, 0], "color": "black", "segments": 20, "inner": 0.9, "ends": "back"},
+    {"shape": "cylinder", "size": [0.2, 0.2, 0.004], "pos": [0, 0.009, -0.112], "rot": [90, 0, 0], "color": "gunmetal", "segments": 20}
   ]
 }

@@ -7,9 +7,9 @@
   "weight": 0.25,
   "muzzles": [[0, 0, -0.035]],
   "model": [
-    {"shape": "rod", "size": [0.036, 0.036, 0.035], "pos": [0, 0, -0.0175], "color": "steel"},
-    {"size": [0.012, 0.012, 0.05], "pos": [0, -0.016, -0.04], "color": "gunmetal"},
-    {"size": [0.012, 0.03, 0.012], "pos": [0, -0.03, -0.062], "rot": [28, 0, 0], "color": "gunmetal"}
+    {"shape": "cylinder", "size": [0.036, 0.036, 0.035], "pos": [0, 0, -0.0175], "color": "steel"},
+    {"shape": "bevel", "size": [0.012, 0.012, 0.045], "pos": [0, -0.016, -0.0375], "color": "gunmetal", "radius": 0.3, "edges": "long"},
+    {"shape": "arc", "size": [0.012, 0.04, 0.025], "pos": [0, -0.032, -0.07], "color": "gunmetal", "segments": 8, "inner": 0.5, "angle": 160, "dir": 90}
   ],
   "stats": [
     {"stat": "recoilVertical", "mul": 0.6},

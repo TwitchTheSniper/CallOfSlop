@@ -2568,6 +2568,114 @@
     ],
     "yaw": 90,
     "cost": 900
+   },
+   {
+    "build": "Buzzbox Machine Pistol",
+    "at": [
+     6.97,
+     -4.5
+    ],
+    "yaw": -90,
+    "cost": 600
+   },
+   {
+    "build": "Kingpin Hand Cannon",
+    "at": [
+     7.33,
+     1.2
+    ],
+    "yaw": 90,
+    "cost": 750
+   },
+   {
+    "build": "Ratchet PDW",
+    "at": [
+     22.97,
+     -6.9
+    ],
+    "yaw": -90,
+    "cost": 1100
+   },
+   {
+    "build": "Courier Carbine",
+    "at": [
+     -22.97,
+     -0.7
+    ],
+    "yaw": 90,
+    "cost": 900
+   },
+   {
+    "build": "Prairie Lever",
+    "at": [
+     -17.8,
+     3.97
+    ],
+    "yaw": 0,
+    "cost": 1000
+   },
+   {
+    "build": "Riot Control",
+    "at": [
+     -2.6,
+     -8.33
+    ],
+    "yaw": 0,
+    "cost": 1250
+   },
+   {
+    "build": "Heavy Hitter",
+    "at": [
+     15.97,
+     -23
+    ],
+    "yaw": -90,
+    "cost": 1400
+   },
+   {
+    "build": "Bastille Squad LMG",
+    "at": [
+     16.33,
+     -14.8
+    ],
+    "yaw": 90,
+    "cost": 2000
+   },
+   {
+    "build": "Elephant Gun",
+    "at": [
+     19.25,
+     -25.97
+    ],
+    "yaw": 180,
+    "cost": 1750
+   },
+   {
+    "build": "Reaper Marksman",
+    "at": [
+     -6.33,
+     11.95
+    ],
+    "yaw": -90,
+    "cost": 1500
+   },
+   {
+    "build": "Auto Shotgun",
+    "at": [
+     -16.85,
+     15.97
+    ],
+    "yaw": 0,
+    "cost": 1750
+   },
+   {
+    "build": "Bucket Lobber",
+    "at": [
+     9.5,
+     4.33
+    ],
+    "yaw": 180,
+    "cost": 2250
    }
   ],
   "box": {

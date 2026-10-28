@@ -3,7 +3,8 @@
   "name": "Bastille Squad LMG",
   "tier": "rare",
   "source": [
-    "box"
+    "box",
+    "wall"
   ],
   "flavor": "An LMG action on a drum with a long compensated barrel and an ACOG. Holds a hallway on its own.",
   "build": "Sport Rifle Grip{receiver_1:Bastille LMG Receiver{barrel:Long Barrel{muzzle:Compensator},feed:Drum Mag,ammo:FMJ,action:Full-Auto Sear},stock:Fixed Stock,foregrip:Vertical Foregrip,optic:2.5x ACOG}"

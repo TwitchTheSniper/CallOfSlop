@@ -7,8 +7,10 @@
   "weight": 0.9,
   "carry": 8,
   "model": [
-    {"size": [0.04, 0.06, 0.2], "pos": [0, -0.01, 0.1], "color": "white"},
-    {"size": [0.06, 0.06, 0.06], "pos": [0, 0.0, 0.12], "color": "accent", "tag": "glow"}
+    {"shape": "rounded", "size": [0.04, 0.06, 0.2], "pos": [0, -0.01, 0.1], "color": "white", "segments": 4, "radius": 0.35, "edges": "long"},
+    {"shape": "sphere", "size": [0.058, 0.058, 0.058], "pos": [0, 0, 0.12], "color": "accent", "tag": "glow", "segments": 12},
+    {"shape": "arc", "size": [0.006, 0.07, 0.07], "pos": [0, 0, 0.12], "color": "steel", "segments": 16, "inner": 0.86, "angle": 360},
+    {"shape": "arc", "size": [0.006, 0.07, 0.07], "pos": [0, 0, 0.12], "rot": [0, 90, 0], "color": "steel", "segments": 16, "inner": 0.86, "angle": 360}
   ],
   "stats": [
     {"stat": "mobility", "add": 0.04},

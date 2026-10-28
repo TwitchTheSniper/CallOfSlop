@@ -68,7 +68,7 @@ Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, 
 Weapons/ Attachments/   one JSON per gun / attachment (Weapons/README.md)
 Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, Muzzle, Optic, Receiver, Splitter, Stock,
                         Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod; grenades: Casing, Fuse, Payload, GrenadeMod);
-                        Parts/Builds (140 standard builds);
+                        Parts/Builds (141 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;

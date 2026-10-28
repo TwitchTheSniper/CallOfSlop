@@ -15,8 +15,14 @@
     {"name": "barrel_6", "type": "barrel", "pos": [0.03, -0.05, -0.06], "accepts": ["barrel", "splitter"]}
   ],
   "model": [
-    {"size": [0.104, 0.144, 0.05], "pos": [0.0, 0.0, -0.035], "color": "gunmetal"},
-    {"size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black"}
+    {"shape": "rounded", "size": [0.104, 0.144, 0.05], "pos": [0, 0, -0.035], "color": "gunmetal", "radius": 0.35, "edges": "long", "segments": 4},
+    {"shape": "cylinder", "size": [0.03, 0.03, 0.02], "pos": [0, 0, -0.005], "color": "black", "segments": 12},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [-0.03, 0.05, -0.062], "color": "black", "segments": 12, "inner": 0.55},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [0.03, 0.05, -0.062], "color": "black", "segments": 12, "inner": 0.55},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [-0.03, 0, -0.062], "color": "black", "segments": 12, "inner": 0.55},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [0.03, 0, -0.062], "color": "black", "segments": 12, "inner": 0.55},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [-0.03, -0.05, -0.062], "color": "black", "segments": 12, "inner": 0.55},
+    {"shape": "tube", "size": [0.028, 0.028, 0.006], "pos": [0.03, -0.05, -0.062], "color": "black", "segments": 12, "inner": 0.55}
   ],
   "stats": [
     {"stat": "recoilVertical", "mul": 1.1},

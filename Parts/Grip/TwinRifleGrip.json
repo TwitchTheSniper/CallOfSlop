@@ -17,12 +17,12 @@
     {"name": "utility", "type": "utility", "pos": [0.073, 0.0, -0.06]}
   ],
   "model": [
-    {"size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0594], "color": "polymer", "rot": [-12, 0, 0]},
-    {"size": [0.03, 0.01, 0.05], "pos": [0, -0.012, 0.01], "color": "black"},
-    {"size": [0.006, 0.018, 0.006], "pos": [0, -0.012, 0.025], "color": "steel"},
-    {"size": [0.14, 0.012, 0.12], "pos": [0, 0.006, -0.02], "color": "gunmetal"},
-    {"size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
-    {"size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black"},
+    {"shape": "rounded", "size": [0.032, 0.1, 0.042], "pos": [0, -0.055, 0.0594], "rot": [-12, 0, 0], "color": "polymer", "radius": 0.35, "segments": 2},
+    {"shape": "arc", "size": [0.01, 0.022, 0.05], "pos": [0, -0.011, 0.01], "color": "black", "segments": 8, "inner": 0.7, "angle": 180, "dir": 0},
+    {"shape": "arc", "size": [0.006, 0.018, 0.01], "pos": [0, -0.012, 0.025], "color": "steel", "segments": 4, "inner": 0.4, "angle": 80, "dir": 270},
+    {"shape": "bevel", "size": [0.14, 0.012, 0.12], "pos": [0, 0.006, -0.02], "color": "gunmetal", "radius": 0.3},
+    {"shape": "cylinder", "size": [0.03, 0.02, 0.3], "pos": [0, -0.004, -0.13], "color": "black"},
+    {"shape": "bevel", "size": [0.024, 0.012, 0.1], "pos": [0, 0.01, 0.1], "color": "black", "radius": 0.25, "edges": "long"},
     {"size": [0.145, 0.004, 0.02], "pos": [0, 0.013, -0.07], "color": "accent"},
     {"size": [0.006, 0.039, 0.006], "pos": [0, 0.0895, -0.05], "color": "black", "tag": "irons"},
     {"size": [0.022, 0.039, 0.006], "pos": [0, 0.0895, 0.075], "color": "black", "tag": "irons"}
