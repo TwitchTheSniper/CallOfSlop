@@ -97,11 +97,14 @@
     "roundsPerExtra": 3
   },
   "box": {
+    "note": "The last part of each offer is free for all (2026-10-27): for the final freeFraction of offerSeconds or the last freeSeconds, whichever is longer, anyone can take the gun (the first take wins); before that only the buyer can. Taking it apart stays the buyer's. Both 0: buyer only.",
     "moveMin": 4,
     "moveMax": 8,
     "spinSeconds": 4,
     "offerSeconds": 10,
-    "moveSeconds": 3
+    "moveSeconds": 3,
+    "freeFraction": 0.3,
+    "freeSeconds": 4
   },
   "slots": {
     "note": "PROPOSED slot machines (docs/zombies/ZOMBIES-MODE.md, Slot machines): a pull costs costBase + costPerRound a round after the first (at most costMax); the reels spin spinSeconds and a win shows showSeconds. A part you already hold dupePointsAt of loose pays pointsBack instead (0: always keep it; 0 since 2026-10-27: loose parts have no cap, bank as many as you like; pointsBack still pays the coin result). The odds by round are DropTables.json slotTiers. No pull pays nothing (2026-10-27): a blank (the skull, slotTiers 'nothing') pays a consolation part of the machine's own category, its rarity from consolation[bet level] (weights per rarity; not the round's table, so commons stay in late rounds; never rarer than the main roll's lowest part tier at that bet); it frees the machine at once, never resets the heat and doesn't count as a pity win. Heat: every pull without a pityTier-or-better part adds 1, every heatStep heat moves the part odds one rarity up (at most heatMaxSteps), such a part resets it. Bets (2026-10-26): the second key at a machine cycles its bet; a pull then costs the price x bets[level] and moves the part odds betSteps[level] rarities up on top of the heat (the blank and coin weights stay: no sure big win). maxNothing (at most that many nothing-results in a row) is unused since consolation parts: kept so it can come back. Every jackpotEvery-th round adds jackpotLegendary / jackpotWonder to the odds and puts the wonder symbol on the reels.",

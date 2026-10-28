@@ -352,6 +352,7 @@ public static partial class SelfTest
         Section("Zombies no scrap", CheckZombiesNoScrap); // SelfTestZombiesNoScrap.cs: no scrap left in the code or tables, old files still load, salvage piles give parts, a seeded run never mentions scrap
         Section("Zombies more perks", CheckZombiesMorePerks); // SelfTestZombiesMorePerks.cs: 12 perks, each on sale at its own machine (both maps), the doubling price, each new perk's effect, lost on down, the wire, no allocation
         Section("Zombies bot shopping", CheckZombiesBotShop); // SelfTestZombiesBotShop.cs: co-op bots spend their points (priorities, reserve, back at their post, safety, revives first, deterministic, no allocation)
+        Section("Zombies box free for all", CheckZombiesBoxGrab); // SelfTestZombiesBoxGrab.cs: the box offer's last seconds are anyone's: the window from the rules, reserved early, free late, one winner in a tick and no accidental spin, the buyer late, a client, co-op bots
         Section("Zombie bots shoot", CheckZombieBotsShoot); // SelfTestZombieBotsShoot.cs: co-op bots fire, hit, kill and reload with the start gun, a bought gun and after a reload
         Section("Ammo effects on players", CheckAmmoEffectsPlayers); // SelfTestAmmoEffectsPlayers.cs: special ammo flags hurt players too (splash, burn, chain, pierce, bounce, bayonet, stun, knockback), friendly fire respected, no allocation
         Section("Zombie animation", CheckZombieAnim); // SelfTestZombieAnim.cs: hands on boards and sill, rising, swipe, variety, network, no allocations

@@ -930,9 +930,18 @@ public sealed partial class Game
                 case ZBoxState.Idle:
                     Consider(d, 1.9f, new ZUse(ZUseKind.Box, BoxSpot, cost, $"Hold [E] to spin the mystery box [{cost}]"));
                     break;
-                case ZBoxState.Offering when BoxOwner == p.Id && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
-                    Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Hold [E] to take the {StandardBuilds.All[BoxBuild].Name}"));
+                case ZBoxState.Offering when BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
+                {
+                    // The buyer's alone at first; the last part of the offer is anyone's (board item 2026-10-27).
+                    var name = StandardBuilds.All[BoxBuild].Name;
+                    if (BoxOwner == p.Id)
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, BoxFreeForAll ? $"Hold [E] to take the {name} (free for all now)" : $"Hold [E] to take the {name}"));
+                    else if (BoxFreeForAll)
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Free for all - hold [E] to take the {name}"));
+                    else
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Reserved for {NameOf(BoxOwner)}: the {name}", Blocked: true));
                     break;
+                }
             }
         }
         for (var i = 0; i < zm.PerkMachines.Count; i++)
@@ -1059,11 +1068,14 @@ public sealed partial class Game
                 zp.Points -= u.Cost;
                 SpinBox(p, zm, now);
                 break;
-            case ZUseKind.BoxTake when BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
+            case ZUseKind.BoxTake when CanTakeBox(p): // (server-authoritative: the first valid take wins, the box is closed for the rest)
             {
                 var ob = StandardBuilds.All[BoxBuild];
+                var owner = BoxOwner;
                 GiveBuild(p, ob.IsMelee ? 4 : TargetSlot(p), ob.Build(), full: true);
                 ZFeedTo(p, $"You took the {ob.Name} ({PartDef.RarityName(ob.Tier)}).", Sfx.LevelUp);
+                if (owner != p.Id && Players.TryGetValue(owner, out var buyer))
+                    ZFeedTo(buyer, $"{p.Name} took the {ob.Name} from your box spin.", Sfx.HitTick);
                 CloseBox();
                 break;
             }
@@ -1310,8 +1322,36 @@ public sealed partial class Game
 
     // ---- The mystery box -----------------------------------------------------------------------------
 
+    /// <summary>
+    /// Both sides: is the box's offer open to everyone now? The last <see cref="ZombiesRules.BoxFreeSeconds"/> of the offer
+    /// (board item 2026-10-27), or at once when its buyer has left. Clients work it out from the replicated
+    /// <see cref="BoxLeft"/> (no wire change).
+    /// </summary>
+    public bool BoxFreeForAll => BoxState == ZBoxState.Offering && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length
+                                 && ((ZRules.BoxFreeSeconds > 0 && BoxLeft <= ZRules.BoxFreeSeconds + 1e-4) || !Players.ContainsKey(BoxOwner));
+
+    /// <summary>Both sides: may <paramref name="p"/> take the box's offer now (its buyer, or anyone in the free-for-all window)?</summary>
+    public bool CanTakeBox(Player p) => BoxState == ZBoxState.Offering && BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length && (BoxOwner == p.Id || BoxFreeForAll);
+
+    /// <summary>
+    /// Server, just before the offer goes (taken, taken apart or timed out): everyone else still holding the key on the box
+    /// has that hold used up, so the closed box doesn't turn their hold into a spin they didn't ask for (let go, press again).
+    /// </summary>
+    private void SpendBoxHolds()
+    {
+        if (BoxState != ZBoxState.Offering)
+            return;
+        foreach (var o in Players.Values)
+            if (ZPlayers.TryGetValue(o.Id, out var oz) && oz.UseHeld && !oz.UseDone && FindZUse(o) is { Kind: ZUseKind.BoxTake })
+                oz.UseDone = true;
+    }
+
+    /// <summary>Server: counts box spins this run (each offer its own number; bots remember which free offers they let go).</summary>
+    public int BoxOfferSeq { get; private set; }
+
     private void SpinBox(Player p, ZombiesMap zm, double now)
     {
+        BoxOfferSeq++;
         BoxUses++;
         BoxOwner = p.Id;
         BoxState = ZBoxState.Spinning;
@@ -1372,9 +1412,7 @@ public sealed partial class Game
                 }
                 break;
             case ZBoxState.Offering when now >= _boxUntil:
-                BoxState = ZBoxState.Idle;
-                BoxBuild = -1;
-                BoxOwner = byte.MaxValue;
+                CloseBox();
                 break;
             case ZBoxState.Teddy when now >= _boxUntil:
             {
