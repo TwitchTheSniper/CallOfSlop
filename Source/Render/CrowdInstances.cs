@@ -22,6 +22,9 @@ public sealed class CrowdInstances
     /// <summary>Tier colours (1: crowd yellow, held orange; 0: zombie colours).</summary>
     public float DebugMix;
 
+    /// <summary>A client's terrain (a terrain map's crowd stands on the ground; null: the picture's floor height).</summary>
+    public TerrainData? Ground;
+
     public readonly float[][] Data = [new float[Floats * 1024], new float[Floats * 4096], new float[Floats * 16384]];
     public readonly int[] Count = new int[Lods];
 
@@ -64,9 +67,12 @@ public sealed class CrowdInstances
     public void FromHost(HordeCrowd c, Vector3 cam)
     {
         var y = c.Y;
+        var terrain = c.Terrain;
         for (var i = 0; i < c.Count; i++)
         {
             float x = c.X[i], z = c.Z[i];
+            if (terrain != null)
+                y = terrain.Sample(x, z);
             if (!ZombieAnim.Visible(new Vector3(x, y + 0.9f, z), 1.1f))
             {
                 Culled++;
@@ -110,7 +116,7 @@ public sealed class CrowdInstances
                 var h = HordeCrowd.Hash((uint)cell * 977u + (uint)k);
                 var walked = head == 0 ? (h >> 10 & 255) / 64f : at.X * f.X + at.Y * f.Z + (h >> 10 & 255) / 64f;
                 // (With the tier colours the mass tier is a darker yellow.)
-                Add(cam, at.X, y, at.Y, yaw, walked, Bright(h) * (DebugMix > 0 ? 0.55f : 1f), false);
+                Add(cam, at.X, terrain != null ? terrain.Sample(at.X, at.Y) : centre.Y, at.Y, yaw, walked, Bright(h) * (DebugMix > 0 ? 0.55f : 1f), false);
             }
         }
     }
@@ -133,7 +139,8 @@ public sealed class CrowdInstances
                 continue;
             var cx = p.MinX + (cell % p.Cols + 0.5f) * p.Cell;
             var cz = p.MinZ + (cell / p.Cols + 0.5f) * p.Cell;
-            if (!ZombieAnim.Visible(new Vector3(cx, p.Y + 0.9f, cz), r))
+            var cy = Ground != null ? Ground.Sample(cx, cz) : p.Y;
+            if (!ZombieAnim.Visible(new Vector3(cx, cy + 0.9f, cz), r))
             {
                 CellsCulled++;
                 Culled += n;
@@ -149,7 +156,7 @@ public sealed class CrowdInstances
                 var f = World.FlatForward(yaw);
                 var h = HordeCrowd.Hash((uint)cell * 977u + (uint)k);
                 var walked = still ? (h >> 10 & 255) / 64f : at.X * f.X + at.Y * f.Z + (h >> 10 & 255) / 64f;
-                Add(cam, at.X, p.Y, at.Y, yaw, walked, Bright(h), still);
+                Add(cam, at.X, Ground != null ? Ground.Sample(at.X, at.Y) : p.Y, at.Y, yaw, walked, Bright(h), still);
             }
         }
     }

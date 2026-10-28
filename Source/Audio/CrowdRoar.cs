@@ -119,7 +119,7 @@ public sealed class CrowdRoar
                     }
                 if (n < MinZombies)
                     continue;
-                var at = new Vector3(sx / n, cells.FloorY + 1.2f, sz / n);
+                var at = new Vector3(sx / n, cells.FloorAt(sx / n, sz / n) + 1.2f, sz / n);
                 var dx = at.X - listener.X;
                 var dz = at.Z - listener.Z;
                 var score = n / MathF.Max(64f, dx * dx + dz * dz);

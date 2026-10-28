@@ -33,9 +33,17 @@ public sealed partial class Game
     /// <summary>Server, at a crowd round's start: the whole round seeded as particles over the field, away from the players.</summary>
     private void CrowdBeginRound(ZombiesMap zm, int round, double now)
     {
+        if (zm.Stress != null)
+        {
+            StressBeginRound(zm, zm.Stress, round, now); // a stress map: the hordes on their staging areas (ZombiesCrowdStress.cs)
+            return;
+        }
         var n = Math.Clamp(CrowdOverride > 0 ? CrowdOverride : zm.Crowd, 1, ZombiesMap.MaxCrowd);
         var floor = zm.Areas[zm.StartArea];
         Crowd.Tuning = ZRules.Crowd; // (the rules file's "crowd" section)
+        Crowd.SetGoal(false);
+        Crowd.Hold = false;
+        StressState = StressPhase.Off;
         Crowd.Setup(World.Map, floor.Y0 > -1e5f && floor.Y0 < 1e5f ? floor.Y0 : 0f, n);
         Crowd.Clear();
         _crowdRound = (_crowdRound + 1) & 0xFFFF; // (clients get a keyframe: ZombiesCrowdNet.cs)
@@ -85,6 +93,8 @@ public sealed partial class Game
     {
         if (!Crowd.Ready)
             return; // (no crowd round yet)
+        if (zm.Stress is { } stress)
+            StressTick(stress, now); // a stress map: staging, descent, merge, waves (ZombiesCrowdStress.cs)
         var tuning = Crowd.Tuning;
         // The players standing, in id order.
         var targets = 0;
@@ -145,7 +155,10 @@ public sealed partial class Game
         Crowd.BlockCount = b;
 
         var room = Math.Max(0, CrowdIndividualCap - alive);
+        var ms0 = Crowd.TickMs;
         Crowd.Tick(ServerTick, _crowdTX.AsSpan(0, targets), _crowdTZ.AsSpan(0, targets), room);
+        _crowdLastTickMs = Crowd.TickMs - ms0;
+        CrowdPerfSample(); // the F9 window's one-second figures (ZombiesCrowdStress.cs)
         if (ServerTick % Math.Max(1, tuning.NetEvery) == 0)
             CrowdCount(); // the cells' counts: the network's (ZombiesCrowdNet.cs) and the crowd surface's (ZombiesCrowdSurface.cs)
 
@@ -161,7 +174,7 @@ public sealed partial class Game
         for (var k = n - 1; k >= 0; k--)
         {
             var i = _crowdPick[k];
-            var at = new Vector3(Crowd.X[i], Crowd.Y, Crowd.Z[i]);
+            var at = new Vector3(Crowd.X[i], Crowd.GroundAt(Crowd.X[i], Crowd.Z[i]), Crowd.Z[i]);
             var vx = Crowd.VX[i];
             var vz = Crowd.VZ[i];
             var hp = Crowd.HP[i];
@@ -269,7 +282,7 @@ public sealed partial class Game
     /// </summary>
     internal void CrowdBlast(Player owner, Vector3 center, float radius, float maxDamage, double now)
     {
-        if (!CrowdOn || Crowd.Total == 0 || MathF.Abs(center.Y - Crowd.Y) > radius + HordeCrowd.BodyHeight)
+        if (!CrowdOn || Crowd.Total == 0 || MathF.Abs(center.Y - Crowd.GroundAt(center.X, center.Z)) > radius + HordeCrowd.BodyHeight)
             return;
         var n = Crowd.Within(center, radius, _crowdHits);
         Array.Sort(_crowdHits, 0, n);
@@ -279,7 +292,7 @@ public sealed partial class Game
             var i = _crowdHits[k];
             if (i >= Crowd.Count)
                 continue;
-            var to = new Vector3(Crowd.X[i], Crowd.Y + 1.1f, Crowd.Z[i]) - center;
+            var to = new Vector3(Crowd.X[i], Crowd.GroundAt(Crowd.X[i], Crowd.Z[i]) + 1.1f, Crowd.Z[i]) - center;
             var dist = to.Length();
             if (dist > radius)
                 continue;
@@ -324,7 +337,7 @@ public sealed partial class Game
             EarnPoints(attacker, ZRules.HitPoints, now);
             return false;
         }
-        var at = new Vector3(Crowd.X[i], Crowd.Y, Crowd.Z[i]);
+        var at = new Vector3(Crowd.X[i], Crowd.GroundAt(Crowd.X[i], Crowd.Z[i]), Crowd.Z[i]);
         Crowd.RemoveAt(i);
         CrowdKillCredit(attacker, at, head, explosive, drops, now);
         return true;

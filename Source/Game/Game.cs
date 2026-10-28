@@ -252,6 +252,8 @@ public sealed partial class Game : IDisposable
         TickWeaponTweaks(now); // host: send the weapon tweak window's changes (GameWeaponTweaks.cs)
         visuals.Dispose();
 
+        if (StressOn)
+            StressNoteFrame(frameDt); // (ZombiesCrowdStress.cs)
         _accumulator += frameDt;
         var steps = 0;
         while (_accumulator >= World.TickDt && steps++ < 8)
@@ -260,7 +262,9 @@ public sealed partial class Game : IDisposable
             if (IsServer)
             {
                 using var _ = Perf.Measure(PerfArea.ServerTick);
+                var stressT0 = StressBeginTick(); // a horde stress round times its ticks for its summary (ZombiesCrowdStress.cs)
                 ServerTickStep(now);
+                StressEndTick(stressT0);
             }
             else
             {
@@ -2035,6 +2039,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
         Net.Dispose();
         EndWeaponTweaks(); // a client drops the host's weapon tweaks (GameWeaponTweaks.cs)
         World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)

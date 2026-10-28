@@ -1108,6 +1108,8 @@ public static unsafe partial class Program
             {
                 _session.ZStartRound = _cliStartRound > 0 ? _cliStartRound : _settings.ZombieStartRound; // host settings (ZombiesStartRound.cs); clients learn them from the lobby state
                 _session.ZTestKit = _cliTestKit || _settings.ZombieTestKit;
+                _session.StressSize = _settings.ZombieStressSize; // host settings: a horde stress map's size and endless waves (ZombiesCrowdStress.cs; the server's own)
+                _session.StressEndless = _settings.ZombieStressEndless;
             }
             if (kind != LobbyAction.Join)
                 _session.GravityPercent = _settings.Gravity; // host setting (GameGravity.cs); clients learn it from the Welcome and the lobby state

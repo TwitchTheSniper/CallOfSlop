@@ -282,6 +282,8 @@ public sealed partial class Game
     /// <summary>Both sides: the map and the run state back to the start (doors shut, boards up, no zombies, round 0).</summary>
     internal void ResetZombiesWorld()
     {
+        StressSummary("run over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
+        StressState = StressPhase.Off;
         ClearHorde();
         CrowdRoundTotal = CrowdRoundKills = 0;
         CrowdSeen.Clear(); // (a client's picture of the crowd)
@@ -463,6 +465,7 @@ public sealed partial class Game
     private void EndRound(double now)
     {
         ZPhase = ZRoundPhase.Break;
+        StressSummary("round survived"); // a horde stress round's figures (ZombiesCrowdStress.cs)
         LogicZombies(LogicEvent.RoundEnded, ZRound); // map logic: zombies.roundEnded, n = the round survived
         ExpireDropsAtRoundEnd(ZRound); // things dropped on purpose last to the end of the next round (ZombiesDropItems.cs)
         RespawnAtRoundEnd(now); // the dead come back now, with the whole break to rebuild (ZombiesFlow.cs)

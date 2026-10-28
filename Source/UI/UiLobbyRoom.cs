@@ -597,6 +597,8 @@ public sealed partial class Ui
             }
             if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
                 ImGuiSafe.SetItemTooltip("For testing: the run starts at this round, with the points a player would have by then and the round's power-ups, box and drops. Round 30 brings up to 300 zombies at once.");
+            if (World.Map.Zombies is { Stress: not null } stressMap)
+                DrawRoomStress(game, s, host, stressMap);
             if (World.Map.Zombies is { TestKit: true })
             {
                 var kit = game.ZTestKit;
