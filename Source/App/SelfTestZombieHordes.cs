@@ -16,6 +16,35 @@ public static partial class SelfTest
 {
     private static readonly List<string> HordeNotes = new();
 
+    private static Dictionary<string, long> _diag0 = new();
+    private static Dictionary<string, long> DIAG_Snap()
+    {
+        var d = new Dictionary<string, long>();
+        if (!OperatingSystem.IsLinux()) return d;
+        foreach (var t in Directory.GetDirectories("/proc/self/task"))
+        {
+            try
+            {
+                var st = File.ReadAllText(t + "/stat");
+                var close = st.LastIndexOf(')');
+                var f = st[(close + 2)..].Split(' ');
+                var name = st[(st.IndexOf('(') + 1)..close];
+                d[Path.GetFileName(t) + ":" + name] = long.Parse(f[11]) + long.Parse(f[12]);
+            }
+            catch { }
+        }
+        return d;
+    }
+    private static void DIAG_Threads(Dictionary<string, long> d0, int count)
+    {
+        var d1 = DIAG_Snap();
+        foreach (var (k, v) in d1)
+        {
+            var dv = v - (d0.TryGetValue(k, out var o) ? o : 0);
+            if (dv > 0) Line($"DIAG {count}: thread {k} +{dv * 10} ms");
+        }
+    }
+
     private static void HLine(string s)
     {
         Line(s);
@@ -406,6 +435,7 @@ public static partial class SelfTest
         var poseMs = double.MaxValue;
         var procCpu0 = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds;
         var poseSum = 0.0;
+        _diag0 = DIAG_Snap();
         var poseWall = Stopwatch.StartNew();
         var poseRuns = new double[5];
         for (var b = 0; b < poseRuns.Length; b++)
@@ -421,6 +451,7 @@ public static partial class SelfTest
         }
         // (for the log: the other threads' CPU while this one posed, and the wall time; a busy process or machine shows here)
         var poseWallMs = poseWall.Elapsed.TotalMilliseconds;
+        DIAG_Threads(_diag0, count);
         var otherCpuMs = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds - procCpu0 - poseSum;
         var draws = rec.Count / 100.0;
         var poseAlloc = GC.GetAllocatedBytesForCurrentThread();
