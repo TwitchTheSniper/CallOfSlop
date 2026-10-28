@@ -93,6 +93,23 @@ public sealed partial class Game
 
     private void ResetTrader() => ZTrader.Reset();
 
+    /// <summary>
+    /// The trader's own random numbers: seeded from the run's stream and the round at each visit, never advancing the
+    /// run's stream itself, so a run plays the same zombies with or without him (the seeded scenarios stay as recorded).
+    /// </summary>
+    private uint _traderRng = 1;
+
+    private uint TraderNext()
+    {
+        var x = _traderRng;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        return _traderRng = x == 0 ? 0x9E3779B9u : x;
+    }
+
+    private int TraderRange(int n) => n <= 1 ? 0 : (int)(TraderNext() % (uint)n);
+
     /// <summary>Server, at the start of every round: he leaves when his time is up, and comes on his rounds (a fresh shelf).</summary>
     private void TraderOnRound(ZombiesMap zm, int round, double now)
     {
@@ -105,6 +122,8 @@ public sealed partial class Game
         }
         if (!ZRules.TraderComes(round))
             return;
+        _traderRng = (_zRng ^ (uint)(round * 2654435761u) ^ 0x7A6Du) | 1u; // (read, not advanced)
+        TraderNext();
         if (!TraderSpotFor(zm, out var at, out var yaw, out var where))
             return;
         var t = ZTrader;
@@ -142,7 +161,7 @@ public sealed partial class Game
         for (var i = 0; i < n; i++)
             if (AreaOpen(TraderCandidate(zm, own, i).Area))
                 open++;
-        var pick = ZRange(open > 0 ? open : n);
+        var pick = TraderRange(open > 0 ? open : n);
         var k = 0;
         for (var i = 0; i < n; i++)
         {
@@ -165,7 +184,7 @@ public sealed partial class Game
 
     /// <summary>
     /// Server: a fresh shelf for <paramref name="round"/>: the parts first (the rarest tier first, then round and round
-    /// down to common; a random category each, no part twice), then the consumables. Deterministic from the run's seed.
+    /// down to common; a random category each, no part twice), then the consumables. Deterministic from the run's seed and the round (the trader's own stream).
     /// </summary>
     private void StockTrader(int round)
     {
@@ -181,10 +200,10 @@ public sealed partial class Game
             short part = -1;
             for (var tries = 0; tries < 6 && part < 0; tries++)
             {
-                var cat = cats[ZRange(cats.Length)];
-                var cand = PickSlotPart(tier, ZNext(), cat, jackpot: false);
+                var cat = cats[TraderRange(cats.Length)];
+                var cand = PickSlotPart(tier, TraderNext(), cat, jackpot: false);
                 if (cand < 0)
-                    cand = PickSlotPart(tier, ZNext());
+                    cand = PickSlotPart(tier, TraderNext());
                 if (cand >= 0 && Parts.All[cand].Rarity == tier && !TraderHas(cand))
                     part = cand;
             }
