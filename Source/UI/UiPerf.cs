@@ -490,8 +490,17 @@ public sealed partial class Ui
             ImGui.Text($"Horde tiers: individuals {individuals}, crowd {game.CrowdSeen.Total} (the server's picture, {game.CrowdSeen.Cols} x {game.CrowdSeen.Rows} cells)");
         ImGui.Text($"Crowd drawn: {Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar} near/mid/far instances, {Program.CrowdDrawnCulled} culled, prep {Program.CrowdPrepMs:0.00} ms");
         if (game.StressOn)
-            ImGui.Text($"Horde stress: {game.StressState} {game.StressPhaseSeconds:0} s, wave {game.StressWave} of {game.StressWaveSize}, {game.StressNearShare * 100:0}% in the blob at the rally point{(game.StressMergeSeconds >= 0 ? $", merged after {game.StressMergeSeconds:0} s" : "")}");
+        {
+            ImGui.Text($"Horde stress: {StressPhaseNames[(int)game.StressState]} {game.StressPhaseSeconds:0} s, wave {game.StressWave} of {game.StressWaveSize}, {game.StressNearShare * 100:0}% in the blob at the rally point");
+            if (game.StressMergeSeconds >= 0)
+            {
+                ImGui.SameLine();
+                ImGui.Text($"(merged after {game.StressMergeSeconds:0} s)");
+            }
+        }
     }
+
+    private static readonly string[] StressPhaseNames = ["off", "staging", "descending", "advancing"];
 
     private static void DrawPerfCrowdLine(Game game)
     {
