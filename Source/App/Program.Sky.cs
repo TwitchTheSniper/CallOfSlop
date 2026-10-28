@@ -131,7 +131,7 @@ public static unsafe partial class Program
         SkySmokeCosts.Add((name, gpu));
         var fb = _window.FramebufferSize;
         Console.WriteLine($"[smoke] sky {name,-9}: {_skySmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_skySmokeFrames, 1):0.00} ms/frame), worst {_skySmokeWorst * 1000:0.0} ms, "
-            + $"sky GPU {(gpu >= 0 ? $"{gpu:0.000} ms" : "n/a")} at {fb.X}x{fb.Y} ({quality}), {World.Map.Skybox?.Describe() ?? "no sky"}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"sky GPU {(gpu >= 0 ? $"{gpu:0.000} ms" : "n/a")} at {fb.X}x{fb.Y} ({quality}), {World.Map.Skybox?.Describe() ?? "no sky"}, GL error 0x{GlDebug.Error():X}");
         SmokeShot($"sky_{name}");
         _skySmokeAdvance = true;
     }

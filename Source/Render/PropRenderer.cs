@@ -26,7 +26,7 @@ namespace CallOfSlop;
 public sealed unsafe class PropRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec3 aColor;
@@ -79,7 +79,7 @@ public sealed unsafe class PropRenderer
     /// shader, so static props render exactly as before.
     /// </summary>
     private const string AnimVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec3 aColor;
@@ -209,7 +209,7 @@ public sealed unsafe class PropRenderer
         """;
 
     private const string DebrisVertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec4 iPosFade;    // per piece: position, fade
@@ -277,7 +277,7 @@ public sealed unsafe class PropRenderer
             float rim = 0.12 * (1.0 - abs(n.y));
             """);
 
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -690,14 +690,15 @@ public sealed unsafe class PropRenderer
 
     // ---- GPU resources ------------------------------------------------------------------------
 
-    private GlProgram Link(string vertex, string fragment)
+    private GlProgram Link(string vertex, string fragment, string label)
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(vertex).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(fragment).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vertex)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fragment)).Compile();
         var program = CreateProgram();
         Native.glAttachShader(program, vs);
         Native.glAttachShader(program, fs);
         Native.glLinkProgram(program);
+        GlDebug.Label(GL_PROGRAM, program.Id, "PropRenderer." + label);
         int linked;
         Native.glGetProgramiv(program, GL_LINK_STATUS, &linked);
         if (linked == 0)
@@ -725,12 +726,12 @@ public sealed unsafe class PropRenderer
     {
         try
         {
-            _program = Link(VertexSrc, FragmentSrc);
+            _program = Link(VertexSrc, FragmentSrc, "program");
             _locViewProj = Uniform(_program, "uViewProj\0"u8);
             _locCam = Uniform(_program, "uCam\0"u8);
             _locFog = Uniform(_program, "uFog\0"u8);
             _locFogRange = Uniform(_program, "uFogRange\0"u8);
-            _debrisProgram = Link(DebrisVertexSrc, DebrisFragmentSrc);
+            _debrisProgram = Link(DebrisVertexSrc, DebrisFragmentSrc, "debrisProgram");
             _dLocViewProj = Uniform(_debrisProgram, "uViewProj\0"u8);
             _dLocCam = Uniform(_debrisProgram, "uCam\0"u8);
             _dLocFog = Uniform(_debrisProgram, "uFog\0"u8);
@@ -788,7 +789,7 @@ public sealed unsafe class PropRenderer
 
             if (GlGpuStamps.Create(GpuStampRing.QueryCount(2, QueryRing)) is { } stamps)
                 _timer = new GpuStampRing(2, QueryRing, stamps, OnGpuSample);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[props] GL error 0x{err:X} while setting up (continuing)");
             Console.WriteLine($"[props] renderer ready, GPU timer {(_timer != null ? "on (timestamps)" : "unavailable")}, animated props {(_animReady ? "on" : "off (drawn still)")}");
@@ -811,7 +812,7 @@ public sealed unsafe class PropRenderer
     {
         try
         {
-            _animProgram = Link(AnimVertexSrc, AnimFragmentSrc);
+            _animProgram = Link(AnimVertexSrc, AnimFragmentSrc, "animProgram");
             _aLocViewProj = Uniform(_animProgram, "uViewProj\0"u8);
             _aLocCam = Uniform(_animProgram, "uCam\0"u8);
             _aLocFog = Uniform(_animProgram, "uFog\0"u8);
@@ -856,7 +857,7 @@ public sealed unsafe class PropRenderer
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
             Native.glActiveTexture(GL_TEXTURE0);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 throw new InvalidOperationException($"GL error 0x{err:X}");
             _animReady = true;
@@ -892,7 +893,7 @@ public sealed unsafe class PropRenderer
             fixed (float* p = records)
                 Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA32F, PropAnimData.RecordTexels, Math.Max(_anim.RecordCount, 1), 0, GL_RGBA, GL_FLOAT, p);
             Native.glActiveTexture(GL_TEXTURE0);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
             {
                 Console.WriteLine($"[props] GL error 0x{err:X} uploading the animation data: animated props drawn still");

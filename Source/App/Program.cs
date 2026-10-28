@@ -142,6 +142,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+        RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
@@ -511,7 +512,7 @@ public static unsafe partial class Program
                     Console.WriteLine($"[smoke] terrain: {TerrainGfx.LastFrame.Chunks} chunks, {TerrainGfx.LastFrame.DrawCalls} draw call(s), {TerrainGfx.LastFrame.Triangles} triangles");
                 Console.WriteLine($"[smoke] scene graph: {ScenePresentation.Stats}");
                 Console.WriteLine($"[smoke] {World.Map.Name}: alive {game?.Local?.Alive}, weapon {game?.Active.Def.Name} [{Attachments.Describe(game?.Active.Def.Kit ?? 0)}], phase {game?.Phase}, players {game?.Players.Count}, "
-                    + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}");
                 game?.DebugEndMatch(now); // show the results screen and map vote
                 _smokeStage++;
                 break;
@@ -524,7 +525,7 @@ public static unsafe partial class Program
                     SmokeShot("vote_0");
                 if (game != null)
                     Console.WriteLine($"[smoke] vote screen: options {string.Join(", ", game.VoteNames)}, "
-                        + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                        + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{GlDebug.Error():X}");
                 SmokeNextMap(now);
                 break;
         }
@@ -553,7 +554,7 @@ public static unsafe partial class Program
                 SmokeShot("deathcam");
                 var info = _deathCam.Info;
                 Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
-                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{GlDebug.Error():X}");
                 _smokeDeathCam++;
                 break;
             case 2 when now - _smokeDeathAt > 2.4:
@@ -655,7 +656,7 @@ public static unsafe partial class Program
                 break;
             case 3 when t > KillStreaks.MortarDelay + 0.7:
                 Console.WriteLine($"[smoke] kill streaks: {(_smokeFrames - _smokeStreakFrames) / Math.Max(t, 0.001):0} fps avg, entities {_game.StreakEntities.Count}, "
-                    + $"strikes left {_game.Strikes.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"strikes left {_game.Strikes.Count}, GL error 0x{GlDebug.Error():X}");
                 _smokeStepStart += t; // give the usual steps their clock back
                 _smokeFrames = _smokeStreakFrames;
                 _smokeStreakStep++;
@@ -677,7 +678,7 @@ public static unsafe partial class Program
                 break;
             case 1 when t > 1.6:
                 SmokeShot("weapon_select");
-                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{GlDebug.Error():X}");
                 _smokeWeaponSelect++;
                 break;
             case 2 when t > 1.8: // a frame after the shot
@@ -760,7 +761,7 @@ public static unsafe partial class Program
             Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
                 + $"lens covers {SightLens.LastCoverage * 100:0.0}% of the screen (radius {SightLens.LastView.HalfH:0.00} of half the height, {Sights.EyeDistance(d) * 100:0.0} cm from the eye; "
                 + $"design {Sights.Coverage(Sights.ProjectAimed(d, 16f / 9f), 16f / 9f) * 100:0.0}% at 16:9), see-through {SightLens.SeeThrough}, reticle {Sights.Spec(d).Reticle}, "
-                + $"alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                + $"alive {game.Local?.Alive}, GL error 0x{GlDebug.Error():X}");
         }
     }
 
@@ -936,27 +937,59 @@ public static unsafe partial class Program
 
     private static nint GetGlProc(byte* name) => Glfw.PInvoke.GetProcAddress(name);
 
+    private static void ContextHints(int major, int minor, bool debug)
+    {
+        Glfw.DefaultWindowHints();
+        Glfw.WindowHint(GlfwWindowHint.ClientApi, Glfw.Constants.GLFW_OPENGL_API);
+        Glfw.WindowHint(GlfwWindowHint.ContextVersionMajor, major);
+        Glfw.WindowHint(GlfwWindowHint.ContextVersionMinor, minor);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlProfile, Glfw.Constants.GLFW_OPENGL_CORE_PROFILE);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlForwardCompat, Glfw.Constants.GLFW_TRUE);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlDebugContext, debug ? Glfw.Constants.GLFW_TRUE : Glfw.Constants.GLFW_FALSE);
+        Glfw.WindowHint(GlfwWindowHint.Samples, 4);
+    }
+
     private static void CreateWindow()
     {
         Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 
-        // OpenGL 4.1 core: what the ImGui OpenGL backend needs (and the highest macOS offers).
-        Glfw.WindowHint(GlfwWindowHint.ClientApi, Glfw.Constants.GLFW_OPENGL_API);
-        Glfw.WindowHint(GlfwWindowHint.ContextVersionMajor, 4);
-        Glfw.WindowHint(GlfwWindowHint.ContextVersionMinor, 1);
-        Glfw.WindowHint(GlfwWindowHint.OpenGlProfile, Glfw.Constants.GLFW_OPENGL_CORE_PROFILE);
-        Glfw.WindowHint(GlfwWindowHint.OpenGlForwardCompat, Glfw.Constants.GLFW_TRUE);
-        Glfw.WindowHint(GlfwWindowHint.Samples, 4);
-
-        _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+        // OpenGL 4.6 core where the driver has it, else 4.1 core (what the ImGui OpenGL backend needs, and the highest
+        // macOS offers); --gl41 forces the fallback (RenderCaps.cs, docs/render/OPENGL46.md).
+        var want46 = RenderCaps.Want46(out var why41);
+        var made46 = false;
+        if (want46)
+        {
+            ContextHints(4, 6, debug: !BuildInfo.IsRelease && !_glBench); // dev builds: a debug context for KHR_debug output
+            try
+            {
+                _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+                made46 = !_window.IsNull();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"[gl] no OpenGL 4.6 core context ({ex.Message}); falling back to 4.1");
+            }
+            if (!made46)
+                why41 = "the driver could not make a 4.6 core context";
+        }
+        if (!made46)
+        {
+            ContextHints(4, 1, debug: false);
+            _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+            if (_window.IsNull())
+                throw new Exception("Failed to create an OpenGL 4.1 core window");
+        }
         _window.MakeContextCurrent();
         _vsync = _settings.VSync;
         Glfw.SwapInterval(_vsync ? 1 : 0);
 
         if (!Glad.Initialize(GlLoader))
             throw new Exception("Failed to load OpenGL functions (GLAD)");
+        RenderCaps.Detect(made46, why41);
+        if (!BuildInfo.IsRelease && !_glBench)
+            GlDebug.Install(); // 4.6 path only: the driver reports GL errors as they happen
 
         Gfx.Init();
         Ui.Init(_window);
@@ -1313,7 +1346,7 @@ public static unsafe partial class Program
             {
                 SaveScreenshot("splash");
                 shot = true;
-                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{GlDebug.Error():X}");
             }
             _window.SwapBuffers();
         }

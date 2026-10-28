@@ -18,7 +18,7 @@ public sealed unsafe class TerrainRenderer
     private const int ChunkCells = 32;
 
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec4 aColor; // rgb = surface colour, a = rockiness
@@ -36,7 +36,7 @@ public sealed unsafe class TerrainRenderer
         """;
 
     // Sun, ambient and fog come from Lighting.Glsl (shared with the box and foliage renderers).
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -138,12 +138,13 @@ public sealed unsafe class TerrainRenderer
 
     private void Init()
     {
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
         _program = CreateProgram();
         Native.glAttachShader(_program, vs);
         Native.glAttachShader(_program, fs);
         Native.glLinkProgram(_program);
+        GlDebug.Label(GL_PROGRAM, _program.Id, "TerrainRenderer");
         int linked;
         Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
         vs.Dispose();
@@ -258,7 +259,7 @@ public sealed unsafe class TerrainRenderer
         _chunks = chunks;
         _builtFor = map;
         _builtData = t;
-        var err = Native.glGetError();
+        var err = GlDebug.Error();
         Console.WriteLine($"[terrain] built '{map.Name}': {nx} x {nz} vertices, {indices.Length / 3} triangles in {chunks.Length} chunks, "
                           + (t.Voids is { } tv ? $"{tv.OpenCells} hole cells skipped, {tv.CaveCells} cave cells, {caveTris} cave/rim triangles, " : "")
                           + $"{(verts.Length * stride + indices.Length * 4) / 1024} KB on the GPU, {sw.Elapsed.TotalMilliseconds:0.0} ms, GL error 0x{(uint)err:X}");
@@ -546,7 +547,7 @@ public sealed unsafe class TerrainRenderer
         {
             _nextLog = now + 10;
             Console.WriteLine($"[terrain] {map.Name}: {_visibleChunks}/{_chunks.Length} chunks visible, {_drawCalls} draw call(s), {_visibleTris} triangles, "
-                              + (_gpuMs >= 0 ? $"GPU {_gpuMs:0.000} ms" : "GPU time n/a") + $", GL error 0x{(uint)Native.glGetError():X}");
+                              + (_gpuMs >= 0 ? $"GPU {_gpuMs:0.000} ms" : "GPU time n/a") + $", GL error 0x{GlDebug.Error():X}");
         }
     }
 

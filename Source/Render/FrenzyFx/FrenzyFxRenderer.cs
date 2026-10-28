@@ -16,7 +16,7 @@ namespace CallOfSlop;
 public sealed unsafe class FrenzyFxRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec4 iCenterWidth; // centre, width
@@ -46,7 +46,7 @@ public sealed unsafe class FrenzyFxRenderer
 
     // Additive glow: brightest where the face looks at the camera, so a box reads as a soft streak, not a crate.
     private const string FragmentSrc = """
-        #version 330 core
+        #version 410 core
         in vec3 vColor;
         in vec3 vNormal;
         in vec3 vView;
@@ -204,12 +204,13 @@ public sealed unsafe class FrenzyFxRenderer
     {
         try
         {
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram();
             Native.glAttachShader(_program, vs);
             Native.glAttachShader(_program, fs);
             Native.glLinkProgram(_program);
+            GlDebug.Label(GL_PROGRAM, _program.Id, "FrenzyFxRenderer");
             int linked;
             Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -249,7 +250,7 @@ public sealed unsafe class FrenzyFxRenderer
             }
             if (GlGpuStamps.Create(GpuStampRing.QueryCount(2, QueryRing)) is { } stamps)
                 _timer = new GpuStampRing(2, QueryRing, stamps, OnGpuSample);
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[frenzyfx] GL error 0x{err:X} while setting up (continuing)");
             FrenzyLooks.Load();

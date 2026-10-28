@@ -34,7 +34,7 @@ public static unsafe partial class Program
                 var frames = Math.Max(1, _smokeFrames - _mapSelectSmokeFrames);
                 Console.WriteLine($"[mapselect] smoke: {made} thumbnail(s) rendered in {ms:0.0} ms total (avg {ms / Math.Max(1, made):0.0} ms, worst so far {MapThumbs.WorstMs:0.0} ms), "
                     + $"{MapThumbs.Failed} failed, {MapThumbs.Pending} still queued, {Ui.MapSelectVisibleMaps} pictures on screen, "
-                    + $"{frames / Math.Max(t, 0.001):0} fps over {t:0.0} s while they were made, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"{frames / Math.Max(t, 0.001):0} fps over {t:0.0} s while they were made, GL error 0x{GlDebug.Error():X}");
                 _mapSelectSmokeStage = 2;
                 return false;
             case 2 when t > 1.2:

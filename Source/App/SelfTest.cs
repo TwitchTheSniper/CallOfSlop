@@ -319,6 +319,7 @@ public static partial class SelfTest
         Section("Text", CheckText); // SelfTestText.cs: player-visible text
         Section("Part text width", CheckPartTextWidth); // SelfTestPartTextWidth.cs: part descriptions wrap at a set width
         Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
+        Section("GL 4.6", CheckGl46); // SelfTestGl46.cs: shader preludes for the 4.6 and 4.1 paths, --gl41, the 4.1 tier keeps 4.6 features off
         Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
         Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)

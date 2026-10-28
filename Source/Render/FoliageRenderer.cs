@@ -26,7 +26,7 @@ namespace CallOfSlop;
 public sealed unsafe class FoliageRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         layout(location = 2) in vec2 aSwayShade;  // x: sway weight (0 root .. 1 tip), y: baked shade
@@ -94,7 +94,7 @@ public sealed unsafe class FoliageRenderer
         }
         """;
 
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -390,12 +390,13 @@ public sealed unsafe class FoliageRenderer
     {
         try
         {
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram();
             Native.glAttachShader(_program, vs);
             Native.glAttachShader(_program, fs);
             Native.glLinkProgram(_program);
+            GlDebug.Label(GL_PROGRAM, _program.Id, "FoliageRenderer");
             int linked;
             Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -449,7 +450,7 @@ public sealed unsafe class FoliageRenderer
                     Native.glGenQueries(QueryRing, q);
                 _timers = true;
             }
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[foliage] GL error 0x{err:X} while setting up (continuing)");
             Console.WriteLine($"[foliage] renderer ready: {FoliageMeshes.Vertices.Length / FoliageMeshes.FloatsPerVertex} mesh vertices, "

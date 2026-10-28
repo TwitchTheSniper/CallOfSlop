@@ -84,7 +84,7 @@ public static unsafe partial class Program
                 break;
             case 2 when t > 2.2:
                 SmokeShot("blood_body");
-                Console.WriteLine($"[smoke] blood body: bot at 20% health, {BodyBloodRender.Stats}; GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] blood body: bot at 20% health, {BodyBloodRender.Stats}; GL error 0x{GlDebug.Error():X}");
                 if (bot != null)
                 {
                     bot.Health = World.MaxHealth;

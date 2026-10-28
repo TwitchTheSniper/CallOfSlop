@@ -103,7 +103,7 @@ public static unsafe class Splash
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, (int)GL_CLAMP_TO_EDGE);
             Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, (int)GL_CLAMP_TO_EDGE);
             Native.glBindTexture(GL_TEXTURE_2D, 0);
-            Console.WriteLine($"[splash] BRUTAL logo {w}x{h}, GL error 0x{(uint)Native.glGetError():X}");
+            Console.WriteLine($"[splash] BRUTAL logo {w}x{h}, GL error 0x{GlDebug.Error():X}");
         }
         catch (Exception ex)
         {

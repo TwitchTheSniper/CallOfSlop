@@ -13,7 +13,7 @@ namespace CallOfSlop;
 public sealed unsafe class Renderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         uniform mat4 uMVP;
@@ -30,7 +30,7 @@ public sealed unsafe class Renderer
 
     // uMode: 0 = lit, 1 = lit + world-space texture (layer uLayer of uTex), 2 = unlit (HUD, tracers, muzzle flash)
     // Sun, ambient and fog come from Lighting.Glsl (shared with the foliage renderer).
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -119,13 +119,14 @@ public sealed unsafe class Renderer
     public void Init()
     {
         // --- Shaders -----------------------------------------------------------
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
 
         _program = CreateProgram();
         Native.glAttachShader(_program, vs);
         Native.glAttachShader(_program, fs);
         Native.glLinkProgram(_program);
+        GlDebug.Label(GL_PROGRAM, _program.Id, "Renderer");
 
         int linked;
         Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
@@ -313,7 +314,7 @@ public sealed unsafe class Renderer
         try
         {
             const string vsSrc = """
-                #version 330 core
+                #version 410 core
                 layout(location = 0) in vec3 aPos;
                 layout(location = 1) in vec3 aNormal;
                 layout(location = 2) in vec4 iM0;
@@ -344,12 +345,13 @@ public sealed unsafe class Renderer
             var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
                 .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
                 .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(vsSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(fsSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
             _instProgram = CreateProgram();
             Native.glAttachShader(_instProgram, vs);
             Native.glAttachShader(_instProgram, fs);
             Native.glLinkProgram(_instProgram);
+            GlDebug.Label(GL_PROGRAM, _instProgram.Id, "Renderer.instProgram");
             int linked;
             Native.glGetProgramiv(_instProgram, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -392,7 +394,7 @@ public sealed unsafe class Renderer
             Native.glVertexAttribDivisor(7, 1);
             _program.Use();
             _vao.Bind();
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[render] GL error 0x{err:X} while setting up the instanced boxes (continuing)");
             Console.WriteLine($"[render] instanced boxes ready ({BatchMax} a draw)");

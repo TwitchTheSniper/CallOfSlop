@@ -97,7 +97,7 @@ public static unsafe partial class Program
         var view = MeshSmokeViews[_meshSmoke];
         var secs = Math.Max(now - _meshSmokeMeasureStart, 1e-6);
         Console.WriteLine($"[smoke] mesh {view.Name,-10} ({World.Map.Name}): {_meshSmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_meshSmokeFrames, 1):0.00} ms/frame), "
-            + $"worst {_meshSmokeWorst * 1000:0.0} ms, [mesh] {MeshGfx.Describe(MeshGfx.Window)}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"worst {_meshSmokeWorst * 1000:0.0} ms, [mesh] {MeshGfx.Describe(MeshGfx.Window)}, GL error 0x{GlDebug.Error():X}");
         SmokeShot("mesh_" + view.Name);
         _meshSmokeAdvance = true;
     }

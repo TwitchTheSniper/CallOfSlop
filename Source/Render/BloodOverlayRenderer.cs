@@ -15,7 +15,7 @@ namespace CallOfSlop;
 public static unsafe class BloodOverlayRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         uniform vec4 uA[27];
         uniform vec4 uB[27];
         uniform vec2 uScreen;
@@ -43,7 +43,7 @@ public static unsafe class BloodOverlayRenderer
         """;
 
     private const string FragmentSrc = """
-        #version 330 core
+        #version 410 core
         uniform sampler2DArray uMask;
         uniform vec3 uRed;
         uniform vec3 uDark;
@@ -182,9 +182,10 @@ public static unsafe class BloodOverlayRenderer
             return _ready;
         try
         {
-            using var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            using var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            using var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            using var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram().Attach(vs, fs).Link();
+            GlDebug.Label(GL_PROGRAM, _program.Id, "BloodOverlayRenderer");
             DetachShader(_program, vs);
             DetachShader(_program, fs);
             _vao = GenVertexArray(); // core profile: a VAO must be bound even with no vertex buffers
@@ -222,7 +223,7 @@ public static unsafe class BloodOverlayRenderer
             }
             _ready = true;
             Console.WriteLine($"[blood] overlay shader ready: {BloodTextures.Layers} procedural splatter masks {BloodTextures.Size}px generated in {genMs:0.0} ms, "
-                + $"GPU timer {(_timer ? "on" : "unavailable")}, GL error 0x{(uint)Native.glGetError():X}");
+                + $"GPU timer {(_timer ? "on" : "unavailable")}, GL error 0x{GlDebug.Error():X}");
         }
         catch (Exception ex)
         {

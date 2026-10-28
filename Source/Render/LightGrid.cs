@@ -122,7 +122,7 @@ public static unsafe class LightGrid
             Native.glActiveTexture(GL_TEXTURE0);
             _lastMode = 0f;
             _ready = true;
-            Console.WriteLine($"[lighting] baked light ready (uniform block binding {Binding}, texture units {UnitA}-{UnitC}), GL error 0x{(uint)Native.glGetError():x}");
+            Console.WriteLine($"[lighting] baked light ready (uniform block binding {Binding}, texture units {UnitA}-{UnitC}), GL error 0x{GlDebug.Error():x}");
         }
         catch (Exception ex)
         {
