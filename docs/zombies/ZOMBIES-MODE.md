@@ -1033,6 +1033,87 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
   costs nothing more and a dismembered one 1 byte. A limb coming off sends the zombie at once (like a death). Clients throw
   each limb's gore once when its bit first appears; a zombie first heard of already without limbs throws none.
 
+## Zombie types (board item dev-zombie-variety-zv01, 2026-10-28)
+
+Source/Zombies/ZombieTypes.cs (the data), Source/Game/ZombieTypes.cs (the behaviour); the rules file's `"types"`
+section; self-test "Zombie types". **The hard rule: no type has a ranged attack of any kind.** Every type has to reach
+you to hurt you: a type's reach (`reachMult` x the rules' reach) may never pass 2.2 m, the loader refuses a file whose
+type does, and an unknown key (`spitRange`, `projectile`...) refuses the file too.
+
+Every type is data. Type 0 is always the walker (the plain zombie of every round, with its own `weight`). A type has:
+`healthMult` on the round's health (or `healthFixed`, see the question below), `gait` (walk / run / sprint, or `mix`
+for the round's roll) and `speedMult`, `damageMult` / `reachMult` / `windupMult` / `swingMult`, its size (`scale`, or
+`width` and `height`: the drawn body, the hit box, the head's height, how high it reaches and the body players are held
+off all scale with it), `skin` / `shirt` / `pants`, `voicePitch` / `voiceGain` (the voice and footsteps), `pointsMult`
+on kill points, `limbHealthMult` and `severs`, `firstRound`, `weight` by round (its share of a spawn's roll against
+the others'), `maxAlive` at once (0: no cap) and `pack` (that many more of it out of the same spawner). Each special:
+
+| Type | Size | Health | Gait | Hits | From round | Cap | Points | Special |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Walker | 1 | 1x | the round's mix | 1x | 1 | - | 1x | none |
+| Brute | 1.45 wide, 1.5 tall | 5x | walk x0.9 | 1.6x, reach 1.3x, slower | 6 | 4 | 3x | `knockback` 7 m/s (a shove through the blast push: the client predicts it); `stunImmune`; `tearMult` 3 (boards) |
+| Skitterer | 0.75 / 0.7 | 0.4x | sprint x1.05 | 0.5x, quick | 4 | 24 | 0.75x | `pack` 3: four come out together |
+| Wall climber | 0.85 / 0.9 | 0.25x | run x1.1 | 0.8x | 8 | 8 | 1.25x | `climbHeight` 14 m at `climbSpeed` 2.2 m/s: climbs any wall |
+| Armoured | 1.1 | 1.5x | run x0.85 | 1.2x | 10 | 6 | 2x | `armour` 300: a helmet and a chest plate shot off before the body |
+| Grabber | 1 / 1.1 | 1.2x | run x0.95 | 0.5x, then a hold | 12 | 4 | 2x | `grabSeconds` 4, `grabDamage` 12 a second: holds you until it is hit |
+| Pouncer | 0.9 / 0.95 | 0.6x | run x1.15 | 1.1x | 14 | 6 | 1.5x | `pounceRange` 6 m, `pounceSpeed` 9, `pounceCooldown` 4 s: a leap, then a swipe where it lands |
+| Bloater | 1.35 / 1.1 | 1.5x | walk x0.9 | 0.8x | 10 | 3 | 2x | **off** (`"enabled": false`): `burstRadius` 2 m, `burstDamage` 50 when it dies or its swipe lands |
+| Juggernaut | 1.8 / 2 | 20x | walk x0.8 | 2.5x, reach 1.6x | 10 | 1 | 10x | `bossEvery` 10: one boss every 10 rounds on top of the round, a health bar on the HUD; shoves, stun immune |
+
+- **Spawning.** Each spawn rolls a type from the round's seeded stream: every type that is on, phased in (`firstRound`),
+  under its cap and weighted that round takes its `weight.At(round)` share against the walker's. Rounds 1-3 are all
+  walkers; by round 12 about a third are specials, never more than about half. A `pack` type brings its pack out of the
+  same spawner in the same burst (within the alive cap and the round's count). A boss round (`round % bossEvery == 0`)
+  queues its one boss first, on top of the round's count. Counts by type come from one pass over the horde each tick.
+- **Brute.** Its hit lands through `Game.Knock`, the blast push the client already predicts (so no rubber-banding), with
+  the usual lift; stuns and staggers (melee stuns, the blast stagger) don't touch it; boards come off 3x faster.
+- **Armoured.** `Plates` bits (helmet, chest) with `armour` health each. A shot on the head or the chest (the torso, not a
+  limb) goes into that plate: the plate takes it all (a hit marker, no damage) and comes off at 0 with a metal clang
+  (`ZPlatesOff`). A melee swing goes into the chest plate. Limbs are bare (shoot the legs: it ties into dismemberment).
+  Blasts and burns go round the plates. Drawn as a steel helmet and breastplate; clients get the plates in the type
+  state byte.
+- **Grabber.** Its landed swipe starts a hold: `ZPlayer.HeldBy` / `HeldUntil` on the server, `Held` on both sides
+  (`ZWorld` flags bit 6). Held, your movement speed is `Game.HeldMoveMult` (2 percent) in both the server's speed check and
+  the client's prediction, and the HUD flashes "HELD - shoot or hit the grabber to get free". It bites every second
+  (`grabDamage`). Any damage on it (yours or a teammate's; a burn tick doesn't count), its death, the hold running out,
+  going down or getting out of its arms frees you; it swings again after its usual pause. Bots are held like anyone.
+- **Pouncer.** With its prey in plain view between its reach and `pounceRange`, on the ground and off cooldown, it
+  leaps: a ballistic jump (`pounceSpeed` flat, the vertical speed solved to land beside the target, forward input held in
+  the air so the mover's drag doesn't eat it). Landed, it swipes at once if anyone is in reach, as any zombie: a melee
+  lunge, never a ranged hit. The self-test checks it hurts only from within its reach.
+- **Wall climber.** Chasing with its prey at least 1.5 m above it (or stuck against something), with a wall within
+  1.4 m towards them, it probes the wall every half metre up to `climbHeight` for the top (a flat ray that no longer
+  hits) and for headroom where it stands (a ceiling or an overhang: not this wall, try again in 2 s), checks there is a
+  landing just past the top (a free-standing wall: it drops off the far side), then climbs: the bell siege's
+  `ZState.Scaling` state and climbing pose, moved by `FreeClimbMove` (straight up at `climbSpeed`, then the siege's vault
+  over the top onto the landing, then after its prey again). Shot on the wall, it lets go and falls like a siege climber
+  (`ClimbFall`: pushed off, dazed), and waits 3 s before another go. Ceilings aren't climbed (no feasible way down).
+- **Bloater.** Off until the developer says a melee-range burst isn't a ranged attack. On, its burst hurts only players
+  within `burstRadius` of it and in plain view (`TypeBurst`), when it dies (any cause) or when its swipe lands (then it
+  dies on the spot with no kill credited).
+- **Juggernaut.** A boss: `bossEvery` rounds, one at a time (`maxAlive` 1), `weight` 0 so it never comes from the roll.
+  The HUD shows its label and a health bar (`Game.ZBoss`, the health byte on clients). Too big for a ragdoll: it tips over
+  as drawn (so does anything more than 25 percent off a player's size).
+- **Bodies.** The hit box is a player's scaled about the feet by width and height (`ZombieBox`); head and limb tests
+  undo the scale (`ZombieUnscale`). The blocking cylinder (Zombie bodies) is `ZBlockRadius` x width, the player's height x
+  height. Bots aim at the scaled chest and head. Gore and ragdolls use the type's colours. The drawn pose is the plain
+  walker's, scaled about the feet each frame (`ZombieAnim.Scale`); the voice is pitched and scaled by the type.
+- **Hordes and pooling.** Types ride on the horde controller unchanged (a zombie is a zombie to it); the pool's reset
+  puts every type field back (the "Zombie hordes" reset check covers them, and never writes into the shared type
+  definitions). Alive-by-type counts are one pass a tick; nothing allocates per tick (the self-test's 16-type horde).
+- **Network (protocol 73).** In `ZEnts` the limbs byte (sent for any typed zombie, flagged by the id's top bit) carries
+  the type in its top four bits, and a typed zombie carries one more byte: its type state (plates on, holding someone).
+  A walker costs what it did; a typed zombie 2 bytes more. A plate coming off or a grab sends the zombie at once.
+  `ZWorld` player flags bit 6: held by a grabber. An older server's zombies are all walkers to a client.
+
+**Decisions for the developer** (the proposal ships; the alternative is a data change):
+
+- Health scales per round with the type's multiplier (ships). The alternative, a fixed health per type, is
+  `"healthFixed": N` on a type (0: scaling).
+- The bloater is implemented but **off**: `"enabled": true` on `types.bloater` switches it on if a 2 m burst counts as
+  melee.
+- Every number in the table (sizes, multipliers, first rounds, weights, caps, points) is proposed.
+
 ## Zombie bodies (developer request, 2026-10-27)
 
 Zombies are solid to players, so a horde is a wall and you can't run through it (`Source/Game/ZombieBlock.cs`,
@@ -1455,3 +1536,6 @@ Melee (V): the melee slot's build (the Machete to start). Weapon slots 1-4 as be
     and over-the-shoulder spectating stay.
 13. ~~Slot machines~~: **answered 2026-10-26**: bet levels added (1x / 2x / 5x the price, each a rarity step up on top
     of the heat; blanks as likely at every bet, so no sure win; see "Bets"); the other numbers stay; no moving machines.
+14. **Zombie types** (2026-10-28): health keeps scaling per round with a type multiplier (`healthMult`, ships) or
+    becomes fixed per type (`healthFixed`)? Is the bloater's 2 m burst on death / on contact a ranged attack? It ships
+    switched off. Every number in the types table is proposed (see "Zombie types").

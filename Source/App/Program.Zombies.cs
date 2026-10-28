@@ -426,10 +426,16 @@ public static unsafe partial class Program
         }
         var detail = BodyModel.WantsDetail(a.Pos);
         var lod = camDist > ZombieAnim.LodRange;
+        var kind = z.Kind; // its type's size and colours (Source/Game/ZombieTypes.cs)
+        ZombieAnim.Scale(ref pose, a.Pos, kind.Width, kind.Height); // (the cached pose is plain-sized; scaled fresh each frame)
         BodyBloodRender.PlaceZombie(z, pose, a.Yaw); // blood marks by health, zombie palette (Source/Render/BodyBloodRender.cs)
         BodyBloodRender.Bind(Gfx);
-        var boxes = ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead, z.Limbs); // (lost limbs: stumps, ZombieLimbs.cs)
+        var boxes = z.Type == 0
+            ? ZombieAnim.Draw(Gfx, pose, ZShirt, ZSkin, ZPants, detail, lod, z.State != ZState.Dead, z.Limbs) // (lost limbs: stumps, ZombieLimbs.cs)
+            : ZombieAnim.Draw(Gfx, pose, kind.Shirt, kind.Skin, kind.Pants, detail, lod, z.State != ZState.Dead, z.Limbs);
         BodyBloodRender.Unbind(Gfx);
+        if (z.Plates != 0)
+            boxes += ZombieAnim.DrawPlates(Gfx, pose, z.Plates); // an armoured one's helmet and chest plate
         if (a.Mode == ZAnimMode.Rising && a.Phase < 0.9f)
         {
             // Dirt thrown up round the hole.

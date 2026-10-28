@@ -166,7 +166,7 @@ public sealed partial class Game
             var vz = Crowd.VZ[i];
             var hp = Crowd.HP[i];
             Crowd.RemoveAt(i);
-            var z = SpawnZombie(zm, spawner, now, at);
+            var z = SpawnZombie(zm, spawner, now, at, type: 0); // (a walker: the crowd carries no types yet, see HordeCrowd.Mass.cs; ZombieTypes.cs)
             z.Health = Math.Clamp((int)MathF.Ceiling(hp), 1, z.MaxHealth); // (a crowd zombie hurt by a blast stays hurt)
             z.Window = -1;
             z.Area = zm.AreaAt(at);

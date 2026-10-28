@@ -180,6 +180,21 @@ public sealed class ZombiesRules
     /// <summary>The mass horde's crowd tier (the "crowd" section; Source/Game/Horde/HordeCrowd.cs, docs/zombies/MASS-HORDE.md). Used only on maps with "crowd".</summary>
     public CrowdTuning Crowd = new();
 
+    /// <summary>The zombie types (the "types" section; Source/Zombies/ZombieTypes.cs, Source/Game/ZombieTypes.cs): type 0 is the walker.</summary>
+    public List<ZombieTypeDef> Types = ZombieTypeDef.Defaults();
+
+    /// <summary>The type at <paramref name="index"/> (the walker for one past the list: an older server's zombie).</summary>
+    public ZombieTypeDef TypeAt(int index) => index >= 0 && index < Types.Count ? Types[index] : Types[0];
+
+    /// <summary>The type with this key, or -1.</summary>
+    public int TypeIndex(string key)
+    {
+        for (var i = 0; i < Types.Count; i++)
+            if (Types[i].Key.Equals(key, StringComparison.OrdinalIgnoreCase))
+                return i;
+        return -1;
+    }
+
     /// <summary>The alive cap in round <paramref name="round"/> with <paramref name="players"/> players (the curve, the extra players, the hard cap).</summary>
     public int MaxAliveFor(int round, int players)
     {
@@ -718,7 +733,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "trader", "bots", "horde", "limbs", "climb", "crowd"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "trader", "bots", "horde", "limbs", "climb", "crowd", "types"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -1409,10 +1424,14 @@ public sealed class ZombiesRules
                     });
                     break;
                 }
+                case "types":
+                    r.Types = ZombieTypeDef.Read(p.Value, at);
+                    break;
                 default:
                     throw new WeaponFileException($"{source}: unknown key \"{p.Name}\" ({string.Join(", ", Sections)})");
             }
         }
+        ZombieTypeDef.CheckReach(r.Types, r, source);
         if (!sawPerks)
             r.Perks.AddRange(Defaults().Perks);
         if (r.BoxMoveMax < r.BoxMoveMin)

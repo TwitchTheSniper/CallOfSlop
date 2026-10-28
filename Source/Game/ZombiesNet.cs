@@ -108,9 +108,11 @@ public sealed partial class Game
 
     /// <summary>
     /// A zombie that has lost a limb carries one more byte (protocol 65): the top bit of its id says so, the byte holds the
-    /// lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler). 9 + 80 x 13 = 1049 bytes at most.
+    /// lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler). Since protocol 73 the same
+    /// byte's top four bits are its type (Source/Game/ZombieTypes.cs; the flag is set for any typed zombie too), and a
+    /// typed zombie carries one byte more again: its type state (armour plates on, holding a player). 9 + 80 x 14 = 1129 bytes at most.
     /// </summary>
-    public const int ZEntLimbBytes = 1, ZEntLimbFlag = 0x8000;
+    public const int ZEntLimbBytes = 1, ZEntTypeBytes = 1, ZEntLimbFlag = 0x8000;
 
     /// <summary>The header of <see cref="Msg.ZEnts"/>: the message id, the tick, the horde's size and the entry count (protocol 58).</summary>
     public const int ZEntsHeader = 1 + 4 + 2 + 2;
@@ -155,6 +157,7 @@ public sealed partial class Game
         public readonly byte[] Age = new byte[MaxZombies];
         public readonly byte[] SentState = new byte[MaxZombies];
         public readonly byte[] SentLimbs = new byte[MaxZombies];
+        public readonly byte[] SentTypeState = new byte[MaxZombies];
     }
 
     private readonly Dictionary<ulong, ZEntView> _zViews = new();
@@ -212,8 +215,8 @@ public sealed partial class Game
                     var p = age * weight;
                     if (isNew)
                         p += 1000f;
-                    else if (view.SentState[slot] != ZStateByte(z) || view.SentLimbs[slot] != z.Limbs)
-                        p += 600f; // (a limb coming off goes out at once, like a death)
+                    else if (view.SentState[slot] != ZStateByte(z) || view.SentLimbs[slot] != z.Limbs || view.SentTypeState[slot] != z.TypeState)
+                        p += 600f; // (a limb coming off goes out at once, like a death; a plate off or a grab too)
                     if (age >= ZEntMaxAge)
                         p += 5000f;
                     key = -p;
@@ -249,20 +252,26 @@ public sealed partial class Game
             var z = Horde[_zEntIdx[k]];
             var p = z.Position;
             var sb = ZStateByte(z);
-            w.U16((ushort)(z.Id | (z.Limbs != 0 ? ZEntLimbFlag : 0))).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
+            var extra = z.Limbs != 0 || z.Type != 0;
+            w.U16((ushort)(z.Id | (extra ? ZEntLimbFlag : 0))).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
                 .U8(sb)
                 .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255));
             if (ZEntHasWindow(z.State))
                 w.U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
-            if (z.Limbs != 0)
-                w.U8(z.Limbs); // the lost limbs (protocol 65, ZombieLimbs.cs)
+            if (extra)
+            {
+                w.U8((byte)((z.Limbs & AllLimbs) | (z.Type << 4))); // the lost limbs (protocol 65, ZombieLimbs.cs) and the type (protocol 73, ZombieTypes.cs)
+                if (z.Type != 0)
+                    w.U8(z.TypeState); // plates on, holding someone
+            }
             if (view != null && z.Hm.Slot is >= 0 and < MaxZombies)
             {
                 view.SentId[z.Hm.Slot] = z.Id;
                 view.Age[z.Hm.Slot] = 0;
                 view.SentState[z.Hm.Slot] = sb;
                 view.SentLimbs[z.Hm.Slot] = z.Limbs;
+                view.SentTypeState[z.Hm.Slot] = z.TypeState;
             }
         }
         if (view != null)
@@ -309,7 +318,7 @@ public sealed partial class Game
         foreach (var p in players)
         {
             var zp = ZP(p);
-            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57)
+            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0) | (zp.Held ? 64 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57); bit 6: held by a grabber (protocol 73)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
                 .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535))
                 .U8((byte)p.Grenade).U8((byte)Math.Clamp(p.GrenadesLeft, 0, 255)); // the grenade and how many are left (protocol 63)
@@ -694,7 +703,10 @@ public sealed partial class Game
             var health = r.U8();
             var state = (ZState)(sb & 7); // (7: on a climbable face, protocol 68)
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
-            var limbs = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? (byte)(r.U8() & AllLimbs) : (byte)0; // (protocol 65)
+            var extra = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? r.U8() : 0; // (protocol 65: the limbs; 73: the type in the top bits)
+            var limbs = (byte)(extra & AllLimbs);
+            var type = (byte)(extra >> 4);
+            var typeState = type != 0 && r.Has(1) ? r.U8() : (byte)0;
             if (_zById.TryGetValue(id, out var known) && known.Snaps.Count > 0 && tick <= known.Snaps[^1].Tick)
                 continue; // a late packet: this zombie already has newer news
             if (!latest && known == null)
@@ -710,6 +722,13 @@ public sealed partial class Game
                 _zById[id] = z;
                 fresh = true;
             }
+            if (type != z.Type)
+            {
+                z.Type = type; // its type (ZombieTypes.cs): the body's size and colours, the voice
+                z.Kind = ZRules.TypeAt(type);
+            }
+            z.Plates = (byte)(typeState & 3);
+            z.Grabbing = (typeState & 4) != 0;
             if (limbs != z.Limbs)
             {
                 z.Limbs = (byte)(z.Limbs | limbs); // (limbs never grow back: a late packet can't put one on again)
@@ -851,6 +870,7 @@ public sealed partial class Game
             if (Players.TryGetValue(id, out var p) && id != LocalId)
                 p.ExtraSlots = (flags & 2) != 0;
             zp.PlateReady = (flags & 32) != 0;
+            zp.Held = (flags & 64) != 0; // held by a grabber (ZombieTypes.cs): the prediction stops too
             zp.Perks = r.U16();
             zp.BleedFraction = r.U8() / 255f;
             zp.BeingRevived = r.U8() / 255f;
