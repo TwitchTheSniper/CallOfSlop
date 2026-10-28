@@ -154,7 +154,7 @@ public static partial class SelfTest
         var near = g.Crowd.Near;
         var alive = g.AliveZombies;
         var crowdMs = g.Crowd.TickMs / Math.Max(1, g.Crowd.Ticks);
-        var flow = $"{g.Crowd.FlowBuilds} flow builds, {g.Crowd.FlowMs / Math.Max(1, g.Crowd.FlowBuilds):0.00} ms each";
+        var flow = $"{g.Crowd.FlowBuilds} flow fields, {g.Crowd.FlowMs / Math.Max(1, g.Crowd.FlowBuilds):0.00} ms each over several ticks (the most in one tick {g.Crowd.FlowWorstMs:0.00} ms)";
         var meanCpu = sumCpu / Math.Max(1, ticks);
         var kbs = sketchBytes / 3.0 / 1024;
         var bytes = g.Crowd.Bytes;

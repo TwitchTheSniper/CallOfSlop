@@ -34,6 +34,9 @@ public sealed class CrowdTuning
     public float FlowCell = 2f;
 
     public int FlowRefreshTicks = 30;
+
+    /// <summary>The field is built over several ticks, about this many cells a tick (Dijkstra pops, then headings), into a second buffer.</summary>
+    public int FlowCellsPerTick = 1600;
 }
 
 /// <summary>
@@ -70,7 +73,7 @@ public sealed class HordeCrowd
     // ---- Statistics (self-test, log) -------------------------------------------------------------------
 
     public long Ticks, Thinks, Promoted, Demoted, FlowBuilds, Blocked;
-    public double FlowMs, TickMs;
+    public double FlowMs, FlowWorstMs, TickMs;
 
     /// <summary>Particles inside the promote range this tick (waiting or about to be promoted).</summary>
     public int Near;
@@ -80,7 +83,13 @@ public sealed class HordeCrowd
     private float _minX, _minZ, _cell = 2f, _halfX, _halfZ;
     private int _cols, _rows;
     private bool[] _walk = [];
-    private float[] _cost = [], _fdx = [], _fdz = [];
+    private float[] _cost = [], _fdx = [], _fdz = [], _bCost = [], _bFdx = [], _bFdz = [];
+    private int _flowPhase, _flowRow;
+    private byte[] _nmask = [];
+    private int[] _nOff = new int[8];
+    private static readonly int[] NDc = [-1, 0, 1, -1, 1, -1, 0, 1], NDr = [-1, -1, -1, 0, 0, 1, 1, 1];
+    private static readonly float[] NCost = [1.41421356f, 1, 1.41421356f, 1, 1, 1.41421356f, 1, 1.41421356f];
+    private bool _flowReady;
     private int[] _heapCell = new int[1024];
     private float[] _heapKey = new float[1024];
     private int _heapCount;
@@ -117,7 +126,7 @@ public sealed class HordeCrowd
     public void Setup(Map map, float floorY, int capacity)
     {
         Reserve(capacity);
-        if (ReferenceEquals(_setupMap, map) && Y == floorY)
+        if (ReferenceEquals(_setupMap, map) && Y == floorY && _cell == MathF.Max(0.5f, Tuning.FlowCell) && _sCell == MathF.Max(0.4f, Tuning.SeparationRadius))
             return;
         _setupMap = map;
         Y = floorY;
@@ -133,11 +142,35 @@ public sealed class HordeCrowd
         _cost = new float[n];
         _fdx = new float[n];
         _fdz = new float[n];
+        _bCost = new float[n];
+        _bFdx = new float[n];
+        _bFdz = new float[n];
+        Array.Fill(_cost, float.PositiveInfinity);
+        _flowPhase = 0;
+        _flowReady = false;
         for (var r = 0; r < _rows; r++)
             for (var c = 0; c < _cols; c++)
             {
                 var p = new Vector3(_minX + (c + 0.5f) * _cell, floorY + 0.05f, _minZ + (r + 0.5f) * _cell);
                 _walk[r * _cols + c] = !World.Blocked(p, 1.7f);
+            }
+        // Each cell's open neighbours (bit k: _nOff[k] is walkable, and a diagonal cuts no corner), for the field's inner loops.
+        _nmask = new byte[n];
+        _nOff = [-_cols - 1, -_cols, -_cols + 1, -1, 1, _cols - 1, _cols, _cols + 1];
+        for (var r = 0; r < _rows; r++)
+            for (var c = 0; c < _cols; c++)
+            {
+                byte m = 0;
+                for (var k = 0; k < 8; k++)
+                {
+                    int dc = NDc[k], dr = NDr[k], uc = c + dc, ur = r + dr;
+                    if (uc < 0 || ur < 0 || uc >= _cols || ur >= _rows || !_walk[ur * _cols + uc])
+                        continue;
+                    if (dc != 0 && dr != 0 && (!_walk[r * _cols + uc] || !_walk[ur * _cols + c]))
+                        continue;
+                    m |= (byte)(1 << k);
+                }
+                _nmask[r * _cols + c] = m;
             }
         _sCell = MathF.Max(0.4f, Tuning.SeparationRadius);
         _sMinX = -map.HalfX - _sCell;
@@ -265,8 +298,10 @@ public sealed class HordeCrowd
         for (var t = targets; t < _targetCell.Length; t++)
             if (_targetCell[t] != -1)
                 moved = true;
-        if (targets > 0 && (tick - _flowTick >= Tuning.FlowRefreshTicks || (moved && tick - _flowTick >= 10)))
-            BuildFlow(tick, tx[..targets], tz[..targets]);
+        if (_flowPhase == 0 && targets > 0 && (tick - _flowTick >= Tuning.FlowRefreshTicks || (moved && tick - _flowTick >= 10)))
+            StartFlow(tick, tx[..targets], tz[..targets]);
+        if (_flowPhase != 0)
+            StepFlow(Tuning.FlowCellsPerTick); // (until the first field is ready the particles walk straight at the players)
 
         BuildSeparation();
 
@@ -408,103 +443,130 @@ public sealed class HordeCrowd
 
     // ---- Flow field -------------------------------------------------------------------------------------
 
-    private void BuildFlow(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz)
+    /// <summary>
+    /// Starts building the next field into the back buffers (the particles keep reading the current one meanwhile): every
+    /// standing player's cell is a source.
+    /// </summary>
+    private void StartFlow(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz)
     {
-        var t0 = Stopwatch.GetTimestamp();
         _flowTick = tick;
-        FlowBuilds++;
+        _flowPhase = 1;
+        _flowRow = 0;
         var n = _cols * _rows;
-        Array.Fill(_cost, float.PositiveInfinity, 0, n);
+        Array.Fill(_bCost, float.PositiveInfinity, 0, n);
         Array.Fill(_targetCell, -1);
         _heapCount = 0;
         for (var t = 0; t < tx.Length; t++)
         {
             var c = CellOf(tx[t], tz[t]);
             _targetCell[t] = c;
-            if (c < 0 || _cost[c] == 0)
+            if (c < 0 || _bCost[c] == 0)
                 continue;
-            _cost[c] = 0;
+            _bCost[c] = 0;
             Push(c, 0);
         }
-        var diag = 1.41421356f;
-        while (_heapCount > 0)
+    }
+
+    /// <summary>
+    /// Works on the field being built for about <paramref name="budget"/> cells (Dijkstra pops, then headings), and
+    /// swaps it in when done. Spread over a few ticks, so no tick pays for a whole field.
+    /// </summary>
+    private void StepFlow(int budget)
+    {
+        var t0 = Stopwatch.GetTimestamp();
+        var cost = _bCost;
+        if (_flowPhase == 1)
         {
-            var (v, key) = Pop();
-            if (key > _cost[v])
-                continue;
-            var vc = v % _cols;
-            var vr = v / _cols;
-            for (var dr = -1; dr <= 1; dr++)
-                for (var dc = -1; dc <= 1; dc++)
-                {
-                    if (dr == 0 && dc == 0)
-                        continue;
-                    int uc = vc + dc, ur = vr + dr;
-                    if (uc < 0 || ur < 0 || uc >= _cols || ur >= _rows)
-                        continue;
-                    var u = ur * _cols + uc;
-                    if (!_walk[u])
-                        continue;
-                    if (dr != 0 && dc != 0 && (!_walk[vr * _cols + uc] || !_walk[ur * _cols + vc]))
-                        continue; // no cutting a corner
-                    var k = key + (dr != 0 && dc != 0 ? diag : 1f);
-                    if (k >= _cost[u])
-                        continue;
-                    _cost[u] = k;
-                    Push(u, k);
-                }
-        }
-        // Each cell's heading: towards its cheapest neighbour.
-        for (var r = 0; r < _rows; r++)
-            for (var c = 0; c < _cols; c++)
+            var off = _nOff;
+            while (_heapCount > 0 && budget > 0)
             {
-                var i = r * _cols + c;
-                _fdx[i] = _fdz[i] = 0;
-                var own = _cost[i];
-                if (float.IsPositiveInfinity(own) || own == 0)
+                var (v, key) = Pop();
+                if (key > cost[v])
                     continue;
-                var best = own;
-                int bc = 0, br = 0;
-                for (var dr = -1; dr <= 1; dr++)
-                    for (var dc = -1; dc <= 1; dc++)
-                    {
-                        int uc = c + dc, ur = r + dr;
-                        if ((dr == 0 && dc == 0) || uc < 0 || ur < 0 || uc >= _cols || ur >= _rows)
-                            continue;
-                        if (dr != 0 && dc != 0 && (!_walk[r * _cols + uc] || !_walk[ur * _cols + c]))
-                            continue;
-                        var k = _cost[ur * _cols + uc];
-                        if (k < best)
-                        {
-                            best = k;
-                            bc = dc;
-                            br = dr;
-                        }
-                    }
-                // In the open (all four neighbours reachable): down the cost's slope (central differences), so the
-                // crowd fans out straight at the players instead of filing along the grid's eight directions; next to
-                // a wall: to the cheapest neighbour.
-                if (c > 0 && r > 0 && c < _cols - 1 && r < _rows - 1)
+                budget--;
+                var m = _nmask[v];
+                for (var k = 0; k < 8; k++)
                 {
-                    float cl = _cost[i - 1], cr = _cost[i + 1], cu = _cost[i - _cols], cd = _cost[i + _cols];
-                    if (!float.IsPositiveInfinity(cl) && !float.IsPositiveInfinity(cr) && !float.IsPositiveInfinity(cu) && !float.IsPositiveInfinity(cd))
+                    if ((m & (1 << k)) == 0)
+                        continue;
+                    var u = v + off[k];
+                    var nk = key + NCost[k];
+                    if (nk >= cost[u])
+                        continue;
+                    cost[u] = nk;
+                    Push(u, nk);
+                }
+            }
+            if (_heapCount == 0)
+                _flowPhase = 2;
+        }
+        if (_flowPhase == 2)
+        {
+            var fdx = _bFdx;
+            var fdz = _bFdz;
+            for (; _flowRow < _rows && budget > 0; _flowRow++, budget -= _cols)
+            {
+                var r = _flowRow;
+                for (var c = 0; c < _cols; c++)
+                {
+                    var i = r * _cols + c;
+                    fdx[i] = fdz[i] = 0;
+                    var own = cost[i];
+                    if (float.IsPositiveInfinity(own) || own == 0)
+                        continue;
+                    // Towards the cheapest neighbour.
+                    var best = own;
+                    int bc = 0, br = 0;
+                    var m = _nmask[i];
+                    for (var k = 0; k < 8; k++)
                     {
-                        var gx = cl - cr;
-                        var gz = cu - cd;
-                        var gl = MathF.Sqrt(gx * gx + gz * gz);
-                        if (gl > 1e-4f && gx * bc + gz * br > 0)
-                        {
-                            _fdx[i] = gx / gl;
-                            _fdz[i] = gz / gl;
+                        if ((m & (1 << k)) == 0)
                             continue;
+                        var kc = cost[i + _nOff[k]];
+                        if (kc < best)
+                        {
+                            best = kc;
+                            bc = NDc[k];
+                            br = NDr[k];
                         }
                     }
+                    // In the open (all four neighbours reachable): down the cost's slope (central differences), so the
+                    // crowd fans out instead of filing along the grid's eight directions; next to a wall: the cheapest neighbour.
+                    if (c > 0 && r > 0 && c < _cols - 1 && r < _rows - 1)
+                    {
+                        float cl = cost[i - 1], cr = cost[i + 1], cu = cost[i - _cols], cd = cost[i + _cols];
+                        if (!float.IsPositiveInfinity(cl) && !float.IsPositiveInfinity(cr) && !float.IsPositiveInfinity(cu) && !float.IsPositiveInfinity(cd))
+                        {
+                            var gx = cl - cr;
+                            var gz = cu - cd;
+                            var gl = MathF.Sqrt(gx * gx + gz * gz);
+                            if (gl > 1e-4f && gx * bc + gz * br > 0)
+                            {
+                                fdx[i] = gx / gl;
+                                fdz[i] = gz / gl;
+                                continue;
+                            }
+                        }
+                    }
+                    var l = bc != 0 && br != 0 ? 0.70710678f : 1f;
+                    fdx[i] = bc * l;
+                    fdz[i] = br * l;
                 }
-                var l = bc != 0 && br != 0 ? 0.70710678f : 1f;
-                _fdx[i] = bc * l;
-                _fdz[i] = br * l;
             }
-        FlowMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            if (_flowRow >= _rows)
+            {
+                // Done: the new field goes live.
+                (_cost, _bCost) = (_bCost, _cost);
+                (_fdx, _bFdx) = (_bFdx, _fdx);
+                (_fdz, _bFdz) = (_bFdz, _fdz);
+                _flowPhase = 0;
+                _flowReady = true;
+                FlowBuilds++;
+            }
+        }
+        var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        FlowMs += ms;
+        FlowWorstMs = Math.Max(FlowWorstMs, ms);
     }
 
     private void Push(int cell, float key)

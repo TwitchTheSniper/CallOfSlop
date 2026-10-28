@@ -177,6 +177,9 @@ public sealed class ZombiesRules
     /// <summary>The horde climbing a face (the "climb" section; Source/Game/ZombiesClimb.cs: the Cathedral's bell tower).</summary>
     public ClimbTuning Climb = new();
 
+    /// <summary>The mass horde's crowd tier (the "crowd" section; Source/Game/Horde/HordeCrowd.cs, docs/zombies/MASS-HORDE.md). Used only on maps with "crowd".</summary>
+    public CrowdTuning Crowd = new();
+
     /// <summary>The alive cap in round <paramref name="round"/> with <paramref name="players"/> players (the curve, the extra players, the hard cap).</summary>
     public int MaxAliveFor(int round, int players)
     {
@@ -639,7 +642,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs", "climb"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs", "climb", "crowd"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -1128,6 +1131,40 @@ public sealed class ZombiesRules
                     });
                     if (!(h.NearRange <= h.MidRange && h.MidRange <= h.FarRange))
                         throw new WeaponFileException($"{at}: nearRange <= midRange <= farRange");
+                    break;
+                }
+                case "crowd":
+                {
+                    var c = r.Crowd;
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "thinkMin": c.ThinkMin = Whole(v, w, 1, 120); break;
+                            case "thinkMax": c.ThinkMax = Whole(v, w, 1, 120); break;
+                            case "promoteRange": c.PromoteRange = Real(v, w, 2, 200); break;
+                            case "demoteRange": c.DemoteRange = Real(v, w, 2, 300); break;
+                            case "demoteSeconds": c.DemoteSeconds = Real(v, w, 0, 60); break;
+                            case "promotePerTick": c.PromotePerTick = Whole(v, w, 1, 64); break;
+                            case "demotePerTick": c.DemotePerTick = Whole(v, w, 0, 64); break;
+                            case "individualCap": c.IndividualCap = Whole(v, w, 1, Game.MaxZombies); break;
+                            case "speed": c.Speed = Real(v, w, 0.1f, 10); break;
+                            case "speedSpread": c.SpeedSpread = Real(v, w, 0, 0.9f); break;
+                            case "separationRadius": c.SeparationRadius = Real(v, w, 0.3f, 3); break;
+                            case "separationStrength": c.SeparationStrength = Real(v, w, 0, 20); break;
+                            case "separationMax": c.SeparationMax = Whole(v, w, 1, 32); break;
+                            case "flowCell": c.FlowCell = Real(v, w, 0.5f, 8); break;
+                            case "flowRefreshTicks": c.FlowRefreshTicks = Whole(v, w, 2, 600); break;
+                            case "flowCellsPerTick": c.FlowCellsPerTick = Whole(v, w, 64, 1000000); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    if (c.ThinkMax < c.ThinkMin)
+                        throw new WeaponFileException($"{at}: thinkMin <= thinkMax");
+                    if (c.DemoteRange < c.PromoteRange + 2)
+                        throw new WeaponFileException($"{at}: demoteRange at least 2 m over promoteRange (the hysteresis)");
                     break;
                 }
                 case "climb":

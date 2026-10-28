@@ -28,13 +28,14 @@ public sealed partial class Game
     public bool CrowdOn => ZMap is { Crowd: > 0 };
 
     /// <summary>The most individuals at once on a crowd map: the crowd's cap, the host's horde cap.</summary>
-    public int CrowdIndividualCap => Math.Clamp(Math.Min(Crowd.Tuning.IndividualCap, HostHordeCap), 1, MaxZombies);
+    public int CrowdIndividualCap => Math.Clamp(Math.Min(ZRules.Crowd.IndividualCap, HostHordeCap), 1, MaxZombies);
 
     /// <summary>Server, at a crowd round's start: the whole round seeded as particles over the field, away from the players.</summary>
     private void CrowdBeginRound(ZombiesMap zm, int round, double now)
     {
         var n = Math.Clamp(CrowdOverride > 0 ? CrowdOverride : zm.Crowd, 1, ZombiesMap.MaxCrowd);
         var floor = zm.Areas[zm.StartArea];
+        Crowd.Tuning = ZRules.Crowd; // (the rules file's "crowd" section)
         Crowd.Setup(World.Map, floor.Y0 > -1e5f && floor.Y0 < 1e5f ? floor.Y0 : 0f, n);
         Crowd.Clear();
         _zToSpawn = 0;
