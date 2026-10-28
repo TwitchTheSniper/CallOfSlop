@@ -1377,6 +1377,69 @@ the Workbench Range (and Zombies later) the **melee slot** replaces it with a bu
 
 (The standard strike: 55 damage, 0.8 s, 2.4 m, one target, a kill from behind.)
 
+## Modular grenades (developer request, 2026-10-27)
+
+The board item: "modular grenades built at workbenches like the weapon builder". A grenade is a build like a melee
+weapon: a **casing** at the root, a **fuse** and a **payload** (both required) and up to three **grenade mods**. It
+goes in the Zombies **grenade slot** (slot 5) and replaces the stock frag on the grenade key; ZOMBIES-MODE.md,
+"How a run plays", has the refill and the run rules. Code: `Source/Zombies/GrenadeStats.cs` (the numbers and the
+whole-grenade rules), `Source/Game/GameGrenades.cs` (throwing, fuses, payloads, patches, bomblets, aftershocks, the
+network), `Source/UI/UiWorkbenchGrenade.cs` (stats and part lines), `Source/App/Program.Grenades.cs` (patches drawn);
+parts in `Parts/Casing`, `Parts/Fuse`, `Parts/Payload`, `Parts/GrenadeMod` (49 files); self-test section **Modular grenades**.
+
+```
+Casing (root of a GRENADE: throw, bounce, sticky, how much payload it holds, extra grenades a round)
+ |- fuse      <- FUSE (required): timer (cookable or not), impact, proximity, remote
+ |- payload   <- PAYLOAD (required): frag, incendiary, cryo, shock, poison gas, lure, healing, rubber ducks
+ |- gmod_1..3 <- GRENADE MODS: cluster, bigger blast, throw, sticky, bouncy, aftershocks, extra grenades
+```
+
+| Category | Blocks | Parts |
+| --- | --- | --- |
+| Casing (9) | `casing`: throw (x the standard 22.5 m/s), bounce (0-0.9; the frag's 0.35), sticky, damageMult, radiusMult, extra; sockets `fuse`, `payload` (required), `gmod_N` | Tin Can, Pineapple, Soda Bottle, Rubber Ball, Sticky Sock, Lunchbox, Paint Can, Garden Gnome, Disco Ball |
+| Fuse (9) | `fuse`: kind (timer, impact, proximity, remote), seconds (timer: the fuse; proximity: arming after landing; impact and remote: the longest it waits), cook (timer only), trigger (proximity m) | Pull Pin, Kitchen Timer (cook), Contact, Short Fuse (cook), Tripwire Sensor, Garage Remote, Motion Fuse, Egg Timer Deluxe (cook), Psychic Fuse |
+| Payload (14) | `payload`: kind, damage (at the centre against zombies; a fire's or cloud's total), radius, knockback, duration (fires, clouds, lures, cryo's slow), strength (cryo and shock stun s, heal hp) | Black Powder, Lighter Fluid, Nail Bomb, Ice Pack, First Aid Kit, Car Battery, Old Gym Socks, Squeaky Toy Lure, Rubber Duck Flock, Thermite Gel, Shaped Charge, Liquid Nitrogen, Mini Sun, Boy Band Cassette |
+| Grenade Mod (17) | `grenade`: cluster, damageMult, radiusMult, throwMult, fuseMult, durationMult, bounce, sticky, stages, extra | Duct Tape Wrap, Spring Coil, Extra Powder, Wide Spreader, Cluster Kit, Pocket Clip, Aftershock Charge, Cluster Rack, Long Burn Canister, Tail Fins, Bandolier Loop, Echo Charge, Grape Bunch, Overpacker, Nesting Doll Shell, Infinite Pockets, Party Popper |
+
+Every category covers all six tiers. Grenade parts take no gun `stats` or `bores`; only casings have fuse, payload
+and gmod sockets. **Stats** (`GrenadeStats.Compute`, deterministic): the payload's numbers times the casing's and every
+mod's multipliers in tree order; the throw from the casing and mods, slowed by 18% a kg over 0.6 kg (at most 45%);
+bounce added up; clusters, aftershocks and extras added; then clamps (damage 5000, radius 1-16 m, throw 8-34 m/s,
+cluster 12, aftershocks 4, extras 4). **Rules** (`GrenadeStats.Problem`, through `BuildRules`, each with a sentence):
+a grenade weighs 3 kg at most; one cluster mod ("A grenade splits once"); sticky and bouncy don't mix; a proximity
+fuse can't carry a lure (it would go off before it played); a casing is a root ("start a grenade build with it");
+grenade parts go only on casings.
+
+**What happens** (the server decides; clients fly the same arc from the same numbers and draw what `Explode` says):
+
+- **Fuses.** Timer: at its seconds. Cookable: hold the grenade key and the fuse runs in your hand (the HUD counts it
+  down), let go to throw; held past the fuse it is thrown with no time left. Impact: on first touch. Proximity: arms
+  its seconds after landing and goes off when a zombie comes within its trigger (checked every third tick), 45 s at
+  most. Remote: the grenade key again sets off every remote grenade you have out (`Msg.ZGrenade`), 30 s at most.
+- **Payloads.** Frag: the Zombies frag's blast (falloff, walls shield, limbs, the horde scatters), props, doors and
+  destructible buildings as a blast; Incendiary: a quarter of it as a blast and a fire patch that lights every zombie in
+  it (the special-ammo burn); Cryo: frozen solid for `strength` s, then slowed for `duration` s; Shock: zapped and
+  stunned; Gas: a cloud doing its damage over its duration, a quarter-second tick at a time; Lure: zombies within three
+  times its radius come to it (the horde controller's lure group) while it squeaks, then it goes off for its damage;
+  Heal: players in range healed (zombies untouched); Ducks: damage and every zombie in range launched.
+- **Clusters and aftershocks.** A cluster splits into its bomblets when it goes off (a fixed fan, no randomness), each
+  40% of the damage on 55% of the radius, going off as it lands; an aftershock hops up and goes off again at 60% of the
+  bang before it (bomblets don't stage).
+- **Cheap with hordes of hundreds.** Blasts reuse BlastZombies' loop; patches live in a fixed pool of 24 ticked four
+  times a second; at most 96 built grenades fly at once (more bomblets are skipped); at most 32 flashes are kept; the
+  fuse and patch ticks allocate nothing (self-test).
+- **The model** is the parts' boxes (`BuildModel`, like a gun's): drawn in flight at twice size (bomblets smaller), on
+  the workbench and in the part pictures. Every part touches the rest (self-test: 360 grenade models).
+
+**The workbench.** A **GRENADE SLOT** switch next to GUNS and MELEE SLOT (the sandbox saves it as `grenade=` in
+`workbench.txt`, a plan: the range has no grenades); a run's bench lists **Grenade** under your slots (Apply,
+Disassemble and Undo work as for the other slots). Step 1 picks a casing; the stat bars show damage, radius, throw
+range, bounce, how long it lasts, bomblets, aftershocks, extra grenades and weight against the 3 kg cap.
+
+**Proposed, open for the developer:** built grenades never hurt players (the stock frag hurts its thrower at half);
+the grenade build stays through a bleed-out; the mystery box doesn't offer grenade builds (no standard grenade
+builds yet); the numbers above.
+
 ## Example builds
 
 All of these are in the workbench (the first four fill the save slots on first run) and the self-test checks each one

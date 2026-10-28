@@ -53,7 +53,8 @@ Source/
               lists), InviteCode.cs, Stun.cs, Upnp.cs
   Zombies/    weapon builder: PartDef/PartFile/PartLibrary (part files), WeaponBuild, BuildRules (what fits), BuildStats
               (stat pipeline), BuildModel (part boxes -> gun mesh), BenchModel (workbench state/filters), StandardBuilds,
-              ActionMigration, ZombiesRules (Parts/Tables/ZombiesRules.json), RunTables, PushCart, MeleeStats
+              ActionMigration, ZombiesRules (Parts/Tables/ZombiesRules.json), RunTables, PushCart, MeleeStats, GrenadeStats (modular grenades;
+              thrown and set off in Source/Game/GameGrenades.cs)
   Render/     Renderer.cs, BodyModel.cs, PlayerRender, ZombieAnim.cs, Ragdolls, Arms/IK, SightLens, Terrain/Foliage/Prop/
               Building/Decal renderers, Mesh/, Sky/, FrenzyFx/
   UI/         Ui.cs (ImGui menus) + Ui*.cs per screen (UiWorkbench, UiLoadout, UiAppearance, UiAudioMixer, UiZombies...)
@@ -66,7 +67,8 @@ Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, 
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.
 Weapons/ Attachments/   one JSON per gun / attachment (Weapons/README.md)
 Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, Muzzle, Optic, Receiver, Splitter, Stock,
-                        Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod); Parts/Builds (140 standard builds);
+                        Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod; grenades: Casing, Fuse, Payload, GrenadeMod);
+                        Parts/Builds (140 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
