@@ -28,7 +28,7 @@ public sealed class ZombieTypeDef
 
     public string Label = "";
 
-    /// <summary>Off: the type never spawns (the bloater ships off until the developer says it isn't a ranged attack).</summary>
+    /// <summary>Off: the type never spawns (every shipped type is on; the bloater since 2026-10-28, when the developer ruled its 2 m burst melee range).</summary>
     public bool Enabled = true;
 
     /// <summary>Health: the round's health x this (the proposal), or <see cref="HealthFixed"/> when that is above 0 (the alternative: fixed per type, never scaling).</summary>
@@ -161,7 +161,7 @@ public sealed class ZombieTypeDef
             },
             new()
             {
-                Key = "bloater", Label = "Bloater", Enabled = false, HealthMult = 1.5f, Gait = (int)ZSpeed.Walk, SpeedMult = 0.9f, DamageMult = 0.8f,
+                Key = "bloater", Label = "Bloater", HealthMult = 1.5f, Gait = (int)ZSpeed.Walk, SpeedMult = 0.9f, DamageMult = 0.8f,
                 Width = 1.35f, Height = 1.1f, Skin = new Vector3(0.55f, 0.6f, 0.32f), Shirt = new Vector3(0.45f, 0.42f, 0.22f), Pants = new Vector3(0.24f, 0.22f, 0.14f),
                 VoicePitch = 0.75f, VoiceGain = 1.2f, PointsMult = 2f, Severs = false, FirstRound = 10, Weight = new RoundCurve([(10, 0.04f), (20, 0.08f)]), MaxAlive = 3,
                 BurstRadius = 2f, BurstDamage = 50,

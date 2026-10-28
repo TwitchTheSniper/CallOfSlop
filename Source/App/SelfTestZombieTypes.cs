@@ -7,8 +7,8 @@ namespace CallOfSlop;
 /// "Zombie types"): the shipped types load (and the hard rule holds: no type reaches past the melee limit, a type with a
 /// ranged key is refused), each type spawns with its health, gait, size and hit box, moves at its speed and attacks as
 /// specified (the brute's shove and its shrugged-off stun, the armoured one's plates shot off before the body, the
-/// grabber's hold and its release when hit, the pouncer's leap that still only hurts in reach, the bloater's burst off by
-/// default and in reach only when on), a wall climber climbs a wall its prey stands on, the boss rounds, the spawn mix
+/// grabber's hold and its release when hit, the pouncer's leap that still only hurts in reach, the bloater's burst only
+/// within its 2 m), a wall climber climbs a wall its prey stands on, the boss rounds, the spawn mix
 /// by round (walkers early, specials phased in and capped, packs), a client sees the types, no allocations and the tick
 /// cost of a mixed horde. Short seeded scenarios on Horde Test.
 /// </summary>
@@ -91,8 +91,8 @@ public static partial class SelfTest
                 Fail("the rules should ship the walker, brute, skitterer, wall climber, armoured, grabber, pouncer, bloater and juggernaut");
             if (worst > ZombieTypeDef.MaxReach || refused == null || farRefused == null || !same)
                 Fail("no type may reach past the melee limit, a ranged key must be refused, and the built-in defaults must match the shipped file");
-            if (types[T("bloater")].Enabled)
-                Fail("the bloater ships switched off (the developer's question: is a burst a ranged attack?)");
+            if (!types[T("bloater")].Enabled)
+                Fail("the bloater ships switched on (the developer, 2026-10-28)");
             foreach (var k in types)
                 if (k.Special == "none" && k.Key != "walker" && k.Key != "skitterer")
                     Fail($"{k.Key} has no special");
@@ -365,59 +365,51 @@ public static partial class SelfTest
             Clear();
         }
 
-        // ---- The bloater: off by default; on, it bursts only on whoever is right next to it ----
+        // ---- The bloater: ships on (the developer, 2026-10-28: a 2 m burst is melee range); it bursts only on whoever is within its radius ----
         {
             var zp = At(-9, -6);
             me.ImmuneUntil = 0;
             me.Health = World.MaxHealth;
-            var off = Z("bloater", zp);
+            var bi = T("bloater");
+            var kind = types[bi];
             var bursts0 = g.ZBursts;
-            using var gb = ZGame(0, ref now, tweak: r =>
-            {
-                r.FirstRoundDelay = 9999;
-                r.PowerFirstAt = 0;
-                r.PowerDropChance = 0f;
-                r.Types[r.TypeIndex("bloater")].Enabled = true;
-            }, onMap: map);
-            World.SetMap(map);
-            var mb = gb.Local!;
-            mb.ImmuneUntil = 0;
-            var tb = now;
-            var zb = gb.SelfTestSpawnTyped(spawner, gb.ZRules.TypeIndex("bloater"), tb);
-            zb.State = ZState.Chase;
-            zb.Window = -1;
-            zb.Area = arena;
-            zb.Sim = new MoveState { Position = zp, Grounded = true };
-            zb.PrevPos = zp;
-            mb.Teleport(zp + new Vector3(0, 0, -1.0f));
-            var t0 = tb;
+            var kills0 = g.ZP(me).Kills;
+            // Its swipe lands on a player 1 m off: it bursts and dies on the spot (no kill credited).
+            var zb = Z("bloater", zp);
+            me.Teleport(zp + new Vector3(0, 0, -1.0f));
+            var t0 = t;
             for (var i = 0; i < 240 && zb.Alive; i++)
             {
-                gb.SelfTestZombiesTick(tb += World.TickDt);
-                mb.Teleport(zp + new Vector3(0, 0, -1.0f));
+                g.SelfTestZombiesTick(t += World.TickDt);
+                me.Teleport(zp + new Vector3(0, 0, -1.0f));
             }
-            var burstDamage = World.MaxHealth - mb.Health;
-            var burstAt = tb - t0;
-            var kills = gb.ZP(mb).Kills;
-            // Shot dead from 4 m off: it bursts, and nobody that far off feels it.
-            mb.Health = World.MaxHealth;
-            var zb2 = gb.SelfTestSpawnTyped(spawner, gb.ZRules.TypeIndex("bloater"), tb);
-            zb2.State = ZState.Chase;
-            zb2.Window = -1;
-            zb2.Area = arena;
-            zb2.Sim = new MoveState { Position = zp, Grounded = true };
-            zb2.PrevPos = zp;
-            for (var i = 0; i < zb2.History.Length; i++)
-                zb2.History[i] = zp;
-            mb.Teleport(zp + new Vector3(0, 0, -4f));
-            gb.SelfTestLimbShot(mb, zb2, zp + new Vector3(0, 1.1f * zb2.Kind.Height, -0.4f * zb2.Kind.Width), 100000, tb);
-            var farDamage = World.MaxHealth - mb.Health;
-            Line($"bloater: shipped {(off.Kind.Enabled ? "ON" : "off")} (bursts {g.ZBursts - bursts0} when it hit in the default rules); switched on, its swipe burst at {burstAt:0.00} s for {burstDamage} on the player next to it (dead {!zb.Alive}, kills credited {kills}); shot dead from 4 m: bursts {gb.ZBursts}, the player 4 m off took {farDamage}");
-            if (off.Kind.Enabled || burstDamage <= 0 || zb.Alive || kills != 0 || gb.ZBursts != 2 || farDamage != 0)
-                Fail("the bloater ships off; on, its burst hurts only whoever is right next to it (never from a distance)");
-            me.ImmuneUntil = 1e9;
-            World.SetMap(map);
+            var burstDamage = World.MaxHealth - me.Health;
+            var burstAt = t - t0;
+            var kills = g.ZP(me).Kills - kills0;
             Clear();
+            // Shot dead with the player at 1.5 m (inside the radius) and at 4 m (outside): only the near one is hurt.
+            float Shot(float away)
+            {
+                me.Health = World.MaxHealth;
+                var z = Z("bloater", zp);
+                for (var i = 0; i < z.History.Length; i++)
+                    z.History[i] = zp;
+                me.Teleport(zp + new Vector3(0, 0, -away));
+                g.SelfTestLimbShot(me, z, zp + new Vector3(0, 1.1f * z.Kind.Height, -0.4f * z.Kind.Width), 100000, t, from: zp + new Vector3(3f, 1.1f * z.Kind.Height, 0));
+                var hurt = World.MaxHealth - me.Health;
+                Clear();
+                return hurt;
+            }
+            var nearDamage = Shot(1.5f);
+            var farDamage = Shot(4f);
+            Line($"bloater: shipped {(kind.Enabled ? "on" : "OFF")}, burst radius {kind.BurstRadius} m for {kind.BurstDamage}; its swipe burst at {burstAt:0.00} s for {burstDamage} on the player 1 m off (dead {!zb.Alive}, kills credited {kills}); "
+                 + $"shot dead: the player 1.5 m off took {nearDamage}, 4 m off took {farDamage}; bursts {g.ZBursts - bursts0}");
+            if (!kind.Enabled || kind.BurstRadius > 2f)
+                Fail("the bloater ships on, with a burst of at most 2 m (melee range)");
+            if (burstDamage <= 0 || zb.Alive || kills != 0 || nearDamage <= 0 || farDamage != 0 || g.ZBursts - bursts0 != 3)
+                Fail("a bloater's burst should hurt only whoever is within its radius (never from a distance)");
+            me.ImmuneUntil = 1e9;
+            me.Health = World.MaxHealth;
         }
 
         // ---- The wall climber: climbs the wall its prey stands on top of; a walker takes the long way ----
