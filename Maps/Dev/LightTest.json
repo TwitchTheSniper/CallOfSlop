@@ -382,42 +382,42 @@
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": -12.0,
    "z": -7.6,
    "y": 2.2
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": -8.0,
    "z": -7.6,
    "y": 2.2
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": -4.0,
    "z": -7.6,
    "y": 2.2
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": 0.0,
    "z": -7.6,
    "y": 2.2
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": 4.0,
    "z": -7.6,
    "y": 2.2
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": -12.0,
    "z": 3.6,
    "y": 2.2,
@@ -425,7 +425,7 @@
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": -6.0,
    "z": 3.6,
    "y": 2.2,
@@ -433,7 +433,7 @@
   },
   {
    "op": "Prop",
-   "name": "Wall Torch",
+   "name": "Iron Torch",
    "x": 4.0,
    "z": 3.6,
    "y": 2.2,
