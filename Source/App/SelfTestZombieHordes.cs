@@ -16,35 +16,6 @@ public static partial class SelfTest
 {
     private static readonly List<string> HordeNotes = new();
 
-    private static Dictionary<string, long> _diag0 = new();
-    private static Dictionary<string, long> DIAG_Snap()
-    {
-        var d = new Dictionary<string, long>();
-        if (!OperatingSystem.IsLinux()) return d;
-        foreach (var t in Directory.GetDirectories("/proc/self/task"))
-        {
-            try
-            {
-                var st = File.ReadAllText(t + "/stat");
-                var close = st.LastIndexOf(')');
-                var f = st[(close + 2)..].Split(' ');
-                var name = st[(st.IndexOf('(') + 1)..close];
-                d[Path.GetFileName(t) + ":" + name] = long.Parse(f[11]) + long.Parse(f[12]);
-            }
-            catch { }
-        }
-        return d;
-    }
-    private static void DIAG_Threads(Dictionary<string, long> d0, int count)
-    {
-        var d1 = DIAG_Snap();
-        foreach (var (k, v) in d1)
-        {
-            var dv = v - (d0.TryGetValue(k, out var o) ? o : 0);
-            if (dv > 0) Line($"DIAG {count}: thread {k} +{dv * 10} ms");
-        }
-    }
-
     private static void HLine(string s)
     {
         Line(s);
@@ -426,34 +397,39 @@ public static partial class SelfTest
         }
         Pose();
         rec.Reset();
-        // The posing and the sounds are each timed as the quickest of five blocks of 20 frames (2026-10-28,
-        // fix/client-zombie-cost). Every block does the same work: the pose staggering (PoseEvery: 1, 2 or 4 frames)
-        // repeats every 4 frames and the horde stands still, so a block can only be slowed by the machine, never sped
-        // up. One block timed once let a busy patch of a shared 2-vCPU Windows runner through (its thread cycle
-        // counter counts the core's stalls on the other hyperthread): 600 read 5.47 ms on one main run against
-        // 1.0 ms on Linux and a pass on every other main run of the same client code (SelfTestCpuRatio.cs: the same fix).
+        // The posing is timed once it has settled: blocks of 20 frames for at least 1.5 s and until the quickest block
+        // has not improved for 8 blocks (at most 100 blocks or 6 s), and the figure is that quickest block. Every block
+        // does the same work (the pose staggering repeats every 4 frames and the horde stands still), so a block is
+        // only ever slowed, never sped up, by anything but the JIT: the posing and drawing code (ZombieAnim.Targets,
+        // Solve, Draw, the recorder) passes through the runtime's tiers (tier 0, the PGO-instrumented tier, tier 1) as
+        // it gets hot, and the instrumented tier runs it about 10x slower than tier 1 (4.2 vs 0.35 ms a frame at 300
+        // on the cloud box, 2026-10-28). When the background tier-up lands depends on the machine (a 100 ms quiet
+        // period per tier, then a compile thread that needs ~0.4 s of CPU, starved on a busy 2-vCPU runner), so one
+        // block timed once read whichever tier the code was in: 600 read 5.47 ms on one main run on Windows (the
+        // instrumented tier) against 1.06 ms on the next, with the same code. The game plays on tier 1, so that is
+        // what is budgeted (SelfTestCpuRatio.cs settles the same way).
         var poseMs = double.MaxValue;
-        var procCpu0 = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds;
-        var poseSum = 0.0;
-        _diag0 = DIAG_Snap();
+        var poseBlocks = 0;
+        var poseFirst = 0.0;
+        var poseBest = 0;
         var poseWall = Stopwatch.StartNew();
-        var poseRuns = new double[5];
-        for (var b = 0; b < poseRuns.Length; b++)
+        while (poseBlocks < 100 && (poseWall.Elapsed.TotalSeconds < 1.5 || (poseBlocks - poseBest < 8 && poseWall.Elapsed.TotalSeconds < 6)))
         {
             var ms = ThreadCpu.TimeMs(() =>
             {
                 for (var k = 0; k < 20; k++)
                     Pose();
-            });
-            poseRuns[b] = ms / 20;
-            poseSum += ms;
-            poseMs = Math.Min(poseMs, ms / 20);
+            }) / 20;
+            if (poseBlocks == 0)
+                poseFirst = ms;
+            if (ms < poseMs * 0.97)
+            {
+                poseMs = ms;
+                poseBest = poseBlocks;
+            }
+            poseBlocks++;
         }
-        // (for the log: the other threads' CPU while this one posed, and the wall time; a busy process or machine shows here)
-        var poseWallMs = poseWall.Elapsed.TotalMilliseconds;
-        DIAG_Threads(_diag0, count);
-        var otherCpuMs = Process.GetCurrentProcess().TotalProcessorTime.TotalMilliseconds - procCpu0 - poseSum;
-        var draws = rec.Count / 100.0;
+        var draws = rec.Count / (20.0 * poseBlocks);
         var poseAlloc = GC.GetAllocatedBytesForCurrentThread();
         Pose();
         poseAlloc = GC.GetAllocatedBytesForCurrentThread() - poseAlloc;
@@ -467,7 +443,7 @@ public static partial class SelfTest
         var clientMs = readMs * 30 / 60 + poseMs + soundMs; // per 60 Hz frame: half a snapshot read, the posing and drawing, the sounds
         HLine($"horde {count}: {g.AliveZombies} alive, server tick {meanCpu:0.00} ms CPU mean, worst {worstCpu:0.00} ms (Windows thread cycles: {cpuTimer.WorstText}), AI {g.ZAiMs / Math.Max(1, g.ZAiTicks):0.00} ms; "
               + $"{alloc / ticks} bytes allocated per tick; ZEnts {bytesPerSec / 1024:0.0} KB/s per client (biggest {biggest} bytes, the client knows {c.Horde.Count}; {nearNow} within {Game.ZEntNear * 0.8f:0} m at the end, the longest a near one waited {nearAgeWorst} snapshots); "
-              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, {poseAlloc} bytes allocated, blocks {string.Join("/", poseRuns.Select(r => r.ToString("0.00")))} ms, other threads {otherCpuMs:0} ms CPU in {poseWallMs:0} ms wall, sounds {soundMs:0.000} ms); {g.HordeSummary()}");
+              + $"client {clientMs:0.00} ms a frame (read {readMs:0.000} ms a snapshot, pose+draw {poseMs:0.00} ms, {draws:0} boxes, {poseAlloc} bytes allocated; settled in {poseBlocks} blocks of 20 frames, the first {poseFirst:0.00} ms, the quickest block {poseBest + 1}, {poseWall.Elapsed.TotalSeconds:0.0} s; sounds {soundMs:0.000} ms); {g.HordeSummary()}");
         if (g.AliveZombies != count)
             Fail($"horde {count}: zombies died or vanished in the scripted horde ({g.AliveZombies} alive)");
         if (alloc > 0)
