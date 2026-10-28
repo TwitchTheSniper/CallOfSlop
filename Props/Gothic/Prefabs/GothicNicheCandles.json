@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Niche Candles",
+  "category": "Gothic",
+  "description": "A Gothic Wall Niche with a lit Candle Cluster on its shelf (back at -Z). It lights lit maps.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"use": "Gothic Wall Niche"},
+    {"use": "Candle Cluster", "pos": [0, 0.55, 0.16]}
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Chequered Floor Band",
+  "category": "Gothic",
+  "description": "A 3 m band of light and dark stone squares between borders, let into the floor (lay them end to end).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [3.0, 0.012, 0.08], "offset": [0, 0.006, 0.46], "color": "#2c2a27"},
+    {"size": [3.0, 0.012, 0.08], "offset": [0, 0.006, -0.46], "color": "#2c2a27"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-1.25, 0.005, -0.21], "color": "#8e887c"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-1.25, 0.005, 0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-0.75, 0.005, -0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-0.75, 0.005, 0.21], "color": "#8e887c"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-0.25, 0.005, -0.21], "color": "#8e887c"},
+    {"size": [0.5, 0.01, 0.42], "offset": [-0.25, 0.005, 0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [0.25, 0.005, -0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [0.25, 0.005, 0.21], "color": "#8e887c"},
+    {"size": [0.5, 0.01, 0.42], "offset": [0.75, 0.005, -0.21], "color": "#8e887c"},
+    {"size": [0.5, 0.01, 0.42], "offset": [0.75, 0.005, 0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [1.25, 0.005, -0.21], "color": "#46433d"},
+    {"size": [0.5, 0.01, 0.42], "offset": [1.25, 0.005, 0.21], "color": "#8e887c"}
+  ]
+}
