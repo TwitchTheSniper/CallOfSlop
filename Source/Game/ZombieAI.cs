@@ -237,17 +237,20 @@ public sealed partial class Game
             if (!FreeSpawnSpot(sp.At, spawned, out var at))
                 continue; // crowded all round
             _zSpawnedAt[spawned] = at;
-            SpawnZombie(zm, pick, now, at);
+            var type = PickZombieType(Math.Max(1, ZRound)); // the boss when due, else the round's weighted mix (ZombieTypes.cs)
+            SpawnZombie(zm, pick, now, at, type);
             _zSpawnerReady[pick] = now + ZRules.SpawnerCooldown;
             _zToSpawn--;
             _zAlive++;
             spawned++;
+            if (ZRules.TypeAt(type).Pack > 0)
+                SpawnPack(zm, pick, now, ZRules.TypeAt(type), type, ref spawned, cap); // a pack comes out together
         }
         _zNextSpawn = now + ZRules.SpawnDelayFor(ZRound);
     }
 
-    /// <summary>Server: a new zombie at spawner <paramref name="spawner"/> (health and speed from the round).</summary>
-    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now, Vector3? at = null)
+    /// <summary>Server: a new zombie at spawner <paramref name="spawner"/> (health and speed from the round; its type <paramref name="type"/>, -1 for the round's roll: ZombieTypes.cs).</summary>
+    public Zombie SpawnZombie(ZombiesMap zm, int spawner, double now, Vector3? at = null, int type = -1)
     {
         var sp = zm.Spawners[spawner];
         var pos = at ?? sp.At;
@@ -263,6 +266,7 @@ public sealed partial class Game
         z.StateAt = now;
         z.SpawnTick = ServerTick;
         ZRand(); // (the old first path search delay: keeps the seeded stream in step)
+        TypeSetup(z, type < 0 ? PickZombieType(Math.Max(1, ZRound)) : type, now); // its type's health, gait and plates (ZombieTypes.cs)
         z.MaxHealth = z.Health;
         InitLimbs(z); // per-limb health (ZombieLimbs.cs)
         z.Sim = new MoveState { Position = pos, Grounded = true };
@@ -325,6 +329,7 @@ public sealed partial class Game
             alive++;
         }
         ZBlockGatherPlayers(); // the standing players' bodies, which walking zombies are held off (ZombieBlock.cs)
+        TypesCount(); // alive by type (the spawn caps; ZombieTypes.cs)
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
         ClimbTick(); // a siege up a climbable face: the pyramid's places (ZombiesClimb.cs)
         foreach (var z in Horde)
@@ -346,6 +351,7 @@ public sealed partial class Game
             z.History[ServerTick % z.History.Length] = z.Sim.Position + ZombieHitShift(z, ServerTick, z.Sim.Position);
         }
         ZBlockBuild(client: false); // the bodies players are pushed out of this tick (ZombieBlock.cs)
+        TypesTickPlayers(now); // grabbers' holds on players (ZombieTypes.cs)
         if (alive > 0)
         {
             ZAiMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -359,13 +365,23 @@ public sealed partial class Game
         ZSpeed.Sprint => ZRules.SprintSpeed,
         ZSpeed.Run => ZRules.RunSpeed,
         _ => ZRules.WalkSpeed,
-    }) * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f); // plasma slows (ZombiesAmmoEffects.cs); a lost leg limps, both crawl (ZombieLimbs.cs)
+    }) * z.Kind.SpeedMult * (z.SlowUntil > _zNow ? ZRules.SlowMult : 1f) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f); // its type's speed (ZombieTypes.cs); plasma slows (ZombiesAmmoEffects.cs); a lost leg limps, both crawl (ZombieLimbs.cs)
 
     private void ThinkZombie(ZombiesMap zm, Zombie z, double now)
     {
-        if (now < z.StunnedUntil && z.State != ZState.Scaling)
+        if (now < z.StunnedUntil && z.State != ZState.Scaling && !z.Kind.StunImmune) // (a brute shrugs stuns off: ZombieTypes.cs)
         {
             MoveZombie(z, z.Yaw, false, false);
+            return;
+        }
+        if (z.Grabbing)
+        {
+            GrabTick(z, now); // a grabber holding its prey (ZombieTypes.cs)
+            return;
+        }
+        if (z.PounceUntil > now)
+        {
+            PounceTick(z, now); // a pouncer in the air (ZombieTypes.cs)
             return;
         }
         if (_climbEnt >= 0 && z.Window >= 0 && z.State is ZState.ToWindow or ZState.Tearing)
@@ -373,7 +389,10 @@ public sealed partial class Game
         switch (z.State)
         {
             case ZState.Scaling:
-                ScaleMove(zm, z, now);
+                if (z.FreeClimb)
+                    FreeClimbMove(zm, z, now); // a wall climber on a wall of its own (ZombieTypes.cs)
+                else
+                    ScaleMove(zm, z, now);
                 return;
             case ZState.Rising:
                 MoveZombie(z, z.Yaw, false, false);
@@ -391,7 +410,7 @@ public sealed partial class Game
                 if (front && Flat(w.Outside - z.Position) < 0.35f)
                 {
                     SetZState(z, ZState.Tearing, now);
-                    z.NextTear = now + ZRules.BoardTearSeconds * (0.7 + 0.3 * ZRand());
+                    z.NextTear = now + TearSecondsFor(z) * (0.7 + 0.3 * ZRand()); // (a brute tears fast: ZombieTypes.cs)
                     MoveZombie(z, w.Yaw, false, false);
                     return;
                 }
@@ -441,7 +460,7 @@ public sealed partial class Game
                 if (now >= z.NextTear && z.Window < ZBoards.Length && ZBoards[z.Window] > 0)
                 {
                     ZBoards[z.Window]--;
-                    z.NextTear = now + ZRules.BoardTearSeconds;
+                    z.NextTear = now + TearSecondsFor(z);
                     Audio.Effect3D(Sfx.BreakWood, w.Opening.Center, 0.9f, MixBus.Zombies);
                 }
                 return;
@@ -605,6 +624,8 @@ public sealed partial class Game
             }
         }
 
+        if (target != null && !lured && (TryPounce(z, target, now) || TryFreeClimb(zm, z, target, now)))
+            return; // a pouncer's leap, a wall climber's wall (ZombieTypes.cs)
         var p = ai.Steer(z, goal, goalNode, out var jump);
         var to = p - z.Position;
         var yaw = MathF.Atan2(to.X, -to.Z);
@@ -686,8 +707,18 @@ public sealed partial class Game
             var reach = ZombieReachFor(z) + (backToWindow ? 0.35f : 0f) + 0.45f; // a little slack: you can still back away during the windup
             if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < ZombieReachHeight(z, true))
             {
-                ZombieHurt(t, ZombieDamageFor(z), now, z.Position); // (one arm, a bite or a crawler hurts less: ZombieLimbs.cs)
+                ZombieHurt(t, ZombieDamageFor(z), now, z.Position); // (one arm, a bite or a crawler hurts less: ZombieLimbs.cs; its type's damage: ZombieTypes.cs)
                 Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f, MixBus.Zombies);
+                // The type's special on a landed hit (ZombieTypes.cs): a brute's shove, a grabber's hold, a bloater's burst.
+                if (z.Kind.Knockback > 0 && IsStanding(t))
+                    TypeKnock(z, t);
+                if (z.Kind.GrabSeconds > 0 && !backToWindow && IsStanding(t))
+                    StartGrab(z, t, now);
+                if (z.Kind.BurstRadius > 0)
+                {
+                    TypeBurstAndDie(z, now);
+                    return;
+                }
             }
         }
         if (backToWindow && z.Window >= 0)
@@ -730,8 +761,9 @@ public sealed partial class Game
             {
                 dist = t;
                 hit = z;
-                head = World.IsHeadshot(at, ZombieStance(z), z.Yaw, o + d * t);
-                _zLastLimb = head ? -1 : LimbAt(z, at, z.Yaw, o + d * t);
+                var hitAt = ZombieUnscale(z, at, o + d * t); // (a big or small type: the hit in a plain body's frame; ZombieLimbs.cs)
+                head = World.IsHeadshot(at, ZombieStance(z), z.Yaw, hitAt);
+                _zLastLimb = head ? -1 : LimbAt(z, at, z.Yaw, hitAt);
             }
         }
         if (hit != null)
@@ -745,6 +777,12 @@ public sealed partial class Game
     /// <summary>Server: one pellet's damage on a zombie, added up per trigger pull (one damage event per zombie, like on players).</summary>
     private void ZombieShotAdd(Zombie z, float damage, bool head)
     {
+        if (z.Plates != 0 && PlateAbsorb(z, head ? 0 : _zLastLimb < 0 ? 1 : -1, damage, _zNow))
+        {
+            _zShotDamage.TryAdd(z, 0f); // the plate took it (a hit, no damage: ZombieTypes.cs)
+            _zShotRay.TryAdd(z, _zLastRay);
+            return;
+        }
         _zShotDamage[z] = _zShotDamage.GetValueOrDefault(z) + damage * (head ? ZRules.ZombieHeadMult : 1f);
         _zShotRay.TryAdd(z, _zLastRay);
         if (!head)
@@ -801,6 +839,8 @@ public sealed partial class Game
             amount = Math.Max(amount, z.Health);
         z.Health -= amount;
         attacker.LastCombatTime = now;
+        if (z.Grabbing && !dot)
+            ReleaseGrab(z, now); // any hit frees whoever it holds (ZombieTypes.cs)
         if (z.Health > 0)
         {
             if (!dot)
@@ -814,7 +854,11 @@ public sealed partial class Game
         }
         z.Health = 0;
         z.KilledByHead = head;
+        if (z.Grabbing)
+            ReleaseGrab(z, now);
         SetZState(z, ZState.Dead, now);
+        if (z.Kind.BurstRadius > 0)
+            TypeBurst(z, now); // a bloater bursts when it dies (ZombieTypes.cs)
         var zp = ZP(attacker);
         zp.Kills++;
         if (head)
@@ -822,7 +866,7 @@ public sealed partial class Game
         attacker.Kills++;
         FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
         var killPoints = melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints; // Marksman Malt
-        EarnPoints(attacker, killPoints, now);
+        EarnPoints(attacker, (int)MathF.Round(killPoints * z.Kind.PointsMult), now); // (more for a brute: ZombieTypes.cs)
         RollDrop(z.Position, ZRound, now, PerkMult(zp, static d => d.PartDrops)); // Salvage Stout
         RollPowerUp(z.Position, now, zp); // ZombiesPowerUps.cs (Windfall Soda)
         Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);
@@ -868,9 +912,11 @@ public sealed partial class Game
         {
             var (z, dist) = list[li];
             hitFlags |= 1;
-            if (stun > 0)
+            if (stun > 0 && !z.Kind.StunImmune)
                 z.StunnedUntil = Math.Max(z.StunnedUntil, now + stun);
             var amount = (int)MathF.Round(damage);
+            if (z.Plates != 0 && PlateAbsorb(z, 1, damage, now))
+                amount = 0; // the chest plate takes a swing (ZombieTypes.cs)
             var killed = DamageZombie(attacker, z, amount, false, melee: true, now);
             if (killed)
                 hitFlags |= 4;

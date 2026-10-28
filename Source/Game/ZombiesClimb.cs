@@ -356,13 +356,17 @@ public sealed partial class Game
         var p = z.Sim.Position;
         if (z.VaultAt >= 0 && now - z.VaultAt > c.VaultSeconds * 0.5)
             return; // (over the top already: it lands inside)
-        var height = MathF.Max(0, p.Y - _climbWall.Y);
+        var free = z.FreeClimb; // a wall climber on a wall of its own (ZombieTypes.cs): the same fall, off its own wall
+        var outDir = free ? z.ClimbOut : _climbOut;
+        var height = MathF.Max(0, p.Y - (free ? z.ClimbFrom.Y : _climbWall.Y));
         z.VaultAt = -1;
         z.ScaleRank = -1;
         z.ScaleClimber = false;
-        z.SiegeOut = true;
-        z.Sim.Position = p + _climbOut * 0.35f;
-        z.Sim.Velocity = _climbOut * c.FallPush + new Vector3(0, 1f, 0);
+        z.SiegeOut = !free;
+        z.FreeClimb = false;
+        z.ClimbRetryAt = now + 3.0;
+        z.Sim.Position = p + outDir * 0.35f;
+        z.Sim.Velocity = outDir * c.FallPush + new Vector3(0, 1f, 0);
         z.Sim.Grounded = false;
         z.StunnedUntil = Math.Max(z.StunnedUntil, now + MathF.Sqrt(2 * height / 9.8f) + c.FallStun);
         z.Hm.Node = -1;

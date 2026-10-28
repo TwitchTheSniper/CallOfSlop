@@ -332,5 +332,56 @@
     "rewardParts": 2,
     "rewardRoundBonus": 10,
     "rewardPowerUp": "maxAmmo"
+  },
+  "types": {
+    "note": "PROPOSED zombie types (docs/zombies/ZOMBIES-MODE.md, Zombie types; Source/Zombies/ZombieTypes.cs, Source/Game/ZombieTypes.cs). Hard rule: NO ranged attacks; every type has to reach you (no type may reach past 2.2 m, the loader refuses one that does). Each type: health (healthMult x the round's health, or healthFixed; the developer's question: per-round scaling with multipliers is what ships), gait (walk / run / sprint, or mix for the round's roll) and speedMult, damageMult / reachMult / windupMult / swingMult, size (scale, or width and height), colours (skin, shirt, pants), voicePitch / voiceGain, pointsMult on kill points, limbHealthMult and severs, firstRound, weight by round (its share of each spawn's roll against the walker's 1), maxAlive at once (0: no cap), pack (more of it from the same spawner). Specials: tearMult (boards), knockback + stunImmune (brute), armour (a helmet and a chest plate of that health each, shot off before the body; limbs are bare), grabSeconds + grabDamage (a grabber holds you until it is hit), pounceRange / pounceSpeed / pounceCooldown (a leap, then a swipe where it lands), climbHeight / climbSpeed (a wall climber scales any wall), burstRadius / burstDamage (the bloater: OFF until the developer rules it isn't ranged), bossEvery (one boss every N rounds, on top of the round). The walker is type 0 and always on.",
+    "walker": { "label": "Walker", "weight": [[1, 1]] },
+    "brute": {
+      "label": "Brute", "healthMult": 5, "gait": "walk", "speedMult": 0.9, "damageMult": 1.6, "reachMult": 1.3, "windupMult": 1.3, "swingMult": 1.4,
+      "width": 1.45, "height": 1.5, "skin": "#4d5c3d", "shirt": "#40332b", "pants": "#242126", "voicePitch": 0.6, "voiceGain": 1.5,
+      "pointsMult": 3, "limbHealthMult": 2.5, "firstRound": 6, "weight": [[6, 0.04], [12, 0.1], [25, 0.16]], "maxAlive": 4,
+      "tearMult": 3, "knockback": 7, "stunImmune": true
+    },
+    "skitterer": {
+      "label": "Skitterer", "healthMult": 0.4, "gait": "sprint", "speedMult": 1.05, "damageMult": 0.5, "reachMult": 0.9, "windupMult": 0.7, "swingMult": 0.7,
+      "width": 0.75, "height": 0.7, "skin": "#85804d", "shirt": "#664233", "pants": "#382e24", "voicePitch": 1.4, "voiceGain": 0.8,
+      "pointsMult": 0.75, "limbHealthMult": 0.6, "firstRound": 4, "weight": [[4, 0.08], [10, 0.2], [20, 0.25]], "maxAlive": 24, "pack": 3
+    },
+    "climber": {
+      "label": "Wall climber", "healthMult": 0.25, "gait": "run", "speedMult": 1.1, "damageMult": 0.8,
+      "width": 0.85, "height": 0.9, "skin": "#736b80", "shirt": "#332e3d", "pants": "#292633", "voicePitch": 1.2, "voiceGain": 0.9,
+      "pointsMult": 1.25, "limbHealthMult": 0.5, "firstRound": 8, "weight": [[8, 0.05], [15, 0.12], [25, 0.15]], "maxAlive": 8,
+      "climbHeight": 14, "climbSpeed": 2.2
+    },
+    "armoured": {
+      "label": "Armoured", "healthMult": 1.5, "gait": "run", "speedMult": 0.85, "damageMult": 1.2, "reachMult": 1.1, "windupMult": 1.1,
+      "width": 1.1, "height": 1.1, "skin": "#57704d", "shirt": "#4d5257", "pants": "#33383d", "voicePitch": 0.85, "voiceGain": 1.1,
+      "pointsMult": 2, "limbHealthMult": 1.2, "firstRound": 10, "weight": [[10, 0.04], [18, 0.1], [30, 0.14]], "maxAlive": 6,
+      "armour": 300
+    },
+    "grabber": {
+      "label": "Grabber", "healthMult": 1.2, "gait": "run", "speedMult": 0.95, "damageMult": 0.5, "reachMult": 1.15,
+      "width": 1.0, "height": 1.1, "skin": "#806b47", "shirt": "#5c3824", "pants": "#33291f", "voicePitch": 0.9, "voiceGain": 1.1,
+      "pointsMult": 2, "firstRound": 12, "weight": [[12, 0.04], [20, 0.08], [30, 0.12]], "maxAlive": 4,
+      "grabSeconds": 4, "grabDamage": 12
+    },
+    "pouncer": {
+      "label": "Pouncer", "healthMult": 0.6, "gait": "run", "speedMult": 1.15, "damageMult": 1.1, "reachMult": 1.1, "windupMult": 0.8,
+      "width": 0.9, "height": 0.95, "skin": "#4d806b", "shirt": "#2e4238", "pants": "#242e29", "voicePitch": 1.15,
+      "pointsMult": 1.5, "limbHealthMult": 0.8, "firstRound": 14, "weight": [[14, 0.04], [22, 0.08], [30, 0.12]], "maxAlive": 6,
+      "pounceRange": 6, "pounceSpeed": 9, "pounceCooldown": 4
+    },
+    "bloater": {
+      "label": "Bloater", "enabled": false, "healthMult": 1.5, "gait": "walk", "speedMult": 0.9, "damageMult": 0.8,
+      "width": 1.35, "height": 1.1, "skin": "#8c9952", "shirt": "#736b38", "pants": "#3d3824", "voicePitch": 0.75, "voiceGain": 1.2,
+      "pointsMult": 2, "severs": false, "firstRound": 10, "weight": [[10, 0.04], [20, 0.08]], "maxAlive": 3,
+      "burstRadius": 2, "burstDamage": 50
+    },
+    "juggernaut": {
+      "label": "Juggernaut", "healthMult": 20, "gait": "walk", "speedMult": 0.8, "damageMult": 2.5, "reachMult": 1.6, "windupMult": 1.5, "swingMult": 1.6,
+      "width": 1.8, "height": 2.0, "skin": "#424738", "shirt": "#4d1f1a", "pants": "#1a1a1f", "voicePitch": 0.5, "voiceGain": 2,
+      "pointsMult": 10, "severs": false, "firstRound": 10, "weight": [[1, 0]], "maxAlive": 1,
+      "tearMult": 4, "knockback": 9, "stunImmune": true, "bossEvery": 10
+    }
   }
 }

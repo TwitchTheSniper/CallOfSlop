@@ -31,6 +31,39 @@ public sealed partial class Ui
         return true;
     }
 
+    /// <summary>
+    /// Zombie types on the HUD (Source/Game/ZombieTypes.cs): a boss round's health bar top centre while the boss lives,
+    /// and "HELD" with how to get free while a grabber has you.
+    /// </summary>
+    private void DrawZombieTypesHud(Game game, Player me, double now, float2 pos, float2 size, float pad)
+    {
+        if (game.ZBoss() is { } boss)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + pad + 70 * _scale), ImGuiCond.Always, new float2(0.5f, 0));
+            if (ImGui.Begin("##zboss"u8, Overlay))
+            {
+                ImGui.PushFont(default, 26);
+                ImGuiSafe.TextColored(ZRed, boss.Kind.Label.ToUpperInvariant());
+                ImGui.PopFont();
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram, ZRed);
+                ImGui.ProgressBar(game.ZombieHealthFraction(boss), new float2(420 * _scale, 14 * _scale), ""u8);
+                ImGui.PopStyleColor();
+            }
+            ImGui.End();
+        }
+        if (game.ZPlayers.TryGetValue(me.Id, out var zp) && zp.Held && ((int)(now * 3) & 1) == 0)
+        {
+            ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.62f), ImGuiCond.Always, new float2(0.5f, 0.5f));
+            if (ImGui.Begin("##zheld"u8, Overlay))
+            {
+                ImGui.PushFont(default, 30);
+                ImGuiSafe.TextColored(ZRed, "HELD - shoot or hit the grabber to get free");
+                ImGui.PopFont();
+            }
+            ImGui.End();
+        }
+    }
+
     /// <summary>The match bar during a ready-up break: "Break: 1/2 ready" (and the fallback's clock).</summary>
     private static string ReadyBarText(Game game)
     {
@@ -132,6 +165,7 @@ public sealed partial class Ui
             }
             ImGui.End();
         }
+        DrawZombieTypesHud(game, me, now, pos, size, pad); // a boss's health bar, a grabber's hold (ZombieTypes.cs)
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)

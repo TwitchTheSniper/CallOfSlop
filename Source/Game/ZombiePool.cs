@@ -91,6 +91,20 @@ public sealed partial class Zombie
         LimbHp = default;
         LimbsShown = 0;
 
+        // ZombieTypes.cs
+        Type = 0;
+        Kind = ZombieTypeDef.DefaultWalker;
+        Plates = 0;
+        PlateHpHead = PlateHpChest = 0;
+        Grabbing = false;
+        GrabUntil = GrabNext = 0;
+        PounceUntil = PounceReadyAt = 0;
+        PounceYaw = 0;
+        FreeClimb = false;
+        ClimbOut = default;
+        ClimbTopY = 0;
+        ClimbRetryAt = 0;
+
         // Source/Audio/ZombieSounds.cs
         HeadHitTick = -1e9;
         VoxInit = VoxDead = false;

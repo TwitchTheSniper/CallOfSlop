@@ -871,6 +871,61 @@ public static class ZombieAnim
     /// Moves a whole pose by <paramref name="d"/> (world): animation level of detail reuses a far zombie's pose for a frame
     /// or three and only carries it along with the body (<see cref="PoseEvery"/>).
     /// </summary>
+    /// <summary>
+    /// Scales a solved pose about its feet (<paramref name="feet"/>): <paramref name="width"/> across (x and z),
+    /// <paramref name="height"/> up (a zombie type's size, Source/Zombies/ZombieTypes.cs). Every frame's basis and
+    /// origin scale with it, so the boxes drawn in the frames come out bigger or smaller and so do the joints. Nothing when both are 1.
+    /// </summary>
+    public static void Scale(ref ZombiePose p, Vector3 feet, float width, float height)
+    {
+        if (width == 1f && height == 1f)
+            return;
+        var s = Matrix4x4.CreateTranslation(-feet) * Matrix4x4.CreateScale(width, height, width) * Matrix4x4.CreateTranslation(feet);
+        p.Root *= s;
+        p.Upper *= s;
+        p.Head *= s;
+        p.ArmUpR *= s;
+        p.ArmUpL *= s;
+        p.ArmLoR *= s;
+        p.ArmLoL *= s;
+        p.LegUpR *= s;
+        p.LegUpL *= s;
+        p.LegLoR *= s;
+        p.LegLoL *= s;
+        p.ShoulderR = Vector3.Transform(p.ShoulderR, s);
+        p.ShoulderL = Vector3.Transform(p.ShoulderL, s);
+        p.ElbowR = Vector3.Transform(p.ElbowR, s);
+        p.ElbowL = Vector3.Transform(p.ElbowL, s);
+        p.HandR = Vector3.Transform(p.HandR, s);
+        p.HandL = Vector3.Transform(p.HandL, s);
+        p.HipR = Vector3.Transform(p.HipR, s);
+        p.HipL = Vector3.Transform(p.HipL, s);
+        p.KneeR = Vector3.Transform(p.KneeR, s);
+        p.KneeL = Vector3.Transform(p.KneeL, s);
+        p.FootR = Vector3.Transform(p.FootR, s);
+        p.FootL = Vector3.Transform(p.FootL, s);
+    }
+
+    /// <summary>Armour plates (an armoured type, Source/Game/ZombieTypes.cs): a helmet over the head (bit 0) and a chest plate on the torso (bit 1), dull steel. Returns the boxes drawn.</summary>
+    public static int DrawPlates(Renderer g, in ZombiePose p, byte plates)
+    {
+        var n = 0;
+        var steel = new Vector3(0.42f, 0.43f, 0.46f);
+        if ((plates & 1) != 0)
+        {
+            g.Draw(Matrix4x4.CreateScale(0.3f, 0.2f, 0.32f) * Matrix4x4.CreateTranslation(0, 0.93f, -0.03f) * p.Head, steel);
+            g.Draw(Matrix4x4.CreateScale(0.32f, 0.06f, 0.36f) * Matrix4x4.CreateTranslation(0, 0.83f, -0.05f) * p.Head, steel * 0.85f);
+            n += 2;
+        }
+        if ((plates & 2) != 0)
+        {
+            g.Draw(Matrix4x4.CreateScale(0.42f, 0.4f, 0.12f) * Matrix4x4.CreateTranslation(0, 0.4f, -0.14f) * p.Upper, steel);
+            g.Draw(Matrix4x4.CreateScale(0.46f, 0.08f, 0.3f) * Matrix4x4.CreateTranslation(0, 0.58f, 0) * p.Upper, steel * 0.85f);
+            n += 2;
+        }
+        return n;
+    }
+
     public static void Shift(ref ZombiePose p, Vector3 d)
     {
         static void M(ref Matrix4x4 m, Vector3 d)
