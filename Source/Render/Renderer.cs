@@ -10,10 +10,10 @@ namespace CallOfSlop;
 /// Matrices are System.Numerics (row-vector, M = S * R * T) uploaded untransposed, which GLSL
 /// reads as the transpose, so "uMVP * vec4(p, 1)" in the shader is correct.
 /// </summary>
-public sealed unsafe class Renderer
+public sealed unsafe partial class Renderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         layout(location = 0) in vec3 aPos;
         layout(location = 1) in vec3 aNormal;
         uniform mat4 uMVP;
@@ -30,7 +30,7 @@ public sealed unsafe class Renderer
 
     // uMode: 0 = lit, 1 = lit + world-space texture (layer uLayer of uTex), 2 = unlit (HUD, tracers, muzzle flash)
     // Sun, ambient and fog come from Lighting.Glsl (shared with the foliage renderer).
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + """
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + """
 
         in vec3 vWorld;
         in vec3 vNormal;
@@ -119,13 +119,14 @@ public sealed unsafe class Renderer
     public void Init()
     {
         // --- Shaders -----------------------------------------------------------
-        var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-        var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+        var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+        var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
 
         _program = CreateProgram();
         Native.glAttachShader(_program, vs);
         Native.glAttachShader(_program, fs);
         Native.glLinkProgram(_program);
+        GlDebug.Label(GL_PROGRAM, _program.Id, "Renderer");
 
         int linked;
         Native.glGetProgramiv(_program, GL_LINK_STATUS, &linked);
@@ -185,6 +186,7 @@ public sealed unsafe class Renderer
 
     public void BeginFrame(int width, int height, Vector3 clear)
     {
+        StreamRing.Frame++; // persistent instance rings move to their next segment (4.6 path)
         Viewport(0, 0, width, height);
         Native.glClearColor(clear.X, clear.Y, clear.Z, 1f);
         Clear(GlClearBit.Color | GlClearBit.Depth);
@@ -295,12 +297,26 @@ public sealed unsafe class Renderer
         Native.glUniform3f(_iLocCam, cam.X, cam.Y, cam.Z);
         Native.glUniform3f(_iLocFog, FogColor.X, FogColor.Y, FogColor.Z);
         Native.glUniform2f(_iLocFogRange, FogRange.X, FogRange.Y);
-        _instVao.Bind();
-        Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
-        Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
-        fixed (float* p = _batch)
-            Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
-        Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+        PerfCounters.Draw(36, _batchCount); // the perf window's counters (Source/Perf/PerfCounters.cs)
+        if (RenderCaps.PersistentBuffers && Ring() is { } ring)
+        {
+            // 4.6 path: straight into this frame's segment of the persistent ring, drawn from its base instance
+            // (written first: a write can grow the ring, and the VAO must point at the buffer it ended up in).
+            int first;
+            fixed (float* p = _batch)
+                first = ring.Write(p, _batchCount, BatchFloats);
+            RingVao(ring);
+            Native.glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 36, _batchCount, (uint)first);
+        }
+        else
+        {
+            _instVao.Bind();
+            Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
+            Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW); // orphan: no stall on the last copy
+            fixed (float* p = _batch)
+                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, _batchCount * BatchFloats * sizeof(float), p);
+            Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36, _batchCount);
+        }
         BatchDraws++;
         BatchBoxes += _batchCount;
         _batchCount = 0;
@@ -308,12 +324,72 @@ public sealed unsafe class Renderer
         _vao.Bind();
     }
 
+    private StreamRing? _ring;
+    private GlVertexArray _ringVao;
+    private int _ringGen = -1;
+    private bool _ringBroken;
+
+    /// <summary>The persistent instance ring (made on first use), or null if it can't be made (then the batch takes the 4.1 path's orphaned buffer).</summary>
+    private StreamRing? Ring()
+    {
+        if (_ringBroken)
+            return null;
+        try
+        {
+            return _ring ??= new StreamRing(BatchFloats * sizeof(float), BatchMax * 2, "Renderer.batchRing");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[render] persistent instance ring off: {ex.Message}");
+            _ringBroken = true;
+            return null;
+        }
+    }
+
+    /// <summary>Binds the ring's VAO, made or re-pointed when the ring was (re)made.</summary>
+    private void RingVao(StreamRing ring)
+    {
+        if (_ringVao.Id == 0)
+        {
+            _ringVao = GenVertexArray();
+            GlDebug.Label(GL_VERTEX_ARRAY, _ringVao.Id, "Renderer.batchRing");
+        }
+        _ringVao.Bind();
+        if (_ringGen != ring.Generation)
+        {
+            BoxInstanceAttributes(ring.Buffer);
+            _ringGen = ring.Generation;
+        }
+    }
+
+    /// <summary>The instanced box VAO's attributes: the cube from the box buffer, the instances from <paramref name="instances"/> (bound VAO).</summary>
+    private void BoxInstanceAttributes(GlBuffer instances)
+    {
+        Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
+        const int stride = 6 * sizeof(float);
+        Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
+        EnableVertexAttribArray(0);
+        Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
+        EnableVertexAttribArray(1);
+        Native.glBindBuffer(GL_ARRAY_BUFFER, instances);
+        const int istride = BatchFloats * sizeof(float);
+        for (uint a = 0; a < 5; a++)
+        {
+            Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, istride, (void*)(a * 4 * sizeof(float)));
+            EnableVertexAttribArray(2 + a);
+            Native.glVertexAttribDivisor(2 + a, 1);
+        }
+        Native.glVertexAttribPointer(7, 2, GL_FLOAT, false, istride, (void*)(20 * sizeof(float)));
+        EnableVertexAttribArray(7);
+        Native.glVertexAttribDivisor(7, 1);
+    }
+
     private bool InitInstanced()
     {
         try
         {
             const string vsSrc = """
-                #version 330 core
+                #version 410 core
                 layout(location = 0) in vec3 aPos;
                 layout(location = 1) in vec3 aNormal;
                 layout(location = 2) in vec4 iM0;
@@ -344,12 +420,13 @@ public sealed unsafe class Renderer
             var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
                 .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
                 .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(vsSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(fsSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(vsSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
             _instProgram = CreateProgram();
             Native.glAttachShader(_instProgram, vs);
             Native.glAttachShader(_instProgram, fs);
             Native.glLinkProgram(_instProgram);
+            GlDebug.Label(GL_PROGRAM, _instProgram.Id, "Renderer.instProgram");
             int linked;
             Native.glGetProgramiv(_instProgram, GL_LINK_STATUS, &linked);
             if (linked == 0)
@@ -371,28 +448,15 @@ public sealed unsafe class Renderer
 
             _instVao = GenVertexArray();
             _instVao.Bind();
-            Native.glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-            const int stride = 6 * sizeof(float);
-            Native.glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, (void*)0);
-            EnableVertexAttribArray(0);
-            Native.glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, (void*)(3 * sizeof(float)));
-            EnableVertexAttribArray(1);
+            GlDebug.Label(GL_VERTEX_ARRAY, _instVao.Id, "Renderer.batch");
             _instVbo = GenBuffer();
             Native.glBindBuffer(GL_ARRAY_BUFFER, _instVbo);
             Native.glBufferData(GL_ARRAY_BUFFER, _batch.Length * sizeof(float), null, GL_STREAM_DRAW);
-            const int istride = BatchFloats * sizeof(float);
-            for (uint a = 0; a < 5; a++)
-            {
-                Native.glVertexAttribPointer(2 + a, 4, GL_FLOAT, false, istride, (void*)(a * 4 * sizeof(float)));
-                EnableVertexAttribArray(2 + a);
-                Native.glVertexAttribDivisor(2 + a, 1);
-            }
-            Native.glVertexAttribPointer(7, 2, GL_FLOAT, false, istride, (void*)(20 * sizeof(float)));
-            EnableVertexAttribArray(7);
-            Native.glVertexAttribDivisor(7, 1);
+            GlDebug.Label(GL_BUFFER, _instVbo.Id, "Renderer.batch");
+            BoxInstanceAttributes(_instVbo);
             _program.Use();
             _vao.Bind();
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[render] GL error 0x{err:X} while setting up the instanced boxes (continuing)");
             Console.WriteLine($"[render] instanced boxes ready ({BatchMax} a draw)");
@@ -606,13 +670,17 @@ public sealed unsafe class Renderer
         Native.glUniform1f(_locMode, mode);
         if (shape == 0)
         {
+            PerfCounters.Draw(36); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArrays(GL_TRIANGLES, 0, 36);
             return;
         }
         if (_shapeVersion != PartShapes.Version)
             UploadShapes();
         if (shape + 1 < _shapeFirst.Count)
+        {
+            PerfCounters.Draw(_shapeFirst[shape + 1] - _shapeFirst[shape]); // the perf window's counters (Source/Perf/PerfCounters.cs)
             Native.glDrawArrays(GL_TRIANGLES, _shapeFirst[shape], _shapeFirst[shape + 1] - _shapeFirst[shape]);
+        }
     }
 
     private int _shapeVersion; // PartShapes.Version starts at 0 with no shapes

@@ -76,7 +76,7 @@ public static unsafe partial class Program
         var (calls, chunks, tris) = TerrainGfx.LastFrame;
         var v = World.Map.Terrain?.Voids;
         Console.WriteLine($"[smoke] cave {name,-8}: {_caveSmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_caveSmokeFrames, 1):0.00} ms/frame), worst {_caveSmokeWorst * 1000:0.0} ms, "
-            + $"terrain {calls} draw call(s), {chunks} chunks, {tris} triangles; {v?.OpenCells ?? 0} hole cells, {v?.CaveCells ?? 0} cave cells, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"terrain {calls} draw call(s), {chunks} chunks, {tris} triangles; {v?.OpenCells ?? 0} hole cells, {v?.CaveCells ?? 0} cave cells, GL error 0x{GlDebug.Error():X}");
         SmokeShot($"cave_{name}");
         _caveSmokeAdvance = true;
     }

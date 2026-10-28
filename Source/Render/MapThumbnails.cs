@@ -169,7 +169,7 @@ public static unsafe class MapThumbs
             Native.glGenerateMipmap(GL_TEXTURE_2D);
             Native.glBindTexture(GL_TEXTURE_2D, 0);
             Native.glFinish(); // so the time below is what the picture really cost (once per map, menus only)
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (err != 0)
                 Console.WriteLine($"[mapselect] GL error 0x{err:X} after the thumbnail of '{map.Name}' (picture kept)");
             if (entry.State == State.Pending) // not replaced meanwhile
@@ -241,7 +241,7 @@ public static unsafe class MapThumbs
             Native.glBindFramebuffer(GL_FRAMEBUFFER, new GlFramebuffer((uint)prev));
             _fbo = fbo;
             _depth = depth;
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             if (fbo.Id == 0 || depth.Id == 0 || err != 0)
                 throw new InvalidOperationException($"framebuffer {fbo.Id}, depth buffer {depth.Id}, GL error 0x{err:X}");
             _glReady = true;

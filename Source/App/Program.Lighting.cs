@@ -38,6 +38,9 @@ public static unsafe partial class Program
         }
     }
 
+    /// <summary>The clock --light-shots draws at, so two runs (or the 4.6 and 4.1 paths) give the same pictures.</summary>
+    private const double ShotTime = 100.0;
+
     private static void RunLightShots(string[] args)
     {
         var name = args.SkipWhile(a => !a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
@@ -88,13 +91,14 @@ public static unsafe partial class Program
                     Gfx.SetCamera(Matrix4x4.CreateLookAt(view.Eye, view.Target, Vector3.UnitY),
                         Matrix4x4.CreatePerspectiveFieldOfView(view.Fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
                     Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
+                    Glfw.SetTime(ShotTime); // one fixed moment: flicker and wind look (nearly) the same in every run and on both GL paths
                     DrawArena();
                     Gfx.SetFog(map.Sky, 0, 0);
                     if (frame == 2)
                         SaveScreenshot(shot.T >= 0 ? $"light_{view.Name}_t{shot.T * 1000:00000}" : $"light_{view.Name}_{(on ? "on" : "off")}");
                     _window.SwapBuffers();
                 }
-                Console.WriteLine($"[lightshots] {view.Name} {(shot.T >= 0 ? $"t={shot.T:0.###}" : on ? "on" : "off")}: GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
+                Console.WriteLine($"[lightshots] {view.Name} {(shot.T >= 0 ? $"t={shot.T:0.###}" : on ? "on" : "off")}: GL error 0x{GlDebug.Error():x}");
             }
         _settings.Lighting = saved;
         Console.WriteLine("[lightshots] done");

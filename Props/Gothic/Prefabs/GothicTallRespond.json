@@ -1,0 +1,15 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Gothic Tall Respond",
+  "category": "Gothic",
+  "description": "A Gothic Pilaster, two Gothic Wall Shafts and a Gothic Vault Springer: a tall vault respond, 9.2 m (back at -Z).",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"use": "Gothic Pilaster"},
+    {"use": "Gothic Wall Shaft", "pos": [0, 4.0, 0]},
+    {"use": "Gothic Wall Shaft", "pos": [0, 6.0, 0]},
+    {"use": "Gothic Vault Springer", "pos": [0, 8.0, 0]}
+  ]
+}

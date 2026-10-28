@@ -171,7 +171,7 @@ public static unsafe partial class Program
                 SmokeShot("lobby_room");
                 var fps = (_smokeFrames - _lobbySmokeFrames) / Math.Max(now - _lobbySmokeAt, 0.001);
                 Console.WriteLine($"[smoke] lobby room: {game.Players.Count} players on {World.Map.Name} ({game.Phase}), {fps:0} fps, "
-                    + $"text rebuilt {Ui.LobbyRoom.Rebuilds} times, chat {game.Chat.Count} line(s), GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"text rebuilt {Ui.LobbyRoom.Rebuilds} times, chat {game.Chat.Count} line(s), GL error 0x{GlDebug.Error():X}");
                 _lobbySmokeAt = now;
                 _lobbySmoke = 2;
                 return true;

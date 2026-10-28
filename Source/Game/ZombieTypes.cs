@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>What a zombie's type adds to it (both sides; Source/Game/ZombieTypes.cs).</summary>
 public sealed partial class Zombie
 {
-    /// <summary>Its type: the index into the rules' types (0: the walker; on the wire in <see cref="Msg.ZEnts"/>, protocol 72) and the type itself (never null).</summary>
+    /// <summary>Its type: the index into the rules' types (0: the walker; on the wire in <see cref="Msg.ZEnts"/>, protocol 73) and the type itself (never null).</summary>
     public byte Type;
 
     public ZombieTypeDef Kind = ZombieTypeDef.DefaultWalker;

@@ -77,6 +77,7 @@ public enum Sfx
     ZombieShuffle, // a walker's dragged step
     ZombieRun, // a runner's footfall
     ZombieSprint, // a sprinter's stamping footfall
+    CrowdRoar, // the mass horde's crowd (SynthZombie.cs, played by CrowdRoar): a looping roar of many throats, one per dense cluster
     COUNT,
 }
 
@@ -151,6 +152,7 @@ public sealed partial class Audio : IDisposable
             _sources = Al.GenSources(Voices);
             _stepSources = Al.GenSources(StepVoices);
             InitZombieSources(); // Audio.Zombies.cs
+            InitCrowdSources(); // Audio.Crowd.cs
 
             var sw = Stopwatch.StartNew();
             var pcm = SynthesiseAll();
@@ -619,6 +621,7 @@ public sealed partial class Audio : IDisposable
         DisposeFrenzyGun();
         DisposeEfx();
         DisposeZombieSources();
+        DisposeCrowdSources();
         Al.DeleteBuffers(_shots.SelectMany(v => v).Concat(_shotsSuppressed.SelectMany(v => v)).Distinct().ToArray());
         Al.DeleteBuffers(_shotsFar.Where(b => !b.IsNull()).ToArray());
         Al.DeleteBuffers(_reloads);

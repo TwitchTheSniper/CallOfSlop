@@ -150,6 +150,9 @@ public sealed class MusicPlayer : IDisposable
     /// <summary>Number of decks currently producing sound (2 during a crossfade).</summary>
     public int ActiveDecks => (_decks[0].Active ? 1 : 0) + (_decks[1].Active ? 1 : 0);
 
+    /// <summary>Stopwatch ticks spent mixing so far (the music thread writes it; the perf window reads the change per frame).</summary>
+    public long RenderTicks => Volatile.Read(ref _renderTicks);
+
     /// <summary>Average mixing cost in milliseconds per second of audio.</summary>
     public double RenderMsPerSecond => _renderedFrames == 0 ? 0 : _renderTicks * 1000.0 / Stopwatch.Frequency / (_renderedFrames / (double)Sr) ;
 

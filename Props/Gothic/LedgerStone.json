@@ -1,0 +1,23 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Ledger Stone",
+  "category": "Gothic",
+  "description": "A worn grave slab let into the floor with a brass rosette and lettering, 1 x 2 m.",
+  "collision": "cosmetic",
+  "fadeDistance": 90,
+  "scatter": {"randomYaw": false, "yawStep": 90},
+  "parts": [
+    {"size": [1.0, 0.025, 2.0], "offset": [0, 0.013, 0], "color": "#3a3833"},
+    {"size": [0.9, 0.006, 0.04], "offset": [0, 0.028, 0.93], "color": "#5a564e"},
+    {"size": [0.9, 0.006, 0.04], "offset": [0, 0.028, -0.93], "color": "#5a564e"},
+    {"size": [0.04, 0.006, 1.86], "offset": [0.43, 0.028, 0], "color": "#5a564e"},
+    {"size": [0.04, 0.006, 1.86], "offset": [-0.43, 0.028, 0], "color": "#5a564e"},
+    {"size": [0.22, 0.008, 0.22], "offset": [0, 0.029, -0.45], "color": "#a8823a"},
+    {"size": [0.22, 0.008, 0.22], "offset": [0, 0.029, -0.45], "color": "#a8823a", "rotation": [0.0, 45.0, 0.0]},
+    {"size": [0.6, 0.006, 0.035], "offset": [0, 0.028, 0.0], "color": "#24221f"},
+    {"size": [0.44, 0.006, 0.035], "offset": [0, 0.028, 0.13], "color": "#24221f"},
+    {"size": [0.6, 0.006, 0.035], "offset": [0, 0.028, 0.26], "color": "#24221f"},
+    {"size": [0.44, 0.006, 0.035], "offset": [0, 0.028, 0.39], "color": "#24221f"},
+    {"size": [0.6, 0.006, 0.035], "offset": [0, 0.028, 0.52], "color": "#24221f"}
+  ]
+}

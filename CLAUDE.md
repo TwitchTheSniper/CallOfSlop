@@ -63,6 +63,7 @@ Source/
   MapKit/     the C# map kit (CallOfSlop.MapKit): JsonTree (ordered map-file JSON), Kit (ops + symmetry + objectives), Geometry,
               Structures (railings/stairs/ramps/catwalks), Clusters (prop groups), Plan (PNG), MapChecks (the real-game report),
               Generators.cs (IMapGenerator, registry, CLI), Generators/<Map>.cs (Twin Shard); docs/mapkit/MAPKIT.md
+  Perf/       the F9 performance window's profiler: Perf (scopes, history), PerfGpu (GPU pass timer), PerfCounters, PerfStats
   Maps/ Physics/ Props/ Buildings/ Decals/ Scene/ Weapons/ Cosmetics/ Updates/
 Maps/<Pack>/        map JSON files + pack.json (packs: Legacy [the old Classic, Collision Point and High Ground
                     packs, 36 maps], Cluttered, Dev, Space, World [World Tour], Zombies). Maps/README.md documents the map ops.
@@ -86,7 +87,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **70**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **72**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -138,6 +139,12 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   `Map.Validate` (`Source/Maps/LightBaker.cs`), kept in the map bake; every scene shader lights through `ApplyLightAt`
   (`Lighting.Glsl`) and the `LitFrame` block (`Source/Render/LightGrid.cs`, binding 7, texture units 12-14: don't reuse
   them). Unlit maps take the old path unchanged. Props carry lights in a `"lights"` list.
+- **OpenGL 4.6 / 4.1** (docs/render/OPENGL46.md). The game asks for a 4.6 core context and falls back to 4.1 (always on
+  macOS; `--gl41` forces it). Every shader source starts with `#version 410 core` and goes through `RenderCaps.Glsl`
+  (the "GL 4.6" section checks); 4.6-only GLSL sits in `#if GL46`; 4.6-only code checks a `RenderCaps` flag and keeps
+  the 4.1 branch. `--gl-bench` measures the experiments (`--gl-on=` / `--gl-no=`); under xvfb, llvmpipe gives 4.5 so
+  set `MESA_GL_VERSION_OVERRIDE=4.6 MESA_GLSL_VERSION_OVERRIDE=460` to test the 4.6 path. Dev builds get KHR_debug
+  output with stack traces (`[gl] error` lines in the log).
 - **Prop part rotation.** Prop parts rotate about their own centre (`"rotation": [x, y, z]` in degrees: x = pitch, y = yaw, z = roll; `PropDef.Rotation`). To tilt an assembly, compute each part's offset around the pivot yourself; see `Props/Countryside/TippedFarmCart.json`.
 - **Prefab props.** A prop part may `use` another prop (`{"use": "Landing Beacon", "pos": [...], "yaw": 90, "scale": 1.1}`): the loader copies the used prop's parts in (two passes, cycles refused), so the loaded PropDef is flat. Props/README.md "Prefabs"; the example is `Props/Space/Prefabs/LandingPadSet.json`.
 - **Weapon-builder parts.**

@@ -45,6 +45,6 @@ public static unsafe partial class Program
         var mesh = DecalGfx.Uploaded;
         Console.WriteLine($"[smoke] decals {view} ({World.Map.Name}): {mesh?.Placed ?? 0} map decals, {mesh?.Triangles ?? 0} triangles, {w.AvgChunks:0.0} chunks visible, "
             + $"{w.AvgImpacts:0} impact slots drawn, {w.AvgDraws:0.0} draw calls, decals CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")} "
-            + $"(target under 0.1 ms), setting {_settings.ImpactDecals}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"(target under 0.1 ms), setting {_settings.ImpactDecals}, GL error 0x{GlDebug.Error():X}");
     }
 }

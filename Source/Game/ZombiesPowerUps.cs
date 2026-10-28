@@ -318,6 +318,7 @@ public sealed partial class Game
                     {
                         z.Health = 0;
                         SetZState(z, ZState.Dead, now);
+                        CrowdNoteKill();
                     }
                 foreach (var o in Players.Values)
                     if (o.Alive)

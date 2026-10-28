@@ -173,6 +173,7 @@ public sealed partial class Game
     /// <summary>Server, every tick while a co-op match is playing (CoopModule.ServerTickPlaying).</summary>
     internal void ServerTickCoop(double now)
     {
+        using var perf = Perf.Measure(PerfArea.Coop); // the perf window (Source/Perf)
         if (_coopRunMatch != MatchNumber)
             StartCoopRun(now);
         if (Coop.MissionDef is not { } mission || Coop.StageDef is not { } st)

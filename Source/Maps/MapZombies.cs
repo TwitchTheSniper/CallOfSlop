@@ -181,6 +181,12 @@ public sealed class ZombiesMap
     public readonly List<ZSpot> CasinoTables = new();
 
     /// <summary>
+    /// Where the trader sets up his stall ("traderSpots"; ZombiesTrader.cs): one is picked at random each visit, an open
+    /// area's first. A map without any uses its box spots and workbenches (the trader stands in front of them).
+    /// </summary>
+    public readonly List<ZSpot> TraderSpots = new();
+
+    /// <summary>
     /// "machineProps": true: every machine stands as a solid prop from <c>Props/Zombies</c> (<see cref="MachineProp"/>):
     /// perk machines, workbenches, the power switch, the slot upgrade, and a crate at every mystery box spot (the box is
     /// drawn over the crate at its spot). Players, zombies and bullets can't pass through them. Off (Zombies Test): the
@@ -193,6 +199,16 @@ public sealed class ZombiesMap
     /// starts with every perk, the slot upgrade and strong late builds (Source/Game/ZombiesStartRound.cs).
     /// </summary>
     public bool TestKit;
+
+    /// <summary>
+    /// "crowd": N (a mass-horde test map: Dev/MassHordeTest.json; 0, the default: off). Each round is N zombies, nearly all
+    /// of them crowd particles (Source/Game/Horde/HordeCrowd.cs) that become full zombies near the players and go back to
+    /// the crowd far from them. The spike of the mass horde (docs/zombies/MASS-HORDE.md).
+    /// </summary>
+    public int Crowd;
+
+    /// <summary>The most a map's <see cref="Crowd"/> can ask for.</summary>
+    public const int MaxCrowd = 32000;
 
     /// <summary>The prop each kind of machine stands as with <see cref="MachineProps"/>.</summary>
     public static class MachineProp
@@ -235,7 +251,7 @@ public sealed class ZombiesMap
         .Where(c => c is not (PartCategory.Casing or PartCategory.Fuse or PartCategory.Payload or PartCategory.GrenadeMod))
         .Select(c => (int)c).Append(SlotCategoryGrenade).ToArray();
 
-    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8;
+    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8, MaxTraderSpots = 32;
 
     /// <summary>The area <paramref name="p"/> is in (the nearest one if it's in none).</summary>
     public int AreaAt(Vector3 p)
@@ -269,7 +285,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "machineProps", "testKit"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "traderSpots", "machineProps", "testKit", "crowd"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -500,6 +516,11 @@ public sealed class ZombiesMap
             }
         if (z.CasinoTables.Count > MaxCasinoTables)
             throw new MapFileException($"{where}: at most {MaxCasinoTables} casino tables");
+        if (Get(e, "traderSpots") is { } ts)
+            foreach (var s in List(ts, $"{where}.traderSpots"))
+                z.TraderSpots.Add(Spot(map, z, s, $"{where}.traderSpots"));
+        if (z.TraderSpots.Count > MaxTraderSpots)
+            throw new MapFileException($"{where}: at most {MaxTraderSpots} trader spots");
         if (Get(e, "machineProps") is { } mp)
             z.MachineProps = mp.ValueKind switch
             {
@@ -514,6 +535,12 @@ public sealed class ZombiesMap
                 JsonValueKind.False => false,
                 _ => throw new MapFileException($"{where}.testKit: true or false"),
             };
+        if (Get(e, "crowd") is { } cr)
+        {
+            if (cr.ValueKind != JsonValueKind.Number || !cr.TryGetInt32(out var n) || n < 0 || n > MaxCrowd)
+                throw new MapFileException($"{where}.crowd: a whole number of zombies from 0 to {MaxCrowd}");
+            z.Crowd = n;
+        }
         if (z.MachineProps)
             foreach (var (name, _) in z.Machines())
                 if (map.PropScope.Find(name) == null)

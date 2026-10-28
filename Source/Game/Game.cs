@@ -234,11 +234,13 @@ public sealed partial class Game : IDisposable
         AllocProfile.Mark("poll");
         if (!Net.IsOffline)
         {
+            using var _ = Perf.Measure(PerfArea.NetReceive); // the perf window (Source/Perf)
             _pollNow = now;
             Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
         }
 
         AllocProfile.Mark("frame: weapon state");
+        var visuals = Perf.Measure(PerfArea.Visuals);
         UpdateWeaponState(now, (float)frameDt);
         AllocProfile.Mark("frame: carts, throwables");
         UpdateCartControls(now); // a manned push cart: view inside its traverse, jump / sprint steps off (GameZombies.cs)
@@ -248,6 +250,7 @@ public sealed partial class Game : IDisposable
         UpdateStreakEffects(now, (float)frameDt);
         TickServerAdvert(now);
         TickWeaponTweaks(now); // host: send the weapon tweak window's changes (GameWeaponTweaks.cs)
+        visuals.Dispose();
 
         _accumulator += frameDt;
         var steps = 0;
@@ -255,15 +258,22 @@ public sealed partial class Game : IDisposable
         {
             _accumulator -= World.TickDt;
             if (IsServer)
+            {
+                using var _ = Perf.Measure(PerfArea.ServerTick);
                 ServerTickStep(now);
+            }
             else
+            {
+                using var _ = Perf.Measure(PerfArea.ClientTick);
                 ClientTickStep();
+            }
         }
         if (_accumulator > World.TickDt)
             _accumulator = 0;
         _alpha = (float)(_accumulator / World.TickDt);
 
         AllocProfile.Mark("frame after ticks");
+        using var after = Perf.Measure(PerfArea.Visuals);
         if (!IsServer)
         {
             AdvanceInterpolationClock(now, frameDt);
@@ -996,22 +1006,28 @@ public sealed partial class Game : IDisposable
         ServerTick++;
         MoverPhysics.Clock = ServerTick; // movers (moving platforms) are posed from the server tick
         AllocProfile.Mark("match and mode");
+        var perf = Perf.Measure(PerfArea.Modes); // the perf window's areas (Source/Perf)
         ServerTickMatch(now);
+        perf.Dispose();
         AllocProfile.Mark("projectiles");
+        perf = Perf.Measure(PerfArea.Projectiles);
         ServerTickProjectiles(now);
         ServerTickGrenadeZones(now); // built grenades' fires, clouds and lures (GameGrenades.cs)
         AllocProfile.Mark("rockets");
         ServerTickRockets(now); // launcher rockets and grenades (GameLaunchers.cs)
+        perf.Dispose();
         AllocProfile.Mark("tactical");
         ServerTickTactical(now); // tactical devices, stim regen (GameTactical.cs)
         AllocProfile.Mark("streaks");
         ServerTickStreaks(now);
         AllocProfile.Mark("props, mines, destruction");
+        perf = Perf.Measure(PerfArea.Destruction);
         ServerTickPropFuses(now); // explosive props burning down their fuses (GameProps.cs)
         ServerTickMines(now); // pressure plates and props coming back (GameMines.cs)
         AllocProfile.Mark("map logic");
         ServerTickLogic(now); // map events: zones, timers, wires (GameLogic.cs)
         ServerTickDestruction(now); // falling building pieces landing (GameDestruction.cs)
+        perf.Dispose();
         AllocProfile.Mark("health, fall, frenzy");
         ServerTickHealth(now); // health regen and Last Stand's shield running out (Health.cs)
         ServerTickBurns(now); // special ammo burns and bleeds on players (AmmoEffectsPlayers.cs)
@@ -1038,6 +1054,7 @@ public sealed partial class Game : IDisposable
                 p.Weapon = cmd.Weapon;
                 if (p.Alive)
                 {
+                    using var _ = Perf.Measure(PerfArea.Players);
                     World.Simulate(ref p.Sim, cmd);
                     ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
                 }
@@ -1045,11 +1062,13 @@ public sealed partial class Game : IDisposable
             }
             else if (p.Bot != null)
             {
+                using var _ = Perf.Measure(PerfArea.Bots);
                 BotTick(p, now);
             }
             else
             {
                 AllocProfile.Mark("client input");
+                using var _ = Perf.Measure(PerfArea.Players);
                 ConsumeClientInput(p);
             }
 
@@ -1069,7 +1088,10 @@ public sealed partial class Game : IDisposable
         if (Carts.Count > 0 || BuilderRange || Mode == GameMode.Zombies)
             ServerTickCarts(now); // push carts, parked and manned (GameZombies.cs): after the players move, so a stuck cart holds its owner
         if (ServerTick % World.SnapshotEvery == 0)
+        {
+            using var _ = Perf.Measure(PerfArea.NetSend);
             SendSnapshots();
+        }
 
         if (now >= _nextInfoLog && _clients.Count > 0)
         {
@@ -1467,6 +1489,11 @@ public sealed partial class Game : IDisposable
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
             }
+            if (zombie == null && Crowd.Count > 0 && CrowdRayHit(o, d, ref dist, ray.Damage * def.DamageMultAt(dist) * PenFactor(dist), def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
+            {
+                hit = null; // a crowd zombie past the front (ZombiesCrowd.cs)
+                turret = null;
+            }
             if (AliveEnemies > 0 && PveRayHit(o, d, ref dist, rewindTo, out var eHead, grow) is { } enemy) // Co-op enemies (GamePve.cs)
             {
                 hit = null;
@@ -1536,7 +1563,8 @@ public sealed partial class Game : IDisposable
             ApplyPlayerEffects(shooter, def.BuildFlags, _pFxHits, def.Id, now); // the gun's special ammo on the players it hurt
 
         if (Horde.Count > 0)
-            flags |= ZombieShotApply(shooter, def, now); // one damage event per zombie per trigger pull (then the gun's special ammo effects)
+            flags |= ZombieShotApply(shooter, def, now);
+        flags |= CrowdShotApply(shooter, now); // crowd zombies hit (ZombiesCrowd.cs; nothing off crowd maps) // one damage event per zombie per trigger pull (then the gun's special ammo effects)
         if (_pveShotCount > 0)
             flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 
@@ -1923,6 +1951,8 @@ public sealed partial class Game : IDisposable
                 OnVoicePacket(id, ref r, sender, now); // voice chat (GameVoice.cs)
                 break;
             case (byte)Msg.State when !IsServer && r.Has(Snapshot.HeaderBytes - 1):
+                SnapBytes += r.Remaining + 1; // (the perf window: GameSnapshots.cs)
+                SnapPackets++;
                 ReadState(ref r, now);
                 break;
             case (byte)Msg.Shot when !IsServer && r.Has(4):

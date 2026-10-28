@@ -552,8 +552,8 @@ public static partial class SelfTest
             var bytes1 = w.Length;
             Line($"network: {bytes3} bytes for a walker, an armoured and a brute, {bytes1} for the walker alone (+{(bytes3 - bytes1 - 2 * (Game.ZEntBytes - 1)) / 2f:0} a typed zombie), protocol {ServerInfo.ProtocolVersion}; "
                  + $"the client sees {cw?.Kind.Key}, {ca?.Kind.Key} (plates {platesBefore}, after the helmet shot {ca?.Plates}) and {cb?.Kind.Key} with the same box {sameBox}");
-            if (cw?.Type != 0 || ca?.Kind.Key != "armoured" || cb?.Kind.Key != "brute" || !sameBox || ca.Plates != 2 || bytes3 - bytes1 != 2 * (Game.ZEntBytes - 1) + 2 * (Game.ZEntLimbBytes + Game.ZEntTypeBytes) || ServerInfo.ProtocolVersion < 72)
-                Fail("a client should see each zombie's type and plates, two bytes more a typed zombie, protocol 72 or later");
+            if (cw?.Type != 0 || ca?.Kind.Key != "armoured" || cb?.Kind.Key != "brute" || !sameBox || ca.Plates != 2 || bytes3 - bytes1 != 2 * (Game.ZEntBytes - 1) + 2 * (Game.ZEntLimbBytes + Game.ZEntTypeBytes) || ServerInfo.ProtocolVersion < 73)
+                Fail("a client should see each zombie's type and plates, two bytes more a typed zombie, protocol 73 or later");
             Clear();
         }
 

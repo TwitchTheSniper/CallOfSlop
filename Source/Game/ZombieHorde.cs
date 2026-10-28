@@ -56,6 +56,8 @@ public sealed partial class Game
     /// <summary>The alive cap now: the round's curve (with the extra players), the rules' hard cap, the host's setting.</summary>
     public int ZAliveCap()
     {
+        if (CrowdOn)
+            return CrowdIndividualCap; // a mass-horde map: the individual tier's cap (ZombiesCrowd.cs)
         var players = ZRoundPlayerCount(); // (live: a join or leave mid-round moves the cap at once)
         return Math.Clamp(Math.Min(ZRules.MaxAliveFor(Math.Max(1, ZRound), players), HostHordeCap), 1, MaxZombies);
     }
@@ -235,6 +237,7 @@ public sealed partial class Game
             FreeZombieSlot(z);
         Horde.Clear();
         _zById.Clear();
+        Crowd.Clear(); // (the mass horde's crowd goes with it: ZombiesCrowd.cs)
         HordeAI.Reset();
         ClimbReset(); // (a siege up a face ends with the horde: ZombiesClimb.cs)
     }

@@ -183,7 +183,7 @@ first lit Zombies map. What it has:
 - **Test block:** 16 `lightProbes`: bright in the nave, the organ loft, by the machines (Juggernog, the revive perks,
   the power switch, a dungeon workbench), the crypt, a cell, the lodge, the barn and the close's brazier; dim in the
   ossuary's and dungeons' corners and the graveyard's far corner.
-- **Cost:** 295 lights; 1.03 million cells, 16 MB with the flicker phasor (14 MB before it; the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
+- **Cost:** 318 lights (with the detail's candle niches and corona chandeliers, 2026-10-28); 1.03 million cells, 16 MB with the flicker phasor (14 MB before it; the same on the GPU); baked in 0.34-0.38 s on CI's 4 cores, 0.45 s on
   the developer's PC runner, 0.9-1.9 s on the shared 2-core agent box (released builds ship it baked; dev builds cache
   it). "Big maps" gives a light bake its own budget (3 s), apart from the 150 ms validation budget, and lists the bakes. Pictures before and after of each level:
   `--light-shots "Ashgrave Cathedral" --at ...` (the cameras are in the agent's report).

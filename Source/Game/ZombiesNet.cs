@@ -76,6 +76,7 @@ public sealed partial class Game
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
             SendPartDropsTo(guid, now); // and the loose parts players dropped (ZombiesDropItems.cs)
             SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
+            SendTraderTo(guid); // the trader and his shelf (ZombiesTrader.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
@@ -94,6 +95,7 @@ public sealed partial class Game
             if (_zViews.Count > _clients.Count)
                 ForgetGoneViews();
         }
+        ServerSendCrowd(); // a mass-horde map: the crowd's cells (ZombiesCrowdNet.cs)
         if (ServerTick % (World.SnapshotEvery * 3) == 0)
         {
             WriteZWorld(_w);
@@ -106,7 +108,7 @@ public sealed partial class Game
 
     /// <summary>
     /// A zombie that has lost a limb carries one more byte (protocol 65): the top bit of its id says so, the byte holds the
-    /// lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler). Since protocol 72 the same
+    /// lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler). Since protocol 73 the same
     /// byte's top four bits are its type (Source/Game/ZombieTypes.cs; the flag is set for any typed zombie too), and a
     /// typed zombie carries one byte more again: its type state (armour plates on, holding a player). 9 + 80 x 14 = 1129 bytes at most.
     /// </summary>
@@ -259,7 +261,7 @@ public sealed partial class Game
                 w.U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
             if (extra)
             {
-                w.U8((byte)((z.Limbs & AllLimbs) | (z.Type << 4))); // the lost limbs (protocol 65, ZombieLimbs.cs) and the type (protocol 72, ZombieTypes.cs)
+                w.U8((byte)((z.Limbs & AllLimbs) | (z.Type << 4))); // the lost limbs (protocol 65, ZombieLimbs.cs) and the type (protocol 73, ZombieTypes.cs)
                 if (z.Type != 0)
                     w.U8(z.TypeState); // plates on, holding someone
             }
@@ -316,7 +318,7 @@ public sealed partial class Game
         foreach (var p in players)
         {
             var zp = ZP(p);
-            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0) | (zp.Held ? 64 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57); bit 6: held by a grabber (protocol 72)
+            w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0) | (zp.Held ? 64 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57); bit 6: held by a grabber (protocol 73)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
                 .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535))
                 .U8((byte)p.Grenade).U8((byte)Math.Clamp(p.GrenadesLeft, 0, 255)); // the grenade and how many are left (protocol 63)
@@ -539,6 +541,9 @@ public sealed partial class Game
             case (byte)Msg.ZWorld when !IsServer:
                 ReadZWorld(ref r, now);
                 break;
+            case (byte)Msg.ZCrowd when !IsServer:
+                ReadZCrowd(ref r); // the mass horde's crowd (ZombiesCrowdNet.cs)
+                break;
             case (byte)Msg.ZCasino when !IsServer:
                 ReadCasino(ref r); // a casino table's state (ZombiesCasinoNet.cs)
                 break;
@@ -597,6 +602,16 @@ public sealed partial class Game
                 break;
             case (byte)Msg.ZPartDrop when !IsServer:
                 ReadPartDrop(ref r, now); // a part pickup appeared or went (ZombiesDropItems.cs)
+                break;
+            case (byte)Msg.ZTrader when !IsServer:
+                ReadTrader(ref r, now); // the trader came, left or sold something (ZombiesTrader.cs)
+                break;
+            case (byte)Msg.ZTraderBuy when IsServer && r.Has(3):
+                if (_clients.TryGetValue(sender.G, out var tc) && Players.TryGetValue(tc.Id, out var tp))
+                {
+                    if (OnTraderBuy(tp, ref r, now) is { } why)
+                        ZFeedTo(tp, $"Trader: {why}", Sfx.DryFire);
+                }
                 break;
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
@@ -688,7 +703,7 @@ public sealed partial class Game
             var health = r.U8();
             var state = (ZState)(sb & 7); // (7: on a climbable face, protocol 68)
             var window = ZEntHasWindow(state) && r.Has(1) ? r.U8() : (byte)255;
-            var extra = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? r.U8() : 0; // (protocol 65: the limbs; 72: the type in the top bits)
+            var extra = (rawId & ZEntLimbFlag) != 0 && r.Has(1) ? r.U8() : 0; // (protocol 65: the limbs; 73: the type in the top bits)
             var limbs = (byte)(extra & AllLimbs);
             var type = (byte)(extra >> 4);
             var typeState = type != 0 && r.Has(1) ? r.U8() : (byte)0;
@@ -964,6 +979,7 @@ public sealed partial class Game
             ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
         ZSounds.Frame(Audio, Horde, dt); // their voices and footsteps, from what this side knows (Source/Audio/ZombieSounds.cs)
+        CrowdRoarFrame(dt); // a mass-horde map: the crowd's roar by cluster (ZombiesCrowdSound.cs)
         if (Local is { } me)
         {
             var zp = ZP(me);

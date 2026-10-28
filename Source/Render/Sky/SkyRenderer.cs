@@ -31,7 +31,7 @@ namespace CallOfSlop;
 public static unsafe class SkyRenderer
 {
     private const string VertexSrc = """
-        #version 330 core
+        #version 410 core
         uniform mat4 uInvVP;   // inverse of (view without translation) * projection
         out vec4 vRay;
         void main()
@@ -163,7 +163,7 @@ public static unsafe class SkyRenderer
         }
         """;
 
-    private static readonly string FragmentSrc = "#version 330 core\n" + Lighting.Glsl + FragmentBody;
+    private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + FragmentBody;
 
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
@@ -276,16 +276,17 @@ public static unsafe class SkyRenderer
         }
 
         if (!_checkedFirstDraw)
-            while ((uint)Native.glGetError() != 0) { } // only our own errors count below
+            while (GlDebug.Error() != 0) { } // only our own errors count below
         g.SetBlend(false);
         DepthMask(false);
+        PerfCounters.Draw(3); // the perf window's counters (Source/Perf/PerfCounters.cs)
         Native.glDrawArrays(GL_TRIANGLES, 0, 3);
         DepthMask(true);
         g.Rebind(); // the box renderer's program, cube and texture array (unit 0) again
         if (!_checkedFirstDraw)
         {
             _checkedFirstDraw = true;
-            var err = (uint)Native.glGetError();
+            var err = GlDebug.Error();
             Console.WriteLine($"[sky] first sky drawn ({s.Describe()}), GL error 0x{err:X}");
         }
         if (timed)
@@ -452,9 +453,10 @@ public static unsafe class SkyRenderer
             return _ready;
         try
         {
-            using var vs = CreateShader(GlShaderType.Vertex).SetSource(VertexSrc).Compile();
-            using var fs = CreateShader(GlShaderType.Fragment).SetSource(FragmentSrc).Compile();
+            using var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            using var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
             _program = CreateProgram().Attach(vs, fs).Link();
+            GlDebug.Label(GL_PROGRAM, _program.Id, "SkyRenderer");
             DetachShader(_program, vs);
             DetachShader(_program, fs);
             _vao = GenVertexArray(); // core profile needs a bound VAO even with no vertex buffers
@@ -485,7 +487,7 @@ public static unsafe class SkyRenderer
             Native.glEnable(GlCapability.TextureCubeMapSeamless); // no seams between cube faces
             Timer.Init();
             _ready = true;
-            Console.WriteLine($"[sky] sky shader ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, noise {NoiseSize}x{NoiseSize} RGBA8, GL error 0x{(uint)Native.glGetError():X}");
+            Console.WriteLine($"[sky] sky shader ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, noise {NoiseSize}x{NoiseSize} RGBA8, GL error 0x{GlDebug.Error():X}");
         }
         catch (Exception ex)
         {
@@ -568,7 +570,7 @@ public static unsafe class SkyRenderer
         Native.glActiveTexture(GL_TEXTURE0);
         ImageTextures.Add((img, tex.Id));
         Console.WriteLine($"[sky] uploaded {(img.Type == SkyType.Cubemap ? $"cubemap 6x {img.Width}x{img.Height}" : $"panorama {img.Width}x{img.Height}{(img.Hdr ? " HDR (RGB16F)" : "")}")}, "
-                          + $"{img.GpuBytes / 1024} KB, decoded by {img.Decoder}, GL error 0x{(uint)Native.glGetError():X}");
+                          + $"{img.GpuBytes / 1024} KB, decoded by {img.Decoder}, GL error 0x{GlDebug.Error():X}");
         return tex.Id;
     }
 

@@ -177,6 +177,9 @@ public sealed class ZombiesRules
     /// <summary>The horde climbing a face (the "climb" section; Source/Game/ZombiesClimb.cs: the Cathedral's bell tower).</summary>
     public ClimbTuning Climb = new();
 
+    /// <summary>The mass horde's crowd tier (the "crowd" section; Source/Game/Horde/HordeCrowd.cs, docs/zombies/MASS-HORDE.md). Used only on maps with "crowd".</summary>
+    public CrowdTuning Crowd = new();
+
     /// <summary>The zombie types (the "types" section; Source/Zombies/ZombieTypes.cs, Source/Game/ZombieTypes.cs): type 0 is the walker.</summary>
     public List<ZombieTypeDef> Types = ZombieTypeDef.Defaults();
 
@@ -467,6 +470,82 @@ public sealed class ZombiesRules
     /// <summary>A win paying at least this many points over the bet is announced to everyone (the feed and a label over the table).</summary>
     public int CasinoAnnounceAt = 1000;
 
+    // ---- The trader (ZombiesTrader.cs; docs/zombies/ZOMBIES-MODE.md, "The trader") ---------------------------------
+    /// <summary>
+    /// The trader comes at the start of every <see cref="TraderEveryRounds"/>th round (0: never) and stays
+    /// <see cref="TraderStayRounds"/> rounds (each with the break after it), then leaves when the next round begins.
+    /// </summary>
+    public int TraderEveryRounds = 5, TraderStayRounds = 1;
+
+    /// <summary>
+    /// Parts on the trader's shelf each visit (at most <see cref="MaxTraderStock"/> less the consumables): every one can
+    /// be bought any number of times (developer change, 2026-10-28: no purchase limit, for silly builds). Spread over the
+    /// categories (grenade parts included), one category each while there are categories left.
+    /// </summary>
+    public int TraderStock = 14;
+
+    /// <summary>The most things on the shelf at once (parts and consumables); the wire sends up to this many.</summary>
+    public const int MaxTraderStock = 20;
+
+    /// <summary>
+    /// The shelf's top rarity: the tier the round's part-drop table favours (its heaviest weight; a tie goes to the rarer)
+    /// less <see cref="TraderTiersBelow"/>, kept between <see cref="TraderTopMin"/> and <see cref="TraderTopMax"/>. Each
+    /// part's rarity is rolled from <see cref="TraderTierWeights"/> up to it.
+    /// </summary>
+    public int TraderTiersBelow = 1;
+
+    public Rarity TraderTopMin = Rarity.Uncommon, TraderTopMax = Rarity.Rare;
+
+    /// <summary>How the shelf leans (weights per rarity, index: <see cref="Rarity"/>; tiers over the top tier don't count): mostly commons and uncommons.</summary>
+    public float[] TraderTierWeights = [60, 32, 8, 0, 0, 0];
+
+    /// <summary>The chance of one extra part a tier above the shelf's top (at most <see cref="TraderExtraMax"/>): the occasional rare.</summary>
+    public float TraderExtraChance = 0.35f;
+
+    public Rarity TraderExtraMax = Rarity.Rare;
+
+    /// <summary>The most of one item a single purchase takes (the panel's x1 / x5 / x10; the server refuses more).</summary>
+    public int TraderMaxPerBuy = 10;
+
+    /// <summary>The price of a part by rarity (index: <see cref="Rarity"/>), before the round's mark-up.</summary>
+    public int[] TraderPrices = [250, 500, 1000, 2000, 4000, 8000];
+
+    /// <summary>Every price goes up this fraction a round after round 1 (to the nearest 10 points).</summary>
+    public float TraderPricePerRound = 0.03f;
+
+    /// <summary>The consumables' base prices: a grenade refill (the round's count) and a full reserve for every gun (0: not sold).</summary>
+    public int TraderGrenadePrice = 400, TraderAmmoPrice = 600;
+
+    /// <summary>How near the trader you must be to shop (metres).</summary>
+    public float TraderUseRange = 2.2f;
+
+    /// <summary>Co-op bots buy one part a visit when they have this much over the bot reserve plus its price (0: bots never shop at the trader).</summary>
+    public int TraderBotSurplus = 1500;
+
+    /// <summary>A part's price in <paramref name="round"/>: the rarity's price plus the round's mark-up, to the nearest 10.</summary>
+    public int TraderPrice(Rarity tier, int round) => TraderMarkUp(TraderPrices[Math.Clamp((int)tier, 0, TraderPrices.Length - 1)], round);
+
+    /// <summary><paramref name="price"/> marked up for <paramref name="round"/> (<see cref="TraderPricePerRound"/> a round after the first), to the nearest 10.</summary>
+    public int TraderMarkUp(int price, int round) => Math.Max(10, (int)MathF.Round(price * (1 + TraderPricePerRound * Math.Max(0, round - 1)) / 10f) * 10);
+
+    /// <summary>Does the trader come at the start of <paramref name="round"/>?</summary>
+    public bool TraderComes(int round) => TraderEveryRounds > 0 && round > 0 && round % TraderEveryRounds == 0;
+
+    /// <summary>
+    /// The shelf's top rarity in <paramref name="round"/>: the tier the round's part-drop row favours, less
+    /// <see cref="TraderTiersBelow"/>, within the rules' bounds (so the trader always sells below what the zombies drop).
+    /// </summary>
+    public Rarity TraderTopTier(RunTables tables, int round)
+    {
+        var favoured = (int)Rarity.Common;
+        if (RunTables.RowFor(tables.PartDrops, round) is { } row)
+            for (var i = 0; i < row.Weights.Length; i++)
+                if (row.Weights[i] >= row.Weights[favoured] && row.Weights[i] > 0)
+                    favoured = i;
+        var top = Math.Clamp(favoured - TraderTiersBelow, (int)TraderTopMin, (int)TraderTopMax);
+        return (Rarity)Math.Clamp(top, (int)Rarity.Common, (int)Rarity.Wonder);
+    }
+
     /// <summary>Reserve ammo: magazines of reserve a bought gun comes with (the start guns get fewer), and the wall ammo price as a share of the gun's.</summary>
     public int ReserveMags = 6, StartReserveMags = 4;
 
@@ -654,7 +733,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs", "climb", "types"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "playerDrops", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "trader", "bots", "horde", "limbs", "climb", "crowd", "types"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -1067,6 +1146,54 @@ public sealed class ZombiesRules
                     if (r.CasinoLeaveRange < r.CasinoUseRange)
                         throw new WeaponFileException($"{at}: leaveRange is below useRange");
                     break;
+                case "trader":
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "everyRounds": r.TraderEveryRounds = Whole(v, w, 0, 1000); break;
+                            case "stayRounds": r.TraderStayRounds = Whole(v, w, 1, 100); break;
+                            case "stock": r.TraderStock = Whole(v, w, 1, MaxTraderStock - 2); break;
+                            case "tiersBelow": r.TraderTiersBelow = Whole(v, w, 0, 5); break;
+                            case "topMin": r.TraderTopMin = RarityOf(v, w); break;
+                            case "topMax": r.TraderTopMax = RarityOf(v, w); break;
+                            case "tierWeights":
+                                r.TraderTierWeights = new float[(int)Rarity.Wonder + 1];
+                                Fields(v, w, (pk, pv, pw) =>
+                                {
+                                    if (!Enum.TryParse<Rarity>(pk, true, out var t) || !Enum.IsDefined(t))
+                                        return false;
+                                    r.TraderTierWeights[(int)t] = Real(pv, pw, 0, 1000);
+                                    return true;
+                                });
+                                if (r.TraderTierWeights.Sum() <= 0)
+                                    throw new WeaponFileException($"{w}: give at least one rarity a weight above 0");
+                                break;
+                            case "extraChance": r.TraderExtraChance = Real(v, w, 0, 1); break;
+                            case "extraMax": r.TraderExtraMax = RarityOf(v, w); break;
+                            case "maxPerBuy": r.TraderMaxPerBuy = Whole(v, w, 1, 100); break;
+                            case "prices":
+                                Fields(v, w, (pk, pv, pw) =>
+                                {
+                                    if (!Enum.TryParse<Rarity>(pk, true, out var t) || !Enum.IsDefined(t))
+                                        return false;
+                                    r.TraderPrices[(int)t] = Whole(pv, pw, 0, 10000000);
+                                    return true;
+                                });
+                                break;
+                            case "pricePerRound": r.TraderPricePerRound = Real(v, w, 0, 10); break;
+                            case "grenadePrice": r.TraderGrenadePrice = Whole(v, w, 0, 10000000); break;
+                            case "ammoPrice": r.TraderAmmoPrice = Whole(v, w, 0, 10000000); break;
+                            case "useRange": r.TraderUseRange = Real(v, w, 0.5f, 10); break;
+                            case "botSurplus": r.TraderBotSurplus = Whole(v, w, 0, 10000000); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    if (r.TraderTopMax < r.TraderTopMin)
+                        throw new WeaponFileException($"{at}: topMax is below topMin");
+                    break;
                 case "bots":
                     Fields(p.Value, at, (k, v, w) =>
                     {
@@ -1143,6 +1270,61 @@ public sealed class ZombiesRules
                     });
                     if (!(h.NearRange <= h.MidRange && h.MidRange <= h.FarRange))
                         throw new WeaponFileException($"{at}: nearRange <= midRange <= farRange");
+                    break;
+                }
+                case "crowd":
+                {
+                    var c = r.Crowd;
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "thinkMin": c.ThinkMin = Whole(v, w, 1, 120); break;
+                            case "thinkMax": c.ThinkMax = Whole(v, w, 1, 120); break;
+                            case "promoteRange": c.PromoteRange = Real(v, w, 2, 200); break;
+                            case "demoteRange": c.DemoteRange = Real(v, w, 2, 300); break;
+                            case "demoteSeconds": c.DemoteSeconds = Real(v, w, 0, 60); break;
+                            case "promotePerTick": c.PromotePerTick = Whole(v, w, 1, 64); break;
+                            case "demotePerTick": c.DemotePerTick = Whole(v, w, 0, 64); break;
+                            case "individualCap": c.IndividualCap = Whole(v, w, 1, Game.MaxZombies); break;
+                            case "speed": c.Speed = Real(v, w, 0.1f, 10); break;
+                            case "speedSpread": c.SpeedSpread = Real(v, w, 0, 0.9f); break;
+                            case "separationRadius": c.SeparationRadius = Real(v, w, 0.3f, 3); break;
+                            case "separationStrength": c.SeparationStrength = Real(v, w, 0, 20); break;
+                            case "separationMax": c.SeparationMax = Whole(v, w, 1, 32); break;
+                            case "flowCell": c.FlowCell = Real(v, w, 0.5f, 8); break;
+                            case "flowRefreshTicks": c.FlowRefreshTicks = Whole(v, w, 2, 600); break;
+                            case "flowCellsPerTick": c.FlowCellsPerTick = Whole(v, w, 64, 1000000); break;
+                            case "netCell": c.NetCell = Real(v, w, 1, 16); break;
+                            case "netEvery": c.NetEvery = Whole(v, w, 1, 60); break;
+                            case "netFarRange": c.NetFarRange = Real(v, w, 0, 1000); break;
+                            case "netFarEvery": c.NetFarEvery = Whole(v, w, 1, 30); break;
+                            case "mass": c.Mass = Flag(v, w); break;
+                            case "massRange": c.MassRange = Real(v, w, 10, 1000); break;
+                            case "massHysteresis": c.MassHysteresis = Real(v, w, 2, 200); break;
+                            case "massPerTick": c.MassPerTick = Whole(v, w, 1, 256); break;
+                            case "massCapacity": c.MassCapacity = Whole(v, w, 1, 255); break;
+                            case "drawCap": c.DrawCap = Whole(v, w, 1, 255); break;
+                            case "surface": c.Surface = Flag(v, w); break;
+                            case "surfaceHeight": c.SurfaceHeight = Real(v, w, 0.2f, 3); break;
+                            case "surfacePacked": c.SurfacePacked = Real(v, w, 0.2f, 10); break;
+                            case "surfaceMin": c.SurfaceMin = Real(v, w, 0, 3); break;
+                            case "surfaceStep": c.SurfaceStep = Real(v, w, 0, 2); break;
+                            case "surfacePush": c.SurfacePush = Real(v, w, 0, 50); break;
+                            case "surfaceLift": c.SurfaceLift = Real(v, w, 0, 10); break;
+                            case "roar": c.Roar = Flag(v, w); break;
+                            case "roarFull": c.RoarFull = Real(v, w, 10, 5000); break;
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    if (c.ThinkMax < c.ThinkMin)
+                        throw new WeaponFileException($"{at}: thinkMin <= thinkMax");
+                    if (c.MassRange < c.DemoteRange + 4)
+                        throw new WeaponFileException($"{at}: massRange at least 4 m over demoteRange (individuals go back to particles before particles go into the mass)");
+                    if (c.DemoteRange < c.PromoteRange + 2)
+                        throw new WeaponFileException($"{at}: demoteRange at least 2 m over promoteRange (the hysteresis)");
                     break;
                 }
                 case "climb":
@@ -1360,6 +1542,11 @@ public sealed class ZombiesRules
             throw new WeaponFileException($"{where}: give at least one rarity a weight above 0");
         return row;
     }
+
+    /// <summary>A rarity by name ("rare").</summary>
+    private static Rarity RarityOf(JsonElement e, string where) =>
+        Enum.TryParse<Rarity>(WeaponFile.Text(e, where), true, out var tier) && Enum.IsDefined(tier)
+            ? tier : throw new WeaponFileException($"{where}: a rarity (common, uncommon, rare, epic, legendary, wonder)");
 
     private static int Whole(JsonElement e, string where, int min, int max)
     {

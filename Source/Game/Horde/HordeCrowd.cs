@@ -1,0 +1,962 @@
+using System.Diagnostics;
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>The crowd tier's numbers (docs/zombies/MASS-HORDE.md). Code defaults for the spike; a rules section later.</summary>
+public sealed class CrowdTuning
+{
+    /// <summary>A particle thinks (reads the flow field for its heading) every this many ticks, spread per particle.</summary>
+    public int ThinkMin = 8, ThinkMax = 16;
+
+    /// <summary>
+    /// Hysteresis (flat metres to the nearest player): a particle nearer than <see cref="PromoteRange"/> becomes a full
+    /// zombie (the individual tier); an individual further than <see cref="DemoteRange"/> for <see cref="DemoteSeconds"/>
+    /// goes back into the crowd.
+    /// </summary>
+    public float PromoteRange = 22f, DemoteRange = 34f, DemoteSeconds = 2f;
+
+    /// <summary>Most promotions and demotions a tick (the tick's cost stays flat when a wave arrives).</summary>
+    public int PromotePerTick = 6, DemotePerTick = 4;
+
+    /// <summary>The most individuals at once (the rest of the crowd waits at the promote range). At most <see cref="Game.MaxZombies"/>.</summary>
+    public int IndividualCap = 300;
+
+    /// <summary>Walking speed (m/s) and the spread either way (each particle its own, from its index).</summary>
+    public float Speed = 1.5f, SpeedSpread = 0.35f;
+
+    /// <summary>Separation: particles closer than this (m) push apart, this hard (m/s at contact), counting this many neighbours at most.</summary>
+    public float SeparationRadius = 0.7f, SeparationStrength = 2.5f;
+
+    public int SeparationMax = 8;
+
+    /// <summary>The flow field's cell (m) and how often (ticks) it is built again (sooner when a player moves to another cell, at most every 10 ticks).</summary>
+    public float FlowCell = 2f;
+
+    public int FlowRefreshTicks = 30;
+
+    /// <summary>The field is built over several ticks, about this many cells a tick (Dijkstra pops, then headings), into a second buffer.</summary>
+    public int FlowCellsPerTick = 1600;
+
+    /// <summary>
+    /// The network (Msg.ZCrowd, protocol 71): per-cell counts and headings in cells of <see cref="NetCell"/> m, every
+    /// <see cref="NetEvery"/> ticks; cells further than <see cref="NetFarRange"/> from the client only every
+    /// <see cref="NetFarEvery"/>th time.
+    /// </summary>
+    public float NetCell = 4f, NetFarRange = 60f;
+
+    public int NetEvery = 6, NetFarEvery = 3;
+
+    /// <summary>
+    /// The mass tier (HordeCrowd.Mass.cs): on; particles further than <see cref="MassRange"/> + <see cref="MassHysteresis"/>
+    /// from every player merge into per-cell counts, cells within <see cref="MassRange"/> let them out again,
+    /// <see cref="MassPerTick"/> each way a tick at most; a cell holds <see cref="MassCapacity"/> at most (the flow backs up
+    /// behind a full one). Clients draw at most <see cref="DrawCap"/> zombies a cell (the top layer of a dense blob).
+    /// </summary>
+    public bool Mass = true;
+
+    public float MassRange = 50f, MassHysteresis = 10f;
+
+    public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
+
+    /// <summary>
+    /// The crowd as ground (ZombiesCrowdSurface.cs): on; a cell packed at <see cref="SurfacePacked"/> zombies a square
+    /// metre is <see cref="SurfaceHeight"/> m high, thinner than <see cref="SurfaceMin"/> m it is no ground; a player
+    /// within <see cref="SurfaceStep"/> m of its top stands on it, slid down its slope at <see cref="SurfacePush"/> m/s
+    /// per unit of slope; one deep inside is lifted onto it at <see cref="SurfaceLift"/> m/s.
+    /// </summary>
+    public bool Surface = true;
+
+    public float SurfaceHeight = 1.3f, SurfacePacked = 2f, SurfaceMin = 0.3f, SurfaceStep = 0.45f, SurfacePush = 3f, SurfaceLift = 0.8f;
+
+    /// <summary>The crowd's roar (CrowdRoar.cs): on; a cluster of <see cref="RoarFull"/> zombies roars at full loudness, fewer by the square root.</summary>
+    public bool Roar = true;
+
+    public float RoarFull = 240f;
+}
+
+/// <summary>
+/// The crowd tier of the mass horde (docs/zombies/MASS-HORDE.md, the spike): thousands of zombies as particles with only
+/// a position and a velocity, in flat arrays (no object per zombie). One flow field over the map's floor plan (a grid
+/// of <see cref="CrowdTuning.FlowCell"/> m cells, a Dijkstra from every player's cell at once) gives every particle its
+/// heading; each reads it every 8-16 ticks and walks it every tick, pushed apart from its neighbours (and from the
+/// individuals) through a uniform grid rebuilt each tick by a counting sort. No hit boxes, no animation state, no
+/// network state: near the players the game promotes particles to full zombies (<see cref="Game.CrowdTick"/>), and
+/// sends far, healthy ones back. Single floor (one height; the spike's dev map is flat). No allocation per tick once
+/// the arrays have grown.
+/// </summary>
+public sealed partial class HordeCrowd
+{
+    public CrowdTuning Tuning = new();
+
+    // ---- The particles (structure of arrays) ----------------------------------------------------------
+
+    /// <summary>Positions, velocities, headings (unit, from the flow field), speeds and separation pushes, by particle index.</summary>
+    public float[] X = [], Z = [], VX = [], VZ = [], DX = [], DZ = [], Spd = [], PX = [], PZ = [];
+
+    /// <summary>The tick each particle thinks next.</summary>
+    public long[] Next = [];
+
+    /// <summary>Inside the promote range but not promoted yet (the individual cap): it holds there.</summary>
+    public bool[] Held = [];
+
+    /// <summary>Health (shots and blasts hurt crowd zombies; a promoted one keeps it).</summary>
+    public float[] HP = [];
+
+    /// <summary>Particles alive in the crowd (indices 0..Count-1).</summary>
+    public int Count;
+
+    /// <summary>The floor's height (the spike is one floor).</summary>
+    public float Y;
+
+    // ---- Statistics (self-test, log) -------------------------------------------------------------------
+
+    public long Ticks, Thinks, Promoted, Demoted, FlowBuilds, Blocked;
+    public double FlowMs, FlowWorstMs, TickMs;
+
+    /// <summary>Particles inside the promote range this tick (waiting or about to be promoted).</summary>
+    public int Near;
+
+    // ---- The flow field --------------------------------------------------------------------------------
+
+    private float _minX, _minZ, _cell = 2f, _halfX, _halfZ;
+    private int _cols, _rows;
+    private bool[] _walk = [];
+    private float[] _cost = [], _fdx = [], _fdz = [], _bCost = [], _bFdx = [], _bFdz = [];
+    private int _flowPhase, _flowRow;
+    private byte[] _nmask = [];
+    private int[] _nOff = new int[8];
+    private static readonly int[] NDc = [-1, 0, 1, -1, 1, -1, 0, 1], NDr = [-1, -1, -1, 0, 0, 1, 1, 1];
+    private static readonly float[] NCost = [1.41421356f, 1, 1.41421356f, 1, 1, 1.41421356f, 1, 1.41421356f];
+    private bool _flowReady;
+    private int[] _heapCell = new int[1024];
+    private float[] _heapKey = new float[1024];
+    private int _heapCount;
+    private long _flowTick = -1_000_000;
+    private readonly int[] _targetCell = new int[HordeController<Zombie>.MaxTargets];
+    private Map? _setupMap;
+
+    // ---- The separation grid ---------------------------------------------------------------------------
+
+    private float _sMinX, _sMinZ, _sCell = 0.7f;
+    private int _sCols, _sRows;
+    private int[] _sStart = [], _sFill = [], _sItem = [];
+    private float[] _sX = [], _sZ = [];
+
+    /// <summary>Individuals' positions this tick (they push particles; set by the game before <see cref="Tick"/>).</summary>
+    public float[] BlockX = new float[Game.MaxZombies], BlockZ = new float[Game.MaxZombies];
+
+    public int BlockCount;
+
+    // ---- Promotion candidates --------------------------------------------------------------------------
+
+    /// <summary>This tick's nearest particles inside the promote range (indices, nearest first), at most <see cref="CrowdTuning.PromotePerTick"/>.</summary>
+    public readonly int[] Candidates = new int[64];
+
+    public int CandidateCount;
+    private readonly float[] _candD = new float[64];
+
+    /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
+    public int FlowCells => _cols * _rows;
+
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
+
+    /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
+    public void Setup(Map map, float floorY, int capacity)
+    {
+        Reserve(capacity);
+        if (ReferenceEquals(_setupMap, map) && Y == floorY && _cell == MathF.Max(0.5f, Tuning.FlowCell) && _sCell == MathF.Max(0.4f, Tuning.SeparationRadius) && _mCell == MathF.Max(1f, Tuning.NetCell))
+            return;
+        _setupMap = map;
+        Y = floorY;
+        _halfX = map.HalfX;
+        _halfZ = map.HalfZ;
+        _cell = MathF.Max(0.5f, Tuning.FlowCell);
+        _minX = -map.HalfX;
+        _minZ = -map.HalfZ;
+        _cols = Math.Clamp((int)MathF.Ceiling(map.HalfX * 2 / _cell), 1, 1024);
+        _rows = Math.Clamp((int)MathF.Ceiling(map.HalfZ * 2 / _cell), 1, 1024);
+        var n = _cols * _rows;
+        _walk = new bool[n];
+        _cost = new float[n];
+        _fdx = new float[n];
+        _fdz = new float[n];
+        _bCost = new float[n];
+        _bFdx = new float[n];
+        _bFdz = new float[n];
+        Array.Fill(_cost, float.PositiveInfinity);
+        _flowPhase = 0;
+        _flowReady = false;
+        for (var r = 0; r < _rows; r++)
+            for (var c = 0; c < _cols; c++)
+            {
+                var p = new Vector3(_minX + (c + 0.5f) * _cell, floorY + 0.05f, _minZ + (r + 0.5f) * _cell);
+                _walk[r * _cols + c] = !World.Blocked(p, 1.7f);
+            }
+        // Each cell's open neighbours (bit k: _nOff[k] is walkable, and a diagonal cuts no corner), for the field's inner loops.
+        _nmask = new byte[n];
+        _nOff = [-_cols - 1, -_cols, -_cols + 1, -1, 1, _cols - 1, _cols, _cols + 1];
+        for (var r = 0; r < _rows; r++)
+            for (var c = 0; c < _cols; c++)
+            {
+                byte m = 0;
+                for (var k = 0; k < 8; k++)
+                {
+                    int dc = NDc[k], dr = NDr[k], uc = c + dc, ur = r + dr;
+                    if (uc < 0 || ur < 0 || uc >= _cols || ur >= _rows || !_walk[ur * _cols + uc])
+                        continue;
+                    if (dc != 0 && dr != 0 && (!_walk[r * _cols + uc] || !_walk[ur * _cols + c]))
+                        continue;
+                    m |= (byte)(1 << k);
+                }
+                _nmask[r * _cols + c] = m;
+            }
+        _sCell = MathF.Max(0.4f, Tuning.SeparationRadius);
+        _sMinX = -map.HalfX - _sCell;
+        _sMinZ = -map.HalfZ - _sCell;
+        _sCols = Math.Clamp((int)MathF.Ceiling((map.HalfX * 2 + 2 * _sCell) / _sCell), 1, 2048);
+        _sRows = Math.Clamp((int)MathF.Ceiling((map.HalfZ * 2 + 2 * _sCell) / _sCell), 1, 2048);
+        _sStart = new int[_sCols * _sRows + 1];
+        _sFill = new int[_sCols * _sRows];
+        _flowTick = -1_000_000;
+        Array.Fill(_targetCell, -1);
+        SetupMass();
+    }
+
+    /// <summary>Set up for a map (<see cref="Setup"/>): before that there is nothing to tick.</summary>
+    public bool Ready => _sStart.Length > 0;
+
+    /// <summary>Grows the particle arrays to <paramref name="n"/> (allocates only when it grows).</summary>
+    public void Reserve(int n)
+    {
+        if (X.Length >= n)
+            return;
+        Array.Resize(ref X, n);
+        Array.Resize(ref Z, n);
+        Array.Resize(ref VX, n);
+        Array.Resize(ref VZ, n);
+        Array.Resize(ref DX, n);
+        Array.Resize(ref DZ, n);
+        Array.Resize(ref Spd, n);
+        Array.Resize(ref PX, n);
+        Array.Resize(ref PZ, n);
+        Array.Resize(ref Next, n);
+        Array.Resize(ref Held, n);
+        Array.Resize(ref HP, n);
+        var m = n + Game.MaxZombies;
+        _sItem = new int[m];
+        _sX = new float[m];
+        _sZ = new float[m];
+    }
+
+    /// <summary>Every particle gone (a new run or round).</summary>
+    public void Clear()
+    {
+        Count = 0;
+        CandidateCount = 0;
+        Near = 0;
+        ClearMass();
+    }
+
+    /// <summary>Is the flow cell at (x, z) walkable (outside the map: no)?</summary>
+    public bool Walkable(float x, float z)
+    {
+        if (_walk.Length == 0)
+            return true;
+        var c = (int)((x - _minX) / _cell);
+        var r = (int)((z - _minZ) / _cell);
+        return c >= 0 && r >= 0 && c < _cols && r < _rows && _walk[r * _cols + c];
+    }
+
+    /// <summary>
+    /// Adds a particle at (x, z) with velocity (vx, vz) and returns its index (-1: full). Its speed comes from
+    /// <paramref name="seed"/> (a stable per-zombie number), so a zombie keeps its pace across demotion and promotion.
+    /// </summary>
+    public int Add(float x, float z, float vx, float vz, uint seed, long tick, float hp = 100f)
+    {
+        if (Count >= X.Length)
+            return -1;
+        var i = Count++;
+        X[i] = x;
+        Z[i] = z;
+        VX[i] = vx;
+        VZ[i] = vz;
+        var l = MathF.Sqrt(vx * vx + vz * vz);
+        DX[i] = l > 1e-3f ? vx / l : 0;
+        DZ[i] = l > 1e-3f ? vz / l : 0;
+        PX[i] = PZ[i] = 0;
+        var h = Hash(seed);
+        Spd[i] = Tuning.Speed * (1 + Tuning.SpeedSpread * ((h & 0xFFFF) / 32767.5f - 1));
+        Next[i] = tick + 1 + (h >> 16) % (uint)Math.Max(1, Tuning.ThinkMax);
+        Held[i] = false;
+        HP[i] = hp;
+        return i;
+    }
+
+    /// <summary>Removes particle <paramref name="i"/> (the last one takes its index).</summary>
+    public void RemoveAt(int i)
+    {
+        var last = --Count;
+        if (i == last)
+            return;
+        X[i] = X[last];
+        Z[i] = Z[last];
+        VX[i] = VX[last];
+        VZ[i] = VZ[last];
+        DX[i] = DX[last];
+        DZ[i] = DZ[last];
+        Spd[i] = Spd[last];
+        PX[i] = PX[last];
+        PZ[i] = PZ[last];
+        Next[i] = Next[last];
+        Held[i] = Held[last];
+        HP[i] = HP[last];
+    }
+
+    public static uint Hash(uint x)
+    {
+        x ^= x >> 16;
+        x *= 0x7feb352d;
+        x ^= x >> 15;
+        x *= 0x846ca68b;
+        x ^= x >> 16;
+        return x;
+    }
+
+    /// <summary>
+    /// One tick: the flow field when it is due, each particle's think when due, separation (half the particles a tick,
+    /// alternating), the walk with sliding along blocked cells, and this tick's promotion candidates (the nearest inside
+    /// the promote range). <paramref name="tx"/>/<paramref name="tz"/>: the players standing (at most 8).
+    /// <paramref name="canPromote"/>: how many the game can take this tick (0: the cap is full, everyone near holds).
+    /// </summary>
+    public void Tick(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz, int canPromote)
+    {
+        var t0 = Stopwatch.GetTimestamp();
+        Ticks++;
+        var targets = Math.Min(tx.Length, _targetCell.Length);
+        // The flow field: due, or a player has moved to another cell.
+        var moved = false;
+        for (var t = 0; t < targets; t++)
+            if (CellOf(tx[t], tz[t]) != _targetCell[t])
+                moved = true;
+        for (var t = targets; t < _targetCell.Length; t++)
+            if (_targetCell[t] != -1)
+                moved = true;
+        if (_flowPhase == 0 && targets > 0 && (tick - _flowTick >= Tuning.FlowRefreshTicks || (moved && tick - _flowTick >= 10)))
+            StartFlow(tick, tx[..targets], tz[..targets]);
+        if (_flowPhase != 0)
+            StepFlow(Tuning.FlowCellsPerTick); // (until the first field is ready the particles walk straight at the players)
+
+        BuildSeparation();
+
+        var dt = World.TickDt;
+        var pr2 = Tuning.PromoteRange * Tuning.PromoteRange;
+        var want = Math.Min(Math.Min(canPromote, Tuning.PromotePerTick), Candidates.Length);
+        CandidateCount = 0;
+        Near = 0;
+        var parity = (int)(tick & 1);
+        var sepR = Tuning.SeparationRadius;
+        var sepS = Tuning.SeparationStrength;
+        var thinkSpan = (uint)Math.Max(1, Tuning.ThinkMax - Tuning.ThinkMin + 1);
+        var mr = Tuning.MassRange + Tuning.MassHysteresis;
+        var merge2 = Tuning.Mass && targets > 0 ? mr * mr : float.MaxValue;
+        var mergeTurn = (int)(tick & 7);
+        _mergeN = 0;
+        for (var i = 0; i < Count; i++)
+        {
+            var x = X[i];
+            var z = Z[i];
+            // The nearest player (flat).
+            var best = float.MaxValue;
+            var bt = -1;
+            for (var t = 0; t < targets; t++)
+            {
+                var ddx = tx[t] - x;
+                var ddz = tz[t] - z;
+                var d = ddx * ddx + ddz * ddz;
+                if (d < best)
+                {
+                    best = d;
+                    bt = t;
+                }
+            }
+            if (tick >= Next[i])
+            {
+                Thinks++;
+                Next[i] = tick + Tuning.ThinkMin + Hash((uint)i * 2654435761u ^ (uint)tick) % thinkSpan;
+                Think(i, x, z, bt >= 0 ? tx[bt] : x, bt >= 0 ? tz[bt] : z, best);
+            }
+            if (best < pr2)
+            {
+                Near++;
+                if (want > 0)
+                    Offer(i, best, want);
+                Held[i] = true;
+            }
+            else
+            {
+                Held[i] = false;
+                if (best > merge2 && (i & 7) == mergeTurn && HP[i] >= MassHP)
+                    OfferMerge(i); // far from everyone: into the mass (HordeCrowd.Mass.cs)
+            }
+            if ((i & 1) == parity)
+                Separate(i, x, z, sepR, sepS);
+            var spd = Held[i] ? 0f : Spd[i];
+            var wx = DX[i] * spd + PX[i];
+            var wz = DZ[i] * spd + PZ[i];
+            // Ease towards the wanted velocity (a quarter a tick: about 0.07 s to turn).
+            var vx = VX[i] + (wx - VX[i]) * 0.25f;
+            var vz = VZ[i] + (wz - VZ[i]) * 0.25f;
+            var nx = x + vx * dt;
+            var nz = z + vz * dt;
+            if (!Walkable(nx, nz))
+            {
+                if (Walkable(nx, z))
+                {
+                    nz = z;
+                    vz = 0;
+                }
+                else if (Walkable(x, nz))
+                {
+                    nx = x;
+                    vx = 0;
+                }
+                else
+                {
+                    nx = x;
+                    nz = z;
+                    vx = vz = 0;
+                    Blocked++;
+                }
+            }
+            X[i] = Math.Clamp(nx, -_halfX + 0.3f, _halfX - 0.3f);
+            Z[i] = Math.Clamp(nz, -_halfZ + 0.3f, _halfZ - 0.3f);
+            VX[i] = vx;
+            VZ[i] = vz;
+        }
+        TickMass(tick, tx[..targets], tz[..targets]); // the mass tier: merge, flow, release (HordeCrowd.Mass.cs)
+        TickMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+    }
+
+    /// <summary>Keeps the <paramref name="want"/> nearest candidates (insertion, nearest first; ties by index).</summary>
+    private void Offer(int i, float d, int want)
+    {
+        var n = CandidateCount;
+        if (n == want && d >= _candD[n - 1])
+            return;
+        var k = n < want ? n++ : n - 1;
+        while (k > 0 && _candD[k - 1] > d)
+        {
+            _candD[k] = _candD[k - 1];
+            Candidates[k] = Candidates[k - 1];
+            k--;
+        }
+        _candD[k] = d;
+        Candidates[k] = i;
+        CandidateCount = n;
+    }
+
+    /// <summary>A particle's think: its heading from the flow field (near the player, or off the field: straight at them).</summary>
+    private void Think(int i, float x, float z, float px, float pz, float d2)
+    {
+        var c = CellOf(x, z);
+        float hx, hz;
+        // The flow field when the way round is longer than the straight line could be on the grid (octile distance is at
+        // most 8% over the straight one, plus a cell): something is in the way. Otherwise straight at the player (no
+        // lanes along the grid's eight directions in the open).
+        if (c >= 0 && _cost.Length > c && !float.IsPositiveInfinity(_cost[c]) && d2 > _cell * _cell * 4 && (_fdx[c] != 0 || _fdz[c] != 0)
+            && _cost[c] * _cell > MathF.Sqrt(d2) * 1.09f + _cell)
+        {
+            hx = _fdx[c];
+            hz = _fdz[c];
+        }
+        else
+        {
+            hx = px - x;
+            hz = pz - z;
+            var l = MathF.Sqrt(hx * hx + hz * hz);
+            if (l < 1e-3f)
+                hx = hz = 0;
+            else
+            {
+                hx /= l;
+                hz /= l;
+            }
+        }
+        DX[i] = hx;
+        DZ[i] = hz;
+    }
+
+    private int CellOf(float x, float z)
+    {
+        var c = (int)((x - _minX) / _cell);
+        var r = (int)((z - _minZ) / _cell);
+        return c < 0 || r < 0 || c >= _cols || r >= _rows ? -1 : r * _cols + c;
+    }
+
+    // ---- Flow field -------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Starts building the next field into the back buffers (the particles keep reading the current one meanwhile): every
+    /// standing player's cell is a source.
+    /// </summary>
+    private void StartFlow(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz)
+    {
+        _flowTick = tick;
+        _flowPhase = 1;
+        _flowRow = 0;
+        var n = _cols * _rows;
+        Array.Fill(_bCost, float.PositiveInfinity, 0, n);
+        Array.Fill(_targetCell, -1);
+        _heapCount = 0;
+        for (var t = 0; t < tx.Length; t++)
+        {
+            var c = CellOf(tx[t], tz[t]);
+            _targetCell[t] = c;
+            if (c < 0 || _bCost[c] == 0)
+                continue;
+            _bCost[c] = 0;
+            Push(c, 0);
+        }
+    }
+
+    /// <summary>
+    /// Works on the field being built for about <paramref name="budget"/> cells (Dijkstra pops, then headings), and
+    /// swaps it in when done. Spread over a few ticks, so no tick pays for a whole field.
+    /// </summary>
+    private void StepFlow(int budget)
+    {
+        var t0 = Stopwatch.GetTimestamp();
+        var cost = _bCost;
+        if (_flowPhase == 1)
+        {
+            var off = _nOff;
+            while (_heapCount > 0 && budget > 0)
+            {
+                var (v, key) = Pop();
+                if (key > cost[v])
+                    continue;
+                budget--;
+                var m = _nmask[v];
+                for (var k = 0; k < 8; k++)
+                {
+                    if ((m & (1 << k)) == 0)
+                        continue;
+                    var u = v + off[k];
+                    var nk = key + NCost[k];
+                    if (nk >= cost[u])
+                        continue;
+                    cost[u] = nk;
+                    Push(u, nk);
+                }
+            }
+            if (_heapCount == 0)
+                _flowPhase = 2;
+        }
+        if (_flowPhase == 2)
+        {
+            var fdx = _bFdx;
+            var fdz = _bFdz;
+            for (; _flowRow < _rows && budget > 0; _flowRow++, budget -= _cols)
+            {
+                var r = _flowRow;
+                for (var c = 0; c < _cols; c++)
+                {
+                    var i = r * _cols + c;
+                    fdx[i] = fdz[i] = 0;
+                    var own = cost[i];
+                    if (float.IsPositiveInfinity(own) || own == 0)
+                        continue;
+                    // Towards the cheapest neighbour.
+                    var best = own;
+                    int bc = 0, br = 0;
+                    var m = _nmask[i];
+                    for (var k = 0; k < 8; k++)
+                    {
+                        if ((m & (1 << k)) == 0)
+                            continue;
+                        var kc = cost[i + _nOff[k]];
+                        if (kc < best)
+                        {
+                            best = kc;
+                            bc = NDc[k];
+                            br = NDr[k];
+                        }
+                    }
+                    // In the open (all four neighbours reachable): down the cost's slope (central differences), so the
+                    // crowd fans out instead of filing along the grid's eight directions; next to a wall: the cheapest neighbour.
+                    if (c > 0 && r > 0 && c < _cols - 1 && r < _rows - 1)
+                    {
+                        float cl = cost[i - 1], cr = cost[i + 1], cu = cost[i - _cols], cd = cost[i + _cols];
+                        if (!float.IsPositiveInfinity(cl) && !float.IsPositiveInfinity(cr) && !float.IsPositiveInfinity(cu) && !float.IsPositiveInfinity(cd))
+                        {
+                            var gx = cl - cr;
+                            var gz = cu - cd;
+                            var gl = MathF.Sqrt(gx * gx + gz * gz);
+                            if (gl > 1e-4f && gx * bc + gz * br > 0)
+                            {
+                                fdx[i] = gx / gl;
+                                fdz[i] = gz / gl;
+                                continue;
+                            }
+                        }
+                    }
+                    var l = bc != 0 && br != 0 ? 0.70710678f : 1f;
+                    fdx[i] = bc * l;
+                    fdz[i] = br * l;
+                }
+            }
+            if (_flowRow >= _rows)
+            {
+                // Done: the new field goes live.
+                (_cost, _bCost) = (_bCost, _cost);
+                (_fdx, _bFdx) = (_bFdx, _fdx);
+                (_fdz, _bFdz) = (_bFdz, _fdz);
+                _flowPhase = 0;
+                _flowReady = true;
+                FlowBuilds++;
+            }
+        }
+        var ms = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        FlowMs += ms;
+        FlowWorstMs = Math.Max(FlowWorstMs, ms);
+    }
+
+    private void Push(int cell, float key)
+    {
+        if (_heapCount == _heapCell.Length)
+        {
+            Array.Resize(ref _heapCell, _heapCell.Length * 2);
+            Array.Resize(ref _heapKey, _heapKey.Length * 2);
+        }
+        var i = _heapCount++;
+        while (i > 0)
+        {
+            var p = (i - 1) >> 1;
+            if (_heapKey[p] <= key)
+                break;
+            _heapCell[i] = _heapCell[p];
+            _heapKey[i] = _heapKey[p];
+            i = p;
+        }
+        _heapCell[i] = cell;
+        _heapKey[i] = key;
+    }
+
+    private (int Cell, float Key) Pop()
+    {
+        var top = (_heapCell[0], _heapKey[0]);
+        var last = --_heapCount;
+        if (last > 0)
+        {
+            var cell = _heapCell[last];
+            var key = _heapKey[last];
+            var i = 0;
+            while (true)
+            {
+                var l = i * 2 + 1;
+                if (l >= last)
+                    break;
+                var r = l + 1;
+                var m = r < last && _heapKey[r] < _heapKey[l] ? r : l;
+                if (_heapKey[m] >= key)
+                    break;
+                _heapCell[i] = _heapCell[m];
+                _heapKey[i] = _heapKey[m];
+                i = m;
+            }
+            _heapCell[i] = cell;
+            _heapKey[i] = key;
+        }
+        return top;
+    }
+
+    /// <summary>The flow field's cost (cells) at (x, z) (self-test; infinity: unreachable or no field yet).</summary>
+    public float FlowCost(float x, float z)
+    {
+        var c = CellOf(x, z);
+        return c < 0 || c >= _cost.Length ? float.PositiveInfinity : _cost[c];
+    }
+
+    // ---- Separation -------------------------------------------------------------------------------------
+
+    private int SCell(float x, float z)
+    {
+        var c = Math.Clamp((int)((x - _sMinX) / _sCell), 0, _sCols - 1);
+        var r = Math.Clamp((int)((z - _sMinZ) / _sCell), 0, _sRows - 1);
+        return r * _sCols + c;
+    }
+
+    /// <summary>The counting sort: particles then individuals into the separation grid (items past <see cref="Count"/> are individuals).</summary>
+    private void BuildSeparation()
+    {
+        var cells = _sCols * _sRows;
+        var total = Count + Math.Min(BlockCount, BlockX.Length);
+        Array.Clear(_sStart, 0, cells + 1);
+        for (var i = 0; i < total; i++)
+        {
+            var (x, z) = i < Count ? (X[i], Z[i]) : (BlockX[i - Count], BlockZ[i - Count]);
+            _sStart[SCell(x, z) + 1]++;
+        }
+        for (var c = 0; c < cells; c++)
+            _sStart[c + 1] += _sStart[c];
+        Array.Copy(_sStart, _sFill, cells);
+        for (var i = 0; i < total; i++)
+        {
+            var (x, z) = i < Count ? (X[i], Z[i]) : (BlockX[i - Count], BlockZ[i - Count]);
+            var k = _sFill[SCell(x, z)]++;
+            _sItem[k] = i;
+            _sX[k] = x;
+            _sZ[k] = z;
+        }
+    }
+
+    private void Separate(int i, float x, float z, float r, float strength)
+    {
+        var c0 = Math.Clamp((int)((x - r - _sMinX) / _sCell), 0, _sCols - 1);
+        var c1 = Math.Clamp((int)((x + r - _sMinX) / _sCell), 0, _sCols - 1);
+        var r0 = Math.Clamp((int)((z - r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var r1 = Math.Clamp((int)((z + r - _sMinZ) / _sCell), 0, _sRows - 1);
+        float px = 0, pz = 0;
+        var seen = 0;
+        var r2 = r * r;
+        var max = Tuning.SeparationMax;
+        for (var cz = r0; cz <= r1 && seen < max; cz++)
+            for (var cx = c0; cx <= c1 && seen < max; cx++)
+            {
+                var cell = cz * _sCols + cx;
+                for (var k = _sStart[cell]; k < _sStart[cell + 1]; k++)
+                {
+                    if (_sItem[k] == i)
+                        continue;
+                    var dx = x - _sX[k];
+                    var dz = z - _sZ[k];
+                    var l2 = dx * dx + dz * dz;
+                    if (l2 > r2)
+                        continue;
+                    if (l2 < 1e-6f)
+                    {
+                        // Exactly on top of each other: split by index.
+                        dx = (i & 1) == 0 ? 0.01f : -0.01f;
+                        dz = (i & 2) == 0 ? 0.01f : -0.01f;
+                        l2 = 2e-4f;
+                    }
+                    var l = MathF.Sqrt(l2);
+                    var f = (r - l) / r * strength / l;
+                    // An individual pushes twice as hard (bodies with collision; particles give way).
+                    if (_sItem[k] >= Count)
+                        f *= 2;
+                    px += dx * f;
+                    pz += dz * f;
+                    if (++seen >= max)
+                        break;
+                }
+            }
+        PX[i] = px;
+        PZ[i] = pz;
+    }
+
+    // ---- Combat ----------------------------------------------------------------------------------------------
+
+    /// <summary>A crowd zombie's body for shots: a vertical capsule this wide and tall (its head the top <see cref="HeadFrom"/>).</summary>
+    public const float BodyRadius = 0.32f, BodyHeight = 1.8f, HeadFrom = 1.5f;
+
+    /// <summary>
+    /// The nearest crowd zombie a ray hits before <paramref name="dist"/> (-1: none), walking the separation grid along
+    /// the ray (positions as of this tick's start). Shortens <paramref name="dist"/> to the hit; <paramref name="head"/>:
+    /// it hit the head.
+    /// </summary>
+    public int RayHit(Vector3 o, Vector3 d, ref float dist, out bool head)
+    {
+        head = false;
+        if (Count == 0 || _sStart.Length == 0)
+            return -1;
+        var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+        if (flat < 1e-4f)
+            return -1;
+        var best = -1;
+        var bestT = dist;
+        var step = _sCell * 0.5f / flat; // (ray length per half a cell across the floor)
+        var lastCell = -1;
+        for (var t = 0f; t <= bestT + step; t += step)
+        {
+            var p = o + d * t;
+            if (p.Y < Y - 0.5f || p.Y > Y + BodyHeight + 0.5f)
+            {
+                // Above or below the crowd: skip ahead only if the ray is heading away.
+                if ((p.Y > Y + BodyHeight && d.Y >= 0) || (p.Y < Y && d.Y <= 0))
+                    break;
+                continue;
+            }
+            var cell = SCell(p.X, p.Z);
+            if (cell == lastCell)
+                continue;
+            lastCell = cell;
+            var cx = cell % _sCols;
+            var cz = cell / _sCols;
+            for (var rz = Math.Max(0, cz - 1); rz <= Math.Min(_sRows - 1, cz + 1); rz++)
+                for (var rx = Math.Max(0, cx - 1); rx <= Math.Min(_sCols - 1, cx + 1); rx++)
+                {
+                    var c = rz * _sCols + rx;
+                    for (var k = _sStart[c]; k < _sStart[c + 1]; k++)
+                    {
+                        var i = _sItem[k];
+                        if (i >= Count)
+                            continue; // (an individual: they have their own hit boxes)
+                        // Closest approach of the ray to the zombie's vertical axis, on the floor plane.
+                        var qx = X[i] - o.X;
+                        var qz = Z[i] - o.Z;
+                        var tc = (qx * d.X + qz * d.Z) / (flat * flat);
+                        if (tc < 0 || tc > bestT)
+                            continue;
+                        var ex = o.X + d.X * tc - X[i];
+                        var ez = o.Z + d.Z * tc - Z[i];
+                        var miss2 = ex * ex + ez * ez;
+                        if (miss2 > BodyRadius * BodyRadius)
+                            continue;
+                        // Back up to the capsule's surface.
+                        var th = tc - MathF.Sqrt(BodyRadius * BodyRadius - miss2) / flat;
+                        var y = o.Y + d.Y * Math.Max(0, th);
+                        if (y < Y || y > Y + BodyHeight || th >= bestT)
+                            continue;
+                        bestT = Math.Max(0, th);
+                        best = i;
+                        head = y > Y + HeadFrom;
+                    }
+                }
+            if (best >= 0 && t > bestT + _sCell)
+                break;
+        }
+        if (best >= 0)
+            dist = bestT;
+        return best;
+    }
+
+    /// <summary>Every crowd zombie within <paramref name="r"/> (flat) of <paramref name="p"/> into <paramref name="into"/> (up to its length). Returns how many.</summary>
+    public int Within(Vector3 p, float r, Span<int> into)
+    {
+        if (Count == 0 || _sStart.Length == 0)
+            return 0;
+        var c0 = Math.Clamp((int)((p.X - r - _sMinX) / _sCell), 0, _sCols - 1);
+        var c1 = Math.Clamp((int)((p.X + r - _sMinX) / _sCell), 0, _sCols - 1);
+        var r0 = Math.Clamp((int)((p.Z - r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var r1 = Math.Clamp((int)((p.Z + r - _sMinZ) / _sCell), 0, _sRows - 1);
+        var n = 0;
+        var r2 = r * r;
+        for (var cz = r0; cz <= r1; cz++)
+            for (var cx = c0; cx <= c1; cx++)
+            {
+                var cell = cz * _sCols + cx;
+                for (var k = _sStart[cell]; k < _sStart[cell + 1]; k++)
+                {
+                    var i = _sItem[k];
+                    if (i >= Count)
+                        continue;
+                    var dx = X[i] - p.X;
+                    var dz = Z[i] - p.Z;
+                    if (dx * dx + dz * dz > r2)
+                        continue;
+                    if (n == into.Length)
+                        return n;
+                    into[n++] = i;
+                }
+            }
+        return n;
+    }
+
+    // ---- The network sketch -----------------------------------------------------------------------------
+
+    /// <summary>
+    /// Counts particles per square cell of <paramref name="cell"/> m into <paramref name="into"/> (cols x rows of the map;
+    /// sized by the caller from <see cref="DensitySize"/>). The network sketch sends these as per-cell deltas.
+    /// </summary>
+    public void Density(float cell, Span<ushort> into)
+    {
+        var (cols, rows) = DensitySize(cell);
+        into[..(cols * rows)].Clear();
+        for (var i = 0; i < Count; i++)
+        {
+            var c = Math.Clamp((int)((X[i] + _halfX) / cell), 0, cols - 1);
+            var r = Math.Clamp((int)((Z[i] + _halfZ) / cell), 0, rows - 1);
+            ref var v = ref into[r * cols + c];
+            if (v < ushort.MaxValue)
+                v++;
+        }
+    }
+
+    private float[] _dvx = [], _dvz = [];
+
+    /// <summary>
+    /// The network's picture of the crowd: per cell of <paramref name="cell"/> m (<see cref="DensitySize"/>) the particles
+    /// in it (at most 255) and their mean heading as a byte (1-255 round the compass, World.FlatForward's yaw; 0 when
+    /// standing). No allocation once sized.
+    /// </summary>
+    public void DensityHeading(float cell, byte[] counts, byte[] headings)
+    {
+        var (cols, rows) = DensitySize(cell);
+        var n = cols * rows;
+        if (_dvx.Length < n)
+        {
+            _dvx = new float[n];
+            _dvz = new float[n];
+        }
+        Array.Clear(counts, 0, n);
+        Array.Clear(_dvx, 0, n);
+        Array.Clear(_dvz, 0, n);
+        for (var i = 0; i < Count; i++)
+        {
+            var c = Math.Clamp((int)((X[i] + _halfX) / cell), 0, cols - 1);
+            var r = Math.Clamp((int)((Z[i] + _halfZ) / cell), 0, rows - 1);
+            var k = r * cols + c;
+            if (counts[k] < 255)
+                counts[k]++;
+            _dvx[k] += VX[i];
+            _dvz[k] += VZ[i];
+        }
+        // The mass's counts (on the same grid when the cell sizes agree: the network's is the mass's).
+        if (MassTotal > 0 && MathF.Abs(cell - _mCell) < 1e-4f && MassCount.Length == n)
+            for (var k = 0; k < n; k++)
+            {
+                var m = MassCount[k];
+                if (m == 0)
+                    continue;
+                counts[k] = (byte)Math.Min(255, counts[k] + m);
+                _dvx[k] += MassVX[k] * m;
+                _dvz[k] += MassVZ[k] * m;
+            }
+        for (var k = 0; k < n; k++)
+        {
+            var l2 = _dvx[k] * _dvx[k] + _dvz[k] * _dvz[k];
+            headings[k] = counts[k] == 0 || l2 < 1e-4f ? (byte)0 : HeadingByte(MathF.Atan2(_dvx[k], -_dvz[k]));
+        }
+    }
+
+    /// <summary>A yaw (radians) as a byte round the compass, 1-255 (0 means standing), and back.</summary>
+    public static byte HeadingByte(float yaw)
+    {
+        var f = yaw / MathF.Tau;
+        f -= MathF.Floor(f);
+        return (byte)(1 + Math.Min(254, (int)(f * 255f)));
+    }
+
+    public static float HeadingYaw(byte b) => b == 0 ? 0f : (b - 0.5f) / 255f * MathF.Tau;
+
+    /// <summary>The map's lower corner (the network grid's origin).</summary>
+    public float MinX => -_halfX;
+
+    public float MinZ => -_halfZ;
+
+    public (int Cols, int Rows) DensitySize(float cell) => (Math.Clamp((int)MathF.Ceiling(_halfX * 2 / cell), 1, 255), Math.Clamp((int)MathF.Ceiling(_halfZ * 2 / cell), 1, 255));
+
+    /// <summary>Order-dependent digest of every particle (self-test: determinism).</summary>
+    public ulong Digest()
+    {
+        var h = 1469598103934665603UL;
+        for (var i = 0; i < Count; i++)
+        {
+            h = (h ^ BitConverter.SingleToUInt32Bits(X[i])) * 1099511628211UL;
+            h = (h ^ BitConverter.SingleToUInt32Bits(Z[i])) * 1099511628211UL;
+        }
+        return h;
+    }
+}

@@ -100,7 +100,7 @@ public static unsafe partial class Program
             var v = (s.Position - _moversSmokePrev) / World.TickDt;
             Console.WriteLine($"[smoke] movers {ride.Mover,-9} t {t,4:0.0} s: feet {SmokeVec(s.Position)}, moved {v.Length():0.00} m/s, grounded {s.Grounded}, "
                 + $"on {(under >= 0 ? map.Movers[under].Name : "nothing")}, {_moversSmokeFrames / Math.Max(t, 1e-6):0} fps, worst {_moversSmokeWorst * 1000:0.0} ms, "
-                + $"{MoverRender.LastBoxes} mover boxes, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                + $"{MoverRender.LastBoxes} mover boxes, GL error 0x{GlDebug.Error():X}");
         }
         if (_moversSmokeShots == _moversSmoke * 2 && t > 1.5)
         {

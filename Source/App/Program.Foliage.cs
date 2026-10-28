@@ -96,7 +96,7 @@ public static unsafe partial class Program
         var w = FoliageGfx.Window;
         Console.WriteLine($"[smoke] foliage {level,-6} {view,-8}: {_foliageSmokeFrames / secs:0} fps avg ({secs * 1000 / Math.Max(_foliageSmokeFrames, 1):0.00} ms/frame), "
             + $"worst {_foliageSmokeWorst * 1000:0.0} ms, {FoliageGfx.Uploaded} plants uploaded, {w.AvgInstances:0} drawn in {w.AvgDraws:0.0} draw calls, "
-            + $"foliage CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+            + $"foliage CPU {w.AvgCpuMs:0.000} ms, GPU {(w.AvgGpuMs >= 0 ? $"{w.AvgGpuMs:0.000} ms" : "n/a")}, GL error 0x{GlDebug.Error():X}");
         if (level is FoliageQuality.High or FoliageQuality.Low)
             SmokeShot($"foliage_{level.ToString().ToLowerInvariant()}_{view}");
         _foliageSmokeAdvance = true;

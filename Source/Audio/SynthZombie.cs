@@ -151,8 +151,68 @@ public static partial class Synth
     }
 
     /// <summary>A zombie effect, variant <paramref name="v"/>; null for an effect this file doesn't make.</summary>
+    /// <summary>The crowd roar's variants (two loops, so two clusters never sound in step) and its length (seconds; it loops).</summary>
+    public const int CrowdRoarVariants = 2;
+
+    public const float CrowdRoarSeconds = 4f;
+
+    /// <summary>
+    /// The mass horde's crowd (CrowdRoar.cs): a loop of many low throats groaning over each other at random, none alike,
+    /// over a deep rumble (the shuffle of thousands of feet) with a slow swell, so a dense cluster sounds like a crowd
+    /// and not one loud zombie. The throats end before the loop's end, so the seam is only the rumble.
+    /// </summary>
+    private static short[] CrowdRoarLoop(int v)
+    {
+        var rng = new Random(41000 + v * 7919);
+        float R(float a, float c) => a + (float)rng.NextDouble() * (c - a);
+        float[] Pick(params float[][] vowels) => vowels[rng.Next(vowels.Length)];
+        var b = new Buf(CrowdRoarSeconds);
+        for (var k = 0; k < 28; k++)
+        {
+            var p = default(ThroatParams);
+            p.Length = R(0.9f, 1.9f);
+            p.Start = R(0f, CrowdRoarSeconds - p.Length - 0.05f);
+            p.F0 = R(70, 150);
+            p.FPeak = p.F0 * R(1.05f, 1.3f);
+            p.FEnd = p.F0 * R(0.7f, 0.95f);
+            p.PeakAt = R(0.2f, 0.55f);
+            p.VowelA = Pick(ZU, ZO, ZA);
+            p.VowelB = Pick(ZO, ZA, ZU, ZAe);
+            p.Sub = R(0.3f, 0.65f);
+            p.Jitter = R(0.4f, 0.8f);
+            p.Breath = R(0.2f, 0.4f);
+            p.Gurgle = R(0.1f, 0.4f);
+            p.GurgleHz = R(12, 30);
+            p.Attack = R(0.12f, 0.3f);
+            p.Release = R(0.2f, 0.4f);
+            p.Vibrato = R(0.01f, 0.04f);
+            p.VibratoHz = R(3.5f, 6f);
+            p.Open = R(0.2f, 0.5f);
+            p.Drive = R(2.5f, 4.5f);
+            p.Gain = R(0.18f, 0.3f);
+            Throat(b, rng, p);
+        }
+        // The rumble of feet and bodies: low band noise, swelling slowly over the loop (the same at both ends).
+        var sr = (float)Sr;
+        var a = 1f - MathF.Exp(-2f * MathF.PI * 260f / sr);
+        var al = 1f - MathF.Exp(-2f * MathF.PI * 45f / sr);
+        float lp = 0, lo = 0;
+        for (var i = 0; i < b.Len; i++)
+        {
+            var n = (float)(rng.NextDouble() * 2 - 1);
+            lp += a * (n - lp);
+            lo += al * (lp - lo);
+            var t = i / sr;
+            var swell = 0.75f + 0.25f * MathF.Sin(MathF.Tau * t / CrowdRoarSeconds);
+            b.S[i] += (lp - lo) * 0.35f * swell;
+        }
+        return Finish(b, 0.6f);
+    }
+
     private static short[]? ZombieFoley(Sfx sfx, int v)
     {
+        if (sfx == Sfx.CrowdRoar)
+            return CrowdRoarLoop(v);
         if (!IsZombieSound(sfx))
             return null;
         var rng = new Random(31000 + (int)sfx * 977 + v * 7919);

@@ -305,6 +305,7 @@ public sealed partial class Game
 
     private void TickHorde(ZombiesMap zm, double now)
     {
+        using var perf = Perf.Measure(PerfArea.Horde); // the perf window (Source/Perf)
         var t0 = Stopwatch.GetTimestamp();
         var alive = 0;
         for (var i = Horde.Count - 1; i >= 0; i--)
@@ -328,6 +329,8 @@ public sealed partial class Game
             }
             alive++;
         }
+        if (zm.Crowd > 0)
+            CrowdTick(zm, now); // a mass-horde map: demote, the crowd's tick, promote (ZombiesCrowd.cs)
         ZBlockGatherPlayers(); // the standing players' bodies, which walking zombies are held off (ZombieBlock.cs)
         TypesCount(); // alive by type (the spawn caps; ZombieTypes.cs)
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
@@ -857,6 +860,7 @@ public sealed partial class Game
         if (z.Grabbing)
             ReleaseGrab(z, now);
         SetZState(z, ZState.Dead, now);
+        CrowdNoteKill(); // (a crowd map's conservation count: ZombiesCrowd.cs)
         if (z.Kind.BurstRadius > 0)
             TypeBurst(z, now); // a bloater bursts when it dies (ZombieTypes.cs)
         var zp = ZP(attacker);
@@ -954,6 +958,7 @@ public sealed partial class Game
             DamageZombie(owner, z, (int)MathF.Round(maxDamage * MathF.Pow(1f - dist / radius, 1.4f)), false, melee: false, now, explosive: true);
             SeverLimbs(z, owner, now);
         }
+        CrowdBlast(owner, center, radius, maxDamage, now); // the crowd behind the front loses its dead by count (ZombiesCrowd.cs)
     }
 
     // ---- Client: hit prediction against what you see ------------------------------------------------------

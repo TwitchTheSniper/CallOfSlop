@@ -98,6 +98,8 @@ turns a terrain feature (a cliff's side stays), `TwinZone` a gravity zone (renam
 longitude), `Turn` (the game's mesh rotation order). `Rng(seed)` is a tiny deterministic generator: the same seed gives
 the same map on every machine.
 
+**Gothic** (`Gothic.*`, `Source/MapKit/Gothic.cs`): cosmetic meshes for gothic interiors: `Rib` (a pointed rib between two points), `RibVault` (a quadripartite bay with its transverse and ridge ribs and a Vault Boss prop), `Moulding` (a string course, cornice or plinth along a wall face with gaps) and `Beams` (timber beams or coffers under a flat ceiling); the wall pieces are the Props/Gothic props. Ashgrave Cathedral (`AshgraveCathedral.Detail.cs`) is the example.
+
 **Structures** (`Structures.*`, the movers' rules built in: Maps/README.md "Void maps", the "Stairs" section).
 `Railing` is a hidden collider band 0.45 to 1.1 m above the deck (bullets and prone shots go under it) drawn as panels
 and posts, with gaps where bridges meet. `Stairs` makes a flight of hidden colliders plus instanced mesh steps and

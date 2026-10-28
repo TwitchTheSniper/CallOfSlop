@@ -150,10 +150,13 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 70: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
-    // 72: Zombie types (Source/Game/ZombieTypes.cs): in Msg.ZEnts the limbs byte's top four bits are the zombie's type and a
+    // 71: The mass horde's crowd (docs/zombies/MASS-HORDE.md, Source/Game/ZombiesCrowdNet.cs): Msg.ZCrowd at the end of Msg
+    //     (per-cell crowd counts and headings, changes or a keyframe), sent only on maps with a "crowd".
+    // 72: The Zombies trader (Source/Game/ZombiesTrader.cs): Msg.ZTrader (the trader and his shelf, server -> all) and
+    //     Msg.ZTraderBuy (a purchase: item, visit, count; no purchase limit, client -> server) at the end of Msg.
+    // 73: Zombie types (Source/Game/ZombieTypes.cs): in Msg.ZEnts the limbs byte's top four bits are the zombie's type and a
     //     typed zombie carries a type state byte (plates, grabbing); Msg.ZWorld's player flags bit 6 is "held by a grabber".
-    //     (71 is the mass horde branch's; the merger renumbers.)
-    public const byte ProtocolVersion = 72;
+    public const byte ProtocolVersion = 73;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

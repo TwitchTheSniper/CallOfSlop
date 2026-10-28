@@ -101,6 +101,7 @@ public static partial class World
 
     public static void SetMap(Map map)
     {
+        using var perf = Perf.Measure(PerfArea.Loading); // the perf window (Source/Perf)
         map.RestoreProps(); // a map always starts with its breakable props whole
         map.Destruction?.StartGraph(); // destructible buildings: their support graph, on a worker thread (MapDestruction.cs)
         Map = map;
@@ -137,7 +138,13 @@ public static partial class World
     /// The current map's collision world (built on first use): one BVH over every static collider, the terrain and the
     /// movers. Every collision question goes through it (see <see cref="Query"/>).
     /// </summary>
-    public static PhysicsWorld Physics => _navBuildPhysics ?? (_physics is { } p && p.IsFor(Map) ? p : _physics = new PhysicsWorld(Map));
+    public static PhysicsWorld Physics => _navBuildPhysics ?? (_physics is { } p && p.IsFor(Map) ? p : _physics = BuildPhysics());
+
+    private static PhysicsWorld BuildPhysics()
+    {
+        using var perf = Perf.Measure(PerfArea.Loading); // the perf window (Source/Perf)
+        return new PhysicsWorld(Map);
+    }
 
     /// <summary>
     /// While the nav graph builds a slice (this thread only): the map as at the start of a match

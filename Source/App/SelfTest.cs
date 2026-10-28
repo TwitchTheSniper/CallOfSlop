@@ -320,6 +320,7 @@ public static partial class SelfTest
         Section("Text", CheckText); // SelfTestText.cs: player-visible text
         Section("Part text width", CheckPartTextWidth); // SelfTestPartTextWidth.cs: part descriptions wrap at a set width
         Section("Meshes", CheckMeshes); // primitives, glTF models, MeshPool, native canaries (SelfTestMeshes.cs)
+        Section("GL 4.6", CheckGl46); // SelfTestGl46.cs: shader preludes for the 4.6 and 4.1 paths, --gl41, the 4.1 tier keeps 4.6 features off
         Section("Sky", CheckSky); // SelfTestSky.cs: sky presets, the "skybox" section, sun, fog at the horizon, image skies
         Section("Map horizons", CheckMapHorizons); // SelfTestSmokeFixes.cs: ground and fog past a boundary, older maps' fog unchanged
         Section("Gunsmith backdrop", CheckShowcaseBackdrop); // SelfTestSmokeFixes.cs: the showcase window is opaque around the 3D gun (no HUD through it)
@@ -370,7 +371,9 @@ public static partial class SelfTest
         Section("Zombies cathedral", CheckZombiesCathedral); // SelfTestZombiesCathedral.cs: Ashgrave Cathedral: the full set on six floors (areas with heights), windows and doors walked, the bell siege (the horde climbs the tower in a pyramid, falls when shot; the reward), a client copy, a replay
         Section("Horde targets", CheckHordeTargets); // SelfTestHordeTargets.cs: a kited horde never turns together to a wrong spot (no false regroup; regrouping only closes up from behind), field drops
         Section("Horde respawn", CheckHordeRespawn); // SelfTestHordeRespawn.cs: the chased player goes down, is revived, bleeds out, respawns, leaves, rejoins (and Second Wind solo): the horde never stalls
+        Section("Mass horde", CheckMassHorde); // SelfTestMassHorde.cs: the mass horde spike: 5k/10k/20k crowds on Mass Horde Test (tick cost, allocations, memory, network sketch), promotion/demotion, counts adding up, determinism, off elsewhere
         Section("Zombies drop items", CheckZombiesDropItems); // SelfTestZombiesDropItems.cs: drop the gun in hand (never the last) and loose parts, teammates pick up, same-tick grabs never duplicate, bots ignore pickups, the cap, despawn at the next round's end and by time, client sync
+        Section("Zombies trader", CheckZombiesTrader); // SelfTestZombiesTrader.cs: the trader every 5th round (comes at 5/10/15, leaves on time, a fresh shelf of distinct parts below the round's favoured tier, prices by rarity and round), purchases and refusals, the last item wanted by two at once, the client copy, a bot buys one part a visit, no allocation
         Section("Zombies grenades", CheckZombiesGrenades); // SelfTestZombiesGrenades.cs: the Zombies grenade thrown by the key (host and loopback client) kills a zombie cluster with credit and points, the blast reaction, the per-round refill 1 + floor((round - 1) / 3)
         Section("Modular grenades", CheckModularGrenades); // SelfTestModularGrenades.cs: grenade parts load, every legal combo builds, each fuse and payload against zombies, clusters, refill, loopback
         Section("Co-op", CheckCoop); // SelfTestPve.cs: missions, the spawn director, Silo Breach, out-of-sight spawns, recycling, 80 enemies (cost, allocations, replication, bandwidth), enemy fire, every objective, wipes and checkpoints
@@ -399,6 +402,7 @@ public static partial class SelfTest
         Section("Chat and voice", CheckChatVoice); // SelfTestChatVoice.cs: chat routing (all / team / dead / mute) over loopback, voice codec SNR, jitter buffer, proximity + occlusion, relay range / team radio, bandwidth, no allocations, settings
         Section("Planet gravity", CheckPlanetGravity); // SelfTestPlanet.cs: point gravity frames, a walk round a planet, jumps, grenades, replays, horizon, ragdolls, Pocket Planet's nav and a bot pole to pole, costs
         Section("Weapon files", CheckWeaponFiles); // last: its file parsing and reflection mustn't disturb the tick timings above
+        Section("Perf window", CheckPerfWindow); // SelfTestPerf.cs: the F9 performance window: scopes nest as the area tree says, out-of-order scopes caught, nothing timed off or on other threads, 0 allocations per frame timing or off, frame stats (1% low, worst frames), GPU pass timer never reads early / no queries while closed, F9 migration
         Section("Weapon tweaks", CheckWeaponTweaks); // SelfTestWeaponTweaks.cs: the dev tweak window: live tweaks and kitted copies, class multipliers, revert / reset, Save into temp copies (minimal patch, loads back, --check-weapon), fingerprint and fits untouched, host -> client over loopback, F7, no allocations closed
         Section("Paste and packets", CheckPaste); // SelfTestPaste.cs: image paste crash, text boxes, received text, packet fuzzing (after the timings too)
         Section("Updates", CheckUpdates); // SelfTestUpdates.cs: versions, manifests, cache, check + install against a fake GitHub (no network, temp folders)

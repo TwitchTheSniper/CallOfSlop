@@ -119,7 +119,12 @@ public static unsafe partial class Program
         // Saves live in %APPDATA%\CallOfSlop (or portable.txt / --save-dir) so they carry over between builds (SavePaths.cs).
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
-        if (_shotTool || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
+        var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
+        _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
+        _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
+        _shotTool |= _crowdShots;
+        CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
+        if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
         else
             SavePaths.Init(args);
@@ -142,6 +147,7 @@ public static unsafe partial class Program
         _lossPct = FlagValue(args, "--loss");
         _forceNoUpnp = args.Any(a => a.Equals("--no-upnp", StringComparison.OrdinalIgnoreCase));
         _smoke = args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase));
+        RenderCaps.ReadArgs(args); // --gl41, --gl-no=... (RenderCaps.cs)
         (_cliStartRound, var roundValue) = ZombiesRoundFlag(args); // --zombies-round N (or =N): the next Zombies runs start at round N
         _cliTestKit = args.Any(a => a.Equals("--test-kit", StringComparison.OrdinalIgnoreCase));
         var plain = SavePaths.WithoutSaveDir(args).Where(a => !a.StartsWith("--") && !ReferenceEquals(a, roundValue)).ToArray();
@@ -180,7 +186,13 @@ public static unsafe partial class Program
                 StartSession(LobbyAction.Join);
             }
 
-            if (_shotTool)
+            if (perfShot)
+                StartPerfShot(); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
+            if (_glBench)
+                RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
+            else if (_crowdShots)
+                RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
+            else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
                 RunLoop();
@@ -197,7 +209,7 @@ public static unsafe partial class Program
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_shotTool) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_shotTool && !_perfShot && !_glBench) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
@@ -398,6 +410,11 @@ public static unsafe partial class Program
             SmokeWeaponTweaks(now); // Program.WeaponTweaks.cs: the weapon tweak window over the match (nothing changed or saved)
             return;
         }
+        if (_smokeMap == 0 && _smokeStage == 8 && _smokePerfStep < 4)
+        {
+            SmokePerf(now); // Program.Perf.cs: the perf window, then the corner overlay, over the match
+            return;
+        }
         if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
         {
             SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
@@ -511,7 +528,7 @@ public static unsafe partial class Program
                     Console.WriteLine($"[smoke] terrain: {TerrainGfx.LastFrame.Chunks} chunks, {TerrainGfx.LastFrame.DrawCalls} draw call(s), {TerrainGfx.LastFrame.Triangles} triangles");
                 Console.WriteLine($"[smoke] scene graph: {ScenePresentation.Stats}");
                 Console.WriteLine($"[smoke] {World.Map.Name}: alive {game?.Local?.Alive}, weapon {game?.Active.Def.Name} [{Attachments.Describe(game?.Active.Def.Kit ?? 0)}], phase {game?.Phase}, players {game?.Players.Count}, "
-                    + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}");
                 game?.DebugEndMatch(now); // show the results screen and map vote
                 _smokeStage++;
                 break;
@@ -524,7 +541,7 @@ public static unsafe partial class Program
                     SmokeShot("vote_0");
                 if (game != null)
                     Console.WriteLine($"[smoke] vote screen: options {string.Join(", ", game.VoteNames)}, "
-                        + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                        + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{GlDebug.Error():X}");
                 SmokeNextMap(now);
                 break;
         }
@@ -553,7 +570,7 @@ public static unsafe partial class Program
                 SmokeShot("deathcam");
                 var info = _deathCam.Info;
                 Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
-                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{GlDebug.Error():X}");
                 _smokeDeathCam++;
                 break;
             case 2 when now - _smokeDeathAt > 2.4:
@@ -655,7 +672,7 @@ public static unsafe partial class Program
                 break;
             case 3 when t > KillStreaks.MortarDelay + 0.7:
                 Console.WriteLine($"[smoke] kill streaks: {(_smokeFrames - _smokeStreakFrames) / Math.Max(t, 0.001):0} fps avg, entities {_game.StreakEntities.Count}, "
-                    + $"strikes left {_game.Strikes.Count}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                    + $"strikes left {_game.Strikes.Count}, GL error 0x{GlDebug.Error():X}");
                 _smokeStepStart += t; // give the usual steps their clock back
                 _smokeFrames = _smokeStreakFrames;
                 _smokeStreakStep++;
@@ -677,7 +694,7 @@ public static unsafe partial class Program
                 break;
             case 1 when t > 1.6:
                 SmokeShot("weapon_select");
-                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{GlDebug.Error():X}");
                 _smokeWeaponSelect++;
                 break;
             case 2 when t > 1.8: // a frame after the shot
@@ -760,7 +777,7 @@ public static unsafe partial class Program
             Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
                 + $"lens covers {SightLens.LastCoverage * 100:0.0}% of the screen (radius {SightLens.LastView.HalfH:0.00} of half the height, {Sights.EyeDistance(d) * 100:0.0} cm from the eye; "
                 + $"design {Sights.Coverage(Sights.ProjectAimed(d, 16f / 9f), 16f / 9f) * 100:0.0}% at 16:9), see-through {SightLens.SeeThrough}, reticle {Sights.Spec(d).Reticle}, "
-                + $"alive {game.Local?.Alive}, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                + $"alive {game.Local?.Alive}, GL error 0x{GlDebug.Error():X}");
         }
     }
 
@@ -790,6 +807,9 @@ public static unsafe partial class Program
 
     private static void SmokeShot(string name) => _shotName = name;
 
+    /// <summary>The next screenshot is saved at full size (not halved).</summary>
+    private static bool _shotFull;
+
     /// <summary>A throwaway copy of the player's progress that can't be saved.</summary>
     private static Progress SmokeProgress()
     {
@@ -807,7 +827,10 @@ public static unsafe partial class Program
         OpenGl.Native.glPixelStorei(OpenGl.GL_PACK_ALIGNMENT, 1);
         fixed (byte* p = pixels)
             OpenGl.Native.glReadPixels(0, 0, w, h, OpenGl.GL_RGBA, OpenGl.GL_UNSIGNED_BYTE, p);
-        int ow = w / 2, oh = h / 2;
+        var full = _shotFull; // (--perf-shot: full size, so the small text reads)
+        _shotFull = false;
+        var div = full ? 1 : 2;
+        int ow = w / div, oh = h / div;
         var rowBytes = (ow * 3 + 3) & ~3;
         using var f = new BinaryWriter(File.Create(AppFolders.LogPath($"smoke_{name}.bmp")));
         f.Write((byte)'B');
@@ -833,7 +856,12 @@ public static unsafe partial class Program
             {
                 // The average of each 2 x 2 block (not one pixel of it), so dithered see-through things (prop glass, faded
                 // litter) show as they look at full size instead of aliasing to solid or empty.
-                var i = ((y * 2) * w + x * 2) * 4;
+                var i = ((y * div) * w + x * div) * 4;
+                if (full)
+                {
+                    (row[x * 3], row[x * 3 + 1], row[x * 3 + 2]) = (pixels[i + 2], pixels[i + 1], pixels[i]);
+                    continue;
+                }
                 var j = i + w * 4;
                 row[x * 3] = (byte)((pixels[i + 2] + pixels[i + 6] + pixels[j + 2] + pixels[j + 6] + 2) >> 2);
                 row[x * 3 + 1] = (byte)((pixels[i + 1] + pixels[i + 5] + pixels[j + 1] + pixels[j + 5] + 2) >> 2);
@@ -936,29 +964,62 @@ public static unsafe partial class Program
 
     private static nint GetGlProc(byte* name) => Glfw.PInvoke.GetProcAddress(name);
 
+    private static void ContextHints(int major, int minor, bool debug)
+    {
+        Glfw.DefaultWindowHints();
+        Glfw.WindowHint(GlfwWindowHint.ClientApi, Glfw.Constants.GLFW_OPENGL_API);
+        Glfw.WindowHint(GlfwWindowHint.ContextVersionMajor, major);
+        Glfw.WindowHint(GlfwWindowHint.ContextVersionMinor, minor);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlProfile, Glfw.Constants.GLFW_OPENGL_CORE_PROFILE);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlForwardCompat, Glfw.Constants.GLFW_TRUE);
+        Glfw.WindowHint(GlfwWindowHint.OpenGlDebugContext, debug ? Glfw.Constants.GLFW_TRUE : Glfw.Constants.GLFW_FALSE);
+        Glfw.WindowHint(GlfwWindowHint.Samples, 4);
+    }
+
     private static void CreateWindow()
     {
         Glfw.ErrorCallback += SafeClipboard.LogGlfwError; // rate-limited (an image on the clipboard raises one per paste)
         if (!Glfw.Init())
             throw new Exception("Failed to initialize GLFW");
 
-        // OpenGL 4.1 core: what the ImGui OpenGL backend needs (and the highest macOS offers).
-        Glfw.WindowHint(GlfwWindowHint.ClientApi, Glfw.Constants.GLFW_OPENGL_API);
-        Glfw.WindowHint(GlfwWindowHint.ContextVersionMajor, 4);
-        Glfw.WindowHint(GlfwWindowHint.ContextVersionMinor, 1);
-        Glfw.WindowHint(GlfwWindowHint.OpenGlProfile, Glfw.Constants.GLFW_OPENGL_CORE_PROFILE);
-        Glfw.WindowHint(GlfwWindowHint.OpenGlForwardCompat, Glfw.Constants.GLFW_TRUE);
-        Glfw.WindowHint(GlfwWindowHint.Samples, 4);
-
-        _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+        // OpenGL 4.6 core where the driver has it, else 4.1 core (what the ImGui OpenGL backend needs, and the highest
+        // macOS offers); --gl41 forces the fallback (RenderCaps.cs, docs/render/OPENGL46.md).
+        var want46 = RenderCaps.Want46(out var why41);
+        var made46 = false;
+        if (want46)
+        {
+            ContextHints(4, 6, debug: !BuildInfo.IsRelease && !_glBench); // dev builds: a debug context for KHR_debug output
+            try
+            {
+                _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+                made46 = !_window.IsNull();
+            }
+            catch (InvalidOperationException ex)
+            {
+                Console.WriteLine($"[gl] no OpenGL 4.6 core context ({ex.Message}); falling back to 4.1");
+            }
+            if (!made46)
+                why41 = "the driver could not make a 4.6 core context";
+        }
+        if (!made46)
+        {
+            ContextHints(4, 1, debug: false);
+            _window = Glfw.CreateWindow(new GlfwWindow.CreateInfo { Title = "Call of Slop", Size = new int2(_settings.Width, _settings.Height) });
+            if (_window.IsNull())
+                throw new Exception("Failed to create an OpenGL 4.1 core window");
+        }
         _window.MakeContextCurrent();
         _vsync = _settings.VSync;
         Glfw.SwapInterval(_vsync ? 1 : 0);
 
         if (!Glad.Initialize(GlLoader))
             throw new Exception("Failed to load OpenGL functions (GLAD)");
+        RenderCaps.Detect(made46, why41);
+        if (!BuildInfo.IsRelease && !_glBench)
+            GlDebug.Install(); // 4.6 path only: the driver reports GL errors as they happen
 
         Gfx.Init();
+        InitPerf(); // the perf window's GPU timer and music counter (Program.Perf.cs)
         Ui.Init(_window);
         Ui.UserScale = _settings.UiScale;
         Ui.Progress = _progress;
@@ -1113,7 +1174,8 @@ public static unsafe partial class Program
         var last = Glfw.Time;
         while (!_window.ShouldClose && !_quit)
         {
-            Glfw.PollEvents();
+            using (Perf.Measure(PerfArea.Events)) // the perf window's areas (Source/Perf, Program.Perf.cs)
+                Glfw.PollEvents();
             var now = Glfw.Time;
             if (_smoke)
                 SmokeTick(now);
@@ -1138,27 +1200,36 @@ public static unsafe partial class Program
                 }
                 else
                 {
-                    if (TrackLobbyRoom(now)) // the lobby room: no player to steer (Program.LobbyRoom.cs)
-                        UpdateLobbyRoom(now);
-                    else
-                        UpdateLocalPlayer(now);
+                    using (Perf.Measure(PerfArea.Input))
+                    {
+                        if (TrackLobbyRoom(now)) // the lobby room: no player to steer (Program.LobbyRoom.cs)
+                            UpdateLobbyRoom(now);
+                        else
+                            UpdateLocalPlayer(now);
+                    }
                     var paused = game.Net.IsOffline && Ui.PauseOpen;
                     if (!paused)
-                        game.Update(now, FrameDt);
+                        using (Perf.Measure(PerfArea.Game))
+                            game.Update(now, FrameDt);
                 }
             }
-            UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
+            using (Perf.Measure(PerfArea.Audio))
+                UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
             UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
+            var perf = Perf.Measure(PerfArea.Audio);
             AudioSystem.Music.Volume = _settings.MusicVolume;
             AudioSystem.Music.HardbassOnly = _settings.MusicChoice == MusicChoice.HardbassOnly;
             AudioSystem.Music.SetMood(MusicPlayer.MoodFor(_session != null, _session?.Phase ?? MatchPhase.Playing));
             UpdateFrenzy(now); // the kill-frenzy music during a live match (Program.Frenzy.cs)
             UpdateFrenzyFx(now); // per-class frenzy visuals (Program.FrenzyFx.cs)
             UpdateFrenzyGunSound(); // per-class frenzy gun sound (Program.FrenzyGunSound.cs)
+            perf.Dispose();
 
+            Perf.Gpu?.BeginFrame(); // the perf window's GPU passes (Source/Perf/PerfGpu.cs): nothing while it's closed
+            perf = Perf.Measure(PerfArea.Render);
             if (_session == null)
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
             if (Ui.WorkbenchOpen)
@@ -1189,7 +1260,9 @@ public static unsafe partial class Program
                 DrawGunsmithPreview(showcase, now);
             if (Ui.AppearanceOpen && _session == null && Ui.LookPreview is { } lookPreview)
                 DrawAppearancePreview(lookPreview, now); // the APPEARANCE screen's turning model (Program.Appearance.cs)
+            perf.Dispose();
 
+            perf = Perf.Measure(PerfArea.Ui);
             Ui.BeginFrame();
             if (_settings.ShowFps)
                 FpsCounter.Draw(now);
@@ -1211,6 +1284,7 @@ public static unsafe partial class Program
                 }
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
+                DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
@@ -1277,16 +1351,22 @@ public static unsafe partial class Program
             }
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
+            DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
             Ui.EndFrame();
             if (Ui.Thumbs.Count > 0)
                 DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
+            perf.Dispose();
+            Perf.Gpu?.Mark(PerfGpuPass.Ui);
 
             if (_shotName != null)
             {
                 SaveScreenshot(_shotName);
                 _shotName = null;
             }
-            _window.SwapBuffers();
+            Perf.Gpu?.EndFrame();
+            using (Perf.Measure(PerfArea.Swap))
+                _window.SwapBuffers();
+            Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
         }
     }
 
@@ -1313,7 +1393,7 @@ public static unsafe partial class Program
             {
                 SaveScreenshot("splash");
                 shot = true;
-                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{(uint)OpenGl.Native.glGetError():X}");
+                Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{GlDebug.Error():X}");
             }
             _window.SwapBuffers();
         }
@@ -1358,29 +1438,47 @@ public static unsafe partial class Program
     private static void DrawArena()
     {
         var map = World.Map;
+        BenchPass(0); // (--gl-bench pass timings, Program.GlBench.cs; nothing otherwise)
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
         // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs,
         // Program.Buildings.cs). Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
-        if (!BuildingGfx.Draw(map, Gfx, Glfw.Time))
-            for (var i = 0; i < map.Solid.Count; i++)
-                if (map.IsDrawnBox(i)) // (no instancing: the boxes one by one, as before)
-                    Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
-        DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
-        TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
-        PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
-        MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
-        FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
-        DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world (Program.Decals.cs)
-        SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
+        // (each pass timed for the perf window, CPU and GPU, while it's up: Source/Perf; BenchPass marks --gl-bench's split)
+        using (Perf.Pass(PerfArea.Buildings, PerfGpuPass.Buildings))
+        {
+            if (!BuildingGfx.Draw(map, Gfx, Glfw.Time))
+                for (var i = 0; i < map.Solid.Count; i++)
+                    if (map.IsDrawnBox(i)) // (no instancing: the boxes one by one, as before)
+                        Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
+            BenchPass(1);
+            DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
+        }
+        using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
+            TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
+        BenchPass(2);
+        using (Perf.Pass(PerfArea.Props, PerfGpuPass.Props))
+            PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
+        BenchPass(3);
+        using (Perf.Pass(PerfArea.Meshes, PerfGpuPass.Meshes))
+            MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
+        BenchPass(4);
+        using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
+            FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
+        BenchPass(5);
+        using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
+            DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world (Program.Decals.cs)
+        BenchPass(6);
+        using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
+            SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
+        BenchPass(7);
     }
 
     // =====================================================================
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen; // (a Zombies workbench too; the lobby room; the Audio mixer and weapon tweak windows)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak and perf windows)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1437,6 +1535,12 @@ public static unsafe partial class Program
             SetMouseCaptured(true);
             return;
         }
+        if (key == GlfwKey.Escape && Ui.TraderOpen)
+        {
+            Ui.CloseTrader(); // Esc leaves the trader's shelf (back to the fight), not the match (Program.ZombiesTrader.cs)
+            SetMouseCaptured(true);
+            return;
+        }
         if (key == GlfwKey.Escape && Ui.ChatOpen)
         {
             Ui.CloseChat(); // Esc leaves the chat line, not the match
@@ -1444,6 +1548,8 @@ public static unsafe partial class Program
         }
 
         if (AudioMixerKey(key)) // F8 (rebindable) or Esc: the Audio mixer window (Program.AudioMixer.cs)
+            return;
+        if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;
         if (WeaponTweaksKey(key)) // F7 (rebindable) or Esc: the weapon tweak window (Program.WeaponTweaks.cs)
             return;
@@ -1948,12 +2054,14 @@ public static unsafe partial class Program
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own
         ScenePresentation.BeginFrame(MeshGfx);
-        UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
+        using (Perf.Measure(PerfArea.Ragdolls))
+            UpdateRagdolls(now); // new bodies for the newly dead, their 60 Hz steps (Program.Ragdolls.cs); drawn with the props' debris
         AddFrameLights(now, eye, fwd); // muzzle flash and blasts light a lit map this frame (Program.Lighting.cs)
         DrawArena();
         DrawRagdollsFallback();
 
         // ---- Players --------------------------------------------------------
+        var pass = Perf.Pass(PerfArea.Bodies, PerfGpuPass.Bodies); // the perf window's passes (Source/Perf)
         LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
         LegAnimator.MoverTick = _game.MoverRenderTick;
         foreach (var p in _game.Players.Values)
@@ -1967,7 +2075,10 @@ public static unsafe partial class Program
             DrawPlayer(p);
         }
 
+        pass.Dispose();
+
         // ---- Grenades in flight and recon sensors ------------------------------------
+        pass = Perf.Pass(PerfArea.Entities, PerfGpuPass.Entities);
         foreach (var pr in _game.Projectiles.Values)
         {
             var c = Throwables.Get(pr.Kind).Color;
@@ -1999,7 +2110,10 @@ public static unsafe partial class Program
         _worldView = view;
         _worldFov = fov; // (for your tracers: Program.Muzzle.cs)
 
+        pass.Dispose();
+
         // ---- Tracers --------------------------------------------------------
+        pass = Perf.Pass(PerfArea.Effects, PerfGpuPass.Effects);
         Gfx.SetBlend(true);
         foreach (var t in _game.Tracers)
         {
@@ -2083,10 +2197,12 @@ public static unsafe partial class Program
         Gfx.SetDepthWrite(true);
         Gfx.SetBlend(false);
         _frenzyFx.DrawWorld(Gfx, _game, now); // frenzy sparks, trails, others' gun glow: one instanced draw (Program.FrenzyFx.cs)
+        pass.Dispose();
 
         Gfx.SetFog(World.Map.Sky, 0, 0); // no haze on the viewmodel and HUD
 
         // ---- First-person gun -----------------------------------------------
+        pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
         if (local is { Alive: true })
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
@@ -2095,10 +2211,12 @@ public static unsafe partial class Program
             DrawFrenzyFxViewModel(now); // your gun's frenzy glow (Program.FrenzyFx.cs)
         }
         _frenzyFx.EndFrame(now);
+        pass.Dispose();
 
         // ---- HUD ------------------------------------------------------------
         if (!Ui.WorkbenchOpen)
-            DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
+            using (Perf.Pass(PerfArea.Hud, PerfGpuPass.Hud))
+                DrawHud(now, w, h, local, fov); // hidden while the weapon workbench is open (the crosshair, ammo, prompts, weapon list)
     }
 
     /// <summary>Box gun model shared by the viewmodel and other players. Origin = grip, -Z = muzzle.</summary>
@@ -2237,7 +2355,7 @@ public static unsafe partial class Program
     /// <summary>Another player's box body with its gun and arms: through the scene graph (Source/Scene/Rigs/PlayerRig.cs), or the old immediate path.</summary>
     private static void DrawPlayer(Player p)
     {
-        ThirdPersonArms.ShotFlash = _game.FlashBarrels(p.Id, Glfw.Time); // their gun flashes at the barrels that just fired (Program.Muzzle.cs)
+        ThirdPersonArms.ShotFlash = _game?.FlashBarrels(p.Id, Glfw.Time) ?? 0; // their gun flashes at the barrels that just fired (Program.Muzzle.cs); no game in the legs smoke
         if (ScenePresentation.Enabled)
             ScenePresentation.DrawPlayer(Gfx, p, Glfw.Time);
         else
