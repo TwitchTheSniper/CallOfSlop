@@ -36,7 +36,7 @@ public sealed record SteamAvatar(int Width, int Height, byte[] Rgba);
 /// UGC, Steam Input) and implement them in both backends; keep every member safe to call before <see cref="Init"/>
 /// (return false / null / empty) so a feature can ask without checking first.
 /// </summary>
-public interface ISteamBackend
+public partial interface ISteamBackend
 {
     /// <summary>Starts the Steam API. False with the reason when Steam is not running, the App ID is unknown, or the
     /// native library is missing; never throws.</summary>
@@ -69,7 +69,7 @@ public interface ISteamBackend
 
 /// <summary>The real backend: Steamworks.NET (the AnyCPU fork) over the native steam_api. Every call that can fail is
 /// caught and turned into an "unavailable" answer; the native library is only touched from <see cref="Init"/> on.</summary>
-public sealed class SteamworksBackend : ISteamBackend
+public sealed partial class SteamworksBackend : ISteamBackend
 {
     private bool _running;
     private Steamworks.Callback<Steamworks.GameOverlayActivated_t>? _overlayCb;
@@ -112,6 +112,7 @@ public sealed class SteamworksBackend : ISteamBackend
             _overlayCb = Steamworks.Callback<Steamworks.GameOverlayActivated_t>.Create(cb => OverlayActivated?.Invoke(cb.m_bActive != 0));
             _personaCb = Steamworks.Callback<Steamworks.PersonaStateChange_t>.Create(cb => PersonaChanged?.Invoke(cb.m_ulSteamID));
             _avatarCb = Steamworks.Callback<Steamworks.AvatarImageLoaded_t>.Create(cb => AvatarLoaded?.Invoke(cb.m_steamID.m_SteamID));
+            HookPhase2(); // sockets, lobbies, Rich Presence and auth (SteamBackend.Net.cs)
             return true;
         }
         catch (Exception ex) // DllNotFoundException, BadImageFormat, a binding mismatch: all "no Steam"
@@ -136,6 +137,7 @@ public sealed class SteamworksBackend : ISteamBackend
         if (!_running)
             return;
         _running = false;
+        UnhookPhase2();
         _overlayCb?.Dispose();
         _personaCb?.Dispose();
         _avatarCb?.Dispose();

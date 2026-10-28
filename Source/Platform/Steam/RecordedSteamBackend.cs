@@ -5,7 +5,7 @@ namespace CallOfSlop.Platform.Steam;
 /// records every call in <see cref="Calls"/>, answers with the names and avatars it was given, and lets a test raise the
 /// overlay and persona callbacks by hand. Later phases add their recorded answers here next to the real ones.
 /// </summary>
-public sealed class RecordedSteamBackend : ISteamBackend
+public sealed partial class RecordedSteamBackend : ISteamBackend
 {
     public readonly List<string> Calls = new();
     /// <summary>Init answers false with this when set (a Steam client that is not running).</summary>
@@ -35,6 +35,7 @@ public sealed class RecordedSteamBackend : ISteamBackend
             return false;
         Running = true;
         AppId = appId;
+        RegisterOnWorld(); // a Steam user on the recorded world (RecordedSteamBackend.Net.cs)
         return true;
     }
 
@@ -47,6 +48,7 @@ public sealed class RecordedSteamBackend : ISteamBackend
     public void RunCallbacks()
     {
         Calls.Add("RunCallbacks");
+        RunPhase2Callbacks(); // connections, lobbies, tickets (RecordedSteamBackend.Net.cs)
         if (_arriving.Count == 0)
             return;
         var ids = _arriving.ToArray();
@@ -63,6 +65,8 @@ public sealed class RecordedSteamBackend : ISteamBackend
     public void Shutdown()
     {
         Calls.Add("Shutdown");
+        if (Running)
+            ShutdownPhase2();
         Running = false;
     }
 
