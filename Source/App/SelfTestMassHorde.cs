@@ -468,7 +468,25 @@ public static partial class SelfTest
             var z = (HordeCrowd.Hash((uint)k * 13u + 5) & 0xFFFF) / 65535f * 150f - 75f;
             worst = MathF.Max(worst, MathF.Abs(g.SelfTestCrowdSurfaceHeight(x, z) - cl.SelfTestCrowdSurfaceHeight(x, z)));
         }
-        // Off the crowd: open floor, nothing done.
+        // The roar (CrowdRoar.cs): with the ear 30 m from the blob its loudest voice sits on the blob and is near full; a
+        // frame allocates nothing; with the ear far away the blob still roars (quieter clusters are nearer).
+        var ear = blob + new Vector3(30, 1.6f, 0);
+        for (var f = 0; f < 30; f++)
+            g.SelfTestCrowdRoarFrame(ear, 1 / 60f);
+        var ra0 = GC.GetAllocatedBytesForCurrentThread();
+        for (var f = 0; f < 30; f++)
+            g.SelfTestCrowdRoarFrame(ear, 1 / 60f);
+        var roarAlloc = GC.GetAllocatedBytesForCurrentThread() - ra0;
+        var loudest = -1;
+        for (var v = 0; v < CrowdRoar.Voices; v++)
+            if (loudest < 0 || g.Roar.GoalGain[v] > g.Roar.GoalGain[loudest])
+                loudest = v;
+        var roarAt = g.Roar.Goal[loudest];
+        var roarOff = new Vector2(roarAt.X - blob.X, roarAt.Z - blob.Z).Length();
+        var roarGain = g.Roar.GoalGain[loudest];
+        var roarN = g.Roar.Zombies[loudest];
+        var sounding = g.Roar.Sounding;
+
         var farY = 0f;
         var stands0 = g.CrowdStands;
         var lifts0 = g.CrowdLifts;
@@ -489,7 +507,8 @@ public static partial class SelfTest
         var openMoved = (me.Sim.Position - open).Length();
         World.SetMap(map);
         MassLine($"surface: the blob's middle cell {best:0.00} m high at ({at.X:0},{at.Z:0}); from the floor there the player rose {lifted:0.00} m in 3 s (ended {stayed:0.00} m up, grounded {grounded}, {lifts} lifts, {stands} stands), {alloc} bytes allocated standing; "
-                 + $"on the edge (slope {steep:0.00}) slid {downhill:0.00} m downhill in 1 s ({slides} slides); client picture vs server heights differ by {worst:0.000} m at most; on open floor moved {openMoved:0.000} m");
+                 + $"on the edge (slope {steep:0.00}) slid {downhill:0.00} m downhill in 1 s ({slides} slides); client picture vs server heights differ by {worst:0.000} m at most; on open floor moved {openMoved:0.000} m; "
+                 + $"roar: {sounding} voices sounding, the loudest {roarGain:0.00} for {roarN} zombies {roarOff:0.0} m from the blob's middle ({g.Roar.Picks} picks, {roarAlloc} bytes allocated in 30 frames)");
         if (best < g.CrowdGround.MinHeight)
             Fail($"4,000 crowd zombies should make a surface somewhere ({best:0.00} m at most)");
         if (lifted < best * 0.8f || stayed < best * 0.5f || !grounded || lifts == 0)
@@ -500,6 +519,8 @@ public static partial class SelfTest
             Fail($"a player on the crowd's edge should slide down its slope ({downhill:0.00} m, slope {steep:0.00})");
         if (worst > 0.05f)
             Fail($"a client's crowd surface should match the server's ({worst:0.000} m off)");
+        if (sounding < 1 || roarGain < 0.8f || roarOff > 4f || roarN < 400 || roarAlloc > 0)
+            Fail($"the crowd roar's loudest voice should sit on the blob at near full loudness ({sounding} sounding, gain {roarGain:0.00}, {roarOff:0.0} m off, {roarN} zombies, {roarAlloc} bytes allocated)");
         if (openMoved > 0.01f || g.CrowdStands != stands0 || g.CrowdLifts != lifts0)
             Fail($"the surface should do nothing on open floor (moved {openMoved:0.000} m)");
     }

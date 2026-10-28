@@ -948,6 +948,7 @@ public sealed partial class Game
             ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
         ZSounds.Frame(Audio, Horde, dt); // their voices and footsteps, from what this side knows (Source/Audio/ZombieSounds.cs)
+        CrowdRoarFrame(dt); // a mass-horde map: the crowd's roar by cluster (ZombiesCrowdSound.cs)
         if (Local is { } me)
         {
             var zp = ZP(me);

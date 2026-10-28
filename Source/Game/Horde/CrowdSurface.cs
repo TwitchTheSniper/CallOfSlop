@@ -25,6 +25,20 @@ public sealed class CrowdSurface
     /// <summary>Is there a grid bound?</summary>
     public bool Bound => _count.Length > 0 && _cols > 0 && _rows > 0;
 
+    /// <summary>The bound grid (CrowdRoar reads the same cells).</summary>
+    public int Cols => _cols;
+
+    public int Rows => _rows;
+
+    public float Cell => _cell;
+
+    public float MinX => _minX;
+
+    public float MinZ => _minZ;
+
+    /// <summary>Crowd zombies in cell (c, r) (0 off the grid).</summary>
+    public int CountAt(int c, int r) => c < 0 || r < 0 || c >= _cols || r >= _rows ? 0 : _count[r * _cols + c];
+
     /// <summary>Points the surface at a grid of counts (no copy: the counts are read as they are each query).</summary>
     public void Bind(int cols, int rows, float cell, float minX, float minZ, float floorY, byte[] counts)
     {

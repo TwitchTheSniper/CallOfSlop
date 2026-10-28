@@ -75,7 +75,7 @@ public sealed partial class Audio
         Sfx.LockTone or Sfx.LockedTone => MixBus.LauncherLock,
         Sfx.GibSquelch => MixBus.Gore,
         Sfx.ZombieShuffle or Sfx.ZombieRun or Sfx.ZombieSprint => MixBus.ZombieSteps, // (ZombieSounds plays these on top of the Zombies row)
-        >= Sfx.ZombieGroan and <= Sfx.ZombieHeadDeath => MixBus.ZombieVoices,
+        >= Sfx.ZombieGroan and <= Sfx.ZombieHeadDeath or Sfx.CrowdRoar => MixBus.ZombieVoices,
         _ => world ? MixBus.Tactical : MixBus.Ui,
     };
 

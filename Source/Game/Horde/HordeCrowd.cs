@@ -68,6 +68,11 @@ public sealed class CrowdTuning
     public bool Surface = true;
 
     public float SurfaceHeight = 1.3f, SurfacePacked = 2f, SurfaceMin = 0.3f, SurfaceStep = 0.45f, SurfacePush = 3f, SurfaceLift = 0.8f;
+
+    /// <summary>The crowd's roar (CrowdRoar.cs): on; a cluster of <see cref="RoarFull"/> zombies roars at full loudness, fewer by the square root.</summary>
+    public bool Roar = true;
+
+    public float RoarFull = 240f;
 }
 
 /// <summary>

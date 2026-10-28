@@ -1174,6 +1174,8 @@ public sealed class ZombiesRules
                             case "surfaceStep": c.SurfaceStep = Real(v, w, 0, 2); break;
                             case "surfacePush": c.SurfacePush = Real(v, w, 0, 50); break;
                             case "surfaceLift": c.SurfaceLift = Real(v, w, 0, 10); break;
+                            case "roar": c.Roar = Flag(v, w); break;
+                            case "roarFull": c.RoarFull = Real(v, w, 10, 5000); break;
                             default: return false;
                         }
                         return true;
