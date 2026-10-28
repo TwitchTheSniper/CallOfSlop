@@ -644,7 +644,10 @@ public static partial class SelfTest
             clientFrameMs += ThreadCpu.NowMs() - c0;
             frames++;
             if (t > 2.0 && t - dt <= 2.0)
+            {
                 a.ZEntsGapWorst = 0;
+                server.ZEntsNearPeak = server.ZEntsNearWaitWorst = 0;
+            }
             if (t > 2.0 && a.Local is { } me)
                 foreach (var z in a.Horde)
                     if (z.Alive && ZFlat(z.Position - me.Position) < Game.ZEntNear * 0.8f)
@@ -652,15 +655,32 @@ public static partial class SelfTest
         }
         var seconds = now - t0;
         var bytesPerSec = (server.ZEntsBytesSent - bytes0) / seconds;
+        // The near zombies' freshness. This horde chases the host, so ~150-180 zombies end up within ZEntNear: more than
+        // the ZEntsMax that fit in one ZEnts, so they can't all go in every snapshot; they share the places by age (each
+        // in about every third snapshot, 100 ms, on 2026-10-28). Measured on the server, without the network, the near
+        // ones must take at least two thirds of the places (the 8x weight; at least every other snapshot). On the
+        // client, a lost packet costs a near zombie a whole share cycle (until its next turn), not one snapshot: two of its
+        // packets lost in the 2 s window happen in ~1 run in 10 at 3% loss (that was the old flake, "one went 283-300 ms
+        // without" against a limit of the longest gap + 200 ms), three in ~1 in 300. So the client may hear of a near
+        // zombie as late as three cycles (or the longest gap between packets plus two).
+        var nearWaitAllowed = Math.Max(2, (int)Math.Ceiling(server.ZEntsNearPeak / (Game.ZEntsMax * 2.0 / 3.0)));
+        var cycle = Math.Max(1, server.ZEntsNearWaitWorst) * World.SnapshotEvery * World.TickDt;
+        var nearStaleAllowed = Math.Max(a.ZEntsGapWorst, cycle) + 2 * cycle + 0.05; // (+50 ms: the 10 ms jitter and a frame)
         var known = a.Horde.Count(z => z.Alive);
         var serverAlive = server.AliveZombies;
         HLine($"loopback (80 ms lag, 3% loss, simulator {(sim ? "on" : "unavailable")}): server {serverAlive} alive, the client knows {known}; ZEnts {bytesPerSec / 1024:0.0} KB/s to the client "
-              + $"({(server.ZEntsPacketsSent - packets0) / seconds:0} packets/s sent, {(a.ZEntsRead - read0) / seconds:0} read; the longest gap between two {a.ZEntsGapWorst * 1000:0} ms), near zombies at most {nearStaleWorst * 1000:0} ms between updates; client update {clientFrameMs / frames:0.000} ms a frame");
+              + $"({(server.ZEntsPacketsSent - packets0) / seconds:0} packets/s sent, {(a.ZEntsRead - read0) / seconds:0} read; the longest gap between two {a.ZEntsGapWorst * 1000:0} ms), "
+              + $"{server.ZEntsNearPeak} zombies within {Game.ZEntNear:0} m, the server sent each near one at least every {server.ZEntsNearWaitWorst} snapshot(s) (allowed {nearWaitAllowed}), "
+              + $"the client heard of each at most {nearStaleWorst * 1000:0} ms apart (allowed {nearStaleAllowed * 1000:0}); client update {clientFrameMs / frames:0.000} ms a frame");
         if (known < serverAlive - 5)
             Fail($"a loopback client should know the whole horde ({known} of {serverAlive})");
         if (bytesPerSec > 30 * 1024)
             Fail($"ZEnts to one client is {bytesPerSec / 1024:0.0} KB/s (budget 30 KB/s)");
-        if (nearStaleWorst > a.ZEntsGapWorst + 0.2)
-            Fail($"near zombies should be updated every snapshot (one went {nearStaleWorst * 1000:0} ms without)");
+        if (server.ZEntsNearPeak == 0)
+            Fail("no zombie came near the loopback client (the near-zombie checks measured nothing)");
+        if (server.ZEntsNearWaitWorst > nearWaitAllowed)
+            Fail($"near zombies should take most of each ZEnts: one waited {server.ZEntsNearWaitWorst} snapshots with {server.ZEntsNearPeak} near (allowed {nearWaitAllowed})");
+        if (nearStaleWorst > nearStaleAllowed)
+            Fail($"near zombies should be heard of every share cycle (one went {nearStaleWorst * 1000:0} ms without; allowed {nearStaleAllowed * 1000:0}: three {cycle * 1000:0} ms cycles, or the longest gap {a.ZEntsGapWorst * 1000:0} ms plus two)");
     }
 }

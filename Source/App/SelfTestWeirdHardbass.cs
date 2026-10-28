@@ -151,7 +151,7 @@ public static partial class SelfTest
         var (refSpot, _) = HeaviestOf(spots, sp => TrackWork(cr, sp.Track, seconds, 1234, sp.Bar));
         var refWork = TrackWork(cr, refSpot.Track, seconds, 1234, refSpot.Bar);
         var refName = refSpot.Track.Name;
-        var stat = new System.Text.StringBuilder($"heaviest classic track {refName} (bar {refSpot.Bar}, {ThreadCpu.Kind}, median of interleaved pairs);");
+        var stat = new System.Text.StringBuilder($"heaviest classic track {refName} (bar {refSpot.Bar}, {ThreadCpu.Kind}, quickest of interleaved runs);");
         var worstWeird = 0.0;
         foreach (var t in weird)
         {
@@ -164,7 +164,7 @@ public static partial class SelfTest
             var drop = Measure(RenderSeconds(new MusicRenderer(), t, 1234, t.FirstDropBar, 3)).Rms;
             stat.Append($" {t.Name} {t.Bpm}bpm {t.Seconds:0}s {cost:0.00}ms/s {ratio:0.00}x drop{drop:0.000};");
             if (ratio > WeirdCostRatioMax)
-                Fail($"{t.Name}: costs {ratio:0.00}x the heaviest classic track {refName} (medians {cost:0.00} vs {reference:0.00} ms per s; allowed {WeirdCostRatioMax}x)");
+                Fail($"{t.Name}: costs {ratio:0.00}x the heaviest classic track {refName} (quickest runs {cost:0.00} vs {reference:0.00} ms per s; allowed {WeirdCostRatioMax}x)");
             if (cost > MusicBudgetMsPerSecond)
                 Fail($"{t.Name}: costs {cost:0.00} ms per s (budget {MusicBudgetMsPerSecond} for every track)");
         }
