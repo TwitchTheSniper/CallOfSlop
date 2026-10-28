@@ -177,6 +177,7 @@ public sealed partial class Game
     /// <summary>Server: the box's offer is gone (taken, taken apart or timed out): back to idle.</summary>
     private void CloseBox()
     {
+        SpendBoxHolds(); // (ZombiesMode.cs: nobody else's hold on the box becomes a spin)
         BoxState = ZBoxState.Idle;
         BoxBuild = -1;
         BoxOwner = byte.MaxValue;

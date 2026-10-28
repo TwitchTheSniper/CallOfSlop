@@ -135,6 +135,12 @@ public sealed partial class Ui
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
+        if (game.BoxFreeForAll && game.ZMap is { BoxSpots.Count: > 0 } bzm)
+        {
+            // The box's offer is anyone's now (board item 2026-10-27): a flashing label over it, seen from 25 m.
+            var bs = bzm.BoxSpots[Math.Clamp(game.BoxSpot, 0, bzm.BoxSpots.Count - 1)];
+            Hud.WorldLabel(bs.At + new System.Numerics.Vector3(0, 2.1f, 0), "FREE FOR ALL", new System.Numerics.Vector3(1f, 0.6f, 0.15f), 0.6f + 0.4f * MathF.Abs(MathF.Sin((float)now * 7)), 17f * _scale, 25f);
+        }
         foreach (var pu in game.ZPowerUps)
         {
             var dx = pu.At.X - me.Position.X;
@@ -181,7 +187,8 @@ public sealed partial class Ui
             {
                 var text = use.Text.Replace("[E]", key).Replace("[G]", Keybinds.Name(settings.Bind(GameAction.Grenade)));
                 var poor = !use.Blocked && use.Cost > me2.Points;
-                ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
+                var freeBox = use.Kind == ZUseKind.BoxTake && !use.Blocked && game.BoxFreeForAll; // (the box's free-for-all window: orange)
+                ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : freeBox ? Orange : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }

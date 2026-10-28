@@ -27,6 +27,9 @@ public sealed class ZBotShop
 
     public int Bought;
 
+    /// <summary>The last free-for-all box offer (<see cref="Game.BoxOfferSeq"/>) this bot looked at and let go (checked once, not every tick).</summary>
+    public int FreeBoxSeen = -1;
+
     public void Clear()
     {
         Kind = ZUseKind.None;
@@ -79,6 +82,7 @@ public sealed partial class Game
             s.NextThink = 0;
             s.SlotRound = -1;
             s.Bought = 0;
+            s.FreeBoxSeen = -1;
             Array.Clear(s.Skip);
         }
         _zBotDoorRound = -1;
@@ -105,8 +109,9 @@ public sealed partial class Game
             return false;
         }
 
-        // The box: a spin of ours is turning (wait by it) or offering (take it if it's better).
-        if (BoxState is ZBoxState.Spinning or ZBoxState.Offering && BoxOwner == p.Id && zm.BoxSpots.Count > 0)
+        // The box: a spin of ours is turning (wait by it) or offering (take it if it's better); someone else's offer in its
+        // free-for-all window (board item 2026-10-27) only when it would have taken it as its own, within reach of its post.
+        if (zm.BoxSpots.Count > 0 && (BoxState is ZBoxState.Spinning or ZBoxState.Offering && BoxOwner == p.Id || BotWantsFreeBox(p, zm, s, b)))
         {
             var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
             if (BoxState == ZBoxState.Spinning)
@@ -308,10 +313,29 @@ public sealed partial class Game
         ZUseKind.WallBuy => s.Index < zm.WallBuys.Count && OwnsBuild(p, zm.WallBuys[s.Index].Build) < 0 && zp.Points >= WallCost(zm.WallBuys[s.Index]),
         ZUseKind.SlotUpgrade => !p.ExtraSlots && zp.Points >= SlotCost(zm),
         ZUseKind.Box => BoxState == ZBoxState.Idle && BoxSpot == s.Index && zp.Points >= BoxCost(zm),
-        ZUseKind.BoxTake => BoxState == ZBoxState.Offering && BoxOwner == p.Id,
+        ZUseKind.BoxTake => CanTakeBox(p),
         ZUseKind.SlotMachine => s.Index < ZSlots.Length && (ZSlots[s.Index].State == ZSlotState.Idle || s.Holding) && zp.Points >= SlotCost(zm, s.Index),
         _ => false,
     };
+
+    /// <summary>
+    /// Someone else's box offer is free for all, and this bot would take it as its own (it beats the gun in hand), the box
+    /// is within its shopping reach and in an open area, and it isn't already holding the key for something else.
+    /// </summary>
+    private bool BotWantsFreeBox(Player p, ZombiesMap zm, ZBotShop s, BotBrain b)
+    {
+        if (BoxOwner == p.Id || !BoxFreeForAll)
+            return false;
+        if (s.Kind == ZUseKind.BoxTake)
+            return true; // (on its way already)
+        if (s.Holding)
+            return false;
+        if (s.FreeBoxSeen == BoxOfferSeq)
+            return false; // (already let this one go)
+        s.FreeBoxSeen = BoxOfferSeq;
+        var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
+        return AreaOpen(spot.Area) && Flat(spot.At - b.HoldAnchor) <= ZRules.BotShopRange && BoxOfferBetter(p);
+    }
 
     /// <summary>Does the box's offer beat the gun in the bot's hands (damage per second)?</summary>
     private bool BoxOfferBetter(Player p)

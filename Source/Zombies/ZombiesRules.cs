@@ -278,6 +278,16 @@ public sealed class ZombiesRules
 
     public float BoxSpinSeconds = 4f, BoxOfferSeconds = 10f, BoxMoveSeconds = 3f;
 
+    /// <summary>
+    /// The last part of the offer is free for all (board item 2026-10-27): anyone may take the gun for the final
+    /// <see cref="BoxFreeFraction"/> of <see cref="BoxOfferSeconds"/> or the last <see cref="BoxFreeMinSeconds"/>, whichever is
+    /// longer (never more than the whole offer). Both 0: only the buyer can ever take it.
+    /// </summary>
+    public float BoxFreeFraction = 0.3f, BoxFreeMinSeconds = 4f;
+
+    /// <summary>How many seconds at the end of the offer anyone may take it (see <see cref="BoxFreeFraction"/>).</summary>
+    public float BoxFreeSeconds => MathF.Min(BoxOfferSeconds, MathF.Max(BoxOfferSeconds * BoxFreeFraction, BoxFreeMinSeconds));
+
     // ---- Co-op bots spending their points (ZombieBotsShop.cs; developer answer, 2026-10-26) --------------------
     /// <summary>Bots buy doors, wall guns, the box, perks, the slot upgrade and slot pulls with their own points.</summary>
     public bool BotsBuy = true;
@@ -762,11 +772,14 @@ public sealed class ZombiesRules
                     {
                         switch (k)
                         {
+                            case "note": break;
                             case "moveMin": r.BoxMoveMin = Whole(v, w, 1, 100); break;
                             case "moveMax": r.BoxMoveMax = Whole(v, w, 1, 100); break;
                             case "spinSeconds": r.BoxSpinSeconds = Real(v, w, 0.2f, 20); break;
                             case "offerSeconds": r.BoxOfferSeconds = Real(v, w, 1, 60); break;
                             case "moveSeconds": r.BoxMoveSeconds = Real(v, w, 0.2f, 30); break;
+                            case "freeFraction": r.BoxFreeFraction = Real(v, w, 0, 1); break;
+                            case "freeSeconds": r.BoxFreeMinSeconds = Real(v, w, 0, 60); break;
                             default: return false;
                         }
                         return true;

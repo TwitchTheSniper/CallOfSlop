@@ -159,7 +159,7 @@ grey: not possible now (needs the power, already owned...).
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
 | **Wall buy** | A chalk outline on a wall with the gun on it: a standard build tagged `"wall"` with a full magazine and reserve, into an empty slot 3-4 if you have one, else replacing the gun in your hands. Owned already: **ammo** for it | per wall buy; default `costs.wall` 500; ammo half the gun's price (`ammoCostFraction`) |
-| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
+| **Mystery box** | Spins 4 s, then offers a **complete build** tagged `"box"` for 10 s (only the buyer can take it at first; the **last 4 s are free for all** since 2026-10-27: anyone can take it, the first take wins; see below); its tier is rolled from `DropTables.json` `boxTiers` by round, then a gun of that tier you don't already carry (**guns only** since 2026-10-26: 46 box guns, 7-12 per tier; melee builds come from the slot machines). After 4-8 spins (rolled) the next spin is the **teddy bear**: refunded, the box flies off to another of its spots | `costs.box` 950 |
 | **Perk machine** | A perk from the rules file (one machine per perk). No cap: beyond the 4th each perk costs double the step before (the 5th 2x its price, the 6th 4x...); all lost when downed | per perk |
 | **Weapon-slot upgrade** | Slots 3-4 for the rest of the run (the "Mule Kick" of this game) | 4000 |
 | **Power switch** | Turns the power on, once (free). Buyables marked `"power": true` don't work until then | free |
@@ -291,6 +291,16 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   parts, and sends `ZRun` (your loose parts) to you and a `ZBuild` with flag 4 ("cleared", no text; the weapon id of the
   Empty hands copy for slots 1-2) to everyone, so every PC shows the slot empty and the hands move the same way. Joiners
   get a cleared `ZBuild` for every empty slot 1-2 after the builds. An older build can't join (protocol 40).
+- **The box offer's last seconds are free for all (board item, 2026-10-27).** For the final `box.freeFraction` (0.3) of
+  `offerSeconds` or the last `box.freeSeconds` (4), whichever is longer (`ZombiesRules.json`; both 0 turns it off), anyone
+  can take the offered gun, for nothing; before that other players see "Reserved for <buyer>" and the key does nothing.
+  In the window the box's glow turns orange and flashes, with a rim, a beam and a FREE FOR ALL label over it for
+  everyone, and the prompt reads "Free for all - hold [E] to take ...". The buyer can still take it, or take it apart
+  (which stays the buyer's alone). The server decides: the first valid take in a tick wins (players in id order), and
+  everyone else's held key on the box is used up, so a closed box never turns their hold into a spin. If the buyer has
+  left, the offer is free at once. Clients work the window out from ZWorld's box time (no wire change). Co-op bots take
+  someone else's free offer only when they would have taken it as their own (it beats the gun in hand) and the box is
+  within their shopping range; each bot looks at a free offer once.
 - **At the mystery box: the OFFERED build (board bug fix, 2026-10-26).** The first version (earlier the same day) made
   G twice at the box take apart the **gun in your hands**; testers read the prompt as "take the box's gun apart" and lost
   the gun they were holding. Now, while the box is **offering you a build** (you spun it), a second HUD line under
