@@ -707,12 +707,12 @@ public sealed partial class Game
             var reach = ZombieReachFor(z) + (backToWindow ? 0.35f : 0f) + 0.45f; // a little slack: you can still back away during the windup
             if (Flat(to) <= reach + World.PlayerRadius && MathF.Abs(to.Y) < ZombieReachHeight(z, true))
             {
-                ZombieHurt(t, ZombieDamageFor(z), now, z.Position); // (one arm, a bite or a crawler hurts less: ZombieLimbs.cs; its type's damage: ZombieTypes.cs)
+                var landed = ZombieHurt(t, ZombieDamageFor(z), now, z.Position); // (one arm, a bite or a crawler hurts less: ZombieLimbs.cs; its type's damage: ZombieTypes.cs)
                 Audio.Effect3D(Sfx.MeleeHit, t.Chest, 0.9f, MixBus.Zombies);
-                // The type's special on a landed hit (ZombieTypes.cs): a brute's shove, a grabber's hold, a bloater's burst.
-                if (z.Kind.Knockback > 0 && IsStanding(t))
+                // The type's special on a hit that landed (ZombieTypes.cs): a brute's shove, a grabber's hold, a bloater's burst.
+                if (landed && z.Kind.Knockback > 0 && IsStanding(t))
                     TypeKnock(z, t);
-                if (z.Kind.GrabSeconds > 0 && !backToWindow && IsStanding(t))
+                if (landed && z.Kind.GrabSeconds > 0 && !backToWindow && IsStanding(t))
                     StartGrab(z, t, now);
                 if (z.Kind.BurstRadius > 0)
                 {

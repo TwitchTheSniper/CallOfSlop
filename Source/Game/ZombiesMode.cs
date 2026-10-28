@@ -833,12 +833,12 @@ public sealed partial class Game
         zp.Points = Math.Max(0, zp.Points + amount);
     }
 
-    /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>.</summary>
-    public void ZombieHurt(Player p, int damage, double now, Vector3? from = null)
+    /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>. False: it did nothing (immune, down, or an armour plate took it), so a type's special doesn't follow.</summary>
+    public bool ZombieHurt(Player p, int damage, double now, Vector3? from = null)
     {
         var zp = ZP(p);
         if (!p.Alive || zp.Downed || !DamageEnabled || now < p.ImmuneUntil)
-            return;
+            return false;
         if (zp.Perks != 0 && PlateUp(zp, now))
         {
             // Bulwark Brew: the plate takes the whole hit and grows back later.
@@ -846,7 +846,7 @@ public sealed partial class Game
             zp.PlateReady = false;
             p.LastCombatTime = now;
             Audio.Effect3D(Sfx.BreakMetal, p.Position + new Vector3(0, 1.2f, 0), 0.7f, MixBus.Zombies);
-            return;
+            return false;
         }
         var dmg = Math.Max(1, (int)MathF.Round(damage * PerkMult(zp, static d => d.DamageTaken)));
         p.Health -= dmg;
@@ -855,6 +855,7 @@ public sealed partial class Game
         p.LastCombatTime = now;
         if (p.Health <= 0)
             Down(p, zp, now);
+        return true;
     }
 
     /// <summary>Server: <paramref name="zp"/> holds an armour plate perk and its plate is up.</summary>
