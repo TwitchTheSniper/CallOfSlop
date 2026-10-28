@@ -122,7 +122,7 @@ public sealed unsafe partial class Renderer
                     vWorld = w;
                     vNormal = normalize(vec3(n.x * c - n.z * s, n.y, n.x * s + n.z * c));
                     vec3 col = vec3(r0.w, r1.w, r2.w) * iWalk.y;
-                    vColorI = vec4(mix(col, iWalk.w > 0.5 ? uDbgB : uDbgA, iWalk.z), 1.0);
+                    vColorI = vec4(mix(col, (iWalk.w > 0.5 ? uDbgB : uDbgA) * iWalk.y, iWalk.z), 1.0);
                     vModeI = r3.w;
                     vLayerI = 0.0;
                     gl_Position = uViewProj * vec4(w, 1.0);

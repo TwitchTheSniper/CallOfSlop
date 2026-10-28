@@ -330,7 +330,13 @@
     "netCell": 4,
     "netEvery": 6,
     "netFarRange": 60,
-    "netFarEvery": 3
+    "netFarEvery": 3,
+    "mass": true,
+    "massRange": 50,
+    "massHysteresis": 10,
+    "massPerTick": 40,
+    "massCapacity": 40,
+    "drawCap": 28
   },
   "climb": {
     "note": "The bell siege (docs/zombies/ZOMBIES-MODE.md, The bell: a siege up the tower; Source/Game/ZombiesClimb.cs): ringing the Cathedral's bell starts a 75 s survival challenge in the belfry. The horde outside leaves the windows for the tower's north face, piles up against it in a living pyramid (layers layerHeight apart, columns columnSpacing apart, each layer layerShrink columns narrower than the one under it, the bottom baseRows layers two deep, at most layers high) and climbs over it and up the bare wall (one in climbEvery goes straight up from the start); a shot zombie lets go and falls, dazed fallStun seconds where it lands, and the bodies above a shot one slide down. The siege adds extraZombies + extraPerRound a round (at most extraMax) to the round. Surviving pays every player standing rewardPoints + rewardPerRound a round (at most rewardMax), rewardParts loose parts rolled as if it were rewardRoundBonus rounds later (rarer), and drops rewardPowerUp on the belfry.",

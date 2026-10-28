@@ -317,6 +317,9 @@ public static unsafe partial class Program
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var inst = CrowdInst;
         inst.DebugMix = CrowdTiers ? 1f : 0f;
+        inst.DrawCap = _game.ZRules.Crowd.DrawCap;
+        inst.MassTime = now;
+        inst.MassSpeed = _game.ZRules.Crowd.Speed;
         inst.Begin();
         if (_game.IsServer && _game.Crowd.Count > 0 && !CrowdAsClient)
             inst.FromHost(_game.Crowd, Gfx.CameraPosition);

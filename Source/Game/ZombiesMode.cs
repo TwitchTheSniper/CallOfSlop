@@ -357,12 +357,12 @@ public sealed partial class Game
             case ZRoundPhase.Round:
                 RescaleRoundForPlayers(); // someone joined or left (bots too): the round's total follows at once
                 SpawnTick(zm, now);
-                if (_zToSpawn == 0 && AliveZombies == 0 && Crowd.Count == 0)
+                if (_zToSpawn == 0 && AliveZombies == 0 && Crowd.Total == 0)
                     EndRound(now);
                 break;
         }
         ZPhaseLeft = ZPhase == ZRoundPhase.Round ? 0 : ZWaitingReady ? ReadyFallbackLeft(now) : Math.Max(0, _zPhaseUntil - now);
-        ZRemaining = _zToSpawn + AliveZombies + Crowd.Count; // (the crowd: ZombiesCrowd.cs, none off crowd maps)
+        ZRemaining = _zToSpawn + AliveZombies + Crowd.Total; // (the crowd: ZombiesCrowd.cs, none off crowd maps)
 
         TickHorde(zm, now); // ZombieAI.cs
         foreach (var zpl in ZPlayers.Values)

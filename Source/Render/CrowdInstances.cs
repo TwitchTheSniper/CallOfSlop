@@ -16,6 +16,9 @@ public sealed class CrowdInstances
     /// <summary>Near rig up to <see cref="NearRange"/> m from the camera, mid up to <see cref="MidRange"/>, far beyond.</summary>
     public float NearRange = 35f, MidRange = 80f;
 
+    /// <summary>The most zombies drawn in one cell (the top layer of a dense blob; CrowdTuning.DrawCap).</summary>
+    public int DrawCap = 28;
+
     /// <summary>Tier colours (1: crowd yellow, held orange; 0: zombie colours).</summary>
     public float DebugMix;
 
@@ -78,7 +81,44 @@ public sealed class CrowdInstances
             var walked = x * f.X + z * f.Z + (h >> 10 & 255) / 64f;
             Add(cam, x, y, z, yaw, walked, Bright(h), c.Held[i]);
         }
+        // The mass tier's cells: their top layer, placed as a client places a cell's zombies.
+        if (c.MassTotal == 0)
+            return;
+        var size = c.MassCell;
+        var r = size * 0.75f + 1f;
+        for (var cell = 0; cell < c.MassCount.Length; cell++)
+        {
+            var m = c.MassCount[cell];
+            if (m == 0)
+                continue;
+            var centre = c.MassCentre(cell);
+            if (!ZombieAnim.Visible(centre + new Vector3(0, 0.9f, 0), r))
+            {
+                CellsCulled++;
+                Culled += m;
+                continue;
+            }
+            CellsDrawn++;
+            float vx = c.MassVX[cell], vz = c.MassVZ[cell];
+            var head = vx * vx + vz * vz > 1e-4f ? HordeCrowd.HeadingByte(MathF.Atan2(vx, -vz)) : (byte)0;
+            var n = Math.Min(m, DrawCap);
+            Culled += m - n;
+            for (var k = 0; k < n; k++)
+            {
+                var at = CrowdPicture.PlaceIn(c.MassCols, c.MinX, c.MinZ, size, head, cell, k, MassTime, MassSpeed, out var yaw);
+                var f = World.FlatForward(yaw);
+                var h = HordeCrowd.Hash((uint)cell * 977u + (uint)k);
+                var walked = head == 0 ? (h >> 10 & 255) / 64f : at.X * f.X + at.Y * f.Z + (h >> 10 & 255) / 64f;
+                // (With the tier colours the mass tier is a darker yellow.)
+                Add(cam, at.X, y, at.Y, yaw, walked, Bright(h) * (DebugMix > 0 ? 0.55f : 1f), false);
+            }
+        }
     }
+
+    /// <summary>The host's clock and the crowd's speed for placing mass cells' zombies (set before <see cref="FromHost"/>).</summary>
+    public double MassTime;
+
+    public float MassSpeed = 1.5f;
 
     /// <summary>A client: each network cell in view (a sphere round the cell), its zombies placed by <see cref="CrowdPicture.Place"/>.</summary>
     public void FromPicture(CrowdPicture p, Vector3 cam, double time, float speed)
@@ -101,6 +141,8 @@ public sealed class CrowdInstances
             }
             CellsDrawn++;
             var still = p.Head[cell] == 0;
+            Culled += Math.Max(0, n - DrawCap);
+            n = Math.Min(n, DrawCap); // (the top layer of a dense cell)
             for (var k = 0; k < n; k++)
             {
                 var at = p.Place(cell, k, time, speed, out var yaw);

@@ -58,7 +58,9 @@ public sealed partial class Game
         var hp = ZRules.ZombieHealth(Math.Max(1, round));
         var hx = World.Map.HalfX - 1;
         var hz = World.Map.HalfZ - 1;
-        for (var tries = 0; Crowd.Count < n && tries < n * 20; tries++)
+        Crowd.MassHP = hp;
+        var massFrom = Crowd.Tuning.Mass ? Crowd.Tuning.MassRange + Crowd.Tuning.MassHysteresis : 0f;
+        for (var tries = 0; Crowd.Total < n && tries < n * 20; tries++)
         {
             var x = (Rand() * 2 - 1) * hx;
             var z = (Rand() * 2 - 1) * hz;
@@ -66,10 +68,13 @@ public sealed partial class Game
             var dz = z - cz;
             if (dx * dx + dz * dz < keep * keep || !Crowd.Walkable(x, z))
                 continue;
-            Crowd.Add(x, z, 0, 0, (uint)Crowd.Count * 2654435761u ^ rng, ServerTick, hp);
+            if (massFrom > 0 && dx * dx + dz * dz > massFrom * massFrom)
+                Crowd.AddMass(x, z); // far out: straight into the mass tier (HordeCrowd.Mass.cs)
+            else
+                Crowd.Add(x, z, 0, 0, (uint)Crowd.Count * 2654435761u ^ rng, ServerTick, hp);
         }
-        _zRoundTotal = CrowdRoundTotal = Crowd.Count;
-        Console.WriteLine($"[zombies] crowd round {round}: {Crowd.Count} zombies in the crowd ({Crowd.FlowCells} flow cells, {Crowd.Bytes / 1024} KB)");
+        _zRoundTotal = CrowdRoundTotal = Crowd.Total;
+        Console.WriteLine($"[zombies] crowd round {round}: {Crowd.Total} zombies in the crowd ({Crowd.MassTotal} of them in the mass tier) ({Crowd.FlowCells} flow cells, {Crowd.Bytes / 1024} KB)");
     }
 
     /// <summary>
@@ -262,7 +267,7 @@ public sealed partial class Game
     /// </summary>
     internal void CrowdBlast(Player owner, Vector3 center, float radius, float maxDamage, double now)
     {
-        if (!CrowdOn || Crowd.Count == 0 || MathF.Abs(center.Y - Crowd.Y) > radius + HordeCrowd.BodyHeight)
+        if (!CrowdOn || Crowd.Total == 0 || MathF.Abs(center.Y - Crowd.Y) > radius + HordeCrowd.BodyHeight)
             return;
         var n = Crowd.Within(center, radius, _crowdHits);
         Array.Sort(_crowdHits, 0, n);
@@ -281,6 +286,20 @@ public sealed partial class Game
             {
                 CrowdBlastKills++;
                 drops++;
+            }
+        }
+        // The mass: the cells the blast covers lose their dead by count.
+        var cells = Crowd.BlastMass(center, radius, maxDamage, _crowdMassKills);
+        for (var k = 0; k < cells; k++)
+        {
+            var (cell, dead) = _crowdMassKills[k];
+            var at = Crowd.MassCentre(cell);
+            for (var d = 0; d < dead; d++)
+            {
+                CrowdKillCredit(owner, at, head: false, explosive: true, drops: drops < CrowdBlastDrops, now);
+                drops++;
+                CrowdBlastKills++;
+                CrowdMassKills++;
             }
         }
     }
@@ -305,6 +324,22 @@ public sealed partial class Game
         }
         var at = new Vector3(Crowd.X[i], Crowd.Y, Crowd.Z[i]);
         Crowd.RemoveAt(i);
+        CrowdKillCredit(attacker, at, head, explosive, drops, now);
+        return true;
+    }
+
+    private readonly (int Cell, int Count)[] _crowdMassKills = new (int, int)[256];
+
+    /// <summary>Mass zombies killed by blasts (log, self-test).</summary>
+    public int CrowdMassKills;
+
+    /// <summary>
+    /// Server: one crowd or mass zombie killed by <paramref name="attacker"/> at <paramref name="at"/>, credited exactly
+    /// as an individual's kill (DamageZombie): the count, kills, headshots, frenzy, kill points, and the drop and
+    /// power-up rolls when <paramref name="drops"/>.
+    /// </summary>
+    private void CrowdKillCredit(Player attacker, Vector3 at, bool head, bool explosive, bool drops, double now)
+    {
         CrowdNoteKill();
         var zp = ZP(attacker);
         zp.Kills++;
@@ -320,6 +355,5 @@ public sealed partial class Game
             RollDrop(at, ZRound, now, PerkMult(zp, static d => d.PartDrops));
             RollPowerUp(at, now, zp);
         }
-        return true;
     }
 }

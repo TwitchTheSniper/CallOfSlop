@@ -1161,12 +1161,20 @@ public sealed class ZombiesRules
                             case "netEvery": c.NetEvery = Whole(v, w, 1, 60); break;
                             case "netFarRange": c.NetFarRange = Real(v, w, 0, 1000); break;
                             case "netFarEvery": c.NetFarEvery = Whole(v, w, 1, 30); break;
+                            case "mass": c.Mass = Flag(v, w); break;
+                            case "massRange": c.MassRange = Real(v, w, 10, 1000); break;
+                            case "massHysteresis": c.MassHysteresis = Real(v, w, 2, 200); break;
+                            case "massPerTick": c.MassPerTick = Whole(v, w, 1, 256); break;
+                            case "massCapacity": c.MassCapacity = Whole(v, w, 1, 255); break;
+                            case "drawCap": c.DrawCap = Whole(v, w, 1, 255); break;
                             default: return false;
                         }
                         return true;
                     });
                     if (c.ThinkMax < c.ThinkMin)
                         throw new WeaponFileException($"{at}: thinkMin <= thinkMax");
+                    if (c.MassRange < c.DemoteRange + 4)
+                        throw new WeaponFileException($"{at}: massRange at least 4 m over demoteRange (individuals go back to particles before particles go into the mass)");
                     if (c.DemoteRange < c.PromoteRange + 2)
                         throw new WeaponFileException($"{at}: demoteRange at least 2 m over promoteRange (the hysteresis)");
                     break;

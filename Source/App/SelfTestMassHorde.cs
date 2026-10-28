@@ -65,7 +65,7 @@ public static partial class SelfTest
         me.Teleport(new Vector3(0, 0, 0));
         g.CrowdOverride = count;
         g.SelfTestBeginRound(1, now);
-        var seeded = g.Crowd.Count;
+        var seeded = g.Crowd.Total;
         var mem = GC.GetTotalMemory(true) - mem0;
         var cpuTimer = new TickCpu();
         double sumCpu = 0, worstCpu = 0;
@@ -90,12 +90,12 @@ public static partial class SelfTest
         var serverAtSend = 0;
         void Check(string when)
         {
-            var sum = g.Crowd.Count + g.AliveZombies + g.CrowdRoundKills;
+            var sum = g.Crowd.Total + g.AliveZombies + g.CrowdRoundKills;
             if (sum != g.CrowdRoundTotal || g.CrowdRoundKills < kills)
             {
                 bad++;
                 if (badText.Length == 0)
-                    badText = $"{when}: crowd {g.Crowd.Count} + alive {g.AliveZombies} + killed {g.CrowdRoundKills} (the test shot {kills}) != {g.CrowdRoundTotal}";
+                    badText = $"{when}: crowd {g.Crowd.Count} + mass {g.Crowd.MassTotal} + alive {g.AliveZombies} + killed {g.CrowdRoundKills} (the test shot {kills}) != {g.CrowdRoundTotal}";
             }
         }
         void Tick(int t, bool measure)
@@ -152,7 +152,7 @@ public static partial class SelfTest
                 lastSum = 0;
                 foreach (var c in view.Count)
                     lastSum += c;
-                serverAtSend = g.Crowd.Count;
+                serverAtSend = g.Crowd.Total;
             }
         }
         // 1 s warm-up (the crowd closes in, the first promotions, JIT), then 3 s measured.
@@ -248,8 +248,11 @@ public static partial class SelfTest
         var draw = $"; drawing prep {hostPrepMs:0.00} ms host ({hostLods} near/mid/far), {clientPrepMs:0.00} ms client ({inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]}), {prepAlloc} bytes allocated";
         if (prepAlloc > 0)
             Fail($"crowd {count}: preparing the crowd's instances allocated {prepAlloc} bytes once warm");
-        if (inst.Total != c.CrowdSeen.Total)
-            Fail($"crowd {count}: the client's instances ({inst.Total}) should be every zombie in its picture ({c.CrowdSeen.Total}) with no frustum");
+        var capped = 0;
+        foreach (var n in c.CrowdSeen.Count)
+            capped += Math.Min((int)n, inst.DrawCap);
+        if (inst.Total != capped)
+            Fail($"crowd {count}: the client's instances ({inst.Total}) should be every zombie in its picture up to {inst.DrawCap} a cell ({capped} of {c.CrowdSeen.Total}) with no frustum");
         World.SetMap(map);
         var net = $"ZCrowd {kbs:0.0} KB/s per client ({netSends} sends, every {g.ZRules.Crowd.NetEvery} ticks, {g.ZRules.Crowd.NetCell:0} m cells {cols}x{rows}; keyframe {keyframe} bytes, biggest change {biggest} bytes; "
                   + $"server {netMs / Math.Max(1, netSends):0.000} ms a send, {netAlloc} bytes allocated); client read {readMs:0.000} ms a message, picture {seen} zombies (sent {lastSum}), fill {fillMs:0.00} ms";
@@ -307,24 +310,35 @@ public static partial class SelfTest
             }
         var shotKills = g.CrowdShotKills;
         var afterShots = c.Count;
-        var sumOk = c.Count + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
+        var sumOk = c.Total + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
         // A blast in the thick of the crowd, far from the player.
         var far = Enumerable.Range(0, c.Count).OrderByDescending(i => c.X[i] * c.X[i] + c.Z[i] * c.Z[i]).First();
         var at = new Vector3(c.X[far] * 0.6f, c.Y + 0.5f, c.Z[far] * 0.6f);
         Span<int> inR = stackalloc int[512];
         var inRange = c.Within(at, 3f, inR);
-        var before = c.Count;
+        var before = c.Total;
         var drops0 = g.CrowdDropRolls;
         g.SelfTestBlast(me, at, 4f, 100000f, now);
-        var blastKills = before - c.Count;
+        var blastKills = before - c.Total;
         var drops = g.CrowdDropRolls - drops0;
-        sumOk &= c.Count + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
+        // A blast out in the mass tier (a mass cell far from the player): its dead leave the mass by count.
+        var massCell = Array.FindIndex(c.MassCount, m => m >= 3);
+        var massBefore = c.MassTotal;
+        var massKills0 = g.CrowdMassKills;
+        if (massCell >= 0)
+            g.SelfTestBlast(me, c.MassCentre(massCell) + new Vector3(0, 0.5f, 0), 3f, 100000f, now);
+        var massKills = g.CrowdMassKills - massKills0;
+        blastKills += massKills;
+        sumOk &= c.Total + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
+        sumOk &= c.Total + g.AliveZombies + g.CrowdRoundKills == g.CrowdRoundTotal;
         var credited = zp.Kills - kills0;
-        MassLine($"combat: 80 head shots into the crowd killed {shotKills} ({3000 - afterShots} out of the crowd); a blast took {blastKills} out of the crowd ({inRange} within 3 m), {drops} drops rolled; "
+        MassLine($"combat: 80 head shots into the crowd killed {shotKills} ({3000 - afterShots} out of the crowd); a blast took {blastKills - massKills} out of the crowd ({inRange} within 3 m), {drops} drops rolled; a blast in the mass killed {massKills} ({massBefore} -> {c.MassTotal} in the mass); "
                  + $"kills credited {credited} (crowd round kills {g.CrowdRoundKills}), points {points0} -> {zp.Points}; counts add up {sumOk}");
         if (shotKills < 5)
             Fail($"shots into the crowd should kill crowd zombies ({shotKills} of 20 targets)");
-        if (blastKills < inRange || blastKills == 0)
+        if (massCell < 0 || massKills < 1 || massBefore - c.MassTotal != massKills)
+            Fail($"a blast in the mass tier should kill mass zombies by count ({massKills} killed, mass {massBefore} -> {c.MassTotal})");
+        if (blastKills - massKills < inRange || blastKills == 0)
             Fail($"a blast should kill every crowd zombie close to it ({blastKills} out, {inRange} within 3 m)");
         if (credited != g.CrowdRoundKills || credited != shotKills + blastKills || zp.Points <= points0)
             Fail($"crowd kills should be credited like individual kills ({credited} credited, {shotKills} + {blastKills} killed, {g.CrowdRoundKills} counted)");

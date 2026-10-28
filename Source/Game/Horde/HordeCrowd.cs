@@ -46,6 +46,18 @@ public sealed class CrowdTuning
     public float NetCell = 4f, NetFarRange = 60f;
 
     public int NetEvery = 6, NetFarEvery = 3;
+
+    /// <summary>
+    /// The mass tier (HordeCrowd.Mass.cs): on; particles further than <see cref="MassRange"/> + <see cref="MassHysteresis"/>
+    /// from every player merge into per-cell counts, cells within <see cref="MassRange"/> let them out again,
+    /// <see cref="MassPerTick"/> each way a tick at most; a cell holds <see cref="MassCapacity"/> at most (the flow backs up
+    /// behind a full one). Clients draw at most <see cref="DrawCap"/> zombies a cell (the top layer of a dense blob).
+    /// </summary>
+    public bool Mass = true;
+
+    public float MassRange = 50f, MassHysteresis = 10f;
+
+    public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
 }
 
 /// <summary>
@@ -58,7 +70,7 @@ public sealed class CrowdTuning
 /// sends far, healthy ones back. Single floor (one height; the spike's dev map is flat). No allocation per tick once
 /// the arrays have grown.
 /// </summary>
-public sealed class HordeCrowd
+public sealed partial class HordeCrowd
 {
     public CrowdTuning Tuning = new();
 
@@ -132,13 +144,13 @@ public sealed class HordeCrowd
     /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
     public int FlowCells => _cols * _rows;
 
-    public long Bytes => (long)X.Length * (9 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 12) + (long)_sStart.Length * 8;
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
     {
         Reserve(capacity);
-        if (ReferenceEquals(_setupMap, map) && Y == floorY && _cell == MathF.Max(0.5f, Tuning.FlowCell) && _sCell == MathF.Max(0.4f, Tuning.SeparationRadius))
+        if (ReferenceEquals(_setupMap, map) && Y == floorY && _cell == MathF.Max(0.5f, Tuning.FlowCell) && _sCell == MathF.Max(0.4f, Tuning.SeparationRadius) && _mCell == MathF.Max(1f, Tuning.NetCell))
             return;
         _setupMap = map;
         Y = floorY;
@@ -193,6 +205,7 @@ public sealed class HordeCrowd
         _sFill = new int[_sCols * _sRows];
         _flowTick = -1_000_000;
         Array.Fill(_targetCell, -1);
+        SetupMass();
     }
 
     /// <summary>Set up for a map (<see cref="Setup"/>): before that there is nothing to tick.</summary>
@@ -227,6 +240,7 @@ public sealed class HordeCrowd
         Count = 0;
         CandidateCount = 0;
         Near = 0;
+        ClearMass();
     }
 
     /// <summary>Is the flow cell at (x, z) walkable (outside the map: no)?</summary>
@@ -329,6 +343,10 @@ public sealed class HordeCrowd
         var sepR = Tuning.SeparationRadius;
         var sepS = Tuning.SeparationStrength;
         var thinkSpan = (uint)Math.Max(1, Tuning.ThinkMax - Tuning.ThinkMin + 1);
+        var mr = Tuning.MassRange + Tuning.MassHysteresis;
+        var merge2 = Tuning.Mass && targets > 0 ? mr * mr : float.MaxValue;
+        var mergeTurn = (int)(tick & 7);
+        _mergeN = 0;
         for (var i = 0; i < Count; i++)
         {
             var x = X[i];
@@ -361,7 +379,11 @@ public sealed class HordeCrowd
                 Held[i] = true;
             }
             else
+            {
                 Held[i] = false;
+                if (best > merge2 && (i & 7) == mergeTurn && HP[i] >= MassHP)
+                    OfferMerge(i); // far from everyone: into the mass (HordeCrowd.Mass.cs)
+            }
             if ((i & 1) == parity)
                 Separate(i, x, z, sepR, sepS);
             var spd = Held[i] ? 0f : Spd[i];
@@ -397,6 +419,7 @@ public sealed class HordeCrowd
             VX[i] = vx;
             VZ[i] = vz;
         }
+        TickMass(tick, tx[..targets], tz[..targets]); // the mass tier: merge, flow, release (HordeCrowd.Mass.cs)
         TickMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
     }
 
@@ -875,6 +898,17 @@ public sealed class HordeCrowd
             _dvx[k] += VX[i];
             _dvz[k] += VZ[i];
         }
+        // The mass's counts (on the same grid when the cell sizes agree: the network's is the mass's).
+        if (MassTotal > 0 && MathF.Abs(cell - _mCell) < 1e-4f && MassCount.Length == n)
+            for (var k = 0; k < n; k++)
+            {
+                var m = MassCount[k];
+                if (m == 0)
+                    continue;
+                counts[k] = (byte)Math.Min(255, counts[k] + m);
+                _dvx[k] += MassVX[k] * m;
+                _dvz[k] += MassVZ[k] * m;
+            }
         for (var k = 0; k < n; k++)
         {
             var l2 = _dvx[k] * _dvx[k] + _dvz[k] * _dvz[k];
