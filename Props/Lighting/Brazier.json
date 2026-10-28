@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-prop/1",
+  "name": "Brazier",
+  "category": "Lighting",
+  "description": "An iron fire basket on four legs, burning. Solid. It lights lit maps.",
+  "collision": "solid",
+  "collider": [{"size": [0.72, 0.9, 0.72]}],
+  "parts": [
+    {"size": [0.05, 0.72, 0.05], "offset": [-0.24, 0.36, -0.24], "color": "black"},
+    {"size": [0.05, 0.72, 0.05], "offset": [-0.24, 0.36, 0.24], "color": "black"},
+    {"size": [0.05, 0.72, 0.05], "offset": [0.24, 0.36, -0.24], "color": "black"},
+    {"size": [0.05, 0.72, 0.05], "offset": [0.24, 0.36, 0.24], "color": "black"},
+    {"size": [0.62, 0.04, 0.62], "offset": [0, 0.3, 0], "color": "black"},
+    {"size": [0.72, 0.16, 0.72], "offset": [0, 0.8, 0], "color": "#2a2622"},
+    {"size": [0.6, 0.05, 0.6], "offset": [0, 0.885, 0], "color": "#2a1610"},
+    {"size": [0.16, 0.05, 0.12], "offset": [-0.12, 0.915, 0.1], "color": "#ff7a30", "anim": {"type": "flicker", "rate": 4, "duty": 0.9, "color": "#ff8a40", "off": "#802010", "glow": 1.2}},
+    {"size": [0.12, 0.05, 0.16], "offset": [0.14, 0.915, -0.08], "color": "#ff7a30", "anim": {"type": "flicker", "rate": 5, "duty": 0.9, "color": "#ff8a40", "off": "#802010", "glow": 1.2}},
+    {"size": [0.24, 0.26, 0.24], "offset": [0, 1.06, 0], "color": "amber", "anim": {"type": "flicker", "rate": 8, "duty": 0.86, "color": "#ffc860", "off": "#a04810", "glow": 1.5}},
+    {"size": [0.14, 0.22, 0.14], "offset": [0.07, 1.24, -0.04], "color": "#ffd890", "anim": {"type": "flicker", "rate": 11, "duty": 0.8, "color": "#fff0c0", "off": "#c06010", "glow": 1.7}}
+  ],
+  "lights": [{"pos": [0, 1.15, 0], "color": "#ff9a40", "intensity": 2.6, "range": 10, "flicker": true}]
+}

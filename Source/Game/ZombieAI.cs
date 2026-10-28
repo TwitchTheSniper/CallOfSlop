@@ -115,12 +115,15 @@ public sealed partial class Zombie
 public sealed partial class Game
 {
     /// <summary>Every zombie in the world, alive or falling over (by id).</summary>
-    public readonly List<Zombie> Horde = new();
+    public readonly List<Zombie> Horde = new(MaxZombies); // (sized for the most at once: a growing horde never allocates mid-round)
 
     /// <summary>The zombies' voices and footsteps on this PC (client side, every frame: Source/Audio/ZombieSounds.cs).</summary>
     public readonly ZombieSounds ZSounds = new();
 
     private ushort _zNextId = 1;
+
+    /// <summary>Zombies spawned on this server so far (self-tests: a spawn is a new object, so allocation probes leave those ticks out).</summary>
+    public long ZSpawns;
 
     /// <summary>Zombie AI cost: total and ticks measured (the self-test reports the cost per zombie per tick).</summary>
     public double ZAiTicks, ZAiZombieTicks, ZAiMs;
@@ -250,17 +253,15 @@ public sealed partial class Game
         var pos = at ?? sp.At;
         var (run, sprint) = ZRules.SpeedMix(Math.Max(1, ZRound));
         var r = ZRand();
-        var z = new Zombie
-        {
-            Id = NextZombieId(),
-            Health = ZRules.ZombieHealth(Math.Max(1, ZRound)),
-            Speed = r < sprint ? ZSpeed.Sprint : r < sprint + run ? ZSpeed.Run : ZSpeed.Walk,
-            Window = sp.Window,
-            Area = sp.Area,
-            State = sp.Window >= 0 ? ZState.ToWindow : ZState.Rising,
-            StateAt = now,
-            SpawnTick = ServerTick,
-        };
+        var z = RentZombie(); // (as new, from the pool once it is warm: ZombiePool.cs)
+        z.Id = NextZombieId();
+        z.Health = ZRules.ZombieHealth(Math.Max(1, ZRound));
+        z.Speed = r < sprint ? ZSpeed.Sprint : r < sprint + run ? ZSpeed.Run : ZSpeed.Walk;
+        z.Window = sp.Window;
+        z.Area = sp.Area;
+        z.State = sp.Window >= 0 ? ZState.ToWindow : ZState.Rising;
+        z.StateAt = now;
+        z.SpawnTick = ServerTick;
         ZRand(); // (the old first path search delay: keeps the seeded stream in step)
         z.MaxHealth = z.Health;
         InitLimbs(z); // per-limb health (ZombieLimbs.cs)
@@ -275,6 +276,7 @@ public sealed partial class Game
         HordeController<Zombie>.Joined(z);
         Horde.Add(z);
         _zById[z.Id] = z;
+        ZSpawns++;
         return z;
     }
 
@@ -322,6 +324,7 @@ public sealed partial class Game
             }
             alive++;
         }
+        ZBlockGatherPlayers(); // the standing players' bodies, which walking zombies are held off (ZombieBlock.cs)
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
         ClimbTick(); // a siege up a climbable face: the pyramid's places (ZombiesClimb.cs)
         foreach (var z in Horde)
@@ -342,6 +345,7 @@ public sealed partial class Game
             // The hit box for lag-compensated shots: at a window it sits on the drawn body (the step in to the boards).
             z.History[ServerTick % z.History.Length] = z.Sim.Position + ZombieHitShift(z, ServerTick, z.Sim.Position);
         }
+        ZBlockBuild(client: false); // the bodies players are pushed out of this tick (ZombieBlock.cs)
         if (alive > 0)
         {
             ZAiMs += Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
@@ -638,6 +642,8 @@ public sealed partial class Game
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(SpeedOf(z) / World.WalkSpeed * 100f), 1, 200),
         };
         World.Simulate(ref z.Sim, cmd);
+        if (walk)
+            ZBlockZombie(z); // held off standing players' bodies (ZombieBlock.cs)
         if (!float.IsFinite(z.Sim.Position.X + z.Sim.Position.Y + z.Sim.Position.Z))
             z.Sim = new MoveState { Position = z.PrevPos, Grounded = true };
     }

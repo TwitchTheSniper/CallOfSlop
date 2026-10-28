@@ -154,6 +154,13 @@ Wall openings are written as `"holes": [ { "center": 4, "width": 1.5, "bottom": 
 
 A map must have at least one spawn.
 
+**Lights** (looks only: never in the fingerprint; see [Lighting](#lighting))
+
+| Op | Parameters | What it does |
+|---|---|---|
+| `LightSource` | x, y, z, color, intensity = 1, range = 8, type = "point", yaw = 0, pitch = 90, cone = 60, w = 1, d = 1, flicker = false | A static light baked into the map: a point, a `"spot"` cone or an `"area"` rectangle. |
+| `BakedLighting` | cell = 0.5, indoor = 0.25, sunShadows = true, propLights = true, region = null, top = 0 | Turns baked lighting on and sets it up. |
+
 ## Terrain
 
 A map can have real terrain: hills, cliffs, valleys and plateaus instead of a flat floor. Add an optional top-level `"terrain"` object. The game turns it into a **heightfield**, a grid of ground heights every `cell` metres, by running a list of **features** in order. Players walk on it, bullets and grenades hit it, bots see and walk around it, and boxes from the ops are placed on it. Maps without `"terrain"` are exactly as before: flat ground at y = 0.
@@ -1077,6 +1084,66 @@ Start from a preset and change what you like; anything you leave out comes from 
 
 **Try it:** the **Sky Test** map in the Dev pack is open ground with a tall tower, made for looking at skies. **Settings > Video > Sky quality**: Low draws the gradient, sun and moon; High (default) adds clouds and stars. The sky is cheap either way (well under 0.2 ms of GPU time at 1440p); the game log shows a `[sky]` line every few seconds on maps with a sky.
 
+## Lighting
+
+A map can have **baked lighting**: torches, candles, lamps, spotlights and glowing windows whose light, with the sun's
+shadows and how much sky each spot sees, is worked out once when the map is built and stored with it, then read per
+pixel at almost no cost (docs/render/LIGHTING.md). It lights everything the same way: walls, props, players, zombies,
+your gun. A map is lit when it has a `BakedLighting` or a `LightSource` op; every other map looks exactly as before,
+even with lamp props on it. Lights are looks only (not in the fingerprint), so lighting a map never stops anyone joining.
+
+```json
+{ "op": "BakedLighting", "cell": 0.5, "indoor": 0.2 },
+{ "op": "LightSource", "x": 0, "y": 3, "z": 0, "color": "#ffc878", "intensity": 1.5, "range": 10, "flicker": true },
+{ "op": "LightSource", "x": 6, "y": 6, "z": -2, "color": "#ffe9c0", "type": "spot", "pitch": 90, "cone": 40, "intensity": 2.5, "range": 10 },
+{ "op": "LightSource", "x": -13.9, "y": 4, "z": 1, "color": "#ff7a6a", "type": "area", "yaw": 90, "pitch": 0, "w": 1.6, "d": 2.5, "intensity": 1.2 },
+{ "op": "Prop", "name": "Iron Torch", "x": -12, "z": -7.6, "y": 2.2 }
+```
+
+`LightSource` (y is above the ground on terrain maps):
+
+| Parameter | Meaning |
+|---|---|
+| `x`, `y`, `z` | Where the light is (an area light: the rectangle's centre). Keep it out of solid boxes, or just inside its own lamp's box (a light inside a box ignores that box). |
+| `color` | `[r, g, b]` (0-1) or `"#rrggbb"`. Flames `#ffb45a`, candles `#ffc878`, bulbs `#ffd8a8`, daylight `#e8f0ff`, moonlight `#9fb4e8`. |
+| `intensity` | 0-20. At 1 a white surface right by the light is lit about twice as brightly as by full sun. |
+| `range` | 0.5-40 m. The light falls off like a real one near the source and reaches nothing past the range: about 60% a quarter of the way out, 20% half way, 3% at three quarters. |
+| `type` | `"point"` (every way), `"spot"` (a cone) or `"area"` (a glowing rectangle that lights the side it faces). |
+| `yaw`, `pitch` | Spot and area: which way it shines: compass `yaw` (0 = north, -Z; 90 = east) and `pitch` degrees below the horizontal (90 = straight down, the default; 0 = level, -90 = up). |
+| `cone` | Spot: the cone's full angle, 1-170 degrees (soft edge in the outer quarter). |
+| `w`, `d` | Area: the rectangle's width and depth (with `pitch` 0 it stands upright: `w` wide, `d` tall), 0.05-20 m. |
+| `flicker` | `true`: its light wavers (flames, a failing bulb). Cheap: the share of each spot's light that flickers is baked, the waver is two sines in the shader. |
+
+`BakedLighting` (all optional):
+
+| Parameter | Meaning |
+|---|---|
+| `cell` | The grid spacing, 0.25-4 m (default 0.5). Shadow edges are about a cell wide. The grid is capped at about a million cells (13 MB): a big map gets coarser cells unless you give a `region`. |
+| `indoor` | 0-1: how much sky light reaches a fully enclosed place (default 0.25). Lower is darker inside, where your lights matter. |
+| `sunShadows` | `false`: no sun shadows (the sun lights everything as before). |
+| `propLights` | `false`: props' own lights are left out. |
+| `region` | `{ "x0", "z0", "x1", "z1" }`: bake only this rectangle (a big map with one lit building); outside it is the classic light. |
+| `top` | The grid's top height in metres (0: just above the tallest box or light). |
+
+**Props bring their lights.** A prop with a `"lights"` list (Props/README.md, "Lights") lights a lit map wherever it is
+placed, turned and scaled with it: the `Lighting` props (**Iron Torch**, **Candle Stand**, **Altar Candles**,
+**Chandelier**, **Brazier**) and the lamps (Hanging Lantern, Street Lamp, Flickering Street Lamp, Heritage Lamp Post,
+Lantern Street Lamp, Caged Bulkhead Lamp, Tube Light, Floor Lamp, Table Lamp, Fireplace, Mall Ceiling Light, Mall
+Pendant Light). On an unlit map they are only their glowing parts, as before.
+
+**What casts shadows:** every solid box (walls, floors, roofs, solid props' colliders, building walls, tree trunks,
+hidden `Collider`s). Doors, windows, Zombies barriers and map logic boxes don't (they open). Meshes, cosmetic props and
+foliage don't. Destroyed boxes keep the light they had.
+
+**Cost.** Baking takes a fraction of a second for a small map and about a second for a big one, once (the release bakes
+shipped maps; your build caches its own). Drawing costs the same whatever the number of lights. Players can turn it off
+(**Settings > Video > Lighting**: Off, Baked, Baked + flashes, which also lets muzzle flashes and blasts light the map).
+
+**Try it:** the Dev pack's **Light Test** is a dusk-lit stone hall with torches, candles, a chandelier, a spot-lit altar,
+stained glass and a firelit side room. `CallOfSlop --light-shots "My Map"` saves pictures of a map with the lighting on
+and off (docs/render/LIGHTING.md "Looking at it"), and the `test` block's `lightProbes` check the light stays where it
+should. The map kit has helpers for rows, rings, wall fittings and windows (docs/mapkit/MAPKIT.md "Lights").
+
 ## Map packs
 
 Each folder directly inside `Maps` is a pack. In the lobby, players first pick a pack, then play a random map from it or choose one of its maps, and the end-of-match vote offers maps from the same pack.
@@ -1265,6 +1332,7 @@ stops anyone joining.
 | `void` | fallKill set, no `Ground`, no terrain | A void map: no nav link crosses the void (floor under every half metre of every link), no nav node below the fall-kill height. Any map with `fallKill` also fails if a nav link leads below it. |
 | `voidAt` | `[]` | `[[x, z], ...]`: open to the void there (no floor from the top of the map down to the fall-kill height). |
 | `probes` | `[]` | `[["name", x, z, y], ...]`: the floor at (x, z), found from 1.2 m above y, is at y (within 0.1 m), and the nav graph's main area reaches it. Name every deck, roof and pit. |
+| `lightProbes` | `[]` | `[{ "at": [x, y, z], "min": 0.3 }, { "at": [...], "max": 0.1 }]`: on a lit map, the baked static light's brightness there (the luminance of the light a surface facing it gets; full sun is about 0.55) is at least `min` and at most `max`. Bright under the chandelier, dark in the crypt. See [Lighting](#lighting). |
 | `fallKill` | – | `{ "drop": [x, y, z], "safe": [x, y, z] }`: a player dropped at `drop` dies within 4 s; one put at `safe` stands and lives. |
 | `botMatchSeconds` | 8 | A seeded bot match of this many simulated seconds (0: none): no crash, nobody outside the outline or below the floor at any tick, no server tick over 8 ms of work. |
 | `botMatchMode`, `botMatchPlayers` | `"ffa"`, the player limit | `"ffa"`, `"tdm"` or `"koth"`; how many players (bots plus the host). |

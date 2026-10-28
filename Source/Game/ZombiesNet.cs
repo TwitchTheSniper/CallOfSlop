@@ -74,6 +74,7 @@ public sealed partial class Game
             if (Players.TryGetValue(id, out var me))
                 SendZRun(me);
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
+            SendPartDropsTo(guid, now); // and the loose parts players dropped (ZombiesDropItems.cs)
             SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
@@ -578,6 +579,16 @@ public sealed partial class Game
             case (byte)Msg.ZRun when !IsServer && r.Has(5):
                 ReadZRun(ref r);
                 break;
+            case (byte)Msg.ZDropItem when IsServer && r.Has(2):
+                if (_clients.TryGetValue(sender.G, out var dc) && Players.TryGetValue(dc.Id, out var dp))
+                {
+                    if (OnDropRequest(dp, ref r, now) is { } why)
+                        ZFeedTo(dp, why, Sfx.DryFire);
+                }
+                break;
+            case (byte)Msg.ZPartDrop when !IsServer:
+                ReadPartDrop(ref r, now); // a part pickup appeared or went (ZombiesDropItems.cs)
+                break;
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
                 break;
@@ -676,7 +687,8 @@ public sealed partial class Game
             var fresh = false;
             if (!_zById.TryGetValue(id, out var z))
             {
-                z = new Zombie { Id = id };
+                z = RentZombie(); // (ZombiePool.cs)
+                z.Id = id;
                 z.Sim.Position = z.RenderPos = pos;
                 z.RenderYaw = yaw;
                 Horde.Add(z);
@@ -724,6 +736,7 @@ public sealed partial class Game
         }
         if (latest && total == 0 && Horde.Count > 0)
         {
+            ReturnHorde();
             Horde.Clear(); // the server has none left
             _zById.Clear();
         }
@@ -741,7 +754,7 @@ public sealed partial class Game
     private double _zEntsReadAt;
 
     /// <summary>Every zombie by id (both sides: the client's lookup for each entry, the server's ids in use).</summary>
-    private readonly Dictionary<ushort, Zombie> _zById = new();
+    private readonly Dictionary<ushort, Zombie> _zById = new(MaxZombies);
 
     /// <summary>Client: drops zombies the server stopped sending (gone, or long dead).</summary>
     private void DropStaleZombies(double now)
@@ -753,6 +766,7 @@ public sealed partial class Game
             {
                 Horde.RemoveAt(i);
                 _zById.Remove(z.Id);
+                ReturnZombie(z);
             }
         }
     }

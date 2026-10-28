@@ -59,6 +59,7 @@ public sealed class Settings
     public HudWidth HudWidth = HudWidth.Wide16x9; // in-match HUD kept inside a centred area this wide
     public FoliageQuality FoliageQuality = FoliageQuality.Medium; // grass, bushes and tree canopies (Off draws none)
     public SkyQuality SkyQuality = SkyQuality.High; // maps with a sky: Low = gradient, sun and moon; High = plus clouds and stars
+    public LightingQuality Lighting = LightingQuality.Full; // lit maps: baked light (Off: the classic light everywhere); Full adds muzzle flashes and blasts (LightGrid.cs)
     public ImpactDecalQuality ImpactDecals = ImpactDecalQuality.High; // bullet-impact decals kept at once: High 1024, Medium 512, Low 128, Off (Source/Decals)
     public FrenzyVisualMode FrenzyVisuals = FrenzyVisualMode.Full; // Settings > Video "Frenzy visuals": per-class frenzy effects (Source/Render/FrenzyFx)
     public BloodMode BloodOverlay = BloodMode.Full; // Settings > Video "Blood overlay": screen splatters by your health + blood marks on bodies (BloodOverlay.cs, BodyBloodRender.cs)
@@ -411,6 +412,7 @@ public sealed class Settings
                     case "head_bob" when int.TryParse(v, out var i): s.HeadBob = Math.Clamp(i, 0, 100); break;
                     case "foliage" when Enum.TryParse<FoliageQuality>(v, out var fq) && Enum.IsDefined(fq): s.FoliageQuality = fq; break;
                     case "sky" when Enum.TryParse<SkyQuality>(v, out var sq) && Enum.IsDefined(sq): s.SkyQuality = sq; break;
+                    case "lighting" when Enum.TryParse<LightingQuality>(v, out var lq) && Enum.IsDefined(lq): s.Lighting = lq; break;
                     case "impact_decals" when Enum.TryParse<ImpactDecalQuality>(v, out var iq) && Enum.IsDefined(iq): s.ImpactDecals = iq; break;
                     case "frenzy_visuals" when Enum.TryParse<FrenzyVisualMode>(v, true, out var fv) && Enum.IsDefined(fv): s.FrenzyVisuals = fv; break;
                     case "blood_overlay" when Enum.TryParse<BloodMode>(v, true, out var bo) && Enum.IsDefined(bo): s.BloodOverlay = bo; break;
@@ -513,6 +515,7 @@ public sealed class Settings
                     $"hud_width={HudWidth}",
                     $"foliage={FoliageQuality}",
                     $"sky={SkyQuality}",
+                    $"lighting={Lighting}",
                     $"impact_decals={ImpactDecals}",
                     $"frenzy_visuals={FrenzyVisuals}",
                     $"gore={Gore}",

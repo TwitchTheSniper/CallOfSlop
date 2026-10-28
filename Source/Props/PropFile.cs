@@ -98,7 +98,7 @@ public static class PropFile
                 throw new PropFileException($"{source}: a prop file is one JSON object {{ \"name\": ..., \"parts\": [...] }}");
             string? name = null;
             var def = new PropDef { Name = "", Category = folderCategory, SourceFile = source };
-            JsonElement? parts = null, collider = null, scatter = null, breakable = null, flag = null;
+            JsonElement? parts = null, collider = null, scatter = null, breakable = null, flag = null, lights = null;
             float? fade = null;
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (var p in root.EnumerateObject())
@@ -156,8 +156,11 @@ public static class PropFile
                     case "concealment":
                         def.Concealment = Bool(p.Value, where);
                         break;
+                    case "lights":
+                        lights = p.Value;
+                        break;
                     default:
-                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable, flag, concealment");
+                        throw new PropFileException($"{where}: unknown key. Prop files use: format, name, category, description, author, collision, collider, parts, scatter, fadeDistance, breakable, flag, concealment, lights");
                 }
             }
             if (string.IsNullOrWhiteSpace(name))
@@ -176,11 +179,12 @@ public static class PropFile
                 throw new PropFileException($"{source}: {pl.GetArrayLength()} parts is more than the limit of {MaxParts}");
             var index = 0;
             var prefabColliders = new List<Box>();
+            var propLights = new List<MapLight>();
             foreach (var pe in pl.EnumerateArray())
             {
                 var where = $"{source}, part #{++index}";
                 if (pe.ValueKind == JsonValueKind.Object && pe.EnumerateObject().Any(q => q.Name.Equals("use", StringComparison.OrdinalIgnoreCase)))
-                    ReadUse(pe, def, prefabColliders, where, library);
+                    ReadUse(pe, def, prefabColliders, propLights, where, library);
                 else
                     def.Parts.Add(ReadPart(pe, where));
             }
@@ -222,6 +226,11 @@ public static class PropFile
                 ReadScatter(sc, def, $"{source} (\"scatter\")");
             if (breakable is { ValueKind: not JsonValueKind.Null } br)
                 def.Breakable = ReadBreakable(br, $"{source} (\"breakable\")");
+            if (lights is { ValueKind: not JsonValueKind.Null } li)
+                ReadLights(li, propLights, $"{source} (\"lights\")");
+            if (propLights.Count > MaxLights)
+                throw new PropFileException($"{source}: {propLights.Count} lights is more than the limit of {MaxLights}");
+            def.Lights = propLights.ToArray();
             return def;
         }
     }
@@ -231,7 +240,7 @@ public static class PropFile
     /// The used prop's parts are copied in, moved, turned and scaled, so the loaded prop is flat (render and physics never see
     /// the composition); its colliders are collected for the prefab's default collider.
     /// </summary>
-    private static void ReadUse(JsonElement e, PropDef def, List<Box> prefabColliders, string where, Func<string, PropDef?>? library)
+    private static void ReadUse(JsonElement e, PropDef def, List<Box> prefabColliders, List<MapLight> lights, string where, Func<string, PropDef?>? library)
     {
         string? use = null;
         var pos = Vector3.Zero;
@@ -288,6 +297,11 @@ public static class PropFile
             };
             def.Parts.Add(copy);
         }
+        foreach (var l in used.Lights) // the used prop's lights come along, moved, turned and scaled with it
+        {
+            var dir = l.Dir == Vector3.Zero ? l.Dir : Vector3.Normalize(Vector3.Transform(l.Dir, q));
+            lights.Add(l with { Pos = pos + Vector3.Transform(l.Pos * scale, q), Dir = dir, Range = MathF.Min(l.Range * scale, MapLight.MaxRange), Size = l.Size * scale });
+        }
         if (used.IsSolid)
             foreach (var c in used.Colliders)
             {
@@ -303,6 +317,85 @@ public static class PropFile
                 }
                 prefabColliders.Add(new Box((min + max) / 2, (max - min) / 2));
             }
+    }
+
+    /// <summary>The most lights one prop carries.</summary>
+    public const int MaxLights = 16;
+
+    /// <summary>
+    /// The "lights" list: [ { "pos": [x, y, z], "color": "amber", "intensity": 1, "range": 6, "flicker": true,
+    /// "type": "point" | "spot" | "area", "yaw", "pitch", "cone", "w", "d" } ], in the prop's frame (Props/README.md "Lights").
+    /// </summary>
+    private static void ReadLights(JsonElement e, List<MapLight> into, string where)
+    {
+        if (e.ValueKind != JsonValueKind.Array)
+            throw new PropFileException($"{where}: expected a list of lights [ {{ \"pos\": [x, y, z], \"color\": ..., \"range\": 6 }} ]");
+        var n = 0;
+        foreach (var le in e.EnumerateArray())
+        {
+            var w = $"{where} #{++n}";
+            if (le.ValueKind != JsonValueKind.Object)
+                throw new PropFileException($"{w}: a light is an object {{ \"pos\": [x, y, z], ... }}");
+            Vector3? pos = null;
+            var color = Vector3.One;
+            float intensity = 1, range = 6, yaw = 0, pitch = 90, cone = 60, lw = 1, ld = 1;
+            var type = "point";
+            var flicker = false;
+            foreach (var p in le.EnumerateObject())
+            {
+                var pw = $"{w} (\"{p.Name}\")";
+                switch (p.Name.ToLowerInvariant())
+                {
+                    case "pos":
+                    case "offset":
+                        pos = Vec(p.Value, pw);
+                        break;
+                    case "color":
+                    case "colour":
+                        color = Color(p.Value, pw);
+                        break;
+                    case "intensity":
+                        intensity = Num(p.Value, pw);
+                        break;
+                    case "range":
+                        range = Num(p.Value, pw);
+                        break;
+                    case "type":
+                        type = Text(p.Value, pw);
+                        break;
+                    case "yaw":
+                        yaw = Num(p.Value, pw);
+                        break;
+                    case "pitch":
+                        pitch = Num(p.Value, pw);
+                        break;
+                    case "cone":
+                        cone = Num(p.Value, pw);
+                        break;
+                    case "w":
+                        lw = Num(p.Value, pw);
+                        break;
+                    case "d":
+                        ld = Num(p.Value, pw);
+                        break;
+                    case "flicker":
+                        flicker = Bool(p.Value, pw);
+                        break;
+                    default:
+                        throw new PropFileException($"{pw}: unknown key. A light takes: pos, color, intensity, range, type, yaw, pitch, cone, w, d, flicker");
+                }
+            }
+            if (pos is not { } at)
+                throw new PropFileException($"{w}: needs \"pos\": [x, y, z] (in the prop's frame)");
+            try
+            {
+                into.Add(MapLight.Make(at, color, intensity, range, type, yaw, pitch, cone, lw, ld, flicker));
+            }
+            catch (InvalidOperationException ex)
+            {
+                throw new PropFileException($"{w}: {ex.Message}");
+            }
+        }
     }
 
     private static Box[] PrefabColliders(List<Box> boxes, string source)

@@ -91,6 +91,7 @@ public sealed partial class Game
             portals[i] = new HordePortal { Front = w.Outside, In = inward, Area = w.Area, Spots = spots.ToArray() };
         }
         HordeAI.Setup(World.Map.HalfX, World.Map.HalfZ, portals);
+        HordeAI.Reserve(MaxZombies); // (a horde growing past 64 or 128 mid-round allocates nothing)
         HordeAI.SetZones(p => World.Map.Zombies?.AreaAt(p) ?? 0);
         HordeAI.SetPortalMover(MoveToWindow);
         _zClimbing = new bool[zm.Windows.Count];
@@ -218,11 +219,13 @@ public sealed partial class Game
     /// <summary>A free network slot for a new zombie (per-client state is kept by slot; ZombiesNet.cs).</summary>
     private int TakeZombieSlot() => _zFreeSlots.Count > 0 ? _zFreeSlots.Pop() : -1;
 
+    /// <summary>A zombie leaves the horde (server): its slot back, and the zombie itself back to the pool (ZombiePool.cs).</summary>
     private void FreeZombieSlot(Zombie z)
     {
         if (z.Hm.Slot >= 0 && _zFreeSlots.Count < MaxZombies)
             _zFreeSlots.Push(z.Hm.Slot);
         z.Hm.Slot = -1;
+        ReturnZombie(z);
     }
 
     /// <summary>Every zombie gone at once (a new run or round reset): their slots back.</summary>

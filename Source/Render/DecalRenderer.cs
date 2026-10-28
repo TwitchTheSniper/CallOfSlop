@@ -132,7 +132,7 @@ public sealed unsafe class DecalRenderer
             }
             vec3 n = normalize(vNormal);
             vec3 albedo = t.rgb * vColor.rgb;
-            vec3 col = ApplyLight(albedo, n, 0.0) + albedo * (0.12 * (1.0 - abs(n.y)));
+            vec3 col = ApplyLightAt(albedo, n, 0.0, vWorld) + albedo * (0.12 * (1.0 - abs(n.y))) * gLitAmb;
             FragColor = vec4(ApplyFog(col, vWorld), a);
         }
         """;

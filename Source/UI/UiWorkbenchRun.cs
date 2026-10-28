@@ -126,13 +126,7 @@ public sealed partial class Ui
         ImGui.Separator();
 
         if (ImGui.CollapsingHeader("Loose parts"u8, ImGuiTreeNodeFlags.None) && zp != null)
-        {
-            if (zp.Parts.Count == 0)
-                ImGui.TextColored(Dim, "None yet: zombies drop parts (later rounds rarer ones); so do salvage piles and the slot machines."u8);
-            foreach (var (name, n) in zp.Parts)
-                if (Parts.Find(name) is { } part)
-                    ImGuiSafe.TextColored(WbCol(PartDef.RarityColor(part.Rarity)), $"{name} x{n}");
-        }
+            DrawPartDropPicker(game, zp, "wb"); // your loose parts; pick one and how many to drop it on the floor for a teammate (UiZombiesInventory.cs)
         ImGui.TextColored(Dim, "The zombies don't wait while you work."u8);
         return null;
     }

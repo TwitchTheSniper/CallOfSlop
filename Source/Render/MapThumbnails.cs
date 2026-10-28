@@ -296,6 +296,7 @@ public static unsafe class MapThumbs
     {
         gfx.BeginFrame(Width, Height, map.Sky); // viewport, clear and the box shader
         SkyRenderer.Use(map); // the map's own sun and sky fog (the scene puts its map's light back next frame)
+        LightGrid.BeginWorld(map, now); // and its baked light, if it has one
         var (eye, target, fovY, far) = Camera(map);
         gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),
             Matrix4x4.CreatePerspectiveFieldOfView(fovY, Width / (float)Height, MathF.Max(0.1f, far * 0.002f), far));
@@ -312,5 +313,6 @@ public static unsafe class MapThumbs
         FoliageR.Draw(map, gfx, FoliageQuality.Low, now);
         SkyRenderer.Draw(gfx, map, SkyQuality.High, now, timed: false); // the sky behind the far side (maps with a "skybox")
         gfx.SetFog(map.Sky, 0, 0);
+        LightGrid.Off();
     }
 }

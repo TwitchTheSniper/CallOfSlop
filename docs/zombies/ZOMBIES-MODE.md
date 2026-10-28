@@ -764,6 +764,40 @@ your player has died. And if you can't get to them in time, will despawn after 5
   them as the new holder's, like any build in their slots).
 - `downs.dropBuildsOnBleedout: false` brings back the old rule (builds lost).
 
+## Dropping things (board item "drop items", 2026-10-27)
+
+The developer's note: a drop key drops the held build as a world pickup with its own model, anyone takes it with the
+use key (swapping if their slots are full); loose parts drop from the part inventory (the workbench and a quick
+inventory view, picking part and amount) as small labelled pickups with a rarity glow. Code: Source/Game/ZombiesDropItems.cs,
+Source/UI/UiZombiesInventory.cs; self-test "Zombies drop items".
+
+- **Drop item (T, rebindable; G stays the grenade key)** drops the gun in your hands as a dropped build (above: its own
+  model over a gold ring, a world label, hold F to pick up, a swap if the picker's slots are full). The next gun comes
+  up. Only a build drops (not empty hands), and **never your last gun** (proposed default: "can't drop your last weapon";
+  the developer may want to allow it). The melee build and the grenade build don't drop with the key (proposed).
+  The dropped gun comes back with a magazine and the picker's slot reserve, like a gun left by a swap (no free ammo).
+- **Parts inventory (I, rebindable)** opens a small window over the match (the mouse is free; I or Esc closes it):
+  your loose parts in rarity colours; click one, pick how many (1 to `playerDrops.maxPartsPerDrop`, 50) and DROP. The
+  workbench's Loose parts list has the same picker. The parts land about 0.7 m in front of you (placed like dropped
+  builds: never in a wall, in reach, in your area) as **one pickup** holding that many: the part's own boxes, small and
+  turning, over a ring of dashes in its rarity colour with a faint beam.
+- **Picking up**: hold F (as a buy). Parts go to your loose parts; the dropper hears who took them. In a pile, the
+  pickup **you look at** comes first. Looking at a pickup (within 6 m) or standing by it names it with its rarity,
+  its owner and how long it stays.
+- **How long**: things dropped on purpose last **to the end of the round after the one they were dropped in**
+  (dropped in round 3 or in the break after it: gone when round 4 ends) or `playerDrops.seconds` (600 s), whichever is
+  first (`playerDrops.rounds: 0` keeps only the time). They blink red in their last `downs.buildDropWarnSeconds`.
+  A build swapped out by picking one up keeps the picked one's time and last round. Bleed-out drops keep their own rule.
+- **Cap**: at most 40 dropped builds and `playerDrops.maxPartDrops` (48) part pickups on the map; past it a drop is
+  **refused** with a message and you keep the item (a bleed-out drop still pushes out the oldest build).
+- **Server-authoritative**: a client asks with `Msg.ZDropItem`; the server checks it (you have the part and the amount,
+  the gun is a build and not your last) and takes the item from you in the same step as the pickup appears, so nothing
+  is ever in two places. A pickup is removed before it is given, so when two players grab it in the same tick the first
+  (in player order) gets it and the second finds nothing. Clients get part pickups in `Msg.ZPartDrop` (joiners get
+  every one); `Msg.ZPickup` carries the dropped build's last round (protocol 70).
+- **Co-op bots ignore pickups** (no prompt, and the server refuses their claims), bleed-out drops included (proposed;
+  ask before letting bots share).
+
 ## Power-ups (milestone 3, World at War style; proposed numbers in "powerUps")
 
 - **Drops: a team points schedule** (World at War style; developer answer, 2026-10-26, replacing the flat 4 percent a
@@ -933,6 +967,38 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
   with the lost limbs (bits 0-3: right arm, left arm, right leg, left leg; both legs is a crawler), so an intact zombie
   costs nothing more and a dismembered one 1 byte. A limb coming off sends the zombie at once (like a death). Clients throw
   each limb's gore once when its bit first appears; a zombie first heard of already without limbs throws none.
+
+## Zombie bodies (developer request, 2026-10-27)
+
+Zombies are solid to players, so a horde is a wall and you can't run through it (`Source/Game/ZombieBlock.cs`,
+self-test section "Zombie bodies").
+
+- **The collider.** Each zombie that isn't dead is an upright cylinder at its feet: radius 0.35 m (a little under a
+  player's 0.4 m), as tall as a standing player (1.8 m). A crawler (no legs, see Dismemberment) is a low cylinder,
+  0.6 m tall, so a jump clears it. Zombies climbing through a window or on the bell tower's face count too.
+- **Players.** After each tick of a player's movement the body is pushed out of every cylinder it overlaps, at most
+  0.3 m a tick, and the part of its velocity going into a zombie is taken away. So a sprint into a horde stops at the
+  bodies, a single zombie is slid round, and a gap of about 1.5 m between zombie centres lets you squeeze through
+  (zombies keep about 0.9 m apart, so a packed horde has no gaps).
+- **Never trapped.** A push that would put the body into a wall is cut to one axis or dropped. A player more than
+  halfway into a zombie (one that rose or climbed in right on them) is only pushed out and never held, so they can
+  always walk out.
+- **Heads.** Landing on a zombie's head slides you off: the cylinder pushes sideways while your feet are below its top.
+  There is no standing on the horde.
+- **Downed players** neither block nor are blocked.
+- **Zombies.** A walking zombie is held off standing players in the same way (server only). So a chasing horde stops
+  at your body instead of shoving you, and zombies standing still don't push. Their reach (1.25 m plus your radius) is
+  longer than the contact distance (0.75 m), so swipes still land.
+- **Bots** (co-op bots are players) are blocked like people. The nav graph doesn't know about zombies, and the
+  stuck watch handles the rest.
+- **Prediction.** The client runs the same push after each predicted tick and after each replayed tick. It uses the
+  newest position each zombie had in `ZEnts`, quantised to 3 cm, so there is no wire change. A packed horde stands
+  still, so prediction and the server agree to within a few centimetres; with moving zombies the usual smoothing
+  covers the difference.
+- **Cost.** A uniform grid of the bodies is rebuilt each tick (counting sort, no allocation). With 600 zombies the
+  rebuild plus four players' pushes measured about 0.03 ms a tick. The 600-zombie horde tick went from about 1.97 to
+  2.1 ms.
+- **Not covered.** Co-op (PvE) enemies run their own movement and aren't blocked (they're few and they shoot).
 
 ## Sound (zombie voices and footsteps, 2026-10-26)
 

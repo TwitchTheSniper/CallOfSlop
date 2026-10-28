@@ -70,5 +70,8 @@
    ],
    "color": "#3a3d40"
   }
- ]
+ ],
+  "lights": [
+    {"pos": [0, -0.04, 0], "color": "#f4f6ff", "intensity": 1.6, "range": 8, "type": "area", "w": 1.4, "d": 0.1}
+  ]
 }

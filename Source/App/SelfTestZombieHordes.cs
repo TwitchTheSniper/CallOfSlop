@@ -37,6 +37,7 @@ public static partial class SelfTest
             rows.Add(HordeMeasure(map, zm, n, ref now));
         HLine("table (zombies | server tick ms CPU mean / worst | ZEnts KB/s per client | client ms a frame): " + string.Join("; ", rows));
         HordeFill(map, zm, ref now);
+        HordePool(map, zm, ref now);
         HordeSpread(map, zm, ref now);
         HordeWindowSplit(map, zm, ref now);
         HordeStimuli(map, zm, ref now);
@@ -105,6 +106,136 @@ public static partial class SelfTest
         HLine($"  round 30 cap {r30}, with the host's horde cap at 100: {host}; settings 'zombie_horde_cap=150' -> {settings.ZombieHordeCap}, '=3' -> {settingsLow.ZombieHordeCap}, '=512' (the old no limit) -> {settingsOld.ZombieHordeCap}, default {new Settings().ZombieHordeCap}");
         if (r30 < 400 || host != 100 || settings.ZombieHordeCap != 150 || settingsLow.ZombieHordeCap != Game.MinHordeCap || settingsOld.ZombieHordeCap != Game.MaxZombies || new Settings().ZombieHordeCap != Game.MaxZombies)
             Fail("the host's Zombie horde cap should lower the alive cap (and load from the settings file)");
+    }
+
+    // ---- Reuse: spawning and dying allocate nothing ----------------------------------------------------------
+
+    /// <summary>
+    /// Zombies are pooled (Source/Game/ZombiePool.cs): bursts of spawns and deaths allocate nothing once the pool is warm,
+    /// a spawn reuses a body that left the horde, and a reused zombie is exactly a new one (every field, by reflection).
+    /// </summary>
+    private static void HordePool(Map map, ZombiesMap zm, ref double now)
+    {
+        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        var me = g.Local!;
+        me.ImmuneUntil = 1e9;
+        var seen = new HashSet<Zombie>(ReferenceEqualityComparer.Instance);
+        var reused = 0;
+        var t = now;
+        long Burst()
+        {
+            var a0 = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 40; i++)
+                g.SelfTestSpawnZombie(i % zm.Spawners.Count, t);
+            for (var k = 0; k < 10; k++)
+                g.SelfTestZombiesTick(t += World.TickDt);
+            foreach (var z in g.Horde)
+            {
+                z.State = ZState.Dead; // (dead long enough to leave the horde on the next tick)
+                z.StateAt = t - 2;
+            }
+            for (var k = 0; k < 3; k++)
+                g.SelfTestZombiesTick(t += World.TickDt);
+            return GC.GetAllocatedBytesForCurrentThread() - a0;
+        }
+        Burst(); // (fills the pool)
+        Burst(); // (JIT, flow fields, list capacities)
+        foreach (var z in g.Horde)
+            seen.Add(z);
+        var bytes = SteadyAllocBytes(Burst, warmups: 0, rounds: 3);
+        var left = g.Horde.Count;
+        var pooled = g.ZombiePoolCount;
+        var probe = g.SelfTestSpawnZombie(0, t);
+        reused = probe.Hm.Slot >= 0 && pooled > 0 && g.ZombiePoolCount == pooled - 1 ? 1 : 0;
+        now = t;
+
+        // A zombie with every field scribbled on, reset, reads back as a new one.
+        var used = new Zombie();
+        PoolScribble(used, 0);
+        used.ResetForReuse();
+        var diff = PoolDiff(new Zombie(), used, "Zombie", 0);
+        HLine($"  pool: 3 bursts of 40 spawns and deaths after warm-up allocate {bytes} bytes ({left} left in the horde, {pooled} in the pool, next spawn reused {reused == 1}); reset zombie vs new: {diff ?? "same"}");
+        if (bytes > 0 || left != 0 || pooled < 40 || reused != 1)
+            Fail($"spawning and killing zombies should reuse pooled zombies and allocate nothing after warm-up ({bytes} bytes, {left} left, {pooled} pooled)");
+        if (diff != null)
+            Fail($"a pooled zombie's reset should give exactly a new zombie (Zombie.ResetForReuse, ZombiePool.cs): {diff} differs");
+    }
+
+    private const System.Reflection.BindingFlags PoolFields = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic;
+
+    /// <summary>Writes a non-default value to every field of <paramref name="o"/> (and its HordeMember, arrays and lists).</summary>
+    private static void PoolScribble(object o, int depth)
+    {
+        foreach (var f in o.GetType().GetFields(PoolFields))
+        {
+            var ft = f.FieldType;
+            var v = f.GetValue(o);
+            if (ft.IsArray && v is Array arr)
+            {
+                for (var i = 0; i < arr.Length; i++)
+                    arr.SetValue(PoolJunk(ft.GetElementType()!), i);
+            }
+            else if (v is System.Collections.IList list && ft.IsGenericType)
+                list.Add(PoolJunk(ft.GetGenericArguments()[0]));
+            else if (ft.IsClass && v != null && depth < 2)
+                PoolScribble(v, depth + 1);
+            else if (ft.IsValueType)
+                f.SetValue(o, PoolJunk(ft));
+        }
+    }
+
+    /// <summary>A value of <paramref name="t"/> with every byte 0x5A (true for a bool).</summary>
+    private static object PoolJunk(Type t) =>
+        t == typeof(bool) ? true : typeof(SelfTest).GetMethod(nameof(PoolJunkOf), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!.MakeGenericMethod(t).Invoke(null, null)!;
+
+    private static object PoolJunkOf<T>() where T : unmanaged
+    {
+        T v = default;
+        System.Runtime.InteropServices.MemoryMarshal.AsBytes(new Span<T>(ref v)).Fill(0x5A);
+        return v;
+    }
+
+    /// <summary>Byte for byte for a struct (an inline array has no Equals), else Equals.</summary>
+    private static bool PoolSame(object? a, object? b) =>
+        a != null && b != null && a.GetType().IsValueType && a.GetType() == b.GetType() && a is not bool
+            ? (bool)typeof(SelfTest).GetMethod(nameof(PoolBytesSame), System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic)!.MakeGenericMethod(a.GetType()).Invoke(null, [a, b])!
+            : Equals(a, b);
+
+    private static bool PoolBytesSame<T>(object a, object b) where T : unmanaged
+    {
+        var (x, y) = ((T)a, (T)b);
+        return System.Runtime.InteropServices.MemoryMarshal.AsBytes(new Span<T>(ref x)).SequenceEqual(System.Runtime.InteropServices.MemoryMarshal.AsBytes(new Span<T>(ref y)));
+    }
+
+    /// <summary>The first field (by path) where <paramref name="a"/> and <paramref name="b"/> differ, or null.</summary>
+    private static string? PoolDiff(object a, object b, string path, int depth)
+    {
+        foreach (var f in a.GetType().GetFields(PoolFields))
+        {
+            var (va, vb) = (f.GetValue(a), f.GetValue(b));
+            var name = path + "." + f.Name;
+            if (va is Array xa && vb is Array xb)
+            {
+                if (xa.Length != xb.Length)
+                    return name + ".Length";
+                for (var i = 0; i < xa.Length; i++)
+                    if (!PoolSame(xa.GetValue(i), xb.GetValue(i)))
+                        return $"{name}[{i}]";
+            }
+            else if (va is System.Collections.ICollection ca && vb is System.Collections.ICollection cb)
+            {
+                if (ca.Count != cb.Count)
+                    return name + ".Count";
+            }
+            else if (f.FieldType.IsClass && va != null && vb != null && depth < 2)
+            {
+                if (PoolDiff(va, vb, name, depth + 1) is { } d)
+                    return d;
+            }
+            else if (!PoolSame(va, vb))
+                return name;
+        }
+        return null;
     }
 
     // ---- Scripted hordes: the costs ---------------------------------------------------------------------------

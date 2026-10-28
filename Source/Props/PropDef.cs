@@ -173,6 +173,9 @@ public sealed class PropDef
 
     public PropBreakable? Breakable;
 
+    /// <summary>Lights the prop carries, in its own frame (Props/README.md "Lights"); baked only on lit maps (MapLights.cs).</summary>
+    public MapLight[] Lights = [];
+
     /// <summary>
     /// Cosmetic props only ("concealment": true in the file): tall crops and thick screens that hide whoever is in them.
     /// Players, bullets and grenades still pass straight through, but bots can't see through enough of them (see

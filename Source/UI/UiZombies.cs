@@ -210,16 +210,41 @@ public sealed partial class Ui
                     if (warn && ((int)(now * 4) & 1) == 0)
                         continue;
                     var whose = wd.Owner == me.Id ? "Your" : wd.OwnerName.Length > 0 ? $"{wd.OwnerName}'s" : "A";
-                    var text = $"{whose} {wd.Build.Name}: {(int)left / 60}:{(int)left % 60:00} left{(warn ? " - about to despawn!" : "")}";
+                    var looked = Game.LooksAt(me, wd.At); // (looked at: its rarity and how long it stays)
+                    var text = looked
+                        ? $"{whose} {wd.Build.Name} ({PartDef.RarityName(wd.Rarity)}): {DropLeft(game, wd.ExpireRound, left)}{(warn ? " - about to despawn!" : "")}"
+                        : $"{whose} {wd.Build.Name}: {(int)left / 60}:{(int)left % 60:00} left{(warn ? " - about to despawn!" : "")}";
                     var col = warn ? new System.Numerics.Vector3(Red.X, Red.Y, Red.Z) : new System.Numerics.Vector3(ZGold.X, ZGold.Y, ZGold.Z);
                     if (!Hud.WorldLabel(wd.At + new System.Numerics.Vector3(0, 0.7f, 0), text, col, 1f, 15f * _scale) && dx * dx + dz * dz <= 8 * 8)
                         ImGuiSafe.TextColored(warn ? Red : ZGold, text);
+                }
+            // Loose parts players dropped (ZombiesDropItems.cs): named, with their rarity, when you look at one (or stand by it).
+            if (me.Alive)
+                foreach (var pd in game.ZPartDrops)
+                {
+                    var dx = pd.At.X - me.Position.X;
+                    var dz = pd.At.Z - me.Position.Z;
+                    if (dx * dx + dz * dz > Game.LookRange * Game.LookRange || (dx * dx + dz * dz > 2.5f * 2.5f && !Game.LooksAt(me, pd.At)))
+                        continue;
+                    var left = Math.Max(0, pd.Until - now);
+                    var whose = pd.Owner == me.Id ? "Your" : pd.OwnerName.Length > 0 ? $"{pd.OwnerName}'s" : "A";
+                    var text = $"{whose} {pd.Part.Name} x{pd.Count} ({PartDef.RarityName(pd.Part.Rarity)}): {DropLeft(game, pd.ExpireRound, left)}";
+                    Hud.WorldLabel(pd.At + new System.Numerics.Vector3(0, 0.6f, 0), text, PartDef.RarityColor(pd.Part.Rarity), 1f, 14f * _scale);
                 }
             foreach (var p in game.Players.Values)
                 if (p != me && p.Alive && game.IsDowned(p))
                     ImGuiSafe.TextColored(Orange, $"{game.NameOf(p.Id)} is down: revive them! ({(int)(game.ZP(p).BleedFraction * game.ZRules.BleedoutSeconds)} s)");
         }
         ImGui.End();
+    }
+
+    /// <summary>How long a pickup stays, in words: the time left, and the round whose end takes it (a drop made on purpose).</summary>
+    private static string DropLeft(Game game, int expireRound, double left)
+    {
+        var time = $"{(int)left / 60}:{(int)left % 60:00} left";
+        if (expireRound <= 0)
+            return time;
+        return expireRound <= game.ZRound && game.ZPhase == ZRoundPhase.Round ? $"gone when this round ends ({time})" : $"stays to the end of round {expireRound} ({time})";
     }
 
     private readonly byte[] SlotWinLabelSeq = new byte[ZombiesMap.MaxSlotMachines];
