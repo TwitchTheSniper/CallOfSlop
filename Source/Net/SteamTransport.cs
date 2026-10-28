@@ -25,6 +25,9 @@ public sealed class SteamTransport : INetTransport
         public uint Handle;
         public ulong SteamId;
         public bool Connected;
+        /// <summary>The peer closed or the route broke: what it sent before still waits in Steam's queue, so the
+        /// connection is drained once more, then the game hears the event and the handle is released.</summary>
+        public byte Closing;
     }
 
     private readonly ISteamBackend _steam;
@@ -35,6 +38,7 @@ public sealed class SteamTransport : INetTransport
     private readonly Dictionary<ulong, Conn> _byId = new();
     private readonly List<Conn> _connected = new();
     private readonly Queue<(ulong SteamId, byte Event)> _events = new();
+    private readonly List<Conn> _closing = new();
     private readonly SteamMessageHandler _onMessage;
     private NetPeer.PacketHandler? _handler;
     private bool _disposed;
@@ -149,12 +153,15 @@ public sealed class SteamTransport : INetTransport
             case SteamConnState.ClosedByPeer:
             case SteamConnState.ProblemDetectedLocally:
             {
-                if (!_conns.TryGetValue(ch.Conn, out var c))
+                if (!_conns.TryGetValue(ch.Conn, out var c) || c.Closing != 0)
                     return;
-                Forget(c);
                 if (c.Connected)
-                    _events.Enqueue((c.SteamId, (byte)(ch.State == SteamConnState.ClosedByPeer ? DefaultMessageIDTypes.DisconnectionNotification : DefaultMessageIDTypes.ConnectionLost)));
-                _steam.CloseConnection(ch.Conn, 0, "", false);
+                    BeginClosing(c, (byte)(ch.State == SteamConnState.ClosedByPeer ? DefaultMessageIDTypes.DisconnectionNotification : DefaultMessageIDTypes.ConnectionLost));
+                else
+                {
+                    Forget(c);
+                    _steam.CloseConnection(ch.Conn, 0, "", false);
+                }
                 Console.WriteLine($"[steam] {c.SteamId} {(ch.State == SteamConnState.ClosedByPeer ? "left" : "lost")}: {ch.EndReason} {ch.EndDebug}");
                 break;
             }
@@ -177,16 +184,24 @@ public sealed class SteamTransport : INetTransport
                 break;
             case SteamConnState.ClosedByPeer:
             case SteamConnState.ProblemDetectedLocally:
+                if (c.Closing != 0)
+                    return;
                 LastEnd = $"{ch.EndReason} {ch.EndDebug}".Trim();
-                Forget(c);
-                _events.Enqueue((c.SteamId, (byte)(
+                BeginClosing(c, (byte)(
                     !c.Connected ? (ch.EndReason == EndFull ? DefaultMessageIDTypes.NoFreeIncomingConnections : DefaultMessageIDTypes.ConnectionAttemptFailed)
-                    : ch.State == SteamConnState.ClosedByPeer ? DefaultMessageIDTypes.DisconnectionNotification : DefaultMessageIDTypes.ConnectionLost)));
-                _steam.CloseConnection(ch.Conn, 0, "", false);
-                _clientConn = 0;
+                    : ch.State == SteamConnState.ClosedByPeer ? DefaultMessageIDTypes.DisconnectionNotification : DefaultMessageIDTypes.ConnectionLost));
                 Console.WriteLine($"[steam] connection to {c.SteamId} ended: {LastEnd}");
                 break;
         }
+    }
+
+    /// <summary>A connection ended: no more sends to it; its last messages are drained on the next Poll, then the event goes out.</summary>
+    private void BeginClosing(Conn c, byte evt)
+    {
+        c.Closing = evt;
+        _byId.Remove(c.SteamId);
+        _connected.Remove(c);
+        _closing.Add(c);
     }
 
     private void Forget(Conn c)
@@ -224,6 +239,23 @@ public sealed class SteamTransport : INetTransport
         {
             one[0] = e.Event;
             handler(GuidOf(e.SteamId), one);
+        }
+        if (_closing.Count > 0)
+        {
+            // Ended connections: drained above (a kick's reason, a last state), now the game hears it and Steam frees the handle.
+            var ended = _closing.ToArray();
+            _closing.Clear();
+            foreach (var c in ended)
+            {
+                if (!IsServer)
+                    _steam.ReceiveMessages(0, c.Handle, _onMessage, 64); // the client's connection is polled by handle: once more after it closed
+                _conns.Remove(c.Handle);
+                _steam.CloseConnection(c.Handle, 0, "", false);
+                if (!IsServer && _clientConn == c.Handle)
+                    _clientConn = 0;
+                one[0] = c.Closing;
+                handler(GuidOf(c.SteamId), one);
+            }
         }
     }
 

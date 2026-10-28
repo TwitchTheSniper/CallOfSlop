@@ -1,6 +1,8 @@
 using System.Numerics;
 using Brutal.RakNetApi;
 
+using CallOfSlop.Platform.Steam;
+
 namespace CallOfSlop;
 
 /// <summary>Visual-only effect: a bullet tracer that fades out.</summary>
@@ -236,6 +238,7 @@ public sealed partial class Game : IDisposable
         {
             _pollNow = now;
             Net.Poll(_onPacket ??= new NetPeer.PacketHandler((sender, data) => OnPacketSafe(sender, data, _pollNow))); // a bad packet is dropped, not fatal (GamePacketSafety.cs)
+            TickSteamAuthClient(); // a client on Steam proves itself to a host on Steam, once (GameSteamAuth.cs)
         }
 
         AllocProfile.Mark("frame: weapon state");
@@ -1632,6 +1635,8 @@ public sealed partial class Game : IDisposable
                 Players[newId] = p;
                 PlaceWaiting(p, now);
                 _clients[sender.G] = (sender, newId);
+                if (!AdmitSteamConnection(sender, p))
+                    break; // banned Steam ID: refused and closed (GameSteamAuth.cs)
                 _w.Begin(Msg.Welcome).U8(newId).Str(World.Map.Name).U32(World.Map.ContentHash)
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
                     .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
@@ -1658,6 +1663,8 @@ public sealed partial class Game : IDisposable
                 {
                     if (_clients.Remove(sender.G, out var gone))
                     {
+                        if (Players.TryGetValue(gone.Id, out var goneP) && goneP.SteamId != 0)
+                            SteamPlatform.Auth.End(goneP.SteamId); // the auth session ends with the connection (GameSteamAuth.cs)
                         Log($"{NameOf(gone.Id)} left");
                         ServerSystemChat($"{NameOf(gone.Id)} left", now); // chat system line (LobbyChat.cs)
                         OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
@@ -1920,6 +1927,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.SteamIds:
                 OnSteamIdsPacket(ref r, sender); // Steam identities, cosmetic (GameSteam.cs)
                 break;
+            case (byte)Msg.SteamAuth:
+                OnSteamAuthPacket(ref r, sender); // a client's Steam auth ticket; the host's refusal (GameSteamAuth.cs)
+                break;
             case (byte)Msg.VoiceUp:
             case (byte)Msg.VoiceDown:
             case (byte)Msg.VoiceCtl:
@@ -2009,6 +2019,7 @@ public sealed partial class Game : IDisposable
 
     public void Dispose()
     {
+        UnhookSteamAuth(); // cancel my ticket / end every session (GameSteamAuth.cs)
         Net.Dispose();
         EndWeaponTweaks(); // a client drops the host's weapon tweaks (GameWeaponTweaks.cs)
         World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)

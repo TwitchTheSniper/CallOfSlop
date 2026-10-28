@@ -84,6 +84,7 @@ public enum Msg : byte
     ZDropItem, // client -> server: Zombies: drop something on purpose (kind: 0 the gun in my hands, 1 loose parts; count; the part's name) (reliable; ZombiesDropItems.cs, protocol 70)
     ZPartDrop, // server -> all (and each joiner): Zombies: a loose-part pickup appeared (id, where, time left, last round, owner, count, part) or went (id, who took it) (reliable; protocol 70)
     SteamIds, // client -> server: my Steam ID (count 1, id, u64) after the Hello; server -> all: every Steam player's (count, then player id + u64 each), with the roster, only when someone is on Steam (reliable; GameSteam.cs, protocol 74)
+    SteamAuth, // client -> server: kind 0, my Steam auth session ticket for this host (u16 length, bytes); server -> one client: kind 1, you were refused or removed (the reason), then the connection closes (reliable; GameSteamAuth.cs, protocol 75)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

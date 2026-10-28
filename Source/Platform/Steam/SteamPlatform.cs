@@ -145,6 +145,9 @@ public static partial class SteamPlatform
         Reason = "";
         Backend.OverlayActivated += OnOverlay;
         Friends.Attach(Backend);
+        Lobby.Attach(Backend, Backend.LocalSteamId); // Phase 2: lobbies, Rich Presence, auth (SteamLobbies.cs, SteamPresence.cs, SteamAuth.cs)
+        Presence.Attach(Backend);
+        Auth.Attach(Backend);
         Console.WriteLine($"[steam] running: App ID {Backend.AppId}, {Backend.PersonaName} ({Backend.LocalSteamId}), overlay {(Backend.OverlayEnabled ? "on" : "off")}");
         return true;
     }
@@ -161,6 +164,9 @@ public static partial class SteamPlatform
         if (State == SteamState.Running)
         {
             Backend.OverlayActivated -= OnOverlay;
+            Auth.Detach(Backend);
+            Presence.Detach(Backend);
+            Lobby.Detach(Backend);
             Friends.Detach(Backend);
             Backend.Shutdown();
             Console.WriteLine("[steam] shut down");

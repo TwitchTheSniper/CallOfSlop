@@ -130,6 +130,7 @@ public static unsafe partial class Program
         // started outside Steam hands over to Steam here and quits.
         if (InitSteam(args))
             return 0;
+        InitSteamNet(args); // lobbies, invites, +connect_lobby, Rich Presence (Program.SteamNet.cs)
         Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
         AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
@@ -200,6 +201,7 @@ public static unsafe partial class Program
         {
             EndSession("");
             _manualList?.Dispose(); // "Run a server list for friends" (Program.Listing.cs)
+            ShutdownSteamNet();
             ShutdownSteam(); // Program.Steam.cs
             Ui.Dispose();
             AudioSystem.Dispose();
@@ -1002,8 +1004,11 @@ public static unsafe partial class Program
 
     private static void StartSession(LobbyAction kind, Invite? invite = null)
     {
+        if (kind == LobbyAction.Join && _steamJoinHost == 0 && StartSteamJoin(_settings.JoinAddress))
+            return; // a Steam lobby: the session starts once the lobby names the host (Program.SteamNet.cs)
         EndSession("");
         _lobbyMessage = "";
+        _joinInvite = invite;
         if (_smoke)
             LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = true;
         var loadout = LoadoutStore.Active(_smoke ? SmokeProgress() : _progress);
@@ -1018,13 +1023,12 @@ public static unsafe partial class Program
                     bots = _rangeLaunch != null ? 0 : _settings.Bots; // the Workbench Range is just you
                     break;
                 case LobbyAction.Host:
-                    net = NetPeer.Host(_settings.Port, Game.MaxPlayers - 1);
+                    net = HostNet(_settings.Port, Game.MaxPlayers - 1); // RakNet, plus Steam sockets and a lobby with Steam (Program.SteamNet.cs)
                     bots = _settings.HostBots;
                     BeginHostAddressing(); // the address line, UPnP, STUN and the invite code (Program.Listing.cs)
                     break;
                 default:
-                    net = NetPeer.Join(_settings.JoinAddress, _settings.Port);
-                    LearnListFromHost(_settings.JoinAddress, _settings.Port, invite); // the host's server list, for next time (Program.Listing.cs)
+                    net = JoinNet(); // Steam sockets to a lobby's host, else RakNet to the address (Program.SteamNet.cs)
                     break;
             }
 
@@ -1068,6 +1072,7 @@ public static unsafe partial class Program
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
                 _session.GamePort = _settings.Port;
+                _session.SteamBans = new HashSet<ulong>(_settings.SteamBans); // refused at the door (GameSteamAuth.cs)
                 StartHostListing(_session); // register on a server list, or run one (Program.Listing.cs)
             }
             if (_rangeLaunch != null)
@@ -1098,6 +1103,7 @@ public static unsafe partial class Program
             _session = null;
         }
         StopHostListing(); // Program.Listing.cs
+        EndSteamNet(); // the Steam lobby and presence (Program.SteamNet.cs)
         if (_upnpTask is { IsCompleted: false })
             _upnpTask.Wait(TimeSpan.FromSeconds(4));
         _upnpTask = null;
@@ -1158,6 +1164,7 @@ public static unsafe partial class Program
             UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
             UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
+            UpdateSteamNet(); // pending lobby joins, the lobby's data, Rich Presence (Program.SteamNet.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             AudioSystem.Music.Volume = _settings.MusicVolume;

@@ -1,4 +1,5 @@
 using Brutal.ImGuiApi;
+using Brutal.Numerics;
 
 namespace CallOfSlop;
 
@@ -42,6 +43,7 @@ public sealed partial class Ui
             ImGuiSafe.TextColored(Dim, "A new difficulty replaces every bot.");
         if (game.Mode == GameMode.Zombies)
             DrawHostZombies(game);
+        DrawHostSteam(game); // Steam players: kick / ban by Steam ID; the invite dialog
         ImGui.Spacing();
         ImGui.Separator();
         var action = PauseAction.None;
@@ -57,6 +59,49 @@ public sealed partial class Ui
         if (BigButton("BACK"))
             _pauseHost = false;
         return action;
+    }
+
+    /// <summary>With Steam running: the connected Steam players with Kick and Ban (GameSteamAuth.cs), and the overlay's invite dialog.</summary>
+    private void DrawHostSteam(Game game)
+    {
+        var steam = CallOfSlop.Platform.Steam.SteamPlatform.Lobby;
+        if (!CallOfSlop.Platform.Steam.SteamPlatform.Available)
+            return;
+        ImGui.Spacing();
+        ImGui.Separator();
+        ImGui.Text("Steam"u8);
+        if (steam.LobbyId != 0 && steam.IsOwner)
+        {
+            ImGui.SameLine();
+            if (ImGui.Button("Invite friends##hoststeam"u8))
+                steam.InviteFriends();
+            ImGui.SameLine();
+            ImGuiSafe.TextColored(Dim, steam.Status);
+        }
+        var any = false;
+        foreach (var p in game.Players.Values.Where(p => p.Bot == null && p.SteamId != 0 && p.Id != game.LocalId).OrderBy(p => p.Id).ToList())
+        {
+            any = true;
+            ImGuiSafe.TextColored(new float4(1, 1, 1, 1), $"{p.Name} ({p.SteamId})");
+            ImGui.SameLine();
+            if (ImGui.Button($"Kick##{p.Id}"))
+                game.KickPlayer(p.Id, "kicked by the host");
+            ImGui.SameLine();
+            if (ImGui.Button($"Ban##{p.Id}"))
+                Program.BanSteam(p.SteamId); // kicked now, refused from now on (Settings "steam_bans")
+        }
+        if (!any)
+            ImGuiSafe.TextColored(Dim, "No other Steam players connected.");
+        if (game.SteamBans.Count > 0)
+        {
+            ImGuiSafe.TextColored(Dim, $"{game.SteamBans.Count} banned Steam ID(s)");
+            foreach (var id in game.SteamBans.Take(8).ToList())
+            {
+                ImGui.SameLine();
+                if (ImGui.SmallButton($"unban {id}##unban"))
+                    Program.UnbanSteam(id);
+            }
+        }
     }
 
     /// <summary>Zombies (testing): the next round now, or a skip to any round (Game.HostSkipToRound, ZombiesStartRound.cs).</summary>

@@ -1,7 +1,7 @@
-# Steam: the platform layer (Phase 1 of the Steam migration)
+# Steam: the platform layer (Phases 1 and 2 of the Steam migration)
 
-The plan (which features, in which order) is the project doc `claude/steam-integration.md`. This file says what Phase 1
-built and how the later phases (transport, lobbies, stats, Workshop, Steam Input) plug into it.
+The plan (which features, in which order) is the project doc `claude/steam-integration.md`. This file says what Phases 1
+and 2 built and how the later phases (stats, Workshop, Steam Input) plug into it.
 
 ## The App ID
 
@@ -61,6 +61,75 @@ SteamPlatform.NativeLibraryPath()        // where steam_api is, null when it is 
 cleaned to the game's ASCII name rules. The pre-match lobby draws a Steam player's avatar before their name when both
 sides are on Steam (`LobbyRoomView.Row.SteamId`, `UiLobbyRoom.cs`).
 
+## Transport, lobbies, invites, Rich Presence and auth (Phase 2)
+
+Protocol **75** (`Msg.SteamAuth` at the end of `Msg`). A game without Steam sends nothing new and runs as before.
+
+| What | Where |
+| --- | --- |
+| The transport interface | `Source/Net/NetTransport.cs` (`INetTransport`, `NetConnectionStats`, `NetLane` + `NetLanes`) |
+| RakNet (UDP, as always) | `Source/Net/RakNetTransport.cs` |
+| Steam sockets, and a host on both | `Source/Net/SteamTransport.cs` (`SteamTransport`, `DualTransport`) |
+| The facade the game calls | `NetPeer` in `Source/Net/Net.cs` (`Host`/`Join` are RakNet; `new NetPeer(INetTransport)` for the rest; `Discovery` stays RakNet) |
+| The backend API (sockets, lobbies, presence, auth) | `Source/Platform/Steam/SteamBackend.Net.cs`, recorded in `RecordedSteamBackend.Net.cs` (`RecordedSteamWorld`: several users in one process) |
+| Lobbies and the lobby list | `Source/Platform/Steam/SteamLobbies.cs` (`SteamPlatform.Lobby`) |
+| Rich Presence | `Source/Platform/Steam/SteamPresence.cs` (`SteamPlatform.Presence`); tokens in `docs/steam/richpresence_english.txt` |
+| Auth tickets and sessions | `Source/Platform/Steam/SteamAuth.cs` (`SteamPlatform.Auth`); the game side `Source/Game/GameSteamAuth.cs` |
+| The app hooks | `Source/App/Program.SteamNet.cs` (hosting, joining through a lobby, +connect_lobby, presence, bans) |
+| Connection stats | `Source/Game/GameNetStats.cs` (`Game.ConnectionStats`, `AllConnectionStats`, `TransportKind`) |
+| The UI | the server browser lists lobbies (`ServerBrowser` + `Lobby.cs`), "Steam lobby" under HOST A GAME, "Invite Steam friends" in the lobby room header, the pause menu's HOST page (kick / ban / unban) |
+| The self-test | `Source/App/SelfTestSteamTransport.cs`, section "Steam transport" |
+
+**Transport.** `NetPeer` is the game's one door to the network; underneath, an `INetTransport` moves the bytes. Connections
+are `RakNetGUID`s whatever the transport (RakNet's own ids; over Steam the peer's Steam ID in `G`), and connection events
+arrive as RakNet's one-byte system packets (`NewIncomingConnection`, `DisconnectionNotification`, ...), so `Game.OnPacket`
+and the ~80 files that send are unchanged. The Steam transport is ISteamNetworkingSockets P2P: the host
+`CreateListenSocketP2P` on virtual port 0 with one poll group, a client `ConnectP2P` to the host's Steam ID,
+`InitRelayNetworkAccess` at start so the relay (SDR) is warm; a direct route when NAT allows, Valve's relays otherwise
+(no UPnP, STUN or port forwarding). `PacketReliability` maps to send flags (reliable; unreliable + NoNagle) and to three
+lanes (`ConfigureConnectionLanes`): 0 reliable gameplay, 1 unreliable snapshots (highest priority), 2 chat / voice / the
+big join-time states (`NetLanes.For`). Messages stay under Steam's 512 KB limit by a mile (the snapshot splitting is
+unchanged). A host on Steam listens both ways (`DualTransport`): RakNet on the game port for LAN, invite codes and server
+lists, Steam sockets for friends on Steam; sends are routed by which side knows the peer. The self-tests keep RakNet over
+loopback; "Steam transport" drives the Steam one on the recorded backend (two or three Steam users in one process).
+
+**Lobbies and joining.** A host on Steam makes a lobby (Settings `steam_lobby`: 2 public, 1 friends, 0 invite only; under
+HOST A GAME) whose data is `game=callofslop`, `protocol`, `host` (the host's Steam ID) and `info` (the `ServerInfo`
+encoded, refreshed every second with the advert). The browser asks for public lobbies of this game and protocol on each
+refresh and shows them as rows (`steam:lobby:ID` addresses, source "Steam", merged with the same game's LAN row by hosting
+id). Every Steam join goes through the lobby: a browser row, an overlay invite (`GameLobbyJoinRequested_t`), "Join game"
+on a friend (`GameRichPresenceJoinRequested_t`) and `+connect_lobby ID` on the command line (Steam passes it when the game
+is not running) all call `SteamPlatform.Lobby.Join`; once the lobby names the host, `StartSession(Join)` connects over
+`SteamTransport` to that Steam ID. No host migration: the lobby ends with the host. The host's "Invite Steam friends" opens
+the overlay's invite dialog.
+
+**Rich Presence.** `steam_display` is a token (`#Status_Menu`, `#Status_SinglePlayer`, `#Status_Lobby`, `#Status_Playing`,
+`#Status_Zombies`) with `mode`, `map`, `players`, `max`, `round` substitutions; `connect` is `+connect_lobby ID` while in
+a lobby (the friends-list "Join game"), `steam_player_group` groups the party. The tokens live in
+`docs/steam/richpresence_english.txt`, which the developer uploads (below); the self-test checks the file defines every
+token the game sets.
+
+**Auth and bans.** Over the Steam transport the host fills `Player.SteamId` from the connection itself. A client on Steam,
+once it knows the host's Steam ID (the connection, or player 0 in the Steam id table), gets a session ticket for that
+host (`GetAuthSessionTicket`) and sends it (`Msg.SteamAuth` kind 0). A host on Steam begins an auth session with it;
+Steam's verdict (`ValidateAuthTicketResponse_t`) kicks the player with the reason on anything but OK (kind 1, then the
+connection closes). A claimed id that is not the connection's is refused. `Game.KickPlayer / KickSteam / BanSteam`;
+bans persist in Settings `steam_bans` and are refused at the door (and the HOST page lists players with Kick / Ban and
+the bans with unban).
+
+**Connection quality.** `Game.ConnectionStats(playerId, out NetConnectionStats)` (a client: the host's connection) and
+`AllConnectionStats` for a host: ping, local / remote quality, bytes and packets per second, pending and unacked bytes,
+queue time, relayed. RakNet fills the ping only; Steam everything (`GetConnectionRealTimeStatus`). The HUD's "Show
+network stats" adds a Steam line; feat/perf-menu's F9 window reads the same calls.
+
+## Developer steps for Phase 2 (Steamworks site)
+
+1. **Rich Presence localisation.** Steamworks > your app > Edit Steamworks Settings > Community > Rich Presence
+   (Localization), upload `docs/steam/richpresence_english.txt` (English), then Publish. Without it friends see no status
+   and the "Join game" button still works (it comes from the `connect` key).
+2. **Two-machine test with a friend** (both on this build, both signed in to Steam, each with `steam_appid.txt` =
+   `1750920` next to the exe until the depot ships): see "The manual test" below, Phase 2 part.
+
 ## Adding a phase
 
 - Add the Steam calls the phase needs to `ISteamBackend`, implement them in `SteamworksBackend` (wrap every call in
@@ -95,3 +164,14 @@ sides are on Steam (`LobbyRoomView.Row.SteamId`, `UiLobbyRoom.cs`).
      list shows each Steam player's avatar before their name, and their Steam name.
    - Quit: the log ends with `[steam] shut down`.
 5. Report the `[steam]` lines if anything differs.
+
+Phase 2, with a friend on another PC (both on Steam, this build):
+6. Host a game (Multiplayer > HOST A GAME, "Steam lobby: Public" or "Friends"). The log says `[steam] hosting over RakNet and
+   Steam sockets (<your id>)` then `[steam] lobby <id> made (Public)`. The lobby room header has "Invite Steam friends".
+7. Your friend: the server browser shows your game with "Steam" after its name and "Steam" in the Ping column (public), or
+   they accept your overlay invite, or click "Join game" on you in their friends list. Their log: `[steam] connecting to
+   <your id> over Steam sockets`; yours: `Player N connected`, then `Steam verified <name>` in the feed.
+8. Play a round. With "Show network stats" on, the friend's HUD shows `Steam relay|direct   quality ...`.
+9. Pause > HOST: your friend is listed with Kick and Ban. Kick them: they see "Removed by the host: kicked by the host".
+10. Quit the game, start it from Steam's friends list "Join game" on your friend's hosted game: it starts straight into
+    their lobby (`+connect_lobby`).

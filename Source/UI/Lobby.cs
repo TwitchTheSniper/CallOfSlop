@@ -225,6 +225,7 @@ public sealed partial class Ui
                         break;
                     }
                     HostOpensWith(s);
+                    SteamLobbyPicker(s); // who finds the Steam lobby (with Steam running)
                     if (ImGui.BeginTabBar("##mp"u8))
                     {
                         if (ImGui.BeginTabItem("Server browser"u8))
@@ -280,6 +281,32 @@ public sealed partial class Ui
 
     private string _opensWith = "";
     private (GameMode, string, bool, string, int, BotDifficulty) _opensWithFor;
+
+    /// <summary>Under HOST A GAME with Steam running: who finds the Steam lobby (Settings.SteamLobby; SteamLobbies.cs).</summary>
+    private void SteamLobbyPicker(Settings s)
+    {
+        if (!SteamPlatform.Available)
+            return;
+        ImGui.Text("Steam lobby"u8);
+        ImGui.SameLine(0, 20 * _scale);
+        var kind = (int)Math.Min(s.SteamLobby, (byte)2);
+        if (ImGui.RadioButton("Public##steamlobby"u8, kind == 2))
+            kind = 2;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Friends##steamlobby"u8, kind == 1))
+            kind = 1;
+        ImGui.SameLine();
+        if (ImGui.RadioButton("Invite only##steamlobby"u8, kind == 0))
+            kind = 0;
+        s.SteamLobby = (byte)kind;
+        ImGuiSafe.TextColored(Dim, kind switch
+        {
+            2 => "Anyone on Steam sees your game in their server browser; friends can join from your profile.",
+            1 => "Friends see your game on your profile and in their browser; others need an invite.",
+            _ => "Only the friends you invite (the overlay, or the lobby's Invite button) can join over Steam.",
+        });
+        ImGui.Spacing();
+    }
 
     /// <summary>Under HOST A GAME: what the lobby opens with (the last choices; all of them change in the lobby).</summary>
     private void HostOpensWith(Settings s)
@@ -360,15 +387,21 @@ public sealed partial class Ui
                 ImGui.TableNextColumn();
                 ImGuiSafe.TextColored(i.Players >= i.MaxPlayers && i.Bots == 0 ? Red : new float4(1, 1, 1, 1), i.Bots > 0 ? $"{humans}/{i.MaxPlayers} +{i.Bots} bots" : $"{humans}/{i.MaxPlayers}");
                 ImGui.TableNextColumn();
-                ImGuiSafe.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
+                if (e.SteamOnly)
+                    ImGui.TextColored(Dim, "Steam"u8); // joined through the lobby: the relay picks the route
+                else
+                    ImGuiSafe.TextColored(e.PingMs < 80 ? Green : e.PingMs < 160 ? Orange : Red, $"{e.PingMs} ms");
                 ImGui.TableNextColumn();
                 if (!e.VersionOk)
                     ImGui.TextColored(Dim, "-"u8);
                 else if (ImGui.Button($"Join##{e.Address}:{i.Port}"))
                 {
-                    s.JoinAddress = e.Address;
-                    s.Port = i.Port;
-                    s.LearnMaster(ListLearner.FromInfo(e.Address, i)); // the host's server list, for next time
+                    s.JoinAddress = e.Address; // a Steam row: "steam:lobby:ID", joined through the lobby (Program.SteamNet.cs)
+                    if (!e.SteamOnly)
+                    {
+                        s.Port = i.Port;
+                        s.LearnMaster(ListLearner.FromInfo(e.Address, i)); // the host's server list, for next time
+                    }
                     s.Save();
                     action = LobbyAction.Join;
                 }
@@ -376,7 +409,11 @@ public sealed partial class Ui
             ImGui.EndTable();
         }
         if (list.Count == 0)
-            ImGui.TextColored(Dim, "No games yet. Games hosted on your network show up here automatically; ask a friend for their address to use Join by address."u8);
+            ImGui.TextColored(Dim, SteamPlatform.Available
+                ? "No games yet. Games on your network and public Steam lobbies show up here; friends' invites arrive through Steam."u8
+                : "No games yet. Games hosted on your network show up here automatically; ask a friend for their address to use Join by address."u8);
+        if (Program.SteamJoinStatus.Length > 0)
+            ImGuiSafe.TextColored(Orange, Program.SteamJoinStatus);
         ImGui.Spacing();
         return false;
     }

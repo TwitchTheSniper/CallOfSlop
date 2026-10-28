@@ -1,0 +1,14 @@
+"lang"
+{
+	"english"
+	{
+		"tokens"
+		{
+			"#Status_Menu"			"In the menus"
+			"#Status_SinglePlayer"	"Playing %mode% on %map% (single player)"
+			"#Status_Lobby"			"In a lobby: %mode% on %map% (%players%/%max%)"
+			"#Status_Playing"		"Playing %mode% on %map% (%players%/%max%)"
+			"#Status_Zombies"		"Zombies on %map%, round %round%"
+		}
+	}
+}

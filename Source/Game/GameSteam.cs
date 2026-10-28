@@ -60,7 +60,14 @@ public sealed partial class Game
             var id = r.U64();
             if (id == 0 || p.SteamId == id)
                 return;
+            var fromTransport = Net.SteamIdOf(sender);
+            if (fromTransport != 0 && fromTransport != id)
+            {
+                KickPlayer(p.Id, "Steam ID does not match the connection"); // GameSteamAuth.cs
+                return;
+            }
             p.SteamId = id;
+            OnSteamIdClaimed(p); // banned ids go at once (GameSteamAuth.cs)
             BroadcastSteamIds();
             return;
         }
