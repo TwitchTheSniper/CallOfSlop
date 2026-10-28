@@ -142,7 +142,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     ThrowableKind.Built; Msg.Throw of a built grenade ends with the cook time (1/50 s), Msg.ProjSpawn with what it is
     //     (thrown, bomblet, aftershock) and Msg.Explode with the payload, radius and duration (tenths) and that byte;
     //     Msg.ZGrenade at the end of Msg (remote detonation, a lure's closing bang).
-    public const byte ProtocolVersion = 67;
+    // 68: The Cathedral's bell siege (Source/Game/ZombiesClimb.cs): zombie state 7 (ZState.Scaling: on a climbable face)
+    //     in Msg.ZEnts' state bits; map logic "zclimb" and Zombies areas with heights (map data, not the wire).
+    public const byte ProtocolVersion = 68;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

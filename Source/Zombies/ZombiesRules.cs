@@ -174,6 +174,9 @@ public sealed class ZombiesRules
     /// <summary>Dismemberment's numbers (the "limbs" section; Source/Game/ZombieLimbs.cs).</summary>
     public LimbTuning Limbs = new();
 
+    /// <summary>The horde climbing a face (the "climb" section; Source/Game/ZombiesClimb.cs: the Cathedral's bell tower).</summary>
+    public ClimbTuning Climb = new();
+
     /// <summary>The alive cap in round <paramref name="round"/> with <paramref name="players"/> players (the curve, the extra players, the hard cap).</summary>
     public int MaxAliveFor(int round, int players)
     {
@@ -594,7 +597,7 @@ public sealed class ZombiesRules
 
     // ---- Loading ------------------------------------------------------------------------------------------
 
-    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs"];
+    private static readonly string[] Sections = ["format", "note", "rounds", "zombie", "points", "downs", "buy", "perks", "box", "ammo", "parts", "powerUps", "ammoEffects", "slots", "casino", "bots", "horde", "limbs", "climb"];
 
     public static ZombiesRules Load(string json, string source)
     {
@@ -1061,6 +1064,50 @@ public sealed class ZombiesRules
                         throw new WeaponFileException($"{at}: nearRange <= midRange <= farRange");
                     break;
                 }
+                case "climb":
+                {
+                    var c = r.Climb;
+                    Fields(p.Value, at, (k, v, w) =>
+                    {
+                        switch (k)
+                        {
+                            case "note": break;
+                            case "layerHeight": c.LayerHeight = Real(v, w, 0.5f, 3); break;
+                            case "columnSpacing": c.ColumnSpacing = Real(v, w, 0.4f, 2); break;
+                            case "layers": c.Layers = Whole(v, w, 1, 30); break;
+                            case "baseRows": c.BaseRows = Whole(v, w, 0, 4); break;
+                            case "climbEvery": c.ClimbEvery = Whole(v, w, 0, 100); break;
+                            case "settleSpeed": c.SettleSpeed = Real(v, w, 0.5f, 20); break;
+                            case "pileClimbSpeed": c.PileClimbSpeed = Real(v, w, 0.2f, 20); break;
+                            case "wallClimbSpeed": c.WallClimbSpeed = Real(v, w, 0.1f, 20); break;
+                            case "vaultSeconds": c.VaultSeconds = Real(v, w, 0.1f, 5); break;
+                            case "fallStun": c.FallStun = Real(v, w, 0, 10); break;
+                            case "fallPush": c.FallPush = Real(v, w, 0, 10); break;
+                            case "extraZombies": c.ExtraZombies = Whole(v, w, 0, 1000); break;
+                            case "extraPerRound": c.ExtraPerRound = Whole(v, w, 0, 100); break;
+                            case "extraMax": c.ExtraMax = Whole(v, w, 0, 1000); break;
+                            case "rewardPoints": c.RewardPoints = Whole(v, w, 0, 1000000); break;
+                            case "rewardPerRound": c.RewardPerRound = Whole(v, w, 0, 100000); break;
+                            case "rewardMax": c.RewardMax = Whole(v, w, 0, 1000000); break;
+                            case "rewardParts": c.RewardParts = Whole(v, w, 0, 10); break;
+                            case "rewardRoundBonus": c.RewardRoundBonus = Whole(v, w, 0, 100); break;
+                            case "rewardPowerUp":
+                            {
+                                var s = v.ValueKind == JsonValueKind.String ? v.GetString()! : throw new WeaponFileException($"{w}: a power-up name (\"maxAmmo\", ...) or \"none\"");
+                                if (s.Equals("none", StringComparison.OrdinalIgnoreCase))
+                                    c.RewardPowerUp = -1;
+                                else if (Enum.TryParse<ZPowerKind>(s, true, out var pk) && pk != ZPowerKind.COUNT && Enum.IsDefined(pk) && !int.TryParse(s, out _))
+                                    c.RewardPowerUp = (int)pk;
+                                else
+                                    throw new WeaponFileException($"{w}: unknown power-up \"{s}\"");
+                                break;
+                            }
+                            default: return false;
+                        }
+                        return true;
+                    });
+                    break;
+                }
                 case "limbs":
                 {
                     var l = r.Limbs;
@@ -1230,6 +1277,40 @@ public sealed class ZombiesRules
         var v = WeaponFile.Number(e, where);
         return v >= min && v <= max ? v : throw new WeaponFileException($"{where}: {v} is outside {min}-{max}");
     }
+}
+
+/// <summary>
+/// The horde climbing a face (the rules file's "climb" section; Source/Game/ZombiesClimb.cs; docs/zombies/ZOMBIES-MODE.md,
+/// "The bell: a siege up the tower"): the living pyramid's shape, how fast the horde climbs and falls, the zombies a
+/// siege adds to the round and what surviving it pays.
+/// </summary>
+public sealed class ClimbTuning
+{
+    /// <summary>The pyramid: each layer of bodies this much higher, columns this far apart along the face, this many layers at most, the bottom layers this many rows deep.</summary>
+    public float LayerHeight = 1.3f, ColumnSpacing = 0.75f;
+
+    public int Layers = 10, BaseRows = 2;
+
+    /// <summary>One zombie in this many reaching the foot climbs straight up the wall instead of joining the pyramid (0: only once it's full).</summary>
+    public int ClimbEvery = 3;
+
+    /// <summary>How fast a body moves to its place in the pile, climbers go up the pile and up the bare wall above it (m/s), and the vault over the parapet (s).</summary>
+    public float SettleSpeed = 3f, PileClimbSpeed = 2f, WallClimbSpeed = 0.8f, VaultSeconds = 0.8f;
+
+    /// <summary>A shot zombie lets go: pushed off the wall this fast (m/s) and dazed for this long once it lands (s).</summary>
+    public float FallStun = 1.2f, FallPush = 2.5f;
+
+    /// <summary>Zombies a siege adds to the round: this many plus this many a round, at most this many.</summary>
+    public int ExtraZombies = 12, ExtraPerRound = 2, ExtraMax = 80;
+
+    /// <summary>Surviving pays every player standing: points (plus per round, at most), loose parts rolled as if the round were this many later, and a power-up at the top (-1: none).</summary>
+    public int RewardPoints = 1500, RewardPerRound = 100, RewardMax = 6000, RewardParts = 2, RewardRoundBonus = 10;
+
+    public int RewardPowerUp = (int)ZPowerKind.MaxAmmo;
+
+    public int ExtraFor(int round) => Math.Min(ExtraMax, ExtraZombies + ExtraPerRound * Math.Max(1, round));
+
+    public int RewardFor(int round) => Math.Min(RewardMax, RewardPoints + RewardPerRound * Math.Max(1, round));
 }
 
 /// <summary>

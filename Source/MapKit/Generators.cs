@@ -182,8 +182,11 @@ public static class MapKitCli
         }
     }
 
-    /// <summary><c>--gen-plan &lt;map file&gt; &lt;png&gt;</c>: a top-down plan of any map file.</summary>
-    public static int GenPlan(string mapFile, string png)
+    /// <summary>
+    /// <c>--gen-plan &lt;map file&gt; &lt;png&gt; [--level y0,y1]</c>: a top-down plan of any map file; with --level only that
+    /// level (floors between those heights, walls through them, the Zombies section: <see cref="Plan.DrawLevel"/>).
+    /// </summary>
+    public static int GenPlan(string mapFile, string png, string[]? args = null)
     {
         try
         {
@@ -198,7 +201,12 @@ public static class MapKitCli
             }
             var m = MapFile.Load(File.ReadAllText(full), inMaps ? rel.Replace('\\', '/') : Path.GetFileName(full), inMaps ? null : "");
             m.Validate();
-            Plan.Draw(m, png);
+            if (args != null && Flag(args, "--level") is { } lv && lv.Split(',') is { Length: 2 } ys
+                && float.TryParse(ys[0], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var ya)
+                && float.TryParse(ys[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var yb))
+                Plan.DrawLevel(m, png, Math.Min(ya, yb), Math.Max(ya, yb));
+            else
+                Plan.Draw(m, png);
             Console.WriteLine($"plan of '{m.Name}': {png}");
             return 0;
         }

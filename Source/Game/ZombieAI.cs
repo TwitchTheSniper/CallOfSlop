@@ -26,6 +26,13 @@ public enum ZState : byte
 
     /// <summary>Dead: falls over, then it's gone.</summary>
     Dead,
+
+    /// <summary>
+    /// On a climbable face (map logic "zclimb": the Cathedral's bell tower): a body in the living pyramid against the
+    /// wall, or climbing over it and up the wall to the top (Source/Game/ZombiesClimb.cs). Moved by the server, not the
+    /// physics; shot, it lets go and falls.
+    /// </summary>
+    Scaling,
 }
 
 /// <summary>How fast a zombie moves (rolled when it spawns, from the round's mix).</summary>
@@ -58,6 +65,14 @@ public sealed partial class Zombie
     public Vector3 ClimbFrom, ClimbTo;
     public uint SpawnTick;
     public bool KilledByHead;
+
+    // A siege up a climbable face (server; ZombiesClimb.cs): walking outside to the face's foot instead of a window,
+    // its place in the climbing list (in the pyramid, or climbing above it), its height and the vault over the top.
+    public bool SiegeOut;
+    public int ScaleRank = -1;
+    public bool ScaleClimber;
+    public double VaultAt = -1;
+    public Vector3 VaultFrom;
 
     // Special ammo effects (server; ZombiesAmmoEffects.cs): a burn or bleed ticking, slowed, a corpse that floats away.
     public double BurnUntil, BurnNext;
@@ -308,6 +323,7 @@ public sealed partial class Game
             alive++;
         }
         HordeBegin(zm, now); // the horde controller's tick: targets, groups, queues, stimuli (ZombieHorde.cs, Source/Game/Horde/)
+        ClimbTick(); // a siege up a climbable face: the pyramid's places (ZombiesClimb.cs)
         foreach (var z in Horde)
         {
             if (z.State == ZState.Dead)
@@ -343,13 +359,18 @@ public sealed partial class Game
 
     private void ThinkZombie(ZombiesMap zm, Zombie z, double now)
     {
-        if (now < z.StunnedUntil)
+        if (now < z.StunnedUntil && z.State != ZState.Scaling)
         {
             MoveZombie(z, z.Yaw, false, false);
             return;
         }
+        if (_climbEnt >= 0 && z.Window >= 0 && z.State is ZState.ToWindow or ZState.Tearing)
+            ClimbRecruit(z, now); // a siege: the horde outside leaves the windows for the face (ZombiesClimb.cs)
         switch (z.State)
         {
+            case ZState.Scaling:
+                ScaleMove(zm, z, now);
+                return;
             case ZState.Rising:
                 MoveZombie(z, z.Yaw, false, false);
                 if (now - z.StateAt >= ZRules.RiseSeconds) // climbing out of the ground (the rules file's riseSeconds)
@@ -489,6 +510,11 @@ public sealed partial class Game
     {
         var m = z.Hm;
         var ai = HordeAI;
+        if (z.SiegeOut)
+        {
+            SiegeWalk(zm, z, now); // outside, on its way to a climbable face or back to a window (ZombiesClimb.cs)
+            return;
+        }
         if (z.Door < 0 && m.ThinkNow && zm.Inside(z.Position))
             z.Area = zm.AreaAt(z.Position);
         // Its group's target (the horde controller spreads the horde over the players); a lure draws it instead.
@@ -775,6 +801,8 @@ public sealed partial class Game
             {
                 EarnPoints(attacker, ZRules.HitPoints, now);
                 HordeHurt(z, attacker, now); // its neighbours turn on the shooter (ZombieHorde.cs)
+                if (z.State == ZState.Scaling)
+                    ClimbFall(z, now); // shot off the face: it lets go (ZombiesClimb.cs)
             }
             return false;
         }

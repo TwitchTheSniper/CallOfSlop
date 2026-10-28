@@ -233,6 +233,7 @@ public sealed partial class Game
         Horde.Clear();
         _zById.Clear();
         HordeAI.Reset();
+        ClimbReset(); // (a siege up a face ends with the horde: ZombiesClimb.cs)
     }
 
     /// <summary>Self-test: the controller's numbers and group state in one line.</summary>

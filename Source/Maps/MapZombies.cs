@@ -3,22 +3,53 @@ using System.Text.Json;
 
 namespace CallOfSlop;
 
-/// <summary>A Zombies area: a rectangle of the map. Areas are unlocked by opening the doors between them.</summary>
+/// <summary>
+/// A Zombies area: a rectangle of the map (any height), or on a map with floors over each other (the Cathedral) a
+/// rectangle between two heights, plus any number of more boxes ("y" and "more" in the map file: an area is the union
+/// of its boxes). Areas are unlocked by opening the doors between them. Where areas' boxes overlap the first listed wins.
+/// </summary>
 public sealed class ZArea
 {
     public required string Name;
+
+    /// <summary>The first box (its rectangle; <see cref="Y0"/>..<see cref="Y1"/> its heights, infinite without "y").</summary>
     public float X0, Z0, X1, Z1;
 
-    public bool Contains(Vector3 p) => p.X >= X0 && p.X <= X1 && p.Z >= Z0 && p.Z <= Z1;
+    public float Y0 = float.NegativeInfinity, Y1 = float.PositiveInfinity;
 
-    public Vector3 Center => new((X0 + X1) / 2, 0, (Z0 + Z1) / 2);
+    /// <summary>More boxes of the same area ("more": [[x0, z0, x1, z1, y0, y1], ...]: a stairwell, a landing); usually none.</summary>
+    public Box[] More = [];
 
-    /// <summary>Flat distance from <paramref name="p"/> to the rectangle (0 inside).</summary>
+    public bool Contains(Vector3 p)
+    {
+        if (p.X >= X0 && p.X <= X1 && p.Z >= Z0 && p.Z <= Z1 && p.Y >= Y0 && p.Y <= Y1)
+            return true;
+        for (var i = 0; i < More.Length; i++)
+            if (p.X >= More[i].Min.X && p.X <= More[i].Max.X && p.Z >= More[i].Min.Z && p.Z <= More[i].Max.Z && p.Y >= More[i].Min.Y && p.Y <= More[i].Max.Y)
+                return true;
+        return false;
+    }
+
+    /// <summary>Has the area a height band (a floor of a building with floors over each other)?</summary>
+    public bool Banded => !float.IsNegativeInfinity(Y0) || !float.IsPositiveInfinity(Y1);
+
+    public Vector3 Center => new((X0 + X1) / 2, Banded ? Y0 + 0.5f : 0, (Z0 + Z1) / 2);
+
+    /// <summary>Distance from <paramref name="p"/> to the area (0 inside): flat for an area without heights, else including the height.</summary>
     public float Distance(Vector3 p)
     {
-        var dx = MathF.Max(0, MathF.Max(X0 - p.X, p.X - X1));
-        var dz = MathF.Max(0, MathF.Max(Z0 - p.Z, p.Z - Z1));
-        return MathF.Sqrt(dx * dx + dz * dz);
+        var d = Dist(p, X0, Z0, X1, Z1, Y0, Y1);
+        for (var i = 0; i < More.Length; i++)
+            d = MathF.Min(d, Dist(p, More[i].Min.X, More[i].Min.Z, More[i].Max.X, More[i].Max.Z, More[i].Min.Y, More[i].Max.Y));
+        return d;
+    }
+
+    private static float Dist(Vector3 p, float x0, float z0, float x1, float z1, float y0, float y1)
+    {
+        var dx = MathF.Max(0, MathF.Max(x0 - p.X, p.X - x1));
+        var dz = MathF.Max(0, MathF.Max(z0 - p.Z, p.Z - z1));
+        var dy = MathF.Max(0, MathF.Max(y0 - p.Y, p.Y - y1)); // (0 without a band: -inf..inf)
+        return MathF.Sqrt(dx * dx + dy * dy + dz * dz);
     }
 }
 
@@ -255,13 +286,31 @@ public sealed class ZombiesMap
             throw new MapFileException($"{where}: needs \"areas\": [ {{ \"name\": ..., \"rect\": [x0, z0, x1, z1] }} ]");
         foreach (var a in areas.EnumerateArray())
         {
-            Only(a, $"{where}.areas", "name", "rect");
+            Only(a, $"{where}.areas", "name", "rect", "y", "more");
             var r = Nums(Need(a, "rect", $"{where}.areas"), 4, $"{where}.areas.rect");
             var area = new ZArea
             {
                 Name = Text(Need(a, "name", $"{where}.areas"), $"{where}.areas.name"),
                 X0 = MathF.Min(r[0], r[2]), Z0 = MathF.Min(r[1], r[3]), X1 = MathF.Max(r[0], r[2]), Z1 = MathF.Max(r[1], r[3]),
             };
+            if (Get(a, "y") is { } ye)
+            {
+                // A floor of a building with floors over each other: the area is only between these heights.
+                var y = Nums(ye, 2, $"{where}.areas.y");
+                (area.Y0, area.Y1) = (MathF.Min(y[0], y[1]), MathF.Max(y[0], y[1]));
+                if (area.Y1 - area.Y0 < 2)
+                    throw new MapFileException($"{where}: area '{area.Name}': \"y\" is [bottom, top], at least 2 m apart");
+            }
+            if (Get(a, "more") is { } more)
+                area.More = List(more, $"{where}.areas.more").Select(m =>
+                {
+                    var b = Nums(m, 6, $"{where}.areas.more (each [x0, z0, x1, z1, y0, y1])");
+                    var lo = new Vector3(MathF.Min(b[0], b[2]), MathF.Min(b[4], b[5]), MathF.Min(b[1], b[3]));
+                    var hi = new Vector3(MathF.Max(b[0], b[2]), MathF.Max(b[4], b[5]), MathF.Max(b[1], b[3]));
+                    if (hi.X - lo.X < 0.5f || hi.Z - lo.Z < 0.5f || hi.Y - lo.Y < 2)
+                        throw new MapFileException($"{where}: area '{area.Name}': a \"more\" box is smaller than 0.5 x 0.5 m or under 2 m tall");
+                    return new Box((lo + hi) / 2, (hi - lo) / 2);
+                }).ToArray();
             if (z.AreaIndex(area.Name) >= 0)
                 throw new MapFileException($"{where}: two areas called '{area.Name}'");
             if (area.X1 - area.X0 < 1 || area.Z1 - area.Z0 < 1)
@@ -301,8 +350,8 @@ public sealed class ZombiesMap
                 var thinX = box.Half.X <= box.Half.Z;
                 var off = (thinX ? box.Half.X : box.Half.Z) + 0.75f;
                 var axis = thinX ? Vector3.UnitX : Vector3.UnitZ;
-                var s1 = Ground(map, box.Center + axis * off);
-                var s2 = Ground(map, box.Center - axis * off);
+                var s1 = DoorSide(map, box, box.Center + axis * off);
+                var s2 = DoorSide(map, box, box.Center - axis * off);
                 var a1 = z.Areas[door.AreaA];
                 (door.SideA, door.SideB) = a1.Distance(s1) <= a1.Distance(s2) ? (s1, s2) : (s2, s1);
                 z.Doors.Add(door);
@@ -526,6 +575,16 @@ public sealed class ZombiesMap
     }
 
     private static Vector3 Ground(Map map, Vector3 p) => p with { Y = map.HasTerrain ? map.GroundHeight(p.X, p.Z) : 0 };
+
+    /// <summary>
+    /// A door's side on the floor it stands on: the ground, or for a door on an upper floor or underground (its bottom
+    /// more than 0.3 m from the ground: the Cathedral's galleries and crypt) the door's own bottom.
+    /// </summary>
+    private static Vector3 DoorSide(Map map, Box box, Vector3 p)
+    {
+        var g = Ground(map, p);
+        return MathF.Abs(box.Min.Y - g.Y) > 0.3f ? p with { Y = box.Min.Y } : g;
+    }
 
     /// <summary>[x, z] (on the ground, plus <paramref name="lift"/>) or [x, y, z].</summary>
     private static Vector3 Point(Map map, JsonElement e, string w, float lift = 0)
