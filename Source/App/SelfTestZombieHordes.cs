@@ -398,7 +398,7 @@ public static partial class SelfTest
         Pose();
         rec.Reset();
         // The posing is timed once it has settled: blocks of 20 frames for at least 1.5 s and until the quickest block
-        // has not improved for 8 blocks (at most 100 blocks or 6 s), and the figure is that quickest block. Every block
+        // has not improved for 8 blocks (at most 400 blocks or 6 s), and the figure is that quickest block. Every block
         // does the same work (the pose staggering repeats every 4 frames and the horde stands still), so a block is
         // only ever slowed, never sped up, by anything but the JIT: the posing and drawing code (ZombieAnim.Targets,
         // Solve, Draw, the recorder) passes through the runtime's tiers (tier 0, the PGO-instrumented tier, tier 1) as
@@ -413,7 +413,7 @@ public static partial class SelfTest
         var poseFirst = 0.0;
         var poseBest = 0;
         var poseWall = Stopwatch.StartNew();
-        while (poseBlocks < 100 && (poseWall.Elapsed.TotalSeconds < 1.5 || (poseBlocks - poseBest < 8 && poseWall.Elapsed.TotalSeconds < 6)))
+        while (poseBlocks < 400 && (poseWall.Elapsed.TotalSeconds < 1.5 || (poseBlocks - poseBest < 8 && poseWall.Elapsed.TotalSeconds < 6)))
         {
             var ms = ThreadCpu.TimeMs(() =>
             {
