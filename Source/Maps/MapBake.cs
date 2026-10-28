@@ -25,7 +25,7 @@ namespace CallOfSlop;
 public static class MapBake
 {
     /// <summary>Bump when the file layout changes (old files are then ignored).</summary>
-    public const int FormatVersion = 1;
+    public const int FormatVersion = 2; // 2: the light grid keeps a flicker phasor and pace per cell (LightFlicker)
 
     private static readonly byte[] Magic = "CoSMap\r\n"u8.ToArray();
 

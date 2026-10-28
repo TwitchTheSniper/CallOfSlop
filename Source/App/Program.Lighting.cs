@@ -10,6 +10,8 @@ namespace CallOfSlop;
 /// game quits. Views: the map-select overview, every <c>--at</c> camera (eye position, compass yaw, pitch in degrees, up is
 /// positive) and, without any, each team's first spawn looking at the map's centre. Uses the smoke test's throwaway save
 /// copy. Runs under a virtual X server with Mesa's software GL too (no GPU needed), so agents can look at lighting changes.
+/// <c>--times t1,t2,...</c> (seconds): instead of on/off, each view with lighting on at those clock times
+/// (smoke_light_&lt;view&gt;_t&lt;ms&gt;.bmp), a frame sequence of the flicker (flames and their light share the clock).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -71,14 +73,19 @@ public static unsafe partial class Program
             }
         var b = map.LightBake;
         Console.WriteLine($"[lightshots] {map.Name}: {(b == null ? "not lit" : $"grid {b.NX}x{b.NY}x{b.NZ} at {b.Cell:0.##} m{(b.CellY != b.Cell ? $" ({b.CellY:0.##} m tall)" : "")}, {b.Sources.Length} lights, {b.Bytes / 1024} KB, baked in {b.BakeMs:0} ms")}; {views.Count} views");
+        var times = args.SkipWhile(a => !a.Equals("--times", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?
+            .Split(',').Select(s => double.Parse(s, CultureInfo.InvariantCulture)).ToArray();
         var saved = _settings.Lighting;
         foreach (var view in views)
-            foreach (var on in new[] { true, false })
+            foreach (var shot in times != null ? times.Select(t => (On: true, T: t)) : new[] { (On: true, T: -1.0), (On: false, T: -1.0) })
             {
+                var on = shot.On;
                 _settings.Lighting = on ? LightingQuality.Baked : LightingQuality.Off;
                 for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++) // (render data is built on the first draw)
                 {
                     Glfw.PollEvents();
+                    if (shot.T >= 0)
+                        Glfw.SetTime(shot.T); // (this tool quits afterwards: the clock is only borrowed)
                     var fb = _window.FramebufferSize;
                     Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
                     Gfx.SetCamera(Matrix4x4.CreateLookAt(view.Eye, view.Target, Vector3.UnitY),
@@ -88,10 +95,10 @@ public static unsafe partial class Program
                     DrawArena();
                     Gfx.SetFog(map.Sky, 0, 0);
                     if (frame == 2)
-                        SaveScreenshot($"light_{view.Name}_{(on ? "on" : "off")}");
+                        SaveScreenshot(shot.T >= 0 ? $"light_{view.Name}_t{shot.T * 1000:00000}" : $"light_{view.Name}_{(on ? "on" : "off")}");
                     _window.SwapBuffers();
                 }
-                Console.WriteLine($"[lightshots] {view.Name} {(on ? "on" : "off")}: GL error 0x{GlDebug.Error():x}");
+                Console.WriteLine($"[lightshots] {view.Name} {(shot.T >= 0 ? $"t={shot.T:0.###}" : on ? "on" : "off")}: GL error 0x{GlDebug.Error():x}");
             }
         _settings.Lighting = saved;
         Console.WriteLine("[lightshots] done");
