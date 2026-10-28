@@ -150,7 +150,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 70: Zombies drop items (Source/Game/ZombiesDropItems.cs): Msg.ZDropItem (client -> server: drop the gun in hand or
     //     loose parts) and Msg.ZPartDrop (server -> all: loose-part pickups) at the end of Msg; Msg.ZPickup's appear
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
-    public const byte ProtocolVersion = 70;
+    // 73: The Zombies trader (Source/Game/ZombiesTrader.cs): Msg.ZTrader (the trader and his shelf, server -> all) and
+    //     Msg.ZTraderBuy (a purchase, client -> server) at the end of Msg. (71 and 72 are other branches' bumps of the same day.)
+    public const byte ProtocolVersion = 73;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

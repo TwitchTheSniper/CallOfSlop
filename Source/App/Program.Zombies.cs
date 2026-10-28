@@ -196,6 +196,9 @@ public static unsafe partial class Program
 
         DrawCasinoTables(zm, live, now); // casino tables: cards, the roulette wheel and chips, dice (Program.ZombiesCasino.cs)
 
+        if (live)
+            DrawTrader(now); // the trader and his stall, while he's here (Program.ZombiesTrader.cs)
+
         // The weapon-slot upgrade (a crate with two gun racks), the power switch, workbenches, salvage piles.
         if (zm.SlotUpgrade is { } su)
         {
@@ -583,11 +586,12 @@ public static unsafe partial class Program
             }
         }
         CasinoInput(interactPressed); // at a casino table: open its panel (Program.ZombiesCasino.cs)
+        TraderInput(interactPressed); // at the trader: open his shelf (Program.ZombiesTrader.cs)
         // The drop key: the gun in your hands goes on the floor as a pickup (never your last gun; ZombiesDropItems.cs).
         if (_mouseCaptured && Pressed(GameAction.DropItem))
             _game.DropItemRequest(Game.DropGun);
         // The inventory key: the parts inventory (drop loose parts), the mouse free for it; again (or Esc) closes it.
-        if (Pressed(GameAction.Inventory) && !Ui.PauseOpen && !Ui.WorkbenchOpen && !Ui.CasinoOpen && !Ui.MenuOpen)
+        if (Pressed(GameAction.Inventory) && !Ui.PauseOpen && !Ui.WorkbenchOpen && !Ui.CasinoOpen && !Ui.TraderOpen && !Ui.MenuOpen)
         {
             if (Ui.InventoryOpen)
             {

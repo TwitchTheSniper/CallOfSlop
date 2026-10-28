@@ -181,6 +181,12 @@ public sealed class ZombiesMap
     public readonly List<ZSpot> CasinoTables = new();
 
     /// <summary>
+    /// Where the trader sets up his stall ("traderSpots"; ZombiesTrader.cs): one is picked at random each visit, an open
+    /// area's first. A map without any uses its box spots and workbenches (the trader stands in front of them).
+    /// </summary>
+    public readonly List<ZSpot> TraderSpots = new();
+
+    /// <summary>
     /// "machineProps": true: every machine stands as a solid prop from <c>Props/Zombies</c> (<see cref="MachineProp"/>):
     /// perk machines, workbenches, the power switch, the slot upgrade, and a crate at every mystery box spot (the box is
     /// drawn over the crate at its spot). Players, zombies and bullets can't pass through them. Off (Zombies Test): the
@@ -235,7 +241,7 @@ public sealed class ZombiesMap
         .Where(c => c is not (PartCategory.Casing or PartCategory.Fuse or PartCategory.Payload or PartCategory.GrenadeMod))
         .Select(c => (int)c).Append(SlotCategoryGrenade).ToArray();
 
-    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8;
+    public const int MaxDoors = 32, MaxWindows = 32, MaxAreas = 32, MaxBoards = 12, MaxSlotMachines = 24, MaxCasinoTables = 8, MaxTraderSpots = 32;
 
     /// <summary>The area <paramref name="p"/> is in (the nearest one if it's in none).</summary>
     public int AreaAt(Vector3 p)
@@ -269,7 +275,7 @@ public sealed class ZombiesMap
 
     // ---- Reading ----------------------------------------------------------------------------------------
 
-    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "machineProps", "testKit"];
+    private static readonly string[] Keys = ["start", "areas", "doors", "windows", "spawners", "wallBuys", "box", "workbenches", "perks", "slotUpgrade", "power", "salvage", "slots", "casino", "traderSpots", "machineProps", "testKit"];
 
     /// <summary>Reads the section and adds its door and window boxes to <paramref name="map"/>.</summary>
     public static ZombiesMap Read(JsonElement e, Map map, string source)
@@ -500,6 +506,11 @@ public sealed class ZombiesMap
             }
         if (z.CasinoTables.Count > MaxCasinoTables)
             throw new MapFileException($"{where}: at most {MaxCasinoTables} casino tables");
+        if (Get(e, "traderSpots") is { } ts)
+            foreach (var s in List(ts, $"{where}.traderSpots"))
+                z.TraderSpots.Add(Spot(map, z, s, $"{where}.traderSpots"));
+        if (z.TraderSpots.Count > MaxTraderSpots)
+            throw new MapFileException($"{where}: at most {MaxTraderSpots} trader spots");
         if (Get(e, "machineProps") is { } mp)
             z.MachineProps = mp.ValueKind switch
             {

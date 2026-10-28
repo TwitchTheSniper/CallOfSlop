@@ -135,6 +135,8 @@ public sealed partial class Ui
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
+        _traderOffScreen = null;
+        DrawTraderLabel(game, me, now); // the trader's waypoint through the walls (UiTrader.cs)
         if (game.BoxFreeForAll && game.ZMap is { BoxSpots.Count: > 0 } bzm)
         {
             // The box's offer is anyone's now (board item 2026-10-27): a flashing label over it, seen from 25 m.
@@ -196,6 +198,8 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(game.BoxDisassembleArmed(now) ? Orange : Dim, dis); // the second key at the box: take the OFFERED build apart (never the gun in your hands)
             if (me.Alive && game.ZWaitingReady && game.ZPhase == ZRoundPhase.Break && game.Phase == MatchPhase.Playing)
                 ImGuiSafe.TextColored(game.ZP(me).RoundReady ? Green : ZGold, ReadyPromptText(game, Keybinds.Name(settings.Bind(GameAction.Ready))));
+            if (me.Alive && _traderOffScreen != null)
+                ImGuiSafe.TextColored(ZGold, _traderOffScreen); // the trader is here but off screen: where to (UiTrader.cs)
             // Dropped builds near you: what they are and how long they stay (blinking red in their last seconds). Labelled in the
             // world over the weapon when it's on screen (Hud.WorldLabel, within 15 m); listed here when it's near (8 m) but off screen.
             if (me.Alive)

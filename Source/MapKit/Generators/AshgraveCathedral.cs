@@ -44,7 +44,7 @@ public sealed class AshgraveCathedral : IMapGenerator
 
     Kit k = null!;
     readonly List<(string Name, List<double[]> Boxes)> _areas = new();
-    readonly JArray _doors = new(), _windows = new(), _spawners = new(), _wallBuys = new(), _box = new(), _benches = new(), _perks = new(), _slots = new(), _casino = new(), _salvage = new();
+    readonly JArray _doors = new(), _windows = new(), _spawners = new(), _wallBuys = new(), _box = new(), _benches = new(), _perks = new(), _slots = new(), _casino = new(), _salvage = new(), _traders = new();
     JObject? _power, _slotUp;
 
     // Layout checks: keep-clear spots (x, y, z, radius, what), machine footprints, wall buys, wall holes.
@@ -95,6 +95,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         Dungeons();
         PaupersField();
         Dressing();
+        TraderSpots();
         BellLogic();
         Spawns();
         Lighting();
@@ -274,6 +275,7 @@ public sealed class AshgraveCathedral : IMapGenerator
     {
         ["box"] = (1.3, 0.66), ["bench"] = (1.6, 0.8), ["perk"] = (0.9, 0.7), ["locker"] = (1.0, 0.6), ["power"] = (0.7, 0.3), ["slots"] = (0.9, 0.7),
         ["blackjack"] = (1.95, 1.25), ["roulette"] = (2.6, 1.15), ["highLow"] = (1.35, 1.35), ["dice"] = (2.05, 1.15),
+        ["trader"] = (1.8, 1.6), // the trader's counter with him behind it (not a prop: the game draws him while he's here)
     };
 
     static (double X, double Z) Fwd(double yaw) => (Math.Sin(yaw * Math.PI / 180), -Math.Cos(yaw * Math.PI / 180));
@@ -307,6 +309,34 @@ public sealed class AshgraveCathedral : IMapGenerator
     void Bench(double x, double y, double z, double yaw) => _benches.Add(Machine("bench", x, y, z, yaw, "workbench"));
 
     void Casino(string game, double x, double y, double z, double yaw) => _casino.Add(Machine(game, x, y, z, yaw, game, ("game", game)));
+
+    /// <summary>
+    /// A trader's stall spot (board item dev-zombies-trader-tr01; Source/Game/ZombiesTrader.cs): open floor that keeps clear of
+    /// everything, like a machine, but with no lamp (he brings his own lantern) and no waypoint.
+    /// </summary>
+    void TraderSpot(double x, double y, double z, double yaw)
+    {
+        var (w, d) = Size["trader"];
+        if (Math.Abs(Math.Sin(yaw * Math.PI / 180)) > 0.5)
+            (w, d) = (d, w);
+        _machines.Add((x - w / 2, z - d / 2, x + w / 2, z + d / 2, y, $"trader spot (trader at {x}, {z})"));
+        var (fx, fz) = Fwd(yaw);
+        _keep.Add((x + fx * (Size["trader"].D / 2 + 0.6), y, z + fz * (Size["trader"].D / 2 + 0.6), 0.6, "trader spot front"));
+        _traders.Add(new JObject(("at", P(x, y, z)), ("yaw", Kit.Yaw(yaw))));
+    }
+
+    /// <summary>Where the trader can set up (one at random every 5th round, an open area's first): open floor in the big rooms on every level.</summary>
+    void TraderSpots()
+    {
+        TraderSpot(-26.0, G, -6.0, 90); // the nave, west of the pews
+        TraderSpot(10.0, G, -17.0, 180); // the north transept, south of the font
+        TraderSpot(26.5, G, -6.0, 90); // the choir
+        TraderSpot(-15.0, G, 11.0, 0); // the cloister garth, north of the well
+        TraderSpot(-44.0, G, 0.0, 90); // the close
+        TraderSpot(30.0, G, 21.0, 180); // the graveyard
+        TraderSpot(27.0, Crypt, -7.0, 0); // the crypt
+        TraderSpot(0.0, Dun, 16.0, 0); // the dungeons' corridor
+    }
 
     void Salvage(double x, double y, double z)
     {
@@ -1481,6 +1511,7 @@ public sealed class AshgraveCathedral : IMapGenerator
             ("power", _power),
             ("salvage", _salvage),
             ("slots", _slots),
-            ("casino", _casino));
+            ("casino", _casino),
+            ("traderSpots", _traders));
     }
 }

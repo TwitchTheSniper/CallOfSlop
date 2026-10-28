@@ -289,6 +289,17 @@ CASINO = [
     {"game": "dice", "at": [21.2, -12.0], "yaw": 180},         # Generator House: the stokers' dice tub by the turbine
 ]
 SALVAGE = [{"at": [12.2, 1.2]}, {"at": [6, -25.5]}, {"at": [23.5, -22]}, {"at": [13.2, 12.6]}]
+# The trader's stalls (board item dev-zombies-trader-tr01, 2026-10-28; Source/Game/ZombiesTrader.cs): one is picked at random
+# every 5th round (an open area's first). Open floor, with room for his counter in front (-Z before the yaw) and the queue.
+TRADER_SPOTS = [
+    {"at": [-2.0, -3.8], "yaw": 0},        # Receiving Hall: the north side, between the reception desk and the cabinets
+    {"at": [13.0, -2.0], "yaw": 180},      # East Ward: the middle, short of the beds
+    {"at": [-19.0, -5.5], "yaw": 0},       # West Offices: the north side, behind the desks
+    {"at": [-8.0, -12.5], "yaw": 0},       # Courtyard: by the hall's back wall, west of the fountain
+    {"at": [21.0, -20.5], "yaw": 0},       # Generator House: the south end
+    {"at": [-19.4, 7.4], "yaw": 90},       # Chapel: before the altar, west of the pews
+    {"at": [9.0, 11.0], "yaw": 180},       # Research Lab: the west side, between the suit rack and the roulette table
+]
 
 zombies = {
     "start": "Receiving Hall",
@@ -306,6 +317,7 @@ zombies = {
     "salvage": SALVAGE,
     "slots": SLOTS,
     "casino": CASINO,
+    "traderSpots": TRADER_SPOTS,
 }
 
 # ---- Keep-clear zones: where players and zombies must be able to stand and walk -----------------------------
@@ -327,9 +339,10 @@ def fwd(yaw_deg):
 
 
 MACHINE_SIZE = {"box": (1.3, 0.66), "bench": (1.6, 0.8), "perk": (0.9, 0.7), "slot": (1.0, 0.6), "power": (0.7, 0.3), "slots": (0.9, 0.7),
-                "blackjack": (2.0, 1.6), "roulette": (2.6, 1.15), "highLow": (1.35, 1.35), "dice": (2.05, 1.15)}
+                "blackjack": (2.0, 1.6), "roulette": (2.6, 1.15), "highLow": (1.35, 1.35), "dice": (2.05, 1.15),
+                "trader": (1.8, 1.6)}  # the trader: his counter and himself behind it (not a prop: drawn by the game while he's here)
 machines = [("box", s) for s in BOX] + [("bench", s) for s in BENCHES] + [("perk", s) for s in PERKS] + [("slot", SLOT), ("power", POWER)] + [("slots", s) for s in SLOTS] \
-    + [(t["game"], t) for t in CASINO]
+    + [(t["game"], t) for t in CASINO] + [("trader", s) for s in TRADER_SPOTS]
 for kind, s in machines:
     fx, fz = fwd(s["yaw"])
     KEEP.append((s["at"][0] + fx * (MACHINE_SIZE[kind][1] / 2 + 0.6), s["at"][1] + fz * (MACHINE_SIZE[kind][1] / 2 + 0.6), 0.6, f"{kind} front"))

@@ -1211,6 +1211,7 @@ public static unsafe partial class Program
                 }
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
+                DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
@@ -1434,6 +1435,12 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.CasinoOpen)
         {
             Ui.CloseCasino(); // Esc leaves a casino table's panel (back to the fight), not the match (Program.ZombiesCasino.cs)
+            SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.TraderOpen)
+        {
+            Ui.CloseTrader(); // Esc leaves the trader's shelf (back to the fight), not the match (Program.ZombiesTrader.cs)
             SetMouseCaptured(true);
             return;
         }

@@ -57,6 +57,9 @@ public enum ZUseKind : byte
 
     /// <summary>Loose parts a player dropped: pick them up into your loose parts (ZombiesDropItems.cs).</summary>
     PartPickup,
+
+    /// <summary>The trader: press to open his shelf (the client opens it; purchases go up in Msg.ZTraderBuy; ZombiesTrader.cs).</summary>
+    Trader,
 }
 
 /// <summary>One thing the interact key can use: what, which one, its price and the prompt.</summary>
@@ -301,6 +304,7 @@ public sealed partial class Game
         BoxUses = 0;
         ResetSlots(); // ZombiesSlots.cs
         ResetCasino(); // ZombiesCasino.cs
+        ResetTrader(); // ZombiesTrader.cs
         Array.Clear(_salvageRound);
         World.Map.CloseAllDoors();
         var z = World.Map.Zombies;
@@ -420,6 +424,8 @@ public sealed partial class Game
         ModeEvent($"ROUND {round}", Sfx.MortarWhistle);
         ZBanner($"ROUND {round}");
         LogicZombies(LogicEvent.RoundStarted, round); // map logic: zombies.roundStarted, n = the round
+        if (ZMap is { } tzm)
+            TraderOnRound(tzm, round, now); // the trader comes every 5th round and leaves when his time is up (ZombiesTrader.cs)
         WarmZombiePool(); // the round's zombies made now, not as they spawn (ZombiePool.cs)
     }
 
@@ -739,10 +745,10 @@ public sealed partial class Game
                     Audio.Effect3D(Sfx.ImpactWood, zm.Windows[u.Index].Inside + new Vector3(0, 1.2f, 0), 0.8f, MixBus.Zombies);
                 }
                 break;
-            case ZUseKind.Workbench or ZUseKind.Casino:
+            case ZUseKind.Workbench or ZUseKind.Casino or ZUseKind.Trader:
                 zp.Reviving = byte.MaxValue;
                 zp.ReviveProgress = 0;
-                break; // the client opens the workbench (or the table's panel) itself; its changes come back in ZBench (ZCasinoAct)
+                break; // the client opens the workbench (or the table's panel, or the trader's shelf) itself; its changes come back in ZBench (ZCasinoAct, ZTraderBuy)
             default:
                 zp.Reviving = byte.MaxValue; // the downed player crawled out of reach: the revive is interrupted
                 zp.ReviveProgress = 0;
@@ -1043,6 +1049,8 @@ public sealed partial class Game
         }
         for (var i = 0; i < zm.Benches.Count; i++)
             Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts)"));
+        if (ZTrader.Here && MathF.Abs(ZTrader.At.Y - pos.Y) < 2.5f)
+            Consider(Flat(ZTrader.At - pos), ZRules.TraderUseRange, TraderUse()); // ZombiesTrader.cs
         for (var i = 0; i < zm.Salvage.Count && i < _salvageRound.Length; i++)
         {
             var s = zm.Salvage[i];

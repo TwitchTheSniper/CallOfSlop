@@ -338,6 +338,7 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   "salvage": [ {"at": [x, z], "cost": 25} ],
   "slots": [ {"at": [x, z], "yaw": 180, "power": false, "cost": 0, "category": "Barrel"} ],
   "casino": [ {"game": "blackjack", "at": [x, z], "yaw": 0, "power": false, "min": 50, "max": 1000} ],
+  "traderSpots": [ {"at": [x, z], "yaw": 0} ],
   "machineProps": true,
   "testKit": true
 }
@@ -651,6 +652,53 @@ can see." Code: `Source/Game/ZombiesSlots.cs` (rolls), `Source/Game/ZombiesSlotW
 | `winSeconds` | 4 | how long a win shows over the machine |
 | `machines.<Category>` `price`, `melee` | see above | a category machine's price (x the classic) and whether it has the blade |
 | `DropTables.json` `slotTiers` `melee` | 5 | the weight of a complete melee build (its tier from the row's part weights) |
+
+## The trader (board item dev-zombies-trader-tr01, 2026-10-28)
+
+A wandering parts dealer, filed by the developer: "a trader NPC that appears at the start of every 5th round at one of
+the map's trader spots ... with a rotating selection of parts from the rarity tiers below what the round's tables now
+favour, plus a few consumables; server-authoritative purchases". Code: `Source/Game/ZombiesTrader.cs` (the visits, the
+shelf, purchases, the wire), `Source/UI/UiTrader.cs` (the shelf panel and the waypoint label), `Source/App/Program.ZombiesTrader.cs`
+(the figure and his stall); rules `Parts/Tables/ZombiesRules.json` "trader"; self-test section **"Zombies trader"**.
+
+- **Visits.** At the start of every `everyRounds`-th round (5, 10, 15, ...) he sets up at one of the map's
+  `traderSpots`, picked at random (an open area's first; a map without any uses its box spots and workbenches: he
+  stands 1.4 m in front of one, his back to it). Everyone gets a feed line ("The trader has set up his stall in the
+  Nave: 8 parts up to Uncommon. He leaves when round 6 starts."), a sound, the banner THE TRADER IS HERE and a
+  **waypoint**: a gold "TRADER 34 m" label over his stall through the walls (a HUD line with the distance when he's
+  off screen) and a thin gold beam over him, brighter in his first seconds. He stays `stayRounds` rounds (each with the
+  break after it: the default 1 means the round he came in and the break after it) and packs up when the next round
+  begins ("The trader packed up his stall and left.").
+- **The look.** Original: a tall figure in a long teal coat and a wide-brimmed hat, a grey beard and a red scarf,
+  behind a wooden counter with his wares on it (a small box per shelf item in its rarity colour, flat when sold) and a
+  lantern on a pole at the counter's end. No brands, no borrowed faces. He's drawn, not a body: **zombies take no
+  notice of him and nothing can hurt him** (he isn't solid either, so he never blocks a doorway).
+- **The shelf.** Walk up ("Press F to see what the trader has") and press the interact key: his shelf opens on the
+  right with the mouse free, over the match (the world goes on, as at a casino table; Esc, Back to the fight or walking
+  away closes it). `stock` (8) **parts, shared by everyone**: first come, first served, one of each, and a **fresh shelf
+  every visit** (the developer's proposal; per-player shelves are listed under decisions). The parts come from common
+  up to the shelf's **top tier**: the tier the round's `partDrops` row favours (its heaviest weight; a tie goes to the
+  rarer) less `tiersBelow` (1), kept between `topMin` (uncommon) and `topMax` (rare), so he always sells **below what
+  the zombies drop**: uncommon at most to round 24, rare from round 25 with the shipped tables. The rarest tier comes
+  first, then round and round down to common, each part from a random category (grenade parts included), no part
+  twice. Then the **consumables**: a **grenade refill** (the round's count, only when you're short; `grenadePrice`) and a
+  **full reserve for every gun** (what Max Ammo gives; `ammoPrice`); neither sells out. **Prices** are `prices[rarity]`
+  (250 / 500 / 1000 / 2000 / 4000 / 8000) marked up `pricePerRound` (3 percent) a round after round 1, to the nearest 10;
+  the shelf is priced for the round he came in. A bought part goes **straight to your loose parts** (no cap: unlimited
+  banking) for the workbench.
+- **Server-authoritative.** A click asks (`Msg.ZTraderBuy`: the item and the visit it was seen on); the server checks
+  he's here, it's the same shelf, the item isn't sold out, you're alive and within `useRange` (2.2 m), and you can
+  pay, then takes the points, gives the thing and sends the shelf to everyone again (`Msg.ZTrader`: here or gone, the
+  visit, where he stands, the round he leaves, every item's kind, part, price and count left). Two players after the
+  last of something in one tick: exactly one sale, the other is told it's sold out. A joiner gets the shelf at once.
+  Nothing allocates per tick.
+- **Co-op bots** (ZombieBotsShop.cs, after the slot upgrade and before the box): while he's here, a bot buys **one part a
+  visit**, the rarest it can afford with `botSurplus` (1500) over its reserve plus the price, walking to his counter
+  when it's safe like any other purchase (0: bots never shop at him).
+- **Maps.** `"traderSpots": [ {"at": [x, z], "yaw": 0}, ... ]` in the zombies section (at most 32): open floor with room
+  for his 1.8 x 1.6 m stall (his counter is in front, -Z before the yaw) and the queue. Blackmoor Asylum has one per
+  area (seven; `tools/zombies/make_blackmoor.py` checks them like machines), Ashgrave Cathedral eight on every level
+  (`Source/MapKit/Generators/AshgraveCathedral.cs`, `TraderSpots()`).
 
 ## Casino tables (board item "Zombies: casino games to bet points", 2026-10-27)
 
@@ -1088,6 +1136,9 @@ the way a player would (`Source/Game/ZombieBotsShop.cs`; rules `ZombiesRules.jso
 | `thinkSeconds`, `giveUpSeconds` | 0.5, 15 | how often it plans; how long it tries to reach something |
 
 ## Network (protocol 19; protocol 40 for milestone 3; 41 for disassembly; 43 for the animations; 54 for the box's offer; 57 for 16-bit perk flags; 58 for hordes; 59 for the start round and test kit; 65 for dismemberment; 67 for modular grenades; 68 for the bell's climb)
+
+Protocol 73 (the trader, see "The trader"): `ZTrader` (server -> all on a change, and each joiner: the trader and his
+shelf) and `ZTraderBuy` (client -> server: an item and the visit it was seen on) at the end of `Msg`.
 
 Protocol 68 (the bell siege, see "Ashgrave Cathedral"): a zombie's state in `ZEnts` can be 7 (`Scaling`: on the climb's
 pile or the tower's face; the low 3 bits); maps can carry `zclimb` logic and areas with heights.
