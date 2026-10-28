@@ -22,6 +22,9 @@ public sealed class ZBotShop
     /// <summary>The last round this bot pulled a slot machine (one pull a round).</summary>
     public int SlotRound = -1;
 
+    /// <summary>The trader's visit this bot last shopped at (one part a visit; ZombiesTrader.cs).</summary>
+    public int TraderVisit = -1;
+
     /// <summary>Things it couldn't reach lately (kind, index, until), so it doesn't walk back to them at once.</summary>
     public readonly (ZUseKind Kind, int Index, double Until)[] Skip = new (ZUseKind, int, double)[4];
 
@@ -81,6 +84,7 @@ public sealed partial class Game
             s.Clear();
             s.NextThink = 0;
             s.SlotRound = -1;
+            s.TraderVisit = -1;
             s.Bought = 0;
             s.FreeBoxSeen = -1;
             Array.Clear(s.Skip);
@@ -179,6 +183,22 @@ public sealed partial class Game
             goal = BotWaypoint(zm, p.Position, s.Stand, s.Area);
             return true;
         }
+        if (s.Kind == ZUseKind.Trader)
+        {
+            // At the trader: no hold, the purchase is made outright (a person's panel asks the same way; ZombiesTrader.cs).
+            s.TraderVisit = ZTrader.Visit;
+            if (ServerTraderBuy(p, s.Index, ZTrader.Visit, 1, now) == null)
+            {
+                s.Bought++;
+                ZBotPurchases++;
+                if (ZBotBought.Count >= 32)
+                    ZBotBought.RemoveAt(0);
+                ZBotBought.Add($"{p.Name}: Trader {s.Index}");
+            }
+            s.Clear();
+            s.NextThink = now + ZRules.BotThinkSeconds;
+            return false;
+        }
         // There: is the thing it came for really what the key does here? (the nearest buyable wins)
         if (FindZUse(p) is { } u && u.Kind == s.Kind && u.Index == s.Index && !u.Blocked && zp.Points >= u.Cost)
         {
@@ -260,6 +280,14 @@ public sealed partial class Game
             && Pick(ZUseKind.SlotUpgrade, 0, SpotStand(su, 0.9f), su.Area))
             return true;
 
+        // 4b. The trader, while he's here: one part a visit (people have no limit; bots keep to one), the rarest it can afford with plenty to spare.
+        if (ZTrader.Here && s.TraderVisit != ZTrader.Visit && BotTraderPick(spare) is var ti and >= 0)
+        {
+            var area = zm.AreaAt(ZTrader.At);
+            if (Reach(ZTrader.At, area) && Pick(ZUseKind.Trader, ti, ZTrader.At + World.FlatForward(ZTrader.Yaw) * 1.1f, area))
+                return true;
+        }
+
         // 5. The mystery box.
         if (BoxState == ZBoxState.Idle && zm.BoxSpots.Count > 0)
         {
@@ -315,6 +343,7 @@ public sealed partial class Game
         ZUseKind.Box => BoxState == ZBoxState.Idle && BoxSpot == s.Index && zp.Points >= BoxCost(zm),
         ZUseKind.BoxTake => CanTakeBox(p),
         ZUseKind.SlotMachine => s.Index < ZSlots.Length && (ZSlots[s.Index].State == ZSlotState.Idle || s.Holding) && zp.Points >= SlotCost(zm, s.Index),
+        ZUseKind.Trader => ZTrader.Here && s.TraderVisit != ZTrader.Visit && s.Index < ZTrader.Count && zp.Points >= ZTrader.Stock[s.Index].Price,
         _ => false,
     };
 

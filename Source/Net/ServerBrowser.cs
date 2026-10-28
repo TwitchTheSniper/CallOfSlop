@@ -152,7 +152,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     message ends with the round the dropped build lasts to (u16, 0 = time only).
     // 71: The mass horde's crowd (docs/zombies/MASS-HORDE.md, Source/Game/ZombiesCrowdNet.cs): Msg.ZCrowd at the end of Msg
     //     (per-cell crowd counts and headings, changes or a keyframe), sent only on maps with a "crowd".
-    public const byte ProtocolVersion = 71;
+    // 72: The Zombies trader (Source/Game/ZombiesTrader.cs): Msg.ZTrader (the trader and his shelf, server -> all) and
+    //     Msg.ZTraderBuy (a purchase: item, visit, count; no purchase limit, client -> server) at the end of Msg.
+    public const byte ProtocolVersion = 72;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

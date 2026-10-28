@@ -177,6 +177,25 @@
     "highLowMaxSteps": 6,
     "announceAt": 1000
   },
+  "trader": {
+    "note": "PROPOSED trader (board item dev-zombies-trader-tr01, 2026-10-28; docs/zombies/ZOMBIES-MODE.md, The trader): a wandering parts dealer comes at the start of every everyRounds-th round (5, 10, 15...) to one of the map's traderSpots (at random; box spots and workbenches when a map has none), stays stayRounds rounds (each with the break after it) and leaves when the next round begins. He's the place to stock up on lots of lower-level parts for silly builds (developer change, 2026-10-28): NO purchase limit, every item on the shelf can be bought any number of times by everyone, up to maxPerBuy at a time (the panel's x1 / x5 / x10), the server checking the points for the lot. His shelf: stock parts (a fresh shelf every visit), one category each while there are categories left (grenade parts included), each part's rarity rolled from tierWeights up to the shelf's top rarity: the tier the round's partDrops table favours, less tiersBelow, kept between topMin and topMax (so mostly commons and uncommons); with extraChance, one extra part a tier above the top (at most extraMax: the occasional rare). Then consumables: a grenade refill (grenadePrice; 0: not sold; only when you're short) and a full reserve for every gun (ammoPrice). Parts cost prices[rarity], every price marked up pricePerRound a round after round 1 (to the nearest 10). Bought parts go to your loose parts. Co-op bots buy one part a visit with botSurplus over their reserve plus its price (0: never). Zombies take no notice of him and nothing can hurt him.",
+    "everyRounds": 5,
+    "stayRounds": 1,
+    "stock": 14,
+    "tiersBelow": 1,
+    "topMin": "uncommon",
+    "topMax": "rare",
+    "tierWeights": {"common": 60, "uncommon": 32, "rare": 8},
+    "extraChance": 0.35,
+    "extraMax": "rare",
+    "maxPerBuy": 10,
+    "prices": {"common": 250, "uncommon": 500, "rare": 1000, "epic": 2000, "legendary": 4000, "wonder": 8000},
+    "pricePerRound": 0.03,
+    "grenadePrice": 400,
+    "ammoPrice": 600,
+    "useRange": 2.2,
+    "botSurplus": 1500
+  },
   "ammo": {
     "reserveMags": 6,
     "startReserveMags": 4,

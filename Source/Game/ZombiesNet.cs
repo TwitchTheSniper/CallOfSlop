@@ -76,6 +76,7 @@ public sealed partial class Game
             SendWeaponDropsTo(guid, now); // the builds on the floor (ZombiesDrops.cs)
             SendPartDropsTo(guid, now); // and the loose parts players dropped (ZombiesDropItems.cs)
             SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
+            SendTraderTo(guid); // the trader and his shelf (ZombiesTrader.cs)
         }
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
@@ -592,6 +593,16 @@ public sealed partial class Game
                 break;
             case (byte)Msg.ZPartDrop when !IsServer:
                 ReadPartDrop(ref r, now); // a part pickup appeared or went (ZombiesDropItems.cs)
+                break;
+            case (byte)Msg.ZTrader when !IsServer:
+                ReadTrader(ref r, now); // the trader came, left or sold something (ZombiesTrader.cs)
+                break;
+            case (byte)Msg.ZTraderBuy when IsServer && r.Has(3):
+                if (_clients.TryGetValue(sender.G, out var tc) && Players.TryGetValue(tc.Id, out var tp))
+                {
+                    if (OnTraderBuy(tp, ref r, now) is { } why)
+                        ZFeedTo(tp, $"Trader: {why}", Sfx.DryFire);
+                }
                 break;
             case (byte)Msg.ZPickup when !IsServer:
                 ReadWeaponDrop(ref r, now); // a dropped build appeared or went (ZombiesDrops.cs)
