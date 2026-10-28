@@ -91,6 +91,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         CryptAndOssuary();
         Dungeons();
         PaupersField();
+        Dressing();
         BellLogic();
         Spawns();
 
@@ -100,15 +101,15 @@ public sealed class AshgraveCathedral : IMapGenerator
         Lift();
 
         k.Top.Set("zombies", ZombiesSection());
-        k.Test(new JObject(("maxPlayers", 8), ("minHills", 0), ("minTeamSpawns", 4), ("handPlaced", false), ("walkFairness", 0.0), ("minMainNavPct", 30),
-            ("maxNavBuildMs", 8000), ("minProps", 500), ("minSolidProps", 250), ("minDecals", 150), ("minDecalShare", 60), ("minPackProps", 200),
+        k.Test(new JObject(("maxPlayers", 8), ("minHills", 0), ("minTeamSpawns", 4), ("handPlaced", false), ("walkFairness", 0.0), ("minMainNavPct", 30), ("navPockets", true),
+            ("maxNavBuildMs", 8000), ("minProps", 520), ("minSolidProps", 380), ("minDecals", 600), ("minDecalShare", 90), ("minPackProps", 340),
             ("requireProps", JArray.Of("Great Bell", "Organ Pipe Wall", "Gothic High Altar", "Mystery Box Crate", "Zombies Workbench", "Power Switch Box", "Weapon Locker",
                 "Reel Cabinet", "Blackjack Table", "Roulette Table", "High-Low Table", "Dice Table")),
             ("probes", new JArray([
                 JArray.Of("nave", -15, -6, G + O), JArray.Of("close", -44, 0, G + O), JArray.Of("cloister walk", -15, 5.8, G + O), JArray.Of("graveyard", 30, 20, G + O),
-                JArray.Of("barn", -10, 36, G + O), JArray.Of("lodge", -48, 20, G + O), JArray.Of("chapter house", 10, 12, G + O), JArray.Of("mausoleum", 37, 32, G + O),
-                JArray.Of("transept", 10, -20, G + O), JArray.Of("choir", 27, -6, G + O), JArray.Of("lady chapel", 44, -6, G + O), JArray.Of("vestry", 27, 9, G + O),
-                JArray.Of("organ loft", -30.5, -6, Gal + O), JArray.Of("north gallery", -10, -13, Gal + O), JArray.Of("roof walk", -10, -13, Roof + O),
+                JArray.Of("barn", -10, 36, G + O), JArray.Of("lodge", -48, 20, G + O), JArray.Of("chapter house", 10, 12, G + O), JArray.Of("mausoleum", 40, 30, G + O),
+                JArray.Of("transept", 10, -20, G + O), JArray.Of("choir", 27, -6, G + O), JArray.Of("lady chapel", 44, -10, G + O), JArray.Of("vestry", 27, 9, G + O),
+                JArray.Of("organ loft", -28.0, -9.5, Gal + O), JArray.Of("north gallery", -10, -13, Gal + O), JArray.Of("roof walk", -10, -13, Roof + O),
                 JArray.Of("tower base", -29, -21, G + O), JArray.Of("ringing chamber", -29, -19, Roof + O), JArray.Of("belfry", -30.5, -23.5, Belfry + O),
                 JArray.Of("crypt", 33, -8, Crypt + O), JArray.Of("ossuary", 6, -10, Crypt + O), JArray.Of("dungeons", 0, 16, Dun + O), JArray.Of("inquisitor", -20, 16, Dun + O),
                 JArray.Of("tunnel", 30, 21, Dun + O), JArray.Of("paupers field", -10, -40, G + O)])),
@@ -445,7 +446,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         SProp("Brass Lectern", 1.4, -3.2, G, -90, 0.3, 0.25);
         SProp("Votive Candle Stand", -30.5, -14.9, G, 0, 0.65, 0.25);
         SProp("Votive Candle Stand", -31.5, 2.9, G, 180, 0.65, 0.25);
-        SProp("Baptismal Font", -30.6, 0.0, G, 0, 0.6, 0.6);
+        SProp("Baptismal Font", -31.0, -9.6, G, 0, 0.6, 0.6);
         foreach (var x in new[] { -24.0, -18.0, -12.0, -6.0, 0.0 })
             k.Prop("Iron Chandelier", x, -6.0, 8.0);
         foreach (var x in new[] { -24.0, -18.0, -12.0, -6.0, 0.0 })
@@ -1091,22 +1092,22 @@ public sealed class AshgraveCathedral : IMapGenerator
         // Graves, dead trees and lamps round the outside, clear of the windows' approaches and of the tower's north face
         // (the climb's foot, x -36..-22, z -34..-26).
         var rng = new Rng(19);
-        for (var i = 0; i < 70; i++)
+        for (var i = 0; i < 150; i++)
         {
             var x = -60 + rng.Next() * 120;
             var z = -54 + rng.Next() * 30;
-            if (z > -20 || (x > -38 && x < -20 && z > -36) || (x > 1 && x < 19 && z > -32))
-                continue;
+            if (z > -20 || (x > -38 && x < -20 && z > -36) || (x > 1 && x < 19 && z > -32) || Math.Abs(Math.Abs(x) - 58.7) < 3 && z > -36 || x * x + (z + 45) * (z + 45) < 36)
+                continue; // (clear of the climb's foot, the transept's windows and the team spawns and flags at the sides)
             var name = rng.Next() < 0.6 ? "Gothic Headstone" : "Churchyard Headstone";
             if (!NearKeep(x, G, z, 1.6))
                 SProp(name, x, z, G, rng.Next() * 30 - 15, 0.4, 0.2);
         }
-        foreach (var (x, z) in new[] { (-50.0, -40.0), (-14.0, -46.0), (24.0, -40.0), (44.0, -48.0), (58.0, -30.0), (58.0, 20.0), (-60.0, 0.0), (-58.0, 40.0), (0.0, 50.0), (40.0, 50.0) })
+        foreach (var (x, z) in new[] { (-50.0, -40.0), (-14.0, -46.0), (24.0, -40.0), (44.0, -48.0), (58.0, -30.0), (58.0, 20.0), (-61.5, 30.0), (-58.0, 40.0), (0.0, 50.0), (40.0, 50.0) })
         {
             k.Prop("Gnarled Dead Tree", x, z);
             Solid(x - 0.3, z - 0.3, x + 0.3, z + 0.3, G, "tree");
         }
-        foreach (var (x, z) in new[] { (-40.0, -30.0), (-18.0, -30.0), (10.0, -36.0), (30.0, -22.0), (-58.0, -20.0), (57.0, 0.0), (-20.0, 50.0), (30.0, 50.0) })
+        foreach (var (x, z) in new[] { (-40.0, -30.0), (-18.0, -30.0), (10.0, -36.0), (30.0, -22.0), (-58.0, -20.0), (56.0, -10.0), (-20.0, 50.0), (30.0, 50.0) })
             k.Prop("Lantern Street Lamp", x, z);
         k.DecalScatter(["Mud Patch", "Leaf Litter", "Puddle", "Dry Grass", "Gib Smear"], -63, -55, 63, -17, 70, 171, gap: 2.0);
         k.DecalScatter(["Mud Patch", "Leaf Litter", "Puddle"], -63, 45, 63, 55, 24, 172, gap: 2.0);
@@ -1114,6 +1115,83 @@ public sealed class AshgraveCathedral : IMapGenerator
         k.WaypointGrid(-63, -16, -55, 55, G, 4.0);
         k.WaypointGrid(51, -16, 63, 55, G, 4.0);
         k.WaypointGrid(-54, 45, 51, 55, G, 4.0);
+    }
+
+    /// <summary>More dressing, mostly on the walls and overhead (torches, glass, banners, chandeliers, gargoyles, bones), out of everyone's way.</summary>
+    void Dressing()
+    {
+        // Torches along the walls of the transept, choir, lady chapel, vestry, chapter house, barn and lodge (back to the wall).
+        foreach (var z in new[] { -24.0, -12.0, -1.0 })
+        {
+            k.Prop("Wall Torch", 4.6, z, 2.7, 90);
+            k.Prop("Wall Torch", 15.4, z, 2.7, -90);
+        }
+        foreach (var x in new[] { 19.0, 25.0, 29.0, 35.0 })
+        {
+            k.Prop("Wall Torch", x, -15.4, 2.7, 0);
+            k.Prop("Wall Torch", x, 3.4, 2.7, 180);
+        }
+        foreach (var x in new[] { 40.0, 47.0 })
+        {
+            k.Prop("Wall Torch", x, -15.4, 2.7, 0);
+            k.Prop("Wall Torch", x, 3.4, 2.7, 180);
+        }
+        foreach (var x in new[] { 18.0, 24.0, 30.0, 36.0 })
+            k.Prop("Wall Torch", x, 13.6, 2.6, 180);
+        foreach (var z in new[] { 6.0, 11.0, 19.0 })
+            k.Prop("Wall Torch", 15.6, z, 2.7, -90);
+        foreach (var x in new[] { -30.0, -18.0, -6.0, 6.0 })
+            k.Prop("Wall Torch", x, 43.6, 2.6, 180);
+        k.Prop("Wall Torch", -54.0, 20, 2.4, 90);
+        // Stained glass high in the cathedral's outer walls (inside faces), and banners.
+        foreach (var x in new[] { -20.0, -12.0, -4.0 })
+            k.Prop(x == -12.0 ? "Lancet Window Red" : "Lancet Window Blue", x, -15.4, Gal + 0.6, 0);
+        foreach (var x in new[] { 20.0, 34.0 })
+            k.Prop("Lancet Window Red", x, -15.4, 6.0, 0);
+        foreach (var z in new[] { -22.0 })
+        {
+            k.Prop("Lancet Window Blue", 4.6, z, 5.0, 90);
+            k.Prop("Lancet Window Blue", 15.4, z, 5.0, -90);
+        }
+        k.Prop("Lancet Window Red", 44.0, -15.4, 5.0, 0);
+        foreach (var (x, z, yaw) in new[] { (6.0, 3.4, 180.0), (14.0, 3.4, 180.0), (37.4, -10.0, -90.0), (16.0, 6.0, 90.0), (-33.6, 9.0, 90.0) })
+            k.Prop("Hanging Tapestry", x, z, 1.2, yaw);
+        // Chandeliers over the galleries and the crossing; lanterns in the cloister walks and the barn.
+        foreach (var x in new[] { -28.0, -16.0, -4.0 })
+        {
+            k.Prop("Iron Chandelier", x, -13.0, Gal + 1.4);
+            k.Prop("Iron Chandelier", x, 1.0, Gal + 1.4);
+        }
+        foreach (var z in new[] { 12.0, 20.0 })
+        {
+            k.Prop("Hanging Lantern", -33.0, z, 2.0);
+            k.Prop("Hanging Lantern", 3.0, z, 2.0, 180);
+        }
+        // Gargoyles round the roofs and the precinct gate piers.
+        foreach (var (x, z, y, yaw) in new[] { (4.3, -28.3, 18.6, 180.0), (15.7, -28.3, 18.6, 180.0), (17.0, -16.3, 16.6, 180.0), (37.0, -16.3, 16.6, 180.0), (49.7, -15.7, 12.6, 90.0), (49.7, 3.7, 12.6, 90.0), (-34.3, 3.7, 18.0, -90.0), (-34.3, -15.7, 18.0, -90.0) })
+            k.Prop("Stone Gargoyle", x, z, y, yaw);
+        // Bones and coffins below.
+        foreach (var (x, z) in new[] { (18.5, -8.0), (36.0, -14.0), (31.0, 0.0) })
+            k.Prop("Skull Heap", x, z, Crypt);
+        foreach (var (x, z) in new[] { (-24.0, 8.5), (-18.5, 23.5), (-7.5, 12.5), (13.5, 7.5) })
+            k.Prop("Skull Heap", x, z, Dun);
+        foreach (var (x, z) in new[] { (-24.5, 7.0), (-16.5, 24.8) })
+            SProp("Plain Coffin", x, z, Dun, 0, 1.0, 0.33);
+        foreach (var (x, z) in new[] { (12.6, -15.0), (6.0, -14.9) })
+            k.Prop("Skull Heap", x, z, Crypt);
+        // The barn's stalls and hay, the lodge's crates, the close's railings and graves.
+        foreach (var (x, z) in new[] { (-29.5, 33.0), (-24.0, 33.5), (-12.0, 32.0), (3.0, 32.0) })
+            SProp("Hay Bale", x, z, G, 0, 0.6, 0.4);
+        SProp("Cider Barrel", -13.0, 42.8, G, 0, 0.4, 0.4);
+        SProp("Wooden Crate", -2.5, 42.6, G, 0, 0.5, 0.5);
+        SProp("Wooden Crate", -44.0, 23.8, G, 0, 0.5, 0.5);
+        foreach (var x in new[] { -51.0, -47.0 })
+            SProp("Churchyard Railings", x, 30.5, G, 0, 1.6, 0.1);
+        foreach (var (x, z) in new[] { (-50.0, 38.0), (-46.0, 41.5), (-36.5, 40.0) })
+            SProp("Gothic Headstone", x, z, G, 180, 0.4, 0.2);
+        // The graveyard's plot railings.
+        foreach (var (x, z, yaw) in new[] { (22.0, 15.2, 0.0), (36.0, 15.2, 0.0), (42.0, 15.2, 0.0), (46.5, 30.0, 90.0), (25.0, 25.0, 0.0) })
+            SProp("Churchyard Railings", x, z, G, yaw, 1.6, 0.1);
     }
 
     bool NearKeep(double x, double y, double z, double r) => _keep.Any(q => Math.Abs(q.Y - y) < 1.5 && (q.X - x) * (q.X - x) + (q.Z - z) * (q.Z - z) < (q.R + r) * (q.R + r));
@@ -1144,7 +1222,7 @@ public sealed class AshgraveCathedral : IMapGenerator
     void Spawns()
     {
         // The players' spawns in the nave (the start area: Zombies puts everyone here), as plain spawns.
-        foreach (var (x, z) in new[] { (-29.0, -8.5), (-29.0, -3.5), (-26.5, -8.5), (-26.5, -3.5), (-29.0, -13.0), (-29.0, -0.8), (-26.5, -13.0), (-26.5, -0.8) })
+        foreach (var (x, z) in new[] { (-29.0, -8.5), (-29.0, -3.5), (-26.5, -8.5), (-26.5, -3.5), (-29.0, -13.0), (-30.5, -0.3), (-26.5, -13.0), (-24.0, -0.3) })
             k.Op(("op", "Spawn"), ("x", Kit.R(x)), ("z", Kit.R(z)));
         k.Waypoint(-28, -6);
         // For the other modes on a Zombies map (every door open: one big map), team spawns, a hill and flags out in the
@@ -1152,11 +1230,11 @@ public sealed class AshgraveCathedral : IMapGenerator
         foreach (var z in new[] { -6.0, 0.0, 6.0, 12.0 })
         {
             k.Spawn(0, -59.0, z);
-            k.Spawn(1, 57.5, z);
+            k.Spawn(1, 58.5, z);
         }
         k.Hill(0.0, -45.0, 4.0);
         k.Flag(-59.0, -32.0);
-        k.Flag(57.5, -32.0);
+        k.Flag(58.5, -32.0);
     }
 
     // ==== The layout check ===============================================================================================

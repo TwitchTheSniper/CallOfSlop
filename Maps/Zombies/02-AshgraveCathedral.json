@@ -12,12 +12,13 @@
   "handPlaced": false,
   "walkFairness": 0.0,
   "minMainNavPct": 30,
+  "navPockets": true,
   "maxNavBuildMs": 8000,
-  "minProps": 500,
-  "minSolidProps": 250,
-  "minDecals": 150,
-  "minDecalShare": 60,
-  "minPackProps": 200,
+  "minProps": 520,
+  "minSolidProps": 380,
+  "minDecals": 600,
+  "minDecalShare": 90,
+  "minPackProps": 340,
   "requireProps": [
    "Great Bell",
    "Organ Pipe Wall",
@@ -77,8 +78,8 @@
    ],
    [
     "mausoleum",
-    37,
-    32,
+    40,
+    30,
     12.0
    ],
    [
@@ -96,7 +97,7 @@
    [
     "lady chapel",
     44,
-    -6,
+    -10,
     12.0
    ],
    [
@@ -107,8 +108,8 @@
    ],
    [
     "organ loft",
-    -30.5,
-    -6,
+    -28.0,
+    -9.5,
     18.0
    ],
    [
@@ -243,22 +244,22 @@
   ],
   [
    [
-    57.5,
+    58.5,
     12.0,
     -6.0
    ],
    [
-    57.5,
+    58.5,
     12.0,
     0.0
    ],
    [
-    57.5,
+    58.5,
     12.0,
     6.0
    ],
    [
-    57.5,
+    58.5,
     12.0,
     12.0
    ]
@@ -279,7 +280,7 @@
    -32.0
   ],
   [
-   57.5,
+   58.5,
    12.0,
    -32.0
   ]
@@ -5247,8 +5248,8 @@
   {
    "op": "Prop",
    "name": "Baptismal Font",
-   "x": -30.6,
-   "z": 0.0,
+   "x": -31.0,
+   "z": -9.6,
    "y": 12.0
   },
   {
@@ -19096,18 +19097,10 @@
   },
   {
    "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 56.9,
-   "z": -26.691,
-   "yaw": 348.3,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
    "name": "Gothic Headstone",
-   "x": 59.609,
-   "z": -30.897,
-   "yaw": 352.4,
+   "x": 50.637,
+   "z": -50.67,
+   "yaw": 10.4,
    "y": 12.0
   },
   {
@@ -19129,401 +19122,376 @@
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -58.462,
-   "z": -31.209,
-   "yaw": 349.2,
+   "x": -32.99,
+   "z": -49.826,
+   "yaw": 1.8,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -59.093,
-   "z": -37.171,
-   "yaw": 346.8,
+   "x": 8.136,
+   "z": -52.192,
+   "yaw": 5.6,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -4.238,
-   "z": -33.371,
-   "yaw": 350.5,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -41.433,
-   "z": -32.897,
-   "yaw": 6.0,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": 57.59,
-   "z": -43.683,
-   "yaw": 13.4,
+   "x": -17.598,
+   "z": -48.456,
+   "yaw": 6.1,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 27.755,
-   "z": -30.398,
-   "yaw": 349.5,
+   "x": -18.733,
+   "z": -39.721,
+   "yaw": 352.7,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 46.222,
-   "z": -39.741,
-   "yaw": 1.3,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": -1.298,
-   "z": -35.199,
-   "yaw": 3.0,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": -18.144,
-   "z": -50.983,
-   "yaw": 351.0,
+   "x": 35.092,
+   "z": -32.061,
+   "yaw": 12.1,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -38.362,
-   "z": -27.49,
-   "yaw": 7.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -20.274,
-   "z": -45.084,
-   "yaw": 357.6,
+   "x": -42.132,
+   "z": -27.445,
+   "yaw": 8.3,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": -5.55,
-   "z": -50.775,
-   "yaw": 345.2,
+   "x": 5.244,
+   "z": -39.325,
+   "yaw": 6.3,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -26.917,
-   "z": -42.954,
-   "yaw": 358.9,
+   "x": 12.058,
+   "z": -43.536,
+   "yaw": 14.7,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 42.375,
-   "z": -51.849,
-   "yaw": 351.3,
+   "x": -35.928,
+   "z": -48.59,
+   "yaw": 353.4,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": 54.207,
-   "z": -25.839,
-   "yaw": 6.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": -6.766,
-   "z": -26.297,
-   "yaw": 347.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 43.396,
-   "z": -46.122,
-   "yaw": 0.5,
+   "x": 30.296,
+   "z": -44.068,
+   "yaw": 354.0,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": 0.171,
-   "z": -49.599,
-   "yaw": 13.4,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 25.447,
-   "z": -43.755,
-   "yaw": 352.6,
+   "x": -9.732,
+   "z": -40.387,
+   "yaw": 6.7,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -28.118,
-   "z": -43.872,
+   "x": -59.325,
+   "z": -45.729,
+   "yaw": 347.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -4.315,
+   "z": -28.406,
+   "yaw": 8.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 52.646,
+   "z": -49.26,
+   "yaw": 358.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 50.812,
+   "z": -31.913,
+   "yaw": 10.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 1.94,
+   "z": -38.957,
+   "yaw": 345.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 53.559,
+   "z": -32.638,
+   "yaw": 8.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -29.659,
+   "z": -46.029,
+   "yaw": 351.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 28.494,
+   "z": -25.59,
+   "yaw": 3.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 42.935,
+   "z": -31.412,
    "yaw": 7.1,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 53.639,
-   "z": -28.299,
+   "x": -12.111,
+   "z": -43.695,
+   "yaw": 348.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 4.961,
+   "z": -34.978,
+   "yaw": 14.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 3.027,
+   "z": -33.901,
+   "yaw": 348.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 44.352,
+   "z": -48.785,
+   "yaw": 350.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -18.717,
+   "z": -41.801,
+   "yaw": 353.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -42.092,
+   "z": -47.02,
+   "yaw": 6.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -58.953,
+   "z": -38.128,
+   "yaw": 354.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -45.038,
+   "z": -44.063,
    "yaw": 10.7,
    "y": 12.0
   },
   {
    "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 30.352,
-   "z": -30.233,
-   "yaw": 357.0,
+   "name": "Gothic Headstone",
+   "x": -35.858,
+   "z": -43.391,
+   "yaw": 345.9,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -18.779,
-   "z": -26.611,
-   "yaw": 1.2,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 58.274,
-   "z": -38.243,
-   "yaw": 2.9,
+   "x": -49.774,
+   "z": -39.231,
+   "yaw": 358.4,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -45.812,
-   "z": -27.912,
-   "yaw": 356.8,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -36.798,
-   "z": -43.679,
-   "yaw": 355.2,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -27.643,
-   "z": -49.523,
-   "yaw": 353.9,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": 23.898,
-   "z": -53.738,
-   "yaw": 348.3,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -22.918,
-   "z": -50.26,
-   "yaw": 10.3,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": 42.904,
-   "z": -47.965,
-   "yaw": 356.9,
+   "x": 24.118,
+   "z": -28.325,
+   "yaw": 12.4,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": -56.358,
-   "z": -24.361,
-   "yaw": 347.6,
+   "x": -18.176,
+   "z": -36.278,
+   "yaw": 357.2,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -0.925,
-   "z": -52.563,
-   "yaw": 345.7,
+   "x": 15.619,
+   "z": -51.619,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 31.251,
-   "z": -32.971,
-   "yaw": 356.0,
+   "x": -45.968,
+   "z": -29.197,
+   "yaw": 347.2,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": 49.694,
-   "z": -43.544,
-   "yaw": 7.9,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -11.088,
-   "z": -35.095,
-   "yaw": 2.7,
+   "x": -0.739,
+   "z": -38.874,
+   "yaw": 10.2,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": 0.079,
-   "z": -50.492,
-   "yaw": 8.2,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -51.217,
-   "z": -39.185,
-   "yaw": 354.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": 40.691,
-   "z": -40.962,
-   "yaw": 10.1,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -47.235,
-   "z": -33.951,
-   "yaw": 3.5,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": 15.201,
-   "z": -41.365,
-   "yaw": 0.9,
+   "x": -7.847,
+   "z": -37.776,
+   "yaw": 351.8,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Churchyard Headstone",
-   "x": -33.43,
-   "z": -53.532,
-   "yaw": 5.7,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 24.698,
-   "z": -37.712,
-   "yaw": 8.9,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -54.453,
-   "z": -37.985,
-   "yaw": 350.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -10.744,
-   "z": -40.305,
-   "yaw": 353.2,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -35.575,
-   "z": -38.259,
-   "yaw": 352.3,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 27.522,
-   "z": -49.698,
-   "yaw": 2.5,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -15.73,
-   "z": -36.899,
-   "yaw": 345.6,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Gothic Headstone",
-   "x": -10.088,
-   "z": -35.395,
-   "yaw": 13.5,
-   "y": 12.0
-  },
-  {
-   "op": "Prop",
-   "name": "Churchyard Headstone",
-   "x": 55.216,
-   "z": -39.161,
+   "x": 14.64,
+   "z": -50.809,
    "yaw": 357.9,
    "y": 12.0
   },
   {
    "op": "Prop",
    "name": "Gothic Headstone",
-   "x": -4.911,
-   "z": -52.276,
-   "yaw": 354.7,
+   "x": -7.806,
+   "z": -38.145,
+   "yaw": 345.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 55.314,
+   "z": -33.272,
+   "yaw": 1.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 21.042,
+   "z": -30.125,
+   "yaw": 1.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -45.048,
+   "z": -48.369,
+   "yaw": 358.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -38.069,
+   "z": -45.824,
+   "yaw": 0.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -57.212,
+   "z": -46.665,
+   "yaw": 349.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 45.669,
+   "z": -36.519,
+   "yaw": 2.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -45.855,
+   "z": -53.353,
+   "yaw": 3.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -16.131,
+   "z": -25.547,
+   "yaw": 359.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 29.645,
+   "z": -41.088,
+   "yaw": 346.7,
    "y": 12.0
   },
   {
@@ -19540,6 +19508,526 @@
    "x": 41.533,
    "z": -42.7,
    "yaw": 356.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -47.504,
+   "z": -53.722,
+   "yaw": 347.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -11.125,
+   "z": -53.744,
+   "yaw": 8.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -11.679,
+   "z": -49.0,
+   "yaw": 8.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -41.085,
+   "z": -44.213,
+   "yaw": 9.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -43.108,
+   "z": -53.206,
+   "yaw": 11.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -44.153,
+   "z": -38.285,
+   "yaw": 1.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -54.089,
+   "z": -38.851,
+   "yaw": 14.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -19.922,
+   "z": -36.78,
+   "yaw": 7.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 51.817,
+   "z": -46.027,
+   "yaw": 6.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 16.581,
+   "z": -40.181,
+   "yaw": 10.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -19.014,
+   "z": -42.198,
+   "yaw": 356.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 57.364,
+   "z": -52.895,
+   "yaw": 1.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -50.937,
+   "z": -29.838,
+   "yaw": 14.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 42.382,
+   "z": -52.006,
+   "yaw": 351.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -22.79,
+   "z": -53.641,
+   "yaw": 9.9,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 0.754,
+   "z": -38.066,
+   "yaw": 10.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 51.541,
+   "z": -36.902,
+   "yaw": 3.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 34.915,
+   "z": -27.061,
+   "yaw": 359.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -26.114,
+   "z": -37.643,
+   "yaw": 3.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -50.187,
+   "z": -37.652,
+   "yaw": 4.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 20.553,
+   "z": -36.219,
+   "yaw": 8.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -22.12,
+   "z": -43.144,
+   "yaw": 7.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -52.146,
+   "z": -34.921,
+   "yaw": 13.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -54.023,
+   "z": -32.637,
+   "yaw": 352.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 35.522,
+   "z": -47.601,
+   "yaw": 10.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 56.414,
+   "z": -53.173,
+   "yaw": 13.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -37.386,
+   "z": -50.115,
+   "yaw": 355.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -38.597,
+   "z": -25.589,
+   "yaw": 0.9,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -23.795,
+   "z": -48.182,
+   "yaw": 14.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -53.15,
+   "z": -34.318,
+   "yaw": 350.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -13.909,
+   "z": -52.94,
+   "yaw": 359.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 43.25,
+   "z": -51.824,
+   "yaw": 349.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 23.23,
+   "z": -28.498,
+   "yaw": 9.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 47.587,
+   "z": -36.26,
+   "yaw": 355.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 32.465,
+   "z": -26.853,
+   "yaw": 3.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -6.335,
+   "z": -44.902,
+   "yaw": 0.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 38.245,
+   "z": -46.158,
+   "yaw": 357.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -7.978,
+   "z": -44.069,
+   "yaw": 8.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -37.661,
+   "z": -51.708,
+   "yaw": 9.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 45.484,
+   "z": -28.602,
+   "yaw": 358.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 54.43,
+   "z": -34.541,
+   "yaw": 4.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -48.995,
+   "z": -47.913,
+   "yaw": 346.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -11.376,
+   "z": -42.376,
+   "yaw": 354.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -41.642,
+   "z": -50.579,
+   "yaw": 352.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 7.208,
+   "z": -39.704,
+   "yaw": 12.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -0.121,
+   "z": -29.139,
+   "yaw": 11.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -16.626,
+   "z": -36.295,
+   "yaw": 348.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 51.835,
+   "z": -37.247,
+   "yaw": 359.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -9.067,
+   "z": -29.618,
+   "yaw": 6.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -8.066,
+   "z": -43.705,
+   "yaw": 10.9,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 20.138,
+   "z": -46.919,
+   "yaw": 345.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 51.749,
+   "z": -29.882,
+   "yaw": 5.3,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -43.979,
+   "z": -30.393,
+   "yaw": 351.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -7.947,
+   "z": -34.782,
+   "yaw": 14.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 39.606,
+   "z": -48.691,
+   "yaw": 346.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": 33.322,
+   "z": -51.807,
+   "yaw": 4.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 19.709,
+   "z": -53.584,
+   "yaw": 4.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Headstone",
+   "x": -33.716,
+   "z": -39.481,
+   "yaw": 14.7,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -37.768,
+   "z": -39.747,
+   "yaw": 357.9,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 39.966,
+   "z": -35.292,
+   "yaw": 357.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -43.039,
+   "z": -37.665,
+   "yaw": 12.4,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 27.239,
+   "z": -42.673,
+   "yaw": 348.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": 41.866,
+   "z": -29.676,
+   "yaw": 11.1,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -52.133,
+   "z": -51.091,
+   "yaw": 11.9,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -15.108,
+   "z": -29.125,
+   "yaw": 354.3,
    "y": 12.0
   },
   {
@@ -19587,8 +20075,8 @@
   {
    "op": "Prop",
    "name": "Gnarled Dead Tree",
-   "x": -60.0,
-   "z": 0.0,
+   "x": -61.5,
+   "z": 30.0,
    "y": 12.0
   },
   {
@@ -19650,8 +20138,8 @@
   {
    "op": "Prop",
    "name": "Lantern Street Lamp",
-   "x": 57.0,
-   "z": 0.0,
+   "x": 56.0,
+   "z": -10.0,
    "y": 12.0
   },
   {
@@ -22475,6 +22963,674 @@
    "y": 12.0
   },
   {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 4.6,
+   "z": -24.0,
+   "y": 14.7,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.4,
+   "z": -24.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 4.6,
+   "z": -12.0,
+   "y": 14.7,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.4,
+   "z": -12.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 4.6,
+   "z": -1.0,
+   "y": 14.7,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.4,
+   "z": -1.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 19.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 19.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 25.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 25.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 29.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 29.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 35.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 35.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 40.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 40.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 47.0,
+   "z": -15.4,
+   "y": 14.7
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 47.0,
+   "z": 3.4,
+   "y": 14.7,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 18.0,
+   "z": 13.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 24.0,
+   "z": 13.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 30.0,
+   "z": 13.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 36.0,
+   "z": 13.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.6,
+   "z": 6.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.6,
+   "z": 11.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 15.6,
+   "z": 19.0,
+   "y": 14.7,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": -30.0,
+   "z": 43.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": -18.0,
+   "z": 43.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": -6.0,
+   "z": 43.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": 6.0,
+   "z": 43.6,
+   "y": 14.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wall Torch",
+   "x": -54.0,
+   "z": 20.0,
+   "y": 14.4,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Blue",
+   "x": -20.0,
+   "z": -15.4,
+   "y": 18.6
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Red",
+   "x": -12.0,
+   "z": -15.4,
+   "y": 18.6
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Blue",
+   "x": -4.0,
+   "z": -15.4,
+   "y": 18.6
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Red",
+   "x": 20.0,
+   "z": -15.4,
+   "y": 18.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Red",
+   "x": 34.0,
+   "z": -15.4,
+   "y": 18.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Blue",
+   "x": 4.6,
+   "z": -22.0,
+   "y": 17.0,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Blue",
+   "x": 15.4,
+   "z": -22.0,
+   "y": 17.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Lancet Window Red",
+   "x": 44.0,
+   "z": -15.4,
+   "y": 17.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Tapestry",
+   "x": 6.0,
+   "z": 3.4,
+   "y": 13.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Tapestry",
+   "x": 14.0,
+   "z": 3.4,
+   "y": 13.2,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Tapestry",
+   "x": 37.4,
+   "z": -10.0,
+   "y": 13.2,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Tapestry",
+   "x": 16.0,
+   "z": 6.0,
+   "y": 13.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Tapestry",
+   "x": -33.6,
+   "z": 9.0,
+   "y": 13.2,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -28.0,
+   "z": -13.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -28.0,
+   "z": 1.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -16.0,
+   "z": -13.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -16.0,
+   "z": 1.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -4.0,
+   "z": -13.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Iron Chandelier",
+   "x": -4.0,
+   "z": 1.0,
+   "y": 19.4
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": -33.0,
+   "z": 12.0,
+   "y": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": 3.0,
+   "z": 12.0,
+   "y": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": -33.0,
+   "z": 20.0,
+   "y": 14.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hanging Lantern",
+   "x": 3.0,
+   "z": 20.0,
+   "y": 14.0,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 4.3,
+   "z": -28.3,
+   "y": 30.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 15.7,
+   "z": -28.3,
+   "y": 30.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 17.0,
+   "z": -16.3,
+   "y": 28.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 37.0,
+   "z": -16.3,
+   "y": 28.6,
+   "yaw": 180.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 49.7,
+   "z": -15.7,
+   "y": 24.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": 49.7,
+   "z": 3.7,
+   "y": 24.6,
+   "yaw": 90.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": -34.3,
+   "z": 3.7,
+   "y": 30.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Stone Gargoyle",
+   "x": -34.3,
+   "z": -15.7,
+   "y": 30.0,
+   "yaw": 270.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 18.5,
+   "z": -8.0,
+   "y": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 36.0,
+   "z": -14.0,
+   "y": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 31.0,
+   "z": 0.0,
+   "y": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": -24.0,
+   "z": 8.5,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": -18.5,
+   "z": 23.5,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": -7.5,
+   "z": 12.5,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 13.5,
+   "z": 7.5,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Plain Coffin",
+   "x": -24.5,
+   "z": 7.0,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Plain Coffin",
+   "x": -16.5,
+   "z": 24.8,
+   "y": 2.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 12.6,
+   "z": -15.0,
+   "y": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Skull Heap",
+   "x": 6.0,
+   "z": -14.9,
+   "y": 7.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Bale",
+   "x": -29.5,
+   "z": 33.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Bale",
+   "x": -24.0,
+   "z": 33.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Bale",
+   "x": -12.0,
+   "z": 32.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Hay Bale",
+   "x": 3.0,
+   "z": 32.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Cider Barrel",
+   "x": -13.0,
+   "z": 42.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wooden Crate",
+   "x": -2.5,
+   "z": 42.6,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Wooden Crate",
+   "x": -44.0,
+   "z": 23.8,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": -51.0,
+   "z": 30.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": -47.0,
+   "z": 30.5,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -50.0,
+   "z": 38.0,
+   "yaw": 180.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -46.0,
+   "z": 41.5,
+   "yaw": 180.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Gothic Headstone",
+   "x": -36.5,
+   "z": 40.0,
+   "yaw": 180.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": 22.0,
+   "z": 15.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": 36.0,
+   "z": 15.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": 42.0,
+   "z": 15.2,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": 46.5,
+   "z": 30.0,
+   "yaw": 90.0,
+   "y": 12.0
+  },
+  {
+   "op": "Prop",
+   "name": "Churchyard Railings",
+   "x": 25.0,
+   "z": 25.0,
+   "y": 12.0
+  },
+  {
    "op": "Spawn",
    "x": -29.0,
    "z": -8.5,
@@ -22506,8 +23662,8 @@
   },
   {
    "op": "Spawn",
-   "x": -29.0,
-   "z": -0.8,
+   "x": -30.5,
+   "z": -0.3,
    "y": 12.0
   },
   {
@@ -22518,8 +23674,8 @@
   },
   {
    "op": "Spawn",
-   "x": -26.5,
-   "z": -0.8,
+   "x": -24.0,
+   "z": -0.3,
    "y": 12.0
   },
   {
@@ -22536,7 +23692,7 @@
   },
   {
    "op": "Spawn",
-   "x": 57.5,
+   "x": 58.5,
    "z": -6.0,
    "y": 12.0
   },
@@ -22548,7 +23704,7 @@
   },
   {
    "op": "Spawn",
-   "x": 57.5,
+   "x": 58.5,
    "z": 0.0,
    "y": 12.0
   },
@@ -22560,7 +23716,7 @@
   },
   {
    "op": "Spawn",
-   "x": 57.5,
+   "x": 58.5,
    "z": 6.0,
    "y": 12.0
   },
@@ -22572,7 +23728,7 @@
   },
   {
    "op": "Spawn",
-   "x": 57.5,
+   "x": 58.5,
    "z": 12.0,
    "y": 12.0
   }
