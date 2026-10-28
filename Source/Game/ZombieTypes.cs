@@ -137,8 +137,8 @@ public sealed partial class Game
             z.Plates = 3;
             z.PlateHpHead = z.PlateHpChest = t.Armour;
         }
-        z.PounceReadyAt = now + 1.0;
-        z.ClimbRetryAt = now + 0.5;
+        z.PounceReadyAt = now;
+        z.ClimbRetryAt = now;
         if (z.Type < ZSpawnedByType.Length)
         {
             ZSpawnedByType[z.Type]++;
@@ -386,9 +386,9 @@ public sealed partial class Game
                 top = h;
                 break;
             }
-            if (World.Blocked(face - dir * 0.45f + new Vector3(0, h - 0.9f, 0), 1.2f))
+            if (World.Blocked(new Vector3(z.Position.X, z.Position.Y + h - 0.9f, z.Position.Z), 1.2f))
             {
-                z.ClimbRetryAt = now + 2.0; // a ceiling or an overhang: not this wall
+                z.ClimbRetryAt = now + 2.0; // a ceiling or an overhang over where it stands: not this wall
                 return false;
             }
         }
