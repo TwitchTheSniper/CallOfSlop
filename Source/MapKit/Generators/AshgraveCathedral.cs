@@ -33,7 +33,7 @@ public sealed class AshgraveCathedral : IMapGenerator
     // players above y -5 (World.ClampToArena) and count anyone under the ground (0) as fallen, so the dungeons (-10 here)
     // must end up above 0. The written map has the grounds at y 12, the crypt at 7, the dungeons at 2.
     public const double O = 12;
-    const double G = 0, Gal = 6, Roof = 10.8, Belfry = 18, Crypt = -5, Dun = -10;
+    const double G = 0, Gal = 6, Roof = 10.8, Belfry = 18, Crypt = -5, Dun = -10, Tun = -6.4; // (Tun: the smugglers' tunnel's raised east end)
     const double T = 0.6; // cathedral walls
     const double Sill = 0.9, WinTop = 2.3, WinW = 1.6;
 
@@ -112,7 +112,7 @@ public sealed class AshgraveCathedral : IMapGenerator
                 JArray.Of("organ loft", -28.0, -9.5, Gal + O), JArray.Of("north gallery", -10, -13, Gal + O), JArray.Of("roof walk", -10, -13, Roof + O),
                 JArray.Of("tower base", -29, -21, G + O), JArray.Of("ringing chamber", -29, -19, Roof + O), JArray.Of("belfry", -30.5, -23.5, Belfry + O),
                 JArray.Of("crypt", 33, -8, Crypt + O), JArray.Of("ossuary", 6, -10, Crypt + O), JArray.Of("dungeons", 0, 16, Dun + O), JArray.Of("inquisitor", -20, 16, Dun + O),
-                JArray.Of("tunnel", 30, 21, Dun + O), JArray.Of("paupers field", -10, -40, G + O)])),
+                JArray.Of("tunnel", 25, 21, Dun + O), JArray.Of("paupers field", -10, -40, G + O)])),
             ("botMatchSeconds", 6), ("spawnsStand", true), ("propsInside", true),
             ("events", new JArray([
                 new JObject(("use", "Bell"), ("expect", JArray.Of("Bell.pressed")), ("expectNot", JArray.Of("Climb.started"))),
@@ -328,8 +328,8 @@ public sealed class AshgraveCathedral : IMapGenerator
     {
         var holes = new List<(double X0, double Z0, double X1, double Z1)>
         {
-            (22.15, 1.3, 28.0, 3.4),   // the crypt stair, in the choir
-            (41.4, 28.5, 43.0, 35.45), // the tunnel stair, in the mausoleum
+            (20.95, 1.3, 28.0, 3.4),   // the crypt stair, in the choir
+            (41.4, 28.5, 43.0, 32.6),  // the tunnel stair, in the mausoleum
         };
         var regions = new List<(double X0, double Z0, double X1, double Z1, string Color)>
         {
@@ -402,15 +402,18 @@ public sealed class AshgraveCathedral : IMapGenerator
         // Gallery floors (y 6): north and south over the aisles, the organ loft over the west door; the loft stair comes up
         // through the south gallery (its landing is the nave's, behind the Loft Stair debris).
         k.Slab(-33.4, -15.4, 3.4, -10.5, Gal, 0.5, FlagDark);
-        k.Slab(-33.4, -1.5, 3.4, 3.4, Gal, 0.5, FlagDark, (-19.35, 1.4, -12.6, 3.4));
+        k.Slab(-33.4, -1.5, 3.4, 3.4, Gal, 0.5, FlagDark, (-20.55, 1.4, -12.6, 3.4));
         k.Slab(-33.4, -10.5, -27.0, -1.5, Gal, 0.5, FlagDark);
         // The loft stair: in a walled alcove along the south aisle (the Loft Stair debris across its mouth at the east end),
-        // up westwards to the south gallery (15 of the game's steps: top at x -19.35).
-        k.StairsX(1.4, 3.4, -12.6, -1, G, Gal, StoneD);
-        k.Waypoint(-12.0, 2.4); k.Waypoint(-16.0, 2.4, 3.2); k.Waypoint(-20.2, 2.4, Gal);
+        // up westwards to the south gallery: two flights of the game's steps (8 and 7) with a landing between, top at x -20.55.
+        // (A flight is at most about 11 steps: the nav links a flight's foot to its top, and can't stand a node on a tread.)
+        k.StairsX(1.4, 3.4, -12.6, -1, G, 3.2, StoneD);
+        k.Block(-20.55, G, 1.4, -16.2, 3.2, 3.4, StoneD); // the landing (and under the upper flight)
+        k.StairsX(1.4, 3.4, -17.4, -1, 3.2, Gal - 3.2, StoneD);
+        k.Waypoint(-12.0, 2.4); k.Waypoint(-16.8, 2.4, 3.2); k.Waypoint(-21.2, 2.4, Gal);
         WallX(-20.6, -11.0, 1.0, 0.4, G, Gal - 0.5, StoneD); // the alcove's wall along the aisle (up to the gallery floor)
         WallZ(1.4, 3.4, -11.4, 0.4, G, Gal - 0.5, StoneD, DoorZ("the Loft Stair", true, 1000, "Organ Loft", "Nave", 2.4, -11.4, 0.4, 1.8, 2.6));
-        Structures.Railing(k, -19.35, 1.2, Gal, -12.4, 1.2);
+        Structures.Railing(k, -20.55, 1.2, Gal, -12.4, 1.2);
         Structures.Railing(k, -12.4, 1.4, Gal, -12.4, 3.4);
         // Pillars of the arcades (and the gallery piers over them), the gallery and loft railings.
         foreach (var x in new[] { -27.0, -21.0, -15.0, -9.0, -3.0, 2.4 })
@@ -538,7 +541,11 @@ public sealed class AshgraveCathedral : IMapGenerator
         Landing(-26.3, -25.0, -25.0, -23.7, rise);
         Structures.Stairs(k, -26.3, -24.35, rise, rise, -1, 0, width: w, steps: 12, tread: 0.45, color: c);     // north wall, west
         Landing(-33.0, -25.0, -31.7, -23.7, 2 * rise);
-        Structures.Stairs(k, -32.35, -23.7, 2 * rise, rise, 0, 1, width: w, steps: 12, tread: 0.45, color: c);  // west wall, south: the chamber
+        // West wall, south, up to the chamber: steeper (0.4 m risers) with a landing halfway, so a zombie part-way up stands
+        // nearest a node on its own flight (the nav can't stand a node on a tread).
+        Structures.Stairs(k, -32.35, -23.7, 2 * rise, 2.0, 0, 1, width: w, steps: 5, tread: 0.45, color: c);
+        Landing(-33.0, -21.45, -31.7, -20.1, 2 * rise + 2.0);
+        Structures.Stairs(k, -32.35, -20.1, 2 * rise + 2.0, Roof - 2 * rise - 2.0, 0, 1, width: w, steps: 4, tread: 0.45, color: c);
         Structures.Stairs(k, -31.7, -17.65, Roof, rise, 1, 0, width: w, steps: 12, tread: 0.45, color: c);      // south wall, east
         Landing(-26.3, -18.3, -25.0, -17.0, Roof + rise);
         Structures.Stairs(k, -25.65, -18.3, Roof + rise, rise, 0, -1, width: w, steps: 12, tread: 0.45, color: c); // east wall, north: the belfry
@@ -547,8 +554,13 @@ public sealed class AshgraveCathedral : IMapGenerator
         double Up(double from, double along) => from + rise * along / 5.4;
         Structures.Railing(k, -26.5, -18.3, G, -26.5, -23.45, Up(G, 5.15));
         Structures.Railing(k, -26.55, -23.5, Up(rise, 0.25), -31.45, -23.5, Up(rise, 5.15));
-        Structures.Railing(k, -31.5, -23.45, Up(2 * rise, 0.25), -31.5, -18.3, Roof);
-        Structures.Railing(k, -31.3, -23.45, Roof, -31.3, -19.2);
+        // (Both stop 1.3 m short of the third flight's top: the way between the chamber and the flights is over its last steps.)
+        Structures.Railing(k, -31.5, -23.45, 2 * rise + 2.0 * 0.25 / 2.25, -31.5, -21.45, 2 * rise + 2.0);
+        Structures.Railing(k, -31.5, -21.45, 2 * rise + 2.0, -31.5, -20.1, 2 * rise + 2.0);
+        Structures.Railing(k, -31.5, -20.1, 2 * rise + 2.0, -31.5, -19.6, 2 * rise + 2.0 + 1.6 * 0.5 / 1.8);
+        // A stone screen along the chamber's side of the opening (a zombie that sees the stair's foot over a low rail heads
+        // straight for it), open over the flight's last 1.3 m.
+        k.Block(-31.7, Roof, -23.7, -31.4, Belfry - 0.4, -19.6, StoneW);
         Structures.Railing(k, -33.0, -23.9, Roof, -31.6, -23.9);
         Structures.Railing(k, -30.2, -18.5, Up(Roof, 1.5), -26.55, -18.5, Up(Roof, 5.15)); // (open over its first steps: the way from the landing into the chamber)
         Structures.Railing(k, -26.5, -18.55, Up(Roof + rise, 0.25), -26.5, -23.7, Belfry);
@@ -572,6 +584,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         k.Prop("Stone Gargoyle", -24.5, -26.3, 22.6, 180);
         k.Waypoint(-29, -19.5); k.Waypoint(-30.6, -21.5); k.Waypoint(-27.6, -22.5);
         k.Waypoint(-29, -19.0, Roof); k.Waypoint(-30.0, -24.2, Roof); k.Waypoint(-27.2, -24.2, Roof);
+        k.Waypoint(-30.3, -19.9, Roof); k.Waypoint(-32.35, -20.8, 2 * rise + 2.0); k.Waypoint(-30.75, -21.8, Roof); k.Waypoint(-26.6, -21.6, Roof); // (the way between the chamber and the flights, over the third flight's last step)
         k.Waypoint(-30.5, -23.6, Belfry); k.Waypoint(-27.5, -23.6, Belfry); k.Waypoint(-30.5, -18.4, Belfry); k.Waypoint(-29, -19.0, Belfry); k.Waypoint(-32.2, -21, Belfry);
     }
 
@@ -620,21 +633,26 @@ public sealed class AshgraveCathedral : IMapGenerator
         WallX(16, 38, 3.4, T, G, 16, StoneW, DoorX("the Vestry Door", false, 1000, "Choir", "Vestry", 31, 3.4, T, 1.8, 2.8));
         WallZ(-15.4, 3.4, 37.4, T, G, 16, StoneW, DoorZ("the Reliquary Grate", false, 1500, "Choir", "Lady Chapel", -6, 37.4, T, 2.4, 3.2, power: true));
         k.Slab(16, -16, 38, 4, 16.6, 0.6, Slate);
-        // The crypt stair: down eastwards along the south wall (13 steps of the game's stairs), railed round its opening.
-        k.StairsX(1.3, 3.4, 28.0, -1, Crypt, -Crypt, StoneD);
-        k.Waypoint(21.4, 2.3); k.Waypoint(25.0, 2.3, -2.5); k.Waypoint(28.7, 2.3, Crypt);
-        Structures.Railing(k, 22.15, 1.2, G, 28.0, 1.2);
-        Structures.Railing(k, 28.15, 1.2, G, 28.15, 3.4);
-        Solid(22.15, 1.2, 28.15, 3.4, G, "the crypt stair's opening");
-        Area("Choir", Box(16.0, -15.4, 37.4, 3.4, -0.5, 8), Box(21.9, 1.3, 29.4, 3.4, -5.5, -0.5));
+        // The crypt stair: down eastwards along the south wall (flights of 6 and 7 of the game's steps, a landing between),
+        // walled round its opening.
+        k.StairsX(1.3, 3.4, 28.0, -1, Crypt, 2.7, StoneD);
+        k.Block(20.95, Crypt, 1.3, 24.85, Crypt + 2.7, 3.4, StoneD); // the landing (and under the upper flight)
+        k.StairsX(1.3, 3.4, 23.65, -1, Crypt + 2.7, -Crypt - 2.7, StoneD);
+        k.Waypoint(20.4, 2.3); k.Waypoint(24.25, 2.3, Crypt + 2.7); k.Waypoint(28.7, 2.3, Crypt);
+        // A stone parapet round the opening, too tall to vault or jump (the mover's mantle reach is 1.7 m): over a low rail
+        // the horde found the 5 m drop to the stair's foot shorter than the stair and piled up at the rail.
+        WallX(20.95, 28.35, 1.1, 0.2, G, G + 2.6, StoneW);
+        WallZ(1.0, 3.1, 28.25, 0.2, G, G + 2.6, StoneW);
+        Solid(20.95, 1.2, 28.15, 3.4, G, "the crypt stair's opening");
+        Area("Choir", Box(16.0, -15.4, 37.4, 3.4, -0.5, 8), Box(20.7, 1.3, 29.4, 3.4, -5.5, -0.5));
         SProp("Gothic High Altar", 33.5, -6.0, G, -90, 1.4, 0.6);
         SProp("Iron Candelabrum", 33.7, -9.0, G, 0, 0.15, 0.15);
         SProp("Iron Candelabrum", 33.7, -3.0, G, 0, 0.15, 0.15);
         foreach (var x in new[] { 19.0, 23.2, 27.4 })
-        {
             SProp("Choir Stalls", x, -11.4, G, 0, 2.0, 0.5);
+        foreach (var x in new[] { 23.2, 27.4 }) // (the south row stops short of the crypt stair's head: the way down)
             SProp("Choir Stalls", x, -0.6, G, 180, 2.0, 0.5);
-        }
+        k.Waypoint(19.6, 0.3); k.Waypoint(30.2, 0.4);
         Perk("jugg", 34.5, G, -15.05, 180, true);
         BoxSpot(27.0, G, -15.07, 180);
         WallBuy("Ratchet PDW", 1100, 18.5, G, 3.37, 0);
@@ -906,14 +924,17 @@ public sealed class AshgraveCathedral : IMapGenerator
         WallZ(28, 38, 43.5, 0.5, G, 5, StoneL);
         k.Slab(34, 28, 44, 38, 5.5, 0.5, StoneD);
         k.MeshAt("box", 39, 6.2, 28.3, StoneL, roll: 0, width: 10.4, height: 1.4, depth: 0.6);
-        Area("Mausoleum", Box(34.5, 28.5, 43.5, 37.5, -0.5, 5), Box(41.0, 23.0, 43.4, 35.5, -10.5, 0.4));
-        // The tunnel stair: 25 of the game's steps up from the tunnel (y -10) to the mausoleum floor, railed round its opening.
-        k.StairsZ(41.4, 43.0, 24.2, 1, Dun, -Dun, UnderD);
-        k.Waypoint(42.2, 23.5, Dun); k.Waypoint(42.2, 29.6, -4.6); k.Waypoint(42.2, 36.0);
-        Structures.Railing(k, 41.25, 28.5, G, 41.25, 35.45);
-        Solid(41.25, 28.5, 43.5, 35.45, G, "the tunnel stair's opening");
-        WallZ(22.6, 35.45, 41.0, 0.4, Dun, -0.6, UnderD);
-        WallZ(22.6, 35.45, 43.0, 0.4, Dun, -0.6, UnderD);
+        Area("Mausoleum", Box(34.5, 28.5, 43.5, 37.5, -0.5, 5), Box(41.0, 23.0, 43.4, 32.7, Tun - 0.5, 0.4));
+        // The tunnel stair: two flights of 8 of the game's steps up from the tunnel's raised end to the mausoleum floor, a
+        // landing between, railed round its opening.
+        k.StairsZ(41.4, 43.0, 24.2, 1, Tun, -3.2 - Tun, UnderD);
+        k.Block(41.4, Tun, 27.8, 43.0, -3.2, 32.6, UnderD); // the landing (and under the upper flight)
+        k.StairsZ(41.4, 43.0, 29.0, 1, -3.2, 3.2, UnderD);
+        k.Waypoint(42.2, 23.5, Tun); k.Waypoint(42.2, 28.4, -3.2); k.Waypoint(42.2, 33.2);
+        Structures.Railing(k, 41.25, 28.5, G, 41.25, 32.6);
+        Solid(41.25, 28.5, 43.5, 32.6, G, "the tunnel stair's opening");
+        WallZ(22.6, 32.6, 41.0, 0.4, Tun, -0.6, UnderD);
+        WallZ(22.6, 32.6, 43.0, 0.4, Tun, -0.6, UnderD);
         _slotUp = Machine("locker", 37.0, G, 37.0, 0, "the slot upgrade", ("cost", 4000));
         Slot("grenade", 35.25, G, 33.5, 90);
         SProp("Stone Sarcophagus", 38.0, 31.5, G, 0, 1.2, 0.55);
@@ -938,7 +959,7 @@ public sealed class AshgraveCathedral : IMapGenerator
         WallZ(-16, 4, 37.4, T, Crypt, ceil, Under);
         WallX(16.4, 29.8, 0.9, 0.4, Crypt, ceil, UnderD);
         WallZ(1.3, 3.4, 29.4, 0.4, Crypt, ceil, UnderD, DoorZ("the Crypt Door", false, 1250, "Choir", "Crypt", 2.35, 29.4, 0.4, 2.0, 2.6, Crypt));
-        k.Block(16.4, Crypt, 1.3, 22.15, ceil, 3.4, UnderD); // (behind the stair's top: solid)
+        k.Block(16.4, Crypt, 1.3, 20.95, ceil, 3.4, UnderD); // (behind the stair's top: solid)
         // The divider between the ossuary (west) and the crypt: the bone pile (debris).
         WallZ(-15.4, 3.4, 15.6, 0.8, Crypt, ceil, UnderD, DoorZ("the Bone Pile", true, 1250, "Ossuary", "Crypt", -6, 15.6, 0.8, 2.4, 2.6, Crypt));
         foreach (var x in new[] { 21.0, 26.5, 32.0 })
@@ -966,20 +987,23 @@ public sealed class AshgraveCathedral : IMapGenerator
         Wp(29.8, 0.9, 37.4, 3.4, Crypt, 2.0);
 
         // The ossuary (under the crossing): floor (an opening for the dungeon stair), walls, the stair shaft down to the dungeons.
-        k.Slab(3.4, -16, 16.0, 3.4, Crypt, 0.6, CryptFloor, (8.8, -1.85, 11.2, 3.4));
+        k.Slab(3.4, -16, 16.0, 3.4, Crypt, 0.6, CryptFloor, (8.8, -3.05, 11.2, 3.4));
         WallX(3.4, 15.6, -16, T, Crypt, ceil, Under);
         WallX(3.4, 15.6, 3.4, T, Crypt, ceil, Under);
         WallZ(-16, 4, 3.4, T, Crypt, ceil, Under);
-        k.StairsZ(8.8, 11.2, 4.0, -1, Dun, Crypt - Dun, UnderD); // (as wide as its shaft: no gap down the sides)
-        k.Waypoint(10, -2.6, Crypt); k.Waypoint(10, 1.1, -7.5); k.Waypoint(10, 4.8, Dun);
-        Structures.Railing(k, 8.65, -1.85, Crypt, 8.65, 3.4);
-        Structures.Railing(k, 11.35, -1.85, Crypt, 11.35, 3.4);
-        Solid(8.65, -1.85, 11.35, 3.4, Crypt, "the dungeon stair's opening");
-        WallZ(-1.85, 5.6, 8.4, 0.4, Dun, Crypt - 0.6, UnderD);
-        WallZ(-1.85, 5.6, 11.2, 0.4, Dun, Crypt - 0.6, UnderD);
+        // (Flights of 7 and 6 steps with a landing between; as wide as its shaft: no gap down the sides.)
+        k.StairsZ(8.8, 11.2, 4.0, -1, Dun, 2.7, UnderD);
+        k.Block(8.8, Dun, -3.05, 11.2, Dun + 2.7, 0.85, UnderD); // the landing (and under the upper flight)
+        k.StairsZ(8.8, 11.2, -0.35, -1, Dun + 2.7, Crypt - Dun - 2.7, UnderD);
+        k.Waypoint(10, -3.6, Crypt); k.Waypoint(10, 0.25, Dun + 2.7); k.Waypoint(10, 4.8, Dun);
+        Structures.Railing(k, 8.65, -3.05, Crypt, 8.65, 3.4);
+        Structures.Railing(k, 11.35, -3.05, Crypt, 11.35, 3.4);
+        Solid(8.65, -3.05, 11.35, 3.4, Crypt, "the dungeon stair's opening");
+        WallZ(-3.05, 5.6, 8.4, 0.4, Dun, Crypt - 0.6, UnderD);
+        WallZ(-3.05, 5.6, 11.2, 0.4, Dun, Crypt - 0.6, UnderD);
         k.Block(8.4, -6.2, 3.4, 11.6, -5.8, 5.6, UnderD); // the shaft's ceiling (3 m over the stair's foot)
         k.Block(8.8, Dun - 0.6, 3.4, 11.2, Dun, 5.6, DunFloor);
-        Area("Ossuary", Box(4.0, -15.4, 15.6, 3.4, Crypt - 0.5, -1), Box(8.8, -2.0, 11.2, 5.6, Dun - 0.5, Crypt + 0.5));
+        Area("Ossuary", Box(4.0, -15.4, 15.6, 3.4, Crypt - 0.5, -1), Box(8.8, -3.2, 11.2, 5.6, Dun - 0.5, Crypt + 0.5));
         foreach (var x in new[] { 5.6, 8.7, 11.8 })
             SProp("Ossuary Niche Wall", x + 0.9, -15.1, Crypt, 0, 1.5, 0.3);
         foreach (var z in new[] { -12.0, -8.7 })
@@ -1052,6 +1076,9 @@ public sealed class AshgraveCathedral : IMapGenerator
             k.Waypoint(x0 + 2.5, 22.0, Dun);
             k.Waypoint(x0 + 4.2, 14.6, Dun);
             k.Waypoint(x0 + 4.2, 17.4, Dun);
+            k.Waypoint(x0 + 5.0, 18.9, Dun); // (inside each cell's door, so a zombie lines up with the gap in the bars)
+            if (x0 < 5)
+                k.Waypoint(x0 + 5.0, 13.1, Dun);
         }
 
         // The inquisitor's chamber (west).
@@ -1069,25 +1096,32 @@ public sealed class AshgraveCathedral : IMapGenerator
         Wp(-26.0, 6.0, -14.4, 26.0, Dun, 2.4);
 
         // The smugglers' tunnel (east, under the graveyard) to the mausoleum stair.
+        // Its east end climbs a flight of 9 steps (x 30-34.05) to a raised floor at Tun, so the tomb stair is two flights.
         k.Block(16.4, Dun - 0.6, 19.6, 43.4, Dun, 22.6, DunFloor);
-        k.Block(16.4, -7.2, 19.2, 43.4, -6.8, 23.0, UnderD);
-        WallX(16.4, 43.4, 19.2, 0.4, Dun, -7.2, Under);
-        WallX(16.4, 41.0, 22.6, 0.4, Dun, -7.2, Under);
-        WallX(41.0, 43.4, 22.6, 0.4, Dun, -7.2, UnderD, DoorX("the Tomb Stair", false, 1000, "Smugglers' Tunnel", "Mausoleum", 42.2, 22.6, 0.4, 1.6, 2.4, Dun));
-        WallZ(19.2, 23.0, 43.4, 0.4, Dun, -7.2, Under);
-        WallX(41.0, 43.4, 22.6, 0.4, -7.2, -0.6, UnderD); // (the shaft's end over the tomb stair's door)
-        k.Block(41.0, Dun - 0.6, 23.0, 43.4, Dun, 24.2, DunFloor);
-        Area("Smugglers' Tunnel", Box(16.4, 19.6, 43.4, 22.6, Dun - 0.5, -7.4));
-        foreach (var x in new[] { 20.0, 26.0, 32.0, 38.0 })
-            k.Prop("Tunnel Timber Frame", x, 21.1, Dun, 90);
+        k.StairsX(19.6, 22.6, 30.0, 1, Dun, Tun - Dun, UnderD);
+        k.Block(34.05, Dun, 19.6, 43.4, Tun, 22.6, DunFloor);
+        k.Block(16.4, -7.2, 19.2, 29.4, -6.8, 23.0, UnderD);
+        k.Block(29.4, Tun + 2.8, 19.2, 43.4, Tun + 3.2, 23.0, UnderD);
+        k.Block(29.2, -6.8, 19.2, 29.4, Tun + 2.8, 23.0, UnderD); // (closes the step in the ceiling)
+        WallX(16.4, 43.4, 19.2, 0.4, Dun, Tun + 3.2, Under);
+        WallX(16.4, 41.0, 22.6, 0.4, Dun, Tun + 3.2, Under);
+        WallX(41.0, 43.4, 22.6, 0.4, Tun, Tun + 3.2, UnderD, DoorX("the Tomb Stair", false, 1000, "Smugglers' Tunnel", "Mausoleum", 42.2, 22.6, 0.4, 1.6, 2.4, Tun));
+        WallZ(19.2, 23.0, 43.4, 0.4, Dun, Tun + 3.2, Under);
+        WallX(41.0, 43.4, 22.6, 0.4, Tun + 3.2, -0.6, UnderD); // (the shaft's end over the tomb stair's door)
+        k.Block(41.0, Dun - 0.6, 23.0, 43.4, Tun, 24.2, DunFloor);
+        Area("Smugglers' Tunnel", Box(16.4, 19.6, 43.4, 22.6, Dun - 0.5, Tun + 2.6));
+        foreach (var (x, y) in new[] { (20.0, Dun), (25.0, Dun), (36.5, Tun), (39.5, Tun) })
+            k.Prop("Tunnel Timber Frame", x, 21.1, y, 90);
         SProp("Cider Barrel", 23.0, 22.1, Dun, 0, 0.4, 0.4);
-        SProp("Wooden Crate", 35.0, 22.0, Dun, 0, 0.5, 0.5);
-        Salvage(29.0, Dun, 20.4);
-        GroundSpawner("Smugglers' Tunnel", 31.5, Dun, 21.1);
+        SProp("Wooden Crate", 35.4, 22.0, Tun, 0, 0.5, 0.5);
+        Salvage(27.5, Dun, 20.4);
+        GroundSpawner("Smugglers' Tunnel", 38.0, Tun, 21.1);
         k.Prop("Wall Torch", 28.0, 19.6, Dun + 1.8, 0);
-        k.Prop("Wall Torch", 40.0, 19.6, Dun + 1.8, 0);
-        for (var x = 17.5; x <= 42.5; x += 2.2)
+        k.Prop("Wall Torch", 40.0, 19.6, Tun + 1.8, 0);
+        for (var x = 17.5; x <= 29.0; x += 2.3)
             k.Waypoint(x, 21.1, Dun);
+        for (var x = 34.6; x <= 42.6; x += 2.0)
+            k.Waypoint(x, 21.1, Tun);
     }
 
     // ==== Outside the precinct: the paupers' field ======================================================================
