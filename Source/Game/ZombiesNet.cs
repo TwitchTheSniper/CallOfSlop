@@ -330,21 +330,32 @@ public sealed partial class Game
         foreach (var b in ZBoards)
             w.U8(b);
         w.U8((byte)BoxSpot).U8((byte)BoxState).F32((float)BoxLeft).U16(BoxBuild < 0 ? (ushort)(BoxBuild == -2 ? 0xFFFE : 0xFFFF) : (ushort)BoxBuild).U8(BoxOwner);
-        var players = Players.Values.Take(32).ToList();
-        w.U8((byte)players.Count);
-        foreach (var p in players)
+        // (Loops capped at 32, not Take(32).ToList(): this goes out every few ticks, and each list was garbage.)
+        var playerCount = Math.Min(Players.Count, 32);
+        w.U8((byte)playerCount);
+        var written = 0;
+        foreach (var p in Players.Values)
         {
+            if (written++ >= playerCount)
+                break;
             var zp = ZP(p);
             w.U8(p.Id).U32((uint)Math.Max(0, zp.Points)).U8((byte)((zp.Downed ? 1 : 0) | (p.ExtraSlots ? 2 : 0) | (zp.SelfReviveAt > 0 ? 4 : 0) | (zp.RoundReady ? 8 : 0) | (zp.ReadyVoter ? 16 : 0) | (zp.PlateReady ? 32 : 0) | (zp.Held ? 64 : 0))).U16(zp.Perks) // bits 3-4: ready-up (protocol 47); bit 5: the armour plate is up, perks 16 bits (protocol 57); bit 6: held by a grabber (protocol 73)
                 .U8((byte)(Math.Clamp(zp.BleedFraction, 0, 1) * 255)).U8((byte)(Math.Clamp(zp.BeingRevived, 0, 1) * 255))
                 .U16((ushort)Math.Min(zp.Kills, 65535)).U16((ushort)Math.Min(zp.Downs, 65535)).U16((ushort)Math.Min(zp.Revives, 65535))
                 .U8((byte)p.Grenade).U8((byte)Math.Clamp(p.GrenadesLeft, 0, 255)); // the grenade and how many are left (protocol 63)
         }
-        var drops = ZDrops.Take(32).ToList();
-        w.U8((byte)drops.Count);
-        foreach (var d in drops)
+        var dropCount = Math.Min(ZDrops.Count, 32);
+        w.U8((byte)dropCount);
+        for (var di = 0; di < dropCount; di++)
         {
-            var idx = Array.FindIndex(Parts.All, x => x.Name == d.Part);
+            var d = ZDrops[di];
+            var idx = -1;
+            for (var k = 0; k < Parts.All.Length; k++)
+                if (Parts.All[k].Name == d.Part)
+                {
+                    idx = k;
+                    break;
+                }
             w.U16(d.Id).U16((ushort)Math.Max(0, idx)).U16(Q(d.At.X, 32)).U16(Q(d.At.Y, 64)).U16(Q(d.At.Z, 32));
         }
         WritePowerUps(w, _zNow); // power-ups and their timers (protocol 40, ZombiesPowerUps.cs)

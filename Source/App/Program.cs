@@ -956,6 +956,7 @@ public static unsafe partial class Program
         {
             var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log"
                 : args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)) ? $"netclient-{Environment.ProcessId}.log" // beside a running game (NetClientProcess.cs)
+                : args.Any(a => a.Equals("--alloc-join", StringComparison.OrdinalIgnoreCase)) ? "alloc-client.log" // --alloc-frames as a joiner, beside a host on the same machine (Program.AllocFrames.cs)
                 : "callofslop.log";
             var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
@@ -1248,6 +1249,7 @@ public static unsafe partial class Program
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);
+                    AllocProfile.Stop(); // (the game's alloc sections end with its update: --alloc-frames; off it is one check)
                 }
             }
             using (Perf.Measure(PerfArea.Audio))
@@ -1301,13 +1303,11 @@ public static unsafe partial class Program
             perf.Dispose();
 
             perf = Perf.Measure(PerfArea.Ui);
-            AllocProfile.Mark("TMP1 Ui.BeginFrame"); // TMPALLOC
             Ui.BeginFrame();
             if (_settings.ShowFps)
                 FpsCounter.Draw(now);
             if (_session is { } lobbyGame && InLobbyRoom)
             {
-                AllocProfile.Mark("TMP3 DrawLobbyRoomUi"); // TMPALLOC
                 DrawLobbyRoomUi(lobbyGame, now); // Program.LobbyRoom.cs
             }
             else if (_session is { } g)
@@ -1316,26 +1316,16 @@ public static unsafe partial class Program
                 var benchCovers = Ui.WorkbenchOpen;
                 if (!benchCovers)
                 {
-                    AllocProfile.Mark("TMP4 DrawNameTags"); // TMPALLOC
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
-                    AllocProfile.Mark("TMP5 TacticalHud.DrawMarkers"); // TMPALLOC
                     TacticalHud.DrawMarkers(g, now, Ui.Scale); // motion pings, decoy tags, your devices (TacticalHud.cs)
-                    AllocProfile.Mark("TMP6 LauncherHud.DrawMarkers"); // TMPALLOC
                     LauncherHud.DrawMarkers(g, now, Ui.Scale); // the lock-on brackets, the wire's guide dot, sticky charges (LauncherHud.cs)
-                    AllocProfile.Mark("TMP7 DrawFriendlyHitText"); // TMPALLOC
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
-                    AllocProfile.Mark("TMP8 Ui.DrawHud"); // TMPALLOC
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
-                AllocProfile.Mark("TMP9 DrawBenchInMatch"); // TMPALLOC
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
-                AllocProfile.Mark("TMP10 DrawCasinoInMatch"); // TMPALLOC
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
-                AllocProfile.Mark("TMP11 DrawTraderInMatch"); // TMPALLOC
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
-                AllocProfile.Mark("TMP12 DrawInventoryInMatch"); // TMPALLOC
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
-                AllocProfile.Mark("TMP13 if (Ui.DrawLoadoutMenu"); // TMPALLOC
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1343,12 +1333,9 @@ public static unsafe partial class Program
                 }
                 if (!benchCovers)
                 {
-                    AllocProfile.Mark("TMP14 Ui.DrawKillCard"); // TMPALLOC
                     Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
-                    AllocProfile.Mark("TMP15 DrawChatUi"); // TMPALLOC
                     DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs); chat can't open with the bench up
                 }
-                AllocProfile.Mark("TMP16 switch (Ui.DrawPauseMenu"); // TMPALLOC
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
                     case PauseAction.Resume:
@@ -1383,12 +1370,10 @@ public static unsafe partial class Program
             {
                 if (Ui.LobbyLoadouts)
                 {
-                    AllocProfile.Mark("TMP18 Ui.DrawLobbyLoadouts"); // TMPALLOC
                     Ui.DrawLobbyLoadouts(AudioSystem, now);
                 }
                 else if (Ui.AppearanceOpen)
                 {
-                    AllocProfile.Mark("TMP19 Ui.DrawAppearance"); // TMPALLOC
                     Ui.DrawAppearance(AudioSystem, now, _settings.Name); // main menu > Appearance (UiAppearance.cs)
                 }
                 else if (DrawWorkbenchLobby(now))
@@ -1399,7 +1384,6 @@ public static unsafe partial class Program
                 {
                     if (SavePaths.TakeWarningOnce() is { } saveWarning)
                         _lobbyMessage = saveWarning; // a save from a newer build that this one won't overwrite (shown once)
-                    AllocProfile.Mark("TMP20 var action = Ui.DrawLobby"); // TMPALLOC
                     var action = Ui.DrawLobby(_settings, _lobbyMessage, AudioSystem);
                     if (action == LobbyAction.Quit || Updater.Shared?.QuitRequested == true) // the installed update has started (UiUpdates.cs)
                         _quit = true;
@@ -1407,19 +1391,13 @@ public static unsafe partial class Program
                         StartSession(action);
                 }
             }
-            AllocProfile.Mark("TMP21 Ui.DrawAudioMixer"); // TMPALLOC
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
-            AllocProfile.Mark("TMP22 Ui.DrawWeaponTweaks"); // TMPALLOC
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
-            AllocProfile.Mark("TMP23 DrawPerfUi"); // TMPALLOC
             DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
-            AllocProfile.Mark("TMP24 DrawDevTools"); // TMPALLOC
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
-            AllocProfile.Mark("TMP25 Ui.EndFrame"); // TMPALLOC
             Ui.EndFrame();
             if (Ui.Thumbs.Count > 0)
                 DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
-            AllocProfile.Stop(); // TMPALLOC
             perf.Dispose();
             Perf.Gpu?.Mark(PerfGpuPass.Ui);
 

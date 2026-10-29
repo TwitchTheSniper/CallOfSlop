@@ -920,10 +920,10 @@ public sealed partial class Game
         if (!s.Enabled(i) || (s.Flags[i] & LogicState.FlagSpent) != 0)
             return null;
         if (e.NeedsPower && !ZPower && Mode == GameMode.Zombies)
-            return $"{e.Text}: needs the power on";
+            return TextCache.Of($"{e.Text}: needs the power on"); // (drawn every frame: no new string each time)
         if ((s.Flags[i] & LogicState.FlagCooling) != 0)
-            return $"{e.Text} (not yet)";
-        return e.Cost > 0 && Mode == GameMode.Zombies ? $"{e.Text} [{e.Cost}]" : e.Text;
+            return TextCache.Of($"{e.Text} (not yet)");
+        return e.Cost > 0 && Mode == GameMode.Zombies ? TextCache.Of($"{e.Text} [{e.Cost}]") : e.Text;
     }
 
     /// <summary>Server: <paramref name="p"/> pressed the interact key at button or lever <paramref name="i"/>.</summary>

@@ -77,9 +77,7 @@ public sealed partial class Ui
             _perfStatsAt = now;
             _perfStats.Update();
         }
-        AllocProfile.Mark("P1 sample"); // TMPALLOC
         SamplePerfNet(game, now);
-        AllocProfile.Mark("P2 draw"); // TMPALLOC
         _perfOverlayGame = game;
         if (PerfMode == PerfView.Overlay)
             DrawPerfOverlay();
@@ -196,7 +194,6 @@ public sealed partial class Ui
             if (now - _perfMsgAt < 4)
                 ImGuiSafe.TextColored(Green, _perfMsg);
 
-            AllocProfile.Mark("P3 frame"); // TMPALLOC
             // ---- Frame time ----
             ImGui.Text($"{s.Fps:0} fps   avg {s.AvgMs:0.00} ms   min {s.MinMs:0.00}   max {s.MaxMs:0.00}   1% low {s.Low1Ms:0.00} ms ({s.Low1Fps:0} fps)   {s.Frames} frames");
             if (FrameLimiter.ActiveFps > 0)
@@ -215,17 +212,13 @@ public sealed partial class Ui
                 DrawTickGraph(new float2(w, 60 * _scale));
             }
 
-            AllocProfile.Mark("P4 cpu"); // TMPALLOC
             // ---- CPU tree ----
             if (ImGui.CollapsingHeader("CPU (main thread, ms per frame over the last second)"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawCpuTable(s);
-            AllocProfile.Mark("P5 gpu"); // TMPALLOC
             if (ImGui.CollapsingHeader("GPU passes"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawGpuTable(s);
-            AllocProfile.Mark("P6 counters"); // TMPALLOC
             if (ImGui.CollapsingHeader("Counters"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawPerfCounters(game, s);
-            AllocProfile.Mark("P7 end"); // TMPALLOC
             if (Perf.Misnested > 0)
                 ImGuiSafe.TextColored(Red, $"{Perf.Misnested} scope(s) ended out of order (a bug in the timing code)");
         }
@@ -608,9 +601,7 @@ public sealed partial class Ui
         if (ImGui.Begin("##perfoverlay"u8, flags))
         {
             ImGui.Text($"{s.Fps:0} fps  avg {s.AvgMs:0.0}  max {s.MaxMs:0.0}  1% low {s.Low1Ms:0.0} ms");
-            AllocProfile.Mark("O1 graph"); // TMPALLOC
             DrawFrameGraph(new float2(240 * _scale, 44 * _scale), s.MaxMs > 36 ? 70f : 40f, false);
-            AllocProfile.Mark("O2 rest"); // TMPALLOC
             // The three busiest roots (by average).
             int a1 = -1, a2 = -1, a3 = -1;
             for (var r = 0; r < PerfRoots.Length; r++)

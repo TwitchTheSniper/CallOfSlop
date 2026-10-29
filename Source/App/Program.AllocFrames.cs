@@ -27,7 +27,18 @@ public static unsafe partial class Program
     private static int _afGc0, _afGc1, _afGc2, _afAllocFrames;
     private static PerfGpu? _afGpu;
     private static AllocTypeListener? _afTypes;
-    private static bool _afHost, _afWarmupOnly;
+    private static bool _afHost, _afWarmupOnly, _afStay, _afSpectate;
+    private static double _afSuicideAt = -10;
+    private static int _afHumans = 1;
+
+    private static int Humans(Game game)
+    {
+        var n = 0;
+        foreach (var p in game.Players.Values)
+            if (p.Bot == null)
+                n++;
+        return n;
+    }
 
     private static void StartAllocFrames(string[] args)
     {
@@ -53,6 +64,10 @@ public static unsafe partial class Program
         if (args.Any(a => a.Equals("--alloc-types", StringComparison.OrdinalIgnoreCase)))
             _afTypes = new AllocTypeListener();
         _afWarmupOnly = args.Any(a => a.Equals("--alloc-warmup", StringComparison.OrdinalIgnoreCase));
+        if (Arg("--alloc-humans") is { } hm && int.TryParse(hm, out var hn))
+            _afHumans = Math.Max(1, hn); // a host: wait until this many people are in before warming up
+        _afSpectate = args.Any(a => a.Equals("--alloc-spectate", StringComparison.OrdinalIgnoreCase));
+        _afStay = args.Any(a => a.Equals("--alloc-stay", StringComparison.OrdinalIgnoreCase));
         _afHost = args.Any(a => a.Equals("--alloc-host", StringComparison.OrdinalIgnoreCase));
         if (Arg("--alloc-join") is { } ip)
         {
@@ -78,15 +93,23 @@ public static unsafe partial class Program
                 Ui.AutoDeploy(game, now);
             else if (game.IsWarmup && !_afWarmupOnly && game.Local is { Ready: false })
                 game.ToggleReady(); // into the match (the warmup is measured with --alloc-warmup)
-            else if (game.Phase == MatchPhase.Playing && game.Local is not { Alive: true } && !game.RespawnRequested)
+            else if (game.Phase == MatchPhase.Playing && game.Local is not { Alive: true } && !game.RespawnRequested && !_afSpectate)
                 game.RequestRespawn();
-            if (game.Local is { } me)
+            if (game.IsServer)
+                foreach (var p in game.Players.Values)
+                    p.ImmuneUntil = now + 0.5; // a host: everyone (a joiner measuring mustn't be killed)
+            else if (game.Local is { } me)
                 me.ImmuneUntil = now + 0.5;
+            if (_afSpectate && game.Phase == MatchPhase.Playing && game.Local is { Alive: true } && _afStep == 0 && now - _afSuicideAt > 2)
+            {
+                _afSuicideAt = now;
+                game.RequestSuicide(); // --alloc-spectate: measure the dead (spectating) frames instead
+            }
         }
         switch (_afStep)
         {
             case 0: // waiting for the match and a live player
-                if (game is { Local.Alive: true } && game.Phase == (_afWarmupOnly ? MatchPhase.Warmup : MatchPhase.Playing))
+                if (game is { Local: { } lp } && lp.Alive != _afSpectate && game.Phase == (_afWarmupOnly ? MatchPhase.Warmup : MatchPhase.Playing) && Humans(game) >= _afHumans)
                 {
                     _afStep = 1;
                     _afCount = 0;
@@ -107,7 +130,8 @@ public static unsafe partial class Program
                 _afStartAll = GC.GetTotalAllocatedBytes(true);
                 _afTypes?.Reset();
                 Perf.ResetAllocs();
-                AllocProfile.Reset(); AllocProfile.On = true; // TMPALLOC
+                AllocProfile.Reset(); // the game's own finer sections (AllocProfile marks in Game.Update and the server tick)
+                AllocProfile.On = true;
                 _afStartMain = _afPrev = GC.GetAllocatedBytesForCurrentThread();
                 break;
             case 3:
@@ -128,14 +152,15 @@ public static unsafe partial class Program
                     else
                     {
                         _afStep = 4;
+                        AllocProfile.On = Perf.TrackAllocs = false;
                         Console.WriteLine("[alloc-frames] done");
-                        _quit = true;
+                        _quit = !_afStay; // --alloc-stay: a host keeps hosting (for a joiner still measuring) until it is closed
                     }
                 }
                 break;
             }
         }
-        if (_afStep >= 2)
+        if (_afStep is 2 or 3)
         {
             Perf.SetOn(true); // the scopes charge the areas in every view (DrawPerf turns them off when the window closes)
             Perf.TrackAllocs = true;
@@ -174,8 +199,8 @@ public static unsafe partial class Program
         if (!any)
             sb.Append(" none");
         Console.WriteLine(sb.ToString());
-        Console.WriteLine("[alloc-frames] TMP marks: " + AllocProfile.Top(30, frames)); // TMPALLOC
-        AllocProfile.Reset(); // TMPALLOC
+        Console.WriteLine($"[alloc-frames] view {view}: the game's sections (bytes per frame): {AllocProfile.Top(30, frames)}");
+        AllocProfile.Reset();
         if (_afTypes != null)
             Console.WriteLine($"[alloc-frames] view {view}: allocation ticks by type (all threads, ~100 KB each): {_afTypes.Report()}");
     }
@@ -208,23 +233,46 @@ public static unsafe partial class Program
                         bytes = Convert.ToInt64(e.Payload[i]);
                         break;
                 }
+            var thread = ThreadName(e.OSThreadId);
             lock (_lock)
             {
                 _types.TryGetValue(name, out var t);
                 _types[name] = (t.Ticks + 1, t.Bytes + bytes);
+                _threads.TryGetValue(thread, out var n);
+                _threads[thread] = n + 1;
             }
         }
 
         public void Reset()
         {
             lock (_lock)
+            {
                 _types.Clear();
+                _threads.Clear();
+            }
+        }
+
+        private readonly Dictionary<string, int> _threads = new();
+
+        /// <summary>The OS thread's name (Linux: /proc/self/task/ID/comm, which .NET sets from Thread.Name), else its id.</summary>
+        private static string ThreadName(long osId)
+        {
+            try
+            {
+                if (OperatingSystem.IsLinux())
+                    return $"{File.ReadAllText($"/proc/self/task/{osId}/comm").Trim()} ({osId})";
+            }
+            catch (IOException)
+            {
+            }
+            return $"thread {osId}";
         }
 
         public string Report()
         {
             lock (_lock)
-                return _types.Count == 0 ? "none" : string.Join(", ", _types.OrderByDescending(kv => kv.Value.Bytes).Take(25).Select(kv => $"{kv.Key} x{kv.Value.Ticks}"));
+                return _types.Count == 0 ? "none" : string.Join(", ", _types.OrderByDescending(kv => kv.Value.Bytes).Take(25).Select(kv => $"{kv.Key} x{kv.Value.Ticks}"))
+                                                    + "; by thread: " + string.Join(", ", _threads.OrderByDescending(kv => kv.Value).Select(kv => $"{kv.Key} x{kv.Value}"));
         }
     }
 }

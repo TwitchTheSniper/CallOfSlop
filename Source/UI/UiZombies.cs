@@ -37,7 +37,6 @@ public sealed partial class Ui
         else
             ImGui.TextColored(ZRed, "GET READY"u8);
         ImGui.PopFont();
-        AllocProfile.Mark("ZB power"); // TMPALLOC
         var power = game.ZPower ? "Power: ON" : "Power: off";
         if (game.ZPhase == ZRoundPhase.Round) // (one call per case: each $"..." goes straight into ImGui's frame arena)
             ImGuiSafe.TextColored(Dim, $"{game.ZRemaining} zombies left this round   {power}");
@@ -103,9 +102,9 @@ public sealed partial class Ui
     public static string SpectateText(Game game, Settings settings)
     {
         var name = game.NameOf(game.ZSpectateId);
-        var next = $"{Keybinds.Name(settings.Bind(GameAction.Fire))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectateNext))}";
-        var prev = $"{Keybinds.Name(settings.Bind(GameAction.Aim))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectatePrev))}";
-        return $"Spectating {name} - [{next}] next / [{prev}] previous";
+        var next = TextCache.Of($"{Keybinds.Name(settings.Bind(GameAction.Fire))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectateNext))}");
+        var prev = TextCache.Of($"{Keybinds.Name(settings.Bind(GameAction.Aim))}] or [{Keybinds.Name(settings.Bind(GameAction.SpectatePrev))}");
+        return TextCache.Of($"Spectating {name} - [{next}] next / [{prev}] previous"); // (drawn every frame while spectating: made once per name)
     }
 
     /// <summary>Everything else of the Zombies HUD (called from DrawHud while a Zombies match is on).</summary>
@@ -116,7 +115,6 @@ public sealed partial class Ui
         var pad = 24 * _scale;
         var key = Keybinds.Name(settings.Bind(GameAction.Interact));
 
-        AllocProfile.Mark("ZH1 // Bottom-left, over the healt"); // TMPALLOC
         // Bottom-left, over the health: the round in red.
         if (game.ZRound > 0)
         {
@@ -130,7 +128,6 @@ public sealed partial class Ui
             ImGui.End();
         }
 
-        AllocProfile.Mark("ZH2 // Bottom-right, over the ammo"); // TMPALLOC
         // Bottom-right, over the ammo: everyone's points (yours first), with your +N popups beside them.
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 190 * _scale), ImGuiCond.Always, new float2(1, 1));
         if (ImGui.Begin("##zpoints"u8, Overlay))
@@ -168,11 +165,9 @@ public sealed partial class Ui
         }
         ImGui.End();
 
-        AllocProfile.Mark("ZH3 // Perks, bottom-left beside t"); // TMPALLOC
         // Perks, bottom-left beside the round: a badge each (UiZombiesPerks.cs).
         DrawZPerkBadges(game, game.ZP(me), pos, size, pad);
 
-        AllocProfile.Mark("ZH4 // Power-ups: Insta-Kill, Doub"); // TMPALLOC
         // Power-ups: Insta-Kill, Double Points and Infinite Ammo timers bottom centre (blinking in their last 5 s); the floating ones labelled.
         var insta = game.InstaKillLeft(now);
         var dbl = game.DoublePointsLeft(now);
@@ -195,17 +190,11 @@ public sealed partial class Ui
             }
             ImGui.End();
         }
-        AllocProfile.Mark("ZH5 DrawZombieTypesHud(game, me, n"); // TMPALLOC
         DrawZombieTypesHud(game, me, now, pos, size, pad); // a boss's health bar, a grabber's hold (ZombieTypes.cs)
-        AllocProfile.Mark("ZH6 DrawSlotLabels(game, me, now);"); // TMPALLOC
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
-        AllocProfile.Mark("ZH7 DrawCasinoLabels(game, me, now"); // TMPALLOC
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
-        AllocProfile.Mark("ZH8 DrawPerkLabels(game, me); // t"); // TMPALLOC
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
-        AllocProfile.Mark("ZH9 _traderOffScreen = null;"); // TMPALLOC
         _traderOffScreen = null;
-        AllocProfile.Mark("ZH10 DrawTraderLabel(game, me, now)"); // TMPALLOC
         DrawTraderLabel(game, me, now); // the trader's waypoint through the walls (UiTrader.cs)
         if (game.BoxFreeForAll && game.ZMap is { BoxSpots.Count: > 0 } bzm)
         {
@@ -221,7 +210,6 @@ public sealed partial class Ui
                 Hud.WorldLabel(pu.At + new System.Numerics.Vector3(0, 1.45f, 0), Game.PowerName(pu.Kind), Game.PowerColor(pu.Kind), 1f, 15f * _scale);
         }
 
-        AllocProfile.Mark("ZH11 // The banner (ROUND 3, THE PO"); // TMPALLOC
         // The banner (ROUND 3, THE POWER IS ON).
         if (now - game.ZBannerTime < 3.5 && game.ZBannerText.Length > 0)
         {
@@ -235,7 +223,6 @@ public sealed partial class Ui
             ImGui.End();
         }
 
-        AllocProfile.Mark("ZH12 // Downed, bleeding out, being"); // TMPALLOC
         // Downed, bleeding out, being revived; or the prompt for what the interact key does.
         var me2 = game.ZP(me);
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.62f), ImGuiCond.Always, new float2(0.5f, 0.5f));

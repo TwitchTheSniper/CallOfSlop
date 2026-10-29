@@ -690,18 +690,35 @@ public static class MasterServerApp
     /// <summary>Handles everything waiting on the master's socket: heartbeats from hosts and list queries from browsers.</summary>
     public static void Pump(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, Options? options = null)
     {
-        options ??= new Options();
-        net.PollRaw((from, data) =>
+        // A list runs this every 15 ms (in a host's own list, on its thread): one handler per thread, made once, instead
+        // of a closure and a delegate every call.
+        var p = _pumper ??= new Pumper();
+        (p.Net, p.Games, p.Options) = (net, games, options ?? (p.Default ??= new Options()));
+        net.PollRaw(p.Handler);
+    }
+
+    [ThreadStatic] private static Pumper? _pumper;
+
+    private sealed class Pumper
+    {
+        public NetPeer? Net;
+        public Dictionary<string, (string Ip, ushort Port, DateTime Seen)>? Games;
+        public Options? Options, Default;
+        public readonly NetPeer.RawPacketHandler Handler;
+
+        public Pumper() => Handler = OnPacket;
+
+        private void OnPacket(SystemAddress from, ReadOnlySpan<byte> data)
         {
             try
             {
-                OnMasterPacket(net, games, options, from, data);
+                OnMasterPacket(Net!, Games!, Options!, from, data);
             }
             catch (Exception ex)
             {
                 NetSafety.Drop("a master-server message", data, ex);
             }
-        });
+        }
     }
 
     private static void OnMasterPacket(NetPeer net, Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games, Options options, SystemAddress from, ReadOnlySpan<byte> data)
@@ -756,11 +773,20 @@ public static class MasterServerApp
     /// <summary>Drops games whose last heartbeat is over a minute old; returns their keys.</summary>
     public static List<string> Expire(Dictionary<string, (string Ip, ushort Port, DateTime Seen)> games)
     {
-        var dead = games.Where(kv => DateTime.UtcNow - kv.Value.Seen > TimeSpan.FromSeconds(60)).Select(kv => kv.Key).ToList();
+        // (Runs every 15 ms in a list: a loop, and no list at all while nothing expires.)
+        List<string>? dead = null;
+        var now = DateTime.UtcNow;
+        foreach (var kv in games)
+            if (now - kv.Value.Seen > TimeSpan.FromSeconds(60))
+                (dead ??= new List<string>()).Add(kv.Key);
+        if (dead == null)
+            return NoneExpired;
         foreach (var k in dead)
             games.Remove(k);
         return dead;
     }
+
+    private static readonly List<string> NoneExpired = new(); // (always empty: callers only read it)
 
     public static int Run(string[] args)
     {

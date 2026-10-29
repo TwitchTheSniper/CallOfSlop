@@ -63,6 +63,33 @@ public sealed partial class Ui : IDisposable
         _renderer = new OpenGlBackend();
     }
 
+    /// <summary>
+    /// Self-test: an ImGui context with no window and no renderer (the "Frame allocations" section draws the HUD and the
+    /// perf window into it). Fonts are made by ImGui itself (the renderer-has-textures flag); nothing is ever uploaded.
+    /// <see cref="DisposeHeadless"/> destroys the context again.
+    /// </summary>
+    public unsafe void InitHeadless(float2 displaySize)
+    {
+        _headlessContext = ImGui.CreateContext();
+        var io = ImGui.GetIO();
+        io.IniFilename = default;
+        io.DisplaySize = displaySize;
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+        ImGui.StyleColorsDark();
+        _baseStyle = *ImGui.GetStyle().Ptr;
+        _scale = 0;
+    }
+
+    private ImGuiContextPtr _headlessContext;
+
+    /// <summary>Self-test: ends the context <see cref="InitHeadless"/> made.</summary>
+    public void DisposeHeadless()
+    {
+        ImString.SharedStorage.Reset();
+        ImGui.DestroyContext(_headlessContext);
+        _headlessContext = default;
+    }
+
     /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
     private float TargetScale()
     {
@@ -91,8 +118,13 @@ public sealed partial class Ui : IDisposable
         var target = TargetScale();
         if (MathF.Abs(target - _scale) > 0.01f)
             ApplyScale(target); // between frames, so ImGui never sees a half-changed style
-        _platform!.NewFrame();
-        _renderer!.NewFrame();
+        if (_platform != null)
+        {
+            _platform.NewFrame();
+            _renderer!.NewFrame();
+        }
+        else
+            ImGui.GetIO().DeltaTime = 1f / 60; // headless (the self-test): no window to read
         ImGui.NewFrame();
         _loadoutDrawn = false;
         Thumbs.Clear(); // re-added every frame by whatever draws them (loadout cards, the kill card)
@@ -103,7 +135,7 @@ public sealed partial class Ui : IDisposable
         if (!_loadoutDrawn)
             Preview = null; // the loadout screen closed: no gun preview to draw
         ImGui.Render();
-        _renderer!.RenderDrawData(ImGui.GetDrawData());
+        _renderer?.RenderDrawData(ImGui.GetDrawData()); // (headless: nothing to draw with)
         ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
     }
 
@@ -144,7 +176,6 @@ public sealed partial class Ui : IDisposable
         var pad = 24 * _scale;
         var local = game.Local;
 
-        AllocProfile.Mark("HUD1 // ---- Top-left: session info"); // TMPALLOC
         // ---- Top-left: session info -------------------------------------------------
         ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + pad));
         if (ImGui.Begin("##info"u8, Overlay))
@@ -167,7 +198,6 @@ public sealed partial class Ui : IDisposable
         }
         ImGui.End();
 
-        AllocProfile.Mark("HUD2 // ---- Top-right: kill feed -"); // TMPALLOC
         // ---- Top-right: kill feed -----------------------------------------------------
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + pad), ImGuiCond.Always, new float2(1, 0));
         if (ImGui.Begin("##feed"u8, Overlay))
@@ -182,13 +212,10 @@ public sealed partial class Ui : IDisposable
         ImGui.End();
 
         _hudSettings = settings;
-        AllocProfile.Mark("HUD3 DrawMatchBar(game, pos, size);"); // TMPALLOC
         DrawMatchBar(game, pos, size);
-        AllocProfile.Mark("HUD4 DrawModeHud(game, now, pos, si"); // TMPALLOC
         DrawModeHud(game, now, pos, size, settings); // warmup panel, hill / flag / gun indicators (UiModes.cs)
         if (game.Phase == MatchPhase.Playing)
             DrawZombiesHud(game, now, pos, size, settings); // round, points, prompts, downs (UiZombies.cs)
-        AllocProfile.Mark("HUD5 DrawCoopBanner(game, now, pos,"); // TMPALLOC
         DrawCoopBanner(game, now, pos, size); // co-op: OBJECTIVE 2/4, SQUAD WIPED (UiCoop.cs)
         if (game.Phase == MatchPhase.Ended)
         {
@@ -203,7 +230,6 @@ public sealed partial class Ui : IDisposable
             return;
         }
 
-        AllocProfile.Mark("HUD6 // ---- Bottom-right: weapon +"); // TMPALLOC
         // ---- Bottom-right: weapon + ammo ---------------------------------------------------
         var w = game.Active;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 40 * _scale), ImGuiCond.Always, new float2(1, 1));
@@ -263,7 +289,6 @@ public sealed partial class Ui : IDisposable
         }
         ImGui.End();
 
-        AllocProfile.Mark("HUD7 // ---- Bottom-left: health nu"); // TMPALLOC
         // ---- Bottom-left: health number ---------------------------------------------
         ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + size.Y - pad - 46 * _scale), ImGuiCond.Always, new float2(0, 1));
         if (ImGui.Begin("##hp"u8, Overlay))
@@ -326,16 +351,11 @@ public sealed partial class Ui : IDisposable
             ImGui.End();
         }
 
-        AllocProfile.Mark("HUD8 DrawStreakHud(game, now, pos, "); // TMPALLOC
         DrawStreakHud(game, now, pos, size, settings); // kill streaks (UiStreaks.cs)
-        AllocProfile.Mark("HUD9 DrawFrenzyHud(game, now, pos, "); // TMPALLOC
         DrawFrenzyHud(game, now, pos, size); // frenzy edge tint, class screen effect and meter (UiFrenzy.cs)
-        AllocProfile.Mark("HUD10 DrawOwnStreakEntities(game, no"); // TMPALLOC
         DrawOwnStreakEntities(game, now, pos, size); // your turret / drone's health (UiKillNotice.cs)
-        AllocProfile.Mark("HUD11 DrawKillNotices(game, now, pos"); // TMPALLOC
         DrawKillNotices(game, now, pos, size); // "KILLED Ash" under the crosshair (UiKillNotice.cs)
 
-        AllocProfile.Mark("HUD12 // ---- XP: popups by the cros"); // TMPALLOC
         // ---- XP: popups by the crosshair, level-up banner, bar under the health ------------
         var prog = Progress;
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2 + 60 * _scale, pos.Y + size.Y / 2 - 20 * _scale), ImGuiCond.Always, new float2(0, 0.5f));
@@ -371,7 +391,6 @@ public sealed partial class Ui : IDisposable
             ImGui.End();
         }
 
-        AllocProfile.Mark("HUD13 // ---- Centre messages ------"); // TMPALLOC
         // ---- Centre messages --------------------------------------------------------
         if (!local.Alive && !MenuOpen && game.Module.ShowsRespawnMessage) // (Zombies says it itself: back next round)
         {
@@ -418,7 +437,22 @@ public sealed partial class Ui : IDisposable
     /// <summary>"M:SS" for <paramref name="t"/> seconds, written into a buffer reused every frame (valid until the next call).</summary>
     private ReadOnlySpan<char> ClockText(int t)
     {
-        _clockBuf.AsSpan().TryWrite($"{t / 60}:{t % 60:00}", out var n);
+        // (By hand: the interpolated TryWrite boxed its numbers until the JIT optimised it.)
+        var minutes = Math.Clamp(t / 60, 0, 99999);
+        var n = 0;
+        Span<char> digits = stackalloc char[5];
+        var d = 0;
+        do
+        {
+            digits[d++] = (char)('0' + minutes % 10);
+            minutes /= 10;
+        } while (minutes > 0);
+        while (d > 0)
+            _clockBuf[n++] = digits[--d];
+        var seconds = Math.Max(t, 0) % 60;
+        _clockBuf[n++] = ':';
+        _clockBuf[n++] = (char)('0' + seconds / 10);
+        _clockBuf[n++] = (char)('0' + seconds % 10);
         return _clockBuf.AsSpan(0, n);
     }
 

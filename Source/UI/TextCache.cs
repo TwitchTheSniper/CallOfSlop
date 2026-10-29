@@ -77,8 +77,10 @@ public static class TextCache
 
         public void AppendFormatted(ReadOnlySpan<char> value) => AppendSpan(value);
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)]
         public void AppendFormatted<T>(T value) => AppendFormatted(value, null);
 
+        [MethodImpl(MethodImplOptions.AggressiveOptimization)] // (fully optimised from the first call: unoptimised code boxes the value)
         public void AppendFormatted<T>(T value, string? format)
         {
             if (value is ISpanFormattable)
