@@ -77,6 +77,7 @@ public sealed partial class Game
     /// <summary>Where the weapon-slot upgrade is bought on this map (the Workbench Range has one; null = none).</summary>
     public Vector3? SlotStation;
 
+    private readonly List<byte> _cartIds = new(); // ServerTickCarts' players, in id order (reused)
     private bool _cartsLive; // server: carts existed when the last state went out (one empty state follows the last one)
     private readonly Dictionary<WeaponDef, CartShape> _cartShapes = new(ReferenceEqualityComparer.Instance);
     private static WeaponDef? _cartStandIn;
@@ -302,7 +303,12 @@ public sealed partial class Game
     /// <summary>Server, every tick: create, push, park and man every push cart.</summary>
     private void ServerTickCarts(double now)
     {
-        foreach (var id in Players.Keys.Order().ToList())
+        // In id order (as ever), from a reused list: this runs every tick of every Zombies game (it allocated 120 B a tick).
+        _cartIds.Clear();
+        foreach (var key in Players.Keys)
+            _cartIds.Add(key);
+        _cartIds.Sort();
+        foreach (var id in _cartIds)
         {
             var p = Players[id];
             var def = CartWeaponOf(p);

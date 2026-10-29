@@ -471,6 +471,8 @@ public sealed partial class Ui
         sb.Append(inv, $"props {map.PropInstances.Count} ({map.BrokenProps.Count} broken), decals {map.DecalRequests.Count}, ragdolls {Ragdolls.LiveCount}, projectiles {game.Projectiles.Count}, tracers {game.Tracers.Count}, blasts {game.Blasts.Count}, smokes {game.Smokes.Count}\n");
         if (!game.Net.IsOffline)
             sb.Append(inv, $"net in {_perfIn / 1024:0.0} KB/s, out {_perfOut / 1024:0.0} KB/s, snapshots {_perfSnapRate:0}/s avg {_perfSnapSize:0} B{(game.IsServer ? "" : $", ping {game.Net.PingTo(game.Net.ServerGuid)} ms")}\n");
+        if (game.CrowdOn)
+            sb.Append(inv, $"{PerfCrowdText(game, walk + run + sprint)}\n");
         return sb.ToString();
     }
 
@@ -488,7 +490,10 @@ public sealed partial class Ui
         }
         else
             ImGui.Text($"Horde tiers: individuals {individuals}, crowd {game.CrowdSeen.Total} (the server's picture, {game.CrowdSeen.Cols} x {game.CrowdSeen.Rows} cells)");
-        ImGui.Text($"Crowd drawn: {Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar} near/mid/far instances, {Program.CrowdDrawnCulled} culled, prep {Program.CrowdPrepMs:0.00} ms");
+        var i = Program.Crowd.Inst;
+        var a = Program.Crowd.Agents;
+        ImGui.Text($"Crowd drawn: {Program.CrowdDrawnNear}/{Program.CrowdDrawnMid}/{Program.CrowdDrawnFar} near/mid/far instances ({i.Particles} particles, {i.Agents} agents of {a.Count}), {Program.CrowdDrawnCulled} culled, prep {Program.CrowdPrepMs:0.00} ms");
+        ImGui.Text($"Crowd cells: {a.CellsDrawn} drawn, {a.CellsCulled} out of view, {a.CellsFogged} past the fog, {a.CellsHidden} behind the ground; agents raised {a.Raised}, sunk {a.Sunk}, passed {a.Passed}, claimed {a.Claims}");
         if (game.StressOn)
         {
             ImGui.Text($"Horde stress: {StressPhaseNames[(int)game.StressState]} {game.StressPhaseSeconds:0} s, wave {game.StressWave} of {game.StressWaveSize}, {game.StressNearShare * 100:0}% in the blob at the rally point");
@@ -501,6 +506,20 @@ public sealed partial class Ui
     }
 
     private static readonly string[] StressPhaseNames = ["off", "staging", "descending", "advancing"];
+
+    /// <summary>The crowd's numbers for a text snapshot (allocates: Copy / Log only).</summary>
+    private static string PerfCrowdText(Game game, int individuals)
+    {
+        var inv = System.Globalization.CultureInfo.InvariantCulture;
+        var c = game.Crowd;
+        var i = Program.Crowd.Inst;
+        var a = Program.Crowd.Agents;
+        var tiers = game.IsServer
+            ? string.Create(inv, $"horde {c.Total + individuals} live: individuals {individuals}, crowd particles {c.Count}, mass {c.MassTotal}; crowd tick {game.CrowdTickAvgMs:0.00} ms avg, {game.CrowdTickWorstMs:0.00} worst")
+            : string.Create(inv, $"horde: individuals {individuals}, crowd {game.CrowdSeen.Total} in the picture ({game.CrowdSeen.Cols} x {game.CrowdSeen.Rows} cells)");
+        return tiers + string.Create(inv, $"\ncrowd drawn: {i.Count[0]}/{i.Count[1]}/{i.Count[2]} near/mid/far = {i.Total} instances ({i.Particles} particles, {i.Agents} agents of {a.Count}), {i.Culled} culled; "
+                                          + $"cells {a.CellsDrawn} drawn, {a.CellsCulled} out of view, {a.CellsFogged} past the fog, {a.CellsHidden} behind the ground; prep {Program.CrowdPrepMs:0.00} ms");
+    }
 
     private static void DrawPerfCrowdLine(Game game)
     {
