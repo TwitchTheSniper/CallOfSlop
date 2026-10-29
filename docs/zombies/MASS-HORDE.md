@@ -50,14 +50,37 @@ The crowd round replaces normal spawning: nothing comes out of the map's spawner
 
 ## Combat
 
-- **Shots.** A ray that hits no individual goes on into the crowd: the nearest crowd capsule on it takes the gun's
-  damage (head above 1.5 m, with the head multiplier). The damage is applied per trigger pull (`CrowdShotApply`), so a
-  shotgun's pellets add up on one zombie. A kill is credited exactly as an individual's (kills, headshots, frenzy,
-  points, drop and power-up rolls).
-- **Blasts.** Every particle in the radius takes the blast's damage falling off with distance, as individuals do;
-  the dead leave the crowd by count. In the mass, each covered cell loses the share the blast covers (at least one
-  when the cell's middle is inside the radius) if the damage there would kill one. Each dead one is a kill for the
-  thrower, with at most 4 drop and power-up rolls per blast.
+Board item `dev-mass-points-mp01`. `Source/Game/ZombiesCrowd.cs`, `Source/Game/Horde/HordeCrowd.MassHits.cs`,
+`Source/Game/ZombiesCrowdFx.cs`. Points are always exactly what the same damage on individuals pays.
+
+- **Shots.** A ray that hits no individual goes on into the crowd: the nearest crowd capsule (a particle) or mass zombie
+  on it takes the gun's damage at that distance (head above 1.5 m, with the head multiplier). The damage is applied per
+  trigger pull (`CrowdShotApply`), so a shotgun's pellets add up on one zombie, and rounded as `DamageZombie` rounds it.
+  A hit pays hit points; a kill is credited exactly as an individual's (kills, headshots, frenzy, kill or headshot kill
+  points times the walker's points multiplier, drop and power-up rolls). Insta-Kill and Double Points apply.
+- **Mass zombies for shots.** A mass cell is only a count, so the server stands its zombies at fixed spots: zombie
+  number k of the cell (its slot, 0 to count - 1) is a capsule at a hash of the cell and the slot, kept off the cell's
+  edges (`MassSpot`). It is a pure function of the counts (never the camera), so the server stays authoritative and a
+  replay is the same. `MassRayHit` walks the mass cells along the ray's flat shadow in order (a 2D DDA) and stops at the
+  first cell with a hit; no allocation. Through a packed horde (40 a cell) a 200 m ray that hits nothing costs about
+  40 us on the cloud box.
+- **Wounds.** A mass zombie has the round's health of an individual walker (`CrowdZombieHealth`). A hurt one keeps its
+  health in a pool of wounds (cell, slot, health; up to 4,096, linked per cell). The slots stay packed wherever a count
+  changes: one that joins takes the top slot, the flow sends the top slots downstream with their wounds, a release takes
+  the top slot (a wounded zombie comes out of the mass as a hurt particle), and a kill moves the top slot into the dead
+  one's place.
+- **Penetration.** A penetrating round (the `Penetrating` ammo effect) goes on from the first mass zombie it hit
+  through up to `pierceTargets` more behind it within `pierceRange`, each taking `pierceFraction` of the damage, as it
+  does through individuals.
+- **Blasts.** Every particle and every mass zombie (at its spot) in the radius takes the blast's damage falling off
+  with distance, as individuals do: the survivors pay hit points and keep their wounds, the dead are kills for the
+  thrower. Points are never capped; at most 4 drop and power-up rolls per blast (`CrowdBlastDrops`).
+- **What players see** (visual only, no wire change). The server's tracer ends where its zombie was hit; where a shot
+  that hit ends in the drawn crowd there is a burst of blood, and on a kill the drawn zombie nearest the end sinks. A
+  client predicts its own shots against the crowd as drawn (`CrowdAgents.RayHit`): the tracer stops on the zombie it
+  sees, with blood and the hit marker at once; the server's answer then sinks that zombie if it killed. The drawn
+  agents and the server's spots are placed independently, so in a thin cell a shot at a drawn zombie can miss the
+  server's; in a packed one it hits.
 
 ## Network
 
@@ -127,11 +150,12 @@ walk phase and look from frame to frame (`CrowdAgents`, one pool for the host's 
 - **Deterministic.** The per-agent step runs in parallel stripes, but everything that touches another agent or a cell
   (crossings, passes, sinking, raising) is decided afterwards in agent order, so a run gives the same agents serial or
   in parallel (the self-test checks). Visual only: nothing feeds back into the game or the network.
-- **Placement API** (for shots into the far crowd, board item `dev-mass-points-mp01`): `CrowdAgents.Count` and the
+- **Placement API** (used for the shooter's prediction and the hit effects, "Combat" above): `CrowdAgents.Count` and the
   agent arrays (`X`, `Z`, `Y`, `Yaw`, `State`, `CellOf`, `Look`), `Position(i)` (its feet, sunk by its fade),
   `Standing(i)`, `RayHit(origin, dir, maxDist, out t)` (vertical capsules, walking the grid's cells along the ray) and
-  `Kill(i)` (it sinks; the cell raises another if its count says so). Independent of the server: it reads only the
-  counts it is given. `Program.Crowd.Agents` is the pool the last frame drew.
+  `Kill(i)` (it sinks; the cell raises another if its count says so), `NearestStanding`, `IndexOfId`. Independent of
+  the server: it reads only the counts it is given. `Program.Crowd.Agents` (and `Game.DrawnCrowd`) is the pool the last
+  frame drew.
 
 ### Culling
 
@@ -214,6 +238,13 @@ frame's instance preparation under 4 ms of CPU. Steady-state allocation must be 
 instance preparation, standing on the crowd, the roar). It also checks the network picture against what was sent,
 promotion and demotion when the player walks off, a seeded replay, the baked rigs, shots and blasts into the crowd and
 the mass, the surface (lift, stand, slide, client agreement) and the roar. The CI run's notice has the numbers.
+
+Section **"Mass points"** (`Source/App/SelfTestMassPoints.cs`, a fraction of a second once the map is loaded): scripted
+volleys (body shots to a kill, a body shot then head shots, Double Points, Insta-Kill) on an individual walker and on a
+mass zombie at the same spot pay the same points shot by shot, with the same kills and headshots; a blast over ten
+individuals and over ten mass zombies at the same spots pays the same; a blast in a blob of 600 pays every hit and kill
+and rolls at most 4 drops; a wound survives the flow and comes out of the mass hurt; a ray finds the next zombie behind
+(pierce); the drawn crowd bleeds and loses a zombie on a kill; the ray test allocates nothing; the counts add up.
 
 Section **"Crowd agents"** (`Source/App/SelfTestCrowdAgents.cs`, about a second): a scripted run of 7 s of crowd
 messages through a picture (a stream flowing east, counts moving downstream, kills, arrivals, headings wobbling, the

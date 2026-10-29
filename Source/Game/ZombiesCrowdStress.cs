@@ -98,7 +98,7 @@ public sealed partial class Game
         Crowd.Clear();
         _crowdRound = (_crowdRound + 1) & 0xFFFF; // (clients get a keyframe: ZombiesCrowdNet.cs)
         _zToSpawn = 0;
-        Crowd.MassHP = ZRules.ZombieHealth(Math.Max(1, round));
+        Crowd.MassHP = CrowdZombieHealth(round);
         StressWave = 0;
         StressWaveSize = n;
         StressMergeSeconds = -1;
