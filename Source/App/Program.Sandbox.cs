@@ -25,6 +25,54 @@ public static unsafe partial class Program
     private static bool SandboxHoldsTrigger =>
         _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated);
 
+    /// <summary>
+    /// The inventory key (I by default) in Sandbox opens the debug parts menu (UiSandboxParts.cs), the mouse free for it;
+    /// again (or Esc) closes it (while its search box has the keyboard the game's keys are off: Esc then). Not with the chat or another menu open, in a seat, or dead; refused
+    /// with a notice where the map turns the menu off.
+    /// </summary>
+    private static void SandboxMenuInput()
+    {
+        if (_game is not { SandboxOn: true } g || !Pressed(GameAction.Inventory))
+            return;
+        if (Ui.SandboxPartsOpen)
+        {
+            Ui.CloseSandboxParts();
+            SetMouseCaptured(true);
+            return;
+        }
+        if (Ui.ChatOpen || Ui.PauseOpen || Ui.MenuOpen || MenusOpen || g.Phase != MatchPhase.Playing || g.Local is not { Alive: true } me)
+            return;
+        if (!g.SandboxPartsMenu)
+        {
+            g.SandboxSay("the parts menu is off on this map");
+            return;
+        }
+        if (g.SandboxHands.Hand(me.Id).Seated)
+        {
+            g.SandboxSay("get out of the seat first");
+            return;
+        }
+        Ui.OpenSandboxParts();
+        SetMouseCaptured(false);
+    }
+
+    /// <summary>The Sandbox parts menu over the match; it closes (and the mouse goes back to aiming) when you die, sit, the match ends or the mode changes.</summary>
+    private static void DrawSandboxPartsInMatch()
+    {
+        if (!Ui.SandboxPartsOpen)
+            return;
+        var gone = _session == null || !_game.SandboxPartsMenu || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
+        if (!gone)
+            Ui.DrawSandboxParts(_game, _settings);
+        if (gone || !Ui.SandboxPartsOpen)
+        {
+            Ui.CloseSandboxParts();
+            if (!MenusOpen)
+                SetMouseCaptured(true);
+            _swallowClick = true; // (the click that picked a part mustn't also fit it)
+        }
+    }
+
     /// <summary>The Sandbox keys, every frame while the mouse is captured. Returns true when the mode is on (the normal Interact, slot 3/4 and reload keys are then its own).</summary>
     private static bool SandboxInput(double now)
     {
@@ -113,7 +161,7 @@ public static unsafe partial class Program
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
-            g.SandboxLookText = "Parts rack: F to take a part (again for the next kind)";
+            g.SandboxLookText = "Parts rack: F to take a part (again for the next kind; I: the parts menu)";
         if (Pressed(GameAction.Interact))
         {
             if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)

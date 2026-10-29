@@ -29,6 +29,12 @@ public sealed class SandboxMap
     public List<SandboxSpawn> Constructs = new();
     public List<SandboxLoose> Loose = new();
 
+    /// <summary>
+    /// The debug parts menu (the inventory key in Sandbox: any part into your hands, any blueprint spawned in front of
+    /// you; UiSandboxParts.cs) is allowed here. On by default; <c>"partsMenu": false</c> turns it off (a survival map).
+    /// </summary>
+    public bool PartsMenu = true;
+
     public Vector3 Rack => new(RackX, 0, RackZ);
 
     /// <summary>Reads the section. Part and blueprint names must exist (a missing one is a refusal with the reason).</summary>
@@ -72,8 +78,13 @@ public sealed class SandboxMap
                         s.Loose.Add(new SandboxLoose { Part = name, X = x, Z = z, Yaw = yaw });
                     }
                     break;
+                case "partsmenu":
+                    if (p.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
+                        throw new MapFileException($"{source}: sandbox.partsMenu: expected true or false");
+                    s.PartsMenu = p.Value.GetBoolean();
+                    break;
                 default:
-                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose)");
+                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu)");
             }
         if (s.RackParts.Count == 0)
             s.RackParts.AddRange(ConstructParts.All.Select(d => d.Name));

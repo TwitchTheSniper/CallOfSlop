@@ -288,6 +288,24 @@ public sealed class ConstructEdits
         return null;
     }
 
+    /// <summary>
+    /// The debug parts menu (UiSandboxParts.cs): any loaded part, by id, straight into the hands, wherever the player is
+    /// (what is in them is replaced, as at the rack). Refused when the map turns the menu off (<see cref="SandboxMap.PartsMenu"/>).
+    /// </summary>
+    public string? TakePart(SandboxMap? sandbox, byte player, byte part)
+    {
+        ref var h = ref Hands[player];
+        if (sandbox is not { PartsMenu: true })
+            return "the parts menu is off on this map";
+        if (h.Seated)
+            return "get out of the seat first";
+        if (ConstructParts.Get(part) is not { } def)
+            return "no such part";
+        h.Held = def.Id;
+        h.Edit = EditKind.None;
+        return null;
+    }
+
     public string? PickUp(ConstructWorld world, byte player, Vector3 eye, ushort body)
     {
         ref var h = ref Hands[player];

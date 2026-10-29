@@ -91,7 +91,7 @@ public enum Msg : byte
     SteamAuth, // client -> server: kind 0, my Steam auth session ticket for this host (u16 length, bytes); server -> one client: kind 1, you were refused or removed (the reason), then the connection closes (reliable; GameSteamAuth.cs, protocol 76)
     CBody, // server -> all (on a change) and each joiner: Sandbox: one construct's parts, links, joints and pose, a part's health, or a construct gone (a CBodyKind first) (reliable ordered; ConstructNet.cs, protocol 77; wires, logic settings and signals: 78)
     CPose, // server -> all: Sandbox: the moving constructs' poses (tick, then id, position, turn, velocity, steering, joint angles and speeds, signals each) (unreliable sequenced, 20 Hz; protocol 77, 78)
-    CAct, // client -> server: Sandbox: an action (a CActKind first): hold a tool, attach or remove a part, cancel, use (sit, stand, a door, pick up), take from the rack, drop; wire, unwire, a setting, a seat's keys (reliable ordered; GameSandbox.cs, protocol 77, 78)
+    CAct, // client -> server: Sandbox: an action (a CActKind first): hold a tool, attach or remove a part, cancel, use (sit, stand, a door, pick up), take from the rack (or a part by id from the debug parts menu), drop; wire, unwire, a setting, a seat's keys, a blueprint from the parts menu (reliable ordered; GameSandbox.cs, protocol 77, 78, 79)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

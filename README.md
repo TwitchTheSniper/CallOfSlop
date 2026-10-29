@@ -1001,6 +1001,12 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
   part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
   takes the part you look at off into your hand, T drops what you hold. Fire on the ground starts a new construct.
+- **Parts (debug)**: a debugging aid for the test yard, not how the final game will hand parts out. **I** (the inventory
+  key, rebindable) opens a window listing every part, grouped by role, with a search box, each with its colour, the tool
+  it needs, mass, health, armour and description. Click one (or Up/Down and Enter) and it is in your hands, with its tool
+  out, exactly as if you took it from the rack; the recent row keeps your last picks, and the blueprint buttons (Buggy,
+  Gate, Lift, Motor Gate, Turret, Wired Buggy) build one in front of you. "Keep open after picking" leaves the window up;
+  I or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
 - **Wiring**: with the linking tool out the wires show (green while on). Fire on an output (a seat, a button, lever,
   switch, pressure plate, input reader, sensor or gate), then fire on an input (a joint, the engine, a gate, a lamp, a
   horn, a brake, a hinge's lock) to wire them; aim cuts a part's wires; R changes a logic part's setting (a timer's

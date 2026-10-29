@@ -172,7 +172,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 78: Sandbox constructs milestone 2 (docs/sandbox/CONSTRUCTS.md): construct structure carries each part's logic setting
     //     and signal, joint types, lock and wired flags, and the wires; poses carry joint speeds and the signal parts' values;
     //     Msg.CAct gains Wire, Unwire, Setting and SeatKeys; the Sandbox state tail's tool can be the linking tool (version 2).
-    public const byte ProtocolVersion = 78;
+    // 79: the Sandbox debug parts menu (docs/sandbox/CONSTRUCTS.md): CActKind.Rack carries a pick byte (0: the rack's next
+    //     kind; n: part id n - 1, from the menu) and CActKind.Blueprint (a blueprint index) builds one in front of the player.
+    public const byte ProtocolVersion = 79;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
