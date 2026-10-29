@@ -5,14 +5,16 @@ using Brutal.GlfwApi;
 namespace CallOfSlop;
 
 /// <summary>
-/// <c>--stress-shots wake [size] [--wake-old]</c>: pictures of the mass horde waking and sleeping by sight
+/// <c>--stress-shots wake [size] [--wake-old] [--wake-round N] [--fixed-pace]</c>: pictures of the mass horde waking and sleeping by sight
 /// (docs/zombies/MASS-HORDE.md, "Waking and sleeping"), written next to the log as smoke_wake_&lt;view&gt;_&lt;s&gt;s.bmp.
 /// An offline Zombies game on Horde Stress with <c>size</c> zombies (20,000 by default) seeded all round the player on
 /// the valley floor (particles out to 45 m, the mass beyond), the player looking down the valley and shooting the
 /// individual nearest the middle of their view every 0.2 s (unhurt). Every 2 s the log gets the tiers ("[wakeshots]":
 /// individuals in view and behind, particles moving and waiting, the crowd's mean distance); at 6 and 20 s pictures from
 /// the player's eye, from their eye looking back, and from above. <c>--wake-old</c>: the old behaviour's tuning (no
-/// sight, no swaps, the front standing at the promote range, closing in from all round), for a before and after. Add
+/// sight, no swaps, the front standing at the promote range, closing in from all round), for a before and after.
+/// <c>--wake-round N</c>: round N's pace (round 1 by default; MASS-HORDE.md, "Pace by round"); <c>--fixed-pace</c>: the
+/// old fixed crowd pace. Add
 /// <c>--crowd-tiers</c> for the tier colours. Runs under a virtual X server like the other picture tools.
 /// </summary>
 public static unsafe partial class Program
@@ -22,6 +24,9 @@ public static unsafe partial class Program
         var arg = args.SkipWhile(a => !a.Equals("wake", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
         var size = arg != null && int.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? Math.Clamp(n, 100, Game.StressMax) : 20000;
         var old = args.Any(a => a.Equals("--wake-old", StringComparison.OrdinalIgnoreCase));
+        var ri = Array.FindIndex(args, a => a.Equals("--wake-round", StringComparison.OrdinalIgnoreCase));
+        var round = ri >= 0 && ri + 1 < args.Length && int.TryParse(args[ri + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out var rn) ? Math.Clamp(rn, 1, 1000) : 1;
+        var fixedPace = args.Any(a => a.Equals("--fixed-pace", StringComparison.OrdinalIgnoreCase));
         if (Maps.Find("Horde Stress") is not { Zombies.Stress: { } st } map)
         {
             Console.WriteLine("[wakeshots] no Horde Stress map");
@@ -39,6 +44,8 @@ public static unsafe partial class Program
             var c0 = g.ZRules.Crowd;
             (c0.UnseenWeight, c0.SwapMargin, c0.HeldPace, c0.SurroundArc) = (1f, 100f, 0f, 360f);
         }
+        if (fixedPace)
+            g.ZRules.Crowd.PaceByRound = false;
         _session = g;
         var now = Glfw.Time;
         for (var t = 0.0; t < Game.CountdownSeconds + 0.3; t += World.TickDt)
@@ -52,7 +59,7 @@ public static unsafe partial class Program
         me.Teleport(at);
         me.Yaw = MathF.PI / 2;
         me.Pitch = 0;
-        g.SelfTestBeginRound(1, now);
+        g.SelfTestBeginRound(round, now);
         var rng = 0x5EEDu;
         float Rand()
         {
