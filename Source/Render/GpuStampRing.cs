@@ -18,10 +18,20 @@ public interface IGpuStamps
 
 /// <summary>
 /// GPU time of a few consecutive passes per frame from timestamp queries (glQueryCounter), a small ring of frames in
-/// flight, read back a few frames later so it never stalls. A frame stamps 0 before the first pass, then k after pass
-/// k; pass k's time is stamp k minus stamp k-1, and a pass whose end stamp wasn't written that frame (skipped) gives no
-/// sample. Timestamps rather than GL_TIME_ELAPSED: they don't nest-conflict with the other renderers' elapsed queries,
-/// and some drivers report 0 for elapsed queries around short instanced passes. Allocation-free per frame.
+/// flight, read back a few frames later so it never stalls. A frame stamps once before the first pass, then optionally
+/// at the start of pass k (<see cref="BeginPass"/>) and at its end (<see cref="EndPass"/>). Pass k's time runs from its
+/// own start stamp when it has one, otherwise from the latest stamp before its end (the end of the pass before it); a
+/// pass whose end stamp wasn't written that frame (skipped) gives no sample.
+///
+/// Why start stamps: a timestamp is written when the GPU gets there, so when the GPU runs dry (a CPU-bound frame: it
+/// has finished everything submitted and waits for the CPU to hand it more) the wait lands between two stamps. Without
+/// a start stamp it is billed to whichever pass comes next, though that pass did nothing; with one it falls between
+/// passes and is billed to none (<see cref="Gaps"/> counts it). Polling a query (glGetQueryObject) also makes most
+/// drivers submit the commands so far, which starts such a wait right there, so nothing should poll inside a timed
+/// range (the sky's own timer did, which billed the CPU time of the horde after it to the sky; README "Performance window").
+///
+/// Timestamps rather than GL_TIME_ELAPSED: they don't nest-conflict with the other renderers' elapsed queries, and
+/// some drivers report 0 for elapsed queries around short instanced passes. Allocation-free per frame.
 /// </summary>
 public sealed class GpuStampRing
 {
@@ -32,13 +42,13 @@ public sealed class GpuStampRing
     private int _frame;
     private bool _recording;
 
-    /// <param name="passes">Passes timed per frame (stamps per frame = passes + 1).</param>
+    /// <param name="passes">Passes timed per frame (stamps per frame = 2 * passes + 1: the frame's start, then each pass's start and end).</param>
     /// <param name="ring">Frames in flight.</param>
     /// <param name="gpu">The query backend; it must hold (passes + 1) * ring queries.</param>
     /// <param name="sample">Called with (pass, milliseconds) for each pass read back.</param>
     public GpuStampRing(int passes, int ring, IGpuStamps gpu, Action<int, double> sample)
     {
-        _stamps = passes + 1;
+        _stamps = 2 * passes + 1;
         _ring = ring;
         _gpu = gpu;
         _sample = sample;
@@ -47,7 +57,17 @@ public sealed class GpuStampRing
     }
 
     /// <summary>Queries the backend needs.</summary>
-    public static int QueryCount(int passes, int ring) => (passes + 1) * ring;
+    public static int QueryCount(int passes, int ring) => (2 * passes + 1) * ring;
+
+    /// <summary>GPU time from the stamp before each start stamp to that start (the GPU waiting between passes, or work
+    /// outside any pass), summed over the frames read back; see <see cref="GapSamples"/>.</summary>
+    public double Gaps;
+
+    /// <summary>Start stamps read back (each adds its gap to <see cref="Gaps"/>).</summary>
+    public int GapSamples;
+
+    /// <summary>Frames read back so far.</summary>
+    public int FramesRead;
 
     /// <summary>Is this frame being timed (its slot was free)?</summary>
     public bool Recording => _recording;
@@ -64,8 +84,11 @@ public sealed class GpuStampRing
         Stamp(0);
     }
 
-    /// <summary>Marks the end of pass <paramref name="pass"/> (0-based): writes stamp pass + 1.</summary>
-    public void EndPass(int pass) => Stamp(pass + 1);
+    /// <summary>Marks the start of pass <paramref name="pass"/> (0-based; optional): writes stamp 2 * pass + 1.</summary>
+    public void BeginPass(int pass) => Stamp(2 * pass + 1);
+
+    /// <summary>Marks the end of pass <paramref name="pass"/> (0-based): writes stamp 2 * pass + 2.</summary>
+    public void EndPass(int pass) => Stamp(2 * pass + 2);
 
     /// <summary>Ends the frame: its stamps are in flight until <see cref="Collect"/> finds them ready.</summary>
     public void EndFrame()
@@ -100,7 +123,8 @@ public sealed class GpuStampRing
             if (!ready)
                 continue;
             _pending[s] = false;
-            // Each pass from the latest written stamp before it (stamps are written in order).
+            FramesRead++;
+            // Each pass from the latest written stamp before its end (its own start, if it has one; stamps are written in order).
             var prev = _marked[b] ? _gpu.Read(b) : 0UL;
             var hasPrev = _marked[b];
             for (var k = 1; k < _stamps; k++)
@@ -109,7 +133,16 @@ public sealed class GpuStampRing
                     continue;
                 var t = _gpu.Read(b + k);
                 if (hasPrev)
-                    _sample(k - 1, t > prev ? (t - prev) / 1e6 : 0);
+                {
+                    var ms = t > prev ? (t - prev) / 1e6 : 0;
+                    if ((k & 1) == 0)
+                        _sample(k / 2 - 1, ms); // an end stamp: the pass
+                    else
+                    {
+                        Gaps += ms; // a start stamp: the time since the stamp before it, outside any pass
+                        GapSamples++;
+                    }
+                }
                 prev = t;
                 hasPrev = true;
             }

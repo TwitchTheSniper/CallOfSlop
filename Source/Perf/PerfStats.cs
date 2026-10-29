@@ -175,7 +175,7 @@ public sealed class PerfStats
         sb.Append(c, $"music thread: {MusicMsPerSecond:0.0} ms per second\n");
         if (gpu is { Available: true })
         {
-            sb.Append(c, $"GPU per pass (smoothed ms), total {gpu.TotalAvgMs():0.000}:\n");
+            sb.Append(c, $"GPU per pass (smoothed ms), total {gpu.TotalAvgMs():0.000}, plus {gpu.GapAvgMs:0.000} between passes (GPU waiting for the CPU):\n");
             for (var p = 0; p < PerfGpu.Count; p++)
                 if (gpu.Samples[p] > 0)
                     sb.Append(c, $"  {PerfGpu.Names[p]}: {gpu.AvgMs[p]:0.000}\n");

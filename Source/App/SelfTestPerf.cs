@@ -274,6 +274,8 @@ public static partial class SelfTest
                 gpu.Mark(PerfGpuPass.Buildings);
                 fake.Now += 2_000_000;
                 gpu.Mark(PerfGpuPass.Props);
+                fake.Now += 3_000_000; // the GPU waits for the CPU here: between passes, billed to none
+                gpu.Begin(PerfGpuPass.Sky);
                 fake.Now += 500_000;
                 gpu.Mark(PerfGpuPass.Sky);
                 gpu.Mark(PerfGpuPass.Props); // out of order: skipped and counted
@@ -287,8 +289,10 @@ public static partial class SelfTest
             Fail($"perf GPU: available {gpu.Available}, {fake.EarlyReads} result(s) read before they were ready (would stall)");
         var p = gpu.Samples[(int)PerfGpuPass.Props];
         if (p < recorded - PerfGpu.Ring || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Buildings] - 1f) > 1e-3f || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Props] - 2f) > 1e-3f
-            || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Sky] - 0.5f) > 1e-3f || gpu.Samples[(int)PerfGpuPass.Terrain] != 0 || gpu.OutOfOrder != 120)
-            Fail($"perf GPU: {p} props samples of {recorded} timed frames; buildings {gpu.AvgMs[0]:0.000} props {gpu.AvgMs[2]:0.000} sky {gpu.AvgMs[6]:0.000} ms (want 1, 2, 0.5), terrain samples {gpu.Samples[1]}, out of order {gpu.OutOfOrder} (want 120)");
+            || MathF.Abs(gpu.AvgMs[(int)PerfGpuPass.Sky] - 0.5f) > 1e-3f || gpu.Samples[(int)PerfGpuPass.Terrain] != 0 || gpu.OutOfOrder != 120
+            || MathF.Abs(gpu.GapAvgMs - 3f) > 1e-3f)
+            Fail($"perf GPU: {p} props samples of {recorded} timed frames; buildings {gpu.AvgMs[0]:0.000} props {gpu.AvgMs[2]:0.000} sky {gpu.AvgMs[(int)PerfGpuPass.Sky]:0.000} ms (want 1, 2, 0.5), "
+                 + $"between passes {gpu.GapAvgMs:0.000} ms (want 3: a wait before the sky's start stamp is billed to no pass), terrain samples {gpu.Samples[1]}, out of order {gpu.OutOfOrder} (want 120)");
 
         // A driver that never finishes: every slot stays pending, frames go on untimed, nothing is ever read or waited for.
         PerfFakeStamps? stuck = null;
@@ -314,7 +318,7 @@ public static partial class SelfTest
         none.EndFrame();
         if (none.Available || !none.Tried)
             Fail("perf GPU: a driver without timestamps isn't reported as unavailable");
-        Line($"GPU: {recorded} of 120 frames timed, {gpu.Readings} pass readings, never early; a stuck driver: {timedFrames} frames timed, 0 reads");
+        Line($"GPU: {recorded} of 120 frames timed, {gpu.Readings} pass readings, never early, sky {gpu.AvgMs[(int)PerfGpuPass.Sky]:0.000} ms with {gpu.GapAvgMs:0.000} ms between passes; a stuck driver: {timedFrames} frames timed, 0 reads");
         Perf.Gpu = null;
     }
 

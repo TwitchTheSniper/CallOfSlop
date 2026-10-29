@@ -177,6 +177,7 @@ public static unsafe partial class Program
                     totals[key] = (acc.Cpu + mc, acc.Full + mf, acc.Gpu + Math.Max(mg, 0), acc.Views + 1);
                 }
             }
+            BenchSkyAlone(map, frames, shots);
             for (var c = 0; c < configs.Count; c++)
             {
                 var parts = new List<string>();
@@ -196,6 +197,58 @@ public static unsafe partial class Program
             Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
                 $"[glbench] summary {key.Replace('|', ' '),-40} cpu {t.Cpu / t.Views,7:0.000}  frame {t.Full / t.Views,8:0.000}  gpu {t.Gpu / t.Views,8:0.000}  (mean of {t.Views} views)"));
         Console.WriteLine($"[glbench] done{(shots ? $", {pictureFailures} picture(s) differ from all on" : "")}, GL error 0x{GlDebug.Error():X}");
+    }
+
+    private static GlGpuStamps? _skyStamps;
+
+    /// <summary>
+    /// The sky on its own: a full screen of sky (the camera looking just above the horizon, nothing else drawn) at High
+    /// and at Low, each draw between two glFinish calls, timed with GPU timestamps and with the CPU clock (Mesa llvmpipe
+    /// writes its timestamps when it bins a draw, not when it shades it, so on llvmpipe only the clock means anything).
+    /// It is the sky shader's own cost at this size with every pixel sky; in play only the pixels the world leaves
+    /// uncovered pay. Maps with a "skybox" only.
+    /// </summary>
+    private static void BenchSkyAlone(Map map, int frames, bool shots)
+    {
+        if (map.Skybox == null)
+            return;
+        _skyStamps ??= GlGpuStamps.Create(4);
+        if (_skyStamps == null)
+            return;
+        var fb = _window.FramebufferSize;
+        var (eye, _, fov, _) = MapThumbs.Camera(map);
+        var fwd = Vector3.Normalize(new Vector3(0.3f, 0.35f, -1f));
+        var gpu = new double[2 * frames];
+        var wall = new double[2 * frames];
+        var n = 0;
+        for (var f = -5; f < frames && !_window.ShouldClose; f++)
+        {
+            Glfw.PollEvents();
+            var t = ShotTime + Math.Max(f, 0) / 60.0;
+            Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
+            Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, eye + fwd, Vector3.UnitY), Matrix4x4.CreatePerspectiveFieldOfView(fov, fb.X / (float)Math.Max(fb.Y, 1), 0.05f, map.FarPlane));
+            for (var k = 0; k < 2; k++)
+            {
+                Native.glFinish();
+                var c0 = Stopwatch.GetTimestamp();
+                _skyStamps.Stamp(2 * k);
+                SkyRenderer.Draw(Gfx, map, k == 0 ? SkyQuality.High : SkyQuality.Low, t, timed: false);
+                _skyStamps.Stamp(2 * k + 1);
+                Native.glFinish();
+                if (f >= 0)
+                {
+                    wall[k * frames + n] = Stopwatch.GetElapsedTime(c0).TotalMilliseconds;
+                    gpu[k * frames + n] = (_skyStamps.Read(2 * k + 1) - (double)_skyStamps.Read(2 * k)) / 1e6;
+                }
+                if (k == 0 && shots && f == frames - 1)
+                    SaveScreenshot($"bench_{Slug(map.Name)}_sky_alone");
+            }
+            if (f >= 0)
+                n++;
+            _window.SwapBuffers();
+        }
+        Console.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            $"[glbench] sky alone {map.Name,-22} {fb.X}x{fb.Y}: High {Median(gpu, 0, n):0.000} ms GPU, {Median(wall, 0, n):0.000} ms clock; Low {Median(gpu, frames, n):0.000} ms GPU, {Median(wall, frames, n):0.000} ms clock (full screen of sky, median of {n})"));
     }
 
     /// <summary>The finished frame's RGBA pixels (full size).</summary>

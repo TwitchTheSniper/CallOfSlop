@@ -1476,6 +1476,11 @@ public static unsafe partial class Program
         using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
             DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world (Program.Decals.cs)
         BenchPass(6);
+        // The sky's own GPU timer is read back here, between passes: a query poll makes the driver submit what it has, and
+        // in a CPU-bound frame the GPU then waits for the CPU, which must not land inside a timed pass (Source/Perf/PerfGpu.cs).
+        SkyRenderer.CollectTimer();
+        Perf.Gpu?.Begin(PerfGpuPass.Probe); // an empty timed pass: the F9 window's check that waits aren't billed to a pass (reads about 0)
+        Perf.Gpu?.Mark(PerfGpuPass.Probe);
         using (Perf.Pass(PerfArea.Sky, PerfGpuPass.Sky))
             SkyRenderer.Draw(Gfx, map, _settings.SkyQuality, Glfw.Time); // last opaque pass: only where nothing was drawn (Source/Render/Sky)
         BenchPass(7);

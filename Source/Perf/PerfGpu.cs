@@ -12,6 +12,7 @@ public enum PerfGpuPass : byte
     Meshes,
     Foliage,
     Decals,
+    Probe,
     Sky,
     Bodies,
     Entities,
@@ -25,7 +26,10 @@ public enum PerfGpuPass : byte
 /// <summary>
 /// GPU time per pass for the performance window: one <see cref="GpuStampRing"/> of timestamp queries (glQueryCounter,
 /// core since GL 3.3, so fine on the GL 4.1 / Mac target) over the whole frame, a ring of <see cref="Ring"/> frames in
-/// flight, each read back only once its results are available (never a stall). Timestamps rather than GL_TIME_ELAPSED
+/// flight, each read back only once its results are available (never a stall). Each pass is stamped where it starts
+/// (<see cref="Begin"/>, from <see cref="Perf.Pass"/>) and where it ends (<see cref="Mark"/>), so time the GPU spends
+/// waiting for the CPU between passes is shown apart (<see cref="GapAvgMs"/>) instead of billed to the next pass;
+/// <see cref="PerfGpuPass.Probe"/> is an empty pass just before the sky that checks it (it should read about 0). Timestamps rather than GL_TIME_ELAPSED
 /// because the terrain, foliage and mesh renderers keep GL_TIME_ELAPSED queries of their own, and two elapsed queries
 /// can't be open at once. Only runs while <see cref="Perf.On"/>; closed, it makes no GL calls at all. The one place to
 /// build further GPU timing on (GL debug output, finer passes).
@@ -36,12 +40,16 @@ public sealed class PerfGpu
     public const int Count = (int)PerfGpuPass.COUNT;
 
     public static readonly string[] Names =
-        ["Buildings", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "UI (ImGui)"];
+        ["Buildings", "Terrain", "Props", "Meshes", "Foliage", "Decals", "Empty (timer check)", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "UI (ImGui)"];
 
     private readonly Func<int, IGpuStamps?> _make;
     private GpuStampRing? _ring;
     private bool _tried, _inFrame;
-    private int _lastMarked = -1;
+    private int _lastMarked = -1, _framesSeen;
+    private double _gapsSeen;
+
+    /// <summary>Smoothed GPU time per frame between the timed passes (the GPU waiting for the CPU, or untimed work).</summary>
+    public float GapAvgMs;
 
     /// <summary>Per pass: the latest reading (ms) and its smoothed average.</summary>
     public readonly float[] LastMs = new float[Count], AvgMs = new float[Count];
@@ -87,6 +95,17 @@ public sealed class PerfGpu
         _ring.BeginFrame();
         _inFrame = _ring.Recording;
         _lastMarked = -1;
+        CountGaps();
+    }
+
+    /// <summary>Marks the start of a pass (optional; in frame order, before its <see cref="Mark"/>).</summary>
+    public void Begin(PerfGpuPass pass)
+    {
+        if (!_inFrame)
+            return;
+        var p = (int)pass;
+        if (p > _lastMarked)
+            _ring!.BeginPass(p); // (out of order: its Mark is skipped and counted)
     }
 
     /// <summary>Marks the end of a pass (in frame order; a pass out of order is skipped and counted).</summary>
@@ -115,7 +134,20 @@ public sealed class PerfGpu
     }
 
     /// <summary>Reads back whatever is ready without starting a frame (the self-test's drain; never waits).</summary>
-    public void Collect() => _ring?.Collect();
+    public void Collect()
+    {
+        _ring?.Collect();
+        CountGaps();
+    }
+
+    private void CountGaps()
+    {
+        if (_ring == null || _ring.FramesRead == _framesSeen)
+            return;
+        var f = (float)((_ring.Gaps - _gapsSeen) / (_ring.FramesRead - _framesSeen));
+        GapAvgMs = _framesSeen == 0 ? f : GapAvgMs + (f - GapAvgMs) * 0.1f;
+        (_framesSeen, _gapsSeen) = (_ring.FramesRead, _ring.Gaps);
+    }
 
     private void OnSample(int pass, double ms)
     {

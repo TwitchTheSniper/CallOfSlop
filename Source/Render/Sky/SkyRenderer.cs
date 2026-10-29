@@ -23,9 +23,13 @@ namespace CallOfSlop;
 /// precision on long sessions. Image skies sample a cube map (6 PNG faces) or an equirectangular PNG / HDR panorama
 /// (HDR tone mapped with an exposure).
 ///
-/// Cost: a handful of ALU ops and 3-4 texture fetches per sky pixel at High, 1 fetch at Low (no clouds or stars), and
-/// zero CPU allocations per frame. GPU time is measured with timestamp queries (the mesh, prop and foliage renderers
-/// use GL_TIME_ELAPSED queries of their own, which can't nest) and logged as a "[sky]" line every few seconds.
+/// Cost: one program per kind of sky (procedural High, procedural Low, cube map, panorama; see <see cref="VariantOf"/>),
+/// so a pixel runs only its own sky's code: a handful of ALU ops and 3 texture fetches per sky pixel at High, none at
+/// Low (no clouds or stars; one fetch inside the moon's disc), and zero CPU allocations per frame. GPU time is measured
+/// with timestamp queries (the mesh, prop and foliage renderers use GL_TIME_ELAPSED queries of their own, which can't
+/// nest) and logged as a "[sky]" line every few seconds; the timer is read back between passes (<see cref="CollectTimer"/>),
+/// never inside the sky's own timed range. <c>--gl-bench</c> logs a "sky alone" line per sky map: a full screen of
+/// sky at High and Low, the shader's own cost at that size.
 /// If the shader can't be built, the sky is skipped (the flat clear colour shows) and the light still follows the sky.
 /// </summary>
 public static unsafe class SkyRenderer
@@ -43,12 +47,17 @@ public static unsafe class SkyRenderer
         }
         """;
 
-    /// <summary>The sky fragment shader (after <see cref="Lighting.Glsl"/>, which supplies SkyGradient and the sun).</summary>
+    /// <summary>
+    /// The sky fragment shader (after <see cref="Lighting.Glsl"/>, which supplies SkyGradient and the sun). It is built
+    /// as one program per kind of sky (SKY_VARIANT: 0 procedural at High, 1 procedural at Low, 2 cube map, 3 panorama),
+    /// so no pixel pays for branches it never takes and each program keeps only the registers it needs.
+    /// </summary>
     public const string FragmentBody = """
 
+        #ifndef SKY_VARIANT
+        #define SKY_VARIANT 0
+        #endif
         in vec4 vRay;
-        uniform float uMode;      // 0 procedural, 1 cube map, 2 panorama
-        uniform float uQuality;   // 0 low (no clouds or stars), 1 high
         uniform float uHdr;
         uniform float uExposure;
         uniform vec2 uRot;        // cos, sin of the image rotation
@@ -81,82 +90,88 @@ public static unsafe class SkyRenderer
         {
             vec3 d = normalize(vRay.xyz / vRay.w);
             vec3 col;
+        #if SKY_VARIANT >= 2
+            // Image skies: a cube map or an equirectangular panorama, turned round the vertical axis.
+            vec3 r = vec3(d.x * uRot.x - d.z * uRot.y, d.y, d.x * uRot.y + d.z * uRot.x);
+        #if SKY_VARIANT == 2
+            vec3 t = texture(uCube, r).rgb;
+        #else
+            vec3 t = texture(uPano, vec2(atan(r.x, -r.z) * 0.15915494 + 0.5, acos(clamp(r.y, -1.0, 1.0)) * 0.31830989)).rgb;
+        #endif
+            col = uHdr > 0.5 ? vec3(1.0) - exp(-t * uExposure) : t * uExposure;
+        #else
             float above = max(smoothstep(-0.015, 0.015, d.y), uSpace);
-            if (uMode > 0.5)
+            vec3 sky = SkyGradient(d); // (once: the clouds' haze uses it too)
+            col = sky;
+
+        #if SKY_VARIANT == 0
+            // Stars: a sparse hash on a grid of directions, twinkling a little; behind everything else.
+            if (uStars > 0.0 && (d.y > 0.0 || uSpace > 0.5))
             {
-                vec3 r = vec3(d.x * uRot.x - d.z * uRot.y, d.y, d.x * uRot.y + d.z * uRot.x);
-                vec3 t = uMode < 1.5 ? texture(uCube, r).rgb
-                                     : texture(uPano, vec2(atan(r.x, -r.z) * 0.15915494 + 0.5, acos(clamp(r.y, -1.0, 1.0)) * 0.31830989)).rgb;
-                col = uHdr > 0.5 ? vec3(1.0) - exp(-t * uExposure) : t * uExposure;
-            }
-            else
-            {
-                col = SkyGradient(d);
-
-                // Stars: a sparse hash on a grid of directions, twinkling a little; behind everything else.
-                if (uQuality > 0.5 && uStars > 0.0 && (d.y > 0.0 || uSpace > 0.5))
+                vec3 sp = d * 260.0;
+                float h = Hash13(floor(sp));
+                if (h > 0.992)
                 {
-                    vec3 sp = d * 260.0;
-                    float h = Hash13(floor(sp));
-                    if (h > 0.992)
-                    {
-                        float r = length(fract(sp) - 0.5);
-                        float tw = 0.7 + 0.3 * sin(uTime * (1.3 + h * 4.0) + h * 300.0);
-                        float b = 0.25 + 0.75 * fract(h * 917.0);
-                        col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * uStars * max(smoothstep(0.0, 0.3, d.y), uSpace));
-                    }
-                }
-
-                // Moon: a sphere lit by the sun, so its phase follows where the sun is.
-                if (uMoon.w > 0.0)
-                {
-                    float md = dot(d, uMoonPos);
-                    col += uMoon.rgb * (0.05 * pow(max(md, 0.0), 40.0) + 0.12 * pow(max(md, 0.0), 900.0)) * above;
-                    if (md > uMoon.w - 0.001)
-                    {
-                        float sinR = sqrt(max(1.0 - uMoon.w * uMoon.w, 1e-8));
-                        vec3 q = (d - uMoonPos * md) / sinR;
-                        float r2 = dot(q, q);
-                        vec3 n = q - uMoonPos * sqrt(max(1.0 - r2, 0.0));
-                        float lit = clamp(dot(n, uSunPos) * 1.4, 0.0, 1.0);
-                        float maria = texture(uNoise, q.xz * 0.35 + 0.5).g;
-                        vec3 mc = uMoon.rgb * (0.07 + 0.93 * lit) * (0.82 + 0.36 * maria);
-                        float a = 1.0 - smoothstep(0.94, 1.0, sqrt(r2));
-                        col = mix(col, mc, a * above);
-                    }
-                }
-
-                // Sun: halo, then the disc.
-                float sd = max(dot(d, uSunPos), 0.0);
-                col += uSunGlow * (pow(sd, 700.0) * 0.9 + pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * above;
-                if (uSunDisc.w > 0.0)
-                {
-                    float aa = max(fwidth(sd), 1e-5);
-                    float disc = smoothstep(uSunDisc.w - aa, uSunDisc.w + aa, sd) * above;
-                    col = mix(col, max(col, uSunDisc.rgb), disc); // never darker than the glow round it
-                }
-
-                // Clouds: a cumulus layer and thin cirrus above it, on flat layers seen in perspective.
-                if (uQuality > 0.5 && uCloud.y > 0.0 && d.y > 0.0)
-                {
-                    float fade = smoothstep(0.0, 0.16, d.y);
-                    vec2 p = d.xz / (d.y + 0.08) * uCloud.z;
-                    float n = dot(texture(uNoise, p + uWind.xy), vec4(0.50, 0.25, 0.15, 0.10));
-                    n = n * 0.72 + texture(uNoise, p * 0.23 + uWind.zw).r * 0.28;
-                    float thr = uCloud.x;
-                    float a = smoothstep(thr, thr + 0.09, n) * uCloud.y * fade;
-                    float thick = smoothstep(thr, thr + 0.30, n);
-                    vec3 cc = mix(uCloudCol, uCloudShade, thick * 0.85);
-                    cc += uSunDisc.rgb * (pow(sd, 10.0) * (1.0 - thick) * 0.35); // light through thin edges near the sun
-                    cc = mix(cc, SkyGradient(d), (1.0 - smoothstep(0.0, 0.35, d.y)) * 0.55); // distance haze
-                    col = mix(col, cc, a);
-
-                    vec2 p2 = d.xz / (d.y + 0.05) * (uCloud.z * 0.3) + uWind2;
-                    float c2 = dot(texture(uNoise, vec2(p2.x * 0.8 + p2.y * 0.3, p2.y * 1.6)).gb, vec2(0.65, 0.35));
-                    float a2 = smoothstep(0.6, 0.85, c2) * uCloud.w * fade * (1.0 - a);
-                    col = mix(col, mix(uCloudCol, SkyGradient(d), 0.35), a2);
+                    float r = length(fract(sp) - 0.5);
+                    float tw = 0.7 + 0.3 * sin(uTime * (1.3 + h * 4.0) + h * 300.0);
+                    float b = 0.25 + 0.75 * fract(h * 917.0);
+                    col += vec3(0.88, 0.93, 1.0) * (smoothstep(0.36, 0.06, r) * b * tw * uStars * max(smoothstep(0.0, 0.3, d.y), uSpace));
                 }
             }
+        #endif
+
+            // Moon: a sphere lit by the sun, so its phase follows where the sun is.
+            if (uMoon.w > 0.0)
+            {
+                float md = dot(d, uMoonPos);
+                col += uMoon.rgb * (0.05 * pow(max(md, 0.0), 40.0) + 0.12 * pow(max(md, 0.0), 900.0)) * above;
+                if (md > uMoon.w - 0.001)
+                {
+                    float sinR = sqrt(max(1.0 - uMoon.w * uMoon.w, 1e-8));
+                    vec3 q = (d - uMoonPos * md) / sinR;
+                    float r2 = dot(q, q);
+                    vec3 n = q - uMoonPos * sqrt(max(1.0 - r2, 0.0));
+                    float lit = clamp(dot(n, uSunPos) * 1.4, 0.0, 1.0);
+                    float maria = texture(uNoise, q.xz * 0.35 + 0.5).g;
+                    vec3 mc = uMoon.rgb * (0.07 + 0.93 * lit) * (0.82 + 0.36 * maria);
+                    float a = 1.0 - smoothstep(0.94, 1.0, sqrt(r2));
+                    col = mix(col, mc, a * above);
+                }
+            }
+
+            // Sun: halo, then the disc.
+            float sd = max(dot(d, uSunPos), 0.0);
+            col += uSunGlow * (pow(sd, 700.0) * 0.9 + pow(sd, 48.0) * 0.22 + pow(sd, 6.0) * 0.06) * above;
+            if (uSunDisc.w > 0.0)
+            {
+                float aa = max(fwidth(sd), 1e-5);
+                float disc = smoothstep(uSunDisc.w - aa, uSunDisc.w + aa, sd) * above;
+                col = mix(col, max(col, uSunDisc.rgb), disc); // never darker than the glow round it
+            }
+
+        #if SKY_VARIANT == 0
+            // Clouds: a cumulus layer and thin cirrus above it, on flat layers seen in perspective.
+            if (uCloud.y > 0.0 && d.y > 0.0)
+            {
+                float fade = smoothstep(0.0, 0.16, d.y);
+                vec2 p = d.xz / (d.y + 0.08) * uCloud.z;
+                float n = dot(texture(uNoise, p + uWind.xy), vec4(0.50, 0.25, 0.15, 0.10));
+                n = n * 0.72 + texture(uNoise, p * 0.23 + uWind.zw).r * 0.28;
+                float thr = uCloud.x;
+                float a = smoothstep(thr, thr + 0.09, n) * uCloud.y * fade;
+                float thick = smoothstep(thr, thr + 0.30, n);
+                vec3 cc = mix(uCloudCol, uCloudShade, thick * 0.85);
+                cc += uSunDisc.rgb * (pow(sd, 10.0) * (1.0 - thick) * 0.35); // light through thin edges near the sun
+                cc = mix(cc, sky, (1.0 - smoothstep(0.0, 0.35, d.y)) * 0.55); // distance haze
+                col = mix(col, cc, a);
+
+                vec2 p2 = d.xz / (d.y + 0.05) * (uCloud.z * 0.3) + uWind2;
+                float c2 = dot(texture(uNoise, vec2(p2.x * 0.8 + p2.y * 0.3, p2.y * 1.6)).gb, vec2(0.65, 0.35));
+                float a2 = smoothstep(0.6, 0.85, c2) * uCloud.w * fade * (1.0 - a);
+                col = mix(col, mix(uCloudCol, sky, 0.35), a2);
+            }
+        #endif
+        #endif
             // A touch of noise so 8-bit gradients don't band.
             col += (Hash13(vec3(gl_FragCoord.xy, 7.0)) - 0.5) / 255.0;
             FragColor = vec4(col, 1.0);
@@ -165,15 +180,32 @@ public static unsafe class SkyRenderer
 
     private static readonly string FragmentSrc = "#version 410 core\n" + Lighting.Glsl + FragmentBody;
 
+    /// <summary>The fragment source of one kind of sky (<see cref="VariantOf"/>): the variant's define, then the rest.</summary>
+    public static string VariantSource(int variant) => $"#version 410 core\n#define SKY_VARIANT {variant}\n" + Lighting.Glsl + FragmentBody;
+
+    /// <summary>The program a sky is drawn with: 0 procedural at High, 1 procedural at Low (no clouds or stars), 2 cube map, 3 panorama.</summary>
+    public static int VariantOf(SkyType type, SkyQuality quality) => type switch
+    {
+        SkyType.Cubemap => 2,
+        SkyType.Equirect => 3,
+        _ => quality == SkyQuality.High ? 0 : 1,
+    };
+
+    private const int Variants = 4;
+
     /// <summary>The uniforms the sky shader declares (besides <see cref="Lighting.UniformNames"/>); the self-test checks both sides agree.</summary>
     public static readonly string[] UniformNames =
-        ["uInvVP", "uMode", "uQuality", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
+        ["uInvVP", "uHdr", "uExposure", "uRot", "uSunPos", "uSunDisc", "uSunGlow", "uMoonPos", "uMoon", "uStars", "uSpace", "uTime",
          "uCloud", "uCloudCol", "uCloudShade", "uWind", "uWind2", "uNoise", "uCube", "uPano"];
+
+    // Indices into a program's uniform locations: UniformNames in order, up to the samplers (set once at link).
+    private const int UInvVP = 0, UHdr = 1, UExposure = 2, URot = 3, USunPos = 4, USunDisc = 5, USunGlow = 6, UMoonPos = 7, UMoon = 8, UStars = 9,
+        USpace = 10, UTime = 11, UCloud = 12, UCloudCol = 13, UCloudShade = 14, UWind = 15, UWind2 = 16, ULocs = 17;
 
     /// <summary>The vertex shader source (for the self-test's shader check).</summary>
     public static string VertexSource => VertexSrc;
 
-    /// <summary>The full fragment shader source.</summary>
+    /// <summary>The full fragment shader source (procedural at High when built without a SKY_VARIANT define).</summary>
     public static string FragmentSource => FragmentSrc;
 
     /// <summary>Texture units the sky uses (unit 0 is the box renderer's texture array, 1 the sight lens copy).</summary>
@@ -182,12 +214,12 @@ public static unsafe class SkyRenderer
     /// <summary>Noise texture size; each channel tiles (4, 8, 16, 32 cells across).</summary>
     public const int NoiseSize = 256;
 
-    private static GlProgram _program;
+    private static readonly GlProgram[] Programs = new GlProgram[Variants];
+    private static readonly bool[] Built = new bool[Variants];
+    private static readonly int[] Locs = new int[Variants * ULocs];
     private static GlVertexArray _vao;
     private static uint _noise;
     private static bool _ready, _failed, _checkedFirstDraw;
-    private static int _locInvVP, _locMode, _locQuality, _locHdr, _locExposure, _locRot, _locSunPos, _locSunDisc, _locSunGlow, _locMoonPos, _locMoon,
-        _locStars, _locSpace, _locTime, _locCloud, _locCloudCol, _locCloudShade, _locWind, _locWind2;
 
     // Image textures, a few kept (thumbnails of other image maps mustn't re-upload the current one every frame).
     private static readonly List<(SkyImage Image, uint Texture)> ImageTextures = new();
@@ -226,46 +258,47 @@ public static unsafe class SkyRenderer
         var image = s.Type != SkyType.Procedural && s.Loaded != null ? ImageTexture(s.Loaded) : 0;
         if (s.Type != SkyType.Procedural && image == 0)
             return;
+        var variant = VariantOf(s.Type, quality);
+        if (!EnsureProgram(variant))
+            return;
         var view = g.View;
         view.M41 = view.M42 = view.M43 = 0;
         if (!Matrix4x4.Invert(view * g.Proj, out var inv))
             return;
         if (timed)
             Timer.Begin(map, s, quality);
-        _program.Use();
+        Programs[variant].Use();
         _vao.Bind();
-        Native.glUniformMatrix4fv(_locInvVP, 1, false, &inv.M11);
-        var mode = s.Type switch { SkyType.Cubemap => 1f, SkyType.Equirect => 2f, _ => 0f };
-        Native.glUniform1f(_locMode, mode);
-        Native.glUniform1f(_locQuality, quality == SkyQuality.High ? 1f : 0f);
-        Native.glUniform1f(_locHdr, s.Loaded?.Hdr == true ? 1f : 0f);
-        Native.glUniform1f(_locExposure, s.Exposure);
+        var l = variant * ULocs;
+        Native.glUniformMatrix4fv(Locs[l + UInvVP], 1, false, &inv.M11);
+        Native.glUniform1f(Locs[l + UHdr], s.Loaded?.Hdr == true ? 1f : 0f);
+        Native.glUniform1f(Locs[l + UExposure], s.Exposure);
         var rot = s.Rotation * MathF.PI / 180f;
-        Native.glUniform2f(_locRot, MathF.Cos(rot), MathF.Sin(rot));
+        Native.glUniform2f(Locs[l + URot], MathF.Cos(rot), MathF.Sin(rot));
 
         var sun = s.SunDir;
-        Native.glUniform3f(_locSunPos, sun.X, sun.Y, sun.Z);
+        Native.glUniform3f(Locs[l + USunPos], sun.X, sun.Y, sun.Z);
         var disc = Vector3.Min(s.SunColor * MathF.Max(1.3f * s.SunIntensity, 1.15f), Vector3.One);
         var discCos = s.SunDisc ? MathF.Cos(s.SunSize * 0.5f * MathF.PI / 180f) : 0f;
-        Native.glUniform4f(_locSunDisc, disc.X, disc.Y, disc.Z, discCos);
+        Native.glUniform4f(Locs[l + USunDisc], disc.X, disc.Y, disc.Z, discCos);
         var glow = s.SunColor * s.SunGlow;
-        Native.glUniform3f(_locSunGlow, glow.X, glow.Y, glow.Z);
+        Native.glUniform3f(Locs[l + USunGlow], glow.X, glow.Y, glow.Z);
         var moon = s.MoonDir;
-        Native.glUniform3f(_locMoonPos, moon.X, moon.Y, moon.Z);
-        Native.glUniform4f(_locMoon, s.MoonColor.X, s.MoonColor.Y, s.MoonColor.Z, s.Moon ? MathF.Cos(s.MoonSize * 0.5f * MathF.PI / 180f) : 0f);
-        Native.glUniform1f(_locStars, s.Stars);
-        Native.glUniform1f(_locSpace, World.Map.PointGravity != null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs)
-        Native.glUniform1f(_locTime, (float)(time % 3600.0));
+        Native.glUniform3f(Locs[l + UMoonPos], moon.X, moon.Y, moon.Z);
+        Native.glUniform4f(Locs[l + UMoon], s.MoonColor.X, s.MoonColor.Y, s.MoonColor.Z, s.Moon ? MathF.Cos(s.MoonSize * 0.5f * MathF.PI / 180f) : 0f);
+        Native.glUniform1f(Locs[l + UStars], s.Stars);
+        Native.glUniform1f(Locs[l + USpace], World.Map.PointGravity != null ? 1f : 0f); // a planet map: sky all round (MapPlanet.cs)
+        Native.glUniform1f(Locs[l + UTime], (float)(time % 3600.0));
 
         // Clouds: one noise tile is 4 "cells" of CloudScale metres; uv per unit of (x/y, z/y) on the layer.
         var uvScale = s.CloudAltitude / (4f * s.CloudScale);
-        Native.glUniform4f(_locCloud, CoverageThreshold(s.CloudCoverage), s.CloudCoverage > 0 ? s.CloudDensity : 0f, uvScale, Math.Clamp(s.CloudCoverage * 1.2f, 0f, 0.3f));
-        Native.glUniform3f(_locCloudCol, s.CloudColor.X, s.CloudColor.Y, s.CloudColor.Z);
-        Native.glUniform3f(_locCloudShade, s.CloudShade.X, s.CloudShade.Y, s.CloudShade.Z);
+        Native.glUniform4f(Locs[l + UCloud], CoverageThreshold(s.CloudCoverage), s.CloudCoverage > 0 ? s.CloudDensity : 0f, uvScale, Math.Clamp(s.CloudCoverage * 1.2f, 0f, 0.3f));
+        Native.glUniform3f(Locs[l + UCloudCol], s.CloudColor.X, s.CloudColor.Y, s.CloudColor.Z);
+        Native.glUniform3f(Locs[l + UCloudShade], s.CloudShade.X, s.CloudShade.Y, s.CloudShade.Z);
         var w = WindOffsets(s, time);
-        Native.glUniform4f(_locWind, w.X, w.Y, w.Z, w.W);
+        Native.glUniform4f(Locs[l + UWind], w.X, w.Y, w.Z, w.W);
         var w2 = CirrusOffset(s, time);
-        Native.glUniform2f(_locWind2, w2.X, w2.Y);
+        Native.glUniform2f(Locs[l + UWind2], w2.X, w2.Y);
 
         Native.glActiveTexture(GL_TEXTURE0 + NoiseUnit);
         Native.glBindTexture(GL_TEXTURE_2D, _noise);
@@ -453,54 +486,65 @@ public static unsafe class SkyRenderer
             return _ready;
         try
         {
-            using var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
-            using var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(FragmentSrc)).Compile();
-            _program = CreateProgram().Attach(vs, fs).Link();
-            GlDebug.Label(GL_PROGRAM, _program.Id, "SkyRenderer");
-            DetachShader(_program, vs);
-            DetachShader(_program, fs);
             _vao = GenVertexArray(); // core profile needs a bound VAO even with no vertex buffers
-            Lighting.Upload(_program); // SkyGradient's colours follow the map's sky like every other shader's
-            _locInvVP = Uniform("uInvVP\0"u8);
-            _locMode = Uniform("uMode\0"u8);
-            _locQuality = Uniform("uQuality\0"u8);
-            _locHdr = Uniform("uHdr\0"u8);
-            _locExposure = Uniform("uExposure\0"u8);
-            _locRot = Uniform("uRot\0"u8);
-            _locSunPos = Uniform("uSunPos\0"u8);
-            _locSunDisc = Uniform("uSunDisc\0"u8);
-            _locSunGlow = Uniform("uSunGlow\0"u8);
-            _locMoonPos = Uniform("uMoonPos\0"u8);
-            _locMoon = Uniform("uMoon\0"u8);
-            _locStars = Uniform("uStars\0"u8);
-            _locSpace = Uniform("uSpace\0"u8);
-            _locTime = Uniform("uTime\0"u8);
-            _locCloud = Uniform("uCloud\0"u8);
-            _locCloudCol = Uniform("uCloudCol\0"u8);
-            _locCloudShade = Uniform("uCloudShade\0"u8);
-            _locWind = Uniform("uWind\0"u8);
-            _locWind2 = Uniform("uWind2\0"u8);
-            Native.glUniform1i(Uniform("uNoise\0"u8), (int)NoiseUnit);
-            Native.glUniform1i(Uniform("uCube\0"u8), (int)CubeUnit);
-            Native.glUniform1i(Uniform("uPano\0"u8), (int)PanoUnit);
             _noise = MakeNoiseTexture();
             Native.glEnable(GlCapability.TextureCubeMapSeamless); // no seams between cube faces
             Timer.Init();
             _ready = true;
-            Console.WriteLine($"[sky] sky shader ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, noise {NoiseSize}x{NoiseSize} RGBA8, GL error 0x{GlDebug.Error():X}");
+            Console.WriteLine($"[sky] sky renderer ready, GPU timer {(Timer.Available ? "on" : "unavailable")}, noise {NoiseSize}x{NoiseSize} RGBA8, GL error 0x{GlDebug.Error():X}");
         }
         catch (Exception ex)
         {
             _failed = true;
-            Console.WriteLine($"[sky] sky shader failed, maps keep their flat sky colour (the light still follows their sky): {ex.Message}");
+            Console.WriteLine($"[sky] sky renderer failed, maps keep their flat sky colour (the light still follows their sky): {ex.Message}");
         }
         return _ready;
     }
 
-    private static int Uniform(ReadOnlySpan<byte> nameZ)
+    /// <summary>Builds one kind of sky's program on first use (a map with an image sky, or the other quality, builds its own).</summary>
+    private static bool EnsureProgram(int variant)
     {
-        fixed (byte* p = nameZ)
-            return Native.glGetUniformLocation(_program, p);
+        if (Built[variant])
+            return true;
+        if (_failed)
+            return false;
+        try
+        {
+            using var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(VertexSrc)).Compile();
+            using var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(VariantSource(variant))).Compile();
+            var program = CreateProgram().Attach(vs, fs).Link();
+            GlDebug.Label(GL_PROGRAM, program.Id, "SkyRenderer");
+            DetachShader(program, vs);
+            DetachShader(program, fs);
+            Lighting.Upload(program); // SkyGradient's colours follow the map's sky like every other shader's (also binds it)
+            for (var i = 0; i < ULocs; i++)
+                Locs[variant * ULocs + i] = Uniform(program, UniformNames[i]);
+            Native.glUniform1i(Uniform(program, "uNoise"), (int)NoiseUnit);
+            Native.glUniform1i(Uniform(program, "uCube"), (int)CubeUnit);
+            Native.glUniform1i(Uniform(program, "uPano"), (int)PanoUnit);
+            Programs[variant] = program;
+            Built[variant] = true;
+            Console.WriteLine($"[sky] sky shader {variant} ({VariantNames[variant]}) ready, GL error 0x{GlDebug.Error():X}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _failed = true;
+            Console.WriteLine($"[sky] sky shader {variant} ({VariantNames[variant]}) failed, maps keep their flat sky colour (the light still follows their sky): {ex.Message}");
+            return false;
+        }
+    }
+
+    private static readonly string[] VariantNames = ["procedural, High", "procedural, Low", "cube map", "panorama"];
+
+    private static int Uniform(GlProgram program, string name)
+    {
+        Span<byte> z = stackalloc byte[name.Length + 1];
+        for (var i = 0; i < name.Length; i++)
+            z[i] = (byte)name[i];
+        z[name.Length] = 0;
+        fixed (byte* p = z)
+            return Native.glGetUniformLocation(program, p);
     }
 
     private static uint MakeNoiseTexture()
@@ -583,6 +627,14 @@ public static unsafe class SkyRenderer
     public static void ResetWindow() => Timer.ResetWindow();
 
     /// <summary>
+    /// Reads back the sky's finished GPU timings (never waits). Call it between timed passes, not inside one: polling a
+    /// query makes most drivers submit the commands so far, and in a CPU-bound frame the GPU then sits idle until the
+    /// CPU submits more, which a timestamp range round the poll counts. It used to poll inside <see cref="Draw"/>, so the
+    /// F9 window's Sky pass could take in the CPU time of the horde drawn after it (0.85-3.2 ms on Horde Stress).
+    /// </summary>
+    public static void CollectTimer() => Timer.Collect();
+
+    /// <summary>
     /// Timestamp queries around the sky draw, a few frames in flight, read back when ready; logs a "[sky]" line every
     /// 5 seconds while a sky is being drawn.
     /// </summary>
@@ -627,8 +679,7 @@ public static unsafe class SkyRenderer
             _inFrame = false;
             if (!Available)
                 return;
-            Collect();
-            var slot = _frame % Ring;
+            var slot = _frame % Ring; // (read back by CollectTimer, outside the timed range)
             if (Pending[slot])
                 return;
             Native.glQueryCounter(Queries[slot * 2].Id, GL_TIMESTAMP);
@@ -665,7 +716,7 @@ public static unsafe class SkyRenderer
             _logSamples = _logFrames = 0;
         }
 
-        private static void Collect()
+        public static void Collect()
         {
             if (!Available)
                 return;
