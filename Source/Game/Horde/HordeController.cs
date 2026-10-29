@@ -121,6 +121,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     private readonly double[] _lastNoise = new double[256];
     private Vector3[] _pos = new Vector3[64];
     private bool[] _active = new bool[64];
+    private bool[] _solid = new bool[64];
     private readonly int[] _scratch = new int[ScratchSize];
     private float[] _keys = new float[64];
     private int[] _idx = new int[64];
@@ -158,6 +159,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             return;
         _pos = new Vector3[n];
         _active = new bool[n];
+        _solid = new bool[n];
         _keys = new float[n];
         _idx = new int[n];
     }
@@ -280,6 +282,7 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             var cap = Math.Max(n, _pos.Length * 2);
             _pos = new Vector3[cap];
             _active = new bool[cap];
+            _solid = new bool[cap];
             _keys = new float[cap];
             _idx = new int[cap];
         }
@@ -288,9 +291,10 @@ public sealed class HordeController<T> where T : class, IHordeAgent
             var a = agents[i];
             _pos[i] = a.Position;
             _active[i] = a.HordeActive;
+            _solid[i] = _active[i] && a.HordeSolid;
             a.Member.Index = i;
         }
-        Grid.Build(_pos.AsSpan(0, n), _active.AsSpan(0, n));
+        Grid.Build(_pos.AsSpan(0, n), _solid.AsSpan(0, n)); // (the active ones the horde doesn't walk over)
 
         for (var t = 0; t < MaxTargets; t++)
         {

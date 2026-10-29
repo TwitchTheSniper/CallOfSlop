@@ -363,7 +363,7 @@ public sealed partial class Game
         }
     }
 
-    private float SpeedOf(Zombie z) => (z.Speed switch
+    private float SpeedOf(Zombie z) => z.Slug ? SlugSpeedOf(z) : (z.Speed switch
     {
         ZSpeed.Sprint => ZRules.SprintSpeed,
         ZSpeed.Run => ZRules.RunSpeed,
@@ -387,6 +387,8 @@ public sealed partial class Game
             PounceTick(z, now); // a pouncer in the air (ZombieTypes.cs)
             return;
         }
+        if (z.Slug && SlugThink(zm, z, now))
+            return; // no limbs: no windows or siege, the stranded cull (ZombieSlug.cs)
         if (_climbEnt >= 0 && z.Window >= 0 && z.State is ZState.ToWindow or ZState.Tearing)
             ClimbRecruit(z, now); // a siege: the horde outside leaves the windows for the face (ZombiesClimb.cs)
         switch (z.State)
@@ -657,11 +659,12 @@ public sealed partial class Game
     /// <summary>One tick of movement through the shared player physics (walking at its speed when <paramref name="walk"/>).</summary>
     private void MoveZombie(Zombie z, float yaw, bool walk, bool jump)
     {
-        z.Yaw = World.LerpAngle(z.Yaw, yaw, walk ? 0.25f : 0.15f);
+        var slug = z.Slug;
+        z.Yaw = slug ? SlugTurnTo(z.Yaw, yaw) : World.LerpAngle(z.Yaw, yaw, walk ? 0.25f : 0.15f); // (a slug turns slowly and inches along its facing, never jumping: ZombieSlug.cs)
         var cmd = new InputCmd
         {
-            Buttons = walk ? Buttons.Forward | (jump ? Buttons.Jump : Buttons.None) : Buttons.None,
-            Yaw = walk ? yaw : z.Yaw,
+            Buttons = walk ? Buttons.Forward | (jump && !slug ? Buttons.Jump : Buttons.None) : Buttons.None,
+            Yaw = walk && !slug ? yaw : z.Yaw,
             Pitch = 0,
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(SpeedOf(z) / World.WalkSpeed * 100f), 1, 200),
         };
@@ -870,7 +873,7 @@ public sealed partial class Game
         attacker.Kills++;
         FrenzyOnZombieKill(attacker, head, melee || explosive, now); // per-player kill frenzy, reduced weight (FrenzyServer.cs)
         var killPoints = melee ? ZRules.MeleeKillPoints : head ? ZRules.HeadshotKillPoints + (int)PerkSum(zp, static d => d.HeadshotPoints) : ZRules.KillPoints; // Marksman Malt
-        EarnPoints(attacker, (int)MathF.Round(killPoints * z.Kind.PointsMult), now); // (more for a brute: ZombieTypes.cs)
+        EarnPoints(attacker, (int)MathF.Round(killPoints * z.Kind.PointsMult) + (z.Slug ? ZRules.Limbs.SlugKillPoints : 0), now); // (more for a brute: ZombieTypes.cs; a slug's optional bonus: ZombieSlug.cs)
         RollDrop(z.Position, ZRound, now, PerkMult(zp, static d => d.PartDrops)); // Salvage Stout
         RollPowerUp(z.Position, now, zp); // ZombiesPowerUps.cs (Windfall Soda)
         Audio.Effect3D(Sfx.FleshHit3D, z.Position + new Vector3(0, 1.2f, 0), 0.9f, MixBus.Zombies);

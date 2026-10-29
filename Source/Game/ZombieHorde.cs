@@ -12,8 +12,11 @@ public sealed partial class Zombie : IHordeAgent
 
     public bool HordeActive => State != ZState.Dead;
 
-    /// <summary>Outside (walking to, queueing at, tearing or climbing through a window): that window.</summary>
-    public int HordePortal => State == ZState.Dead ? -1 : Window;
+    /// <summary>A slug (no limbs: ZombieSlug.cs) isn't: the horde walks over it.</summary>
+    public bool HordeSolid => !Slug;
+
+    /// <summary>Outside (walking to, queueing at, tearing or climbing through a window): that window. A slug never queues for one.</summary>
+    public int HordePortal => State == ZState.Dead || Slug ? -1 : Window;
 
     public bool HordeAtPortal => Window >= 0 && State is ZState.Tearing or ZState.Climbing or ZState.Attack;
 
@@ -167,7 +170,8 @@ public sealed partial class Game
         {
             if (z.State == ZState.Dead)
                 continue;
-            _zAlive++;
+            if (!z.Slug)
+                _zAlive++; // (a slug doesn't hold the spawning back: ZombieSlug.cs)
             if (z.State == ZState.Climbing && z.Window >= 0 && z.Window < _zClimbing.Length)
                 _zClimbing[z.Window] = true;
         }
