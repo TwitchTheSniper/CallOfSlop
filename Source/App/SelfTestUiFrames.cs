@@ -32,7 +32,8 @@ public static partial class SelfTest
         try
         {
             var io = ImGui.GetIO();
-            io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset | ImGuiBackendFlags.RendererHasTextures;
+            io.IniFilename = default; // like Ui.Init: never write imgui.ini into the working folder
+            io.BackendFlags |=ImGuiBackendFlags.RendererHasVtxOffset | ImGuiBackendFlags.RendererHasTextures;
             io.DisplaySize = new float2(1920, 1080);
             io.DisplayFramebufferScale = new float2(1, 1);
             io.DeltaTime = 1f / 600;
