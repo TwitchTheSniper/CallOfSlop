@@ -256,14 +256,14 @@ for (b0, b1) in BRIDGES:
         # the balustrade climbs towards its -Z: yaw 270 turns that to +X, yaw 90 to -X
         X.append({"type": "prop", "name": "Escalator Balustrade", "at": [round(cx, 3), 0.1, round((z0 + z1) / 2, 3)], "yaw": 270 if d < 0 else 90})
         ESC.append((foot_x, top_x, (z0 + z1) / 2))
-# skylight frame over the atrium: cross beams every 4 m and two long beams
-for k in range(13):
+# skylight frame over the atrium: cross beams every 4 m and three long beams, resting on the courtyard's 1 m roof
+# parapets and stopping at their inner faces (a beam end in a parapet's face, or a beam inside one, would flicker
+# through it: z-fighting)
+for k in range(1, 12):
     x = AX0 + k * 4.0
-    block(x - 0.15, ROOF + 0.3, AZ0 - 0.15, x + 0.15, ROOF + 0.7, AZ1 + 0.15, "#d8dce0")
+    block(x - 0.15, ROOF + 0.3, AZ0 + 0.15, x + 0.15, ROOF + 0.7, AZ1 - 0.15, "#d8dce0")
 for z in (-4.0, 0.0, 4.0):
-    block(AX0, ROOF + 0.7, z - 0.12, AX1, ROOF + 1.0, z + 0.12, "#d8dce0")
-for z in (AZ0, AZ1):
-    block(AX0 - 0.15, ROOF, z - 0.15, AX1 + 0.15, ROOF + 0.3, z + 0.15, "#c8ccd0")
+    block(AX0 + 0.15, ROOF + 0.7, z - 0.12, AX1 - 0.15, ROOF + 1.0, z + 0.12, "#d8dce0")
 # entrance canopy, the facade band, the loading dock's bumper rail
 X.append({"type": "awning", "rect": [-6.0, 26.0, 6.0, 29.0], "height": 3.8, "posts": True, "color": "$trim"})
 for (x0, x1, z) in ((-42.0, -4.0, 23.0), (4.0, 42.0, 23.0), (-4.0, 4.0, 26.0)):
