@@ -90,6 +90,7 @@ public sealed partial class Zombie
         Limbs = 0;
         LimbHp = default;
         LimbsShown = 0;
+        SlugSeenAt = 0;
 
         // ZombieTypes.cs
         Type = 0;

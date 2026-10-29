@@ -19,6 +19,8 @@ public sealed partial class Game
     /// </summary>
     private bool SlugThink(ZombiesMap zm, Zombie z, double now)
     {
+        if (z.SlugSeenAt <= 0)
+            z.SlugSeenAt = now; // (a slug the clock hasn't started for)
         if (z.Hm.ThinkNow && SlugSeen(z))
             z.SlugSeenAt = now;
         if (now - z.SlugSeenAt > ZRules.Limbs.SlugCullSeconds && z.State != ZState.Climbing)

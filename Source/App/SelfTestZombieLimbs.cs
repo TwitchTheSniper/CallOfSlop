@@ -340,7 +340,7 @@ public static partial class SelfTest
             for (var i = 0; i < 12; i++)
             {
                 var z = Z(At(-14 + (i % 6) * 2.5f, -10 - (i / 6) * 3));
-                z.Limbs = z.LimbsShown = (byte)(i % 4 == 0 ? 12 : i % 4 == 1 ? 1 : i % 4 == 2 ? 3 : 4);
+                z.Limbs = z.LimbsShown = (byte)(i % 4 == 0 ? (i == 4 ? 15 : 12) : i % 4 == 1 ? 1 : i % 4 == 2 ? 3 : 4); // (one a slug: ZombieSlug.cs)
                 zs.Add(z);
             }
             var target = Z(At(-9, -2), health: 1_000_000);
