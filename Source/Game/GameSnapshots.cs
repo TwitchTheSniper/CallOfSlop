@@ -116,7 +116,13 @@ public sealed partial class Game
             if (!SnapshotRelevance || f.Id == p.Id || (f.Alive && System.Numerics.Vector3.DistanceSquared(f.Position, p.Position) < NearDistance * NearDistance)
                 || (_snapCounter + f.Id) % 2 == 0 || ServerTick - _aliveChangedTick[f.Id] <= World.SnapshotEvery * 2)
                 _snapMine.Add(f);
-        var ownIndex = _snapMine.FindIndex(f => f.Id == p.Id);
+        var ownIndex = -1; // (a loop, not FindIndex with a lambda: that made a closure and a delegate per recipient per snapshot)
+        for (var i = 0; i < _snapMine.Count; i++)
+            if (_snapMine[i].Id == p.Id)
+            {
+                ownIndex = i;
+                break;
+            }
         var n = Snapshot.Build(header, own, _snapMine, ownIndex, _snapSlow, _snapParts);
         SnapPackets += n;
         SnapMaxParts = Math.Max(SnapMaxParts, n);

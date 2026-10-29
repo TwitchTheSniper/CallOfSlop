@@ -132,6 +132,8 @@ public static unsafe partial class Program
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
         Ui.BackendDraw = args.Any(a => a.Equals("--imgui-backend-draw", StringComparison.OrdinalIgnoreCase)); // the package's ImGui GL renderer (ImGuiRenderer.cs)
         Ui.BackendNewFrame = args.Any(a => a.Equals("--imgui-backend-frame", StringComparison.OrdinalIgnoreCase)); // the GLFW backend's own NewFrame every frame (UiPlatformFrame.cs)
+        var allocFrames = args.Any(a => a.Equals("--alloc-frames", StringComparison.OrdinalIgnoreCase)); // (Program.AllocFrames.cs)
+        perfShot |= allocFrames; // (the same sandbox, no frame cap, settings never saved)
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
@@ -207,7 +209,9 @@ public static unsafe partial class Program
                 StartSession(LobbyAction.Join);
             }
 
-            if (perfShot)
+            if (allocFrames)
+                StartAllocFrames(args); // --alloc-frames: bytes allocated per frame by perf area, frame-counted, then quit (Program.AllocFrames.cs)
+            else if (perfShot)
                 StartPerfShot(args); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
             if (_glBench)
                 RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
@@ -238,7 +242,7 @@ public static unsafe partial class Program
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
-            if (!_smoke && !_shotTool && !_perfShot && !_glBench) // the smoke test borrows settings temporarily; never save them
+            if (!_smoke && !_shotTool && !_perfShot && !_allocFrames && !_glBench) // the smoke test borrows settings temporarily; never save them
             {
                 _settings.Save();
                 _progress.Save();
@@ -959,6 +963,7 @@ public static unsafe partial class Program
         {
             var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log"
                 : args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)) ? $"netclient-{Environment.ProcessId}.log" // beside a running game (NetClientProcess.cs)
+                : args.Any(a => a.Equals("--alloc-join", StringComparison.OrdinalIgnoreCase)) ? "alloc-client.log" // --alloc-frames as a joiner, beside a host on the same machine (Program.AllocFrames.cs)
                 : "callofslop.log";
             var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
@@ -1078,6 +1083,8 @@ public static unsafe partial class Program
         {
             if (focus != GlfwFocusEvent.GainFocus)
                 SetMouseCaptured(false);
+            else
+                Keybinds.ForgetNames(); // key names follow the keyboard layout, which may have changed meanwhile (Keybinds.cs)
         };
     }
 
@@ -1249,6 +1256,7 @@ public static unsafe partial class Program
                     if (!paused)
                         using (Perf.Measure(PerfArea.Game))
                             game.Update(now, FrameDt);
+                    AllocProfile.Stop(); // (the game's alloc sections end with its update: --alloc-frames; off it is one check)
                 }
             }
             using (Perf.Measure(PerfArea.Audio))
@@ -1430,6 +1438,8 @@ public static unsafe partial class Program
             Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
             if (_perfShot)
                 PerfShotFrame(); // --perf-shot: slow frames logged with the area that spiked (Program.Perf.cs)
+            if (_allocFrames)
+                AllocFramesTick(); // --alloc-frames (Program.AllocFrames.cs)
         }
     }
 

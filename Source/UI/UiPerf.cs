@@ -93,7 +93,7 @@ public sealed partial class Ui
         var fresh = !ReferenceEquals(_perfNetOf, game) || dt > 5 || dt <= 0;
         _perfNetAt = now;
         _perfNetOf = game;
-        _perfWorkingSet = Environment.WorkingSet; // (once a second)
+        _perfWorkingSet = WorkingSetBytes(); // (once a second)
         if (game == null)
         {
             _perfIn = _perfOut = _perfSnapSize = _perfSnapRate = 0;
@@ -109,6 +109,42 @@ public sealed partial class Ui
             _perfSnapSize = parts > 0 ? (float)(sb - _perfSnapB0) / parts : 0;
         }
         (_perfIn0, _perfOut0, _perfSnapB0, _perfSnapN0) = (inB, outB, sb, sn);
+    }
+
+    private static Microsoft.Win32.SafeHandles.SafeFileHandle? _statm;
+    private static readonly byte[] StatmBytes = new byte[128];
+
+    /// <summary>
+    /// The process's working set. On Linux <see cref="Environment.WorkingSet"/> reads and parses /proc/self/status into
+    /// new strings (about 3 KB each call); this reads /proc/self/statm through a handle kept open into a fixed buffer.
+    /// </summary>
+    private static long WorkingSetBytes()
+    {
+        if (!OperatingSystem.IsLinux())
+            return Environment.WorkingSet;
+        try
+        {
+            _statm ??= File.OpenHandle("/proc/self/statm");
+            var n = RandomAccess.Read(_statm, StatmBytes, 0);
+            // "size resident shared ...", in pages: the second number.
+            var span = StatmBytes.AsSpan(0, n);
+            var space = span.IndexOf((byte)' ');
+            if (space < 0)
+                return 0;
+            span = span[(space + 1)..];
+            long pages = 0;
+            foreach (var b in span)
+            {
+                if (b is < (byte)'0' or > (byte)'9')
+                    break;
+                pages = pages * 10 + (b - '0');
+            }
+            return pages * Environment.SystemPageSize;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Environment.WorkingSet;
+        }
     }
 
     private void PerfMessage(string text, double now)

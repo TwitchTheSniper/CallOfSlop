@@ -25,6 +25,7 @@ public sealed partial class Game
     public readonly uint InstanceId = (uint)Random.Shared.Next(1, int.MaxValue);
 
     private double _nextInfoUpdate;
+    private (string, string, int, int, int, MatchPhase, ushort, GameMode, PhysicsMode, bool, string, ushort, int) _infoKey;
 
     /// <summary>The server info as last advertised (also the Steam lobby's data, Program.SteamNet.cs).</summary>
     public ServerInfo? LastInfo { get; private set; }
@@ -44,9 +45,20 @@ public sealed partial class Game
         if (now >= _nextInfoUpdate)
         {
             _nextInfoUpdate = now + 1;
-            var info = CurrentInfo();
-            Net.SetOfflineInfo(info.Encode());
-            LastInfo = info;
+            // Made again only when something in it changed (a new ServerInfo and its bytes every second was the host's
+            // steady per-frame garbage). Strings compare by reference: a changed name is a new string.
+            var bots = 0;
+            foreach (var p in Players.Values)
+                if (p.Bot != null)
+                    bots++;
+            var key = (ServerName, World.Map.Name, Players.Count, MapMaxPlayers, bots, Phase, GamePort, Mode, World.PhysicsMode, TrueRandom, ListHost, ListPort, GravityPercent);
+            if (LastInfo == null || !key.Equals(_infoKey))
+            {
+                _infoKey = key;
+                var info = CurrentInfo();
+                Net.SetOfflineInfo(info.Encode());
+                LastInfo = info;
+            }
         }
         _heartbeats.Tick(Net, GamePort, AdvertiseTo, now);
     }

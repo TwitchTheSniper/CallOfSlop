@@ -11,6 +11,7 @@ namespace CallOfSlop;
 public sealed partial class Ui
 {
     private Settings? _hudSettings; // for key names in the match bar
+    private readonly List<HudLine> _modeHudLines = new();
 
 
     private static float4 TeamRgba(byte team) => Rgba(GameModes.TeamColor(team));
@@ -82,7 +83,8 @@ public sealed partial class Ui
             DrawReadyPanel(game, pos, size, settings);
         if (game.Phase != MatchPhase.Playing || game.Local is not { } me)
             return;
-        var lines = new List<HudLine>();
+        var lines = _modeHudLines; // (reused: no list per frame)
+        lines.Clear();
         System.Numerics.Vector3? pointAt = null;
         game.Module.HudLines(game, me, lines, ref pointAt); // the mode's objective lines (the hill, the flags, the Gun Game ladder...)
         float? arrow = null;
@@ -173,14 +175,15 @@ public sealed partial class Ui
         ImGui.TextColored(Orange, "WAITING FOR PLAYERS"u8);
         ImGui.PopFont();
         var key = settings != null ? Keybinds.Name(settings.Bind(GameAction.Ready)) : "F3";
-        ImGuiSafe.TextColored(Dim, game.Net.IsOffline
-            ? $"Pick your loadout, then READY or DEPLOY ({key}) to start."
-            : $"{ready}/{humans} ready - press {key} or click READY. The match starts when everyone is ready.");
+        if (game.Net.IsOffline)
+            ImGuiSafe.TextColored(Dim, $"Pick your loadout, then READY or DEPLOY ({key}) to start.");
+        else
+            ImGuiSafe.TextColored(Dim, $"{ready}/{humans} ready - press {key} or click READY. The match starts when everyone is ready.");
         ImGuiSafe.TextColored(Dim, game.ModeGoalText);
     }
 
     /// <summary>The match bar while playing a mode with its own bar (team scores, Gun Game's ladder, Zombies' round). Returns false for the plain free-for-all bar.</summary>
-    private bool DrawModeScoreBar(Game game, string clock, int t)
+    private bool DrawModeScoreBar(Game game, ReadOnlySpan<char> clock, int t)
     {
         if (DrawZombiesBar(game))
             return true; // the round instead of a clock (UiZombies.cs)

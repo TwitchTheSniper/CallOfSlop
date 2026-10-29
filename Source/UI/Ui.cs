@@ -70,6 +70,33 @@ public sealed partial class Ui : IDisposable
             _gl = new ImGuiRenderer();
     }
 
+    /// <summary>
+    /// Self-test: an ImGui context with no window and no renderer (the "Frame allocations" section draws the HUD and the
+    /// perf window into it). Fonts are made by ImGui itself (the renderer-has-textures flag); nothing is ever uploaded.
+    /// <see cref="DisposeHeadless"/> destroys the context again.
+    /// </summary>
+    public unsafe void InitHeadless(float2 displaySize)
+    {
+        _headlessContext = ImGui.CreateContext();
+        var io = ImGui.GetIO();
+        io.IniFilename = default;
+        io.DisplaySize = displaySize;
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+        ImGui.StyleColorsDark();
+        _baseStyle = *ImGui.GetStyle().Ptr;
+        _scale = 0;
+    }
+
+    private ImGuiContextPtr _headlessContext;
+
+    /// <summary>Self-test: ends the context <see cref="InitHeadless"/> made.</summary>
+    public void DisposeHeadless()
+    {
+        ImString.SharedStorage.Reset();
+        ImGui.DestroyContext(_headlessContext);
+        _headlessContext = default;
+    }
+
     /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
     private float TargetScale()
     {
@@ -98,8 +125,13 @@ public sealed partial class Ui : IDisposable
         var target = TargetScale();
         if (MathF.Abs(target - _scale) > 0.01f)
             ApplyScale(target); // between frames, so ImGui never sees a half-changed style
-        PlatformNewFrame(); // (UiPlatformFrame.cs: the backend's NewFrame without its per-frame monitor scan)
-        _renderer?.NewFrame();
+        if (_platform != null)
+        {
+            PlatformNewFrame(); // (UiPlatformFrame.cs: the backend's NewFrame without its per-frame monitor scan)
+            _renderer?.NewFrame();
+        }
+        else
+            ImGui.GetIO().DeltaTime = 1f / 60; // headless (the self-test): no window to read
         ImGui.NewFrame();
         _loadoutDrawn = false;
         Thumbs.Clear(); // re-added every frame by whatever draws them (loadout cards, the kill card)
@@ -114,7 +146,7 @@ public sealed partial class Ui : IDisposable
         if (_gl != null)
             _gl.Render(dd);
         else
-            _renderer!.RenderDrawData(dd);
+            _renderer?.RenderDrawData(dd); // (headless: nothing to draw with)
         ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
     }
 
@@ -144,6 +176,8 @@ public sealed partial class Ui : IDisposable
         var (left, width) = HudLayout.Span(vp.WorkSize.X, vp.WorkSize.Y, mode);
         return (new float2(vp.WorkPos.X + left, vp.WorkPos.Y), new float2(width, vp.WorkSize.Y));
     }
+
+    private static readonly PerkCategory[] HudPerkCategories = [PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage];
 
     public void DrawHud(Game game, double now, string joinInfo, Settings settings)
     {
@@ -217,7 +251,19 @@ public sealed partial class Ui : IDisposable
             if (reload >= 0)
                 ImGuiSafe.TextColored(Orange, $"RELOADING {reload * 100:0}%");
             else
-                ImGuiSafe.TextColored(Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1), Game.IsEmptyGun(w.Def) ? "-" : game.InfiniteAmmoOn(now) ? $"{w.Ammo} | INF" : w.Reserve >= 0 ? $"{w.Ammo} | {w.Reserve}" : $"{w.Ammo} / {w.Def.Mag}"); // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF)
+            {
+                // Zombies: magazine | reserve (an empty slot: nothing; Infinite Ammo: INF). One call per case: each
+                // $"..." then goes straight into ImGui's frame arena (a ?: between them would make a string every frame).
+                var ammoCol = Game.IsEmptyGun(w.Def) ? Dim : w.Ammo == 0 ? Red : new float4(1, 1, 1, 1);
+                if (Game.IsEmptyGun(w.Def))
+                    ImGui.TextColored(ammoCol, "-"u8);
+                else if (game.InfiniteAmmoOn(now))
+                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | INF");
+                else if (w.Reserve >= 0)
+                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} | {w.Reserve}");
+                else
+                    ImGuiSafe.TextColored(ammoCol, $"{w.Ammo} / {w.Def.Mag}");
+            }
             ImGui.PopFont();
             if (reload < 0 && w.Def.FireGroups is { } fireGroups && w.Groups is { } groups && FireGroupState.FeedsOf(fireGroups) > 1)
                 ImGuiSafe.TextColored(Dim, FeedLine(fireGroups, groups, now)); // each receiver's own magazine (GameFireGroups.cs)
@@ -225,16 +271,29 @@ public sealed partial class Ui : IDisposable
             ImGuiSafe.TextColored(Dim, $"{w.Def.ClassName} - {w.Def.ModeName}  [{game.ActiveSlot + 1}]");
             for (var i = 0; i < game.WeaponSlots; i++) // 2 slots, or up to 4 with the Zombies slot upgrade
                 if (i != game.ActiveSlot)
-                    ImGuiSafe.TextColored(Dim, game.SlotHasGun(i) ? $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}" : $"[{i + 1}] (empty)");
+                {
+                    if (game.SlotHasGun(i))
+                        ImGuiSafe.TextColored(Dim, $"[{i + 1}] {game.Slots[i].Def.Name}  {game.Slots[i].Ammo}/{game.Slots[i].Def.Mag}");
+                    else
+                        ImGuiSafe.TextColored(Dim, $"[{i + 1}] (empty)");
+                }
             if (game.MannedCart != null) // manning a push cart's gun (GameZombies.cs)
                 ImGuiSafe.TextColored(Orange, $"Leave: {K(GameAction.Interact)}   Push it: hold {K(GameAction.Interact)}");
             else if (game.InteractHint() is { } hint)
                 ImGuiSafe.TextColored(Orange, $"[{K(GameAction.Interact)}] {hint}");
             if (game.LocalGrenade != ThrowableKind.None)
-                ImGuiSafe.TextColored(game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim,
-                    game.LocalGrenade == ThrowableKind.Built && game.LocalGrenadeBuild is { } gb // a built grenade (Zombies): its name, and the cook
-                        ? (game.CookingSince >= 0 ? $"[{K(GameAction.Grenade)}] COOKING {gb.Name}: {MathF.Max(0, gb.FuseSeconds - (float)(Brutal.GlfwApi.Glfw.Time - game.CookingSince)):0.0} s" : $"[{K(GameAction.Grenade)}] {gb.Name} x{game.GrenadesLeft}")
-                        : $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
+            {
+                var nadeCol = game.GrenadesLeft > 0 ? new float4(1, 1, 1, 1) : Dim;
+                if (game.LocalGrenade == ThrowableKind.Built && game.LocalGrenadeBuild is { } gb) // a built grenade (Zombies): its name, and the cook
+                {
+                    if (game.CookingSince >= 0)
+                        ImGuiSafe.TextColored(nadeCol, $"[{K(GameAction.Grenade)}] COOKING {gb.Name}: {MathF.Max(0, gb.FuseSeconds - (float)(Brutal.GlfwApi.Glfw.Time - game.CookingSince)):0.0} s");
+                    else
+                        ImGuiSafe.TextColored(nadeCol, $"[{K(GameAction.Grenade)}] {gb.Name} x{game.GrenadesLeft}");
+                }
+                else
+                    ImGuiSafe.TextColored(nadeCol, $"[{K(GameAction.Grenade)}] {Throwables.Get(game.LocalGrenade).Name} x{game.GrenadesLeft}");
+            }
             if (game.LocalEquipment != ThrowableKind.None)
                 ImGuiSafe.TextColored(game.EquipmentLeft > 0 ? new float4(0.4f, 0.95f, 1f, 1) : Dim,
                     $"[{K(GameAction.Equipment)}] {Throwables.Get(game.LocalEquipment).Name} x{game.EquipmentLeft}");
@@ -246,16 +305,25 @@ public sealed partial class Ui : IDisposable
         if (ImGui.Begin("##hp"u8, Overlay))
         {
             ImGui.PushFont(default, 24);
-            ImGuiSafe.TextColored(local.Health > World.HealthAt(35) ? new float4(1, 1, 1, 1) : Red, local.Alive ? $"{local.Health} HP" : "DEAD");
+            var hpCol = local.Health > World.HealthAt(35) ? new float4(1, 1, 1, 1) : Red;
+            if (local.Alive)
+                ImGuiSafe.TextColored(hpCol, $"{local.Health} HP");
+            else
+                ImGui.TextColored(hpCol, "DEAD"u8);
             ImGui.PopFont();
             ImGuiSafe.TextColored(Dim, $"Kills {local.Kills}   Deaths {local.Deaths}");
             ImGui.PushStyleColor(ImGuiCol.PlotHistogram, Orange);
             ImGui.ProgressBar(Progress.LevelFraction, new float2(220 * _scale, 6 * _scale), ""u8);
             ImGui.PopStyleColor();
-            var prestigeTag = Progress.Prestige > 0 ? $"P{Progress.Prestige} " : ""; // prestige (Progression.cs)
-            ImGuiSafe.TextColored(Dim, Progress.Level >= CallOfSlop.Progress.MaxLevel
-                ? $"{prestigeTag}Level {Progress.Level} (max)"
-                : $"{prestigeTag}Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
+            if (Progress.Prestige > 0) // prestige (Progression.cs)
+            {
+                ImGuiSafe.TextColored(Dim, $"P{Progress.Prestige} ");
+                ImGui.SameLine(0, 0);
+            }
+            if (Progress.Level >= CallOfSlop.Progress.MaxLevel)
+                ImGuiSafe.TextColored(Dim, $"Level {Progress.Level} (max)");
+            else
+                ImGuiSafe.TextColored(Dim, $"Level {Progress.Level}  {Progress.XpIntoLevel}/{CallOfSlop.Progress.XpForNext(Progress.Level)} XP");
             if (local.Alive)
                 ImGuiSafe.TextColored(local.Sim.Stance == Stance.Stand ? Dim : Orange, local.Sim.Stance switch
                 {
@@ -266,15 +334,17 @@ public sealed partial class Ui : IDisposable
             // Perks: lit up while their situation is happening.
             if (local.Alive)
             {
-                foreach (var cat in new[] { PerkCategory.Movement, PerkCategory.Survival, PerkCategory.Damage })
+                foreach (var cat in HudPerkCategories)
                 {
                     var id = local.Perks[cat];
                     if (id == PerkId.None)
                         continue;
                     var c = Perks.Color(cat);
                     var active = PerkActive(local, id);
-                    ImGuiSafe.TextColored(active ? new float4(c.X, c.Y, c.Z, 1f) : new float4(c.X, c.Y, c.Z, 0.45f),
-                        active ? $"{Perks.Get(id).Name}  ACTIVE" : Perks.Get(id).Name);
+                    if (active)
+                        ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1f), $"{Perks.Get(id).Name}  ACTIVE");
+                    else
+                        ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 0.45f), Perks.Get(id).Name);
                 }
             }
         }
@@ -357,6 +427,46 @@ public sealed partial class Ui : IDisposable
         }
     }
 
+    /// <summary>The best kill count among the others and who has it (the first such in the player table; null alone). No LINQ: no lambda captures per frame.</summary>
+    private static (int Kills, Player? Leader) BestOther(Game game)
+    {
+        var best = 0;
+        Player? leader = null;
+        foreach (var p in game.Players.Values)
+        {
+            if (p.Id == game.LocalId)
+                continue;
+            if (leader == null || p.Kills > leader.Kills)
+                leader = p;
+            best = Math.Max(best, p.Kills);
+        }
+        return (best, leader);
+    }
+
+    private readonly char[] _clockBuf = new char[16];
+
+    /// <summary>"M:SS" for <paramref name="t"/> seconds, written into a buffer reused every frame (valid until the next call).</summary>
+    private ReadOnlySpan<char> ClockText(int t)
+    {
+        // (By hand: the interpolated TryWrite boxed its numbers until the JIT optimised it.)
+        var minutes = Math.Clamp(t / 60, 0, 99999);
+        var n = 0;
+        Span<char> digits = stackalloc char[5];
+        var d = 0;
+        do
+        {
+            digits[d++] = (char)('0' + minutes % 10);
+            minutes /= 10;
+        } while (minutes > 0);
+        while (d > 0)
+            _clockBuf[n++] = digits[--d];
+        var seconds = Math.Max(t, 0) % 60;
+        _clockBuf[n++] = ':';
+        _clockBuf[n++] = (char)('0' + seconds / 10);
+        _clockBuf[n++] = (char)('0' + seconds % 10);
+        return _clockBuf.AsSpan(0, n);
+    }
+
     /// <summary>Top-centre: clock, your score vs the best other score, and the win condition.</summary>
     private void DrawMatchBar(Game game, float2 pos, float2 size)
     {
@@ -366,7 +476,7 @@ public sealed partial class Ui : IDisposable
                                     | ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav))
         {
             var t = Math.Max(0, (int)Math.Ceiling(game.TimeLeft));
-            var clock = $"{t / 60}:{t % 60:00}";
+            var clock = ClockText(t); // (a reused buffer: no string per frame)
             if (game.Phase == MatchPhase.Ended)
             {
                 ImGuiSafe.TextColored(Dim, $"Next match in {clock}");
@@ -377,9 +487,11 @@ public sealed partial class Ui : IDisposable
             }
             else if (game.Phase == MatchPhase.Countdown)
             {
-                var text = t > 0 ? $"MATCH STARTS IN {t}" : "GO!";
                 ImGui.PushFont(default, 40);
-                ImGuiSafe.TextColored(Orange, text);
+                if (t > 0)
+                    ImGuiSafe.TextColored(Orange, $"MATCH STARTS IN {t}");
+                else
+                    ImGui.TextColored(Orange, "GO!"u8);
                 ImGui.PopFont();
                 ImGui.TextColored(Dim, MenuOpen ? "Pick your loadout - it deploys automatically at GO."u8 : "Get ready..."u8);
                 ImGuiSafe.TextColored(Dim, game.ModeGoalText);
@@ -391,8 +503,7 @@ public sealed partial class Ui : IDisposable
             {
                 var me = game.Local;
                 var mine = me?.Kills ?? 0;
-                var bestOther = game.Players.Values.Where(p => p.Id != game.LocalId).Select(p => (int)p.Kills).DefaultIfEmpty(0).Max();
-                var leaderOther = game.Players.Values.Where(p => p.Id != game.LocalId).OrderByDescending(p => p.Kills).FirstOrDefault();
+                var (bestOther, leaderOther) = BestOther(game);
 
                 ImGui.PushFont(default, 24);
                 ImGuiSafe.TextColored(t <= 60 ? Red : new float4(1, 1, 1, 1), clock);

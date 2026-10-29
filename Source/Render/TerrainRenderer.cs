@@ -95,6 +95,7 @@ public sealed unsafe class TerrainRenderer
     private int _drawCalls, _visibleChunks, _visibleTris;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private double _nextLog = 5;
+    private int _logsLeft = 3; // the periodic stats line: the first few per map only (a log line allocates; play would never stop paying)
     private GlQuery _query;
     private bool _queryActive;
     private double _gpuMs = -1;
@@ -264,6 +265,7 @@ public sealed unsafe class TerrainRenderer
                           + (t.Voids is { } tv ? $"{tv.OpenCells} hole cells skipped, {tv.CaveCells} cave cells, {caveTris} cave/rim triangles, " : "")
                           + $"{(verts.Length * stride + indices.Length * 4) / 1024} KB on the GPU, {sw.Elapsed.TotalMilliseconds:0.0} ms, GL error 0x{(uint)err:X}");
         _nextLog = _clock.Elapsed.TotalSeconds + 5;
+        _logsLeft = 3;
     }
 
     private static void SetupAttributes(int stride)
@@ -544,9 +546,10 @@ public sealed unsafe class TerrainRenderer
         }
 
         var now = _clock.Elapsed.TotalSeconds;
-        if (now >= _nextLog)
+        if (now >= _nextLog && _logsLeft > 0)
         {
             _nextLog = now + 10;
+            _logsLeft--;
             Console.WriteLine($"[terrain] {map.Name}: {_visibleChunks}/{_chunks.Length} chunks visible, {_drawCalls} draw call(s), {_visibleTris} triangles, "
                               + (_gpuMs >= 0 ? $"GPU {_gpuMs:0.000} ms" : "GPU time n/a") + $", GL error 0x{GlDebug.Error():X}");
         }

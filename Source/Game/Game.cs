@@ -878,7 +878,11 @@ public sealed partial class Game : IDisposable
 
     private void Reconcile(Player me, uint ackSeq, MoveState server, bool alive, bool respawned)
     {
-        _pendingInputs.RemoveAll(c => c.Seq <= ackSeq);
+        var keep = 0; // (in place, not RemoveAll with a lambda: that made a closure and a delegate every snapshot)
+        for (var i = 0; i < _pendingInputs.Count; i++)
+            if (_pendingInputs[i].Seq > ackSeq)
+                _pendingInputs[keep++] = _pendingInputs[i];
+        _pendingInputs.RemoveRange(keep, _pendingInputs.Count - keep);
         DropAckedKnocks(ackSeq); // blast pushes the server's state already includes (Knockback.cs)
         server = WithStagger(server, ackSeq, alive, respawned); // and the stagger they left in it (snapshots don't carry it)
         (_lastServerMove, _lastAckSeq, _haveServerMove) = (server, ackSeq, alive);

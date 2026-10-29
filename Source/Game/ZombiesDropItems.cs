@@ -107,8 +107,8 @@ public sealed partial class Game
     /// <summary>The prompt for a part pickup (both sides).</summary>
     private static ZUse PartDropUse(Player p, ZPartDrop d)
     {
-        var whose = d.Owner == p.Id ? "your " : d.OwnerName.Length > 0 ? $"{d.OwnerName}'s " : "the ";
-        return new ZUse(ZUseKind.PartPickup, d.Id, 0, $"Hold [E] to pick up {whose}{d.Part.Name} x{d.Count} ({PartDef.RarityName(d.Part.Rarity)})");
+        var whose = d.Owner == p.Id ? "your " : d.OwnerName.Length > 0 ? TextCache.Of($"{d.OwnerName}'s ") : "the ";
+        return new ZUse(ZUseKind.PartPickup, d.Id, 0, TextCache.Of($"Hold [E] to pick up {whose}{d.Part.Name} x{d.Count} ({PartDef.RarityName(d.Part.Rarity)})"));
     }
 
     // ---- The local player ---------------------------------------------------------------------------------

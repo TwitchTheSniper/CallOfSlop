@@ -349,10 +349,34 @@ public sealed partial class WeaponDef
             WeaponClass.SMG => "SMG",
             WeaponClass.DMR => "Marksman",
             WeaponClass.LMG => "LMG",
-            _ => Class.ToString(),
+            _ => ClassNames.Of(Class), // (the HUD shows it every frame: Class.ToString() boxed and made a string each time)
         };
 
-    public string ModeName => Mode == FireMode.Burst ? $"{BurstCount}-round burst" : Mode == FireMode.Auto ? "Full auto" : "Semi auto";
+    public string ModeName => Mode == FireMode.Burst ? BurstName() : Mode == FireMode.Auto ? "Full auto" : "Semi auto";
+
+    private string? _burstName;
+    private int _burstNameOf;
+
+    private string BurstName()
+    {
+        if (_burstName == null || _burstNameOf != BurstCount)
+            (_burstName, _burstNameOf) = ($"{BurstCount}-round burst", BurstCount); // (made once per burst count, not every frame)
+        return _burstName;
+    }
+
+    private static class ClassNames
+    {
+        private static readonly string[] Names = Enum.GetNames<WeaponClass>();
+        private static readonly WeaponClass[] Values = Enum.GetValues<WeaponClass>();
+
+        public static string Of(WeaponClass c)
+        {
+            for (var i = 0; i < Values.Length; i++)
+                if (Values[i] == c)
+                    return Names[i];
+            return c.ToString();
+        }
+    }
 }
 
 public static class Weapons
