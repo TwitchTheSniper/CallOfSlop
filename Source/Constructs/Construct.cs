@@ -218,8 +218,8 @@ public sealed class Construct
         return 0;
     }
 
-    /// <summary>A loose part: one part, not a seat or a foundation, nobody in it (can be picked up).</summary>
-    public bool Loose => PartCount == 1 && Parts[0].D.Role is not (PartRole.Seat or PartRole.Foundation) && !Anchored;
+    /// <summary>A loose part: one part, whole, not a seat or a foundation (can be picked up; wrecked debris can't).</summary>
+    public bool Loose => PartCount == 1 && !Parts[0].Broken && Parts[0].D.Role is not (PartRole.Seat or PartRole.Foundation) && !Anchored;
 
     public void Wake()
     {

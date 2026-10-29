@@ -31,6 +31,84 @@ public static partial class SelfTest
         ConstructScriptedBuild(yard);
         ConstructNetRoundTrip(yard);
         ConstructNoAllocations(yard);
+        ConstructLoopback(yard);
+    }
+
+    /// <summary>
+    /// A real host and client in the Sandbox mode: the client gets every construct; it sits in a buggy with bare hands and
+    /// drives it with its own keys; the server's buggy moves and the client's copy follows; a part the server breaks
+    /// breaks on the client; a client asking to build with bare hands is refused with a reason; a late joiner gets the lot.
+    /// </summary>
+    private static void ConstructLoopback(Map yard)
+    {
+        const ushort port = 26291;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
+        var now = 0.0;
+        yard.RestoreProps();
+        World.SetMap(yard);
+        using var server = new Game(NetPeer.Host(port, 4), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: yard.Id) { MapVoteEnabled = false };
+        server.Mode = GameMode.Sandbox;
+        using var a = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        Pump(server, [a], 1.5, ref now, clock);
+        for (var wait = 0; wait < 40 && server.Phase != MatchPhase.Playing; wait++)
+            Pump(server, [a], 0.25, ref now, clock);
+        Pump(server, [a], 0.5, ref now, clock);
+        if (a.LocalId == byte.MaxValue || !server.Players.TryGetValue(a.LocalId, out var sp))
+        {
+            Fail("constructs loopback: the client didn't join");
+            return;
+        }
+        if (!sp.Alive)
+            server.SelfTestRespawn(sp, now);
+        var mirrored = a.Constructs.Bodies.Count == server.Constructs.Bodies.Count && server.Constructs.Bodies.Count > 0 && a.SandboxOn;
+        // Sit in the first buggy (bare hands: use only).
+        var car = server.Constructs.Bodies.First(b => b.CanDrive);
+        var seat = car.Root;
+        var seatAt = ConstructEdits.SeatFeet(car, seat);
+        sp.Teleport(ConstructWorld.Ground(World.Query, seatAt.X - 1.6f, seatAt.Z));
+        Pump(server, [a], 0.3, ref now, clock);
+        a.SandboxSend(CActKind.Use, body: car.Id, part: (byte)seat);
+        Pump(server, [a], 0.5, ref now, clock);
+        var seated = car.Driver == a.LocalId && a.SandboxHands.Hand(a.LocalId).Seated;
+        var p0 = car.WorldCom;
+        a.HeldButtons = Buttons.Forward;
+        Pump(server, [a], 1.5, ref now, clock);
+        a.HeldButtons = Buttons.Jump;
+        Pump(server, [a], 1.0, ref now, clock);
+        a.HeldButtons = Buttons.None;
+        var drove = Vector3.Distance(p0, car.WorldCom);
+        var copy = a.Constructs.Get(car.Id);
+        if (copy != null)
+            ConstructNet.Blend(a.Constructs, now + 1, 0);
+        var follow = copy == null ? 99 : Vector3.Distance(copy.Pos, car.Pos);
+        var driverFeet = Vector3.Distance(sp.Position, ConstructEdits.SeatFeet(car, seat));
+        // Out of the seat, then bare hands can't build.
+        a.SandboxSend(CActKind.Stand);
+        Pump(server, [a], 0.4, ref now, clock);
+        var stood = car.Driver == 255 && !server.SandboxHands.Hand(a.LocalId).Seated;
+        server.SandboxHands.Hand(a.LocalId).Held = ConstructParts.Need("Frame Block").Id; // (as if from the rack)
+        a.SandboxSend(CActKind.PlaceNew, at: ConstructWorld.Ground(World.Query, sp.Position.X + 1.5f, sp.Position.Z), yaw: 0);
+        Pump(server, [a], 0.5, ref now, clock);
+        var refused = a.SandboxNotice.Contains("tool");
+        // A part the server breaks breaks on the client.
+        var line = PartOf(car, PartRole.FuelLine);
+        server.Constructs.DamagePart(car, line, 1000, out _);
+        Pump(server, [a], 0.5, ref now, clock);
+        copy = a.Constructs.Get(car.Id);
+        var broke = copy != null && copy.PartCount == car.PartCount && !copy.CanDrive;
+        // A late joiner gets every construct.
+        using var b = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Bravo", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        Pump(server, [a, b], 1.5, ref now, clock);
+        var joined = b.Constructs.Bodies.Count == server.Constructs.Bodies.Count && b.Constructs.TotalParts == server.Constructs.TotalParts;
+        Line($"loopback: the client mirrors {a.Constructs.Bodies.Count} of {server.Constructs.Bodies.Count} constructs {mirrored}; sat in the buggy {seated}, drove it {drove:0.0} m with its own keys (its copy within {follow:0.00} m, the driver {driverFeet:0.00} m from the seat); stood up {stood}; bare-hands build refused {refused} (\"{a.SandboxNotice}\"); a broken fuel line mirrored {broke}; a late joiner got them all {joined}");
+        if (!mirrored)
+            Fail("constructs loopback: the client doesn't mirror the server's constructs");
+        if (!seated || drove < 3 || follow > 0.5f || driverFeet > 0.3f)
+            Fail("constructs loopback: the client couldn't sit in the buggy and drive it (or its copy or the driver didn't follow)");
+        if (!stood || !refused)
+            Fail("constructs loopback: standing up, or the bare-hands refusal, didn't go through");
+        if (!broke || !joined)
+            Fail("constructs loopback: a broken part or a late joiner didn't get the server's constructs");
     }
 
     private static Construct? Buggy(ConstructWorld w, float x, float z, float yaw)
@@ -250,12 +328,13 @@ public static partial class SelfTest
         var before = w2.Bodies.Count;
         var wheelsBefore = car2.CountRole(PartRole.Wheel);
         w2.DamagePart(car2, sus, 10000, out _);
-        var wreck = w2.Bodies.FirstOrDefault(b => b != car2);
+        var wreck = w2.Bodies.FirstOrDefault(b => b != car2 && b.PartCount == 1 && b.DefOf(0).Role == PartRole.Wheel);
+        var debris = w2.Bodies.FirstOrDefault(b => b != car2 && b.PartCount == 1 && b.DefOf(0).Role == PartRole.Suspension && b.Parts[0].Broken);
         var y0 = wreck?.WorldCom.Y ?? 0;
         StepConstructs(w2, 90);
         Line($"suspension broken: bodies {before} -> {w2.Bodies.Count}, the car has {car2.CountRole(PartRole.Wheel)} of {wheelsBefore} wheels, the wreck: {(wreck == null ? "none" : $"{wreck.PartCount} part ({wreck.DefOf(0).Name}), wreck {wreck.Wreck}, fell {y0 - wreck.WorldCom.Y:0.00} m")}; events: {string.Join("; ", w2.Events)}");
-        if (wreck == null || !wreck.Wreck || wreck.DefOf(0).Role != PartRole.Wheel || car2.CountRole(PartRole.Wheel) != wheelsBefore - 1)
-            Fail("constructs: a wheel whose suspension broke didn't fall away as a wreck");
+        if (wreck == null || !wreck.Wreck || wreck.Parts[0].Broken || car2.CountRole(PartRole.Wheel) != wheelsBefore - 1 || debris == null || debris.Loose)
+            Fail("constructs: a wheel whose suspension broke didn't fall away as a wreck (with the wrecked suspension as debris)");
         else if (wreck.WorldCom.Y > y0 - 0.02f && !wreck.Asleep)
             Fail("constructs: the wrecked wheel didn't fall");
         // A blast: parts near it take damage.

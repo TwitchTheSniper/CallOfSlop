@@ -348,7 +348,26 @@ public sealed class ConstructWorld
             return true;
         }
         Events.Add($"construct {c.Id}: {d.Name} broke off");
+        // The broken part itself falls away too, as wrecked debris (scrap to salvage later), moving as it was.
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var debris = p with { Seg = 0, Broken = true, Health = 0 };
+        c.PartBounds(part, out var mn, out var mx);
+        var at = t + Vector3.Transform((mn + mx) * 0.5f, q);
+        var vel = c.PointVel(at);
+        var outward = at - c.WorldCom;
+        outward.Y = 0;
+        outward = outward.LengthSquared() > 1e-4f ? Vector3.Normalize(outward) * 2.5f : Vector3.Zero;
+        var spin = c.AngVel;
         RemovePart(c, part);
+        if (Bodies.Count < MaxBodies && TotalParts < MaxTotalParts && Create(t, q) is { } piece)
+        {
+            piece.Parts[0] = debris;
+            piece.PartCount = 1;
+            piece.Wreck = true;
+            piece.Rebuild();
+            piece.Vel = vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up
+            piece.AngVel = spin + new Vector3(1.3f, 0.4f, -0.9f);
+        }
         return true;
     }
 

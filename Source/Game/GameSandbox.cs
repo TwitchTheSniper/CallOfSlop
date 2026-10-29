@@ -205,6 +205,8 @@ public sealed partial class Game
 
     internal void OnSandboxPacket(byte id, ref PacketReader r, RakNetGUID sender, double now)
     {
+        if (!IsServer)
+            SandboxNow = now;
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
