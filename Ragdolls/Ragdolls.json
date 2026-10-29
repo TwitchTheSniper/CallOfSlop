@@ -394,10 +394,10 @@
         ],
         "moving": true
       },
-      "balance": 0.5,
+      "balance": 0.6,
       "support": 0.4,
       "lean": [
-        28,
+        40,
         0
       ],
       "carry": 0.9,

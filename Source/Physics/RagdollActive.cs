@@ -223,6 +223,14 @@ public static class RagdollActive
         a.RunVel = float.IsFinite(run.X + run.Y + run.Z) ? run : Vector3.Zero;
         a.Wound = WoundParticle(Region(d), a.Side);
         sim.Driven = true;
+        if (Reactions[c.Reaction].Carry > 0)
+        {
+            // A stumble: the feet catch on the ground and the body pitches forward over them.
+            sim.Push(RagdollRig.FootR, -a.RunVel * 0.75f);
+            sim.Push(RagdollRig.FootL, -a.RunVel * 0.75f);
+            sim.Push(RagdollRig.KneeR, -a.RunVel * 0.4f);
+            sim.Push(RagdollRig.KneeL, -a.RunVel * 0.4f);
+        }
     }
 
     private static Vector3 Up(Vector3 at) => GravityFrames.Curved ? GravityFrames.UpAt(at) : Vector3.UnitY;

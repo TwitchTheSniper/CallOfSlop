@@ -1230,7 +1230,7 @@ public static class Ragdolls
         get
         {
             var fr = Math.Max(_frames, 1);
-            var s = $"{LiveCount} bodies ({AwakeCount} awake), {_spawned} spawned, {_steps} steps in {_frames} frames, sim {_simTicks * 1000.0 / Stopwatch.Frequency / fr:0.000} ms/frame avg, "
+            var s = $"{LiveCount} bodies ({AwakeCount} awake, {ActiveCount().All} powered), {_spawned} spawned, {_steps} steps in {_frames} frames, sim {_simTicks * 1000.0 / Stopwatch.Frequency / fr:0.000} ms/frame avg, "
                     + $"{_worstSimTicks * 1000.0 / Stopwatch.Frequency:0.000} ms worst, {Ragdoll.Gathers} gathers";
             _simTicks = _worstSimTicks = 0;
             _frames = _steps = _spawned = 0;
