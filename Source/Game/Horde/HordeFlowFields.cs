@@ -25,6 +25,17 @@ public sealed class HordeFlowFields
     }
 
     public int Capacity = 24, BuildsPerTick = 1;
+
+    /// <summary>
+    /// Extra route cost (metres) of a vault: an edge the bots cross by climbing over something and coming down about where
+    /// they started or lower (a pew, a railing, a balustrade, a gallery's edge with a drop behind it). Zombies walk round
+    /// those when the way round is shorter than this (board item dev-zombies-stuck-railings-zr01: they pushed into pews and
+    /// railings their field told them to climb); a climb to a higher floor costs nothing extra.
+    /// </summary>
+    public float VaultPenalty = 25f;
+
+    /// <summary>More on top of <see cref="VaultPenalty"/> for a vault with a drop of more than 1.5 m behind it (over a gallery's railing to the floor below): the stairs win unless they are a long way round.</summary>
+    public float VaultDropPenalty = 40f;
     public long RefreshTicks = 60;
 
     private Field[] _fields = [];
@@ -117,7 +128,7 @@ public sealed class HordeFlowFields
                 var v = g.EdgeTo[e];
                 var k = fill[v]++;
                 _revFrom[k] = u;
-                _revCost[k] = g.EdgeCost[e];
+                _revCost[k] = g.EdgeCost[e] + (IsVault(g, u, e) ? VaultPenalty + (g.Nodes[u].Y - g.Nodes[g.EdgeTo[e]].Y > 1.5f ? VaultDropPenalty : 0f) : 0f);
                 _revEdge[k] = e;
             }
     }
@@ -260,6 +271,10 @@ public sealed class HordeFlowFields
         }
         return top;
     }
+
+    /// <summary>Is edge <paramref name="e"/> (from node <paramref name="from"/>) a vault: a climb over something that doesn't end higher up?</summary>
+    public static bool IsVault(NavGraph g, int from, int e) =>
+        e >= 0 && e < g.EdgeFlags.Length && (g.EdgeFlags[e] & NavGraph.FlagMantle) != 0 && g.Nodes[g.EdgeTo[e]].Y - g.Nodes[from].Y < World.StepHeight;
 
     /// <summary>The cost from node <paramref name="from"/> to the field's goal (infinity: no way).</summary>
     public static float CostFrom(Field f, int from) => from >= 0 && from < f.Cost.Length ? f.Cost[from] : float.PositiveInfinity;

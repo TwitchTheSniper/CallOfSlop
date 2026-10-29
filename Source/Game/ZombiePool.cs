@@ -48,6 +48,8 @@ public sealed partial class Zombie
         StuckPos = default;
         StuckAt = UnstickUntil = 0;
         UnstickYaw = 0;
+        StuckStage = 0;
+        StuckSpellSpot = null;
         Array.Clear(History);
         PrevPos = RenderPos = default;
         RenderYaw = 0;

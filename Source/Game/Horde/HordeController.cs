@@ -48,6 +48,9 @@ public sealed class HordeTuning
     /// <summary>Separation between members: radius (m) and strength.</summary>
     public float SeparationRadius = 0.9f, SeparationStrength = 1.6f;
 
+    /// <summary>Separation's strength on stairs and ramps, as a share of <see cref="SeparationStrength"/> (HordeMember.Climbing).</summary>
+    public float StairSeparation = 0.35f;
+
     /// <summary>Flow fields kept, new ones built per tick, and how old (seconds) one may get before it's rebuilt.</summary>
     public int FlowFields = 24, FlowBuildsPerTick = 1;
 
@@ -742,21 +745,80 @@ public sealed class HordeController<T> where T : class, IHordeAgent
     }
 
     /// <summary>
-    /// Where a member should walk this tick to reach <paramref name="goal"/>: straight at it when it is close and in
-    /// plain view (checked on think ticks), else the next node on the shared flow field to <paramref name="goalNode"/>
-    /// (with a corner cut when the node after is in view; checked on think ticks). <paramref name="jump"/>: the next
-    /// node is a step up the member has to jump.
+    /// Where a member should walk this tick to reach <paramref name="goal"/>: straight at it when it is close and its whole
+    /// body has a clear way there (<see cref="WalkClear"/>; checked on think ticks), else the next node on the shared flow
+    /// field to <paramref name="goalNode"/> (with a corner cut when the node after is clear the same way; checked on think
+    /// ticks). <paramref name="jump"/>: the next node is a step up the member has to jump, or the edge to it climbs over a
+    /// ledge and the member is at it. The stuck watch's recovery (<see cref="HordeMember.NoStraightUntil"/>,
+    /// <see cref="HordeMember.ToNodeUntil"/>) is kept here.
     /// </summary>
     public Vector3 Steer(T a, Vector3 goal, int goalNode, out bool jump)
+    {
+        var p = SteerRoute(a, goal, goalNode, out jump);
+        return Slide(a, p);
+    }
+
+    /// <summary>
+    /// Slides along what the body is pressed against (board item dev-zombies-stuck-railings-zr01): on some think ticks
+    /// three short knee rays (the middle and the body's two sides) look along the way to <paramref name="p"/>; a wall,
+    /// railing or post within reach turns the way along its face (kept a few ticks), so a member walks round a pew's end or
+    /// along a railing instead of pushing into it. No change when nothing is in the way.
+    /// </summary>
+    private Vector3 Slide(T a, Vector3 p)
+    {
+        var m = a.Member;
+        var pos = a.Position;
+        var d = p - pos;
+        d.Y = 0;
+        var len = d.Length();
+        if (len < 0.05f || GravityFrames.Curved)
+            return p;
+        var dir = d / len;
+        if (m.ThinkNow && (m.Tier > 0 || ((_tick + a.HordeId) & 1) == 0))
+        {
+            m.SlideNormal = Vector3.Zero;
+            var side = new Vector3(-dir.Z, 0, dir.X) * WalkClearSide;
+            var knee = pos + new Vector3(0, 0.6f, 0);
+            var best = SlideReach;
+            for (var k = -1; k <= 1; k++)
+                if (World.Query.Raycast(knee + side * k, dir, SlideReach, QueryFilter.Navigation, out var hit) && hit.Distance < best)
+                {
+                    var n = new Vector3(hit.Normal.X, 0, hit.Normal.Z);
+                    var nl = n.Length();
+                    if (nl < 0.3f)
+                        continue; // (a floor or a ramp: not a wall)
+                    best = hit.Distance;
+                    m.SlideNormal = n / nl;
+                }
+            m.SlideUntil = _tick + 12;
+        }
+        if (_tick > m.SlideUntil || m.SlideNormal == Vector3.Zero)
+            return p;
+        var into = Vector3.Dot(dir, m.SlideNormal);
+        if (into >= -0.05f)
+            return p; // (heading away from it, or along it)
+        var along = dir - m.SlideNormal * into;
+        var al = along.Length();
+        if (al < 0.05f)
+            return p; // (square on: the stuck watch's side-step decides which way)
+        return pos + along / al * MathF.Max(len, 1f) + new Vector3(0, p.Y - pos.Y, 0);
+    }
+
+    /// <summary>How far ahead <see cref="Slide"/> looks for something to slide along (a body's radius and a stride).</summary>
+    public const float SlideReach = 0.75f;
+
+    /// <summary>The route part of <see cref="Steer"/>: the straight goal or the field's next node (no sliding yet).</summary>
+    private Vector3 SteerRoute(T a, Vector3 goal, int goalNode, out bool jump)
     {
         jump = false;
         var m = a.Member;
         var pos = a.Position;
         var nav = _nav;
+        m.Climbing = false;
         if (m.ThinkNow)
         {
             var to = goal - pos;
-            m.Straight = Flat(to) < 14f && MathF.Abs(to.Y) < 1.2f && NavGraph.Clear(pos, goal);
+            m.Straight = _now >= m.NoStraightUntil && Flat(to) < 14f && MathF.Abs(to.Y) < 1.2f && WalkClear(pos, goal);
         }
         if (m.Straight || goalNode < 0 || nav.Nodes.Length == 0)
             return goal;
@@ -764,37 +826,183 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         if (field == null)
             return goal;
         m.FlowGoal = goalNode;
-        if (m.Node < 0 || m.Node >= nav.Nodes.Length || (m.ThinkNow && Flat(nav.Nodes[m.Node] - pos) > 2.2f))
-            m.Node = nav.Nearest(pos, needSight: false);
+        if (m.Node < 0 || m.Node >= nav.Nodes.Length || (m.ThinkNow && OffRoute(nav, m.Node, field.Next[m.Node], pos)))
+            m.Node = nav.Nearest(pos, needSight: true); // (in plain view: never the floor below a stair or the far side of a railing)
         if (m.Node < 0)
             return goal;
+        if (_now < m.ToNodeUntil)
+        {
+            // Recovering: back to its route node first, then on along the field.
+            var back = nav.Nodes[m.Node];
+            if (Flat(back - pos) > 0.5f)
+            {
+                m.Climbing = MathF.Abs(back.Y - pos.Y) > 0.3f;
+                jump = back.Y - pos.Y > World.StepHeight && Flat(back - pos) < 1.5f;
+                return back;
+            }
+            m.ToNodeUntil = 0;
+        }
         var next = field.Next[m.Node];
-        for (var hop = 0; hop < 4 && next >= 0 && Flat(nav.Nodes[next] - pos) < 0.65f; hop++)
+        for (var hop = 0; hop < 4 && next >= 0 && Reached(nav.Nodes[m.Node], nav.Nodes[next], pos); hop++)
         {
             m.Node = next;
             next = field.Next[next];
         }
         if (next < 0)
             return goal; // at the goal's node (or no way from here: straight, and the stuck watch)
-        if (m.ThinkNow && ((_tick + a.HordeId) & 1) == 0)
+        var edge = EdgeBetween(nav, m.Node, next);
+        if (edge >= 0 && (nav.EdgeFlags[edge] & NavGraph.FlagLastResort) != 0 && m.ThinkNow)
+        {
+            // The field only has a last resort from here (through a Zombies door the graph was built shut, say): straight
+            // at the goal after all when the plain sight test allows it, as before the body-wide test.
+            var to = goal - pos;
+            if (Flat(to) < 14f && MathF.Abs(to.Y) < 1.2f && NavGraph.Clear(pos, goal))
+            {
+                m.Straight = true;
+                return goal;
+            }
+        }
+        var climb = edge >= 0 && (nav.EdgeFlags[edge] & (NavGraph.FlagMantle | NavGraph.FlagDrop)) != 0;
+        if (!climb && m.ThinkNow && ((_tick + a.HordeId) & 1) == 0)
         {
             var after = field.Next[next];
-            if (after >= 0 && NavGraph.Clear(pos, nav.Nodes[after]))
+            var e2 = after >= 0 ? EdgeBetween(nav, next, after) : -1;
+            if (after >= 0 && MathF.Abs(nav.Nodes[after].Y - pos.Y) < 0.6f && (e2 < 0 || (nav.EdgeFlags[e2] & (NavGraph.FlagMantle | NavGraph.FlagDrop)) == 0) && WalkClear(pos, nav.Nodes[after]))
             {
                 m.Node = next;
                 next = after;
+                edge = e2;
             }
         }
         var p = nav.Nodes[next];
-        jump = p.Y - pos.Y > World.StepHeight;
+        if (!climb && m.ThinkNow && (m.Tier > 0 || ((_tick + a.HordeId) & 3) == 1) && MathF.Abs(p.Y - pos.Y) < 0.3f && Flat(nav.Nodes[m.Node] - pos) > 0.6f && !KneeClear(pos, p))
+        {
+            // Off the edge's line with a corner (or a railing's post) between it and the next node: back onto the line
+            // at its node first instead of grinding along the corner.
+            m.ToNodeUntil = _now + 0.5;
+            var back = nav.Nodes[m.Node];
+            m.Climbing = MathF.Abs(back.Y - pos.Y) > 0.3f;
+            jump = back.Y - pos.Y > World.StepHeight && Flat(back - pos) < 1.5f;
+            return back;
+        }
+        m.Climbing = MathF.Abs(p.Y - pos.Y) > 0.3f;
+        jump = p.Y - pos.Y > World.StepHeight && Flat(p - pos) < 1.5f; // (a ledge right ahead, not the top of a long flight)
+        if (edge >= 0 && (nav.EdgeFlags[edge] & NavGraph.FlagMantle) != 0 && edge < nav.EdgeLedge.Length)
+        {
+            // A climb over a ledge (the field's vault penalty makes these rare): jump at the ledge, as the bots do.
+            var ledge = nav.EdgeLedge[edge];
+            if (Flat(ledge - pos) < 1.4f && ledge.Y > pos.Y + World.StepHeight)
+                jump = true;
+        }
         return p;
+    }
+
+    /// <summary>
+    /// Is the member too far off its route to go on from node <paramref name="node"/>: more than 2.2 m across the ground
+    /// or 1.4 m up or down from the edge to <paramref name="next"/> (the line between them, so a member halfway up a long
+    /// stair flight keeps its route instead of being given the landing above, whose next node is across the stairwell)?
+    /// </summary>
+    private static bool OffRoute(NavGraph nav, int node, int next, Vector3 pos)
+    {
+        var a = nav.Nodes[node];
+        if (next < 0 || next >= nav.Nodes.Length)
+            return Flat(a - pos) > 2.2f || MathF.Abs(a.Y - pos.Y) > 1.4f;
+        var b = nav.Nodes[next];
+        float dx = b.X - a.X, dz = b.Z - a.Z;
+        var len2 = dx * dx + dz * dz;
+        var t = len2 < 1e-4f ? 0f : Math.Clamp(((pos.X - a.X) * dx + (pos.Z - a.Z) * dz) / len2, 0f, 1f);
+        var on = Vector3.Lerp(a, b, t);
+        return Flat(on - pos) > 2.2f || MathF.Abs(on.Y - pos.Y) > 1.4f;
+    }
+
+    /// <summary>
+    /// Has a member at <paramref name="pos"/> reached the node <paramref name="b"/> it walks to from <paramref name="a"/>:
+    /// within 0.65 m of it, or past it along the edge and within 1.6 m (a member pushed or cutting a corner never walks
+    /// back to a node it has gone by)? On its floor either way.
+    /// </summary>
+    private static bool Reached(Vector3 a, Vector3 b, Vector3 pos)
+    {
+        if (MathF.Abs(b.Y - pos.Y) >= 1.2f)
+            return false;
+        var d = Flat(b - pos);
+        if (d < 0.65f)
+            return true;
+        if (d > 1.6f)
+            return false;
+        float ex = b.X - a.X, ez = b.Z - a.Z;
+        return ex * (pos.X - b.X) + ez * (pos.Z - b.Z) > 0;
+    }
+
+    /// <summary>The edge from node <paramref name="from"/> to node <paramref name="to"/>, or -1.</summary>
+    public static int EdgeBetween(NavGraph nav, int from, int to)
+    {
+        if (from < 0 || from + 1 >= nav.EdgeStart.Length)
+            return -1;
+        for (var e = nav.EdgeStart[from]; e < nav.EdgeStart[from + 1]; e++)
+            if (nav.EdgeTo[e] == to)
+                return e;
+        return -1;
+    }
+
+    /// <summary>One ray at knee height between two feet positions (the cheap corner test while following the field).</summary>
+    private static bool KneeClear(Vector3 a, Vector3 b)
+    {
+        var from = a + new Vector3(0, 0.6f, 0);
+        var d = b + new Vector3(0, 0.6f, 0) - from;
+        var len = d.Length();
+        return len < 0.01f || World.Query.Raycast(from, d / len, len, QueryFilter.Navigation) >= len - 0.05f;
+    }
+
+    /// <summary>Half the width between the side rays of <see cref="WalkClear"/>: just under a body's radius (0.4 m), so a corner the body would clip stops the line.</summary>
+    public const float WalkClearSide = 0.38f;
+
+    /// <summary>
+    /// Can a body walk straight from feet <paramref name="a"/> to feet <paramref name="b"/>? <see cref="NavGraph.Clear"/>
+    /// (knee and chest), a ray at railing height (a rail band between the two), and two knee rays a body's width apart (the
+    /// end of a pew, a pillar's corner or a baluster the middle ray slips past). Seven rays at most, most of the time two
+    /// (a blocked way stops at the first), then the floor under the line (a ray down every couple of metres).
+    /// </summary>
+    public static bool WalkClear(Vector3 a, Vector3 b)
+    {
+        if (!NavGraph.Clear(a, b))
+            return false;
+        if (GravityFrames.Curved)
+            return true;
+        var d = b - a;
+        var flat = MathF.Sqrt(d.X * d.X + d.Z * d.Z);
+        if (flat < 0.05f)
+            return true;
+        if (!Ray(a + new Vector3(0, 0.95f, 0), b + new Vector3(0, 0.95f, 0)))
+            return false;
+        var side = new Vector3(-d.Z / flat * WalkClearSide, 0.6f, d.X / flat * WalkClearSide);
+        var other = new Vector3(-side.X, 0.6f, -side.Z);
+        if (!Ray(a + side, b + side) || !Ray(a + other, b + other))
+            return false;
+        // Floor all the way: no line across a stairwell, a gallery's open side or a gap between floors (a ray down at
+        // every couple of metres finds the floor near the line).
+        var samples = Math.Min(6, (int)(flat / 2f));
+        for (var i = 1; i <= samples; i++)
+        {
+            var p = Vector3.Lerp(a, b, i / (samples + 1f));
+            if (World.Query.Raycast(p + new Vector3(0, 0.5f, 0), -Vector3.UnitY, 1.2f, QueryFilter.Navigation) > 1.15f)
+                return false;
+        }
+        return true;
+
+        static bool Ray(Vector3 from, Vector3 to)
+        {
+            var dd = to - from;
+            var len = dd.Length();
+            return len < 0.01f || World.Query.Raycast(from, dd / len, len, QueryFilter.Navigation) >= len - 0.05f;
+        }
     }
 
     /// <summary>The walking yaw turned away from the members close by (from the grid; the old all-pairs maths).</summary>
     public float Separate(T a, float yaw)
     {
         var tu = Tuning;
-        var push = Grid.Push(a.Member.Index, a.Position, tu.SeparationRadius, tu.SeparationStrength);
+        // Narrower on stairs and ramps: a crowd pushing sideways there shoves its members into the railings.
+        var push = Grid.Push(a.Member.Index, a.Position, tu.SeparationRadius, a.Member.Climbing ? tu.SeparationStrength * tu.StairSeparation : tu.SeparationStrength);
         if (push.LengthSquared() < 1e-6f)
             return yaw;
         var w = World.FlatForward(yaw) + push;
