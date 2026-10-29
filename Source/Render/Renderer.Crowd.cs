@@ -7,9 +7,11 @@ namespace CallOfSlop;
 /// <summary>
 /// The mass horde's crowd on the GPU (docs/zombies/MASS-HORDE.md, "Rendering"): one instanced draw per level of detail.
 /// Each rig (<see cref="CrowdRig"/>) is its boxes' cubes in one vertex buffer (each vertex knows its box), and its walk
-/// cycle a float texture; per instance only the position, yaw, metres walked, brightness and the debug tint
-/// (<see cref="CrowdInstances"/>). The vertex shader reads the box's transform for the frame (texelFetch) and places it;
-/// the fragment shader is the box shader's own (sun, sky, baked lighting, fog). OpenGL 3.3/4.1 only: no compute, no
+/// cycle a float texture; per instance 16 bytes (<see cref="CrowdInstance"/>: position, yaw, walk phase, brightness,
+/// the debug tint, held). The vertex shader reads the box's transform for the frame (texelFetch) and places it; the
+/// fragment shader is the box shader's own (sun, sky, baked lighting, fog). Both GL paths: the 4.1 path uploads each
+/// level's stripes by orphaning and <c>glBufferSubData</c>; on the 4.6 path with the <c>persistent</c> experiment they
+/// are copied into a persistently mapped ring (<see cref="StreamRing"/>) and drawn with a base instance. No compute, no
 /// indirect draws (Mac). Texture unit <see cref="CrowdAnimUnit"/> while it draws.
 /// </summary>
 public sealed unsafe partial class Renderer
@@ -29,7 +31,9 @@ public sealed unsafe partial class Renderer
     private CrowdGl[]? _crowd;
     private bool _crowdBroken;
     private GlProgram _crowdProgram;
-    private int _cLocViewProj, _cLocCam, _cLocFog, _cLocFogRange, _cLocTex, _cLocAnim, _cLocFrames, _cLocCycle, _cLocDbgA, _cLocDbgB;
+    private int _cLocViewProj, _cLocCam, _cLocFog, _cLocFogRange, _cLocTex, _cLocAnim, _cLocFrames, _cLocDbgA, _cLocDbgB, _cLocBaseY;
+    private StreamRing? _crowdRing;
+    private int _crowdRingGen = -1;
 
     /// <summary>Instanced crowd draws and the zombies in them since the last read (smoke test, perf).</summary>
     public int CrowdDraws, CrowdZombies;
@@ -54,6 +58,19 @@ public sealed unsafe partial class Renderer
         Native.glUniform2f(_cLocFogRange, FogRange.X, FogRange.Y);
         Native.glUniform3f(_cLocDbgA, CrowdTierYellow.X, CrowdTierYellow.Y, CrowdTierYellow.Z);
         Native.glUniform3f(_cLocDbgB, CrowdTierOrange.X, CrowdTierOrange.Y, CrowdTierOrange.Z);
+        Native.glUniform1f(_cLocBaseY, inst.BaseY);
+        var ring = RenderCaps.PersistentBuffers ? _crowdRing ??= new StreamRing(CrowdInstances.Bytes, 65536, "Renderer.crowdRing") : null;
+        if (ring != null ? _crowdRingGen != ring.Generation : _crowdRingGen >= 0)
+        {
+            // (Which buffer the vertex arrays read instances from: the ring, or each level's own; --gl-bench flips it.)
+            for (var lod = 0; lod < CrowdInstances.Lods; lod++)
+            {
+                _crowd![lod].Vao.Bind();
+                Native.glBindBuffer(GL_ARRAY_BUFFER, ring != null ? ring.Buffer : _crowd[lod].Inst);
+                CrowdInstanceAttribs();
+            }
+            _crowdRingGen = ring?.Generation ?? -1;
+        }
         for (var lod = 0; lod < CrowdInstances.Lods; lod++)
         {
             var n = inst.Count[lod];
@@ -63,16 +80,44 @@ public sealed unsafe partial class Renderer
             Native.glActiveTexture(GL_TEXTURE0 + CrowdAnimUnit);
             Native.glBindTexture(GL_TEXTURE_2D, c.Tex);
             Native.glUniform1f(_cLocFrames, c.Rig.Frames);
-            Native.glUniform1f(_cLocCycle, c.Rig.CycleMetres);
             c.Vao.Bind();
-            Native.glBindBuffer(GL_ARRAY_BUFFER, c.Inst);
-            var bytes = n * CrowdInstances.Floats * sizeof(float);
-            if (bytes > c.InstCapacity)
-                c.InstCapacity = Math.Max(bytes, c.InstCapacity * 2);
-            Native.glBufferData(GL_ARRAY_BUFFER, c.InstCapacity, null, GL_STREAM_DRAW); // orphan
-            fixed (float* p = inst.Data[lod])
-                Native.glBufferSubData(GL_ARRAY_BUFFER, 0, bytes, p);
-            Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36 * c.Rig.Boxes, n);
+            var first = 0;
+            if (ring != null)
+            {
+                // The 4.6 path: every stripe copied into this frame's segment of the mapped ring, drawn from its base.
+                var dst = (byte*)ring.Reserve(n, out first);
+                foreach (var st in inst.Stripes)
+                {
+                    var k = st.Count[lod];
+                    if (k == 0)
+                        continue;
+                    var bytes = (long)k * CrowdInstances.Bytes;
+                    fixed (CrowdInstance* p = st.Data[lod])
+                        System.Buffer.MemoryCopy(p, dst, bytes, bytes);
+                    dst += bytes;
+                }
+                Native.glDrawArraysInstancedBaseInstance(GL_TRIANGLES, 0, 36 * c.Rig.Boxes, n, (uint)first);
+            }
+            else
+            {
+                Native.glBindBuffer(GL_ARRAY_BUFFER, c.Inst);
+                var total = n * CrowdInstances.Bytes;
+                if (total > c.InstCapacity)
+                    c.InstCapacity = Math.Max(total, c.InstCapacity * 2);
+                Native.glBufferData(GL_ARRAY_BUFFER, c.InstCapacity, null, GL_STREAM_DRAW); // orphan
+                var at = 0;
+                foreach (var st in inst.Stripes)
+                {
+                    var k = st.Count[lod];
+                    if (k == 0)
+                        continue;
+                    fixed (CrowdInstance* p = st.Data[lod])
+                        Native.glBufferSubData(GL_ARRAY_BUFFER, at, k * CrowdInstances.Bytes, p);
+                    at += k * CrowdInstances.Bytes;
+                }
+                Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36 * c.Rig.Boxes, n);
+            }
+            PerfCounters.Draw(36 * c.Rig.Boxes, n);
             CrowdDraws++;
             CrowdZombies += n;
         }
@@ -81,58 +126,78 @@ public sealed unsafe partial class Renderer
         _vao.Bind();
     }
 
+    /// <summary>The instance attributes (16 bytes, <see cref="CrowdInstance"/>) from the bound array buffer, into the bound vertex array.</summary>
+    private static void CrowdInstanceAttribs()
+    {
+        const int istride = CrowdInstances.Bytes;
+        Native.glVertexAttribPointer(3, 2, GL_FLOAT, false, istride, (void*)0);
+        EnableVertexAttribArray(3);
+        Native.glVertexAttribDivisor(3, 1);
+        Native.glVertexAttribPointer(4, 2, GL_HALF_FLOAT, false, istride, (void*)8);
+        EnableVertexAttribArray(4);
+        Native.glVertexAttribDivisor(4, 1);
+        Native.glVertexAttribPointer(5, 4, GL_UNSIGNED_BYTE, true, istride, (void*)12);
+        EnableVertexAttribArray(5);
+        Native.glVertexAttribDivisor(5, 1);
+    }
+
+    /// <summary>The crowd's vertex shader: a rig box placed for the instance's frame of the walk cycle.</summary>
+    private const string CrowdVertexSrc = """
+        #version 410 core
+        layout(location = 0) in vec3 aPos;
+        layout(location = 1) in vec3 aNormal;
+        layout(location = 2) in float aBox;
+        layout(location = 3) in vec2 iXZ;
+        layout(location = 4) in vec2 iYPhase;
+        layout(location = 5) in vec4 iLook;
+        uniform mat4 uViewProj;
+        uniform sampler2D uAnim;
+        uniform float uFrames;
+        uniform float uBaseY;
+        uniform vec3 uDbgA;
+        uniform vec3 uDbgB;
+        out vec3 vWorld;
+        out vec3 vNormal;
+        out vec4 vColorI;
+        flat out float vModeI;
+        flat out float vLayerI;
+        void main()
+        {
+            // The frame: the walk cycle's phase (0-1).
+            int frames = int(uFrames);
+            int frame = int(floor(fract(iYPhase.y) * uFrames)) % frames;
+            int b = int(aBox + 0.5) * 4;
+            vec4 r0 = texelFetch(uAnim, ivec2(b, frame), 0);
+            vec4 r1 = texelFetch(uAnim, ivec2(b + 1, frame), 0);
+            vec4 r2 = texelFetch(uAnim, ivec2(b + 2, frame), 0);
+            vec4 r3 = texelFetch(uAnim, ivec2(b + 3, frame), 0);
+            // Row vectors (System.Numerics): p * M.
+            vec3 local = aPos.x * r0.xyz + aPos.y * r1.xyz + aPos.z * r2.xyz + r3.xyz;
+            vec3 n = aNormal.x * r0.xyz + aNormal.y * r1.xyz + aNormal.z * r2.xyz;
+            float yaw = iLook.x * 6.28318531;
+            float s = sin(yaw), c = cos(yaw);
+            // Turned to its yaw (World.FlatForward: yaw 0 faces -z).
+            vec3 w = vec3(local.x * c - local.z * s, local.y, local.x * s + local.z * c) + vec3(iXZ.x, iYPhase.x + uBaseY, iXZ.y);
+            vWorld = w;
+            vNormal = normalize(vec3(n.x * c - n.z * s, n.y, n.x * s + n.z * c));
+            float bright = iLook.y * 1.5;
+            vec3 col = vec3(r0.w, r1.w, r2.w) * bright;
+            vColorI = vec4(mix(col, (iLook.w > 0.5 ? uDbgB : uDbgA) * bright, iLook.z), 1.0);
+            vModeI = r3.w;
+            vLayerI = 0.0;
+            gl_Position = uViewProj * vec4(w, 1.0);
+        }
+        """;
+
     private bool InitCrowd()
     {
         try
         {
-            const string vsSrc = """
-                #version 330 core
-                layout(location = 0) in vec3 aPos;
-                layout(location = 1) in vec3 aNormal;
-                layout(location = 2) in float aBox;
-                layout(location = 3) in vec4 iPosYaw;
-                layout(location = 4) in vec4 iWalk;
-                uniform mat4 uViewProj;
-                uniform sampler2D uAnim;
-                uniform float uFrames;
-                uniform float uCycle;
-                uniform vec3 uDbgA;
-                uniform vec3 uDbgB;
-                out vec3 vWorld;
-                out vec3 vNormal;
-                out vec4 vColorI;
-                flat out float vModeI;
-                flat out float vLayerI;
-                void main()
-                {
-                    // The frame: the walk cycle by metres walked.
-                    float cyc = fract(iWalk.x / uCycle);
-                    int frame = int(floor(cyc * uFrames)) % int(uFrames);
-                    int b = int(aBox + 0.5) * 4;
-                    vec4 r0 = texelFetch(uAnim, ivec2(b, frame), 0);
-                    vec4 r1 = texelFetch(uAnim, ivec2(b + 1, frame), 0);
-                    vec4 r2 = texelFetch(uAnim, ivec2(b + 2, frame), 0);
-                    vec4 r3 = texelFetch(uAnim, ivec2(b + 3, frame), 0);
-                    // Row vectors (System.Numerics): p * M.
-                    vec3 local = aPos.x * r0.xyz + aPos.y * r1.xyz + aPos.z * r2.xyz + r3.xyz;
-                    vec3 n = aNormal.x * r0.xyz + aNormal.y * r1.xyz + aNormal.z * r2.xyz;
-                    float s = sin(iPosYaw.w), c = cos(iPosYaw.w);
-                    // Turned to its yaw (World.FlatForward: yaw 0 faces -z).
-                    vec3 w = vec3(local.x * c - local.z * s, local.y, local.x * s + local.z * c) + iPosYaw.xyz;
-                    vWorld = w;
-                    vNormal = normalize(vec3(n.x * c - n.z * s, n.y, n.x * s + n.z * c));
-                    vec3 col = vec3(r0.w, r1.w, r2.w) * iWalk.y;
-                    vColorI = vec4(mix(col, (iWalk.w > 0.5 ? uDbgB : uDbgA) * iWalk.y, iWalk.z), 1.0);
-                    vModeI = r3.w;
-                    vLayerI = 0.0;
-                    gl_Position = uViewProj * vec4(w, 1.0);
-                }
-                """;
             var fsSrc = FragmentSrc.Replace("uniform vec4 uColor;", "in vec4 vColorI;\n#define uColor vColorI")
                 .Replace("uniform float uMode;", "flat in float vModeI;\n#define uMode vModeI")
                 .Replace("uniform float uLayer;", "flat in float vLayerI;\n#define uLayer vLayerI");
-            var vs = CreateShader(GlShaderType.Vertex).SetSource(vsSrc).Compile();
-            var fs = CreateShader(GlShaderType.Fragment).SetSource(fsSrc).Compile();
+            var vs = CreateShader(GlShaderType.Vertex).SetSource(RenderCaps.Glsl(CrowdVertexSrc)).Compile();
+            var fs = CreateShader(GlShaderType.Fragment).SetSource(RenderCaps.Glsl(fsSrc)).Compile();
             _crowdProgram = CreateProgram();
             Native.glAttachShader(_crowdProgram, vs);
             Native.glAttachShader(_crowdProgram, fs);
@@ -156,7 +221,7 @@ public sealed unsafe partial class Renderer
             _cLocTex = Loc("uTex\0"u8);
             _cLocAnim = Loc("uAnim\0"u8);
             _cLocFrames = Loc("uFrames\0"u8);
-            _cLocCycle = Loc("uCycle\0"u8);
+            _cLocBaseY = Loc("uBaseY\0"u8);
             _cLocDbgA = Loc("uDbgA\0"u8);
             _cLocDbgB = Loc("uDbgB\0"u8);
             _crowdProgram.Use();
@@ -194,15 +259,9 @@ public sealed unsafe partial class Renderer
                 EnableVertexAttribArray(2);
                 c.Inst = GenBuffer();
                 Native.glBindBuffer(GL_ARRAY_BUFFER, c.Inst);
-                c.InstCapacity = 4096 * CrowdInstances.Floats * sizeof(float);
+                c.InstCapacity = 4096 * CrowdInstances.Bytes;
                 Native.glBufferData(GL_ARRAY_BUFFER, c.InstCapacity, null, GL_STREAM_DRAW);
-                const int istride = CrowdInstances.Floats * sizeof(float);
-                Native.glVertexAttribPointer(3, 4, GL_FLOAT, false, istride, (void*)0);
-                EnableVertexAttribArray(3);
-                Native.glVertexAttribDivisor(3, 1);
-                Native.glVertexAttribPointer(4, 4, GL_FLOAT, false, istride, (void*)(4 * sizeof(float)));
-                EnableVertexAttribArray(4);
-                Native.glVertexAttribDivisor(4, 1);
+                CrowdInstanceAttribs();
                 // The walk cycle: a float texture, a row per frame.
                 GlTexture tex = default;
                 Native.glGenTextures(1, &tex);

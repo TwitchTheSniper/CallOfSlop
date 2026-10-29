@@ -300,13 +300,16 @@ public static unsafe partial class Program
     /// <summary>This frame's crowd instances (reused).</summary>
     private static readonly CrowdInstances CrowdInst = new();
 
+    /// <summary>The far crowd's persistent visual zombies: the host's mass cells, and a client's picture (CrowdAgents.cs).</summary>
+    public static readonly CrowdAgents HostCrowdAgents = new(), ClientCrowdAgents = new();
+
     /// <summary>"--crowd-tiers": the mass horde's tier colours (crowd yellow, held back orange, a red marker on each individual).</summary>
     public static bool CrowdTiers;
 
     /// <summary>Shots: the host draws its own picture of the cells, as a client would (Program.CrowdShots.cs).</summary>
     public static bool CrowdAsClient;
 
-    /// <summary>CPU ms of the last frame's crowd instances (culling, levels of detail, placing).</summary>
+    /// <summary>CPU ms (wall clock, all threads working) of the last frame's crowd instances (culling, agents, levels of detail, placing).</summary>
     public static double CrowdPrepMs;
 
     /// <summary>The last frame's crowd instances per level of detail and those culled (the F9 window).</summary>
@@ -314,24 +317,66 @@ public static unsafe partial class Program
 
     private static readonly Vector3 IndividualRed = new(0.95f, 0.12f, 0.1f);
 
+    private static double _crowdLast = double.NaN;
+    private static long _crowdNotes;
+    private static Game? _crowdFor;
+    private static int _crowdIndN;
+    private static readonly ushort[] CrowdInd = new ushort[Game.MaxZombies];
+    private static readonly float[] CrowdIndX = new float[Game.MaxZombies], CrowdIndZ = new float[Game.MaxZombies];
+    private static readonly long[] CrowdIndSeen = new long[65536];
+    private static long _crowdIndFrame;
+
     /// <summary>
-    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles, a client its picture of the
-    /// cells (Msg.ZCrowd); culled by the view, three levels of detail by distance, one instanced draw each.
+    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles as they are and its mass cells
+    /// as persistent agents; a client draws its picture of the cells (Msg.ZCrowd) as persistent agents. Culled by the
+    /// view, the fog and the terrain's horizon, three levels of detail by distance, one instanced draw each.
     /// </summary>
     private static void DrawCrowd(double now)
     {
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var inst = CrowdInst;
+        var rules = _game.ZRules.Crowd;
+        var cam = Gfx.CameraPosition;
+        if (!ReferenceEquals(_crowdFor, _game))
+        {
+            // A new session: nothing carried over.
+            HostCrowdAgents.Clear();
+            ClientCrowdAgents.Clear();
+            _crowdFor = _game;
+            _crowdNotes = _game.Crowd.Notes;
+            _crowdIndN = 0;
+            _crowdLast = double.NaN;
+        }
+        var dt = double.IsNaN(_crowdLast) ? 0f : (float)Math.Clamp(now - _crowdLast, 0, 0.1);
+        _crowdLast = now;
         inst.DebugMix = CrowdTiers ? 1f : 0f;
-        inst.DrawCap = _game.ZRules.Crowd.DrawCap;
-        inst.MassTime = now;
-        inst.MassSpeed = _game.ZRules.Crowd.Speed;
-        inst.Ground = World.Map.Terrain; // (a terrain map: the crowd stands on the ground)
-        inst.Begin();
-        if (_game.IsServer && _game.Crowd.Total > 0 && !CrowdAsClient)
-            inst.FromHost(_game.Crowd, Gfx.CameraPosition);
+        inst.Begin(cam);
+        var fogEnd = Gfx.FogRange.Y > Gfx.FogRange.X ? Gfx.FogRange.Y : 0f;
+        var host = _game.IsServer && _game.Crowd.Total > 0 && !CrowdAsClient;
+        var agents = host ? HostCrowdAgents : ClientCrowdAgents;
+        (agents.DrawCap, agents.FarCap, agents.FarFrom, agents.FarTo, agents.Speed, agents.JamCount) =
+            (rules.DrawCap, rules.DrawCapFar, rules.DrawFarFrom, rules.DrawFarTo, rules.Speed, rules.MassCapacity);
+        if (host)
+        {
+            inst.AgentShade = CrowdTiers ? 0.55f : 1f; // (with the tier colours the mass is a darker yellow)
+            agents.FromMass(_game.Crowd);
+            CrowdNotes(_game.Crowd, agents);
+        }
         else
-            inst.FromPicture(_game.CrowdSeen, Gfx.CameraPosition, now, _game.ZRules.Crowd.Speed);
+        {
+            inst.AgentShade = 1f;
+            agents.FromPicture(_game.CrowdSeen, World.Map.Terrain);
+            CrowdIndividuals(agents);
+        }
+        agents.Update(cam, dt, fogEnd, inst);
+        inst.CountCells(agents);
+        inst.End();
+        inst.Agents = inst.Total;
+        if (host)
+        {
+            inst.FromParticles(_game.Crowd, cam, fogEnd, agents, _game.ServerTick);
+            inst.End();
+        }
         CrowdPrepMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         (CrowdDrawnNear, CrowdDrawnMid, CrowdDrawnFar, CrowdDrawnCulled) = (inst.Count[0], inst.Count[1], inst.Count[2], inst.Culled);
         _game.StressDrawn = inst.Total; // (a horde stress round's summary: the peak drawn)
@@ -340,6 +385,60 @@ public static unsafe partial class Program
             foreach (var z in _game.Horde)
                 if (z.Alive)
                     Gfx.Draw(Matrix4x4.CreateScale(0.25f) * Matrix4x4.CreateTranslation(z.RenderPos + new Vector3(0, 2.25f, 0)), IndividualRed, 1f, mode: 2);
+    }
+
+    /// <summary>The host: the crowd's merges into the mass (an agent appears where the particle was) and releases from it (the nearest agent sinks).</summary>
+    private static void CrowdNotes(HordeCrowd c, CrowdAgents agents)
+    {
+        var from = Math.Max(_crowdNotes, c.Notes - HordeCrowd.NoteCap);
+        for (var k = from; k < c.Notes; k++)
+        {
+            var j = (int)(k & (HordeCrowd.NoteCap - 1));
+            if (c.NoteKind[j] == 1)
+                agents.Hint(c.NoteX[j], c.NoteZ[j], c.NoteLook[j]);
+            else
+                agents.Release(c.NoteX[j], c.NoteZ[j]);
+        }
+        _crowdNotes = c.Notes;
+    }
+
+    /// <summary>
+    /// A client: individuals that appeared since the last frame claim the nearest agent (it hides: the zombie came out of
+    /// the crowd there); ones that vanished alive leave an agent where they were (back into the crowd).
+    /// </summary>
+    private static void CrowdIndividuals(CrowdAgents agents)
+    {
+        var frame = ++_crowdIndFrame;
+        foreach (var z in _game.Horde)
+        {
+            if (!z.Alive)
+                continue;
+            if (CrowdIndSeen[z.Id] != frame - 1)
+                agents.Claim(z.RenderPos.X, z.RenderPos.Z);
+            CrowdIndSeen[z.Id] = frame;
+        }
+        // Last frame's living individuals not seen this frame: gone back into the crowd (a dead one stays in the horde as dead).
+        for (var k = 0; k < _crowdIndN; k++)
+            if (CrowdIndSeen[CrowdInd[k]] != frame && !DiedThisFrame(CrowdInd[k]))
+                agents.Hint(CrowdIndX[k], CrowdIndZ[k], 0);
+        _crowdIndN = 0;
+        foreach (var z in _game.Horde)
+            if (z.Alive && _crowdIndN < CrowdInd.Length)
+            {
+                CrowdInd[_crowdIndN] = z.Id;
+                CrowdIndX[_crowdIndN] = z.RenderPos.X;
+                CrowdIndZ[_crowdIndN] = z.RenderPos.Z;
+                _crowdIndN++;
+            }
+    }
+
+    /// <summary>Is zombie <paramref name="id"/> in the horde, dead (killed, not gone back into the crowd)?</summary>
+    private static bool DiedThisFrame(ushort id)
+    {
+        foreach (var z in _game.Horde)
+            if (z.Id == id)
+                return true; // (in the horde but not alive this frame: it died)
+        return false;
     }
 
     private static long _zFrame;

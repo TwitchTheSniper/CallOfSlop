@@ -1,163 +1,246 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace CallOfSlop;
 
+/// <summary>One crowd instance for the GPU: 16 bytes (Renderer.Crowd.cs reads them as three attributes).</summary>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public struct CrowdInstance
+{
+    /// <summary>Flat position (world metres).</summary>
+    public float X, Z;
+
+    /// <summary>Height over <see cref="CrowdInstances.BaseY"/> (the camera's: most precise near it), and the walk cycle's phase (0-1).</summary>
+    public Half Y, Phase;
+
+    /// <summary>Yaw (a turn in 255ths), brightness (in 1.5 / 255ths), the debug tier tint and held (0 or 255).</summary>
+    public byte Yaw, Bright, Tint, Held;
+}
+
 /// <summary>
 /// This frame's crowd instances for <see cref="Renderer.DrawCrowd"/> (docs/zombies/MASS-HORDE.md, "Rendering"): every
-/// crowd zombie the camera can see, sorted into three levels of detail by distance (<see cref="CrowdRig"/>: near, mid,
-/// far), <see cref="Floats"/> floats each: position (x, y, z), yaw, metres walked (the walk cycle's frame), brightness,
-/// how much of the debug tier colour, and held (0 or 1). The host fills it from the crowd's particles, a client from
-/// its picture of the cells (culled by cell). CPU only, so the self-test can time it; no allocation once grown.
+/// crowd zombie the camera can see, sorted into three levels of detail (<see cref="CrowdRig"/>: near, mid, far), packed
+/// at 16 bytes (<see cref="CrowdInstance"/>). Written in parallel stripes (<see cref="CrowdJobs"/>): each stripe has
+/// its own arrays per level, which the renderer uploads one after another. The host's particles are written here
+/// (<see cref="FromParticles"/>); the far crowd, the host's mass and everything a client draws, by its persistent agents
+/// (<see cref="CrowdAgents.Update"/>). CPU only, so the self-test can time it; no allocation once grown.
 /// </summary>
 public sealed class CrowdInstances
 {
-    public const int Floats = 8, Lods = 3;
+    public const int Lods = 3, Bytes = 16;
 
     /// <summary>Near rig up to <see cref="NearRange"/> m from the camera, mid up to <see cref="MidRange"/>, far beyond.</summary>
     public float NearRange = 35f, MidRange = 80f;
 
-    /// <summary>The most zombies drawn in one cell (the top layer of a dense blob; CrowdTuning.DrawCap).</summary>
-    public int DrawCap = 28;
+    /// <summary>Tier colours (1: crowd yellow, held orange; 0: zombie colours); <see cref="AgentShade"/> darkens the agents (the host's mass with the tier colours).</summary>
+    public float DebugMix, AgentShade = 1f;
 
-    /// <summary>Tier colours (1: crowd yellow, held orange; 0: zombie colours).</summary>
-    public float DebugMix;
+    /// <summary>Heights are stored over this (the camera's height this frame).</summary>
+    public float BaseY;
 
-    /// <summary>A client's terrain (a terrain map's crowd stands on the ground; null: the picture's floor height).</summary>
-    public TerrainData? Ground;
+    /// <summary>Metres walked per walk cycle (the rigs': <see cref="CrowdRig.CycleMetres"/>).</summary>
+    public float Cycle = 4f * ZombieAnim.StrideHalf(ZSpeed.Walk);
 
-    public readonly float[][] Data = [new float[Floats * 1024], new float[Floats * 4096], new float[Floats * 16384]];
+    /// <summary>A stripe's own instances (one thread writes it).</summary>
+    public sealed class Stripe
+    {
+        public readonly CrowdInstance[][] Data = [new CrowdInstance[512], new CrowdInstance[1024], new CrowdInstance[4096]];
+        public readonly int[] Count = new int[Lods];
+        public int Culled;
+        internal float BaseY, Cycle;
+        internal byte Tint;
+
+        public void Clear()
+        {
+            Array.Clear(Count);
+            Culled = 0;
+        }
+
+        /// <summary>An instance at (x, y, z) facing <paramref name="yaw"/>, <paramref name="walked"/> m into its walk.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Add(int lod, float x, float y, float z, float yaw, float walked, float bright, bool held)
+        {
+            ref var arr = ref Data[lod];
+            var n = Count[lod];
+            if (n >= arr.Length)
+                Array.Resize(ref arr, arr.Length * 2);
+            var f = yaw * (1f / MathF.Tau);
+            f -= MathF.Floor(f);
+            var p = walked / Cycle;
+            p -= MathF.Floor(p);
+            ref var o = ref arr[n];
+            o.X = x;
+            o.Z = z;
+            o.Y = (Half)(y - BaseY);
+            o.Phase = (Half)p;
+            o.Yaw = (byte)(f * 255f + 0.5f);
+            o.Bright = (byte)Math.Clamp(bright * (255f / 1.5f) + 0.5f, 0f, 255f);
+            o.Tint = Tint;
+            o.Held = held ? (byte)255 : (byte)0;
+            Count[lod] = n + 1;
+        }
+    }
+
+    public readonly Stripe[] Stripes;
+    private readonly CrowdJobs _jobs;
+
+    /// <summary>Instances per level of detail this frame (all stripes; after <see cref="End"/>).</summary>
     public readonly int[] Count = new int[Lods];
 
-    /// <summary>Zombies and cells left out (outside the view) this frame.</summary>
-    public int Culled, CellsCulled, CellsDrawn;
+    /// <summary>Zombies left out this frame (out of view, past the fog, behind the ground, over a cell's cap), and the agents' cell counts.</summary>
+    public int Culled, CellsCulled, CellsDrawn, CellsHidden, CellsFogged;
+
+    /// <summary>Of the instances, how many are particles (the host's) and how many agents.</summary>
+    public int Particles, Agents;
 
     public int Total => Count[0] + Count[1] + Count[2];
 
-    public void Begin()
+    public CrowdInstances(CrowdJobs? jobs = null)
+    {
+        _jobs = jobs ?? CrowdJobs.Shared;
+        Stripes = new Stripe[_jobs.Stripes];
+        for (var s = 0; s < Stripes.Length; s++)
+            Stripes[s] = new Stripe();
+        _particlePass = ParticlePass;
+    }
+
+    /// <summary>The stripe <paramref name="s"/> writes (CrowdAgents' pass).</summary>
+    public Stripe StripeAt(int s) => Stripes[s];
+
+    /// <summary>A new frame from <paramref name="cam"/>.</summary>
+    public void Begin(Vector3 cam)
+    {
+        BaseY = cam.Y;
+        var tint = (byte)Math.Clamp(DebugMix * 255f + 0.5f, 0f, 255f);
+        foreach (var s in Stripes)
+        {
+            s.Clear();
+            s.BaseY = BaseY;
+            s.Cycle = Cycle;
+            s.Tint = tint;
+        }
+        Array.Clear(Count);
+        Culled = CellsCulled = CellsDrawn = CellsHidden = CellsFogged = Particles = Agents = 0;
+    }
+
+    /// <summary>Sums the stripes (call after the last writer).</summary>
+    public void End()
     {
         Array.Clear(Count);
-        Culled = CellsCulled = CellsDrawn = 0;
+        var culled = 0;
+        foreach (var s in Stripes)
+        {
+            for (var l = 0; l < Lods; l++)
+                Count[l] += s.Count[l];
+            culled += s.Culled;
+        }
+        Culled += culled;
     }
 
-    private void Add(Vector3 cam, float x, float y, float z, float yaw, float walked, float bright, bool held)
+    /// <summary>A zombie's brightness from its look.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static float BrightOf(uint h) => 0.82f + (h & 1023) / 1023f * 0.36f;
+
+    /// <summary>An agent's brightness (with <see cref="AgentShade"/>).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public float Bright(uint h) => BrightOf(h) * AgentShade;
+
+    /// <summary>The agents' cells for the frame's counts (after their update).</summary>
+    public void CountCells(CrowdAgents a)
     {
-        var dx = x - cam.X;
-        var dz = z - cam.Z;
-        var d2 = dx * dx + dz * dz;
-        var lod = d2 < NearRange * NearRange ? 0 : d2 < MidRange * MidRange ? 1 : 2;
-        ref var arr = ref Data[lod];
-        var n = Count[lod];
-        if ((n + 1) * Floats > arr.Length)
-            Array.Resize(ref arr, arr.Length * 2);
-        var o = n * Floats;
-        arr[o] = x;
-        arr[o + 1] = y;
-        arr[o + 2] = z;
-        arr[o + 3] = yaw;
-        arr[o + 4] = walked;
-        arr[o + 5] = bright;
-        arr[o + 6] = DebugMix;
-        arr[o + 7] = held ? 1 : 0;
-        Count[lod] = n + 1;
+        CellsDrawn += a.CellsDrawn;
+        CellsCulled += a.CellsCulled;
+        CellsHidden += a.CellsHidden;
+        CellsFogged += a.CellsFogged;
     }
 
-    private static float Bright(uint h) => 0.82f + (h & 1023) / 1023f * 0.36f;
+    // ---- The host's particles ---------------------------------------------------------------------------
 
-    /// <summary>The host: every crowd particle in view (a sphere test each).</summary>
-    public void FromHost(HordeCrowd c, Vector3 cam)
+    private HordeCrowd? _pc;
+    private CrowdAgents? _pcells;
+    private Vector3 _pcam;
+    private float _pfog2;
+    private long _ptick;
+    private readonly Action<int> _particlePass;
+
+    /// <summary>Ticks a released particle takes to rise out of the ground (its mass agent sinks meanwhile).</summary>
+    public const int RiseTicks = (int)(CrowdAgents.FadeSeconds * World.TickRate);
+
+    /// <summary>
+    /// The host: every crowd particle in view (a sphere test each; past the fog or behind the ground by its cell, from
+    /// <paramref name="cells"/>' horizon), in parallel stripes. <paramref name="tick"/>: the server tick (a particle just
+    /// let out of the mass rises).
+    /// </summary>
+    public void FromParticles(HordeCrowd c, Vector3 cam, float fogEnd, CrowdAgents? cells, long tick)
     {
-        var y = c.Y;
+        if (c.Count == 0)
+            return;
+        _pc = c;
+        _pcells = cells != null && cells.Cells > 0 ? cells : null;
+        _pcam = cam;
+        _pfog2 = fogEnd > 0 ? (fogEnd + 1.5f) * (fogEnd + 1.5f) : float.MaxValue;
+        _ptick = tick;
+        var before = 0;
+        foreach (var s in Stripes)
+            before += s.Count[0] + s.Count[1] + s.Count[2];
+        _jobs.Run(_particlePass);
+        var after = 0;
+        foreach (var s in Stripes)
+            after += s.Count[0] + s.Count[1] + s.Count[2];
+        Particles += after - before;
+        _pc = null;
+        _pcells = null;
+    }
+
+    private void ParticlePass(int s)
+    {
+        var c = _pc!;
+        _jobs.Range(s, c.Count, out var from, out var to);
+        var st = Stripes[s];
+        var cam = _pcam;
         var terrain = c.Terrain;
-        for (var i = 0; i < c.Count; i++)
+        var cells = _pcells;
+        var fog2 = _pfog2;
+        float near2 = NearRange * NearRange, mid2 = MidRange * MidRange;
+        var y = c.Y;
+        for (var i = from; i < to; i++)
         {
             float x = c.X[i], z = c.Z[i];
+            float dx = x - cam.X, dz = z - cam.Z;
+            var d2 = dx * dx + dz * dz;
+            if (d2 > fog2)
+            {
+                st.Culled++;
+                continue;
+            }
+            if (cells != null)
+            {
+                var cell = cells.CellAt(x, z);
+                if (cell >= 0 && cells.HiddenCell(cell))
+                {
+                    st.Culled++;
+                    continue;
+                }
+            }
             if (terrain != null)
                 y = terrain.Sample(x, z);
             if (!ZombieAnim.Visible(new Vector3(x, y + 0.9f, z), 1.1f))
             {
-                Culled++;
+                st.Culled++;
                 continue;
             }
             float vx = c.VX[i], vz = c.VZ[i];
             var moving = vx * vx + vz * vz > 0.04f;
             var yaw = moving ? MathF.Atan2(vx, -vz) : MathF.Atan2(c.DX[i], -c.DZ[i]);
-            var h = HordeCrowd.Hash((uint)i);
+            var h = c.Look[i];
             // Metres walked: along its heading (continuous while it walks; a held one stands in its last pose).
             var f = World.FlatForward(yaw);
             var walked = x * f.X + z * f.Z + (h >> 10 & 255) / 64f;
-            Add(cam, x, y, z, yaw, walked, Bright(h), c.Held[i]);
-        }
-        // The mass tier's cells: their top layer, placed as a client places a cell's zombies.
-        if (c.MassTotal == 0)
-            return;
-        var size = c.MassCell;
-        var r = size * 0.75f + 1f;
-        for (var cell = 0; cell < c.MassCount.Length; cell++)
-        {
-            var m = c.MassCount[cell];
-            if (m == 0)
-                continue;
-            var centre = c.MassCentre(cell);
-            if (!ZombieAnim.Visible(centre + new Vector3(0, 0.9f, 0), r))
-            {
-                CellsCulled++;
-                Culled += m;
-                continue;
-            }
-            CellsDrawn++;
-            float vx = c.MassVX[cell], vz = c.MassVZ[cell];
-            var head = vx * vx + vz * vz > 1e-4f ? HordeCrowd.HeadingByte(MathF.Atan2(vx, -vz)) : (byte)0;
-            var n = Math.Min(m, DrawCap);
-            Culled += m - n;
-            for (var k = 0; k < n; k++)
-            {
-                var at = CrowdPicture.PlaceIn(c.MassCols, c.MinX, c.MinZ, size, head, cell, k, MassTime, MassSpeed, out var yaw);
-                var f = World.FlatForward(yaw);
-                var h = HordeCrowd.Hash((uint)cell * 977u + (uint)k);
-                var walked = head == 0 ? (h >> 10 & 255) / 64f : at.X * f.X + at.Y * f.Z + (h >> 10 & 255) / 64f;
-                // (With the tier colours the mass tier is a darker yellow.)
-                Add(cam, at.X, terrain != null ? terrain.Sample(at.X, at.Y) : centre.Y, at.Y, yaw, walked, Bright(h) * (DebugMix > 0 ? 0.55f : 1f), false);
-            }
-        }
-    }
-
-    /// <summary>The host's clock and the crowd's speed for placing mass cells' zombies (set before <see cref="FromHost"/>).</summary>
-    public double MassTime;
-
-    public float MassSpeed = 1.5f;
-
-    /// <summary>A client: each network cell in view (a sphere round the cell), its zombies placed by <see cref="CrowdPicture.Place"/>.</summary>
-    public void FromPicture(CrowdPicture p, Vector3 cam, double time, float speed)
-    {
-        if (p.Round < 0)
-            return;
-        var r = p.Cell * 0.75f + 1f;
-        for (var cell = 0; cell < p.Count.Length; cell++)
-        {
-            int n = p.Count[cell];
-            if (n == 0)
-                continue;
-            var cx = p.MinX + (cell % p.Cols + 0.5f) * p.Cell;
-            var cz = p.MinZ + (cell / p.Cols + 0.5f) * p.Cell;
-            var cy = Ground != null ? Ground.Sample(cx, cz) : p.Y;
-            if (!ZombieAnim.Visible(new Vector3(cx, cy + 0.9f, cz), r))
-            {
-                CellsCulled++;
-                Culled += n;
-                continue;
-            }
-            CellsDrawn++;
-            var still = p.Head[cell] == 0;
-            Culled += Math.Max(0, n - DrawCap);
-            n = Math.Min(n, DrawCap); // (the top layer of a dense cell)
-            for (var k = 0; k < n; k++)
-            {
-                var at = p.Place(cell, k, time, speed, out var yaw);
-                var f = World.FlatForward(yaw);
-                var h = HordeCrowd.Hash((uint)cell * 977u + (uint)k);
-                var walked = still ? (h >> 10 & 255) / 64f : at.X * f.X + at.Y * f.Z + (h >> 10 & 255) / 64f;
-                Add(cam, at.X, Ground != null ? Ground.Sample(at.X, at.Y) : p.Y, at.Y, yaw, walked, Bright(h), still);
-            }
+            var age = _ptick - c.Born[i];
+            var sink = age >= 0 && age < RiseTicks ? (1f - age / (float)RiseTicks) * CrowdAgents.SinkDepth : 0f;
+            var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
+            st.Add(lod, x, y - sink, z, yaw, walked, BrightOf(h), c.Held[i]);
         }
     }
 }

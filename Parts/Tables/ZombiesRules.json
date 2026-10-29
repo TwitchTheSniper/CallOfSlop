@@ -329,7 +329,7 @@
     }
   },
   "crowd": {
-    "note": "The mass horde's crowd tier (docs/zombies/MASS-HORDE.md), only on maps whose zombies section has \"crowd\": zombies as particles that read a shared flow field (flowCell m cells, rebuilt every flowRefreshTicks, flowCellsPerTick of it a tick) every thinkMin-thinkMax ticks, walk at speed (+- speedSpread) and push apart (separationRadius, separationStrength, at most separationMax neighbours). Clients get per-cell counts and headings (netCell m cells, every netEvery ticks; cells past netFarRange every netFarEvery-th time) and fill the cells themselves. Within promoteRange of a player the nearest become full zombies (promotePerTick a tick, at most individualCap at once); a healthy one further than demoteRange for demoteSeconds goes back to the crowd (demotePerTick a tick). Particles further than massRange + massHysteresis from everyone merge into the mass tier (per-cell counts flowing along the field, at most massCapacity a cell, massPerTick merged or released a tick), let out again within massRange; clients draw at most drawCap a cell. With surface, the crowd is ground (ZombiesCrowdSurface.cs): a cell packed at surfacePacked zombies a square metre is surfaceHeight m high (under surfaceMin m it is none); a player within surfaceStep m of its top stands on it and slides down its slope at surfacePush m/s per unit of slope, one inside is lifted onto it at surfaceLift m/s. With roar, the densest clusters of cells near the listener each get a looping crowd roar (CrowdRoar.cs), full at roarFull zombies.",
+    "note": "The mass horde's crowd tier (docs/zombies/MASS-HORDE.md), only on maps whose zombies section has \"crowd\": zombies as particles that read a shared flow field (flowCell m cells, rebuilt every flowRefreshTicks, flowCellsPerTick of it a tick) every thinkMin-thinkMax ticks, walk at speed (+- speedSpread) and push apart (separationRadius, separationStrength, at most separationMax neighbours). Clients get per-cell counts and headings (netCell m cells, every netEvery ticks; cells past netFarRange every netFarEvery-th time) and fill the cells themselves. Within promoteRange of a player the nearest become full zombies (promotePerTick a tick, at most individualCap at once); a healthy one further than demoteRange for demoteSeconds goes back to the crowd (demotePerTick a tick). Particles further than massRange + massHysteresis from everyone merge into the mass tier (per-cell counts flowing along the field, at most massCapacity a cell, massPerTick merged or released a tick), let out again within massRange; the far crowd is drawn as persistent visual zombies, at most drawCap a cell within drawFarFrom m of the camera, falling to drawCapFar at drawFarTo m and beyond. With surface, the crowd is ground (ZombiesCrowdSurface.cs): a cell packed at surfacePacked zombies a square metre is surfaceHeight m high (under surfaceMin m it is none); a player within surfaceStep m of its top stands on it and slides down its slope at surfacePush m/s per unit of slope, one inside is lifted onto it at surfaceLift m/s. With roar, the densest clusters of cells near the listener each get a looping crowd roar (CrowdRoar.cs), full at roarFull zombies.",
     "thinkMin": 8,
     "thinkMax": 16,
     "promoteRange": 22,
@@ -356,6 +356,9 @@
     "massPerTick": 40,
     "massCapacity": 40,
     "drawCap": 28,
+    "drawCapFar": 8,
+    "drawFarFrom": 60,
+    "drawFarTo": 180,
     "surface": true,
     "surfaceHeight": 1.3,
     "surfacePacked": 2,

@@ -82,6 +82,8 @@ public static unsafe partial class Program
             selfTestOnly = ""; // given without names: an error that lists the valid ones, never a silent full run
         if (selfTestOnly != null || args.Any(a => a.Equals("--selftest", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.Run(selfTestOnly); // headless checks (all, or only the named sections), see SelfTest.cs
+        if (args.Any(a => a.Equals("--crowd-bench", StringComparison.OrdinalIgnoreCase)))
+            return SelfTest.CrowdBench(args); // headless: the crowd's per-frame preparation on Horde Stress, host and client (SelfTestCrowdBench.cs)
         if (args.SkipWhile(a => !a.Equals("--export-maps", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } exportDir)
             return Maps.Export(exportDir); // writes the loaded maps back out as map files
         if (args.SkipWhile(a => !a.Equals("--check-map", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } checkFile)
