@@ -172,10 +172,12 @@ public static partial class SelfTest
 
         // ---- The horde walks over it ----
         {
-            (bool Past, float Closest, int InGrid, double At) Pass(byte blocker)
+            (bool Past, float Closest, int InGrid, double At) Pass(byte blocker, bool none = false)
             {
                 var b = Z(At(-9, -10), blocker);
                 b.StunnedUntil = 1e9; // lies still
+                if (none)
+                    b.Sim.Position = b.PrevPos = At(-20, -20); // (out of the way: the walk on its own)
                 var w = Z(At(-9, -14), 0);
                 w.Yaw = MathF.PI;
                 me.Teleport(At(-9, -4));
@@ -188,16 +190,18 @@ public static partial class SelfTest
                     g.SelfTestZombiesTick(t += World.TickDt);
                     closest = MathF.Min(closest, Flat2(w.Position - b.Position));
                     inGrid = g.HordeAI.Grid.Count;
-                    if (w.Position.Z > b.Position.Z + 1f)
+                    if (w.Position.Z > -9f)
                         at = t - t0;
                 }
                 Clear();
                 return (at >= 0, closest, inGrid, at);
             }
+            var free = Pass(15, none: true);
             var sp = Pass(15);
             var cp = Pass(12);
-            Line($"a zombie walking past one lying in its way: over a slug {sp.Past} after {sp.At:0.00} s, {sp.Closest:0.00} m at the closest ({sp.InGrid} in the neighbour grid); round a crawler {cp.Past} after {cp.At:0.00} s, {cp.Closest:0.00} m ({cp.InGrid} in the grid)");
-            if (!sp.Past || sp.InGrid != 1 || cp.InGrid != 2 || sp.Closest > 0.45f || sp.Closest >= cp.Closest)
+            Line($"a zombie walking past one lying in its way: on its own {free.At:0.00} s; over a slug {sp.Past} after {sp.At:0.00} s, {sp.Closest:0.00} m at the closest ({sp.InGrid} in the neighbour grid); "
+                 + $"round a crawler {cp.Past} after {cp.At:0.00} s, {cp.Closest:0.00} m ({cp.InGrid} in the grid)");
+            if (!sp.Past || !free.Past || sp.InGrid != 1 || cp.InGrid != 2 || sp.At > free.At * 1.25 + 0.3 || sp.Closest >= cp.Closest)
                 Fail("the horde should walk over a slug (out of the neighbour grid) and keep going");
         }
 
