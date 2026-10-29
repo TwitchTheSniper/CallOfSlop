@@ -18,6 +18,9 @@ public static class WindowEntry
     /// <summary>Boards left on each window: the game's <c>ZBoards</c> (Game keeps this pointing at it). Empty: no windows open.</summary>
     public static byte[] Boards = [];
 
+    /// <summary>False while a zombie's movement is simulated (ZombieAI): these rules are for players (and bots) only.</summary>
+    public static bool PlayersOnly = true;
+
     /// <summary>How far out from the opening's outer face the feet may be (the mantle reaches about this far).</summary>
     public const float Reach = 1.4f;
 
@@ -31,7 +34,7 @@ public static class WindowEntry
         stance = Stance.Crouch;
         target = default;
         top = 0;
-        if (World.Map.Zombies is not { } zm || Boards.Length == 0 || Boards.Length != zm.Windows.Count)
+        if (!PlayersOnly || World.Map.Zombies is not { } zm || Boards.Length == 0 || Boards.Length != zm.Windows.Count)
             return false;
         var feet = s.Position;
         if (zm.Inside(feet))
@@ -116,7 +119,7 @@ public static class WindowEntry
     /// slab (3.6-3.9 m) over the head, with room on top of it, and the climb went up through it (onto the roof, then
     /// down outside). The body's whole column, from the feet to the ledge top plus its height, must be clear.</para>
     public static bool LeavesPlayArea(Vector3 feet, Vector3 target, Stance stance) =>
-        World.Map.Zombies is { } zm && Boards.Length == zm.Windows.Count && Boards.Length > 0 && !OutsidePlayArea(zm, feet)
+        PlayersOnly && World.Map.Zombies is { } zm && Boards.Length == zm.Windows.Count && Boards.Length > 0 && !OutsidePlayArea(zm, feet)
         && (!InsideBy(zm, target + new Vector3(0, 0.05f, 0), MantleInset)
             || World.BlockedByBoxes(feet + new Vector3(0, 0.02f, 0), target.Y + World.HeightOf(stance) - feet.Y - 0.02f));
 
