@@ -206,60 +206,65 @@ public static partial class SelfTest
                 c.SelfTestReadCrowd(pk);
         }) / Math.Max(1, packets.Count);
         var seen = c.CrowdSeen.Total;
-        // Filling the picture (every crowd zombie's spot and yaw for drawing), once: the client's cost a frame.
-        var fillMs = ThreadCpu.TimeMs(() =>
-        {
-            var pic = c.CrowdSeen;
-            var sum = 0f;
-            for (var i = 0; i < pic.Count.Length; i++)
-                for (var k = 0; k < pic.Count[i]; k++)
-                    sum += pic.Place(i, k, now, 1.5f, out _).X;
-            if (sum == 12345.678f)
-                Line("(never)");
-        });
-        // Drawing (CPU side): this frame's instances, every crowd zombie in view (no frustum: the worst case), by level of
-        // detail, from the host's particles and from the client's picture; nothing allocated once warm.
+        double hostPrepMs, clientPrepMs;
+        var draw = "";
+        // Drawing (CPU side): this frame's instances, every crowd zombie in view (no frustum, no fog: the worst case), by
+        // level of detail, from the host's particles and mass and from the client's picture (CrowdView: the persistent
+        // agents); nothing allocated once warm. Timed in one stripe on this thread (CrowdJobs.Serial): the whole CPU cost.
         ZombieAnim.ClearFrustum();
-        var inst = new CrowdInstances();
+        var hostView = new CrowdView();
+        var clientView = new CrowdView();
         var cam = me.Position + new Vector3(0, 1.6f, 0);
-        void HostPrep()
-        {
-            inst.Begin();
-            inst.FromHost(g.Crowd, cam);
-        }
-        void ClientPrep()
-        {
-            inst.Begin();
-            inst.FromPicture(c.CrowdSeen, cam, now, g.ZRules.Crowd.Speed);
-        }
+        var pt = now;
+        void HostPrep() => hostView.Prepare(g, cam, pt += 1 / 60.0, 0);
+        void ClientPrep() => clientView.Prepare(c, cam, pt += 1 / 60.0, 0);
         HostPrep();
         ClientPrep();
-        var prepAlloc = GC.GetAllocatedBytesForCurrentThread();
-        HostPrep();
-        ClientPrep();
-        prepAlloc = GC.GetAllocatedBytesForCurrentThread() - prepAlloc;
-        var hostPrepMs = ThreadCpu.TimeMs(() =>
+        CrowdJobs.Serial = true;
+        try
         {
-            for (var k = 0; k < 5; k++)
-                HostPrep();
-        }) / 5;
-        var hostLods = $"{inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]}";
-        var clientPrepMs = ThreadCpu.TimeMs(() =>
+            HostPrep();
+            ClientPrep();
+            var prepAlloc = GC.GetAllocatedBytesForCurrentThread();
+            HostPrep();
+            ClientPrep();
+            prepAlloc = GC.GetAllocatedBytesForCurrentThread() - prepAlloc;
+            hostPrepMs = ThreadCpu.TimeMs(() =>
+            {
+                for (var k = 0; k < 5; k++)
+                    HostPrep();
+            }) / 5;
+            clientPrepMs = ThreadCpu.TimeMs(() =>
+            {
+                for (var k = 0; k < 5; k++)
+                    ClientPrep();
+            }) / 5;
+            var hi = hostView.Inst;
+            var ci = clientView.Inst;
+            draw = $"; drawing prep {hostPrepMs:0.00} ms host ({hi.Count[0]}/{hi.Count[1]}/{hi.Count[2]} near/mid/far, {hi.Particles} particles), {clientPrepMs:0.00} ms client ({ci.Count[0]}/{ci.Count[1]}/{ci.Count[2]}), {prepAlloc} bytes allocated";
+            if (prepAlloc > 0)
+                Fail($"crowd {count}: preparing the crowd's instances allocated {prepAlloc} bytes once warm");
+            // Every zombie in the client's picture, up to its cell's cap (by distance), stands as an agent.
+            var capped = 0;
+            var pic = c.CrowdSeen;
+            var ag = clientView.Client;
+            for (var k = 0; k < pic.Count.Length; k++)
+            {
+                if (pic.Count[k] == 0)
+                    continue;
+                float cx = pic.MinX + (k % pic.Cols + 0.5f) * pic.Cell - cam.X, cz = pic.MinZ + (k / pic.Cols + 0.5f) * pic.Cell - cam.Z;
+                capped += Math.Min(pic.Count[k], ag.CapAt(MathF.Sqrt(cx * cx + cz * cz)));
+            }
+            if (ci.Agents != capped)
+                Fail($"crowd {count}: the client's instances ({ci.Agents}) should be every zombie in its picture up to its cell's cap ({capped} of {pic.Total}) with no frustum");
+        }
+        finally
         {
-            for (var k = 0; k < 5; k++)
-                ClientPrep();
-        }) / 5;
-        var draw = $"; drawing prep {hostPrepMs:0.00} ms host ({hostLods} near/mid/far), {clientPrepMs:0.00} ms client ({inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]}), {prepAlloc} bytes allocated";
-        if (prepAlloc > 0)
-            Fail($"crowd {count}: preparing the crowd's instances allocated {prepAlloc} bytes once warm");
-        var capped = 0;
-        foreach (var n in c.CrowdSeen.Count)
-            capped += Math.Min((int)n, inst.DrawCap);
-        if (inst.Total != capped)
-            Fail($"crowd {count}: the client's instances ({inst.Total}) should be every zombie in its picture up to {inst.DrawCap} a cell ({capped} of {c.CrowdSeen.Total}) with no frustum");
+            CrowdJobs.Serial = false;
+        }
         World.SetMap(map);
         var net = $"ZCrowd {kbs:0.0} KB/s per client ({netSends} sends, every {g.ZRules.Crowd.NetEvery} ticks, {g.ZRules.Crowd.NetCell:0} m cells {cols}x{rows}; keyframe {keyframe} bytes, biggest change {biggest} bytes; "
-                  + $"server {netMs / Math.Max(1, netSends):0.000} ms a send, {netAlloc} bytes allocated); client read {readMs:0.000} ms a message, picture {seen} zombies (sent {lastSum}), fill {fillMs:0.00} ms";
+                  + $"server {netMs / Math.Max(1, netSends):0.000} ms a send, {netAlloc} bytes allocated); client read {readMs:0.000} ms a message, picture {seen} zombies (sent {lastSum})";
         if (seen != lastSum || c.CrowdSeen.Reads != packets.Count)
             Fail($"crowd {count}: the client's picture should match what it was sent ({seen} vs {lastSum}, {c.CrowdSeen.Reads} of {packets.Count} messages read)");
         if (netAlloc > 0)

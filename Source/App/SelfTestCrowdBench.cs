@@ -79,36 +79,38 @@ public static partial class SelfTest
         Measure("descending");
     }
 
-    /// <summary>A frame's preparation, host and client, timed over a few frames (wall clock and this thread's CPU), and its allocations.</summary>
+    /// <summary>A frame's preparation, host and client, timed over a few frames (wall clock: every thread working), and its allocations.</summary>
     private static string BenchPrep(Game host, Game client, Vector3 cam, Vector2 fog, double now)
     {
-        var inst = new CrowdInstances { DrawCap = host.ZRules.Crowd.DrawCap, Ground = World.Map.Terrain, MassSpeed = host.ZRules.Crowd.Speed };
-        const int frames = 20;
-        string Run(bool asHost)
+        const int frames = 30;
+        string Run(Game g, string who)
         {
+            var view = new CrowdView();
             var t = now;
             void Frame()
             {
                 t += 1 / 60.0;
-                inst.MassTime = t;
-                inst.Begin();
-                if (asHost)
-                    inst.FromHost(host.Crowd, cam);
-                else
-                    inst.FromPicture(client.CrowdSeen, cam, t, host.ZRules.Crowd.Speed);
+                view.Prepare(g, cam, t, fog.Y > fog.X ? fog.Y : 0f);
             }
-            for (var k = 0; k < 5; k++)
-                Frame(); // (warm: arrays grown, JIT)
-            var a0 = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 30; k++)
+                Frame(); // (warm: the agents filled, arrays grown, JIT)
+            var a0 = GC.GetTotalAllocatedBytes(true);
             var cpu0 = ThreadCpu.NowMs();
             var sw = Stopwatch.StartNew();
+            var worst = 0.0;
             for (var k = 0; k < frames; k++)
+            {
                 Frame();
+                worst = Math.Max(worst, view.PrepMs);
+            }
             var wall = sw.Elapsed.TotalMilliseconds / frames;
             var cpu = (ThreadCpu.NowMs() - cpu0) / frames;
-            var alloc = (GC.GetAllocatedBytesForCurrentThread() - a0) / frames;
-            return $"{(asHost ? "host" : "client")} {wall:0.00} ms wall, {cpu:0.00} ms main-thread CPU, {inst.Count[0]}/{inst.Count[1]}/{inst.Count[2]} near/mid/far, {inst.CellsDrawn} cells drawn, {inst.CellsCulled} culled, {alloc} B/frame";
+            var alloc = (GC.GetTotalAllocatedBytes(true) - a0) / frames;
+            var i = view.Inst;
+            var a = view.Agents;
+            return $"{who} {wall:0.00} ms wall (worst {worst:0.00}), {cpu:0.00} ms main-thread CPU, {i.Count[0]}/{i.Count[1]}/{i.Count[2]} near/mid/far ({i.Particles} particles, {i.Agents} agents of {a.Count}), "
+                   + $"cells {a.CellsDrawn} drawn, {a.CellsCulled} out of view, {a.CellsFogged} fogged, {a.CellsHidden} behind the ground, {alloc} B/frame";
         }
-        return Run(true) + "; " + Run(false);
+        return Run(host, "host") + "; " + Run(client, "client");
     }
 }
