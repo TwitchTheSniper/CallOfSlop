@@ -1450,6 +1450,32 @@ one raw tick. A solo player not standing for one tick (Alive false, no Second Wi
 down is in play, so the match ends and the horde stops with it: that, not the controller, was the "1 zombie moving
 instead of 40" seen while writing "Horde targets". In play Alive only goes false by bleeding out.
 
+### Stairs, railings and pews (board item dev-zombies-stuck-railings-zr01, 2026-10-28)
+
+The fields are over the bots' nav graph, not a grid, so thin blockers were already in the graph; what went wrong was
+the steering on top of it. Found with every-area-to-every-area runs on Ashgrave Cathedral (281 of 380 zombies there in
+40 s before; 337 of 380 in 60 s before, about 370 after) and Blackmoor:
+- **Vaults.** The bots climb over pews and railings (mantle edges); zombies pushed into them. A climb that doesn't end
+  higher costs a field 25 m more (`HordeFlowFields.VaultPenalty`), 65 m with a drop of more than 1.5 m behind it (over a
+  gallery railing), so zombies go round or take the stairs; when the field still climbs, they jump at the ledge.
+- **Straight lines.** Walking straight at the goal and corner cuts now need `HordeController.WalkClear`: the two sight
+  rays, a rail-height ray (a 0.8-1.1 m top rail sits between the sight rays), two knee rays a body's width apart (posts,
+  a pew's end, a pillar's corner) and the floor under the line every 2 m. No cuts over climbs or drops, only on the level.
+- **Stairwells.** Halfway up a long flight the member's route node was re-picked as the landing above, whose next node is
+  across the open stairwell: the bell tower's zombies walked off the flight and fell, over and over. The route node is
+  now kept while the member is near the edge it walks (`OffRoute`), a node it has gone past counts as reached, re-picks
+  need sight, and it jumps only at a ledge right ahead (it bunny-hopped up whole flights at the landing's height).
+- **Sliding.** Three short knee rays on some think ticks turn the way along a wall, railing or post it is pressed against
+  (`Slide`); off its edge's line with a corner in the way, it goes back to its node first. Separation is 0.35 times as
+  strong on stairs and ramps.
+- **Doors.** The graph is built with the Zombies doors shut, so crossing one is straight from its near side to its far
+  side; a zombie pushed off the doorway goes back to the near side instead of following a last-resort edge (it climbed
+  Blackmoor's Receiving Hall workbench); over a last-resort edge, plain sight is enough to go straight.
+- **Stuck watch** (`Game.ZStuckWatch`, once a second): a side-step to the side nearer the goal (never one with no floor),
+  then back to the nearest route node in sight (the spot goes in the stuck-spot report, mode "Zombies (horde)", when the
+  map blocks it, not the crowd), the other side, then a nudge onto a free node within 2.5 m in sight of the zombie, only
+  where no player can see either. Self-test "Zombie railings".
+
 ## Horde Test, start round and test kit (developer request, 2026-10-27)
 
 "Add an agent to make a horde test map. Getting a high round in zombies takes a lot of time." Three tools for seeing and
