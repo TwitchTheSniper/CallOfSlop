@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Lever",
+  "description": "Interact moves it: middle, forward (1), middle, back (-1). Runs a turntable both ways.",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3a3f46",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.22,
+        0.04
+      ],
+      "at": [
+        0,
+        0.2,
+        0
+      ],
+      "color": "#e0b030",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "lever"
+  }
+}

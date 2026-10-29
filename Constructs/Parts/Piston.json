@@ -1,0 +1,101 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Piston",
+  "description": "Pushes what sits on its top out along it, up to 2 m: a signal of 1 extends it fully, 0 pulls it in. Interact works it when nothing is wired in.",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 40,
+  "health": 260,
+  "armour": 6,
+  "material": "steel",
+  "color": "#6d747c",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.3,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.06,
+        0.42
+      ],
+      "at": [
+        0,
+        0.12,
+        0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 2.0,
+    "leaf": "top",
+    "speed": 0.8,
+    "strength": 14000
+  }
+}

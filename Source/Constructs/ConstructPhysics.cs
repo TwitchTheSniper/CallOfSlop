@@ -99,19 +99,28 @@ public static class ConstructPhysics
         var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
         var com = c.WorldCom;
         var share = c.Mass / c.WheelCount;
-        var driving = c.CanDrive && c.Driver != 255 && c.Fuel > 0;
+        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.Fuel > 0;
         var engine = driving ? c.DefOf(c.Engine) : null;
+        var throttle = c.EngineWired ? c.EngineSignal : c.Throttle; // a wired engine runs on its signal
+        var brake = c.Brake || c.BrakeSignal >= 0.5f;
         var touching = 0;
+        var drivenTouching = 0;
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Touching)
+            {
                 touching++;
+                if (c.Wheels[k].Driven)
+                    drivenTouching++;
+            }
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
-        if (driving && c.Throttle != 0)
-            c.Fuel = MathF.Max(0, c.Fuel - engine!.BurnRate * MathF.Abs(c.Throttle) * dt);
+        if (driving && throttle != 0)
+            c.Fuel = MathF.Max(0, c.Fuel - engine!.BurnRate * MathF.Abs(throttle) * dt);
+        var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
-            var origin = c.ToWorld(w.Centre);
+            c.WheelFrame(k, out var centreBody, out var axleBody);
+            var origin = c.ToWorld(centreBody);
             var len = w.Travel + w.Radius;
             LastRays++;
             w.PrevCompression = w.Compression;
@@ -145,15 +154,13 @@ public static class ConstructPhysics
             ApplyImpulse(c, invI, r, up * normalImpulse);
             // Tyre: forward along the ground across the axle, side along the axle.
             var n = hit.Normal;
-            var axle = Vector3.TransformNormal(w.Axle, Matrix4x4.CreateFromQuaternion(c.Rot));
+            var axle = Vector3.TransformNormal(axleBody, rot); // (a wheel on a steering pivot: its axle turns with the pivot)
             var fwd = Vector3.Cross(axle, n);
             if (fwd.LengthSquared() < 1e-6f)
                 continue;
             fwd = Vector3.Normalize(fwd);
             if (Vector3.Dot(fwd, fwdBody) < 0)
                 fwd = -fwd;
-            if (w.Steers && c.Steer != 0)
-                fwd = Vector3.Normalize(Vector3.Transform(fwd, Quaternion.CreateFromAxisAngle(n, -c.Steer)));
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
             var vp = c.PointVel(at);
             var maxFriction = normalImpulse * w.Grip;
@@ -162,17 +169,17 @@ public static class ConstructPhysics
             var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf;
             var vFwd = Vector3.Dot(vp, fwd);
             var jFwd = 0f;
-            if (driving && touching > 0)
+            if (driving && w.Driven && drivenTouching > 0)
             {
-                var want = c.Throttle;
+                var want = throttle;
                 var top = engine!.TopSpeed;
                 if (want > 0 && forwardSpeed < top)
-                    jFwd += want * engine.EngineForce / touching * dt * MathF.Min(1, (top - forwardSpeed) / 3f);
+                    jFwd += want * engine.EngineForce / drivenTouching * dt * MathF.Min(1, (top - forwardSpeed) / 3f);
                 else if (want < 0 && forwardSpeed > -top * 0.4f)
-                    jFwd += want * engine.EngineForce / touching * dt * 0.6f;
+                    jFwd += want * engine.EngineForce / drivenTouching * dt * 0.6f;
             }
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (c.Brake || ((!driving || c.Throttle == 0) && MathF.Abs(vFwd) < 1.5f))
+            if (brake || ((!driving || throttle == 0) && MathF.Abs(vFwd) < 1.5f))
                 jFwd = stop; // brakes (and a car left in neutral stays put)
             else
                 jFwd += stop * 0.01f; // rolling resistance
@@ -436,32 +443,119 @@ public static class ConstructPhysics
         }
     }
 
-    /// <summary>Passive hinges: damped, swinging towards the latch, held inside their limits.</summary>
+    /// <summary>
+    /// The joints. A passive hinge swings, damped, towards its latch (or holds still while its lock is on). A moving joint
+    /// is driven by a motor: a position joint (motorised hinge, piston, steering pivot) towards the angle or extension its
+    /// input asks for, a turntable at the speed it asks for; the motor pushes with at most its strength against the load
+    /// (gravity on everything the joint carries, players standing on it included), so an overloaded lift sinks. Everything
+    /// stays inside the limits, and a joint that isn't a number any more is put back at rest.
+    /// </summary>
     private static void StepJoints(Construct c, float dt)
     {
+        var g = GravityAccel;
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
-            var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
-            jt.Vel += (target - jt.Angle) * 30f * dt;
-            jt.Vel *= MathF.Max(0, 1 - 7f * dt);
+            if (!float.IsFinite(jt.Angle) || !float.IsFinite(jt.Vel))
+            {
+                jt.Angle = 0;
+                jt.Vel = 0;
+            }
+            var seg = j + 1;
+            var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[seg]);
+            c.RiderBits[seg] = 0;
+            if (jt.Type == JointType.Passive)
+            {
+                if (jt.Locked)
+                {
+                    jt.Vel = 0; // a lock holds it where it is
+                    continue;
+                }
+                var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
+                jt.Vel += (target - jt.Angle) * 30f * dt;
+                jt.Vel *= MathF.Max(0, 1 - 7f * dt);
+                jt.Angle += jt.Vel * dt;
+                Limit(ref jt);
+                continue;
+            }
+            // The load: gravity on what it carries (its segment and everything hanging on it, and the riders), along its motion.
+            c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
+            var axis = Vector3.Transform(jt.Axis, pq);
+            var mass = c.SegMass[seg] + riders * Construct.RiderMass;
+            c.SegPose(seg, out var sq, out var st);
+            var comBody = Vector3.Transform(c.SegCom[seg], sq) + st;
+            var com = c.ToWorld(comBody);
+            var down = new Vector3(0, -g * mass, 0);
+            float load, inertia;
+            if (jt.Slides)
+            {
+                load = Vector3.Dot(down, axis);
+                inertia = MathF.Max(mass, 1f);
+            }
+            else
+            {
+                var r = com - (pt + Vector3.Transform(jt.Pivot, pq));
+                load = Vector3.Dot(Vector3.Cross(r, down), axis);
+                var across = r - axis * Vector3.Dot(r, axis);
+                inertia = MathF.Max(mass * (across.LengthSquared() + 0.05f), 0.5f);
+            }
+            jt.Load = load;
+            // What the motor wants: a speed (turntable), or a speed towards a target (the rest).
+            float want;
+            if (jt.Type == JointType.Turntable)
+                want = Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
+            else
+            {
+                float target;
+                var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
+                if (jt.Type == JointType.Steering && !jt.Wired)
+                {
+                    // Unwired, a steering pivot follows the driver (c.Steer: right is positive; a turn about +y is to the left).
+                    var upRest = Vector3.Dot(jt.Axis, Vector3.UnitY) >= 0 ? 1f : -1f;
+                    target = -c.Steer * upRest;
+                }
+                else if (jt.Slides)
+                    target = Math.Clamp(input, 0, 1) * jt.Max;
+                else
+                {
+                    input = Math.Clamp(input, -1, 1);
+                    target = input >= 0 ? input * jt.Max : -input * jt.Min;
+                }
+                target = Math.Clamp(target, jt.Min, jt.Max);
+                var err = target - jt.Angle;
+                want = Math.Clamp(err * 10f, -jt.Speed, jt.Speed);
+            }
+            // The motor's push, no more than its strength; the load acts whatever the motor does.
+            var push = Math.Clamp((want - jt.Vel) * inertia / dt - load, -jt.Strength, jt.Strength);
+            jt.Vel += (push + load) / inertia * dt;
+            jt.Vel = Math.Clamp(jt.Vel, -MathF.Max(jt.Speed * 3, 2f), MathF.Max(jt.Speed * 3, 2f));
             jt.Angle += jt.Vel * dt;
-            if (jt.Angle < jt.Min)
-            {
-                jt.Angle = jt.Min;
-                jt.Vel = MathF.Max(0, jt.Vel);
-            }
-            else if (jt.Angle > jt.Max)
-            {
-                jt.Angle = jt.Max;
-                jt.Vel = MathF.Min(0, jt.Vel);
-            }
+            if (jt.Type == JointType.Turntable && !float.IsFinite(jt.Min))
+                jt.Angle = World.WrapAngle(jt.Angle);
+            Limit(ref jt);
+            if (jt.Vel != 0 && !c.Anchored)
+                c.Wake();
+        }
+    }
+
+    private static void Limit(ref CJoint jt)
+    {
+        if (jt.Angle < jt.Min)
+        {
+            jt.Angle = jt.Min;
+            jt.Vel = MathF.Max(0, jt.Vel);
+        }
+        else if (jt.Angle > jt.Max)
+        {
+            jt.Angle = jt.Max;
+            jt.Vel = MathF.Min(0, jt.Vel);
         }
     }
 
     private static void Sleep(Construct c)
     {
-        var still = c.Vel.LengthSquared() < 0.02f && c.AngVel.LengthSquared() < 0.02f && (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0));
+        var still = c.Vel.LengthSquared() < 0.02f && c.AngVel.LengthSquared() < 0.02f && (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0))
+                    && !(c.EngineWired && c.EngineSignal != 0);
         for (var j = 0; j < c.JointCount && still; j++)
             still = MathF.Abs(c.Joints[j].Vel) < 0.05f;
         if (!still)

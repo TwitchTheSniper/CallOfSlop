@@ -169,7 +169,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 77: Sandbox mode and constructs (docs/sandbox/CONSTRUCTS.md): GameMode.Sandbox at the end of the modes; Msg.CBody,
     //     Msg.CPose and Msg.CAct at the end of Msg (construct structure and health, poses at 20 Hz, players' tool and edit
     //     actions); the Sandbox mode-state tail carries each player's tool, held part, seat and edit in progress.
-    public const byte ProtocolVersion = 77;
+    // 78: Sandbox constructs milestone 2 (docs/sandbox/CONSTRUCTS.md): construct structure carries each part's logic setting
+    //     and signal, joint types, lock and wired flags, and the wires; poses carry joint speeds and the signal parts' values;
+    //     Msg.CAct gains Wire, Unwire, Setting and SeatKeys; the Sandbox state tail's tool can be the linking tool (version 2).
+    public const byte ProtocolVersion = 78;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

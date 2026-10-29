@@ -1,0 +1,65 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steering Pivot",
+  "description": "Bolt it to a frame's side and a suspension onto it: the wheel steers with the driver (or with a wired signal).",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 10,
+  "health": 120,
+  "armour": 4,
+  "material": "steel",
+  "color": "#8a6d3b",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.3,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        0.4,
+        0.08
+      ],
+      "color": "#d0b050",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    }
+  ],
+  "joint": {
+    "type": "steering",
+    "axis": "+y",
+    "pivot": [
+      0,
+      0,
+      0
+    ],
+    "min": -35,
+    "max": 35,
+    "leaf": "leaf",
+    "speed": 150,
+    "strength": 2500
+  }
+}

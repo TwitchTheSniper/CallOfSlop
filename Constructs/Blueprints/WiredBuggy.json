@@ -1,0 +1,212 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Wired Buggy",
+  "description": "The buggy with a passenger seat in front and wiring: the driver's fire key sounds the horn, aim switches the headlamps on and off.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+2",
+      "by": "bottom"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "y+0",
+      "by": "-y"
+    },
+    {
+      "part": "Engine",
+      "on": 1,
+      "socket": "y+3",
+      "by": "-y"
+    },
+    {
+      "part": "Fuel Line",
+      "on": 3,
+      "socket": "+z",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Line",
+      "on": 5,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Transmission",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Differential",
+      "on": 0,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Suspension",
+      "on": 8,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 8,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 0,
+      "socket": "x-0",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "x+0",
+      "by": "base"
+    },
+    {
+      "part": "Suspension",
+      "on": 11,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 12,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 9,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 10,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 13,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 14,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Corner",
+      "on": 19,
+      "socket": "-z",
+      "by": "back"
+    },
+    {
+      "part": "Corner",
+      "on": 20,
+      "socket": "-z",
+      "by": "back"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+0",
+      "by": "bottom"
+    },
+    {
+      "part": "Input Reader",
+      "on": 0,
+      "socket": "x-1",
+      "by": "+x",
+      "setting": 0
+    },
+    {
+      "part": "Input Reader",
+      "on": 0,
+      "socket": "x-2",
+      "by": "+x",
+      "setting": 1
+    },
+    {
+      "part": "Toggle",
+      "on": 1,
+      "socket": "x+1",
+      "by": "-x"
+    },
+    {
+      "part": "Horn",
+      "on": 1,
+      "socket": "x+2",
+      "by": "-x"
+    },
+    {
+      "part": "Lamp",
+      "on": 19,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Lamp",
+      "on": 20,
+      "socket": "+y",
+      "by": "-y"
+    }
+  ],
+  "wires": [
+    [
+      2,
+      24
+    ],
+    [
+      2,
+      25
+    ],
+    [
+      24,
+      27
+    ],
+    [
+      25,
+      26
+    ],
+    [
+      26,
+      28
+    ],
+    [
+      26,
+      29
+    ]
+  ]
+}

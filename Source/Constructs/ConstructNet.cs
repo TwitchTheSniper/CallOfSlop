@@ -12,7 +12,8 @@ public enum CBodyKind : byte
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 77). Structure goes reliably and only when it changes (an edit, a break, a
+/// The constructs on the wire (protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
+/// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
 /// refreshed each time so a lost packet never leaves a body wrong for long. Positions of parts travel on their 1 cm grid
 /// (<see cref="ConstructWorld.Quantise"/>), so a client's copy is exactly the server's.
@@ -59,7 +60,8 @@ public static class ConstructNet
         {
             ref var p = ref c.Parts[i];
             w.U8(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
-                .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0));
+                .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
+                .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
         w.U16((ushort)c.LinkCount);
         for (var k = 0; k < c.LinkCount; k++)
@@ -72,8 +74,11 @@ public static class ConstructNet
         {
             ref var jt = ref c.Joints[j];
             w.U8(jt.Hinge).U8(jt.ParentSeg).U16(S16(Cm(jt.Pivot.X))).U16(S16(Cm(jt.Pivot.Y))).U16(S16(Cm(jt.Pivot.Z))).U8(AxisDir(jt.Axis))
-                .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)(jt.Open ? 1 : 0));
+                .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0))).U8((byte)jt.Type);
         }
+        w.U8((byte)c.WireCount);
+        for (var k = 0; k < c.WireCount; k++)
+            w.U8(c.Wires[k].From).U8(c.Wires[k].To);
     }
 
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
@@ -172,9 +177,13 @@ public static class ConstructNet
             var seg = r.U8();
             var hp = r.U16();
             var broken = r.U8() != 0;
-            if (ConstructParts.Get(def) == null || turn >= Rot24.Count)
+            var setting = r.U8();
+            var signal = (sbyte)r.U8() / 10f;
+            if (ConstructParts.Get(def) is not { } pd || turn >= Rot24.Count)
                 throw new MalformedPacketException($"construct part {i}: unknown type {def} or turn {turn}");
-            c.Parts[c.PartCount++] = new CPart { Def = def, Pos = p, Rot = turn, Seg = seg, Health = hp, Broken = broken };
+            if (setting > 0 && setting >= pd.Settings.Length)
+                throw new MalformedPacketException($"construct part {i}: setting {setting} of a {pd.Name}");
+            c.Parts[c.PartCount++] = new CPart { Def = def, Pos = p, Rot = turn, Seg = seg, Health = hp, Broken = broken, Setting = setting, Out = signal, OutNext = signal };
         }
         int links = r.U16();
         if (links > Construct.MaxLinks)
@@ -203,12 +212,30 @@ public static class ConstructNet
                 Max = r.F32(),
                 Angle = r.F32(),
                 Vel = r.F32(),
-                Open = r.U8() != 0,
             };
-            if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Min + jt.Max + jt.Vel))
+            var jflags = r.U8();
+            jt.Open = (jflags & 1) != 0;
+            jt.Locked = (jflags & 2) != 0;
+            jt.Wired = (jflags & 4) != 0;
+            var type = r.U8();
+            if (type > (byte)JointType.Steering)
+                throw new MalformedPacketException($"a construct joint of type {type}");
+            jt.Type = (JointType)type;
+            if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Vel) || float.IsNaN(jt.Min) || float.IsNaN(jt.Max))
                 throw new MalformedPacketException("a construct joint that doesn't fit");
             jt.PrevAngle = jt.Angle;
             c.Joints[c.JointCount++] = jt;
+        }
+        int wires = r.U8();
+        if (wires > Construct.MaxWires)
+            throw new MalformedPacketException($"a construct of {wires} wires");
+        c.WireCount = 0;
+        for (var k = 0; k < wires; k++)
+        {
+            var wire = new CWire { From = r.U8(), To = r.U8() };
+            if (wire.From >= parts || wire.To >= parts)
+                throw new MalformedPacketException("a construct wire to a part that isn't there");
+            c.Wires[c.WireCount++] = wire;
         }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
@@ -255,9 +282,9 @@ public static class ConstructNet
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
-            if (c.Asleep || c.Anchored && c.JointCount == 0)
-                continue;
-            if (w.Length + PoseBytes + c.JointCount * 2 > budget || n == 255)
+            if ((c.Asleep || c.Anchored && c.JointCount == 0) && c.SigHash == c.SigSent)
+                continue; // still, and its signals as last sent
+            if (w.Length + PoseSize(c) > budget || n == 255)
                 break;
             WritePose(w, c);
             n++;
@@ -268,7 +295,7 @@ public static class ConstructNet
             var c = bodies[sleepCursor];
             if (!(c.Asleep || c.Anchored && c.JointCount == 0))
                 continue;
-            if (w.Length + PoseBytes + c.JointCount * 2 > budget || n == 255)
+            if (w.Length + PoseSize(c) > budget || n == 255)
                 break;
             WritePose(w, c);
             n++;
@@ -276,6 +303,17 @@ public static class ConstructNet
         w.PatchU8(countAt, (byte)n);
         return n > 0;
     }
+
+    private static int SignalParts(Construct c)
+    {
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.IsSignal)
+                n++;
+        return n;
+    }
+
+    private static int PoseSize(Construct c) => PoseBytes + c.JointCount * 4 + 1 + (c.HasLogic ? SignalParts(c) : 0);
 
     private static void WritePose(PacketWriter w, Construct c)
     {
@@ -290,7 +328,22 @@ public static class ConstructNet
             .U8((byte)(c.Asleep ? 1 : 0))
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
-            w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)));
+            w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
+                .U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Vel * 100), short.MinValue, short.MaxValue)));
+        // The signal parts' values, in part order (only with logic: the client knows which parts they are).
+        var at = w.Length;
+        w.U8(0);
+        if (!c.HasLogic)
+            return;
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.IsSignal)
+            {
+                w.U8(unchecked((byte)ConstructLogic.Quantise(c.Parts[i].Out)));
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+        c.SigSent = c.SigHash;
     }
 
     /// <summary>Client: a <see cref="Msg.CPose"/> (after the id byte). Older packets than the last one are ignored.</summary>
@@ -315,10 +368,26 @@ public static class ConstructNet
             for (var j = 0; j < joints; j++)
             {
                 var a = R16(r.U16()) / 1000f;
+                var v = R16(r.U16()) / 100f;
                 if (c != null && !stale && j < c.JointCount)
                 {
                     c.Joints[j].PrevAngle = c.Joints[j].Angle;
                     c.Joints[j].Angle = a;
+                    c.Joints[j].Vel = v;
+                }
+            }
+            int signals = r.U8();
+            for (int k2 = 0, i = 0; k2 < signals; k2++)
+            {
+                var sig = (sbyte)r.U8() / 10f;
+                if (c == null || stale)
+                    continue;
+                while (i < c.PartCount && !c.Parts[i].D.IsSignal)
+                    i++;
+                if (i < c.PartCount)
+                {
+                    c.Parts[i].Out = sig;
+                    i++;
                 }
             }
             if (c == null || stale || !float.IsFinite(pos.X + pos.Y + pos.Z) || q.LengthSquared() < 0.5f)
@@ -344,10 +413,10 @@ public static class ConstructNet
             // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
             c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
             c.Rot = Quaternion.Slerp(c.NetFromRot, c.NetRot, MathF.Min(t, 1));
+            var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
             {
                 ref var wh = ref c.Wheels[k];
-                var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
                 wh.Spin += Vector3.Dot(c.Vel, fwd) / wh.Radius * dt;
             }
         }

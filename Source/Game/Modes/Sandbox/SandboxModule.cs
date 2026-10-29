@@ -17,7 +17,7 @@ public sealed class SandboxModule : GameModeModule
     public override string Name => "Sandbox";
     public override string Short => "SBX";
     public override string Rules(int limit = 0) =>
-        "Build and drive: take parts from the rack, fit them with the wrench (3) or the welder (4), sit in a seat to drive. No score or time limit.";
+        "Build and drive: take parts from the rack, fit them with the wrench (3) or the welder (4), wire them with the linking tool (5), sit in a seat to drive. No score or time limit.";
     public override string Description => "Build vehicles and bases from parts with tools in hand, drive them, and shoot their parts off.";
     public override bool DevOnly => true;
     public override bool UsesMapVote => false;
@@ -60,7 +60,7 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 1;
+    public override byte StateVersion => 2; // 2: the linking tool (milestone 2)
 
     public override void WriteState(Game game, PacketWriter w)
     {
@@ -83,7 +83,7 @@ public sealed class SandboxModule : GameModeModule
         for (var k = 0; k < n; k++)
         {
             var id = r.U8();
-            var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Welder);
+            var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker);
             var held = r.U8();
             var seat = r.U16();
             var seatPart = r.U8();
@@ -113,7 +113,11 @@ public sealed class SandboxModule : GameModeModule
     public override void HudLines(Game game, Player me, List<HudLine> lines, ref Vector3? pointAt) => game.SandboxHud(me, lines, HudWhite, HudDim, HudOrange, HudGreen, HudRed);
 
     /// <summary>The ghost sockets of the held part and the part under the crosshair (blended pass; ConstructRender.cs).</summary>
-    public override void DrawObjectives(Renderer gfx, Game game, double now) => ConstructRender.DrawGhosts(gfx, now);
+    public override void DrawObjectives(Renderer gfx, Game game, double now)
+    {
+        ConstructRender.DrawGhosts(gfx, now);
+        ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
+    }
 
     public override string? SelfTestVerify(Game game) =>
         game.Phase == MatchPhase.Ended ? $"the match ended: {game.MatchResult}"

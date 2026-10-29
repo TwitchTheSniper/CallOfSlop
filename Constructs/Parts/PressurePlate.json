@@ -1,0 +1,86 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Pressure Plate",
+  "description": "On while a player stands on it.",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 8,
+  "health": 80,
+  "armour": 1,
+  "material": "steel",
+  "color": "#5a5f66",
+  "boxes": [
+    {
+      "size": [
+        1.0,
+        0.06,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.8,
+        0.02,
+        0.8
+      ],
+      "at": [
+        0,
+        0.035,
+        0
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.03,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "plate"
+  }
+}
