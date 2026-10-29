@@ -209,10 +209,14 @@ public sealed partial class Audio
             Meters.AddExternal((MixBus)((int)MixBus.Frenzy1 + Math.Min(level, 6) - 1), frenzyPeak * music, frenzyMs * music * music, toMaster: false);
         Meters.AddMusicOutput(outPeak * ListenerGain, outMs * ListenerGain * ListenerGain);
         var talkers = 0;
+        var lg = ListenerGain;
         foreach (var v in _voiceOut)
             if (v.Bound != null)
+            {
                 talkers++;
-        Meters.VoiceCount[(int)MixBus.Voice] = talkers; // voice chat streams: counted, not measured
+                Meters.AddExternal(MixBus.Voice, v.MeterPeak * lg, v.MeterMs * lg * lg); // the last frame queued, boost and all
+            }
+        Meters.VoiceCount[(int)MixBus.Voice] = talkers; // voice chat streams (each one measured above)
         Meters.End(now, dt);
     }
 

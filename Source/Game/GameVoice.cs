@@ -26,7 +26,7 @@ public sealed partial class Game
     /// <summary>This player listens to voice (Settings > Audio "Voice chat" not Off, and not "Mute all voice").</summary>
     public bool VoiceListen { get; private set; } = true;
 
-    /// <summary>People you don't want to hear (by name; this session only).</summary>
+    /// <summary>People you don't want to hear (by name; Settings remembers them, <see cref="LoadVoiceMutes"/>).</summary>
     public readonly HashSet<string> MutedVoice = new(StringComparer.Ordinal);
 
     /// <summary>When the local player last sent a voice frame (the HUD's mic icon, the scoreboard).</summary>
@@ -257,6 +257,16 @@ public sealed partial class Game
             }
         }
     }
+
+    /// <summary>Each talker's volume from <paramref name="s"/> (Settings' per-player voice volumes, by name). Once a frame; no allocations.</summary>
+    public void UpdateVoiceVolumes(Settings s)
+    {
+        foreach (var v in Voice.Active)
+            v.Volume = Players.TryGetValue(v.Talker, out var p) ? s.VoicePlayerGain(p.Name) : 1f;
+    }
+
+    /// <summary>A new session: the players you muted before stay muted (Settings remembers them by name).</summary>
+    public void LoadVoiceMutes(Settings s) => MutedVoice.UnionWith(s.VoicePlayerMuted);
 
     /// <summary>Self-test: <paramref name="p"/>'s voice frame arriving at the server, as if from the network.</summary>
     public void SelfTestVoiceFrom(Player p, ReadOnlySpan<byte> frame, ushort seq, bool teamRadio, double now) =>

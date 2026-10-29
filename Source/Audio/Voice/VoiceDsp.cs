@@ -133,3 +133,88 @@ public struct RadioFilter
 
     public void Reset() => this = default;
 }
+
+/// <summary>
+/// The playback boost for voices turned up past 100% (Settings > Audio "Voice volume" and the per-player volume, up to
+/// <see cref="Max"/> each). OpenAL clamps a source's gain to AL_MAX_GAIN (often 1), so the part above 1 is applied here, to
+/// the decoded 16-bit samples before they are queued (<see cref="Split"/>), and the rest stays on the OpenAL gain with
+/// proximity, radio and the mixer on top. A per-stream limiter keeps loud talkers clean: when a frame's boosted peak
+/// would pass <see cref="Ceiling"/> its boost drops at once to fit, then recovers over about 150 ms; a soft knee above
+/// <see cref="Knee"/> rounds off anything left, so the output never clips. A boost never makes a voice quieter than 100%
+/// (a voice already louder than the ceiling plays as it would at 100%).
+/// No allocations.
+/// </summary>
+public static class VoiceBoost
+{
+    /// <summary>The highest voice volume (300%).</summary>
+    public const float Max = 3f;
+
+    /// <summary>The limiter's target peak, and where the soft knee starts (fractions of full scale).</summary>
+    public const float Ceiling = 0.9f, Knee = 0.8f;
+
+    /// <summary>How much of the way back to the full boost the limiter goes each 20 ms frame.</summary>
+    public const float Release = 0.12f;
+
+    /// <summary>Splits your volume for a voice into the gain on the samples (1 or more) and the gain on the OpenAL source (1 or less).</summary>
+    public static (float Samples, float Source) Split(float volume) =>
+        !(volume > 0f) ? (1f, 0f) : volume > 1f ? (MathF.Min(volume, Max * Max), 1f) : (1f, volume);
+
+    /// <summary>
+    /// Boosts <paramref name="pcm"/> by <paramref name="gain"/> (above 1) through the limiter. <paramref name="state"/> is the
+    /// stream's limiter (the fraction of the boost it let through last frame; start it at 1). A gain of 1 or less leaves the
+    /// samples alone and resets it.
+    /// </summary>
+    public static void Apply(Span<short> pcm, float gain, ref float state)
+    {
+        if (!(gain > 1f) || pcm.Length == 0)
+        {
+            state = 1f;
+            return;
+        }
+        gain = MathF.Min(gain, Max * Max);
+        var peak = 0;
+        foreach (var x in pcm)
+            peak = Math.Max(peak, Math.Abs((int)x));
+        var p = peak / 32768f;
+        var fit = p * gain > Ceiling ? Ceiling / (p * gain) : 1f; // the share of the boost this frame's peak allows
+        if (!(state > 0f) || state > 1f)
+            state = 1f;
+        var from = state;
+        var to = fit < from ? fit : from + (fit - from) * Release;
+        var n = pcm.Length;
+        for (var i = 0; i < n; i++)
+        {
+            var g = gain * MathF.Min(from + (to - from) * (i + 1) / n, fit);
+            pcm[i] = g > 1f ? SoftClip(pcm[i] * g) : pcm[i];
+        }
+        state = to;
+    }
+
+    /// <summary>The soft knee's highest output: just under full scale, so a boosted voice never reaches a hard clip.</summary>
+    public const short MaxSample = 32700;
+
+    /// <summary>One sample through the soft knee: straight below <see cref="Knee"/>, then bent smoothly to stay under full scale.</summary>
+    public static short SoftClip(float x)
+    {
+        const float k = Knee * 32767f, room = 32767f - k;
+        var a = MathF.Abs(x);
+        if (a <= k)
+            return (short)x;
+        var y = MathF.Min(k + room * MathF.Tanh((a - k) / room), MaxSample);
+        return (short)(x < 0 ? -y : y);
+    }
+
+    /// <summary>A frame's peak (0-1) and mean square (for the audio mixer's Voice chat meter).</summary>
+    public static void Level(ReadOnlySpan<short> pcm, out float peak, out float meanSquare)
+    {
+        var pk = 0;
+        double sum = 0;
+        foreach (var x in pcm)
+        {
+            pk = Math.Max(pk, Math.Abs((int)x));
+            sum += (double)x * x;
+        }
+        peak = pk / 32768f;
+        meanSquare = pcm.Length == 0 ? 0f : (float)(sum / pcm.Length / (32768.0 * 32768.0));
+    }
+}

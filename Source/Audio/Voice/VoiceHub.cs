@@ -25,6 +25,12 @@ public sealed class VoiceStream(byte talker)
     /// <summary>The radio band-pass state (team radio frames).</summary>
     public RadioFilter Radio;
 
+    /// <summary>Your volume for this talker (0 to <see cref="VoiceBoost.Max"/>, 1 = as sent): set by the game each frame from Settings.</summary>
+    public float Volume = 1f;
+
+    /// <summary>The boost limiter's gain last frame (<see cref="VoiceBoost.Apply"/>).</summary>
+    public float BoostState = 1f;
+
     public bool Talking(double now) => now - LastFrame < VoiceRules.TalkingHold;
 }
 
