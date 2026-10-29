@@ -51,6 +51,7 @@ public sealed class Settings
     /// <summary>A small fps counter in the top-right corner.</summary>
     public bool ShowFps = true;
     public bool AllowWeaponTweaks; // Settings > Graphics: allow the weapon tweak window in a release build (dev builds always do; UiWeaponTweaks.cs)
+    public bool AllowDevTools; // Settings > Graphics: allow the look-at inspector and prop editor in a release build (dev builds always do; UiDevTools.cs)
     public bool ShowNetStats = true;
     public DisplayMode Display = DisplayMode.Windowed;
     public int Width = 1600; // windowed size, or fullscreen resolution
@@ -360,6 +361,7 @@ public sealed class Settings
                     case "dead_chat": s.DeadChatPrivate = v == "dead"; break;
                     case "show_fps": s.ShowFps = v == "1"; break;
                     case "weapon_tweaks": s.AllowWeaponTweaks = v == "1"; break;
+                    case "dev_tools": s.AllowDevTools = v == "1"; break;
                     case "net_stats": s.ShowNetStats = v == "1"; break;
                     case "bots" when int.TryParse(v, out var i): s.Bots = Math.Clamp(i, 0, Game.MaxPlayers - 1); break;
                     case "difficulty" when Enum.TryParse<BotDifficulty>(v, out var d): s.Difficulty = d; break;
@@ -475,6 +477,7 @@ public sealed class Settings
                     $"dead_chat={(DeadChatPrivate ? "dead" : "all")}",
                     $"show_fps={(ShowFps ? 1 : 0)}",
                     $"weapon_tweaks={(AllowWeaponTweaks ? 1 : 0)}",
+                    $"dev_tools={(AllowDevTools ? 1 : 0)}",
                     $"net_stats={(ShowNetStats ? 1 : 0)}",
                     $"bots={Bots}",
                     $"difficulty={Difficulty}",
