@@ -15,6 +15,9 @@ public sealed partial class Zombie
 {
     /// <summary>A crowd map (ZombiesCrowd.cs): when it was promoted out of the crowd (woken), and when a player last saw it.</summary>
     public double CrowdWokeAt, CrowdSeenAt;
+
+    /// <summary>A crowd map: since when it has counted past the demote range (-1: it doesn't now), the far clock a stray goes back to the crowd by.</summary>
+    public double CrowdFarAt = -1;
 }
 
 public sealed partial class Game
@@ -48,6 +51,7 @@ public sealed partial class Game
         var n = Math.Clamp(CrowdOverride > 0 ? CrowdOverride : zm.Crowd, 1, ZombiesMap.MaxCrowd);
         var floor = zm.Areas[zm.StartArea];
         Crowd.Tuning = ZRules.Crowd; // (the rules file's "crowd" section)
+        Crowd.Pace = CrowdPace.For(ZRules, Crowd.Tuning, round); // the round's speed mix, as individuals get it (CrowdPace.cs)
         Crowd.SetGoal(false);
         Crowd.Hold = false;
         StressState = StressPhase.Off;
@@ -142,31 +146,61 @@ public sealed partial class Game
             var score = sight.Score(pos.X, pos.Y + 1f, pos.Z, out var seen, out var nearest);
             if (seen)
                 z.CrowdSeenAt = now;
-            if (now - z.CrowdSeenAt < tuning.UnseenGrace)
+            var seenLately = now - z.CrowdSeenAt < tuning.UnseenGrace;
+            if (seenLately)
                 score = nearest; // (seen a moment ago: it counts at its distance a little longer)
-            if (z.State != ZState.Chase || now - z.CrowdWokeAt < tuning.MinAwake || z.Health != z.MaxHealth || z.Limbs != 0
+            if (score > tuning.DemoteRange)
+            {
+                if (z.CrowdFarAt < 0)
+                    z.CrowdFarAt = now; // (the far clock starts)
+            }
+            else
+                z.CrowdFarAt = -1;
+            // Never one swinging at a player, at a window, on a climb, grabbing, pouncing, a slug, or burning, stunned or
+            // slowed (those end in a moment; a burn's damage is still to pay), or one just woken.
+            if (z.State != ZState.Chase || now - z.CrowdWokeAt < tuning.MinAwake || z.Slug || z.Grabbing || z.PounceUntil > now
                 || z.BurnUntil > now || z.StunnedUntil > now || z.SlowUntil > now)
                 continue;
-            var far = score > tuning.DemoteRange && now - z.StateAt >= tuning.DemoteSeconds;
+            var healthy = z.Health == z.MaxHealth && z.Limbs == 0;
+            // Far: a healthy one as soon as it counts past the demote range (awake a while); a stray (hurt, or a limb
+            // lost) once it has counted that far for demoteSeconds on its far clock, so it doesn't hold a slot the
+            // zombies nearer the players need (its wounds go with it: the particle keeps its health). One with a limb
+            // lost goes only while nobody sees it (it comes back whole).
+            var far = healthy
+                ? score > tuning.DemoteRange && now - z.StateAt >= tuning.DemoteSeconds
+                : tuning.RejoinStrays && z.CrowdFarAt >= 0 && now - z.CrowdFarAt >= tuning.DemoteSeconds && (z.Limbs == 0 || !seenLately);
             // (Never swapped out near the range it would wake again unseen: a zombie at the player's back stays awake, and
-            // one put to sleep doesn't walk back into that range while it rests.)
-            if (far || score > pressure && nearest * MathF.Max(1f, tuning.UnseenWeight) > tuning.PromoteRange + tuning.SwapMargin)
+            // one put to sleep doesn't walk back into that range while it rests. Only healthy ones are swapped.)
+            if (far || healthy && score > pressure && nearest * MathF.Max(1f, tuning.UnseenWeight) > tuning.PromoteRange + tuning.SwapMargin)
                 CrowdSleepOffer(i, far ? float.MaxValue : score, tuning.DemotePerTick);
         }
         // The chosen ones, highest index first (removing one leaves the lower indices where they are).
         CrowdSleepSort();
-        for (var k = 0; k < _crowdSleepN && Crowd.Count < Crowd.X.Length; k++)
+        for (var k = 0; k < _crowdSleepN; k++)
         {
             var i = _crowdSleepIdx[k];
             var z = Horde[i];
             var pos = z.Position;
-            var v = (pos - z.PrevPos) / World.TickDt;
-            var pi = Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick, z.Health);
-            if (pi >= 0)
+            if (Crowd.Count >= Crowd.X.Length)
             {
-                Crowd.RestUntil[pi] = ServerTick + (long)(tuning.MinAwake * World.TickRate);
-                CrowdNoteSleep(Crowd.Look[pi], now);
+                // The particles are full (a huge horde packed round the players): a healthy one far out goes straight into
+                // the mass (its cell), a hurt one stays awake (only the particles carry wounds of their own).
+                if (!tuning.Mass || z.Health != z.MaxHealth || z.Limbs != 0 || Crowd.MassCount.Length == 0)
+                    continue;
+                Crowd.AddMass(pos.X, pos.Z);
             }
+            else
+            {
+                var v = (pos - z.PrevPos) / World.TickDt;
+                var pi = Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick, z.Health, (int)z.Speed); // (its speed class goes with it)
+                if (pi >= 0)
+                {
+                    Crowd.RestUntil[pi] = ServerTick + (long)(tuning.MinAwake * World.TickRate);
+                    CrowdNoteSleep(Crowd.Look[pi], now);
+                }
+            }
+            if (z.Health != z.MaxHealth || z.Limbs != 0)
+                CrowdStraysRejoined++;
             sight.Score(pos.X, pos.Y + 1f, pos.Z, out var seenNow, out _);
             if (seenNow)
                 CrowdSleptSeen++;
@@ -215,6 +249,7 @@ public sealed partial class Game
             var vx = Crowd.VX[i];
             var vz = Crowd.VZ[i];
             var hp = Crowd.HP[i];
+            var cls = (ZSpeed)Crowd.Cls[i];
             CrowdNoteWake(Crowd.Look[i], now);
             if (sight.Views > 0)
             {
@@ -227,6 +262,9 @@ public sealed partial class Game
             Crowd.RemoveAt(i);
             var z = SpawnZombie(zm, spawner, now, at, type: 0); // (a walker: the crowd carries no types yet, see HordeCrowd.Mass.cs; ZombieTypes.cs)
             z.Health = Math.Clamp((int)MathF.Ceiling(hp), 1, z.MaxHealth); // (a crowd zombie hurt by a blast stays hurt)
+            if (Crowd.Pace.ByRound)
+                z.Speed = cls; // (its speed class from the crowd: no jump in pace as it wakes; CrowdPace.cs)
+            z.CrowdFarAt = -1;
             z.Window = -1;
             z.Area = zm.AreaAt(at);
             SetZState(z, ZState.Chase, now); // (straight in: no rising out of the ground)
@@ -287,6 +325,9 @@ public sealed partial class Game
 
     /// <summary>Individuals put to sleep that a player sees, and that nobody does (self-test, log).</summary>
     public int CrowdSleptSeen, CrowdSleptUnseen;
+
+    /// <summary>Strays (hurt or limb-lost individuals far from every player) put back into the crowd (self-test, log).</summary>
+    public int CrowdStraysRejoined;
 
     /// <summary>Crowd zombies woken (promoted) that a player saw, and that nobody did (near enough to wake unseen; self-test, log).</summary>
     public int CrowdWokeSeen, CrowdWokeUnseen;

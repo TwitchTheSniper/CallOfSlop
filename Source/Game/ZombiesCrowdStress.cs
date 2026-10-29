@@ -94,6 +94,7 @@ public sealed partial class Game
             tuning.Speed *= StressSpeedScale;
         }
         Crowd.Tuning = tuning;
+        Crowd.Pace = CrowdPace.For(ZRules, tuning, round, StressSpeedScale); // the round's speed mix (CrowdPace.cs; the fixed speed is already scaled)
         Crowd.Setup(World.Map, 0f, n);
         Crowd.Clear();
         _crowdRound = (_crowdRound + 1) & 0xFFFF; // (clients get a keyframe: ZombiesCrowdNet.cs)
@@ -424,6 +425,13 @@ public sealed partial class Game
         _zToSpawn = 0;
         _zRoundTotal = CrowdRoundTotal = Crowd.Total + _zAlive;
         CrowdRoundKills = 0;
+    }
+
+    /// <summary>Self-test: <paramref name="n"/> zombies were added to the crowd straight after a scene (the round's total).</summary>
+    internal void SelfTestCrowdAdded(int n)
+    {
+        _zRoundTotal += n;
+        CrowdRoundTotal += n;
     }
 
     public void SelfTestStressTick(double now)

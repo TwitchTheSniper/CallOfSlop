@@ -45,7 +45,8 @@ zombies in three tiers. This page is the design and the numbers. It runs only on
   counted more than 34 m from every player for 2 s (so an unseen one past 13.6 m). With the cap full and particles
   waiting, an individual that counts 8 m further than the nearest waiting one goes back too (the furthest-counting first),
   unless it is within 12 m of a player. It keeps its position and velocity, and its speed comes from its id. At most 4 a
-  tick. A hurt, burning, slowed, stunned or limb-lost zombie stays an individual.
+  tick. A burning, slowed or stunned zombie stays an individual for now; a hurt or limb-lost one goes back only when far
+  ("Strays rejoin" below).
 - **Conservation.** The counts always add up: particles + mass + alive + killed = the round's total. Every kill path
   counts (shots, melee, mines, the nuke power-up, shots and blasts into the crowd, blasts into the mass).
   `ZRemaining` includes the crowd, and the round ends when the crowd and the horde are both empty.
@@ -124,6 +125,63 @@ shooting what they look at): at least 60% of the individuals in view and three w
 the horde closing in (mean distance down 8 m, its nearest 5% inside 18 m, under 20% of the particles at 12-22 m standing),
 no allocation; a wall ahead keeping 85% of its individuals in front. `HORDE_WAKE_COMPARE=1` also runs both scenes with
 the old tuning and logs them.
+
+### Pace by round
+
+Developer request (2026-10-29): "The zombies in low cost mode should update the speed in which they move across the map to
+correlate with the zombies at that current round level." `Source/Game/Horde/CrowdPace.cs`.
+
+- **The mix.** Individuals roll walk, run or sprint from the round (`SpeedMix`: runners from round 3, sprinters from round
+  5, at most 90% and 75%), at `walkSpeed` / `runSpeed` / `sprintSpeed` (1.3 / 3.2 / 5.2 m/s) times their type's speed
+  multiplier. The crowd holds walkers (type 0), so `CrowdPace.For` takes the same mix at the walker type's multiplier (a
+  walker type with a gait of its own makes every crowd zombie that gait).
+- **Particles.** Each carries a speed class (`HordeCrowd.Cls`), rolled from its own number with the round's shares, and
+  walks at its class's speed +- `paceSpread` (8%). Woken, the individual keeps the class (`z.Speed`); put back to sleep,
+  the particle takes the individual's class. So a zombie's pace doesn't jump at a tier change (within the 8%).
+- **Mass.** A cell's count flows at the mix's mean (`CrowdPace.Mean`: 1.3 m/s in round 1, 4.7 m/s from about round 15).
+  A cell sends `speed x dt / cell` of its count a tick (at the 12 m/s a rules file allows, a twentieth), only ever one cell
+  on: no tunnelling, and capacity holds as before. The mass has no classes: a particle merging into it gives its class up,
+  one let out rolls one (far from every player, over 60 m).
+- **What players see.** The rigs bake the walk, run and sprint cycles (16 frames each, rows gait by gait); an instance's
+  phase carries the gait as its whole part (0-1 walk, 1-2 run, 2-3 sprint), and its cycle is that gait's stride (four half
+  strides, as individuals step). The host draws particles in their own class; the drawn agents (the host's mass, a
+  client's whole picture) each roll a gait from their look in the round's mix and walk at it (`CrowdAgents.SetPace`). A
+  client works the pace out from the round number in `Msg.ZWorld`: no wire change (protocol 76).
+- **Off.** `paceByRound: false` in the rules' `crowd` section gives the old fixed pace (`speed` +- `speedSpread`, every crowd
+  zombie drawn walking).
+
+### Strays rejoin
+
+Developer request (2026-10-29): "Zombies that go too far away from the player should rejoin the hoard to free up new slots
+for zombies closer to the player." `Game.CrowdTick` (ZombiesCrowd.cs).
+
+A healthy individual already went back when it counted far (above). A hurt one (shot) or one with a limb lost never did, so
+the slots filled with zombies the players had shot at and walked away from. Now each individual has a far clock
+(`CrowdFarAt`: since when it has counted past `demoteRange`, by sight as above); a hurt or limb-lost one that has counted
+that far for `demoteSeconds` (2 s) goes back to the crowd too, with its health (the particle's `HP`; a hurt particle never
+merges into the mass, so its wound stays with it) and its speed class. A limb-lost one goes only while nobody sees it (it
+comes back whole). Never one swinging at a player, at a window or on a climb, grabbing or pouncing, a slug, burning,
+stunned or slowed, or one woken less than `minAwake` ago; the swap (`swapMargin`) still takes only healthy ones. With
+the particles full (40,000), a healthy one goes straight into its mass cell instead. The freed slots go to the
+nearest-counting particles as ever. `rejoinStrays: false` turns this off.
+
+**Self-test** "Horde pace" (`Source/App/SelfTestHordePace.cs`, a few seconds): rounds 1 and 20 on Horde Stress's valley
+floor: 400 walkers spawned on an ordinary map against 400 particles and 5,000 in the mass; a particle of each class woken;
+the drawn agents of round 7; 38 hurt individuals left 80 m behind with the cap (40) full, two hurt ones walking with the
+player. Numbers (the user's PC, 2026-10-29):
+
+| | Before (fixed pace) | After |
+| --- | --- | --- |
+| Round 1: individuals / particles / mass (m/s) | 1.30 / 1.50 / 1.33 | 1.30 / 1.30 / 1.15 |
+| Round 20: individuals / particles / mass | 4.69 / 1.49 / 1.33 | 4.69 / 4.68 / 4.22 (runners 3.24, sprinters 5.18) |
+| Woken: class kept, pace change | rolled anew | 3 of 3, at most 4.8% |
+| Drawn agents, round 7 (70% run, 30% sprint) | all walking at 1.5 | 71% running, 29% sprinting; steps 3.22 / 5.16 m/s |
+| Strays 4 s after the player left | 38 of 38 still awake, 2 individuals near the player | 0 awake, 38 rejoined (classes and 22,686 health kept), 40 near |
+
+The mass travels at about 90% of its pace (its flow is in steps of a whole zombie a cell, along eight directions). At
+100,000 (`--stress-shots wake 100000 --wake-round 20`, the cloud box, wall clock with drawing) the faster round fills the
+40,000 particles round the player by 12 s (the fixed pace hadn't by 20 s); the tick then costs what a full particle tier
+costs at any pace. `--fixed-pace` gives the old pace for comparison.
 
 ## Combat
 

@@ -16,7 +16,13 @@ public sealed class CrowdRig
 
     public int Boxes, Frames;
 
-    /// <summary>RGBA32F texels, <see cref="Frames"/> rows of <see cref="Boxes"/> x <see cref="TexelsPerBox"/>.</summary>
+    /// <summary>Gaits baked (walk, run, sprint: <see cref="ZSpeed"/>), each <see cref="Frames"/> rows; the far rig has one (standing).</summary>
+    public int Gaits = 1;
+
+    /// <summary>Metres walked per cycle of a gait (four half strides of the individuals' animation).</summary>
+    public static float CycleOf(ZSpeed s) => 4f * ZombieAnim.StrideHalf(s);
+
+    /// <summary>RGBA32F texels, <see cref="Gaits"/> x <see cref="Frames"/> rows (gait by gait) of <see cref="Boxes"/> x <see cref="TexelsPerBox"/>.</summary>
     public float[] Texels = [];
 
     /// <summary>Metres walked per walk cycle (the shader's frame from the distance walked).</summary>
@@ -44,7 +50,10 @@ public sealed class CrowdRig
     /// <summary>The zombie palette (Program.Zombies.cs draws individuals with the same).</summary>
     public static readonly Vector3 Skin = new(0.36f, 0.52f, 0.3f), Shirt = new(0.33f, 0.3f, 0.26f), Pants = new(0.18f, 0.2f, 0.27f);
 
-    /// <summary>Bakes one level of detail (0 near, 1 mid, 2 far). Headless (records draws; no GL).</summary>
+    /// <summary>Texture rows: every gait's frames.</summary>
+    public int Rows => Gaits * Frames;
+
+    /// <summary>Bakes one level of detail (0 near, 1 mid, 2 far): the walk, run and sprint cycles (the far rig stands). Headless (records draws; no GL).</summary>
     public static CrowdRig Bake(int lod, int frames = 16)
     {
         var rec = new Rec();
@@ -63,15 +72,17 @@ public sealed class CrowdRig
             return rig;
         }
         rig.Frames = frames;
-        for (var f = 0; f < frames; f++)
+        rig.Gaits = 3;
+        for (var row = 0; row < frames * rig.Gaits; row++)
         {
+            var f = row % frames;
             rec.Items.Clear();
             var a = new ZombieAnimInput
             {
                 Pos = Vector3.Zero,
                 Yaw = 0,
                 Mode = ZAnimMode.Locomotion,
-                Speed = ZSpeed.Walk,
+                Speed = (ZSpeed)(row / frames),
                 Move = 1f,
                 Gait = f * MathF.Tau / frames,
                 Time = f * 0.05f,
@@ -81,14 +92,14 @@ public sealed class CrowdRig
             ZombieAnim.Targets(a, out var t);
             ZombieAnim.Solve(a, t, out var pose);
             ZombieAnim.Draw(g, pose, Shirt, Skin, Pants, detail: lod == 0, lod: lod == 1, eyes: true);
-            if (f == 0)
+            if (row == 0)
             {
                 rig.Boxes = rec.Items.Count;
-                rig.Texels = new float[frames * rig.Width * 4];
+                rig.Texels = new float[rig.Rows * rig.Width * 4];
             }
             else if (rec.Items.Count != rig.Boxes)
-                throw new InvalidOperationException($"crowd rig {rig.Name}: frame {f} has {rec.Items.Count} boxes, frame 0 {rig.Boxes}");
-            rig.Fill(f, rec.Items);
+                throw new InvalidOperationException($"crowd rig {rig.Name}: row {row} has {rec.Items.Count} boxes, row 0 {rig.Boxes}");
+            rig.Fill(row, rec.Items);
         }
         return rig;
     }
@@ -96,7 +107,7 @@ public sealed class CrowdRig
     private void Fill(int frame, List<(Matrix4x4 M, Vector3 C, int Mode)> items)
     {
         if (Texels.Length == 0)
-            Texels = new float[Math.Max(1, Frames) * Width * 4];
+            Texels = new float[Math.Max(1, Rows) * Width * 4];
         var o = frame * Width * 4;
         foreach (var (m, c, mode) in items)
         {

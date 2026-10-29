@@ -1299,6 +1299,9 @@ public sealed class ZombiesRules
                             case "surroundArc": c.SurroundArc = Real(v, w, 0, 360); break;
                             case "speed": c.Speed = Real(v, w, 0.1f, 10); break;
                             case "speedSpread": c.SpeedSpread = Real(v, w, 0, 0.9f); break;
+                            case "paceByRound": c.PaceByRound = Flag(v, w); break;
+                            case "paceSpread": c.PaceSpread = Real(v, w, 0, 0.5f); break;
+                            case "rejoinStrays": c.RejoinStrays = Flag(v, w); break;
                             case "separationRadius": c.SeparationRadius = Real(v, w, 0.3f, 3); break;
                             case "separationStrength": c.SeparationStrength = Real(v, w, 0, 20); break;
                             case "separationMax": c.SeparationMax = Whole(v, w, 1, 32); break;

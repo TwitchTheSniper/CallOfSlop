@@ -83,8 +83,11 @@ public sealed class CrowdView
         if (Vector3.DistanceSquared(cam, _lastCam) > CutMetres * CutMetres)
             agents.Clear();
         _lastCam = cam;
-        (agents.DrawCap, agents.FarCap, agents.FarFrom, agents.FarTo, agents.Speed, agents.JamCount) =
-            (rules.DrawCap, rules.DrawCapFar, rules.DrawFarFrom, rules.DrawFarTo, rules.Speed, rules.MassCapacity);
+        (agents.DrawCap, agents.FarCap, agents.FarFrom, agents.FarTo, agents.JamCount) =
+            (rules.DrawCap, rules.DrawCapFar, rules.DrawFarFrom, rules.DrawFarTo, rules.MassCapacity);
+        // The round's pace: the host's own crowd's; a client works it out from the round it is sent (Msg.ZWorld), as the
+        // host did (CrowdPace.For), so its drawn crowd walks, runs and sprints as the round's individuals do.
+        agents.SetPace(host ? g.Crowd.Pace : CrowdPace.For(g.ZRules, rules, g.ZRound));
         (agents.NearRange, agents.MidRange) = (inst.NearRange, inst.MidRange);
         if (host)
         {
