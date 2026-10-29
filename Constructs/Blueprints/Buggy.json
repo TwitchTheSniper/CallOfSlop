@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Buggy",
-  "description": "Two beams, a seat, an engine, a tank and two fuel lines, four wheels on suspensions.",
+  "description": "Two beams, a seat, a tank, fuel lines and an engine at the back, a transmission and a differential driving the back wheels, the front wheels on steering pivots.",
   "steps": [
     {
       "part": "Frame Beam"
@@ -19,13 +19,13 @@
       "by": "bottom"
     },
     {
-      "part": "Engine",
+      "part": "Fuel Tank",
       "on": 1,
       "socket": "y+0",
       "by": "-y"
     },
     {
-      "part": "Fuel Tank",
+      "part": "Engine",
       "on": 1,
       "socket": "y+3",
       "by": "-y"
@@ -43,40 +43,52 @@
       "by": "-x"
     },
     {
+      "part": "Transmission",
+      "on": 4,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Differential",
+      "on": 0,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
       "part": "Suspension",
+      "on": 8,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 8,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Steering Pivot",
       "on": 0,
       "socket": "x-0",
-      "by": "mount"
+      "by": "base"
     },
     {
-      "part": "Suspension",
-      "on": 0,
-      "socket": "x-3",
-      "by": "mount"
-    },
-    {
-      "part": "Suspension",
+      "part": "Steering Pivot",
       "on": 1,
       "socket": "x+0",
+      "by": "base"
+    },
+    {
+      "part": "Suspension",
+      "on": 11,
+      "socket": "leaf",
       "by": "mount"
     },
     {
       "part": "Suspension",
-      "on": 1,
-      "socket": "x+3",
+      "on": 12,
+      "socket": "leaf",
       "by": "mount"
-    },
-    {
-      "part": "Wheel",
-      "on": 7,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Wheel",
-      "on": 8,
-      "socket": "axle",
-      "by": "axle"
     },
     {
       "part": "Wheel",
@@ -91,6 +103,18 @@
       "by": "axle"
     },
     {
+      "part": "Wheel",
+      "on": 13,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 14,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
       "part": "Frame Block",
       "on": 0,
       "socket": "end-",
@@ -104,13 +128,13 @@
     },
     {
       "part": "Corner",
-      "on": 15,
+      "on": 19,
       "socket": "-z",
       "by": "back"
     },
     {
       "part": "Corner",
-      "on": 16,
+      "on": 20,
       "socket": "-z",
       "by": "back"
     }

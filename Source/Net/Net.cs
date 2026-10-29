@@ -89,9 +89,9 @@ public enum Msg : byte
     HostBye, // server -> one client or all: why the host is closing the connection (the host closed the server, a different build) (reliable; GameHostBye.cs, protocol 74)
     SteamIds, // client -> server: my Steam ID (count 1, id, u64) after the Hello; server -> all: every Steam player's (count, then player id + u64 each), with the roster, only when someone is on Steam (reliable; GameSteam.cs, protocol 76)
     SteamAuth, // client -> server: kind 0, my Steam auth session ticket for this host (u16 length, bytes); server -> one client: kind 1, you were refused or removed (the reason), then the connection closes (reliable; GameSteamAuth.cs, protocol 76)
-    CBody, // server -> all (on a change) and each joiner: Sandbox: one construct's parts, links, joints and pose, a part's health, or a construct gone (a CBodyKind first) (reliable ordered; ConstructNet.cs, protocol 77)
-    CPose, // server -> all: Sandbox: the moving constructs' poses (tick, then id, position, turn, velocity, steering, joint angles each) (unreliable sequenced, 20 Hz; protocol 77)
-    CAct, // client -> server: Sandbox: an action (a CActKind first): hold a tool, attach or remove a part, cancel, use (sit, stand, a door, pick up), take from the rack, drop (reliable ordered; GameSandbox.cs, protocol 77)
+    CBody, // server -> all (on a change) and each joiner: Sandbox: one construct's parts, links, joints and pose, a part's health, or a construct gone (a CBodyKind first) (reliable ordered; ConstructNet.cs, protocol 77; wires, logic settings and signals: 78)
+    CPose, // server -> all: Sandbox: the moving constructs' poses (tick, then id, position, turn, velocity, steering, joint angles and speeds, signals each) (unreliable sequenced, 20 Hz; protocol 77, 78)
+    CAct, // client -> server: Sandbox: an action (a CActKind first): hold a tool, attach or remove a part, cancel, use (sit, stand, a door, pick up), take from the rack, drop; wire, unwire, a setting, a seat's keys (reliable ordered; GameSandbox.cs, protocol 77, 78)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

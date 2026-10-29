@@ -18,6 +18,44 @@ public enum PartRole : byte
     Hinge, // a passive hinge joint: what is attached to its leaf swings
     Door, // a door leaf (hangs on a hinge; Interact opens and shuts it)
     Foundation, // anchors a construct to the ground (a base: never moves)
+    Joint, // milestone 2: a moving joint (motorised hinge, turntable, piston, steering pivot): what is on its leaf moves
+    Transmission, // milestone 2: takes the engine's drive (it must touch the engine) on to the differentials
+    Differential, // milestone 2: an axle: drives the suspensions (wheels) bolted to it, fed by a transmission
+    Logic, // milestone 2: a logic part (controls, sensors, gates, timers, lamps, horns, brakes), wired with the linking tool
+}
+
+/// <summary>How a joint part moves (milestone 2; docs/sandbox/CONSTRUCTS.md, "Joints").</summary>
+public enum JointType : byte
+{
+    Passive, // the milestone 1 hinge: swings freely, latched open or shut by Interact; a signal wired to it locks it
+    Motor, // a motorised hinge: driven to an angle (signal 1: max, 0: rest, -1: min)
+    Turntable, // turns at a speed (signal -1..1 of its speed), no limits unless given
+    Piston, // slides along its axis (signal 0..1 of its travel)
+    Steering, // a steering pivot: follows the driver's steering, or a wired signal (-1..1)
+}
+
+/// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>
+public enum CLogic : byte
+{
+    None,
+    Button, // Interact: on for half a second
+    Lever, // Interact: middle, forward (1), middle, back (-1)
+    Switch, // Interact: on / off
+    Plate, // a pressure plate: on while a player stands on it
+    Reader, // an input reader: on while the sitter of a seat holds a key (the seat wired into it, else the driver's)
+    Speed, // a speed sensor: its construct's speed (m/s)
+    Proximity, // on while a player is within its range
+    And, // on when every input is on
+    Or, // on when any input is on
+    Not, // on when no input is on
+    Timer, // while enabled (no input, or an input on): on and off, each for half its period
+    Delay, // copies its input once the input has held for its time
+    Toggle, // flips each time its input comes on (any input on)
+    Compare, // on when its inputs add up to more than its threshold
+    Scale, // its inputs added up, times its factor
+    Lamp, // lights while its input is on
+    Horn, // sounds while its input is on
+    Brake, // brakes its construct while its input is on
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -26,6 +64,7 @@ public enum ConstructTool : byte
     None, // bare hands or a gun: use only (drive, sit, open doors), never edit
     Wrench, // bolted parts: wheels, seats, engines, doors...
     Welder, // welded parts: frames, panels, foundations
+    Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -82,8 +121,41 @@ public sealed class ConstructPartDef
     public Vector3 JointPivot; // hinge: a point on the axis (part frame)
     public float JointMin, JointMax; // hinge: limits (radians)
     public string LeafSocket = ""; // hinge: what attaches to this socket hangs on the joint
+    public JointType JointType; // hinge: Passive; joint: the rest
+    public float MotorSpeed, MotorStrength; // joint: radians (metres for a piston) a second; N m (N for a piston)
+    public bool JointLimited = true; // a turntable without min/max turns forever
+    public int LeafIndex = -1; // hinge, joint: the leaf socket's index
+
+    // Logic (milestone 2)
+    public CLogic Logic;
+    public float[] Settings = []; // the values its setting cycles through (seconds, metres, a threshold, a factor; a reader's key bits)
+    public string[] SettingLabels = []; // what the HUD shows for each
+    public string SettingName = ""; // "period", "key"...
+    public byte DefaultSetting;
 
     public bool UsesTool(ConstructTool t) => t != ConstructTool.None && t == Tool;
+
+    /// <summary>A joint part: a passive hinge or a moving joint (what goes on its leaf hangs on a new joint).</summary>
+    public bool HasJoint => Role is PartRole.Hinge or PartRole.Joint;
+
+    /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
+    public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake));
+
+    /// <summary>How many wires may come into it (0: it takes no input).</summary>
+    public int MaxInputs => Role switch
+    {
+        PartRole.Joint or PartRole.Hinge or PartRole.Engine => 4,
+        PartRole.Logic => Logic switch
+        {
+            CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity => 0,
+            CLogic.Reader or CLogic.Timer or CLogic.Delay => 1,
+            _ => 4,
+        },
+        _ => 0,
+    };
+
+    /// <summary>Is a signal part (its value travels to clients): an output, or a lamp, horn or brake.</summary>
+    public bool IsSignal => HasOutput || Role == PartRole.Logic;
     public override string ToString() => Name;
 }
 
@@ -195,8 +267,17 @@ public static class ConstructParts
     private static readonly string[] TopKeys =
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
-        "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge",
+        "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
     ];
+
+    /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
+    public static readonly (string Name, ushort Bit)[] ReaderKeys =
+    [
+        ("fire", 0x100), ("aim", 0x200), ("reload", 0x400), ("forward", (ushort)Buttons.Forward), ("back", (ushort)Buttons.Back),
+        ("left", (ushort)Buttons.Left), ("right", (ushort)Buttons.Right), ("jump", (ushort)Buttons.Jump), ("sprint", (ushort)Buttons.Sprint),
+    ];
+
+    public const ushort KeyFire = 0x100, KeyAim = 0x200, KeyReload = 0x400;
 
     /// <summary>Parses one part file's text. Throws <see cref="ConstructPartException"/> with the reason for anything wrong.</summary>
     public static ConstructPartDef Parse(string json, string file)
@@ -215,7 +296,7 @@ public static class ConstructParts
         d.Description = Opt(root, "description") is { } desc ? AsciiText(desc, file, "description") : "";
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
         d.Tool = EnumOf<ConstructTool>(StrKey(root, "tool", file), file, "tool");
-        if (d.Tool == ConstructTool.None)
+        if (d.Tool is ConstructTool.None or ConstructTool.Linker)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
@@ -229,7 +310,7 @@ public static class ConstructParts
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
-            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat ? PartBreak.Disable : PartBreak.Detach;
+            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential ? PartBreak.Disable : PartBreak.Detach;
         var colour = Opt(root, "color") is { } col ? Colour(col, file, "color") : new Vector3(0.5f);
 
         // Boxes
@@ -307,7 +388,7 @@ public static class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -316,6 +397,8 @@ public static class ConstructParts
             PartRole.FuelTank => "fuelTank",
             PartRole.Seat => "seat",
             PartRole.Hinge => "hinge",
+            PartRole.Joint => "joint",
+            PartRole.Logic => "logic",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -376,6 +459,14 @@ public static class ConstructParts
                 d.LeafSocket = Str(Need(block.Value, "leaf", bw), file, "hinge.leaf");
                 if (!d.Sockets.Any(s => s.Name == d.LeafSocket && s.Kind == SocketKind.Leaf))
                     throw new ConstructPartException($"{file}: hinge \"leaf\" must name one of its \"leaf\" sockets");
+                d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket);
+                d.JointType = JointType.Passive;
+                break;
+            case PartRole.Joint:
+                ParseJoint(d, block!.Value, file, bw);
+                break;
+            case PartRole.Logic:
+                ParseLogic(d, block!.Value, file, bw);
                 break;
         }
         if (d.Role == PartRole.Door && !d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
@@ -385,6 +476,117 @@ public static class ConstructParts
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
         return d;
+    }
+
+    private static readonly string[] JointTypes = ["motor", "turntable", "piston", "steering"];
+
+    /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
+    private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength"], bw);
+        var type = Str(Need(b, "type", bw), file, "joint.type").ToLowerInvariant();
+        var ti = Array.IndexOf(JointTypes, type);
+        if (ti < 0)
+            throw new ConstructPartException($"{file}: \"joint.type\" is one of {string.Join(", ", JointTypes)}, not \"{type}\"");
+        d.JointType = (JointType)(ti + 1);
+        d.JointAxis = DirOf(Str(Need(b, "axis", bw), file, "joint.axis"), file, "joint.axis");
+        d.JointPivot = Opt(b, "pivot") is { } pv ? Vec(pv, file, "joint.pivot") : Vector3.Zero;
+        var piston = d.JointType == JointType.Piston;
+        var unit = piston ? 1f : MathF.PI / 180f; // a piston's limits and speed are metres; the rest degrees
+        if (d.JointType == JointType.Turntable && Opt(b, "min") == null && Opt(b, "max") == null)
+        {
+            d.JointLimited = false;
+            d.JointMin = float.NegativeInfinity;
+            d.JointMax = float.PositiveInfinity;
+        }
+        else
+        {
+            d.JointMin = Num(Need(b, "min", bw), file, "joint.min") * unit;
+            d.JointMax = Num(Need(b, "max", bw), file, "joint.max") * unit;
+            if (piston && (d.JointMin != 0 || d.JointMax < 0.1f || d.JointMax > 4f))
+                throw new ConstructPartException($"{file}: a piston's \"min\" is 0 and its \"max\" (its travel) 0.1 to 4 metres");
+            if (!piston && (d.JointMin > 0 || d.JointMax < 0 || d.JointMax - d.JointMin < 0.05f || d.JointMax - d.JointMin > MathF.Tau))
+                throw new ConstructPartException($"{file}: joint \"min\" must be 0 or less and \"max\" 0 or more (degrees), at most 360 apart");
+        }
+        d.MotorSpeed = Num(Need(b, "speed", bw), file, "joint.speed") * unit;
+        Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
+        d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
+        Range(d.MotorStrength, 1, 1_000_000, file, "joint.strength");
+        d.LeafSocket = Str(Need(b, "leaf", bw), file, "joint.leaf");
+        d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
+        if (d.LeafIndex < 0)
+            throw new ConstructPartException($"{file}: joint \"leaf\" must name one of its struct sockets (what goes on it moves)");
+    }
+
+    private static readonly string[] LogicKinds = Enum.GetNames<CLogic>().Skip(1).Select(n => n.ToLowerInvariant()).ToArray();
+
+    /// <summary>A logic part's block: its kind and, for the kinds that have one, the setting it cycles through (the linking tool's R).</summary>
+    private static void ParseLogic(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["kind", "settings", "labels", "setting", "settingName"], bw);
+        var kind = Str(Need(b, "kind", bw), file, "logic.kind").ToLowerInvariant();
+        var ki = Array.IndexOf(LogicKinds, kind);
+        if (ki < 0)
+            throw new ConstructPartException($"{file}: \"logic.kind\" is one of {string.Join(", ", LogicKinds)}, not \"{kind}\"");
+        d.Logic = (CLogic)(ki + 1);
+        var needs = d.Logic is CLogic.Reader or CLogic.Proximity or CLogic.Timer or CLogic.Delay or CLogic.Compare or CLogic.Scale;
+        if (d.Logic == CLogic.Reader)
+        {
+            // A reader's settings are key names.
+            if (Opt(b, "labels") is not { ValueKind: JsonValueKind.Array } keys || keys.GetArrayLength() is 0 or > 16)
+                throw new ConstructPartException($"{file}: an input reader needs \"labels\": the keys it can read (1-16 of {string.Join(", ", ReaderKeys.Select(k => k.Name))})");
+            var labels = new List<string>();
+            var bits = new List<float>();
+            foreach (var k in keys.EnumerateArray())
+            {
+                var name = Str(k, file, "logic.labels").ToLowerInvariant();
+                var at = Array.FindIndex(ReaderKeys, x => x.Name == name);
+                if (at < 0)
+                    throw new ConstructPartException($"{file}: an input reader reads one of {string.Join(", ", ReaderKeys.Select(x => x.Name))}, not \"{name}\"");
+                labels.Add(name);
+                bits.Add(ReaderKeys[at].Bit);
+            }
+            d.SettingLabels = labels.ToArray();
+            d.Settings = bits.ToArray();
+            if (Opt(b, "settings") != null)
+                throw new ConstructPartException($"{file}: an input reader's keys are its \"labels\" (no \"settings\")");
+        }
+        else if (Opt(b, "settings") is { ValueKind: JsonValueKind.Array } set)
+        {
+            if (!needs)
+                throw new ConstructPartException($"{file}: a {kind} has no setting");
+            if (set.GetArrayLength() is 0 or > 16)
+                throw new ConstructPartException($"{file}: \"logic.settings\" lists 1 to 16 values");
+            d.Settings = set.EnumerateArray().Select(v => Num(v, file, "logic.settings")).ToArray();
+            if (d.Logic is CLogic.Timer or CLogic.Delay or CLogic.Proximity && d.Settings.Any(v => v < 0.05f || v > 60))
+                throw new ConstructPartException($"{file}: a {kind}'s settings are 0.05 to 60 ({(d.Logic == CLogic.Proximity ? "metres" : "seconds")})");
+            d.SettingLabels = Opt(b, "labels") is { ValueKind: JsonValueKind.Array } lab
+                ? lab.EnumerateArray().Select(v => AsciiText(v, file, "logic.labels")).ToArray()
+                : d.Settings.Select(v => v.ToString("0.##", CultureInfo.InvariantCulture)).ToArray();
+            if (d.SettingLabels.Length != d.Settings.Length)
+                throw new ConstructPartException($"{file}: \"logic.labels\" must have one label per setting");
+        }
+        else if (needs)
+            throw new ConstructPartException($"{file}: a {kind} needs \"settings\" (the values its setting cycles through)");
+        else if (Opt(b, "labels") != null)
+            throw new ConstructPartException($"{file}: a {kind} has no setting");
+        d.SettingName = Opt(b, "settingName") is { } sn ? AsciiText(sn, file, "logic.settingName") : d.Logic switch
+        {
+            CLogic.Reader => "key",
+            CLogic.Proximity => "range",
+            CLogic.Timer => "period",
+            CLogic.Delay => "delay",
+            CLogic.Compare => "threshold",
+            CLogic.Scale => "factor",
+            _ => "",
+        };
+        if (Opt(b, "setting") is { } def)
+        {
+            var v = Num(def, file, "logic.setting");
+            if (v < 0 || v >= d.Settings.Length || v != MathF.Floor(v))
+                throw new ConstructPartException($"{file}: \"logic.setting\" is the index of its starting setting (0 to {d.Settings.Length - 1})");
+            d.DefaultSetting = (byte)v;
+        }
     }
 
     // ---- Small helpers ------------------------------------------------------------------------------------

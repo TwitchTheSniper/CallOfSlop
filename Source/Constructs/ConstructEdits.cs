@@ -24,6 +24,7 @@ public struct SandboxHand
     public double Start, Duration;
     public ushort SeatBody; // 0: not sitting
     public byte SeatPart;
+    public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
 
     public readonly bool Seated => SeatBody != 0;
@@ -212,6 +213,63 @@ public sealed class ConstructEdits
         return "nothing";
     }
 
+    // ---- The linking tool (milestone 2) -------------------------------------------------------------------------------
+
+    private string? Linking(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, out Construct? c)
+    {
+        ref var h = ref Hands[player];
+        c = null;
+        if (h.Seated)
+            return "get out of the seat first";
+        if (h.Tool != ConstructTool.Linker)
+            return "take out the linking tool (5) to wire";
+        if (world.Get(body) is not { } cc || part < 0 || part >= cc.PartCount)
+            return "that part is gone";
+        c = cc;
+        cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
+        cc.PartBounds(part, out var mn, out var mx);
+        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach);
+    }
+
+    /// <summary>The linking tool: a wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (same construct). Null, or why not.</summary>
+    public string? Wire(ConstructWorld world, byte player, Vector3 eye, ushort body, int from, int to)
+    {
+        if (Linking(world, player, eye, body, from, out var c) is { } why)
+            return why;
+        if (Linking(world, player, eye, body, to, out _) is { } why2)
+            return why2;
+        if (ConstructBuild.CanWire(world, c!, from, to) is { } bad)
+            return bad;
+        if (!world.AddWire(c!, from, to))
+            return "no room for another wire";
+        Done.Add($"player {player}: wire {c!.DefOf(from).Name} {from} -> {c.DefOf(to).Name} {to} on construct {c.Id}");
+        return null;
+    }
+
+    /// <summary>The linking tool: cuts every wire into or out of a part.</summary>
+    public string? Unwire(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        if (Linking(world, player, eye, body, part, out var c) is { } why)
+            return why;
+        return world.RemoveWires(c!, part) > 0 ? null : $"no wires on the {c!.DefOf(part).Name}";
+    }
+
+    /// <summary>The linking tool: the next value of a logic part's setting (a timer's period, a reader's key...).</summary>
+    public string? CycleSetting(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        if (Linking(world, player, eye, body, part, out var c) is { } why)
+            return why;
+        var d = c!.DefOf(part);
+        if (d.Settings.Length == 0)
+            return $"a {d.Name} has no setting";
+        ref var p = ref c.Parts[part];
+        p.Setting = (byte)((p.Setting + 1) % d.Settings.Length);
+        p.Count = 0;
+        world.StructureDirty.Add(c.Id);
+        c.Wake();
+        return null;
+    }
+
     /// <summary>Takes the next part type from the rack (each press moves on to the next kind).</summary>
     public string? TakeFromRack(SandboxMap? sandbox, byte player, Vector3 feet)
     {
@@ -257,12 +315,17 @@ public sealed class ConstructEdits
         return null;
     }
 
-    /// <summary>Use (any hands): a seat to sit in, a door or hinge to open or shut.</summary>
+    /// <summary>
+    /// Use (any hands): a seat to sit in (the first seat drives; any other carries a passenger), a door or hinge to open
+    /// or shut (refused while locked or run by its wires), a button, switch or lever to work.
+    /// </summary>
     public string? Use(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
     {
         ref var h = ref Hands[player];
         if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
             return "nothing there";
+        if (c.Dirty)
+            c.Rebuild();
         var d = c.DefOf(part);
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
@@ -270,26 +333,59 @@ public sealed class ConstructEdits
             return far;
         if (d.Role == PartRole.Seat)
         {
-            if (c.Parts[part].Broken)
+            ref var seat = ref c.Parts[part];
+            if (seat.Broken)
                 return "the seat is wrecked";
-            if (c.Driver != 255)
+            if (seat.SitterPlus1 != 0 || part == c.DriveSeat && c.Driver != 255)
                 return "someone is already in it";
+            if (h.Seated)
+                return "you are already sitting";
             h.Edit = EditKind.None;
             h.SeatBody = c.Id;
             h.SeatPart = (byte)part;
-            c.Driver = player;
-            c.DriverSeat = part;
+            seat.SitterPlus1 = (byte)(player + 1);
+            if (part == c.DriveSeat)
+            {
+                c.Driver = player;
+                c.DriverSeat = part;
+            }
+            c.Wake();
+            return null;
+        }
+        if (d.Role == PartRole.Logic)
+        {
+            ref var lp = ref c.Parts[part];
+            if (lp.Broken)
+                return $"the {d.Name} is wrecked";
+            switch (d.Logic)
+            {
+                case CLogic.Button:
+                    lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructLogic.ButtonSeconds * World.TickRate));
+                    break;
+                case CLogic.Switch:
+                    lp.State ^= 1;
+                    break;
+                case CLogic.Lever:
+                    lp.State = (byte)((lp.State + 1) & 3);
+                    break;
+                default:
+                    return d.Settings.Length > 0 ? $"{d.Name}: the linking tool (5) changes its {d.SettingName} (R)" : "nothing to use there";
+            }
             c.Wake();
             return null;
         }
         var seg = c.Parts[part].Seg;
-        if (d.Role == PartRole.Hinge)
-            for (var j = 0; j < c.JointCount; j++)
-                if (c.Joints[j].Hinge == part)
-                    seg = (byte)(j + 1);
+        if (d.HasJoint && c.JointOf(part) is var own and >= 0)
+            seg = (byte)(own + 1);
         if (seg > 0)
         {
             ref var jt = ref c.Joints[seg - 1];
+            if (jt.Locked)
+                return "it's locked";
+            if (jt.Wired && jt.Motorised)
+                return "its wires run it";
+            if (jt.Type is JointType.Turntable or JointType.Steering)
+                return "a turntable or steering pivot turns by its wires";
             jt.Open = !jt.Open;
             c.Wake();
             return null;
@@ -307,8 +403,15 @@ public sealed class ConstructEdits
             return null;
         var c = world.Get(h.SeatBody);
         h.SeatBody = 0;
+        h.SeatKeys = 0;
         if (c == null)
             return null;
+        var mine = c.SeatOf(player);
+        if (mine >= 0)
+        {
+            c.Parts[mine].SitterPlus1 = 0;
+            h.SeatPart = (byte)mine;
+        }
         if (c.Driver == player)
         {
             c.Driver = 255;

@@ -16,6 +16,10 @@ public enum CActKind : byte
     Rack,
     Drop,
     PickUp, // u16 body
+    Wire, // u16 body, u8 from part, u8 to part (the linking tool; milestone 2)
+    Unwire, // u16 body, u8 part: cut every wire on it
+    Setting, // u16 body, u8 part: a logic part's next setting
+    SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -128,21 +132,32 @@ public sealed partial class Game
         SandboxNow = now;
         if (!SandboxOn)
             return;
+        Constructs.PlayerSpotCount = 0;
         foreach (var p in Players.Values)
         {
             ref var h = ref SandboxHands.Hand(p.Id);
             if (!p.Alive)
                 h.Edit = EditKind.None;
+            else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
+                Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
                 continue;
             var c = Constructs.Get(h.SeatBody);
-            if (!p.Alive || c == null || c.Driver != p.Id || c.DriverSeat < 0 || c.Parts[c.DriverSeat].Broken)
+            var seat = c?.SeatOf(p.Id) ?? -1;
+            if (!p.Alive || c == null || seat < 0 || c.Parts[seat].Broken || c.Parts[seat].D.Role != PartRole.Seat)
             {
                 SandboxStand(p, teleport: p.Alive);
                 continue;
             }
+            h.SeatPart = (byte)seat; // (parts are renumbered when others come off)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
-            ConstructEdits.DriveInput(c, b, World.TickDt);
+            c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
+            if (seat == c.DriveSeat)
+            {
+                c.Driver = p.Id;
+                c.DriverSeat = seat;
+                ConstructEdits.DriveInput(c, b, World.TickDt);
+            }
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
@@ -244,7 +259,7 @@ public sealed partial class Game
         switch (kind)
         {
             case CActKind.Tool:
-                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Welder));
+                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker));
             case CActKind.Attach:
             {
                 var body = r.U16();
@@ -289,6 +304,26 @@ public sealed partial class Game
                 return hands.Drop(Constructs, p.Id, p.Position, p.Yaw);
             case CActKind.PickUp:
                 return hands.PickUp(Constructs, p.Id, eye, r.U16());
+            case CActKind.Wire:
+            {
+                var body = r.U16();
+                var from = r.U8();
+                var to = r.U8();
+                return hands.Wire(Constructs, p.Id, eye, body, from, to);
+            }
+            case CActKind.Unwire:
+            {
+                var body = r.U16();
+                return hands.Unwire(Constructs, p.Id, eye, body, r.U8());
+            }
+            case CActKind.Setting:
+            {
+                var body = r.U16();
+                return hands.CycleSetting(Constructs, p.Id, eye, body, r.U8());
+            }
+            case CActKind.SeatKeys:
+                hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
+                return null;
         }
         return null;
     }
@@ -311,7 +346,15 @@ public sealed partial class Game
                 break;
             case CActKind.Remove:
             case CActKind.Use:
+            case CActKind.Unwire:
+            case CActKind.Setting:
                 w.U16(body).U8(part);
+                break;
+            case CActKind.Wire:
+                w.U16(body).U8(part).U8(socket); // (from, to)
+                break;
+            case CActKind.SeatKeys:
+                w.U8(part);
                 break;
             case CActKind.PickUp:
                 w.U16(body);
@@ -348,10 +391,39 @@ public sealed partial class Game
             s.MantleTicks = 0;
             return;
         }
-        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), pushDoors: IsServer);
+        Constructs.BlockPlayer(ref s, World.HeightOf(s.Stance), IsServer, p.Id);
+        if (IsServer && Constructs.LastHitSpeed > RunOverSpeed && Constructs.LastHitBody is { } car)
+            SandboxRunOver(p, ref s, car);
     }
 
-    /// <summary>Is this player in a seat? (Drivers don't shoot in milestone 1.)</summary>
+    /// <summary>A moving construct part closing on a player faster than this (m/s) hurts them (run over, or hit by a swinging arm).</summary>
+    public const float RunOverSpeed = 4f;
+
+    public const double RunOverCooldown = 0.6;
+
+    private readonly double[] _sbHitAt = new double[256];
+
+    /// <summary>Run-over damage: by how fast the part closed on them and how heavy its construct is; the driver (if any) gets the credit.</summary>
+    public static int RunOverDamage(float closing, float mass) =>
+        closing <= RunOverSpeed ? 0 : (int)MathF.Round((closing - RunOverSpeed) * 9f * Math.Clamp(MathF.Sqrt(mass / 500f), 0.4f, 2.5f));
+
+    private void SandboxRunOver(Player p, ref MoveState s, Construct car)
+    {
+        var now = SandboxNow;
+        if (now < _sbHitAt[p.Id] + RunOverCooldown)
+            return;
+        _sbHitAt[p.Id] = now;
+        var dmg = RunOverDamage(Constructs.LastHitSpeed, Constructs.LastHitMass);
+        // Knocked along with the car, and a little up.
+        s.Velocity += Constructs.LastHitVel * 0.5f + new Vector3(0, 2.5f, 0);
+        s.Grounded = false;
+        var by = car.Driver != 255 && car.Driver != p.Id && Players.TryGetValue(car.Driver, out var d) ? d : p;
+        Constructs.Events.Add($"player {p.Id} hit by construct {car.Id} at {Constructs.LastHitSpeed:0.0} m/s: {dmg} damage");
+        if (dmg > 0)
+            DamagePlayer(by, p, dmg, false, MeleeKillId, now, DamageKind.Melee, car.WorldCom);
+    }
+
+    /// <summary>Is this player in a seat? (Drivers and passengers don't shoot: construct weapons are milestone 3.)</summary>
     public bool SandboxSeated(Player p) => SandboxOn && SandboxHands.Hand(p.Id).Seated;
 
     /// <summary>A bullet's ray against the constructs: shortens <paramref name="dist"/> to the part it hits.</summary>
@@ -414,6 +486,12 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
+        {
+            lines.Add(new HudLine("Riding as a passenger", white));
+            lines.Add(new HudLine("Fire, aim, R: the construct's input readers. F get out", dim));
+            return;
+        }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
             var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.SeatForward(), car.Rot))) * 3.6f);
@@ -434,7 +512,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -449,8 +527,10 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxLookText, white));
         if (SandboxNotice is { Length: > 0 } notice)
             lines.Add(new HudLine(notice, red));
+        else if (h.Tool == ConstructTool.Linker)
+            lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
-            lines.Add(new HudLine("F at the rack: take a part. 3 wrench, 4 welder, 1/2 guns", dim));
+            lines.Add(new HudLine("F at the rack: take a part. 3 wrench, 4 welder, 5 linking tool, 1/2 guns", dim));
         else
         {
             if (_sbHint.Stale(held.Id))
@@ -461,4 +541,30 @@ public sealed partial class Game
 
     /// <summary>What the crosshair is on (set by the client's look each frame; Program.Sandbox.cs).</summary>
     public string SandboxLookText = "";
+
+    /// <summary>The linking tool's wire in progress (Program.Sandbox.cs), for the HUD.</summary>
+    public string SandboxWireFrom = "";
+
+    private readonly double[] _sbHornAt = new double[ConstructWorld.MaxBodies * 4];
+
+    /// <summary>Every frame (host and clients): each horn that is on sounds, a beep every 0.3 s, where it is.</summary>
+    internal void SandboxSounds(double now)
+    {
+        if (!SandboxOn)
+            return;
+        var slot = 0;
+        foreach (var c in Constructs.Bodies)
+            for (var i = 0; i < c.PartCount && slot < _sbHornAt.Length; i++)
+            {
+                if (c.Parts[i].D.Logic != CLogic.Horn)
+                    continue;
+                if (c.Parts[i].Out >= 0.5f && now >= _sbHornAt[slot] + 0.3)
+                {
+                    _sbHornAt[slot] = now;
+                    c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+                    Audio.Effect3D(Sfx.LockTone, t + Vector3.Transform(c.Parts[i].Pos, q), 1f);
+                }
+                slot++;
+            }
+    }
 }

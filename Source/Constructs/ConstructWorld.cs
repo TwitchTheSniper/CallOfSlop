@@ -21,6 +21,8 @@ public sealed class ConstructWorld
 {
     public const int MaxBodies = 64;
     public const int MaxTotalParts = 1200;
+    public const int MaxTotalJoints = 128; // joints in all (each construct: Construct.MaxJoints)
+    public const int MaxTotalWires = 512; // wires in all (each construct: Construct.MaxWires)
     public const float FallOutY = -30f;
 
     public readonly List<Construct> Bodies = new(MaxBodies);
@@ -32,8 +34,39 @@ public sealed class ConstructWorld
     public readonly List<ushort> Removed = new(MaxBodies);
     public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
 
+    /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
+    public readonly Vector3[] PlayerSpots = new Vector3[64];
+    public int PlayerSpotCount;
+
+    /// <summary>What the last <see cref="BlockPlayer"/> call found: the hardest push by a moving part (run-over damage), and who pushed.</summary>
+    public float LastHitSpeed, LastHitMass;
+    public Vector3 LastHitVel;
+    public Construct? LastHitBody;
+
     /// <summary>A line per notable event (a part broke, a piece fell off): the game shows some, the self-test reads them.</summary>
     public readonly List<string> Events = new(32);
+
+    public int TotalJoints
+    {
+        get
+        {
+            var n = 0;
+            foreach (var c in Bodies)
+                n += c.JointCount;
+            return n;
+        }
+    }
+
+    public int TotalWires
+    {
+        get
+        {
+            var n = 0;
+            foreach (var c in Bodies)
+                n += c.WireCount;
+            return n;
+        }
+    }
 
     public int TotalParts
     {
@@ -92,7 +125,7 @@ public sealed class ConstructWorld
         if (c.PartCount >= Construct.MaxParts || TotalParts >= MaxTotalParts)
             return -1;
         var i = c.PartCount++;
-        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health };
+        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting };
         c.Dirty = true;
         c.Wake();
         StructureDirty.Add(c.Id);
@@ -113,10 +146,10 @@ public sealed class ConstructWorld
         return true;
     }
 
-    /// <summary>A hinge joint: the parts of a new segment turn about the hinge's axis (returns the new segment, or 0 when full).</summary>
+    /// <summary>A joint on a joint part (a hinge, or a moving joint): the parts of a new segment turn (or slide) on it (returns the new segment, or 0 when full).</summary>
     public byte AddJoint(Construct c, int hinge)
     {
-        if (c.JointCount >= Construct.MaxJoints)
+        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= MaxTotalJoints)
             return 0;
         ref var h = ref c.Parts[hinge];
         var d = h.D;
@@ -128,9 +161,45 @@ public sealed class ConstructWorld
             Axis = ConstructParts.DirVector(Rot24.ApplyDir(h.Rot, d.JointAxis)),
             Min = d.JointMin,
             Max = d.JointMax,
+            Type = d.JointType,
+            Speed = d.MotorSpeed,
+            Strength = d.MotorStrength,
         };
         c.JointCount++;
         return (byte)c.JointCount;
+    }
+
+    /// <summary>A wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (call <see cref="ConstructBuild.CanWire"/> first). False when full.</summary>
+    public bool AddWire(Construct c, int from, int to)
+    {
+        if (c.WireCount >= Construct.MaxWires || TotalWires >= MaxTotalWires)
+            return false;
+        c.Wires[c.WireCount++] = new CWire { From = (byte)from, To = (byte)to };
+        c.Dirty = true;
+        c.Wake();
+        StructureDirty.Add(c.Id);
+        return true;
+    }
+
+    /// <summary>Cuts every wire into or out of part <paramref name="part"/>. Returns how many went.</summary>
+    public int RemoveWires(Construct c, int part)
+    {
+        var n = 0;
+        for (var k = 0; k < c.WireCount; k++)
+        {
+            if (c.Wires[k].From == part || c.Wires[k].To == part)
+                continue;
+            c.Wires[n++] = c.Wires[k];
+        }
+        var cut = c.WireCount - n;
+        c.WireCount = n;
+        if (cut > 0)
+        {
+            c.Dirty = true;
+            c.Wake();
+            StructureDirty.Add(c.Id);
+        }
+        return cut;
     }
 
     /// <summary>
@@ -252,6 +321,11 @@ public sealed class ConstructWorld
             if (map[link.A] >= 0 && map[link.B] >= 0)
                 AddLink(wreck, map[link.A], link.SA, map[link.B], link.SB);
         }
+        for (var wi = 0; wi < c.WireCount && wreck.WireCount < Construct.MaxWires; wi++)
+            if (map[c.Wires[wi].From] >= 0 && map[c.Wires[wi].To] >= 0)
+                wreck.Wires[wreck.WireCount++] = new CWire { From = (byte)map[c.Wires[wi].From], To = (byte)map[c.Wires[wi].To] };
+        for (var i = 0; i < wreck.PartCount; i++)
+            wreck.Parts[i].SitterPlus1 = 0; // (a seat that falls away throws its sitter out)
         wreck.Wreck = true;
         wreck.Rebuild();
         // Moving as that bit of the old body moved.
@@ -285,6 +359,17 @@ public sealed class ConstructWorld
             c.Links[ln++] = link;
         }
         c.LinkCount = ln;
+        var wn = 0;
+        for (var k = 0; k < c.WireCount; k++)
+        {
+            var wire = c.Wires[k];
+            if (wire.From >= oldCount || wire.To >= oldCount || map[wire.From] < 0 || map[wire.To] < 0)
+                continue;
+            wire.From = (byte)map[wire.From];
+            wire.To = (byte)map[wire.To];
+            c.Wires[wn++] = wire;
+        }
+        c.WireCount = wn;
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         segMap[0] = 0;
@@ -350,7 +435,7 @@ public sealed class ConstructWorld
         Events.Add($"construct {c.Id}: {d.Name} broke off");
         // The broken part itself falls away too, as wrecked debris (scrap to salvage later), moving as it was.
         c.WorldFrame(p.Seg, out var q, out var t);
-        var debris = p with { Seg = 0, Broken = true, Health = 0 };
+        var debris = p with { Seg = 0, Broken = true, Health = 0, SitterPlus1 = 0 };
         c.PartBounds(part, out var mn, out var mx);
         var at = t + Vector3.Transform((mn + mx) * 0.5f, q);
         var vel = c.PointVel(at);
@@ -489,12 +574,18 @@ public sealed class ConstructWorld
 
     /// <summary>
     /// Keeps a player out of every construct: pushed out sideways, or stood on top when the feet are near a part's top
-    /// (then carried along with it). Returns the body stood on, or null. Players never move constructs (milestone 1),
-    /// except doors: a player walking into a door leaf swings it.
+    /// (then carried along with it: the body's motion and any joint's under it, a lift, a turntable). Returns the body
+    /// stood on, or null. Players never move constructs, except doors: a player walking into a door leaf swings it. On
+    /// the server (<paramref name="server"/>) it also notes who stands where (pressure plates, the load on a joint) and
+    /// the hardest push a moving part gave (<see cref="LastHitSpeed"/>: run-over damage, GameSandbox.cs).
     /// </summary>
-    public Construct? BlockPlayer(ref MoveState s, float height, bool pushDoors)
+    public Construct? BlockPlayer(ref MoveState s, float height, bool server, byte who = 255)
     {
+        var pushDoors = server;
         Construct? standing = null;
+        var standSeg = 0;
+        LastHitSpeed = 0;
+        LastHitBody = null;
         for (var bi = 0; bi < Bodies.Count; bi++)
         {
             var c = Bodies[bi];
@@ -533,6 +624,14 @@ public sealed class ConstructWorld
                             s.Velocity.Y = 0;
                         s.Grounded = true;
                         standing = c;
+                        standSeg = p.Seg;
+                        if (server)
+                        {
+                            if (p.D.Logic == CLogic.Plate)
+                                p.Stood = true;
+                            if (p.Seg > 0 && p.Seg <= Construct.MaxJoints)
+                                c.RiderBits[p.Seg] |= 1UL << (who & 63);
+                        }
                         continue;
                     }
                     var pushed = false;
@@ -573,7 +672,22 @@ public sealed class ConstructWorld
                         s.Position.X += nx * depth;
                         s.Position.Z += nz * depth;
                         var vn = s.Velocity.X * nx + s.Velocity.Z * nz;
-                        if (vn < 0)
+                        // A moving part (a car, a swinging arm) shoves the player along with it, and hits them as hard as it closes.
+                        var pv = (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest);
+                        var pn = pv.X * nx + pv.Z * nz;
+                        if (pn - vn > LastHitSpeed)
+                        {
+                            LastHitSpeed = pn - vn;
+                            LastHitMass = c.Mass;
+                            LastHitVel = pv;
+                            LastHitBody = c;
+                        }
+                        if (vn < pn && pn > 0)
+                        {
+                            s.Velocity.X += (pn - vn) * nx;
+                            s.Velocity.Z += (pn - vn) * nz;
+                        }
+                        else if (vn < 0)
                         {
                             s.Velocity.X -= vn * nx;
                             s.Velocity.Z -= vn * nz;
@@ -585,8 +699,14 @@ public sealed class ConstructWorld
                 }
             }
         }
-        if (standing != null && !standing.Anchored && !standing.Asleep)
-            s.Position += standing.PointVel(s.Position) * World.TickDt; // carried along
+        if (standing != null)
+        {
+            // Carried along: the body's motion, and (across) any joint's under the feet; a rising lift lifts them by the stand above.
+            var carry = standing.Anchored || standing.Asleep ? Vector3.Zero : standing.PointVel(s.Position);
+            if (standSeg > 0)
+                carry += standing.SegPointVel(standSeg, s.Position) * new Vector3(1, 0, 1);
+            s.Position += carry * World.TickDt;
+        }
         return standing;
     }
 
@@ -613,6 +733,8 @@ public sealed class ConstructWorld
         if (seg <= 0 || seg > c.JointCount)
             return;
         ref var j = ref c.Joints[seg - 1];
+        if (j.Motorised || j.Locked)
+            return; // a motor holds its joint, and a lock its hinge
         c.WorldFrame(j.ParentSeg, out var q, out var t);
         var axis = Vector3.Transform(j.Axis, q);
         var pivot = t + Vector3.Transform(j.Pivot, q);
@@ -643,9 +765,11 @@ public sealed class ConstructWorld
                 ConstructBuild.PlaceNew(this, def, Ground(q, l.X, l.Z), l.Yaw);
     }
 
-    /// <summary>One tick: physics, then anything that fell out of the world goes.</summary>
+    /// <summary>One tick: the logic (every construct in list order, every part in index order), physics, then anything that fell out of the world goes.</summary>
     public void Step(IWorldQuery query, float dt)
     {
+        foreach (var c in Bodies)
+            ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);
         for (var i = Bodies.Count - 1; i >= 0; i--)
             if (Bodies[i].Pos.Y < FallOutY)

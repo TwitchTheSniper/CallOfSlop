@@ -12,8 +12,25 @@ public struct CPart
     public float Health;
     public bool Broken; // at zero health with PartBreak.Disable: still there, does nothing
 
+    // Logic and seats (milestone 2; they move with the part when the arrays are compacted or split)
+    public byte Setting; // index into its def's Settings (the linking tool's R cycles it)
+    public byte State; // a switch's on/off, a lever's position (0..3), a toggle's output and last input, a timer's phase
+    public ushort Count; // ticks: a button's pulse left, a timer's or delay's count
+    public float Out, OutNext; // the signal it puts out (this tick's, and the next being worked out)
+    public ushort Keys; // a seat: its sitter's keys this tick (Buttons, then fire/aim/reload bits; 0x8000: someone sits there)
+    public byte SitterPlus1; // a seat: the player sitting in it, plus one (0: empty)
+    public bool Stood; // a pressure plate: a player stood on it this tick
+
+    public const ushort Occupied = 0x8000;
+
     public readonly ConstructPartDef D => ConstructParts.All[Def];
     public readonly bool Working => !Broken;
+}
+
+/// <summary>A wire (milestone 2): part <see cref="From"/>'s output goes into part <see cref="To"/>. Every wire carries the value its source had last tick.</summary>
+public struct CWire
+{
+    public byte From, To;
 }
 
 /// <summary>An attachment between two parts: which socket of each (a weld or a bolt; a hinge's leaf link carries a joint).</summary>
@@ -24,20 +41,30 @@ public struct CLink
 }
 
 /// <summary>
-/// A one-degree-of-freedom joint (milestone 1: the passive hinge). The parts of segment <c>index + 1</c> turn about
-/// <see cref="Axis"/> through <see cref="Pivot"/> (both in the rest frame) relative to segment <see cref="ParentSeg"/>.
-/// Reduced coordinates: the joint is an angle, so it never drifts apart; turntables and pistons (milestone 2) are the
-/// same record with a motor and, for a piston, a slide instead of a turn.
+/// A one-degree-of-freedom joint. The parts of segment <c>index + 1</c> turn about <see cref="Axis"/> through
+/// <see cref="Pivot"/> (both in the rest frame) relative to segment <see cref="ParentSeg"/>, or for a piston slide along
+/// <see cref="Axis"/>. Reduced coordinates: the joint is one number (an angle, or a piston's extension in metres), so the
+/// two pieces it links never drift apart and nothing can explode. Milestone 2's moving joints add a motor: a speed it
+/// moves at and a strength (N m, or N for a piston) it can push with against the load (gravity on everything it carries,
+/// players standing on it included).
 /// </summary>
 public struct CJoint
 {
-    public byte Hinge; // the hinge part
+    public byte Hinge; // the joint part (a hinge, a motorised hinge, a turntable, a piston, a steering pivot)
     public byte ParentSeg;
     public Vector3 Pivot, Axis; // rest frame
-    public float Angle, Vel; // radians, radians a second
+    public float Angle, Vel; // radians (a piston: metres), per second
     public float Min, Max;
     public bool Open; // the latch: where Interact last sent it (closed 0, open at the far limit)
     public float PrevAngle; // last tick (drawing blends)
+    public JointType Type;
+    public float Speed, Strength; // the motor (from the part)
+    public float Input; // the wires into its part, added up (last tick's values)
+    public bool Wired, Locked; // something is wired into it; a passive hinge's lock is on
+    public float Load; // the gravity load it held last tick (N m or N; the HUD and the self-test)
+
+    public readonly bool Slides => Type == JointType.Piston;
+    public readonly bool Motorised => Type != JointType.Passive;
 }
 
 /// <summary>A raycast wheel's cached set-up (rebuilt when the construct changes).</summary>
@@ -52,6 +79,8 @@ public struct CWheel
     public float Compression, PrevCompression; // metres
     public bool Touching;
     public float Spin; // radians (drawing)
+    public byte Seg; // the segment it hangs on (0, or a steering pivot's)
+    public bool Driven; // its suspension is on a differential the transmission feeds
 }
 
 /// <summary>
@@ -67,6 +96,7 @@ public sealed class Construct
     public const int MaxJoints = 8;
     public const int MaxPoints = 40; // contact points against the world
     public const int MaxWheels = 12;
+    public const int MaxWires = 64;
 
     public ushort Id;
     public readonly CPart[] Parts = new CPart[MaxParts];
@@ -75,6 +105,8 @@ public sealed class Construct
     public int LinkCount;
     public readonly CJoint[] Joints = new CJoint[MaxJoints];
     public int JointCount;
+    public readonly CWire[] Wires = new CWire[MaxWires];
+    public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
     public bool Anchored; // a working foundation holds it to the ground
@@ -101,9 +133,21 @@ public sealed class Construct
     public float Throttle, Steer, SteerInput;
     public bool Brake;
     public float Fuel;
-    public bool CanDrive; // seat + working engine + fuel path (the drivetrain)
+    public bool CanDrive; // seat + working engine + fuel path + transmission + driven wheels (the drivetrain)
     public int Engine = -1;
+    public int Transmission = -1;
+    public int DriveSeat = -1; // the seat whose sitter drives (the first working seat in the body); other seats carry passengers
     public string DriveProblem = ""; // why it can't drive (the HUD)
+
+    // Logic (milestone 2; ConstructLogic.cs)
+    public bool HasLogic; // any logic part or wire: the logic step runs
+    public bool EngineWired; // a signal runs the engine (it drives without a driver)
+    public float EngineSignal, BrakeSignal;
+    public uint SigHash, SigSent; // the signal parts' values (hashed) now and as last sent to clients
+    public readonly ulong[] RiderBits = new ulong[MaxJoints + 1]; // players (id & 63) standing on each segment this tick
+    public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
+    public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
+    public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
 
     // Caches
     public readonly Vector3[] Points = new Vector3[MaxPoints];
@@ -140,11 +184,66 @@ public sealed class Construct
             return;
         ref var j = ref Joints[seg - 1];
         SegPose(j.ParentSeg, out var pq, out var pt);
+        if (j.Slides)
+        {
+            q = pq;
+            t = pt + Vector3.Transform(j.Axis * j.Angle, pq);
+            return;
+        }
         var turn = Quaternion.CreateFromAxisAngle(j.Axis, j.Angle);
         // rest -> about the pivot -> the parent's pose
         var local = j.Pivot - Vector3.Transform(j.Pivot, turn);
         q = pq * turn;
         t = pt + Vector3.Transform(local, pq);
+    }
+
+    /// <summary>
+    /// The velocity a joint segment gives a world point on it (on top of the body's own): every joint up its chain, a
+    /// piston's slide or a turn about its axis. A player standing on a moving deck is carried by this.
+    /// </summary>
+    public Vector3 SegPointVel(int seg, Vector3 world)
+    {
+        var v = Vector3.Zero;
+        for (var guard = 0; seg > 0 && seg <= JointCount && guard <= MaxJoints; guard++)
+        {
+            ref var j = ref Joints[seg - 1];
+            if (j.Vel != 0)
+            {
+                WorldFrame(j.ParentSeg, out var q, out var t);
+                var axis = Vector3.Transform(j.Axis, q);
+                v += j.Slides ? axis * j.Vel : Vector3.Cross(axis * j.Vel, world - (t + Vector3.Transform(j.Pivot, q)));
+            }
+            seg = j.ParentSeg;
+        }
+        return v;
+    }
+
+    /// <summary>The joint whose part is <paramref name="part"/>, or -1.</summary>
+    public int JointOf(int part)
+    {
+        for (var j = 0; j < JointCount; j++)
+            if (Joints[j].Hinge == part)
+                return j;
+        return -1;
+    }
+
+    /// <summary>How many wires come into part <paramref name="part"/>.</summary>
+    public int WiresInto(int part)
+    {
+        var n = 0;
+        for (var k = 0; k < WireCount; k++)
+            if (Wires[k].To == part)
+                n++;
+        return n;
+    }
+
+    /// <summary>The seat a player sits in on this construct, or -1.</summary>
+    public int SeatOf(byte player)
+    {
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].SitterPlus1 == player + 1)
+                return i;
+        return -1;
     }
 
     /// <summary>A part box's frame in the world: rest-frame centre and half size (axis aligned there), and the world turn and offset of that frame.</summary>
@@ -289,6 +388,7 @@ public sealed class Construct
         BuildPoints();
         BuildWheels();
         BuildDrivetrain();
+        BuildSegments();
         Anchored = false;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
@@ -314,6 +414,49 @@ public sealed class Construct
 
     private bool _fuelSet;
 
+    /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
+    private void BuildSegments()
+    {
+        for (var s = 0; s <= MaxJoints; s++)
+        {
+            SegMass[s] = 0;
+            SegCom[s] = Vector3.Zero;
+        }
+        HasLogic = WireCount > 0;
+        for (var i = 0; i < PartCount; i++)
+        {
+            var d = Parts[i].D;
+            if (d.Role == PartRole.Logic || d.Role == PartRole.Seat && WireCount > 0)
+                HasLogic = true;
+            PartBounds(i, out var mn, out var mx);
+            var c = (mn + mx) * 0.5f;
+            for (int s = Parts[i].Seg, guard = 0; guard <= MaxJoints; guard++)
+            {
+                if (s < 0 || s > JointCount)
+                    break;
+                SegMass[s] += d.Mass;
+                SegCom[s] += c * d.Mass;
+                if (s == 0)
+                    break;
+                s = Joints[s - 1].ParentSeg;
+            }
+        }
+        for (var s = 0; s <= JointCount; s++)
+            if (SegMass[s] > 0)
+                SegCom[s] /= SegMass[s];
+        // The motors come from their parts (a client's copy too: the wire carries only the type).
+        for (var j = 0; j < JointCount; j++)
+        {
+            ref var jt = ref Joints[j];
+            if (jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)
+            {
+                jt.Type = jd.JointType;
+                jt.Speed = jd.MotorSpeed;
+                jt.Strength = jd.MotorStrength;
+            }
+        }
+    }
+
     /// <summary>Litres the working tanks hold.</summary>
     public float FuelCapacity()
     {
@@ -329,8 +472,11 @@ public sealed class Construct
 
     private bool IsRaycastWheel(int i)
     {
-        if (Parts[i].D.Role != PartRole.Wheel || Parts[i].Seg != 0)
+        if (Parts[i].D.Role != PartRole.Wheel)
             return false;
+        var seg = Parts[i].Seg;
+        if (seg != 0 && (seg > JointCount || Joints[seg - 1].Type != JointType.Steering || Joints[seg - 1].ParentSeg != 0))
+            return false; // a wheel rolls on the body, or on a steering pivot's segment
         return SuspensionOf(i) >= 0;
     }
 
@@ -347,7 +493,7 @@ public sealed class Construct
                 other = l.A;
             else
                 continue;
-            if (Parts[other].D.Role == PartRole.Suspension && Parts[other].Working && Parts[other].Seg == 0)
+            if (Parts[other].D.Role == PartRole.Suspension && Parts[other].Working && Parts[other].Seg == Parts[wheel].Seg)
                 return other;
         }
         return -1;
@@ -438,16 +584,25 @@ public sealed class Construct
                 Frequency = sd.Frequency,
                 Damping = sd.Damping,
                 Grip = d.Grip * d.Friction,
-                Steers = false,
+                Steers = Parts[i].Seg != 0, // (steering is a joint since milestone 2: a wheel on a steering pivot)
                 Compression = WheelCount < old ? keep[WheelCount] : 0,
+                Seg = Parts[i].Seg,
             };
             WheelCount++;
         }
-        // Steering: the wheels ahead of the centre of mass (forward is -Z in the body frame, as the seat faces).
-        var fwd = SeatForward();
-        for (var k = 0; k < WheelCount; k++)
-            Wheels[k].Steers = Vector3.Dot(Wheels[k].Centre - Com, fwd) > 0.3f;
-        // The wheels' own points are not in BuildPoints: rebuild those (a wheel whose suspension went is a plain box again).
+    }
+
+    /// <summary>A wheel's top-of-travel centre and axle in the body frame now (turned with its steering pivot).</summary>
+    public void WheelFrame(int k, out Vector3 centre, out Vector3 axle)
+    {
+        ref var w = ref Wheels[k];
+        centre = w.Centre;
+        axle = w.Axle;
+        if (w.Seg == 0)
+            return;
+        SegPose(w.Seg, out var q, out var t);
+        centre = Vector3.Transform(centre, q) + t;
+        axle = Vector3.Transform(axle, q);
     }
 
     /// <summary>Which way the vehicle faces in the body frame: the root seat's -Z (or -Z).</summary>
@@ -460,22 +615,27 @@ public sealed class Construct
     }
 
     /// <summary>
-    /// The drivetrain (decision: it works only when connected): a working seat, a working engine in the body, and fuel
-    /// from a working tank that touches the engine directly or through working fuel lines. Wheels on working
-    /// suspensions are driven. <see cref="DriveProblem"/> says what is missing.
+    /// The drivetrain (decision: it works only when connected): a working seat, a working engine in the body, fuel from a
+    /// working tank that touches the engine directly or through working fuel lines, a working transmission touching the
+    /// engine, and wheels on suspensions bolted to a working differential that the transmission feeds (touching it, or
+    /// through other differentials), directly or through a steering pivot. Only those wheels are driven; the rest roll.
+    /// <see cref="DriveProblem"/> says what is missing.
     /// </summary>
     private void BuildDrivetrain()
     {
         CanDrive = false;
         Engine = -1;
-        var seat = -1;
+        Transmission = -1;
+        DriveSeat = -1;
+        for (var k = 0; k < WheelCount; k++)
+            Wheels[k].Driven = false;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0 && Parts[i].Working)
             {
-                seat = i;
+                DriveSeat = i;
                 break;
             }
-        if (seat < 0)
+        if (DriveSeat < 0)
         {
             DriveProblem = CountRole(PartRole.Seat, false) > 0 ? "the seat is wrecked" : "no seat";
             return;
@@ -498,9 +658,73 @@ public sealed class Construct
                 : CountRole(PartRole.FuelTank) == 0 ? "no working fuel tank" : "no fuel line from the tank to the engine";
             return;
         }
-        if (WheelCount == 0)
+        // The transmission: on the engine.
+        var anyTransmission = false;
+        for (var k = 0; k < LinkCount && Transmission < 0; k++)
         {
-            DriveProblem = "no wheels on suspension";
+            ref var l = ref Links[k];
+            var other = l.A == Engine ? l.B : l.B == Engine ? l.A : -1;
+            if (other < 0 || Parts[other].D.Role != PartRole.Transmission)
+                continue;
+            anyTransmission = true;
+            if (Parts[other].Working)
+                Transmission = other;
+        }
+        if (Transmission < 0)
+        {
+            DriveProblem = anyTransmission ? "the transmission is wrecked" : CountRole(PartRole.Transmission, false) > 0 ? "the transmission isn't on the engine" : "no transmission";
+            return;
+        }
+        // The differentials it feeds (touching it, or each other), and the wheels on them.
+        Span<bool> fed = stackalloc bool[MaxParts];
+        Span<byte> queue = stackalloc byte[MaxParts];
+        int head = 0, tail = 0;
+        queue[tail++] = (byte)Transmission;
+        fed[Transmission] = true;
+        var anyDiff = false;
+        while (head < tail)
+        {
+            int at = queue[head++];
+            for (var k = 0; k < LinkCount; k++)
+            {
+                ref var l = ref Links[k];
+                var other = l.A == at ? l.B : l.B == at ? l.A : -1;
+                if (other < 0 || fed[other] || Parts[other].D.Role != PartRole.Differential)
+                    continue;
+                anyDiff = true;
+                if (!Parts[other].Working)
+                    continue;
+                fed[other] = true;
+                queue[tail++] = (byte)other;
+            }
+        }
+        var driven = 0;
+        for (var k = 0; k < WheelCount; k++)
+        {
+            int s = Wheels[k].Suspension;
+            var on = false;
+            for (var l = 0; l < LinkCount && !on; l++)
+            {
+                var other = Links[l].A == s ? Links[l].B : Links[l].B == s ? Links[l].A : -1;
+                if (other < 0)
+                    continue;
+                if (Parts[other].D.Role == PartRole.Differential && fed[other])
+                    on = true;
+                else if (Parts[other].D.Role == PartRole.Joint && Parts[other].Working && Parts[other].D.JointType == JointType.Steering)
+                    for (var l2 = 0; l2 < LinkCount && !on; l2++) // through a steering pivot bolted to a differential
+                    {
+                        var o2 = Links[l2].A == other ? Links[l2].B : Links[l2].B == other ? Links[l2].A : -1;
+                        on = o2 >= 0 && Parts[o2].D.Role == PartRole.Differential && fed[o2];
+                    }
+            }
+            Wheels[k].Driven = on;
+            if (on)
+                driven++;
+        }
+        if (driven == 0)
+        {
+            DriveProblem = WheelCount == 0 ? "no wheels on suspension" : !anyDiff ? "no differential on the transmission"
+                : CountRole(PartRole.Differential) == 0 ? "the differential is wrecked" : "no wheels on the differential";
             return;
         }
         CanDrive = true;

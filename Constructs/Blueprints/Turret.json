@@ -1,0 +1,46 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Turret",
+  "description": "A turntable on a post with an arm and a shield on it: the lever on the base turns it one way, the other, or holds it.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "top11",
+      "by": "-y"
+    },
+    {
+      "part": "Turntable",
+      "on": 1,
+      "socket": "+y",
+      "by": "base"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 2,
+      "socket": "top",
+      "by": "y-1"
+    },
+    {
+      "part": "Panel",
+      "on": 3,
+      "socket": "end-",
+      "by": "back"
+    },
+    {
+      "part": "Lever",
+      "on": 0,
+      "socket": "x+1",
+      "by": "-x"
+    }
+  ],
+  "wires": [
+    [
+      5,
+      2
+    ]
+  ]
+}

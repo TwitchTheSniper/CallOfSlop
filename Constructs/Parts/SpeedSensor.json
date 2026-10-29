@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Speed Sensor",
+  "description": "Puts out its construct's speed (m/s).",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#2f3a4a",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        0.04,
+        0.12
+      ],
+      "at": [
+        0,
+        0.11,
+        0
+      ],
+      "color": "#e07a30",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "speed"
+  }
+}

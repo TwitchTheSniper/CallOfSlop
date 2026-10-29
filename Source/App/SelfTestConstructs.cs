@@ -376,7 +376,7 @@ public static partial class SelfTest
         for (var k = 0; k < 20; k++)
         {
             s.Position += new Vector3(0, 0, -0.05f);
-            w.BlockPlayer(ref s, World.PlayerHeight, pushDoors: true);
+            w.BlockPlayer(ref s, World.PlayerHeight, server: true);
         }
         StepConstructs(w, 20);
         var pushed = gate.JointCount > 0 ? gate.Joints[0].Angle : 0;
@@ -456,15 +456,19 @@ public static partial class SelfTest
         Span<ConstructGhost> ghosts = stackalloc ConstructGhost[ConstructBuild.MaxGhosts];
         var wheelGhostsBare = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
         var beamGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Frame Block"), ghosts, car.Com, 10);
-        var eng = Step("Engine", b, "y+0", "-y", ConstructTool.Wrench);
-        var tank = Step("Fuel Tank", b, "y+3", "-y", ConstructTool.Wrench);
-        var l1 = Step("Fuel Line", eng, "+z", "-x", ConstructTool.Wrench);
+        var tank = Step("Fuel Tank", b, "y+0", "-y", ConstructTool.Wrench);
+        var eng = Step("Engine", b, "y+3", "-y", ConstructTool.Wrench);
+        var l1 = Step("Fuel Line", tank, "+z", "-x", ConstructTool.Wrench);
         Step("Fuel Line", l1, "+x", "-x", ConstructTool.Wrench);
-        var s0 = Step("Suspension", 0, "x-0", "mount", ConstructTool.Wrench);
+        Step("Transmission", eng, "+z", "-z", ConstructTool.Wrench);
+        var diff = Step("Differential", 0, "end+", "-z0", ConstructTool.Wrench);
+        var s0 = Step("Suspension", diff, "-x", "mount", ConstructTool.Wrench);
         var wheelGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
-        var s1 = Step("Suspension", 0, "x-3", "mount", ConstructTool.Wrench);
-        var s2 = Step("Suspension", b, "x+0", "mount", ConstructTool.Wrench);
-        var s3 = Step("Suspension", b, "x+3", "mount", ConstructTool.Wrench);
+        var s1 = Step("Suspension", diff, "+x", "mount", ConstructTool.Wrench);
+        var p0 = Step("Steering Pivot", 0, "x-0", "base", ConstructTool.Wrench);
+        var p1 = Step("Steering Pivot", b, "x+0", "base", ConstructTool.Wrench);
+        var s2 = Step("Suspension", p0, "leaf", "mount", ConstructTool.Wrench);
+        var s3 = Step("Suspension", p1, "leaf", "mount", ConstructTool.Wrench);
         // The wrong tool for a wheel is refused; then the right one.
         e.Hand(me).Held = ConstructParts.Need("Wheel").Id;
         e.SetTool(me, ConstructTool.Welder);
@@ -494,7 +498,6 @@ public static partial class SelfTest
         Want(e.Stand(w, me) != null && car.Driver == 255, "and stand up again");
         Line($"scripted build: {car.PartCount} parts, {w.Bodies.Count} body, drives {car.CanDrive}; ghost sockets for a wheel before any suspension {wheelGhostsBare}, after one {wheelGhosts}; for a frame block {beamGhosts}; edits: {e.Done.Count}");
         Want(wheelGhostsBare == 0 && wheelGhosts == 1 && beamGhosts > 10, "ghost sockets: a wheel goes only on a free suspension axle, a block on many frame faces");
-        _ = tank;
         foreach (var p in problems)
             Fail($"constructs: scripted build: {p}");
     }

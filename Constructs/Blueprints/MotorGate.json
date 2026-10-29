@@ -1,0 +1,62 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Motor Gate",
+  "description": "A gate whose door swings on a motorised hinge: the button on the post works it, through a toggle.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "top01",
+      "by": "-y"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Frame Block",
+      "on": 2,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 3,
+      "socket": "+x",
+      "by": "base"
+    },
+    {
+      "part": "Door",
+      "on": 4,
+      "socket": "leaf",
+      "by": "hang"
+    },
+    {
+      "part": "Button",
+      "on": 2,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Toggle",
+      "on": 1,
+      "socket": "-z",
+      "by": "+z"
+    }
+  ],
+  "wires": [
+    [
+      6,
+      7
+    ],
+    [
+      7,
+      4
+    ]
+  ]
+}

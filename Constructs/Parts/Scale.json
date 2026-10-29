@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scale",
+  "description": "Its inputs added up, times its factor (-1 reverses a signal).",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#30343a",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        0.04,
+        0.12
+      ],
+      "at": [
+        0,
+        0.11,
+        0
+      ],
+      "color": "#ffffff",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "scale",
+    "settings": [
+      -1,
+      0.5,
+      2,
+      0.1
+    ],
+    "labels": [
+      "x -1",
+      "x 0.5",
+      "x 2",
+      "x 0.1"
+    ],
+    "setting": 0
+  }
+}

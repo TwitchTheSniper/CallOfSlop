@@ -56,11 +56,16 @@ public static class ConstructBuild
             return "that part is wrecked";
         var ts = target.Sockets[socket];
         var ds = def.Sockets[defSocket];
-        if (ts.Kind != ds.Kind)
+        var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
+        if (ts.Kind != ds.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
             return "those don't fit together";
         if (c.SocketUsed(part, socket))
             return "something is already attached there";
+        if (def.HasJoint && defSocket == def.LeafIndex)
+            return $"a {def.Name} goes on by its base (its {def.LeafSocket} is what moves)";
         if (ts.Kind == SocketKind.Leaf && !((target.Role == PartRole.Hinge && def.Role == PartRole.Door) || (target.Role == PartRole.Door && def.Role == PartRole.Hinge)))
+            return "doors hang on hinges";
+        if (ds.Kind == SocketKind.Leaf && !onLeaf)
             return "doors hang on hinges";
         c.SocketAt(part, socket, out var at, out var dir);
         Span<byte> turns = stackalloc byte[4];
@@ -75,9 +80,11 @@ public static class ConstructBuild
         var rot = turns[((spin % n) + n) % n];
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At));
         var seg = c.Parts[part].Seg;
-        var newJoint = target.Role == PartRole.Hinge && ts.Kind == SocketKind.Leaf;
+        var newJoint = onLeaf;
         if (newJoint && c.JointCount >= Construct.MaxJoints)
             return $"at most {Construct.MaxJoints} joints a construct";
+        if (newJoint && c.JointOf(part) >= 0)
+            return "something already hangs on that joint";
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint };
         if (Blocked(c, def, pos, rot))
             return "something is in the way";
@@ -178,7 +185,7 @@ public static class ConstructBuild
         var d = c.DefOf(i);
         for (var s = 0; s < d.Sockets.Length; s++)
         {
-            if (c.SocketUsed(i, s) || d.Sockets[s].Kind != SocketKind.Struct)
+            if (c.SocketUsed(i, s) || d.Sockets[s].Kind != SocketKind.Struct || (d.HasJoint && s == d.LeafIndex))
                 continue;
             c.SocketAt(i, s, out var at, out var dir);
             for (var j = 0; j < c.PartCount; j++)
@@ -189,7 +196,7 @@ public static class ConstructBuild
                 var done = false;
                 for (var t = 0; t < od.Sockets.Length && !done; t++)
                 {
-                    if (od.Sockets[t].Kind != SocketKind.Struct || c.SocketUsed(j, t))
+                    if (od.Sockets[t].Kind != SocketKind.Struct || c.SocketUsed(j, t) || (od.HasJoint && t == od.LeafIndex)) // (a joint's leaf only takes what hangs on it)
                         continue;
                     c.SocketAt(j, t, out var oat, out var odir);
                     if (odir == Opposite(dir) && Vector3.DistanceSquared(oat, at) < 0.0004f)
@@ -202,6 +209,48 @@ public static class ConstructBuild
                     break;
             }
         }
+    }
+
+    public const float WireReach = 8f; // the longest wire (between the two parts' centres)
+
+    /// <summary>
+    /// Can part <paramref name="from"/>'s output be wired into part <paramref name="to"/>? Null when it can, else the reason
+    /// (the linking tool shows it): wires join an output (a seat, a control, a sensor, a gate) to an input (a joint, the
+    /// engine, a gate, a lamp...) of the same construct; a part can be wired to itself only if it is logic (a NOT on
+    /// itself is a clock); an input reader reads a seat.
+    /// </summary>
+    public static string? CanWire(ConstructWorld world, Construct c, int from, int to)
+    {
+        if (from < 0 || from >= c.PartCount || to < 0 || to >= c.PartCount)
+            return "no such part";
+        var fd = c.DefOf(from);
+        var td = c.DefOf(to);
+        if (c.Parts[from].Broken || c.Parts[to].Broken)
+            return "that part is wrecked";
+        if (!fd.HasOutput)
+            return $"a {fd.Name} has no output (wire from a seat, a control, a sensor or a gate)";
+        if (td.MaxInputs == 0)
+            return $"a {td.Name} takes no input";
+        if (from == to && td.Role != PartRole.Logic)
+            return "a part can't be wired to itself";
+        if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
+            return "an input reader reads a seat: wire it from one";
+        for (var k = 0; k < c.WireCount; k++)
+            if (c.Wires[k].From == from && c.Wires[k].To == to)
+                return "those are already wired";
+        if (c.WiresInto(to) >= td.MaxInputs)
+            return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
+        c.PartBounds(from, out var a0, out var a1);
+        c.PartBounds(to, out var b0, out var b1);
+        c.SegPose(c.Parts[from].Seg, out var qa, out var ta);
+        c.SegPose(c.Parts[to].Seg, out var qb, out var tb);
+        if (Vector3.Distance(ta + Vector3.Transform((a0 + a1) * 0.5f, qa), tb + Vector3.Transform((b0 + b1) * 0.5f, qb)) > WireReach)
+            return $"a wire reaches at most {WireReach:0} m";
+        if (c.WireCount >= Construct.MaxWires)
+            return $"at most {Construct.MaxWires} wires a construct";
+        if (world.TotalWires >= ConstructWorld.MaxTotalWires)
+            return "the world has all the wires it can take";
+        return null;
     }
 
     /// <summary>A new construct of one part standing on the ground at <paramref name="ground"/>, facing <paramref name="yaw"/>.</summary>
@@ -229,6 +278,8 @@ public static class ConstructBuild
     {
         public string Name = "", File = "", Description = "";
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
+        public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
+        public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2)
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -296,7 +347,7 @@ public static class ConstructBuild
                     foreach (var s in p.Value.EnumerateArray())
                     {
                         string part = "", sock = "", own = "";
-                        int on = -1, spin = 0;
+                        int on = -1, spin = 0, setting = -1;
                         foreach (var f in s.EnumerateObject())
                             switch (f.Name)
                             {
@@ -305,16 +356,26 @@ public static class ConstructBuild
                                 case "socket": sock = f.Value.GetString() ?? ""; break;
                                 case "by": own = f.Value.GetString() ?? ""; break;
                                 case "spin": spin = f.Value.GetInt32(); break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin)");
+                                case "setting": setting = f.Value.GetInt32(); break;
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
+                        bp.StepSettings.Add(setting);
                         k++;
                     }
                     break;
+                case "wires":
+                    foreach (var wire in p.Value.EnumerateArray())
+                    {
+                        if (wire.ValueKind != JsonValueKind.Array || wire.GetArrayLength() != 2)
+                            throw new ConstructPartException($"{file}: a wire is [from step, to step]");
+                        bp.Wires.Add((wire[0].GetInt32(), wire[1].GetInt32()));
+                    }
+                    break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -346,6 +407,7 @@ public static class ConstructBuild
             if (k == 0)
             {
                 partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(spin % Rot24.Count));
+                SetSetting(c, partOf[0], def, bp.StepSettings[0]);
                 continue;
             }
             var target = partOf[on];
@@ -371,9 +433,42 @@ public static class ConstructBuild
                 world.Remove(c);
                 return null;
             }
+            if (!SetSetting(c, partOf[k], def, bp.StepSettings[k]))
+            {
+                why = $"step {k}: a {def.Name} has no setting {bp.StepSettings[k]}";
+                world.Remove(c);
+                return null;
+            }
+        }
+        // The wires, through the linking tool's rules.
+        foreach (var (from, to) in bp.Wires)
+        {
+            if (from < 0 || from >= bp.Steps.Count || to < 0 || to >= bp.Steps.Count)
+            {
+                why = $"wire {from} -> {to}: no such step";
+                world.Remove(c);
+                return null;
+            }
+            if (CanWire(world, c, partOf[from], partOf[to]) is { } bad)
+            {
+                why = $"wire {from} -> {to} ({c.DefOf(partOf[from]).Name} to {c.DefOf(partOf[to]).Name}): {bad}";
+                world.Remove(c);
+                return null;
+            }
+            world.AddWire(c, partOf[from], partOf[to]);
         }
         c.Rebuild();
         return c;
+    }
+
+    private static bool SetSetting(Construct c, int part, ConstructPartDef def, int setting)
+    {
+        if (setting < 0)
+            return true;
+        if (setting >= def.Settings.Length)
+            return false;
+        c.Parts[part].Setting = (byte)setting;
+        return true;
     }
 
     /// <summary>A blueprint's construct set down standing on the ground at <paramref name="ground"/> (its lowest point there).</summary>

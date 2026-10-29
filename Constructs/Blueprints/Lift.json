@@ -1,0 +1,60 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Lift",
+  "description": "A deck on a piston on a foundation, with a step: a button on the deck and one on the foundation's side send it up or down, through a toggle.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Piston",
+      "on": 0,
+      "socket": "top11",
+      "by": "base"
+    },
+    {
+      "part": "Deck Plate",
+      "on": 1,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "z+1",
+      "by": "-z"
+    },
+    {
+      "part": "Toggle",
+      "on": 0,
+      "socket": "x+1",
+      "by": "-x"
+    },
+    {
+      "part": "Button",
+      "on": 0,
+      "socket": "x+2",
+      "by": "-x"
+    },
+    {
+      "part": "Button",
+      "on": 2,
+      "socket": "top33",
+      "by": "-y"
+    }
+  ],
+  "wires": [
+    [
+      5,
+      4
+    ],
+    [
+      6,
+      4
+    ],
+    [
+      4,
+      1
+    ]
+  ]
+}

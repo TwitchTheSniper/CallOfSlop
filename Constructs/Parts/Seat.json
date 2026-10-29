@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Seat",
-  "description": "A driver's seat. Sit with Interact; a seat makes a construct a vehicle.",
+  "description": "A seat. Sit with Interact: the first seat of a construct drives it, any other carries a passenger.",
   "role": "seat",
   "tool": "wrench",
   "attachSeconds": 1.5,
