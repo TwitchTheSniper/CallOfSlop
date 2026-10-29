@@ -128,6 +128,8 @@ public static unsafe partial class Program
         // The smoke test works on a throwaway copy and never touches the real save folder.
         _shotTool = args.Any(a => a.Equals("--light-shots", StringComparison.OrdinalIgnoreCase)); // (Program.LightShots.cs)
         var perfShot = args.Any(a => a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)); // (Program.Perf.cs)
+        Ui.BackendDraw = args.Any(a => a.Equals("--imgui-backend-draw", StringComparison.OrdinalIgnoreCase)); // the package's ImGui GL renderer (ImGuiRenderer.cs)
+        Ui.BackendNewFrame = args.Any(a => a.Equals("--imgui-backend-frame", StringComparison.OrdinalIgnoreCase)); // the GLFW backend's own NewFrame every frame (UiPlatformFrame.cs)
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
@@ -1295,9 +1297,11 @@ public static unsafe partial class Program
             perf.Dispose();
 
             perf = Perf.Measure(PerfArea.Ui);
-            Ui.BeginFrame();
+            using (Perf.Measure(PerfArea.UiNewFrame)) // (the UI's sub-areas: which part of a slow UI frame was slow)
+                Ui.BeginFrame();
             if (_settings.ShowFps)
                 FpsCounter.Draw(now);
+            var uiPart = Perf.Measure(PerfArea.UiMenus);
             if (_session is { } lobbyGame && InLobbyRoom)
             {
                 DrawLobbyRoomUi(lobbyGame, now); // Program.LobbyRoom.cs
@@ -1306,6 +1310,8 @@ public static unsafe partial class Program
             {
                 // While the weapon workbench is open over the match the player HUD is not drawn at all (the match keeps running).
                 var benchCovers = Ui.WorkbenchOpen;
+                uiPart.Dispose();
+                uiPart = Perf.Measure(PerfArea.UiHud);
                 if (!benchCovers)
                 {
                     DrawNameTags(g); // under the HUD windows (Program.NameTags.cs)
@@ -1314,6 +1320,8 @@ public static unsafe partial class Program
                     DrawFriendlyHitText(g, now); // "FRIENDLY" under the friendly hit marker (Program.FriendlyHit.cs)
                     Ui.DrawHud(g, now, _joinAddress, _settings);
                 }
+                uiPart.Dispose();
+                uiPart = Perf.Measure(PerfArea.UiMenus);
                 DrawBenchInMatch(now); // a Zombies workbench, open over the match (Program.Zombies.cs)
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
@@ -1325,8 +1333,12 @@ public static unsafe partial class Program
                 }
                 if (!benchCovers)
                 {
+                    uiPart.Dispose();
+                    uiPart = Perf.Measure(PerfArea.UiHud);
                     Ui.DrawKillCard(g, _deathCam, now, _settings); // after the loadout screen, so it can sit beside it
                     DrawChatUi(g, now); // the HUD chat and the mic indicator (Program.Voice.cs); chat can't open with the bench up
+                    uiPart.Dispose();
+                    uiPart = Perf.Measure(PerfArea.UiMenus);
                 }
                 switch (Ui.DrawPauseMenu(g, _settings))
                 {
@@ -1383,13 +1395,21 @@ public static unsafe partial class Program
                         StartSession(action);
                 }
             }
+            uiPart.Dispose();
+            uiPart = Perf.Measure(PerfArea.UiDev);
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
-            DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
             DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
-            Ui.EndFrame();
-            if (Ui.Thumbs.Count > 0)
-                DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
+            uiPart.Dispose();
+            using (Perf.Measure(PerfArea.UiPerf))
+                DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
+            using (Perf.Measure(PerfArea.UiDraw))
+            {
+                Ui.EndFrame();
+                Gfx.Rebind(); // (ImGui's renderer leaves its program unbound: ImGuiRenderer.cs)
+                if (Ui.Thumbs.Count > 0)
+                    DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
+            }
             perf.Dispose();
             Perf.Gpu?.Mark(PerfGpuPass.Ui);
 
@@ -1403,6 +1423,8 @@ public static unsafe partial class Program
                 _window.SwapBuffers();
             LimitFrame(); // Max FPS: waits out the rest of the frame, input is read right after (Program.FrameCap.cs)
             Perf.EndFrame(); // the frame time always; the areas and counters while the perf window is up (Source/Perf)
+            if (_perfShot)
+                PerfShotFrame(); // --perf-shot: slow frames logged with the area that spiked (Program.Perf.cs)
         }
     }
 

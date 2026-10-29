@@ -11,7 +11,11 @@ namespace CallOfSlop;
 public sealed partial class Ui : IDisposable
 {
     private GlfwBackend? _platform;
-    private OpenGlBackend? _renderer;
+    private OpenGlBackend? _renderer; // (only with --imgui-backend-draw: the package's renderer, to compare)
+    private ImGuiRenderer? _gl; // ImGui's lists drawn without reading GL state back (ImGuiRenderer.cs)
+
+    /// <summary>Draw with the package's OpenGlBackend (<c>--imgui-backend-draw</c>; the old path, for comparisons).</summary>
+    public static bool BackendDraw;
     private float _scale = 1f;
     private GlfwWindow? _window;
     private ImGuiStyle _baseStyle; // unscaled style, so rescaling never compounds
@@ -60,7 +64,10 @@ public sealed partial class Ui : IDisposable
 
         _platform = new GlfwBackend(window, GlfwBackend.ClientApi.OpenGL);
         SafeClipboard.Install(); // replaces the backend's paste hook, which crashes on an image clipboard (SafeClipboard.cs)
-        _renderer = new OpenGlBackend();
+        if (BackendDraw)
+            _renderer = new OpenGlBackend();
+        else
+            _gl = new ImGuiRenderer();
     }
 
     /// <summary>Automatic scale from the window height (1080p = 1.2x, 1440p = 1.6x) times the player's setting.</summary>
@@ -91,8 +98,8 @@ public sealed partial class Ui : IDisposable
         var target = TargetScale();
         if (MathF.Abs(target - _scale) > 0.01f)
             ApplyScale(target); // between frames, so ImGui never sees a half-changed style
-        _platform!.NewFrame();
-        _renderer!.NewFrame();
+        PlatformNewFrame(); // (UiPlatformFrame.cs: the backend's NewFrame without its per-frame monitor scan)
+        _renderer?.NewFrame();
         ImGui.NewFrame();
         _loadoutDrawn = false;
         Thumbs.Clear(); // re-added every frame by whatever draws them (loadout cards, the kill card)
@@ -103,7 +110,11 @@ public sealed partial class Ui : IDisposable
         if (!_loadoutDrawn)
             Preview = null; // the loadout screen closed: no gun preview to draw
         ImGui.Render();
-        _renderer!.RenderDrawData(ImGui.GetDrawData());
+        var dd = ImGui.GetDrawData();
+        if (_gl != null)
+            _gl.Render(dd);
+        else
+            _renderer!.RenderDrawData(dd);
         ImString.SharedStorage.Reset(); // strings built this frame are no longer needed
     }
 
@@ -712,6 +723,7 @@ public sealed partial class Ui : IDisposable
     public void Dispose()
     {
         _renderer?.Dispose();
+        _gl?.Dispose();
         _platform?.Dispose();
     }
 }
