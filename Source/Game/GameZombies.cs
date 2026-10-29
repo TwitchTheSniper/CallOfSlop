@@ -379,10 +379,11 @@ public sealed partial class Game
         return (World.WrapAngle(cartYaw + rel), Math.Clamp(pitch, CartPitchDown, CartPitchUp));
     }
 
-    private static bool NearBar(Player p, CartEntity c)
+    private bool NearBar(Player p, CartEntity c)
     {
         var d = c.Bar - p.Position;
-        return new Vector2(d.X, d.Z).Length() <= CartPickupRange && MathF.Abs(d.Y) < 1.5f;
+        return new Vector2(d.X, d.Z).Length() <= CartPickupRange && MathF.Abs(d.Y) < 1.5f
+            && ZReach(p, c.Bar, 0, c.Shape.BarHeight); // in reach and in sight of the bar (ZombiesReach.cs)
     }
 
     private void SetCartMode(Player owner, CartEntity c, CartMode mode, double now)

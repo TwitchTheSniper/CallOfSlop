@@ -579,6 +579,7 @@ public sealed partial class Game : IDisposable
 
         // Predict every pellet against what we see; the server rewinds to the same tick.
         var predictedHit = false;
+        _crowdPredictId = 0;
         foreach (var ray in ShotRays(def, origin, dir, spread, seed, _predictRays, groups)) // one per pellet (per barrel on built weapons, GameBuilder.cs)
         {
             var o = ray.Origin;
@@ -602,6 +603,8 @@ public sealed partial class Game : IDisposable
                 dist = ZombieRayDrawn(o, d, dist, out var zHit, BulletRadius(ray.Size)); // Zombies, as you see them (ZombieAI.cs); a fat round clips them as on the server
                 predictedHit |= zHit;
             }
+            if (CrowdRayDrawn(o, d, ref dist))
+                predictedHit = true; // the far crowd as you see it (ZombiesCrowdFx.cs)
             if (Enemies.Count > 0)
             {
                 dist = PveRayDrawn(o, d, dist, out var eHit, BulletRadius(ray.Size)); // Co-op enemies, as you see them (GamePve.cs)
@@ -1495,7 +1498,7 @@ public sealed partial class Game : IDisposable
                 turret = null;
                 ZombieShotAdd(zombie, ray.Damage * def.DamageMultAt(dist) * (zHead ? def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage) : 1f) * PenFactor(dist), zHead); // (Marksman Malt: head pellets)
             }
-            if (zombie == null && Crowd.Count > 0 && CrowdRayHit(o, d, ref dist, ray.Damage * def.DamageMultAt(dist) * PenFactor(dist), def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
+            if (zombie == null && Crowd.Total > 0 && CrowdRayHit(o, d, ref dist, ray.Damage, def, def.HeadMult * ZPerkMult(shooter, static d => d.HeadshotDamage)))
             {
                 hit = null; // a crowd zombie past the front (ZombiesCrowd.cs)
                 turret = null;
@@ -1570,7 +1573,7 @@ public sealed partial class Game : IDisposable
 
         if (Horde.Count > 0)
             flags |= ZombieShotApply(shooter, def, now);
-        flags |= CrowdShotApply(shooter, now); // crowd zombies hit (ZombiesCrowd.cs; nothing off crowd maps) // one damage event per zombie per trigger pull (then the gun's special ammo effects)
+        flags |= CrowdShotApply(shooter, def, now); // crowd zombies hit (ZombiesCrowd.cs; nothing off crowd maps) // one damage event per zombie per trigger pull (then the gun's special ammo effects)
         if (_pveShotCount > 0)
             flags |= PveShotApply(shooter, def.Id, now); // the same for co-op enemies (GamePve.cs)
 
@@ -1583,6 +1586,7 @@ public sealed partial class Game : IDisposable
             Audio.Shot(def, shooter.RenderEye);
         for (var i = 0; i < ends.Count; i++)
             AddTracer(TracerStart(shooter, def, barrels[i], now), ends[i], def, now, flags, shooter, _shotPenetrated ? origin : null); // from the muzzle that fired (GameMuzzle.cs)
+        CrowdShotFx(System.Runtime.InteropServices.CollectionsMarshal.AsSpan(ends), origin, flags); // blood in the far crowd (ZombiesCrowdFx.cs)
 
         _w.Begin(Msg.Shot).U8(shooter.Id).U8(def.Id).U8(flags).U8((byte)ends.Count);
         foreach (var end in ends)
@@ -1989,6 +1993,7 @@ public sealed partial class Game : IDisposable
                 if (shooter == LocalId)
                 {
                     OnOwnShotConfirmed(flags, now);
+                    CrowdOwnShotConfirmed(flags); // a kill in the far crowd sinks the zombie we saw hit (ZombiesCrowdFx.cs)
                     break; // we already drew and heard our own shot
                 }
                 if (!Players.TryGetValue(shooter, out var sp))
@@ -1999,6 +2004,7 @@ public sealed partial class Game : IDisposable
                 var shotBarrels = ReadShotBarrels(ref r, shotEnds.Length, _shotBarrelsIn ??= new byte[256]); // which barrel fired each (GameMuzzle.cs)
                 for (var i = 0; i < shotEnds.Length; i++)
                     AddTracer(TracerStart(sp, def, shotBarrels[i], now), shotEnds[i], def, now, flags, sp, through);
+                CrowdShotFx(shotEnds, sp.RenderEye, flags); // blood in the far crowd (ZombiesCrowdFx.cs)
                 break;
             }
             case (byte)Msg.ReloadFx when !IsServer && r.Has(2):

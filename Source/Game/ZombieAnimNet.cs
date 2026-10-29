@@ -134,7 +134,7 @@ public sealed partial class Game
         }
         z.AnimPrevPos = z.RenderPos;
         z.AnimPrevSet = true;
-        z.AnimMove = Math.Clamp(z.AnimSpeed / MathF.Max(0.3f, 0.6f * ZombieNominalSpeed(z.Speed) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f)), 0f, 1f);
+        z.AnimMove = Math.Clamp(z.AnimSpeed / (z.Slug ? MathF.Max(0.05f, 0.6f * ZRules.Limbs.SlugSpeed) : MathF.Max(0.3f, 0.6f * ZombieNominalSpeed(z.Speed) * (z.Limbs != 0 ? LimbSpeedMult(z) : 1f))), 0f, 1f); // (a slug's own slow speed: ZombieSlug.cs)
         if (z.State == ZState.Scaling)
         {
             // On a climbable face: the climbing cycle follows the height climbed (one cycle per 0.9 m), still is braced.

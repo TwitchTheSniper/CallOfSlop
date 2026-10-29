@@ -157,6 +157,17 @@ The prompt says what the interact key (**F** by default) does, with the price: "
 for `holdSeconds` (0.25 s) to buy; reviving and rebuilding boards go on while you hold it. Red: not enough points;
 grey: not possible now (needs the power, already owned...).
 
+**Reach** (`Source/Game/ZombiesReach.cs`, board item dev-use-height-limit-uh01). Every interactable (doors and debris,
+wall buys, the box, perks, the slot upgrade, the power, workbenches, slot machines, casino tables, the trader, salvage,
+windows, pickups, a downed teammate, the push cart's bar, map logic buttons and levers such as the bell) is in reach
+only when, besides its flat range: your eye is within 1.2 m over to 0.3 m under its height band (a thing on the floor:
+its spot to 1.2 m up; a wall buy: the floor to 0.4 m over its chalk; a door: its box; a button: its 0.5 m hot spot), and
+nothing solid stands between your eye and it (the thing's own prop doesn't count; window openings don't block). So
+nothing is usable from the floor above or below, or through a wall. The prompt and the server use the same rule (the
+server runs it on its own copy of you for every buy, bet, casino move, trader purchase and button), and co-op bots buy
+through it too. A map's interact point that no floor spot can reach fails the "Zombies use reach" self-test: move the
+point rather than loosening the rule.
+
 | Buyable | What it does | Price (proposed) |
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
@@ -1040,6 +1051,28 @@ Source/Game/ZombieLimbs.cs; numbers in the rules file's `"limbs"` section; self-
   and it climbs in through windows `crawlClimb` times slower. Players already walk through zombies, so you can step over
   one. Crawlers still path with the horde (the same flow fields and mover; the horde isn't held up by its slow members).
   Bots aim low at crawlers.
+- **The slug (board item dev-zombie-slug-zs02, 2026-10-28).** All four limbs gone (Source/Game/ZombieSlug.cs; self-test
+  "Zombie slugs"). It is still a crawler for everything above, and on top:
+  - *Moving.* The torso and head inch along at `slugSpeed` m/s (0.3 by default, whatever its speed class or type; plasma
+    still slows it), turning at `slugTurn` rad/s and always crawling along its facing. It follows the horde's flow field
+    like any zombie inside, but never jumps: stairs it takes slowly (the mover's step-up), a ledge or the bell pile stops
+    it and it waits at the bottom. It never climbs in through a window: one outside inches to its window's foot and lies
+    there (it doesn't tear boards or take a place in the window's queue); during a bell siege one outside waits.
+  - *Attacking.* A weak, slow bite only right at your feet: reach `slugReach` times a crawler's, damage `slugDamage`
+    times a crawler's, windup and time between bites `slugWindup` / `slugSwing` times a bite's, and only a target within
+    `slugAttackHeight` (0.4 m) of its feet.
+  - *Hit box.* The torso and head only, at ground height: 0.4 m high, from 0.1 m behind its feet to 1.0 m ahead. The head
+    is where a prone body's is, so a head shot still kills. Bots aim at 0.2 / 0.3 m.
+  - *The horde walks over it.* Slugs are left out of the horde's neighbour grid (`IHordeAgent.HordeSolid`), so the others
+    don't keep apart from them (and slugs aren't heard by gunfire or lures, nor crowd a spawner). Slugs don't count towards
+    the alive cap, so the spawning carries on. A slug that no standing player has seen (a clear line of sight within 60 m)
+    or been within `slugCullNear` m of for `slugCullSeconds` (45 s) is culled: gone with no kill credit, and the round's
+    count goes down as for a kill.
+  - *Points.* A kill scores as normal, plus `slugKillPoints` (0 by default: the developer's call).
+  - *Drawn.* Flat on its belly with an inchworm body wave (the hips hump up and draw in, then the chest stretches forward
+    with the head lifting to look ahead) and a side-to-side wriggle, one wave per 0.28 m crawled. Clients know a slug from
+    the limb bits, so the network is unchanged (protocol 74). Slugs never join a mass-horde crowd (only whole zombies are
+    demoted), so the crowd rig needs no slug pose. Zombie types that don't sever never become slugs.
 - **Gore.** A severed limb flies off as pooled gibs (its two parts in the zombie's colours and a little meat that leaves
   a splat, `Gibs.SpawnLimb`), at most `goreCap` limb pieces at once (the oldest reused), each gone after `goreSeconds`,
   with a squelch on the gore bus. Nothing flies with gore off (a flesh hit sound instead). A ragdoll leaves the lost

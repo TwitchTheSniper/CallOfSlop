@@ -9,13 +9,13 @@ namespace CallOfSlop;
 /// held back where the next cell is full). Particles further than <see cref="CrowdTuning.MassRange"/> +
 /// <see cref="CrowdTuning.MassHysteresis"/> from everyone merge into their cell; cells within
 /// <see cref="CrowdTuning.MassRange"/> of a player let theirs out as particles again; at most
-/// <see cref="CrowdTuning.MassPerTick"/> each way a tick. Mass zombies are unhurt (only an unhurt particle merges) and all
-/// have <see cref="MassHP"/>. <see cref="Total"/> = particles + mass, always.
+/// <see cref="CrowdTuning.MassPerTick"/> each way a tick. Only an unhurt particle merges; a mass zombie hurt by a shot or a
+/// blast keeps its health in the wound pool (HordeCrowd.MassHits.cs), every other one has <see cref="MassHP"/>. <see cref="Total"/> = particles + mass, always.
 /// <para>
 /// Zombie types (feat/zombie-types): the mass holds one count a cell. When types reach the mass, each cell takes a count
 /// per type (a second index: cell * kinds + kind) at the four places a count moves: <see cref="TickMass"/>'s merge
 /// (the particle's type), flux (each type's share) and release (the type the particle gets back), and
-/// <see cref="BlastMass"/> (kills per type for the credit). Nothing else reads the counts by type.
+/// <see cref="KillMass"/> (the kill's type for the credit). Nothing else reads the counts by type.
 /// </para>
 /// </summary>
 public sealed partial class HordeCrowd
@@ -86,6 +86,7 @@ public sealed partial class HordeCrowd
         _mNext = new int[n];
         _mFlux = new float[n];
         _mWalk = new bool[n];
+        SetupWounds(n); // (the mass's wounded: HordeCrowd.MassHits.cs)
         for (var r = 0; r < _mRows; r++)
             for (var c = 0; c < _mCols; c++)
             {
@@ -104,6 +105,7 @@ public sealed partial class HordeCrowd
         Array.Clear(MassVX);
         Array.Clear(MassVZ);
         Array.Clear(_mFlux);
+        ClearWounds();
         MassTotal = 0;
         _mergeN = 0;
     }
@@ -234,6 +236,8 @@ public sealed partial class HordeCrowd
                 continue;
             }
             _mFlux[c] -= move;
+            if (_wHead[c] >= 0)
+                MoveWounds(c, _mNext[c], move, u, _mNext[u]); // (the top slots go downstream, wounds and all)
             _mNext[c] -= move;
             _mNext[u] += move;
         }
@@ -272,7 +276,7 @@ public sealed partial class HordeCrowd
                 }
                 if (!Walkable(x, z) || Packed(x, z))
                     break; // (no room in the cell: they stay in the mass for now)
-                var p = Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, MassHP);
+                var p = Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, TakeTop(c, MassCount[c])); // (a wounded one comes out hurt)
                 if (p >= 0)
                     Born[p] = tick;
                 Note(2, x, z, 0);
@@ -313,45 +317,6 @@ public sealed partial class HordeCrowd
             return -1;
         var fc = CellOf(MinX + (u % _mCols + 0.5f) * _mCell, MinZ + (u / _mCols + 0.5f) * _mCell);
         return fc >= 0 && _cost[fc] < own ? u : -1;
-    }
-
-    /// <summary>
-    /// Server: a blast over the mass: in each mass cell whose middle the blast's damage there would kill a mass zombie,
-    /// the share of the cell the blast covers dies (at least one if the middle is inside the radius). Writes the kills
-    /// per cell into <paramref name="killedAt"/> (cell, count) pairs; returns how many pairs.
-    /// </summary>
-    public int BlastMass(Vector3 center, float radius, float maxDamage, Span<(int Cell, int Count)> killedAt)
-    {
-        if (MassTotal == 0 || MassCount.Length == 0)
-            return 0;
-        var reach = radius + _mCell * 0.71f;
-        var c0 = Math.Clamp((int)((center.X - reach - MinX) / _mCell), 0, _mCols - 1);
-        var c1 = Math.Clamp((int)((center.X + reach - MinX) / _mCell), 0, _mCols - 1);
-        var r0 = Math.Clamp((int)((center.Z - reach - MinZ) / _mCell), 0, _mRows - 1);
-        var r1 = Math.Clamp((int)((center.Z + reach - MinZ) / _mCell), 0, _mRows - 1);
-        var cover = MathF.Min(1f, MathF.PI * radius * radius / (_mCell * _mCell));
-        var n = 0;
-        for (var r = r0; r <= r1; r++)
-            for (var c = c0; c <= c1; c++)
-            {
-                var k = r * _mCols + c;
-                if (MassCount[k] == 0 || n == killedAt.Length)
-                    continue;
-                var cx = MinX + (c + 0.5f) * _mCell;
-                var cz = MinZ + (r + 0.5f) * _mCell;
-                var dist = new Vector3(cx - center.X, GroundAt(cx, cz) + 1.1f - center.Y, cz - center.Z).Length();
-                var inside = dist <= radius;
-                var dmg = maxDamage * MathF.Pow(MathF.Max(0f, 1f - MathF.Max(0f, dist - _mCell * 0.5f) / radius), 1.4f);
-                if (dmg < MassHP)
-                    continue;
-                var dead = Math.Min(MassCount[k], Math.Max(inside ? 1 : 0, (int)(MassCount[k] * cover * (inside ? 1f : 0.5f))));
-                if (dead <= 0)
-                    continue;
-                MassCount[k] -= dead;
-                MassTotal -= dead;
-                killedAt[n++] = (k, dead);
-            }
-        return n;
     }
 
     /// <summary>A mass cell's middle (world, on the ground).</summary>

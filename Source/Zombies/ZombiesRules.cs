@@ -1401,6 +1401,16 @@ public sealed class ZombiesRules
                             case "crawlDamage": l.CrawlDamage = Real(v, w, 0, 2); break;
                             case "crawlClimb": l.CrawlClimb = Real(v, w, 1, 10); break;
                             case "limbPoints": l.LimbPoints = Whole(v, w, 0, 1000); break;
+                            case "slugSpeed": l.SlugSpeed = Real(v, w, 0.05f, 2); break;
+                            case "slugTurn": l.SlugTurn = Real(v, w, 0.1f, 10); break;
+                            case "slugReach": l.SlugReach = Real(v, w, 0.1f, 2); break;
+                            case "slugDamage": l.SlugDamage = Real(v, w, 0, 2); break;
+                            case "slugWindup": l.SlugWindup = Real(v, w, 0.2f, 5); break;
+                            case "slugSwing": l.SlugSwing = Real(v, w, 0.2f, 5); break;
+                            case "slugAttackHeight": l.SlugAttackHeight = Real(v, w, 0.1f, 2); break;
+                            case "slugCullSeconds": l.SlugCullSeconds = Real(v, w, 5, 600); break;
+                            case "slugCullNear": l.SlugCullNear = Real(v, w, 1, 100); break;
+                            case "slugKillPoints": l.SlugKillPoints = Whole(v, w, 0, 1000); break;
                             case "goreSeconds": l.GoreSeconds = Real(v, w, 0.5f, 60); break;
                             case "goreCap": l.GoreCap = Whole(v, w, 0, Gibs.Capacity); break;
                             case "types":

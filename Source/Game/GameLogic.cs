@@ -878,6 +878,8 @@ public sealed partial class Game
             var t = Vector3.Dot(to, dir);
             if (t < 0 || t > e.Reach + LogicUseSlack || Vector3.DistanceSquared(eye + dir * t, e.At) > 0.5f * 0.5f || t >= bestT)
                 continue;
+            if (!LogicInReach(eye, e.At))
+                continue; // a floor above or below (the Zombies reach rule, ZombiesReach.cs)
             if (World.Query.Raycast(eye, dir, t - 0.3f, QueryFilter.All) < t - 0.35f)
                 continue; // a wall in the way
             bestT = t;
@@ -885,6 +887,9 @@ public sealed partial class Game
         }
         return best;
     }
+
+    /// <summary>The height part of the reach rule for a button or lever: its hot spot is a 0.5 m ball, so that is its band (ZombiesReach.cs).</summary>
+    internal static bool LogicInReach(Vector3 eye, Vector3 at) => eye.Y >= at.Y - 0.5f - ReachBelow && eye.Y <= at.Y + 0.5f + ReachAbove;
 
     /// <summary>The interact key at a button or lever: uses it. False if you're not looking at one.</summary>
     public bool TryUseLogic(double now)
@@ -932,6 +937,8 @@ public sealed partial class Game
             return false;
         if (Vector3.Distance(p.Eye, e.At) > e.Reach + 1.2f) // (a little slack for lag)
             return false;
+        if (!LogicInReach(p.Eye, e.At) || !ZClearSight(p.Eye, e.At))
+            return false; // the floor above or below, or through a wall (the client checks the same: LogicAlong)
         if (ServerTick < s.Ready[i])
             return false;
         var zombies = Mode == GameMode.Zombies && ZMap != null;
