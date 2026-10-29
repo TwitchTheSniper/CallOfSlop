@@ -18,6 +18,7 @@ audio_mix.json
 AudioMixes/
 Cache/
 Logs/
+DevEdits/
 stuck-spots*.json
 portable.txt
 update_check.txt

@@ -552,6 +552,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F8 | Open / close the Audio mixer debug window (see Audio mixer) |
 | F7 | Open / close the weapon tweak debug window (dev builds; see Weapon tweak window) |
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
+| F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Esc | Close the menu / release the mouse (click to recapture) |
@@ -778,6 +779,27 @@ A debug window for balancing weapons live: change any stat of any gun while you 
 **Buttons:** **Pause** freezes the graphs; **Copy snapshot** puts all of it as text on the clipboard (paste it into a bug report); **Write to log** writes the same text to `callofslop.log` as `[perf]` lines; **Corner overlay** switches to the overlay (fps, a small frame graph, the three busiest areas, GPU time, the tick and draw calls).
 
 **Cost:** closed, each timed area is one check of a flag and nothing is recorded but the frame time; open, each area costs two clock reads (tens of nanoseconds on Windows), nothing allocates per frame (the working set is read once a second), and the GPU timer makes no queries until the window first opens. Code: `Source/Perf/` (`Perf.cs` the scopes and history, `PerfGpu.cs` the GPU timer, `PerfCounters.cs`, `PerfStats.cs`), `Source/UI/UiPerf.cs`, `Source/App/Program.Perf.cs`; self-test section **Perf window**. `CallOfSlop.exe --perf-shot` plays a short single-player match, screenshots the window and the overlay (`smoke_perf_window.bmp`, `smoke_perf_overlay.bmp`, full size) and logs `[perf-shot]` lines, then quits (throwaway save copy, like the smoke test).
+
+### Look-at inspector and prop editor (dev)
+
+Two tools for testers reporting problems with models: name exactly what you're looking at, and fix a prop on the spot and send the fix. Dev builds always have them; a release build only with **Settings > Graphics > Allow the dev tools**. Closed, they cost a few checks a frame and allocate nothing.
+
+**Look-at inspector:** press **F6** (rebindable as *Look-at inspector*) in a match. A panel names what the crosshair is on, with its outline drawn over the world: a prop's name, file and the part you're on (part number, size, offset, rotation, colour, material, glass / glow, its `anim` type, axis, rpm and pivot), the placed copy's position, yaw and scale; a building's file, shell box number and whether it's a door or window glass; a plain map box's corners; or the terrain. It also names the **map op** that made it (`op #8 PlaceProp`, numbered from 1 in the map file's `ops` list, as the map loader's error messages count), the hit point and the surface normal. Things no single op made (foliage, Clutter, the boundary) say so. Part and box numbers count from 1, like the prop loader's messages (`part #3`).
+
+**Copy reference:** **F5** (rebindable as *Copy the look-at reference*) puts one short line on the clipboard for a Playtest Desk report, and works with the panel closed too, e.g. `Animated Props / Props/Animated/Anemometer.json "Anemometer" part #8 of 12 (anim spin y 90 rpm) / Maps/Dev/AnimatedProps.json op #8 PlaceProp / at (-33.8, 1.6, -61.4)`. The same text reads well dictated.
+
+**Prop editor:** point at a prop and press **F10** (rebindable as *Prop editor*; offline or hosting only, F10 or Esc closes it). It edits that prop live:
+- **Placed prop:** position, yaw and scale of the copy you pointed at.
+- **Parts:** pick a part in the list (outlined in blue in the world); change its size, offset, rotation, colour and material; **Add box**, **Duplicate**, **Delete**. Parts a prefab copied in with `use` are shown but not editable (edit the used prop).
+- **Animation:** the axis (x, y, z, -x, -y, -z), pivot and rpm (spin) or angle (swing); with *Change every part with the same anim block* on, a rotor's parts change together (the Animated Props map's wind sensor fixed in one click).
+- **Undo / Redo**, **Revert all**. Every edit is loaded with the real prop loader as you make it: a bad one (a zero size, a part sunk too far into the ground) is refused with the loader's reason and leaves the prop as it was.
+
+What you see is a preview on your PC only: every copy of the prop on the map changes, collisions stay as the map built them, and leaving the map puts everything back. Nothing is written until **Save package**, which never touches a shipped file: it writes a change package to `DevEdits/<yyyyMMdd-HHmmss>-<Prop>/` in the save folder (**Open folder** shows it), with
+- `edit.json` (format `call-of-slop-devedit/1`): the game build, map and map file, prop and prop file, the SHA-256 of the prop file it started from, your note, `propChanges` (every changed value: `{"path": "parts[2].anim.axis", "from": null, "to": "z"}`), `mapOps` (for a prop placed by a Prop op that you moved: the op number and the op `before` and `after`), and `placement` (the new position in world coordinates for a prop no single op placed);
+- the whole edited prop file at its own path (`Props/Animated/Anemometer.json`): copy it over the original to apply it;
+- `README.txt`, the same in words.
+
+Zip the folder and attach it to the Playtest Desk report. `CallOfSlop.exe --check-devedit <folder>` checks a package (or a folder of them): the prop file loads under the prop's name, each map op patch still matches the map file's op and the patched map loads. The `DevEdits` folder is not a save (never migrated, never in the tester zip). The "Dev tools" self-test section covers all of this.
 
 ### Text chat and voice chat
 
