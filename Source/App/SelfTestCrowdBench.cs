@@ -67,9 +67,16 @@ public static partial class SelfTest
             // The whole game update (every server tick in it), as the main loop runs it: its allocations.
             for (var k = 0; k < 10; k++)
                 g.Update(now += 1 / 60.0, 1 / 60f);
+            Perf.SetOn(true); // TEMP DIAG
+            Array.Clear(Perf.DiagAlloc);
             var u0 = GC.GetAllocatedBytesForCurrentThread();
             for (var k = 0; k < 60; k++)
+            {
                 g.Update(now += 1 / 60.0, 1 / 60f);
+                Perf.EndFrame();
+            }
+            Line("[TEMP DIAG] " + string.Join(", ", Enumerable.Range(0, Perf.Count).Where(a => Perf.DiagAlloc[a] > 0).Select(a => $"{Perf.Names[a]} {Perf.DiagAlloc[a]}")));
+            Perf.SetOn(false);
             Line($"crowd {size} {moment}: Game.Update allocated {(GC.GetAllocatedBytesForCurrentThread() - u0) / 60} B a frame over 60 frames");
             Sync();
             ZombieAnim.SetFrustum(view * proj);
