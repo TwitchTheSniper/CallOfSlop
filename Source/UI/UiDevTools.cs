@@ -43,14 +43,14 @@ public sealed partial class Ui
         if (ImGui.Begin("##lookat"u8, ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoInputs | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoSavedSettings
                                       | ImGuiWindowFlags.NoFocusOnAppearing | ImGuiWindowFlags.NoNav))
         {
-            ImGui.TextColored(Orange, $"LOOK-AT ({Keybinds.Name(closeBind)})");
+            ImGuiSafe.TextColored(Orange, $"LOOK-AT ({Keybinds.Name(closeBind)})");
             foreach (var line in details)
                 ImGui.Text(line);
             ImGui.Separator();
             ImGui.PushTextWrapPos(560 * _scale);
-            ImGui.TextColored(Dim, reference);
+            ImGuiSafe.TextColored(Dim, reference);
             ImGui.PopTextWrapPos();
-            ImGui.TextColored(Dim, hit.Kind == LookAtKind.Prop
+            ImGuiSafe.TextColored(Dim, hit.Kind == LookAtKind.Prop
                 ? $"{Keybinds.Name(copyBind)}: copy this line for a report.  {Keybinds.Name(editBind)}: edit this prop."
                 : $"{Keybinds.Name(copyBind)}: copy this line for a report.");
         }
@@ -160,18 +160,18 @@ public sealed partial class Ui
         ImGui.SetNextWindowBgAlpha(0.94f);
         if (ImGui.Begin("Prop editor###propeditor"u8, ref PropEditorOpen))
         {
-            ImGui.TextColored(Orange, $"{s.Def.Name}  -  {s.PropPath}");
-            ImGui.TextColored(Dim, $"Placed prop #{s.Instance + 1} on {s.Map.Name} ({LookAt.MapPath(s.Map)} {LookAt.OpText(s.Map, s.Map.FileOpOfProp(s.Instance))}). {Keybinds.Name(bind)} or Esc closes.");
-            ImGui.TextColored(Dim, "Live on this PC only: every copy of this prop changes; collisions stay as the map built them. Nothing is written until Save package."u8);
+            ImGuiSafe.TextColored(Orange, $"{s.Def.Name}  -  {s.PropPath}");
+            ImGuiSafe.TextColored(Dim, $"Placed prop #{s.Instance + 1} on {s.Map.Name} ({LookAt.MapPath(s.Map)} {LookAt.OpText(s.Map, s.Map.FileOpOfProp(s.Instance))}). {Keybinds.Name(bind)} or Esc closes.");
+            ImGuiSafe.TextColored(Dim, "Live on this PC only: every copy of this prop changes; collisions stay as the map built them. Nothing is written until Save package."u8);
             DrawEditToolbar(s, now);
             if (s.Error.Length > 0)
             {
                 ImGui.PushTextWrapPos(0);
-                ImGui.TextColored(Red, "Refused: " + s.Error);
+                ImGuiSafe.TextColored(Red, "Refused: " + s.Error);
                 ImGui.PopTextWrapPos();
             }
             if (now - _peMsgAt < 6 && _peMsg.Length > 0)
-                ImGui.TextColored(Green, _peMsg);
+                ImGuiSafe.TextColored(Green, _peMsg);
             ImGui.Separator();
             DrawPlacement(s, now);
             ImGui.Separator();
@@ -250,7 +250,7 @@ public sealed partial class Ui
         var why = "";
         var patch = s.PlacementChanged ? s.MapOpPatch(out why) : null;
         if (s.PlacementChanged)
-            ImGui.TextColored(Dim, patch is { } p ? $"Saved as a patch of map op #{p.OpNumber}." : why);
+            ImGuiSafe.TextColored(Dim, patch is { } p ? $"Saved as a patch of map op #{p.OpNumber}." : why);
     }
 
     private void DrawPartList(PropEditSession s)
@@ -270,7 +270,7 @@ public sealed partial class Ui
     {
         var i = _peSel;
         var part = s.Def.Parts[i];
-        ImGui.TextColored(Orange, $"Part #{i + 1} of {s.Def.Parts.Count}");
+        ImGuiSafe.TextColored(Orange, $"Part #{i + 1} of {s.Def.Parts.Count}");
         if (ImGui.Button("Add box"u8) && s.AddPart() is var added and >= 0)
             _peSel = added;
         ImGui.SameLine();
@@ -285,7 +285,7 @@ public sealed partial class Ui
         {
             s.PartJson(i, out var why);
             ImGui.PushTextWrapPos(0);
-            ImGui.TextColored(Dim, why);
+            ImGuiSafe.TextColored(Dim, why);
             ImGui.PopTextWrapPos();
             return;
         }
@@ -318,7 +318,7 @@ public sealed partial class Ui
         ImGui.Separator();
         if (part.Anim is not { } anim)
         {
-            ImGui.TextColored(Dim, "No \"anim\" block: a still part."u8);
+            ImGuiSafe.TextColored(Dim, "No \"anim\" block: a still part."u8);
             return;
         }
         ImGui.Text($"Animation: {LookAt.AnimText(part)}");
@@ -356,6 +356,6 @@ public sealed partial class Ui
         var changes = s.PropChanges();
         if (changes.Count > 0 && ImGui.CollapsingHeader($"{changes.Count} change(s) to the prop file###pechanges", ImGuiTreeNodeFlags.None))
             foreach (var (path, from, to) in changes)
-                ImGui.TextColored(Dim, $"{path}: {from?.ToJsonString() ?? "(none)"} -> {to?.ToJsonString() ?? "(removed)"}");
+                ImGuiSafe.TextColored(Dim, $"{path}: {from?.ToJsonString() ?? "(none)"} -> {to?.ToJsonString() ?? "(removed)"}");
     }
 }
