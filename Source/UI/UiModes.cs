@@ -251,11 +251,8 @@ public sealed partial class Ui
                         ImGui.TableNextRow();
                         ImGui.TableNextColumn();
                         var tag = mode.ScoreboardTag(game, p);
-                        var carrier = (tag.Length > 0 ? " " + tag : "")
-                                      + (mode.TeamBased && p.Bot == null && p.TeamChoice < 2 ? " *" : ""); // * picked their team (UiTeams.cs)
-                        ImGuiSafe.TextColored(Rgba(p.Color), (p.Id == game.LocalId ? $"{game.NameOf(p.Id)} (you)" : game.NameOf(p.Id)) + game.RankTag(p) + carrier + game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)); // talking / muted (GameVoice.cs)
                         var picked = mode.TeamBased && p.Bot == null && p.TeamChoice < 2; // * picked their team (UiTeams.cs)
-                        ImGuiSafe.TextColored(Rgba(p.Color), $"{game.NameOf(p.Id)}{(p.Id == game.LocalId ? " (you)" : "")}{(tag.Length > 0 ? " " : "")}{tag}{(picked ? " *" : "")}");
+                        ImGuiSafe.TextColored(Rgba(p.Color), $"{game.NameOf(p.Id)}{(p.Id == game.LocalId ? " (you)" : "")}{game.RankTag(p)}{(tag.Length > 0 ? " " : "")}{tag}{(picked ? " *" : "")}{game.VoiceTag(p, Brutal.GlfwApi.Glfw.Time)}"); // talking / muted (GameVoice.cs)
                         ImGui.TableNextColumn();
                         DrawLevelCell(game, p);
                         var (cell1, cell2) = mode.ScoreboardCells(game, p);
