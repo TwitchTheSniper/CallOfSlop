@@ -618,7 +618,7 @@ internal sealed partial class BuildingGenerator
             var above = _floors[f + 1].Rooms.SelectMany(x => x.Rects).ToList();
             var exposed = BRect.Subtract(rooms.SelectMany(x => x.Rects), above);
             var y = _level[f + 1];
-            foreach (var p in exposed)
+            foreach (var p in BRect.Subtract(exposed, OutsideWallsThrough(f + 1)))
                 Add(p.X0, y - Slab, p.Z0, p.X1, y, p.Z1, RoofSurface);
             if (exposed.Count > 0)
             {
@@ -650,7 +650,9 @@ internal sealed partial class BuildingGenerator
             return;
         if (_roof != RoofKind.Flat && _holesIn[top + 1].Count > 0)
             throw new BuildingFileException($"building \"{_def.Name}\": stairs onto the roof need a flat roof");
-        foreach (var p in BRect.Subtract(rects, _holesIn[top + 1]))
+        // Inside the outside walls, like the floors (they run up to the roof's top; a stairwell onto the roof would show
+        // the slab's edge in the wall's face).
+        foreach (var p in BRect.Subtract(rects, _holesIn[top + 1].Concat(OutsideWallsThrough(top + 1))))
             Add(p.X0, y - Slab, p.Z0, p.X1, y, p.Z1, RoofSurface);
         if (_roof == RoofKind.Flat)
         {

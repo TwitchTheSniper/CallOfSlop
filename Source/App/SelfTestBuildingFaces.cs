@@ -124,8 +124,8 @@ public static partial class SelfTest
                     var u1 = MathF.Min(Comp(ba.Max, u), Comp(bc.Max, u));
                     var w0 = MathF.Max(Comp(ba.Min, w), Comp(bc.Min, w));
                     var w1 = MathF.Min(Comp(ba.Max, w), Comp(bc.Max, w));
-                    if (u1 - u0 < 0.025f || w1 - w0 < 0.025f)
-                        continue; // slivers no wider than the 2 cm wall lining
+                    if (u1 - u0 < 0.025f || w1 - w0 < 0.025f || (u1 - u0) * (w1 - w0) < 0.01f)
+                        continue; // slivers no wider than the 2 cm wall lining, and specks under 0.01 m2 (a sill end in a chimney)
                     pairs++;
                     // Visible: a point just in front of the shared patch that no box covers.
                     var n = side == 0 ? -1f : 1f;

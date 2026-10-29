@@ -204,8 +204,12 @@ def block(x0, y0, z0, x1, y1, z1, color):
 
 
 # atrium walkway floors (tiles, flush with the building floors); the middle between the bridges is left to the site
+# They stop at the walls' faces (a half-wall inset at the courtyard's edges): run into the walls, their tops would share
+# the door thresholds' tops and flicker (z-fighting).
+def _inset(v):
+    return v + 0.15 if v in (AX0, AZ0) else v - 0.15 if v in (AX1, AZ1) else v
 for (x0, z0, x1, z1) in ((AX0, AZ0, AX1, -VZ), (AX0, VZ, AX1, AZ1), (AX0, -VZ, -12.0, VZ), (12.0, -VZ, AX1, VZ)):
-    block(x0, 0.0, z0, x1, 0.1, z1, {"color": "$floor", "material": "tiles"})
+    block(_inset(x0), 0.0, _inset(z0), _inset(x1), 0.1, _inset(z1), {"color": "$floor", "material": "tiles"})
 # balconies round the void and the two bridges (no automatic railings: they'd close the joins)
 for r in ((AX0, AZ0, AX1, -VZ), (AX0, VZ, AX1, AZ1), (AX0, -VZ, -VX, VZ), (VX, -VZ, AX1, VZ)) + tuple((b0, -VZ, b1, VZ) for b0, b1 in BRIDGES):
     X.append({"type": "balcony", "rect": [float(v) for v in r], "floor": 1, "railing": 0, "color": {"color": "$floor", "material": "tiles"}})
@@ -263,7 +267,7 @@ for z in (AZ0, AZ1):
 # entrance canopy, the facade band, the loading dock's bumper rail
 X.append({"type": "awning", "rect": [-6.0, 26.0, 6.0, 29.0], "height": 3.8, "posts": True, "color": "$trim"})
 for (x0, x1, z) in ((-42.0, -4.0, 23.0), (4.0, 42.0, 23.0), (-4.0, 4.0, 26.0)):
-    block(x0 - 0.15, 7.0, z + 0.12, x1 + 0.15, 7.7, z + 0.3, "$band")
+    block(x0 - 0.15, 7.0, z + 0.15, x1 + 0.15, 7.7, z + 0.3, "$band")  # from the wall's face: not into it (its ends would show in the side walls)
 block(-4.0, 0.0, -29.5, 10.0, 0.3, -29.15, "#2a2a2e")
 X += [
     {"type": "prop", "name": "Rooftop HVAC Unit", "at": [-30.0, 0, -12.0], "onRoof": True},

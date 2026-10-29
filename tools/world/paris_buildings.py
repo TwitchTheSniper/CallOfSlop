@@ -112,9 +112,9 @@ floors.append({
 })
 h_extras = [
     {"type": "balcony", "floor": 2, "rect": [-6, 5.15, 6, 6.05], "railing": 1.0, "color": {"color": "#2a2a2a", "material": "metal"}},
-    {"type": "block", "min": [-6.15, 4.15, 5.12], "max": [6.15, 4.45, 5.36], "color": "$trim"},              # first-floor cornice
+    {"type": "block", "min": [-6.15, 4.15, 5.15], "max": [6.15, 4.45, 5.36], "color": "$trim"},              # first-floor cornice
     {"type": "block", "min": [-6.1, 3.35, 5.15], "max": [1.35, 4.15, 5.3], "color": "$front"},               # shop fascia
-    {"type": "block", "min": [-6.15, 16.85, 5.12], "max": [6.15, 17.15, 5.42], "color": "$trim"},            # main cornice under the terrace
+    {"type": "block", "min": [-6.15, 16.85, 5.15], "max": [6.15, 17.15, 5.42], "color": "$trim"},            # main cornice under the terrace
     {"type": "block", "min": [-6.0, 20.1, -3.2], "max": [-5.2, 24.4, -1.4], "color": {"color": "$wall", "material": "concrete"}},
     {"type": "block", "min": [5.2, 20.1, -3.2], "max": [6.0, 24.4, -1.4], "color": {"color": "$wall", "material": "concrete"}},
     {"type": "prop", "name": "Chimney Pot Stack", "at": [-5.6, 24.4, -2.3], "yaw": 90, "scale": 0.95},
@@ -246,8 +246,8 @@ write("Buildings/CafeBrasserie/building.json", {
         {"type": "balcony", "floor": 1, "rect": [6.15, 2.2, 7.0, 4.6], "railing": 1.0, "color": {"color": "#2a2a2a", "material": "metal"}},
         {"type": "block", "min": [-1.5, 3.35, 5.15], "max": [6.32, 4.15, 5.32], "color": "$front"},
         {"type": "block", "min": [6.15, 3.35, -1.0], "max": [6.32, 4.15, 5.32], "color": "$front"},
-        {"type": "block", "min": [-6.15, 4.15, 5.12], "max": [6.4, 4.42, 5.4], "color": "$trim"},
-        {"type": "block", "min": [6.12, 4.15, -5.15], "max": [6.4, 4.42, 5.4], "color": "$trim"},
+        {"type": "block", "min": [-6.15, 4.15, 5.15], "max": [6.4, 4.42, 5.4], "color": "$trim"},
+        {"type": "block", "min": [6.15, 4.15, -5.15], "max": [6.4, 4.42, 5.4], "color": "$trim"},
         {"type": "prop", "name": "Chimney Pot Stack", "at": [2.0, 0, -4.3], "onRoof": True},
         {"type": "prop", "name": "Rooftop Condenser", "at": [4.2, 0, 1.5], "onRoof": True, "yaw": 90},
         {"type": "prop", "name": "Bistro Table", "at": [0.6, 7.6]},
