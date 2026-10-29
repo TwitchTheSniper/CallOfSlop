@@ -39,7 +39,7 @@ public static partial class SelfTest
                 walled = w;
             }
         }
-        if (cathedral is not { Zombies: { } czm } || fronts == null || walled == null)
+        if (cathedral is not { Zombies: not null } || fronts == null || walled == null)
         {
             Fail($"Zombies use reach: '{CathedralName}' is missing");
             return;
@@ -106,7 +106,7 @@ public static partial class SelfTest
                 Fail($"{CathedralName}: the server changed {pk.T.What}'s bet from the floor {label}");
         }
         if (pk.Above == null || pk.Below == null)
-            ZLine($"  (only a floor {(pk.Above == null ? "below" : "above")} the chosen machine)");
+            Fail($"{CathedralName}: no machine with a floor both above and below it (only {(pk.Above == null ? "below" : "above")} {pk.T.What})");
 
         // Through a wall: a spot in flat range and at the right height whose sight line a wall cuts.
         var wall = walled.FirstOrDefault(x => x.T.Kind is ZUseKind.SlotMachine or ZUseKind.Perk or ZUseKind.Workbench or ZUseKind.Box or ZUseKind.WallBuy or ZUseKind.Casino);
