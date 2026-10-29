@@ -194,7 +194,10 @@ public static class ZombieAnim
     public static float StrideHalf(ZSpeed s) => s switch { ZSpeed.Sprint => 0.46f, ZSpeed.Run => 0.33f, _ => 0.24f };
 
     /// <summary>Half a step's length with <paramref name="limbs"/> lost: a crawl's pull is short, a hop shorter than a stride.</summary>
-    public static float StrideHalf(ZSpeed s, byte limbs) => (limbs & 12) == 12 ? 0.16f : (limbs & 12) != 0 ? StrideHalf(s) * 0.6f : StrideHalf(s);
+    public static float StrideHalf(ZSpeed s, byte limbs) => limbs == 15 ? SlugStrideHalf : (limbs & 12) == 12 ? 0.16f : (limbs & 12) != 0 ? StrideHalf(s) * 0.6f : StrideHalf(s);
+
+    /// <summary>A slug's (no limbs) half wave: one body wave covers four of these (about one a second at its speed).</summary>
+    public const float SlugStrideHalf = 0.07f;
 
     /// <summary>Beyond this distance limbs are drawn as one box each (today's count of boxes).</summary>
     public static float LodRange = 28f;
@@ -351,7 +354,9 @@ public static class ZombieAnim
                 ScaleTargets(a, look, out t);
                 break;
             default:
-                if ((a.Limbs & 12) == 12)
+                if (a.Limbs == 15)
+                    Slug(a, look, out t);
+                else if ((a.Limbs & 12) == 12)
                     Crawl(a, look, out t);
                 else
                 {
@@ -512,6 +517,32 @@ public static class ZombieAnim
             else
                 t.HandL = hand;
         }
+    }
+
+    /// <summary>
+    /// No limbs at all: a slug. Flat on its belly, it inches along like an inchworm: the hips bunch up under a hump in the
+    /// back, then the chest lifts and stretches forward and the hips are dragged after it, with a side-to-side wriggle
+    /// and the head lifting to look ahead at each stretch (the wave keyed to how far it moves).
+    /// </summary>
+    private static void Slug(in ZombieAnimInput a, in ZombieLook look, out ZombieTargets t)
+    {
+        var amp = Math.Clamp(a.Move, 0, 1);
+        var idle = 0.25f * (1 - amp); // lying still, it still heaves a little
+        var g = a.Gait + idle * a.Time * 2f;
+        var w = amp + idle;
+        var sn = MathF.Sin(g);
+        var cs = MathF.Cos(g);
+        t = default;
+        t.Pitch = 1.47f - 0.1f * w * MathF.Max(0, cs); // the chest comes up off the floor as it stretches
+        t.Pelvis = new Vector3(0, 0.15f + 0.06f * w * MathF.Max(0, sn), 0.12f + 0.09f * w * sn); // the hump: hips up and drawn in
+        t.Roll = 0.12f * w * MathF.Sin(g + 0.6f);
+        t.Twist = 0.16f * w * sn;
+        t.HeadRoll = look.HeadRoll * 0.4f - 0.1f * w * sn;
+        t.HeadNod = -1.12f + 0.16f * w * MathF.Max(0, cs) + 0.04f * MathF.Sin(a.Time * 0.4f);
+        t.FootR = new Vector3(HipX, 0.1f, 0.75f); // (no legs to draw)
+        t.FootL = new Vector3(-HipX, 0.1f, 0.75f);
+        t.HandR = new Vector3(ShoulderX, 0.12f, -0.45f); // (no arms either)
+        t.HandL = new Vector3(-ShoulderX, 0.12f, -0.45f);
     }
 
     /// <summary>No arms: it bites. The body lunges forward and the head snaps at you, timed like the swipe.</summary>

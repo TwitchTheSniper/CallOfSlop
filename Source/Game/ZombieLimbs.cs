@@ -34,6 +34,15 @@ public sealed partial class Zombie
     /// <summary>Both legs gone: it crawls (slower, lower, a crawler-sized hit box).</summary>
     public bool Crawler => (Limbs & Game.LegsMask) == Game.LegsMask;
 
+    /// <summary>
+    /// All four limbs gone: a slug (a crawler too). The torso and head inch along the ground, very slowly; it can't climb
+    /// windows or ledges, bites only at your feet, and the horde walks over it (<see cref="Game.SlugThink"/>).
+    /// </summary>
+    public bool Slug => Limbs == Game.AllLimbs;
+
+    /// <summary>Server: when a player last saw this slug or was near it (a slug stranded unseen for long is culled).</summary>
+    public double SlugSeenAt;
+
     /// <summary>Arms it still has (0-2) and legs (0-2).</summary>
     public int ArmsLeft => 2 - ((Limbs & 1) + ((Limbs >> 1) & 1));
 
@@ -56,6 +65,9 @@ public sealed partial class Game
     /// <summary>Limbs severed on this PC (gore thrown) and limbs the server took off (self-test, logs).</summary>
     public long ZLimbsShown, ZLimbsSevered;
 
+    /// <summary>Server: zombies that became slugs, and slugs culled stranded and unseen (self-test, logs).</summary>
+    public long ZSlugs, ZSlugsCulled;
+
     /// <summary>Server: a new zombie's limb health (its speed class's share; a class that ignores dismemberment never loses one).</summary>
     private void InitLimbs(Zombie z)
     {
@@ -75,13 +87,28 @@ public sealed partial class Game
     /// <summary>A zombie's hit box with its feet at <paramref name="feet"/>: a player's, scaled about the feet by its type's width and height (ZombieTypes.cs).</summary>
     public static Box ZombieBox(Zombie z, Vector3 feet, float yaw)
     {
-        var b = World.Hitbox(feet, ZombieStance(z), yaw);
+        var b = z.Slug ? SlugBox(feet, yaw) : World.Hitbox(feet, ZombieStance(z), yaw);
         var k = z.Kind;
         if (k.Width == 1f && k.Height == 1f)
             return b;
         var c = b.Center - feet;
         return new Box(feet + new Vector3(c.X * k.Width, c.Y * k.Height, c.Z * k.Width), new Vector3(b.Half.X * k.Width, b.Half.Y * k.Height, b.Half.Z * k.Width));
     }
+
+    /// <summary>
+    /// A slug's hit box: the torso and head only, at ground height (0.4 m high), from just behind its feet to its head out
+    /// front. The head is where a prone body's is (<see cref="World.IsHeadshot"/>: 0.55 m ahead, from 0.2 m up), so a head
+    /// shot still kills.
+    /// </summary>
+    public static Box SlugBox(Vector3 feet, float yaw)
+    {
+        var f = World.FlatForward(yaw);
+        var half = new Vector3(MathF.Abs(f.X) * SlugHalfLength + MathF.Abs(f.Z) * 0.28f, SlugHeight / 2, MathF.Abs(f.Z) * SlugHalfLength + MathF.Abs(f.X) * 0.28f);
+        return new Box(feet + f * 0.45f + new Vector3(0, SlugHeight / 2, 0), half);
+    }
+
+    /// <summary>A slug's box: half its length (from 0.1 m behind the feet to 1.0 m ahead) and its height (m).</summary>
+    public const float SlugHalfLength = 0.55f, SlugHeight = 0.4f;
 
     /// <summary>A hit point on zombie <paramref name="z"/> in a plain-sized body's frame (its type's scale about the feet undone), for the head and limb tests.</summary>
     public static Vector3 ZombieUnscale(Zombie z, Vector3 feet, Vector3 point)
@@ -94,7 +121,7 @@ public sealed partial class Game
     }
 
     /// <summary>Where bots aim on a zombie (feet up): the chest or the head, a crawler's low body; scaled by its type's height.</summary>
-    public static float ZombieAimHeight(Zombie z, bool head) => (z.Crawler ? (head ? 0.35f : 0.28f) : head ? 1.6f : 1.25f) * z.Kind.Height;
+    public static float ZombieAimHeight(Zombie z, bool head) => (z.Slug ? (head ? 0.3f : 0.2f) : z.Crawler ? (head ? 0.35f : 0.28f) : head ? 1.6f : 1.25f) * z.Kind.Height;
 
     /// <summary>
     /// Which limb a hit at <paramref name="point"/> landed on (-1: the torso or head). Standing: below the hips a leg (by
@@ -180,6 +207,11 @@ public sealed partial class Game
             z.Sim.Velocity = Vector3.Zero; // drops onto its belly
             z.Hm.Node = -1;
         }
+        if (z.Slug)
+        {
+            z.SlugSeenAt = now; // (the stranded slug's clock starts now)
+            ZSlugs++;
+        }
         if (by != null && ZRules.Limbs.LimbPoints > 0 && z.Alive)
             EarnPoints(by, ZRules.Limbs.LimbPoints * n, now);
         ShowLimbs(z, z.Position, z.Yaw, now);
@@ -227,10 +259,10 @@ public sealed partial class Game
         2 => 1f,
         1 => ZRules.Limbs.OneArmWindup,
         _ => ZRules.Limbs.BiteWindup,
-    });
+    }) * (z.Slug ? ZRules.Limbs.SlugWindup : 1f);
 
     /// <summary>Seconds between swipes for this zombie (one arm: slower; its type's: ZombieTypes.cs).</summary>
-    private float ZombieSwingFor(Zombie z) => ZRules.ZombieSwing * z.Kind.SwingMult * (z.ArmsLeft == 1 ? ZRules.Limbs.OneArmSwing : 1f);
+    private float ZombieSwingFor(Zombie z) => ZRules.ZombieSwing * z.Kind.SwingMult * (z.ArmsLeft == 1 ? ZRules.Limbs.OneArmSwing : 1f) * (z.Slug ? ZRules.Limbs.SlugSwing : 1f);
 
     /// <summary>A swipe's (or bite's) damage for this zombie: one arm or none hurts less, a crawler a little less again.</summary>
     private int ZombieDamageFor(Zombie z)
@@ -239,6 +271,8 @@ public sealed partial class Game
         var m = z.ArmsLeft switch { 2 => 1f, 1 => lt.OneArmDamage, _ => lt.BiteDamage };
         if (z.Crawler)
             m *= lt.CrawlDamage;
+        if (z.Slug)
+            m *= lt.SlugDamage;
         return Math.Max(1, (int)MathF.Round(ZRules.ZombieDamage * z.Kind.DamageMult * m)); // (its type's damage: ZombieTypes.cs)
     }
 
@@ -247,11 +281,11 @@ public sealed partial class Game
     {
         var lt = ZRules.Limbs;
         var r = z.Kind.ReachFor(ZRules) * (z.ArmsLeft == 0 ? lt.BiteReach : 1f);
-        return z.Crawler ? r * lt.CrawlReach : r;
+        return z.Slug ? r * lt.CrawlReach * lt.SlugReach : z.Crawler ? r * lt.CrawlReach : r;
     }
 
     /// <summary>How far above or below its feet a target can be and still be hit (a crawler only reaches low: stand on something; a tall type higher).</summary>
-    private float ZombieReachHeight(Zombie z, bool landing) => z.Crawler ? ZRules.Limbs.CrawlAttackHeight : (landing ? 1.6f : 1.4f) * z.Kind.Height;
+    private float ZombieReachHeight(Zombie z, bool landing) => z.Slug ? ZRules.Limbs.SlugAttackHeight : z.Crawler ? ZRules.Limbs.CrawlAttackHeight : (landing ? 1.6f : 1.4f) * z.Kind.Height;
 
     /// <summary>Seconds this zombie takes to climb in through a window (both sides: the climb's progress byte): a crawler is slow.</summary>
     public float ClimbSecondsFor(Zombie z) => ZRules.ClimbSeconds * (z.Crawler ? ZRules.Limbs.CrawlClimb : 1f);
@@ -327,6 +361,16 @@ public sealed class LimbTuning
 
     /// <summary>No legs (a crawler): speed, reach and damage multipliers, the highest a target may stand above or below it (m), and its window climb's slowdown.</summary>
     public float CrawlSpeed = 0.32f, CrawlReach = 0.8f, CrawlDamage = 0.8f, CrawlAttackHeight = 0.7f, CrawlClimb = 2.2f;
+
+    /// <summary>
+    /// No limbs at all (a slug: Source/Game/ZombieSlug.cs): its speed (m/s, whatever its class), how fast it turns (rad/s),
+    /// its bite's reach (times a crawler's), damage (times a crawler's), windup and time between bites (times a bite's),
+    /// the highest a target may stand above or below it (m), the seconds a slug may go unseen with nobody near
+    /// (<see cref="SlugCullNear"/> m) before it is culled, and the bonus points for killing one (0: none, normal points).
+    /// </summary>
+    public float SlugSpeed = 0.3f, SlugTurn = 1.2f, SlugReach = 0.6f, SlugDamage = 0.6f, SlugWindup = 1.4f, SlugSwing = 1.6f, SlugAttackHeight = 0.4f, SlugCullSeconds = 45f, SlugCullNear = 10f;
+
+    public int SlugKillPoints;
 
     /// <summary>Points for each limb shot off a living zombie (0: none; an option for the developer).</summary>
     public int LimbPoints;

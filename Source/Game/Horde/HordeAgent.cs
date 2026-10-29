@@ -19,6 +19,9 @@ public interface IHordeAgent
     /// <summary>Alive and steered by the horde (dead, rising or climbing agents are left alone).</summary>
     bool HordeActive { get; }
 
+    /// <summary>In the neighbour grid (others keep apart from it, it is heard by stimuli, it crowds a spawner): false for one the horde walks over (a Zombies slug).</summary>
+    bool HordeSolid => true;
+
     /// <summary>
     /// The barrier (portal) it is working towards from outside (a Zombies window), or -1 once it is inside. Members of a
     /// portal queue up at its spots (<see cref="HordeMember.QueueRank"/>).
