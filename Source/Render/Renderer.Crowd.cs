@@ -163,9 +163,12 @@ public sealed unsafe partial class Renderer
         flat out float vLayerI;
         void main()
         {
-            // The frame: the walk cycle's phase (0-1).
+            // The frame: the gait (the whole part: walk, run, sprint; the rig's rows gait by gait, CrowdRig.Gaits) and the
+            // cycle's phase (the fraction).
             int frames = int(uFrames);
-            int frame = int(floor(fract(iYPhase.y) * uFrames)) % frames;
+            int gaits = max(textureSize(uAnim, 0).y / frames, 1);
+            int gait = clamp(int(floor(iYPhase.y)), 0, gaits - 1);
+            int frame = int(floor(fract(iYPhase.y) * uFrames)) % frames + gait * frames;
             int b = int(aBox + 0.5) * 4;
             vec4 r0 = texelFetch(uAnim, ivec2(b, frame), 0);
             vec4 r1 = texelFetch(uAnim, ivec2(b + 1, frame), 0);
@@ -262,7 +265,7 @@ public sealed unsafe partial class Renderer
                 c.InstCapacity = 4096 * CrowdInstances.Bytes;
                 Native.glBufferData(GL_ARRAY_BUFFER, c.InstCapacity, null, GL_STREAM_DRAW);
                 CrowdInstanceAttribs();
-                // The walk cycle: a float texture, a row per frame.
+                // The walk, run and sprint cycles: a float texture, a row per frame, gait by gait.
                 GlTexture tex = default;
                 Native.glGenTextures(1, &tex);
                 c.Tex = tex.Id;
@@ -270,7 +273,7 @@ public sealed unsafe partial class Renderer
                 Native.glBindTexture(GL_TEXTURE_2D, c.Tex);
                 Native.glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
                 fixed (float* p = rig.Texels)
-                    Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA32F, rig.Width, rig.Frames, 0, GL_RGBA, GL_FLOAT, p);
+                    Native.glTexImage2D(GL_TEXTURE_2D, 0, (int)GL_RGBA32F, rig.Width, rig.Rows, 0, GL_RGBA, GL_FLOAT, p);
                 Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, (int)GL_NEAREST);
                 Native.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, (int)GL_NEAREST);
                 Native.glActiveTexture(GL_TEXTURE0);
@@ -281,7 +284,7 @@ public sealed unsafe partial class Renderer
             var err = (uint)Native.glGetError();
             if (err != 0)
                 Console.WriteLine($"[render] GL error 0x{err:X} while setting up the crowd (continuing)");
-            Console.WriteLine($"[render] crowd rigs ready: {string.Join(", ", _crowd.Select(c => $"{c.Rig.Name} {c.Rig.Boxes} boxes x {c.Rig.Frames} frames"))}");
+            Console.WriteLine($"[render] crowd rigs ready: {string.Join(", ", _crowd.Select(c => $"{c.Rig.Name} {c.Rig.Boxes} boxes x {c.Rig.Frames} frames x {c.Rig.Gaits} gaits"))}");
             return true;
         }
         catch (Exception ex)

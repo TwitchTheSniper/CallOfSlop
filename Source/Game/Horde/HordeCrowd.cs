@@ -46,6 +46,23 @@ public sealed class CrowdTuning
     /// <summary>Walking speed (m/s) and the spread either way (each particle its own, from its index).</summary>
     public float Speed = 1.5f, SpeedSpread = 0.35f;
 
+    /// <summary>
+    /// Pace by round (<see cref="CrowdPace"/>; docs/zombies/MASS-HORDE.md, "Pace by round"): on, the crowd and the mass
+    /// move at the round's speed mix (each crowd zombie a walker, runner or sprinter as an individual would be, at its
+    /// class's speed +- <see cref="PaceSpread"/>), and <see cref="Speed"/> / <see cref="SpeedSpread"/> are unused; off, the
+    /// fixed speed.
+    /// </summary>
+    public bool PaceByRound = true;
+
+    public float PaceSpread = 0.08f;
+
+    /// <summary>
+    /// Strays rejoin (docs/zombies/MASS-HORDE.md, "Strays rejoin"): a hurt or limb-lost individual counting past the
+    /// demote range for <see cref="DemoteSeconds"/> goes back to the crowd with its wounds, so it frees its slot for
+    /// zombies nearer the players (off: only healthy ones go back, as before).
+    /// </summary>
+    public bool RejoinStrays = true;
+
     /// <summary>Separation: particles closer than this (m) push apart, this hard (m/s at contact), counting this many neighbours at most.</summary>
     public float SeparationRadius = 0.7f, SeparationStrength = 2.5f;
 
@@ -137,6 +154,23 @@ public sealed partial class HordeCrowd
 
     /// <summary>Health (shots and blasts hurt crowd zombies; a promoted one keeps it).</summary>
     public float[] HP = [];
+
+    /// <summary>Each particle's speed class (<see cref="ZSpeed"/>: walk, run, sprint; <see cref="Pace"/>), kept through promotion and demotion.</summary>
+    public byte[] Cls = [];
+
+    private CrowdPace _pace;
+    private bool _paceSet;
+
+    /// <summary>The round's pace (<see cref="CrowdPace"/>; until a round sets it, the tuning's fixed speed).</summary>
+    public CrowdPace Pace
+    {
+        get => _paceSet ? _pace : CrowdPace.Fixed(Tuning.Speed, Tuning.SpeedSpread);
+        set
+        {
+            _pace = value;
+            _paceSet = true;
+        }
+    }
 
     /// <summary>
     /// Visual only (drawing; nothing in the game reads them): each particle's look (a hash of its own seed, kept when
@@ -269,7 +303,7 @@ public sealed partial class HordeCrowd
     /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
     public int FlowCells => _cols * _rows;
 
-    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8 + 4 + 8 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 1 + 4 + 8 + 4 + 8 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
@@ -356,6 +390,7 @@ public sealed partial class HordeCrowd
         Array.Resize(ref DX, n);
         Array.Resize(ref DZ, n);
         Array.Resize(ref Spd, n);
+        Array.Resize(ref Cls, n);
         Array.Resize(ref PX, n);
         Array.Resize(ref PZ, n);
         Array.Resize(ref Next, n);
@@ -413,9 +448,11 @@ public sealed partial class HordeCrowd
 
     /// <summary>
     /// Adds a particle at (x, z) with velocity (vx, vz) and returns its index (-1: full). Its speed comes from
-    /// <paramref name="seed"/> (a stable per-zombie number), so a zombie keeps its pace across demotion and promotion.
+    /// <paramref name="seed"/> (a stable per-zombie number) and its speed class <paramref name="cls"/> (an individual's
+    /// own, put back to sleep; -1: rolled from the seed with the round's mix, <see cref="CrowdPace.ClassOf"/>), so a zombie
+    /// keeps its pace across demotion and promotion.
     /// </summary>
-    public int Add(float x, float z, float vx, float vz, uint seed, long tick, float hp = 100f)
+    public int Add(float x, float z, float vx, float vz, uint seed, long tick, float hp = 100f, int cls = -1)
     {
         if (Count >= X.Length)
             return -1;
@@ -429,7 +466,10 @@ public sealed partial class HordeCrowd
         DZ[i] = l > 1e-3f ? vz / l : 0;
         PX[i] = PZ[i] = 0;
         var h = Hash(seed);
-        Spd[i] = Tuning.Speed * (1 + Tuning.SpeedSpread * ((h & 0xFFFF) / 32767.5f - 1));
+        var pace = Pace;
+        var k = cls >= 0 && pace.ByRound ? (byte)Math.Min(cls, (int)ZSpeed.Sprint) : pace.ClassOf(seed);
+        Cls[i] = k;
+        Spd[i] = pace.SpeedOf(k) * pace.Factor(h);
         Next[i] = tick + 1 + (h >> 16) % (uint)Math.Max(1, Tuning.ThinkMax);
         Held[i] = false;
         HP[i] = hp;
@@ -452,6 +492,7 @@ public sealed partial class HordeCrowd
         DX[i] = DX[last];
         DZ[i] = DZ[last];
         Spd[i] = Spd[last];
+        Cls[i] = Cls[last];
         PX[i] = PX[last];
         PZ[i] = PZ[last];
         Next[i] = Next[last];

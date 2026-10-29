@@ -55,8 +55,31 @@ public sealed class CrowdAgents
 
     public float FarFrom = 60f, FarTo = 180f;
 
-    /// <summary>The crowd's walking speed (m/s; each agent its own share of it).</summary>
+    /// <summary>The crowd's walking speed (m/s; each agent its own share of it). With <see cref="SetPace"/>, the fastest gait's.</summary>
     public float Speed = 1.5f;
+
+    private CrowdPace _pace;
+    private bool _paced;
+
+    /// <summary>
+    /// The round's pace (<see cref="CrowdPace"/>: the host's own, a client's worked out from the round number): each agent
+    /// walks, runs or sprints as its look rolls in the round's mix (<see cref="Gait"/>), at that gait's speed and stride,
+    /// so a sprinting round's crowd looks like sprinting. A new mix rolls every agent's gait again.
+    /// </summary>
+    public void SetPace(in CrowdPace p)
+    {
+        if (_paced && _pace.Equals(p))
+            return;
+        _pace = p;
+        _paced = true;
+        Speed = p.Max;
+        for (var i = 0; i < Count; i++)
+            Gait[i] = p.ClassOf(Look[i]);
+    }
+
+    /// <summary>An agent's speed (m/s) before its own share: its gait's (or <see cref="Speed"/> without a pace).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private float GaitSpeed(int i) => _paced ? _pace.SpeedOf(Gait[i]) : Speed;
 
     /// <summary>A cell this full is packed (the mass tier's capacity): agents don't flow into a packed cell from a packed one.</summary>
     public int JamCount = 40;
@@ -103,6 +126,10 @@ public sealed class CrowdAgents
     public uint[] Look = [], Id = [];
 
     public byte[] Lod = [];
+
+    /// <summary>Each agent's gait (<see cref="ZSpeed"/>: walk, run, sprint), from its look and the round's mix (<see cref="SetPace"/>).</summary>
+    public byte[] Gait = [];
+
     private byte[] _dead = [];
     private uint _nextId = 1;
 
@@ -599,7 +626,8 @@ public sealed class CrowdAgents
             else
             {
                 var go = _move[c] * _flow[c];
-                var drift = Pace[i] * Speed * go;
+                var pace = Pace[i] * GaitSpeed(i);
+                var drift = pace * go;
                 vx = _hx[c] * drift;
                 vz = _hz[c] * drift;
                 if (st != Mode.Sinking)
@@ -626,7 +654,7 @@ public sealed class CrowdAgents
                     turnTo = _yawC[c] + ((Look[i] >> 8 & 255) / 255f - 0.5f) * 0.5f;
                 // Pressing on in place: a moving cell with no room ahead (a stream sampled at the cap, or a queue) walks
                 // on the spot; a packed one (a jam) shuffles, slower.
-                Walk[i] += Pace[i] * Speed * _move[c] * (1f - _flow[c]) * dt * (_want[c] < JamCount ? 1f : JamPace);
+                Walk[i] += pace * _move[c] * (1f - _flow[c]) * dt * (_want[c] < JamCount ? 1f : JamPace);
             }
             float nx = x + vx * dt, nz = z + vz * dt;
             if (st != Mode.Moving && st != Mode.Sinking)
@@ -671,7 +699,7 @@ public sealed class CrowdAgents
             if (lod == 0 && d2 > near2 || lod == 2 && d2 < mid1 || lod == 1 && (d2 < near1 || d2 > mid2))
                 Lod[i] = (byte)(lod = d2 < NearRange * NearRange ? 0 : d2 < MidRange * MidRange ? 1 : 2);
             if (stripe != null && Fade[i] > 0f)
-                stripe.Add(lod, nx, Y[i] - (1f - Fade[i]) * SinkDepth, nz, Yaw[i], Walk[i], output!.Bright(Look[i]), _move[c] < 0.5f);
+                stripe.Add(lod, nx, Y[i] - (1f - Fade[i]) * SinkDepth, nz, Yaw[i], Walk[i], output!.Bright(Look[i]), _move[c] < 0.5f, Gait[i]);
         }
     }
 
@@ -749,6 +777,7 @@ public sealed class CrowdAgents
             Look[i] = Look[last];
             Id[i] = Id[last];
             Lod[i] = Lod[last];
+            Gait[i] = Gait[last];
         }
         _dead[i] = _dead[last];
         _dead[last] = 0;
@@ -774,6 +803,7 @@ public sealed class CrowdAgents
         Array.Resize(ref Look, n);
         Array.Resize(ref Id, n);
         Array.Resize(ref Lod, n);
+        Array.Resize(ref Gait, n);
         Array.Resize(ref _dead, n);
         _items = new int[n];
         _listFrame = -1;
@@ -797,6 +827,7 @@ public sealed class CrowdAgents
         Walk[i] = (look >> 10 & 255) / 64f;
         Fade[i] = fade;
         Pace[i] = 0.8f + 0.4f * ((look >> 4 & 255) / 255f);
+        Gait[i] = _paced ? _pace.ClassOf(look) : (byte)0;
         Timer[i] = 0;
         State[i] = mode;
         CellOf[i] = c;

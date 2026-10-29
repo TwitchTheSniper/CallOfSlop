@@ -11,7 +11,10 @@ public struct CrowdInstance
     /// <summary>Flat position (world metres).</summary>
     public float X, Z;
 
-    /// <summary>Height over <see cref="CrowdInstances.BaseY"/> (the camera's: most precise near it), and the walk cycle's phase (0-1).</summary>
+    /// <summary>
+    /// Height over <see cref="CrowdInstances.BaseY"/> (the camera's: most precise near it), and the gait plus the walk
+    /// cycle's phase: 0-1 walking, 1-2 running, 2-3 sprinting (<see cref="ZSpeed"/>; the rig's rows for that gait).
+    /// </summary>
     public Half Y, Phase;
 
     /// <summary>Yaw (a turn in 255ths), brightness (in 1.5 / 255ths), the debug tier tint and held (0 or 255).</summary>
@@ -42,6 +45,9 @@ public sealed class CrowdInstances
     /// <summary>Metres walked per walk cycle (the rigs': <see cref="CrowdRig.CycleMetres"/>).</summary>
     public float Cycle = 4f * ZombieAnim.StrideHalf(ZSpeed.Walk);
 
+    /// <summary>Metres per cycle of each gait (walk, run, sprint: the individuals' strides, ZombieAnim.StrideHalf).</summary>
+    public static readonly float[] GaitCycle = [CrowdRig.CycleOf(ZSpeed.Walk), CrowdRig.CycleOf(ZSpeed.Run), CrowdRig.CycleOf(ZSpeed.Sprint)];
+
     /// <summary>A stripe's own instances (one thread writes it).</summary>
     public sealed class Stripe
     {
@@ -57,9 +63,9 @@ public sealed class CrowdInstances
             Culled = 0;
         }
 
-        /// <summary>An instance at (x, y, z) facing <paramref name="yaw"/>, <paramref name="walked"/> m into its walk.</summary>
+        /// <summary>An instance at (x, y, z) facing <paramref name="yaw"/>, <paramref name="walked"/> m into its walk, in gait <paramref name="gait"/> (<see cref="ZSpeed"/>).</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Add(int lod, float x, float y, float z, float yaw, float walked, float bright, bool held)
+        public void Add(int lod, float x, float y, float z, float yaw, float walked, float bright, bool held, int gait = 0)
         {
             ref var arr = ref Data[lod];
             var n = Count[lod];
@@ -67,8 +73,10 @@ public sealed class CrowdInstances
                 Array.Resize(ref arr, arr.Length * 2);
             var f = yaw * (1f / MathF.Tau);
             f -= MathF.Floor(f);
-            var p = walked / Cycle;
+            gait = Math.Clamp(gait, 0, 2);
+            var p = walked / (gait == 0 ? Cycle : GaitCycle[gait]);
             p -= MathF.Floor(p);
+            p = MathF.Min(p, 0.995f) + gait; // (a whole number of gaits, then the phase: Half keeps 1/512 at 2-3)
             ref var o = ref arr[n];
             o.X = x;
             o.Z = z;
@@ -243,7 +251,7 @@ public sealed class CrowdInstances
             var age = _ptick - c.Born[i];
             var sink = age >= 0 && age < RiseTicks ? (1f - age / (float)RiseTicks) * CrowdAgents.SinkDepth : 0f;
             var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
-            st.Add(lod, x, y - sink, z, yaw, walked, BrightOf(h), c.Held[i]);
+            st.Add(lod, x, y - sink, z, yaw, walked, BrightOf(h), c.Held[i], c.Cls[i]); // (its gait: its speed class, CrowdPace.cs)
         }
     }
 }

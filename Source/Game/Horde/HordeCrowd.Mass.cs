@@ -171,6 +171,9 @@ public sealed partial class HordeCrowd
         Array.Copy(MassCount, _mNext, n);
         var dt = World.TickDt;
         var cap = Tuning.MassCapacity;
+        // The round's mean pace (CrowdPace: the individuals' speed mix). At the fastest a rules file allows (12 m/s) a cell
+        // sends a twentieth of its count a tick, and only ever one cell on: nothing jumps a cell.
+        var speed = Pace.Mean;
         for (var c = 0; c < n; c++)
         {
             var m = MassCount[c];
@@ -206,13 +209,13 @@ public sealed partial class HordeCrowd
                 if (best < _mCell * _mCell * 0.5f)
                     hx = hz = 0; // (the target is in this cell: they're there)
             }
-            MassVX[c] = hx * Tuning.Speed;
-            MassVZ[c] = hz * Tuning.Speed;
+            MassVX[c] = hx * speed;
+            MassVZ[c] = hz * speed;
             int dc = MathF.Abs(hx) > 0.38f ? Math.Sign(hx) : 0, dr = MathF.Abs(hz) > 0.38f ? Math.Sign(hz) : 0;
             if (dc == 0 && dr == 0)
                 continue;
             // A cell's zombies cross it in cell / speed seconds: that share of them a tick.
-            _mFlux[c] += m * Tuning.Speed * dt / (_mCell * (dc != 0 && dr != 0 ? 1.41421356f : 1f));
+            _mFlux[c] += m * speed * dt / (_mCell * (dc != 0 && dr != 0 ? 1.41421356f : 1f));
             if ((int)_mFlux[c] <= 0)
                 continue;
             // Downstream: the heading's neighbour; when that one is full (or a wall), the neighbour 45 degrees either side
