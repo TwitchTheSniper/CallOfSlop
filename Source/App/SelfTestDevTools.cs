@@ -13,7 +13,7 @@ public static partial class SelfTest
           "halfX": 20,
           "halfZ": 20,
           "ops": [
-            {"op": "Ground"},
+            {"op": "Ground", "color": [0.3, 0.3, 0.3]},
             {"op": "Block", "x0": 5, "y0": 0, "z0": -1, "x1": 6, "y1": 2, "z1": 1},
             {"op": "Prop", "name": "Anemometer", "x": 0, "z": 0, "yaw": 90},
             {"op": "Spawn", "x": -10, "z": 0}
