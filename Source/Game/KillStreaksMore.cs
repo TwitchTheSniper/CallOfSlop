@@ -221,8 +221,12 @@ public sealed partial class Game
                 _fireHits.Add(v);
             }
             foreach (var v in _fireHits) // (outside the loop over Players: a kill may change the match)
+            {
+                _deathCause = DeathCause.Fire; // napalm burns (the death reaction flails)
                 if (DamagePlayer(owner, v, (int)KillStreaks.FireTickDamage, false, KillStreaks.KillId(StreakId.NapalmStrike), now, DamageKind.Explosive) && owner.Id == LocalId)
                     OnOwnShotConfirmed(5, now);
+                _deathCause = DeathCause.Unknown;
+            }
             _fireHits.Clear();
         }
     }

@@ -256,7 +256,7 @@ public sealed partial class Game
             w.U16((ushort)(z.Id | (extra ? ZEntLimbFlag : 0))).U16(Q(p.X, 32)).U16(Q(p.Y, 64)).U16(Q(p.Z, 32))
                 .U8(ZAnimByteState(z.State, z.Window) ? z.AnimByte : (byte)((int)MathF.Round(World.WrapAngle(z.Yaw) / MathF.Tau * 256f) & 255))
                 .U8(sb)
-                .U8((byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255));
+                .U8(z.State == ZState.Dead ? z.DeathInfo : (byte)Math.Clamp(z.MaxHealth > 0 ? z.Health * 255 / z.MaxHealth : 0, 0, 255)); // (dead: its death info, protocol 75)
             if (ZEntHasWindow(z.State))
                 w.U8(z.Window is >= 0 and < 255 ? (byte)z.Window : (byte)255);
             if (extra)
@@ -281,6 +281,23 @@ public sealed partial class Game
                 if (slot is >= 0 and < MaxZombies && view.Age[slot] < 255)
                     view.Age[slot]++;
             }
+    }
+
+    /// <summary>
+    /// A zombie's death info (protocol 75; a dead zombie's health byte in Msg.ZEnts): bit 7 set (known), bits 0-3 the
+    /// killing hit's overkill as a share of the hit (0-14, 15 = all of it), bit 4 a headshot, bit 5 melee, bit 6 a blast.
+    /// </summary>
+    public static byte ZDeathInfo(float overkillShare, bool head, bool melee, bool explosive) =>
+        (byte)(0x80 | (int)MathF.Round(Math.Clamp(float.IsFinite(overkillShare) ? overkillShare : 1f, 0f, 1f) * 15f) | (head ? 16 : 0) | (melee ? 32 : 0) | (explosive ? 64 : 0));
+
+    /// <summary>Reads <see cref="ZDeathInfo"/>: false if unknown.</summary>
+    public static bool ZDeathInfoRead(byte info, out float overkillShare, out bool head, out bool melee, out bool explosive)
+    {
+        overkillShare = (info & 15) / 15f;
+        head = (info & 16) != 0;
+        melee = (info & 32) != 0;
+        explosive = (info & 64) != 0;
+        return (info & 0x80) != 0;
     }
 
     /// <summary>The state byte: state (bits 0-2), head hit (3), speed (4-5), burning and zapped (6-7).</summary>
@@ -752,7 +769,9 @@ public sealed partial class Game
             z.Speed = (ZSpeed)Math.Min((sb >> 4) & 3, (int)ZSpeed.Sprint);
             z.FxBurning = (sb & 64) != 0;
             z.FxZapped = (sb & 128) != 0;
-            z.HealthByte = health;
+            z.HealthByte = state == ZState.Dead ? (byte)0 : health;
+            if (state == ZState.Dead && health != 0)
+                z.DeathInfo = health; // how it died (protocol 75: the death reaction, Ragdolls.cs)
             z.Window = window == 255 ? -1 : window;
             if (ZAnimByteState(state, z.Window))
             {

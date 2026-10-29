@@ -87,6 +87,7 @@ public sealed partial class Ui
             ImGui.EndChild();
         }
         ImGui.End();
+        DrawRagdollTuning(); // the ragdoll panel (UiRagdollTuning.cs), opened from the toolbar
     }
 
     /// <summary>Weapon ids per class (its own method: a lambda in DrawWeaponTweaks would allocate its closure on every call, closed too).</summary>
@@ -125,6 +126,11 @@ public sealed partial class Ui
         ImGui.EndDisabled();
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, WeaponTweaks.Active ? $"{WeaponTweaks.OverrideCount} stat(s) and {WeaponTweaks.MultCount} class multiplier(s) changed" : "nothing changed");
+        ImGui.SameLine();
+        if (ImGui.Button("Ragdoll tuning"u8))
+            RagdollTuningOpen = !RagdollTuningOpen;
+        if (ImGui.IsItemHovered())
+            ImGui.SetItemTooltip("Soft joint limits, the relax pull and how hard shots and blasts push bodies (Ragdolls/Ragdolls.json)."u8);
         ImGui.SameLine();
         ImGuiSafe.TextColored(Dim, $"({Keybinds.Name(bind)} closes)");
         if (now - _twMsgAt < 8)

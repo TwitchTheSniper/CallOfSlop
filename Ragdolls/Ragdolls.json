@@ -1,0 +1,489 @@
+{
+  "format": "call-of-slop-ragdolls/1",
+  "note": "Ragdoll tuning and death reactions (every tuning key is optional; the defaults and ranges are in Source/Physics/RagdollTuning.cs, and F7 > Ragdoll tuning has a slider per value). Reactions: Source/Physics/RagdollActive.cs.",
+  "tuning": {
+    "softRange": 0.4,
+    "softStiffness": 0.14,
+    "softExponent": 2.5,
+    "softDamping": 0.35,
+    "hardMargin": 0.06,
+    "kneeSoft": 0.05,
+    "kneeHard": 0.03,
+    "neutralPull": 0.08,
+    "neutralMaxStep": 0.006,
+    "neutralSpeedFull": 0.5,
+    "neutralSpeedNone": 1.6,
+    "neutralQuiet": 0.0015,
+    "neutralTime": 3,
+    "neutralArms": 1,
+    "neutralLegs": 0.8,
+    "neutralHead": 0.5,
+    "gunScale": 1.75,
+    "gunMin": 1.5,
+    "gunCap": 10,
+    "bodyShare": 0.6,
+    "hitShare": 0.9,
+    "neighbourShare": 0.4,
+    "hitLift": 0.15,
+    "blastScale": 1.15,
+    "overkillShare": 0.3,
+    "overkillHp": 30,
+    "activeMin": 0.4,
+    "activeMax": 1.5,
+    "maxActive": 4,
+    "maxActiveZombies": 2,
+    "activePush": 0.6,
+    "muscleGain": 0.3,
+    "muscleBlend": 0.35,
+    "muscleSpeed": 4
+  },
+  "reactions": [
+    {
+      "name": "leg buckle",
+      "note": "A leg hit: that knee gives, the body sags onto that side and a foot steps to catch it.",
+      "when": {
+        "cause": [
+          "bullet",
+          "melee"
+        ],
+        "region": "leg"
+      },
+      "balance": 0.55,
+      "support": 0.3,
+      "lean": [
+        4,
+        28
+      ],
+      "staggerSide": 0.7,
+      "staggerBack": 0.3,
+      "step": true,
+      "targets": [
+        {
+          "part": "kneeHit",
+          "at": [
+            0.1,
+            0.25,
+            -0.22
+          ]
+        },
+        {
+          "part": "footHit",
+          "at": [
+            0.12,
+            -0.75,
+            0.2
+          ],
+          "weight": 0.6
+        },
+        {
+          "part": "handHit",
+          "at": "wound",
+          "weight": 0.8
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.45,
+            0.55,
+            -0.1
+          ],
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "name": "chest stagger",
+      "note": "A body shot: staggers back away from the shot, a hand clutching the wound, the other arm out.",
+      "when": {
+        "cause": "bullet",
+        "region": [
+          "chest",
+          "back",
+          "none"
+        ]
+      },
+      "weight": 2,
+      "balance": 0.8,
+      "support": 0.65,
+      "lean": [
+        -14,
+        0
+      ],
+      "staggerBack": 1.3,
+      "step": true,
+      "targets": [
+        {
+          "part": "handOther",
+          "at": "wound"
+        },
+        {
+          "part": "elbowOther",
+          "at": [
+            -0.05,
+            0.75,
+            -0.28
+          ],
+          "weight": 0.6
+        },
+        {
+          "part": "handHit",
+          "at": [
+            0.55,
+            0.75,
+            0.1
+          ],
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "name": "gut shot",
+      "note": "A body shot variant: folds forward over the wound with both hands on it.",
+      "when": {
+        "cause": "bullet",
+        "region": [
+          "chest",
+          "back",
+          "none"
+        ]
+      },
+      "weight": 1,
+      "balance": 0.6,
+      "support": 0.5,
+      "lean": [
+        32,
+        0
+      ],
+      "staggerBack": 0.5,
+      "step": true,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": "belly"
+        },
+        {
+          "part": "handOther",
+          "at": "wound"
+        },
+        {
+          "part": "head",
+          "at": [
+            0,
+            0.95,
+            -0.35
+          ],
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "name": "arm spin",
+      "note": "An arm hit: spins towards that side, the hit arm flung out, the other hand to it.",
+      "when": {
+        "cause": [
+          "bullet",
+          "melee"
+        ],
+        "region": "arm"
+      },
+      "balance": 0.7,
+      "support": 0.55,
+      "lean": [
+        0,
+        14
+      ],
+      "turn": 160,
+      "staggerSide": 0.6,
+      "step": true,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.8,
+            0.85,
+            0.15
+          ],
+          "weight": 0.8
+        },
+        {
+          "part": "handOther",
+          "at": "wound"
+        }
+      ]
+    },
+    {
+      "name": "head wobble",
+      "note": "A head hit that only just killed: wobbles, hands rising to the face, and topples.",
+      "when": {
+        "region": "head"
+      },
+      "duration": 0.8,
+      "balance": 0.35,
+      "support": 0.35,
+      "lean": [
+        -8,
+        6
+      ],
+      "turn": 45,
+      "flail": 0.15,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": "face",
+          "weight": 0.7
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.25,
+            0.95,
+            -0.3
+          ],
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "name": "melee stagger",
+      "note": "A melee kill: staggers away from the swing with the arms up.",
+      "when": {
+        "cause": "melee"
+      },
+      "balance": 0.75,
+      "support": 0.6,
+      "lean": [
+        -18,
+        0
+      ],
+      "staggerBack": 1.7,
+      "step": true,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.18,
+            1.15,
+            -0.3
+          ]
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.18,
+            1.15,
+            -0.3
+          ]
+        }
+      ]
+    },
+    {
+      "name": "burning flail",
+      "note": "Fire: a brief flailing stagger.",
+      "when": {
+        "cause": "fire"
+      },
+      "duration": 1.3,
+      "balance": 0.6,
+      "support": 0.6,
+      "lean": [
+        8,
+        0
+      ],
+      "staggerSide": 0.4,
+      "flail": 1,
+      "step": true,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.3,
+            1.25,
+            -0.15
+          ],
+          "weight": 0.5
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.3,
+            1.25,
+            -0.15
+          ],
+          "weight": 0.5
+        }
+      ]
+    },
+    {
+      "name": "electrocuted",
+      "note": "A shock kill (a zapped zombie): rigid jitter, then down.",
+      "when": {
+        "cause": "shock"
+      },
+      "duration": 0.8,
+      "balance": 0.8,
+      "support": 0.7,
+      "lean": [
+        -5,
+        0
+      ],
+      "flail": 0.45,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.55,
+            0.6,
+            0.0
+          ],
+          "weight": 0.6
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.55,
+            0.6,
+            0.0
+          ],
+          "weight": 0.6
+        }
+      ]
+    },
+    {
+      "name": "doubling over",
+      "note": "Poison or gas: doubles over, both hands to the belly.",
+      "when": {
+        "cause": "poison"
+      },
+      "duration": 1.3,
+      "balance": 0.6,
+      "support": 0.5,
+      "lean": [
+        55,
+        0
+      ],
+      "staggerBack": 0.2,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": "belly"
+        },
+        {
+          "part": "handOther",
+          "at": "belly"
+        },
+        {
+          "part": "head",
+          "at": [
+            0,
+            0.85,
+            -0.4
+          ],
+          "weight": 0.7
+        }
+      ]
+    },
+    {
+      "name": "running stumble",
+      "note": "Killed at a run (or falling): carries on into a forward stumble, hands out to break the fall.",
+      "when": {
+        "cause": [
+          "bullet",
+          "melee",
+          "fall",
+          "fire"
+        ],
+        "moving": true
+      },
+      "balance": 0.6,
+      "support": 0.4,
+      "lean": [
+        40,
+        0
+      ],
+      "carry": 0.9,
+      "step": true,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.25,
+            0.55,
+            -0.5
+          ]
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.25,
+            0.55,
+            -0.5
+          ]
+        }
+      ]
+    },
+    {
+      "name": "pulled down",
+      "note": "A zombie's bite or swipe: pulled down towards the attacker.",
+      "when": {
+        "cause": "zombie"
+      },
+      "balance": 0.4,
+      "support": 0.25,
+      "lean": [
+        30,
+        0
+      ],
+      "pull": 1.4,
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.2,
+            0.9,
+            -0.55
+          ]
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.2,
+            0.9,
+            -0.55
+          ]
+        }
+      ]
+    },
+    {
+      "name": "crawler collapse",
+      "note": "A legless zombie (crawler or slug): its arms claw forward once and it slumps.",
+      "when": {
+        "legless": true
+      },
+      "duration": 0.6,
+      "balance": 0,
+      "support": 0,
+      "lean": [
+        0,
+        0
+      ],
+      "targets": [
+        {
+          "part": "handHit",
+          "at": [
+            0.3,
+            0.4,
+            -0.7
+          ]
+        },
+        {
+          "part": "handOther",
+          "at": [
+            -0.3,
+            0.4,
+            -0.7
+          ]
+        }
+      ]
+    }
+  ]
+}

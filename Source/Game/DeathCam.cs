@@ -22,6 +22,16 @@ public enum KillKind : byte
 }
 
 /// <summary>
+/// What killed, for the death reaction (<see cref="Ragdolls"/>, Ragdolls/Ragdolls.json "reactions"): the killing hit's
+/// kind. Four bits on the wire (protocol 75); new causes go at the end.
+/// </summary>
+public enum DeathCause : byte
+{
+    Bullet, Explosive, Melee, Fire, Poison, Fall, Zombie, Shock,
+    Unknown = 15,
+}
+
+/// <summary>
 /// The contents of a <see cref="Msg.Kill"/> packet. The first four fields are the original packet;
 /// the rest were added in protocol 5 and are only read when present (older senders leave them unknown).
 /// </summary>
@@ -31,8 +41,24 @@ public enum KillKind : byte
 public readonly record struct KillPacket(byte Killer, byte Victim, bool Headshot, byte KillId,
     uint Kit = 0, int KillerHp = -1, Vector3? Source = null)
 {
-    /// <summary>Bytes after the message id: the original 4, plus kit (4; 3 before protocol 46), killer HP (1) and source (12).</summary>
-    public const int Size = 4 + 4 + 1 + 12; // the kit is 4 bytes since protocol 46 (3 before)
+    /// <summary>Bytes after the message id: the original 4, plus kit (4; 3 before protocol 46), killer HP (1), source (12) and the death (3, protocol 75).</summary>
+    public const int Size = 4 + 4 + 1 + 12 + 3; // the kit is 4 bytes since protocol 46 (3 before)
+
+    /// <summary>
+    /// The body part the killing hit landed on (<see cref="BloodPart.None"/>: unknown) and what it was (protocol 75): the
+    /// death reaction's table picks by them (Source/Render/Ragdolls.cs).
+    /// </summary>
+    public BloodPart HitPart { get; init; }
+
+    public DeathCause Cause { get; init; } = DeathCause.Unknown;
+
+    /// <summary>
+    /// How much the killing hit was more than the health left: in HP (0-254, -1 unknown) and as a share of the hit (0-1,
+    /// -1 unknown). Small overkill ("a near thing") gives a short active death reaction; big overkill a limp body.
+    /// </summary>
+    public int OverkillHp { get; init; } = -1;
+
+    public float OverkillFraction { get; init; } = -1;
 
     /// <summary>
     /// The victim was blown apart (a blast kill right next to the explosion, <see cref="Game.ShouldGib"/>): every PC bursts
@@ -46,7 +72,9 @@ public readonly record struct KillPacket(byte Killer, byte Victim, bool Headshot
     /// <summary>Writes the whole packet (the original four fields, then the extras).</summary>
     public void Write(PacketWriter w) =>
         w.Begin(Msg.Kill).U8(Killer).U8(Victim).U8((byte)((Headshot ? 1 : 0) | (Gibbed ? 2 : 0))).U8(KillId)
-            .U32(Kit).U8((byte)Math.Clamp(KillerHp, 0, 255)).Vec(Source ?? Vector3.Zero);
+            .U32(Kit).U8((byte)Math.Clamp(KillerHp, 0, 255)).Vec(Source ?? Vector3.Zero)
+            .U8((byte)(((byte)HitPart & 15) | ((byte)Cause << 4))).U8(OverkillHp < 0 ? (byte)255 : (byte)Math.Min(OverkillHp, 254))
+            .U8(OverkillFraction < 0 ? (byte)255 : (byte)MathF.Round(Math.Clamp(OverkillFraction, 0, 1) * 254));
 
     /// <summary>Reads a packet body (after the message id). Tolerates packets without the extras.</summary>
     public static KillPacket Read(ref PacketReader r)
@@ -63,6 +91,17 @@ public readonly record struct KillPacket(byte Killer, byte Victim, bool Headshot
             var s = r.Vec();
             if (float.IsFinite(s.X + s.Y + s.Z))
                 p = p with { Source = s };
+        }
+        if (r.Has(3))
+        {
+            var d = r.U8();
+            var hp = r.U8();
+            var frac = r.U8();
+            p = p with
+            {
+                HitPart = (d & 15) <= (int)BloodPart.LegR ? (BloodPart)(d & 15) : BloodPart.None, Cause = (DeathCause)(d >> 4),
+                OverkillHp = hp == 255 ? -1 : hp, OverkillFraction = frac == 255 ? -1 : frac / 254f,
+            };
         }
         return p;
     }

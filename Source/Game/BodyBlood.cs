@@ -193,7 +193,7 @@ public sealed partial class Game
     private readonly Dictionary<Player, BloodPart> _bloodShotPart = new();
 
     /// <summary>Server: <paramref name="victim"/> just lost health from <paramref name="attacker"/>.</summary>
-    private void BloodOnHit(Player victim, Player attacker, DamageKind kind, Vector3? from)
+    private BloodPart BloodOnHit(Player victim, Player attacker, DamageKind kind, Vector3? from)
     {
         var src = from ?? (attacker != victim ? attacker.Eye : (Vector3?)null);
         var part = _bloodPending;
@@ -203,6 +203,7 @@ public sealed partial class Game
         if (sector < 0)
             sector = BloodMarks.SectorOfPart(part);
         victim.Blood = BloodMarks.AddHit(victim.Blood, part, sector);
+        return part;
     }
 
     /// <summary>Server: a zombie's swipe from <paramref name="from"/> took health from <paramref name="victim"/>.</summary>

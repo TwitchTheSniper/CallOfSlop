@@ -186,7 +186,9 @@ public sealed partial class Game
             {
                 p.BurnNext += 0.25;
                 var by = Players.TryGetValue(p.BurnBy, out var b) ? b : p; // (the shooter left: the burn is nobody's but the victim's)
+                _deathCause = DeathCause.Fire; // (a bleed is a burn's slot too: it reads as fire to the death reaction)
                 DamagePlayer(by, p, Math.Max(1, (int)MathF.Round(p.BurnPerTick)), false, p.BurnKillId, now, DamageKind.Explosive); // like napalm: Flak Jacket helps
+                _deathCause = DeathCause.Unknown;
             }
             if (now > p.BurnUntil || !p.Alive)
             {

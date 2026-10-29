@@ -37,6 +37,23 @@ public struct RagdollDeath
     /// <summary>A blast kill: where, how hard (m/s at the centre) and how far it pushes (0 strength = not a blast).</summary>
     public Vector3 BlastAt;
     public float BlastStrength, BlastRadius;
+
+    /// <summary>
+    /// The death reaction's inputs (<see cref="RagdollActive"/>; from the kill packet, or a zombie's death info): the hit
+    /// part, the cause, the overkill (HP and share of the hit; -1 unknown: limp) and a legless zombie (crawler or slug).
+    /// </summary>
+    public BloodPart HitPart;
+    public DeathCause Cause;
+    public int OverkillHp;
+    public float OverkillFraction;
+    public bool Legless;
+
+    public RagdollDeath()
+    {
+        Cause = DeathCause.Unknown;
+        OverkillHp = -1;
+        OverkillFraction = -1;
+    }
 }
 
 /// <summary>One body in the <see cref="Ragdolls"/> pool: the simulation, its look, the hat and the cached boxes of a sleeping body.</summary>
@@ -84,6 +101,9 @@ public sealed class RagdollBody
     /// <summary>A sleeping body's boxes, written once (<see cref="PropDebris.FloatsPerPiece"/> floats each), or -1 to rebuild.</summary>
     public readonly float[] Cache = new float[MaxBoxes * PropDebris.FloatsPerPiece];
     public int CacheCount = -1;
+
+    /// <summary>The death reaction's active phase (<see cref="RagdollActive"/>), if it has one.</summary>
+    public RagdollActive.State Act;
 
     /// <summary>Is everything about this body still (nothing to recompute per frame)?</summary>
     public bool Still => Sim.Asleep && (Hat == null || !HatOff || HatResting && HatLand >= 1f);
@@ -286,7 +306,8 @@ public static class Ragdolls
             foreach (var b in Bodies)
                 if (b.Live && !b.Sim.Asleep && (oldest == null || b.Order < oldest.Order))
                     oldest = b;
-            oldest!.Sim.Sleep();
+            RagdollActive.Stop(oldest!.Sim, ref oldest.Act);
+            oldest.Sim.Sleep();
             oldest.CacheCount = -1;
             awake--;
         }
@@ -295,6 +316,8 @@ public static class Ragdolls
         {
             if (!b.Live)
                 continue;
+            if (b.Act.Active)
+                RagdollActive.Drive(b.Sim, ref b.Act); // the death reaction's muscles (RagdollActive.cs)
             if (!b.Sim.Asleep)
             {
                 b.Sim.Advance(world);
@@ -312,8 +335,18 @@ public static class Ragdolls
 
     // ---- Spawning ---------------------------------------------------------------------------------------------
 
-    /// <summary>A shot's push on a body (m/s): bigger for hard-hitting, big-calibre guns (shotguns and snipers throw bodies, pistols nudge them).</summary>
-    public static float GunPower(WeaponDef def) => Math.Clamp(def.ShotDamage * (0.6f + def.Caliber) / 18f, 1.2f, 6f);
+    /// <summary>
+    /// A shot's push on a body (m/s): bigger for hard-hitting, big-calibre guns (shotguns and snipers throw bodies, pistols
+    /// nudge them): damage x (0.6 + calibre) / 18 x GunScale, between GunMin and GunCap (<see cref="RagdollTuning"/>).
+    /// </summary>
+    public static float GunPower(WeaponDef def) => GunPower(def.ShotDamage, def.Caliber);
+
+    public static float GunPower(float shotDamage, float caliber)
+    {
+        var t = RagdollTuning.Values;
+        var min = t[(int)RT.GunMin];
+        return Math.Clamp(shotDamage * (0.6f + caliber) / 18f * t[(int)RT.GunScale], min, MathF.Max(min, t[(int)RT.GunCap]));
+    }
 
     private static void SpawnPlayer(Game game, Player p, in KillPacket kill, double now)
     {
@@ -322,6 +355,7 @@ public static class Ragdolls
         {
             Feet = p.RenderPosition, Yaw = p.RenderYaw, Stance = p.RenderStance, Velocity = p.RenderVelocity,
             Victim = p.Id, Killer = kill.Killer, KillId = kill.KillId, Headshot = kill.Headshot,
+            HitPart = kill.HitPart, Cause = kill.Cause, OverkillHp = kill.OverkillHp, OverkillFraction = kill.OverkillFraction,
         };
         if (kill.Source is { } src)
         {
@@ -368,9 +402,19 @@ public static class Ragdolls
         }
         var d = new RagdollDeath
         {
-            Feet = z.RenderPos, Yaw = z.RenderYaw, Stance = Stance.Stand, Velocity = vel, Victim = 255, Killer = 255, Headshot = z.KilledByHead,
-            KillId = (byte)(z.Id & 0x7F), // only seeds the jitter
+            Feet = z.RenderPos, Yaw = z.RenderYaw, Stance = Game.ZombieStance(z), Velocity = vel, Victim = 255, Killer = 255, Headshot = z.KilledByHead,
+            KillId = (byte)(z.Id & 0x7F), // only seeds the jitter (and the death reaction's pick: the id is the same on every PC)
+            Legless = z.Crawler, // (a crawler or slug lies down already: prone, and only a legless reaction)
         };
+        if (Game.ZDeathInfoRead(z.DeathInfo, out var overShare, out var zHead, out var zMelee, out var zBlast))
+        {
+            // How it died (the server's death info, protocol 75): the death reaction's inputs.
+            d.OverkillFraction = overShare;
+            d.Headshot |= zHead;
+            d.HitPart = zHead ? BloodPart.Head : BloodPart.None;
+            d.Cause = zBlast ? DeathCause.Explosive : zMelee ? DeathCause.Melee : z.FxBurning ? DeathCause.Fire : z.FxZapped ? DeathCause.Shock : DeathCause.Bullet;
+            d.Killer = (byte)(z.Id >> 7);
+        }
         if (RecentBlast(game, d.Feet, now, 0.5) is { } b)
         {
             (d.BlastAt, d.BlastRadius) = (b.Pos, b.Radius);
@@ -566,6 +610,7 @@ public static class Ragdolls
         body.Gibbed = false;
         body.HatOff = body.HatResting = false;
         _spawned++;
+        RagdollTuning.EnsureLoaded();
         var pose = d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
         var toWorld = GravityFrames.Curved // a planet: the body falls from standing on its curve
             ? Matrix4x4.CreateRotationY(-d.Yaw) * GravityFrames.Basis(d.Feet) * Matrix4x4.CreateTranslation(d.Feet)
@@ -576,8 +621,35 @@ public static class Ragdolls
         if (vel.LengthSquared() > 144f)
             vel = Vector3.Normalize(vel) * 12f;
         body.Sim.Init(pose, toWorld, vel);
+        body.Act = default;
+        // A near thing: a short active phase (the death reaction), if there's room among the powered bodies.
+        var choice = RagdollActive.Choose(d);
+        if (choice.Reaction >= 0 && ActiveRoom(body.Look == RagdollLook.Zombie))
+            RagdollActive.Start(body.Sim, ref body.Act, choice, d);
         var rng = new Foliage.Rng(Seed(d));
         ApplyDeath(body, d, ref rng);
+    }
+
+    /// <summary>Bodies in their active phase now (all, and zombies).</summary>
+    public static (int All, int Zombies) ActiveCount()
+    {
+        int all = 0, zombies = 0;
+        foreach (var b in Bodies)
+            if (b.Live && b.Act.Active)
+            {
+                all++;
+                if (b.Look == RagdollLook.Zombie)
+                    zombies++;
+            }
+        return (all, zombies);
+    }
+
+    /// <summary>Is there room for one more powered body (MaxActive, and for a zombie MaxActiveZombies)?</summary>
+    private static bool ActiveRoom(bool zombie)
+    {
+        var (all, zombies) = ActiveCount();
+        var t = RagdollTuning.Values;
+        return all < (int)t[(int)RT.MaxActive] && (!zombie || zombies < (int)t[(int)RT.MaxActiveZombies]);
     }
 
     /// <summary>Self-test: what a PC does for a player's fresh death (a ragdoll, or gibs for a "gibbed" kill).</summary>
@@ -617,10 +689,12 @@ public static class Ragdolls
     {
         var sim = body.Sim;
         var fwd = sim.Forward();
+        var active = body.Act.Active;
+        var share = active ? RagdollTuning.Values[(int)RT.ActivePush] : 1f; // a powered body staggers instead of flying
         for (var i = 0; i < RagdollRig.Count; i++)
-            sim.Push(i, Jitter(ref rng, 0.35f));
-        sim.Push(RagdollRig.KneeR, fwd * (0.8f + rng.Next() * 0.6f));
-        sim.Push(RagdollRig.KneeL, fwd * (0.8f + rng.Next() * 0.6f));
+            sim.Push(i, Jitter(ref rng, 0.35f * share));
+        sim.Push(RagdollRig.KneeR, fwd * ((0.8f + rng.Next() * 0.6f) * share));
+        sim.Push(RagdollRig.KneeL, fwd * ((0.8f + rng.Next() * 0.6f) * share));
         var hatOff = d.Headshot || rng.Next() < 0.3f;
 
         if (d.BlastStrength > 0)
@@ -641,23 +715,69 @@ public static class Ragdolls
                 away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : -fwd;
                 away = Vector3.Normalize(away + new Vector3(0, 0.3f, 0));
                 for (var i = 0; i < RagdollRig.Count; i++)
-                    sim.Push(i, away * (i <= RagdollRig.Head ? 3.2f : 1.2f));
+                    sim.Push(i, away * ((i <= RagdollRig.Head ? 3.2f : 1.2f) * share));
             }
             else if (d.KillId != Game.SuicideKillId)
             {
                 var target = d.Headshot ? sim.Pos[RagdollRig.Head] : chest;
                 var dir = target - d.Source;
                 dir = dir.LengthSquared() > 1e-4f ? Vector3.Normalize(dir) : -fwd;
-                var power = d.GunPower > 0 ? d.GunPower : 2f;
-                var w = d.Headshot ? HeadShot : BodyShot;
-                for (var i = 0; i < RagdollRig.Count; i++)
-                    sim.Push(i, dir * (power * w[i]));
-                if (d.Headshot)
-                    sim.Push(RagdollRig.Head, new Vector3(0, power * 0.4f, 0)); // the head snaps back and up
+                var power = (d.GunPower > 0 ? d.GunPower : 2f) * share;
+                var hit = d.Headshot ? RagdollRig.Head : d.HitPart is not (BloodPart.None or BloodPart.Front or BloodPart.Back)
+                    ? RagdollActive.WoundParticle(d.HitPart, 1) // (the kill says where: the limb or the head)
+                    : HitParticle(sim, d.Source, dir, ref rng);
+                ShotPush(sim, hit, dir, power, d.Headshot);
             }
         }
         if (hatOff && body.Hat != null && body.Look == RagdollLook.Soldier)
             PopHat(body, ref rng);
+    }
+
+    /// <summary>
+    /// A shot's push: every particle a share (BodyShare, weighted towards the torso, or the head for a headshot), and the
+    /// hit particle (HitShare) and its neighbours (NeighbourShare) more, with a little lift (HitLift): off-centre hits
+    /// twist the body. All in <see cref="RagdollTuning"/>.
+    /// </summary>
+    public static void ShotPush(Ragdoll sim, int hit, Vector3 dir, float power, bool headshot)
+    {
+        var t = RagdollTuning.Values;
+        var w = headshot ? HeadShot : BodyShot;
+        var body = power * t[(int)RT.BodyShare];
+        for (var i = 0; i < RagdollRig.Count; i++)
+            sim.Push(i, dir * (body * w[i]));
+        var up = GravityFrames.Curved ? GravityFrames.UpAt(sim.Pos[hit]) : Vector3.UnitY;
+        var lift = power * t[(int)RT.HitLift];
+        sim.Push(hit, dir * (power * t[(int)RT.HitShare]) + up * lift);
+        var near = power * t[(int)RT.NeighbourShare];
+        for (int k = RagdollRig.NeighbourStart[hit], end = RagdollRig.NeighbourStart[hit + 1]; k < end; k++)
+            sim.Push(RagdollRig.NeighbourList[k], dir * near + up * (lift * 0.5f));
+        if (headshot)
+            sim.Push(RagdollRig.Head, up * (power * 0.4f)); // the head snaps back and up
+    }
+
+    private static readonly byte[] TorsoTargets = [RagdollRig.Belly, RagdollRig.Back, RagdollRig.ShoulderR, RagdollRig.ShoulderL, RagdollRig.HipR, RagdollRig.HipL];
+
+    /// <summary>
+    /// The particle a body shot hit when the kill doesn't say where: aim a seeded few centimetres off the chest, then the
+    /// torso particle nearest that line, the near side first.
+    /// </summary>
+    private static int HitParticle(Ragdoll sim, Vector3 source, Vector3 dir, ref Foliage.Rng rng)
+    {
+        var side = Vector3.Cross(dir, Vector3.UnitY);
+        side = side.LengthSquared() > 1e-6f ? Vector3.Normalize(side) : Vector3.UnitX;
+        var off = side * ((rng.Next() - 0.5f) * 0.4f) + Vector3.Cross(side, dir) * ((rng.Next() - 0.5f) * 0.4f);
+        var best = (int)RagdollRig.Belly;
+        var bestScore = float.MaxValue;
+        foreach (var i in TorsoTargets)
+        {
+            var rel = sim.Pos[i] - source - off;
+            var along = Vector3.Dot(rel, dir);
+            var perp = (rel - dir * along).Length();
+            var score = perp + along * 0.25f;
+            if (score < bestScore)
+                (best, bestScore) = (i, score);
+        }
+        return best;
     }
 
     // ---- Blasts -------------------------------------------------------------------------------------------------
@@ -692,6 +812,7 @@ public static class Ragdolls
             body.CacheCount = -1;
             return true;
         }
+        strength *= RagdollTuning.Values[(int)RT.BlastScale];
         var pelvis = sim.Pelvis;
         if (Vector3.Distance(pelvis, center) > radius + 1.5f)
             return false;
@@ -1109,7 +1230,7 @@ public static class Ragdolls
         get
         {
             var fr = Math.Max(_frames, 1);
-            var s = $"{LiveCount} bodies ({AwakeCount} awake), {_spawned} spawned, {_steps} steps in {_frames} frames, sim {_simTicks * 1000.0 / Stopwatch.Frequency / fr:0.000} ms/frame avg, "
+            var s = $"{LiveCount} bodies ({AwakeCount} awake, {ActiveCount().All} powered), {_spawned} spawned, {_steps} steps in {_frames} frames, sim {_simTicks * 1000.0 / Stopwatch.Frequency / fr:0.000} ms/frame avg, "
                     + $"{_worstSimTicks * 1000.0 / Stopwatch.Frequency:0.000} ms worst, {Ragdoll.Gathers} gathers";
             _simTicks = _worstSimTicks = 0;
             _frames = _steps = _spawned = 0;
