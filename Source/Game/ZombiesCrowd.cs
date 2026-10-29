@@ -8,7 +8,8 @@ namespace CallOfSlop;
 /// (<see cref="HordeCrowd"/>) out in the field; near the players the nearest are promoted to full zombies (the
 /// individual tier: AI, collision, hit boxes, animation and network as ever), a few a tick up to the individual cap;
 /// healthy individuals far from everyone go back to the crowd (hysteresis: promote under 22 m, demote over 34 m held
-/// for 2 s). Counts always add up: crowd + alive + killed = the round's total. Every other map: nothing here runs.
+/// for 2 s). Distances count by sight (CrowdSight.cs, MASS-HORDE.md "Waking and sleeping"): what no player sees counts
+/// further, so the players' view wakes first and the unseen sleeps first. Counts always add up: crowd + alive + killed = the round's total. Every other map: nothing here runs.
 /// </summary>
 public sealed partial class Zombie
 {
@@ -92,8 +93,9 @@ public sealed partial class Game
     }
 
     /// <summary>
-    /// Server, every tick on a crowd map (from <see cref="TickHorde"/>, before the horde controller's tick): demote far
-    /// healthy individuals, tick the crowd, promote this tick's nearest candidates. No allocation.
+    /// Server, every tick on a crowd map (from <see cref="TickHorde"/>, before the horde controller's tick): the players'
+    /// views, demote (put to sleep) the individuals that count furthest, tick the crowd, promote (wake) this tick's
+    /// nearest-counting candidates. No allocation.
     /// </summary>
     internal void CrowdTick(ZombiesMap zm, double now)
     {

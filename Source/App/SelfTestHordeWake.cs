@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// zombies mostly in the player's view, unseen ones put to sleep first, nothing woken again just after being put to sleep
 /// over a turn, the horde closing in (mean distance falling, the front not standing at the promote range), woken
 /// individuals from a wall ahead staying in front; the sight's ground test hides only what the ground hides; two players
-/// back to back see all round; no allocation. Prints the numbers with the old behaviour's tuning beside them.
+/// back to back see all round; no allocation. HORDE_WAKE_COMPARE=1 also runs the scenes with the old behaviour's tuning.
 /// </summary>
 public static partial class SelfTest
 {
@@ -159,7 +159,7 @@ public static partial class SelfTest
         (res.MeanStart, _) = WakeSpread(c, at, scratch);
         var badText = "";
         var kills = 0;
-        var shoot = Environment.GetEnvironmentVariable("HORDE_WAKE_NOSHOOT") != "1";
+        var shoot = true;
         void Run(double seconds, float turnPerSecond = 0)
         {
             for (var t = 0; t < (int)(seconds * World.TickRate); t++)
@@ -209,7 +209,7 @@ public static partial class SelfTest
         }
         Line($"{tag}: {c.Count} particles, {c.MassTotal} mass, the individual cap {g.CrowdIndividualCap}");
         var clock = 0.0;
-        for (var s = 0; s < (ring ? 4 : Environment.GetEnvironmentVariable("HORDE_WAKE_NOSHOOT") == "1" ? 11 : 5); s++)
+        for (var s = 0; s < (ring ? 4 : 5); s++)
         {
             if (s == 2 && !legacy && ring)
             {
@@ -217,6 +217,7 @@ public static partial class SelfTest
                 var a0 = GC.GetAllocatedBytesForCurrentThread();
                 Run(0.5);
                 res.Alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
+                shoot = true;
                 Run(1.5);
             }
             else

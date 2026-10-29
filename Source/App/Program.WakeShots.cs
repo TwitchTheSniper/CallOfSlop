@@ -48,7 +48,7 @@ public static unsafe partial class Program
             g.Update(now += World.TickDt, World.TickDt);
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
-        var at = new Vector3(st.Rally.X, map.GroundHeight(st.Rally.X, st.Rally.Y) + 0.05f, st.Rally.Y);
+        var at = new Vector3(st.Rally.X - 6, map.GroundHeight(st.Rally.X - 6, st.Rally.Y) + 0.05f, st.Rally.Y); // (beside the rally post)
         me.Teleport(at);
         me.Yaw = MathF.PI / 2;
         me.Pitch = 0;
@@ -82,11 +82,16 @@ public static unsafe partial class Program
         Console.WriteLine($"[wakeshots] {tag}: {g.Crowd.Total} zombies round the player ({g.Crowd.Count} particles, {g.Crowd.MassTotal} mass, out to {outer:0} m), individual cap {g.CrowdIndividualCap}");
         var simulated = 0.0;
         var kills = 0;
+        double tickMs = 0, worstMs = 0;
+        var ticks = 0;
         void Step()
         {
             now += World.TickDt;
             simulated += World.TickDt;
+            var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
             g.SelfTestZombiesTick(now);
+            var ms = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+            (tickMs, worstMs, ticks) = (tickMs + ms, Math.Max(worstMs, ms), ticks + 1);
             if (g.ServerTick % 12 == 0)
             {
                 Zombie? best = null;
@@ -139,7 +144,8 @@ public static unsafe partial class Program
                     sum += c.MassCount[k] * Vector2.Distance(new Vector2(m.X, m.Z), new Vector2(at.X, at.Z));
                 }
             Console.WriteLine($"[wakeshots] {tag} {simulated:0} s: individuals {alive} ({inView} in view, {behind} behind), particles {c.Count} ({moving} moving, {c.Near} waiting), "
-                              + $"mass {c.MassTotal}, mean distance {sum / Math.Max(1, c.Total):0.0} m; woken {g.CrowdWokeSeen} seen + {g.CrowdWokeUnseen} unseen, put to sleep {g.CrowdSleptUnseen} unseen + {g.CrowdSleptSeen} seen, woken again soon after {g.CrowdRewoken}, shot {kills}");
+                              + $"mass {c.MassTotal}, mean distance {sum / Math.Max(1, c.Total):0.0} m; woken {g.CrowdWokeSeen} seen + {g.CrowdWokeUnseen} unseen, put to sleep {g.CrowdSleptUnseen} unseen + {g.CrowdSleptSeen} seen, woken again soon after {g.CrowdRewoken}, shot {kills}; zombies tick {(ticks > 0 ? tickMs / ticks : 0):0.00} ms mean, worst {worstMs:0.00} ms (wall clock)");
+            (tickMs, worstMs, ticks) = (0, 0, 0);
         }
         var eye = at + new Vector3(0, World.EyeHeight, 0);
         var views = new (string Name, Vector3 Eye, Vector3 Target)[]
