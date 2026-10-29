@@ -285,7 +285,7 @@ public sealed partial class Game
     };
 
     /// <summary>Is <paramref name="p"/> near enough the trader to shop (the rules' range, a little slack for a moving client)?</summary>
-    public bool AtTrader(Player p) => ZTrader.Here && Flat(ZTrader.At - p.Position) <= ZRules.TraderUseRange + 0.4f && MathF.Abs(ZTrader.At.Y - p.Position.Y) < 2.5f;
+    public bool AtTrader(Player p) => ZTrader.Here && Flat(ZTrader.At - p.Position) <= ZRules.TraderUseRange + 0.4f && ZReachSpot(p, ZTrader.At); // (the reach rule: ZombiesReach.cs)
 
     /// <summary>The interact prompt at the trader (FindZUse).</summary>
     private ZUse TraderUse() => new(ZUseKind.Trader, 0, 0, "Press [E] to see what the trader has");

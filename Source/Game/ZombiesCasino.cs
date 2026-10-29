@@ -276,7 +276,7 @@ public sealed partial class Game
     }
 
     /// <summary>Is <paramref name="p"/> close enough to table <paramref name="i"/> to play it?</summary>
-    public bool AtCasinoTable(Player p, int i) => World.Map.Zombies is { } zm && i >= 0 && i < zm.CasinoTables.Count && Flat(zm.CasinoTables[i].At - p.Position) <= ZRules.CasinoUseRange + 0.3f;
+    public bool AtCasinoTable(Player p, int i) => World.Map.Zombies is { } zm && i >= 0 && i < zm.CasinoTables.Count && Flat(zm.CasinoTables[i].At - p.Position) <= ZRules.CasinoUseRange + 0.3f && ZReachSpot(p, zm.CasinoTables[i].At); // (the reach rule: ZombiesReach.cs)
 
     // ---- Requests ------------------------------------------------------------------------------------------
 

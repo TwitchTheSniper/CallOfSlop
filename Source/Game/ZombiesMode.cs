@@ -937,7 +937,10 @@ public sealed partial class Game
 
     // ---- The interact key ----------------------------------------------------------------------------
 
-    private const float UseRange = 1.7f;
+    internal const float UseRange = 1.7f;
+
+    /// <summary>A wall buy's height band about its chalk (<see cref="ZWallBuy.At"/>, usually 1.3 m up the wall): down to the floor, a little over the top.</summary>
+    internal const float WallBuyBandLo = -1.3f, WallBuyBandHi = 0.4f;
 
     /// <summary>
     /// What the interact key would do for <paramref name="p"/> right now (both sides: the client shows the prompt, the
@@ -956,7 +959,7 @@ public sealed partial class Game
         {
             if (o == p || !o.Alive || !IsDowned(o))
                 continue;
-            if (Flat(o.Position - pos) <= ZRules.ReviveRange)
+            if (Flat(o.Position - pos) <= ZRules.ReviveRange && ZReachSpot(p, o.Position))
                 return new ZUse(ZUseKind.Revive, o.Id, 0, $"Hold [E] to revive {o.Name}");
         }
 
@@ -970,6 +973,8 @@ public sealed partial class Game
                 best = u;
             }
         }
+        // Every thing below also has to be in reach in 3D and in sight (ZombiesReach.cs); the cheap flat range goes first.
+        bool Near(float d, float range, Vector3 at) => d <= range && d < bestD && ZReachSpot(p, at);
 
         for (var i = 0; i < zm.Doors.Count; i++)
         {
@@ -978,6 +983,8 @@ public sealed partial class Game
             var door = zm.Doors[i];
             var closest = Vector3.Clamp(pos + new Vector3(0, 1, 0), door.Box.Min, door.Box.Max);
             var d = Flat(closest - pos);
+            if (d > 1.9f || d >= bestD || !ZReach(p, closest with { Y = door.Box.Min.Y }, 0, door.Box.Max.Y - door.Box.Min.Y))
+                continue;
             var what = door.Debris ? "clear the debris" : "open the door";
             Consider(d, 1.9f, door.NeedsPower && !ZPower
                 ? new ZUse(ZUseKind.Door, i, door.Cost, $"{door.Name}: needs the power on", Blocked: true)
@@ -987,7 +994,7 @@ public sealed partial class Game
         {
             var wb = zm.WallBuys[i];
             var d = Flat(wb.At - pos);
-            if (d > UseRange)
+            if (d > UseRange || d >= bestD || !ZReach(p, wb.At, WallBuyBandLo, WallBuyBandHi))
                 continue;
             var cost = WallCost(wb);
             var owned = OwnsBuild(p, wb.Build) >= 0;
@@ -1004,6 +1011,8 @@ public sealed partial class Game
             var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
             var d = Flat(spot.At - pos);
             var cost = BoxCost(zm);
+            if (!Near(d, 1.9f, spot.At))
+                d = float.MaxValue; // (out of reach: nothing below considers it)
             switch (BoxState)
             {
                 case ZBoxState.Idle:
@@ -1027,7 +1036,7 @@ public sealed partial class Game
         {
             var m = zm.PerkMachines[i];
             var d = Flat(m.At - pos);
-            if (d > UseRange)
+            if (!Near(d, UseRange, m.At))
                 continue;
             var k = ZRules.PerkIndex(m.Perk);
             if (k < 0)
@@ -1052,6 +1061,8 @@ public sealed partial class Game
         {
             var d = Flat(su.At - pos);
             var cost = SlotCost(zm);
+            if (!Near(d, UseRange, su.At))
+                d = float.MaxValue;
             if (p.ExtraSlots)
                 Consider(d, UseRange, new ZUse(ZUseKind.SlotUpgrade, 0, cost, "You have 4 weapon slots", Blocked: true));
             else if (su.NeedsPower && !ZPower)
@@ -1059,27 +1070,30 @@ public sealed partial class Game
             else
                 Consider(d, UseRange, new ZUse(ZUseKind.SlotUpgrade, 0, cost, $"Hold [E] for 2 more weapon slots [{cost}]"));
         }
-        if (zm.Power is { } pw && !ZPower)
+        if (zm.Power is { } pw && !ZPower && Near(Flat(pw.At - pos), UseRange, pw.At))
             Consider(Flat(pw.At - pos), UseRange, new ZUse(ZUseKind.Power, 0, 0, "Hold [E] to turn on the power"));
         for (var i = 0; i < zm.SlotMachines.Count && i < ZSlots.Length; i++)
         {
             var d = Flat(zm.SlotMachines[i].At - pos);
-            if (d <= UseRange)
+            if (Near(d, UseRange, zm.SlotMachines[i].At))
                 Consider(d, UseRange, SlotUse(zm, i)); // ZombiesSlots.cs
         }
         for (var i = 0; i < zm.CasinoTables.Count && i < ZCasino.Length; i++)
         {
             var d = Flat(zm.CasinoTables[i].At - pos);
-            if (d <= ZRules.CasinoUseRange)
+            if (Near(d, ZRules.CasinoUseRange, zm.CasinoTables[i].At))
                 Consider(d, ZRules.CasinoUseRange, CasinoUse(zm, i)); // ZombiesCasino.cs
         }
         for (var i = 0; i < zm.Benches.Count; i++)
-            Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts)"));
-        if (ZTrader.Here && MathF.Abs(ZTrader.At.Y - pos.Y) < 2.5f)
+            if (Near(Flat(zm.Benches[i].At - pos), 1.9f, zm.Benches[i].At))
+                Consider(Flat(zm.Benches[i].At - pos), 1.9f, new ZUse(ZUseKind.Workbench, i, 0, "Press [E] to use the workbench (your parts)"));
+        if (ZTrader.Here && Near(Flat(ZTrader.At - pos), ZRules.TraderUseRange, ZTrader.At))
             Consider(Flat(ZTrader.At - pos), ZRules.TraderUseRange, TraderUse()); // ZombiesTrader.cs
         for (var i = 0; i < zm.Salvage.Count && i < _salvageRound.Length; i++)
         {
             var s = zm.Salvage[i];
+            if (!Near(Flat(s.At - pos), UseRange, s.At))
+                continue;
             Consider(Flat(s.At - pos), UseRange, _salvageRound[i] == ZRound
                 ? new ZUse(ZUseKind.Salvage, i, 0, "Picked clean this round", Blocked: true)
                 : new ZUse(ZUseKind.Salvage, i, 0, ZRules.SalvageParts == 1 ? "Hold [E] to search the pile for a part" : $"Hold [E] to search the pile for parts (+{ZRules.SalvageParts})"));
@@ -1090,20 +1104,20 @@ public sealed partial class Game
             foreach (var wd in ZWeaponDrops)
             {
                 var d = Flat(wd.At - pos);
-                if (d <= UseRange && MathF.Abs(wd.At.Y - pos.Y) < 1.5f && PickupRank(p, wd.At, d) is var rank && rank < bestD)
+                if (d <= UseRange && MathF.Abs(wd.At.Y - pos.Y) < 1.5f && PickupRank(p, wd.At, d) is var rank && rank < bestD && ZReachSpot(p, wd.At))
                     Consider(rank, UseRange, WeaponDropUse(p, wd)); // ZombiesDrops.cs
             }
             foreach (var pd in ZPartDrops)
             {
                 var d = Flat(pd.At - pos);
-                if (d <= UseRange && MathF.Abs(pd.At.Y - pos.Y) < 1.5f && PickupRank(p, pd.At, d) is var rank && rank < bestD)
+                if (d <= UseRange && MathF.Abs(pd.At.Y - pos.Y) < 1.5f && PickupRank(p, pd.At, d) is var rank && rank < bestD && ZReachSpot(p, pd.At))
                     Consider(rank, UseRange, PartDropUse(p, pd));
             }
         }
         for (var i = 0; i < zm.Windows.Count; i++)
         {
             var w = zm.Windows[i];
-            if (i < ZBoards.Length && ZBoards[i] < w.Boards)
+            if (i < ZBoards.Length && ZBoards[i] < w.Boards && Near(Flat(w.Inside - pos) + 0.3f, 1.6f, w.Inside))
                 Consider(Flat(w.Inside - pos) + 0.3f, 1.6f, new ZUse(ZUseKind.Repair, i, 0, "Hold [E] to rebuild the barrier"));
         }
         if (best is { Blocked: false } b && LogicMachineOf(b.Kind) is var (lk, lm) && LogicLocksZ(lk, lm, b.Index))

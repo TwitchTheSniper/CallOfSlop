@@ -157,6 +157,17 @@ The prompt says what the interact key (**F** by default) does, with the price: "
 for `holdSeconds` (0.25 s) to buy; reviving and rebuilding boards go on while you hold it. Red: not enough points;
 grey: not possible now (needs the power, already owned...).
 
+**Reach** (`Source/Game/ZombiesReach.cs`, board item dev-use-height-limit-uh01). Every interactable (doors and debris,
+wall buys, the box, perks, the slot upgrade, the power, workbenches, slot machines, casino tables, the trader, salvage,
+windows, pickups, a downed teammate, the push cart's bar, map logic buttons and levers such as the bell) is in reach
+only when, besides its flat range: your eye is within 1.2 m over to 0.3 m under its height band (a thing on the floor:
+its spot to 1.2 m up; a wall buy: the floor to 0.4 m over its chalk; a door: its box; a button: its 0.5 m hot spot), and
+nothing solid stands between your eye and it (the thing's own prop doesn't count; window openings don't block). So
+nothing is usable from the floor above or below, or through a wall. The prompt and the server use the same rule (the
+server runs it on its own copy of you for every buy, bet, casino move, trader purchase and button), and co-op bots buy
+through it too. A map's interact point that no floor spot can reach fails the "Zombies use reach" self-test: move the
+point rather than loosening the rule.
+
 | Buyable | What it does | Price (proposed) |
 | --- | --- | --- |
 | **Door / debris** | Opens (a door sinks into the floor, debris is cleared): the area behind it is **unlocked**, its spawners go live and zombies can route through it | per door in the map (750, 1000, 1250 on Zombies Test) |
