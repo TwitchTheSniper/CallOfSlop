@@ -52,7 +52,9 @@ public sealed class Settings
     public bool VoiceActivation; // false: push to talk; true: transmit while the level is over the threshold
     public float VoiceThresholdDb = VoiceSender.DefaultThresholdDb;
     public string VoiceDevice = ""; // capture device name ("" = the system default)
-    public float VoiceVolume = 1f; // other players' voices, on top of the master volume
+    public float VoiceVolume = 1f; // other players' voices, on top of the master volume: 0 to VoiceBoost.Max (300%)
+    public readonly Dictionary<string, float> VoicePlayerVolume = new(StringComparer.Ordinal); // by player name: 0 to VoiceBoost.Max (absent = 100%)
+    public readonly HashSet<string> VoicePlayerMuted = new(StringComparer.Ordinal); // players whose voice you muted (by name)
     public bool VoiceMuteAll; // hear no voices (your own mic is unaffected)
     public bool AllowVoice = true; // hosting: relay voice chat at all
     public bool DeadChatPrivate; // hosting: dead players' chat in a live match reaches only the dead
@@ -317,6 +319,45 @@ public sealed class Settings
     }
 
     /// <summary>Server names: printable ASCII, up to 32 characters (may be empty).</summary>
+    /// <summary>Your volume for a player's voice (1 unless set), 0 to <see cref="VoiceBoost.Max"/>.</summary>
+    public float VoicePlayerGain(string name) => VoicePlayerVolume.TryGetValue(name, out var v) ? v : 1f;
+
+    /// <summary>Sets a player's voice volume (100% removes the entry).</summary>
+    public void SetVoicePlayerVolume(string name, float volume)
+    {
+        volume = float.IsFinite(volume) ? Math.Clamp(volume, 0f, VoiceBoost.Max) : 1f;
+        if (MathF.Abs(volume - 1f) < 0.005f)
+            VoicePlayerVolume.Remove(name);
+        else
+            VoicePlayerVolume[name] = volume;
+    }
+
+    /// <summary>Saved per-player voice lines: <c>voice_player=VOLUME:MUTED:NAME</c> (the name last: it may hold a colon).</summary>
+    private IEnumerable<string> VoicePlayerLines()
+    {
+        var inv = CultureInfo.InvariantCulture;
+        foreach (var name in VoicePlayerVolume.Keys.Union(VoicePlayerMuted).Order(StringComparer.Ordinal).Take(MaxVoicePlayers))
+            if (name.Length > 0 && name.IndexOfAny(['\r', '\n']) < 0)
+                yield return $"voice_player={VoicePlayerGain(name).ToString(inv)}:{(VoicePlayerMuted.Contains(name) ? 1 : 0)}:{name}";
+    }
+
+    /// <summary>The most players remembered (a long-lived save stays small).</summary>
+    public const int MaxVoicePlayers = 500;
+
+    private void ReadVoicePlayer(string v)
+    {
+        var parts = v.Split(':', 3);
+        if (parts.Length != 3 || parts[2].Length == 0 || VoicePlayerVolume.Count + VoicePlayerMuted.Count >= MaxVoicePlayers * 2)
+            return;
+        var name = Clean(parts[2]);
+        if (name.Length == 0)
+            return;
+        if (float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out var f))
+            SetVoicePlayerVolume(name, f);
+        if (parts[1] == "1")
+            VoicePlayerMuted.Add(name);
+    }
+
     public static string CleanServerName(string name) => new string(name.Where(c => c >= 32 && c < 127).Take(32).ToArray()).Trim();
 
     /// <summary>Addresses (join address, master server): printable ASCII without spaces, up to 127 characters (fits the lobby's text box).</summary>
@@ -367,7 +408,8 @@ public sealed class Settings
                     case "voice_activation": s.VoiceActivation = v == "1"; break;
                     case "voice_threshold" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.VoiceThresholdDb = Math.Clamp(f, VoiceSender.MinThresholdDb, VoiceSender.MaxThresholdDb); break;
                     case "voice_device": s.VoiceDevice = new string(v.Where(c => c >= 32).Take(200).ToArray()); break;
-                    case "voice_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.VoiceVolume = Math.Clamp(f, 0f, 1f); break;
+                    case "voice_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.VoiceVolume = Math.Clamp(f, 0f, VoiceBoost.Max); break;
+                    case "voice_player": s.ReadVoicePlayer(v); break;
                     case "voice_mute_all": s.VoiceMuteAll = v == "1"; break;
                     case "allow_voice": s.AllowVoice = v != "0"; break;
                     case "dead_chat": s.DeadChatPrivate = v == "dead"; break;
@@ -553,6 +595,7 @@ public sealed class Settings
                     $"wb_show_all_grips={(WorkbenchShowAllGrips ? 1 : 0)}",
                     $"binds_version={Keybinds.DefaultsVersion}",
                     .. Enumerable.Range(0, (int)GameAction.COUNT).Select(i => $"bind_{(GameAction)i}={Binds[i]}"),
+                    .. VoicePlayerLines(),
                 ],
                 SaveVersion
             );

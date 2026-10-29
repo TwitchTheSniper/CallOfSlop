@@ -257,12 +257,13 @@ public sealed partial class Ui
     /// <summary>The pause menu's PLAYERS page: everyone (not bots), with Mute voice / Mute chat and who is talking.</summary>
     private void DrawPausePlayers(Game game, Settings s)
     {
-        Title("Players - mute voice or chat");
+        Title("Players - voice volume, mute voice or chat");
         var now = Brutal.GlfwApi.Glfw.Time;
         var any = false;
-        if (ImGui.BeginTable("##players"u8, 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
+        if (ImGui.BeginTable("##players"u8, 4, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
         {
             ImGui.TableSetupColumn("Player"u8, ImGuiTableColumnFlags.WidthFixed, 260 * _scale);
+            ImGui.TableSetupColumn("Volume"u8, ImGuiTableColumnFlags.WidthFixed, 200 * _scale);
             ImGui.TableSetupColumn("Voice"u8, ImGuiTableColumnFlags.WidthFixed, 140 * _scale);
             ImGui.TableSetupColumn("Chat"u8, ImGuiTableColumnFlags.WidthFixed, 140 * _scale);
             ImGui.TableHeadersRow();
@@ -276,9 +277,22 @@ public sealed partial class Ui
                 ImGui.AlignTextToFramePadding();
                 ImGuiSafe.TextColored(Rgba(game.SideColor(p)), game.NameOf(p.Id) + (game.IsTalking(p, now) ? "  <))" : ""));
                 ImGui.TableNextColumn();
+                var pct = s.VoicePlayerGain(p.Name) * 100f;
+                ImGui.SetNextItemWidth(180 * _scale);
+                if (ImGui.SliderFloat($"##pv{p.Id}", ref pct, 0f, VoiceBoost.Max * 100f, "%.0f%%"u8))
+                    s.SetVoicePlayerVolume(p.Name, MathF.Round(pct) / 100f);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip("Your volume for this player (100% = as they sound). Remembered by name. Ctrl+click to type a value.");
+                ImGui.TableNextColumn();
                 var mv = game.MutedVoice.Contains(p.Name);
                 if (ImGui.Checkbox($"Mute voice##mv{p.Id}", ref mv))
+                {
                     game.SetVoiceMuted(p, mv);
+                    if (mv)
+                        s.VoicePlayerMuted.Add(p.Name);
+                    else
+                        s.VoicePlayerMuted.Remove(p.Name);
+                }
                 ImGui.TableNextColumn();
                 var mc = game.MutedChat.Contains(p.Name);
                 if (ImGui.Checkbox($"Mute chat##mc{p.Id}", ref mc))
@@ -385,8 +399,14 @@ public sealed partial class Ui
             MicTestOn = false;
 
         ImGui.SetNextItemWidth(w);
-        if (ImGui.SliderFloat("Voice volume"u8, ref s.VoiceVolume, 0f, 1f, "%.2f"u8))
+        var voicePct = s.VoiceVolume * 100f;
+        if (ImGui.SliderFloat("Voice volume"u8, ref voicePct, 0f, VoiceBoost.Max * 100f, "%.0f%%"u8))
+        {
+            s.VoiceVolume = Math.Clamp(MathF.Round(voicePct) / 100f, 0f, VoiceBoost.Max);
             audio.VoiceVolume = s.VoiceVolume;
+        }
+        if (ImGui.IsItemHovered())
+            ImGuiSafe.SetItemTooltip("Other players' voices, up to 300%. Above 100% the voice is boosted with a limiter, so loud talkers don't distort. Each player's own volume: Esc > PLAYERS.");
         ImGui.Checkbox("Mute all voice"u8, ref s.VoiceMuteAll);
         ImGuiSafe.TextColored(Dim, $"Chat: {Keybinds.Name(s.Bind(GameAction.ChatAll))} (everyone), {Keybinds.Name(s.Bind(GameAction.ChatTeam))} (your team). Mute someone: Esc > PLAYERS.");
     }

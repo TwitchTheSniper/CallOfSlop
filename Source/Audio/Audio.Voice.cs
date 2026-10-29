@@ -145,7 +145,7 @@ public sealed partial class Audio
     /// <summary>The microphone (Settings > Audio opens it; Program reads it).</summary>
     public readonly MicCapture Mic = new();
 
-    /// <summary>Settings > Audio "Voice volume" (on top of the master volume) and "Mute all voice".</summary>
+    /// <summary>Settings > Audio "Voice volume" (on top of the master volume; 0 to <see cref="VoiceBoost.Max"/>) and "Mute all voice".</summary>
     public float VoiceVolume = 1f;
 
     public bool VoiceMuteAll;
@@ -165,6 +165,7 @@ public sealed partial class Audio
         public int FreeCount;
         public VoiceStream? Bound;
         public float MaxGain = 1f; // the OpenAL cap last set (the audio mixer's Voice chat row lifts it for a boost)
+        public float MeterPeak, MeterMs; // the last queued frame's level times the source gain (the mixer's Voice chat meter)
     }
 
     private VoiceOut[] _voiceOut = [];
@@ -286,7 +287,9 @@ public sealed partial class Audio
 
         // Where and how loud.
         var spatial = s.Route == VoiceRoute.Proximity && s.HeadKnown;
-        var gain = VoiceMuteAll ? 0f : VoiceVolume;
+        // Your volumes (Settings' and this talker's): the part above 1 goes on the samples (OpenAL caps a source's gain,
+        // often at 1), the rest on the source with proximity, radio and the mixer on top.
+        var (boost, gain) = VoiceBoost.Split(VoiceMuteAll ? 0f : VoiceVolume * s.Volume);
         var hf = 1f;
         if (spatial)
         {
@@ -316,7 +319,8 @@ public sealed partial class Audio
             src.MaxGain = cap; // a boost may pass OpenAL's default cap of 1 (scaled with it, like the other buses)
             v.MaxGain = cap;
         }
-        src.Gain = mix == 1f ? gain : gain * mix;
+        var srcGain = mix == 1f ? gain : gain * mix;
+        src.Gain = srcGain;
         if (EfxEnabled)
         {
             try
@@ -343,6 +347,13 @@ public sealed partial class Audio
                 break;
             if (s.Route == VoiceRoute.Radio)
                 s.Radio.Process(_voicePcm);
+            VoiceBoost.Apply(_voicePcm, boost, ref s.BoostState);
+            if (Meters.Enabled)
+            {
+                VoiceBoost.Level(_voicePcm, out var pk, out var ms);
+                v.MeterPeak = pk * srcGain;
+                v.MeterMs = ms * srcGain * srcGain;
+            }
             var buffer = v.Free[--v.FreeCount];
             buffer.SetData(AlFormat.Mono16, MemoryMarshal.AsBytes(_voicePcm.AsSpan()), VoiceCodec.SampleRate);
             _voiceOne[0] = buffer;
@@ -356,6 +367,7 @@ public sealed partial class Audio
             src.Play(); // a new talk spurt, or after an underrun
         if (queued == 0 && !s.Jitter.Playing && s.Jitter.Buffered == 0)
         {
+            v.MeterPeak = v.MeterMs = 0f;
             src.Stop();
             v.Bound = null; // free for the next talker
         }

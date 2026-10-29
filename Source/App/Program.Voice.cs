@@ -58,6 +58,7 @@ public static unsafe partial class Program
         if (!ReferenceEquals(game, _voiceGame))
         {
             _voiceGame = game;
+            game?.LoadVoiceMutes(s);
             _voiceSender.Reset();
             audio.Loopback.Jitter.Reset();
         }
@@ -104,6 +105,7 @@ public static unsafe partial class Program
         }
 
         game?.UpdateVoiceHeads();
+        game?.UpdateVoiceVolumes(s);
         audio.UpdateVoice(game?.Voice, now);
 
         if (now - _voiceStatsAt > 60)
