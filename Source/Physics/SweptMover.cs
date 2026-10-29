@@ -158,7 +158,8 @@ public sealed class SweptMover : IMover
         s.Velocity = vFlat + up * vUp;
 
         if ((b & Buttons.Jump) != 0 && (b & Buttons.Forward) != 0 && s.Stance != Stance.Prone && up == Vector3.UnitY // (the ledge search is Y-up only: never on a planet, fine on a zoned map's decks)
-            && ClassicMover.FindLedge(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge))
+            && (WindowEntry.TryFind(s, cmd.Yaw, out var ledgeStance, out var ledgeTarget, out var ledgeTop, _roomForLedge) // (a Zombies window from outside, WindowEntry.cs)
+                || (ClassicMover.FindLedge(s, cmd.Yaw, out ledgeStance, out ledgeTarget, out ledgeTop, _roomForLedge) && !WindowEntry.LeavesPlayArea(s.Position, ledgeTarget, ledgeStance))))
         {
             ClassicMover.StartMantle(ref s, ledgeStance, ledgeTarget, ledgeTop);
             return;

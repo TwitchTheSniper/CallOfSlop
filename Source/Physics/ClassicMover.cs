@@ -141,7 +141,9 @@ public sealed class ClassicMover : IMover
     /// </summary>
     private bool TryMantle(ref MoveState s, float yaw)
     {
-        var ledge = FindLedge(s, yaw, out var stance, out var target, out var top);
+        // A Zombies window with every board gone, from outside the play area: in through it (WindowEntry.cs).
+        var ledge = WindowEntry.TryFind(s, yaw, out var stance, out var target, out var top)
+            || (FindLedge(s, yaw, out stance, out target, out top) && !WindowEntry.LeavesPlayArea(s.Position, target, stance)); // (never out of the play area)
         if (!ledge)
             return false;
         StartMantle(ref s, stance, target, top);

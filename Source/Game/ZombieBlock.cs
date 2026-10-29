@@ -175,7 +175,10 @@ public sealed partial class Game
             push *= ZBlockMaxPush / len;
         s.Velocity = vel;
         if (ZBlockTryPush(ref s.Position, push, h))
+        {
             ZBlockPushes++;
+            NotePushed(p); // (the outside log's "pushed", ZombiesOutside.cs)
+        }
     }
 
     /// <summary>
