@@ -90,6 +90,12 @@ public sealed partial class Zombie
     public double UnstickUntil;
     public float UnstickYaw;
 
+    /// <summary>The stuck watch's recovery stage in the current stuck spell (0: not stuck; Game.ZStuckWatch).</summary>
+    public byte StuckStage;
+
+    /// <summary>The stuck-spot report's spot for the current spell (from stage 2 on, when geometry blocks it; StuckSpots.cs).</summary>
+    public StuckSpot? StuckSpellSpot;
+
     /// <summary>Positions by server tick (lag compensation: shots are tested against where the shooter saw it).</summary>
     public readonly Vector3[] History = new Vector3[32];
 
@@ -603,6 +609,14 @@ public sealed partial class Game
                 z.Door = -1;
                 m.Node = -1;
             }
+            else if (Flat(door.SideIn(z.Area) - z.Position) > 1.5f && Flat(outSide - z.Position) > Flat(outSide - door.SideIn(z.Area)) + 0.3f)
+            {
+                // Pushed off the doorway before it got through (the crowd, a side-step): back to the near side first, then
+                // through square on (the nav graph was built with the doors shut, so no route crosses them).
+                goal = door.SideIn(z.Area);
+                goalNode = DoorSideNode(z.Door, z.Area, outSide: false);
+                z.Door = -1;
+            }
             else
             {
                 goal = outSide;
@@ -640,21 +654,171 @@ public sealed partial class Game
         MoveZombie(z, ai.Separate(z, yaw), true, jump);
     }
 
-    /// <summary>Stuck check: barely moved in a second while trying to: walk off sideways for a moment, plan again.</summary>
+    /// <summary>Stuck watch counts this server (self-tests): spells that reached stage 2, side-steps, returns to the route node and nudges.</summary>
+    public int ZStuckSpells, ZStuckSideSteps, ZStuckBacks, ZStuckNudges;
+
+    /// <summary>The stuck-spot report's mode name for zombies' spells (beside the bots' modes).</summary>
+    public const string ZombieStuckMode = "Zombies (horde)";
+
+    /// <summary>
+    /// The zombies' stuck watch (board item dev-zombies-stuck-railings-zr01), checked once a second: barely moved while
+    /// trying to and not at the goal is a stuck spell, recovered in stages, each a second on from the last:
+    /// <list type="number">
+    /// <item>side-step along the blocker (the side with more room) and follow the field instead of walking straight;</item>
+    /// <item>re-path: back to the nearest route node in plain view, then on along the field (its spot goes in the stuck-spot
+    /// report when geometry is what blocks it, not the crowd);</item>
+    /// <item>side-step the other way and back to the node again;</item>
+    /// <item>a nudge onto the nearest free route node within a couple of metres, only where no player can see the zombie or the
+    /// node (never a teleport in view); seen, it keeps side-stepping.</item>
+    /// </list>
+    /// Progress ends the spell. Cheap: a few rays per stage, nothing per tick.
+    /// </summary>
     private void ZStuckWatch(Zombie z, float yaw, Vector3 goal, double now)
     {
         if (now - z.StuckAt <= 1.0)
             return;
+        var m = z.Hm;
         if (Flat(z.Position - z.StuckPos) < 0.25f * SpeedOf(z) && Flat(goal - z.Position) > 1.2f)
         {
-            z.UnstickUntil = now + 0.6;
-            z.UnstickYaw = World.WrapAngle(yaw + (ZRand() < 0.5f ? 1.4f : -1.4f));
-            z.Hm.Node = -1;
-            z.Hm.Straight = false;
+            if (z.StuckStage < 255)
+                z.StuckStage++;
+            m.Straight = false;
+            m.NoStraightUntil = now + 3.0;
+            switch (z.StuckStage)
+            {
+                case 1:
+                    ZSideStep(z, yaw, goal, now, other: false);
+                    m.Node = -1;
+                    break;
+                case 2:
+                case 3:
+                    if (z.StuckStage == 3)
+                        ZSideStep(z, yaw, goal, now, other: true);
+                    m.Node = -1; // (picked again in plain view, then walked back to)
+                    m.ToNodeUntil = now + 0.9; // (short: never long walking away from the target)
+                    ZStuckBacks++;
+                    if (z.StuckStage == 2)
+                        ZStuckSpellStarts(z, yaw);
+                    else if (z.StuckSpellSpot is { } s3)
+                        StuckSpots.Session.Stage(s3, 3);
+                    break;
+                default:
+                    if (!ZNudge(z))
+                        ZSideStep(z, yaw, goal, now, other: (z.StuckStage & 1) == 0);
+                    break;
+            }
+        }
+        else
+        {
+            z.StuckStage = 0;
+            z.StuckSpellSpot = null;
         }
         z.StuckPos = z.Position;
         z.StuckAt = now;
     }
+
+    /// <summary>
+    /// Stage 1 / 3: walk off sideways for a moment: to the side nearer the goal's way, unless that side is blocked close
+    /// by and the other isn't (knee rays); <paramref name="other"/>: the other side.
+    /// </summary>
+    private void ZSideStep(Zombie z, float yaw, Vector3 goal, double now, bool other)
+    {
+        float l = World.WrapAngle(yaw + 1.4f), r = World.WrapAngle(yaw - 1.4f);
+        var knee = z.Position + new Vector3(0, 0.6f, 0);
+        Vector3 fl = World.FlatForward(l), fr = World.FlatForward(r);
+        var dl = World.Query.Raycast(knee, fl, 1.5f, QueryFilter.Navigation);
+        var dr = World.Query.Raycast(knee, fr, 1.5f, QueryFilter.Navigation);
+        var to = goal - z.Position;
+        to.Y = 0;
+        // A side with no floor a step away (a stair's open side, a gallery's edge) is no side at all.
+        bool floorL = FloorNear(z.Position + fl * 0.8f), floorR = FloorNear(z.Position + fr * 0.8f);
+        bool okL = dl >= 0.7f && floorL, okR = dr >= 0.7f && floorR;
+        var left = Vector3.Dot(fl, to) >= Vector3.Dot(fr, to);
+        if (left && !okL && okR)
+            left = false;
+        else if (!left && !okR && okL)
+            left = true;
+        if (other)
+            left = !left;
+        if (!(left ? floorL : floorR))
+            return; // (no floor that side either: no side-step, the re-path stages still run)
+        z.UnstickUntil = now + 0.45;
+        z.UnstickYaw = left ? l : r;
+        ZStuckSideSteps++;
+    }
+
+    /// <summary>Is there floor under <paramref name="p"/> within a step down (a ray from just above its feet)?</summary>
+    private static bool FloorNear(Vector3 p) =>
+        World.Query.Raycast(p + new Vector3(0, 0.5f, 0), -Vector3.UnitY, 0.5f + World.StepHeight + 0.1f, QueryFilter.Navigation) < 0.5f + World.StepHeight + 0.1f;
+
+    /// <summary>Stage 2: the spell counts (self-tests), and its spot goes in the stuck-spot report when geometry blocks the way.</summary>
+    private void ZStuckSpellStarts(Zombie z, float yaw)
+    {
+        ZStuckSpells++;
+        var nav = HordeAI.Flow.Graph;
+        if (!IsServer || nav == null || nav.Nodes.Length == 0)
+            return;
+        var fw = World.FlatForward(yaw);
+        var p = z.Position;
+        var blocked = false;
+        foreach (var h in StuckRayHeights)
+            blocked |= World.Query.Raycast(p + new Vector3(0, h, 0), fw, 0.9f, QueryFilter.Navigation) < 0.9f;
+        if (!blocked)
+            return; // (held up by the crowd or a player, not the map)
+        var spot = StuckSpots.Session.Spell(World.Map.Name, ZombieStuckMode, p, BotStuckCause.Blocked, nav.Nearest(p, needSight: false));
+        StuckSpots.Session.Stage(spot, 2);
+        z.StuckSpellSpot = spot;
+    }
+
+    private static readonly float[] StuckRayHeights = [0.3f, 0.6f, 0.95f, 1.3f];
+
+    /// <summary>
+    /// Stage 4 on: onto the nearest free route node within 2.5 m in plain view of it (not the spot it is on), only where no
+    /// living player has a line of sight to the zombie or to the node. True if it moved.
+    /// </summary>
+    private bool ZNudge(Zombie z)
+    {
+        var nav = HordeAI.Flow.Graph;
+        if (nav == null || nav.Nodes.Length == 0)
+            return false;
+        var pos = z.Position;
+        var node = nav.Nearest(pos, needSight: true);
+        if (node < 0)
+            return false;
+        var to = nav.Nodes[node];
+        if (Flat(to - pos) < 0.3f || Flat(to - pos) > 2.5f || MathF.Abs(to.Y - pos.Y) > 1.5f || World.Blocked(to + new Vector3(0, 0.05f, 0))
+            || !NavGraph.Clear(pos, to) || ZSeen(pos) || ZSeen(to)) // (in plain view of the zombie: never through a wall)
+            return false;
+        z.Sim.Position = to + new Vector3(0, 0.02f, 0);
+        z.Sim.Velocity = Vector3.Zero;
+        z.Hm.Node = node;
+        z.Hm.ToNodeUntil = 0;
+        ZStuckNudges++;
+        if (z.StuckSpellSpot is { } s)
+            StuckSpots.Session.Stage(s, 4);
+        return true;
+    }
+
+    /// <summary>Can a living player see a body standing at feet <paramref name="feet"/> (its chest or head, from their eye)?</summary>
+    private bool ZSeen(Vector3 feet)
+    {
+        foreach (var p in Players.Values)
+        {
+            if (!p.Alive)
+                continue;
+            var eye = p.Eye;
+            foreach (var h in SeenHeights)
+            {
+                var d = feet + new Vector3(0, h, 0) - eye;
+                var len = d.Length();
+                if (len < 0.01f || World.Query.Raycast(eye, d / len, len, QueryFilter.Shots) >= len - 0.1f)
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    private static readonly float[] SeenHeights = [1.0f, 1.6f];
 
     /// <summary>One tick of movement through the shared player physics (walking at its speed when <paramref name="walk"/>).</summary>
     private void MoveZombie(Zombie z, float yaw, bool walk, bool jump)

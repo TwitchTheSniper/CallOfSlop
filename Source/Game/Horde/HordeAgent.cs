@@ -193,6 +193,21 @@ public sealed class HordeMember
     /// <summary>The last think found its goal close and in plain view: it walks straight at it.</summary>
     public bool Straight;
 
+    /// <summary>
+    /// The stuck watch's recovery (board item dev-zombies-stuck-railings-zr01): no walking straight at the goal until
+    /// <see cref="NoStraightUntil"/> (follow the field round whatever blocked it), and back to its route node first until
+    /// <see cref="ToNodeUntil"/> (off the edge's line it was pushing into a corner or a railing).
+    /// </summary>
+    public double NoStraightUntil, ToNodeUntil;
+
+    /// <summary>What it slides along (the flat normal of the wall or railing ahead; zero: nothing) until tick <see cref="SlideUntil"/> (HordeController.Slide).</summary>
+    public Vector3 SlideNormal;
+
+    public long SlideUntil;
+
+    /// <summary>Its next step is up or down a staircase or ramp this tick (narrower separation there: crowding pushes into the railings).</summary>
+    public bool Climbing;
+
     public void Reset()
     {
         Slot = -1;
@@ -210,5 +225,9 @@ public sealed class HordeMember
         GroupSince = 0;
         Index = 0;
         Straight = false;
+        NoStraightUntil = ToNodeUntil = 0;
+        Climbing = false;
+        SlideNormal = default;
+        SlideUntil = 0;
     }
 }
