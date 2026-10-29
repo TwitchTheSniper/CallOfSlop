@@ -31,7 +31,7 @@ before `SetSource`. That swaps the first line for the tier's prelude:
 
 so one source serves both tiers, and anything 4.6-only (`gl_BaseInstance`, `gl_DrawID`, storage blocks) sits inside
 `#if GL46 ... #endif`. A source without that first line throws, so a new shader cannot skip the prelude by accident.
-The "GL 4.6" self-test section (`Source/App/SelfTestGl46.cs`) finds every shader source by reflection (27 of them),
+The "GL 4.6" self-test section (`Source/App/SelfTestGl46.cs`) finds every shader source by reflection (28 of them),
 checks each turns into a valid 4.6 and 4.1 source, that 4.6-only GLSL is guarded, and that the 4.1 tier has every
 feature off; it runs headless, without a context. A compute shader (`GlCompute`) is 4.6-only whole and exempt.
 
@@ -59,7 +59,7 @@ Each experiment runs only on the 4.6 path, keeps the 4.1 code as its other branc
 | Name | What | Default | Why |
 | --- | --- | --- | --- |
 | `mdi` | The prop renderer's visible runs (one `glDrawElementsInstanced` each on 4.1, with two `glVertexAttribPointer` calls before it) are queued as `DrawElementsIndirectCommand`s and drawn with one `glMultiDrawElementsIndirect` per pass; the base instance offsets the instanced attributes, so the vertex shader is unchanged (`PropRenderer.QueueRun` / `FlushIndirect`). | on | 90 draw calls become 3 on Ashgrave Cathedral, 34 become 1 on Horde Test; identical pictures; CPU submission equal or a little lower in every run. |
-| `persistent` | The box batch's per-frame instance data (horde bodies, players, guns) written straight into a persistently mapped, triple-buffered, fenced ring (`StreamRing`: `glBufferStorage` + `GL_MAP_PERSISTENT_BIT`, DSA when there) and drawn with `glDrawArraysInstancedBaseInstance`, instead of `glBufferData` orphaning + `glBufferSubData` (`Renderer.FlushBatch`). | off | On llvmpipe it costs 1-2.5 ms of CPU a frame on Horde Test (5,800 batched boxes) and shows nothing on Downtown; see below. Worth an A/B on a real GPU with `--gl-on=persistent`. |
+| `persistent` | The box batch's per-frame instance data (horde bodies, players, guns), and the mass horde's crowd instances (`Renderer.DrawCrowd`, its own ring `Renderer.crowdRing`, 16 bytes an instance), written straight into a persistently mapped, triple-buffered, fenced ring (`StreamRing`: `glBufferStorage` + `GL_MAP_PERSISTENT_BIT`, DSA when there) and drawn with `glDrawArraysInstancedBaseInstance`, instead of `glBufferData` orphaning + `glBufferSubData` (`Renderer.FlushBatch`). | off | On llvmpipe it costs 1-2.5 ms of CPU a frame on Horde Test (5,800 batched boxes) and shows nothing on Downtown; see below. Worth an A/B on a real GPU with `--gl-on=persistent`. |
 
 Also on the 4.6 path, behind their flags and ready for use: **DSA** (`StreamRing` makes its buffer with
 `glCreateBuffers` / `glNamedBufferStorage` when `RenderCaps.Dsa`), and **compute** (`GlCompute`, below). Not tried:

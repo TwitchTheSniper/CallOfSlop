@@ -66,26 +66,102 @@ The crowd round replaces normal spawning: nothing comes out of the map's spawner
 the cells that changed since what that client was last sent, reliable ordered; cells further than 60 m from the
 client only every third time. A new crowd round or a new client gets a keyframe. Individuals go in `Msg.ZEnts` as ever.
 
-The client keeps a picture of the cells (`CrowdPicture`) and fills each cell itself, the same way on every client:
-zombie k of cell c stands at a hashed spot, drifting along the cell's heading and wrapping round inside it.
+The client keeps a picture of the cells (`CrowdPicture`); its persistent crowd agents (below, "Rendering") stand in for
+each cell's zombies.
 
 ## Rendering
 
-`Source/Render/CrowdRig.cs`, `CrowdInstances.cs`, `Renderer.Crowd.cs`. OpenGL 3.3 features only (no compute shaders,
-no indirect draws: Mac).
+`Source/Render/CrowdRig.cs`, `CrowdInstances.cs`, `CrowdView.cs`, `Renderer.Crowd.cs`; `Source/Game/Horde/CrowdAgents.cs`,
+`CrowdHorizon.cs`, `CrowdJobs.cs`. Board items `dev-crowd-flicker-cf01` (far zombies popping) and
+`dev-horde-render-opt-ho01` (the client's 11.6 ms of CPU at Horde Stress), designed together.
 
 - **Baked rigs.** The box zombie's walk cycle (`ZombieAnim`) is recorded once at 16 phases into a float texture: a
   row per frame, four texels per box (the transform's three axis rows with the colour in w, then the translation with
   the draw mode). Three levels of detail: near (20 boxes: the full body with hands, feet and eyes, to 35 m), mid (10
   boxes, one per limb, to 80 m) and far (3 boxes, standing, beyond).
-- **Instances.** Each frame the CPU sorts every crowd zombie in view into the three levels: the host from its
-  particles (a sphere test each), a client from its picture (a sphere test per cell, then at most `drawCap` (28)
-  zombies a cell: the top layer of a dense blob). Eight floats an instance: position, yaw, metres walked (the walk
-  cycle's frame, so a zombie's legs match the ground it covers), brightness, debug tint and held.
+- **What is drawn.** The host draws its particles as they are (a sphere test each, in parallel stripes) and its mass
+  cells as persistent agents; a client draws its whole picture (particles and mass are the same counts to it) as
+  persistent agents. `CrowdView.Prepare` does a frame of either; the game, the self-test and `--crowd-bench` all go
+  through it.
+- **Instances.** 16 bytes each (`CrowdInstance`): flat position (two floats), height over the camera's and the walk
+  cycle's phase (two half floats), and four bytes: yaw, brightness, the debug tint, held. Written in parallel stripes
+  (`CrowdJobs`: up to 8 stripes, one per logical processor less one, each with its own arrays per level of detail; no
+  allocation per frame), uploaded stripe by stripe.
 - **Draws.** One instanced draw per level. The vertex shader reads the box's transform for the frame with
-  `texelFetch` and places it; the fragment shader is the box shader's own (sun, sky, baked lighting, fog).
+  `texelFetch` and places it; the fragment shader is the box shader's own (sun, sky, baked lighting, fog). On the 4.1
+  path each level's buffer is orphaned and the stripes written with `glBufferSubData`; on the 4.6 path with the
+  `persistent` experiment they are copied into a persistently mapped ring (`Renderer.crowdRing`) and drawn with a base
+  instance. The crowd's draws count in the F9 window's draw calls, triangles and instances.
 - **Readability.** Crowd zombies use the individuals' palette and gait, so the front and the mass read as one horde;
   the dev map's `--crowd-tiers` tint (yellow crowd, orange held, darker mass) is a debug view, off by default.
+
+### Persistent crowd agents
+
+The far crowd is only counts per 4 m cell. Each zombie used to be placed anew every frame from its cell's index and its
+number in the cell (a hashed spot, drifting along the cell's heading and wrapping round inside it), so a count
+changing, a heading changing, the still/moving switch, the draw cap and the culling all made zombies pop or jump a
+cell's width. Now a fixed pool of visual zombies ("agents") stands in for them and keeps its own position, heading,
+walk phase and look from frame to frame (`CrowdAgents`, one pool for the host's mass and one for a client's picture):
+
+- **Targets.** A visible cell holds `min(count, cap)` agents. The cap is `drawCap` (28) within `drawFarFrom` (60 m) of
+  the camera, falling to `drawCapFar` (8) at `drawFarTo` (180 m) and beyond, moving in steps of 3 (hysteresis).
+- **Walking.** A cell's heading is smoothed (a heading byte changing turns its agents, it doesn't move them) and its
+  still/moving switch eased over half a second. Agents walk the heading at their own pace and cross into the next cell
+  when it has room for another agent (never wrapping round); a cell with no room ahead stops them, and they spread out
+  to spots of their own in their cell. A moving cell that can't move walks on the spot (a stream sampled at the cap,
+  a queue), unless it is packed (`massCapacity`, a jam), which stands.
+- **Counts changing.** A cell with an agent too many passes one to a neighbour that is short (downstream first: the
+  one nearest it walks across, at most 2.4 m/s). What is left over after 0.6 s sinks into the ground (half a second);
+  a cell short of agents for 0.4 s raises new ones out of it. Nothing appears or vanishes in view otherwise.
+- **The view.** A cell is drawn if it is in the view frustum, nearer than the fog's end and not behind the terrain's
+  horizon (below). A cell coming into view is filled at once (nobody saw it empty) and one leaving it drops its agents
+  at once; a camera cut (more than 12 m in a frame: a respawn, the spectator camera) starts the agents afresh.
+- **Tier changes.** On a client, an individual that appears out of the crowd claims the nearest agent (it hides and
+  stands in for it until the cell's count drops); one that goes back into the crowd leaves an agent where it stood. On
+  the host, a particle merging into the mass leaves an agent where it was (with its look), and a particle let out of
+  the mass rises out of the ground while the nearest agent sinks (`HordeCrowd.Notes`, a ring of the latest merges and
+  releases, and `HordeCrowd.Born`).
+- **Looks.** An agent's brightness, stride and yaw spread come from its own number; the host's particles now keep a
+  look of their own too (`HordeCrowd.Look`: it used to come from the particle's index, which changes when another one
+  is removed, so a zombie's look jumped when another died).
+- **Deterministic.** The per-agent step runs in parallel stripes, but everything that touches another agent or a cell
+  (crossings, passes, sinking, raising) is decided afterwards in agent order, so a run gives the same agents serial or
+  in parallel (the self-test checks). Visual only: nothing feeds back into the game or the network.
+- **Placement API** (for shots into the far crowd, board item `dev-mass-points-mp01`): `CrowdAgents.Count` and the
+  agent arrays (`X`, `Z`, `Y`, `Yaw`, `State`, `CellOf`, `Look`), `Position(i)` (its feet, sunk by its fade),
+  `Standing(i)`, `RayHit(origin, dir, maxDist, out t)` (vertical capsules, walking the grid's cells along the ray) and
+  `Kill(i)` (it sinks; the cell raises another if its count says so). Independent of the server: it reads only the
+  counts it is given. `Program.Crowd.Agents` is the pool the last frame drew.
+
+### Culling
+
+- **Frustum** per cell (a sphere round the cell's ground and bodies), and per particle on the host.
+- **Fog.** Cells and particles past the fog's end are not drawn.
+- **Terrain horizon** (`CrowdHorizon`, both GL paths). From the camera, for 512 directions round the compass and about
+  100 distances out to the map's size, the steepest rise of the ground seen so far along each direction (built in
+  parallel stripes when the camera has moved 0.3 m). A cell is hidden when, in every direction it spans, the ground
+  nearer than it rises above its highest point (its highest ground plus 2.2 m). Conservative: the profiles are points on
+  the ground, and the test allows for the camera's 0.3 m of slack; the self-test checks that every cell it hides from
+  three cameras on Horde Stress really is behind the ground (a line to each of 50 points of its top layer passes under
+  the terrain). From the Overlook nothing is hidden (the whole valley is in view: that is the map's point); from the
+  valley floor the knolls and slopes hide a good share.
+- **Not done:** occlusion by buildings and walls (a coarse CPU occlusion buffer or occlusion queries on 4.1, a Hi-Z
+  pyramid and compute cull on 4.6) and GPU-side placement with compute: with the instance count down by the cap and the
+  CPU work spread over threads (below), the remaining cost on Horde Stress didn't call for them, and the persistent
+  agents (stateful, needed on the CPU for the placement API) don't fit a stateless vertex-shader or compute placement.
+  Far impostors are not done either (the GPU is not the limit).
+
+### Measuring
+
+- **F9 window** (Counters): instances per level of detail, how many are particles and agents, cells drawn and left out
+  (out of view, past the fog, behind the ground), agents raised, sunk, passed and claimed, and the preparation's
+  wall-clock ms. **Copy snapshot** and **Write to log** include the same.
+- **`--crowd-bench [sizes]`** (headless; `crowdbench.log` beside the self-test log): Horde Stress at each size (25,000,
+  50,000 and 100,000 by default) from the player's eye on the Overlook with the real frustum and fog, while staging and
+  after 8 s of descent: the preparation's wall clock and main-thread CPU, host and client, the instances, the cells, and
+  allocations per frame; also what `Game.Update` allocates per frame (`AllocProfile`).
+- **`--stress-shots`** pictures (`--crowd-no-horizon`: without the horizon culling; `--crowd-as-client`: the host
+  draws its picture as a client would).
 
 ## Crowd physics: the crowd as ground
 
@@ -139,6 +215,15 @@ instance preparation, standing on the crowd, the roar). It also checks the netwo
 promotion and demotion when the player walks off, a seeded replay, the baked rigs, shots and blasts into the crowd and
 the mass, the surface (lift, stand, slide, client agreement) and the roar. The CI run's notice has the numbers.
 
+Section **"Crowd agents"** (`Source/App/SelfTestCrowdAgents.cs`, about a second): a scripted run of 7 s of crowd
+messages through a picture (a stream flowing east, counts moving downstream, kills, arrivals, headings wobbling, the
+front stopping and starting): no agent moves more than a walking step in a frame, none appears except rising out of
+the ground, none vanishes except after sinking, the agents match the picture up to each cell's cap once settled, and
+nothing allocates; the same run serial and in parallel gives the same agents; cells turned into view are filled at
+once and those turned out of it emptied; claims, hints and the ray test; the horizon only hides what the ground hides
+(Horde Stress, three cameras); particles keep their looks; and the preparation on Horde Stress at 25,000 (one thread,
+under 2 ms of CPU on Windows, no allocation).
+
 Manual CI run on 2026-10-28 (the Windows runner; thread CPU cycles for the tick, thread CPU for the rest):
 
 | Crowd | Server tick CPU mean | Worst | Crowd tick alone | ZCrowd per client | Host prep | Client prep |
@@ -146,6 +231,25 @@ Manual CI run on 2026-10-28 (the Windows runner; thread CPU cycles for the tick,
 | 5,000 | 0.52 ms | 1.08 ms | 0.55 ms | 7.7 KB/s | 0.45 ms | 0.36 ms |
 | 10,000 | 0.84 ms | 1.45 ms | 0.65 ms | 11.8 KB/s | 0.63 ms | 0.58 ms |
 | 20,000 | 1.12 ms | 1.72 ms | 0.90 ms | 14.8 KB/s | 1.17 ms | 1.14 ms |
+
+**Crowd drawing before and after the persistent agents** (2026-10-28, `--crowd-bench`, Horde Stress from the Overlook
+looking at the pads, everything in the mass tier: the client's case; preparation only, without the GL upload, ms a
+frame; the user's PC's Linux VM, 2 cores, wall clock):
+
+| Crowd | Moment | Before: instances, prep | After: instances, prep (host / client) |
+| --- | --- | --- | --- |
+| 25,000 | staging | 17,512, 0.40 ms | 5,016, 0.28 / 0.32 ms |
+| 25,000 | descending | 21,383, 0.82 ms | 8,747, 0.52 / 0.53 ms |
+| 100,000 | staging | 70,012, 1.19 ms | 18,968, 0.63 / 0.55 ms |
+| 100,000 | descending | 74,058, 2.98 ms | 22,304, 0.74 / 0.88 ms |
+
+The cloud box (2 cores shared with other agents) measured 5.5 ms before at 100,000 descending. The instances are 16
+bytes instead of 32 and there are 3-4 times fewer, so a frame's upload is 6-7 times smaller (about 0.36 MB at
+100,000 instead of 2.4 MB). The tester's PC measured 11.6 ms of CPU for "Entities, zombies" on a client at 100,000
+before (4.69 ms on the host): the upload and the draw calls were most of it, and those shrink with the instances; the
+F9 figures on that PC are the developer's to take (target: under 3 ms). Allocation: none per frame in the crowd's
+drawing; `Game.Update` in a Zombies game allocated 120 bytes a tick (`ServerTickCarts` sorted the players into a new
+list every tick), now reused.
 
 The server tick includes the 300 individuals' full AI (about 1.2 ms on its own in "Zombie hordes"). With the mass
 tier on, most of a 20,000 crowd is counts, which is why 20,000 costs little more than 10,000. Managed memory for the
@@ -231,7 +335,7 @@ The crowd tier was one floor height. On a terrain map now (a flat map keeps its 
 | A mass cell | 40 zombies (`massCapacity`): 100,000 needs 2,500 cells (40,000 m2) | the merged blob fills the valley floor |
 | Count a network cell | 255 (a byte); packing keeps it under ~140 | 40 at most in the mass, 0 cells saturated |
 | One `Msg.ZCrowd` | 16 KB (`ZCrowdMaxBytes`; the rest next time) | keyframe 7.5 KB; 6-12 KB per 3 sends (~20-40 KB/s per client) |
-| Instances drawn | no hard limit (arrays and GL buffers double); a mass cell draws its top 28 (`drawCap`) | 70,000-74,000 a frame (prep 2-7 ms CPU on the cloud box) |
+| Instances drawn | no hard limit (arrays and GL buffers double); a cell draws at most 28 near (`drawCap`), 8 far (`drawCapFar`) | 19,000-22,000 a frame from the Overlook (before the persistent agents: 70,000-74,000) |
 | Individuals | 300 (`individualCap`) and the host's horde cap | 300 |
 | Memory | the crowd's arrays | 6.9 MB |
 
