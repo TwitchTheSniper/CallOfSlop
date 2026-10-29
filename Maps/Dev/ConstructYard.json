@@ -35,13 +35,13 @@
     { "op": "Block", "x0": 20, "y0": 0, "z0": 8, "x1": 26, "y1": 1.4, "z1": 10, "color": "#8a7f70" },
 
     { "op": "Spawn", "x": -20, "z": 16 },
-    { "op": "Spawn", "x": -16, "z": 16 },
-    { "op": "Spawn", "x": -24, "z": 14 },
-    { "op": "Spawn", "x": -12, "z": 14 },
-    { "op": "Spawn", "x": -20, "z": 10 },
-    { "op": "Spawn", "x": -14, "z": 8 },
-    { "op": "Spawn", "x": -26, "z": 8 },
-    { "op": "Spawn", "x": -8, "z": 18 },
+    { "op": "Spawn", "x": -14, "z": 14 },
+    { "op": "Spawn", "x": -26, "z": 12 },
+    { "op": "Spawn", "x": -20, "z": 8 },
+    { "op": "Spawn", "x": 26, "z": 16 },
+    { "op": "Spawn", "x": 20, "z": 22 },
+    { "op": "Spawn", "x": 26, "z": 26 },
+    { "op": "Spawn", "x": 16, "z": 26 },
     { "op": "AutoWaypoints", "spacing": 7 }
   ],
   "sandbox": {
@@ -62,6 +62,11 @@
   },
   "test": {
     "size": "small",
-    "maxPlayers": 8
+    "maxPlayers": 8,
+    "handPlaced": false,
+    "minHills": 2,
+    "minTeamSpawns": 4,
+    "walkFairness": 0.0,
+    "botMatchSeconds": 6
   }
 }

@@ -26,8 +26,8 @@ public static partial class SelfTest
             Fail("Test Range: wrong capability flags");
         if (ScoreLimits.HasLimit(GameMode.TestRange) || ScoreLimits.For(GameMode.TestRange, 8) != 0 || ScoreLimits.For(GameMode.TestRange, 32, auto: false) != 0)
             Fail("Test Range has a score limit");
-        if (GameModeRegistry.All.Any(x => x.Endless != (x.Id == GameMode.TestRange)))
-            Fail("only Test Range should be endless");
+        if (GameModeRegistry.All.Any(x => x.Endless != (x.Id is GameMode.TestRange or GameMode.Sandbox)))
+            Fail("only Test Range and Sandbox (Dev) should be endless");
         if (!GameModeRegistry.Shipped.Contains(m) || !GameModes.Every.Contains(GameMode.TestRange) || !GameModes.ForMap(null).Contains(GameMode.TestRange))
             Fail("Test Range isn't offered in the menus (shipped, random map)");
         var missing = Maps.All.Where(map => map.Pack is not { InTrueRandom: false } && !GameModes.ForMap(map).Contains(GameMode.TestRange)).Select(map => map.Name).ToList();

@@ -982,6 +982,27 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 - Network: enemies near you arrive 20 times a second, interest-managed (13 bytes each, the nearest 56 within 150 m), about 6-12 KB/s per player with 80 alive (protocol 37). Missions are data files: `Maps/<Pack>/Missions/<Name>.json` (format and every objective type in the design doc).
 
 **What to test with friends**: a full run of Silo Breach with 2-4 people (do the waves feel fair, do enemies ever pop in where you're looking, is the defend stage tense but winnable on Normal), a deliberate wipe (everyone back at the checkpoint?), late joiners, and the fps with 60-80 enemies in the defend stage.
+### Sandbox and constructs (in development)
+
+**Sandbox** is milestone 1 of the sandbox survival mode: build vehicles and bases from parts with a tool in your hands,
+drive them, and shoot their parts off one at a time. It is a Dev-only mode for now: host **Construct Yard** (Dev pack) and
+pick **Sandbox**. Two buggies, an anchored gate, a parts rack (the yellow shelf) and some loose parts are waiting.
+
+- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks, fuel lines, hinges,
+  doors), 4 the **welder** (frames, panels, corners, foundations); 1 or 2 back to your guns. With a gun out or bare hands
+  you can only use things (sit, drive, open doors), never build.
+- **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
+  part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
+  takes the part you look at off into your hand, T drops what you hold. Fire on the ground starts a new construct.
+- **Driving**: F on a seat to sit, W/S/A/D to drive, Space to brake, F to get out. A vehicle needs a seat, an engine, fuel
+  reaching the engine (a tank touching it or a chain of fuel lines) and wheels on suspensions; the HUD says what's missing.
+- **Damage**: every part has its own health and armour. Shoot the cheap fuel line and the engine starves; break a
+  suspension and its wheel falls off; anything cut off from the seat falls away as a wreck.
+
+Parts and blueprints are data files (`Constructs/Parts`, `Constructs/Blueprints`; `--check-construct-parts` checks
+them), and a map gets the mode with a `"sandbox"` section. The design, the data format, the decisions made so far and
+what milestone 2 takes on are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
+
 ## Updates
 
 Release builds check GitHub for a newer release and can install it from inside the game.

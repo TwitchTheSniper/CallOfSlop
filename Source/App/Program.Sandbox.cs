@@ -13,6 +13,9 @@ public static unsafe partial class Program
     private static int _sbVariantShift; // R presses: which way round the chosen part goes
     private static int _sbLastGhostKey = -1;
     private static bool _sbFiring, _sbRemoving;
+    private static long _sbLookKey = -1;
+    private static string _sbLookText = "", _sbGroundText = "";
+    private static int _sbGroundKey = -1;
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
@@ -57,13 +60,23 @@ public static unsafe partial class Program
             ConstructRender.AimPart = hit.Part;
             var d = hit.Body.DefOf(hit.Part);
             ref var part = ref hit.Body.Parts[hit.Part];
-            g.SandboxLookText = d.Role switch
+            // (rebuilt only when what it shows changes: the look runs every frame)
+            var near = hit.Distance <= ConstructBuild.UseReach;
+            var fits = h.Tool != ConstructTool.None && ConstructBuild.ToolFits(h.Tool, d);
+            var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
+                      | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26);
+            if (key != _sbLookKey)
             {
-                PartRole.Seat when hit.Distance <= ConstructBuild.UseReach => hit.Body.Driver == 255 ? "Seat: F to sit" : "Seat: taken",
-                PartRole.Door or PartRole.Hinge when hit.Distance <= ConstructBuild.UseReach => $"{d.Name}: F to open or shut",
-                _ when hit.Body.Loose && hit.Distance <= ConstructBuild.UseReach => $"{d.Name}: F to pick up",
-                _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(h.Tool != ConstructTool.None && ConstructBuild.ToolFits(h.Tool, d) ? " - hold aim to take it off" : "")}",
-            };
+                _sbLookKey = key;
+                _sbLookText = d.Role switch
+                {
+                    PartRole.Seat when near => hit.Body.Driver == 255 ? "Seat: F to sit" : "Seat: taken",
+                    PartRole.Door or PartRole.Hinge when near => $"{d.Name}: F to open or shut",
+                    _ when hit.Body.Loose && near => $"{d.Name}: F to pick up",
+                    _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(fits ? " - hold aim to take it off" : "")}",
+                };
+            }
+            g.SandboxLookText = _sbLookText;
         }
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
@@ -139,7 +152,12 @@ public static unsafe partial class Program
                 {
                     ConstructRender.PlaceAt = at;
                     ConstructRender.PlaceYaw = g.LookYaw;
-                    g.SandboxLookText = $"Ground: hold fire to set down the {held.Name} as a new construct";
+                    if (_sbGroundKey != held.Id)
+                    {
+                        _sbGroundKey = held.Id;
+                        _sbGroundText = $"Ground: hold fire to set down the {held.Name} as a new construct";
+                    }
+                    g.SandboxLookText = _sbGroundText;
                     if (Pressed(GameAction.Fire) && !_swallowClick)
                     {
                         g.SandboxSend(CActKind.PlaceNew, at: at, yaw: g.LookYaw);

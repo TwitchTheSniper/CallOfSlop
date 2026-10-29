@@ -66,6 +66,7 @@ This prints `OK` with the box, spawn and waypoint counts, or the exact problem, 
 | `foliage` | no | Grass, bushes, shrubs and trees. See [Foliage](#foliage). |
 | `movers` | no | Rotating platforms, sliding platforms and elevators. See [Movers](#movers). |
 | `logic` | no | Map events: buttons, levers, pressure plates, zones and timers wired to doors, lamps, movers, sounds and the Zombies run, with delays and logic gates. See [Map logic](#map-logic). |
+| `sandbox` | no | The Sandbox mode (Dev): the parts rack, the constructs the map starts with and loose parts. Only maps with it offer the mode. See [docs/sandbox/CONSTRUCTS.md](../docs/sandbox/CONSTRUCTS.md#the-maps-sandbox-section). |
 | `test` | no | What the self-test (and `--check-map`) must find true of this map: shape, dressing floors, symmetry, fair walks, deck probes, a short bot match. Not part of the fingerprint. See [Testing a map](#testing-a-map). |
 
 Trash cans, crates, litter and other props are placed with ops; see [Props](#props).

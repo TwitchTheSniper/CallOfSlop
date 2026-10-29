@@ -39,6 +39,8 @@ RULES = [
     (r"^Weapons/", ["Weapon files", "Loadouts and perks", "Recoil", "Gun mix", "Mode modules"]),
     (r"^Attachments/", ["Attachments", "Optics", "Attachment variety", "Sight pictures", "Recoil", "Loadouts and perks",
                         "Bot gear level", "Loudener", "Mode modules"]),
+    (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
+     ["Constructs", "Mode modules"]),
     (r"^Parts/", PARTS),
     (r"^Source/Zombies/", PARTS),
     (r"^Source/Game/Zombies|^Source/Game/ZombieAI|^Source/Game/ZombieBots", ["Zombies mode", "Zombies flow", "Zombie animation", "Co-op"]),

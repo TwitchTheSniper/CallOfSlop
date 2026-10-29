@@ -393,28 +393,70 @@ public sealed partial class Game
         return _sbBar;
     }
 
+    /// <summary>A line of text rebuilt only when what it shows changes (the HUD runs every frame: no allocation per frame).</summary>
+    private struct SbText
+    {
+        public long Key;
+        public string Text;
+
+        public bool Stale(long key)
+        {
+            if (Text != null && key == Key)
+                return false;
+            Key = key;
+            return true;
+        }
+    }
+
+    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint;
+
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
         if (h.Seated && Constructs.Get(h.SeatBody) is { } car)
         {
-            var speed = Vector3.Dot(car.Vel, Vector3.Transform(car.SeatForward(), car.Rot));
-            lines.Add(new HudLine($"Driving: {MathF.Abs(speed) * 3.6f:0} km/h, fuel {car.Fuel:0.0} l", white));
-            lines.Add(car.CanDrive ? new HudLine("W/S drive, A/D steer, Space brake, F get out", dim) : new HudLine($"It won't go: {car.DriveProblem}", red));
+            var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.SeatForward(), car.Rot))) * 3.6f);
+            var fuel = (int)(car.Fuel * 10);
+            if (_sbDrive.Stale(kmh * 100000L + fuel))
+                _sbDrive.Text = $"Driving: {kmh} km/h, fuel {fuel / 10f:0.0} l";
+            lines.Add(new HudLine(_sbDrive.Text, white));
+            if (car.CanDrive)
+                lines.Add(new HudLine("W/S drive, A/D steer, Space brake, F get out", dim));
+            else
+            {
+                if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))
+                    _sbProblem.Text = $"It won't go: {car.DriveProblem}";
+                lines.Add(new HudLine(_sbProblem.Text, red));
+            }
             return;
         }
         var held = ConstructParts.Get(h.Held);
-        var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", _ => "Gun" };
-        lines.Add(new HudLine($"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}", h.Tool == ConstructTool.None ? dim : orange));
+        if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
+        {
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", _ => "Gun" };
+            _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
+        }
+        lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
         if (h.Edit != EditKind.None)
-            lines.Add(new HudLine($"{(h.Edit == EditKind.Remove ? "Taking it off" : "Fitting")}... {(int)(h.Progress(SandboxNow) * 100)}%", green));
+        {
+            var pct = (int)(h.Progress(SandboxNow) * 100);
+            if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
+                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : "Fitting")}... {pct}%";
+            lines.Add(new HudLine(_sbEdit.Text, green));
+        }
         else if (SandboxLookText.Length > 0)
             lines.Add(new HudLine(SandboxLookText, white));
         if (SandboxNotice is { Length: > 0 } notice)
             lines.Add(new HudLine(notice, red));
+        else if (held == null)
+            lines.Add(new HudLine("F at the rack: take a part. 3 wrench, 4 welder, 1/2 guns", dim));
         else
-            lines.Add(new HudLine(held == null ? "F at the rack: take a part. 3 wrench, 4 welder, 1/2 guns" : $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop", dim));
+        {
+            if (_sbHint.Stale(held.Id))
+                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop";
+            lines.Add(new HudLine(_sbHint.Text, dim));
+        }
     }
 
     /// <summary>What the crosshair is on (set by the client's look each frame; Program.Sandbox.cs).</summary>
