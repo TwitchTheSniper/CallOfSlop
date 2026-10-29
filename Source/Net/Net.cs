@@ -86,6 +86,7 @@ public enum Msg : byte
     ZCrowd, // server -> each client: Zombies mass horde: the crowd's per-cell counts and headings that changed, or a keyframe (reliable ordered; ZombiesCrowdNet.cs, protocol 71)
     ZTrader, // server -> all (he came or went) and each joiner: Zombies: the trader (here or gone, visit number, where he stands, the round he leaves, his shelf: kind, part, price; nothing sells out) (reliable; ZombiesTrader.cs, protocol 73)
     ZTraderBuy, // client -> server: Zombies: buy C of shelf item N of visit V from the trader (no limit; at most the rules' maxPerBuy at a time) (reliable; protocol 73)
+    HostBye, // server -> one client or all: why the host is closing the connection (the host closed the server, a different build) (reliable; GameHostBye.cs, protocol 74)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

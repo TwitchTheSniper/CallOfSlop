@@ -137,6 +137,7 @@ public static unsafe partial class Program
             case LobbyRoomAction.Leave:
                 if (game.IsServer && !_smoke)
                     _settings.Save(); // the host's lobby choices, for next time, even without a match
+                game.CloseReason = "The host closed the server from the lobby (CLOSE SERVER) and went to the main menu."; // what clients are told (GameHostBye.cs)
                 EndSession("");
                 break;
             case LobbyRoomAction.Loadout:

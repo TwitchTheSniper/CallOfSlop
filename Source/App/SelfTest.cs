@@ -300,6 +300,7 @@ public static partial class SelfTest
         Section("Team pick", CheckTeamPick); // SelfTestTeams.cs: Join Blue / Red / Auto, the balance rule, bots giving way, switching
         Section("Pre-match lobby", CheckPreMatchLobby); // SelfTestPreMatchLobby.cs: lobby room over loopback (join, teams, ready, cancel, start, map change, late joiner, chat), offline rules, settings, no allocations
         Section("Return to lobby", CheckReturnToLobby); // SelfTestReturnToLobby.cs: the host's BACK TO LOBBY over loopback (clients stay, teams/loadouts/bots kept, a client leaving, a new match, Zombies cleared), the pause menu's exits
+        Section("Two-process lobby", CheckTwoProcessLobby); // SelfTestTwoProcessLobby.cs: BACK TO LOBBY against a client in its own process (--net-client) over real RakNet with lag: TDM, Zombies, Horde Stress, a new match
         Section("Team balance", CheckTeamBalance); // SelfTestPreMatchLobby.cs: balance Off and Humans vs Bots over loopback (host + 2 clients + bots)
         Section("Arms", CheckArms);
         Section("Gun models", CheckGunModels); // SelfTestGunModels.cs

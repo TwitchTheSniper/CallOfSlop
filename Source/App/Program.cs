@@ -75,6 +75,8 @@ public static unsafe partial class Program
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
+        if (args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)))
+            return NetClientProcess.Run(args); // a headless client in its own process (NetClientProcess.cs; the "Two-process lobby" self-test)
         if (args.Any(a => a.Equals("--selftest-list", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.List(); // the self-test's section names, for --selftest-only
         var selfTestOnly = args.SkipWhile(a => !a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
@@ -934,7 +936,9 @@ public static unsafe partial class Program
     {
         try
         {
-            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log" : "callofslop.log";
+            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log"
+                : args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)) ? $"netclient-{Environment.ProcessId}.log" // beside a running game (NetClientProcess.cs)
+                : "callofslop.log";
             var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
             Console.SetError(writer);
@@ -1322,12 +1326,14 @@ public static unsafe partial class Program
                         _swallowClick = true;
                         break;
                     case PauseAction.Leave:
+                        g.CloseReason = "The host closed the server from the menu (CLOSE SERVER) and went to the main menu."; // what clients are told (GameHostBye.cs)
                         EndSession("");
                         break;
                     case PauseAction.BackToLobby:
                         g.ReturnToLobbyNow(); // the lobby room, everyone still connected (TrackLobbyRoom frees the mouse)
                         break;
                     case PauseAction.Quit:
+                        g.CloseReason = "The host quit the game.";
                         _quit = true;
                         break;
                 }
@@ -1574,11 +1580,13 @@ public static unsafe partial class Program
         if (_session == null || key != GlfwKey.Escape)
             return; // everything else is polled through the keybinds in UpdateLocalPlayer
 
-        if (_session.Local == null)
+        if (_session.Local == null && !_session.IsServer && _session.LocalId == byte.MaxValue)
         {
-            EndSession("Cancelled");
+            EndSession("Cancelled"); // still joining (no welcome yet): Esc gives up. Once in, Esc never leaves by itself.
             return;
         }
+        if (_session.Local == null)
+            return;
         if (InLobbyRoom)
             return; // the lobby room has its own LEAVE button
         if (Ui.MenuOpen)

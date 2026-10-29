@@ -75,6 +75,15 @@ public sealed partial class Ui
         return clicked;
     }
 
+    /// <summary>A <see cref="BigButton"/> in its own colour (BACK TO LOBBY green, CLOSE SERVER red).</summary>
+    private bool BigButtonColored(string label, float4 color)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Button, color);
+        var clicked = BigButton(label);
+        ImGui.PopStyleColor();
+        return clicked;
+    }
+
     private void Title(string subtitle)
     {
         ImGui.PushFont(default, 44);
@@ -978,6 +987,7 @@ public sealed partial class Ui
         {
             _pauseTeams = false;
             _pauseHost = false;
+            _pauseConfirm = PauseAction.None;
             ResetPausePlayers(); // UiChat.cs
             return PauseAction.None;
         }
@@ -987,7 +997,23 @@ public sealed partial class Ui
         ImGui.SetNextWindowBgAlpha(0.92f);
         if (ImGui.Begin("##pause"u8, Panel))
         {
-            if (_pauseTeams)
+            if (_pauseConfirm != PauseAction.None)
+            {
+                Title(_pauseConfirm == PauseAction.Quit ? "Quit and close the server?" : "Close the server?");
+                switch (DrawConfirmClose(game, inMatch: true))
+                {
+                    case CloseChoice.Close:
+                        action = _pauseConfirm;
+                        break;
+                    case CloseChoice.BackToLobby:
+                        action = PauseAction.BackToLobby;
+                        break;
+                    case CloseChoice.Cancel:
+                        _pauseConfirm = PauseAction.None;
+                        break;
+                }
+            }
+            else if (_pauseTeams)
                 DrawPauseTeams(game, s); // UiTeams.cs
             else if (_pauseHost)
                 action = DrawPauseHost(game); // bots and BACK TO LOBBY (UiHostPanel.cs)
@@ -1034,18 +1060,41 @@ public sealed partial class Ui
                     ImGui.PopStyleColor();
                 }
                 ImGui.Spacing();
+                ImGui.Separator();
+                ImGui.Spacing();
+                // The two ways out look nothing alike: BACK TO LOBBY green (everyone stays), the host's CLOSE SERVER red,
+                // a gap between them, and closing asks first while anyone else is connected.
                 var exits = PauseExits(game.IsServer, game.Net.IsOffline, game.CanReturnToLobby);
                 if (exits.BackToLobby != null)
                 {
+                    ImGui.PushStyleColor(ImGuiCol.Button, LobbyGreen);
                     if (BigButton(exits.BackToLobby))
                         action = PauseAction.BackToLobby; // Game.ReturnToLobbyNow: the lobby room, everyone still connected (HostControls.cs)
+                    ImGui.PopStyleColor();
                     ImGuiSafe.TextColored(Dim, "Ends the match: everyone stays connected and goes to the lobby room.");
+                    ImGui.Spacing();
+                    ImGui.Spacing();
                 }
+                var closes = game.IsServer && !game.Net.IsOffline;
+                if (closes)
+                    ImGui.PushStyleColor(ImGuiCol.Button, LeaveRed);
                 if (BigButton(exits.Leave))
-                    action = PauseAction.Leave; // EndSession: the main menu
+                {
+                    if (game.IsServer && !game.Net.IsOffline && game.HumanCount > 1)
+                        _pauseConfirm = PauseAction.Leave; // the others would be disconnected: ask first
+                    else
+                        action = PauseAction.Leave; // EndSession: the main menu
+                }
+                if (closes)
+                    ImGui.PopStyleColor();
                 ImGuiSafe.TextColored(Dim, exits.LeaveHint);
                 if (BigButton("QUIT GAME"))
-                    action = PauseAction.Quit;
+                {
+                    if (closes && game.HumanCount > 1)
+                        _pauseConfirm = PauseAction.Quit; // quitting closes the server too: ask first
+                    else
+                        action = PauseAction.Quit;
+                }
             }
         }
         ImGui.End();
@@ -1056,6 +1105,7 @@ public sealed partial class Ui
             _pauseSettings = false;
             _pauseTeams = false;
             _pauseHost = false;
+            _pauseConfirm = PauseAction.None;
             ResetPausePlayers();
         }
         return action;
@@ -1070,11 +1120,42 @@ public sealed partial class Ui
     /// </summary>
     internal static (string? BackToLobby, string Leave, string LeaveHint) PauseExits(bool isServer, bool offline, bool canReturnToLobby)
     {
+        // Short enough to fit the button (the old labels were cut off: "BACK TO LOBBY (end match, keep ev").
         if (offline)
             return (null, "LEAVE MATCH (main menu)", "Back to the main menu.");
         if (isServer)
-            return (canReturnToLobby ? "BACK TO LOBBY (end match, keep everyone)" : null, "LEAVE GAME (main menu, closes the server)",
+            return (canReturnToLobby ? "BACK TO LOBBY (keep everyone)" : null, "CLOSE SERVER (main menu)",
                 "Disconnects everyone and goes to the main menu.");
-        return (null, "LEAVE GAME (disconnect, main menu)", "Only you leave: the match goes on. The host can take everyone back to the lobby.");
+        return (null, "LEAVE GAME (main menu)", "Only you leave: the match goes on. The host can take everyone back to the lobby.");
+    }
+
+    private PauseAction _pauseConfirm; // CLOSE SERVER or QUIT GAME, waiting for the host's yes
+    private bool _roomConfirmClose;
+
+    private enum CloseChoice { None, Close, Cancel, BackToLobby }
+    private static readonly float4 LeaveRed = new(0.55f, 0.16f, 0.14f, 1f);
+    private static readonly float4 LobbyGreen = new(0.16f, 0.45f, 0.22f, 1f);
+
+    /// <summary>
+    /// The host asked to close the server while other people are connected: say what that does and ask, offering
+    /// BACK TO LOBBY instead in a match (<paramref name="inMatch"/>) where it's possible.
+    /// </summary>
+    private CloseChoice DrawConfirmClose(Game game, bool inMatch)
+    {
+        var others = Math.Max(0, game.HumanCount - 1);
+        var lobby = inMatch && game.CanReturnToLobby;
+        ImGui.PushStyleColor(ImGuiCol.Text, Red);
+        ImGuiSafe.TextWrapped($"Closing the server disconnects {others} other {(others == 1 ? "person" : "people")} and sends everyone to the main menu."
+                              + (lobby ? " To change the map or mode and keep everyone, go BACK TO LOBBY instead." : ""));
+        ImGui.PopStyleColor();
+        ImGui.Spacing();
+        var choice = CloseChoice.None;
+        if (lobby && BigButtonColored("BACK TO LOBBY (keep everyone)", LobbyGreen))
+            choice = CloseChoice.BackToLobby;
+        if (BigButtonColored("YES, CLOSE THE SERVER", LeaveRed))
+            choice = CloseChoice.Close;
+        if (BigButton("CANCEL"))
+            choice = CloseChoice.Cancel;
+        return choice;
     }
 }
