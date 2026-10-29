@@ -196,6 +196,7 @@ public sealed partial class Game : IDisposable
             {
                 Id = 0, Name = LocalName, WantPrimary = primary, WantSecondary = secondary, WantGrenade = grenade, WantEquipment = equipment,
                 WantPrimaryKit = primaryKit, WantSecondaryKit = secondaryKit, WantPerks = ChosenPerks,
+                MpPrimary = primary, MpSecondary = secondary, MpPrimaryKit = primaryKit, MpSecondaryKit = secondaryKit,
             };
             Players[0] = host;
             PlaceWaiting(host, 0); // you pick a loadout and click Respawn to drop in
@@ -1258,6 +1259,7 @@ public sealed partial class Game : IDisposable
         p.WantSecondary = sw.Id;
         p.WantPrimaryKit = Attachments.Sanitize(pw, primaryKit);
         p.WantSecondaryKit = Attachments.Sanitize(sw, secondaryKit);
+        (p.MpPrimary, p.MpSecondary, p.MpPrimaryKit, p.MpSecondaryKit) = (p.WantPrimary, p.WantSecondary, p.WantPrimaryKit, p.WantSecondaryKit); // kept through a Zombies run
 
         // Loadouts change on (re)spawn. The only exception is the pre-match countdown, where you're
         // already standing in the map, frozen, and can still swap.

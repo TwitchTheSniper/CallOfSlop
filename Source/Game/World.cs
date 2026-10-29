@@ -625,6 +625,10 @@ public sealed class Player
     public byte WantPrimary = Weapons.DefaultPrimary.Id; // requested loadout, applied on (re)spawn
     public byte WantSecondary = Weapons.DefaultSecondary.Id;
     public uint WantPrimaryKit, WantSecondaryKit;
+    // The guns this person picked for the multiplayer modes (server). Zombies replaces the Want* guns with its built
+    // ones; a match in another mode after a Zombies run (BACK TO LOBBY, a mode change) puts these back (ZombiesMode.cs).
+    public byte MpPrimary = Weapons.DefaultPrimary.Id, MpSecondary = Weapons.DefaultSecondary.Id;
+    public uint MpPrimaryKit, MpSecondaryKit;
     public PerkSet WantPerks = PerkSet.Empty;
     public bool LastStandUsed; // Last Stand saves you once per life
     public uint AfterburnerReadyTick; // server tick from which a kill can fire Afterburner again (Perks.AfterburnerCooldownTicks)

@@ -266,6 +266,13 @@ public sealed partial class Game
         _zAnySpawned = false;
         foreach (var p in Players.Values)
         {
+            if (Mode != GameMode.Zombies && p.Bot == null)
+            {
+                // Out of Zombies (BACK TO LOBBY and another mode): the person's own multiplayer guns again, not the
+                // run's built guns (whose ids mean nothing outside it). Bots draw a fresh loadout every spawn.
+                (p.WantPrimary, p.WantSecondary, p.WantPrimaryKit, p.WantSecondaryKit) = (p.MpPrimary, p.MpSecondary, p.MpPrimaryKit, p.MpSecondaryKit);
+                (p.Primary, p.Secondary, p.PrimaryKit, p.SecondaryKit, p.Weapon) = (p.MpPrimary, p.MpSecondary, p.MpPrimaryKit, p.MpSecondaryKit, p.MpPrimary);
+            }
             p.BuiltPrimary = p.BuiltSecondary = null;
             p.BuiltExtra[0] = p.BuiltExtra[1] = null;
             p.ExtraSlots = false;

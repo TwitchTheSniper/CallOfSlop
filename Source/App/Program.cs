@@ -75,6 +75,8 @@ public static unsafe partial class Program
         System.Runtime.GCSettings.LatencyMode = System.Runtime.GCLatencyMode.SustainedLowLatency;
         Console.WriteLine($"Call of Slop - built with the BRUTAL framework, Copyright (c) 2024 Ahwoo Limited. {DateTime.Now}");
 
+        if (args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)))
+            return NetClientProcess.Run(args); // a headless client in its own process (NetClientProcess.cs; the "Two-process lobby" self-test)
         if (args.Any(a => a.Equals("--selftest-list", StringComparison.OrdinalIgnoreCase)))
             return SelfTest.List(); // the self-test's section names, for --selftest-only
         var selfTestOnly = args.SkipWhile(a => !a.Equals("--selftest-only", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
@@ -931,7 +933,9 @@ public static unsafe partial class Program
     {
         try
         {
-            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log" : "callofslop.log";
+            var name = args.Any(a => a.Equals("--master", StringComparison.OrdinalIgnoreCase)) ? "serverlist.log"
+                : args.Any(a => a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)) ? $"netclient-{Environment.ProcessId}.log" // beside a running game (NetClientProcess.cs)
+                : "callofslop.log";
             var writer = new StreamWriter(AppFolders.LogPath(name), append: false) { AutoFlush = true };
             Console.SetOut(writer);
             Console.SetError(writer);
