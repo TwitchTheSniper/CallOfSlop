@@ -88,7 +88,7 @@
     {"type": "prop", "name": "Bench", "at": [-0.5, 2.51, -6.5], "yaw": 0},
     {"type": "prop", "name": "Fire Station Hose Rack", "at": [1.6, 2.51, -6.55], "yaw": 0},
     {"type": "prop", "name": "Duffel Bag", "at": [-7, 2.51, -6.3], "yaw": 30},
-    {"type": "block", "min": [-9.15, 4.35, 7], "max": [3.15, 4.65, 7.3], "color": {"color": "#c01818", "material": "none"}},
+    {"type": "block", "min": [-9.15, 4.35, 7.15], "max": [3.15, 4.65, 7.3], "color": {"color": "#c01818", "material": "none"}},
     {"type": "block", "min": [-2.4, 0, -9.7], "max": [0.4, 12, -7.15], "color": {"color": "$wall", "material": "brick"}},
     {"type": "block", "min": [-2.6, 12, -9.9], "max": [0.6, 12.4, -6.95], "color": {"color": "$trim", "material": "none"}},
     {"type": "prop", "name": "Fire Station Bell", "at": [4.6, 2.05, 7.4], "yaw": 0},

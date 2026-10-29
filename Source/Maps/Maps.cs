@@ -259,8 +259,10 @@ public sealed partial class Map
                     hole = (sx0, zEnd, sx1 + 0.2f, zs + 0.3f);
                 }
             }
-            // Ceiling / next floor / roof
-            Slab(x0, z0, x1, z1, y1, slab, floor, hole);
+            // Ceiling / next floor / roof, inside the walls: a slab out to the outer faces would share them (and the wall
+            // tops under the doorways) with the walls and flicker through them (z-fighting). The walls run up to y1, so
+            // the solid volume is the same.
+            Slab(x0 + t, z0 + t, x1 - t, z1 - t, y1, slab, floor, hole);
         }
 
         var roofY = stories * H;

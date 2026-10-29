@@ -104,7 +104,7 @@
   "stairs": [{"floor": 0, "rect": [-2, 8.45, -0.9, 11.75], "dir": "-z", "color": {"color": "#5a4632", "material": "wood"}}],
   "roof": {"type": "hip", "pitch": 60, "overhang": 0.25, "color": {"color": "$roof", "material": "tiles"}},
   "extras": [
-    {"type": "block", "min": [-5.45, 5.6, -9.45], "max": [5.45, 6.6, 6.8], "color": {"color": "$roof", "material": "tiles"}},
+    {"type": "block", "min": [-5.45, 5.6, -9.45], "max": [5.45, 6.62, 6.8], "color": {"color": "$roof", "material": "tiles"}},
     {"type": "block", "min": [-5.2, 6.6, -9.45], "max": [5.2, 6.88, 6.8], "color": {"color": "$roof", "material": "tiles"}},
     {"type": "block", "min": [-4.92, 6.88, -9.45], "max": [4.92, 7.16, 6.8], "color": {"color": "$roof", "material": "tiles"}},
     {"type": "block", "min": [-4.64, 7.16, -9.45], "max": [4.64, 7.44, 6.8], "color": {"color": "$roof", "material": "tiles"}},

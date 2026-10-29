@@ -90,7 +90,7 @@
   "extras": [
     {"type": "awning", "rect": [-5.6, 4.63, 2.6, 5.9], "height": 2.7, "color": "$awning"},
     {"type": "awning", "rect": [3.5, 4.63, 5.7, 5.6], "height": 2.7, "color": "$awning"},
-    {"type": "block", "min": [-5.6, 2.55, 5.84], "max": [2.6, 2.7, 5.92], "color": "#f4f0e6"},
+    {"type": "block", "min": [-5.6, 2.54, 5.84], "max": [2.6, 2.71, 5.92], "color": "#f4f0e6"},
     {"type": "prop", "name": "Shop Sign", "at": [-1.5, 2.85, 4.72]},
     {"type": "prop", "name": "Neon Sign", "at": [4.6, 2.12, 4.63]},
     {"type": "prop", "name": "Patio Table", "at": [-4.0, 6.9]},

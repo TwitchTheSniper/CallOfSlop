@@ -506,7 +506,23 @@ internal sealed partial class BuildingGenerator
         var open = f == _floors.Count - 1 && _roof == RoofKind.None; // nothing over the top floor
         // An interior wall stops under the slab above it (its top would fight with the floor or roof there); exterior walls
         // run up through the slab's edge (a wall or parapet above covers their top).
-        CutWall(s.AlongX, s.A - _t / 2, s.B + _t / 2, s.C - _t / 2, s.C + _t / 2, y0, s.Exterior || open ? y1 : y1 - Slab, holes, s.Exterior ? _def.ExteriorWall : _def.InteriorWall);
+        // An interior wall's core reaches half a thickness past its ends to fill the joint, except where an outside wall's
+        // core already fills it (an outside wall it runs into, or one carrying on in line): there it stops at that wall's
+        // face, or its end would lie in the outside face (interior paint flickering through the brickwork) and its top or
+        // sides in the outside wall's. Outside walls are never shortened, so the joint stays filled; joints between
+        // interior walls keep the overlap (same surface: nothing to see).
+        var coreA = s.A - _t / 2;
+        var coreB = s.B + _t / 2;
+        if (!s.Exterior)
+        {
+            if (JointFilled(f, s, s.A - _t / 4))
+                coreA = s.A + _t / 2;
+            if (JointFilled(f, s, s.B + _t / 4))
+                coreB = s.B - _t / 2;
+        }
+        // An interior wall stands on the floor (the rooms' floors meet under it), so a doorway in it has no threshold
+        // piece fighting with the floor's top.
+        CutWall(s.AlongX, coreA, coreB, s.C - _t / 2, s.C + _t / 2, s.Exterior ? y0 : lf, s.Exterior || open ? y1 : y1 - Slab, holes, s.Exterior ? _def.ExteriorWall : _def.InteriorWall);
         var liningTop = open ? y1 : y1 - Slab;
         for (var side = 0; side < 2; side++)
         {
@@ -524,6 +540,21 @@ internal sealed partial class BuildingGenerator
                 b -= _t / 2;
             CutWall(s.AlongX, a, b, MathF.Min(c0, c1), MathF.Max(c0, c1), lf, liningTop, holes, RoomWall(f, r));
         }
+    }
+
+    /// <summary>Does an outside wall's core on floor <paramref name="f"/> cover wall <paramref name="s"/>'s centre line at <paramref name="along"/> (just past one of its ends)?</summary>
+    private bool JointFilled(int f, Seg s, float along)
+    {
+        var (x, z) = s.AlongX ? (along, s.C) : (s.C, along);
+        foreach (var o in _segs[f])
+        {
+            if (o == s || !o.Exterior)
+                continue;
+            var (oa, oc) = o.AlongX ? (x, z) : (z, x);
+            if (oa > o.A - _t / 2 + 0.001f && oa < o.B + _t / 2 - 0.001f && MathF.Abs(oc - o.C) < _t / 2 - 0.001f)
+                return true;
+        }
+        return false;
     }
 
     /// <summary>Does room <paramref name="r"/> carry on past the end of a wall (no corner there, the lining keeps going)?</summary>
@@ -558,14 +589,19 @@ internal sealed partial class BuildingGenerator
     {
         var rooms = _floors[f].Rooms;
         var lf = _level[f];
+        // The floor stops at the inside face of every outside wall that runs up through its level (this floor's own on
+        // the ground floor, the floor below's above it): a floor reaching into the wall would share the wall's top face
+        // under a doorway and show its edge in the wall's outside face (z-fighting). The wall fills the strip on its own.
+        var walls = new List<BRect>(_holesIn[f]);
+        walls.AddRange(OutsideWallsThrough(f));
         for (var r = 0; r < rooms.Count; r++)
         {
             foreach (var rect in rooms[r].Rects)
             {
-                if (f == 0)
-                    Add(rect.X0, _origin.Y, rect.Z0, rect.X1, lf, rect.Z1, RoomFloor(f, r));
-                else
-                    foreach (var p in BRect.Subtract([rect], _holesIn[f]))
+                foreach (var p in BRect.Subtract([rect], walls))
+                    if (f == 0)
+                        Add(p.X0, _origin.Y, p.Z0, p.X1, lf, p.Z1, RoomFloor(f, r));
+                    else
                         Add(p.X0, lf - Slab, p.Z0, p.X1, lf, p.Z1, RoomFloor(f, r));
                 var top = f == _floors.Count - 1;
                 if (!top || _roof != RoofKind.None)
@@ -592,6 +628,17 @@ internal sealed partial class BuildingGenerator
                         AddAlong(s.AlongX, s.A - _t / 2, s.B + _t / 2, s.C - _t / 2, s.C + _t / 2, y, y + 1.0f, _def.ExteriorWall);
             }
         }
+    }
+
+    /// <summary>
+    /// The plan strips of the outside walls that run up through floor <paramref name="f"/>'s level (this floor's own on the
+    /// ground floor, the floor below's above it): a slab (a floor, a balcony) stops at their faces.
+    /// </summary>
+    private IEnumerable<BRect> OutsideWallsThrough(int f)
+    {
+        foreach (var s in _segs[f == 0 ? 0 : f - 1])
+            if (s.Exterior)
+                yield return s.AlongX ? new BRect(s.A - _t / 2, s.C - _t / 2, s.B + _t / 2, s.C + _t / 2) : new BRect(s.C - _t / 2, s.A - _t / 2, s.C + _t / 2, s.B + _t / 2);
     }
 
     private void EmitRoof()
@@ -979,7 +1026,13 @@ internal sealed partial class BuildingGenerator
                         Add(r.X0, baseY, r.Z0, r.X1, l0, r.Z1, x.Surface ?? _def.FloorSurface);
                     var top = baseY + x.Height;
                     if (x.Roof)
-                        Add(r.X0 - 0.1f, top - 0.15f, r.Z0 - 0.1f, r.X1 + 0.1f, top, r.Z1 + 0.1f, surf);
+                    {
+                        // The roof overhangs its rect by 0.1 m, except on a side against the building: pushed into the wall
+                        // it would share faces with the wall's lintels (z-fighting under the awning).
+                        float Over(float px, float pz) => InsideFootprint(px, pz) ? 0f : 0.1f;
+                        var (mx, mz) = ((r.X0 + r.X1) / 2, (r.Z0 + r.Z1) / 2);
+                        Add(r.X0 - Over(r.X0 - 0.05f, mz), top - 0.15f, r.Z0 - Over(mx, r.Z0 - 0.05f), r.X1 + Over(r.X1 + 0.05f, mz), top, r.Z1 + Over(mx, r.Z1 + 0.05f), surf);
+                    }
                     if (x.Posts && x.Roof)
                         foreach (var (px, pz) in new[] { (r.X0, r.Z0), (r.X1, r.Z0), (r.X0, r.Z1), (r.X1, r.Z1) })
                         {
@@ -1007,7 +1060,9 @@ internal sealed partial class BuildingGenerator
     {
         var y = _level[f];
         var r = x.Rect;
-        Add(r.X0, y - Slab, r.Z0, r.X1, y, r.Z1, x.Surface ?? _def.FloorSurface);
+        // Like a floor, the balcony's slab stops at the face of an outside wall it would run into.
+        foreach (var p in BRect.Subtract([r], f > 0 ? OutsideWallsThrough(f) : []))
+            Add(p.X0, y - Slab, p.Z0, p.X1, y, p.Z1, x.Surface ?? _def.FloorSurface);
         if (x.Railing <= 0.01f)
             return;
         var edges = new (bool AlongX, float C, float A, float B, float Out)[]
