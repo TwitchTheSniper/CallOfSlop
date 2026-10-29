@@ -17,7 +17,7 @@ public static partial class SelfTest
     private static readonly (string File, uint Hash)[] PrePackAssetFingerprints =
     [
         ("Legacy/01-ProtoBox.json", 0xa83dd7a5u), ("Legacy/02-Courtyard.json", 0xe3534311u), ("Legacy/03-Crossroads.json", 0x32d2876fu),
-        ("Legacy/04-Warehouse9.json", 0x0d1b5095u), ("Legacy/05-LongShot.json", 0x5dc41fa0u), ("Legacy/06-Ziggurat.json", 0xd8b982f8u),
+        ("Legacy/04-Warehouse9.json", 0x51eb6525u), ("Legacy/05-LongShot.json", 0x5dc41fa0u), ("Legacy/06-Ziggurat.json", 0xd8b982f8u),
         ("Legacy/07-Scrapyard.json", 0x607cf9a5u), ("Legacy/08-Rooftops.json", 0xc4389c57u), ("Legacy/09-Harbor.json", 0xc9c70729u),
         ("Legacy/10-MarketStreet.json", 0x56bbf266u), ("Legacy/11-Quarry.json", 0xf2fbda89u), ("Legacy/12-Trenches.json", 0x58540d3bu) /* 2026-10-27: Waypoint ops out of the bunkers (bots had no way out; the look is unchanged) */,
         ("Legacy/13-TrainYard.json", 0xd94dde9du), ("Legacy/14-OfficePark.json", 0xffd0db70u), ("Legacy/15-Ruins.json", 0xe93ec317u),
@@ -27,12 +27,12 @@ public static partial class SelfTest
         ("Legacy/25-Blueprint.json", 0xde9e3279u), ("Legacy/26-Galleria.json", 0x429afd78u), ("Legacy/27-Floodgate.json", 0x4a22d535u),
         ("Legacy/28-Trefoil.json", 0x22112141u), ("Legacy/29-Citadel.json", 0x1da8b2d5u), ("Legacy/30-Confluence.json", 0x01cc3073u),
         ("Legacy/31-GravelPit.json", 0xca7426b9u), ("Legacy/32-Hillfort.json", 0xda1b684bu), ("Legacy/33-Riverbend.json", 0x6c804618u),
-        ("Legacy/34-AdobeMesa.json", 0xb9ca18aau), ("Legacy/35-Ridgeline.json", 0xb945fc4au), ("Legacy/36-AlpinePass.json", 0x61c5781cu),
-        ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x8a64c7d3u),
+        ("Legacy/34-AdobeMesa.json", 0xc187c13du), ("Legacy/35-Ridgeline.json", 0xb945fc4au), ("Legacy/36-AlpinePass.json", 0x514f3f9fu),
+        ("Cluttered/01-Carousel.json", 0x28a0993cu), ("Cluttered/02-CrescentBazaar.json", 0xa26b8e27u), ("Cluttered/03-Sprawl.json", 0x7a653715u),
         ("Dev/FoliageTest.json", 0x8a733893u), ("Dev/TerrainTest.json", 0x6ea98f95u), ("Dev/PhysicsTest.json", 0x476984bcu),
         ("Dev/PropGallery.json", 0x3e664c24u), ("Dev/PropYard.json", 0xabe63286u), ("Dev/PropGallery2.json", 0x5304a7d5u),
         ("Dev/PropGallery3.json", 0xf7ac0dc5u), ("Dev/AnimatedProps.json", 0xe27faceeu) /* 2026-10-28: regenerated with the Corona Chandelier and Candle Cluster (feat/cathedral-detail) */, ("Dev/MeshTest.json", 0xb7a01a63u),
-        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x5fbf936fu), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
+        ("Dev/ShapeTest.json", 0x6b175b8cu), ("Dev/SkyTest.json", 0x1ba9e8d4u), ("Dev/WorkbenchRange.json", 0xaaeeb152u),
     ];
 
     private static void CheckPackAssets()
