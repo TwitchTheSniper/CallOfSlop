@@ -533,8 +533,8 @@ public static class ZombieAnim
         var sn = MathF.Sin(g);
         var cs = MathF.Cos(g);
         t = default;
-        t.Pitch = 1.47f - 0.1f * w * MathF.Max(0, cs); // the chest comes up off the floor as it stretches
-        t.Pelvis = new Vector3(0, 0.15f + 0.06f * w * MathF.Max(0, sn), 0.12f + 0.09f * w * sn); // the hump: hips up and drawn in
+        t.Pitch = 1.5f - 0.1f * w * MathF.Max(0, cs); // the chest comes up off the floor as it stretches
+        t.Pelvis = new Vector3(0, 0.13f + 0.06f * w * MathF.Max(0, sn), 0.12f + 0.09f * w * sn); // the hump: hips up and drawn in
         t.Roll = 0.12f * w * MathF.Sin(g + 0.6f);
         t.Twist = 0.16f * w * sn;
         t.HeadRoll = look.HeadRoll * 0.4f - 0.1f * w * sn;

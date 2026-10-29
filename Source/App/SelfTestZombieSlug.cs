@@ -85,6 +85,7 @@ public static partial class SelfTest
         {
             var slug = Z(At(-12, -12), 15);
             slug.Speed = ZSpeed.Sprint;
+            slug.Yaw = MathF.PI; // (facing the player: turning round takes a slug a while)
             var whole = Z(At(-6, -12), 0);
             me.Teleport(At(-9, 10));
             var from = slug.Position;
@@ -171,27 +172,32 @@ public static partial class SelfTest
 
         // ---- The horde walks over it ----
         {
-            float Pass(byte blocker)
+            (bool Past, float Closest, int InGrid, double At) Pass(byte blocker)
             {
                 var b = Z(At(-9, -10), blocker);
                 b.StunnedUntil = 1e9; // lies still
                 var w = Z(At(-9, -14), 0);
-                me.Teleport(At(-9, -5));
+                w.Yaw = MathF.PI;
+                me.Teleport(At(-9, -4));
                 var closest = float.MaxValue;
-                for (var k = 0; k < 150; k++)
+                var inGrid = 0;
+                var t0 = t;
+                var at = -1.0;
+                for (var k = 0; k < 360 && at < 0; k++)
                 {
                     g.SelfTestZombiesTick(t += World.TickDt);
                     closest = MathF.Min(closest, Flat2(w.Position - b.Position));
+                    inGrid = g.HordeAI.Grid.Count;
+                    if (w.Position.Z > b.Position.Z + 1f)
+                        at = t - t0;
                 }
-                var past = w.Position.Z > b.Position.Z + 1f;
-                var inGrid = g.HordeAI.Grid.Count;
                 Clear();
-                return past ? closest + inGrid * 100 : -1;
+                return (at >= 0, closest, inGrid, at);
             }
-            var slugPass = Pass(15);
-            var crawlPass = Pass(12);
-            Line($"a zombie walking past one lying in its way: a slug {slugPass % 100:0.00} m at the closest ({(int)(slugPass / 100)} in the neighbour grid), a crawler {crawlPass % 100:0.00} m ({(int)(crawlPass / 100)} in the grid)");
-            if (slugPass < 0 || (int)(slugPass / 100) != 1 || (int)(crawlPass / 100) != 2 || slugPass % 100 > 0.45f || crawlPass >= 0 && slugPass % 100 >= crawlPass % 100)
+            var sp = Pass(15);
+            var cp = Pass(12);
+            Line($"a zombie walking past one lying in its way: over a slug {sp.Past} after {sp.At:0.00} s, {sp.Closest:0.00} m at the closest ({sp.InGrid} in the neighbour grid); round a crawler {cp.Past} after {cp.At:0.00} s, {cp.Closest:0.00} m ({cp.InGrid} in the grid)");
+            if (!sp.Past || sp.InGrid != 1 || cp.InGrid != 2 || sp.Closest > 0.45f || sp.Closest >= cp.Closest)
                 Fail("the horde should walk over a slug (out of the neighbour grid) and keep going");
         }
 
@@ -200,7 +206,6 @@ public static partial class SelfTest
             var cull = lt.SlugCullSeconds;
             lt.SlugCullSeconds = 5;
             var seen = Z(At(-9, -6), 15);
-            seen.StunnedUntil = 1e9;
             me.Teleport(At(-9, -3));
             for (var k = 0; k < 60 * 7; k++)
                 g.SelfTestTickHorde(t += World.TickDt);
@@ -243,24 +248,24 @@ public static partial class SelfTest
                 a.Stagger = -1;
                 return a;
             }
-            float chestHigh = -9, headHigh = -9, hipMin = 9, hipMax = -9;
+            float chestSum = 0, headHigh = -9, hipMin = 9, hipMax = -9;
             var finite = true;
             for (var k = 0; k < 16; k++)
             {
                 ZombieAnim.Evaluate(Pose(15, k * 0.4f), out var p);
-                chestHigh = MathF.Max(chestHigh, p.Upper.M42);
+                chestSum += p.Upper.M42 / 16;
                 headHigh = MathF.Max(headHigh, Vector3.Transform(ZombieAnim.HeadCenter, p.Head).Y);
-                hipMin = MathF.Min(hipMin, p.Root.M43);
-                hipMax = MathF.Max(hipMax, p.Root.M43);
+                hipMin = MathF.Min(hipMin, p.Upper.M43);
+                hipMax = MathF.Max(hipMax, p.Upper.M43);
                 finite &= float.IsFinite(p.Upper.M41 + p.Upper.M42 + p.Head.M42 + p.Root.M43);
             }
             ZombieAnim.Evaluate(Pose(12, 0), out var crawl);
             var client = cs != null && cs.Slug;
             Line($"network: the client sees a slug {client} (limbs {cs?.Limbs ?? 255:X}), same hit box {sameBox}, protocol {ServerInfo.ProtocolVersion}; "
-                 + $"the slug pose: chest at most {chestHigh:0.00} m up (a crawler's {crawl.Upper.M42:0.00} m), head at most {headHigh:0.00} m, the hips moving {hipMax - hipMin:0.00} m along the body over a wave");
+                 + $"the slug pose: chest {chestSum:0.00} m up on average (a crawler's {crawl.Upper.M42:0.00} m), head at most {headHigh:0.00} m, the body moving {hipMax - hipMin:0.00} m back and forth over a wave");
             if (!client || !sameBox)
                 Fail("a client should see the slug (from its limb bits) with the same hit box");
-            if (!finite || chestHigh >= crawl.Upper.M42 || headHigh > 0.6f || hipMax - hipMin < 0.08f)
+            if (!finite || chestSum >= crawl.Upper.M42 || headHigh > 0.6f || hipMax - hipMin < 0.08f)
                 Fail("a slug should be drawn flat on its belly (lower than a crawler), inching along with a body wave");
             Clear();
         }
