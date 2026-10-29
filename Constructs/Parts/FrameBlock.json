@@ -28,7 +28,8 @@
         0.22,
         0
       ],
-      "color": "#6a7078"
+      "color": "#6a7078",
+      "detail": true
     }
   ],
   "sockets": [

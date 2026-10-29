@@ -446,8 +446,8 @@ public sealed class ConstructWorld
                 var iq = Quaternion.Conjugate(q);
                 var lo = Vector3.Transform(origin - t, iq);
                 var ld = Vector3.Transform(dir, iq);
-                var boxes = p.D.Boxes;
-                for (var bi = 0; bi < boxes.Length; bi++)
+                var boxes = p.D.SolidBoxes;
+                for (var bi = 0; bi < boxes; bi++)
                 {
                     c.BoxOf(i, bi, out var centre, out var half);
                     if (Geometry.RayAabb(centre - half, centre + half, lo, ld, best) is { } d && d < best)
@@ -488,8 +488,8 @@ public sealed class ConstructWorld
                 c.WorldFrame(p.Seg, out var q, out var t);
                 var iq = Quaternion.Conjugate(q);
                 var upLocal = Vector3.Transform(Vector3.UnitY, iq);
-                var boxes = p.D.Boxes;
-                for (var bi2 = 0; bi2 < boxes.Length; bi2++)
+                var boxes = p.D.SolidBoxes;
+                for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
                     c.BoxOf(i, bi2, out var centre, out var half);
                     // World bounds of the turned box.
@@ -603,6 +603,25 @@ public sealed class ConstructWorld
         j.Vel = Math.Clamp(j.Vel + torque / (lever * lever) * 0.15f, -4f, 4f);
         j.Open = j.Angle + j.Vel * 0.3f is var guess && MathF.Abs(guess) > 0.4f; // a pushed door stays where it was pushed to
         c.Wake();
+    }
+
+    /// <summary>The ground under (x, z): the first thing a ray from high above hits.</summary>
+    public static Vector3 Ground(IWorldQuery q, float x, float z)
+    {
+        const float top = 60f;
+        var d = q.Raycast(new Vector3(x, top, z), -Vector3.UnitY, top + 20f, QueryFilter.All);
+        return new Vector3(x, top - d, z);
+    }
+
+    /// <summary>A sandbox map's starting constructs and loose parts (server, at the start of a match).</summary>
+    public void Populate(SandboxMap s, IWorldQuery q)
+    {
+        foreach (var sp in s.Constructs)
+            if (ConstructBuild.FindBlueprint(sp.Blueprint) is { } bp)
+                ConstructBuild.BuildOnGround(this, bp, Ground(q, sp.X, sp.Z), sp.Yaw, out _);
+        foreach (var l in s.Loose)
+            if (ConstructParts.Find(l.Part) is { } def)
+                ConstructBuild.PlaceNew(this, def, Ground(q, l.X, l.Z), l.Yaw);
     }
 
     /// <summary>One tick: physics, then anything that fell out of the world goes.</summary>

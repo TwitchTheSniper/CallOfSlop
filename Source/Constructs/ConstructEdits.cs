@@ -1,0 +1,359 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>An edit in progress: attaching takes a few seconds, removing a little less (decision 2).</summary>
+public enum EditKind : byte
+{
+    None,
+    Attach, // the held part onto a socket of a construct
+    PlaceNew, // the held part on the ground: a new construct
+    Remove, // a part off a construct, into the hand
+}
+
+/// <summary>What one player holds and is doing (server-owned, replicated in the Sandbox mode-state tail).</summary>
+public struct SandboxHand
+{
+    public ConstructTool Tool; // None: a gun or bare hands (use only, never edit)
+    public byte Held; // the part in hand (ConstructParts id, 255: none)
+    public EditKind Edit;
+    public ushort Body;
+    public byte Part, Socket, Variant;
+    public Vector3 At; // PlaceNew: the ground point
+    public float Yaw;
+    public double Start, Duration;
+    public ushort SeatBody; // 0: not sitting
+    public byte SeatPart;
+    public double RackAt; // last rack take (a press cycles to the next part)
+
+    public readonly bool Seated => SeatBody != 0;
+
+    public readonly float Progress(double now) => Edit == EditKind.None || Duration <= 0 ? 0 : (float)Math.Clamp((now - Start) / Duration, 0, 1);
+
+    public static SandboxHand Empty => new() { Held = ConstructParts.None };
+}
+
+/// <summary>
+/// The Sandbox editing rules on the server (the client asks; this decides): tools, the held part, timed attach and
+/// remove, the parts rack, picking up and dropping loose parts, seats and doors. Every check the client could fake is
+/// redone here: the tool must fit the part, the socket must be free and within reach, nothing may be in the way.
+/// Per-player state is a fixed array: nothing allocates.
+/// </summary>
+public sealed class ConstructEdits
+{
+    public readonly SandboxHand[] Hands = new SandboxHand[256];
+
+    /// <summary>A line per completed edit (the self-test reads them; the game logs them).</summary>
+    public readonly List<string> Done = new(16);
+
+    public ConstructEdits() => Reset();
+
+    public void Reset()
+    {
+        for (var i = 0; i < Hands.Length; i++)
+            Hands[i] = SandboxHand.Empty;
+    }
+
+    public ref SandboxHand Hand(byte player) => ref Hands[player];
+
+    public string? SetTool(byte player, ConstructTool tool)
+    {
+        ref var h = ref Hands[player];
+        if (h.Tool != tool)
+            h.Edit = EditKind.None; // putting the tool away stops the edit
+        h.Tool = tool;
+        return null;
+    }
+
+    private static string? Reachable(Vector3 eye, Vector3 at, float reach) =>
+        Vector3.Distance(eye, at) <= reach + 0.75f ? null : "too far away";
+
+    public string? BeginAttach(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int socket, int variant, double now)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (ConstructParts.Get(h.Held) is not { } def)
+            return "hold a part first (take one from the rack)";
+        if (h.Tool == ConstructTool.None)
+            return "take out a tool to build (3: wrench, 4: welder)";
+        if (!ConstructBuild.ToolFits(h.Tool, def))
+            return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
+        if (world.Get(body) is not { } c)
+            return "that construct is gone";
+        if (c.Driver != 255 && c.Driver != player)
+            return "someone is driving it";
+        var v = variant % Math.Max(1, def.Sockets.Length * 4);
+        if (ConstructBuild.Place(c, part, socket, def, v / 4, v % 4, out var g) is { } why)
+            return why;
+        if (Reachable(eye, c.ToWorld(g.Pos), ConstructBuild.Reach) is { } far)
+            return far;
+        h.Edit = EditKind.Attach;
+        h.Body = body;
+        h.Part = (byte)part;
+        h.Socket = (byte)socket;
+        h.Variant = (byte)v;
+        h.Start = now;
+        h.Duration = ConstructBuild.AttachSeconds(def);
+        return null;
+    }
+
+    public string? BeginPlaceNew(ConstructWorld world, byte player, Vector3 eye, Vector3 ground, float yaw, double now)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (ConstructParts.Get(h.Held) is not { } def)
+            return "hold a part first (take one from the rack)";
+        if (h.Tool == ConstructTool.None)
+            return "take out a tool to build (3: wrench, 4: welder)";
+        if (!ConstructBuild.ToolFits(h.Tool, def))
+            return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
+        if (Reachable(eye, ground, ConstructBuild.Reach) is { } far)
+            return far;
+        if (world.Bodies.Count >= ConstructWorld.MaxBodies || world.TotalParts >= ConstructWorld.MaxTotalParts)
+            return "the world is full of constructs";
+        h.Edit = EditKind.PlaceNew;
+        h.At = ground;
+        h.Yaw = yaw;
+        h.Start = now;
+        h.Duration = ConstructBuild.AttachSeconds(def);
+        return null;
+    }
+
+    public string? BeginRemove(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, double now)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
+            return "that part is gone";
+        var def = c.DefOf(part);
+        if (h.Tool == ConstructTool.None)
+            return "take out a tool to take parts off (3: wrench, 4: welder)";
+        if (!ConstructBuild.ToolFits(h.Tool, def))
+            return $"the {def.Name} comes off with the {def.Tool.ToString().ToLowerInvariant()}";
+        if (c.Driver != 255)
+            return "someone is driving it";
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+            return far;
+        h.Edit = EditKind.Remove;
+        h.Body = body;
+        h.Part = (byte)part;
+        h.Start = now;
+        h.Duration = ConstructBuild.RemoveSeconds(def);
+        return null;
+    }
+
+    public void Cancel(byte player) => Hands[player].Edit = EditKind.None;
+
+    /// <summary>Every tick: edits whose time is up are done (checked again: the construct may have changed meanwhile).</summary>
+    public void Tick(ConstructWorld world, double now, Func<byte, Vector3?> eyeOf)
+    {
+        for (var pid = 0; pid < Hands.Length; pid++)
+        {
+            ref var h = ref Hands[pid];
+            if (h.Edit == EditKind.None || now < h.Start + h.Duration)
+                continue;
+            var kind = h.Edit;
+            h.Edit = EditKind.None;
+            if (eyeOf((byte)pid) is not { } eye)
+                continue; // left, or dead
+            var result = Complete(world, (byte)pid, ref h, kind, eye);
+            Done.Add($"player {pid}: {kind} {result}");
+        }
+    }
+
+    private static string Complete(ConstructWorld world, byte player, ref SandboxHand h, EditKind kind, Vector3 eye)
+    {
+        switch (kind)
+        {
+            case EditKind.Attach:
+            {
+                if (ConstructParts.Get(h.Held) is not { } def || !ConstructBuild.ToolFits(h.Tool, def) || world.Get(h.Body) is not { } c)
+                    return "failed: nothing to attach";
+                if (ConstructBuild.Place(c, h.Part, h.Socket, def, h.Variant / 4, h.Variant % 4, out var g) is { } why)
+                    return $"failed: {why}";
+                var i = ConstructBuild.Attach(world, c, def, g);
+                if (i < 0)
+                    return "failed: too many parts";
+                h.Held = ConstructParts.None;
+                return $"ok: {def.Name} as part {i} of construct {c.Id}";
+            }
+            case EditKind.PlaceNew:
+            {
+                if (ConstructParts.Get(h.Held) is not { } def || !ConstructBuild.ToolFits(h.Tool, def))
+                    return "failed: nothing to place";
+                if (ConstructBuild.PlaceNew(world, def, h.At, h.Yaw) is not { } c)
+                    return "failed: the world is full";
+                h.Held = ConstructParts.None;
+                return $"ok: {def.Name} as new construct {c.Id}";
+            }
+            case EditKind.Remove:
+            {
+                if (world.Get(h.Body) is not { } c || h.Part >= c.PartCount || !ConstructBuild.ToolFits(h.Tool, c.DefOf(h.Part)) || c.Driver != 255)
+                    return "failed: that part is gone";
+                c.WorldFrame(c.Parts[h.Part].Seg, out var q, out var t);
+                c.PartBounds(h.Part, out var mn, out var mx);
+                var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
+                var def = world.RemovePart(c, h.Part);
+                if (h.Held == ConstructParts.None)
+                {
+                    h.Held = def.Id;
+                    return $"ok: {def.Name} into the hand";
+                }
+                // Hands full: it drops where it was.
+                ConstructBuild.PlaceNew(world, def, where with { Y = where.Y - 0.3f }, 0);
+                return $"ok: {def.Name} dropped";
+            }
+        }
+        return "nothing";
+    }
+
+    /// <summary>Takes the next part type from the rack (each press moves on to the next kind).</summary>
+    public string? TakeFromRack(SandboxMap? sandbox, byte player, Vector3 feet)
+    {
+        ref var h = ref Hands[player];
+        if (sandbox == null || sandbox.RackParts.Count == 0)
+            return "no parts rack on this map";
+        if (Vector3.Distance(feet with { Y = 0 }, sandbox.Rack) > 4.5f)
+            return "go to the parts rack";
+        var cur = ConstructParts.Get(h.Held)?.Name;
+        var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
+        var next = ConstructParts.Find(sandbox.RackParts[(at + 1) % sandbox.RackParts.Count]);
+        if (next == null)
+            return "the rack is empty";
+        h.Held = next.Id;
+        h.Edit = EditKind.None;
+        return null;
+    }
+
+    public string? PickUp(ConstructWorld world, byte player, Vector3 eye, ushort body)
+    {
+        ref var h = ref Hands[player];
+        if (h.Held != ConstructParts.None)
+            return "your hands are full (drop what you hold first)";
+        if (world.Get(body) is not { } c || !c.Loose)
+            return "only loose parts can be picked up";
+        if (Reachable(eye, c.WorldCom, ConstructBuild.UseReach) is { } far)
+            return far;
+        h.Held = c.Parts[0].Def;
+        world.Remove(c);
+        return null;
+    }
+
+    public string? Drop(ConstructWorld world, byte player, Vector3 feet, float yaw)
+    {
+        ref var h = ref Hands[player];
+        if (ConstructParts.Get(h.Held) is not { } def)
+            return "nothing in your hands";
+        var at = feet + World.FlatForward(yaw) * 1.3f + new Vector3(0, 0.5f, 0);
+        if (ConstructBuild.PlaceNew(world, def, at, yaw) == null)
+            return "the world is full of constructs";
+        h.Held = ConstructParts.None;
+        h.Edit = EditKind.None;
+        return null;
+    }
+
+    /// <summary>Use (any hands): a seat to sit in, a door or hinge to open or shut.</summary>
+    public string? Use(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        ref var h = ref Hands[player];
+        if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
+            return "nothing there";
+        var d = c.DefOf(part);
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach) is { } far)
+            return far;
+        if (d.Role == PartRole.Seat)
+        {
+            if (c.Parts[part].Broken)
+                return "the seat is wrecked";
+            if (c.Driver != 255)
+                return "someone is already in it";
+            h.Edit = EditKind.None;
+            h.SeatBody = c.Id;
+            h.SeatPart = (byte)part;
+            c.Driver = player;
+            c.DriverSeat = part;
+            c.Wake();
+            return null;
+        }
+        var seg = c.Parts[part].Seg;
+        if (d.Role == PartRole.Hinge)
+            for (var j = 0; j < c.JointCount; j++)
+                if (c.Joints[j].Hinge == part)
+                    seg = (byte)(j + 1);
+        if (seg > 0)
+        {
+            ref var jt = ref c.Joints[seg - 1];
+            jt.Open = !jt.Open;
+            c.Wake();
+            return null;
+        }
+        if (c.Loose)
+            return PickUp(world, player, eye, body);
+        return "nothing to use there";
+    }
+
+    /// <summary>Out of the seat (or the seat went). Returns where the feet should go (beside the seat), or null if not seated.</summary>
+    public Vector3? Stand(ConstructWorld world, byte player)
+    {
+        ref var h = ref Hands[player];
+        if (!h.Seated)
+            return null;
+        var c = world.Get(h.SeatBody);
+        h.SeatBody = 0;
+        if (c == null)
+            return null;
+        if (c.Driver == player)
+        {
+            c.Driver = 255;
+            c.DriverSeat = -1;
+            c.Throttle = c.Steer = c.SteerInput = 0;
+        }
+        var side = Vector3.Transform(Vector3.UnitX, c.Rot);
+        side.Y = 0;
+        side = side.LengthSquared() > 1e-4f ? Vector3.Normalize(side) : Vector3.UnitX;
+        var seatPos = SeatFeet(c, h.SeatPart);
+        return seatPos with { Y = MathF.Max(seatPos.Y, c.WorldCom.Y - 0.6f) } - side * (MathF.Max(c.LocalMax.X - c.LocalMin.X, 1.5f) * 0.5f + 0.9f);
+    }
+
+    /// <summary>Where a sitter's feet are: the seat's "at" point.</summary>
+    public static Vector3 SeatFeet(Construct c, int part)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return c.WorldCom;
+        ref var p = ref c.Parts[part];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        return t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), q);
+    }
+
+    /// <summary>Driving: the seated player's keys become throttle, steering and brake (server, every tick).</summary>
+    public static void DriveInput(Construct c, Buttons b, float dt)
+    {
+        var throttle = ((b & Buttons.Forward) != 0 ? 1f : 0f) - ((b & Buttons.Back) != 0 ? 1f : 0f);
+        var steer = ((b & Buttons.Right) != 0 ? 1f : 0f) - ((b & Buttons.Left) != 0 ? 1f : 0f);
+        c.SteerInput = steer;
+        c.Brake = (b & Buttons.Jump) != 0;
+        // Reversing: Back while rolling forward brakes first.
+        var fwd = Vector3.Dot(c.Vel, Vector3.Transform(c.SeatForward(), c.Rot));
+        if (throttle < 0 && fwd > 1f)
+        {
+            c.Brake = true;
+            throttle = 0;
+        }
+        c.Throttle = throttle;
+        // Steering eases in and out, and less of it at speed.
+        var speed = MathF.Abs(fwd);
+        var max = 0.55f / (1f + speed * 0.06f);
+        var target = steer * max;
+        var rate = 2.5f * dt;
+        c.Steer += Math.Clamp(target - c.Steer, -rate, rate);
+        if (throttle != 0 || steer != 0)
+            c.Wake();
+    }
+}

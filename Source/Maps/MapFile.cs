@@ -456,6 +456,8 @@ public static partial class MapFile
             }
             if (Prop(root, "zombies") is { ValueKind: not JsonValueKind.Null } zombies)
                 map.Zombies = ZombiesMap.Read(zombies, map, source); // the Zombies mode: areas, doors, windows, buyables (MapZombies.cs)
+            if (Prop(root, "sandbox") is { ValueKind: not JsonValueKind.Null } sandbox)
+                map.Sandbox = SandboxMap.Read(sandbox, source); // the Sandbox mode: the parts rack, starting constructs, loose parts (MapSandbox.cs)
             if (Prop(root, "logic") is { ValueKind: not JsonValueKind.Null } logic)
                 map.ReadLogic(logic, source); // map events: entities wired together (MapLogic.cs); after the movers and the zombies section it refers to
             if (Prop(root, MapTestSpec.Key) is { ValueKind: not JsonValueKind.Null } test)

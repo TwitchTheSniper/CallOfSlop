@@ -23,7 +23,8 @@
         0.52,
         1.9
       ],
-      "color": "#5d636b"
+      "color": "#5d636b",
+      "detail": true
     }
   ],
   "sockets": [

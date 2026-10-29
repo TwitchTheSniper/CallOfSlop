@@ -89,14 +89,14 @@ public static class ConstructBuild
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
     public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
     {
-        for (var b = 0; b < def.Boxes.Length; b++)
+        for (var b = 0; b < def.SolidBoxes; b++)
         {
             var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center);
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half) - new Vector3(0.01f);
             for (var i = 0; i < c.PartCount; i++)
             {
                 var d = c.DefOf(i);
-                for (var k = 0; k < d.Boxes.Length; k++)
+                for (var k = 0; k < d.SolidBoxes; k++)
                 {
                     c.BoxOf(i, k, out var oc, out var oh);
                     if (MathF.Abs(bc.X - oc.X) < bh.X + oh.X && MathF.Abs(bc.Y - oc.Y) < bh.Y + oh.Y && MathF.Abs(bc.Z - oc.Z) < bh.Z + oh.Z)
@@ -231,12 +231,12 @@ public static class ConstructBuild
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
     }
 
-    private static List<Blueprint>? _blueprints;
     private static readonly List<string> _refusedBlueprints = new();
+    private static readonly Lazy<List<Blueprint>> _blueprints = new(() => LoadBlueprints(BlueprintFolder, _refusedBlueprints), LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static string BlueprintFolder => Path.Combine(AppFolders.Data, "Constructs", "Blueprints");
 
-    public static IReadOnlyList<Blueprint> Blueprints => _blueprints ??= LoadBlueprints(BlueprintFolder, _refusedBlueprints);
+    public static IReadOnlyList<Blueprint> Blueprints => _blueprints.Value;
 
     public static IReadOnlyList<string> RefusedBlueprints
     {

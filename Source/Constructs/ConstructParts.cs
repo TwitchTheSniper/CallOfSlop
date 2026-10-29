@@ -44,7 +44,8 @@ public enum SocketKind : byte
 }
 
 /// <summary>One box of a part's model and collision, in the part's own frame (metres).</summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color);
+/// <summary>A detail box is drawn only: it adds no bounds, mass, collision or hit area (and may stick out past a face).</summary>
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false);
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketKind Kind);
@@ -65,7 +66,8 @@ public sealed class ConstructPartDef
     public string Material = "steel";
     public float Friction = 0.7f;
     public PartBreak OnBreak;
-    public CPartBox[] Boxes = [];
+    public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
+    public int SolidBoxes; // how many of Boxes are solid
     public CSocket[] Sockets = [];
     public Vector3 BoundsMin, BoundsMax; // round every box, in the part's frame
 
@@ -102,12 +104,12 @@ public static class ConstructParts
 
     public const byte None = 255;
 
-    private static ConstructPartDef[]? _all;
     private static readonly List<string> _refused = new();
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
 
-    public static IReadOnlyList<ConstructPartDef> All => _all ??= LoadFolder(Folder, _refused);
+    public static IReadOnlyList<ConstructPartDef> All => _all.Value;
 
     /// <summary>Files refused at load, with the reason (one line each).</summary>
     public static IReadOnlyList<string> Refused
@@ -130,6 +132,20 @@ public static class ConstructParts
                     h = (h ^ ch) * 16777619u;
             return h;
         }
+    }
+
+    /// <summary><c>--check-construct-parts</c>: every part file and blueprint, loaded or refused with the reason. Exit code: the refusals.</summary>
+    public static int CheckCli()
+    {
+        foreach (var d in All)
+            Console.WriteLine($"OK  part {d.Id,3} {d.Name,-14} {d.Role,-10} {d.Tool,-6} {d.Mass,6:0} kg {d.Health,6:0} hp armour {d.Armour:0}, {d.Boxes.Length} boxes, {d.Sockets.Length} sockets ({d.File})");
+        foreach (var b in ConstructBuild.Blueprints)
+            Console.WriteLine($"OK  blueprint {b.Name}: {b.Steps.Count} steps ({b.File})");
+        foreach (var r in Refused)
+            Console.WriteLine($"REFUSED {r}");
+        foreach (var r in ConstructBuild.RefusedBlueprints)
+            Console.WriteLine($"REFUSED {r}");
+        return Refused.Count + ConstructBuild.RefusedBlueprints.Count;
     }
 
     public static ConstructPartDef? Get(byte id) => id < All.Count ? All[id] : null;
@@ -226,7 +242,7 @@ public static class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, ["min", "max", "at", "size", "color"], $"{file}, {where}");
+            Known(b, ["min", "max", "at", "size", "color", "detail"], $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -247,12 +263,16 @@ public static class ConstructParts
             if (Vector3.Max(Vector3.Abs(min), Vector3.Abs(max)) is var far && MathF.Max(far.X, MathF.Max(far.Y, far.Z)) > 4f)
                 throw new ConstructPartException($"{file}: {where} reaches more than 4 m from the part's origin");
             var c = Opt(b, "color") is { } bc ? Colour(bc, file, where + ".color") : colour;
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c));
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, Opt(b, "detail") is { ValueKind: JsonValueKind.True }));
         }
-        d.Boxes = list.ToArray();
+        if (list.All(x => x.Detail))
+            throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
+        // Solid boxes first (the physics walks those), details after.
+        d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
+        d.SolidBoxes = list.Count(x => !x.Detail);
         d.BoundsMin = new Vector3(float.MaxValue);
         d.BoundsMax = new Vector3(float.MinValue);
-        foreach (var b in d.Boxes)
+        foreach (var b in d.Boxes.AsSpan(0, d.SolidBoxes))
         {
             d.BoundsMin = Vector3.Min(d.BoundsMin, b.Center - b.Half);
             d.BoundsMax = Vector3.Max(d.BoundsMax, b.Center + b.Half);

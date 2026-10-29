@@ -29,7 +29,8 @@
         0,
         0
       ],
-      "color": "#d0b050"
+      "color": "#d0b050",
+      "detail": true
     }
   ],
   "sockets": [

@@ -38,14 +38,15 @@
         0.22,
         0.22
       ],
-      "color": "#9aa0a6"
+      "color": "#9aa0a6",
+      "detail": true
     }
   ],
   "sockets": [
     {
       "name": "axle",
       "at": [
-        -0.17,
+        -0.15,
         0,
         0
       ],

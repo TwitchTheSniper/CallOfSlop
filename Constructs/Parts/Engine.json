@@ -29,7 +29,8 @@
         0.27,
         0
       ],
-      "color": "#c04a2c"
+      "color": "#c04a2c",
+      "detail": true
     },
     {
       "size": [
@@ -42,7 +43,8 @@
         0.05,
         0
       ],
-      "color": "#353b42"
+      "color": "#353b42",
+      "detail": true
     }
   ],
   "sockets": [

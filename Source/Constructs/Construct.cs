@@ -261,9 +261,9 @@ public sealed class Construct
         {
             var d = Parts[i].D;
             var vol = 0f;
-            foreach (var b in d.Boxes)
-                vol += b.Half.X * b.Half.Y * b.Half.Z;
-            for (var b = 0; b < d.Boxes.Length; b++)
+            for (var b = 0; b < d.SolidBoxes; b++)
+                vol += d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z;
+            for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
                 var m = d.Mass * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);

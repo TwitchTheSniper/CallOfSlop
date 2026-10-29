@@ -25,6 +25,7 @@ public static class ConstructPhysics
     public const float MaxSpeed = 60f;
     public const float MaxSpin = 18f;
     public const int SleepAfterTicks = 40;
+    public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
 
     public struct Contact
     {
@@ -105,6 +106,8 @@ public static class ConstructPhysics
             if (c.Wheels[k].Touching)
                 touching++;
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
+        if (driving && c.Throttle != 0)
+            c.Fuel = MathF.Max(0, c.Fuel - engine!.BurnRate * MathF.Abs(c.Throttle) * dt);
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -118,15 +121,18 @@ public static class ConstructPhysics
                 w.Compression = 0;
                 continue;
             }
+            var wasTouching = w.Touching;
             w.Touching = true;
             var x = MathF.Min(len - hit.Distance, w.Travel);
             w.Compression = x;
+            if (!wasTouching)
+                w.PrevCompression = x; // first touch: no damping kick
             var omega = MathF.Tau * w.Frequency;
             var k_s = share * omega * omega;
             var c_d = 2 * w.Damping * MathF.Sqrt(k_s * share);
             var rate = (w.Compression - w.PrevCompression) / dt;
             var force = MathF.Max(0, k_s * x + c_d * rate);
-            var at = hit.Point;
+            var at = origin - up * hit.Distance; // (the contact under the wheel)
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
             var normalImpulse = force * dt;
@@ -152,7 +158,8 @@ public static class ConstructPhysics
             var vp = c.PointVel(at);
             var maxFriction = normalImpulse * w.Grip;
             var vSide = Vector3.Dot(vp, side);
-            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f;
+            var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
+            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf;
             var vFwd = Vector3.Dot(vp, fwd);
             var jFwd = 0f;
             if (driving && touching > 0)
@@ -164,8 +171,8 @@ public static class ConstructPhysics
                 else if (want < 0 && forwardSpeed > -top * 0.4f)
                     jFwd += want * engine.EngineForce / touching * dt * 0.6f;
             }
-            var stop = -vFwd / InvMassAt(c, invI, r, fwd);
-            if (c.Brake || (c.Throttle == 0 && MathF.Abs(vFwd) < 1.5f))
+            var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
+            if (c.Brake || ((!driving || c.Throttle == 0) && MathF.Abs(vFwd) < 1.5f))
                 jFwd = stop; // brakes (and a car left in neutral stays put)
             else
                 jFwd += stop * 0.01f; // rolling resistance
@@ -177,7 +184,9 @@ public static class ConstructPhysics
                 jSide *= k2;
                 jFwd *= k2;
             }
-            ApplyImpulse(c, invI, r, side * jSide + fwd * jFwd);
+            // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
+            var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);
+            ApplyImpulse(c, invI, rGrip, side * jSide + fwd * jFwd);
             w.Spin += vFwd / w.Radius * dt;
         }
     }
@@ -217,11 +226,11 @@ public static class ConstructPhysics
             if (speed * dt > 0.002f)
             {
                 var dir = v / speed;
-                if (dir.Y > -0.7f) // (straight down is the first ray's job)
+                if (dir.Y > -0.7f && dir.Y < 0.5f) // (straight down is the first ray's job; rising points never meet a wall that matters)
                 {
                     const float back = 0.25f;
                     LastRays++;
-                    if (query.Raycast(p - dir * back, dir, back + speed * dt + 0.05f, QueryFilter.All, out var hit2) && Vector3.Dot(hit2.Normal, dir) < -0.1f)
+                    if (query.Raycast(p - dir * back, dir, back + speed * dt + 0.05f, QueryFilter.All, out var hit2) && hit2.Distance > 1e-3f && Vector3.Dot(hit2.Normal, dir) < -0.1f) // (a ray starting inside something tells nothing)
                         Add(index, -1, p, hit2.Normal, (hit2.Distance - back) * MathF.Max(0.1f, -Vector3.Dot(hit2.Normal, dir)), 0.6f);
                 }
             }
@@ -282,8 +291,8 @@ public static class ConstructPhysics
                 ref var part = ref b.Parts[pi];
                 b.WorldFrame(part.Seg, out var q, out var t);
                 var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
-                var boxes = part.D.Boxes;
-                for (var bi = 0; bi < boxes.Length; bi++)
+                var boxes = part.D.SolidBoxes;
+                for (var bi = 0; bi < boxes; bi++)
                 {
                     b.BoxOf(pi, bi, out var centre, out var half);
                     var d = local - centre;

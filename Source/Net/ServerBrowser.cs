@@ -166,7 +166,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     Steam ID after its Hello; the server's table of every Steam player's id with each roster, sent only when at least
     //     one player is on Steam) and Msg.SteamAuth after it (a client's Steam session ticket for the host; the host's
     //     refusal with a reason). Packets travel the same over RakNet and Steam sockets. A game without Steam sends nothing new.
-    public const byte ProtocolVersion = 76;
+    // 77: Sandbox mode and constructs (docs/sandbox/CONSTRUCTS.md): GameMode.Sandbox at the end of the modes; Msg.CBody,
+    //     Msg.CPose and Msg.CAct at the end of Msg (construct structure and health, poses at 20 Hz, players' tool and edit
+    //     actions); the Sandbox mode-state tail carries each player's tool, held part, seat and edit in progress.
+    public const byte ProtocolVersion = 77;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

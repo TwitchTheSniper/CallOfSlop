@@ -19,6 +19,7 @@ public enum GameMode : byte
     LastManStanding, // one life each (the template mode, Dev-only: Source/Game/Modes/README.md)
     Coop, // co-op PvE missions against waves of enemy soldiers; only on maps with a mission (docs/pve/DESIGN.md)
     TestRange, // free-for-all with no win condition: no score or time limit, the match never ends, the map stays
+    Sandbox, // build and drive constructs from parts with tools in hand; only on maps with a "sandbox" section (docs/sandbox/CONSTRUCTS.md)
 }
 
 /// <summary>Names, limits and colours for the game modes: a thin front for <see cref="GameModeRegistry"/>, plus the shared team names and colours.</summary>
