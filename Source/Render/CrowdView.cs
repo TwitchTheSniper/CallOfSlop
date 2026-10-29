@@ -29,6 +29,10 @@ public sealed class CrowdView
     public CrowdAgents Agents => _lastHost ? Host : Client;
 
     private bool _lastHost;
+    private Vector3 _lastCam = new(float.MaxValue);
+
+    /// <summary>The camera moving further than this (m) in a frame is a cut.</summary>
+    public const float CutMetres = 12f;
     private double _last = double.NaN;
     private long _notes;
     private Game? _for;
@@ -73,6 +77,11 @@ public sealed class CrowdView
             (host ? Host : Client).Clear();
         _lastHost = host;
         var agents = host ? Host : Client;
+        // A camera cut (a respawn, the spectator camera, a shot tool's next view): nobody saw the crowd in between, so the
+        // agents start afresh, every cell filled at once, rather than catching up on caps and views.
+        if (Vector3.DistanceSquared(cam, _lastCam) > CutMetres * CutMetres)
+            agents.Clear();
+        _lastCam = cam;
         (agents.DrawCap, agents.FarCap, agents.FarFrom, agents.FarTo, agents.Speed, agents.JamCount) =
             (rules.DrawCap, rules.DrawCapFar, rules.DrawFarFrom, rules.DrawFarTo, rules.Speed, rules.MassCapacity);
         (agents.NearRange, agents.MidRange) = (inst.NearRange, inst.MidRange);
