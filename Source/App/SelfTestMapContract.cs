@@ -623,6 +623,21 @@ public static partial class SelfTest
                 return $"{t.LightProbes.Length} probes ({string.Join(", ", seen)}); grid {lb.NX}x{lb.NY}x{lb.NZ} at {lb.Cell:0.##} m, {lb.Sources.Length} lights, baked in {lb.BakeMs:0} ms";
             });
 
+        // Baked light against what is drawn (LightBaker.Audit, docs/render/LIGHTING.md "Occluders"): no hidden collider casts
+        // shadows without a mesh over it, no light sits inside a wall or another prop, every prop light is at its prop.
+        if (m.LightBake is { } lightBake)
+            MapCheck("light sources", verbose, () =>
+            {
+                var moves = new List<string>();
+                var problems = LightBaker.Audit(m, moves);
+                if (verbose)
+                    foreach (var mv in moves)
+                        Line($"  {mv}");
+                if (problems.Count > 0)
+                    Fail($"{m.Name}: the baked light doesn't match what is drawn ({problems.Count}): {string.Join("; ", problems.Take(6))}");
+                return $"{lightBake.Sources.Length} lights and {LightBaker.OccluderList(m, LightBaker.MinOccluder(lightBake.Spec)).Count} occluders match the drawn map{(moves.Count > 0 ? $" ({moves.Count} lights moved out of a box)" : "")}";
+            });
+
         // The horizon (the all-maps "Map horizons" section's per-map check, here too so a focused run sees it).
         MapCheck("horizon", verbose, () =>
         {

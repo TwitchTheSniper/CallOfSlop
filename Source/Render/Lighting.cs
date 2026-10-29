@@ -140,7 +140,66 @@ public static unsafe class Lighting
         float LitFlicker(float t, vec4 c, float share)
         {
             vec2 z = (c.gb * 255.0 - 128.0) / 127.0 * 0.6;
-            return max(1.0 - 0.3 * share + FlameWave(z, c.a, t), 0.0);
+            return max(1.0 - 0.3 * share + FlameWave(z, min(c.a * (255.0 / 248.0), 1.0), t), 0.0); // (alpha's low bits: the cell's links)
+        }
+
+        // The baked grid for a surface at p facing n (LightBake.SampleSurface in C#): read a little over half a cell along n.
+        // Most places take the GPU's own trilinear filtering. Where the 8 cells round that point hold a cell inside a box,
+        // or something stands between two of them (the low corner's flag: LightBaker.WriteFlags), they are filtered here
+        // instead, leaving out cells inside boxes and cells behind the surface, so a thin wall's outside face, or the floor
+        // at its foot, never reads the light of the room behind it.
+        void LitGrid(vec3 p, vec3 n, out vec4 a, out vec4 b, out vec4 c)
+        {
+            vec3 uvw = (p + n * vec3(uLitMode.z, uLitOrigin.w, uLitMode.z) - uLitOrigin.xyz) * uLitScale.xyz;
+            ivec3 size = textureSize(uLitC, 0);
+            vec3 g = uvw * vec3(size) - 0.5;
+            ivec3 c0 = clamp(ivec3(floor(g)), ivec3(0), size - 1);
+            int flags = int(texelFetch(uLitC, c0, 0).r * 255.0 + 0.5);
+            if ((flags & 2) != 0)
+            {
+                vec3 f = clamp(g - vec3(c0), 0.0, 1.0);
+                vec3 cell = 1.0 / (uLitScale.xyz * vec3(size));
+                // The home cell (the corner nearest the point): a corner across a blocked link from it (texture C's alpha
+                // low bits: +x, +y, +z) is behind a wall that stands between two cell centres.
+                ivec3 h = ivec3(greaterThanEqual(f, vec3(0.5)));
+                ivec3 hq = min(c0 + h, size - 1);
+                bool homeOpen = (int(texelFetch(uLitC, hq, 0).r * 255.0 + 0.5) & 1) == 0;
+                ivec3 links = ivec3(int(texelFetch(uLitC, min(c0 + ivec3(0, h.y, h.z), size - 1), 0).a * 255.0 + 0.5) & 1,
+                                    int(texelFetch(uLitC, min(c0 + ivec3(h.x, 0, h.z), size - 1), 0).a * 255.0 + 0.5) & 2,
+                                    int(texelFetch(uLitC, min(c0 + ivec3(h.x, h.y, 0), size - 1), 0).a * 255.0 + 0.5) & 4);
+                bvec3 blocked = bvec3(homeOpen && links.x != 0, homeOpen && links.y != 0, homeOpen && links.z != 0);
+                vec4 sa = vec4(0.0);
+                vec4 sb = vec4(0.0);
+                vec4 sc = vec4(0.0);
+                float sum = 0.0;
+                for (int i = 0; i < 8; i++)
+                {
+                    ivec3 o = ivec3(i & 1, (i >> 1) & 1, i >> 2);
+                    ivec3 q = min(c0 + o, size - 1);
+                    vec3 t = mix(1.0 - f, f, vec3(o));
+                    float w = t.x * t.y * t.z;
+                    vec4 tc = texelFetch(uLitC, q, 0);
+                    vec3 centre = uLitOrigin.xyz + (vec3(q) + 0.5) * cell;
+                    bvec3 across = notEqual(o, h);
+                    if ((int(tc.r * 255.0 + 0.5) & 1) != 0 || dot(centre - p, n) < 0.0 || w <= 0.0
+                        || (blocked.x && across.x) || (blocked.y && across.y) || (blocked.z && across.z))
+                        continue;
+                    sa += texelFetch(uLitA, q, 0) * w;
+                    sb += texelFetch(uLitB, q, 0) * w;
+                    sc += tc * w;
+                    sum += w;
+                }
+                if (sum > 1e-4)
+                {
+                    a = sa / sum;
+                    b = sb / sum;
+                    c = sc / sum;
+                    return;
+                }
+            }
+            a = texture(uLitA, uvw);
+            b = texture(uLitB, uvw);
+            c = texture(uLitC, uvw);
         }
 
         // ApplyLight plus the baked light at world position p (mode 0: exactly ApplyLight).
@@ -152,13 +211,8 @@ public static unsafe class Lighting
             vec4 a;
             vec4 b;
             vec4 c;
-            if (uLitMode.x < 1.5)
-            {
-                vec3 uvw = (p + n * vec3(uLitMode.z, uLitOrigin.w, uLitMode.z) - uLitOrigin.xyz) * uLitScale.xyz;
-                a = texture(uLitA, uvw);
-                b = texture(uLitB, uvw);
-                c = texture(uLitC, uvw);
-            }
+            if (uLitMode.x < 1.5 || uLitMode.x > 2.5)
+                LitGrid(p, n, a, b, c);
             else
             {
                 a = uProbeA;
@@ -169,7 +223,8 @@ public static unsafe class Lighting
             float skyLum = max(dot(uFog, vec3(0.3333)), 0.05);
             vec3 sky = mix(uAmbSky, uFog / skyLum * dot(uAmbSky, vec3(0.3333)), uSkyTint);
             vec3 amb = mix(uAmbGround, sky, n.y * 0.5 + 0.5) * b.w;
-            float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0) * c.r;
+            float sunVis = min(c.r * (255.0 / 252.0), 1.0); // (its low two bits are flags: LightBaker.WriteFlags)
+            float diff = max((dot(n, uSunDir) + wrap) / (1.0 + wrap), 0.0) * sunVis;
             float facing = (1.0 - min(length(b.xyz), 1.0)) * 0.6 + max((dot(n, b.xyz) + wrap) / (1.0 + wrap), 0.0);
             vec3 lit = a.rgb * facing * LitFlicker(uLitMode.y, c, a.a);
             int nd = uLitMode.x < 1.5 ? int(uLitMode.w + 0.5) : 0;
@@ -181,6 +236,8 @@ public static unsafe class Lighting
                 float f = (1.0 - q * q) * (1.0 - q * q);
                 lit += uDynCol[i].rgb * f * max(dot(n, l / max(d, 1e-3)) * 0.8 + 0.2, 0.0);
             }
+            if (uLitMode.x > 2.5) // (--light-debug's pictures: the grid's light alone, or its sky and sun visibility)
+                return uLitMode.x < 3.5 ? lit + vec3(0.02) : vec3(b.w * 0.6 + sunVis * 0.4, b.w * 0.6 + sunVis * 0.4, b.w * 0.6);
             return albedo * (amb + uSunColor * diff + lit);
         }
 

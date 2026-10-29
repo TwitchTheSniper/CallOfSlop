@@ -164,7 +164,7 @@ public static partial class SelfTest
             for (var x = -9f; x <= 6f; x += 0.05f)
             {
                 b.Sample(new Vector3(x, 1.2f, 0.5f), out var la, out _, out var s);
-                var f = MathF.Max(1f - LightFlicker.Dip * la.W + LightFlicker.Wave(new Vector2(LightFlicker.ZOf(s.Y), LightFlicker.ZOf(s.Z)), s.W, t), 0f);
+                var f = MathF.Max(1f - LightFlicker.Dip * la.W + LightFlicker.Wave(new Vector2(LightFlicker.ZOf(s.Y), LightFlicker.ZOf(s.Z)), LightBake.PaceOf(s.W), t), 0f);
                 if (last is { } lf)
                     worstStep = MathF.Max(worstStep, MathF.Abs(f - lf));
                 last = f;

@@ -244,6 +244,7 @@ public static partial class SelfTest
         Section("Matches", CheckMatches);
         Section("Baked lighting", CheckBakedLighting); // SelfTestLighting.cs: a seeded scene baked: shadows, falloff, sun and sky, spot and area lights, prop lights, determinism, map bake read-back, bake key, no per-frame allocation
         Section("Light flicker", CheckLightFlicker); // SelfTestLightFlicker.cs: each flickering light its own slow soft wave, blended smoothly in the bake, map/prop overrides, flames follow their light
+        Section("Light leaks", CheckLightLeaks); // SelfTestLightLeaks.cs: light stays on its side of thin walls (as the shader reads it), lights in walls moved out, prop lights where drawn, shadows from drawn parts only, the bake audit
         Section("Map bake", CheckMapBake); // SelfTestMapBake.cs: every shipped map read back from its bake = the live build, cache and baked folder, keys, mismatched or damaged files refused
         Section("Nav bake", CheckNavBake); // SelfTestNavBake.cs: baked and cached nav graphs = the live build, cache and baked folder, mismatched or damaged files refused, never a stalled tick
         Section("Nav determinism", CheckNavDeterminism); // SelfTestNavDeterminism.cs: the same graph built whole, a step per slice while the match breaks things, and in 50 ms slices

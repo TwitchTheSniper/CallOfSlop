@@ -61,16 +61,31 @@ public sealed class LightBake
     /// <summary>The grid's far corner.</summary>
     public Vector3 Max => Origin + new Vector3(NX, NY, NZ) * CellSize;
 
+    /// <summary>How far along its normal a surface reads the grid, in cells (a little over half a cell, so a wall reads the air in front of it).</summary>
+    public const float NormalNudge = 0.6f;
+
     /// <summary>
-    /// The grid at <paramref name="p"/>, filtered like the GPU does (trilinear between cell centres, clamped at the edges;
-    /// outside the grid: no static light, full sun and ambient): light (rgb, flicker share), direction + ambient, sun + flicker (phasor x, y, pace; stored values 0..1 as the GPU reads them).
+    /// The grid at <paramref name="p"/> (a point in the air: the eye's probe, the map's light probes), filtered like the
+    /// GPU does: trilinear between cell centres, clamped at the edges, leaving out cells inside a box where the eight cells
+    /// round <paramref name="p"/> are flagged as mixed; outside the grid: no static light, full sun and ambient. Light (rgb,
+    /// flicker share), direction + ambient, sun + flicker (phasor x, y, pace; stored values 0..1 as the GPU reads them).
     /// No allocation (the viewmodel's probe samples this every frame, see LightGrid).
     /// </summary>
-    public void Sample(Vector3 p, out Vector4 light, out Vector4 dir, out Vector4 sun)
+    public void Sample(Vector3 p, out Vector4 light, out Vector4 dir, out Vector4 sun) => Sample(p, p, Vector3.Zero, out light, out dir, out sun);
+
+    /// <summary>
+    /// What the shader reads for a surface at <paramref name="p"/> facing <paramref name="n"/> (Lighting.Glsl's LitGrid, in
+    /// C# for the self-tests): the grid at p nudged <see cref="NormalNudge"/> of a cell along n, and in a mixed block only
+    /// the cells that are in the open and in front of the surface.
+    /// </summary>
+    public void SampleSurface(Vector3 p, Vector3 n, out Vector4 light, out Vector4 dir, out Vector4 sun) =>
+        Sample(p + n * CellSize * NormalNudge, p, n, out light, out dir, out sun);
+
+    private void Sample(Vector3 s, Vector3 surface, Vector3 n, out Vector4 light, out Vector4 dir, out Vector4 sun)
     {
-        var g = (p - Origin) / CellSize - new Vector3(0.5f);
+        var g = (s - Origin) / CellSize - new Vector3(0.5f);
         var max = Max;
-        if (p.X < Origin.X || p.Y < Origin.Y || p.Z < Origin.Z || p.X > max.X || p.Y > max.Y || p.Z > max.Z)
+        if (s.X < Origin.X || s.Y < Origin.Y || s.Z < Origin.Z || s.X > max.X || s.Y > max.Y || s.Z > max.Z)
         {
             light = Vector4.Zero;
             dir = new Vector4(0, 0, 0, 1);
@@ -80,20 +95,56 @@ public sealed class LightBake
         int x0 = Math.Clamp((int)MathF.Floor(g.X), 0, NX - 1), y0 = Math.Clamp((int)MathF.Floor(g.Y), 0, NY - 1), z0 = Math.Clamp((int)MathF.Floor(g.Z), 0, NZ - 1);
         int x1 = Math.Min(x0 + 1, NX - 1), y1 = Math.Min(y0 + 1, NY - 1), z1 = Math.Min(z0 + 1, NZ - 1);
         float fx = Math.Clamp(g.X - x0, 0, 1), fy = Math.Clamp(g.Y - y0, 0, 1), fz = Math.Clamp(g.Z - z0, 0, 1);
-        light = Vector4.Zero;
-        dir = Vector4.Zero;
-        sun = Vector4.Zero;
-        for (var c = 0; c < 8; c++)
+        var careful = (Sun[((z0 * NY + y0) * NX + x0) * 4] & LightBaker.FlagMixed) != 0;
+        // The home cell (the corner nearest the sample point) and whether the way from it along x, y and z is blocked:
+        // a corner across a blocked link is behind a wall from here (a wall between two cell centres).
+        int hx = fx >= 0.5f ? x1 : x0, hy = fy >= 0.5f ? y1 : y0, hz = fz >= 0.5f ? z1 : z0;
+        var homeOpen = (Sun[((hz * NY + hy) * NX + hx) * 4] & LightBaker.FlagInside) == 0;
+        var linkX = homeOpen && (Sun[((hz * NY + hy) * NX + x0) * 4 + 3] & 1) != 0;
+        var linkY = homeOpen && (Sun[((hz * NY + y0) * NX + hx) * 4 + 3] & 2) != 0;
+        var linkZ = homeOpen && (Sun[((z0 * NY + hy) * NX + hx) * 4 + 3] & 4) != 0;
+        for (var pass = 0; pass < 2; pass++)
         {
-            int x = (c & 1) == 0 ? x0 : x1, y = (c & 2) == 0 ? y0 : y1, z = (c & 4) == 0 ? z0 : z1;
-            var w = ((c & 1) == 0 ? 1 - fx : fx) * ((c & 2) == 0 ? 1 - fy : fy) * ((c & 4) == 0 ? 1 - fz : fz);
-            var i = (z * NY + y) * NX + x;
-            light += w * new Vector4((float)BitConverter.UInt16BitsToHalf(Light[i * 4]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 1]),
-                (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 2]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 3]));
-            dir += w * new Vector4(Snorm(Dir[i * 4]), Snorm(Dir[i * 4 + 1]), Snorm(Dir[i * 4 + 2]), Snorm(Dir[i * 4 + 3]));
-            sun += w * new Vector4(Sun[i * 4], Sun[i * 4 + 1], Sun[i * 4 + 2], Sun[i * 4 + 3]) / 255f;
+            light = Vector4.Zero;
+            dir = Vector4.Zero;
+            sun = Vector4.Zero;
+            var sum = 0f;
+            for (var c = 0; c < 8; c++)
+            {
+                int x = (c & 1) == 0 ? x0 : x1, y = (c & 2) == 0 ? y0 : y1, z = (c & 4) == 0 ? z0 : z1;
+                var w = ((c & 1) == 0 ? 1 - fx : fx) * ((c & 2) == 0 ? 1 - fy : fy) * ((c & 4) == 0 ? 1 - fz : fz);
+                var i = (z * NY + y) * NX + x;
+                if (careful && ((Sun[i * 4] & LightBaker.FlagInside) != 0 || Vector3.Dot(Origin + new Vector3(x + 0.5f, y + 0.5f, z + 0.5f) * CellSize - surface, n) < 0f
+                                || linkX && x != hx || linkY && y != hy || linkZ && z != hz))
+                    continue;
+                if (w <= 0f)
+                    continue;
+                sum += w;
+                light += w * new Vector4((float)BitConverter.UInt16BitsToHalf(Light[i * 4]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 1]),
+                    (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 2]), (float)BitConverter.UInt16BitsToHalf(Light[i * 4 + 3]));
+                dir += w * new Vector4(Snorm(Dir[i * 4]), Snorm(Dir[i * 4 + 1]), Snorm(Dir[i * 4 + 2]), Snorm(Dir[i * 4 + 3]));
+                sun += w * new Vector4(Sun[i * 4], Sun[i * 4 + 1], Sun[i * 4 + 2], Sun[i * 4 + 3]) / 255f;
+            }
+            if (!careful || sum > 1e-4f)
+            {
+                if (careful)
+                {
+                    light /= sum;
+                    dir /= sum;
+                    sun /= sum;
+                }
+                return;
+            }
+            careful = false; // (every cell left out: plain filtering, as the shader falls back to)
         }
+        throw new InvalidOperationException("unreachable");
     }
+
+    /// <summary>The sun's visibility from a sampled (or stored, / 255) texture C red value: the flags in its low bits are dropped by the scale (LightBaker.WriteFlags).</summary>
+    public static float SunOf(float red) => MathF.Min(red * (255f / 252f), 1f);
+
+    /// <summary>The flicker pace from a sampled texture C alpha value (its low bits are the cell's links: LightBaker.WriteFlags).</summary>
+    public static float PaceOf(float alpha) => MathF.Min(alpha * (255f / 248f), 1f);
 
     private static float Snorm(sbyte b) => MathF.Max(b / 127f, -1f);
 
@@ -150,9 +201,13 @@ public static class LightBaker
     {
         var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
         var spec = m.LightingSettings ?? new LightingSpec();
-        var lights = m.BakeLights().ToArray();
+        var ownerList = new List<int>();
+        var lights = m.BakeLights(ownerList).ToArray();
+        var owners = ownerList.ToArray();
         var sunDir = m.Light.SunDir;
-        var occ = new Occluders(m);
+        var occList = OccluderList(m, MinOccluder(spec));
+        var occ = new Occluders(occList);
+        MoveLightsOut(m, occList, lights, owners, null);
 
         // ---- The grid: the playable area, from below the floor to above the tallest box or light ----------------
         var yMin = (m.Terrain is { } terr ? terr.MinHeight : 0f) - 0.5f;
@@ -216,22 +271,47 @@ public static class LightBaker
             }
         });
         var solid = new bool[nx * ny * nz];
+        var flags = new byte[nx * ny * nz]; // FlagInside, then the blocked links to the +x, +y, +z neighbours (bits 2-4)
         For(nz, () => new Tracer(occ, m), (k, tr) =>
         {
             for (var j = 0; j < ny; j++)
             for (var i = 0; i < nx; i++)
             {
                 var idx = (k * ny + j) * nx + i;
-                var p = min + new Vector3(i + 0.5f, j + 0.5f, k + 0.5f) * cs;
-                if (!tr.PushOut(ref p))
+                var centre = min + new Vector3(i + 0.5f, j + 0.5f, k + 0.5f) * cs;
+                var p = centre;
+                var ok = tr.PushOut(ref p);
+                if (p != centre || !ok)
+                    flags[idx] = FlagInside; // (its light is from outside the box it is in: the shader doesn't use it next to that box)
+                if (!ok)
                 {
                     solid[idx] = true;
                     continue;
                 }
-                Cell(bake, idx, p, tr, lights, bins, spec, sunDir, SampleSky(sky, cx, cy, cz, (i - 0.5f) * 0.5f, (j - 0.5f) * 0.5f, (k - 0.5f) * 0.5f));
+                Cell(bake, idx, p, tr, lights, owners, bins, spec, sunDir, SampleSky(sky, cx, cy, cz, (i - 0.5f) * 0.5f, (j - 0.5f) * 0.5f, (k - 0.5f) * 0.5f));
             }
         });
         FillSolid(bake, solid);
+        // Links: is the way from each cell's centre to its +x, +y and +z neighbours' clear? (A wall thinner than a cell
+        // can sit between two centres with neither inside it.)
+        For(nz, () => new Tracer(occ, m), (k, tr) =>
+        {
+            for (var j = 0; j < ny; j++)
+            for (var i = 0; i < nx; i++)
+            {
+                var idx = (k * ny + j) * nx + i;
+                var centre = min + new Vector3(i + 0.5f, j + 0.5f, k + 0.5f) * cs;
+                for (var a = 0; a < 3; a++)
+                {
+                    var n = a == 0 ? i + 1 < nx ? idx + 1 : -1 : a == 1 ? j + 1 < ny ? idx + nx : -1 : k + 1 < nz ? idx + nx * ny : -1;
+                    if (n < 0)
+                        continue;
+                    if ((flags[idx] & FlagInside) != 0 || (flags[n] & FlagInside) != 0 || tr.SegmentBlocked(centre, a, a == 1 ? cellY : cell))
+                        flags[idx] |= (byte)(4 << a);
+                }
+            }
+        });
+        WriteFlags(bake, flags);
         bake.Hash = HashOf(bake);
         bake.BakeMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
         return bake;
@@ -288,7 +368,7 @@ public static class LightBaker
         return a * a / (1f + 8f * q * q);
     }
 
-    private static void Cell(LightBake bake, int idx, Vector3 p, Tracer tr, MapLight[] lights, LightBins bins, LightingSpec spec, Vector3 sunDir, float skyVis)
+    private static void Cell(LightBake bake, int idx, Vector3 p, Tracer tr, MapLight[] lights, int[] owners, LightBins bins, LightingSpec spec, Vector3 sunDir, float skyVis)
     {
         var sum = Vector3.Zero;
         var dirSum = Vector3.Zero;
@@ -318,7 +398,7 @@ public static class LightBaker
                     var emit = -Vector3.Dot(dn, l.Dir); // the glowing side faces the cell
                     if (emit <= 0f)
                         continue;
-                    if (tr.Blocked(p, dn, dist - 0.02f, sp, true))
+                    if (tr.Blocked(p, dn, dist - 0.02f, sp, true, owners[li]))
                         continue;
                     var e = l.Color * (share * Falloff(dist, l.Range) * emit);
                     lit += e;
@@ -341,7 +421,7 @@ public static class LightBaker
                     var t = Math.Clamp((c - l.CosOuter) / MathF.Max(l.CosInner - l.CosOuter, 1e-4f), 0f, 1f);
                     s = t * t * (3f - 2f * t);
                 }
-                if (dist > 1e-4f && tr.Blocked(p, dn, dist - 0.02f, l.Pos, true))
+                if (dist > 1e-4f && tr.Blocked(p, dn, dist - 0.02f, l.Pos, true, owners[li]))
                     continue;
                 lit = l.Color * (l.Intensity * Falloff(dist, l.Range) * s);
                 ldir = dn * Vector3.Dot(lit, Lum);
@@ -377,6 +457,47 @@ public static class LightBaker
         bake.Sun[idx * 4 + 1] = LightFlicker.ZByte(zc.X);
         bake.Sun[idx * 4 + 2] = LightFlicker.ZByte(zc.Y);
         bake.Sun[idx * 4 + 3] = (byte)MathF.Round(Math.Clamp(flickLum > 0 ? paceSum / flickLum : 0f, 0f, 1f) * 255f);
+    }
+
+    /// <summary>A cell's flag (texture C's red channel, bit 0): its centre is inside an occluder (or under the ground).</summary>
+    public const int FlagInside = 1;
+
+    /// <summary>
+    /// A cell's flag (bit 1), for the block of 8 cells it is the low corner of (it and its +x, +y, +z neighbours): one of them
+    /// is inside an occluder or something stands between two of them. Only these blocks need the shader's careful filtering.
+    /// </summary>
+    public const int FlagMixed = 2;
+
+    /// <summary>
+    /// Puts the flags into the low two bits of each cell's sun byte (texture C's red: the sun's visibility in 64 steps of
+    /// 4, 0-252, so the flags change a filtered sun value by at most 3/252; the shader reads sun as red x 255/252), and the
+    /// blocked links to its +x, +y, +z neighbours into the low three bits of its flicker pace (texture C's alpha: 32 steps
+    /// of 8, 0-248, read as alpha x 255/248).
+    /// </summary>
+    private static void WriteFlags(LightBake b, byte[] flags)
+    {
+        int nx = b.NX, ny = b.NY, nz = b.NZ;
+        for (var k = 0; k < nz; k++)
+        for (var j = 0; j < ny; j++)
+        for (var i = 0; i < nx; i++)
+        {
+            var idx = (k * ny + j) * nx + i;
+            int i1 = Math.Min(i + 1, nx - 1), j1 = Math.Min(j + 1, ny - 1), k1 = Math.Min(k + 1, nz - 1);
+            var mixed = false;
+            for (var c = 0; c < 8 && !mixed; c++)
+            {
+                int x = (c & 1) == 0 ? i : i1, y = (c & 2) == 0 ? j : j1, z = (c & 4) == 0 ? k : k1;
+                var f = flags[(z * ny + y) * nx + x];
+                mixed = (f & FlagInside) != 0
+                        || x == i && i1 != i && (f & 4) != 0 // its link along +x inside the block
+                        || y == j && j1 != j && (f & 8) != 0
+                        || z == k && k1 != k && (f & 16) != 0;
+            }
+            var sun = (int)MathF.Round(b.Sun[idx * 4] / 255f * 63f) * 4;
+            b.Sun[idx * 4] = (byte)(sun | (flags[idx] & FlagInside) | (mixed ? FlagMixed : 0));
+            var pace = (int)MathF.Round(b.Sun[idx * 4 + 3] / 255f * 31f) * 8;
+            b.Sun[idx * 4 + 3] = (byte)(pace | (flags[idx] >> 2) & 7);
+        }
     }
 
     private static ushort Half(float v) => BitConverter.HalfToUInt16Bits((Half)Math.Clamp(v, 0f, 1000f));
@@ -516,28 +637,216 @@ public static class LightBaker
 
     // ---- Occluders and rays -------------------------------------------------------------------------------------
 
+    /// <summary>What an occluder is (the debug view colours them by it; the audit checks each kind against what is drawn).</summary>
+    public enum OccluderKind : byte
+    {
+        /// <summary>Not an occluder: doors, glass, Zombies doors and barriers, map logic boxes, clip boxes (they open, break or are invisible), and removed boxes.</summary>
+        None,
+        /// <summary>A drawn map box (or the ground).</summary>
+        MapBox,
+        /// <summary>A prop collider in <see cref="Map.Solid"/> (never an occluder since 2026-10-28: the prop's drawn parts are), or a drawn prop part.</summary>
+        Prop,
+        Building,
+        /// <summary>A hidden collider (the Collider op): collision under a cosmetic mesh.</summary>
+        Hidden,
+        Trunk,
+    }
+
+    /// <summary>What a box of <see cref="Map.Solid"/> is to the bake: None for boxes light passes (doors, glass, Zombies boxes, logic and clip boxes, removed boxes).</summary>
+    public static OccluderKind KindOf(Map m, int i)
+    {
+        if (m.IsBuildingDoorBox(i) || m.IsBuildingGlass(i) || m.IsZombieBox(i) || m.IsLogicBox(i) || m.IsClipBox(i))
+            return OccluderKind.None; // (boxes that open, break away or are invisible: light passes)
+        var b = m.Solid[i];
+        if (b.Half.X <= 0 || b.Half.Y <= 0 || b.Half.Z <= 0 || b.Center.Y < -500f)
+            return OccluderKind.None;
+        return m.IsPropCollider(i) ? OccluderKind.Prop : m.IsBuildingBox(i) ? OccluderKind.Building : m.IsHiddenBox(i) ? OccluderKind.Hidden
+            : m.IsTrunk(i) ? OccluderKind.Trunk : OccluderKind.MapBox;
+    }
+
+    /// <summary>
+    /// The smallest an occluder may be across (half the finer cell size): a box must be at least this in two of its three
+    /// sizes to cast a shadow. One shadow ray per cell can't draw the shadow of a pole, a rail or a candle: it darkens whole
+    /// cells (half a metre) or none, which gave dark streaks down walls and blotches on floors. Walls, slabs, pillars and
+    /// table tops still cast theirs.
+    /// </summary>
+    public static float MinOccluder(LightingSpec spec) => 0.5f * MathF.Min(spec.Cell, spec.CellY > 0f ? spec.CellY : spec.Cell);
+
+    private static bool BigEnough(Vector3 size, float min) => (size.X >= min ? 1 : 0) + (size.Y >= min ? 1 : 0) + (size.Z >= min ? 1 : 0) >= 2;
+
+    /// <summary>
+    /// Every box that casts shadows in the bake, and what it is (in a fixed order: <see cref="Map.Solid"/>'s, then the
+    /// props' parts in placing order). Shadows come from what is drawn: map boxes, buildings, tree trunks and hidden
+    /// colliders (the collision under a cosmetic mesh) from <see cref="Map.Solid"/>, and each placed prop's drawn parts
+    /// (turned, scaled and placed as the prop renderer draws them), never its collider, which is often a plain box round the
+    /// whole prop (a brazier's collider is a solid block where only a bowl on legs is drawn, and it cast a square shadow
+    /// with nothing above it). Parts that glow or flicker (flames, bulbs, screens), glass, parts turned so far their box
+    /// would be half air, and anything thinner than <paramref name="minSize"/> in two of its sizes cast none.
+    /// </summary>
+    public static List<(Box Box, OccluderKind Kind, int Owner)> OccluderList(Map m, float minSize)
+    {
+        var list = new List<(Box, OccluderKind, int)>(m.Solid.Count);
+        for (var i = 0; i < m.Solid.Count; i++)
+        {
+            var kind = KindOf(m, i);
+            if (kind is OccluderKind.None or OccluderKind.Prop || !BigEnough(m.Solid[i].Half * 2, minSize))
+                continue;
+            list.Add((m.Solid[i], kind, -1));
+        }
+        var strips = new List<Box>(6);
+        for (var pi = 0; pi < m.PropInstances.Count; pi++)
+            foreach (var part in m.PropInstances[pi].Def.Parts)
+            {
+                var p = m.PropInstances[pi];
+                if (part.Corners != null || part.Glow > 0f || part.Anim != null || part.Glass > 0f)
+                    continue;
+                var local = part.Bounds;
+                var volume = part.Size.X * part.Size.Y * part.Size.Z;
+                if (volume <= 0f || local.Half.X * local.Half.Y * local.Half.Z * 8f > volume * 1.5f)
+                    continue; // (pitched or rolled so far its box would be mostly air)
+                strips.Clear();
+                Map.ColliderBoxes(local, p.Position, p.Yaw, p.Scale, strips); // (a turned prop: strips along its outline, as its collider)
+                foreach (var b in strips)
+                    if (BigEnough(b.Half * 2, minSize) && b.Half.X > 0 && b.Half.Y > 0 && b.Half.Z > 0)
+                        list.Add((b, OccluderKind.Prop, pi));
+            }
+        return list;
+    }
+
+    /// <summary>
+    /// What the bake sees against what is drawn (the Map contract's "light sources" check, --check-map and --light-shots
+    /// --light-debug): every hidden collider that casts shadows with no cosmetic mesh over it (an invisible blocker), every
+    /// light inside an occluder that isn't its own prop's (a light in a wall shines only on one side of it, or nowhere), and
+    /// every prop light away from its prop's drawn model. Empty: they all match. <paramref name="moves"/> gets the lights the
+    /// bake moved out of a box (<see cref="MoveLightsOut"/>): worth fixing in the map, but they light the right side.
+    /// </summary>
+    public static List<string> Audit(Map m, List<string>? moves = null)
+    {
+        var report = new List<string>();
+        var spec = m.LightingSettings ?? new LightingSpec();
+        var occ = OccluderList(m, MinOccluder(spec));
+        var meshes = m.MeshPlacements.Select(mp => mp.Bounds).ToArray();
+        foreach (var (b, kind, _) in occ)
+        {
+            if (kind != OccluderKind.Hidden)
+                continue;
+            // Covered by the meshes drawn over it (a railing's collider under its panel and cap): a 4 x 4 x 4 lattice, 10 cm slack.
+            const float Slack = 0.1f;
+            var near = meshes.Where(mb => mb.Min.X - Slack < b.Max.X && mb.Max.X + Slack > b.Min.X && mb.Min.Y - Slack < b.Max.Y
+                                          && mb.Max.Y + Slack > b.Min.Y && mb.Min.Z - Slack < b.Max.Z && mb.Max.Z + Slack > b.Min.Z).ToArray();
+            var covered = 0;
+            for (var q = 0; q < 64; q++)
+            {
+                var pt = b.Min + (b.Max - b.Min) * new Vector3((q % 4 + 0.5f) / 4, (q / 4 % 4 + 0.5f) / 4, (q / 16 + 0.5f) / 4);
+                if (near.Any(mb => pt.X > mb.Min.X - Slack && pt.Y > mb.Min.Y - Slack && pt.Z > mb.Min.Z - Slack && pt.X < mb.Max.X + Slack && pt.Y < mb.Max.Y + Slack && pt.Z < mb.Max.Z + Slack))
+                    covered++;
+            }
+            if (covered < 58) // (90%)
+                report.Add($"hidden collider {Fmt(b.Min)} - {Fmt(b.Max)} casts shadows where no mesh is drawn ({covered * 100 / 64}% covered)");
+        }
+        // Each light against the occluders (a prop's light may sit among its own prop's parts: a lamp's housing).
+        foreach (var p in m.PropInstances)
+            for (var i = 0; i < p.Def.Lights.Length; i++)
+            {
+                var l = p.Def.Lights[i].Placed(p.Position, p.Yaw, p.Scale, i);
+                if (!Inside(l.Pos, new AaBox(p.Bounds.Min, p.Bounds.Max), 0.5f))
+                    report.Add($"prop '{p.Def.Name}' at {Fmt(p.Position)}: light {i} at {Fmt(l.Pos)} is away from the drawn prop ({Fmt(p.Bounds.Min)} - {Fmt(p.Bounds.Max)})");
+            }
+        var owners = new List<int>();
+        var lights = m.BakeLights(owners).ToArray();
+        MoveLightsOut(m, occ, lights, owners.ToArray(), report, moves);
+        return report;
+    }
+
+    /// <summary>
+    /// Lights inside a box that isn't their own prop's (a torch put through a wall, a window's light set inside the wall
+    /// it is in) are moved out of it, a little past one face: a spot or area light through the face it shines out of, a
+    /// prop's light through the face nearest where its prop stands (the side it is drawn on), any other light through the
+    /// nearest face. Before 2026-10-28 such a light made the whole box see-through for itself, so it lit both sides of a
+    /// wall. With <paramref name="problems"/>, a light that can't be moved out (deep inside solid) is reported there.
+    /// </summary>
+    public static int MoveLightsOut(Map m, List<(Box Box, OccluderKind Kind, int Owner)> occ, MapLight[] lights, int[] owners, List<string>? problems, List<string>? moves = null)
+    {
+        var moved = 0;
+        for (var li = 0; li < lights.Length; li++)
+        {
+            var l = lights[li];
+            var pos = l.Pos;
+            var stuck = false;
+            for (var tries = 0; ; tries++)
+            {
+                var hit = -1;
+                for (var q = 0; q < occ.Count && hit < 0; q++)
+                    if ((occ[q].Owner < 0 || occ[q].Owner != owners[li]) && Inside(pos, new AaBox(occ[q].Box.Min, occ[q].Box.Max), -0.01f))
+                        hit = q;
+                if (hit < 0)
+                    break;
+                if (tries == 6)
+                {
+                    stuck = true;
+                    break;
+                }
+                var b = occ[hit].Box;
+                var from = owners[li] >= 0 ? m.PropInstances[owners[li]].Position : pos;
+                var best = 0;
+                var bestScore = float.MaxValue;
+                for (var f = 0; f < 6; f++)
+                {
+                    var axis = f >> 1;
+                    var plus = (f & 1) == 1;
+                    var face = plus ? b.Max[axis] : b.Min[axis];
+                    float score;
+                    if (l.Dir != Vector3.Zero) // (spot and area lights: the face they shine out of)
+                        score = -(plus ? l.Dir[axis] : -l.Dir[axis]);
+                    else
+                        score = MathF.Abs(from[axis] - face);
+                    if (score < bestScore)
+                    {
+                        bestScore = score;
+                        best = f;
+                    }
+                }
+                pos[best >> 1] = (best & 1) == 1 ? b.Max[best >> 1] + 0.05f : b.Min[best >> 1] - 0.05f;
+            }
+            if (stuck)
+            {
+                problems?.Add($"light at {Fmt(l.Pos)}{(owners[li] >= 0 ? $" (prop '{m.PropInstances[owners[li]].Def.Name}')" : "")} is deep inside solid boxes: it can't be moved out");
+                continue;
+            }
+            if (pos != l.Pos)
+            {
+                lights[li] = l with { Pos = pos };
+                moved++;
+                moves?.Add($"light at {Fmt(l.Pos)}{(owners[li] >= 0 ? $" (prop '{m.PropInstances[owners[li]].Def.Name}' at {Fmt(m.PropInstances[owners[li]].Position)})" : "")} was inside a box: moved {Vector3.Distance(l.Pos, pos):0.##} m to {Fmt(pos)}");
+            }
+        }
+        return moved;
+    }
+
+    private static string Fmt(Vector3 v) => $"({v.X:0.##}, {v.Y:0.##}, {v.Z:0.##})";
+
+    private static bool Inside(Vector3 p, AaBox b, float margin) =>
+        p.X > b.Min.X - margin && p.Y > b.Min.Y - margin && p.Z > b.Min.Z - margin && p.X < b.Max.X + margin && p.Y < b.Max.Y + margin && p.Z < b.Max.Z + margin;
+
     private readonly record struct AaBox(Vector3 Min, Vector3 Max);
 
     /// <summary>The static boxes that cast shadows, filed into a uniform 3D grid of box lists (built once per bake, then read only).</summary>
     private sealed class Occluders
     {
         public readonly List<AaBox> Boxes = new();
+        public readonly List<int> Owners = new(); // (each box's prop: its index in Map.PropInstances, or -1)
         public Vector3 Min, Max;
         public float G;
         public int NX, NY, NZ;
         public int[] Start = [];
         public int[] Items = [];
 
-        public Occluders(Map m)
+        public Occluders(List<(Box Box, OccluderKind Kind, int Owner)> list)
         {
-            for (var i = 0; i < m.Solid.Count; i++)
+            foreach (var (b, _, owner) in list)
             {
-                if (m.IsBuildingDoorBox(i) || m.IsBuildingGlass(i) || m.IsZombieBox(i) || m.IsLogicBox(i) || m.IsClipBox(i))
-                    continue; // (boxes that open, break away or are invisible: light passes)
-                var b = m.Solid[i];
-                if (b.Half.X <= 0 || b.Half.Y <= 0 || b.Half.Z <= 0 || b.Center.Y < -500f)
-                    continue;
                 Boxes.Add(new AaBox(b.Min, b.Max));
+                Owners.Add(owner);
             }
         }
 
@@ -555,12 +864,13 @@ public static class LightBaker
             {
                 if (pass == 1)
                 {
+                    // counts[c + 1] held cell c's count: the running sum makes counts[c] cell c's first item. (Before
+                    // 2026-10-28 the starts were shifted one cell along, so a cell read its neighbour's share of the list:
+                    // rays and the push-out missed boxes, and light went through walls; dev-light-leak-ll01.)
                     for (var c = 1; c < counts.Length; c++)
                         counts[c] += counts[c - 1];
-                    Start = new int[counts.Length];
-                    Array.Copy(counts, 0, Start, 1, counts.Length - 1);
-                    Items = new int[counts[^1]];
-                    Array.Copy(Start, counts, counts.Length); // (reused as the write cursors)
+                    Start = (int[])counts.Clone();
+                    Items = new int[counts[^1]]; // (counts is reused as the write cursors)
                 }
                 for (var bi = 0; bi < Boxes.Count; bi++)
                 {
@@ -591,6 +901,7 @@ public static class LightBaker
     {
         private readonly Occluders _o;
         private readonly AaBox[] _boxes;
+        private readonly int[] _owners;
         private readonly int[] _stamp;
         private int _ray;
         private readonly Map? _terrain;
@@ -599,6 +910,7 @@ public static class LightBaker
         {
             _o = o;
             _boxes = o.Boxes.ToArray();
+            _owners = o.Owners.ToArray();
             _stamp = new int[_boxes.Length];
             _terrain = m.HasTerrain ? m : null;
         }
@@ -649,11 +961,39 @@ public static class LightBaker
         }
 
         /// <summary>
+        /// Does a box cut the segment from <paramref name="a"/> <paramref name="length"/> along axis <paramref name="axis"/>
+        /// (0 x, 1 y, 2 z)? The cell links' test: a straight lookup in the one or two grid cells the short segment is in,
+        /// much cheaper than a ray (cells under the ground are flagged as inside already).
+        /// </summary>
+        public bool SegmentBlocked(Vector3 a, int axis, float length)
+        {
+            var b = a;
+            b[axis] += length;
+            if (a.X < _o.Min.X || a.Y < _o.Min.Y || a.Z < _o.Min.Z || b.X > _o.Max.X || b.Y > _o.Max.Y || b.Z > _o.Max.Z)
+                return false;
+            int u = (axis + 1) % 3, v = (axis + 2) % 3;
+            var c0 = (_o.Cl(a.Z - _o.Min.Z, _o.NZ) * _o.NY + _o.Cl(a.Y - _o.Min.Y, _o.NY)) * _o.NX + _o.Cl(a.X - _o.Min.X, _o.NX);
+            var c1 = (_o.Cl(b.Z - _o.Min.Z, _o.NZ) * _o.NY + _o.Cl(b.Y - _o.Min.Y, _o.NY)) * _o.NX + _o.Cl(b.X - _o.Min.X, _o.NX);
+            for (var pass = 0; pass < (c1 != c0 ? 2 : 1); pass++)
+            {
+                var c = pass == 0 ? c0 : c1;
+                for (var q = _o.Start[c]; q < _o.Start[c + 1]; q++)
+                {
+                    var box = _boxes[_o.Items[q]];
+                    if (box.Min[u] < a[u] && box.Max[u] > a[u] && box.Min[v] < a[v] && box.Max[v] > a[v] && box.Min[axis] < b[axis] && box.Max[axis] > a[axis])
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
         /// Does a static box (or the terrain) block the ray from <paramref name="o"/> along unit <paramref name="d"/> before
         /// <paramref name="tMax"/>? With <paramref name="skipHolders"/>, boxes that hold <paramref name="light"/> (a bulb
-        /// inside its lamp's collider) don't count.
+        /// inside its lamp's collider) don't count; nor do the parts of the light's own prop (<paramref name="owner"/>), so a
+        /// lantern's base plate under its bulb doesn't throw a shadow metres wide under the lamp.
         /// </summary>
-        public bool Blocked(Vector3 o, Vector3 d, float tMax, Vector3 light, bool skipHolders)
+        public bool Blocked(Vector3 o, Vector3 d, float tMax, Vector3 light, bool skipHolders, int owner = -1)
         {
             if (tMax <= 0f)
                 return false;
@@ -696,7 +1036,7 @@ public static class LightBaker
                         var far = Vector3.Max(a1, a2);
                         var bn = MathF.Max(near.X, MathF.Max(near.Y, near.Z));
                         var bf = MathF.Min(far.X, MathF.Min(far.Y, far.Z));
-                        if (bf <= MathF.Max(bn, 1e-4f) || bn >= tMax)
+                        if (bf <= MathF.Max(bn, 1e-4f) || bn >= tMax || owner >= 0 && _owners[bi] == owner)
                             continue;
                         if (skipHolders && light.X >= b.Min.X - 0.02f && light.Y >= b.Min.Y - 0.02f && light.Z >= b.Min.Z - 0.02f
                             && light.X <= b.Max.X + 0.02f && light.Y <= b.Max.Y + 0.02f && light.Z <= b.Max.Z + 0.02f)
