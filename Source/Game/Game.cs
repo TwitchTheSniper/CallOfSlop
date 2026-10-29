@@ -1353,7 +1353,7 @@ public sealed partial class Game : IDisposable
             return false;
         var healthBefore = victim.Health;
         victim.Health -= amount;
-        BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
+        var hitPart = BloodOnHit(victim, attacker, kind, from); // the blood marks: body part and direction (BodyBlood.cs)
         if (victim.Health > 0)
             return false;
         if (victim.Perks.Has(PerkId.LastStand) && !victim.LastStandUsed && kind != DamageKind.Melee) // melee always kills (Melee.cs)
@@ -1381,7 +1381,14 @@ public sealed partial class Game : IDisposable
             ScavengeOnKill(attacker); // Scavenger (PerksMore.cs)
         }
         var kill = new KillPacket(attacker.Id, victim.Id, head, killId, KitForKill(attacker, killId),
-            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye) { Gibbed = ShouldGib(kind, killId, amount, healthBefore) }; // blown apart (GameGibs.cs)
+            attacker.Alive ? Math.Clamp(attacker.Health, 0, 255) : 0, from ?? attacker.Eye)
+        {
+            Gibbed = ShouldGib(kind, killId, amount, healthBefore), // blown apart (GameGibs.cs)
+            // The death reaction (Source/Render/Ragdolls.cs): where the hit landed, what it was, and how much more than the
+            // health left it did (a near thing gets a short stagger before going limp).
+            HitPart = hitPart, Cause = DeathCauseFor(kind, killId),
+            OverkillHp = Math.Max(0, amount - healthBefore), OverkillFraction = Math.Clamp((amount - healthBefore) / (float)amount, 0f, 1f),
+        };
         LastKill = kill;
         kill.Write(_w);
         Net.Broadcast(_w.Span, PacketReliability.ReliableOrdered);
@@ -1392,6 +1399,16 @@ public sealed partial class Game : IDisposable
         BotNoteKill(attacker, victim, head, killId, now);
         return true;
     }
+
+    /// <summary>
+    /// Server: the cause the next kill reports instead of its damage kind's (a burn tick is fire, falling out of the map a
+    /// fall); set just before the <see cref="DamagePlayer"/> call and cleared just after.
+    /// </summary>
+    private DeathCause _deathCause = DeathCause.Unknown;
+
+    private DeathCause DeathCauseFor(DamageKind kind, byte killId) => _deathCause != DeathCause.Unknown ? _deathCause
+        : killId == SuicideKillId ? DeathCause.Fall
+        : kind switch { DamageKind.Explosive => DeathCause.Explosive, DamageKind.Melee => DeathCause.Melee, _ => DeathCause.Bullet };
 
     /// <summary>Hitscan with lag compensation (targets rewound to <paramref name="viewTick"/>), one ray per pellet.</summary>
     /// <param name="groups">The receivers that fired, on a build that fires them at their own rates (<see cref="WeaponDef.FireGroups"/>; 0 = all). Ignored for every other gun.</param>

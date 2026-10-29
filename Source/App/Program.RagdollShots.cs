@@ -55,10 +55,34 @@ public static unsafe partial class Program
             ("shotgun", Shot(WeaponClass.Shotgun, 3, height: 1.2f)),
             ("headshot", Shot(WeaponClass.AssaultRifle, 12, head: true, height: 1.6f)),
             ("running", Shot(WeaponClass.AssaultRifle, 12) with { Velocity = new Vector3(0, 0, -6) }),
+            // Near things: the active death reactions (Ragdolls/Ragdolls.json "reactions"; the kill id is searched for the named one).
+            ("act_leg", Near(Shot(WeaponClass.AssaultRifle, 12), BloodPart.LegR, DeathCause.Bullet)),
+            ("act_chest", Near(Shot(WeaponClass.AssaultRifle, 12), BloodPart.Front, DeathCause.Bullet)),
+            ("act_gut", Near(Shot(WeaponClass.SMG, 10), BloodPart.Front, DeathCause.Bullet)),
+            ("act_arm", Near(Shot(WeaponClass.AssaultRifle, 12), BloodPart.ArmL, DeathCause.Bullet)),
+            ("act_head", Near(Shot(WeaponClass.Pistol, 10, head: true, height: 1.6f), BloodPart.Head, DeathCause.Bullet)),
+            ("act_melee", Near(Shot(WeaponClass.Pistol, 1.5f) with { KillId = Game.MeleeKillId, GunPower = 0 }, BloodPart.Front, DeathCause.Melee)),
+            ("act_fire", Near(Shot(WeaponClass.Pistol, 6) with { HasSource = false }, BloodPart.None, DeathCause.Fire)),
+            ("act_shock", Near(Shot(WeaponClass.Pistol, 6), BloodPart.None, DeathCause.Shock)),
+            ("act_poison", Near(Shot(WeaponClass.Pistol, 6) with { HasSource = false }, BloodPart.None, DeathCause.Poison)),
+            ("act_running", Near(Shot(WeaponClass.AssaultRifle, 12) with { Velocity = new Vector3(0, 0, -6) }, BloodPart.Back, DeathCause.Bullet)),
+            ("act_zombie", Near(Shot(WeaponClass.Pistol, 1.2f, height: 1.0f) with { GunPower = 0.5f }, BloodPart.Front, DeathCause.Zombie)),
+            ("act_crawler", Near(Shot(WeaponClass.Pistol, 6) with { Stance = Stance.Prone, Legless = true, Victim = 255 }, BloodPart.None, DeathCause.Bullet)),
             ("frag", new RagdollDeath { Feet = at, Victim = 7, Killer = 3, KillId = (byte)(Throwables.KillIdBase + (byte)ThrowableKind.Frag),
                 BlastAt = at + new Vector3(0.9f, 0.2f, -0.8f), BlastStrength = Throwables.Get(ThrowableKind.Frag).Knockback, BlastRadius = 6 }),
         ];
     }
+
+    /// <summary>A near thing: a few HP of overkill (an active death reaction), with the hit part and the cause.</summary>
+    private static RagdollDeath Near(RagdollDeath d, BloodPart part, DeathCause cause) => d with { HitPart = part, Cause = cause, OverkillHp = 4, OverkillFraction = 0.08f };
+
+    /// <summary>The reaction each active scenario wants (the kill id is changed until the table picks it).</summary>
+    private static readonly Dictionary<string, string> ShotReaction = new()
+    {
+        ["act_leg"] = "leg buckle", ["act_chest"] = "chest stagger", ["act_gut"] = "gut shot", ["act_arm"] = "arm spin", ["act_head"] = "head wobble",
+        ["act_melee"] = "melee stagger", ["act_fire"] = "burning flail", ["act_shock"] = "electrocuted", ["act_poison"] = "doubling over",
+        ["act_running"] = "running stumble", ["act_zombie"] = "pulled down", ["act_crawler"] = "crawler collapse",
+    };
 
     /// <summary>An open, flat spot of the map: the floor under it found by a ray, nothing within 3.5 m around at body height.</summary>
     private static Vector3 RagdollShotSpot(Map map)
@@ -106,7 +130,22 @@ public static unsafe partial class Program
             if (only != null && !only.Contains(scenario, StringComparer.OrdinalIgnoreCase))
                 continue;
             Ragdolls.Clear();
-            var body = Ragdolls.SpawnForTest(death, RagdollLook.Soldier, now, new Vector3(0.25f, 0.5f, 0.95f));
+            var d = death;
+            if (ShotReaction.TryGetValue(scenario, out var wanted))
+                for (var id = 0; id < 256; id++)
+                {
+                    var c = RagdollActive.Choose(d with { Killer = (byte)id });
+                    if (c.Reaction >= 0 && RagdollActive.Reactions[c.Reaction].Name == wanted)
+                    {
+                        d = d with { Killer = (byte)id };
+                        break;
+                    }
+                }
+            var zombie = d.Legless;
+            var body = Ragdolls.SpawnForTest(d, zombie ? RagdollLook.Zombie : RagdollLook.Soldier, now, new Vector3(0.25f, 0.5f, 0.95f));
+            if (zombie)
+                body.ZLimbs = 12; // (both legs gone: drawn without them)
+            var chosen = body.Act.Active ? RagdollActive.Reactions[body.Act.Reaction].Name : "limp";
             var t = 0f;
             for (var f = 0; f < RagdollShotTimes.Length; f++)
             {
@@ -137,7 +176,7 @@ public static unsafe partial class Program
                     _window.SwapBuffers();
                 }
             }
-            Console.WriteLine($"[ragdollshots] {scenario}{tag}: hips moved {Vector3.Distance(body.Sim.Pelvis with { Y = 0 }, at with { Y = 0 }):0.00} m, "
+            Console.WriteLine($"[ragdollshots] {scenario}{tag} ({chosen}): hips moved {Vector3.Distance(body.Sim.Pelvis with { Y = 0 }, at with { Y = 0 }):0.00} m, "
                               + $"{(body.Sim.Asleep ? $"asleep after {body.Sim.AwakeSteps / 60f:0.0} s" : "awake")}, {body.Sim.RelaxError() * 100:0} cm from the relaxed pose");
         }
         Ragdolls.Clear();

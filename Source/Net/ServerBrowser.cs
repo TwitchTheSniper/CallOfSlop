@@ -159,7 +159,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 74: Back to lobby (Source/Game/GameHostBye.cs): Msg.HostBye at the end of Msg (server -> clients: why the host is
     //     closing the connection), and the protocol number at the end of Msg.Welcome and Msg.Hello: a different build is
     //     refused when it joins, with the reason, instead of misreading packets later.
-    public const byte ProtocolVersion = 74;
+    // 75: Active ragdolls (Source/Render/Ragdolls.cs): Msg.Kill ends with the death (the hit body part and its cause in one
+    //     byte, the overkill in HP and as a share of the hit); a dead zombie's health byte in Msg.ZEnts is its death info
+    //     (Game.ZDeathInfo: overkill share, head / melee / explosive).
+    public const byte ProtocolVersion = 75;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

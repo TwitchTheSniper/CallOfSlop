@@ -34,6 +34,7 @@ public sealed partial class Zombie
         ClimbFrom = ClimbTo = default;
         SpawnTick = 0;
         KilledByHead = false;
+        DeathInfo = 0;
         SiegeOut = false;
         ScaleRank = -1;
         ScaleClimber = false;

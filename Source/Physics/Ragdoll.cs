@@ -246,6 +246,9 @@ public sealed class Ragdoll
     public bool Asleep;
     public int QuietSteps, AwakeSteps;
 
+    /// <summary>Powered by a death reaction's muscles (<see cref="RagdollActive"/>): it doesn't relax or fall asleep meanwhile.</summary>
+    public bool Driven;
+
     /// <summary>Something went wrong (a non-finite position, fell out of the world): the pool drops it.</summary>
     public bool Broken;
 
@@ -303,7 +306,7 @@ public sealed class Ragdoll
             Pos[i] = Last[i] = p;
             Prev[i] = p - dv;
         }
-        Asleep = Broken = false;
+        Asleep = Broken = Driven = false;
         QuietSteps = AwakeSteps = RelaxSteps = 0;
         Touching = 0;
         _gathered = false;
@@ -381,7 +384,7 @@ public sealed class Ragdoll
             for (var i = 0; i < RagdollRig.Count; i++)
                 Prev[i] = Pos[i] - (Pos[i] - Prev[i]) * sub;
 
-        var relaxing = RelaxPull();
+        var relaxing = !Driven && RelaxPull();
 
         // Sanity, sleep.
         var fastest2 = 0f;
@@ -406,7 +409,7 @@ public sealed class Ragdoll
         // towards the relaxed pose (a limb the floor holds back doesn't drift: it can still fall asleep).
         var quietMove = RagdollTuning.Values[(int)RT.NeutralQuiet];
         var still = fastest2 < SleepSpeed * SleepSpeed * Step * Step && Touching != 0 && (!relaxing || moved2 < quietMove * quietMove);
-        QuietSteps = still ? QuietSteps + 1 : 0;
+        QuietSteps = still && !Driven ? QuietSteps + 1 : 0;
         if (QuietSteps >= SleepSteps || AwakeSteps >= MaxAwakeSteps)
             Sleep();
     }

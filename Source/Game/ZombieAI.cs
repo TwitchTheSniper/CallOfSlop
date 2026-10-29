@@ -66,6 +66,9 @@ public sealed partial class Zombie
     public uint SpawnTick;
     public bool KilledByHead;
 
+    /// <summary>How it died, for its death reaction (<see cref="Game.ZDeathInfo"/>; 0 = unknown): the server sets it, clients read it from Msg.ZEnts.</summary>
+    public byte DeathInfo;
+
     // A siege up a climbable face (server; ZombiesClimb.cs): walking outside to the face's foot instead of a window,
     // its place in the climbing list (in the pyramid, or climbing above it), its height and the vault over the top.
     public bool SiegeOut;
@@ -1007,8 +1010,10 @@ public sealed partial class Game
     {
         if (z.State == ZState.Dead || amount <= 0 || !DamageEnabled)
             return false;
-        if (now < ZInstaKillUntil)
+        var insta = now < ZInstaKillUntil;
+        if (insta)
             amount = Math.Max(amount, z.Health);
+        var healthBefore = z.Health;
         z.Health -= amount;
         attacker.LastCombatTime = now;
         if (z.Grabbing && !dot)
@@ -1026,6 +1031,7 @@ public sealed partial class Game
         }
         z.Health = 0;
         z.KilledByHead = head;
+        z.DeathInfo = ZDeathInfo(insta || dot ? 1f : (amount - healthBefore) / (float)amount, head, melee, explosive); // the death reaction (Ragdolls.cs; Insta-Kill and burns: limp)
         if (z.Grabbing)
             ReleaseGrab(z, now);
         SetZState(z, ZState.Dead, now);

@@ -13,6 +13,9 @@ public enum RT
 
     // Bullet and blast pushes (Ragdolls.GunPower, Ragdolls.ApplyDeath, Ragdolls.BlastBody)
     GunScale, GunMin, GunCap, BodyShare, HitShare, NeighbourShare, HitLift, BlastScale,
+
+    // Active ragdolls (RagdollActive): when a death is a near thing, how long, how many at once, the muscles
+    OverkillShare, OverkillHp, ActiveMin, ActiveMax, MaxActive, MaxActiveZombies, ActivePush, MuscleGain, MuscleBlend, MuscleSpeed,
 }
 
 /// <summary>
@@ -56,6 +59,17 @@ public static class RagdollTuning
         new(RT.NeighbourShare, "neighbourShare", "Shot: neighbours", 0.4f, 0f, 2f, "The extra share of a shot's push the hit particle's neighbours get."),
         new(RT.HitLift, "hitLift", "Shot: lift", 0.15f, 0f, 1f, "An upward share of the push on the hit particle (and half on its neighbours)."),
         new(RT.BlastScale, "blastScale", "Blast scale", 1.15f, 0.1f, 4f, "Scales every blast's push on bodies (kept above the stronger gun push)."),
+
+        new(RT.OverkillShare, "overkillShare", "Near thing: overkill share", 0.3f, 0f, 1f, "A kill is a near thing (an active death reaction) when the killing hit's overkill is under this share of the hit..."),
+        new(RT.OverkillHp, "overkillHp", "Near thing: overkill HP", 30f, 0f, 200f, "...or under this many HP."),
+        new(RT.ActiveMin, "activeMin", "Active time min (s)", 0.4f, 0f, 3f, "The active phase of a barely-near thing."),
+        new(RT.ActiveMax, "activeMax", "Active time max (s)", 1.5f, 0f, 3f, "The active phase of a hit that did exactly enough (times the reaction's own duration)."),
+        new(RT.MaxActive, "maxActive", "Most active bodies", 4f, 0f, 16f, "At most this many bodies are powered at once (the rest go limp)."),
+        new(RT.MaxActiveZombies, "maxActiveZombies", "Most active zombies", 2f, 0f, 16f, "Of those, at most this many zombies (hordes)."),
+        new(RT.ActivePush, "activePush", "Active: shot push share", 0.6f, 0f, 1f, "An active body takes this share of the shot's push (it staggers instead of flying)."),
+        new(RT.MuscleGain, "muscleGain", "Muscle gain", 0.3f, 0f, 1f, "The share of the way to its target a driven particle aims to move per step."),
+        new(RT.MuscleBlend, "muscleBlend", "Muscle blend", 0.35f, 0f, 1f, "How fast a driven particle's speed turns to the muscle's (per step, at full strength)."),
+        new(RT.MuscleSpeed, "muscleSpeed", "Muscle top speed (m/s)", 4f, 0f, 12f, "The fastest a muscle drives a particle."),
     ];
 
     /// <summary>The live values, by <see cref="RT"/>.</summary>
@@ -87,12 +101,13 @@ public static class RagdollTuning
         Reload();
     }
 
-    /// <summary>Back to the defaults, then the file's values.</summary>
+    /// <summary>Back to the defaults, then the file's values and death reactions (none if the file is missing or broken: every death limp).</summary>
     public static void Reload()
     {
         _loaded = true;
         LoadErrors.Clear();
         Array.Copy(Defaults(), Values, Values.Length);
+        RagdollActive.Reactions = [];
         string json;
         try
         {
@@ -113,6 +128,7 @@ public static class RagdollTuning
             LoadErrors.Add(ex.Message);
             Console.WriteLine($"[ragdolls] {ex.Message} (using the defaults)");
             Array.Copy(Defaults(), Values, Values.Length);
+            RagdollActive.Reactions = [];
         }
     }
 
@@ -134,6 +150,9 @@ public static class RagdollTuning
                     break;
                 case "tuning":
                     LoadTuning(p.Value, $"{source}: \"tuning\"");
+                    break;
+                case "reactions":
+                    RagdollActive.Reactions = RagdollActive.Load(p.Value, $"{source}: \"reactions\"");
                     break;
                 default:
                     throw new WeaponFileException($"{source}: unknown section \"{p.Name}\"");
