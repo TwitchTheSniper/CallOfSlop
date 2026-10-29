@@ -36,6 +36,22 @@ public static class RagdollRig
     /// <summary>Prone: the standing pose tipped face down along the facing, as the prone hit box lies.</summary>
     public static readonly Vector3[] Prone = MakeProne();
 
+    /// <summary>
+    /// The relaxed pose a still body's limbs drift towards (<see cref="Ragdoll"/>'s relax pull, relative to the torso):
+    /// arms hanging by the body with the elbows a little bent and the hands a little forward, knees a little bent, feet
+    /// under the hips. Not the standing pose: what a body lying limp looks like. Link lengths are the standing pose's.
+    /// </summary>
+    public static readonly Vector3[] Relaxed = MakeRelaxed();
+
+    /// <summary>The middle of the hips in <see cref="Relaxed"/> (the relax pull's origin).</summary>
+    public static readonly Vector3 RelaxedMidHip = (Relaxed[HipR] + Relaxed[HipL]) * 0.5f;
+
+    /// <summary>
+    /// Each particle's neighbours (a shot's push spreads to them): <see cref="NeighbourStart"/>[i] to
+    /// <see cref="NeighbourStart"/>[i + 1] in <see cref="NeighbourList"/>.
+    /// </summary>
+    public static readonly byte[] NeighbourList, NeighbourStart;
+
     /// <summary>A link between two particles: rigid when <see cref="Min"/> equals <see cref="Max"/>, a range otherwise.</summary>
     public readonly record struct Link(byte A, byte B, float Min, float Max);
 
@@ -47,6 +63,49 @@ public static class RagdollRig
 
     /// <summary>Where the torso box centre sits between the hips' midpoint (0) and the shoulders' midpoint (1).</summary>
     public static readonly float TorsoAlong = (BodyModel.Stances[0].TorsoAt.Y - HipY) / (ShoulderY - HipY);
+
+    static RagdollRig()
+    {
+        // (A static constructor runs after every field initialiser above, so Stand and the link lengths are ready.)
+        byte[][] n =
+        [
+            [KneeR, Belly, Back], [KneeL, Belly, Back], // hips
+            [Head, ElbowR, Belly, Back], [Head, ElbowL, Belly, Back], // shoulders
+            [ShoulderR, ShoulderL, HipR, HipL], [ShoulderR, ShoulderL, HipR, HipL], // belly, back
+            [ShoulderR, ShoulderL], // head
+            [ShoulderR, HandR], [ElbowR], [ShoulderL, HandL], [ElbowL], // arms
+            [HipR, FootR], [KneeR], [HipL, FootL], [KneeL], // legs
+        ];
+        NeighbourStart = new byte[Count + 1];
+        var list = new List<byte>();
+        for (var i = 0; i < Count; i++)
+        {
+            NeighbourStart[i] = (byte)list.Count;
+            list.AddRange(n[i]);
+        }
+        NeighbourStart[Count] = (byte)list.Count;
+        NeighbourList = list.ToArray();
+    }
+
+    private static Vector3[] MakeRelaxed()
+    {
+        var p = MakeStand();
+        var upper = Vector3.Distance(p[ShoulderR], p[ElbowR]);
+        var fore = Vector3.Distance(p[ElbowR], p[HandR]);
+        var thigh = Vector3.Distance(p[HipR], p[KneeR]);
+        var shin = Vector3.Distance(p[KneeR], p[FootR]);
+        for (var s = 0; s < 2; s++)
+        {
+            var x = s == 0 ? 1f : -1f;
+            var el = p[ShoulderR + s] + Vector3.Normalize(new Vector3(x * 0.12f, -1f, -0.12f)) * upper;
+            p[ElbowR + s * 2] = el;
+            p[HandR + s * 2] = el + Vector3.Normalize(new Vector3(x * 0.05f, -0.8f, -0.55f)) * fore;
+            var kn = p[HipR + s] + Vector3.Normalize(new Vector3(x * 0.03f, -1f, -0.15f)) * thigh;
+            p[KneeR + s * 2] = kn;
+            p[FootR + s * 2] = kn + Vector3.Normalize(new Vector3(0, -1f, 0.2f)) * shin;
+        }
+        return p;
+    }
 
     private static Vector3[] MakeStand()
     {
@@ -200,11 +259,15 @@ public sealed class Ragdoll
     private int _nearCount;
     private float _terrainLow = float.NegativeInfinity;
 
-    /// <summary>A link ready to solve: the particles, its limits (and squares) and each end's share of the correction.</summary>
+    /// <summary>
+    /// A link ready to solve: the particles, its limits (and squares), its length in the standing pose (where a range
+    /// link's soft zone is measured from) and each end's share of the correction.
+    /// </summary>
     private readonly struct Solver(RagdollRig.Link l)
     {
         public readonly int A = l.A, B = l.B;
         public readonly float Min = l.Min, Max = l.Max, Min2 = l.Min * l.Min, Max2 = l.Max == float.MaxValue ? float.MaxValue : l.Max * l.Max;
+        public readonly float Rest = Vector3.Distance(RagdollRig.Stand[l.A], RagdollRig.Stand[l.B]);
         public readonly float Ka = RagdollRig.InvMass[l.A] / (RagdollRig.InvMass[l.A] + RagdollRig.InvMass[l.B]);
         public readonly float Kb = RagdollRig.InvMass[l.B] / (RagdollRig.InvMass[l.A] + RagdollRig.InvMass[l.B]);
     }
@@ -241,7 +304,7 @@ public sealed class Ragdoll
             Prev[i] = p - dv;
         }
         Asleep = Broken = false;
-        QuietSteps = AwakeSteps = 0;
+        QuietSteps = AwakeSteps = RelaxSteps = 0;
         Touching = 0;
         _gathered = false;
     }
@@ -262,7 +325,7 @@ public sealed class Ragdoll
     public void Wake()
     {
         Asleep = false;
-        QuietSteps = 0;
+        QuietSteps = RelaxSteps = 0;
         AwakeSteps = Math.Min(AwakeSteps, MaxAwakeSteps - 120); // a blast on a sleeping body gets at least 2 s to settle again
     }
 
@@ -282,6 +345,7 @@ public sealed class Ragdoll
             return;
         Steps++;
         Array.Copy(Pos, Last, RagdollRig.Count);
+        PrepareSoft();
 
         // Sub-steps: no particle moves more than MaxStepMove per sub-step.
         var maxMove2 = 0f;
@@ -308,7 +372,7 @@ public sealed class Ragdoll
             var fwd = Forward(); // the knee rule's "forward", once per sub-step (the torso is rigid, it barely turns within one)
             for (var it = 0; it < Iterations; it++)
             {
-                SolveLinks(fwd);
+                SolveLinks(fwd, it == Iterations - 1);
                 if ((it & 1) == 1)
                     Collide(terrain, it == Iterations - 1);
             }
@@ -317,8 +381,11 @@ public sealed class Ragdoll
             for (var i = 0; i < RagdollRig.Count; i++)
                 Prev[i] = Pos[i] - (Pos[i] - Prev[i]) * sub;
 
+        var relaxing = RelaxPull();
+
         // Sanity, sleep.
         var fastest2 = 0f;
+        var moved2 = 0f;
         for (var i = 0; i < RagdollRig.Count; i++)
         {
             var p = Pos[i];
@@ -332,11 +399,108 @@ public sealed class Ragdoll
             if (l2 > MaxSpeed * MaxSpeed * Step * Step)
                 Prev[i] = Pos[i] - v * (MaxSpeed * Step / MathF.Sqrt(l2));
             fastest2 = MathF.Max(fastest2, l2);
+            moved2 = MathF.Max(moved2, (p - Last[i]).LengthSquared());
         }
         AwakeSteps++;
-        QuietSteps = fastest2 < SleepSpeed * SleepSpeed * Step * Step && Touching != 0 ? QuietSteps + 1 : 0;
+        // Still: every particle slow and something touching; while the relax pull works, also nothing still drifting
+        // towards the relaxed pose (a limb the floor holds back doesn't drift: it can still fall asleep).
+        var quietMove = RagdollTuning.Values[(int)RT.NeutralQuiet];
+        var still = fastest2 < SleepSpeed * SleepSpeed * Step * Step && Touching != 0 && (!relaxing || moved2 < quietMove * quietMove);
+        QuietSteps = still ? QuietSteps + 1 : 0;
         if (QuietSteps >= SleepSteps || AwakeSteps >= MaxAwakeSteps)
             Sleep();
+    }
+
+    // The relax pull's particles and their weights' tuning ids (arms, legs, head).
+    private static readonly byte[] RelaxParticles =
+        [RagdollRig.ElbowR, RagdollRig.HandR, RagdollRig.ElbowL, RagdollRig.HandL, RagdollRig.KneeR, RagdollRig.FootR, RagdollRig.KneeL, RagdollRig.FootL, RagdollRig.Head];
+    private static readonly RT[] RelaxWeights = [RT.NeutralArms, RT.NeutralArms, RT.NeutralArms, RT.NeutralArms, RT.NeutralLegs, RT.NeutralLegs, RT.NeutralLegs, RT.NeutralLegs, RT.NeutralHead];
+
+    /// <summary>The relax pull's strength last step (0-1; self-test), and the steps it has worked since the body was placed or woken.</summary>
+    public float Relax;
+    public int RelaxSteps;
+
+    /// <summary>The share of the way a relaxing limb's speed (across gravity) moves to the drive's per step.</summary>
+    private const float RelaxBlend = 0.5f;
+
+    // The torso particles' total mass (the relax pull's reaction is spread over them by mass).
+    private static readonly float TorsoMass = 1f / RagdollRig.InvMass[0] + 1f / RagdollRig.InvMass[1] + 1f / RagdollRig.InvMass[2] + 1f / RagdollRig.InvMass[3] + 1f / RagdollRig.InvMass[4] + 1f / RagdollRig.InvMass[5];
+
+    /// <summary>
+    /// Once a body slows down, its limbs drift towards the relaxed pose (<see cref="RagdollRig.Relaxed"/>, placed on the
+    /// torso as it lies): a weak, capped drive speed (NeutralPull of the way per step, at most NeutralMaxStep) that the
+    /// limb's own speed across gravity blends towards, so it can't pump energy in or fight a limb held back, fading in as the fastest particle drops from NeutralSpeedNone to NeutralSpeedFull, for at most
+    /// NeutralTime seconds (then it fades out, so nothing can keep the body awake). The torso takes the opposite change of
+    /// momentum, so the pull is internal: it can't slide the body along the floor. Returns true when it drove something.
+    /// </summary>
+    private bool RelaxPull()
+    {
+        var tune = RagdollTuning.Values;
+        var pull = tune[(int)RT.NeutralPull];
+        var maxStep = tune[(int)RT.NeutralMaxStep];
+        Relax = 0;
+        if (pull <= 0 || maxStep <= 0)
+            return false;
+        var fastest2 = 0f;
+        for (var i = 0; i < RagdollRig.Count; i++)
+            fastest2 = MathF.Max(fastest2, (Pos[i] - Prev[i]).LengthSquared());
+        var speed = MathF.Sqrt(fastest2) / Step;
+        float full = tune[(int)RT.NeutralSpeedFull], none = MathF.Max(tune[(int)RT.NeutralSpeedNone], full + 0.01f);
+        var w = Math.Clamp((none - speed) / (none - full), 0f, 1f);
+        w *= Math.Clamp((tune[(int)RT.NeutralTime] * 60f - RelaxSteps) / 30f, 0f, 1f);
+        if (w <= 0)
+            return false;
+        w = w * w * (3f - 2f * w);
+        Relax = w;
+        RelaxSteps++;
+        var reaction = Vector3.Zero;
+        TorsoAxes(Pos, out var right, out var up, out var back);
+        var mid = Pelvis;
+        var moved = false;
+        for (var k = 0; k < RelaxParticles.Length; k++)
+        {
+            int i = RelaxParticles[k];
+            var r = RagdollRig.Relaxed[i] - RagdollRig.RelaxedMidHip;
+            var target = mid + right * r.X + up * r.Y + back * r.Z;
+            // The drive: a velocity towards the target (capped), blended into the particle's own, across gravity only
+            // (a limp limb is never lifted, and gravity keeps the say on falling). A limb something holds back just
+            // stops: its velocity is what the solver left it, so nothing pumps.
+            var gUp = GravityFrames.Curved ? GravityFrames.UpAt(Pos[i]) : Vector3.UnitY;
+            var want = (target - Pos[i]) * (pull * tune[(int)RelaxWeights[k]]);
+            want -= gUp * Vector3.Dot(want, gUp);
+            var l2 = want.LengthSquared();
+            if (l2 > maxStep * maxStep)
+                want *= maxStep / MathF.Sqrt(l2);
+            var v = Pos[i] - Prev[i];
+            v -= gUp * Vector3.Dot(v, gUp);
+            var dv = (want - v) * (RelaxBlend * w);
+            if (dv.LengthSquared() < 1e-14f)
+                continue;
+            Prev[i] -= dv;
+            reaction += dv / RagdollRig.InvMass[i];
+            moved = true;
+        }
+        if (moved)
+        {
+            reaction /= -TorsoMass; // the torso takes the opposite change of momentum
+            for (var i = RagdollRig.HipR; i <= RagdollRig.Back; i++)
+                Prev[i] -= reaction;
+        }
+        return moved;
+    }
+
+    /// <summary>How far the relax pull's particles are from the relaxed pose on the torso as it lies (mean, m; self-test, smoke log).</summary>
+    public float RelaxError()
+    {
+        TorsoAxes(Pos, out var right, out var up, out var back);
+        var mid = Pelvis;
+        var sum = 0f;
+        foreach (int i in RelaxParticles)
+        {
+            var r = RagdollRig.Relaxed[i] - RagdollRig.RelaxedMidHip;
+            sum += Vector3.Distance(mid + right * r.X + up * r.Y + back * r.Z, Pos[i]);
+        }
+        return sum / RelaxParticles.Length;
     }
 
     /// <summary>Stops simulating: the body stays where it is (no velocity) until woken.</summary>
@@ -347,7 +511,8 @@ public sealed class Ragdoll
         Array.Copy(Pos, Last, RagdollRig.Count);
     }
 
-    private void SolveLinks(Vector3 fwd)
+    /// <summary>One solver pass: rigid links, the soft joint limits and the knees; <paramref name="damp"/> (the last pass of a sub-step): also the soft limits' damping.</summary>
+    private void SolveLinks(Vector3 fwd, bool damp)
     {
         var pos = Pos.AsSpan();
         foreach (ref readonly var l in Rigid.AsSpan())
@@ -361,32 +526,126 @@ public sealed class Ragdoll
             pos[l.A] += d * (k * l.Ka);
             pos[l.B] -= d * (k * l.Kb);
         }
-        foreach (ref readonly var l in Ranges.AsSpan())
+        // Range links (the joint limits) are soft: free inside the comfortable range, then a spring that stiffens as
+        // k * t^exponent (t: 0 where the soft zone starts, 1 at the limit) pushes the joint back, full strength past the
+        // limit, and a hard backstop just past it that nothing bends beyond (RagdollTuning; damping in DampSoftLimits).
+        var tune = RagdollTuning.Values;
+        var stiff = tune[(int)RT.SoftStiffness];
+        var damping = damp ? tune[(int)RT.SoftDamping] : 0f;
+        var prev = Prev.AsSpan();
+        var ranges = Ranges.AsSpan();
+        for (var r = 0; r < ranges.Length; r++)
         {
+            ref readonly var l = ref ranges[r];
             var d = pos[l.B] - pos[l.A];
             var len2 = d.LengthSquared();
-            if (len2 >= l.Min2 && len2 <= l.Max2 || len2 < 1e-12f)
-                continue; // inside its range (the usual case)
+            if (len2 >= SoftLen2[r] && len2 <= l.Max2 || len2 < 1e-12f)
+                continue; // inside its comfortable range (the usual case)
             var len = MathF.Sqrt(len2);
-            var k = (len - (len2 < l.Min2 ? l.Min : l.Max)) / len;
-            pos[l.A] += d * (k * l.Ka);
-            pos[l.B] -= d * (k * l.Kb);
+            float want, t = 1f;
+            if (len2 > l.Max2)
+                want = l.Max; // (a maximum stays hard: no link has one today)
+            else
+            {
+                var soft = SoftLen[r];
+                if (len > l.Min)
+                    t = (soft - len) * SoftInvSpan[r];
+                want = MathF.Max(len + (soft - len) * (t >= 1f ? stiff : stiff * Curve(t)), BackLen[r]);
+            }
+            var c = (len - want) / len;
+            pos[l.A] += d * (c * l.Ka);
+            pos[l.B] -= d * (c * l.Kb);
+            if (damping > 0)
+            {
+                // The damping: part of the joint's bending speed along the link goes (both ends share it: momentum kept).
+                var n = d / len;
+                var dv = Vector3.Dot(pos[l.B] - prev[l.B] - (pos[l.A] - prev[l.A]), n) * damping * MathF.Min(t, 1f);
+                prev[l.A] -= n * (dv * l.Ka);
+                prev[l.B] += n * (dv * l.Kb);
+            }
         }
-        // Knees bend forward only: a knee may not get more than KneeSlack behind the line from its hip to its foot. The fix
+        // Knees bend forward only: a knee in front of the line from its hip to its foot by less than KneeSoft gets the same
+        // kind of spring (full strength once it's KneeSlack behind the line), and a hard stop KneeHard further back. The fix
         // moves the knee forward and the hip and foot back (momentum kept), so a straight leg lying on the floor isn't
         // pushed into it every step (that fight kept bodies creeping and never asleep).
+        EnsureCurve(tune[(int)RT.SoftExponent]);
+        float kneeSoft = tune[(int)RT.KneeSoft], kneeHard = -KneeSlack - tune[(int)RT.KneeHard];
         for (var side = 0; side < 2; side++)
         {
             int hip = RagdollRig.HipR + side, knee = RagdollRig.KneeR + side * 2, foot = RagdollRig.FootR + side * 2;
             var mid = (pos[hip] + pos[foot]) * 0.5f;
-            var behind = -KneeSlack - Vector3.Dot(pos[knee] - mid, fwd);
-            if (behind <= 0)
+            var ahead = Vector3.Dot(pos[knee] - mid, fwd);
+            if (ahead >= kneeSoft)
                 continue;
-            pos[knee] += fwd * (behind * (2f / 3f));
-            pos[hip] -= fwd * (behind / 6f);
-            pos[foot] -= fwd * (behind / 6f);
+            var t = (kneeSoft - ahead) / (kneeSoft + KneeSlack);
+            var push = (kneeSoft - ahead) * (t >= 1f ? stiff : stiff * Curve(t));
+            push = MathF.Max(push, (kneeHard - ahead) * 1.2f); // the backstop (the knee moves 5/6 of the push relative to the line)
+            pos[knee] += fwd * (push * (2f / 3f));
+            pos[hip] -= fwd * (push / 6f);
+            pos[foot] -= fwd * (push / 6f);
         }
     }
+
+    // t^SoftExponent for t in 0..1, as a table (MathF.Pow per link per pass cost a fifth of the step): rebuilt when the exponent changes.
+    private const int CurveSteps = 64;
+    private static readonly float[] CurveTable = new float[CurveSteps + 2];
+    private static float _curveExp = float.NaN;
+
+    private static void EnsureCurve(float exp)
+    {
+        if (exp == _curveExp)
+            return;
+        _curveExp = exp;
+        for (var i = 0; i <= CurveSteps; i++)
+            CurveTable[i] = MathF.Pow(i / (float)CurveSteps, exp);
+        CurveTable[CurveSteps + 1] = 1f;
+    }
+
+    /// <summary>t^SoftExponent (t clamped to 0..1), from the table.</summary>
+    private static float Curve(float t)
+    {
+        var x = Math.Clamp(t, 0f, 1f) * CurveSteps;
+        var i = (int)x;
+        return CurveTable[i] + (CurveTable[i + 1] - CurveTable[i]) * (x - i);
+    }
+
+    // Each range link's soft zone (its start, squared, 1 / its width) and backstop, from the tuning (rebuilt when it changes).
+    private static readonly float[] SoftLen = new float[Ranges.Length], SoftLen2 = new float[Ranges.Length], SoftInvSpan = new float[Ranges.Length], BackLen = new float[Ranges.Length];
+    private static float _softRange = float.NaN, _hardMargin = float.NaN;
+
+    /// <summary>
+    /// Where each range link's soft zone starts (SoftRange of the way from its limit to its standing length; a link whose
+    /// standing length is at its limit has none) and where its backstop is (HardMargin past the limit).
+    /// </summary>
+    private static void PrepareSoft()
+    {
+        var tune = RagdollTuning.Values;
+        float softRange = tune[(int)RT.SoftRange], hard = tune[(int)RT.HardMargin];
+        if (softRange == _softRange && hard == _hardMargin)
+            return;
+        (_softRange, _hardMargin) = (softRange, hard);
+        for (var r = 0; r < Ranges.Length; r++)
+        {
+            ref readonly var l = ref Ranges[r];
+            var soft = l.Rest > l.Min ? l.Min + (l.Rest - l.Min) * softRange : l.Min;
+            SoftLen[r] = soft;
+            SoftLen2[r] = soft * soft;
+            SoftInvSpan[r] = soft - l.Min > 1e-5f ? 1f / (soft - l.Min) : 0f;
+            BackLen[r] = l.Min * (1f - hard);
+        }
+    }
+
+    /// <summary>Self-test: range link <paramref name="r"/>'s soft start and backstop (m).</summary>
+    public static (float Soft, float Back) SoftZone(int r)
+    {
+        PrepareSoft();
+        return (SoftLen[r], BackLen[r]);
+    }
+
+    /// <summary>Self-test: the range links' particles and limits, in solve order.</summary>
+    public static (int A, int B, float Min) RangeLink(int r) => (Ranges[r].A, Ranges[r].B, Ranges[r].Min);
+
+    public static int RangeCount => Ranges.Length;
 
     /// <summary>The torso's facing (world, unit): the way the chest points.</summary>
     public Vector3 Forward()

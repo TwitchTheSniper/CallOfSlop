@@ -312,8 +312,18 @@ public static class Ragdolls
 
     // ---- Spawning ---------------------------------------------------------------------------------------------
 
-    /// <summary>A shot's push on a body (m/s): bigger for hard-hitting, big-calibre guns (shotguns and snipers throw bodies, pistols nudge them).</summary>
-    public static float GunPower(WeaponDef def) => Math.Clamp(def.ShotDamage * (0.6f + def.Caliber) / 18f, 1.2f, 6f);
+    /// <summary>
+    /// A shot's push on a body (m/s): bigger for hard-hitting, big-calibre guns (shotguns and snipers throw bodies, pistols
+    /// nudge them): damage x (0.6 + calibre) / 18 x GunScale, between GunMin and GunCap (<see cref="RagdollTuning"/>).
+    /// </summary>
+    public static float GunPower(WeaponDef def) => GunPower(def.ShotDamage, def.Caliber);
+
+    public static float GunPower(float shotDamage, float caliber)
+    {
+        var t = RagdollTuning.Values;
+        var min = t[(int)RT.GunMin];
+        return Math.Clamp(shotDamage * (0.6f + caliber) / 18f * t[(int)RT.GunScale], min, MathF.Max(min, t[(int)RT.GunCap]));
+    }
 
     private static void SpawnPlayer(Game game, Player p, in KillPacket kill, double now)
     {
@@ -566,6 +576,7 @@ public static class Ragdolls
         body.Gibbed = false;
         body.HatOff = body.HatResting = false;
         _spawned++;
+        RagdollTuning.EnsureLoaded();
         var pose = d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
         var toWorld = GravityFrames.Curved // a planet: the body falls from standing on its curve
             ? Matrix4x4.CreateRotationY(-d.Yaw) * GravityFrames.Basis(d.Feet) * Matrix4x4.CreateTranslation(d.Feet)
@@ -649,15 +660,58 @@ public static class Ragdolls
                 var dir = target - d.Source;
                 dir = dir.LengthSquared() > 1e-4f ? Vector3.Normalize(dir) : -fwd;
                 var power = d.GunPower > 0 ? d.GunPower : 2f;
-                var w = d.Headshot ? HeadShot : BodyShot;
-                for (var i = 0; i < RagdollRig.Count; i++)
-                    sim.Push(i, dir * (power * w[i]));
-                if (d.Headshot)
-                    sim.Push(RagdollRig.Head, new Vector3(0, power * 0.4f, 0)); // the head snaps back and up
+                ShotPush(sim, d.Headshot ? RagdollRig.Head : HitParticle(sim, d.Source, dir, ref rng), dir, power, d.Headshot);
             }
         }
         if (hatOff && body.Hat != null && body.Look == RagdollLook.Soldier)
             PopHat(body, ref rng);
+    }
+
+    /// <summary>
+    /// A shot's push: every particle a share (BodyShare, weighted towards the torso, or the head for a headshot), and the
+    /// hit particle (HitShare) and its neighbours (NeighbourShare) more, with a little lift (HitLift): off-centre hits
+    /// twist the body. All in <see cref="RagdollTuning"/>.
+    /// </summary>
+    public static void ShotPush(Ragdoll sim, int hit, Vector3 dir, float power, bool headshot)
+    {
+        var t = RagdollTuning.Values;
+        var w = headshot ? HeadShot : BodyShot;
+        var body = power * t[(int)RT.BodyShare];
+        for (var i = 0; i < RagdollRig.Count; i++)
+            sim.Push(i, dir * (body * w[i]));
+        var up = GravityFrames.Curved ? GravityFrames.UpAt(sim.Pos[hit]) : Vector3.UnitY;
+        var lift = power * t[(int)RT.HitLift];
+        sim.Push(hit, dir * (power * t[(int)RT.HitShare]) + up * lift);
+        var near = power * t[(int)RT.NeighbourShare];
+        for (int k = RagdollRig.NeighbourStart[hit], end = RagdollRig.NeighbourStart[hit + 1]; k < end; k++)
+            sim.Push(RagdollRig.NeighbourList[k], dir * near + up * (lift * 0.5f));
+        if (headshot)
+            sim.Push(RagdollRig.Head, up * (power * 0.4f)); // the head snaps back and up
+    }
+
+    private static readonly byte[] TorsoTargets = [RagdollRig.Belly, RagdollRig.Back, RagdollRig.ShoulderR, RagdollRig.ShoulderL, RagdollRig.HipR, RagdollRig.HipL];
+
+    /// <summary>
+    /// The particle a body shot hit when the kill doesn't say where: aim a seeded few centimetres off the chest, then the
+    /// torso particle nearest that line, the near side first.
+    /// </summary>
+    private static int HitParticle(Ragdoll sim, Vector3 source, Vector3 dir, ref Foliage.Rng rng)
+    {
+        var side = Vector3.Cross(dir, Vector3.UnitY);
+        side = side.LengthSquared() > 1e-6f ? Vector3.Normalize(side) : Vector3.UnitX;
+        var off = side * ((rng.Next() - 0.5f) * 0.4f) + Vector3.Cross(side, dir) * ((rng.Next() - 0.5f) * 0.4f);
+        var best = (int)RagdollRig.Belly;
+        var bestScore = float.MaxValue;
+        foreach (var i in TorsoTargets)
+        {
+            var rel = sim.Pos[i] - source - off;
+            var along = Vector3.Dot(rel, dir);
+            var perp = (rel - dir * along).Length();
+            var score = perp + along * 0.25f;
+            if (score < bestScore)
+                (best, bestScore) = (i, score);
+        }
+        return best;
     }
 
     // ---- Blasts -------------------------------------------------------------------------------------------------
@@ -692,6 +746,7 @@ public static class Ragdolls
             body.CacheCount = -1;
             return true;
         }
+        strength *= RagdollTuning.Values[(int)RT.BlastScale];
         var pelvis = sim.Pelvis;
         if (Vector3.Distance(pelvis, center) > radius + 1.5f)
             return false;

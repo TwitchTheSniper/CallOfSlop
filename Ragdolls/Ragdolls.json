@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-ragdolls/1",
+  "note": "Ragdoll tuning (every key optional; the defaults and ranges are in Source/Physics/RagdollTuning.cs, and F7 > Ragdoll tuning has a slider per value).",
+  "tuning": {
+    "softRange": 0.4,
+    "softStiffness": 0.14,
+    "softExponent": 2.5,
+    "softDamping": 0.35,
+    "hardMargin": 0.06,
+    "kneeSoft": 0.05,
+    "kneeHard": 0.03,
+    "neutralPull": 0.08,
+    "neutralMaxStep": 0.006,
+    "neutralSpeedFull": 0.5,
+    "neutralSpeedNone": 1.6,
+    "neutralQuiet": 0.0015,
+    "neutralTime": 3,
+    "neutralArms": 1,
+    "neutralLegs": 0.8,
+    "neutralHead": 0.5,
+    "gunScale": 1.75,
+    "gunMin": 1.5,
+    "gunCap": 10,
+    "bodyShare": 0.6,
+    "hitShare": 0.9,
+    "neighbourShare": 0.4,
+    "hitLift": 0.15,
+    "blastScale": 1.15
+  }
+}

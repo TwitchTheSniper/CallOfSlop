@@ -129,7 +129,8 @@ public static unsafe partial class Program
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
-        _shotTool |= _crowdShots | _stressShots;
+        _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -200,6 +201,8 @@ public static unsafe partial class Program
                 RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
             else if (_stressShots)
                 RunStressShots(args); // --stress-shots: Horde Stress's hordes staging, descending, merged and advancing, then quit (Program.StressShots.cs)
+            else if (_ragdollShots)
+                RunRagdollShots(args); // --ragdoll-shots: picture strips of ragdoll deaths, then quit (Program.RagdollShots.cs)
             else if (_crowdShots)
                 RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
             else if (_shotTool)
