@@ -96,6 +96,8 @@ public static unsafe partial class Program
             return MapKit.MapKitCli.GenMaps(args); // every generator: which outputs differ from the committed files
         if (args.SkipWhile(a => !a.Equals("--gen-plan", StringComparison.OrdinalIgnoreCase)).Skip(1).Take(2).ToArray() is [var planMap, var planPng])
             return MapKit.MapKitCli.GenPlan(planMap, planPng, args); // a top-down PNG plan of any map file (--level y0,y1: one floor)
+        if (args.SkipWhile(a => !a.Equals("--check-devedit", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } devEditDir)
+            return DevEditPackage.Cli(devEditDir); // a prop editor change package (or a folder of them): does it load? (DevEditPackage.cs)
         if (args.SkipWhile(a => !a.Equals("--check-weapon", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponFile)
             return WeaponSet.Check(weaponFile); // for modders: does this weapon (or attachment) file load?
         if (args.SkipWhile(a => !a.Equals("--export-weapons", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } weaponDir)
@@ -1358,6 +1360,7 @@ public static unsafe partial class Program
             Ui.DrawAudioMixer(AudioSystem, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.AudioMixer)); // over everything; closed it only turns the meters off (Program.AudioMixer.cs)
             Ui.DrawWeaponTweaks(_session, now, _session?.Local?.WeaponDef ?? Weapons.All[0], _settings.Bind(GameAction.WeaponTweaks)); // dev window over everything; closed one bool check (Program.WeaponTweaks.cs)
             DrawPerfUi(now); // the performance window or overlay (F9; Program.Perf.cs): closed one check
+            DrawDevTools(now); // the look-at inspector and prop editor (F6 / F10; Program.DevTools.cs): closed two checks
             Ui.EndFrame();
             if (Ui.Thumbs.Count > 0)
                 DrawGunThumbs(now); // gun pictures on the loadout cards, over the UI
@@ -1490,7 +1493,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak and perf windows)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1564,6 +1567,8 @@ public static unsafe partial class Program
         if (PerfKey(key)) // F9 (rebindable) cycles the perf window, overlay, off; Esc closes the window (Program.Perf.cs)
             return;
         if (WeaponTweaksKey(key)) // F7 (rebindable) or Esc: the weapon tweak window (Program.WeaponTweaks.cs)
+            return;
+        if (DevToolsKey(key)) // F6 / F5 / F10 (rebindable) or Esc: the look-at inspector and prop editor (Program.DevTools.cs)
             return;
 
         if (_session == null || key != GlfwKey.Escape)
@@ -2062,6 +2067,7 @@ public static unsafe partial class Program
         _worldEye = eye; // the first-person gun samples the baked light here (LightGrid.BeginViewModel)
         Gfx.SetFog(World.Map.Sky, World.Map.FogStart, World.Map.FogEnd);
         UpdateNameTags(now, eye, fwd, view, proj); // HUD world labels and name tags (Program.NameTags.cs)
+        DevToolsFrame(eye, fwd, view * proj); // the look-at inspector's ray, while it's open (Program.DevTools.cs)
 
         // ---- Arena ----------------------------------------------------------
         SightLens.MarkWorldStart(); // the lens pass logs the world pass's cost next to its own

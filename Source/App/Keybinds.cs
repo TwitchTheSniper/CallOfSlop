@@ -43,6 +43,9 @@ public enum GameAction
     DropItem, // binds version 7: Zombies, drop the gun in your hands as a pickup (ZombiesDropItems.cs)
     Inventory, // Zombies: the parts inventory (drop loose parts; UiZombiesInventory.cs)
     PerfWindow, // binds version 8: the performance window / overlay (UiPerf.cs, Program.Perf.cs)
+    LookAtInspector, // binds version 9: the dev look-at inspector (UiDevTools.cs, Program.DevTools.cs)
+    CopyLookAt, // copy the inspector's reference line to the clipboard
+    PropEditor, // the dev prop editor on the prop under the crosshair
     COUNT,
 }
 
@@ -97,6 +100,9 @@ public static class Keybinds
         Key(GlfwKey.T), // Drop item (Zombies): binds version 7 (G is the grenade key)
         Key(GlfwKey.I), // Parts inventory (Zombies)
         Key(GlfwKey.F9), // Performance window: binds version 8
+        Key(GlfwKey.F6), // Look-at inspector (dev): binds version 9
+        Key(GlfwKey.F5), // Copy the look-at reference (dev)
+        Key(GlfwKey.F10), // Prop editor (dev)
     ];
 
     /// <summary>
@@ -105,9 +111,10 @@ public static class Keybinds
     /// 3: chat and voice keys added (Chat all Enter, Chat team Y, Push to talk X), each only if no other action has the key.
     /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
     /// 6: Weapon tweaks F7 added (same rule). 7: Drop item T and Parts inventory I (Zombies) added (same rule).
-    /// 8: Performance window F9 added (same rule).
+    /// 8: Performance window F9 added (same rule). 9: dev tools: Look-at inspector F6, Copy look-at reference F5 and Prop
+    /// editor F10 added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 8;
+    public const int DefaultsVersion = 9;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -126,6 +133,9 @@ public static class Keybinds
         (7, GameAction.DropItem, Unbound, Key(GlfwKey.T)),
         (7, GameAction.Inventory, Unbound, Key(GlfwKey.I)),
         (8, GameAction.PerfWindow, Unbound, Key(GlfwKey.F9)),
+        (9, GameAction.LookAtInspector, Unbound, Key(GlfwKey.F6)),
+        (9, GameAction.CopyLookAt, Unbound, Key(GlfwKey.F5)),
+        (9, GameAction.PropEditor, Unbound, Key(GlfwKey.F10)),
     ];
 
     /// <summary>
@@ -212,6 +222,9 @@ public static class Keybinds
             GameAction.DropItem => "Drop the gun in your hands (Zombies)",
             GameAction.Inventory => "Parts inventory: drop loose parts (Zombies)",
             GameAction.PerfWindow => "Performance window (window, corner overlay, off)",
+            GameAction.LookAtInspector => "Look-at inspector (dev: what the crosshair is on)",
+            GameAction.CopyLookAt => "Copy the look-at reference (dev, inspector open)",
+            GameAction.PropEditor => "Prop editor (dev: the prop under the crosshair)",
             _ => a.ToString(),
         };
 

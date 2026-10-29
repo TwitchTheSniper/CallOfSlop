@@ -431,6 +431,7 @@ public static partial class MapFile
                 foreach (var prop in op.EnumerateObject())
                     if (prop.Name != "op" && !prop.Name.Equals("anchor", StringComparison.OrdinalIgnoreCase) && !ps.Any(p => string.Equals(p.Name, prop.Name, StringComparison.OrdinalIgnoreCase)))
                         throw new MapFileException($"{where}: {method.Name} has no parameter \"{prop.Name}\" (it takes: {string.Join(", ", ps.Select(p => p.Name))})");
+                map.MarkFileOp(index, method.Name); // which op built which boxes and props (MapFileOps.cs, the dev look-at inspector)
                 try
                 {
                     method.Invoke(map, args);
@@ -440,6 +441,7 @@ public static partial class MapFile
                     throw new MapFileException($"{where}: {method.Name} failed: {ex.InnerException?.Message}");
                 }
             }
+            map.MarkFileOp(0, ""); // closes the list: anything added from here on belongs to no op
             if (Prop(root, "foliage") is { ValueKind: not JsonValueKind.Null } foliage)
             {
                 map.FoliageSection = ReadFoliage(foliage, source);

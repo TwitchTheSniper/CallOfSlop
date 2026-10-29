@@ -859,6 +859,9 @@ public sealed partial class Ui
                 ImGui.Checkbox("Allow the weapon tweak window"u8, ref s.AllowWeaponTweaks);
                 if (ImGui.IsItemHovered())
                     ImGuiSafe.SetItemTooltip($"A debug window ({Keybinds.Name(s.Bind(GameAction.WeaponTweaks))}) for changing weapon stats live while you host. Dev builds always have it.");
+                ImGui.Checkbox("Allow the dev tools (look-at inspector, prop editor)"u8, ref s.AllowDevTools);
+                if (ImGui.IsItemHovered())
+                    ImGuiSafe.SetItemTooltip($"{Keybinds.Name(s.Bind(GameAction.LookAtInspector))} names what the crosshair is on ({Keybinds.Name(s.Bind(GameAction.CopyLookAt))} copies it for a report); {Keybinds.Name(s.Bind(GameAction.PropEditor))} edits that prop offline and saves a change package. Dev builds always have them.");
             }
             ImGui.EndChild();
             ImGui.EndTabItem();

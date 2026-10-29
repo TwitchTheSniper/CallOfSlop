@@ -350,6 +350,7 @@ public sealed unsafe class PropRenderer
 
     private PropMeshes? _meshes;
     private int _meshGeneration = -1;
+    private int _editVersion;
     private Map? _map;
     private int _breakVersion = -1;
     private PropBatches _batches = new();
@@ -432,7 +433,7 @@ public sealed unsafe class PropRenderer
         if (!_ready && !Init())
             return;
         var library = FlagPool.WithVariants(map.PropLibrary); // the global props, plus the map's pack props (cached per pack) and building-local props (MapBuildings.cs), plus one variant per flag design of each flag prop (FlagPool.cs)
-        if (_meshGeneration != Props.Generation || _meshes == null || !ReferenceEquals(_meshes.Defs, library))
+        if (_meshGeneration != Props.Generation || _meshes == null || !ReferenceEquals(_meshes.Defs, library) || _editVersion != Props.EditVersion)
         {
             UploadMeshes(library);
         }
@@ -957,6 +958,7 @@ public sealed unsafe class PropRenderer
         var sw = Stopwatch.StartNew();
         _meshes = PropMeshes.Build(library);
         _meshGeneration = Props.Generation;
+        _editVersion = Props.EditVersion; // a live edit from the dev prop editor (PropsEdit.cs)
         _vao.Bind();
         Native.glBindBuffer(GL_ARRAY_BUFFER, _meshVbo);
         fixed (float* p = _meshes.Vertices)

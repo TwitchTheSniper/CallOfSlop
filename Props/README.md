@@ -463,6 +463,10 @@ Layout: one pad per prop (a 5 cm slab the footprint plus 0.6 m on each side), pa
 
 The "Props" self-test runs the tool with `--check` when it finds the source tree above the exe and a Python 3 (CI and a developer checkout do; a packaged build skips it) and fails with the stale file names if a committed gallery differs from what the tool writes. The gallery maps' fingerprints are pinned in `Source/App/SelfTestPackAssets.cs`: re-pin them from the failure message after a regeneration, and mention in the commit which changed. Regenerating never changes the seeded match digests (they use the first maps, not Dev).
 
+## Editing a prop in the game
+
+The look-at inspector (F6) names any prop's file and part under the crosshair, and the prop editor (F10) changes a placed prop live (parts, colours, anim axes, adding boxes) and saves the change as a package for a report, never over the shipped file: README.md, "Look-at inspector and prop editor (dev)".
+
 ## Tips
 
 - Keep the part count sensible: most starter props use 10 to 40 boxes. A box is 12 triangles; the renderer draws hundreds of props in a few draw calls, so detail is cheap, but very fiddly props are hard to read in the game's chunky style anyway.

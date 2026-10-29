@@ -369,7 +369,7 @@ public static partial class SelfTest
         var old = (int[])kd.Clone();
         old[(int)GameAction.PerfWindow] = Keybinds.Unbound;
         var moved = Keybinds.Migrate(old, 7);
-        if (old[(int)GameAction.PerfWindow] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F9) || moved.Count != 1)
+        if (old[(int)GameAction.PerfWindow] != Keybinds.Key(Brutal.GlfwApi.GlfwKey.F9) || !moved.Contains(GameAction.PerfWindow) || moved.Count(a => a < GameAction.LookAtInspector) != 1) // (later versions' added keys move too)
             Fail($"perf: migrating binds version 7 gave the perf window {Keybinds.Name(old[(int)GameAction.PerfWindow])}, {moved.Count} moved");
         var taken = (int[])kd.Clone();
         taken[(int)GameAction.PerfWindow] = Keybinds.Unbound;
