@@ -32,6 +32,7 @@ public sealed partial class Ui
     public void ResetLobbyRoom()
     {
         _room.Reset();
+        _roomConfirmClose = false;
         _roomPack = -2;
         _chatSeen = -1;
     }
@@ -69,16 +70,30 @@ public sealed partial class Ui
             ImGui.SameLine(0, 18 * _scale);
             ImGui.SetCursorPosY(ImGui.GetCursorPosY() + 8 * _scale);
             ImGuiSafe.TextColored(Dim, game.IsServer ? game.ServerName : game.Status);
+            // LEAVE on the title row, alone: the host's address, invite and server list line goes on the row below, so
+            // it can never run under the button (it used to, and a click there closed the server for everyone).
+            var leaveW = (game.IsServer ? 190 : 120) * _scale;
+            ImGui.SameLine(ImGui.GetWindowSize().X - ImGui.GetStyle().WindowPadding.X - leaveW);
+            ImGui.PushStyleColor(ImGuiCol.Button, LeaveRed);
+            if (ImGui.Button(game.IsServer ? "CLOSE SERVER##room"u8 : "LEAVE##room"u8, new float2(leaveW, 0)))
+            {
+                if (game.IsServer && game.HumanCount > 1)
+                    _roomConfirmClose = true; // the others would be disconnected: ask first
+                else
+                    action = LobbyRoomAction.Leave;
+            }
+            ImGui.PopStyleColor();
             if (address.Length > 0)
             {
-                ImGui.SameLine(0, 18 * _scale);
                 ImGuiSafe.TextColored(Dim, address);
                 InviteHeader(); // Copy invite link / code (UiInvite.cs)
             }
-            var leaveW = 120 * _scale;
-            ImGui.SameLine(ImGui.GetWindowSize().X - ImGui.GetStyle().WindowPadding.X - leaveW);
-            if (ImGui.Button("LEAVE##room"u8, new float2(leaveW, 0)))
-                action = LobbyRoomAction.Leave;
+            if (_roomConfirmClose && DrawConfirmClose(game, "the lobby") is { } close)
+            {
+                _roomConfirmClose = false;
+                if (close)
+                    action = LobbyRoomAction.Leave;
+            }
             ImGui.Separator();
 
             var avail = ImGui.GetContentRegionAvail();

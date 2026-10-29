@@ -4,8 +4,8 @@ using System.Diagnostics;
 namespace CallOfSlop;
 
 /// <summary>
-/// A headless client in a process of its own: <c>--net-client HOST PORT [--lag=ms] [--loss=%] [--name NAME]
-/// [--seconds S]</c>. It joins over the real RakNet transport (with RakNet's network simulator for --lag/--loss) and
+/// A headless client in a process of its own: <c>--net-client HOST PORT | INVITE [--lag=ms] [--loss=%] [--name NAME]
+/// [--seconds S]</c> (INVITE: an invite code or callofslop:// link, as a friend joins). It joins over the real RakNet transport (with RakNet's network simulator for --lag/--loss) and
 /// runs the client game at 60 Hz with no window, the way a second PC would, so a host can be tested against a client
 /// that shares nothing with it but the network. The "Two-process lobby" self-test (SelfTestTwoProcessLobby.cs) starts
 /// one; it is also handy by hand against a real host.
@@ -22,12 +22,25 @@ public static class NetClientProcess
     {
         var rest = args.SkipWhile(a => !a.Equals("--net-client", StringComparison.OrdinalIgnoreCase)).Skip(1).Where(a => !a.StartsWith("--")).ToArray();
         using var stdout = new StreamWriter(Console.OpenStandardOutput()) { AutoFlush = true };
-        if (rest.Length < 2 || !ushort.TryParse(rest[1], out var port))
+        string host;
+        ushort port;
+        if (rest.Length >= 1 && InviteCode.LooksLikeInvite(rest[0]))
         {
-            stdout.WriteLine("[netclient] usage: --net-client HOST PORT [--lag=ms] [--loss=%] [--name NAME] [--seconds S]");
+            // An invite code or link, the way a friend joins (Program.JoinFromInvite).
+            if (!InviteCode.TryParseJoin(rest[0], 27015, out host, out port, out _, out var error))
+            {
+                stdout.WriteLine($"[netclient] bad invite: {error}");
+                return 1;
+            }
+            stdout.WriteLine($"[netclient] joining {host}:{port} from an invite");
+        }
+        else if (rest.Length >= 2 && ushort.TryParse(rest[1], out port))
+            host = rest[0];
+        else
+        {
+            stdout.WriteLine("[netclient] usage: --net-client HOST PORT | INVITE [--lag=ms] [--loss=%] [--name NAME] [--seconds S]");
             return 1;
         }
-        var host = rest[0];
         var name = Arg(args, "--name") ?? "NetClient";
         var seconds = double.TryParse(Arg(args, "--seconds"), System.Globalization.CultureInfo.InvariantCulture, out var s) ? s : 120;
         var lag = Flag(args, "--lag");

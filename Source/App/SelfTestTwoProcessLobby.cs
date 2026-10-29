@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Text.RegularExpressions;
 
 namespace CallOfSlop;
 
@@ -11,7 +10,8 @@ namespace CallOfSlop;
 /// can't see a client that disagrees with the host about the map, or a reliable packet stuck behind a flood.
 /// Host here, client there: Team Deathmatch match -> BACK TO LOBBY -> Zombies on Zombies Test -> BACK TO LOBBY ->
 /// Horde Stress (its smallest crowd) -> BACK TO LOBBY -> a new match. After every return the client must be connected,
-/// in the lobby, on the host's map and mode, with its name, team pick and gun kept on the host.
+/// in the lobby, on the host's map and mode, with its name, team pick and gun kept on the host (its gun back after the
+/// Zombies runs). The client joins from an invite code; at the end the host closes and the client must be told why.
 /// </summary>
 public static partial class SelfTest
 {
@@ -19,6 +19,13 @@ public static partial class SelfTest
 
     private static void CheckTwoProcessLobby()
     {
+        // Two builds can't play together: refused at the door with the numbers (Msg.Welcome / Msg.Hello, protocol 74).
+        var older = Game.VersionProblem(ServerInfo.ProtocolVersion - 1, "host");
+        var none = Game.VersionProblem(0, "player");
+        Line($"two-process lobby: version check: same {Game.VersionProblem(ServerInfo.ProtocolVersion, "host") ?? "ok"}; older host: {older}");
+        if (Game.VersionProblem(ServerInfo.ProtocolVersion, "host") != null || older == null || none == null || !IsPrintableAscii(older) || !IsPrintableAscii(none))
+            Fail("two-process lobby: the join version check is wrong");
+
         var tdmMap = FindMap("Proto Box", m => m.MaxPlayers >= 8)!;
         var zMap = ZTestMap;
         var stress = Maps.Find("Horde Stress");
@@ -30,23 +37,27 @@ public static partial class SelfTest
         World.SetMap(tdmMap);
         var clock = Stopwatch.StartNew();
         var now = 0.0;
-        using var server = new Game(NetPeer.Host(TwoProcessPort, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
+        var server = new Game(NetPeer.Host(TwoProcessPort, Game.MaxPlayers - 1), new Audio(), "Host", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id,
             bots: 1, mapId: tdmMap.Id)
         {
             MapVoteEnabled = true,
             LobbyEnabled = true,
             StressSize = Game.StressSizeChoices[0],
         };
-        using var child = NetChild.Start(TwoProcessPort, lagMs: 80, name: "Remote");
+        // The client joins the way a friend does: from the host's invite code (here pointing at this PC).
+        var invite = InviteCode.Encode(new Invite(System.Net.IPAddress.Loopback, TwoProcessPort, ServerInfo.ProtocolVersion));
+        using var child = NetChild.Start(invite, lagMs: 80, name: "Remote");
         if (child == null)
         {
+            server.Dispose();
             Fail("two-process lobby: couldn't start the client process (--net-client)");
             return;
         }
+        var serverOpen = true;
         try
         {
             // Join: the child loads its own data first (a few seconds), then connects through the simulator.
-            var joined = PumpUntil(server, child, NetChild.Windowed ? 120 : 40, ref now, clock, () => server.HumanCount == 2 && child.Is("connected", MatchPhase.Lobby));
+            var joined = PumpUntil(server, child, 40, ref now, clock, () => server.HumanCount == 2 && child.Is("connected", MatchPhase.Lobby));
             Line($"two-process lobby: joined {joined} after {clock.Elapsed.TotalSeconds:0.0} s: {child.Last}");
             if (!joined)
             {
@@ -59,8 +70,8 @@ public static partial class SelfTest
             var gun = Weapons.All.FirstOrDefault(w => w.Id != Weapons.DefaultPrimary.Id && w.Slot == Slot.Primary && w.UnlockLevel is null or <= 1)?.Id ?? Weapons.DefaultPrimary.Id;
             child.Send("team 1");
             child.Send($"gun {gun}");
-            var picked = PumpUntil(server, child, 5, ref now, clock, () => remote.TeamChoice == 1 && remote.Primary == gun);
-            Line($"two-process lobby: Remote picks team 1 and gun {gun}: {picked}");
+            PumpUntil(server, child, 5, ref now, clock, () => remote.TeamChoice == 1 && remote.Primary == gun);
+            Line($"two-process lobby: Remote picks team 1 and gun {gun}: host sees team {remote.TeamChoice}, gun {remote.WantPrimary}");
 
             var steps = new (string Label, Map Map, GameMode Mode)[]
             {
@@ -121,12 +132,36 @@ public static partial class SelfTest
             Line($"two-process lobby: new match {again}, matches {match}->{server.MatchNumber}, {clock.Elapsed.TotalSeconds:0.0} s in all; client: {child.Last}");
             if (!again || child.Lost)
                 Fail($"two-process lobby: no new match from the room after BACK TO LOBBY ({child.Last})");
+
+            // The host closes the server (CLOSE SERVER): the client is told why, not just "disconnected".
+            server.CloseReason = "Two-process lobby: the host closed the server.";
+            server.Dispose();
+            serverOpen = false;
+            var told = SpinUntil(child, 6, () => child.Lost);
+            Line($"two-process lobby: host closed: client lost {told}: {child.Last}");
+            if (!told || !child.Last.Contains("the host closed the server", StringComparison.Ordinal))
+                Fail($"two-process lobby: the client wasn't told why the host closed ({child.Last}; {child.Tail()})");
         }
         finally
         {
+            if (serverOpen)
+                server.Dispose();
             child.Quit();
             World.SetMap(Maps.Get(0));
         }
+    }
+
+    private static bool SpinUntil(NetChild child, double seconds, Func<bool> done)
+    {
+        var sw = Stopwatch.StartNew();
+        while (sw.Elapsed.TotalSeconds < seconds)
+        {
+            child.Drain();
+            if (done())
+                return true;
+            Thread.Sleep(5);
+        }
+        return done();
     }
 
     /// <summary>Pumps the host (its clock <paramref name="speed"/> times real time; the network always real time) until <paramref name="done"/> or the client process gives up.</summary>
@@ -171,18 +206,11 @@ public static partial class SelfTest
             p.BeginOutputReadLine();
         }
 
-        public static NetChild? Start(ushort port, int lagMs, string name)
+        public static NetChild? Start(string invite, int lagMs, string name)
         {
             try
             {
                 var exe = Environment.ProcessPath ?? "";
-                if (Windowed)
-                {
-                    var w = new ProcessStartInfo("xvfb-run") { UseShellExecute = false, RedirectStandardInput = true, RedirectStandardOutput = true, WorkingDirectory = AppContext.BaseDirectory };
-                    foreach (var a in new[] { "-a", "-s", "-screen 0 1280x720x24", exe, typeof(SelfTest).Assembly.Location, "join", "127.0.0.1", port.ToString(), $"--lag={lagMs}", "--save-dir", "/tmp/twoproc-save" })
-                        w.ArgumentList.Add(a);
-                    return new NetChild(Process.Start(w)!);
-                }
                 var psi = new ProcessStartInfo(exe)
                 {
                     RedirectStandardInput = true,
@@ -192,7 +220,7 @@ public static partial class SelfTest
                 };
                 if (Path.GetFileNameWithoutExtension(exe).Equals("dotnet", StringComparison.OrdinalIgnoreCase))
                     psi.ArgumentList.Add(typeof(SelfTest).Assembly.Location); // dotnet CallOfSlop.dll
-                foreach (var a in new[] { "--net-client", "127.0.0.1", port.ToString(), $"--lag={lagMs}", "--name", name, "--seconds", "150" })
+                foreach (var a in new[] { "--net-client", invite, $"--lag={lagMs}", "--name", name, "--seconds", "150" })
                     psi.ArgumentList.Add(a);
                 var p = Process.Start(psi);
                 return p == null ? null : new NetChild(p);
@@ -221,9 +249,8 @@ public static partial class SelfTest
                 Lost = true;
         }
 
-        public static bool Windowed = Environment.GetEnvironmentVariable("TWOPROC_WINDOW") == "1"; // TEMP experiment
-        public bool Is(string state, MatchPhase phase) => Windowed || Last.StartsWith($"[netclient] {state} ", StringComparison.Ordinal) && Last.Contains($" phase {phase} ");
-        public bool Has(string text) => Windowed || Last.Contains(text, StringComparison.Ordinal);
+        public bool Is(string state, MatchPhase phase) => Last.StartsWith($"[netclient] {state} ", StringComparison.Ordinal) && Last.Contains($" phase {phase} ");
+        public bool Has(string text) => Last.Contains(text, StringComparison.Ordinal);
         public string Tail() => string.Join(" | ", _tail);
 
         public void Send(string command)

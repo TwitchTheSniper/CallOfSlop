@@ -1670,7 +1670,8 @@ public sealed partial class Game : IDisposable
                     .U32(WeaponSet.WeaponsHash).U8((byte)Weapons.All.Length).U32(WeaponSet.AttachmentsHash).U8((byte)Attachments.BySlot.Sum(x => x.Length))
                     .U8((byte)World.PhysicsMode) // protocol 13: which movement to predict with
                     .U32(PartSet.Hash).U16((ushort)Parts.All.Length) // Zombies weapon builder parts (PartReload.cs); older clients stop reading before it
-                    .U8((byte)GravityPercent); // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
+                    .U8((byte)GravityPercent) // protocol 48: the host's gravity setting (GameGravity.cs), so prediction falls the same way
+                    .U16(ServerInfo.ProtocolVersion); // protocol 74: a different build is refused at the door (GameHostBye.cs)
                 Net.SendTo(sender, _w.Span, PacketReliability.ReliableOrdered);
                 SendPropState(sender); // props broken so far this match (GameProps.cs)
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
@@ -1692,8 +1693,9 @@ public sealed partial class Game : IDisposable
                 {
                     if (_clients.Remove(sender.G, out var gone))
                     {
-                        Log($"{NameOf(gone.Id)} left");
-                        ServerSystemChat($"{NameOf(gone.Id)} left", now); // chat system line (LobbyChat.cs)
+                        var how = data[0] == (byte)DefaultMessageIDTypes.ConnectionLost ? "lost the connection (timed out)" : "left";
+                        Log($"{NameOf(gone.Id)} {how}");
+                        ServerSystemChat($"{NameOf(gone.Id)} {how}", now); // chat system line (LobbyChat.cs)
                         OnVoicePlayerLeft(gone.Id); // voice chat (GameVoice.cs)
                         if (Players.Remove(gone.Id, out var left))
                             OnModePlayerLeave(left);
@@ -1703,8 +1705,8 @@ public sealed partial class Game : IDisposable
                 else if (!Disconnected) // keep a reason we already have (e.g. "server full")
                 {
                     Disconnected = true;
-                    Status = "Disconnected from host";
-                    Log(Status);
+                    Status = DisconnectReason(data[0] == (byte)DefaultMessageIDTypes.ConnectionLost); // the host's own reason if it sent one (GameHostBye.cs)
+                    Log(Status, true);
                 }
                 break;
             case (byte)DefaultMessageIDTypes.ConnectionRequestAccepted:
@@ -1865,6 +1867,13 @@ public sealed partial class Game : IDisposable
                     break;
                 }
                 ApplyHostGravity(r.Has(1) ? r.U8() : 100); // the host's gravity setting (GameGravity.cs)
+                if (VersionProblem(r.Has(2) ? r.U16() : 0, "host") is { } versionProblem) // (GameHostBye.cs)
+                {
+                    Status = versionProblem;
+                    Log(Status, true);
+                    Disconnected = true;
+                    break;
+                }
                 Status = $"Connected as player {LocalId} - {World.Map.Name}";
                 Log(Status);
                 // Tell the server who we are and what we want to play with.
@@ -1873,6 +1882,7 @@ public sealed partial class Game : IDisposable
                 foreach (var c in nameBytes)
                     _w.U8(c);
                 WriteHelloProfile(_w); // prestige + level (cosmetic, GameCosmetics.cs)
+                _w.U16(ServerInfo.ProtocolVersion); // protocol 74: the host refuses a different build (GameHostBye.cs)
                 Net.SendToServer(_w.Span, PacketReliability.ReliableOrdered);
                 SendLoadout();
                 break;
@@ -1892,6 +1902,11 @@ public sealed partial class Game : IDisposable
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
                 ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
+                if (VersionProblem(r.Has(2) ? r.U16() : 0, "player") is { } helloProblem)
+                {
+                    RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
+                    break;
+                }
                 LogJoin(name);
                 ServerSystemChat($"{name} joined", now); // chat system line (LobbyChat.cs)
                 SendVoiceInfo(sender); // the host's "Allow voice chat" (GameVoice.cs)
@@ -1939,6 +1954,9 @@ public sealed partial class Game : IDisposable
             case (byte)Msg.TeamPick:
             case (byte)Msg.TeamReply:
                 OnTeamPacket(id, ref r, sender, now); // team selection (TeamPick.cs)
+                break;
+            case (byte)Msg.HostBye when !IsServer:
+                ReadHostBye(ref r); // why the host is closing the connection (GameHostBye.cs)
                 break;
             case (byte)Msg.LobbyState when !IsServer:
                 ReadLobbyState(ref r); // the pre-match lobby room (PreMatchLobby.cs)
@@ -2042,6 +2060,7 @@ public sealed partial class Game : IDisposable
     public void Dispose()
     {
         StressSummary("session over"); // a horde stress round's figures, if not written yet (ZombiesCrowdStress.cs)
+        SayHostBye(); // the host tells everyone why before the connections close (GameHostBye.cs)
         Net.Dispose();
         EndWeaponTweaks(); // a client drops the host's weapon tweaks (GameWeaponTweaks.cs)
         World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)

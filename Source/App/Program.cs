@@ -1323,12 +1323,14 @@ public static unsafe partial class Program
                         _swallowClick = true;
                         break;
                     case PauseAction.Leave:
+                        g.CloseReason = "The host closed the server from the menu (CLOSE SERVER) and went to the main menu."; // what clients are told (GameHostBye.cs)
                         EndSession("");
                         break;
                     case PauseAction.BackToLobby:
                         g.ReturnToLobbyNow(); // the lobby room, everyone still connected (TrackLobbyRoom frees the mouse)
                         break;
                     case PauseAction.Quit:
+                        g.CloseReason = "The host quit the game.";
                         _quit = true;
                         break;
                 }
@@ -1566,11 +1568,13 @@ public static unsafe partial class Program
         if (_session == null || key != GlfwKey.Escape)
             return; // everything else is polled through the keybinds in UpdateLocalPlayer
 
-        if (_session.Local == null)
+        if (_session.Local == null && !_session.IsServer && _session.LocalId == byte.MaxValue)
         {
-            EndSession("Cancelled");
+            EndSession("Cancelled"); // still joining (no welcome yet): Esc gives up. Once in, Esc never leaves by itself.
             return;
         }
+        if (_session.Local == null)
+            return;
         if (InLobbyRoom)
             return; // the lobby room has its own LEAVE button
         if (Ui.MenuOpen)

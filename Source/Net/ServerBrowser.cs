@@ -156,7 +156,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     Msg.ZTraderBuy (a purchase: item, visit, count; no purchase limit, client -> server) at the end of Msg.
     // 73: Zombie types (Source/Game/ZombieTypes.cs): in Msg.ZEnts the limbs byte's top four bits are the zombie's type and a
     //     typed zombie carries a type state byte (plates, grabbing); Msg.ZWorld's player flags bit 6 is "held by a grabber".
-    public const byte ProtocolVersion = 73;
+    // 74: Back to lobby (Source/Game/GameHostBye.cs): Msg.HostBye at the end of Msg (server -> clients: why the host is
+    //     closing the connection), and the protocol number at the end of Msg.Welcome and Msg.Hello: a different build is
+    //     refused when it joins, with the reason, instead of misreading packets later.
+    public const byte ProtocolVersion = 74;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -47,7 +47,7 @@ public sealed partial class Ui
         var action = PauseAction.None;
         if (game.CanReturnToLobby)
         {
-            if (BigButton("BACK TO LOBBY (change map, keep everyone)"))
+            if (BigButtonColored("BACK TO LOBBY (keep everyone)", LobbyGreen))
                 action = PauseAction.BackToLobby;
             ImGuiSafe.TextColored(Dim, "Everyone goes to the lobby room: pick a map, mode or bots there and start again.");
         }
