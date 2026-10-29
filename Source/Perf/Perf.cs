@@ -123,6 +123,8 @@ public static class Perf
     private static readonly long[] Longest = new long[Count]; // the longest single scope this frame
     private static readonly int[] Calls = new int[Count];
     private static readonly PerfArea[] Stack = new PerfArea[MaxDepth];
+    public static readonly long[] DiagAlloc = new long[Count]; // TEMP DIAG
+    private static readonly long[] DiagStart = new long[MaxDepth]; // TEMP DIAG
     private static int _depth, _overflow;
 
     /// <summary>Scopes that ended out of order (a scope left open, or closed twice). Zero in a healthy build.</summary>
@@ -212,6 +214,7 @@ public static class Perf
         if (_depth < MaxDepth)
         {
             SeenParent[i] = _depth == 0 ? (sbyte)-1 : (sbyte)Stack[_depth - 1];
+            DiagStart[_depth] = GC.GetAllocatedBytesForCurrentThread(); // TEMP DIAG
             Stack[_depth++] = area;
         }
         else
@@ -236,6 +239,7 @@ public static class Perf
         if (_depth > 0 && Stack[_depth - 1] == area)
         {
             _depth--;
+            DiagAlloc[i] += GC.GetAllocatedBytesForCurrentThread() - DiagStart[_depth]; // TEMP DIAG
             return;
         }
         // Out of order: unwind to this area if it's open (the ones above it were left open), else ignore the end.

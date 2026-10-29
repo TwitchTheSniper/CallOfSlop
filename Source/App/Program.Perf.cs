@@ -117,6 +117,8 @@ public static unsafe partial class Program
                           + $"ui {s.AreaAvg[(int)PerfArea.Ui]:0.00}, ticks {s.TicksPerSecond:0}/s worst {s.TickWorstMs:0.00} ms; GPU {(gpu is { Available: true } ? $"{gpu.TotalAvgMs():0.00} ms over {gpu.Readings} readings" : "unavailable")}; "
                           + $"{s.Draws:0} draws, {s.Triangles:0} tris; {s.AllocBytes:0} B/frame allocated on the main thread, "
                           + $"the perf UI itself {(_perfUiFrames > 0 ? _perfUiBytes / (double)_perfUiFrames : 0):0} B/frame over {_perfUiFrames} frames ({_perfUiAllocFrames} allocated); misnested {Perf.Misnested}, GPU marks out of order {gpu?.OutOfOrder ?? 0}");
+        Console.WriteLine("[TEMP DIAG] alloc by area: " + string.Join(", ", Enumerable.Range(0, Perf.Count).Where(a => Perf.DiagAlloc[a] > 0).Select(a => $"{Perf.Names[a]} {Perf.DiagAlloc[a]}")));
+        Array.Clear(Perf.DiagAlloc);
     }
 
     // ---- --perf-shot ------------------------------------------------------------------------------------------
@@ -124,11 +126,23 @@ public static unsafe partial class Program
     private static double _perfShotStart = -1;
     private static int _perfShotStep;
 
-    private static void StartPerfShot()
+    private static void StartPerfShot(string[] args)
     {
         _perfShot = true;
         _settings.Bots = 5;
         _settings.MapRandom = false;
+        // --perf-shot "Map" [--stress-size N]: that map (a Zombies map in Zombies, no bots; Horde Stress at N zombies).
+        if (args.SkipWhile(a => !a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")) is { } name && Maps.Find(name) is { } map)
+        {
+            _settings.MapName = map.Name;
+            if (map.Zombies != null)
+            {
+                _settings.Mode = GameMode.Zombies;
+                _settings.Bots = 0;
+            }
+            if (args.SkipWhile(a => !a.Equals("--stress-size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sz && int.TryParse(sz, out var n))
+                _settings.ZombieStressSize = n;
+        }
         StartSession(LobbyAction.SinglePlayer);
     }
 

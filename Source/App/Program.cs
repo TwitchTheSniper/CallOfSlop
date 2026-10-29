@@ -190,7 +190,7 @@ public static unsafe partial class Program
             }
 
             if (perfShot)
-                StartPerfShot(); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
+                StartPerfShot(args); // --perf-shot: the perf window and overlay over a short match, screenshotted, then quit (Program.Perf.cs)
             if (_glBench)
                 RunGlBench(args); // --gl-bench: the OpenGL 4.6 experiments timed on heavy maps, then quit (Program.GlBench.cs)
             else if (_stressShots)
