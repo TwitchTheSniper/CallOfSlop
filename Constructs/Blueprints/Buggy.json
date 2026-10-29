@@ -1,0 +1,118 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Buggy",
+  "description": "Two beams, a seat, an engine, a tank and two fuel lines, four wheels on suspensions.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+2",
+      "by": "bottom"
+    },
+    {
+      "part": "Engine",
+      "on": 1,
+      "socket": "y+0",
+      "by": "-y"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "y+3",
+      "by": "-y"
+    },
+    {
+      "part": "Fuel Line",
+      "on": 3,
+      "socket": "+z",
+      "by": "-x"
+    },
+    {
+      "part": "Fuel Line",
+      "on": 5,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Suspension",
+      "on": 0,
+      "socket": "x-0",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 0,
+      "socket": "x-3",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 1,
+      "socket": "x+0",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 1,
+      "socket": "x+3",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 7,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 8,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 9,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 10,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Corner",
+      "on": 15,
+      "socket": "-z",
+      "by": "back"
+    },
+    {
+      "part": "Corner",
+      "on": 16,
+      "socket": "-z",
+      "by": "back"
+    }
+  ]
+}

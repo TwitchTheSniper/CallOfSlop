@@ -1,0 +1,619 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>What a ray hit on a construct.</summary>
+public struct ConstructHit
+{
+    public Construct Body;
+    public int Part;
+    public float Distance;
+    public Vector3 Point, Normal;
+}
+
+/// <summary>
+/// Every construct in a match (server: simulated; client: a mirror of what the server sends). Owns the bodies, splitting
+/// cut-off pieces into wrecks, per-part damage, ray tests, keeping players out of constructs, and the caps that keep
+/// the tick inside its budget: at most <see cref="MaxBodies"/> bodies and <see cref="MaxTotalParts"/> parts in all.
+/// Changes the network must carry are queued (<see cref="StructureDirty"/>, <see cref="Removed"/>, <see cref="HealthDirty"/>).
+/// </summary>
+public sealed class ConstructWorld
+{
+    public const int MaxBodies = 64;
+    public const int MaxTotalParts = 1200;
+    public const float FallOutY = -30f;
+
+    public readonly List<Construct> Bodies = new(MaxBodies);
+    private readonly Dictionary<ushort, Construct> _byId = new(MaxBodies);
+    private ushort _nextId = 1;
+
+    // Network queues (server): bodies whose parts changed, bodies gone, part health changes.
+    public readonly HashSet<ushort> StructureDirty = new(MaxBodies);
+    public readonly List<ushort> Removed = new(MaxBodies);
+    public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
+
+    /// <summary>A line per notable event (a part broke, a piece fell off): the game shows some, the self-test reads them.</summary>
+    public readonly List<string> Events = new(32);
+
+    public int TotalParts
+    {
+        get
+        {
+            var n = 0;
+            foreach (var c in Bodies)
+                n += c.PartCount;
+            return n;
+        }
+    }
+
+    public Construct? Get(ushort id) => _byId.GetValueOrDefault(id);
+
+    public void Clear()
+    {
+        foreach (var c in Bodies)
+            Removed.Add(c.Id);
+        Bodies.Clear();
+        _byId.Clear();
+        StructureDirty.Clear();
+        HealthDirty.Clear();
+    }
+
+    /// <summary>A new empty body at a pose (null when the caps are reached). Add parts, then it rebuilds on the next tick.</summary>
+    public Construct? Create(Vector3 pos, Quaternion rot, ushort id = 0)
+    {
+        if (Bodies.Count >= MaxBodies)
+            return null;
+        if (id == 0)
+        {
+            while (_byId.ContainsKey(_nextId) || _nextId == 0)
+                _nextId++;
+            id = _nextId++;
+        }
+        else if (_byId.ContainsKey(id))
+            return null;
+        var c = new Construct { Id = id, Pos = pos, Rot = rot, PrevPos = pos, PrevRot = rot, NetPos = pos, NetFromPos = pos, NetRot = rot, NetFromRot = rot };
+        Bodies.Add(c);
+        _byId[id] = c;
+        StructureDirty.Add(id);
+        return c;
+    }
+
+    public void Remove(Construct c)
+    {
+        Bodies.Remove(c);
+        _byId.Remove(c.Id);
+        StructureDirty.Remove(c.Id);
+        Removed.Add(c.Id);
+    }
+
+    /// <summary>Adds a part (no checks: the builder checks placements). Returns its index, or -1 when the caps are full.</summary>
+    public int AddPart(Construct c, ConstructPartDef def, Vector3 pos, byte rot, byte seg = 0)
+    {
+        if (c.PartCount >= Construct.MaxParts || TotalParts >= MaxTotalParts)
+            return -1;
+        var i = c.PartCount++;
+        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health };
+        c.Dirty = true;
+        c.Wake();
+        StructureDirty.Add(c.Id);
+        if (def.Role == PartRole.FuelTank && c.PartCount > 1)
+            c.AddFuel(def.FuelCapacity);
+        return i;
+    }
+
+    /// <summary>Positions sit on a 1 cm grid, so what the server builds and what the wire carries are the same numbers.</summary>
+    public static Vector3 Quantise(Vector3 v) => new(MathF.Round(v.X * 100) / 100, MathF.Round(v.Y * 100) / 100, MathF.Round(v.Z * 100) / 100);
+
+    public bool AddLink(Construct c, int a, int sa, int b, int sb)
+    {
+        if (c.LinkCount >= Construct.MaxLinks)
+            return false;
+        c.Links[c.LinkCount++] = new CLink { A = (byte)a, B = (byte)b, SA = (byte)sa, SB = (byte)sb };
+        c.Dirty = true;
+        return true;
+    }
+
+    /// <summary>A hinge joint: the parts of a new segment turn about the hinge's axis (returns the new segment, or 0 when full).</summary>
+    public byte AddJoint(Construct c, int hinge)
+    {
+        if (c.JointCount >= Construct.MaxJoints)
+            return 0;
+        ref var h = ref c.Parts[hinge];
+        var d = h.D;
+        c.Joints[c.JointCount] = new CJoint
+        {
+            Hinge = (byte)hinge,
+            ParentSeg = h.Seg,
+            Pivot = h.Pos + Rot24.Apply(h.Rot, d.JointPivot),
+            Axis = ConstructParts.DirVector(Rot24.ApplyDir(h.Rot, d.JointAxis)),
+            Min = d.JointMin,
+            Max = d.JointMax,
+        };
+        c.JointCount++;
+        return (byte)c.JointCount;
+    }
+
+    /// <summary>
+    /// Takes part <paramref name="index"/> out of <paramref name="c"/> (broken off, or removed with a tool) and splits off
+    /// every piece no longer joined to the root as a wreck of its own. Returns the removed part's type.
+    /// </summary>
+    public ConstructPartDef RemovePart(Construct c, int index)
+    {
+        var def = c.DefOf(index);
+        var keepDriver = c.Driver;
+        // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
+        Span<int> comp = stackalloc int[Construct.MaxParts];
+        for (var i = 0; i < c.PartCount; i++)
+            comp[i] = -1;
+        comp[index] = -2;
+        var root = c.Root == index || c.Root >= c.PartCount ? -1 : c.Root;
+        if (root < 0)
+        {
+            // The root is going: the new root is picked from what's left (a seat, a foundation, the first part).
+            for (var i = 0; i < c.PartCount && root < 0; i++)
+                if (i != index && c.Parts[i].D.Role is PartRole.Seat or PartRole.Foundation)
+                    root = i;
+            for (var i = 0; i < c.PartCount && root < 0; i++)
+                if (i != index)
+                    root = i;
+        }
+        var comps = 0;
+        if (root >= 0)
+            Flood(c, root, comps++, comp);
+        for (var i = 0; i < c.PartCount; i++)
+            if (comp[i] == -1)
+                Flood(c, i, comps++, comp);
+        // Pieces cut off become wrecks (a body each), in part order, so every run splits the same way.
+        for (var k = 1; k < comps; k++)
+            SplitOff(c, comp, k);
+        // What's left: compact the arrays (parts of the removed part and the split pieces go).
+        Compact(c, comp, 0);
+        c.Dirty = true;
+        c.Wake();
+        StructureDirty.Add(c.Id);
+        if (c.PartCount == 0)
+            Remove(c);
+        else if (keepDriver != 255 && c.Driver == 255)
+            Events.Add($"driver {keepDriver} thrown out");
+        return def;
+    }
+
+    private static void Flood(Construct c, int start, int id, Span<int> comp)
+    {
+        Span<byte> queue = stackalloc byte[Construct.MaxParts];
+        int head = 0, tail = 0;
+        comp[start] = id;
+        queue[tail++] = (byte)start;
+        while (head < tail)
+        {
+            int at = queue[head++];
+            for (var k = 0; k < c.LinkCount; k++)
+            {
+                ref var l = ref c.Links[k];
+                var other = l.A == at ? l.B : l.B == at ? l.A : -1;
+                if (other < 0 || comp[other] != -1)
+                    continue;
+                comp[other] = id;
+                queue[tail++] = (byte)other;
+            }
+        }
+    }
+
+    /// <summary>Component <paramref name="k"/> of <paramref name="c"/> becomes a body of its own, moving as that part of the body moved.</summary>
+    private void SplitOff(Construct c, Span<int> comp, int k)
+    {
+        // Its frame: the segment none of its joints hang it from (its own hinge isn't in the piece), so its parts keep their turns.
+        var baseSeg = -1;
+        for (var i = 0; i < c.PartCount && baseSeg < 0; i++)
+        {
+            if (comp[i] != k)
+                continue;
+            var s = c.Parts[i].Seg;
+            while (s > 0 && comp[c.Joints[s - 1].Hinge] == k)
+                s = c.Joints[s - 1].ParentSeg;
+            baseSeg = s;
+        }
+        c.WorldFrame(baseSeg, out var q, out var t);
+        var wreck = Create(t, q);
+        if (wreck == null)
+            return; // the caps are full: the piece is simply lost
+        // Copy the parts; segments other than the base keep their joints (when their hinge came along).
+        Span<int> map = stackalloc int[Construct.MaxParts];
+        Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
+        for (var s = 0; s <= Construct.MaxJoints; s++)
+            segMap[s] = -1;
+        segMap[baseSeg] = 0;
+        for (var j = 0; j < c.JointCount; j++)
+            if (comp[c.Joints[j].Hinge] == k && wreck.JointCount < Construct.MaxJoints)
+            {
+                wreck.Joints[wreck.JointCount] = c.Joints[j];
+                segMap[j + 1] = ++wreck.JointCount;
+            }
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            map[i] = -1;
+            if (comp[i] != k)
+                continue;
+            var seg = segMap[c.Parts[i].Seg];
+            if (seg < 0)
+                seg = 0;
+            map[i] = wreck.PartCount;
+            wreck.Parts[wreck.PartCount++] = c.Parts[i] with { Seg = (byte)seg };
+        }
+        for (var j = 0; j < wreck.JointCount; j++)
+        {
+            ref var jt = ref wreck.Joints[j];
+            jt.Hinge = (byte)map[jt.Hinge];
+            jt.ParentSeg = (byte)Math.Max(0, segMap[jt.ParentSeg]);
+        }
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var link = ref c.Links[l];
+            if (map[link.A] >= 0 && map[link.B] >= 0)
+                AddLink(wreck, map[link.A], link.SA, map[link.B], link.SB);
+        }
+        wreck.Wreck = true;
+        wreck.Rebuild();
+        // Moving as that bit of the old body moved.
+        wreck.Vel = c.PointVel(wreck.WorldCom);
+        wreck.AngVel = c.AngVel;
+        wreck.Fuel = 0;
+        Events.Add($"construct {c.Id}: a piece of {wreck.PartCount} part(s) fell away as wreck {wreck.Id}");
+    }
+
+    /// <summary>Keeps only the parts of component <paramref name="keep"/>, renumbering links, joints, the seat and the root.</summary>
+    private static void Compact(Construct c, Span<int> comp, int keep)
+    {
+        Span<int> map = stackalloc int[Construct.MaxParts];
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+        {
+            map[i] = comp[i] == keep ? n : -1;
+            if (comp[i] == keep)
+                c.Parts[n++] = c.Parts[i];
+        }
+        var oldCount = c.PartCount;
+        c.PartCount = n;
+        var ln = 0;
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            var link = c.Links[l];
+            if (link.A >= oldCount || link.B >= oldCount || map[link.A] < 0 || map[link.B] < 0)
+                continue;
+            link.A = (byte)map[link.A];
+            link.B = (byte)map[link.B];
+            c.Links[ln++] = link;
+        }
+        c.LinkCount = ln;
+        // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
+        Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
+        segMap[0] = 0;
+        var jn = 0;
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            var jt = c.Joints[j];
+            if (map[jt.Hinge] < 0)
+            {
+                segMap[j + 1] = 0;
+                continue;
+            }
+            jt.Hinge = (byte)map[jt.Hinge];
+            jt.ParentSeg = (byte)segMap[jt.ParentSeg];
+            c.Joints[jn] = jt;
+            segMap[j + 1] = ++jn;
+        }
+        c.JointCount = jn;
+        for (var i = 0; i < c.PartCount; i++)
+            c.Parts[i].Seg = (byte)segMap[c.Parts[i].Seg];
+        if (c.DriverSeat >= 0)
+        {
+            c.DriverSeat = c.DriverSeat < oldCount ? map[c.DriverSeat] : -1;
+            if (c.DriverSeat < 0)
+                c.Driver = 255;
+        }
+    }
+
+    // ---- Damage (decision 6: every part on its own) ------------------------------------------------------------
+
+    /// <summary>
+    /// Damage to one part: its armour takes a flat amount off first. At zero health it breaks off (and anything cut off
+    /// from the root falls away as a wreck) or, for engines, tanks and seats, stops working. Returns true if it broke.
+    /// </summary>
+    public bool DamagePart(Construct c, int part, float damage, out float dealt)
+    {
+        dealt = 0;
+        if (part < 0 || part >= c.PartCount)
+            return false;
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        dealt = MathF.Max(0, damage - d.Armour);
+        if (dealt <= 0 || p.Broken)
+            return false;
+        p.Health -= dealt;
+        c.Wake();
+        if (p.Health > 0)
+        {
+            HealthDirty.Add((c.Id, (byte)part));
+            return false;
+        }
+        p.Health = 0;
+        if (d.OnBreak == PartBreak.Disable)
+        {
+            p.Broken = true;
+            c.Dirty = true;
+            StructureDirty.Add(c.Id);
+            Events.Add($"construct {c.Id}: {d.Name} wrecked (stops working)");
+            if (d.Role == PartRole.FuelTank)
+                c.Fuel = MathF.Min(c.Fuel, c.FuelCapacity() - 0); // (its fuel is lost)
+            return true;
+        }
+        Events.Add($"construct {c.Id}: {d.Name} broke off");
+        RemovePart(c, part);
+        return true;
+    }
+
+    /// <summary>A blast: every part within the radius takes damage falling off with distance (to its nearest point).</summary>
+    public int Blast(Vector3 centre, float radius, float maxDamage)
+    {
+        var hits = 0;
+        // Bodies can split while we go: walk by index over a snapshot of the count, re-finding parts by distance each time.
+        for (var bi = 0; bi < Bodies.Count; bi++)
+        {
+            var c = Bodies[bi];
+            if (Vector3.Distance(c.WorldCom, centre) > radius + c.Radius)
+                continue;
+            for (var guard = 0; guard < Construct.MaxParts; guard++)
+            {
+                // The next part not yet hit by this blast, nearest first (parts are removed as they break).
+                var best = -1;
+                var bestD = float.MaxValue;
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    if (_blasted.Contains(((ulong)c.Id << 32) | (uint)Ident(c, i)))
+                        continue;
+                    var dist = PartDistance(c, i, centre);
+                    if (dist < radius && dist < bestD)
+                    {
+                        bestD = dist;
+                        best = i;
+                    }
+                }
+                if (best < 0)
+                    break;
+                _blasted.Add(((ulong)c.Id << 32) | (uint)Ident(c, best));
+                var k = 1f - bestD / radius;
+                DamagePart(c, best, maxDamage * k * k, out _);
+                hits++;
+                if (!Bodies.Contains(c))
+                    break;
+            }
+        }
+        _blasted.Clear();
+        // The push: every body nearby gets an impulse away from the blast.
+        foreach (var c in Bodies)
+        {
+            if (c.Anchored)
+                continue;
+            var d = c.WorldCom - centre;
+            var dist = d.Length();
+            if (dist > radius + c.Radius * 0.5f || dist < 1e-3f)
+                continue;
+            var k = 1f - MathF.Min(1, dist / (radius + c.Radius * 0.5f));
+            c.Wake();
+            c.Vel += (d / dist + new Vector3(0, 0.5f, 0)) * k * maxDamage * 0.4f / MathF.Max(c.Mass, 20f) * 6f;
+        }
+        return hits;
+    }
+
+    private readonly HashSet<ulong> _blasted = new(256);
+
+    // A part's identity during one blast (index plus its exact position: stable while other parts are removed).
+    private static int Ident(Construct c, int i) => HashCode.Combine(c.Parts[i].Def, c.Parts[i].Pos, c.Parts[i].Rot);
+
+    private static float PartDistance(Construct c, int i, Vector3 world)
+    {
+        c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+        var local = Vector3.Transform(world - t, Quaternion.Conjugate(q));
+        c.PartBounds(i, out var mn, out var mx);
+        var closest = Vector3.Clamp(local, mn, mx);
+        return Vector3.Distance(closest, local);
+    }
+
+    // ---- Ray tests -------------------------------------------------------------------------------------------------
+
+    /// <summary>The nearest construct part along a ray (before <paramref name="maxDist"/>). Uses the drawn pose on a client when <paramref name="drawn"/>.</summary>
+    public bool Raycast(Vector3 origin, Vector3 dir, float maxDist, out ConstructHit hit, Construct? ignore = null)
+    {
+        hit = default;
+        var best = maxDist;
+        var found = false;
+        foreach (var c in Bodies)
+        {
+            if (c == ignore)
+                continue;
+            // Sphere round the body first.
+            var oc = origin - c.WorldCom;
+            var b = Vector3.Dot(oc, dir);
+            var cc = oc.LengthSquared() - c.Radius * c.Radius;
+            if (cc > 0 && b > 0)
+                continue;
+            if (b * b - cc < 0)
+                continue;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                ref var p = ref c.Parts[i];
+                c.WorldFrame(p.Seg, out var q, out var t);
+                var iq = Quaternion.Conjugate(q);
+                var lo = Vector3.Transform(origin - t, iq);
+                var ld = Vector3.Transform(dir, iq);
+                var boxes = p.D.Boxes;
+                for (var bi = 0; bi < boxes.Length; bi++)
+                {
+                    c.BoxOf(i, bi, out var centre, out var half);
+                    if (Geometry.RayAabb(centre - half, centre + half, lo, ld, best) is { } d && d < best)
+                    {
+                        best = d;
+                        found = true;
+                        hit.Body = c;
+                        hit.Part = i;
+                        hit.Distance = d;
+                        hit.Point = origin + dir * d;
+                        hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
+                    }
+                }
+            }
+        }
+        return found;
+    }
+
+    // ---- Players ---------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Keeps a player out of every construct: pushed out sideways, or stood on top when the feet are near a part's top
+    /// (then carried along with it). Returns the body stood on, or null. Players never move constructs (milestone 1),
+    /// except doors: a player walking into a door leaf swings it.
+    /// </summary>
+    public Construct? BlockPlayer(ref MoveState s, float height, bool pushDoors)
+    {
+        Construct? standing = null;
+        for (var bi = 0; bi < Bodies.Count; bi++)
+        {
+            var c = Bodies[bi];
+            var reach = c.Radius + World.PlayerRadius + height;
+            if (Vector3.DistanceSquared(s.Position, c.WorldCom) > reach * reach)
+                continue;
+            for (var i = 0; i < c.PartCount; i++)
+            {
+                ref var p = ref c.Parts[i];
+                c.WorldFrame(p.Seg, out var q, out var t);
+                var iq = Quaternion.Conjugate(q);
+                var upLocal = Vector3.Transform(Vector3.UnitY, iq);
+                var boxes = p.D.Boxes;
+                for (var bi2 = 0; bi2 < boxes.Length; bi2++)
+                {
+                    c.BoxOf(i, bi2, out var centre, out var half);
+                    // World bounds of the turned box.
+                    var wc = t + Vector3.Transform(centre, q);
+                    var m = Matrix4x4.CreateFromQuaternion(q);
+                    var wh = new Vector3(
+                        MathF.Abs(m.M11) * half.X + MathF.Abs(m.M21) * half.Y + MathF.Abs(m.M31) * half.Z,
+                        MathF.Abs(m.M12) * half.X + MathF.Abs(m.M22) * half.Y + MathF.Abs(m.M32) * half.Z,
+                        MathF.Abs(m.M13) * half.X + MathF.Abs(m.M23) * half.Y + MathF.Abs(m.M33) * half.Z);
+                    var feet = s.Position;
+                    if (feet.Y > wc.Y + wh.Y + 0.05f || feet.Y + height < wc.Y - wh.Y)
+                        continue;
+                    if (MathF.Abs(feet.X - wc.X) > wh.X + World.PlayerRadius || MathF.Abs(feet.Z - wc.Z) > wh.Z + World.PlayerRadius)
+                        continue;
+                    // In the box's frame: the closest point of the box to the player's axis, at feet and at a few heights.
+                    var lf = Vector3.Transform(feet - t, iq);
+                    var top = TopAt(lf, centre, half, upLocal, t, q, feet);
+                    if (top is { } topY && feet.Y >= topY - World.StepHeight && feet.Y <= topY + 0.06f && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
+                    {
+                        s.Position.Y = topY;
+                        if (s.Velocity.Y < 0)
+                            s.Velocity.Y = 0;
+                        s.Grounded = true;
+                        standing = c;
+                        continue;
+                    }
+                    var pushed = false;
+                    for (var h = 0; h < 3 && !pushed; h++)
+                    {
+                        var probe = feet + new Vector3(0, 0.3f + h * (height - 0.5f) * 0.5f, 0);
+                        var lp = Vector3.Transform(probe - t, iq);
+                        var closest = Vector3.Clamp(lp, centre - half, centre + half);
+                        var wclosest = t + Vector3.Transform(closest, q);
+                        var dx = probe.X - wclosest.X;
+                        var dz = probe.Z - wclosest.Z;
+                        var d2 = dx * dx + dz * dz;
+                        if (d2 >= World.PlayerRadius * World.PlayerRadius)
+                            continue;
+                        var inside = Vector3.DistanceSquared(closest, lp) < 1e-8f;
+                        float nx, nz, depth;
+                        if (inside || d2 < 1e-8f)
+                        {
+                            // Inside: out the nearest side, horizontally.
+                            var rel = lp - centre;
+                            var o = half - Vector3.Abs(rel);
+                            var ln = o.X < o.Z ? new Vector3(MathF.Sign(rel.X) is var sx && sx == 0 ? 1 : sx, 0, 0) : new Vector3(0, 0, MathF.Sign(rel.Z) is var sz && sz == 0 ? 1 : sz);
+                            var wn = Vector3.Transform(ln, q);
+                            var len = MathF.Sqrt(wn.X * wn.X + wn.Z * wn.Z);
+                            if (len < 1e-3f)
+                                continue;
+                            nx = wn.X / len;
+                            nz = wn.Z / len;
+                            depth = MathF.Min(o.X < o.Z ? o.X : o.Z, 0.5f) + World.PlayerRadius;
+                        }
+                        else
+                        {
+                            var d = MathF.Sqrt(d2);
+                            nx = dx / d;
+                            nz = dz / d;
+                            depth = World.PlayerRadius - d;
+                        }
+                        s.Position.X += nx * depth;
+                        s.Position.Z += nz * depth;
+                        var vn = s.Velocity.X * nx + s.Velocity.Z * nz;
+                        if (vn < 0)
+                        {
+                            s.Velocity.X -= vn * nx;
+                            s.Velocity.Z -= vn * nz;
+                        }
+                        pushed = true;
+                        if (pushDoors && p.Seg > 0)
+                            PushJoint(c, p.Seg, wclosest, new Vector3(-nx, 0, -nz) * MathF.Max(1.5f, -vn));
+                    }
+                }
+            }
+        }
+        if (standing != null && !standing.Anchored && !standing.Asleep)
+            s.Position += standing.PointVel(s.Position) * World.TickDt; // carried along
+        return standing;
+    }
+
+    /// <summary>The box's top surface height over the feet (world y), when the box is upright and the feet are over it.</summary>
+    private static float? TopAt(Vector3 lf, Vector3 centre, Vector3 half, Vector3 upLocal, Vector3 t, Quaternion q, Vector3 feet)
+    {
+        // Upright enough boxes only: the box's local axis nearest world up.
+        var ax = MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Y) ? (MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Z) ? 0 : 2) : (MathF.Abs(upLocal.Y) > MathF.Abs(upLocal.Z) ? 1 : 2);
+        var sign = upLocal[ax] > 0 ? 1 : -1;
+        if (MathF.Abs(upLocal[ax]) < 0.7f)
+            return null;
+        // Over the box (the feet's centre within the top face, a little inside the edge).
+        for (var a = 0; a < 3; a++)
+            if (a != ax && MathF.Abs(lf[a] - centre[a]) > half[a] + 0.05f)
+                return null;
+        var topLocal = lf;
+        topLocal[ax] = centre[ax] + sign * half[ax];
+        return (t + Vector3.Transform(topLocal, q)).Y;
+    }
+
+    /// <summary>A push on a hinged segment at a world point: the joint picks up some swing.</summary>
+    public static void PushJoint(Construct c, int seg, Vector3 at, Vector3 push)
+    {
+        if (seg <= 0 || seg > c.JointCount)
+            return;
+        ref var j = ref c.Joints[seg - 1];
+        c.WorldFrame(j.ParentSeg, out var q, out var t);
+        var axis = Vector3.Transform(j.Axis, q);
+        var pivot = t + Vector3.Transform(j.Pivot, q);
+        var r = at - pivot;
+        var torque = Vector3.Dot(Vector3.Cross(r, push), axis);
+        var lever = MathF.Max(0.3f, (r - axis * Vector3.Dot(r, axis)).Length());
+        j.Vel = Math.Clamp(j.Vel + torque / (lever * lever) * 0.15f, -4f, 4f);
+        j.Open = j.Angle + j.Vel * 0.3f is var guess && MathF.Abs(guess) > 0.4f; // a pushed door stays where it was pushed to
+        c.Wake();
+    }
+
+    /// <summary>One tick: physics, then anything that fell out of the world goes.</summary>
+    public void Step(IWorldQuery query, float dt)
+    {
+        ConstructPhysics.Step(this, query, dt);
+        for (var i = Bodies.Count - 1; i >= 0; i--)
+            if (Bodies[i].Pos.Y < FallOutY)
+            {
+                Events.Add($"construct {Bodies[i].Id} fell out of the world");
+                Remove(Bodies[i]);
+            }
+    }
+}

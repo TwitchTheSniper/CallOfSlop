@@ -75,6 +75,8 @@
     <None Update="Materials\**\*" CopyToOutputDirectory="PreserveNewest" />
     <!-- Ragdoll tuning and death reactions: Ragdolls\Ragdolls.json (see Source\Physics\RagdollTuning.cs). -->
     <None Update="Ragdolls\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Sandbox construct parts and blueprints: Constructs\Parts, Constructs\Blueprints (docs/sandbox/CONSTRUCTS.md). -->
+    <None Update="Constructs\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

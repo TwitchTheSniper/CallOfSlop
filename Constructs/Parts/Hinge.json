@@ -1,0 +1,54 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hinge",
+  "description": "A passive hinge: what hangs on its leaf swings about it (doors, flaps, gates).",
+  "role": "hinge",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 6,
+  "health": 140,
+  "armour": 5,
+  "material": "steel",
+  "color": "#55595e",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.5,
+        0.2
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x",
+      "kind": "leaf"
+    }
+  ],
+  "hinge": {
+    "axis": "+y",
+    "pivot": [
+      0.1,
+      0,
+      0
+    ],
+    "min": -100,
+    "max": 100,
+    "leaf": "leaf"
+  }
+}
