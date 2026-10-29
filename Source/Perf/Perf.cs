@@ -44,6 +44,7 @@ public enum PerfArea : byte
     Ui, // the ImGui menus and HUD windows, built and drawn
     Swap, // SwapBuffers: waiting for vsync or the GPU
     Loading, // map loads and switches, the collision world build (anywhere in the frame)
+    Limiter, // the Max FPS frame limiter's wait after SwapBuffers (FrameLimiter.cs)
     COUNT,
 }
 
@@ -84,7 +85,7 @@ public static class Perf
         "Projectiles", "Props, logic, destruction", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "Terrain", "Props", "Meshes", "Foliage",
         "Decals", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
-        "Swap (vsync/GPU wait)", "Loading",
+        "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
     ];
 
     /// <summary>Depth in the tree (0 for roots).</summary>

@@ -46,14 +46,14 @@ public sealed partial class Ui
     private long _perfWorkingSet;
     private object? _perfNetOf;
 
-    // The roots' colours in the stacked graph and its legend: events, input, game, audio, render, ui, swap, loading.
+    // The roots' colours in the stacked graph and its legend: events, input, game, audio, render, ui, swap, loading, limiter.
     private static readonly (byte R, byte G, byte B)[] PerfRootRgb =
-        [(120, 130, 150), (90, 170, 230), (240, 150, 60), (170, 120, 230), (90, 200, 120), (230, 210, 90), (110, 110, 120), (230, 80, 80)];
+        [(120, 130, 150), (90, 170, 230), (240, 150, 60), (170, 120, 230), (90, 200, 120), (230, 210, 90), (110, 110, 120), (230, 80, 80), (70, 90, 110)];
 
     private static readonly ImColor8[] PerfRootColours = PerfRootRgb.Select(c => new ImColor8(c.R, c.G, c.B, 255)).ToArray();
     private static readonly float4[] PerfRootText = PerfRootRgb.Select(c => new float4(c.R / 255f, c.G / 255f, c.B / 255f, 1f)).ToArray();
 
-    private static readonly PerfArea[] PerfRoots = [PerfArea.Events, PerfArea.Input, PerfArea.Game, PerfArea.Audio, PerfArea.Render, PerfArea.Ui, PerfArea.Swap, PerfArea.Loading];
+    private static readonly PerfArea[] PerfRoots = [PerfArea.Events, PerfArea.Input, PerfArea.Game, PerfArea.Audio, PerfArea.Render, PerfArea.Ui, PerfArea.Swap, PerfArea.Loading, PerfArea.Limiter];
 
     /// <summary>
     /// Draws the window or the overlay (call every frame: it also turns the timing on and off with the view).
@@ -160,6 +160,8 @@ public sealed partial class Ui
 
             // ---- Frame time ----
             ImGui.Text($"{s.Fps:0} fps   avg {s.AvgMs:0.00} ms   min {s.MinMs:0.00}   max {s.MaxMs:0.00}   1% low {s.Low1Ms:0.00} ms ({s.Low1Fps:0} fps)   {s.Frames} frames");
+            if (FrameLimiter.ActiveFps > 0)
+                ImGuiSafe.TextColored(PerfCapText, $"Max FPS cap {FrameLimiter.ActiveFps} ({1000f / FrameLimiter.ActiveFps:0.0} ms, the blue line): the limiter waits {s.AreaAvg[(int)PerfArea.Limiter]:0.00} ms a frame on average (not part of Swap)");
             if (s.WorstBack[0] >= 0)
                 ImGuiSafe.TextColored(Dim, $"worst: {s.WorstMs[0]:0.0} ms {s.WorstBack[0] / 60f:0.0} s ago, {s.WorstMs[1]:0.0} ms, {s.WorstMs[2]:0.0} ms (red marks)");
             var scale = s.MaxMs > 66 ? 100f : s.MaxMs > 36 ? 70f : 40f;
@@ -209,6 +211,7 @@ public sealed partial class Ui
         }
         GuideLine(dl, p0, p1, 16.7f, scale, new ImColor8(140, 220, 140, 160));
         GuideLine(dl, p0, p1, 33.3f, scale, new ImColor8(230, 140, 90, 160));
+        CapLine(dl, p0, p1, scale);
         if (marks)
         {
             var s = _perfStats;
@@ -233,6 +236,25 @@ public sealed partial class Ui
         var at = new float2(p0.X + 4 * _scale, y - 14 * _scale); // (at the old end of the graph, left, where the bars are oldest)
         dl.AddText(at + new float2(1, 1), new ImColor8(0, 0, 0, 220), $"{ms:0.0} ms");
         dl.AddText(at, c, $"{ms:0.0} ms");
+    }
+
+    private static readonly float4 PerfCapText = new(0.45f, 0.75f, 1f, 1f);
+
+    /// <summary>The Max FPS cap's frame time as a blue guide line, labelled at the new (right) end of the graph.</summary>
+    private void CapLine(ImDrawListPtr dl, float2 p0, float2 p1, float scale)
+    {
+        var fps = FrameLimiter.ActiveFps;
+        if (fps <= 0)
+            return;
+        var ms = 1000f / fps;
+        if (ms > scale)
+            return;
+        var c = new ImColor8(110, 180, 255, 220);
+        var y = p1.Y - ms / scale * (p1.Y - p0.Y);
+        dl.AddLine(new float2(p0.X, y), new float2(p1.X, y), c, 1.5f);
+        var at = new float2(p1.X - 90 * _scale, y - 14 * _scale);
+        dl.AddText(at + new float2(1, 1), new ImColor8(0, 0, 0, 220), $"cap {fps} fps");
+        dl.AddText(at, c, $"cap {fps} fps");
     }
 
     private void DrawCpuStack(float2 size, float scale)
@@ -268,6 +290,7 @@ public sealed partial class Ui
             }
         }
         GuideLine(dl, p0, p1, 16.7f, scale, new ImColor8(140, 220, 140, 160));
+        CapLine(dl, p0, p1, scale);
         ImGui.Dummy(size);
     }
 
