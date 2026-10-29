@@ -158,6 +158,7 @@ public static class ConstructRender
         LastWires = 0;
         if (!ShowWires)
             return;
+        gfx.SetDepthTest(false); // (seen through the parts: the wires run inside the construct)
         foreach (var c in world.Bodies)
         {
             if (c.WireCount == 0 && c.Id != WireFromBody)
@@ -182,6 +183,7 @@ public static class ConstructRender
             if (c.Id == WireFromBody && WireFromPart >= 0 && WireFromPart < c.PartCount)
                 Line(gfx, PartCentre(c, WireFromPart), WireAim, new Vector3(1f, 0.9f, 0.3f), 0.7f);
         }
+        gfx.SetDepthTest(true);
     }
 
     /// <summary>A thin unlit box from <paramref name="a"/> to <paramref name="b"/>.</summary>
@@ -195,7 +197,7 @@ public static class ConstructRender
         var x = MathF.Abs(z.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z)) : Vector3.UnitX;
         var y = Vector3.Cross(z, x);
         var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
-        gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.03f, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, opacity, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.035f, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, opacity, mode: 2);
     }
 
     /// <summary>The ghost sockets (blended, depth-tested, no depth write): small markers on every free socket the held part fits, the chosen one as the whole part.</summary>

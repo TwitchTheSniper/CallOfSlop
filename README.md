@@ -988,24 +988,37 @@ A World at War style **Zombies** mode (co-op for 1-4, new maps) is being built. 
 **What to test with friends**: a full run of Silo Breach with 2-4 people (do the waves feel fair, do enemies ever pop in where you're looking, is the defend stage tense but winnable on Normal), a deliberate wipe (everyone back at the checkpoint?), late joiners, and the fps with 60-80 enemies in the defend stage.
 ### Sandbox and constructs (in development)
 
-**Sandbox** is milestone 1 of the sandbox survival mode: build vehicles and bases from parts with a tool in your hands,
-drive them, and shoot their parts off one at a time. It is a Dev-only mode for now: host **Construct Yard** (Dev pack) and
-pick **Sandbox**. Two buggies, an anchored gate, a parts rack (the yellow shelf) and some loose parts are waiting.
+**Sandbox** is the sandbox survival mode being built in milestones (milestone 2: moving joints, logic and wiring, a
+drivetrain made of parts, passengers): build vehicles and bases from parts with a tool in your hands, wire them up, drive
+them, and shoot their parts off one at a time. It is a Dev-only mode for now: host **Construct Yard** (Dev pack) and pick
+**Sandbox**. A buggy, a wired buggy with a passenger seat, horn and headlamps, two gates (one on a motorised hinge with a
+button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and some loose parts are waiting.
 
-- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks, fuel lines, hinges,
-  doors), 4 the **welder** (frames, panels, corners, foundations); 1 or 2 back to your guns. With a gun out or bare hands
-  you can only use things (sit, drive, open doors), never build.
+- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks, fuel lines,
+  transmissions, differentials, hinges and joints, doors, logic parts), 4 the **welder** (frames, panels, corners, decks,
+  foundations), 5 the **linking tool** (wires and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
+  you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
   part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
   takes the part you look at off into your hand, T drops what you hold. Fire on the ground starts a new construct.
-- **Driving**: F on a seat to sit, W/S/A/D to drive, Space to brake, F to get out. A vehicle needs a seat, an engine, fuel
-  reaching the engine (a tank touching it or a chain of fuel lines) and wheels on suspensions; the HUD says what's missing.
-- **Damage**: every part has its own health and armour. Shoot the cheap fuel line and the engine starves; break a
-  suspension and its wheel falls off; anything cut off from the seat falls away as a wreck.
+- **Wiring**: with the linking tool out the wires show (green while on). Fire on an output (a seat, a button, lever,
+  switch, pressure plate, input reader, sensor or gate), then fire on an input (a joint, the engine, a gate, a lamp, a
+  horn, a brake, a hinge's lock) to wire them; aim cuts a part's wires; R changes a logic part's setting (a timer's
+  period, a reader's key...). Refused wires say why. Every wire takes one tick, so a NOT wired into itself is a clock.
+- **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
+  with a speed and a strength (an overloaded lift sinks). Unwired, F works a motorised hinge or a piston like a door.
+- **Driving**: F on a seat to sit (the first seat drives, any other carries a passenger), W/S/A/D to drive, Space to
+  brake, F to get out. A vehicle needs a seat, an engine, fuel reaching the engine, a **transmission** touching the engine
+  and wheels on suspensions bolted to a **differential** it feeds; front wheels steer on **steering pivots**. Seated,
+  fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
+  deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
+- **Damage**: every part has its own health and armour. Shoot the cheap fuel line and the engine starves; shoot the
+  transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
+  from the seat falls away as a wreck.
 
 Parts and blueprints are data files (`Constructs/Parts`, `Constructs/Blueprints`; `--check-construct-parts` checks
 them), and a map gets the mode with a `"sandbox"` section. The design, the data format, the decisions made so far and
-what milestone 2 takes on are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
+what comes next are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
 
 ## Updates
 

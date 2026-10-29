@@ -39,12 +39,14 @@ public static unsafe partial class Program
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
         var cars = g.Constructs.Bodies.Where(b => b.CanDrive).ToList();
-        var gate = g.Constructs.Bodies.FirstOrDefault(b => b.JointCount > 0);
+        var gate = g.Constructs.Bodies.FirstOrDefault(b => b.JointCount > 0 && b.Joints[0].Type == JointType.Passive);
+        Construct? Having(string part) => g.Constructs.Bodies.FirstOrDefault(b => Enumerable.Range(0, b.PartCount).Any(i => b.DefOf(i).Name == part));
+        int Part(Construct b, string name, int nth = 0) => Enumerable.Range(0, b.PartCount).Where(i => b.DefOf(i).Name == name).Skip(nth).FirstOrDefault(-1);
         Console.WriteLine($"[sandboxshots] {g.Constructs.Bodies.Count} constructs, {g.Constructs.TotalParts} parts; {cars.Count} cars, gate {(gate != null ? "yes" : "no")}, phase {g.Phase}");
         if (cars.Count < 2)
             return;
-        var car = cars[0];
-        var other = cars[1];
+        var car = cars[^1]; // (the wired buggy: driven, then its lamps and wires)
+        var other = cars[0];
         me.Teleport(new Vector3(-20, 0, 18));
 
         void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false)
@@ -64,6 +66,7 @@ public static unsafe partial class Program
                     Gfx.SetBlend(true);
                     Gfx.SetDepthWrite(false);
                     ConstructRender.DrawGhosts(Gfx, now);
+                    ConstructRender.DrawWires(Gfx, g.Constructs);
                     Gfx.SetDepthWrite(true);
                     Gfx.SetBlend(false);
                 }
@@ -115,6 +118,13 @@ public static unsafe partial class Program
         var cd = car.WorldCom;
         Console.WriteLine($"[sandboxshots] drove to {cd.X:0.0}, {cd.Y:0.00}, {cd.Z:0.0} (driver {car.Driver}, can drive {car.CanDrive})");
         Shot("driven", cd + new Vector3(-6f, 3.5f, 5f), cd);
+        // Steering held while it stands still: the front wheels turn on their steering pivots.
+        g.HeldButtons = Buttons.Left | Buttons.Jump;
+        Run(0.8);
+        g.HeldButtons = Buttons.None;
+        var front = Vector3.Transform(car.SeatForward(), car.Rot);
+        cd = car.WorldCom;
+        Shot("steering", cd + front * 4.5f + new Vector3(0, 2.6f, 0) + Vector3.Cross(front, Vector3.UnitY) * 1.5f, cd);
         g.SandboxSend(CActKind.Stand);
         Run(0.2);
 
@@ -128,6 +138,55 @@ public static unsafe partial class Program
             var gc = gate.WorldCom;
             Shot("gate_open", gc + new Vector3(3.5f, 2.6f, 5.5f), gc + new Vector3(0, 1, 0));
             _ = door;
+        }
+
+        // Milestone 2: the motor gate opened by its button, the lift raised, the turret turned by its lever.
+        if (Having("Motor Hinge") is { } mg)
+        {
+            var bt = Part(mg, "Button");
+            g.SandboxHands.Use(g.Constructs, me.Id, ConstructRender.PartCentre(mg, bt) + new Vector3(0, 0.5f, -1.5f), mg.Id, bt);
+        }
+        if (Having("Piston") is { } lf)
+        {
+            var bt = Part(lf, "Button");
+            g.SandboxHands.Use(g.Constructs, me.Id, ConstructRender.PartCentre(lf, bt) + new Vector3(1.2f, 1f, 0), lf.Id, bt);
+        }
+        if (Having("Turntable") is { } tt)
+            tt.Parts[Part(tt, "Lever")].State = 1;
+        Run(3.2);
+        if (Having("Motor Hinge") is { } mg2)
+        {
+            var c2 = mg2.WorldCom;
+            Shot("motor_gate", c2 + new Vector3(4.5f, 2.8f, -5.5f), c2 + new Vector3(0.8f, 1, 0));
+            Console.WriteLine($"[sandboxshots] motor gate: door at {mg2.Joints[0].Angle * 180 / MathF.PI:0} deg");
+        }
+        if (Having("Piston") is { } lf2)
+        {
+            var c2 = lf2.WorldCom;
+            Shot("lift", c2 + new Vector3(5.5f, 3.5f, 5.5f), c2 + new Vector3(0, 1.2f, 0));
+            Console.WriteLine($"[sandboxshots] lift: piston at {lf2.Joints[0].Angle:0.00} m");
+        }
+        if (Having("Turntable") is { } tt2)
+        {
+            tt2.Parts[Part(tt2, "Lever")].State = 0;
+            Run(0.2);
+            var c2 = tt2.WorldCom;
+            Shot("turret", c2 + new Vector3(4.5f, 3.2f, 4.5f), c2 + new Vector3(0, 0.8f, 0));
+            Console.WriteLine($"[sandboxshots] turret: turntable at {tt2.Joints[0].Angle * 180 / MathF.PI:0} deg");
+        }
+        // The wired buggy: its lamps switched on (the toggle), and its wires as the linking tool shows them.
+        if (Having("Toggle") is { } wb && Part(wb, "Horn") >= 0)
+        {
+            wb.Parts[Part(wb, "Toggle")].State = 1;
+            Run(0.2);
+            var c2 = wb.WorldCom;
+            var f2 = Vector3.Transform(wb.SeatForward(), wb.Rot);
+            Shot("wired_buggy", c2 + f2 * 5f + new Vector3(1.5f, 2.2f, 0), c2);
+            ConstructRender.ShowWires = true;
+            ConstructRender.WireEye = c2;
+            Shot("wires", c2 + new Vector3(-3.5f, 3.4f, 2.5f), c2, ghosts: true);
+            Console.WriteLine($"[sandboxshots] wires: {ConstructRender.LastWires} drawn; lamps {wb.Parts[Part(wb, "Lamp")].Out}");
+            ConstructRender.ShowWires = false;
         }
 
         // Broken: a blast by the other buggy, then its suspension and fuel line shot off.

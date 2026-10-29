@@ -89,18 +89,52 @@ public static partial class SelfTest
         server.SandboxHands.Hand(a.LocalId).Held = ConstructParts.Need("Frame Block").Id; // (as if from the rack)
         a.SandboxSend(CActKind.PlaceNew, at: ConstructWorld.Ground(World.Query, sp.Position.X + 1.5f, sp.Position.Z), yaw: 0);
         Pump(server, [a], 0.5, ref now, clock);
-        var refused = a.SandboxNotice.Contains("tool");
+        var notice = a.SandboxNotice;
+        var refused = notice.Contains("tool");
         // A part the server breaks breaks on the client.
         var line = PartOf(car, PartRole.FuelLine);
         server.Constructs.DamagePart(car, line, 1000, out _);
         Pump(server, [a], 0.5, ref now, clock);
         copy = a.Constructs.Get(car.Id);
         var broke = copy != null && copy.PartCount == car.PartCount && !copy.CanDrive;
+        // Milestone 2: the motor gate's button (server side) swings its door; the client mirrors the joint, the wires and the signals.
+        var mgate = server.Constructs.Bodies.First(x => x.JointCount > 0 && x.Joints[0].Type == JointType.Motor);
+        var mbutton = PartNamed(mgate, "Button");
+        var bpos = ConstructRender.PartCentre(mgate, mbutton);
+        var pressed = server.SandboxHands.Use(server.Constructs, sp.Id, bpos + new Vector3(0, 0.5f, -1.5f), mgate.Id, mbutton);
+        var turret = server.Constructs.Bodies.First(x => x.JointCount > 0 && x.Joints[0].Type == JointType.Turntable);
+        turret.Parts[PartNamed(turret, "Lever")].State = 1; // (the lever forward: the turntable turns)
+        Pump(server, [a], 2.0, ref now, clock);
+        string Mirror(Game client)
+        {
+            ConstructNet.Blend(client.Constructs, now + 1, 0);
+            var worstJoint = 0f;
+            var wiresSame = client.Constructs.TotalWires == server.Constructs.TotalWires && server.Constructs.TotalWires > 0;
+            var signalsSame = true;
+            foreach (var sc in server.Constructs.Bodies)
+            {
+                if (client.Constructs.Get(sc.Id) is not { } cc || cc.JointCount != sc.JointCount || cc.WireCount != sc.WireCount)
+                    return "a construct's joints or wires differ";
+                for (var j = 0; j < sc.JointCount; j++)
+                    worstJoint = MathF.Max(worstJoint, MathF.Abs(World.WrapAngle(cc.Joints[j].Angle - sc.Joints[j].Angle)) * (sc.Joints[j].Slides ? 0 : 1));
+                for (var i = 0; i < sc.PartCount; i++)
+                    if (sc.Parts[i].D.IsSignal && ConstructLogic.Quantise(sc.Parts[i].Out) != ConstructLogic.Quantise(cc.Parts[i].Out) && sc.Parts[i].D.Logic != CLogic.Speed)
+                        signalsSame = false;
+            }
+            // (the turntable keeps turning: 45 deg/s for a pose interval and the round trip is a few degrees)
+            return worstJoint > 0.15f ? $"a joint is off by {worstJoint * 180 / MathF.PI:0.0} deg" : !wiresSame ? "the wires differ" : !signalsSame ? "a signal differs" : "";
+        }
+        var mirrorA = Mirror(a);
+        var openA = a.Constructs.Get(mgate.Id) is { } ma ? ma.Joints[0].Angle : 0;
         // A late joiner gets every construct.
         using var b = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Bravo", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [a, b], 1.5, ref now, clock);
+        var mirrorB = Mirror(b);
+        Line($"loopback, milestone 2: the motor gate's button {pressed ?? "ok"}, its door {mgate.Joints[0].Angle * 180 / MathF.PI:0} deg on the server and {openA * 180 / MathF.PI:0} deg on the client; the client mirrors joints, {a.Constructs.TotalWires} wires and signals: {(mirrorA.Length == 0 ? "yes" : mirrorA)}; the late joiner: {(mirrorB.Length == 0 ? "yes" : mirrorB)}");
+        if (pressed != null || mgate.Joints[0].Angle < 1.5f || mirrorA.Length > 0 || mirrorB.Length > 0)
+            Fail("constructs loopback: a client (or a late joiner) doesn't mirror the joints, wires and signals");
         var joined = b.Constructs.Bodies.Count == server.Constructs.Bodies.Count && b.Constructs.TotalParts == server.Constructs.TotalParts;
-        Line($"loopback: the client mirrors {a.Constructs.Bodies.Count} of {server.Constructs.Bodies.Count} constructs {mirrored}; sat in the buggy {seated}, drove it {drove:0.0} m with its own keys (its copy within {follow:0.00} m, the driver {driverFeet:0.00} m from the seat); stood up {stood}; bare-hands build refused {refused} (\"{a.SandboxNotice}\"); a broken fuel line mirrored {broke}; a late joiner got them all {joined}");
+        Line($"loopback: the client mirrors {a.Constructs.Bodies.Count} of {server.Constructs.Bodies.Count} constructs {mirrored}; sat in the buggy {seated}, drove it {drove:0.0} m with its own keys (its copy within {follow:0.00} m, the driver {driverFeet:0.00} m from the seat); stood up {stood}; bare-hands build refused {refused} (\"{notice}\"); a broken fuel line mirrored {broke}; a late joiner got them all {joined}");
         if (!mirrored)
             Fail("constructs loopback: the client doesn't mirror the server's constructs");
         if (!seated || drove < 3 || follow > 0.5f || driverFeet > 0.3f)
@@ -570,6 +604,14 @@ public static partial class SelfTest
         var car = w.Bodies.First(b => b.CanDrive);
         car.Driver = 1;
         car.DriverSeat = car.Root;
+        // Milestone 2's joints and logic busy too: the turret turning, the lift and the motor gate on their way.
+        foreach (var b in w.Bodies)
+        {
+            if (PartNamed(b, "Lever") is var lever and >= 0)
+                b.Parts[lever].State = 1;
+            if (PartNamed(b, "Button") is var button and >= 0)
+                b.Parts[button].Count = 30;
+        }
         var writer = new PacketWriter(16384);
         var cursor = 0;
         StepConstructs(w, 60, _ => ConstructEdits.DriveInput(car, Buttons.Forward | Buttons.Left, World.TickDt)); // (warm up: JIT, caches)
@@ -583,7 +625,8 @@ public static partial class SelfTest
         }
         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
         var ms = sw.Elapsed.TotalMilliseconds / 120;
-        Line($"steady state: {w.Bodies.Count} constructs ({w.Bodies.Count(b => !b.Asleep && !b.Anchored)} awake), {ConstructPhysics.LastContacts} contacts, {ConstructPhysics.LastRays} rays a tick; {bytes} bytes allocated in 120 ticks, {ms:0.000} ms a tick");
+        var moving = w.Bodies.Sum(b => b.Joints.AsSpan(0, b.JointCount).ToArray().Count(j => MathF.Abs(j.Vel) > 0.05f));
+        Line($"steady state: {w.Bodies.Count} constructs ({w.Bodies.Count(b => !b.Asleep && !b.Anchored)} awake, {moving} joints moving, {w.TotalWires} wires), {ConstructPhysics.LastContacts} contacts, {ConstructPhysics.LastRays} rays a tick; {bytes} bytes allocated in 120 ticks, {ms:0.000} ms a tick");
         if (bytes > 0)
             Fail($"constructs: {bytes} bytes allocated in 120 ticks of driving (should be none)");
         if (ms > 2.0)
