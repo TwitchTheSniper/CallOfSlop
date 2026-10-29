@@ -77,6 +77,7 @@ public sealed class CrowdView
             (host ? Host : Client).Clear();
         _lastHost = host;
         var agents = host ? Host : Client;
+        g.DrawnCrowd = agents; // (the game's crowd hit effects: ZombiesCrowdFx.cs)
         // A camera cut (a respawn, the spectator camera, a shot tool's next view): nobody saw the crowd in between, so the
         // agents start afresh, every cell filled at once, rather than catching up on caps and views.
         if (Vector3.DistanceSquared(cam, _lastCam) > CutMetres * CutMetres)

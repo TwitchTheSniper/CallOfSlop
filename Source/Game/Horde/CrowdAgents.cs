@@ -1144,6 +1144,38 @@ public sealed class CrowdAgents
         return true;
     }
 
+    /// <summary>The nearest standing agent to (x, z) within <paramref name="within"/> m (at most a cell), -1 if none.</summary>
+    public int NearestStanding(float x, float z, float within)
+    {
+        if (_n == 0 || Count == 0)
+            return -1;
+        var c = CellAt(x, z);
+        if (c < 0)
+            return -1;
+        if (_listFrame != Frame || _listCount != Count)
+            BuildLists();
+        return Nearest(c, x, z, MathF.Min(within, Cell), claimable: true);
+    }
+
+    /// <summary>The agent with number <paramref name="id"/> (<see cref="Id"/>), -1 if it is gone.</summary>
+    public int IndexOfId(uint id)
+    {
+        for (var i = 0; i < Count; i++)
+            if (Id[i] == id)
+                return i;
+        return -1;
+    }
+
+    /// <summary>The count the agents follow at (x, z) (0 off the grid).</summary>
+    public int WantAt(float x, float z)
+    {
+        var c = CellAt(x, z);
+        return c < 0 ? 0 : _want[c];
+    }
+
+    /// <summary>The ground under (x, z) as the agents stand on it.</summary>
+    public float GroundAt(float x, float z) => GroundY(x, z);
+
     /// <summary>Agent <paramref name="i"/> is killed (it sinks; its cell raises another if the count says so).</summary>
     public void Kill(int i)
     {
