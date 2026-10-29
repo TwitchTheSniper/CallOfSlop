@@ -42,7 +42,7 @@
   "extras": [
     {"type": "block", "min": [-4.15, 2.3, 3.12], "max": [4.15, 2.9, 3.25], "color": "$trim"},
     {"type": "awning", "rect": [-6.5, 5.5, 6.5, 13.0], "height": 4.6, "color": "$trim", "posts": true},
-    {"type": "block", "min": [-6.6, 4.0, 5.4], "max": [6.6, 4.48, 13.1], "color": "#f2f2ee"},
+    {"type": "block", "min": [-6.6, 4.0, 5.4], "max": [6.6, 4.45, 13.1], "color": "#f2f2ee"},
     {"type": "block", "min": [-3.4, 0, 8.6], "max": [-1.6, 0.18, 10.0], "color": {"color": "#a8a8a2", "material": "concrete"}},
     {"type": "block", "min": [1.6, 0, 8.6], "max": [3.4, 0.18, 10.0], "color": {"color": "#a8a8a2", "material": "concrete"}},
     {"type": "prop", "name": "Fuel Pump", "at": [-2.5, 0.18, 9.0], "yaw": 0},
