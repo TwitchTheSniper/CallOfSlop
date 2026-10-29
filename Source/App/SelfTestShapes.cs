@@ -22,18 +22,19 @@ public static partial class SelfTest
     /// </summary>
     private static readonly (string File, uint Hash)[] ShapeBaseline =
     [
-        ("01-ProtoBox", 0xa83dd7a5u), ("02-Courtyard", 0x9b62bfadu), ("03-Crossroads", 0x04fab23au),
-        ("05-LongShot", 0x9a88c69cu), ("06-Ziggurat", 0xd8b982f8u), ("07-Scrapyard", 0xdece740cu), ("08-Rooftops", 0x3601e902u),
-        ("09-Harbor", 0x56f96d12u), ("10-MarketStreet", 0xb8c3562au), ("11-Quarry", 0xc0f1d401u),
-        ("14-OfficePark", 0xbf692394u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x5b03f45fu),
-        ("17-Farmland", 0xfcc5a090u), ("18-Downtown", 0x2a9960f5u), ("19-Canyon", 0x03353c42u), ("20-Airfield", 0xf47d65a6u),
-        ("21-Village", 0x8004499bu), ("22-Industrial", 0x87c760edu), ("23-Highlands", 0xe932e450u), ("24-MilitaryBase", 0xe6122c44u),
-        ("25-Blueprint", 0xde9e3279u), ("26-Galleria", 0x429afd78u), ("27-Floodgate", 0xcb35e9deu), ("28-Trefoil", 0x39b08239u),
-        ("29-Citadel", 0x340e65a1u), ("30-Confluence", 0x3aad3033u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
-        ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0x59b1babcu), ("TerrainTest", 0x6ad80326u),
-        ("31-GravelPit", 0x1010fd2au), ("32-Hillfort", 0xddcb110bu), ("33-Riverbend", 0xa7be54dau),
+        ("01-ProtoBox", 0xa83dd7a5u), ("02-Courtyard", 0xe3534311u), ("03-Crossroads", 0x32d2876fu),
+        ("05-LongShot", 0x5dc41fa0u), ("06-Ziggurat", 0xd8b982f8u), ("07-Scrapyard", 0x607cf9a5u), ("08-Rooftops", 0xc4389c57u),
+        ("09-Harbor", 0xc9c70729u), ("10-MarketStreet", 0x56bbf266u), ("11-Quarry", 0xf2fbda89u),
+        ("14-OfficePark", 0xffd0db70u), ("15-Ruins", 0xe93ec317u), ("16-Overpass", 0x34febd6au),
+        ("17-Farmland", 0x489200ccu), ("18-Downtown", 0x399f96adu), ("19-Canyon", 0x3f65dd1au), ("20-Airfield", 0xf8af7f9fu),
+        ("21-Village", 0xbbc0b471u), ("22-Industrial", 0x513f58bau), ("23-Highlands", 0xe932e450u), ("24-MilitaryBase", 0xb5deb887u),
+        ("25-Blueprint", 0xde9e3279u), ("26-Galleria", 0x429afd78u), ("27-Floodgate", 0x4a22d535u), ("28-Trefoil", 0x22112141u),
+        ("29-Citadel", 0x1da8b2d5u), ("30-Confluence", 0x01cc3073u), ("FoliageTest", 0x8a733893u), ("MeshTest", 0xb7a01a63u),
+        ("PhysicsTest", 0x476984bcu), ("PropGallery", 0x3e664c24u), ("PropYard", 0xabe63286u), ("TerrainTest", 0x6ea98f95u),
+        ("31-GravelPit", 0xca7426b9u), ("32-Hillfort", 0xda1b684bu), ("33-Riverbend", 0x6c804618u),
         ("35-Ridgeline", 0xb945fc4au), // High Ground (Legacy 31-36): new fingerprints since the foliage no-go rules
         // (Warehouse 9, Train Yard, Adobe Mesa and Alpine Pass dropped: their stairs were rebuilt for 2.1 m headroom)
+        // 2026-10-28: the maps with the walk-in "Building" op re-pinned (fix/building-clipping: its floor slabs moved inside the walls)
     ];
 
     private static readonly List<string> ShapeNotes = new();
