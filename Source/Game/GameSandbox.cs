@@ -534,7 +534,7 @@ public sealed partial class Game
         }
     }
 
-    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint;
+    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
@@ -584,7 +584,11 @@ public sealed partial class Game
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
-            lines.Add(new HudLine("F at the rack or I (parts menu): take a part. 3 wrench, 4 welder, 5 linking tool, 1/2 guns", dim));
+        {
+            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode()))
+                _sbKeys.Text = $"F at the rack or I (parts menu): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
+            lines.Add(new HudLine(_sbKeys.Text, dim));
+        }
         else
         {
             if (_sbHint.Stale(held.Id))
@@ -595,6 +599,9 @@ public sealed partial class Game
 
     /// <summary>What the crosshair is on (set by the client's look each frame; Program.Sandbox.cs).</summary>
     public string SandboxLookText = "";
+
+    /// <summary>The tool wheel key's name (set by the client every frame; Program.SandboxWheel.cs), for the HUD's key line.</summary>
+    public string SandboxWheelKey = "Mouse Middle";
 
     /// <summary>The linking tool's wire in progress (Program.Sandbox.cs), for the HUD.</summary>
     public string SandboxWireFrom = "";

@@ -214,6 +214,7 @@ public static partial class SelfTest
         Section("Map logic", CheckMapLogic); // map events: refusals, the Logic Test map's doors and nav links, mover control, determinism, no allocations, a loopback (SelfTestMapLogic.cs)
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)
         Section("Sandbox parts menu", CheckSandboxPartsMenu); // SelfTestSandboxPartsMenu.cs: the Sandbox debug parts menu: parts by id, blueprints, the map flag, the window headless (no allocation)
+        Section("Sandbox tool wheel", CheckSandboxToolWheel); // SelfTestSandboxToolWheel.cs: the radial widget's maths, the tool wheel's hold-flick-release picks, cancels and closing, headless with no allocation, over the wire
         Section("Construct logic", CheckConstructLogic); // SelfTestConstructLogic.cs: milestone 2: moving joints, logic and wires, the linking tool, drivetrain parts, riding, run-over
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard

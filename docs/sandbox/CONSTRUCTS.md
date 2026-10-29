@@ -26,9 +26,42 @@ north-west corner) and some loose parts.
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
 | I | The debug **parts menu** (below): any part into your hands, any blueprint in front of you. I or Esc closes it. |
+| Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+
+### The tool wheel (decision 17)
+
+The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
+(`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
+Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
+clockwise from the top: **wrench** (N), hoist (NE), **welder** (E), configure tool (SE), **hands / gun** (S: out of
+build mode), scanner (SW), **linking tool** (W), hand drill (NW). The four tools that exist sit on the compass points, so
+the easiest flicks reach them; the four from the design's tool list that don't exist yet sit on the diagonals, greyed out
+with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
+mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
+another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
+orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
+with a green inner arc and dot. Letting go takes the tool out through the very request the number keys send
+(`CActKind.Tool`, server-authoritative), so nothing on the wire changed (protocol 79) and the number keys stay as the
+favourites. Letting go in the middle cancels. You keep walking while it's open; the mouse buttons don't reach the gun or
+the tools meanwhile (so opening it lets go of a fit in progress). It doesn't open in a seat ("get out of the seat
+first"), and it closes without choosing on death, any menu (the parts menu included: only one is open at a time), the
+chat, or the match ending; a key still held after that doesn't reopen it.
+
+The widget is generic (`Source/UI/RadialMenu.cs`): items with a label, a hint, a note, an enabled flag and an icon id; the
+owner opens it, feeds it mouse movement and asks which segment was chosen on release; it draws with ImGui's draw list
+(annular sectors, arcs, the icons through a delegate) and allocates nothing per frame. It is meant to be reused for parts
+to place, logic components, pings or emotes. The Sandbox wheel is `Source/UI/SandboxToolWheel.cs` (its icons are simple
+shapes from lines and boxes: an open-jaw wrench, a torch with sparks, two terminals and a wire, a box pistol, a hook on a
+chain, three sliders, a handset with waves, a drill); `Source/App/Program.SandboxWheel.cs` hooks it into the frame.
+
+Choices made for the wheel (the developer may change them): the middle mouse button, not Q (Q swaps weapons); the wheel
+sits at the screen centre (the cursor is captured, so "around the cursor" is the centre); the tools still to come are
+shown greyed rather than left off (eight segments read cleanly as a compass, and they show what is planned); it is
+closed in a seat (seated keys belong to the construct's input readers); no tool modes ring or second page yet (no tool
+has modes); no stick support yet (no Steam Input in the game).
 
 ### The debug parts menu
 
@@ -259,9 +292,19 @@ window draws headless (every part listed, a search narrows it, a pick puts the p
 the window) with no ImGui error and no allocation per frame while open; a real client's part by id and blueprint go over
 the wire; and outside Sandbox a blueprint spawn is refused.
 
+The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): the direction-to-segment maths (every
+segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
+isn't a number), the pointer held at its reach so one flick turns it; the key (an unshared middle mouse button; binds
+version 9 files get it, one that already used the button keeps it); in an offline Sandbox game a scripted
+hold-flick-release takes out the welder (east), wrench (north), linking tool (west) and hands (south), the current tool is
+marked when it opens, letting go in the dead zone cancels, the hoist says "coming later" and changes nothing, a menu and
+death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
+frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
+server.
+
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
-wires (the linking tool's view), a broken buggy, and the debug parts menu (open, searched, and a buggy spawned from it) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
+wires (the linking tool's view), a broken buggy, the debug parts menu (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
 
 ## Decisions made for milestone 1 (open questions it touches; the developer may change them)
 
