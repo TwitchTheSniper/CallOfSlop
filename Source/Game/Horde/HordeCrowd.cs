@@ -16,6 +16,27 @@ public sealed class CrowdTuning
     /// </summary>
     public float PromoteRange = 22f, DemoteRange = 34f, DemoteSeconds = 2f;
 
+    /// <summary>
+    /// Waking and sleeping by sight (docs/zombies/MASS-HORDE.md, "Waking and sleeping"): a zombie a player can see (inside
+    /// the view of <see cref="SightHalfAngle"/> degrees either side and <see cref="SightHalfAngleV"/> up and down of
+    /// their look, and not behind the ground) counts at its distance; one nobody sees counts <see cref="UnseenWeight"/>
+    /// times as far, so the promote and demote ranges apply to it that much nearer. With the individual tier full and a
+    /// crowd zombie waiting, an individual counting <see cref="SwapMargin"/> m further than the nearest waiting one goes
+    /// back to the crowd (unseen ones first), once it has been awake <see cref="MinAwake"/> s and unseen for
+    /// <see cref="UnseenGrace"/> s.
+    /// </summary>
+    public float SightHalfAngle = 62f, SightHalfAngleV = 42f, UnseenWeight = 2.5f, SwapMargin = 8f, MinAwake = 3f, UnseenGrace = 1f;
+
+    /// <summary>
+    /// A crowd zombie waiting to be promoted (the individual tier full) still presses on at this share of its pace,
+    /// until it is within <see cref="HoldRange"/> m of a player, so the front closes up behind the individuals instead of
+    /// standing at the promote range.
+    /// </summary>
+    public float HeldPace = 0.5f, HoldRange = 5f;
+
+    /// <summary>On a crowd map, individuals close in on a player within this arc (degrees) round the side they came from, not from all round.</summary>
+    public float SurroundArc = 120f;
+
     /// <summary>Most promotions and demotions a tick (the tick's cost stays flat when a wave arrives).</summary>
     public int PromotePerTick = 6, DemotePerTick = 4;
 
@@ -126,6 +147,13 @@ public sealed partial class HordeCrowd
 
     public long[] Born = [];
 
+    /// <summary>
+    /// Waking and sleeping: the tick before which a zombie just put to sleep isn't woken again unless it is near enough
+    /// to wake unseen (an individual demoted by <see cref="Game.CrowdTick"/>; 0 otherwise), so nothing flickers between
+    /// the tiers as a player turns.
+    /// </summary>
+    public long[] RestUntil = [];
+
     /// <summary>Particles alive in the crowd (indices 0..Count-1).</summary>
     public int Count;
 
@@ -181,8 +209,19 @@ public sealed partial class HordeCrowd
     public long Ticks, Thinks, Promoted, Demoted, FlowBuilds, Blocked;
     public double FlowMs, FlowWorstMs, TickMs;
 
-    /// <summary>Particles inside the promote range this tick (waiting or about to be promoted).</summary>
+    /// <summary>Particles inside the promote range this tick (waiting or about to be promoted), by how near they count (<see cref="CrowdSight.Score"/>).</summary>
     public int Near;
+
+    /// <summary>How near the nearest of them counts (m; <see cref="float.MaxValue"/>: none), and how many of them a player sees.</summary>
+    public float NearBest;
+
+    public int NearSeen;
+
+    /// <summary>
+    /// What the players see (set by the game each tick before <see cref="Tick"/>: CrowdSight.cs). With no views, a
+    /// particle counts at its plain distance (as before sight).
+    /// </summary>
+    public readonly CrowdSight Sight = new();
 
     // ---- The flow field --------------------------------------------------------------------------------
 
@@ -230,7 +269,7 @@ public sealed partial class HordeCrowd
     /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
     public int FlowCells => _cols * _rows;
 
-    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8 + 4 + 8 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
@@ -324,6 +363,7 @@ public sealed partial class HordeCrowd
         Array.Resize(ref HP, n);
         Array.Resize(ref Look, n);
         Array.Resize(ref Born, n);
+        Array.Resize(ref RestUntil, n);
         var m = n + Game.MaxZombies;
         _sItem = new int[m];
         _sX = new float[m];
@@ -395,6 +435,7 @@ public sealed partial class HordeCrowd
         HP[i] = hp;
         Look[i] = h;
         Born[i] = long.MinValue;
+        RestUntil[i] = 0;
         return i;
     }
 
@@ -418,6 +459,7 @@ public sealed partial class HordeCrowd
         HP[i] = HP[last];
         Look[i] = Look[last];
         Born[i] = Born[last];
+        RestUntil[i] = RestUntil[last];
     }
 
     public static uint Hash(uint x)
@@ -469,7 +511,13 @@ public sealed partial class HordeCrowd
         var pr2 = Tuning.PromoteRange * Tuning.PromoteRange;
         var want = Math.Min(Math.Min(canPromote, Tuning.PromotePerTick), Candidates.Length);
         CandidateCount = 0;
-        Near = 0;
+        Near = NearSeen = 0;
+        NearBest = float.MaxValue;
+        var promote = Tuning.PromoteRange;
+        var sight = Sight.Views > 0 ? Sight : null;
+        var unseenW = MathF.Max(1f, Tuning.UnseenWeight);
+        var heldPace = Math.Clamp(Tuning.HeldPace, 0f, 1f);
+        var hold2 = Tuning.HoldRange * Tuning.HoldRange;
         var parity = (int)(tick & 1);
         var sepR = Tuning.SeparationRadius;
         var sepS = Tuning.SeparationStrength;
@@ -505,11 +553,29 @@ public sealed partial class HordeCrowd
                 else
                     Think(i, x, z, bt >= 0 ? tx[bt] : x, bt >= 0 ? tz[bt] : z, best);
             }
-            if (best < pr2)
+            // How near it counts: its distance, or further when nobody sees it (CrowdSight.Score), so the players' view
+            // wakes first and what they can't see waits nearer.
+            var score = best < pr2 ? MathF.Sqrt(best) : float.MaxValue;
+            var seen = true;
+            var wait = false;
+            if (sight != null && score < promote)
+            {
+                score = sight.Score(x, GroundAt(x, z) + 1f, z, out seen, out var nearest);
+                if (RestUntil[i] > tick && nearest * unseenW >= promote)
+                    score = float.MaxValue; // (just put to sleep: it rests a moment unless it's near enough to wake unseen)
+                // Unseen with the individual tier full: it waits just outside the range it would wake in unseen (nobody
+                // sees it stand), so the tier's room goes to what the players see; seen again, it presses on.
+                wait = !seen && canPromote <= 0 && nearest * unseenW < promote + unseenW;
+            }
+            if (score < promote)
             {
                 Near++;
+                if (seen)
+                    NearSeen++;
+                if (score < NearBest)
+                    NearBest = score;
                 if (want > 0)
-                    Offer(i, best, want);
+                    Offer(i, score * score, want);
                 Held[i] = true;
             }
             else
@@ -520,7 +586,9 @@ public sealed partial class HordeCrowd
             }
             if ((i & 1) == parity)
                 Separate(i, x, z, sepR, sepS);
-            var spd = Held[i] || Hold ? 0f : Spd[i];
+            // Waiting for the individual tier: pressing on behind the front at a slower pace (the individuals push it back),
+            // standing only near a player; held by the map (a staging countdown): standing.
+            var spd = Hold || wait ? 0f : Held[i] ? (best > hold2 ? Spd[i] * heldPace : 0f) : Spd[i];
             var wx = DX[i] * spd + PX[i];
             var wz = DZ[i] * spd + PZ[i];
             // Ease towards the wanted velocity (a quarter a tick: about 0.07 s to turn).
@@ -1082,6 +1150,13 @@ public sealed partial class HordeCrowd
                 counts[k]++;
             _dvx[k] += VX[i];
             _dvz[k] += VZ[i];
+            if (Held[i])
+            {
+                // Waiting to be promoted, held back by the front: it still faces and presses the way it is heading (a
+                // client draws the cell shuffling on, not standing).
+                _dvx[k] += DX[i] * 0.1f;
+                _dvz[k] += DZ[i] * 0.1f;
+            }
         }
         // The mass's counts (on the same grid when the cell sizes agree: the network's is the mass's).
         if (MassTotal > 0 && MathF.Abs(cell - _mCell) < 1e-4f && MassCount.Length == n)

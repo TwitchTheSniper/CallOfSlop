@@ -10,6 +10,12 @@ namespace CallOfSlop;
 /// healthy individuals far from everyone go back to the crowd (hysteresis: promote under 22 m, demote over 34 m held
 /// for 2 s). Counts always add up: crowd + alive + killed = the round's total. Every other map: nothing here runs.
 /// </summary>
+public sealed partial class Zombie
+{
+    /// <summary>A crowd map (ZombiesCrowd.cs): when it was promoted out of the crowd (woken), and when a player last saw it.</summary>
+    public double CrowdWokeAt, CrowdSeenAt;
+}
+
 public sealed partial class Game
 {
     /// <summary>The crowd tier (server; empty on every map without "crowd").</summary>
@@ -96,51 +102,80 @@ public sealed partial class Game
         if (zm.Stress is { } stress)
             StressTick(stress, now); // a stress map: staging, descent, merge, waves (ZombiesCrowdStress.cs)
         var tuning = Crowd.Tuning;
-        // The players standing, in id order.
+        // The players standing, in id order: the crowd's targets, and the views it wakes and sleeps by (CrowdSight.cs).
         var targets = 0;
+        var sight = Crowd.Sight;
+        sight.Begin(tuning);
         for (var id = 0; id < 256 && targets < _crowdTX.Length; id++)
             if (Players.TryGetValue((byte)id, out var p) && IsStanding(p))
             {
                 _crowdTX[targets] = p.Position.X;
                 _crowdTZ[targets] = p.Position.Z;
+                sight.AddView(p.Position + new Vector3(0, World.EyeHeight, 0), p.Yaw, p.Pitch);
                 targets++;
             }
             else if (id > 0 && Players.Count == 0)
                 break;
+        if (ServerTick % Math.Max(1, tuning.NetEvery) == 0 || _crowdSightViews != targets)
+            sight.Occlude(tuning.DemoteRange + 6f); // (the ground between each player and the cells near them, every few ticks)
+        _crowdSightViews = targets;
 
-        // Demote: healthy, plain chasing individuals far from everyone for a while go back to the crowd.
+        // Demote (put to sleep): a healthy, plain chasing individual that has been awake a while goes back to the crowd when
+        // it counts as far (CrowdSight.Score: its distance, or further when nobody has seen it for a moment) for a while,
+        // or, with the individual tier full and crowd zombies waiting, when it counts clearly further than the nearest of
+        // them (the furthest-counting first, so what the players can't see sleeps first and what they can see wakes).
         var alive = 0;
         var demoted = 0;
-        var dr2 = tuning.DemoteRange * tuning.DemoteRange;
+        var pressure = Crowd.Near > 0 && _zAlive >= CrowdIndividualCap ? Crowd.NearBest + tuning.SwapMargin : float.MaxValue;
+        _crowdSleepN = 0;
         for (var i = Horde.Count - 1; i >= 0; i--)
         {
             var z = Horde[i];
             if (z.State == ZState.Dead)
                 continue;
-            if (demoted < tuning.DemotePerTick && targets > 0 && z.State == ZState.Chase && now - z.StateAt >= tuning.DemoteSeconds
-                && z.Health == z.MaxHealth && z.Limbs == 0 && z.BurnUntil <= now && z.StunnedUntil <= now && z.SlowUntil <= now && Crowd.Count < Crowd.X.Length)
-            {
-                var pos = z.Position;
-                var far = true;
-                for (var t = 0; t < targets && far; t++)
-                {
-                    var dx = _crowdTX[t] - pos.X;
-                    var dz = _crowdTZ[t] - pos.Z;
-                    far = dx * dx + dz * dz > dr2;
-                }
-                if (far)
-                {
-                    var v = (pos - z.PrevPos) / World.TickDt;
-                    Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick, z.Health);
-                    Horde.RemoveAt(i);
-                    _zById.Remove(z.Id);
-                    FreeZombieSlot(z);
-                    Crowd.Demoted++;
-                    demoted++;
-                    continue;
-                }
-            }
             alive++;
+            if (targets == 0)
+                continue;
+            var pos = z.Position;
+            var score = sight.Score(pos.X, pos.Y + 1f, pos.Z, out var seen, out var nearest);
+            if (seen)
+                z.CrowdSeenAt = now;
+            if (now - z.CrowdSeenAt < tuning.UnseenGrace)
+                score = nearest; // (seen a moment ago: it counts at its distance a little longer)
+            if (z.State != ZState.Chase || now - z.CrowdWokeAt < tuning.MinAwake || z.Health != z.MaxHealth || z.Limbs != 0
+                || z.BurnUntil > now || z.StunnedUntil > now || z.SlowUntil > now)
+                continue;
+            var far = score > tuning.DemoteRange && now - z.StateAt >= tuning.DemoteSeconds;
+            // (Never swapped out near the range it would wake again unseen: a zombie at the player's back stays awake, and
+            // one put to sleep doesn't walk back into that range while it rests.)
+            if (far || score > pressure && nearest * MathF.Max(1f, tuning.UnseenWeight) > tuning.PromoteRange + tuning.SwapMargin)
+                CrowdSleepOffer(i, far ? float.MaxValue : score, tuning.DemotePerTick);
+        }
+        // The chosen ones, highest index first (removing one leaves the lower indices where they are).
+        CrowdSleepSort();
+        for (var k = 0; k < _crowdSleepN && Crowd.Count < Crowd.X.Length; k++)
+        {
+            var i = _crowdSleepIdx[k];
+            var z = Horde[i];
+            var pos = z.Position;
+            var v = (pos - z.PrevPos) / World.TickDt;
+            var pi = Crowd.Add(pos.X, pos.Z, v.X, v.Z, z.Id, ServerTick, z.Health);
+            if (pi >= 0)
+            {
+                Crowd.RestUntil[pi] = ServerTick + (long)(tuning.MinAwake * World.TickRate);
+                CrowdNoteSleep(Crowd.Look[pi], now);
+            }
+            sight.Score(pos.X, pos.Y + 1f, pos.Z, out var seenNow, out _);
+            if (seenNow)
+                CrowdSleptSeen++;
+            else
+                CrowdSleptUnseen++;
+            Horde.RemoveAt(i);
+            _zById.Remove(z.Id);
+            FreeZombieSlot(z);
+            Crowd.Demoted++;
+            demoted++;
+            alive--;
         }
 
         // The individuals push the crowd's particles.
@@ -178,17 +213,98 @@ public sealed partial class Game
             var vx = Crowd.VX[i];
             var vz = Crowd.VZ[i];
             var hp = Crowd.HP[i];
+            CrowdNoteWake(Crowd.Look[i], now);
+            if (sight.Views > 0)
+            {
+                sight.Score(at.X, at.Y + 1f, at.Z, out var seenNow, out _);
+                if (seenNow)
+                    CrowdWokeSeen++;
+                else
+                    CrowdWokeUnseen++;
+            }
             Crowd.RemoveAt(i);
             var z = SpawnZombie(zm, spawner, now, at, type: 0); // (a walker: the crowd carries no types yet, see HordeCrowd.Mass.cs; ZombieTypes.cs)
             z.Health = Math.Clamp((int)MathF.Ceiling(hp), 1, z.MaxHealth); // (a crowd zombie hurt by a blast stays hurt)
             z.Window = -1;
             z.Area = zm.AreaAt(at);
             SetZState(z, ZState.Chase, now); // (straight in: no rising out of the ground)
+            z.CrowdWokeAt = z.CrowdSeenAt = now;
             if (vx * vx + vz * vz > 1e-4f)
                 z.Yaw = z.RenderYaw = MathF.Atan2(vx, -vz);
             _zAlive++;
             Crowd.Promoted++;
         }
+    }
+
+    // ---- Waking and sleeping by sight (docs/zombies/MASS-HORDE.md, "Waking and sleeping") ------------------------
+
+    private int _crowdSightViews = -1;
+    private readonly int[] _crowdSleepIdx = new int[64];
+    private readonly float[] _crowdSleepScore = new float[64];
+    private int _crowdSleepN;
+
+    /// <summary>Keeps the <paramref name="want"/> individuals that count furthest (insertion, furthest first).</summary>
+    private void CrowdSleepOffer(int i, float score, int want)
+    {
+        want = Math.Min(want, _crowdSleepIdx.Length);
+        if (want <= 0)
+            return;
+        var n = _crowdSleepN;
+        if (n == want && score <= _crowdSleepScore[n - 1])
+            return;
+        var k = n < want ? n++ : n - 1;
+        while (k > 0 && _crowdSleepScore[k - 1] < score)
+        {
+            _crowdSleepScore[k] = _crowdSleepScore[k - 1];
+            _crowdSleepIdx[k] = _crowdSleepIdx[k - 1];
+            k--;
+        }
+        _crowdSleepScore[k] = score;
+        _crowdSleepIdx[k] = i;
+        _crowdSleepN = n;
+    }
+
+    /// <summary>The chosen individuals by index, highest first.</summary>
+    private void CrowdSleepSort()
+    {
+        for (var a = 1; a < _crowdSleepN; a++)
+            for (var b = a; b > 0 && _crowdSleepIdx[b] > _crowdSleepIdx[b - 1]; b--)
+                (_crowdSleepIdx[b], _crowdSleepIdx[b - 1]) = (_crowdSleepIdx[b - 1], _crowdSleepIdx[b]);
+    }
+
+    // The latest zombies put to sleep (their particle's look) and when: one woken again soon after is a flicker (counted).
+    private const int CrowdSleepRing = 128;
+    private readonly uint[] _crowdSleptLook = new uint[CrowdSleepRing];
+    private readonly double[] _crowdSleptAt = new double[CrowdSleepRing];
+    private int _crowdSleptN;
+
+    /// <summary>Zombies woken within <see cref="CrowdFlickerSeconds"/> of being put to sleep (self-test: no flicker over a turn).</summary>
+    public int CrowdRewoken;
+
+    public const double CrowdFlickerSeconds = 3;
+
+    /// <summary>Individuals put to sleep that a player sees, and that nobody does (self-test, log).</summary>
+    public int CrowdSleptSeen, CrowdSleptUnseen;
+
+    /// <summary>Crowd zombies woken (promoted) that a player saw, and that nobody did (near enough to wake unseen; self-test, log).</summary>
+    public int CrowdWokeSeen, CrowdWokeUnseen;
+
+    private void CrowdNoteSleep(uint look, double now)
+    {
+        var k = _crowdSleptN++ & (CrowdSleepRing - 1);
+        _crowdSleptLook[k] = look;
+        _crowdSleptAt[k] = now;
+    }
+
+    private void CrowdNoteWake(uint look, double now)
+    {
+        for (var k = 0; k < Math.Min(_crowdSleptN, CrowdSleepRing); k++)
+            if (_crowdSleptLook[k] == look && now - _crowdSleptAt[k] < CrowdFlickerSeconds)
+            {
+                CrowdRewoken++;
+                _crowdSleptAt[k] = double.MinValue;
+                return;
+            }
     }
 
     /// <summary>A crowd zombie's health in round <paramref name="round"/>: an individual walker's (the round's health and the walker type's multiplier, as TypeSetup gives it).</summary>

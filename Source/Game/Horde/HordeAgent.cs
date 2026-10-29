@@ -184,6 +184,15 @@ public sealed class HordeMember
     /// <summary>The angle it closes in from when surrounding its target (from its id).</summary>
     public float SurroundAngle;
 
+    /// <summary>
+    /// On a crowd map (<see cref="HordeController{T}.SurroundArc"/>): the side of its target it came from (an angle round
+    /// it, kept from when it was last outside the surround range), which it closes in on and walks back to if the press
+    /// pushes it round.
+    /// </summary>
+    public float HomeAngle;
+
+    public bool HomeSet;
+
     /// <summary>When it last changed group (hysteresis: it doesn't flip every think).</summary>
     public double GroupSince;
 
@@ -222,6 +231,8 @@ public sealed class HordeMember
         QueueRank = -1;
         QueueSpot = default;
         SurroundAngle = 0;
+        HomeAngle = 0;
+        HomeSet = false;
         GroupSince = 0;
         Index = 0;
         Straight = false;

@@ -1288,6 +1288,15 @@ public sealed class ZombiesRules
                             case "promotePerTick": c.PromotePerTick = Whole(v, w, 1, 64); break;
                             case "demotePerTick": c.DemotePerTick = Whole(v, w, 0, 64); break;
                             case "individualCap": c.IndividualCap = Whole(v, w, 1, Game.MaxZombies); break;
+                            case "sightHalfAngle": c.SightHalfAngle = Real(v, w, 10, 179); break;
+                            case "sightHalfAngleV": c.SightHalfAngleV = Real(v, w, 10, 89); break;
+                            case "unseenWeight": c.UnseenWeight = Real(v, w, 1, 20); break;
+                            case "swapMargin": c.SwapMargin = Real(v, w, 0, 100); break;
+                            case "minAwake": c.MinAwake = Real(v, w, 0, 60); break;
+                            case "unseenGrace": c.UnseenGrace = Real(v, w, 0, 10); break;
+                            case "heldPace": c.HeldPace = Real(v, w, 0, 1); break;
+                            case "holdRange": c.HoldRange = Real(v, w, 0, 100); break;
+                            case "surroundArc": c.SurroundArc = Real(v, w, 0, 360); break;
                             case "speed": c.Speed = Real(v, w, 0.1f, 10); break;
                             case "speedSpread": c.SpeedSpread = Real(v, w, 0, 0.9f); break;
                             case "separationRadius": c.SeparationRadius = Real(v, w, 0.3f, 3); break;

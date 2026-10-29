@@ -105,6 +105,7 @@ public static partial class SelfTest
         void Tick(int t, bool measure)
         {
             now += World.TickDt;
+            me.Yaw += MathF.Tau / 4 * World.TickDt; // (the player looks round, a full turn in 4 s: the crowd wakes by sight, MASS-HORDE.md "Waking and sleeping")
             var a0 = GC.GetAllocatedBytesForCurrentThread();
             cpuTimer.Start();
             var c0 = ThreadCpu.NowMs();

@@ -68,6 +68,7 @@ public sealed partial class Game
     /// <summary>The map's portals (one per window, with its queue spots), set up once per map and rules.</summary>
     private void HordeSetup(ZombiesMap zm)
     {
+        HordeAI.SurroundArc = CrowdOn ? Math.Clamp(ZRules.Crowd.SurroundArc, 0f, 360f) * MathF.PI / 180f : MathF.Tau; // (a crowd map: from the horde's side)
         if (ReferenceEquals(_hordeMap, World.Map) && ReferenceEquals(_hordeRules, ZRules) && HordeAI.Portals.Length == zm.Windows.Count)
             return;
         _hordeMap = World.Map;

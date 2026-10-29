@@ -12,7 +12,8 @@ namespace CallOfSlop;
 /// <c>N</c> times as fast (3 by default, so a run takes a minute or two): pictures from above the Overlook and from the
 /// player's eye while the hordes wait on their pads, as they descend, when they have merged and as they advance, with
 /// the tier counts, the crowd's tick and the instances drawn in the log ("[stressshots]"). Uses the smoke test's
-/// throwaway save copy; runs under a virtual X server with Mesa's software GL.
+/// throwaway save copy; runs under a virtual X server with Mesa's software GL. <c>--stress-shots wake</c>: the horde
+/// round the player instead (Program.WakeShots.cs).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -21,6 +22,11 @@ public static unsafe partial class Program
     private static void RunStressShots(string[] args)
     {
         var arg = args.SkipWhile(a => !a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--"));
+        if (arg != null && arg.Equals("wake", StringComparison.OrdinalIgnoreCase))
+        {
+            RunWakeShots(args); // --stress-shots wake: a horde round the player on the valley floor (Program.WakeShots.cs)
+            return;
+        }
         var size = arg != null && int.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 10000;
         var sp = args.SkipWhile(a => !a.Equals("--stress-speed", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault();
         var speed = sp != null && float.TryParse(sp, NumberStyles.Float, CultureInfo.InvariantCulture, out var f) ? Math.Clamp(f, 0.25f, 20f) : 3f;

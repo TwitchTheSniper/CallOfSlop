@@ -234,9 +234,12 @@ public sealed class CrowdInstances
             var moving = vx * vx + vz * vz > 0.04f;
             var yaw = moving ? MathF.Atan2(vx, -vz) : MathF.Atan2(c.DX[i], -c.DZ[i]);
             var h = c.Look[i];
-            // Metres walked: along its heading (continuous while it walks; a held one stands in its last pose).
+            // Metres walked: along its heading (continuous while it walks); one waiting to be promoted and held back by the
+            // front shuffles on the spot (CrowdAgents.JamPace).
             var f = World.FlatForward(yaw);
             var walked = x * f.X + z * f.Z + (h >> 10 & 255) / 64f;
+            if (!moving && c.Held[i])
+                walked += _ptick * World.TickDt * c.Spd[i] * CrowdAgents.JamPace;
             var age = _ptick - c.Born[i];
             var sink = age >= 0 && age < RiseTicks ? (1f - age / (float)RiseTicks) * CrowdAgents.SinkDepth : 0f;
             var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
