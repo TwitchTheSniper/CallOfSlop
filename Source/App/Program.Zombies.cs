@@ -297,8 +297,11 @@ public static unsafe partial class Program
             DrawCrowd(now); // a mass-horde map: the crowd, instanced with baked animation (Renderer.Crowd.cs)
     }
 
+    /// <summary>The crowd's frame: its persistent agents and this frame's instances (CrowdView.cs).</summary>
+    public static readonly CrowdView Crowd = new();
+
     /// <summary>This frame's crowd instances (reused).</summary>
-    private static readonly CrowdInstances CrowdInst = new();
+    private static CrowdInstances CrowdInst => Crowd.Inst;
 
     /// <summary>"--crowd-tiers": the mass horde's tier colours (crowd yellow, held back orange, a red marker on each individual).</summary>
     public static bool CrowdTiers;
@@ -306,7 +309,7 @@ public static unsafe partial class Program
     /// <summary>Shots: the host draws its own picture of the cells, as a client would (Program.CrowdShots.cs).</summary>
     public static bool CrowdAsClient;
 
-    /// <summary>CPU ms of the last frame's crowd instances (culling, levels of detail, placing).</summary>
+    /// <summary>Wall-clock ms of the last frame's crowd preparation (culling, agents, levels of detail, placing; all its threads).</summary>
     public static double CrowdPrepMs;
 
     /// <summary>The last frame's crowd instances per level of detail and those culled (the F9 window).</summary>
@@ -315,24 +318,17 @@ public static unsafe partial class Program
     private static readonly Vector3 IndividualRed = new(0.95f, 0.12f, 0.1f);
 
     /// <summary>
-    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles, a client its picture of the
-    /// cells (Msg.ZCrowd); culled by the view, three levels of detail by distance, one instanced draw each.
+    /// The mass horde's crowd (docs/zombies/MASS-HORDE.md): the host draws its particles as they are and its mass cells
+    /// as persistent agents; a client draws its picture of the cells (Msg.ZCrowd) as persistent agents. Culled by the
+    /// view, the fog and the terrain's horizon, three levels of detail by distance, one instanced draw each.
     /// </summary>
     private static void DrawCrowd(double now)
     {
-        var t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-        var inst = CrowdInst;
-        inst.DebugMix = CrowdTiers ? 1f : 0f;
-        inst.DrawCap = _game.ZRules.Crowd.DrawCap;
-        inst.MassTime = now;
-        inst.MassSpeed = _game.ZRules.Crowd.Speed;
-        inst.Ground = World.Map.Terrain; // (a terrain map: the crowd stands on the ground)
-        inst.Begin();
-        if (_game.IsServer && _game.Crowd.Total > 0 && !CrowdAsClient)
-            inst.FromHost(_game.Crowd, Gfx.CameraPosition);
-        else
-            inst.FromPicture(_game.CrowdSeen, Gfx.CameraPosition, now, _game.ZRules.Crowd.Speed);
-        CrowdPrepMs = System.Diagnostics.Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
+        Crowd.AsClient = CrowdAsClient;
+        Crowd.Tiers = CrowdTiers;
+        Crowd.Prepare(_game, Gfx.CameraPosition, now, Gfx.FogRange.Y > Gfx.FogRange.X ? Gfx.FogRange.Y : 0f);
+        var inst = Crowd.Inst;
+        CrowdPrepMs = Crowd.PrepMs;
         (CrowdDrawnNear, CrowdDrawnMid, CrowdDrawnFar, CrowdDrawnCulled) = (inst.Count[0], inst.Count[1], inst.Count[2], inst.Culled);
         _game.StressDrawn = inst.Total; // (a horde stress round's summary: the peak drawn)
         Gfx.DrawCrowd(inst);

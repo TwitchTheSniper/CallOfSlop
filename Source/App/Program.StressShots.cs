@@ -29,6 +29,9 @@ public static unsafe partial class Program
             Console.WriteLine("[stressshots] no Horde Stress map");
             return;
         }
+        // --crowd-no-horizon: the same pictures without the terrain horizon culling (they must match: it hides only what the ground hides).
+        Crowd.Host.HorizonCull = Crowd.Client.HorizonCull = !args.Any(a => a.Equals("--crowd-no-horizon", StringComparison.OrdinalIgnoreCase));
+        CrowdAsClient = args.Any(a => a.Equals("--crowd-as-client", StringComparison.OrdinalIgnoreCase)); // (the host draws its picture, as a client)
         World.SetMap(map);
         var g = new Game(NetPeer.Offline(), AudioSystem, "Shots", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id, bots: 0, mapId: map.Id)
         {
@@ -112,7 +115,9 @@ public static unsafe partial class Program
                     {
                         _shotFull = true;
                         SaveScreenshot($"stress_{view.Name}_{moment}");
-                        Console.WriteLine($"[stressshots] {view.Name} {moment}: {CrowdInst.Count[0]}/{CrowdInst.Count[1]}/{CrowdInst.Count[2]} near/mid/far, {CrowdInst.Culled} culled, prep {CrowdPrepMs:0.00} ms; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
+                        var ag = Crowd.Agents;
+                        Console.WriteLine($"[stressshots] {view.Name} {moment}: {CrowdInst.Count[0]}/{CrowdInst.Count[1]}/{CrowdInst.Count[2]} near/mid/far ({CrowdInst.Particles} particles, {CrowdInst.Agents} agents), {CrowdInst.Culled} culled, "
+                                          + $"cells {ag.CellsDrawn} drawn, {ag.CellsCulled} out of view, {ag.CellsFogged} fogged, {ag.CellsHidden} behind the ground; prep {CrowdPrepMs:0.00} ms; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
                     }
                     _window.SwapBuffers();
                 }

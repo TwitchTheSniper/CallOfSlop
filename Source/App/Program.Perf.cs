@@ -124,11 +124,23 @@ public static unsafe partial class Program
     private static double _perfShotStart = -1;
     private static int _perfShotStep;
 
-    private static void StartPerfShot()
+    private static void StartPerfShot(string[] args)
     {
         _perfShot = true;
         _settings.Bots = 5;
         _settings.MapRandom = false;
+        // --perf-shot "Map" [--stress-size N]: that map (a Zombies map in Zombies, no bots; Horde Stress at N zombies).
+        if (args.SkipWhile(a => !a.Equals("--perf-shot", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")) is { } name && Maps.Find(name) is { } map)
+        {
+            _settings.MapName = map.Name;
+            if (map.Zombies != null)
+            {
+                _settings.Mode = GameMode.Zombies;
+                _settings.Bots = 0;
+            }
+            if (args.SkipWhile(a => !a.Equals("--stress-size", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } sz && int.TryParse(sz, out var n))
+                _settings.ZombieStressSize = n;
+        }
         StartSession(LobbyAction.SinglePlayer);
     }
 

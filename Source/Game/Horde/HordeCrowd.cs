@@ -60,6 +60,14 @@ public sealed class CrowdTuning
     public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
 
     /// <summary>
+    /// Drawing the far crowd (CrowdAgents): a cell further than <see cref="DrawFarFrom"/> m from the camera draws fewer
+    /// than <see cref="DrawCap"/>, down to <see cref="DrawCapFar"/> at <see cref="DrawFarTo"/> m and beyond.
+    /// </summary>
+    public int DrawCapFar = 8;
+
+    public float DrawFarFrom = 60f, DrawFarTo = 180f;
+
+    /// <summary>
     /// The crowd as ground (ZombiesCrowdSurface.cs): on; a cell packed at <see cref="SurfacePacked"/> zombies a square
     /// metre is <see cref="SurfaceHeight"/> m high, thinner than <see cref="SurfaceMin"/> m it is no ground; a player
     /// within <see cref="SurfaceStep"/> m of its top stands on it, slid down its slope at <see cref="SurfacePush"/> m/s
@@ -108,6 +116,15 @@ public sealed partial class HordeCrowd
 
     /// <summary>Health (shots and blasts hurt crowd zombies; a promoted one keeps it).</summary>
     public float[] HP = [];
+
+    /// <summary>
+    /// Visual only (drawing; nothing in the game reads them): each particle's look (a hash of its own seed, kept when
+    /// another particle's removal moves it to another index) and the tick it was let out of the mass (it rises out of the
+    /// ground while its mass agent sinks; long.MinValue otherwise).
+    /// </summary>
+    public uint[] Look = [];
+
+    public long[] Born = [];
 
     /// <summary>Particles alive in the crowd (indices 0..Count-1).</summary>
     public int Count;
@@ -213,7 +230,7 @@ public sealed partial class HordeCrowd
     /// <summary>The flow grid's size (cells) and the bytes the crowd's arrays hold (self-test: memory).</summary>
     public int FlowCells => _cols * _rows;
 
-    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
+    public long Bytes => (long)X.Length * (10 * 4 + 8 + 1 + 4 + 8 + 4 + 8) + (long)_walk.Length * (1 + 1 + 24 + (_gnd.Length > 0 ? 4 : 0)) + (long)_sStart.Length * 8 + (long)MassCount.Length * 21;
 
     /// <summary>Sizes everything for the map (once per map: the walkable cells, by probing the floor) and for <paramref name="capacity"/> particles.</summary>
     public void Setup(Map map, float floorY, int capacity)
@@ -305,6 +322,8 @@ public sealed partial class HordeCrowd
         Array.Resize(ref Next, n);
         Array.Resize(ref Held, n);
         Array.Resize(ref HP, n);
+        Array.Resize(ref Look, n);
+        Array.Resize(ref Born, n);
         var m = n + Game.MaxZombies;
         _sItem = new int[m];
         _sX = new float[m];
@@ -374,6 +393,8 @@ public sealed partial class HordeCrowd
         Next[i] = tick + 1 + (h >> 16) % (uint)Math.Max(1, Tuning.ThinkMax);
         Held[i] = false;
         HP[i] = hp;
+        Look[i] = h;
+        Born[i] = long.MinValue;
         return i;
     }
 
@@ -395,6 +416,8 @@ public sealed partial class HordeCrowd
         Next[i] = Next[last];
         Held[i] = Held[last];
         HP[i] = HP[last];
+        Look[i] = Look[last];
+        Born[i] = Born[last];
     }
 
     public static uint Hash(uint x)

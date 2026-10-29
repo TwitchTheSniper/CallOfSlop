@@ -46,6 +46,28 @@ public sealed partial class HordeCrowd
     private int _mergeN;
     private uint _mRng = 0x6A55u;
 
+    /// <summary>
+    /// Visual only: the latest merges into the mass (kind 1, with the particle's look) and releases out of it (kind 2), a
+    /// ring of <see cref="NoteCap"/>, for the host's drawing (CrowdAgents.Hint / Release). <see cref="Notes"/> counts every
+    /// one ever written; a reader keeps its own count and reads what it hasn't seen (at most the ring's worth).
+    /// </summary>
+    public const int NoteCap = 512;
+
+    public readonly float[] NoteX = new float[NoteCap], NoteZ = new float[NoteCap];
+    public readonly uint[] NoteLook = new uint[NoteCap];
+    public readonly byte[] NoteKind = new byte[NoteCap];
+    public long Notes;
+
+    private void Note(byte kind, float x, float z, uint look)
+    {
+        var k = (int)(Notes & (NoteCap - 1));
+        NoteKind[k] = kind;
+        NoteX[k] = x;
+        NoteZ[k] = z;
+        NoteLook[k] = look;
+        Notes++;
+    }
+
     public int MassCols => _mCols;
 
     public int MassRows => _mRows;
@@ -131,6 +153,7 @@ public sealed partial class HordeCrowd
             MassCount[c]++;
             MassTotal++;
             Merged++;
+            Note(1, X[i], Z[i], Look[i]);
             RemoveAt(i);
         }
         _mergeN = 0;
@@ -249,7 +272,10 @@ public sealed partial class HordeCrowd
                 }
                 if (!Walkable(x, z) || Packed(x, z))
                     break; // (no room in the cell: they stay in the mass for now)
-                Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, MassHP);
+                var p = Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, MassHP);
+                if (p >= 0)
+                    Born[p] = tick;
+                Note(2, x, z, 0);
                 MassCount[c]--;
                 MassTotal--;
                 Released++;
