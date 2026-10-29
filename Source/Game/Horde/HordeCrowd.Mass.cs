@@ -87,6 +87,7 @@ public sealed partial class HordeCrowd
         _mFlux = new float[n];
         _mWalk = new bool[n];
         SetupWounds(n); // (the mass's wounded: HordeCrowd.MassHits.cs)
+        Sight.Setup(_terrain, MinX, MinZ, _mCell, _mCols, _mRows); // (what the players see: CrowdSight.cs)
         for (var r = 0; r < _mRows; r++)
             for (var c = 0; c < _mCols; c++)
             {

@@ -61,6 +61,9 @@ public sealed class CrowdAgents
     /// <summary>A cell this full is packed (the mass tier's capacity): agents don't flow into a packed cell from a packed one.</summary>
     public int JamCount = 40;
 
+    /// <summary>A packed cell pressing on (a jam with a heading) shuffles on the spot at this share of the pace instead of standing (a horde held back still moves as a body).</summary>
+    public const float JamPace = 0.35f;
+
     /// <summary>Cull cells behind the terrain's horizon (<see cref="CrowdHorizon"/>).</summary>
     public bool HorizonCull = true;
 
@@ -622,9 +625,8 @@ public sealed class CrowdAgents
                 if (_move[c] > 0.3f)
                     turnTo = _yawC[c] + ((Look[i] >> 8 & 255) / 255f - 0.5f) * 0.5f;
                 // Pressing on in place: a moving cell with no room ahead (a stream sampled at the cap, or a queue) walks
-                // on the spot, unless it is packed (a jam stands).
-                if (_want[c] < JamCount)
-                    Walk[i] += Pace[i] * Speed * _move[c] * (1f - _flow[c]) * dt;
+                // on the spot; a packed one (a jam) shuffles, slower.
+                Walk[i] += Pace[i] * Speed * _move[c] * (1f - _flow[c]) * dt * (_want[c] < JamCount ? 1f : JamPace);
             }
             float nx = x + vx * dt, nz = z + vz * dt;
             if (st != Mode.Moving && st != Mode.Sinking)

@@ -36,17 +36,94 @@ zombies in three tiers. This page is the design and the numbers. It runs only on
 
 - **Seeding.** At a round's start, all N zombies are seeded over the field, at least 24 m from the middle of the
   start area: as particles up to 60 m out, straight into the mass beyond. The seed comes from the run's seed.
-- **Promotion.** Each tick, the 6 particles nearest a player within 22 m become full zombies, in Chase at the
-  particle's position, heading and health. Promotion stops while the individual cap is full; particles inside 22 m
-  then hold.
-- **Demotion.** A healthy individual goes back to the crowd if it is in plain Chase and has been more than 34 m from
-  every player for 2 s. It keeps its position and velocity, and its speed comes from its id. At most 4 a tick. A
-  hurt, burning, slowed, stunned or limb-lost zombie stays an individual.
+- **Promotion (waking).** Each tick, the 6 particles that count nearest a player within 22 m become full zombies, in
+  Chase at the particle's position, heading and health. "Counts nearest" is by sight (below, "Waking and sleeping"): a
+  particle a player can see counts at its distance, one nobody sees at 2.5 times it, so the players' view wakes first.
+  Promotion stops while the individual cap is full; particles that count inside 22 m then wait, pressing on behind the
+  front at half their pace until 5 m from a player.
+- **Demotion (sleeping).** A healthy individual goes back to the crowd if it is in plain Chase, has been awake 3 s and has
+  counted more than 34 m from every player for 2 s (so an unseen one past 13.6 m). With the cap full and particles
+  waiting, an individual that counts 8 m further than the nearest waiting one goes back too (the furthest-counting first),
+  unless it is within 12 m of a player. It keeps its position and velocity, and its speed comes from its id. At most 4 a
+  tick. A hurt, burning, slowed, stunned or limb-lost zombie stays an individual.
 - **Conservation.** The counts always add up: particles + mass + alive + killed = the round's total. Every kill path
   counts (shots, melee, mines, the nuke power-up, shots and blasts into the crowd, blasts into the mass).
   `ZRemaining` includes the crowd, and the round ends when the crowd and the horde are both empty.
 
 The crowd round replaces normal spawning: nothing comes out of the map's spawners, and the player-count rescale is off.
+
+### Waking and sleeping
+
+Developer request (2026-10-29, Horde Stress at round 50): "Individuals will run off of the horde and then gather up in a
+ball behind the player, while a large percentage of the horde remains static or unresponsive." `Source/Game/Horde/CrowdSight.cs`,
+`Source/Game/ZombiesCrowd.cs`, `HordeCrowd.Tick`, `HordeController.SurroundGoal` / `Queued`.
+
+**What went wrong.** A short scripted reproduction (the self-test's ring scene with the old tuning, and
+`--stress-shots wake --wake-old`) showed three causes:
+
+- Promotion took the nearest particles all round the player, so about half the individual tier was behind them (at
+  100,000: 165 of 300 behind, 89 in view). The player shoots what they look at, so the cap stayed full of zombies behind
+  them, and the front they faced waited.
+- A particle inside the promote range with the cap full stood still (`Held`). The whole front stood in a ring at 20-22 m,
+  packed to the separation limit; the mass behind could let nobody out into a packed ring, and its cells filled to
+  `massCapacity` and stopped flowing. Clients drew the packed cells as a standing jam. That is the wall in the pictures.
+- Individuals close in on a point round the player at an angle of their own (`SurroundAngle`, anywhere round), and a few
+  hundred pressing on one player slide round each other: those from a wall ahead walked round to the player's back.
+
+**Sight** (server-authoritative: player positions and look, never a client's drawing). Each tick the standing players
+are the views: the eye (position plus eye height), yaw and pitch. A point is seen by a view when it is inside
+`sightHalfAngle` (62 degrees) either side and `sightHalfAngleV` (42) up and down of the look, with 0.6 m of slack for a
+body, and its 4 m cell (the mass grid) isn't behind the ground from that eye. The ground test runs every `netEvery`
+ticks (and when the views change) for every cell within `demoteRange` + 6 m of each view: the line from the eye to the
+top of a body in the cell's middle against the terrain every 2 m (a flat map hides nothing). A zombie counts at
+`min over views of distance x (seen by that view ? 1 : unseenWeight)` (2.5); a zombie any player sees counts at its
+distance (co-op: seen by anyone is seen).
+
+**Waking.** The promotion candidates are the particles that count nearest (inside `promoteRange`): visible within 22 m,
+unseen within 8.8 m (a zombie about to reach a player's back still wakes). Waiting particles press on at `heldPace`
+(half) until `holdRange` (5 m) from a player; with the cap full, an unseen one waits just outside the unseen wake range
+(9.8 m), where nobody sees it stand, so the room goes to what the players see. One just put to sleep rests for `minAwake`
+(it isn't a candidate unless it comes near enough to wake unseen).
+
+**Sleeping.** An individual counts at its distance while a player saw it in the last `unseenGrace` (1 s), else by the
+score. Far (over `demoteRange`, as before) or, with the cap full and particles waiting, more than `swapMargin` (8 m)
+further than the nearest waiting one: the furthest-counting go back first, at most `demotePerTick` a tick, never one
+awake less than `minAwake` (3 s), never one within 12 m of a player ((`promoteRange` + `swapMargin`) / `unseenWeight`:
+it couldn't walk back into the unseen wake range while it rests). So a turn doesn't flicker: in the self-test's 180
+degree turn, nothing put to sleep was woken again within 3 s.
+
+**Staying at the front** (crowd maps only: `HordeController.SurroundArc`, the full turn elsewhere, so no other map or
+digest changes). An individual remembers the side of the player it came from (`HordeMember.HomeAngle`, kept while it is
+outside the surround range) and closes in within `surroundArc` (120 degrees) round that side; one the press pushes past
+its side walks back to it. Within the surround range, one with another individual within 1.2 m ahead of it on its way
+in (40 degrees either side) is queued: it stands facing the player and presses instead of sliding round the front
+(`Queued`). The front rank, and anyone with a clear way in, walks on.
+
+**Numbers** (before = the old behaviour's tuning in the same code: `unseenWeight` 1, `swapMargin` 100, `heldPace` 0,
+`surroundArc` 360; checked equivalent to the old code's promotion, holding and surround).
+
+| Scene | Moment | Before: individuals in view / behind | After | Before: crowd mean distance, particles moving | After |
+| --- | --- | --- | --- | --- | --- |
+| Self-test ring (4,000, cap 120) | 8 s | 32 / 62 of 120 | 107 / 8 | 46.0 m, nearest 5% at 21.3 m, 46% standing at 12-22 m | 45.2 m, nearest 5% at 13.0 m, 0% standing |
+| `--stress-shots wake 100000` (cap 300) | 6 s | 89 / 164 of 299 | 257 / 0 | 74.5 m, 17,650 of 21,567 moving | 74.3 m, 21,188 of 21,567 |
+| | 12 s | 96 / 159 | 217 / 11 | 69.1 m, 17,754 of 27,550 | 68.4 m, 22,524 of 27,550 |
+| | 20 s | 89 / 165 | 191 / 27 | 63.1 m, 15,093 of 35,645 | 62.2 m, 11,667 of 35,647 (packed round the front) |
+
+Promotions at 100,000 over 20 s: before 132 seen and 267 unseen; after 371 seen and 28 unseen (those near the player's
+back). The crowd's tick costs the same ("Mass horde" on the user's PC: 0.26 / 0.25 / 0.49 ms at 5,000 / 10,000 / 20,000
+before, 0.27 / 0.26 / 0.50 ms after); the sight's ground test is a few hundred cells a view every 6 ticks. No allocation.
+
+**Pictures**: `--stress-shots wake [size] [--wake-old] [--crowd-tiers]` (Program.WakeShots.cs): the horde seeded all round
+the player beside the rally post on Horde Stress's valley floor, the player shooting what they look at, the tiers logged
+every 2 s ("[wakeshots]") and `smoke_wake_<old|sight>_<eye|back|above>_<6|20>s.bmp`.
+
+**Self-test** "Horde wake" (`Source/App/SelfTestHordeWake.cs`): the sight alone (ahead, behind, two players back to back,
+the ground test on Horde Stress hiding only what the ground hides); a ring of 4,000 round the player (cap 120, the player
+shooting what they look at): at least 60% of the individuals in view and three woken seen for every one unseen, a
+180-degree turn putting to sleep what is no longer seen and waking what is, nothing woken again within 3 s of sleeping,
+the horde closing in (mean distance down 8 m, its nearest 5% inside 18 m, under 20% of the particles at 12-22 m standing),
+no allocation; a wall ahead keeping 85% of its individuals in front. `HORDE_WAKE_COMPARE=1` also runs both scenes with
+the old tuning and logs them.
 
 ## Combat
 
@@ -132,7 +209,9 @@ walk phase and look from frame to frame (`CrowdAgents`, one pool for the host's 
   still/moving switch eased over half a second. Agents walk the heading at their own pace and cross into the next cell
   when it has room for another agent (never wrapping round); a cell with no room ahead stops them, and they spread out
   to spots of their own in their cell. A moving cell that can't move walks on the spot (a stream sampled at the cap,
-  a queue), unless it is packed (`massCapacity`, a jam), which stands.
+  a queue); a packed one (`massCapacity`, a jam) shuffles on the spot at a third of the pace (`CrowdAgents.JamPace`).
+  Particles waiting to be promoted add their heading to their cell's (a tenth of a walk), so a held-back front is sent
+  with a heading and drawn pressing on, not standing; the host draws its waiting particles shuffling the same way.
 - **Counts changing.** A cell with an agent too many passes one to a neighbour that is short (downstream first: the
   one nearest it walks across, at most 2.4 m/s). What is left over after 0.6 s sinks into the ground (half a second);
   a cell short of agents for 0.4 s raises new ones out of it. Nothing appears or vanishes in view otherwise.
@@ -236,7 +315,7 @@ The "Mass horde" self-test section runs crowds of 5,000, 10,000 and 20,000 for 4
 measured. Every count must add up on every tick. On Windows the worst tick must stay under 8 ms at every count and a
 frame's instance preparation under 4 ms of CPU. Steady-state allocation must be zero (the tick, the network write, the
 instance preparation, standing on the crowd, the roar). It also checks the network picture against what was sent,
-promotion and demotion when the player walks off, a seeded replay, the baked rigs, shots and blasts into the crowd and
+promotion and demotion when the player walks off (the player looks round, a full turn in the 4 s: the crowd wakes by sight), a seeded replay, the baked rigs, shots and blasts into the crowd and
 the mass, the surface (lift, stand, slide, client agreement) and the roar. The CI run's notice has the numbers.
 
 Section **"Mass points"** (`Source/App/SelfTestMassPoints.cs`, a fraction of a second once the map is loaded): scripted

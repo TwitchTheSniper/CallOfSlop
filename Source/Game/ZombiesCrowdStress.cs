@@ -410,6 +410,22 @@ public sealed partial class Game
     private double _crowdLastTickMs;
 
     /// <summary>Self-test: the stress round's phase machine without the clock (a tick of the stress logic now).</summary>
+    /// <summary>
+    /// Self-test: the round's crowd replaced by what <paramref name="seed"/> puts in (the stress phases off: no goal, no
+    /// hold), the conservation count started afresh from it. Individuals already alive stay.
+    /// </summary>
+    internal void SelfTestCrowdScene(Action<HordeCrowd> seed)
+    {
+        StressState = StressPhase.Off;
+        Crowd.SetGoal(false);
+        Crowd.Hold = false;
+        Crowd.Clear();
+        seed(Crowd);
+        _zToSpawn = 0;
+        _zRoundTotal = CrowdRoundTotal = Crowd.Total + _zAlive;
+        CrowdRoundKills = 0;
+    }
+
     public void SelfTestStressTick(double now)
     {
         if (ZMap is { Stress: { } st })

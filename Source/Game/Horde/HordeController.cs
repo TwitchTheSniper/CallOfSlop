@@ -729,6 +729,9 @@ public sealed class HordeController<T> where T : class, IHordeAgent
 
     // ---- Steering (asked by each member) ---------------------------------------------------------------------
 
+    /// <summary>The arc (radians) round the side a member comes from within which it closes in (a full turn: its own angle anywhere round).</summary>
+    public float SurroundArc = MathF.Tau;
+
     /// <summary>
     /// The goal for an inside member after its target at <paramref name="target"/>: between <see cref="HordeTuning.SurroundMin"/>
     /// and <see cref="HordeTuning.SurroundRange"/> a point on a ring round the target at the member's own angle, so a group
@@ -740,11 +743,79 @@ public sealed class HordeController<T> where T : class, IHordeAgent
         var m = a.Member;
         var to = target - a.Position;
         var d = Flat(to);
+        if (SurroundArc < MathF.Tau - 1e-3f && tu.SurroundRadius > 0)
+            return SurroundFromSide(m, target, to, d);
         if (d < tu.SurroundMin || d > tu.SurroundRange || tu.SurroundRadius <= 0)
             return target;
         // The ring shrinks as it closes in, so the last metres are straight at the target.
         var r = tu.SurroundRadius * Math.Clamp((d - tu.SurroundMin) / MathF.Max(0.1f, tu.SurroundRange - tu.SurroundMin) * 2f, 0f, 1f);
         var ang = m.SurroundAngle;
+        return target + new Vector3(MathF.Sin(ang) * r, 0, MathF.Cos(ang) * r);
+    }
+
+    /// <summary>
+    /// On a crowd map (<see cref="SurroundArc"/> less than a full turn): is member <paramref name="a"/> queued behind the
+    /// front? Between <see cref="QueueFrom"/> m and the surround range of its target with another member (as of this
+    /// tick's grid) within <see cref="QueueGap"/> m nearer the target, no more than about 40 degrees off its way there.
+    /// A queued member stands and presses (it doesn't slide round the front to the far side of the player); the front
+    /// rank, and anyone with a clear way in, walks on.
+    /// </summary>
+    public bool Queued(T a, Vector3 target)
+    {
+        if (SurroundArc >= MathF.Tau - 1e-3f)
+            return false;
+        var p = a.Position;
+        var to = target - p;
+        to.Y = 0;
+        var d = to.Length();
+        if (d < QueueFrom || d > Tuning.SurroundRange)
+            return false;
+        var dir = to / d;
+        var self = a.Member.Index;
+        var n = Grid.Query(p, QueueGap, _scratch);
+        for (var k = 0; k < n; k++)
+        {
+            var j = _scratch[k];
+            if (j == self || (uint)j >= (uint)_pos.Length)
+                continue;
+            var v = _pos[j] - p;
+            v.Y = 0;
+            var along = v.X * dir.X + v.Z * dir.Z;
+            if (along > 0.25f && along * along > 0.58f * v.LengthSquared())
+                return true; // (cos 40 degrees squared: 0.58)
+        }
+        return false;
+    }
+
+    /// <summary>A member nearer its target than this (m) is the front: it never queues. And how close ahead another must be to queue behind.</summary>
+    public const float QueueFrom = 2.2f, QueueGap = 1.2f;
+
+    /// <summary>
+    /// <see cref="SurroundGoal"/> on a crowd map: a member closes in within <see cref="SurroundArc"/> round the side it came
+    /// from (<see cref="HordeMember.HomeAngle"/>, kept from when it was outside the surround range), so a horde arriving
+    /// from one side presses on the player from that side; one the press has pushed round past its arc walks back to its
+    /// side instead of on round behind the player.
+    /// </summary>
+    private Vector3 SurroundFromSide(HordeMember m, Vector3 target, Vector3 to, float d)
+    {
+        var tu = Tuning;
+        var from = MathF.Atan2(-to.X, -to.Z); // (where it is, round the target)
+        if (!m.HomeSet || d > tu.SurroundRange)
+        {
+            m.HomeAngle = from;
+            m.HomeSet = true;
+        }
+        if (d > tu.SurroundRange)
+            return target;
+        var ang = m.HomeAngle + (m.SurroundAngle / MathF.Tau - 0.5f) * SurroundArc;
+        var off = from - m.HomeAngle;
+        off -= MathF.Floor((off + MathF.PI) / MathF.Tau) * MathF.Tau;
+        var outside = MathF.Abs(off) > SurroundArc * 0.5f + 0.35f;
+        if (d < tu.SurroundMin && !outside)
+            return target; // (at the front on its own side: straight in)
+        // On a ring round the target at its angle (shrinking as it closes in), or, pushed round past its side, back to it.
+        var r = outside ? MathF.Max(1.2f, MathF.Min(d, tu.SurroundRadius))
+            : tu.SurroundRadius * Math.Clamp((d - tu.SurroundMin) / MathF.Max(0.1f, tu.SurroundRange - tu.SurroundMin) * 2f, 0f, 1f);
         return target + new Vector3(MathF.Sin(ang) * r, 0, MathF.Cos(ang) * r);
     }
 

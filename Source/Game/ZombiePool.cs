@@ -62,6 +62,7 @@ public sealed partial class Zombie
         Gait = 0;
         SeenState = (ZState)255;
         SeenStateAt = 0;
+        CrowdWokeAt = CrowdSeenAt = 0;
 
         // ZombieAnimNet.cs
         AnimByte = 0;
