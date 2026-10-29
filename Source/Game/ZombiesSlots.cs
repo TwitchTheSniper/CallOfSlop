@@ -241,27 +241,27 @@ public sealed partial class Game
         var m = ZSlots[i];
         var cost = SlotCost(zm, i);
         if (zm.SlotMachines[i].NeedsPower && !ZPower)
-            return new ZUse(ZUseKind.SlotMachine, i, cost, $"{SlotMachineName(zm.SlotMachines[i].SlotCategory)}: needs the power on", Blocked: true);
+            return new ZUse(ZUseKind.SlotMachine, i, cost, TextCache.Of($"{SlotMachineName(zm.SlotMachines[i].SlotCategory)}: needs the power on"), Blocked: true);
         if (m.State != ZSlotState.Idle)
             return new ZUse(ZUseKind.SlotMachine, i, cost, m.State == ZSlotState.Spinning ? "The reels are spinning..." : SlotResultText(m), Blocked: true);
         var step = Math.Max(1, ZRules.SlotHeatStep);
         var steps = Math.Min(ZRules.SlotHeatMaxSteps, m.Heat / step);
-        var heat = steps >= ZRules.SlotHeatMaxSteps ? "heat MAX" : $"heat {m.Heat % step}/{step}{(steps > 0 ? $" (+{steps})" : "")}";
-        var bet = ZRules.SlotBets.Length > 1 ? $" - bet {SlotBetName(m.Bet)} ([G] to change)" : "";
-        return new ZUse(ZUseKind.SlotMachine, i, cost, $"Hold [E] to pull the {SlotMachineName(zm.SlotMachines[i].SlotCategory)} [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}");
+        var heat = steps >= ZRules.SlotHeatMaxSteps ? "heat MAX" : TextCache.Of($"heat {m.Heat % step}/{step}{(steps > 0 ? $" (+{steps})" : "")}");
+        var bet = ZRules.SlotBets.Length > 1 ? TextCache.Of($" - bet {SlotBetName(m.Bet)} ([G] to change)") : "";
+        return new ZUse(ZUseKind.SlotMachine, i, cost, TextCache.Of($"Hold [E] to pull the {SlotMachineName(zm.SlotMachines[i].SlotCategory)} [{cost}]{bet} - {heat}{(ZRules.SlotJackpot(ZRound) ? " - JACKPOT ROUND" : "")}"));
     }
 
     /// <summary>What the last pull of <paramref name="m"/> paid, for the prompt and the feed.</summary>
     public string SlotResultText(ZSlotMachine m) => m.Result switch
     {
         ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length && m.Consolation => m.Refunded
-            ? $"Consolation: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)"
-            : $"Consolation: {Parts.All[m.Part].Name}",
+            ? TextCache.Of($"Consolation: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)")
+            : TextCache.Of($"Consolation: {Parts.All[m.Part].Name}"),
         ZSlotResult.Part when m.Part >= 0 && m.Part < Parts.All.Length => m.Refunded
-            ? $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)"
-            : $"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!",
-        ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length => $"{PartDef.RarityName(m.Tier)} melee: the {StandardBuilds.All[m.Part].Name}!",
-        ZSlotResult.Points => $"Coins: +{SlotPointsBack(m.Paid)} points",
+            ? TextCache.Of($"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name} (you have plenty: +{SlotPointsBack(m.Paid)} points instead)")
+            : TextCache.Of($"{PartDef.RarityName(m.Tier)}: {Parts.All[m.Part].Name}!"),
+        ZSlotResult.Melee when m.Part >= 0 && m.Part < StandardBuilds.All.Length => TextCache.Of($"{PartDef.RarityName(m.Tier)} melee: the {StandardBuilds.All[m.Part].Name}!"),
+        ZSlotResult.Points => TextCache.Of($"Coins: +{SlotPointsBack(m.Paid)} points"),
         _ => "Nothing. Better luck next pull.",
     };
 

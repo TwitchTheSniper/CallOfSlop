@@ -14,7 +14,17 @@ public sealed partial class Ui
     private static readonly float4 ZGold = new(1f, 0.85f, 0.3f, 1f);
 
     /// <summary>The round as World at War draws it: tally marks up to 5, then the number.</summary>
-    public static string RoundTally(int round) => round <= 0 ? "" : round <= 5 ? string.Join(" ", Enumerable.Repeat("I", round)) : round.ToString();
+    public static string RoundTally(int round)
+    {
+        if (round == _tallyRound && _tallyText != null)
+            return _tallyText; // (drawn every frame: made once per round)
+        _tallyRound = round;
+        return _tallyText = round <= 0 ? "" : round <= 5 ? string.Join(" ", Enumerable.Repeat("I", round)) : round.ToString();
+    }
+
+    private static int _tallyRound = int.MinValue;
+    private static string? _tallyText;
+    private readonly List<Player> _zOthers = new();
 
     /// <summary>The match bar in Zombies: the round and what's left of it (or the break).</summary>
     private bool DrawZombiesBar(Game game)
@@ -22,12 +32,19 @@ public sealed partial class Ui
         if (game.Mode != GameMode.Zombies)
             return false;
         ImGui.PushFont(default, 24);
-        ImGuiSafe.TextColored(ZRed, game.ZRound > 0 ? $"ROUND {game.ZRound}" : "GET READY");
+        if (game.ZRound > 0)
+            ImGuiSafe.TextColored(ZRed, $"ROUND {game.ZRound}");
+        else
+            ImGui.TextColored(ZRed, "GET READY"u8);
         ImGui.PopFont();
-        var left = game.ZPhase == ZRoundPhase.Round ? $"{game.ZRemaining} zombies left this round"
-            : game.ZWaitingReady ? ReadyBarText(game)
-            : $"Next round in {Math.Ceiling(game.ZPhaseLeft):0} s";
-        ImGuiSafe.TextColored(Dim, $"{left}   {(game.ZPower ? "Power: ON" : "Power: off")}");
+        AllocProfile.Mark("ZB power"); // TMPALLOC
+        var power = game.ZPower ? "Power: ON" : "Power: off";
+        if (game.ZPhase == ZRoundPhase.Round) // (one call per case: each $"..." goes straight into ImGui's frame arena)
+            ImGuiSafe.TextColored(Dim, $"{game.ZRemaining} zombies left this round   {power}");
+        else if (game.ZWaitingReady)
+            ImGuiSafe.TextColored(Dim, $"{ReadyBarText(game)}   {power}");
+        else
+            ImGuiSafe.TextColored(Dim, $"Next round in {Math.Ceiling(game.ZPhaseLeft):0} s   {power}");
         return true;
     }
 
@@ -99,6 +116,7 @@ public sealed partial class Ui
         var pad = 24 * _scale;
         var key = Keybinds.Name(settings.Bind(GameAction.Interact));
 
+        AllocProfile.Mark("ZH1 // Bottom-left, over the healt"); // TMPALLOC
         // Bottom-left, over the health: the round in red.
         if (game.ZRound > 0)
         {
@@ -112,6 +130,7 @@ public sealed partial class Ui
             ImGui.End();
         }
 
+        AllocProfile.Mark("ZH2 // Bottom-right, over the ammo"); // TMPALLOC
         // Bottom-right, over the ammo: everyone's points (yours first), with your +N popups beside them.
         ImGui.SetNextWindowPos(new float2(pos.X + size.X - pad, pos.Y + size.Y - pad - 190 * _scale), ImGuiCond.Always, new float2(1, 1));
         if (ImGui.Begin("##zpoints"u8, Overlay))
@@ -120,11 +139,17 @@ public sealed partial class Ui
             ImGui.PushFont(default, 30);
             ImGuiSafe.TextColored(ZGold, $"{mine.Points}");
             ImGui.PopFont();
-            foreach (var p in game.Players.Values.Where(p => p.Id != me.Id).OrderBy(p => p.Id))
+            _zOthers.Clear(); // (a reused list sorted in place: no LINQ per frame)
+            foreach (var p in game.Players.Values)
+                if (p.Id != me.Id)
+                    _zOthers.Add(p);
+            if (_zOthers.Count > 1)
+                _zOthers.Sort(static (a, b) => a.Id.CompareTo(b.Id));
+            foreach (var p in _zOthers)
             {
                 var zp = game.ZP(p);
                 var c = game.SideColor(p); // teammates: the friendly colour, not their own palette colour (which can be red)
-                ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), $"{game.NameOf(p.Id)}: {zp.Points}{(zp.Downed ? "  (DOWN)" : !p.Alive ? "  (out)" : "")}");
+                ImGuiSafe.TextColored(new float4(c.X, c.Y, c.Z, 1), $"{game.NameOf(p.Id)}: {zp.Points}{(zp.Downed ? "  (DOWN)" : !p.Alive ? "  (out)" : "")}"); // (the ?: picks a constant: no string made)
             }
         }
         ImGui.End();
@@ -135,14 +160,19 @@ public sealed partial class Ui
             {
                 var age = (float)(now - t);
                 var a = Math.Clamp(1.6f - age, 0f, 1f);
-                ImGuiSafe.TextColored(amount >= 0 ? new float4(1f, 0.85f, 0.3f, a) : new float4(1f, 0.3f, 0.3f, a), amount >= 0 ? $"+{amount}" : $"{amount}");
+                if (amount >= 0)
+                    ImGuiSafe.TextColored(new float4(1f, 0.85f, 0.3f, a), $"+{amount}");
+                else
+                    ImGuiSafe.TextColored(new float4(1f, 0.3f, 0.3f, a), $"{amount}");
             }
         }
         ImGui.End();
 
+        AllocProfile.Mark("ZH3 // Perks, bottom-left beside t"); // TMPALLOC
         // Perks, bottom-left beside the round: a badge each (UiZombiesPerks.cs).
         DrawZPerkBadges(game, game.ZP(me), pos, size, pad);
 
+        AllocProfile.Mark("ZH4 // Power-ups: Insta-Kill, Doub"); // TMPALLOC
         // Power-ups: Insta-Kill, Double Points and Infinite Ammo timers bottom centre (blinking in their last 5 s); the floating ones labelled.
         var insta = game.InstaKillLeft(now);
         var dbl = game.DoublePointsLeft(now);
@@ -165,11 +195,17 @@ public sealed partial class Ui
             }
             ImGui.End();
         }
+        AllocProfile.Mark("ZH5 DrawZombieTypesHud(game, me, n"); // TMPALLOC
         DrawZombieTypesHud(game, me, now, pos, size, pad); // a boss's health bar, a grabber's hold (ZombieTypes.cs)
+        AllocProfile.Mark("ZH6 DrawSlotLabels(game, me, now);"); // TMPALLOC
         DrawSlotLabels(game, me, now); // the slot machines' category labels and their wins (ZombiesSlotWin.cs)
+        AllocProfile.Mark("ZH7 DrawCasinoLabels(game, me, now"); // TMPALLOC
         DrawCasinoLabels(game, me, now); // the casino tables: game, limits, what's on them, big wins (UiCasino.cs)
+        AllocProfile.Mark("ZH8 DrawPerkLabels(game, me); // t"); // TMPALLOC
         DrawPerkLabels(game, me); // the perk machines' names (UiZombiesPerks.cs)
+        AllocProfile.Mark("ZH9 _traderOffScreen = null;"); // TMPALLOC
         _traderOffScreen = null;
+        AllocProfile.Mark("ZH10 DrawTraderLabel(game, me, now)"); // TMPALLOC
         DrawTraderLabel(game, me, now); // the trader's waypoint through the walls (UiTrader.cs)
         if (game.BoxFreeForAll && game.ZMap is { BoxSpots.Count: > 0 } bzm)
         {
@@ -185,6 +221,7 @@ public sealed partial class Ui
                 Hud.WorldLabel(pu.At + new System.Numerics.Vector3(0, 1.45f, 0), Game.PowerName(pu.Kind), Game.PowerColor(pu.Kind), 1f, 15f * _scale);
         }
 
+        AllocProfile.Mark("ZH11 // The banner (ROUND 3, THE PO"); // TMPALLOC
         // The banner (ROUND 3, THE POWER IS ON).
         if (now - game.ZBannerTime < 3.5 && game.ZBannerText.Length > 0)
         {
@@ -198,6 +235,7 @@ public sealed partial class Ui
             ImGui.End();
         }
 
+        AllocProfile.Mark("ZH12 // Downed, bleeding out, being"); // TMPALLOC
         // Downed, bleeding out, being revived; or the prompt for what the interact key does.
         var me2 = game.ZP(me);
         ImGui.SetNextWindowPos(new float2(pos.X + size.X / 2, pos.Y + size.Y * 0.62f), ImGuiCond.Always, new float2(0.5f, 0.5f));
@@ -221,10 +259,14 @@ public sealed partial class Ui
             }
             else if (game.FindZUse(me) is { } use)
             {
-                var text = use.Text.Replace("[E]", key).Replace("[G]", Keybinds.Name(settings.Bind(GameAction.Grenade)));
+                var text = PromptWithKeys(use.Text, key, Keybinds.Name(settings.Bind(GameAction.Grenade)));
                 var poor = !use.Blocked && use.Cost > me2.Points;
                 var freeBox = use.Kind == ZUseKind.BoxTake && !use.Blocked && game.BoxFreeForAll; // (the box's free-for-all window: orange)
-                ImGuiSafe.TextColored(use.Blocked ? Dim : poor ? Red : freeBox ? Orange : new float4(1, 1, 1, 1), poor ? $"{text}   (you have {me2.Points})" : text);
+                var useCol = use.Blocked ? Dim : poor ? Red : freeBox ? Orange : new float4(1, 1, 1, 1);
+                if (poor)
+                    ImGuiSafe.TextColored(useCol, $"{text}   (you have {me2.Points})");
+                else
+                    ImGuiSafe.TextColored(useCol, text);
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
@@ -276,6 +318,17 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(Orange, $"{game.NameOf(p.Id)} is down: revive them! ({(int)(game.ZP(p).BleedFraction * game.ZRules.BleedoutSeconds)} s)");
         }
         ImGui.End();
+    }
+
+    private string? _promptFrom, _promptE, _promptG, _promptText;
+
+    /// <summary>A prompt with "[E]" and "[G]" as the bound keys; the last one is kept, so standing at a buy makes no string per frame.</summary>
+    private string PromptWithKeys(string text, string e, string g)
+    {
+        if (ReferenceEquals(text, _promptFrom) && ReferenceEquals(e, _promptE) && ReferenceEquals(g, _promptG) && _promptText != null)
+            return _promptText;
+        (_promptFrom, _promptE, _promptG) = (text, e, g);
+        return _promptText = text.Replace("[E]", e).Replace("[G]", g);
     }
 
     /// <summary>How long a pickup stays, in words: the time left, and the round whose end takes it (a drop made on purpose).</summary>

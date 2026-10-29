@@ -143,18 +143,18 @@ public sealed partial class Game
     /// <summary>The prompt for a dropped build (both sides).</summary>
     private ZUse WeaponDropUse(Player p, ZWeaponDrop d)
     {
-        var whose = d.Owner == p.Id ? "your " : d.OwnerName.Length > 0 ? $"{d.OwnerName}'s " : "the ";
+        var whose = d.Owner == p.Id ? "your " : d.OwnerName.Length > 0 ? TextCache.Of($"{d.OwnerName}'s ") : "the ";
         var slot = PickupSlot(p, d, out var replaced);
         string how;
         if (replaced != null)
-            how = $" (swap for your {replaced.Name})";
+            how = TextCache.Of($" (swap for your {replaced.Name})");
         else if (slot == 4)
             how = " (melee)";
         else if (slot >= 2 || !HasGunIn(p, slot))
-            how = $" (slot {slot + 1})";
+            how = TextCache.Of($" (slot {slot + 1})");
         else
-            how = $" (in place of your {p.DefFor(p.Weapon).Name})";
-        return new ZUse(ZUseKind.Pickup, d.Id, 0, $"Hold [E] to pick up {whose}{d.Build.Name}{how}");
+            how = TextCache.Of($" (in place of your {p.DefFor(p.Weapon).Name})");
+        return new ZUse(ZUseKind.Pickup, d.Id, 0, TextCache.Of($"Hold [E] to pick up {whose}{d.Build.Name}{how}"));
     }
 
     /// <summary>

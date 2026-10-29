@@ -218,6 +218,8 @@ public static class Perf
         if (Environment.CurrentManagedThreadId != MainThread)
             return 0; // a worker (a nav bake, a map load task): not ours to time, and the stack is the main thread's
         var i = (int)area;
+        if (TrackAllocs)
+            ChargeAllocs(_depth > 0 && _overflow == 0 ? (int)Stack[_depth - 1] : _depth == 0 ? Count : -1);
         if (_depth < MaxDepth)
         {
             SeenParent[i] = _depth == 0 ? (sbyte)-1 : (sbyte)Stack[_depth - 1];
@@ -233,6 +235,8 @@ public static class Perf
     {
         var d = Stopwatch.GetTimestamp() - t0;
         var i = (int)area;
+        if (TrackAllocs)
+            ChargeAllocs(_overflow > 0 ? -1 : i);
         Acc[i] += d;
         Calls[i]++;
         if (d > Longest[i])
@@ -255,6 +259,42 @@ public static class Perf
                 _depth = k;
                 return;
             }
+    }
+
+    // ---- Allocations by area (--alloc-frames, the "Frame allocations" self-test) ---------------------------------
+
+    /// <summary>
+    /// Charge the main thread's allocations to the areas (self bytes: what an area allocated outside its children).
+    /// Off it costs one bool test per scope; on, one <see cref="GC.GetAllocatedBytesForCurrentThread"/> per scope edge.
+    /// Only while <see cref="On"/> (the scopes must run). Slot <see cref="Count"/> is "outside every scope".
+    /// </summary>
+    public static bool TrackAllocs;
+
+    /// <summary>Self bytes per area since <see cref="ResetAllocs"/> (index <see cref="Count"/>: outside every scope).</summary>
+    public static readonly long[] AllocSelf = new long[Count + 1];
+
+    private static long _allocMark;
+
+    private static void ChargeAllocs(int slot)
+    {
+        var now = GC.GetAllocatedBytesForCurrentThread();
+        if (slot >= 0)
+            AllocSelf[slot] += now - _allocMark;
+        _allocMark = now;
+    }
+
+    /// <summary>Charges what was allocated since the last scope edge to "outside" (call between frames, outside every scope).</summary>
+    public static void FlushAllocs()
+    {
+        if (TrackAllocs && _depth == 0 && _overflow == 0)
+            ChargeAllocs(Count);
+    }
+
+    /// <summary>Forgets the charged bytes and starts counting from here (anything allocated before this is not charged).</summary>
+    public static void ResetAllocs()
+    {
+        Array.Clear(AllocSelf);
+        _allocMark = GC.GetAllocatedBytesForCurrentThread();
     }
 
     // ---- History ------------------------------------------------------------------------------------------------

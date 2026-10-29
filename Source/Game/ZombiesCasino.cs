@@ -270,9 +270,9 @@ public sealed partial class Game
         var s = zm.CasinoTables[i];
         var name = CasinoGames.Name(s.Game);
         if (s.NeedsPower && !ZPower)
-            return new ZUse(ZUseKind.Casino, i, 0, $"{name}: needs the power on", Blocked: true);
+            return new ZUse(ZUseKind.Casino, i, 0, TextCache.Of($"{name}: needs the power on"), Blocked: true);
         var (min, max) = CasinoLimits(zm, i);
-        return new ZUse(ZUseKind.Casino, i, 0, $"Press [E] to play {name} (bets {min}-{max} points)");
+        return new ZUse(ZUseKind.Casino, i, 0, TextCache.Of($"Press [E] to play {name} (bets {min}-{max} points)"));
     }
 
     /// <summary>Is <paramref name="p"/> close enough to table <paramref name="i"/> to play it?</summary>

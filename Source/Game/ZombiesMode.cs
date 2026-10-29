@@ -980,7 +980,7 @@ public sealed partial class Game
             if (o == p || !o.Alive || !IsDowned(o))
                 continue;
             if (Flat(o.Position - pos) <= ZRules.ReviveRange && ZReachSpot(p, o.Position))
-                return new ZUse(ZUseKind.Revive, o.Id, 0, $"Hold [E] to revive {o.Name}");
+                return new ZUse(ZUseKind.Revive, o.Id, 0, TextCache.Of($"Hold [E] to revive {o.Name}"));
         }
 
         ZUse? best = null;
@@ -1007,8 +1007,8 @@ public sealed partial class Game
                 continue;
             var what = door.Debris ? "clear the debris" : "open the door";
             Consider(d, 1.9f, door.NeedsPower && !ZPower
-                ? new ZUse(ZUseKind.Door, i, door.Cost, $"{door.Name}: needs the power on", Blocked: true)
-                : new ZUse(ZUseKind.Door, i, door.Cost, $"Hold [E] to {what} ({door.Name}) [{door.Cost}]"));
+                ? new ZUse(ZUseKind.Door, i, door.Cost, TextCache.Of($"{door.Name}: needs the power on"), Blocked: true)
+                : new ZUse(ZUseKind.Door, i, door.Cost, TextCache.Of($"Hold [E] to {what} ({door.Name}) [{door.Cost}]")));
         }
         for (var i = 0; i < zm.WallBuys.Count; i++)
         {
@@ -1021,10 +1021,10 @@ public sealed partial class Game
             if (owned)
             {
                 var ammo = WallAmmoCost(wb);
-                Consider(d, UseRange, new ZUse(ZUseKind.WallAmmo, i, ammo, $"Hold [E] to buy ammo for the {wb.Build} [{ammo}]"));
+                Consider(d, UseRange, new ZUse(ZUseKind.WallAmmo, i, ammo, TextCache.Of($"Hold [E] to buy ammo for the {wb.Build} [{ammo}]")));
             }
             else
-                Consider(d, UseRange, new ZUse(ZUseKind.WallBuy, i, cost, $"Hold [E] to buy the {wb.Build} [{cost}]"));
+                Consider(d, UseRange, new ZUse(ZUseKind.WallBuy, i, cost, TextCache.Of($"Hold [E] to buy the {wb.Build} [{cost}]")));
         }
         if (zm.BoxSpots.Count > 0)
         {
@@ -1036,18 +1036,18 @@ public sealed partial class Game
             switch (BoxState)
             {
                 case ZBoxState.Idle:
-                    Consider(d, 1.9f, new ZUse(ZUseKind.Box, BoxSpot, cost, $"Hold [E] to spin the mystery box [{cost}]"));
+                    Consider(d, 1.9f, new ZUse(ZUseKind.Box, BoxSpot, cost, TextCache.Of($"Hold [E] to spin the mystery box [{cost}]")));
                     break;
                 case ZBoxState.Offering when BoxBuild >= 0 && BoxBuild < StandardBuilds.All.Length:
                 {
                     // The buyer's alone at first; the last part of the offer is anyone's (board item 2026-10-27).
                     var name = StandardBuilds.All[BoxBuild].Name;
                     if (BoxOwner == p.Id)
-                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, BoxFreeForAll ? $"Hold [E] to take the {name} (free for all now)" : $"Hold [E] to take the {name}"));
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, BoxFreeForAll ? TextCache.Of($"Hold [E] to take the {name} (free for all now)") : TextCache.Of($"Hold [E] to take the {name}")));
                     else if (BoxFreeForAll)
-                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Free for all - hold [E] to take the {name}"));
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, TextCache.Of($"Free for all - hold [E] to take the {name}")));
                     else
-                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, $"Reserved for {NameOf(BoxOwner)}: the {name}", Blocked: true));
+                        Consider(d, 1.9f, new ZUse(ZUseKind.BoxTake, BoxSpot, 0, TextCache.Of($"Reserved for {NameOf(BoxOwner)}: the {name}"), Blocked: true));
                     break;
                 }
             }
@@ -1064,17 +1064,17 @@ public sealed partial class Game
             var perk = ZRules.Perks[k];
             var cost = ZRules.PerkPrice(m.Cost > 0 ? m.Cost : perk.Price(solo), PerkCount(zp));
             if (m.NeedsPower && !ZPower)
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"{perk.Name}: needs the power on", Blocked: true));
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, TextCache.Of($"{perk.Name}: needs the power on"), Blocked: true));
             else if (zp.Has(k))
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"You have {perk.Name}", Blocked: true));
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, TextCache.Of($"You have {perk.Name}"), Blocked: true));
             else if (PerkCount(zp) >= ZRules.MaxPerks)
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"You can't carry more than {ZRules.MaxPerks} perks", Blocked: true));
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, TextCache.Of($"You can't carry more than {ZRules.MaxPerks} perks"), Blocked: true));
             else
             {
                 var held = PerkCount(zp);
                 var extra = ZRules.FullPricePerks > 0 && held >= ZRules.FullPricePerks
-                    ? $" ({Ordinal(held + 1)} perk: x{ZRules.PerkPrice(1000, held) / 1000f:0.#})" : "";
-                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, $"Hold [E] to buy {perk.Name} [{cost}]{extra}: {perk.Blurb}"));
+                    ? TextCache.Of($" ({Ordinal(held + 1)} perk: x{ZRules.PerkPrice(1000, held) / 1000f:0.#})") : "";
+                Consider(d, UseRange, new ZUse(ZUseKind.Perk, i, cost, TextCache.Of($"Hold [E] to buy {perk.Name} [{cost}]{extra}: {perk.Blurb}")));
             }
         }
         if (zm.SlotUpgrade is { } su)
@@ -1088,7 +1088,7 @@ public sealed partial class Game
             else if (su.NeedsPower && !ZPower)
                 Consider(d, UseRange, new ZUse(ZUseKind.SlotUpgrade, 0, cost, "Weapon slots: needs the power on", Blocked: true));
             else
-                Consider(d, UseRange, new ZUse(ZUseKind.SlotUpgrade, 0, cost, $"Hold [E] for 2 more weapon slots [{cost}]"));
+                Consider(d, UseRange, new ZUse(ZUseKind.SlotUpgrade, 0, cost, TextCache.Of($"Hold [E] for 2 more weapon slots [{cost}]")));
         }
         if (zm.Power is { } pw && !ZPower && Near(Flat(pw.At - pos), UseRange, pw.At))
             Consider(Flat(pw.At - pos), UseRange, new ZUse(ZUseKind.Power, 0, 0, "Hold [E] to turn on the power"));
@@ -1116,7 +1116,7 @@ public sealed partial class Game
                 continue;
             Consider(Flat(s.At - pos), UseRange, _salvageRound[i] == ZRound
                 ? new ZUse(ZUseKind.Salvage, i, 0, "Picked clean this round", Blocked: true)
-                : new ZUse(ZUseKind.Salvage, i, 0, ZRules.SalvageParts == 1 ? "Hold [E] to search the pile for a part" : $"Hold [E] to search the pile for parts (+{ZRules.SalvageParts})"));
+                : new ZUse(ZUseKind.Salvage, i, 0, ZRules.SalvageParts == 1 ? "Hold [E] to search the pile for a part" : TextCache.Of($"Hold [E] to search the pile for parts (+{ZRules.SalvageParts})")));
         }
         if (p.Bot == null) // (co-op bots never pick anything up)
         {

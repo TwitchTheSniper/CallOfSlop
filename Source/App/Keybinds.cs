@@ -228,7 +228,33 @@ public static class Keybinds
             _ => a.ToString(),
         };
 
+    /// <summary>
+    /// The display name of a key or mouse button code ("W", "Left Shift", "Mouse 4"). The HUD asks for a dozen of these
+    /// every frame, so each code's name is worked out once and kept (it would allocate a few strings every call);
+    /// <see cref="ForgetNames"/> drops them when the window regains focus, so a keyboard layout switched meanwhile shows.
+    /// </summary>
     public static string Name(int code)
+    {
+        lock (NameCache)
+        {
+            if (NameCache.TryGetValue(code, out var cached))
+                return cached;
+            var name = NameUncached(code);
+            NameCache[code] = name;
+            return name;
+        }
+    }
+
+    private static readonly Dictionary<int, string> NameCache = new();
+
+    /// <summary>Forgets the cached key names (the window gained focus: the keyboard layout may have changed).</summary>
+    public static void ForgetNames()
+    {
+        lock (NameCache)
+            NameCache.Clear();
+    }
+
+    private static string NameUncached(int code)
     {
         if (code == Unbound)
             return "-";
