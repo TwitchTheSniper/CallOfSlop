@@ -73,13 +73,19 @@ public sealed partial class Game
             CrowdStands++;
             var slide = new Vector3(-sx, 0, -sz) * (t.SurfacePush * dt);
             if (slide.LengthSquared() > 1e-8f && ZBlockTryPush(ref s.Position, CrowdClampPush(slide), ph))
+            {
                 CrowdSlides++;
+                NotePushed(p); // (the outside log's "pushed", ZombiesOutside.cs)
+            }
             return;
         }
         // Deep inside: out sideways down the slope, and up onto it.
         var push = new Vector3(-sx, 0, -sz) * (t.SurfacePush * 2 * dt);
         if (push.LengthSquared() > 1e-8f && ZBlockTryPush(ref s.Position, CrowdClampPush(push), ph))
+        {
             CrowdSlides++;
+            NotePushed(p);
+        }
         var lift = MathF.Min(t.SurfaceLift * dt, top - s.Position.Y);
         if (lift > 0 && !ZBlockBodyBlocked(s.Position + new Vector3(0, lift, 0), ph))
         {
@@ -88,6 +94,7 @@ public sealed partial class Game
                 s.Velocity.Y = 0;
             s.Grounded = true;
             CrowdLifts++;
+            NotePushed(p);
         }
     }
 

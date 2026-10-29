@@ -668,7 +668,9 @@ public sealed partial class Game
             Pitch = 0,
             SpeedPct = (byte)Math.Clamp((int)MathF.Round(SpeedOf(z) / World.WalkSpeed * 100f), 1, 200),
         };
+        WindowEntry.PlayersOnly = false; // (the window and play-area mantle rules are for players: zombies climb windows their own way)
         World.Simulate(ref z.Sim, cmd);
+        WindowEntry.PlayersOnly = true;
         if (walk)
             ZBlockZombie(z); // held off standing players' bodies (ZombieBlock.cs)
         if (!float.IsFinite(z.Sim.Position.X + z.Sim.Position.Y + z.Sim.Position.Z))

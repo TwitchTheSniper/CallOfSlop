@@ -96,6 +96,16 @@ public sealed class ZPlayer
 
     public double UseSince;
     public double RepairNext;
+
+    /// <summary>Server, the outside watch (ZombiesOutside.cs): when this spell outside began (-1: inside), where and how it began, whether it's logged.</summary>
+    public double OutsideSince = -1;
+
+    public Vector3 OutsideAt, LastInside, LastPos;
+    public string OutsideCause = "";
+    public bool OutsideLogged, WasMantling;
+
+    /// <summary>Server: when a zombie body or the crowd surface last moved this player (the outside log's "pushed").</summary>
+    public double PushedAt = double.NegativeInfinity;
     public int RepairPointsThisRound;
 
     /// <summary>Who this player is reviving and how far along (0-1); and, for a downed player, how far their revive is (clients).</summary>
@@ -177,7 +187,14 @@ public sealed partial class Game
     public double ZPhaseLeft; // seconds left of the break (clients count it down)
     public int ZRemaining; // zombies still to come this round (queued + alive)
     public bool ZPower;
-    public byte[] ZBoards = [];
+    /// <summary>Boards left on each window. Kept in <see cref="WindowEntry.Boards"/> too: the movers read it (a window with none left lets an outside player mantle in).</summary>
+    public byte[] ZBoards
+    {
+        get => _zBoards;
+        set => _zBoards = WindowEntry.Boards = value;
+    }
+
+    private byte[] _zBoards = [];
     public int BoxSpot, BoxUses;
     public ZBoxState BoxState;
     public double BoxLeft; // seconds left in the box's state
@@ -389,7 +406,10 @@ public sealed partial class Game
             zpl.BeingRevived = 0; // set again by whoever is reviving them this tick: crawling out of reach, or the reviver letting go, clears it
         for (var id = 0; id < 256; id++) // (in id order without OrderBy: no allocation every tick)
             if (Players.TryGetValue((byte)id, out var p))
+            {
                 TickZPlayer(p, ZP(p), zm, now);
+                ServerTickOutside(p, ZP(p), zm, now); // outside the play area: logged, and brought back in time (ZombiesOutside.cs)
+            }
         TickBox(zm, now);
         TickSlots(zm, now); // ZombiesSlots.cs
         TickCasino(zm, now); // ZombiesCasino.cs

@@ -396,6 +396,18 @@ the workbench." Code: `Source/Game/ZombiesDisassemble.cs` (server, messages, the
   it blocks bodies (players can't climb out, zombies can't walk in, the nav graph doesn't cross it) but **not
   bullets**, so you shoot zombies at the window. `outside` is where zombies stand to tear boards, `inside` (in the
   area) where they land and where players stand to rebuild.
+- **Getting back in from outside** (board item wr01, 2026-10-28; `Source/Physics/WindowEntry.cs`,
+  `Source/Game/ZombiesOutside.cs`). A player outside every area may mantle IN through a window whose boards are all
+  gone and whose area is open (the usual Jump while moving forward, facing it, from up to 1.4 m out); they glide over
+  the sill to just inside and drop down. Players inside never pass out through a window, and a window with a board
+  left blocks as before. More than 0.8 m from every area counts as outside: the HUD says how to get back, and after
+  10 s the server puts the player on the nearest spawn of an open area (points and gear kept). Each spell outside is
+  logged (`[zombies] player outside play area: ...`, with the map, where, the last spot inside and how: teleport,
+  knockback, mantle, pushed, fell through, jumped, walked out). Against leaks, a mantle that starts in the play area
+  must end at least 0.45 m inside an area (no more standing on outer wall tops) and never goes up through a ceiling
+  (Blackmoor's roof slab from a cabinet top). Bots follow the same rules. Known leaks left (2026-10-28, a scan of
+  jump-and-mantle from every edge spot): jumping off Blackmoor's courtyard machines and the Stone Well over the 3 m
+  courtyard walls, and off Ashgrave's Gnarled Dead Tree trunks over the graveyard wall.
 - **Spawners** behind a window name it (they belong to its area); others name an area and rise out of the ground.
 - Points are `[x, z]` (on the ground; wall buys 1.3 m up) or `[x, y, z]`. `yaw` is degrees: the way the thing faces
   (0 = -Z, 90 = +X).

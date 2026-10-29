@@ -228,6 +228,8 @@ public sealed partial class Ui
                 if (use.Kind == ZUseKind.Revive && game.Players.TryGetValue((byte)use.Index, out var dp) && game.ZP(dp).BeingRevived > 0)
                     ImGui.ProgressBar(game.ZP(dp).BeingRevived, new float2(320 * _scale, 10 * _scale), "reviving"u8);
             }
+            if (me.Alive && !me2.Downed && game.OutsideReturnLeft(me, now) is var outLeft and >= 0)
+                ImGuiSafe.TextColored(Orange, Game.OutsideHint(outLeft, Keybinds.Name(settings.Bind(GameAction.Jump)))); // outside the play area: how to get back (ZombiesOutside.cs)
             if (me.Alive && !me2.Downed && game.BoxDisassemblePrompt(Keybinds.Name(settings.Bind(GameAction.Grenade)), now) is { } dis)
                 ImGuiSafe.TextColored(game.BoxDisassembleArmed(now) ? Orange : Dim, dis); // the second key at the box: take the OFFERED build apart (never the gun in your hands)
             if (me.Alive && game.ZWaitingReady && game.ZPhase == ZRoundPhase.Break && game.Phase == MatchPhase.Playing)

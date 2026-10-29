@@ -2071,5 +2071,7 @@ public sealed partial class Game : IDisposable
         EndWeaponTweaks(); // a client drops the host's weapon tweaks (GameWeaponTweaks.cs)
         World.GravitySetting = 100; // the host's gravity setting ends with the session (GameGravity.cs)
         World.GravityScale = 1f;
+        if (ReferenceEquals(WindowEntry.Boards, _zBoards))
+            WindowEntry.Boards = []; // (the movers stop reading this game's windows)
     }
 }
