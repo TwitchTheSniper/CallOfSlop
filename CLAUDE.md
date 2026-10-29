@@ -17,7 +17,7 @@ Call of Slop is a C#/.NET 10 multiplayer arena shooter built directly on the BRU
 | Window smoke test | `--smoketest`: drives the real window, writes `smoke_*.bmp` and `[smoke]` log lines. Uses a throwaway save copy |
 | Quick host or join | `CallOfSlop host [port]`, `CallOfSlop join <ip> [port]`, `--lag=ms --loss=%`, `--no-upnp`, `--save-dir <path>` |
 | Modding checks | `--check-map FILE` (loads it and runs the map contract checks), `--check-maps DIR`, `--map-ops`, `--export-maps DIR`, `--check-weapon FILE`, `--check-part FILE`, `--check-parts [DIR]`, `--export-parts DIR [--resolved]`, `--watch-parts` (hot reload) |
-| Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch]`: baked lighting on/off BMPs next to the log. Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
+| Lighting pictures | `--light-shots "Map" [--at x,y,z,yaw,pitch] [--light-debug]`: baked lighting on/off BMPs next to the log (`--light-debug`: the bake's occluders and lights, grid-only and sky pictures, the audit). Runs in the container: `xvfb-run -a -s "-screen 0 1280x720x24" dotnet bin/Release/net10.0/CallOfSlop.dll ...` (Mesa llvmpipe; `--smoketest` works there too) |
 | Map kit | `--gen-map NAME [--out DIR] [--plan]` runs one C# generator, writes its map and prints the MapChecks report; `--gen-maps` compares every generator with its committed file; `--gen-plan FILE PNG` draws a plan (docs/mapkit/MAPKIT.md) |
 | Package a tester zip | `tools\Package.bat` (calls `tools/package.ps1`): self-contained win-x64 zip, with no personal files |
 | Verify an update package | `--verify-update <update.json> <zip>` |

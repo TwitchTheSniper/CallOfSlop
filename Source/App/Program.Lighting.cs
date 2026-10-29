@@ -72,7 +72,7 @@ public static unsafe partial class Program
                 views.Add(($"spawn{i}", s + new Vector3(0, 1.7f, 0), new Vector3(0, 1.5f, 0), 1.2f));
             }
         var b = map.LightBake;
-        Console.WriteLine($"[lightshots] {map.Name}: {(b == null ? "not lit" : $"grid {b.NX}x{b.NY}x{b.NZ} at {b.Cell:0.##} m{(b.CellY != b.Cell ? $" ({b.CellY:0.##} m tall)" : "")}, {b.Sources.Length} lights, {b.Bytes / 1024} KB, baked in {b.BakeMs:0} ms")}; {views.Count} views");
+        Console.WriteLine($"[lightshots] {map.Name}: {(b == null ? "not lit" : $"grid {b.NX}x{b.NY}x{b.NZ} at {b.Cell:0.##} m{(b.CellY != b.Cell ? $" ({b.CellY:0.##} m tall)" : "")}, {b.Sources.Length} lights, {LightBaker.OccluderList(map, LightBaker.MinOccluder(b.Spec)).Count} occluders, {b.Bytes / 1024} KB, baked in {b.BakeMs:0} ms")}; {views.Count} views");
         var times = args.SkipWhile(a => !a.Equals("--times", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault()?
             .Split(',').Select(s => double.Parse(s, CultureInfo.InvariantCulture)).ToArray();
         var saved = _settings.Lighting;
@@ -111,8 +111,13 @@ public static unsafe partial class Program
         LightGrid.DebugView = 0;
         _settings.Lighting = saved;
         if (debug && b != null)
-            foreach (var line in LightBaker.Audit(map))
+        {
+            var moves = new List<string>();
+            foreach (var line in LightBaker.Audit(map, moves))
                 Console.WriteLine($"[lightshots] audit: {line}");
+            foreach (var line in moves)
+                Console.WriteLine($"[lightshots] audit (moved): {line}");
+        }
         Console.WriteLine("[lightshots] done");
     }
 

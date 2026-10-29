@@ -1144,8 +1144,10 @@ shipped maps; your build caches its own). Drawing costs the same whatever the nu
 
 **Try it:** the Dev pack's **Light Test** is a dusk-lit stone hall with torches, candles, a chandelier, a spot-lit altar,
 stained glass and a firelit side room. `CallOfSlop --light-shots "My Map"` saves pictures of a map with the lighting on
-and off (docs/render/LIGHTING.md "Looking at it"), and the `test` block's `lightProbes` check the light stays where it
-should. The map kit has helpers for rows, rings, wall fittings and windows (docs/mapkit/MAPKIT.md "Lights").
+and off (docs/render/LIGHTING.md "Looking at it"; `--light-debug` also draws what casts the shadows and where each light
+is), and the `test` block's `lightProbes` check the light stays where it should. Shadows come from what is drawn (map
+boxes, buildings, props' drawn parts, never prop colliders), and nothing thinner than half a cell casts one. Keep lights
+out of walls: one inside a box is moved out of it (the Map contract's "light sources" check lists each move). The map kit has helpers for rows, rings, wall fittings and windows (docs/mapkit/MAPKIT.md "Lights").
 
 ## Map packs
 

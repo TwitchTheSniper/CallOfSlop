@@ -35,7 +35,7 @@ air in front of it:
 | --- | --- | --- |
 | A | RGBA16F | rgb: the static lights' colour reaching the cell, as a surface facing them sees it; a: the share that flickers |
 | B | RGBA8 snorm | xyz: the lights' average direction, weighted by brightness (its length says how one-sided the light is); w: ambient left (sky visibility) |
-| C | RGBA8 | r: how much of the sun reaches the cell; g, b: the flicker phasor (128 = 0, see "Flicker"); a: the flickering lights' average pace |
+| C | RGBA8 | r: how much of the sun reaches the cell (64 steps of 4) and, in its low two bits, the cell's flags (section 3); g, b: the flicker phasor (128 = 0, see "Flicker"); a: the flickering lights' average pace (32 steps of 8) and, in its low three bits, the cell's blocked links |
 
 Why a grid and not per-vertex colours or lightmaps:
 
@@ -45,10 +45,11 @@ Why a grid and not per-vertex colours or lightmaps:
 - **No change to how the world is drawn.** Boxes are instanced (one draw call for a whole map); per-vertex colours would
   mean subdividing and un-instancing them, and lightmaps an atlas and UVs for every box face.
 - **Bounded cost.** Three filtered texture reads and a few multiplies per pixel, whatever the number of lights.
-- **The direction stops leaks.** A thin wall between a light and a room is thinner than a cell, so filtering mixes the
-  two sides; but the lit side's direction points at the light, and a surface facing away gets `max(dot(n, dir), 0)` of
-  it, so the far side of a wall stays dark. Light from all round (several lights) has a short direction and lights every
-  face a little (60%).
+- **Walls keep their sides apart.** A wall is often thinner than a cell, so plain filtering would mix the two sides.
+  Cells round a wall are flagged and filtered carefully in the shader (section 5, "Walls and what casts shadows"), so
+  neither the far face of a wall nor the floor at its foot reads the light behind it. The direction helps too: a
+  surface facing away from the light gets `max(dot(n, dir), 0)` of it. Light from all round (several lights) has a
+  short direction and lights every face a little (60%).
 
 The trade-off is softness: shadow edges are about a cell wide (0.5 m), and very thin geometry can leak sun at its edges.
 That suits the blocky look; the Cathedral can use `cell: 0.35` in its nave if it wants crisper edges.
@@ -63,15 +64,24 @@ That suits the blocky look; the Cathedral can use `cell: 0.35` in its nave if it
   (the shader's scale and its nudge along the normal are per axis: `uLitScale`, and `uLitOrigin.w` the nudge up and down),
   so a tall map with several floors keeps fine cells across. Past the region's sides the GPU clamps to its edge cells
   (the light there carries on outward), so put the edge in open air.
-- **Occluders:** `Map.Solid` (map boxes, prop colliders, building walls, foliage trunks, hidden colliders) without the
-  boxes that come and go or don't block sight: building doors and glass, Zombies doors and barriers, map logic boxes,
-  clip boxes. They are filed in a uniform grid of box lists (cells of 2 m or more) and rays walk it with a 3D DDA, each
-  box tested once per ray. Terrain maps also step rays along the heightfield. A light inside a box (a bulb in its
-  lamp's collider) ignores that box.
-- **Each cell:** its centre, pushed out of any box it falls in (to the nearest face); then every light whose range
+- **Occluders** (`LightBaker.OccluderList`): what is drawn. From `Map.Solid`: map boxes, building walls, foliage trunks
+  and hidden colliders (the collision under a cosmetic mesh), without the boxes that come and go or don't block sight
+  (building doors and glass, Zombies doors and barriers, map logic boxes, clip boxes). From each placed prop: its drawn
+  parts, turned and scaled as the prop renderer draws them (never its collider), without parts that glow or flicker,
+  glass, and parts pitched or rolled so far their box would be mostly air. Nothing thinner than half a cell in two of
+  its three sizes casts a shadow (poles, rails, candles: one ray per cell can only draw their shadow as a half-metre
+  streak). They are filed in a uniform grid of box lists (cells of 2 m or more) and rays walk it with a 3D DDA, each
+  box tested once per ray. Terrain maps also step rays along the heightfield. A light's own prop's parts never shadow
+  it (a lantern's base plate under its bulb would throw a shadow metres wide), and a light inside some other box is
+  moved out of it first (see "Walls and what casts shadows").
+- **Each cell:** its centre, pushed out of any box it falls in (to the nearest face; the cell is then flagged
+  *inside*); then every light whose range
   reaches it (lights are binned in 4 m bins): falloff `(1 - (d/r)^2)^2 / (1 + 8 (d/r)^2)` (an inverse-square-like core,
   zero at the range), a spot's soft cone, an area light as 1-9 point samples with a cosine emitter, and one shadow ray
   per light (per sample). One ray towards the sun. Cells still inside solid take their open neighbours' average.
+- **Flags and links:** each cell also records whether the way to its +x, +y and +z neighbours' centres is clear (a
+  lookup in the occluder grid), and a cell is flagged *mixed* when the block of 8 cells it is the low corner of holds an
+  inside cell or a blocked link. Only mixed blocks get the shader's careful filtering.
 - **Sky (ambient occlusion):** on a half-resolution grid, 16 cosine-weighted rays over the upper hemisphere; a ray that
   gets 24 m (or out of the occluders' grid) sees the sky. Ambient = `indoor + (1 - indoor) * seen`. It is what makes a
   roofed hall dark and a courtyard bright, and darkens corners.
@@ -100,6 +110,11 @@ lighting" checks the key and the grid change). `LightBake.BakeMs` is `[NotBaked]
 - The block is rewritten at most three times a frame (`glBufferSubData`): the world pass (mode 1, the grid at each
   pixel), the first-person gun (mode 2: drawn in camera space, so the CPU samples the grid once at the eye and turns the
   light's direction into view space) and menus and previews (mode 0, the classic light; every frame starts there).
+- `LitGrid(p, n)` reads the grid for a surface (C# twin: `LightBake.SampleSurface`): a little over half a cell along the
+  normal, with the GPU's own trilinear filtering, unless the 8 cells round that point are a mixed block (one texel
+  fetch of the low corner's flags). Then it filters them itself, leaving out cells inside boxes, cells behind the
+  surface and cells across a blocked link from the corner nearest the point (a wall between two cell centres), and
+  falls back to plain filtering if that leaves nothing. Away from walls the cost is that one fetch.
 - `ApplyLightAt(albedo, n, wrap, worldPos)` replaces `ApplyLight` in the box, building, prop, mesh, terrain, foliage and
   decal shaders. Mode 0 returns `ApplyLight` exactly; modes 1 and 2 scale the hemisphere ambient by the cell's sky
   visibility, the sun by its sun visibility, and add the baked light times how much the surface faces it, wavering by
@@ -136,6 +151,34 @@ maps (`Program.AddFrameLights`); unlit maps never get them.
 **Settings > Video > Lighting:** Off (the classic light everywhere), Baked, Baked + flashes (default). `lighting=` in
 settings.txt. The baked grid costs the same whatever the number of lights.
 
+### Walls and what casts shadows (2026-10-28)
+
+The developer's Light Test screenshots (board items dev-light-leak-ll01 and dev-light-phantoms-lp01) showed torch light
+in warm bands on a building's solid outer wall and along its foot, bright patches with no source in the fireplace room,
+dark streaks down walls and a dark square on the floor with nothing above it. `--light-shots --light-debug` (section 7)
+traced each one:
+
+- **Light through walls, patches with no source.** The occluder grid's list starts were shifted one cell along, so a
+  grid cell read its neighbour's share of the box list: rays and the push-out missed boxes, and torch light and the
+  low sun went through solid walls (the bands, and the sun patches in the side room). Fixed in `Occluders.Index`.
+- **The foot of a wall.** A cell centre inside a thin wall was pushed out to the nearer face, often the room's, so the
+  floor outside read the room's light through filtering. Now such cells are flagged and the shader leaves them out next
+  to walls; a wall between two centres blocks the link between them, and the shader leaves out cells across it.
+- **The dark square.** Prop colliders cast the shadows, and a collider is often a plain box round the whole prop (the
+  Brazier's is a 0.7 m block where a bowl on legs is drawn). Shadows now come from the drawn parts.
+- **Streaks.** Thin things (lamp posts, rails, candles) darkened whole cells along one shadow ray; they no longer cast.
+- **Lights in walls.** A light inside a box made that box see-through for itself, so it lit both sides. It is moved out
+  of the box: a spot or area light through the face it shines out of, a prop's light through the face nearest where its
+  prop stands, other lights through the nearest face. The Map contract lists the moves (`--check-map` shows them); in
+  Ashgrave Cathedral: the two north transept windows' lights (inside the wall, shining north, out of the building), two
+  nave lancet lights inside a window prop's sill, and a Wall Torch set into the wall (yaw 180 at z 4).
+- **The contract** ("light sources", `LightBaker.Audit`): every hidden collider that casts shadows has a mesh drawn over
+  it, no light is stuck inside solid, and every prop light is at its drawn prop. "Light leaks" checks the rest.
+
+The bake format is version 3 (`MapBake.FormatVersion`): stale bakes are rebuilt. Lighting away from walls is unchanged
+(the Cathedral's pictures before and after differ only at walls and props); both GL paths draw the same pictures (under
+llvmpipe, at most 1/255 apart). The bake costs about the same (the links are a lookup, about 3% of it).
+
 ## 6. Destruction and moving things
 
 Destroyed boxes keep the light they had: the grid is not re-lit at run time (a wall blown open leaves its shadow on the
@@ -151,6 +194,10 @@ light through. Movers aren't occluders either.
   GPU under a virtual X server with Mesa's software GL, which is how this was developed in the agent container:
   `xvfb-run -a -s "-screen 0 1280x720x24" dotnet CallOfSlop.dll --light-shots "Light Test"`. (The whole `--smoketest`
   runs there too.)
+- `--light-debug` adds three pictures per view: `_occ` (the bake's occluders drawn over the scene, coloured by kind:
+  map boxes white, buildings green, prop parts magenta, hidden colliders yellow, trunks brown, and every baked light as
+  a small cube in its colour, seen through walls), `_grid` (the grid's light alone on white) and `_sky` (grey: the sky
+  the cells see, yellow: the sun), and prints the audit and the lights the bake moved out of boxes.
 - The map's `test` block takes `lightProbes` (Maps/README.md "Testing a map"), which the Map contract and `--check-map`
   check: bright where the lights are, dim where they aren't.
 - The log prints `[lighting] light grid ...` when a lit map's grid is uploaded.

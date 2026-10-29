@@ -140,7 +140,7 @@ public static unsafe class Lighting
         float LitFlicker(float t, vec4 c, float share)
         {
             vec2 z = (c.gb * 255.0 - 128.0) / 127.0 * 0.6;
-            return max(1.0 - 0.3 * share + FlameWave(z, c.a, t), 0.0);
+            return max(1.0 - 0.3 * share + FlameWave(z, min(c.a * (255.0 / 248.0), 1.0), t), 0.0); // (alpha's low bits: the cell's links)
         }
 
         // The baked grid for a surface at p facing n (LightBake.SampleSurface in C#): read a little over half a cell along n.
@@ -159,6 +159,15 @@ public static unsafe class Lighting
             {
                 vec3 f = clamp(g - vec3(c0), 0.0, 1.0);
                 vec3 cell = 1.0 / (uLitScale.xyz * vec3(size));
+                // The home cell (the corner nearest the point): a corner across a blocked link from it (texture C's alpha
+                // low bits: +x, +y, +z) is behind a wall that stands between two cell centres.
+                ivec3 h = ivec3(greaterThanEqual(f, vec3(0.5)));
+                ivec3 hq = min(c0 + h, size - 1);
+                bool homeOpen = (int(texelFetch(uLitC, hq, 0).r * 255.0 + 0.5) & 1) == 0;
+                ivec3 links = ivec3(int(texelFetch(uLitC, min(c0 + ivec3(0, h.y, h.z), size - 1), 0).a * 255.0 + 0.5) & 1,
+                                    int(texelFetch(uLitC, min(c0 + ivec3(h.x, 0, h.z), size - 1), 0).a * 255.0 + 0.5) & 2,
+                                    int(texelFetch(uLitC, min(c0 + ivec3(h.x, h.y, 0), size - 1), 0).a * 255.0 + 0.5) & 4);
+                bvec3 blocked = bvec3(homeOpen && links.x != 0, homeOpen && links.y != 0, homeOpen && links.z != 0);
                 vec4 sa = vec4(0.0);
                 vec4 sb = vec4(0.0);
                 vec4 sc = vec4(0.0);
@@ -171,7 +180,9 @@ public static unsafe class Lighting
                     float w = t.x * t.y * t.z;
                     vec4 tc = texelFetch(uLitC, q, 0);
                     vec3 centre = uLitOrigin.xyz + (vec3(q) + 0.5) * cell;
-                    if ((int(tc.r * 255.0 + 0.5) & 1) != 0 || dot(centre - p, n) < 0.0 || w <= 0.0)
+                    bvec3 across = notEqual(o, h);
+                    if ((int(tc.r * 255.0 + 0.5) & 1) != 0 || dot(centre - p, n) < 0.0 || w <= 0.0
+                        || (blocked.x && across.x) || (blocked.y && across.y) || (blocked.z && across.z))
                         continue;
                     sa += texelFetch(uLitA, q, 0) * w;
                     sb += texelFetch(uLitB, q, 0) * w;
