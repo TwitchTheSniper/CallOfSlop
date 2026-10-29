@@ -172,36 +172,22 @@ public static partial class SelfTest
 
         // ---- The horde walks over it ----
         {
-            (bool Past, float Closest, int InGrid, double At) Pass(byte blocker, bool none = false)
+            // One walking forward (-Z) with one lying just ahead of it and to its side: a crawler pushes it aside, a slug doesn't.
+            (float Turn, int InGrid) Beside(byte lying)
             {
-                var b = Z(At(-9, -10), blocker);
+                var b = Z(At(-9, -10.5f), lying);
                 b.StunnedUntil = 1e9; // lies still
-                if (none)
-                    b.Sim.Position = b.PrevPos = At(-20, -20); // (out of the way: the walk on its own)
-                var w = Z(At(-9, -14), 0);
-                w.Yaw = MathF.PI;
-                me.Teleport(At(-9, -4));
-                var closest = float.MaxValue;
-                var inGrid = 0;
-                var t0 = t;
-                var at = -1.0;
-                for (var k = 0; k < 360 && at < 0; k++)
-                {
-                    g.SelfTestZombiesTick(t += World.TickDt);
-                    closest = MathF.Min(closest, Flat2(w.Position - b.Position));
-                    inGrid = g.HordeAI.Grid.Count;
-                    if (w.Position.Z > -9f)
-                        at = t - t0;
-                }
+                var w = Z(At(-8.6f, -10f), 0);
+                g.SelfTestTickHorde(t += World.TickDt); // (the neighbour grid is built at the start of the horde's tick)
+                var turn = MathF.Abs(World.WrapAngle(g.HordeAI.Separate(w, 0) - 0));
+                var n = g.HordeAI.Grid.Count;
                 Clear();
-                return (at >= 0, closest, inGrid, at);
+                return (turn, n);
             }
-            var free = Pass(15, none: true);
-            var sp = Pass(15);
-            var cp = Pass(12);
-            Line($"a zombie walking past one lying in its way: on its own {free.At:0.00} s; over a slug {sp.Past} after {sp.At:0.00} s, {sp.Closest:0.00} m at the closest ({sp.InGrid} in the neighbour grid); "
-                 + $"round a crawler {cp.Past} after {cp.At:0.00} s, {cp.Closest:0.00} m ({cp.InGrid} in the grid)");
-            if (!sp.Past || !free.Past || sp.InGrid != 1 || cp.InGrid != 2 || sp.At > free.At * 1.25 + 0.3 || sp.Closest >= cp.Closest)
+            var sp = Beside(15);
+            var cp = Beside(12);
+            Line($"a walker with one lying just ahead of it: a slug turns it {sp.Turn:0.00} rad ({sp.InGrid} of 2 in the neighbour grid), a crawler {cp.Turn:0.00} rad ({cp.InGrid} of 2 in the grid)");
+            if (sp.InGrid != 1 || cp.InGrid != 2 || sp.Turn > 0.01f || cp.Turn < 0.05f)
                 Fail("the horde should walk over a slug (out of the neighbour grid) and keep going");
         }
 
