@@ -220,7 +220,7 @@ public static class Keybinds
             GameAction.SpectatePrev => "Spectate previous player (Zombies, out)",
             GameAction.WeaponTweaks => "Weapon tweaks (debug window)",
             GameAction.DropItem => "Drop the gun in your hands (Zombies)",
-            GameAction.Inventory => "Parts inventory: drop loose parts (Zombies)",
+            GameAction.Inventory => "Parts inventory (Zombies: drop loose parts; Sandbox: the debug parts menu)",
             GameAction.PerfWindow => "Performance window (window, corner overlay, off)",
             GameAction.LookAtInspector => "Look-at inspector (dev: what the crosshair is on)",
             GameAction.CopyLookAt => "Copy the look-at reference (dev, inspector open)",

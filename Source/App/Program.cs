@@ -1339,6 +1339,7 @@ public static unsafe partial class Program
                 DrawCasinoInMatch(now); // a Zombies casino table's panel, over the match (Program.ZombiesCasino.cs)
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
+                DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1557,7 +1558,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen || Ui.SandboxPartsOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows; the Sandbox parts menu)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1605,6 +1606,12 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.InventoryOpen)
         {
             Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
+            SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.SandboxPartsOpen)
+        {
+            Ui.CloseSandboxParts(); // Esc closes the Sandbox parts menu (back to building), not the match (Program.Sandbox.cs)
             SetMouseCaptured(true);
             return;
         }
@@ -1865,6 +1872,7 @@ public static unsafe partial class Program
             _crouchToggle = _proneToggle = false; // respawn standing
 
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
+        SandboxMenuInput(); // Sandbox: the inventory key opens and closes the debug parts menu (Program.Sandbox.cs)
         var sandbox = SandboxInput(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
         var buttons = Buttons.None;
         if (_mouseCaptured)

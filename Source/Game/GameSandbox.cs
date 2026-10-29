@@ -13,13 +13,14 @@ public enum CActKind : byte
     Cancel,
     Use, // u16 body, u8 part
     Stand,
-    Rack,
+    Rack, // u8 pick: 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere (protocol 79)
     Drop,
     PickUp, // u16 body
     Wire, // u16 body, u8 from part, u8 to part (the linking tool; milestone 2)
     Unwire, // u16 body, u8 part: cut every wire on it
     Setting, // u16 body, u8 part: a logic part's next setting
     SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
+    Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -299,7 +300,12 @@ public sealed partial class Game
                 SandboxStand(p, teleport: true);
                 return null;
             case CActKind.Rack:
-                return hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position);
+            {
+                var pick = r.U8();
+                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position) : hands.TakePart(World.Map.Sandbox, p.Id, (byte)(pick - 1));
+            }
+            case CActKind.Blueprint:
+                return SandboxSpawnBlueprint(p, r.U8());
             case CActKind.Drop:
                 return hands.Drop(Constructs, p.Id, p.Position, p.Yaw);
             case CActKind.PickUp:
@@ -354,6 +360,8 @@ public sealed partial class Game
                 w.U16(body).U8(part).U8(socket); // (from, to)
                 break;
             case CActKind.SeatKeys:
+            case CActKind.Rack:
+            case CActKind.Blueprint:
                 w.U8(part);
                 break;
             case CActKind.PickUp:
@@ -373,6 +381,52 @@ public sealed partial class Game
             return;
         }
         Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    // ---- The debug parts menu (UiSandboxParts.cs) ------------------------------------------------------------------
+
+    /// <summary>The debug parts menu is allowed: Sandbox on a map whose sandbox section doesn't turn it off (a future survival map can).</summary>
+    public bool SandboxPartsMenu => SandboxOn && World.Map.Sandbox is { PartsMenu: true };
+
+    /// <summary>Client (or host): ask for a part by id from the debug parts menu (the rack's request with a part id).</summary>
+    public void SandboxTakePart(byte id) => SandboxSend(CActKind.Rack, part: (byte)(id + 1));
+
+    /// <summary>
+    /// Server: the debug parts menu's blueprint button: the blueprint is built standing on the ground in front of the
+    /// player, facing the way they look, far enough out that it doesn't land on them. Returns why it was refused, or null.
+    /// </summary>
+    internal string? SandboxSpawnBlueprint(Player p, int index)
+    {
+        if (!SandboxOn)
+            return "blueprints spawn only in Sandbox";
+        if (World.Map.Sandbox is not { PartsMenu: true })
+            return "the parts menu is off on this map";
+        if (!p.Alive)
+            return "you are dead";
+        if (SandboxHands.Hand(p.Id).Seated)
+            return "get out of the seat first";
+        var all = ConstructBuild.Blueprints;
+        if (index < 0 || index >= all.Count)
+            return "no such blueprint";
+        var bp = all[index];
+        var fwd = World.FlatForward(p.Yaw);
+        var probe = p.Position + fwd * 6f;
+        var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe.X, probe.Z), p.Yaw, out var why);
+        if (c == null)
+            return why.Length > 0 ? why : "the world is full of constructs";
+        // Out past its own size (a buggy is longer than a gate): its widest reach from its origin, plus a metre and a half.
+        var reach = MathF.Max(MathF.Max(MathF.Abs(c.LocalMin.X), MathF.Abs(c.LocalMax.X)), MathF.Max(MathF.Abs(c.LocalMin.Z), MathF.Abs(c.LocalMax.Z)));
+        var dist = MathF.Max(3f, reach + 1.5f);
+        if (MathF.Abs(dist - 6f) > 0.05f)
+        {
+            var at = p.Position + fwd * dist;
+            var g0 = ConstructWorld.Ground(World.Query, probe.X, probe.Z);
+            var g1 = ConstructWorld.Ground(World.Query, at.X, at.Z);
+            c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
+            c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+        }
+        Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
+        return null;
     }
 
     // ---- Players in and on constructs ------------------------------------------------------------------------------
@@ -530,7 +584,7 @@ public sealed partial class Game
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
-            lines.Add(new HudLine("F at the rack: take a part. 3 wrench, 4 welder, 5 linking tool, 1/2 guns", dim));
+            lines.Add(new HudLine("F at the rack or I (parts menu): take a part. 3 wrench, 4 welder, 5 linking tool, 1/2 guns", dim));
         else
         {
             if (_sbHint.Stale(held.Id))

@@ -49,7 +49,7 @@ public static unsafe partial class Program
         var other = cars[0];
         me.Teleport(new Vector3(-20, 0, 18));
 
-        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false)
+        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false)
         {
             for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
             {
@@ -71,8 +71,17 @@ public static unsafe partial class Program
                     Gfx.SetBlend(false);
                 }
                 Gfx.SetFog(map.Sky, 0, 0);
+                if (menu)
+                {
+                    // The debug parts menu over the scene, as in a match (the HUD under it).
+                    Ui.BeginFrame();
+                    Ui.DrawHud(g, now, "", _settings);
+                    Ui.DrawSandboxParts(g, _settings);
+                    Ui.EndFrame();
+                }
                 if (frame == 2)
                 {
+                    _shotFull = menu; // (full size, so the menu's text reads)
                     SaveScreenshot($"sandbox_{name}");
                     Console.WriteLine($"[sandboxshots] {name}: {ConstructRender.LastBoxes} construct boxes; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
                 }
@@ -187,6 +196,34 @@ public static unsafe partial class Program
             Shot("wires", c2 + new Vector3(-3.5f, 3.4f, 2.5f), c2, ghosts: true);
             Console.WriteLine($"[sandboxshots] wires: {ConstructRender.LastWires} drawn; lamps {wb.Parts[Part(wb, "Lamp")].Out}");
             ConstructRender.ShowWires = false;
+        }
+
+        // The debug parts menu (UiSandboxParts.cs): two parts picked (the recent row), then the whole list over the yard,
+        // a search, and a Buggy spawned from it in front of the player.
+        me.Teleport(ConstructWorld.Ground(World.Query, -12, 22));
+        Run(0.3);
+        Ui.SandboxPartsKeepOpen = true;
+        Ui.OpenSandboxParts(focusSearch: false);
+        Ui.SetSandboxPartsSearch("");
+        Ui.SandboxPartsPick(g, ConstructParts.Need("Wheel"));
+        Ui.SandboxPartsPick(g, ConstructParts.Need("Frame Block"));
+        Run(0.1);
+        var eyeAt = me.Position + new Vector3(0, 1.6f, 0);
+        Shot("parts_menu", eyeAt, eyeAt + World.FlatForward(me.Yaw) * 10 + new Vector3(0, -1.5f, 0), menu: true);
+        Ui.SetSandboxPartsSearch("logic");
+        Shot("parts_menu_search", eyeAt, eyeAt + World.FlatForward(me.Yaw) * 10 + new Vector3(0, -1.5f, 0), menu: true);
+        var buggy = ConstructBuild.Blueprints.ToList().FindIndex(b => b.Name == "Buggy");
+        var before = g.Constructs.Bodies.Count;
+        Ui.SandboxPartsSpawn(g, buggy);
+        Run(1.5);
+        Console.WriteLine($"[sandboxshots] parts menu: {Ui.SandboxPartsListed} parts listed for \"logic\"; in hand {ConstructParts.Get(g.SandboxHands.Hand(me.Id).Held)?.Name ?? "nothing"}; "
+                          + $"a Buggy spawned from it: {g.Constructs.Bodies.Count - before} new construct(s), notice \"{g.SandboxNotice}\"");
+        Ui.CloseSandboxParts();
+        Ui.SandboxPartsKeepOpen = false;
+        if (g.Constructs.Bodies.Count > before)
+        {
+            var sp = g.Constructs.Bodies[^1].WorldCom;
+            Shot("parts_menu_spawned", eyeAt + new Vector3(0, 1.5f, 0), sp);
         }
 
         // Broken: a blast by the other buggy, then its suspension and fuel line shot off.

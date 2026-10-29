@@ -31,7 +31,7 @@ public static unsafe partial class Program
     {
         if (_chatLatch && !Keybinds.IsDown(_window, _settings.Bind(GameAction.ChatAll)) && !Keybinds.IsDown(_window, _settings.Bind(GameAction.ChatTeam)))
             _chatLatch = false;
-        if (Ui.ChatOpen || _chatLatch || Ui.PauseOpen || Ui.BenchRun != null || Ui.Rebinding != null)
+        if (Ui.ChatOpen || _chatLatch || Ui.PauseOpen || Ui.BenchRun != null || Ui.Rebinding != null || Ui.SandboxPartsOpen) // (Enter takes a part in the Sandbox parts menu)
             return;
         if (Pressed(GameAction.ChatAll))
             Ui.OpenChat(team: false);

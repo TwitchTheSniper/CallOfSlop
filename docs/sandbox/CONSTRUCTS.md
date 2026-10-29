@@ -25,9 +25,29 @@ north-west corner) and some loose parts.
 | R | Turn the part on its socket (the next way round that fits). |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
+| I | The debug **parts menu** (below): any part into your hands, any blueprint in front of you. I or Esc closes it. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+
+### The debug parts menu
+
+A debugging aid for the test yard (the developer asked for one, 2026-10-29), not how the final game will hand parts out:
+**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens **Parts
+(debug)** (`Source/UI/UiSandboxParts.cs`), the mouse free for it. It lists every loaded part grouped by role (frames,
+panels, seats, wheels, ..., logic), with a search box (name, role or description), and for each its colour swatch (its
+first and last boxes' colours), the tool it needs, mass, health, armour, fitting time and description. Click a part, or
+move the highlight with Up/Down and press Enter: the client asks the server for it by id (the rack's `CActKind.Rack`
+request with a part id, so the server checks it: an unknown id is refused) and takes out the tool it needs, so the
+ghost sockets, fitting and dropping work exactly as with a part from the rack. A **recent** row keeps the last six picks.
+The **blueprint buttons** (one per blueprint file) ask the server to build that blueprint standing on the ground in front
+of you, facing the way you look, far enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). The
+window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it. It closes itself when you
+die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
+
+It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section (a future
+survival map will): the key then says "the parts menu is off on this map" and the server refuses both requests. The
+window allocates nothing per frame while open (every row's text is made once).
 
 Editing always needs the right tool in hand (decision 2): **welder** for frames, panels, corners, decks and foundations,
 **wrench** for everything bolted (seats, wheels, suspensions, engines, tanks, fuel lines, transmissions, differentials,
@@ -174,11 +194,12 @@ parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Tur
 }
 ```
 
-`rack` is `[x, z, yaw]`; `rackParts` defaults to every part. Unknown parts or blueprints refuse the map with the reason.
+`rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the debug parts menu off (it is
+on by default). Unknown parts or blueprints refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 78)
+## Network (protocol 79)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -190,7 +211,8 @@ The Sandbox mode is offered only on maps with this section.
   wheels to the ground themselves.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
   unwire, a setting, a seated player's fire/aim/reload keys); the server re-checks everything and answers a refusal with
-  its reason.
+  its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
+  debug parts menu, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
 
@@ -229,9 +251,17 @@ game the lift raises the player standing on it, a passenger rides along in the s
 buggy's way is hurt. "Constructs"' loopback now also checks the client and a late joiner mirror the joints, wires and
 signals.
 
+The **Sandbox parts menu** section (`Source/App/SelfTestSandboxPartsMenu.cs`): the map's `partsMenu` flag reads (on by
+default, a bad value refused); in an offline Sandbox game the menu's request hands the chosen part by id to the player
+anywhere, an unknown id is refused (the hands kept), the rack still refuses from afar and hands out its next kind at the
+rack, a Turret spawns in front of the player and a bad blueprint index is refused, and the map flag turns both off; the
+window draws headless (every part listed, a search narrows it, a pick puts the part in hand with its tool out and closes
+the window) with no ImGui error and no allocation per frame while open; a real client's part by id and blueprint go over
+the wire; and outside Sandbox a blueprint spawn is refused.
+
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
-wires (the linking tool's view), and a broken buggy (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
+wires (the linking tool's view), a broken buggy, and the debug parts menu (open, searched, and a buggy spawned from it) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
 
 ## Decisions made for milestone 1 (open questions it touches; the developer may change them)
 
