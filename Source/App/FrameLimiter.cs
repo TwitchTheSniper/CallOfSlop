@@ -56,6 +56,7 @@ public sealed partial class FrameLimiter
     public long Release { get; private set; }
 
     private int _fps;
+    private long _anchor, _frames; // the schedule: frame n is released at _anchor + n / fps
 
     /// <summary>Lateness kept in the schedule (made up next frame) rather than resetting it: a quarter frame, at most 2 ms.</summary>
     public static long Tolerance(long period) => Math.Min(period / 4, Stopwatch.Frequency / 500);
@@ -75,20 +76,30 @@ public sealed partial class FrameLimiter
             Release = 0;
             return 0;
         }
-        var period = Period(fps);
         if (fps != _fps || Release == 0)
         {
             _fps = fps;
-            Release = now; // the first capped frame goes out now; the schedule starts from it
+            Release = _anchor = now; // the first capped frame goes out now; the schedule starts from it
+            _frames = 0;
             return 0;
         }
-        var target = Release + period;
+        var target = _anchor + (_frames + 1) * Stopwatch.Frequency / fps; // (from the anchor: no rounding drift)
         if (now < target)
         {
+            _frames++;
             Release = target;
             return target - now;
         }
-        Release = now - target <= Tolerance(period) ? target : now; // a long frame: start over from now (no burst)
+        if (now - target <= Tolerance(Period(fps)))
+        {
+            _frames++;
+            Release = target; // a little late: kept, made up next frame
+        }
+        else
+        {
+            Release = _anchor = now; // a long frame: start over from now (no burst)
+            _frames = 0;
+        }
         return 0;
     }
 
