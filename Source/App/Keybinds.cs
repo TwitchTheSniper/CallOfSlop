@@ -46,6 +46,7 @@ public enum GameAction
     LookAtInspector, // binds version 9: the dev look-at inspector (UiDevTools.cs, Program.DevTools.cs)
     CopyLookAt, // copy the inspector's reference line to the clipboard
     PropEditor, // the dev prop editor on the prop under the crosshair
+    ToolWheel, // binds version 10: Sandbox, hold for the tool wheel (SandboxToolWheel.cs)
     COUNT,
 }
 
@@ -103,6 +104,7 @@ public static class Keybinds
         Key(GlfwKey.F6), // Look-at inspector (dev): binds version 9
         Key(GlfwKey.F5), // Copy the look-at reference (dev)
         Key(GlfwKey.F10), // Prop editor (dev)
+        Mouse(GlfwMouseButton.Middle), // Tool wheel (Sandbox): binds version 10 (Q is Swap weapon)
     ];
 
     /// <summary>
@@ -112,9 +114,9 @@ public static class Keybinds
     /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
     /// 6: Weapon tweaks F7 added (same rule). 7: Drop item T and Parts inventory I (Zombies) added (same rule).
     /// 8: Performance window F9 added (same rule). 9: dev tools: Look-at inspector F6, Copy look-at reference F5 and Prop
-    /// editor F10 added (same rule).
+    /// editor F10 added (same rule). 10: Tool wheel (Sandbox) on the middle mouse button added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 9;
+    public const int DefaultsVersion = 10;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -136,6 +138,7 @@ public static class Keybinds
         (9, GameAction.LookAtInspector, Unbound, Key(GlfwKey.F6)),
         (9, GameAction.CopyLookAt, Unbound, Key(GlfwKey.F5)),
         (9, GameAction.PropEditor, Unbound, Key(GlfwKey.F10)),
+        (10, GameAction.ToolWheel, Unbound, Mouse(GlfwMouseButton.Middle)),
     ];
 
     /// <summary>
@@ -225,6 +228,7 @@ public static class Keybinds
             GameAction.LookAtInspector => "Look-at inspector (dev: what the crosshair is on)",
             GameAction.CopyLookAt => "Copy the look-at reference (dev, inspector open)",
             GameAction.PropEditor => "Prop editor (dev: the prop under the crosshair)",
+            GameAction.ToolWheel => "Tool wheel (Sandbox: hold, flick to a tool, let go)",
             _ => a.ToString(),
         };
 

@@ -1340,6 +1340,7 @@ public static unsafe partial class Program
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
+                DrawToolWheelInMatch(); // the Sandbox tool wheel while held (Program.SandboxWheel.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1857,8 +1858,11 @@ public static unsafe partial class Program
         if (Pressed(GameAction.Ready) && !Ui.PauseOpen)
             _game.ToggleReady();
 
-        // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat.
-        if (_mouseCaptured && !Ui.ChatOpen)
+        // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
+        var wheelOpen = ToolWheelInput(delta);
+
+        // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).
+        if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)
         {
             // Lower sensitivity while zoomed so aiming feels the same at any FOV.
             var zoom = float.Lerp(1f, _game.Active.Def.AdsZoom, _game.AimT);

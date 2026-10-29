@@ -554,10 +554,11 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
-| I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
+| I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it). Sandbox: the debug parts menu |
+| Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), and `binds_version=8` the Performance window on F9.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, and `binds_version=10` the Sandbox tool wheel on the middle mouse button.
 
 ### Display
 
@@ -998,6 +999,13 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   transmissions, differentials, hinges and joints, doors, logic parts), 4 the **welder** (frames, panels, corners, decks,
   foundations), 5 the **linking tool** (wires and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
   you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
+- **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
+  the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
+  go takes it out. Wrench at the top, welder on the right, linking tool on the left, **hands / gun** at the bottom (out
+  of build mode); the four diagonals are the tools still to come (hoist, configure tool, scanner, hand drill), greyed out
+  as "coming later". The highlighted tool's name and key show in the middle, the tool in your hands is marked green, and
+  letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
+  choosing when you die, open a menu or the parts menu, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
   part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
   takes the part you look at off into your hand, T drops what you hold. Fire on the ground starts a new construct.

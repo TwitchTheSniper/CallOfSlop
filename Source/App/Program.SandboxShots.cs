@@ -49,7 +49,7 @@ public static unsafe partial class Program
         var other = cars[0];
         me.Teleport(new Vector3(-20, 0, 18));
 
-        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false)
+        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false, bool wheel = false)
         {
             for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
             {
@@ -79,9 +79,17 @@ public static unsafe partial class Program
                     Ui.DrawSandboxParts(g, _settings);
                     Ui.EndFrame();
                 }
+                if (wheel)
+                {
+                    // The tool wheel held open over the HUD, as in a match.
+                    Ui.BeginFrame();
+                    Ui.DrawHud(g, now, "", _settings);
+                    _toolWheel.Draw(Ui.Scale);
+                    Ui.EndFrame();
+                }
                 if (frame == 2)
                 {
-                    _shotFull = menu; // (full size, so the menu's text reads)
+                    _shotFull = menu || wheel; // (full size, so the menu's text reads)
                     SaveScreenshot($"sandbox_{name}");
                     Console.WriteLine($"[sandboxshots] {name}: {ConstructRender.LastBoxes} construct boxes; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
                 }
@@ -225,6 +233,20 @@ public static unsafe partial class Program
             var sp = g.Constructs.Bodies[^1].WorldCom;
             Shot("parts_menu_spawned", eyeAt + new Vector3(0, 1.5f, 0), sp);
         }
+
+        // The tool wheel (SandboxToolWheel.cs): the welder out, held open with the pointer flicked west to the linking
+        // tool, then towards the hoist (one still to come).
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
+        _toolWheel.SetKeys(_settings);
+        _toolWheel.Step(g, false, Vector2.Zero, false);
+        _toolWheel.Step(g, true, Vector2.Zero, false);
+        _toolWheel.Step(g, true, new Vector2(-45, 4), false);
+        Shot("tool_wheel", eyeAt, eyeAt + World.FlatForward(me.Yaw) * 10 + new Vector3(0, -1.5f, 0), wheel: true);
+        _toolWheel.Step(g, true, new Vector2(80, -80), false);
+        Shot("tool_wheel_later", eyeAt, eyeAt + World.FlatForward(me.Yaw) * 10 + new Vector3(0, -1.5f, 0), wheel: true);
+        Console.WriteLine($"[sandboxshots] tool wheel: open {_toolWheel.Menu.IsOpen}, hovered {_toolWheel.Menu.Hovered}, current {_toolWheel.Menu.Current}");
+        _toolWheel.Menu.Close();
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
 
         // Broken: a blast by the other buggy, then its suspension and fuel line shot off.
         var ob = other.WorldCom;
