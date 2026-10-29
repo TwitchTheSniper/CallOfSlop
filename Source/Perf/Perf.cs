@@ -42,6 +42,12 @@ public enum PerfArea : byte
     Hud, //   the 2D HUD (crosshair, ammo, prompts)
     Ragdolls, //   ragdoll physics steps (drawn with the props' debris)
     Ui, // the ImGui menus and HUD windows, built and drawn
+    UiNewFrame, //   ImGui's new frame (input, the font atlas, the UI scale)
+    UiHud, //   the match HUD windows (name tags, markers, the HUD, kill card, chat)
+    UiMenus, //   menus over the match or the lobby (loadout, pause, bench, trader, lobby screens)
+    UiDev, //   the audio mixer, weapon tweaks and dev tools windows (F8 / F6 / F10)
+    UiPerf, //   this performance window or its overlay (F9)
+    UiDraw, //   ImGui's render and the GL draw of its lists (texture uploads too), and the gun thumbnails
     Swap, // SwapBuffers: waiting for vsync or the GPU
     Loading, // map loads and switches, the collision world build (anywhere in the frame)
     Limiter, // the Max FPS frame limiter's wait after SwapBuffers (FrameLimiter.cs)
@@ -85,6 +91,7 @@ public static class Perf
         "Projectiles", "Props, logic, destruction", "Player moves", "Bots + nav", "Net send (snapshots)", "Client prediction",
         "Frame state, sounds", "Audio, voice, frenzy", "Render (CPU)", "Buildings", "Terrain", "Props", "Meshes", "Foliage",
         "Decals", "Sky", "Players", "Entities, zombies", "Effects", "View model", "HUD (2D)", "Ragdolls", "UI (ImGui)",
+        "ImGui new frame", "HUD windows", "Menus", "Dev windows", "Perf window (F9)", "ImGui draw (GL)",
         "Swap (vsync/GPU wait)", "Loading", "Frame limiter (Max FPS wait)",
     ];
 
@@ -106,6 +113,7 @@ public static class Perf
         Under(PerfArea.Zombies, PerfArea.Horde);
         Under(PerfArea.Render, PerfArea.Buildings, PerfArea.Terrain, PerfArea.Props, PerfArea.Meshes, PerfArea.Foliage, PerfArea.Decals, PerfArea.Sky,
             PerfArea.Bodies, PerfArea.Entities, PerfArea.Effects, PerfArea.ViewModel, PerfArea.Hud, PerfArea.Ragdolls);
+        Under(PerfArea.Ui, PerfArea.UiNewFrame, PerfArea.UiHud, PerfArea.UiMenus, PerfArea.UiDev, PerfArea.UiPerf, PerfArea.UiDraw);
         return p;
     }
 
