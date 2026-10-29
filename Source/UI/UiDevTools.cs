@@ -228,6 +228,7 @@ public sealed partial class Ui
         }
         if (ImGui.IsItemHovered(ImGuiHoveredFlags.AllowWhenDisabled))
             ImGui.SetItemTooltip("Writes a change package in DevEdits in the save folder: edit.json (what changed), the edited prop file and a readme. Attach it to the Playtest Desk report. Shipped files are never changed."u8);
+        ImGui.EndDisabled(); // closes BeginDisabled(!s.Changed) above; "Open folder" stays usable
         ImGui.SameLine();
         if (ImGui.Button("Open folder"u8))
             DevEditPackage.OpenFolder(_pePackage ?? DevEditPackage.Folder);
