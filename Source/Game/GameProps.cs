@@ -312,6 +312,7 @@ public sealed partial class Game
             _blastEnv = wasEnv;
         }
         BlastTactical(attacker, center, br.ExplodeRadius, br.ExplodeDamage, now); // tactical devices (GameTactical.cs)
+        SandboxBlast(center, br.ExplodeRadius, br.ExplodeDamage); // Sandbox: construct parts in range (GameSandbox.cs)
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------

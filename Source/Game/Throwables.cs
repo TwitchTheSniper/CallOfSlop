@@ -631,6 +631,7 @@ public sealed partial class Game
             BlastZombies(owner, center, radius, def.ObjectDamage * 3f, now); // Zombies (ZombieAI.cs): grenades are strong against them
             BlastPve(owner, center, radius, def.ObjectDamage * 3f, now, (byte)(Throwables.KillIdBase + (byte)proj.Kind)); // co-op enemies too (GamePve.cs)
             BlastTactical(owner, center, radius, def.ObjectDamage, now); // enemy tactical devices (GameTactical.cs)
+            SandboxBlast(center, radius, def.ObjectDamage); // Sandbox: construct parts in range (GameSandbox.cs)
         }
         else if (TacticalGear.UseOf(proj.Kind) == TacticalUse.Thrown)
         {

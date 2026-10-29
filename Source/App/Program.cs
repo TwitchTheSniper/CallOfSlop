@@ -1830,6 +1830,7 @@ public static unsafe partial class Program
             _crouchToggle = _proneToggle = false; // respawn standing
 
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
+        var sandbox = SandboxInput(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
         var buttons = Buttons.None;
         if (_mouseCaptured)
         {
@@ -1883,19 +1884,19 @@ public static unsafe partial class Program
                 _crouchToggle = _proneToggle = false; // Jump stands you up first
                 _holdJumpUntilRelease = true;
             }
-            if (Pressed(GameAction.Reload))
-                _game.StartReload(now);
+            if (Pressed(GameAction.Reload) && !SandboxHoldsTrigger)
+                _game.StartReload(now); // (Sandbox with a tool out: R turns the part instead)
             if (Pressed(GameAction.PrimaryWeapon))
                 _game.SwitchTo(0, now);
             if (Pressed(GameAction.SecondaryWeapon))
                 _game.SwitchTo(1, now);
             if (Pressed(GameAction.SwapWeapon))
                 _game.SwitchTo(_game.NextSlot, now);
-            if (Pressed(GameAction.Weapon3))
+            if (Pressed(GameAction.Weapon3) && !sandbox)
                 _game.SwitchTo(2, now); // Zombies slot upgrade (refused while you have 2 slots)
-            if (Pressed(GameAction.Weapon4))
+            if (Pressed(GameAction.Weapon4) && !sandbox)
                 _game.SwitchTo(3, now);
-            if (Pressed(GameAction.Interact))
+            if (Pressed(GameAction.Interact) && !sandbox)
             {
                 if (_game.InteractCanHold)
                     _interactDownAt = now; // at a parked or manned cart: tap = man it / step off, hold = push it
@@ -1942,10 +1943,10 @@ public static unsafe partial class Program
                 buttons |= Buttons.Crouch;
         }
         _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's arms step only)
-        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim)) || _smokeAimHeld;
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) || _smokeAimHeld; // (Sandbox: aim takes parts off with a tool out)
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
-        var down = _mouseCaptured && Down(GameAction.Fire);
+        var down = _mouseCaptured && Down(GameAction.Fire) && !SandboxHoldsTrigger; // (Sandbox: fire fits parts with a tool out; drivers don't shoot)
         if (_swallowClick)
         {
             if (!down)
@@ -2154,6 +2155,7 @@ public static unsafe partial class Program
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         DrawLogic(now); // map logic: doors, lamps, buttons, levers, plates (Program.Logic.cs); nothing on maps without a "logic" section
+        DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
@@ -2252,7 +2254,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true })
+        if (local is { Alive: true } && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);

@@ -1427,6 +1427,8 @@ public sealed partial class Game : IDisposable
         }
         if (CartBlocksShot(shooter, def, ref dir))
             return; // a push cart only fires while you man it, within its traverse limits (GameZombies.cs)
+        if (SandboxOn && SandboxSeated(shooter))
+            return; // Sandbox: drivers don't shoot (milestone 1; GameSandbox.cs)
         // Fire-rate budget: each shot costs ~one fire interval. Up to 0.3 s can be banked so
         // packets that arrive bunched together aren't rejected, but the average rate can't exceed the gun's.
         if (def.FireGroups is { } fireGroups)
@@ -1495,6 +1497,7 @@ public sealed partial class Game : IDisposable
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
+            var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets (GameSandbox.cs)
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
@@ -1531,6 +1534,11 @@ public sealed partial class Game : IDisposable
                 PveShotAdd(enemy, ray.Damage * def.DamageMultAt(dist) * (eHead ? def.HeadMult : 1f) * PenFactor(dist), eHead);
             }
             var pen = PenFactor(dist); // damage left after the walls it went through (1: none)
+            if (construct is { } ch && hit == null && turret == null && zombie == null && device == null && ch.Distance <= dist + 1e-3f)
+            {
+                SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen); // the part it hit (armour first; GameSandbox.cs)
+                flags |= 1;
+            }
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
             PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)
@@ -1703,6 +1711,7 @@ public sealed partial class Game : IDisposable
                 SendBuildingState(sender); // building doors and windows (GameBuildings.cs)
                 SendStructureState(sender); // broken destructible chunks (GameDestruction.cs)
                 SendLogicState(sender); // map logic: doors, lamps, levers, controlled movers (GameLogic.cs)
+                Module.OnClientJoined(this, sender); // the active mode's own state (Sandbox: every construct)
                 if (VoteOpen)
                 {
                     RefitBallot(); // an option too small for everyone now is replaced (MapVote.cs)

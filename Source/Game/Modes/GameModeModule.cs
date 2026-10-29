@@ -12,6 +12,7 @@ public enum MapNeeds : byte
     Hills = 2, // hill zones (generated when not hand-placed)
     Flags = 4, // two flag stands (generated when not hand-placed)
     ZombiesSection = 8, // a "zombies" section in the map file (only maps made for Zombies)
+    SandboxSection = 16, // a "sandbox" section in the map file (only maps made for the Sandbox mode)
 }
 
 /// <summary>
@@ -150,6 +151,11 @@ public abstract class GameModeModule
 
     /// <summary>Someone (re)spawns: hand out the mode's weapons, perks, position (after the normal spawn and loadout).</summary>
     public virtual void OnSpawn(Game game, Player p)
+    {
+    }
+
+    /// <summary>Server: a client just connected (after its Welcome and the core state): send it this mode's own state.</summary>
+    public virtual void OnClientJoined(Game game, RakNetGUID to)
     {
     }
 

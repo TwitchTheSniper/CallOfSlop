@@ -718,6 +718,7 @@ public sealed partial class Game
             BlastKnockback(owner, center, radius, KillStreaks.Get(KillStreaks.FromKillId(killId)).Knockback, enemiesOnly: true); // pushes the caller's enemies (Knockback.cs)
             StreakBlastEntities(owner, center, radius, maxDamage, now);
             BlastTactical(owner, center, radius, maxDamage, now); // enemy tactical devices (GameTactical.cs)
+            SandboxBlast(center, radius, maxDamage); // Sandbox: construct parts in range (GameSandbox.cs)
         }
         BlastProps(owner, center, radius, maxDamage, PropDamage.Streak, now); // breakable props (GameProps.cs)
         BlastBuildings(owner, center, radius, maxDamage, PropDamage.Streak, now); // building doors and windows (GameBuildings.cs)
