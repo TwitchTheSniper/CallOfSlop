@@ -130,7 +130,7 @@ public sealed partial class Game
         if (ZMap is not { } zm)
             return false;
         foreach (var b in zm.Benches)
-            if (Flat(b.At - p.Position) <= 3.5f)
+            if (Flat(b.At - p.Position) <= 3.5f && ZReachSpot(p, b.At))
                 return true;
         return false;
     }
@@ -144,7 +144,7 @@ public sealed partial class Game
         if (ZMap is not { } zm || zm.BoxSpots.Count == 0)
             return "There's no mystery box on this map.";
         var spot = zm.BoxSpots[Math.Clamp(BoxSpot, 0, zm.BoxSpots.Count - 1)];
-        if (Flat(spot.At - p.Position) > BoxDisassembleRange)
+        if (Flat(spot.At - p.Position) > BoxDisassembleRange || !ZReachSpot(p, spot.At))
             return "You're not at the mystery box.";
         if (BoxState != ZBoxState.Offering || BoxBuild < 0 || BoxBuild >= StandardBuilds.All.Length)
             return "The mystery box isn't offering anything to take apart.";

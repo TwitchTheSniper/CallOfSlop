@@ -215,7 +215,7 @@ public sealed partial class Game
     {
         if (ZMap is not { } zm || i < 0 || i >= zm.SlotMachines.Count || i >= ZSlots.Length)
             return "That's not a slot machine.";
-        if (Flat(zm.SlotMachines[i].At - p.Position) > UseRange + 0.3f)
+        if (Flat(zm.SlotMachines[i].At - p.Position) > UseRange + 0.3f || !ZReachSpot(p, zm.SlotMachines[i].At))
             return "You're not at the slot machine.";
         var m = ZSlots[i];
         if (m.State != ZSlotState.Idle)
