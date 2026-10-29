@@ -11,7 +11,8 @@ public static class FpsCounter
 {
     private static double _windowStart = -1, _lastShown;
     private static int _frames;
-    private static string _text = "";
+    private static readonly char[] Text = new char[24]; // reused: no string twice a second
+    private static int _textLength;
 
     public static void Draw(double now)
     {
@@ -22,17 +23,18 @@ public static class FpsCounter
         if (span >= 0.5)
         {
             _lastShown = _frames / span;
-            _text = $"{_lastShown:0} fps";
+            Text.AsSpan().TryWrite($"{_lastShown:0} fps", out _textLength);
             _frames = 0;
             _windowStart = now;
         }
-        if (_text.Length == 0)
+        if (_textLength == 0)
             return;
+        var text = Text.AsSpan(0, _textLength);
         var size = ImGui.GetIO().DisplaySize;
-        var textSize = ImGui.CalcTextSize(_text);
+        var textSize = ImGui.CalcTextSize(text);
         var pos = new float2(size.X - textSize.X - 8, 4);
         var dl = ImGui.GetForegroundDrawList();
-        dl.AddText(pos + new float2(1, 1), new ImColor8(0, 0, 0, 140), _text);
-        dl.AddText(pos, new ImColor8(200, 205, 210, 170), _text);
+        dl.AddText(pos + new float2(1, 1), new ImColor8(0, 0, 0, 140), text);
+        dl.AddText(pos, new ImColor8(200, 205, 210, 170), text);
     }
 }

@@ -77,7 +77,9 @@ public sealed partial class Ui
             _perfStatsAt = now;
             _perfStats.Update();
         }
+        AllocProfile.Mark("P1 sample"); // TMPALLOC
         SamplePerfNet(game, now);
+        AllocProfile.Mark("P2 draw"); // TMPALLOC
         _perfOverlayGame = game;
         if (PerfMode == PerfView.Overlay)
             DrawPerfOverlay();
@@ -93,7 +95,7 @@ public sealed partial class Ui
         var fresh = !ReferenceEquals(_perfNetOf, game) || dt > 5 || dt <= 0;
         _perfNetAt = now;
         _perfNetOf = game;
-        _perfWorkingSet = Environment.WorkingSet; // (once a second)
+        _perfWorkingSet = WorkingSetBytes(); // (once a second)
         if (game == null)
         {
             _perfIn = _perfOut = _perfSnapSize = _perfSnapRate = 0;
@@ -109,6 +111,42 @@ public sealed partial class Ui
             _perfSnapSize = parts > 0 ? (float)(sb - _perfSnapB0) / parts : 0;
         }
         (_perfIn0, _perfOut0, _perfSnapB0, _perfSnapN0) = (inB, outB, sb, sn);
+    }
+
+    private static Microsoft.Win32.SafeHandles.SafeFileHandle? _statm;
+    private static readonly byte[] StatmBytes = new byte[128];
+
+    /// <summary>
+    /// The process's working set. On Linux <see cref="Environment.WorkingSet"/> reads and parses /proc/self/status into
+    /// new strings (about 3 KB each call); this reads /proc/self/statm through a handle kept open into a fixed buffer.
+    /// </summary>
+    private static long WorkingSetBytes()
+    {
+        if (!OperatingSystem.IsLinux())
+            return Environment.WorkingSet;
+        try
+        {
+            _statm ??= File.OpenHandle("/proc/self/statm");
+            var n = RandomAccess.Read(_statm, StatmBytes, 0);
+            // "size resident shared ...", in pages: the second number.
+            var span = StatmBytes.AsSpan(0, n);
+            var space = span.IndexOf((byte)' ');
+            if (space < 0)
+                return 0;
+            span = span[(space + 1)..];
+            long pages = 0;
+            foreach (var b in span)
+            {
+                if (b is < (byte)'0' or > (byte)'9')
+                    break;
+                pages = pages * 10 + (b - '0');
+            }
+            return pages * Environment.SystemPageSize;
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return Environment.WorkingSet;
+        }
     }
 
     private void PerfMessage(string text, double now)
@@ -158,6 +196,7 @@ public sealed partial class Ui
             if (now - _perfMsgAt < 4)
                 ImGuiSafe.TextColored(Green, _perfMsg);
 
+            AllocProfile.Mark("P3 frame"); // TMPALLOC
             // ---- Frame time ----
             ImGui.Text($"{s.Fps:0} fps   avg {s.AvgMs:0.00} ms   min {s.MinMs:0.00}   max {s.MaxMs:0.00}   1% low {s.Low1Ms:0.00} ms ({s.Low1Fps:0} fps)   {s.Frames} frames");
             if (FrameLimiter.ActiveFps > 0)
@@ -176,13 +215,17 @@ public sealed partial class Ui
                 DrawTickGraph(new float2(w, 60 * _scale));
             }
 
+            AllocProfile.Mark("P4 cpu"); // TMPALLOC
             // ---- CPU tree ----
             if (ImGui.CollapsingHeader("CPU (main thread, ms per frame over the last second)"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawCpuTable(s);
+            AllocProfile.Mark("P5 gpu"); // TMPALLOC
             if (ImGui.CollapsingHeader("GPU passes"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawGpuTable(s);
+            AllocProfile.Mark("P6 counters"); // TMPALLOC
             if (ImGui.CollapsingHeader("Counters"u8, ImGuiTreeNodeFlags.DefaultOpen))
                 DrawPerfCounters(game, s);
+            AllocProfile.Mark("P7 end"); // TMPALLOC
             if (Perf.Misnested > 0)
                 ImGuiSafe.TextColored(Red, $"{Perf.Misnested} scope(s) ended out of order (a bug in the timing code)");
         }
@@ -565,7 +608,9 @@ public sealed partial class Ui
         if (ImGui.Begin("##perfoverlay"u8, flags))
         {
             ImGui.Text($"{s.Fps:0} fps  avg {s.AvgMs:0.0}  max {s.MaxMs:0.0}  1% low {s.Low1Ms:0.0} ms");
+            AllocProfile.Mark("O1 graph"); // TMPALLOC
             DrawFrameGraph(new float2(240 * _scale, 44 * _scale), s.MaxMs > 36 ? 70f : 40f, false);
+            AllocProfile.Mark("O2 rest"); // TMPALLOC
             // The three busiest roots (by average).
             int a1 = -1, a2 = -1, a3 = -1;
             for (var r = 0; r < PerfRoots.Length; r++)

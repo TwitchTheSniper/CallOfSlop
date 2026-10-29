@@ -654,6 +654,8 @@ public static unsafe class SkyRenderer
         private static SkySettings? _sky;
         private static SkyQuality _quality;
         private static int _vw, _vh;
+        private static Map? _logMap;
+        private static int _logsLeft; // the periodic GPU line: the first few per map only (a log line allocates; play would never stop paying)
 
         public static void Init()
         {
@@ -707,6 +709,15 @@ public static unsafe class SkyRenderer
             if (now < _logAt)
                 return;
             _logAt = now + 5;
+            if (!ReferenceEquals(_logMap, _map))
+                (_logMap, _logsLeft) = (_map, 3);
+            if (_logsLeft <= 0)
+            {
+                _logMs = 0;
+                _logSamples = _logFrames = 0;
+                return;
+            }
+            _logsLeft--;
             int* v = stackalloc int[4];
             Native.glGetIntegerv(GL_VIEWPORT, v);
             (_vw, _vh) = (v[2], v[3]);
