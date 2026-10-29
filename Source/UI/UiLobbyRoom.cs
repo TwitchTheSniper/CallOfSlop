@@ -88,10 +88,10 @@ public sealed partial class Ui
                 ImGuiSafe.TextColored(Dim, address);
                 InviteHeader(); // Copy invite link / code (UiInvite.cs)
             }
-            if (_roomConfirmClose && DrawConfirmClose(game, "the lobby") is { } close)
+            if (_roomConfirmClose && DrawConfirmClose(game, inMatch: false) is var close and not CloseChoice.None)
             {
                 _roomConfirmClose = false;
-                if (close)
+                if (close == CloseChoice.Close)
                     action = LobbyRoomAction.Leave;
             }
             ImGui.Separator();

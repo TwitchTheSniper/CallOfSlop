@@ -1902,7 +1902,7 @@ public sealed partial class Game : IDisposable
                     name = Settings.Clean($"{name[..Math.Min(name.Length, 13)]} {p.Id}");
                 p.Name = name;
                 ReadHelloProfile(p, ref r); // prestige + level (cosmetic, GameCosmetics.cs)
-                if (VersionProblem(r.Has(2) ? r.U16() : 0, "player") is { } helloProblem)
+                if (r.Has(2) && VersionProblem(r.U16(), "player") is { } helloProblem) // (builds before protocol 74 don't send it: let them in)
                 {
                     RefuseVersion(sender, p, helloProblem); // GameHostBye.cs
                     break;
