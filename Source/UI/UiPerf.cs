@@ -376,7 +376,8 @@ public sealed partial class Ui
             return;
         }
         var total = MathF.Max(gpu.TotalAvgMs(), 0.001f);
-        ImGui.Text($"GPU frame {gpu.TotalAvgMs():0.000} ms (smoothed; read back a few frames late, never waited for)");
+        ImGui.Text($"GPU frame {gpu.TotalAvgMs():0.000} ms in the passes (smoothed; read back a few frames late, never waited for)");
+        ImGuiSafe.TextColored(Dim, $"+ {gpu.GapAvgMs:0.000} ms between passes (the GPU waiting for the CPU, or untimed work; billed to no pass)");
         if (gpu.OutOfOrder > 0)
             ImGuiSafe.TextColored(Red, $"{gpu.OutOfOrder} pass mark(s) out of order (skipped)");
         if (!ImGui.BeginTable("##perfgpu"u8, 3, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))

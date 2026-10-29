@@ -194,9 +194,17 @@ public static class Perf
         On = on;
     }
 
-    /// <summary>Times a render pass on the CPU and marks its end on the GPU timer (nothing when <see cref="On"/> is off).</summary>
+    /// <summary>Times a render pass on the CPU and marks its start and end on the GPU timer (nothing when <see cref="On"/> is off).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static PassScope Pass(PerfArea area, PerfGpuPass pass) => On ? new PassScope(area, pass, Begin(area)) : default;
+    public static PassScope Pass(PerfArea area, PerfGpuPass pass) => On ? BeginPass(area, pass) : default;
+
+    private static PassScope BeginPass(PerfArea area, PerfGpuPass pass)
+    {
+        var t0 = Begin(area);
+        if (t0 != 0)
+            Gpu?.Begin(pass); // the pass's GPU start stamp (PerfGpu): a wait before it isn't billed to it
+        return new PassScope(area, pass, t0);
+    }
 
     /// <summary>The frame's GPU pass timer (made by the game once GL is up; null headless).</summary>
     public static PerfGpu? Gpu;
