@@ -497,17 +497,17 @@ public sealed class CrowdAgents
         return (uint)ux < (uint)Cols && (uint)uz < (uint)Rows ? uz * Cols + ux : -1;
     }
 
-    /// <summary>May an agent of cell <paramref name="c"/> walk into neighbouring cell <paramref name="u"/>?</summary>
+    /// <summary>
+    /// May an agent of cell <paramref name="c"/> walk into neighbouring cell <paramref name="u"/>? Only where the crowd
+    /// has reached (a count there) and there is room for another agent (or out of view: it leaves the picture).
+    /// </summary>
     private bool Accepts(int c, int u)
     {
         if (u < 0 || _want[u] == 0)
             return false; // (nothing there: the crowd hasn't reached it)
         if (_vis[u] == 0)
             return true; // (out of view: it leaves the picture)
-        if (_members[u] < _target[u])
-            return true;
-        // A sampled cell (more zombies than drawn) that isn't packed: the stream flows through it (it passes one on).
-        return _want[u] > _target[u] && _want[u] < JamCount && _want[c] < JamCount + JamCount / 2;
+        return _members[u] < _target[u];
     }
 
     private void FlowPass(int s)
@@ -621,6 +621,10 @@ public sealed class CrowdAgents
                 }
                 if (_move[c] > 0.3f)
                     turnTo = _yawC[c] + ((Look[i] >> 8 & 255) / 255f - 0.5f) * 0.5f;
+                // Pressing on in place: a moving cell with no room ahead (a stream sampled at the cap, or a queue) walks
+                // on the spot, unless it is packed (a jam stands).
+                if (_want[c] < JamCount)
+                    Walk[i] += Pace[i] * Speed * _move[c] * (1f - _flow[c]) * dt;
             }
             float nx = x + vx * dt, nz = z + vz * dt;
             if (st != Mode.Moving && st != Mode.Sinking)
@@ -941,9 +945,6 @@ public sealed class CrowdAgents
                     diff--;
                     passes++;
                 }
-                // A flowing, sampled stream: one walks on into the next sampled cell (which passes one on in turn).
-                if (diff > 0 && passes == 0 && _move[c] > 0.5f && down >= 0 && _vis[down] != 0 && _want[down] > _target[down] && Accepts(c, down) && PassTo(c, down))
-                    diff--;
                 if (diff <= 0)
                 {
                     _surT[c] = 0;

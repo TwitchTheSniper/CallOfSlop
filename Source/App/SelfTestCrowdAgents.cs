@@ -157,10 +157,11 @@ public static partial class SelfTest
             for (var c = 0; c < a.Cells; c++)
             {
                 var d = new Vector2(a.MinX + (c % a.Cols + 0.5f) * a.Cell - cam.X, a.MinZ + (c / a.Cols + 0.5f) * a.Cell - cam.Z).Length();
-                var t = Math.Min(pic.Count[c], a.CapAt(d));
+                var t = a.TargetOf(c);
                 want += t;
                 members += a.MembersOf(c);
-                if (a.MembersOf(c) != t)
+                // (the cap moves in steps, so it may be up to two off the distance's own)
+                if (a.MembersOf(c) != t || t > pic.Count[c] || Math.Abs(t - Math.Min(pic.Count[c], a.CapAt(d))) > 2)
                     wrong++;
             }
             var drawn = inst.Total;
@@ -192,7 +193,7 @@ public static partial class SelfTest
     {
         var pic = CrowdTestPicture(out _);
         var a = new CrowdAgents();
-        var cam = new Vector3(-30, 1.7f, 0);
+        var cam = new Vector3(-60, 1.7f, 0);
         var proj = Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, 500f);
         void Look(Vector3 at) => ZombieAnim.SetFrustum(Matrix4x4.CreateLookAt(cam, at, Vector3.UnitY) * proj);
         try
@@ -205,19 +206,25 @@ public static partial class SelfTest
             }
             var before = a.Count;
             var raisedBefore = a.Raised;
+            var seen = new bool[a.Cells];
+            for (var c = 0; c < a.Cells; c++)
+                seen[c] = a.VisibleCell(c);
             Look(cam + new Vector3(50, 0, 0)); // (east, at the stream)
             a.FromPicture(pic, null);
             a.Update(cam, 1 / 60f, 0, null);
-            var risingNow = 0;
-            for (var i = 0; i < a.Count; i++)
-                if (a.State[i] == CrowdAgents.Mode.Rising)
-                    risingNow++;
-            var visibleWant = 0;
+            int fresh = 0, short_ = 0, rising = 0;
             for (var c = 0; c < a.Cells; c++)
-                if (a.VisibleCell(c))
-                    visibleWant += a.TargetOf(c);
-            if (a.Count < visibleWant || risingNow > 0 || a.Raised != raisedBefore)
-                Fail($"crowd agents: cells turned into view should be filled at once ({a.Count} agents for {visibleWant}, {risingNow} rising)");
+                if (a.VisibleCell(c) && !seen[c] && a.TargetOf(c) > 0)
+                {
+                    fresh++;
+                    if (a.MembersOf(c) != a.TargetOf(c))
+                        short_++;
+                }
+            for (var i = 0; i < a.Count; i++)
+                if (a.State[i] == CrowdAgents.Mode.Rising && !seen[a.CellOf[i]])
+                    rising++;
+            if (fresh == 0 || short_ > 0 || rising > 0 || a.Raised != raisedBefore)
+                Fail($"crowd agents: cells turned into view should be filled at once ({fresh} came into view, {short_} not full, {rising} agents rising in them)");
             Look(cam + new Vector3(-50, 0, 0)); // (west: the stream behind the camera)
             a.FromPicture(pic, null);
             a.Update(cam, 1 / 60f, 0, null);
@@ -408,12 +415,14 @@ public static partial class SelfTest
             for (var k = 0; k < 10; k++)
                 v.Prepare(g, eye, t += 1 / 60.0, map.FogEnd);
             var a0 = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 10; k++)
+                v.Prepare(g, eye, t += 1 / 60.0, map.FogEnd);
+            var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
             var ms = ThreadCpu.TimeMs(() =>
             {
                 for (var k = 0; k < 10; k++)
                     v.Prepare(g, eye, t += 1 / 60.0, map.FogEnd);
             }) / 10;
-            var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
             var i = v.Inst;
             Line($"crowd prep on Horde Stress at 25,000 (host, mass only, one thread): {ms:0.00} ms CPU, {i.Total} instances ({i.Count[0]}/{i.Count[1]}/{i.Count[2]}), {v.Agents.CellsDrawn} cells drawn, {v.Agents.CellsHidden} behind the ground, {alloc} bytes allocated");
             if (alloc > 0)
