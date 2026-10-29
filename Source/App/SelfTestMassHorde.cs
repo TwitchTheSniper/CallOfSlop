@@ -63,7 +63,11 @@ public static partial class SelfTest
     {
         var now = clock;
         var mem0 = GC.GetTotalMemory(true);
-        using var g = ZGame(0, ref now, tweak: r => r.FirstRoundDelay = 9999, onMap: map);
+        using var g = ZGame(0, ref now, tweak: r =>
+        {
+            r.FirstRoundDelay = 9999;
+            r.Crowd.PaceByRound = false; // (the fixed pace these numbers were measured at; "Horde pace" checks the round's pace)
+        }, onMap: map);
         var me = g.Local!;
         me.ImmuneUntil = 1e9;
         me.Teleport(new Vector3(0, 0, 0));

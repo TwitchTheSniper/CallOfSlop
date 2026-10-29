@@ -109,6 +109,7 @@ public static partial class SelfTest
         {
             r.FirstRoundDelay = 9999;
             r.Crowd.IndividualCap = 120;
+            r.Crowd.PaceByRound = false; // (the fixed pace the scenes were tuned at; "Horde pace" checks the round's pace)
             if (legacy)
             {
                 // The old behaviour: no sight (everything counts at its distance), no swaps, the front standing at the
