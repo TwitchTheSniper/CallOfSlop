@@ -32,6 +32,12 @@ public sealed partial class Ui
     /// <summary>The lobby room header's invite buttons (host only).</summary>
     private void InviteHeader()
     {
+        if (CallOfSlop.Platform.Steam.SteamPlatform.Lobby.LobbyId != 0 && CallOfSlop.Platform.Steam.SteamPlatform.Lobby.IsOwner)
+        {
+            ImGui.SameLine(0, 18 * _scale);
+            if (ImGui.Button("Invite Steam friends##steaminvite"u8))
+                CallOfSlop.Platform.Steam.SteamPlatform.Lobby.InviteFriends(); // the overlay's invite dialog (SteamLobbies.cs)
+        }
         if (HostInvite.Length == 0)
             return;
         ImGui.SameLine(0, 18 * _scale);
@@ -66,13 +72,20 @@ public sealed partial class Ui
         _inviteCopiedUntil = Environment.TickCount64 / 1000.0 + 4;
     }
 
-    /// <summary>"LAN", "list", "LAN + list" for a browser row.</summary>
-    private static string SourceLabel(ServerBrowser.Entry e) => (e.FromLan, e.FromMaster) switch
+    /// <summary>"LAN", "list", "LAN + list", "Steam" (and "+ Steam") for a browser row.</summary>
+    private static string SourceLabel(ServerBrowser.Entry e)
     {
-        (true, true) => "  LAN + list",
-        (false, true) => "  list",
-        _ => "  LAN",
-    };
+        var label = (e.FromLan, e.FromMaster) switch
+        {
+            (true, true) => "  LAN + list",
+            (false, true) => "  list",
+            (true, false) => "  LAN",
+            _ => "",
+        };
+        if (e.FromSteam)
+            label += label.Length == 0 ? "  Steam" : " + Steam";
+        return label;
+    }
 
     /// <summary>The Host tab's sharing options.</summary>
     private void HostSharingOptions(Settings s)

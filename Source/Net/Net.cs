@@ -87,6 +87,8 @@ public enum Msg : byte
     ZTrader, // server -> all (he came or went) and each joiner: Zombies: the trader (here or gone, visit number, where he stands, the round he leaves, his shelf: kind, part, price; nothing sells out) (reliable; ZombiesTrader.cs, protocol 73)
     ZTraderBuy, // client -> server: Zombies: buy C of shelf item N of visit V from the trader (no limit; at most the rules' maxPerBuy at a time) (reliable; protocol 73)
     HostBye, // server -> one client or all: why the host is closing the connection (the host closed the server, a different build) (reliable; GameHostBye.cs, protocol 74)
+    SteamIds, // client -> server: my Steam ID (count 1, id, u64) after the Hello; server -> all: every Steam player's (count, then player id + u64 each), with the roster, only when someone is on Steam (reliable; GameSteam.cs, protocol 76)
+    SteamAuth, // client -> server: kind 0, my Steam auth session ticket for this host (u16 length, bytes); server -> one client: kind 1, you were refused or removed (the reason), then the connection closes (reliable; GameSteamAuth.cs, protocol 76)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>
@@ -145,6 +147,13 @@ public sealed class PacketWriter
     {
         BinaryPrimitives.WriteUInt32LittleEndian(_buf.AsSpan(Length), v);
         Length += 4;
+        return this;
+    }
+
+    public PacketWriter U64(ulong v)
+    {
+        BinaryPrimitives.WriteUInt64LittleEndian(_buf.AsSpan(Length), v);
+        Length += 8;
         return this;
     }
 
@@ -255,6 +264,14 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
         return v;
     }
 
+    public ulong U64()
+    {
+        Need(8);
+        var v = BinaryPrimitives.ReadUInt64LittleEndian(_data[_pos..]);
+        _pos += 8;
+        return v;
+    }
+
     public double F64()
     {
         Need(8);
@@ -275,195 +292,147 @@ public ref struct PacketReader(ReadOnlySpan<byte> data)
 }
 
 /// <summary>
-/// Thin wrapper around a BRUTAL RakNet peer. One instance acts either as the listen-server (host)
-/// or as a client connected to it.
+/// The game's one door to the network. One instance acts either as the listen-server (host) or as a client connected to
+/// it; underneath, an <see cref="INetTransport"/> moves the bytes: RakNet (UDP, as always), Steam networking sockets
+/// (Phase 2 of the Steam migration), or both for a host on Steam. The game never sees which: connections are
+/// <see cref="RakNetGUID"/>s, events are RakNet's system message ids, and <see cref="PacketReliability"/> says how a
+/// message travels. <see cref="Discovery"/> is the RakNet-only socket for pings and adverts (the server browser and
+/// server lists); Steam games are found through lobbies instead (SteamLobbies.cs).
 /// </summary>
-public sealed unsafe class NetPeer : IDisposable
+public sealed class NetPeer : IDisposable
 {
     public delegate void PacketHandler(RakNetGUID sender, ReadOnlySpan<byte> data);
 
-    private RakPeerInstance _peer;
+    private readonly INetTransport? _transport;
+    private readonly RakNetTransport? _raw; // Discovery only
     public bool IsServer { get; }
 
     /// <summary>Single player: a server with no sockets. Every send is a no-op.</summary>
-    public bool IsOffline { get; }
+    public bool IsOffline => _transport == null && _raw == null;
 
-    public RakNetGUID ServerGuid { get; private set; } = RakNetGUID.UNASSIGNED_RAKNET_GUID;
+    /// <summary>The transport underneath ("raknet", "steam", "raknet+steam"; "offline" with none).</summary>
+    public string Kind => _transport?.Kind ?? (_raw != null ? "discovery" : "offline");
 
-    private NetPeer(bool isServer, bool offline = false)
+    /// <summary>The transport itself, for the few places that need more than the game API (the self-test, the Steam hooks).</summary>
+    public INetTransport? Transport => _transport;
+
+    public RakNetGUID ServerGuid => _transport?.ServerGuid ?? RakNetGUID.UNASSIGNED_RAKNET_GUID;
+
+    private NetPeer(bool isServer, INetTransport? transport, RakNetTransport? raw = null)
     {
         IsServer = isServer;
-        IsOffline = offline;
-        if (offline)
-            return;
-        _peer = RakNetLibrary.CreateInstance();
-        if (_peer.IsNull())
-            throw new InvalidOperationException("RakNet: CreateInstance returned null.");
+        _transport = transport;
+        _raw = raw;
     }
 
-    public static NetPeer Offline() => new(true, offline: true);
+    /// <summary>A peer over any transport (the Steam transport, a test double).</summary>
+    public NetPeer(INetTransport transport) : this(transport.IsServer, transport) { }
+
+    public static NetPeer Offline() => new(true, null);
 
     /// <summary>Self-test: a client with no sockets (every send is a no-op), to feed packets to a client game.</summary>
-    public static NetPeer OfflineClient() => new(false, offline: true);
+    public static NetPeer OfflineClient() => new(false, null);
 
-    public static NetPeer Host(ushort port, ushort maxClients)
-    {
-        var net = new NetPeer(true);
-        SocketDescriptor[] sockets = [new SocketDescriptor(port)];
-        var result = net._peer.Startup(maxClients, sockets);
-        if (result != StartupResult.RaknetStarted)
-            throw new InvalidOperationException($"RakNet: failed to start server on port {port}: {result}");
-        net._peer.SetMaximumIncomingConnections(maxClients);
-        net._peer.SetOccasionalPing(true);
-        return net;
-    }
+    public static NetPeer Host(ushort port, ushort maxClients) => new(true, RakNetTransport.Host(port, maxClients));
 
-    public static NetPeer Join(string host, ushort port)
-    {
-        var net = new NetPeer(false);
-        SocketDescriptor[] sockets = [new SocketDescriptor()];
-        var result = net._peer.Startup(1, sockets);
-        if (result != StartupResult.RaknetStarted)
-            throw new InvalidOperationException($"RakNet: failed to start client: {result}");
+    public static NetPeer Join(string host, ushort port) => new(false, RakNetTransport.Join(host, port));
 
-        var hostBytes = Encoding.ASCII.GetBytes(host + "\0"); // native side expects a C string
-        var attempt = net._peer.Connect(hostBytes, port, ReadOnlySpan<byte>.Empty, null);
-        if (attempt != ConnectionAttemptResult.ConnectionAttemptStarted)
-            throw new InvalidOperationException($"RakNet: could not connect to {host}:{port}: {attempt}");
-        return net;
-    }
-
-    /// <summary>Drains every packet RakNet has queued and hands it to <paramref name="handler"/>.</summary>
+    /// <summary>Drains every packet the transport has queued and hands it to <paramref name="handler"/>.</summary>
     public void Poll(PacketHandler handler)
     {
-        if (IsOffline)
+        if (_transport == null)
             return;
-        for (var packet = _peer.Receive(); packet != null; packet = _peer.Receive())
+        _handler = handler;
+        try
         {
-            try
-            {
-                if (packet->Length > 0)
-                {
-                    BytesReceived += packet->Length;
-                    var data = new ReadOnlySpan<byte>(packet->Data, (int)packet->Length);
-                    if (!IsServer && data[0] == (byte)DefaultMessageIDTypes.ConnectionRequestAccepted)
-                        ServerGuid = packet->Guid;
-                    handler(packet->Guid, data);
-                }
-            }
-            finally
-            {
-                _peer.DeallocatePacket(packet);
-            }
+            _transport.Poll(_counted ??= OnCounted); // one delegate, allocated once: Poll runs every tick
         }
+        finally
+        {
+            _handler = null;
+        }
+    }
+
+    private PacketHandler? _counted, _handler;
+
+    private void OnCounted(RakNetGUID sender, ReadOnlySpan<byte> data)
+    {
+        BytesReceived += data.Length;
+        _handler!(sender, data);
     }
 
     // ---- Discovery (server browser, LAN broadcast, master server) ---------------------------
 
     public delegate void RawPacketHandler(SystemAddress from, ReadOnlySpan<byte> data);
 
-    /// <summary>A socket-only peer for the server browser: no connections, just pings and adverts.</summary>
-    public static NetPeer Discovery()
-    {
-        var net = new NetPeer(false);
-        SocketDescriptor[] sockets = [new SocketDescriptor()];
-        var result = net._peer.Startup(4, sockets);
-        if (result != StartupResult.RaknetStarted)
-            throw new InvalidOperationException($"RakNet: failed to start discovery socket: {result}");
-        return net;
-    }
+    /// <summary>A socket-only peer for the server browser: no connections, just pings and adverts (RakNet only).</summary>
+    public static NetPeer Discovery() => new(false, null, RakNetTransport.Discovery());
+
+    /// <summary>The RakNet socket under this peer, when there is one: the discovery socket, a RakNet game, or the RakNet
+    /// side of a host on Steam. Unconnected messages (pings, adverts, the offline info) only exist there.</summary>
+    private RakNetTransport? RakNetSide => _raw ?? _transport as RakNetTransport ?? (_transport as DualTransport)?.RakNet;
 
     /// <summary>Like <see cref="Poll"/>, but hands over the sender's address (for unconnected messages).</summary>
-    public void PollRaw(RawPacketHandler handler)
-    {
-        if (IsOffline)
-            return;
-        for (var packet = _peer.Receive(); packet != null; packet = _peer.Receive())
-        {
-            try
-            {
-                if (packet->Length > 0)
-                    handler(packet->SystemAddress, new ReadOnlySpan<byte>(packet->Data, (int)packet->Length));
-            }
-            finally
-            {
-                _peer.DeallocatePacket(packet);
-            }
-        }
-    }
+    public void PollRaw(RawPacketHandler handler) => RakNetSide?.PollRaw(handler);
 
     /// <summary>Unconnected ping; the reply (ID_UNCONNECTED_PONG) carries the target's offline ping response. Use 255.255.255.255 for the LAN.</summary>
-    public void PingHost(string host, ushort port)
-    {
-        if (IsOffline)
-            return;
-        var hostBytes = Encoding.ASCII.GetBytes(host + "\0");
-        _peer.Ping(hostBytes, port, false, 0);
-    }
+    public void PingHost(string host, ushort port) => RakNetSide?.PingHost(host, port);
 
     /// <summary>Sends an unconnected ID_ADVERTISE_SYSTEM message carrying <paramref name="data"/>.</summary>
-    public void Advertise(string host, ushort port, ReadOnlySpan<byte> data)
-    {
-        if (IsOffline)
-            return;
-        var hostBytes = Encoding.ASCII.GetBytes(host + "\0");
-        _peer.AdvertiseSystem(hostBytes, port, data, 0);
-    }
+    public void Advertise(string host, ushort port, ReadOnlySpan<byte> data) => RakNetSide?.Advertise(host, port, data);
 
-    /// <summary>What this peer answers to unconnected pings (server name, map, player count...).</summary>
-    public void SetOfflineInfo(ReadOnlySpan<byte> data)
-    {
-        if (!IsOffline)
-            _peer.SetOfflinePingResponse(data);
-    }
+    /// <summary>What this peer answers to unconnected pings (server name, map, player count...). RakNet hosts only;
+    /// a Steam host's lobby data says the same (SteamLobbies.cs).</summary>
+    public void SetOfflineInfo(ReadOnlySpan<byte> data) => RakNetSide?.SetOfflineInfo(data);
 
     /// <summary>Game payload bytes received / sent so far (no RakNet or UDP headers; a broadcast counts once per connection).</summary>
     public long BytesReceived, BytesSent;
 
     public void SendTo(RakNetGUID target, ReadOnlySpan<byte> data, PacketReliability reliability)
     {
-        if (IsOffline)
+        if (_transport == null)
             return;
         BytesSent += data.Length;
-        _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.From(target), false);
+        _transport.SendTo(target, data, reliability);
     }
 
     public void Broadcast(ReadOnlySpan<byte> data, PacketReliability reliability)
     {
-        if (IsOffline)
+        if (_transport == null)
             return;
         BytesSent += (long)data.Length * ConnectionCount;
-        _peer.Send(data, PacketPriority.HighPriority, reliability, 0, AddressOrGUID.UnassignedGuid, true);
+        _transport.Broadcast(data, reliability);
     }
 
     /// <summary>Server: drops a client (they get a disconnection notice once what was already sent to them arrives).</summary>
-    public void Kick(RakNetGUID target)
-    {
-        if (!IsOffline)
-            _peer.CloseConnection(AddressOrGUID.From(target), true);
-    }
+    public void Kick(RakNetGUID target) => _transport?.Kick(target);
 
     public void SendToServer(ReadOnlySpan<byte> data, PacketReliability reliability) =>
         SendTo(ServerGuid, data, reliability);
 
-    public int PingTo(RakNetGUID target) => IsOffline ? 0 : _peer.GetAveragePing(AddressOrGUID.From(target));
+    public int PingTo(RakNetGUID target) => _transport?.PingTo(target) ?? 0;
 
-    public int ConnectionCount => IsOffline ? 0 : _peer.NumberOfConnections();
+    public int ConnectionCount => _transport?.ConnectionCount ?? 0;
 
-    /// <summary>Adds fake latency/loss to everything this peer sends (testing only). Returns false if RakNet was built without it.</summary>
-    public bool SimulateBadNetwork(int extraPingMs, int jitterMs, float lossPercent)
+    /// <summary>The peer's Steam ID when that connection runs over Steam, else 0.</summary>
+    public ulong SteamIdOf(RakNetGUID target) => _transport?.SteamIdOf(target) ?? 0;
+
+    /// <summary>Live connection quality for one peer (the network stats line, the perf menu). False when unknown.</summary>
+    public bool StatsFor(RakNetGUID target, out NetConnectionStats stats)
     {
-        if (IsOffline)
-            return false;
-        _peer.ApplyNetworkSimulator(lossPercent / 100f, (ushort)Math.Clamp(extraPingMs, 0, 2000), (ushort)Math.Clamp(jitterMs, 0, 2000));
-        return _peer.IsNetworkSimulatorActive();
+        if (_transport != null)
+            return _transport.StatsFor(target, out stats);
+        stats = default;
+        return false;
     }
+
+    /// <summary>Adds fake latency/loss to everything this peer sends (testing only). Returns false if the transport cannot.</summary>
+    public bool SimulateBadNetwork(int extraPingMs, int jitterMs, float lossPercent) =>
+        _transport?.SimulateBadNetwork(extraPingMs, jitterMs, lossPercent) ?? false;
 
     public void Dispose()
     {
-        if (IsOffline || _peer.IsNull())
-            return;
-        _peer.Shutdown(300);
-        _peer.Dispose();
+        _transport?.Dispose();
+        _raw?.Dispose();
     }
 }

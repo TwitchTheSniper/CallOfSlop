@@ -22,6 +22,9 @@ public sealed class Settings
 {
     // Player
     public string Name = DefaultName();
+    public bool SteamName = true; // Settings > Player > "Use my Steam name": with Steam running, the persona name is the display name (Program.Steam.cs)
+    public byte SteamLobby = 2; // hosting on Steam: who finds the lobby: 0 invite only, 1 friends, 2 public (SteamLobbies.cs; Program.SteamNet.cs)
+    public List<ulong> SteamBans = new(); // hosting: Steam IDs refused at the door (GameSteamAuth.cs)
     public float Sensitivity = 1f; // multiplier
     public float Fov = 75f;
     public bool InvertY;
@@ -388,6 +391,13 @@ public sealed class Settings
                 switch (key)
                 {
                     case "name": s.Name = Clean(v); break;
+                    case "steam_name": s.SteamName = v == "1"; break;
+                    case "steam_lobby" when byte.TryParse(v, out var sl): s.SteamLobby = Math.Min(sl, (byte)2); break;
+                    case "steam_bans":
+                        foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            if (ulong.TryParse(part, NumberStyles.None, inv, out var ban) && ban != 0 && !s.SteamBans.Contains(ban) && s.SteamBans.Count < 1000)
+                                s.SteamBans.Add(ban);
+                        break;
                     case "sensitivity" when float.TryParse(v, inv, out var f): s.Sensitivity = Math.Clamp(f, 0.1f, 5f); break;
                     case "fov" when float.TryParse(v, inv, out var f): s.Fov = Math.Clamp(f, 60f, 110f); break;
                     case "invert_y": s.InvertY = v == "1"; break;
@@ -555,6 +565,9 @@ public sealed class Settings
                     $"server_name={ServerName}",
                     $"master={MasterServer}",
                     $"update_check={(UpdateCheck ? 1 : 0)}",
+                    $"steam_name={(SteamName ? 1 : 0)}",
+                    $"steam_lobby={SteamLobby}",
+                    $"steam_bans={string.Join(",", SteamBans.Select(b => b.ToString(inv)))}",
                     $"update_skip={UpdateSkip}",
                     $"update_cleanup={(UpdateCleanup ? 1 : 0)}",
                     $"update_keep_previous={(UpdateKeepPrevious ? 1 : 0)}",

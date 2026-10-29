@@ -162,7 +162,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 75: Active ragdolls (Source/Render/Ragdolls.cs): Msg.Kill ends with the death (the hit body part and its cause in one
     //     byte, the overkill in HP and as a share of the hit); a dead zombie's health byte in Msg.ZEnts is its death info
     //     (Game.ZDeathInfo: overkill share, head / melee / explosive).
-    public const byte ProtocolVersion = 75;
+    // 76: Steam (Phases 1 and 2, merged together; docs/steam/STEAM.md). Msg.SteamIds at the end of Msg (a client's own
+    //     Steam ID after its Hello; the server's table of every Steam player's id with each roster, sent only when at least
+    //     one player is on Steam) and Msg.SteamAuth after it (a client's Steam session ticket for the host; the host's
+    //     refusal with a reason). Packets travel the same over RakNet and Steam sockets. A game without Steam sends nothing new.
+    public const byte ProtocolVersion = 76;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
@@ -309,6 +313,7 @@ public enum ServerSource : byte
     None = 0,
     Lan = 1, // answered the LAN broadcast
     List = 2, // listed by a server list (master server)
+    Steam = 4, // a Steam lobby (SteamLobbies.cs): joined over Steam sockets
 }
 
 /// <summary>
@@ -331,6 +336,9 @@ public sealed class ServerBrowser : IDisposable
 
         public bool FromMaster => (Sources & ServerSource.List) != 0;
         public bool FromLan => (Sources & ServerSource.Lan) != 0;
+        public bool FromSteam => (Sources & ServerSource.Steam) != 0;
+        /// <summary>Only reachable over Steam (a lobby): joined through it, no ping to show.</summary>
+        public bool SteamOnly => Sources == ServerSource.Steam;
 
         /// <summary>Same build (protocol version) as this game: only these can be joined.</summary>
         public bool VersionOk => Info.Version == ServerInfo.ProtocolVersion;
@@ -340,6 +348,7 @@ public sealed class ServerBrowser : IDisposable
 
     private readonly NetPeer _net = NetPeer.Discovery();
     private readonly Dictionary<string, Entry> _servers = new();
+    private readonly Dictionary<string, Entry> _steam = new(); // Steam lobbies, by "steam:lobby:ID" (SteamLobbies.cs)
     private readonly Dictionary<string, double> _pingSent = new(); // "ip:port" or ":port" (LAN broadcast) -> time
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private double _nextRefresh;
@@ -356,7 +365,7 @@ public sealed class ServerBrowser : IDisposable
         {
             if (_dirty)
             {
-                _merged = Merge(_servers.Values);
+                _merged = Merge(_servers.Values.Concat(_steam.Values));
                 _dirty = false;
             }
             return _merged;
@@ -369,6 +378,20 @@ public sealed class ServerBrowser : IDisposable
 
     private double Now => _clock.Elapsed.TotalSeconds;
 
+    public ServerBrowser()
+    {
+        CallOfSlop.Platform.Steam.SteamPlatform.Lobby.ListChanged += OnSteamLobbies;
+    }
+
+    /// <summary>Steam's public lobbies of this game arrived: one row each, joined through the lobby (no address, no ping).</summary>
+    private void OnSteamLobbies()
+    {
+        _steam.Clear();
+        foreach (var l in CallOfSlop.Platform.Steam.SteamPlatform.Lobby.Listed)
+            _steam[l.Address] = new Entry { Address = l.Address, Info = l.Info, PingMs = 0, LastSeen = Now, Sources = ServerSource.Steam };
+        _dirty = true;
+    }
+
     /// <summary>
     /// One row per game: entries with the same hosting id (<see cref="ServerInfo.InstanceId"/>) are one game reached by
     /// different addresses (LAN and internet, loopback); the row keeps the lowest-ping address and every source.
@@ -378,7 +401,7 @@ public sealed class ServerBrowser : IDisposable
         var rows = new List<Entry>();
         foreach (var g in entries.GroupBy(e => e.Info.InstanceId != 0 ? $"#{e.Info.InstanceId:x8}" : e.Key))
         {
-            var best = g.OrderBy(e => e.PingMs).First();
+            var best = g.OrderBy(e => e.SteamOnly ? 1 : 0).ThenBy(e => e.PingMs).First(); // a direct address before the Steam lobby of the same game
             var sources = g.Aggregate(ServerSource.None, (a, e) => a | e.Sources);
             rows.Add(sources == best.Sources ? best : new Entry { Address = best.Address, Info = best.Info, PingMs = best.PingMs, LastSeen = best.LastSeen, Sources = sources });
         }
@@ -390,6 +413,7 @@ public sealed class ServerBrowser : IDisposable
     {
         _lastRefresh = Now;
         _nextRefresh = Now + 6;
+        CallOfSlop.Platform.Steam.SteamPlatform.Lobby.RequestList(); // Steam lobbies (nothing without Steam)
         // LAN: the game port people use plus a few next to it
         foreach (var port in new[] { s.Port, Program.DefaultPort, (ushort)(Program.DefaultPort + 1), (ushort)(Program.DefaultPort + 2) }.Distinct())
         {
@@ -486,7 +510,11 @@ public sealed class ServerBrowser : IDisposable
         }
     }
 
-    public void Dispose() => _net.Dispose();
+    public void Dispose()
+    {
+        CallOfSlop.Platform.Steam.SteamPlatform.Lobby.ListChanged -= OnSteamLobbies;
+        _net.Dispose();
+    }
 }
 
 /// <summary>Address helpers for discovery: what kind of address an IPv4 string is.</summary>

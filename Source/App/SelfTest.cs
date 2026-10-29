@@ -432,6 +432,8 @@ public static partial class SelfTest
         Section("Space: gravity physics", CheckSpaceGravityMaps); // SelfTestSpaceGravity.cs: Space 03 Keelhaul Yard and 04 Twin Shard: zones, nav by area, stands in every gravity, the hatch jump and the Pebble loop (the rest is the Map contract's)
         Section("Gravity strength", CheckGravityStrength); // SelfTestGravityStrength.cs: the host's gravity setting: every field type scales, jumps and falls as 1/g, Pocket Planet 11 m/s2 and its 60% floor, nav unchanged, clients and the browser get it, seeded bot matches at 25% and 200%
         Section("Map kit", CheckMapKit); // SelfTestMapKit.cs: Source/MapKit: map files round-trip, generators reproduce their maps, MapChecks.Check agrees with the Space sections
+        Section("Steam platform", CheckSteamPlatform); // SelfTestSteam.cs: Source/Platform/Steam: off without Steam, the start decision, the native library ships, the layer on a recorded backend, Steam ids over loopback
+        Section("Steam transport", CheckSteamTransport); // SelfTestSteamTransport.cs: the transport interface (RakNet and Steam sockets on the recorded backend), a game over Steam, lobbies and the browser, Rich Presence, auth tickets, bans
     }
 
     /// <summary>One section of the suite. <paramref name="needs"/> names earlier sections whose results this one uses,

@@ -29,11 +29,28 @@
          (vertex cache optimisation, LOD simplification). Both natives are canary-checked at runtime, with fallbacks. -->
     <PackageReference Include="Ahwoo.BRUTAL.Gltf" Version="2026.10.3" />
     <PackageReference Include="Ahwoo.BRUTAL.MeshOptimizer" Version="2026.10.2" />
+    <!-- Steam (optional at runtime, Source/Platform/Steam): the Steamworks.NET fork with the native steam_api for
+         win-x64, linux-x64 and osx-arm64 in runtimes/<rid>/native (flat next to the exe in a published package).
+         2026.164.3 is deprecated (corrupt networking callback structs); stay on 2026.165.x or later. The developer
+         approved this one PackageReference (2026-10-28). -->
+    <PackageReference Include="Steamworks.NET.AnyCPU" Version="2026.165.3" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <!-- A Steam build: dotnet build/publish -p:SteamAppId=1750920 (Call of Slop's App ID, SteamPlatform.CallOfSlopAppId)
+         stamps the App ID into the assembly: the game then starts Steam, restarts through Steam when launched directly,
+         and turns the GitHub updater off. Empty (the default, every GitHub/tester build and CI): no Steam unless
+         steam_appid.txt or the steam flag says so. -->
+    <SteamAppId Condition="'$(SteamAppId)' == ''"></SteamAppId>
+  </PropertyGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="SteamAppId" Value="$(SteamAppId)" />
   </ItemGroup>
 
   <ItemGroup>
     <!-- BRUTAL licence section 2.3: ship NOTICE.txt alongside the product. -->
     <None Include="NOTICE.txt" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="docs\steam\richpresence_english.txt" LogicalName="richpresence_english.txt" /> <!-- the Rich Presence tokens the self-test checks against (SteamPresence.cs) -->
     <None Include="Branding\**\*" CopyToOutputDirectory="PreserveNewest" /> <!-- the BRUTAL logo (licence section 2.2) -->
     <!-- Maps are data files: everything in Maps\ is copied next to the game and loaded at startup. -->
     <None Update="Maps\**\*" CopyToOutputDirectory="PreserveNewest" />

@@ -153,7 +153,11 @@ public sealed partial class Ui : IDisposable
             else if (game.IsServer)
                 ImGuiSafe.TextColored(Dim, $"Hosting - friends join: {joinInfo}");
             else if (showNetStats)
+            {
                 ImGuiSafe.TextColored(Dim, $"Ping {game.Net.PingTo(game.Net.ServerGuid)} ms   interp {game.InterpDelayTicks * 1000 / World.TickRate:0} ms   correction {game.LastCorrection * 100:0} cm");
+                if (game.Net.Kind == "steam" && game.ConnectionStats(game.LocalId, out var st)) // Steam sockets: the relay's view (GameNetStats.cs)
+                    ImGuiSafe.TextColored(Dim, $"Steam {(st.Relayed ? "relay" : "direct")}   quality {st.QualityLocal * 100:0}% / {st.QualityRemote * 100:0}%   out {st.OutBytesPerSec / 1024:0.0} KB/s   in {st.InBytesPerSec / 1024:0.0} KB/s   queued {st.PendingReliable + st.PendingUnreliable} B");
+            }
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
             ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             ImGui.PopTextWrapPos();

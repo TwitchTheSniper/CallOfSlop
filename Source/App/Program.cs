@@ -3,6 +3,8 @@ using Brutal.GlfwApi;
 using Brutal.Numerics;
 using Brutal.OpenGlApi;
 
+using CallOfSlop.Platform.Steam;
+
 namespace CallOfSlop;
 
 /// <summary>
@@ -137,6 +139,11 @@ public static unsafe partial class Program
         else
             SavePaths.Init(args);
         _settings = Settings.Load();
+        // Steam, when this run asks for it (a Steam build, steam_appid.txt, --steam; Program.Steam.cs). A Steam build
+        // started outside Steam hands over to Steam here and quits.
+        if (InitSteam(args))
+            return 0;
+        InitSteamNet(args); // lobbies, invites, +connect_lobby, Rich Presence (Program.SteamNet.cs)
         Ui.BenchSettings = _settings; // the workbench's "Show incompatible parts" checkbox
         _progress = Progress.Load();
         AppearanceStore.Load(); // before the loadouts: a first run takes the hat from loadout.txt's old hat= line (Appearance.cs)
@@ -146,7 +153,7 @@ public static unsafe partial class Program
         {
             // Update check (Source/Updates): in the background, never blocking startup; release builds only, at most every 6 h.
             Updater.Shared = new Updater(null, SavePaths.PathOf("update_check.txt"), SavePaths.ExeFolder);
-            if (_settings.UpdateCheck && BuildInfo.IsRelease)
+            if (_settings.UpdateCheck && BuildInfo.IsRelease && !SteamPlatform.IsSteamBuild) // Steam builds update through Steam
                 Updater.Shared.Check(manual: false);
             // Old versions the updater installed are removed once this build reaches its menu (UpdateCleanup.cs).
             UpdateCleaner.Shared = new UpdateCleaner(SavePaths.ExeFolder, BuildInfo.ReleaseVersion, SavePaths.PathOf(UpdateCleanup.LogFileName), SavePaths.Folder);
@@ -219,6 +226,8 @@ public static unsafe partial class Program
         {
             EndSession("");
             _manualList?.Dispose(); // "Run a server list for friends" (Program.Listing.cs)
+            ShutdownSteamNet();
+            ShutdownSteam(); // Program.Steam.cs
             Ui.Dispose();
             AudioSystem.Dispose();
             Glfw.Terminate();
@@ -1071,8 +1080,11 @@ public static unsafe partial class Program
 
     private static void StartSession(LobbyAction kind, Invite? invite = null)
     {
+        if (kind == LobbyAction.Join && _steamJoinHost == 0 && StartSteamJoin(_settings.JoinAddress))
+            return; // a Steam lobby: the session starts once the lobby names the host (Program.SteamNet.cs)
         EndSession("");
         _lobbyMessage = "";
+        _joinInvite = invite;
         if (_smoke)
             LoadoutStore.ReadOnly = AppearanceStore.ReadOnly = true;
         var loadout = LoadoutStore.Active(_smoke ? SmokeProgress() : _progress);
@@ -1087,13 +1099,12 @@ public static unsafe partial class Program
                     bots = _rangeLaunch != null ? 0 : _settings.Bots; // the Workbench Range is just you
                     break;
                 case LobbyAction.Host:
-                    net = NetPeer.Host(_settings.Port, Game.MaxPlayers - 1);
+                    net = HostNet(_settings.Port, Game.MaxPlayers - 1); // RakNet, plus Steam sockets and a lobby with Steam (Program.SteamNet.cs)
                     bots = _settings.HostBots;
                     BeginHostAddressing(); // the address line, UPnP, STUN and the invite code (Program.Listing.cs)
                     break;
                 default:
-                    net = NetPeer.Join(_settings.JoinAddress, _settings.Port);
-                    LearnListFromHost(_settings.JoinAddress, _settings.Port, invite); // the host's server list, for next time (Program.Listing.cs)
+                    net = JoinNet(); // Steam sockets to a lobby's host, else RakNet to the address (Program.SteamNet.cs)
                     break;
             }
 
@@ -1103,7 +1114,7 @@ public static unsafe partial class Program
                     : "[test] network simulator not available in this RakNet build");
 
             var map = RangeMap ?? (kind == LobbyAction.Join ? Maps.All[0] : _settings.PickMap(bots + 1)); // joiners get the host's map; random picks a map that fits everyone
-            _session = new Game(net, AudioSystem, _settings.Name, loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
+            _session = new Game(net, AudioSystem, DisplayName(), loadout.Primary, loadout.Secondary, bots, _settings.Difficulty, map.Id,
                 loadout.Grenade, loadout.Equipment, loadout.PrimaryKit, loadout.SecondaryKit, loadout.Perks)
                 {
                     Progress = _smoke ? SmokeProgress() : _progress, // the smoke test must never touch your real save
@@ -1139,6 +1150,7 @@ public static unsafe partial class Program
             {
                 _session.ServerName = _settings.ServerNameOrDefault;
                 _session.GamePort = _settings.Port;
+                _session.SteamBans = new HashSet<ulong>(_settings.SteamBans); // refused at the door (GameSteamAuth.cs)
                 StartHostListing(_session); // register on a server list, or run one (Program.Listing.cs)
             }
             if (_rangeLaunch != null)
@@ -1169,6 +1181,7 @@ public static unsafe partial class Program
             _session = null;
         }
         StopHostListing(); // Program.Listing.cs
+        EndSteamNet(); // the Steam lobby and presence (Program.SteamNet.cs)
         if (_upnpTask is { IsCompleted: false })
             _upnpTask.Wait(TimeSpan.FromSeconds(4));
         _upnpTask = null;
@@ -1193,6 +1206,7 @@ public static unsafe partial class Program
         {
             using (Perf.Measure(PerfArea.Events)) // the perf window's areas (Source/Perf, Program.Perf.cs)
                 Glfw.PollEvents();
+            SteamPlatform.RunCallbacks(); // overlay, persona and avatar callbacks (no-op without Steam)
             var now = Glfw.Time;
             if (_smoke)
                 SmokeTick(now);
@@ -1234,6 +1248,7 @@ public static unsafe partial class Program
                 UpdateVoice(now); // voice chat: the mic in, voices out (Program.Voice.cs)
             TickPartsWatch(now); // part hot reload: --watch-parts (Program.PartsReload.cs)
             UpdateListing(now); // server lists and the invite code (Program.Listing.cs)
+            UpdateSteamNet(); // pending lobby joins, the lobby's data, Rich Presence (Program.SteamNet.cs)
 
             // Menu music outside a session, lobby music around matches, silence while one is live (Music.cs).
             var perf = Perf.Measure(PerfArea.Audio);
@@ -1401,6 +1416,7 @@ public static unsafe partial class Program
         while (!_window.ShouldClose && !_quit)
         {
             Glfw.PollEvents();
+            SteamPlatform.RunCallbacks();
             var now = Glfw.Time;
             if (!Splash.Active(now))
                 break;

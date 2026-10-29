@@ -258,6 +258,7 @@ public sealed partial class Game
         p = new Player { Id = id, Yaw = e.Yaw, Pitch = e.Pitch, Name = _names.GetValueOrDefault(id) ?? "" };
         if (_cosmetics.TryGetValue(id, out var cosmetics))
             ApplyCosmetics(p, cosmetics); // the roster came first (GameCosmetics.cs)
+        p.SteamId = _steamIds.GetValueOrDefault(id); // and the Steam ids with it (GameSteam.cs)
         p.Teleport(e.Position);
         Players[id] = p;
         return p;

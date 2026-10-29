@@ -1,6 +1,8 @@
 using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
+using CallOfSlop.Platform.Steam;
+
 namespace CallOfSlop;
 
 /// <summary>What the player chose on the lobby room screen this frame.</summary>
@@ -156,7 +158,14 @@ public sealed partial class Ui
                 DrawCrown(dl, p0, icon);
             if (r.Hat != HatId.None)
                 DrawHatIcon(dl, r.Hat, p0 + new float2(icon + 2 * _scale, 0), icon);
-            ImGui.Dummy(new float2(icon * 2 + 4 * _scale, icon));
+            var avatar = SteamAvatars.Texture(r.SteamId); // 0 without Steam on both sides, or while it loads
+            var avatarW = avatar != 0 ? icon + 2 * _scale : 0;
+            if (avatar != 0)
+            {
+                var a0 = p0 + new float2(icon * 2 + 4 * _scale, 0);
+                dl.AddImage(new ImTextureRef { _TexID = new ImTextureID((nint)avatar) }, a0, a0 + new float2(icon, icon));
+            }
+            ImGui.Dummy(new float2(icon * 2 + 4 * _scale + avatarW, icon));
             ImGui.SameLine();
             ImGuiSafe.TextColored(r.Bot ? Dim : Rgba(r.Color), r.Name);
             ImGui.TableNextColumn();

@@ -25,6 +25,16 @@ public sealed partial class Game
     public readonly uint InstanceId = (uint)Random.Shared.Next(1, int.MaxValue);
 
     private double _nextInfoUpdate;
+
+    /// <summary>The server info as last advertised (also the Steam lobby's data, Program.SteamNet.cs).</summary>
+    public ServerInfo? LastInfo { get; private set; }
+
+    /// <summary>What a hosted game tells the world right now: name, map, players, mode, phase, protocol, build, gravity.</summary>
+    public ServerInfo CurrentInfo() =>
+        new(ServerName, World.Map.Name, (byte)Players.Count, (byte)MapMaxPlayers, (byte)Players.Values.Count(p => p.Bot != null),
+            Phase, GamePort, ServerInfo.ProtocolVersion, Mode, World.PhysicsMode, TrueRandom ? MapPack.TrueRandomName : "", InstanceId, ListHost, ListPort,
+            BuildInfo.IsRelease ? BuildInfo.Version : "", // the release, for "your build is older" in browsers (BuildInfo.cs)
+            (byte)GravityPercent); // the host's gravity setting (GameGravity.cs)
     private readonly Heartbeats _heartbeats = new();
 
     private void TickServerAdvert(double now)
@@ -34,11 +44,9 @@ public sealed partial class Game
         if (now >= _nextInfoUpdate)
         {
             _nextInfoUpdate = now + 1;
-            var info = new ServerInfo(ServerName, World.Map.Name, (byte)Players.Count, (byte)MapMaxPlayers, (byte)Players.Values.Count(p => p.Bot != null),
-                Phase, GamePort, ServerInfo.ProtocolVersion, Mode, World.PhysicsMode, TrueRandom ? MapPack.TrueRandomName : "", InstanceId, ListHost, ListPort,
-                BuildInfo.IsRelease ? BuildInfo.Version : "", // the release, for "your build is older" in browsers (BuildInfo.cs)
-                (byte)GravityPercent); // the host's gravity setting (GameGravity.cs)
+            var info = CurrentInfo();
             Net.SetOfflineInfo(info.Encode());
+            LastInfo = info;
         }
         _heartbeats.Tick(Net, GamePort, AdvertiseTo, now);
     }
