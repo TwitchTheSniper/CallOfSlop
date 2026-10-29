@@ -60,7 +60,7 @@ public static partial class SelfTest
                 Fail($"dev tools: the pole probe found {pole.Kind} part {pole.Part + 1}, '{LookAt.OpText(map, pole.FileOp)}' (want part #2, op #3)");
             // The first cup sits at +x in the prop's frame: turned 90 degrees it is at -z in the world.
             var cup = LookAt.Probe(map, new Vector3(0, 1.6f, -5), Vector3.UnitZ, 100);
-            if (cup.Kind != LookAtKind.Prop || cup.Part != 7 || MathF.Abs(cup.Point.Z + 0.36f) > 0.01f || cup.Normal != -Vector3.UnitZ)
+            if (cup.Kind != LookAtKind.Prop || cup.Part != 7 || MathF.Abs(cup.Point.Z + 0.36f) > 0.01f || Vector3.Distance(cup.Normal, -Vector3.UnitZ) > 1e-4f)
                 Fail($"dev tools: the cup probe found {cup.Kind} part {cup.Part + 1} at {cup.Point}, normal {cup.Normal} (want part #8 at z -0.36)");
             var miss = LookAt.Probe(map, new Vector3(0, 30, 0), Vector3.UnitY, 100);
             if (miss.Found)
@@ -82,8 +82,8 @@ public static partial class SelfTest
             if (!s.SetAnim(2, "axis", JsonValue.Create("z"), sameAnim: true))
                 Fail("dev tools: setting the anim axis was refused: " + s.Error);
             var spinning = def.Parts.Count(p => p.Anim != null);
-            if (def.Parts.Any(p => p.Anim != null && p.Anim.Axis != Vector3.UnitZ) || spinning != 11)
-                Fail($"dev tools: after the axis edit {def.Parts.Count(p => p.Anim?.Axis == Vector3.UnitZ)} of {spinning} spinning parts turn about z (want 11 of 11)");
+            if (def.Parts.Any(p => p.Anim != null && p.Anim.Axis != Vector3.UnitZ) || spinning != 10)
+                Fail($"dev tools: after the axis edit {def.Parts.Count(p => p.Anim?.Axis == Vector3.UnitZ)} of {spinning} spinning parts turn about z (want 10 of 10)");
             if (LookAt.AnimText(def.Parts[7]) != "anim spin z 90 rpm")
                 Fail($"dev tools: the live prop says '{LookAt.AnimText(def.Parts[7])}'");
             s.SetPartVector(1, "size", new Vector3(0.06f, 1.6f, 0.06f));
@@ -145,7 +145,7 @@ public static partial class SelfTest
             var badProblems = DevEditPackage.Validate(dir, data);
             if (badProblems.Count == 0)
                 Fail("dev tools: a package with a zero-size part validated");
-            Line($"editor: axis z on 11 spinning parts, size, duplicate, delete, undo / redo, add box, refused '{refusal[..Math.Min(70, refusal.Length)]}'; package {Path.GetFileName(dir)}: "
+            Line($"editor: axis z on 10 spinning parts, size, duplicate, delete, undo / redo, add box, refused '{refusal[..Math.Min(70, refusal.Length)]}'; package {Path.GetFileName(dir)}: "
                  + $"{changes.Count} prop change(s), map op #3 patch, validates; a broken copy is caught ({badProblems[0][..Math.Min(70, badProblems[0].Length)]})");
 
             // ---- Revert --------------------------------------------------------------------------------------

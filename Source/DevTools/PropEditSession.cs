@@ -490,11 +490,11 @@ public sealed class PropEditSession
                     into.Add((path.Length == 0 ? k : path + "." + k, null, v?.DeepClone()));
             return;
         }
-        // Lists of objects (parts) compare entry by entry while the counts match; otherwise the list changed as a whole.
-        if (a is JsonArray la && b is JsonArray lb && la.Count == lb.Count && la.Any(x => x is JsonObject))
+        // Lists of objects (parts) compare entry by entry; entries past the shorter list are added or removed.
+        if (a is JsonArray la && b is JsonArray lb && (la.Any(x => x is JsonObject) || lb.Any(x => x is JsonObject)))
         {
-            for (var i = 0; i < la.Count; i++)
-                Diff($"{path}[{i}]", la[i], lb[i], into);
+            for (var i = 0; i < Math.Max(la.Count, lb.Count); i++)
+                Diff($"{path}[{i}]", i < la.Count ? la[i] : null, i < lb.Count ? lb[i] : null, into);
             return;
         }
         into.Add((path, a?.DeepClone(), b?.DeepClone()));
