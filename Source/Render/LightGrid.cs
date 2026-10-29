@@ -38,6 +38,12 @@ public static unsafe class LightGrid
     /// <summary>Settings > Video > Baked lighting (off: every map draws with the classic light).</summary>
     public static bool Enabled = true;
 
+    /// <summary>
+    /// --light-shots --light-debug only: 3 draws the grid's light alone on white (no sun, sky or texture), 4 the grid's
+    /// sky and sun visibility (grey: sky, yellow: sun). 0 (always in the game): the normal light.
+    /// </summary>
+    public static float DebugView;
+
     /// <summary>Settings > Video > Dynamic lights (muzzle flashes and blasts light lit maps, at most <see cref="MaxDynamic"/>).</summary>
     public static bool DynamicEnabled = true;
 
@@ -198,6 +204,8 @@ public static unsafe class LightGrid
         if (bake != null)
             Bind(bake);
         Fill(ref _block, bake, time, DynamicEnabled ? _dynCount : 0, DynPos, DynCol);
+        if (DebugView > 0 && bake != null)
+            _block.Mode.X = DebugView;
         _dynCount = 0;
         Send();
     }
@@ -231,10 +239,10 @@ public static unsafe class LightGrid
     }
 
     /// <summary>How far along its normal a pixel samples the grid (a little over half a cell, so a wall reads the air in front of it).</summary>
-    public static float NormalOffset(LightBake bake) => bake.Cell * 0.6f;
+    public static float NormalOffset(LightBake bake) => bake.Cell * LightBake.NormalNudge;
 
     /// <summary>The same up and down (taller cells: a floor reads the air a little over half a cell above it).</summary>
-    public static float NormalOffsetY(LightBake bake) => bake.CellY * 0.6f;
+    public static float NormalOffsetY(LightBake bake) => bake.CellY * LightBake.NormalNudge;
 
     /// <summary>Fills the world pass's block (no GL: the self-test runs it; no allocation).</summary>
     public static void Fill(ref FrameBlock b, LightBake? bake, double time, int dynamic, Vector4[] dynPos, Vector4[] dynCol)

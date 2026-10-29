@@ -178,17 +178,28 @@ public sealed partial class Map
     }
 
     /// <summary>Every light the bake uses: the LightSource ops' in order, then each placed prop's (when prop lights are on), capped at <see cref="MaxLights"/>.</summary>
-    public List<MapLight> BakeLights()
+    /// <param name="owners">If given, filled with each light's prop (its index in <see cref="PropInstances"/>; -1: a LightSource op), so the bake can keep a lamp's own parts from shadowing its light.</param>
+    public List<MapLight> BakeLights(List<int>? owners = null)
     {
         var all = new List<MapLight>(Lights);
+        owners?.Clear();
+        for (var i = 0; i < Lights.Count; i++)
+            owners?.Add(-1);
         if (LightingSettings?.PropLights ?? true)
-            foreach (var p in PropInstances)
+            for (var pi = 0; pi < PropInstances.Count; pi++)
+            {
+                var p = PropInstances[pi];
                 for (var i = 0; i < p.Def.Lights.Length; i++)
+                {
                     all.Add(p.Def.Lights[i].Placed(p.Position, p.Yaw, p.Scale, i));
+                    owners?.Add(pi);
+                }
+            }
         if (all.Count > MaxLights)
         {
             Console.WriteLine($"Map '{Name}': {all.Count} lights, only the first {MaxLights} are baked");
             all.RemoveRange(MaxLights, all.Count - MaxLights);
+            owners?.RemoveRange(MaxLights, owners.Count - MaxLights);
         }
         return all;
     }
