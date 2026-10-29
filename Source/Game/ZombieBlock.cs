@@ -111,6 +111,7 @@ public sealed partial class Game
     {
         ZBlockOutOfBodies(p, ref s);
         CrowdSurfacePlayer(p, ref s); // a crowd map: the crowd as ground (ZombiesCrowdSurface.cs)
+        SandboxPlayer(p, ref s); // Sandbox: drivers in their seats, everyone else out of (or on) the constructs (GameSandbox.cs)
     }
 
     private void ZBlockOutOfBodies(Player p, ref MoveState s)

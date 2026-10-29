@@ -1,0 +1,61 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wheel",
+  "description": "A rubber wheel, 0.8 m across. Bolts onto a suspension.",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 20,
+  "health": 120,
+  "armour": 2,
+  "material": "rubber",
+  "color": "#1f2124",
+  "boxes": [
+    {
+      "size": [
+        0.3,
+        0.8,
+        0.34
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.34,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.68,
+        0.68
+      ]
+    },
+    {
+      "size": [
+        0.34,
+        0.22,
+        0.22
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.15,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.4,
+    "grip": 1.0
+  }
+}

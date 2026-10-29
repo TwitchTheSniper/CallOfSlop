@@ -533,6 +533,7 @@ public sealed partial class Game
         var playerMult = damageMult * d.LauncherPlayerMult; // players take the launcher's "playerMult" on top
         var killId = d.Id;
         byte flags = 0;
+        SandboxBlast(center, radius, LauncherBlastAt(d, center, center, radius) * damageMult); // Sandbox: construct parts in range (GameSandbox.cs)
 
         // The direct hit first (a player hit straight on takes the bonus on top of the blast).
         Player? direct = playerHit != byte.MaxValue && Players.TryGetValue(playerHit, out var dp) && dp.Alive ? dp : null;

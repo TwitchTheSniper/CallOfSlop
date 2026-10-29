@@ -19,6 +19,7 @@ public static class GameModeRegistry
         () => new CoopModule(), // co-op PvE missions (docs/pve/DESIGN.md)
         () => new TestRangeModule(), // free-for-all with no win condition: the match never ends
         () => new LastManStandingModule(), // the template mode (Dev-only): Source/Game/Modes/README.md
+        () => new SandboxModule(), // build and drive constructs (Dev-only, milestone 1): docs/sandbox/CONSTRUCTS.md
     ];
 
     /// <summary>A reference instance per mode, for everything that needs a mode's identity or rules without a game (menus, the server browser, score limits).</summary>

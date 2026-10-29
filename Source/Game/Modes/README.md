@@ -18,6 +18,7 @@ Source/Game/Modes/
   LastManStanding/             LastManStandingModule    id 6  the TEMPLATE (Dev-only): copy this
   Coop/                        CoopModule               id 7  co-op PvE missions; routes into Source/Game/Pve (enemies, director, objectives)
   TestRange/                   TestRangeModule          id 8  free-for-all with no win condition (Endless; HostPanelInMatch: Esc > HOST)
+  Sandbox/                     SandboxModule            id 9  build and drive constructs (Dev-only; routes into GameSandbox.cs and Source/Constructs; docs/sandbox/CONSTRUCTS.md)
 ```
 
 What stays shared, in `Game` (GameModes.cs and friends): the `GameMode` enum, team assignment / autobalance / team
@@ -58,6 +59,7 @@ those.
 | `OnSpawn(game, p)` | server, active | after the normal spawn + loadout | Gun Game (ladder gun), Zombies (start gear) |
 | `OnKill(game, attacker, victim, killId, now)` | server, active | a kill was counted | TDM (team score), Gun Game (ladder), LMS |
 | `OnPlayerLeave(game, p)` | server, active | someone left | LMS |
+| `OnClientJoined(game, guid)` | server, active | a client connected: send it the mode's own state | Sandbox (every construct) |
 | `CanRespawn(game, p, now)` | server, active | a dead player wants back | LMS (one life) |
 | `ServerTickPlaying(game, now)` | server, active | every tick while playing: objectives, win check, time limit | all; `TeamWinCheck` / `FreeForAllWinCheck` do the common endings |
 | `HandlePacket(game, id, ref r, sender, now)` | both, every module | a `Msg` id the core doesn't know | Zombies (ZUse, ZEnts, ZWorld...) |

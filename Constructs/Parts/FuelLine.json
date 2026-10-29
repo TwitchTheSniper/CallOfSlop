@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fuel Line",
+  "description": "A 0.5 m pipe: carries fuel from a tank to an engine. Cheap, and easy to shoot off.",
+  "role": "fuelline",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#e0b030",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.14,
+        0.14
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.07,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

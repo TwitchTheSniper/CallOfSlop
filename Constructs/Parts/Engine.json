@@ -1,0 +1,111 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Engine",
+  "description": "Drives every wheel of its construct, while a driver sits in the seat and fuel reaches it.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 120,
+  "health": 250,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4c5560",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.4,
+        0.12,
+        0.42
+      ],
+      "at": [
+        0,
+        0.27,
+        0
+      ],
+      "color": "#c04a2c",
+      "detail": true
+    },
+    {
+      "size": [
+        0.52,
+        0.2,
+        0.2
+      ],
+      "at": [
+        0,
+        0.05,
+        0
+      ],
+      "color": "#353b42",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "engine": {
+    "force": 5200,
+    "topSpeed": 19,
+    "burnRate": 0.05
+  }
+}

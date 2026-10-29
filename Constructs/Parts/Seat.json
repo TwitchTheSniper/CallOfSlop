@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Seat",
+  "description": "A driver's seat. Sit with Interact; a seat makes a construct a vehicle.",
+  "role": "seat",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 25,
+  "health": 120,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3a3f46",
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        0,
+        -0.3
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.3
+      ]
+    },
+    {
+      "min": [
+        -0.25,
+        0.25,
+        0.15
+      ],
+      "max": [
+        0.25,
+        0.95,
+        0.3
+      ],
+      "color": "#2f343a"
+    },
+    {
+      "min": [
+        -0.22,
+        0.25,
+        -0.25
+      ],
+      "max": [
+        0.22,
+        0.3,
+        0.15
+      ],
+      "color": "#7a2f2a"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.5,
+        0.3
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.15,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.15,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "seat": {
+    "at": [
+      0,
+      -0.55,
+      0
+    ]
+  }
+}

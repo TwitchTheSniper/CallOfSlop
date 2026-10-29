@@ -1,0 +1,77 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Panel",
+  "description": "A 1 m armour plate. Cover for whatever is behind it.",
+  "role": "panel",
+  "tool": "welder",
+  "mass": 18,
+  "health": 160,
+  "armour": 12,
+  "material": "steel",
+  "color": "#8a9096",
+  "boxes": [
+    {
+      "size": [
+        1.0,
+        0.1,
+        1.0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0,
+        -0.05,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.05,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ]
+}

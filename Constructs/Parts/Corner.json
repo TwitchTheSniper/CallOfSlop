@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Corner",
+  "description": "A sloped corner piece, 0.5 m: noses, ramps and roof edges.",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 14,
+  "health": 180,
+  "armour": 6,
+  "material": "steel",
+  "color": "#80878f",
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.25,
+        -0.25
+      ],
+      "max": [
+        0.25,
+        -0.083,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.25,
+        -0.083,
+        -0.083
+      ],
+      "max": [
+        0.25,
+        0.083,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.25,
+        0.083,
+        0.083
+      ],
+      "max": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    }
+  ]
+}

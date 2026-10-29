@@ -110,6 +110,8 @@ public static unsafe partial class Program
             return WeaponSet.Export(weaponDir); // writes the loaded weapons and attachments back out as files
         if (args.SkipWhile(a => !a.Equals("--check-part", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partFile)
             return PartTools.Check(partFile); // for part makers: does this part (fragment, base, registry) file load, and where does it fit?
+        if (args.Any(a => a.Equals("--check-construct-parts", StringComparison.OrdinalIgnoreCase)))
+            return ConstructParts.CheckCli(); // Sandbox construct parts and blueprints: what loads, what's refused and why (Source/Constructs)
         if (args.Any(a => a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)))
             return PartTools.CheckAll(args.SkipWhile(a => !a.Equals("--check-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault(a => !a.StartsWith("--")));
         if (args.SkipWhile(a => !a.Equals("--export-parts", StringComparison.OrdinalIgnoreCase)).Skip(1).FirstOrDefault() is { } partDir)
@@ -132,9 +134,10 @@ public static unsafe partial class Program
         Ui.BackendNewFrame = args.Any(a => a.Equals("--imgui-backend-frame", StringComparison.OrdinalIgnoreCase)); // the GLFW backend's own NewFrame every frame (UiPlatformFrame.cs)
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
+        _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -214,6 +217,8 @@ public static unsafe partial class Program
                 RunRagdollShots(args); // --ragdoll-shots: picture strips of ragdoll deaths, then quit (Program.RagdollShots.cs)
             else if (_crowdShots)
                 RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
+            else if (_sandboxShots)
+                RunSandboxShots(args); // --sandbox-shots: the Sandbox constructs on Construct Yard, then quit (Program.SandboxShots.cs)
             else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
@@ -1850,6 +1855,7 @@ public static unsafe partial class Program
             _crouchToggle = _proneToggle = false; // respawn standing
 
         ZombiesInput(now, _mouseCaptured && Pressed(GameAction.Interact)); // Zombies: the interact key's hold, workbenches (Program.Zombies.cs)
+        var sandbox = SandboxInput(now); // Sandbox: tools, parts, seats and doors take these keys (Program.Sandbox.cs)
         var buttons = Buttons.None;
         if (_mouseCaptured)
         {
@@ -1903,19 +1909,19 @@ public static unsafe partial class Program
                 _crouchToggle = _proneToggle = false; // Jump stands you up first
                 _holdJumpUntilRelease = true;
             }
-            if (Pressed(GameAction.Reload))
-                _game.StartReload(now);
+            if (Pressed(GameAction.Reload) && !SandboxHoldsTrigger)
+                _game.StartReload(now); // (Sandbox with a tool out: R turns the part instead)
             if (Pressed(GameAction.PrimaryWeapon))
                 _game.SwitchTo(0, now);
             if (Pressed(GameAction.SecondaryWeapon))
                 _game.SwitchTo(1, now);
             if (Pressed(GameAction.SwapWeapon))
                 _game.SwitchTo(_game.NextSlot, now);
-            if (Pressed(GameAction.Weapon3))
+            if (Pressed(GameAction.Weapon3) && !sandbox)
                 _game.SwitchTo(2, now); // Zombies slot upgrade (refused while you have 2 slots)
-            if (Pressed(GameAction.Weapon4))
+            if (Pressed(GameAction.Weapon4) && !sandbox)
                 _game.SwitchTo(3, now);
-            if (Pressed(GameAction.Interact))
+            if (Pressed(GameAction.Interact) && !sandbox)
             {
                 if (_game.InteractCanHold)
                     _interactDownAt = now; // at a parked or manned cart: tap = man it / step off, hold = push it
@@ -1962,10 +1968,10 @@ public static unsafe partial class Program
                 buttons |= Buttons.Crouch;
         }
         _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's arms step only)
-        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim)) || _smokeAimHeld;
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) || _smokeAimHeld; // (Sandbox: aim takes parts off with a tool out)
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
-        var down = _mouseCaptured && Down(GameAction.Fire);
+        var down = _mouseCaptured && Down(GameAction.Fire) && !SandboxHoldsTrigger; // (Sandbox: fire fits parts with a tool out; drivers don't shoot)
         if (_swallowClick)
         {
             if (!down)
@@ -2174,6 +2180,7 @@ public static unsafe partial class Program
         DrawZombiesWorld(now); // push carts and the slot station (Program.Workbench.cs); nothing in normal matches
         DrawZombiesMode(now); // the Zombies mode: zombies, doors, windows, buyables (Program.Zombies.cs); nothing on other maps
         DrawLogic(now); // map logic: doors, lamps, buttons, levers, plates (Program.Logic.cs); nothing on maps without a "logic" section
+        DrawSandbox(now); // Sandbox: the constructs (Program.Sandbox.cs); nothing in other modes
         DrawAmmoFx(now); // special ammo flashes, in any mode (Program.Zombies.cs)
         DrawPveEnemies(now, eye, fwd); // co-op enemy soldiers, with level of detail (Program.Pve.cs); nothing outside Co-op
         _worldView = view;
@@ -2272,7 +2279,7 @@ public static unsafe partial class Program
 
         // ---- First-person gun -----------------------------------------------
         pass = Perf.Pass(PerfArea.ViewModel, PerfGpuPass.ViewModel);
-        if (local is { Alive: true })
+        if (local is { Alive: true } && !DrawSandboxTool(now, eye, fwd)) // (Sandbox: the wrench or welder instead, or nothing in a seat)
         {
             GunModel.AdsCutaway = SightLens.Cutaway(_game.Active.Def, _game.AimT); // reflex dots hand over to the lens pass as you aim
             DrawViewModel(now, proj);

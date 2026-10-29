@@ -154,7 +154,7 @@ public static partial class SelfTest
             (GameMode.FreeForAll, 0, typeof(FreeForAllModule)), (GameMode.TeamDeathmatch, 1, typeof(TeamDeathmatchModule)),
             (GameMode.KingOfTheHill, 2, typeof(KingOfTheHillModule)), (GameMode.CaptureTheFlag, 3, typeof(CaptureTheFlagModule)),
             (GameMode.GunGame, 4, typeof(GunGameModule)), (GameMode.Zombies, 5, typeof(ZombiesModule)), (GameMode.LastManStanding, 6, typeof(LastManStandingModule)),
-            (GameMode.Coop, 7, typeof(CoopModule)), (GameMode.TestRange, 8, typeof(TestRangeModule)),
+            (GameMode.Coop, 7, typeof(CoopModule)), (GameMode.TestRange, 8, typeof(TestRangeModule)), (GameMode.Sandbox, 9, typeof(SandboxModule)),
         };
         foreach (var (id, wire, type) in expected)
         {
@@ -208,6 +208,7 @@ public static partial class SelfTest
             (GameMode.LastManStanding, false, true, true, null, false, true, true, 0, "kills"),
             (GameMode.Coop, false, true, false, null, true, false, false, 0, "kills"),
             (GameMode.TestRange, false, true, true, null, false, false, false, 0, "kills"),
+            (GameMode.Sandbox, false, true, false, null, false, false, false, 0, "kills"),
         };
         foreach (var w in want)
         {
@@ -217,7 +218,7 @@ public static partial class SelfTest
             if (m.TeamBased != w.Team || m.UsesLoadout != w.Loadout || m.AllowsStreaks != w.Streaks || !Equals(m.FixedPerks, w.Perks) || m.CoOp != w.CoOp
                 || m.UsesMapVote != w.Vote || m.HasTimeLimit != w.Clock || ScoreLimits.Classic(w.Mode) != w.Classic || m.ScoreUnit != w.Unit)
                 Fail($"{m.Name}: capability flags changed ({flags})");
-            if (m.DevOnly != (w.Mode == GameMode.LastManStanding))
+            if (m.DevOnly != (w.Mode is GameMode.LastManStanding or GameMode.Sandbox))
                 Fail($"{m.Name}: DevOnly is {m.DevOnly}");
         }
         // Through a game: the derived rules match the flags.
@@ -372,6 +373,8 @@ public static partial class SelfTest
                 ClutteredLargeNav(silo); // co-op plays on a map with a mission (Silo Breach): 3 co-op bots against the director's squads
                 game = ModeGame(3, mode, silo.Id);
             }
+            else if (mode == GameMode.Sandbox && Maps.Find(ConstructYardMap) is { } yard)
+                game = ModeGame(3, mode, yard.Id); // Sandbox plays on a map with a "sandbox" section (Construct Yard): 3 bots among the constructs
             else
                 game = ModeGame(Game.ClassicPlayers - 1, mode, map.Id);
             Game.SeedNextGame = null; // (ZGame may not have made a Game with it)
