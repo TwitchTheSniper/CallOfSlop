@@ -64,6 +64,13 @@ public static partial class SelfTest
         }
         void Measure(string moment)
         {
+            // The whole game update (every server tick in it), as the main loop runs it: its allocations.
+            for (var k = 0; k < 10; k++)
+                g.Update(now += 1 / 60.0, 1 / 60f);
+            var u0 = GC.GetAllocatedBytesForCurrentThread();
+            for (var k = 0; k < 60; k++)
+                g.Update(now += 1 / 60.0, 1 / 60f);
+            Line($"crowd {size} {moment}: Game.Update allocated {(GC.GetAllocatedBytesForCurrentThread() - u0) / 60} B a frame over 60 frames");
             Sync();
             ZombieAnim.SetFrustum(view * proj);
             var r = BenchPrep(g, c, eye, fog, now);
