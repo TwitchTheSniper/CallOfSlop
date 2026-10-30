@@ -166,6 +166,7 @@ public static partial class SelfTest
         if (seatOpen || !seatSaid.Contains("seat"))
             Fail("tool wheel: the wheel opened in a seat");
 
+        wheel.SetOptions(SandboxToolWheel.Slot.Linker, new SandboxLinkWheel()); // (the outer ring drawn too, with no allocation)
         SandboxToolWheelDrawn(g, wheel);
         SandboxToolWheelOverWire(yard);
     }

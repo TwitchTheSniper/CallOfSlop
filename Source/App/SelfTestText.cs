@@ -88,6 +88,18 @@ public static partial class SelfTest
         foreach (GameAction a in Enum.GetValues<GameAction>())
             Add($"key binding {a}", Keybinds.Label(a), TextKind.Label);
         Add("default loadout name", LoadoutStore.DefaultName(0), TextKind.Label);
+        // The Sandbox tool wheel: its tools and the linking tool's outer ring (names in the middle, hints in the tooltip).
+        var wheel = new SandboxToolWheel();
+        foreach (var it in wheel.Menu.Items.Concat(new SandboxLinkWheel().Options))
+        {
+            Add($"tool wheel item '{it.Label}'", it.Label, TextKind.Label);
+            if (it.Hint.Length > 0)
+                Add($"tool wheel item '{it.Label}' hint", it.Hint, TextKind.Label);
+            if (it.Note.Length > 0)
+                Add($"tool wheel item '{it.Label}' note", it.Note, TextKind.Label);
+        }
+        Add("tool wheel title", wheel.Menu.Title, TextKind.Label);
+        Add("tool wheel help", wheel.Menu.Help, TextKind.Label);
 
         var bad = 0;
         foreach (var (where, text, kind) in texts)

@@ -3,8 +3,8 @@ using System.Numerics;
 namespace CallOfSlop;
 
 /// <summary>
-/// The linking tool's routed links on this PC (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"). Hold the tool
-/// wheel key for the link wheel (the type, a pipe's style, the edit modes). Routing: LMB on an output (a picker when it
+/// The linking tool's routed links on this PC (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"). The tool wheel's
+/// outer ring round the linking tool picks the type, a pipe's style and the edit modes (SandboxLinkWheel). Routing: LMB on an output (a picker when it
 /// has several ports), then each LMB places a node on the surface under the crosshair (snapped; the preview turns red
 /// with the reason when a rule is broken), RMB or Backspace takes the last node off, LMB on an input finishes (a picker
 /// for its port), Esc cancels. LMB on a link of the same type branches off it. The edit modes delete a link, move a
@@ -70,29 +70,20 @@ public static partial class Program
         return true;
     }
 
-    /// <summary>The link wheel while the linking tool is out (the tool wheel otherwise). Returns true while it (or the port picker) is open: the view is frozen.</summary>
+    /// <summary>The port picker while the linking tool is out (its options are on the tool wheel's outer ring). Returns true while it is open: the view is frozen.</summary>
     private static bool LinkWheelInput(Game g, Vector2 delta, bool blocked, float dt)
     {
-        if (_lkPicker.IsOpen)
-        {
-            if (blocked)
-                _lkPicker.Close();
-            else
-                _lkPicker.Move(delta);
-            return _lkPicker.IsOpen;
-        }
-        var open = _linkWheel.Step(Down(GameAction.ToolWheel), delta, dt, blocked);
-        if (_linkWheel.WantsTools)
-        {
-            _toolWheel.Menu.Open(); // (the tool wheel in its place: the key is still held)
-            return true;
-        }
-        return open;
+        if (!_lkPicker.IsOpen)
+            return false;
+        if (blocked)
+            _lkPicker.Close();
+        else
+            _lkPicker.Move(delta, dt);
+        return _lkPicker.IsOpen;
     }
 
     private static void DrawLinkWheelInMatch()
     {
-        _linkWheel.Draw(Ui.Scale);
         if (_lkPicker.IsOpen)
         {
             var size = Brutal.ImGuiApi.ImGui.GetIO().DisplaySize;
@@ -453,7 +444,7 @@ public static partial class Program
                 var k = hit.RoutePlus1 - 1;
                 ref var r = ref c.Routes[k];
                 if (r.Type != w.Type)
-                    g.SandboxSay($"that is a {ConstructRoutes.Name(r.Type, r.Style)}: pick its type on the link wheel to branch off it");
+                    g.SandboxSay($"that is a {ConstructRoutes.Name(r.Type, r.Style)}: pick its type on the tool wheel to branch off it");
                 else if (r.Type == RouteType.Shaft && ConstructRoutes.ShaftJunctionNeedsTBox)
                     g.SandboxSay("a drive shaft branches only through a T gearbox");
                 else
@@ -524,9 +515,9 @@ public static partial class Program
         if (_lkBody == 0 && w.Type == RouteType.Pipe && w.Style == 255)
             type = "pipe (style from the output)";
         _lkHud = w.Mode != LinkMode.Link
-            ? _lkMoveRoute >= 0 ? "Move node: LMB where it goes (RMB: let go)" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: the link wheel"
+            ? _lkMoveRoute >= 0 ? "Move node: LMB where it goes (RMB: let go)" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: tool wheel, link types"
             : _lkBody == 0
-                ? $"Linking tool: {type}{(w.Highlight ? " (highlight all)" : "")} - LMB an output (or a link to branch). RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: link wheel"
+                ? $"Linking tool: {type}{(w.Highlight ? " (highlight all)" : "")} - LMB an output (or a link to branch). RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: tool wheel, link types"
                 : $"Routing a {type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input. RMB/Backspace: last node off. Esc: cancel{(_lkWhy != null ? $" | {_lkWhy}" : "")}";
         g.SandboxWireFrom = _lkHud;
     }
