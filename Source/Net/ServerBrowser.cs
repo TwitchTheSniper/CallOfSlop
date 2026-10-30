@@ -201,7 +201,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     (data, power, pipe, shaft, chute: endpoints, junction, nodes on the 1 cm grid, segment health) in place of its wires;
     //     CAct.Route / RouteEdit at the end of CActKind; part ids are two bytes everywhere (CBody parts, stores, the inventory,
     //     the mode-state tail's held part, CAct.Rack's pick).
-    public const byte ProtocolVersion = 90;
+    // 91: Sandbox actuator sizes (docs/sandbox/CONSTRUCTS.md "Actuator sizes and strength"): Msg.CPose carries a byte per
+    //     joint after its angle and speed, its load against its rating (hundredths), for the configure panel's bar and the
+    //     overload tint; a construct may have 16 joints (was 8).
+    public const byte ProtocolVersion = 91;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

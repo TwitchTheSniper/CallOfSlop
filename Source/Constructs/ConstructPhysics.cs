@@ -24,6 +24,7 @@ namespace CallOfSlop;
 public static class ConstructPhysics
 {
     public const int Iterations = 6;
+    public const int JointIterations = 6; // more passes over the joints and the contacts on jointed constructs (the strength model: chains of actuators stay rigid)
     public const int MaxContacts = 1024;
     public const float Slop = 0.01f;
     public const float Beta = 0.25f;
@@ -38,7 +39,12 @@ public static class ConstructPhysics
     public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
     public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick
     public const float PivotMaxFix = 4f; // m/s at most to put it right (a coupling made apart pulls together, not snaps)
-    public const float HitchClear = 0.7f; // coupled constructs' parts this near a hitch point don't collide with each other
+    public const float HitchClear = 0.7f;
+    // The strength model (board item dev-sandbox-actuator-sizes-as01; MotorPrep): a motor holds rigidly up to its rating, then gives.
+    public const float OverCap = 4f; // the most an overloaded motor pushes, times its rating (then it slips)
+    public const float RefGain = 10f; // a second: how hard a motor pulls its joint back onto its reference (the speed it asks per unit behind)
+    public const float YieldDamp = 20f; // a second: how fast an overloaded joint's speed away from its reference dies (damping the give)
+    public const float ForceSmooth = 0.25f; // the share of this tick's load the shown load takes // coupled constructs' parts this near a hitch point don't collide with each other
 
     /// <summary>A motor's push and a joint's stops push the body back (milestone 3: a turret swung hard rocks a light buggy). The self-test turns it off to compare.</summary>
     public static bool JointReactions = true;
@@ -72,6 +78,7 @@ public static class ConstructPhysics
     private static readonly Vector3[] _jAxis = new Vector3[Slots], _jPivot = new Vector3[Slots];
     private static readonly float[] _jInvI = new float[Slots], _jWant = new float[Slots], _jMotorMax = new float[Slots];
     private static readonly float[] _jLoB = new float[Slots], _jHiB = new float[Slots], _jP = new float[Slots], _jLo = new float[Slots], _jHi = new float[Slots];
+    private static readonly float[] _jRating = new float[Slots], _jSide = new float[Slots]; // the strength model: this tick's rating (side load taken off), side load against what it takes
     private static readonly short[] _active = new short[Slots];
     private static int _activeCount;
     // Segment frames this tick (body index * (MaxJoints + 1) + segment).
@@ -828,76 +835,87 @@ public static class ConstructPhysics
             ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
                 : ct.Gap > 0 ? ct.Gap / dt : MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
         }
-        for (var it = 0; it < Iterations; it++)
+        for (var it = 0; it < Iterations + JointIterations; it++)
         {
-            // The joints first (motors, limits), then the contacts: what can't pass through has the last word.
-            for (var a = 0; a < _activeCount; a++)
+            // The joints first (motors, limits), then the contacts: what can't pass through has the last word. The last
+            // passes are only the joints and the contacts on jointed constructs (a chain of actuators converges rigid).
+            JointRows(bodies);
+            ContactRows(it >= Iterations);
+        }
+    }
+
+    private static void JointRows(IList<Construct> bodies)
+    {
+        for (var a = 0; a < _activeCount; a++)
+        {
+            int slot = _active[a];
+            var inv = _jInvI[slot];
+            if (inv <= 0)
+                continue;
+            ref var jt = ref bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints];
+            var max = _jMotorMax[slot];
+            var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
+            if (max > 0)
             {
-                int slot = _active[a];
-                var inv = _jInvI[slot];
-                if (inv <= 0)
-                    continue;
-                ref var jt = ref bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints];
-                var max = _jMotorMax[slot];
-                var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
-                if (max > 0)
-                {
-                    var old = _jP[slot];
-                    _jP[slot] = Math.Clamp(old + (_jWant[slot] - jt.Vel) / inv, -max, max);
-                    jt.Vel += (_jP[slot] - old) * inv;
-                    react += _jP[slot] - old;
-                }
-                if (float.IsFinite(_jLoB[slot]))
-                {
-                    var old = _jLo[slot];
-                    _jLo[slot] = MathF.Max(0, old + (_jLoB[slot] - jt.Vel) / inv);
-                    jt.Vel += (_jLo[slot] - old) * inv;
-                    react += _jLo[slot] - old;
-                }
-                if (float.IsFinite(_jHiB[slot]))
-                {
-                    var old = _jHi[slot];
-                    _jHi[slot] = MathF.Min(0, old + (_jHiB[slot] - jt.Vel) / inv);
-                    jt.Vel += (_jHi[slot] - old) * inv;
-                    react += _jHi[slot] - old;
-                }
-                if (react != 0 && JointReactions)
-                    React(slot, react);
+                var old = _jP[slot];
+                _jP[slot] = Math.Clamp(old + (_jWant[slot] - jt.Vel) / inv, -max, max);
+                jt.Vel += (_jP[slot] - old) * inv;
+                react += _jP[slot] - old;
             }
-            for (var k = 0; k < _contactCount; k++)
+            if (float.IsFinite(_jLoB[slot]))
             {
-                ref var ct = ref _contacts[k];
-                if (ct.MassN <= 0)
-                    continue;
-                var rel = Rel(ct);
-                var vn = Vector3.Dot(rel, ct.Normal);
-                var dj = -(vn + ct.Bias) * ct.MassN;
-                if (ct.Bilateral)
-                {
-                    ct.Jn += dj; // (a free pivot holds either way)
-                    Push2(ct, ct.Normal * dj);
-                    continue;
-                }
-                var old = ct.Jn;
-                ct.Jn = MathF.Max(0, old + dj);
-                dj = ct.Jn - old;
-                if (dj != 0)
-                    Push2(ct, ct.Normal * dj);
-                if (ct.Jn <= 0)
-                    continue;
-                // Friction (two tangents, inside the cone).
-                rel = Rel(ct);
-                var max = ct.Friction * ct.Jn;
-                var d1 = -Vector3.Dot(rel, ct.T1) * ct.MassT1;
-                var o1 = ct.Jt1;
-                ct.Jt1 = Math.Clamp(o1 + d1, -max, max);
-                var d2 = -Vector3.Dot(rel, ct.T2) * ct.MassT2;
-                var o2 = ct.Jt2;
-                ct.Jt2 = Math.Clamp(o2 + d2, -max, max);
-                var jt = ct.T1 * (ct.Jt1 - o1) + ct.T2 * (ct.Jt2 - o2);
-                if (jt != Vector3.Zero)
-                    Push2(ct, jt);
+                var old = _jLo[slot];
+                _jLo[slot] = MathF.Max(0, old + (_jLoB[slot] - jt.Vel) / inv);
+                jt.Vel += (_jLo[slot] - old) * inv;
+                react += _jLo[slot] - old;
             }
+            if (float.IsFinite(_jHiB[slot]))
+            {
+                var old = _jHi[slot];
+                _jHi[slot] = MathF.Min(0, old + (_jHiB[slot] - jt.Vel) / inv);
+                jt.Vel += (_jHi[slot] - old) * inv;
+                react += _jHi[slot] - old;
+            }
+            if (react != 0 && JointReactions)
+                React(slot, react);
+        }
+    }
+
+    private static void ContactRows(bool jointedOnly)
+    {
+        for (var k = 0; k < _contactCount; k++)
+        {
+            ref var ct = ref _contacts[k];
+            if (ct.MassN <= 0 || jointedOnly && ct.NA + ct.NB == 0 && !_jact[ct.A] && (ct.B < 0 || !_jact[ct.B]))
+                continue;
+            var rel = Rel(ct);
+            var vn = Vector3.Dot(rel, ct.Normal);
+            var dj = -(vn + ct.Bias) * ct.MassN;
+            if (ct.Bilateral)
+            {
+                ct.Jn += dj; // (a free pivot holds either way)
+                Push2(ct, ct.Normal * dj);
+                continue;
+            }
+            var old = ct.Jn;
+            ct.Jn = MathF.Max(0, old + dj);
+            dj = ct.Jn - old;
+            if (dj != 0)
+                Push2(ct, ct.Normal * dj);
+            if (ct.Jn <= 0)
+                continue;
+            // Friction (two tangents, inside the cone).
+            rel = Rel(ct);
+            var max = ct.Friction * ct.Jn;
+            var d1 = -Vector3.Dot(rel, ct.T1) * ct.MassT1;
+            var o1 = ct.Jt1;
+            ct.Jt1 = Math.Clamp(o1 + d1, -max, max);
+            var d2 = -Vector3.Dot(rel, ct.T2) * ct.MassT2;
+            var o2 = ct.Jt2;
+            ct.Jt2 = Math.Clamp(o2 + d2, -max, max);
+            var jt = ct.T1 * (ct.Jt1 - o1) + ct.T2 * (ct.Jt2 - o2);
+            if (jt != Vector3.Zero)
+                Push2(ct, jt);
         }
     }
 
@@ -1148,6 +1166,16 @@ public static class ConstructPhysics
             _jPivot[slot] = pivot;
             _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
             _jMotorMax[slot] = 0;
+            _jRating[slot] = jt.Strength;
+            _jSide[slot] = 0;
+            if (jt.Slides && jt.SideLoad > 0)
+            {
+                // A piston's side load: gravity across its axis on what it carries (and its riders), against what it takes.
+                var w = GravityAccel * (c.SegMass[seg] + riders * Construct.RiderMass);
+                var across = MathF.Sqrt(MathF.Max(0, w * w - load * load));
+                _jSide[slot] = across / jt.SideLoad;
+                _jRating[slot] = jt.Strength / MathF.Max(1, _jSide[slot]); // (pushed sideways past what it takes, it holds less along its axis)
+            }
             _jWant[slot] = 0;
             _active[_activeCount++] = (short)slot;
             if (jt.Type == JointType.Passive)
@@ -1164,12 +1192,13 @@ public static class ConstructPhysics
                 jt.Vel *= MathF.Max(0, 1 - 7f * dt);
             }
             else if (ConstructPower.On(c, jt.Hinge))
-            {
-                _jWant[slot] = MotorWant(c, jt);
-                _jMotorMax[slot] = jt.Strength * dt;
-            }
+                MotorPrep(c, ref jt, slot, dt);
             else
+            {
                 jt.Vel *= MathF.Max(0, 1 - 2f * dt); // (no power: the motor lets go, a little drag in its gears)
+                jt.Ref = jt.Angle; // (power back: it starts from where it is)
+                jt.RefSet = true;
+            }
             jt.Vel += load / inertia * dt; // the load acts whatever the motor does
             _jInvI[slot] = 1f / inertia;
             _jLoB[slot] = float.IsFinite(jt.Min) ? (jt.Min - jt.Angle) / dt : float.NaN;
@@ -1180,6 +1209,79 @@ public static class ConstructPhysics
             c.WorldFrame(s, out _segQ[baseSeg + s], out _segT[baseSeg + s]);
     }
 
+    /// <summary>
+    /// The strength model (board item dev-sandbox-actuator-sizes-as01; docs/sandbox/CONSTRUCTS.md, "Actuator sizes and
+    /// strength"). A moving joint's motor follows a reference: the target its input asks for (a turntable: the speed),
+    /// reached at its speed. The motor holds the joint on it with at most its rating while the joint is on it, so up to
+    /// its rating the joint is rigid (a velocity constraint solved with the contacts and the other joints, no spring). A
+    /// load above the rating pushes the joint off its reference, and the further off it is the more the motor pushes:
+    /// rating x (1 + sqrt(behind / give)), so it settles where that meets the load, give x (load / rating - 1)^2 behind
+    /// (a little just over the rating, more and more as the overload grows; "give" is how far at twice the rating). It
+    /// never asks to move faster than its speed, so it comes back at its speed when the load goes (and doesn't bounce:
+    /// what pushes it off is resisted, what it moves back with is its speed). At OverCap times its rating it slips: the
+    /// reference is dragged along. A gunner's aim and a steering pivot keep the plain motor (at most their strength).
+    /// </summary>
+    private static void MotorPrep(Construct c, ref CJoint jt, int slot, float dt)
+    {
+        if (jt.Aimed || jt.Type == JointType.Steering)
+        {
+            _jWant[slot] = MotorWant(c, jt);
+            _jMotorMax[slot] = jt.Strength * dt;
+            jt.Ref = jt.Angle;
+            jt.RefSet = true;
+            return;
+        }
+        var wraps = jt.Type == JointType.Turntable && !float.IsFinite(jt.Min);
+        if (!jt.RefSet || !float.IsFinite(jt.Ref))
+        {
+            jt.Ref = jt.Angle;
+            jt.RefSet = true;
+        }
+        float refVel;
+        if (jt.Type == JointType.Turntable && jt.Wired && jt.Input != 0)
+            refVel = Math.Clamp(jt.Input, -1, 1) * jt.Speed;
+        else
+        {
+            var to = jt.Type == JointType.Turntable ? jt.Ref : PositionTarget(c, jt); // (a turntable with no input holds where it is)
+            var d = wraps ? World.WrapAngle(to - jt.Ref) : to - jt.Ref;
+            refVel = Math.Clamp(d / dt, -jt.Speed, jt.Speed);
+        }
+        jt.Ref += refVel * dt;
+        if (wraps)
+            jt.Ref = World.WrapAngle(jt.Ref);
+        else
+            jt.Ref = Math.Clamp(jt.Ref, jt.Min, jt.Max);
+        var behind = wraps ? World.WrapAngle(jt.Ref - jt.Angle) : jt.Ref - jt.Angle;
+        var give = MathF.Max(jt.Give, 1e-3f);
+        var lead = give * (OverCap - 1) * (OverCap - 1);
+        if (MathF.Abs(behind) > lead)
+        {
+            // Past OverCap times its rating: it slips (the reference comes along).
+            behind = MathF.CopySign(lead, behind);
+            jt.Ref = wraps ? World.WrapAngle(jt.Angle + behind) : jt.Angle + behind;
+        }
+        if (MathF.Abs(behind) > 1e-4f && jt.Vel * behind < 0)
+            jt.Vel *= MathF.Max(0, 1 - YieldDamp * dt); // (giving way, damped: it settles on its curve without bouncing)
+        _jWant[slot] = Math.Clamp(refVel + behind * RefGain, -jt.Speed, jt.Speed);
+        _jMotorMax[slot] = _jRating[slot] * (1 + MathF.Sqrt(MathF.Abs(behind) / give)) * dt;
+    }
+
+    /// <summary>Where a position joint's input sends it (a motorised hinge, a piston): inside its limits.</summary>
+    private static float PositionTarget(Construct c, in CJoint jt)
+    {
+        var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
+        float target;
+        if (jt.Slides)
+            target = Math.Clamp(input, 0, 1) * jt.Max;
+        else
+        {
+            input = Math.Clamp(input, -1, 1);
+            target = input >= 0 ? input * jt.Max : -input * jt.Min;
+        }
+        _ = c;
+        return Math.Clamp(target, jt.Min, jt.Max);
+    }
+
     /// <summary>After the solve: each joint moves at the speed it was left with, inside its limits.</summary>
     private static void IntegrateJoints(Construct c, int index, float dt)
     {
@@ -1188,7 +1290,19 @@ public static class ConstructPhysics
             ref var jt = ref c.Joints[j];
             var slot = index * Construct.MaxJoints + j;
             if (_jMotorMax[slot] > 0)
+            {
                 c.MotorWork += MathF.Abs(_jP[slot] / dt * jt.Vel); // (the power drain: torque x speed, ConstructPower.cs)
+                // The load it held (the strength model): what the panel's bar and the tint show, and what overload damage counts.
+                jt.Force += (MathF.Abs(_jP[slot]) / dt - jt.Force) * ForceSmooth;
+                jt.Over = MathF.Max(jt.Force / MathF.Max(1, _jRating[slot]), _jSide[slot]);
+                if (jt.Over > 1 && jt.Hinge < c.PartCount && c.Parts[jt.Hinge].D.OverloadDamage > 0)
+                    jt.Strain += c.Parts[jt.Hinge].D.OverloadDamage * (jt.Over - 1) * dt;
+            }
+            else if (jt.Motorised)
+            {
+                jt.Force *= 1 - ForceSmooth;
+                jt.Over = 0;
+            }
             if (jt.Type == JointType.Passive && jt.Locked)
             {
                 jt.Vel = 0;
@@ -1253,7 +1367,7 @@ public static class ConstructPhysics
         for (var j = 0; j < c.JointCount && still; j++)
         {
             ref var jt = ref c.Joints[j];
-            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || MathF.Abs(MotorWant(c, jt)) <= 0.05f); // (a stalled motor still pushes)
+            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || MathF.Abs(MotorWant(c, jt)) <= 0.05f && jt.Over <= 1); // (a stalled or overloaded motor still pushes)
         }
         if (!still)
         {

@@ -1,0 +1,117 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Motor Hinge 2x2 Short",
+  "description": "A motorised hinge: wire a signal into it (1 opens to max, 0 shuts, -1 to min), or Interact opens and shuts it. Size 2x2 short: holds up to 12000 N m rigidly; more and it gives way.",
+  "group": "Joints",
+  "section": "Motor hinges",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 32.0,
+  "health": 260,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4f6a7a",
+  "power": 26.6667,
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.25,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.52,
+        0.1,
+        0.52
+      ],
+      "at": [
+        0.0,
+        0.0625,
+        0.0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "leaf",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    }
+  ],
+  "joint": {
+    "type": "motor",
+    "axis": "+y",
+    "pivot": [
+      0.25,
+      0.0,
+      0.0
+    ],
+    "min": -100,
+    "max": 100,
+    "leaf": "leaf",
+    "speed": 45,
+    "strength": 12000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "min",
+      "label": "Lowest angle",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -100.0,
+      "max": 100.0,
+      "step": 1,
+      "tooltip": "The far end a signal of -1 turns it to."
+    },
+    {
+      "key": "max",
+      "label": "Highest angle",
+      "group": "Limits",
+      "unit": "deg",
+      "min": -100.0,
+      "max": 100.0,
+      "step": 1,
+      "tooltip": "The far end a signal of 1 (or opening it) turns it to."
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 5.0,
+      "max": 45.0,
+      "step": 1,
+      "tooltip": "How fast it turns (this size: up to 45 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 1200.0,
+      "max": 12000.0,
+      "step": 50,
+      "tooltip": "Its rating: what it holds rigidly (this size: up to 12000 N m). More load and it gives way; a lower setting caps the power it draws."
+    }
+  ]
+}

@@ -94,6 +94,14 @@ public struct CJoint
     public float Load; // the gravity load it held last tick (N m or N; the HUD and the self-test)
     public bool Aimed; // milestone 3: a gunner (or a sentry's sensor) points it this tick: it turns towards AimErr
     public float AimErr; // radians (about its axis) between where its gun points and where it should
+    // The strength model (board item dev-sandbox-actuator-sizes-as01; ConstructPhysics.cs): Strength is its rating
+    public float Ref; // server: where the motor's reference is (its target reached at its speed); the joint lags it only when overloaded
+    public bool RefSet; // Ref holds a value (a new joint takes its angle)
+    public float Give; // how far it has given at twice its rating (radians; a piston's metres): the yield curve's scale
+    public float SideLoad; // a piston: the most load across its axis before it gives (N; 0: none)
+    public float Force; // the load the motor held, smoothed (N m; a piston's N)
+    public float Over; // load against rating (1: at its rating, more: overloaded); clients hear it in the pose
+    public float Strain; // overload damage owed to its part (hp; only with the part's overloadDamage on)
 
     public readonly bool Slides => Type == JointType.Piston;
     public readonly bool Motorised => Type != JointType.Passive;
@@ -136,7 +144,7 @@ public sealed partial class Construct
 {
     public const int MaxParts = 96;
     public const int MaxLinks = MaxParts * 3;
-    public const int MaxJoints = 8;
+    public const int MaxJoints = 16; // (16 since the actuator sizes: a 10-joint leg or arm fits)
     public const int MaxPoints = 40; // contact points against the world
     public const int MaxWheels = 12;
     public const int MaxWires = 64;
@@ -605,6 +613,8 @@ public sealed partial class Construct
                 var unit = jd.JointType == JointType.Piston ? 1f : MathF.PI / 180f;
                 jt.Speed = ConstructConfig.Has(jd, CfgKey.Speed) ? MathF.Max(0, ConstructConfig.Get(hp, jd, CfgKey.Speed, 0) * unit) : jd.MotorSpeed;
                 jt.Strength = ConstructConfig.Get(hp, jd, CfgKey.Strength, jd.MotorStrength);
+                jt.Give = jd.JointGive;
+                jt.SideLoad = jd.SideLoad;
                 if (jd.JointLimited && (ConstructConfig.Has(jd, CfgKey.Min) || ConstructConfig.Has(jd, CfgKey.Max)))
                 {
                     var a = Math.Clamp(ConstructConfig.Get(hp, jd, CfgKey.Min, jd.JointMin / unit) * unit, jd.JointMin, jd.JointMax);
