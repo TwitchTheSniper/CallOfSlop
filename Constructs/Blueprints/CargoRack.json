@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Cargo Rack",
+  "description": "A foundation with a Cargo Volume that starts frozen, holding two frame blocks fast (decision 21: a blueprint's cargo). F on the control box lets them go.",
+  "steps": [
+    { "part": "Foundation" },
+    { "part": "Cargo Volume", "on": 0, "socket": "top11", "by": "-y", "config": { "startOn": true, "sizeX": 2, "sizeY": 1, "sizeZ": 2, "atX": 0.25, "atY": 0.6, "atZ": 0.25 } }
+  ],
+  "cargo": [
+    { "part": "Frame Block", "at": [-0.4, 0.8, 0.3], "turn": 0 },
+    { "part": "Frame Block", "at": [0.4, 0.8, 0.3], "turn": 0 }
+  ]
+}

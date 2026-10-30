@@ -14,6 +14,7 @@ public enum SlotCheck : byte
     OtherKind, // a pile of another part
     Full, // a pile at its limit
     TooHeavy, // heavier than the container takes (a backpack's maxMass)
+    PhysicsOnly, // decision 21: a welded, heavy or bulky part is never an item (ConstructPartDef.PhysicsOnly)
 }
 
 /// <summary>
@@ -159,6 +160,8 @@ public static class ConstructStorage
         if (slot < 0 || slot >= cd.Slots.Length || slot >= st.SlotCount)
             return SlotCheck.NoSlot;
         ref readonly var s = ref cd.Slots[slot];
+        if (d.PhysicsOnly)
+            return SlotCheck.PhysicsOnly;
         if (cd.StoreMaxMass > 0 && d.Mass > cd.StoreMaxMass)
             return SlotCheck.TooHeavy;
         if (!Fits(s, d, out rot))
@@ -189,6 +192,7 @@ public static class ConstructStorage
             SlotCheck.WrongShape => $"that slot takes a {RoleWord(s.Fits[0])}",
             SlotCheck.TooBig => $"the {d.Name} doesn't fit a {SizeClass(s)} slot",
             SlotCheck.Taken => "that slot is taken",
+            SlotCheck.PhysicsOnly => ConstructEdits.PhysicsOnlyRefusal(d, $"go in the {cd.Name}"),
             SlotCheck.TooHeavy => $"the {d.Name} is too heavy for the {cd.Name} ({d.Mass:0} kg; it takes {cd.StoreMaxMass:0})",
             SlotCheck.OtherKind => $"that bin holds {ConstructParts.Get(st.Def[slot])?.Name ?? "something"}s",
             _ => $"that bin is full ({s.Stack})",

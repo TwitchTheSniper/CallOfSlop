@@ -116,6 +116,11 @@ public static unsafe partial class Program
                 LinkReset(); // (the linking tool put away: the link being routed goes)
         }
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
+        ConstructRender.VolumesShown = h.Tool != ConstructTool.None; // (cargo volumes: outlined in build mode)
+        if (h.Tool != ConstructTool.Configure && (_cvBody != 0 || _cvArmed))
+            CargoReset();
+        if (h.Tool != ConstructTool.Configure)
+            ConstructRender.VolumeHotBody = null;
         if (h.Seated)
         {
             if (Pressed(GameAction.Interact))
@@ -181,7 +186,8 @@ public static unsafe partial class Program
                       ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
-                      ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0); // (an engine's rpm, a gearbox's gear)
+                      ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
+                      ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0); // (a cargo volume's load; carried)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -203,14 +209,16 @@ public static unsafe partial class Program
                     PartRole.Wheel when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.WheelRadius * 2:0.0#} m, grip {d.Grip:0.0#} (dirt {d.Grip * d.OffroadGrip:0.0#}){(part.Broken ? d.FlatTyre ? " - FLAT" : " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
                     PartRole.Suspension when h.Tool == ConstructTool.None && !hit.Body.Loose => $"{d.Name}: {d.Travel:0.0#} m travel{(d.SuspFrequency.Length > 0 ? $", {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]}" : d.ActiveSuspension ? $", height {(part.InCount > 0 ? part.In : 0.5f) * 100:0}%" : "")}{(part.Broken ? " (wrecked)" : $" {part.Health:0}/{d.Health:0}")}",
                     PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? "Seat: taken" : hit.Part == hit.Body.DriveSeat ? "Seat: F to drive" : "Seat: F to ride",
+                    PartRole.Logic when d.Logic == CLogic.Cargo => $"{d.Name}: {(ConstructCargo.IsFrozen(part) ? $"FROZEN, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free")}{(near ? ConstructCargo.IsFrozen(part) ? " - F to let go" : " - F to freeze what is inside" : "")}{(h.Tool == ConstructTool.Configure ? " (configure tool: drag a face handle to resize)" : "")}",
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
                     PartRole.Logic => $"{d.Name}{setting}{signal}{unpowered}",
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => $"{d.Name}: {part.Rounds} rounds{(part.Burn > 0 ? " - ON FIRE" : "")}{(part.Broken ? " (wrecked)" : "")}",
                     _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
-                    _ when hit.Body.Loose && near => $"{d.Name}: F to pick up",
-                    _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits ? "" : theirs ? " - someone else's: disable it to salvage" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
+                    _ when hit.Body.Loose && d.PhysicsOnly => $"{d.Name} - physics only ({d.PhysicsWhy}): move it with the physics gun{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
+                    _ when hit.Body.Loose && near => $"{d.Name} (item): F to pick up{(hit.Body.CarriedBy != 0 ? " (carried in a cargo volume)" : "")}",
+                    _ => $"{d.Name}{(d.PhysicsOnly ? " [physics only]" : "")} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits ? "" : theirs ? " - someone else's: disable it to salvage" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
                 };
             }
             g.SandboxLookText = _sbLookText;
@@ -227,14 +235,16 @@ public static unsafe partial class Program
             g.SandboxLookText = _sbRackText;
         // The welder on a part that touches another construct: F joins the two into one.
         JoinPlan jplan = default;
-        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        // (decision 21: the wrench bolts on a loose wrench part the same way: a physics-only engine moved into place)
+        var join = h.Tool is ConstructTool.Welder or ConstructTool.Wrench && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan)
+                   && ConstructEdits.JoinTool(h.Tool, hit.Body, jplan.Other!);
         if (join)
         {
-            var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32);
+            var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
             if (jk != _sbJoinKey)
             {
                 _sbJoinKey = jk;
-                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to weld the two into one";
+                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to {(h.Tool == ConstructTool.Wrench ? "bolt" : "weld")} the two into one";
             }
             g.SandboxLookText = _sbJoinText;
         }
@@ -278,7 +288,8 @@ public static unsafe partial class Program
         // The configure tool: fire on a part opens its settings panel; shift+fire selects more of a kind.
         if (h.Tool == ConstructTool.Configure)
         {
-            SandboxConfigInput(g, me, aimed, hit);
+            if (!SandboxCargoInput(g, me, eye, dir, aimed, hit)) // (a cargo volume's face handles and box drawing first)
+                SandboxConfigInput(g, me, aimed, hit);
             return true;
         }
 
@@ -504,6 +515,16 @@ public static unsafe partial class Program
     /// The storage look-at tooltip (the only storage UI): the container's name, what it holds and its room; a stored part's
     /// name and how many (a pile); a bin's level. Rebuilt only when what it shows changes (the store's version, the hands).
     /// </summary>
+    /// <summary>How many bodies construct <paramref name="c"/>'s frozen cargo volumes carry (as this machine has them).</summary>
+    private static int CarriedBy(ConstructWorld w, Construct c)
+    {
+        var n = 0;
+        foreach (var b in w.Bodies)
+            if (b.CarriedBy == c.Id)
+                n++;
+        return n;
+    }
+
     private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
     {
         var scrap = g.SandboxInventory(me.Id).Scrap;
