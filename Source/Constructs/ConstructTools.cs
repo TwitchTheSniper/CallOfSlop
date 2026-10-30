@@ -161,7 +161,7 @@ public static class ConstructTools
         var ki = Array.IndexOf(Keys, m.Key);
         if (ki < 0)
             throw new ToolModelException($"{file}: \"tool\" is one of {string.Join(", ", Keys)}, not \"{m.Key}\"");
-        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "physgun" ? ConstructTool.PhysicsGun : null;
+        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : m.Key == "physgun" ? ConstructTool.PhysicsGun : m.Key == "configure" ? ConstructTool.Configure : null;
         if (Opt(root, "hold") is { } hold)
             m.Hold = Turn(Vec(hold, file, "hold"));
 

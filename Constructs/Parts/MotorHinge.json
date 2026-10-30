@@ -66,5 +66,11 @@
     "leaf": "leaf",
     "speed": 90,
     "strength": 3000
-  }
+  },
+  "config": [
+    {"key": "min", "label": "Lowest angle", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "The far end a signal of -1 turns it to."},
+    {"key": "max", "label": "Highest angle", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "The far end a signal of 1 (or opening it) turns it to."},
+    {"key": "speed", "label": "Speed", "group": "Motor", "unit": "deg/s", "min": 5, "max": 360, "step": 1, "tooltip": "How fast it turns."},
+    {"key": "strength", "label": "Torque", "group": "Motor", "unit": "N m", "min": 100, "max": 20000, "step": 50, "tooltip": "The most it can turn against; a heavier load holds it back."}
+  ]
 }

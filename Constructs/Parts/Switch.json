@@ -91,5 +91,8 @@
   ],
   "logic": {
     "kind": "switch"
-  }
+  },
+  "config": [
+    {"key": "startOn", "label": "Starts on", "group": "General", "default": false, "tooltip": "A newly built switch starts in the on position."}
+  ]
 }

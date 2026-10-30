@@ -459,6 +459,7 @@ public sealed partial class ConstructEdits
             return $"a {d.Name} has no setting";
         ref var p = ref c.Parts[part];
         p.Setting = (byte)((p.Setting + 1) % d.Settings.Length);
+        ConstructConfig.ApplyPreset(ref p, d); // (a timer's period, a sensor's range... take the next preset)
         p.Count = 0;
         world.StructureDirty.Add(c.Id);
         c.Wake();
@@ -688,7 +689,10 @@ public sealed partial class ConstructEdits
             switch (d.Logic)
             {
                 case CLogic.Button:
-                    lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructLogic.ButtonSeconds * World.TickRate));
+                    if (ConstructConfig.Get(lp, d, CfgKey.Latched, 0) >= 0.5f)
+                        lp.State ^= 1; // (latched: push on, push off)
+                    else
+                        lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(lp, d, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
                     break;
                 case CLogic.Switch:
                     lp.State ^= 1;
@@ -700,7 +704,7 @@ public sealed partial class ConstructEdits
                     lp.State = (byte)((lp.State + 1) % Math.Max(2, (int)d.Settings[Math.Min(lp.Setting, (byte)(d.Settings.Length - 1))]));
                     break;
                 default:
-                    return d.Settings.Length > 0 ? $"{d.Name}: the linking tool (5) changes its {d.SettingName} (R)" : "nothing to use there";
+                    return d.Configurable ? $"{d.Name}: the configure tool (tool wheel) changes its settings" : "nothing to use there";
             }
             c.Wake();
             return null;

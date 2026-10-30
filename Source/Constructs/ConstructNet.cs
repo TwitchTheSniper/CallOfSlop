@@ -107,6 +107,7 @@ public static class ConstructNet
                 n++;
             }
         w.PatchU8(at, (byte)n);
+        ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -536,6 +537,7 @@ public static class ConstructNet
                 throw new MalformedPacketException("construct ammo for a part that isn't there");
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
+        ConstructConfig.Read(ref r, c); // protocol 89: the part settings
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

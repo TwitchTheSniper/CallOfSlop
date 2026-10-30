@@ -1368,6 +1368,7 @@ public static unsafe partial class Program
                 DrawTraderInMatch(now); // the Zombies trader's shelf, over the match (Program.ZombiesTrader.cs)
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
+                DrawSandboxConfigInMatch(now); // the configure tool's settings panel (Program.SandboxConfig.cs)
                 DrawToolWheelInMatch(); // the Sandbox tool wheel while held (Program.SandboxWheel.cs)
                 DrawPhysGunHud(); // the Sandbox frozen snowflake on look-at (Program.PhysicsGun.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -1588,7 +1589,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen || Ui.SandboxPartsOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows; the Sandbox parts menu)
+    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows; the Sandbox parts menu)
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -1641,6 +1642,15 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.InventoryOpen)
         {
             Ui.CloseInventory(); // Esc closes the Zombies parts inventory (back to the fight), not the match (Program.Zombies.cs)
+            SetMouseCaptured(true);
+            return;
+        }
+        // The configure tool's key field is waiting for a key (Program.SandboxConfig.cs).
+        if (_session != null && Ui.SandboxConfigOpen && SandboxConfigKey(Keybinds.Key(key)))
+            return;
+        if (key == GlfwKey.Escape && Ui.SandboxConfigOpen)
+        {
+            Ui.CloseSandboxConfig(); // Esc closes the configure tool's panel (back to building), not the match
             SetMouseCaptured(true);
             return;
         }
@@ -1725,6 +1735,9 @@ public static unsafe partial class Program
             }
             return;
         }
+
+        if (_session != null && Ui.SandboxConfigOpen && Ui.SandboxConfigCapture >= 0 && !Ui.WantsMouse && SandboxConfigKey(Keybinds.Mouse(button)))
+            return; // (a mouse button bound to a seat key, clicked away from the panel)
 
         if (CursorPolicy.ClickCaptures(CursorNow(), _mouseCaptured, Ui.WantsMouse))
         {
