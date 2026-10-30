@@ -27,15 +27,49 @@ north-west corner) and some loose parts.
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
-| R | Turn the part on its socket (the next way round that fits); aimed at a surface, the next of its 24 turns. |
+| Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
+| R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
 | F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
+| Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+
+### Turning the ghost
+
+Board item dev-sandbox-arrow-rotate-ar02 (`Source/Constructs/GhostTurn.cs`). Every ghost (free placement on a surface
+and attaching to a socket) turns with the same keys, each a quarter turn relative to the camera:
+
+- **Left / Right** (the arrow keys): about the vertical; Left swings the part's front to your left, whichever way you or
+  the construct face.
+- **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
+- **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
+- **R**: back to the default orientation (it no longer steps through the turns).
+
+The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
+which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
+turns the placement and the network already use: no wire change. On a socket the part's own sockets decide which turns
+are possible: a turn no socket of the part can make there (or one that would be in the way) is skipped and the next quarter
+turn the same way is taken, and of the ways round giving one turn the first is used, so a key and its opposite always undo
+each other. The ghost carries a small gizmo: its front as an orange arrow, its top green, its right red. The HUD's hint
+names the keys ("<- -> ^ v: turn, Shift + <- ->: roll, R: reset").
+
+The keys are rebindable in Settings > Controls under the **Sandbox** heading: Turn the part left / right, Tip it towards /
+away from you, Roll it left / right (binds version 12). Sandbox actions are live only in Sandbox and the Zombies spectate
+keys only outside it, so they share the arrows without a clash (`Keybinds.Context`); a Sandbox action may be bound to a
+Shift chord (hold Shift while choosing the key), and while a chord is held its plain key does nothing (Shift + Left rolls,
+it doesn't also turn).
+
+**Self-test**: the **Sandbox ghost turns** section (`Source/App/SelfTestGhostTurn.cs`): from every player yaw (15 degree
+steps), on level, wall and upside-down frames, from all 24 turns: a key then its opposite gives the same turn, four presses
+a full turn, each an exact quarter turn about the camera's snapped axis the right way (on a slope only the turn rules); on
+a Frame Block's every socket, at three construct yaws and every 30 degrees of look, a key gives the same turn as free
+placement in the same frame, its opposite comes back to the default, four come round; a Frame Beam (which can't take every
+turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
+kept; nothing allocates.
 
 ### The tool wheel (decision 17)
 
@@ -140,8 +174,18 @@ putting a tool away brings the gun up with its equip time before it can fire; th
 
 ### The inventory (the parts menu)
 
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
-**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+**Per-mode keys** (board item dev-sandbox-tab-inventory-ti01, binds version 13): Sandbox has no scoreboard, so the
+inventory took Tab there without changing the global Scoreboard default. Each action has a context (`Keybinds.Context`):
+everywhere, Sandbox only, or every mode but Sandbox. The Scoreboard and the Zombies parts inventory (still on I) are live
+outside Sandbox only, the Sandbox inventory and the other Sandbox keys in Sandbox only, and two actions clash on a key only
+when their contexts overlap, so the keybinds screen (the Sandbox keys under their own heading) treats Tab there as no
+conflict. Settings migrate once: a player who never rebound the inventory gets Tab; one who had rebound it keeps that key
+for the Sandbox inventory; if a key used everywhere already holds Tab, the Sandbox inventory keeps I. The
+**Sandbox Tab inventory** self-test section (`Source/App/SelfTestSandboxTab.cs`) holds Tab in Sandbox, Team Deathmatch and
+Zombies matches and migrates version 12 files.
+
+**Tab** (the Sandbox inventory key, `GameAction.SandboxInventory`; rebindable under the Sandbox heading in Settings >
+Controls) opens the **Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
 list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
 
 - **Tabs**: Parts, Blueprints and Tools.
@@ -165,7 +209,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
   the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
   enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
-  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
   It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
@@ -939,8 +983,9 @@ and `EditKind.PlaceNew`).
 
 - **The pose**: the construct's up follows the surface's normal, except on near-level ground (within 12 degrees), where
   it stands upright and rests on the highest ground under its footprint's corners (a bump under one corner lifts it, so
-  it never starts inside the terrain). Its yaw is the look's. **R** steps through the part's 24 turns (`Rot24`; the four
-  upright ones first, then on its sides, then upside down). On a wall it stands out of the wall.
+  it never starts inside the terrain). Its yaw is the look's. The **arrow keys** turn the part through its 24 turns
+  (`Rot24`) relative to the camera and **R** puts it back upright ([Turning the ghost](#turning-the-ghost)). On a wall it
+  stands out of the wall.
 - **The grid** (the inventory window's "Snap new constructs to the grid", off by default): the spot snaps to a 0.5 m world
   grid across the surface and the yaw to 90 degrees, so constructs set down apart line up (a block set down next to
   another one meets it face to face).

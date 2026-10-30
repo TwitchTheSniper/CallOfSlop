@@ -881,8 +881,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
         {
-            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode()))
-                _sbKeys.Text = $"F at the rack or I (parts menu): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
+            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
+                _sbKeys.Text = $"F at the rack or {SandboxMenuKey} (inventory): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
             lines.Add(new HudLine(_sbKeys.Text, dim));
         }
         else
@@ -890,14 +890,20 @@ public sealed partial class Game
             // The counts while holding a part (milestone 3): how many more of it the inventory holds.
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0)))
-                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop. "
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41)))
+                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, {SandboxTurnKeys}, T: drop. "
                                + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);
     }
+
+    /// <summary>The Sandbox inventory key's name for the HUD (Program sets it from the binds).</summary>
+    public string SandboxMenuKey = "Tab";
+
+    /// <summary>The ghost's rotate keys for the HUD (Program sets them from the binds; GhostTurn.cs).</summary>
+    public string SandboxTurnKeys = "<- -> ^ v: turn, Shift + <- ->: roll, R: reset";
 
     /// <summary>The keys the backpack's line names (Program sets them from the binds).</summary>
     public string SandboxPackKeys = "H: stow, J: draw";
