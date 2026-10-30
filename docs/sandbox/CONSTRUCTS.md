@@ -2536,6 +2536,82 @@ input end). Wiring is instant (fitting a part is what takes time).
    binding still works too), so no new key binding was added.
 10. **Run-over kills** show as melee kills and credit the driver.
 
+## Freeform welds (board item fw01, decision 25)
+
+The welder has two modes on the tool wheel's outer ring round it (`SandboxWeldModes`): **Socket weld**, the default
+(held parts snap onto sockets, as before), and **Freeform weld**: position a piece by hand with the physics gun at any
+angle and offset, then weld it to the vehicle exactly where it is.
+
+### Using it
+
+- **LMB** casts the crosshair's ray through the first part it hits and on to the next part behind it on a **different
+  body** (`Freeform.Behind`); those two are welded at their current relative position and turn. No socket, no grid.
+- **Two clicks** when the ray finds nothing behind (parts side by side): the first LMB picks a part (outlined amber), the
+  second LMB on a part of another body welds them; LMB on nothing starts again.
+- **Preview** while aiming: both parts outlined and the weld bead drawn between their closest points, green when the weld
+  is allowed and red when not, the reason on the look line. The held part isn't fitted in freeform mode.
+- **Cutting** (either mode): the welder's aim (RMB) on a freeform seam (within 0.6 m of its bead, on either of its two
+  parts) cuts it: the piece falls away as a body of its own where it is, moving as it moved. Destroying the anchor part
+  (or the welded-on part) detaches it like any part.
+
+### Rules (`Freeform.Check`, `ConstructEdits.FreeformRefusal`)
+
+Two different bodies (a loose piece, a wreck, another construct); the closest boxes of the two parts within **0.25 m**
+(touching isn't needed: the bead bridges it); neither part wrecked; at most **8** freeform welds a construct (they share
+`Construct.MaxJoints` with the joints, and the world's joint cap); the welded-on piece without raycast wheels, not riding
+in a cargo volume and not carrying cargo; nobody driving or sitting in it (as joining). Then the usual welder rules: the
+welder out, out of a seat, within reach, your own constructs or ones anyone may salvage (decision 19), the contested rule
+(`ConstructEdits.Contested`) and, in survival, the weld takes **2.5 s** (`EditKind.Weld`, checked again when done; creative
+welds at once). The physics-only rule (decision 21) is unchanged. Which body keeps its frame: one held to the ground (a
+foundation or pinned, not just frozen), else the one that isn't a loose part, else the one with more parts, else the
+second picked; the other becomes the freeform segment. The welder's owner takes the result, as joining does.
+
+### How it works (`Source/Constructs/ConstructFreeform.cs`)
+
+A construct part still turns only in Rot24 steps on its segment's 1 cm grid. The welded-on piece (its whole body) joins the
+construct as a new rigid **segment** whose rest frame sits at a fixed, arbitrary pose on its parent segment: a joint of type
+`JointType.Fixed` (wire byte 5) with `CJoint.FixRot` / `FixPos` (`Construct.SegPose`), its anchor part in `Hinge` and the
+welded-on part in `Child`. Everything inside the segment stays on its own Rot24 grid, so socket parts attach to a freeform
+panel as usual (they go on its segment; `ConstructBuild.Blocked` compares parts in the same frame, `Construct.FrameOf`).
+Nothing solves it: the physics skips freeform welds (no slot, no chain entry, no motor), their parts' corners are **hull
+points** of the body (`Construct.Rigid`), and the mass, centre of mass and inertia take them turned into the body frame
+(`Construct.RestPose`, `RestBounds`; each box's own inertia turned with it). It costs what a jointed segment costs minus
+the joint, and the moving-joint passes only run for constructs with a moving joint (`Construct.MovingJoints`). Collision,
+damage rays and drawing already work per segment. The weld is an edge in the connectivity flood, so losing the anchor or
+the welded-on part splits the piece off where it is (`ConstructWorld.Compact` moves the body's frame to a freeform
+segment when what stays hangs beyond a weld that went, so nothing jumps). A cut marks the weld and runs the same split.
+
+### Network, blueprints and saves (protocol 97)
+
+`CBody` carries the freeform welds at its end (each one's joint, welded-on part, position and quaternion as exact
+floats); `CActKind.FreeformWeld` (u16 body, u8 part, u16 second body, u8 its part) and `CActKind.FreeformCut` (u16 body,
+u8 part, u8 weld) at the end of `CActKind`; `EditKind.Weld` in the hands tail. A blueprint step may be a weld instead of a
+socket step: `{ "part": "Panel", "weld": { "on": 3, "pos": [x, y, z], "rot": [x, y, z, w] } }` puts the part on a new
+freeform segment, its own frame at that pose in step 3's segment frame (`ConstructBuild.WeldJson` writes one from a weld,
+`Freeform.StepPose`). Constructs aren't saved with the world yet; the construct message and the blueprint step are what
+a save will use.
+
+### Self-test
+
+"Freeform weld" (`SelfTestFreeformWeld.cs`): a panel held at 30 degrees over the buggy's plate is welded by one
+ray-through click without moving and stays exactly there (to a micrometre) while the buggy drives 30 m and turns, with no
+allocation per tick; the two-click fallback welds two panels side by side; a gap of 0.6 m is refused with the reason;
+a beam socket-attaches to the freeform panel on its segment; the welder cuts it free where it was, beam and all;
+destroying the anchor detaches the panel where it was; survival's weld waits its 2.5 s; a fresh copy from the construct
+message and a blueprint with the weld step put the panel at the same pose; a real host with a separate client welds and
+cuts over the transport and the client's copy agrees on the pose; the welder's default mode is socket weld.
+
+### Choices made (the developer may change them)
+
+- The gap limit is 0.25 m and a construct takes 8 freeform welds; weld strength is a normal weld's (the anchor and the
+  welded-on part take the damage).
+- Cutting is the welder's aim on the seam (RMB within 0.6 m of the bead), and it is instant (survival included);
+  welding is LMB.
+- In freeform mode the held part isn't fitted (switch back to socket weld on the wheel to fit it).
+- A piece with raycast wheels can't be freeform-welded (wheels roll in the body's own frame); a part on a freeform piece
+  can't be socket-joined to another construct with F (weld it freeform instead).
+- A routed link copied in with the welded piece keeps its nodes in their host parts' frames.
+
 ## Next: milestone 3 and later
 
 - **Salvage** (done, above). Still to come with it: materials, repair, saving inventories.
