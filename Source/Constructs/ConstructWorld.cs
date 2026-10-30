@@ -10,6 +10,7 @@ public struct ConstructHit
     public float Distance;
     public Vector3 Point, Normal;
     public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
+    public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
 }
 
 /// <summary>
@@ -38,6 +39,12 @@ public sealed partial class ConstructWorld
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
     public readonly Vector3[] PlayerSpots = new Vector3[64];
     public int PlayerSpotCount;
+
+    /// <summary>
+    /// Glass parts that broke since the game last sent them (server): where (the part's world bounds' centre and half
+    /// size). The game sends each as a <see cref="CFireKind.Shatter"/> event and every PC bursts it into small shards.
+    /// </summary>
+    public readonly List<(Vector3 Centre, Vector3 Half)> Shattered = new(32);
 
     /// <summary>What the last <see cref="BlockPlayer"/> call found: the hardest push by a moving part (run-over damage), and who pushed.</summary>
     public float LastHitSpeed, LastHitMass;
@@ -171,6 +178,7 @@ public sealed partial class ConstructWorld
         HealthDirty.Clear();
         ClearLinks();
         AmmoDirty.Clear();
+        Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;
         ClearStores();
@@ -537,9 +545,26 @@ public sealed partial class ConstructWorld
                 c.Fuel = MathF.Min(c.Fuel, c.FuelCapacity() - 0); // (its fuel is lost)
             return true;
         }
-        Events.Add($"construct {c.Id}: {d.Name} broke off");
         // The broken part itself falls away too, as wrecked debris (scrap to salvage later), moving as it was.
         c.WorldFrame(p.Seg, out var q, out var t);
+        if (d.HasGlass)
+        {
+            // Glass shatters instead: nothing big falls, small shards burst out where it was (on every PC: Shattered).
+            Events.Add($"construct {c.Id}: {d.Name} shattered");
+            c.PartBounds(part, out var gmn, out var gmx);
+            var gc = t + Vector3.Transform((gmn + gmx) * 0.5f, q);
+            var gm = Matrix4x4.CreateFromQuaternion(q);
+            var gh = (gmx - gmn) * 0.5f;
+            var wh = new Vector3(
+                MathF.Abs(gm.M11) * gh.X + MathF.Abs(gm.M21) * gh.Y + MathF.Abs(gm.M31) * gh.Z,
+                MathF.Abs(gm.M12) * gh.X + MathF.Abs(gm.M22) * gh.Y + MathF.Abs(gm.M32) * gh.Z,
+                MathF.Abs(gm.M13) * gh.X + MathF.Abs(gm.M23) * gh.Y + MathF.Abs(gm.M33) * gh.Z);
+            if (Shattered.Count < 64)
+                Shattered.Add((gc, wh));
+            RemovePart(c, part);
+            return true;
+        }
+        Events.Add($"construct {c.Id}: {d.Name} broke off");
         var debris = p with { Seg = 0, Broken = true, Health = 0, SitterPlus1 = 0, Store = 0 };
         c.PartBounds(part, out var mn, out var mx);
         var at = t + Vector3.Transform((mn + mx) * 0.5f, q);
@@ -672,6 +697,7 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * d;
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                         hit.SlotPlus1 = 0;
+                        hit.Glass = p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index)
                     }
                 }
                 if (p.Store != 0)
@@ -688,6 +714,7 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * best;
                         hit.Normal = -dir;
                         hit.SlotPlus1 = (byte)(slot + 1);
+                        hit.Glass = false;
                     }
                 }
             }

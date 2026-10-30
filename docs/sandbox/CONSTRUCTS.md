@@ -357,7 +357,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -923,9 +923,33 @@ building rules. `--inventory-shots` adds the four groups' pages.
 
 **Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
 blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
-heavy armour everything short of a sniper rifle; glass is drawn opaque (a pale blue pane; see-through glass needs
-sorted blending); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
+heavy armour everything short of a sniper rifle; glass is see-through ([Glass](#glass), below); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
 (`"group"`, `"section"`), the top folder's parts listed after the subfolders'.
+
+### Glass
+
+A part box with `"glass": true` (or how much of it is drawn, 0.1 to 0.9; `true` is 0.3) is a see-through pane. The four
+Glass Panes' panes are (`tools/constructs/structure_parts.py` writes them); the "Construct glass" self-test checks every
+part of `"material": "glass"` has one. A glass box may be solid or a detail, not hidden.
+
+- **Drawing** (`Source/Render/ConstructRender.cs`): the opaque pass leaves panes out and keeps them for `DrawGlass`, which
+  runs in the blended pass after everything opaque (the mode's `DrawObjectives`): farthest first by distance from the eye,
+  blending on, depth writes off, lit and fogged by the box shader (mode 0, so both GL paths; no new texture units or
+  bindings). A pane is tinted by its colour, drawn more opaque and lighter at grazing angles (a little reflection), and
+  has a thin lighter strip along each long edge so it still reads as glass edge-on. At most 512 panes a frame are kept;
+  more are drawn opaque. The inventory's tiles (`SandboxTiles.DrawTile`), the part in your hands (`ToolRender.Emit`) and
+  a stored or packed pane draw it blended after the rest; a ghost's pane is fainter than its frame.
+- **Collision**: a pane is a solid box like any other: players, constructs and wrecks are stopped by it.
+- **Bullets**: a player's round goes through up to four panes (`Game.SandboxRay`), hits what is behind (a player in a
+  cab, a part, the map) and damages each pane it passed, at full strength. A construct gun's round does the same. Blasts
+  hurt glass like any part.
+- **Breaking**: glass is weak (health 13 to 48, armour 0). A broken pane **shatters**: it is removed, no wreck piece falls,
+  and a `CFireKind.Shatter` event (protocol 87: where, and its world bounds' half size in centimetres) bursts small shards
+  out of it on every PC (the prop debris pool) with the glass sound.
+
+**Choices made (the developer may change them)**: the opacity 0.3; rounds keep their full damage through glass; glass
+shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
+other may blend in the wrong order where they cross).
 
 ## New constructs (free placement)
 

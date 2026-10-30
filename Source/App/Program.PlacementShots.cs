@@ -69,6 +69,7 @@ public static unsafe partial class Program
                 DrawSandbox(now);
                 Gfx.SetBlend(true);
                 Gfx.SetDepthWrite(false);
+                ConstructRender.DrawGlass(Gfx, Gfx.CameraPosition);
                 ConstructRender.DrawGhosts(Gfx, now);
                 Gfx.SetDepthWrite(true);
                 Gfx.SetBlend(false);

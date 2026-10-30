@@ -6,7 +6,8 @@ using static Brutal.OpenGlApi.OpenGl;
 namespace CallOfSlop;
 
 /// <summary>One box of a tile's picture: its model matrix (the unit cube scaled, turned and placed) and its colour.</summary>
-public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color, ushort Shape = 0);
+/// <summary>One box of a tile's picture; <see cref="Glass"/> &gt; 0: a see-through pane, drawn blended over the rest (its opacity).</summary>
+public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color, ushort Shape = 0, float Glass = 0);
 
 /// <summary>
 /// The Sandbox inventory's 3D tiles (UiSandboxParts.cs; docs/sandbox/CONSTRUCTS.md, "The inventory"): every construct
@@ -134,7 +135,7 @@ public static unsafe class SandboxTiles
         {
             foreach (var b in parts[slot].Boxes)
                 if (!b.Hidden)
-                    boxes.Add(new TileBox(b.Model(0, b.Center), b.Color, b.Shape));
+                    boxes.Add(new TileBox(b.Model(0, b.Center), b.Color, b.Shape, b.Glass));
             return boxes.Count > 0;
         }
         slot -= parts.Count;
@@ -157,7 +158,7 @@ public static unsafe class SandboxTiles
                     if (d.Boxes[b].Hidden)
                         continue;
                     c.BoxOf(i, b, out var centre, out _);
-                    boxes.Add(new TileBox(d.Boxes[b].Model(c.Parts[i].Rot, centre) * drop * seg, d.Boxes[b].Color, d.Boxes[b].Shape));
+                    boxes.Add(new TileBox(d.Boxes[b].Model(c.Parts[i].Rot, centre) * drop * seg, d.Boxes[b].Color, d.Boxes[b].Shape, d.Boxes[b].Glass));
                 }
             }
             world.Remove(c);
@@ -171,6 +172,45 @@ public static unsafe class SandboxTiles
             return boxes.Count > 0;
         }
         return false;
+    }
+
+    private static readonly int[] GlassOrder = new int[256];
+
+    /// <summary>
+    /// A tile's boxes: the opaque ones, then the glass panes blended over them (farthest from the tile's eye first, no
+    /// depth writes), so a pane shows the frame and parts behind it as it does in the world. Leaves blending off and
+    /// depth writes on.
+    /// </summary>
+    public static void DrawTile(Renderer gfx, List<TileBox> boxes)
+    {
+        var glass = 0;
+        foreach (var b in boxes)
+            if (b.Glass <= 0)
+                gfx.Draw(b.Model, b.Color, 1f, mode: 0, shape: b.Shape);
+        for (var i = 0; i < boxes.Count && glass < GlassOrder.Length; i++)
+            if (boxes[i].Glass > 0)
+            {
+                // Insertion by depth along the view (EyeDir points at the eye: the smaller the dot, the farther).
+                var key = Vector3.Dot(boxes[i].Model.Translation, EyeDir);
+                var at = glass++;
+                while (at > 0 && Vector3.Dot(boxes[GlassOrder[at - 1]].Model.Translation, EyeDir) > key)
+                {
+                    GlassOrder[at] = GlassOrder[at - 1];
+                    at--;
+                }
+                GlassOrder[at] = i;
+            }
+        if (glass == 0)
+            return;
+        gfx.SetBlend(true);
+        gfx.SetDepthWrite(false);
+        for (var k = 0; k < glass; k++)
+        {
+            var b = boxes[GlassOrder[k]];
+            gfx.Draw(b.Model, b.Color, b.Glass, mode: 0, shape: b.Shape);
+        }
+        gfx.SetDepthWrite(true);
+        gfx.SetBlend(false);
     }
 
     /// <summary>The view direction: from above, front-left (things face -Z), a 3/4 view.</summary>
@@ -278,8 +318,7 @@ public static unsafe class SandboxTiles
                     Frame(Scratch, out var view, out var proj);
                     gfx.SetCamera(view, proj);
                     gfx.SetFog(Vector3.Zero, 0, 0);
-                    foreach (var b in Scratch)
-                        gfx.Draw(b.Model, b.Color, 1f, mode: 0, shape: b.Shape);
+                    DrawTile(gfx, Scratch);
                 }
                 // Down into the page, averaging 2x2 (smooth edges).
                 Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);

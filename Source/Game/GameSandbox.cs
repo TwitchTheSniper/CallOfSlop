@@ -587,13 +587,51 @@ public sealed partial class Game
     /// <summary>Is this player in a seat? (Drivers and passengers don't shoot: construct weapons are milestone 3.)</summary>
     public bool SandboxSeated(Player p) => SandboxOn && SandboxHands.Hand(p.Id).Seated;
 
-    /// <summary>A bullet's ray against the constructs: shortens <paramref name="dist"/> to the part it hits.</summary>
+    /// <summary>The glass panes the last <see cref="SandboxRay"/> went through (where it met each, and how far along).</summary>
+    private readonly (Vector3 At, float Dist)[] _sbGlass = new (Vector3, float)[4];
+
+    private int _sbGlassCount;
+
+    /// <summary>
+    /// A bullet's ray against the constructs: shortens <paramref name="dist"/> to the part it hits. Glass panes don't stop
+    /// it: it goes on through them (up to four; noted for <see cref="SandboxGlassShot"/>, which breaks them), so a player
+    /// behind a windscreen can be hit.
+    /// </summary>
     private ConstructHit? SandboxRay(Vector3 o, Vector3 d, ref float dist)
     {
-        if (!SandboxOn || Constructs.Bodies.Count == 0 || !Constructs.Raycast(o, d, dist, out var hit))
+        _sbGlassCount = 0;
+        if (!SandboxOn || Constructs.Bodies.Count == 0)
             return null;
-        dist = hit.Distance;
-        return hit;
+        var from = 0f;
+        while (from < dist && Constructs.Raycast(o + d * from, d, dist - from, out var hit))
+        {
+            hit.Distance += from;
+            if (!hit.Glass || _sbGlassCount == _sbGlass.Length)
+            {
+                dist = hit.Distance;
+                return hit;
+            }
+            _sbGlass[_sbGlassCount++] = (hit.Point, hit.Distance);
+            from = hit.Distance + ConstructWeapons.ExitDistance(hit.Body, hit.Part, hit.Point, d) + 0.01f;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The glass the last <see cref="SandboxRay"/> went through before <paramref name="dist"/> (where the round ended)
+    /// takes the round's damage (found again by where it was met: a pane that broke renumbers the parts after it).
+    /// </summary>
+    private void SandboxGlassShot(Vector3 d, float dist, float damage)
+    {
+        for (var k = 0; k < _sbGlassCount; k++)
+        {
+            var (at, along) = _sbGlass[k];
+            if (along > dist + 1e-3f)
+                break;
+            if (Constructs.Raycast(at - d * 0.05f, d, 0.1f, out var gh) && gh.Glass)
+                SandboxShotDamage(gh, damage);
+        }
+        _sbGlassCount = 0;
     }
 
     private void SandboxShotDamage(ConstructHit hit, float damage)
