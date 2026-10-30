@@ -70,6 +70,9 @@ public static partial class Program
         _lkAdj = LinkAdjust.None;
         _lkPicker.Close();
         RouteRender.ClearPreview();
+        _lkWorld = false; // (a world link being routed: Program.SandboxWorldLinks.cs)
+        _lkWCount = 0;
+        WorldLinkRender.PreviewCount = 0;
     }
 
     /// <summary>Esc while routing: cancels the link (true: the key was used).</summary>
@@ -449,6 +452,7 @@ public static partial class Program
         RouteRender.Highlight = _linkWheel.Highlight;
         RouteRender.PreviewBody = null;
         RouteRender.PreviewCount = 0;
+        WorldLinkRender.PreviewCount = 0;
         ConstructRender.WireEye = eye;
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is null || _lkMoveRoute >= 0 && g.Constructs.Get(_lkMoveBody) is null)
             LinkReset();
@@ -473,6 +477,12 @@ public static partial class Program
         }
         var w = _linkWheel;
         var onRoute = aimed && hit.RoutePlus1 > 0 && hit.RoutePlus1 <= hit.Body.RouteCount;
+        // A world link under the crosshair: its look line, and the delete mode (Program.SandboxWorldLinks.cs).
+        if (_lkBody == 0 && _lkMoveRoute < 0 && !onRoute && LinkWorldAimed(g, eye, dir, aimed, hit, fire, w.Mode) >= 0 && w.Mode != LinkMode.Link)
+        {
+            LinkHud(g);
+            return;
+        }
         // The edit modes.
         if (w.Mode != LinkMode.Link && _lkBody == 0)
         {
@@ -569,6 +579,11 @@ public static partial class Program
             return;
         }
         // Routing.
+        if (_lkBody != 0 && _lkWorld)
+        {
+            LinkWorldFrame(g, eye, dir, aimed, hit, fire); // (a world link: Program.SandboxWorldLinks.cs)
+            return;
+        }
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is { } rc)
         {
             _lkFree = Down(GameAction.FreeRouting);
@@ -596,18 +611,30 @@ public static partial class Program
             byte endPort = 255;
             var ports = 0;
             Vector3 next = default, nrm = default;
-            if (aimed && hit.Body != rc)
+            var toWorld = !aimed && WorldAim(eye, dir, aimed, hit, out _);
+            if (aimed && hit.Body != rc && _lkType == RouteType.Data && _lkCount == 0 && _lkParent == 255 && !_lkFree && ConstructRoutes.IsInput(hit.Body.DefOf(hit.Part), RouteType.Data))
             {
-                _lkWhy = _lkType == RouteType.Data && _lkCount == 0 && _lkParent == 255 ? null : "a routed link stays on one construct";
-                if (_lkWhy == null && !ConstructRoutes.IsInput(hit.Body.DefOf(hit.Part), RouteType.Data))
-                    _lkWhy = $"a {hit.Body.DefOf(hit.Part).Name} takes no input";
-                if (fire && _lkWhy == null)
+                _lkWhy = null;
+                if (fire)
                 {
                     // (a straight data cable into another construct: milestone 3's wire between constructs)
                     g.SandboxSend(CActKind.Wire, body: rc.Id, part: (byte)_lkFrom, socket: (byte)hit.Part, body2: hit.Body.Id);
                     LinkReset();
                     return;
                 }
+            }
+            else if (aimed && hit.Body != rc || toWorld)
+            {
+                // Off the construct: the first click there makes it a world link (board item wl01), whose nodes go on the ground, walls and any construct.
+                _lkWhy = LinkWorldRefusal();
+                if (fire && _lkWhy == null)
+                {
+                    LinkGoWorld(rc);
+                    LinkWorldFrame(g, eye, dir, aimed, hit, fire);
+                    return;
+                }
+                if (_lkWhy == null)
+                    _lkWhy = "LMB: a node off this construct makes it a world link";
             }
             else if (aimed && !onRoute)
             {
@@ -747,7 +774,7 @@ public static partial class Program
         var w = _linkWheel;
         var key = (long)w.Type ^ ((long)w.Style << 4) ^ ((long)w.Mode << 12) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
                   ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)_lkStyle << 52) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
-                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8);
+                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0);
         if (key == _lkHudKey)
         {
             g.SandboxWireFrom = _lkHud;
@@ -757,6 +784,8 @@ public static partial class Program
         var type = ConstructRoutes.Name(_lkBody != 0 ? _lkType : w.Type, _lkBody != 0 ? _lkStyle : w.Type == RouteType.Pipe && w.Style != 255 ? w.Style : (byte)0);
         if (_lkBody == 0 && w.Type == RouteType.Pipe && w.Style == 255)
             type = "pipe (style from the output)";
+        if (_lkWorld)
+            type = $"world {type}"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
         var why = _lkWhy != null ? $" | {_lkWhy}" : "";
         _lkHud = _lkAdj != LinkAdjust.None
