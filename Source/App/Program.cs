@@ -1615,7 +1615,12 @@ public static unsafe partial class Program
         if (Ui.Rebinding is { } rebind)
         {
             if (key != GlfwKey.Escape && key != GlfwKey.Unknown)
-                Keybinds.Assign(_settings.Binds, rebind, Keybinds.Key(key));
+            {
+                // Shift held with another key: a Shift chord (Sandbox actions only take one; Keybinds.Assign drops it for the rest).
+                var shift = key is not (GlfwKey.LeftShift or GlfwKey.RightShift)
+                            && (window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press);
+                Keybinds.Assign(_settings.Binds, rebind, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
+            }
             Ui.Rebinding = null;
             return;
         }
@@ -1748,6 +1753,7 @@ public static unsafe partial class Program
         var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
+        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down); // (per-mode keys; a Shift chord hides its plain key)
     }
 
     private static void UpdateLocalPlayer(double now)

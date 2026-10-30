@@ -890,14 +890,17 @@ public sealed partial class Game
             // The counts while holding a part (milestone 3): how many more of it the inventory holds.
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0)))
-                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop. "
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41)))
+                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, {SandboxTurnKeys}, T: drop. "
                                + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);
     }
+
+    /// <summary>The ghost's rotate keys for the HUD (Program sets them from the binds; GhostTurn.cs).</summary>
+    public string SandboxTurnKeys = "<- -> ^ v: turn, Shift + <- ->: roll, R: reset";
 
     /// <summary>The keys the backpack's line names (Program sets them from the binds).</summary>
     public string SandboxPackKeys = "H: stow, J: draw";

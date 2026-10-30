@@ -524,6 +524,7 @@ public static class ConstructRender
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center);
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse, mode: 2, shape: box.Shape);
                 }
+                Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
             }
         }
         if (SlotBody is { } sbody && SlotDef is { } sdef && SlotPart >= 0 && SlotPart < sbody.PartCount)
@@ -561,6 +562,7 @@ public static class ConstructRender
             for (var b = 0; b < nd.Boxes.Length; b++)
                 if (!nd.Boxes[b].Hidden)
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse, mode: 2, shape: nd.Boxes[b].Shape);
+            Gizmo(gfx, nd, Vector3.Zero, PlaceTurn, Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground));
         }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
@@ -568,6 +570,29 @@ public static class ConstructRender
             ab.PartBounds(AimPart, out var mn, out var mx);
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
+        }
+    }
+
+    /// <summary>
+    /// The ghost's orientation gizmo (board item dev-sandbox-arrow-rotate-ar02): from the part's middle, its front (-z) as
+    /// an orange arrow with a head, its top (+y) green and its right (+x) red, each poking out of the part, so the rotate
+    /// keys' effect reads at a glance. <paramref name="pos"/> and <paramref name="turn"/> place the part in the frame <paramref name="frame"/>.
+    /// </summary>
+    private static void Gizmo(Renderer gfx, ConstructPartDef def, Vector3 pos, byte turn, in Matrix4x4 frame)
+    {
+        var mid = pos + Rot24.Apply(turn, (def.BoundsMin + def.BoundsMax) * 0.5f);
+        var half = Rot24.ApplyHalf(turn, (def.BoundsMax - def.BoundsMin) * 0.5f);
+        var centre = Vector3.Transform(mid, frame);
+        for (var k = 0; k < 3; k++)
+        {
+            var local = k == 0 ? -Vector3.UnitZ : k == 1 ? Vector3.UnitY : Vector3.UnitX;
+            var d = Rot24.Apply(turn, local); // (an axis of the frame, signed)
+            var reach = Vector3.Dot(Vector3.Abs(d), half) + (k == 0 ? 0.22f : 0.12f);
+            var tip = Vector3.Transform(mid + d * reach, frame);
+            var colour = k == 0 ? new Vector3(1f, 0.6f, 0.15f) : k == 1 ? new Vector3(0.35f, 1f, 0.4f) : new Vector3(1f, 0.3f, 0.3f);
+            Line(gfx, centre, tip, colour, 0.9f);
+            if (k == 0)
+                gfx.Draw(Matrix4x4.CreateScale(0.09f) * Matrix4x4.CreateTranslation(tip), colour, 0.95f, mode: 2);
         }
     }
 

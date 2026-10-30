@@ -27,7 +27,8 @@ north-west corner) and some loose parts.
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
-| R | Turn the part on its socket (the next way round that fits); aimed at a surface, the next of its 24 turns. |
+| Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
+| R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
 | F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
@@ -36,6 +37,39 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+
+### Turning the ghost
+
+Board item dev-sandbox-arrow-rotate-ar02 (`Source/Constructs/GhostTurn.cs`). Every ghost (free placement on a surface
+and attaching to a socket) turns with the same keys, each a quarter turn relative to the camera:
+
+- **Left / Right** (the arrow keys): about the vertical; Left swings the part's front to your left, whichever way you or
+  the construct face.
+- **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
+- **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
+- **R**: back to the default orientation (it no longer steps through the turns).
+
+The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
+which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
+turns the placement and the network already use: no wire change. On a socket the part's own sockets decide which turns
+are possible: a turn no socket of the part can make there (or one that would be in the way) is skipped and the next quarter
+turn the same way is taken, and of the ways round giving one turn the first is used, so a key and its opposite always undo
+each other. The ghost carries a small gizmo: its front as an orange arrow, its top green, its right red. The HUD's hint
+names the keys ("<- -> ^ v: turn, Shift + <- ->: roll, R: reset").
+
+The keys are rebindable in Settings > Controls under the **Sandbox** heading: Turn the part left / right, Tip it towards /
+away from you, Roll it left / right (binds version 12). Sandbox actions are live only in Sandbox and the Zombies spectate
+keys only outside it, so they share the arrows without a clash (`Keybinds.Context`); a Sandbox action may be bound to a
+Shift chord (hold Shift while choosing the key), and while a chord is held its plain key does nothing (Shift + Left rolls,
+it doesn't also turn).
+
+**Self-test**: the **Sandbox ghost turns** section (`Source/App/SelfTestGhostTurn.cs`): from every player yaw (15 degree
+steps), on level, wall and upside-down frames, from all 24 turns: a key then its opposite gives the same turn, four presses
+a full turn, each an exact quarter turn about the camera's snapped axis the right way (on a slope only the turn rules); on
+a Frame Block's every socket, at three construct yaws and every 30 degrees of look, a key gives the same turn as free
+placement in the same frame, its opposite comes back to the default, four come round; a Frame Beam (which can't take every
+turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
+kept; nothing allocates.
 
 ### The tool wheel (decision 17)
 
@@ -939,8 +973,9 @@ and `EditKind.PlaceNew`).
 
 - **The pose**: the construct's up follows the surface's normal, except on near-level ground (within 12 degrees), where
   it stands upright and rests on the highest ground under its footprint's corners (a bump under one corner lifts it, so
-  it never starts inside the terrain). Its yaw is the look's. **R** steps through the part's 24 turns (`Rot24`; the four
-  upright ones first, then on its sides, then upside down). On a wall it stands out of the wall.
+  it never starts inside the terrain). Its yaw is the look's. The **arrow keys** turn the part through its 24 turns
+  (`Rot24`) relative to the camera and **R** puts it back upright ([Turning the ghost](#turning-the-ghost)). On a wall it
+  stands out of the wall.
 - **The grid** (the inventory window's "Snap new constructs to the grid", off by default): the spot snaps to a 0.5 m world
   grid across the surface and the yaw to 90 degrees, so constructs set down apart line up (a block set down next to
   another one meets it face to face).

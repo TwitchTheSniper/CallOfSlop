@@ -49,6 +49,12 @@ public enum GameAction
     ToolWheel, // binds version 10: Sandbox, hold for the tool wheel (SandboxToolWheel.cs)
     Stow, // binds version 11: Sandbox, the part in your hands into your backpack (ConstructBackpack.cs)
     DrawPack, // Sandbox: the next part in your backpack into your hands
+    RotateLeft, // binds version 12: Sandbox, turn the ghost part 90 degrees as you see it (Constructs/GhostTurn.cs)
+    RotateRight,
+    RotateUp, // tip it towards you (its top comes towards you, its front rises)
+    RotateDown,
+    RollLeft, // about the axis pointing away from you (Shift + Left by default)
+    RollRight,
     COUNT,
 }
 
@@ -63,6 +69,78 @@ public static class Keybinds
     public static int Mouse(GlfwMouseButton b) => -((int)b + 2);
 
     public static int Key(GlfwKey k) => (int)k;
+
+    /// <summary>A Shift chord (Shift held with the key) as a binding: the key's code with this bit set. Only Sandbox actions take chords (Shift is the sprint key everywhere else).</summary>
+    public const int ShiftFlag = 1 << 24;
+
+    public static int Shift(GlfwKey k) => (int)k | ShiftFlag;
+
+    /// <summary>Is <paramref name="code"/> a Shift chord?</summary>
+    public static bool IsChord(int code) => code != Unbound && code >= 0 && (code & ShiftFlag) != 0;
+
+    // ---- Contexts: one key can do different things in different modes ------------------------------------------
+
+    /// <summary>
+    /// Where an action is live (board item dev-sandbox-tab-inventory-ti01): everywhere, only in Sandbox, or in every mode
+    /// but Sandbox. Two actions clash on a key only when their contexts overlap, so a Sandbox key may share a key with a
+    /// key the other modes use (the rotate keys and the Zombies spectate keys on the arrows).
+    /// </summary>
+    public enum BindContext : byte
+    {
+        Any,
+        Sandbox,
+        NotSandbox,
+    }
+
+    public static BindContext Context(GameAction a) =>
+        a switch
+        {
+            GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
+                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight => BindContext.Sandbox,
+            GameAction.SpectateNext or GameAction.SpectatePrev => BindContext.NotSandbox,
+            _ => BindContext.Any,
+        };
+
+    /// <summary>The first Sandbox action in the list (the keybinds screen puts the Sandbox heading above it).</summary>
+    public static readonly GameAction FirstSandboxAction = Enumerable.Range(0, (int)GameAction.COUNT).Select(i => (GameAction)i).First(a => Context(a) == BindContext.Sandbox);
+
+    /// <summary>Can actions <paramref name="a"/> and <paramref name="b"/> both be live at once (so sharing a key is a clash)?</summary>
+    public static bool Overlap(GameAction a, GameAction b)
+    {
+        var x = Context(a);
+        var y = Context(b);
+        return x == BindContext.Any || y == BindContext.Any || x == y;
+    }
+
+    /// <summary>Is <paramref name="a"/> live in a match that is (<paramref name="sandbox"/>) or isn't Sandbox?</summary>
+    public static bool ActiveIn(GameAction a, bool sandbox) =>
+        Context(a) switch
+        {
+            BindContext.Sandbox => sandbox,
+            BindContext.NotSandbox => !sandbox,
+            _ => true,
+        };
+
+    /// <summary>
+    /// This frame's raw key states (<paramref name="down"/>[i]: action i's binding is held) made into what the game reads:
+    /// an action whose context isn't live is off, and while a Shift chord is held the plain actions on the same key are
+    /// off (Shift + Left rolls instead of also turning). Nothing allocates.
+    /// </summary>
+    public static void Resolve(int[] binds, bool sandbox, bool[] down)
+    {
+        for (var i = 0; i < down.Length; i++)
+            if (down[i] && !ActiveIn((GameAction)i, sandbox))
+                down[i] = false;
+        for (var i = 0; i < down.Length; i++)
+        {
+            if (!down[i] || !IsChord(binds[i]))
+                continue;
+            var key = binds[i] & ~ShiftFlag;
+            for (var j = 0; j < down.Length; j++)
+                if (binds[j] == key)
+                    down[j] = false;
+        }
+    }
 
     public static readonly int[] Defaults =
     [
@@ -109,6 +187,12 @@ public static class Keybinds
         Mouse(GlfwMouseButton.Middle), // Tool wheel (Sandbox): binds version 10 (Q is Swap weapon)
         Key(GlfwKey.H), // Stow in the backpack (Sandbox): binds version 11
         Key(GlfwKey.J), // Draw from the backpack (Sandbox)
+        Key(GlfwKey.Left), // Rotate left (Sandbox): binds version 12 (the Zombies spectate keys share the arrows: other context)
+        Key(GlfwKey.Right), // Rotate right (Sandbox)
+        Key(GlfwKey.Up), // Rotate up (Sandbox)
+        Key(GlfwKey.Down), // Rotate down (Sandbox)
+        Shift(GlfwKey.Left), // Roll left (Sandbox)
+        Shift(GlfwKey.Right), // Roll right (Sandbox)
     ];
 
     /// <summary>
@@ -119,9 +203,10 @@ public static class Keybinds
     /// 6: Weapon tweaks F7 added (same rule). 7: Drop item T and Parts inventory I (Zombies) added (same rule).
     /// 8: Performance window F9 added (same rule). 9: dev tools: Look-at inspector F6, Copy look-at reference F5 and Prop
     /// editor F10 added (same rule). 10: Tool wheel (Sandbox) on the middle mouse button added (same rule). 11: the
-    /// Sandbox backpack's Stow H and Draw J added (same rule).
+    /// Sandbox backpack's Stow H and Draw J added (same rule). 12: the Sandbox ghost's rotate keys (the arrows; roll on
+    /// Shift + Left / Right) added (same rule; keys only clash within overlapping contexts, see <see cref="Context"/>).
     /// </summary>
-    public const int DefaultsVersion = 11;
+    public const int DefaultsVersion = 12;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -146,6 +231,12 @@ public static class Keybinds
         (10, GameAction.ToolWheel, Unbound, Mouse(GlfwMouseButton.Middle)),
         (11, GameAction.Stow, Unbound, Key(GlfwKey.H)),
         (11, GameAction.DrawPack, Unbound, Key(GlfwKey.J)),
+        (12, GameAction.RotateLeft, Unbound, Key(GlfwKey.Left)),
+        (12, GameAction.RotateRight, Unbound, Key(GlfwKey.Right)),
+        (12, GameAction.RotateUp, Unbound, Key(GlfwKey.Up)),
+        (12, GameAction.RotateDown, Unbound, Key(GlfwKey.Down)),
+        (12, GameAction.RollLeft, Unbound, Shift(GlfwKey.Left)),
+        (12, GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
     ];
 
     /// <summary>
@@ -179,7 +270,7 @@ public static class Keybinds
                         continue;
                     var clash = false;
                     for (var i = 0; i < binds.Length; i++)
-                        clash |= i != a && binds[i] == binds[a];
+                        clash |= i != a && binds[i] == binds[a] && Overlap((GameAction)i, c.Action);
                     if (clash)
                     {
                         binds[a] = before[a];
@@ -238,6 +329,12 @@ public static class Keybinds
             GameAction.ToolWheel => "Tool wheel (Sandbox: hold, flick to a tool, let go)",
             GameAction.Stow => "Stow in the backpack (Sandbox: what you hold)",
             GameAction.DrawPack => "Draw from the backpack (Sandbox: the next part)",
+            GameAction.RotateLeft => "Turn the part left (Sandbox ghost)",
+            GameAction.RotateRight => "Turn the part right (Sandbox ghost)",
+            GameAction.RotateUp => "Tip the part towards you (Sandbox ghost)",
+            GameAction.RotateDown => "Tip the part away from you (Sandbox ghost)",
+            GameAction.RollLeft => "Roll the part left (Sandbox ghost)",
+            GameAction.RollRight => "Roll the part right (Sandbox ghost)",
             _ => a.ToString(),
         };
 
@@ -271,6 +368,8 @@ public static class Keybinds
     {
         if (code == Unbound)
             return "-";
+        if (IsChord(code))
+            return "Shift + " + NameUncached(code & ~ShiftFlag);
         if (code < 0)
         {
             var button = -code - 2;
@@ -311,22 +410,34 @@ public static class Keybinds
     /// <summary>The key name bound to <paramref name="a"/> in <paramref name="s"/>, or its default key's without settings.</summary>
     public static string NameOf(Settings? s, GameAction a) => Name(s != null ? s.Bind(a) : Defaults[(int)a]);
 
+    /// <summary>Can <paramref name="a"/> be bound to a Shift chord? Sandbox actions only (Shift sprints everywhere else, and a plain key works whatever modifiers are held).</summary>
+    public static bool TakesChord(GameAction a) => Context(a) == BindContext.Sandbox;
+
     public static bool IsDown(GlfwWindow window, int code)
     {
         if (code == Unbound)
             return false;
         if (code < 0)
             return window.GetMouseButton((GlfwMouseButton)(-code - 2)) == GlfwButtonAction.Press;
+        if (IsChord(code))
+            return window.GetKey((GlfwKey)(code & ~ShiftFlag)) == GlfwKeyAction.Press
+                   && (window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press);
         return window.GetKey((GlfwKey)code) == GlfwKeyAction.Press;
     }
 
-    /// <summary>Binds <paramref name="code"/> to <paramref name="action"/>. If another action had it, the two swap.</summary>
+    /// <summary>
+    /// Binds <paramref name="code"/> to <paramref name="action"/>. If another action live at the same time had it, the two
+    /// swap (an action of another context keeps the key: no clash). A Shift chord on an action that doesn't take chords
+    /// binds the plain key.
+    /// </summary>
     public static void Assign(int[] binds, GameAction action, int code)
     {
+        if (IsChord(code) && !TakesChord(action))
+            code &= ~ShiftFlag;
         var old = binds[(int)action];
         for (var i = 0; i < binds.Length; i++)
-            if (i != (int)action && binds[i] == code)
-                binds[i] = old;
+            if (i != (int)action && binds[i] == code && Overlap((GameAction)i, action))
+                binds[i] = IsChord(old) && !TakesChord((GameAction)i) ? old & ~ShiftFlag : old;
         binds[(int)action] = code;
     }
 }

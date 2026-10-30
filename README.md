@@ -1007,9 +1007,11 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
   choosing when you die, open a menu or the inventory, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
-  part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
+  part fits on lights up on the construct you look at; hold fire to fit it (a second or three), the arrow keys turn it
+  as you see it (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R puts it back the default way), aim (hold)
   takes the part you look at off into your hand, T drops what you hold. Fire on any surface (not a socket) sets the
-  part down as a new construct (a ghost, green or red with the reason; R turns it; the inventory window has the grid
+  part down as a new construct (a ghost, green or red with the reason, with a small front / top / right gizmo; the same
+  keys turn it; the inventory window has the grid
   and creative anchor toggles; the Construct Core is the starter block). With the welder, F on a part touching another
   construct joins the two.
 - **Inventory**: **I** (the inventory key, rebindable) opens the inventory: tabs for parts, blueprints and tools; on
