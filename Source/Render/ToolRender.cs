@@ -72,7 +72,8 @@ public static class ToolRender
         public ConstructTool Want, From;
         public double ChangeAt, LastTime;
         public float SpinAngle, BobPhase;
-        public Vector3 Tip; // the tool's tip in the world, last drawn (lights)
+        public Vector3 Tip; // the tool's tip in the world, last drawn (lights, the physics gun's beam)
+        public double TipAt;
         public double LitUntil;
         public Vector3 LightColour;
     }
@@ -283,12 +284,18 @@ public static class ToolRender
     private static void NoteTip(int slot, in ToolFrame f, in Matrix4x4 toWorld)
     {
         ref var st = ref States[slot];
-        if (f.Model is not { Light: { } light } m || !f.Using)
+        if (f.Model is not { } m)
             return;
         st.Tip = Vector3.Transform(Vector3.Transform(m.Tip, f.Pose), toWorld);
+        st.TipAt = f.Now; // (the physics gun's beam starts here)
+        if (m.Light is not { } light || !f.Using)
+            return;
         st.LitUntil = f.Now + 0.1;
         st.LightColour = light;
     }
+
+    /// <summary>Where a slot's tool tip was drawn lately (in the world), or null when it hasn't been drawn for a moment.</summary>
+    public static Vector3? TipOf(int slot, double now) => (uint)slot < (uint)States.Length && now - States[slot].TipAt is >= 0 and < 0.25 ? States[slot].Tip : null;
 
     /// <summary>This frame's tool lights (a welding arc), from where each lit tool's tip was last drawn; flickering. Lit maps only (LightGrid).</summary>
     public static void AddLights(double now)
@@ -328,7 +335,7 @@ public static class ToolRender
             return false;
         }
         f.Now = time;
-        var use = h.Edit != EditKind.None && shown == h.Tool;
+        var use = (h.Edit != EditKind.None || h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) && shown == h.Tool; // (the physics gun: while it holds something)
         var (rest, side) = p.RenderStance switch
         {
             Stance.Prone => (0.3f, 0.32f),

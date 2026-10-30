@@ -104,6 +104,14 @@ public enum ConstructTool : byte
     Wrench, // bolted parts: wheels, seats, engines, doors...
     Welder, // welded parts: frames, panels, foundations
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
+    PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
+}
+
+/// <summary>The tools a wire byte may name.</summary>
+public static class ConstructToolWire
+{
+    /// <summary>A tool from the wire (anything unknown: none).</summary>
+    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Linker || b == (byte)ConstructTool.PhysicsGun ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
