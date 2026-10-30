@@ -533,7 +533,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). |
-| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
+| `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
 | `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`). Needs an `axle` socket. |
@@ -548,6 +548,9 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
 | `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
 | `config` | The part's settings schema (up to 8), the configure tool's panel ([The configure tool](#the-configure-tool)). |
+| `walk` | Building pieces: `floor`, `stairs`, `ramp` or `ladder`. Players and bots step up onto it ([Building pieces](#building-pieces)); bots' navigation may treat its tops as ground. |
+| `damaged` | `{"below": 0.6, "part": "Concrete Wall 4 m Damaged"}`: below that share of its health the part turns into that stage in place (a wall losing a chunk). The stage needs `"stage": true`, the same role and exactly the same sockets; a chain's shares must fall. |
+| `stage` | `true`: a damage stage of another part; not offered in the parts menu or on a rack. |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -1264,6 +1267,94 @@ part of `"material": "glass"` has one. A glass box may be solid or a detail, not
 **Choices made (the developer may change them)**: the opacity 0.3; rounds keep their full damage through glass; glass
 shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
 other may blend in the wrong order where they cross).
+
+## Building pieces
+
+Board item dev-sandbox-building-pieces-bp01 (the developer's note, 2026-10-30): large prefabricated parts for anchored
+builds (bases, bunkers, towers) in the inventory's **Building** group. They are written by
+`tools/constructs/building_parts.py` into `Constructs/Parts/Building` (178 files; run it again after changing a family,
+`--check` compares), and the same script writes the four example blueprints (it mirrors the game's Rot24 turns and fitting
+order to work out each step's sockets from where the part should go).
+
+**The module.** The pieces keep the structural parts' 0.25 m cell rules (origin on a cell centre, sockets on cell faces at
+cell centres), so they line up with the beams and panels. Walls are 0.25 m thick and 2.75 m tall; a floor slab is 0.25 m
+thick, so a storey is **3 m floor to floor**. Lengths are **2 m and 4 m**. A room's corners are **L-shaped corner pieces
+with 2 m legs** (8 cells each, sharing the corner cell): four close a 4 by 4 m room, and straight 2 m and 4 m walls fill the
+module between corners on bigger rooms (4 by 6, 4 by 8...). An inside wall meets an outside one at a **Wall T** (a 2 m
+crossbar, a 1.75 m stem), a free wall ends in a **Wall End**. Floors, foundations and bunker roofs have sockets at the
+module points (cells 0, 7, 8 and 15 of each side) where walls stand; a slab on the walls' tops welds to every one it
+meets, and the next storey's corners stand on the slab.
+
+| Section | Parts |
+| --- | --- |
+| Walls | per material: wall 2 and 4 m, half wall 2 and 4 m (1.25 m), parapets 2 and 4 m (0.75 m; wood and concrete) |
+| Wall openings | window walls 2 m (one 1 m window) and 4 m (two), sills 1 m up; door wall 2 m (1.5 by 2.25 m doorway, a hinge socket on each jamb); garage wall 4 m (3 by 2.5 m); slit wall 2 m (two 0.5 m slits at 1.3-1.65 m, eye height); Window Glass 1 m (fits a sill) |
+| Corners and ends | per material: wall corner, door corner (a doorway in one leg), window corner, wall T, wall end; parapet corner |
+| Floors | wood, steel, concrete, reinforced: 2x2, 2x4, 4x4 m; hatch floor (1 by 2 m hatch for a ship ladder), stair floor (1 by 3 m opening a cell in from one side), stairwell floor (2 by 2.5 m) |
+| Foundations | concrete 2x2 and 4x4 m pads (0.5 m), stepped (its back half 0.5 m deeper, for slopes), deep (four piers 1 m down), reinforced 4x4 m |
+| Roofs | roof slopes 4x4 and 2x4 m (wood, corrugated; 1 m rise), corrugated lean-tos, ridge roofs 4x4 m (one piece, closed ends), gable walls (close a ridge made of two slopes) |
+| Stairs and access | straight stairs 3 m (wood, steel, concrete: eight 0.375 m steps over 3 m), stair flights 1.5 m, half-turn stairs (2 by 2.5 m, a storey), Ship Ladder 3 m (steep: 0.375 m steps over 0.25 m), landings 2x2 m at 1.5 m, ramps (concrete 2x4 and 4x4, steel 2x4, wood 1x3 m), railings 2 and 4 m (steel, wood) |
+| Doors and gates | Wood and Steel Door 1.25 m, Garage Door Leaf, Fence Gate: door-role leaves hung on the existing **Hinge** (so Interact and logic open them; a hinge's base goes on a jamb's socket) |
+| Defences | sandbag walls 2 m, 1 m, low 2 m, corner; Concrete Barrier 2 m; Blast Wall 2 m (3 m T-wall); wire-topped Wire Fences 2 and 4 m (seen and shot through, not walked through); Bunker Module (4 by 4 by 3 m, slits, a back doorway) and Pillbox (3 by 3 m), both foundations that anchor themselves |
+| Watchtower | Tower Platform 2x2 m (parapet on three sides), Tower Brace, Tower Post 1.25 m, Tower Roof; the legs are Wood Posts |
+| Columns and beams | concrete, steel and wood columns 2.75 m; beams 2 and 4 m |
+| Damaged | the walls' damage stages (not offered) |
+
+**Materials** (per square metre of wall; walls burn by their material, as before):
+
+| Material | kg | Health | Armour | Tool |
+| --- | --- | --- | --- | --- |
+| Wood | 30 | 45 | 2 (burns) | wrench |
+| Corrugated metal | 18 | 55 | 4 | wrench |
+| Concrete | 300 | 260 | 25 | welder |
+| Steel plate | 160 | 320 | 35 | welder |
+| Reinforced concrete | 360 | 420 | 45 | welder |
+
+A part's mass may now be up to 50 t (a 4 m pad is about 14 t; was 5 t).
+
+**Walls lose chunks.** The straight walls (2 and 4 m, every material) have two damage stages (`"damaged"` in the file):
+below 60% of its health a wall turns into its **Damaged** stage (a 1 m chunk gone from a top corner), below 30% into
+**Breached** (also a hole at the bottom, 1 m wide and 1.5 m tall: crouch through it), and at zero it breaks off as before
+(`ConstructWorld.LoseChunk`). A stage has exactly the wall's sockets, so every weld stays; its health carries on from the
+wall's. The structure goes out again (the part's id is in it): **no wire change**. Window, door and other walls break
+whole.
+
+**Walking.** `ConstructWorld.BlockPlayer` now steps a player (and a bot: the same code runs for every player) up onto the
+boxes of anchored constructs and of parts marked `"walk"` once the player's disc reaches them, up to `World.StepHeight`
+(0.55 m) above where the feet were that tick, as the map's own steps are: stairs, ramps, the ship ladder, onto a pad or a
+low sandbag wall. A box whose top is below the feet no longer pushes (so walking from one floor slab or step onto the
+next never snags). Loose and free constructs are unchanged (a parked car still blocks you).
+
+**What bots still need** (the sandbox-spawns work owns bot navigation over constructs): today bots walk up stairs and
+through doorways only when they already walk that way (their nav graph is the map's). For paths into and through
+buildings they need the constructs' walkable tops as nav nodes (every `"walk"` part's top boxes; `Floor`, `Stairs`,
+`Ramp`, `Ladder`), links through door openings (a door leaf is a passive joint: open it with Interact first, as players
+do) and a rebuild when a construct is built, changed or breaks.
+
+**Blueprints** (`Constructs/Blueprints`): **Two-Storey House** (21 parts: two pads, a 4 by 8 m concrete house with a
+front door, window walls on both floors, a straight stair under a stair floor, two wooden ridge roofs), **Bunker** (11:
+a Bunker Module on two pads with a steel door onto a sandbagged yard), **Watchtower** (15: a platform 3 m up on four
+posts with three braces, a ship ladder and a corrugated roof) and **Small Outpost** (15: a corrugated hut with a door, a
+fenced yard with a gate, sandbags at the front).
+
+**Self-test**: the **Building parts** section (`Source/App/SelfTestBuildingParts.cs`): every part loads in the Building
+group with a known section, keeps the cell rules, has few boxes, and the stairs, ramps and floors are marked walkable;
+no stage is offered; the five wall materials order by armour, mass and health and wood burns; four corners on a pad
+cover exactly the room's 60 perimeter cells, the slab on top welds to them a storey (3 m) up and the next storey's corner
+stands on it, and the house's 4 m walls weld to the corners at both ends; a concrete wall shot down goes whole, Damaged,
+Breached, then breaks off, its weld kept; a player passes the opened front door, a garage opening and a breach
+crouching, and is stopped by the shut door, a window wall, a garage's jamb, a breach standing, a slit wall and a plain
+wall; a player climbs the house's stair to the floor above, a steel stair, the ship ladder, the half-turn stair and a
+ramp (walking about the house allocates nothing); a bot climbs a concrete stair on Construct Yard through the server's
+own movement (`Game.SelfTestApplyCmd`); the four blueprints build anchored and stand still under physics.
+
+**Choices made (the developer may change them)**: corners are L pieces with 2 m legs, so a room's sides are at least
+4 m (2 m walls go between corners); walls are 2.75 m under a 0.25 m slab; stairs rise 0.375 m a step (45 degrees on the
+straight stair, a storey in 3 m); the ship ladder is a steep stair rather than a climbing mechanic; stair floors' openings
+sit a cell in from the edge so the stair runs along a wall; doors are new 1.25 m leaves on the existing Hinge (the
+milestone 1 Door is 1 m); only straight walls lose chunks, in two fixed stages, and the lost chunk leaves no rubble piece;
+windows are open (a Window Glass fits each); the bunker and pillbox are foundations; masses are realistic-ish (a concrete
+4 m wall is 3.3 t), which needs the 50 t cap.
 
 ## New constructs (free placement)
 
