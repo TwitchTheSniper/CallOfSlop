@@ -33,6 +33,19 @@ public enum PartRole : byte
     Transfer, // drivetrain parts: drive shafts, U and CV joints, gearboxes, chains and belts, clutches, transfer cases, PTOs, hubs (ConstructDrive.cs)
 }
 
+/// <summary>
+/// How a part is walked on (building pieces; docs/sandbox/CONSTRUCTS.md, "Building pieces"): players and bots step up
+/// onto it (like any anchored part) and bots' navigation may treat its tops as ground. None: not marked.
+/// </summary>
+public enum WalkKind : byte
+{
+    None,
+    Floor, // a floor, deck, foundation or landing: flat ground
+    Stairs, // steps (0.375 m rises): walked up and down
+    Ramp, // a slope stepped in small rises (ramps, roofs): walked or driven
+    Ladder, // a steep ship ladder (0.375 m rises over 0.25 m): walked up, slowly
+}
+
 /// <summary>What a hitch part is (milestone 3): a ball or a hook couples to an eye.</summary>
 public enum HitchKind : byte
 {
@@ -182,6 +195,12 @@ public sealed class ConstructPartDef
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
     public Fluid TankFluid; // what the tank holds (routed links: the pipe style its output pre-selects)
+    public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
+    public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
+    public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
+    public string DamagedName = ""; // the stage it turns into (resolved after loading)
+    public int DamagedTo = -1; // ...its id, or -1
+    public bool Offered => !Legacy && !Stage; // listed in the parts menu and on racks
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
@@ -432,7 +451,38 @@ public static partial class ConstructParts
                 refused.Add(ex is ConstructPartException ? ex.Message : $"{Path.GetFileName(file)}: {ex.Message}");
             }
         }
+        LinkStages(list, refused);
         return list.ToArray();
+    }
+
+    /// <summary>
+    /// Resolves the damage stages ("damaged": a wall that loses chunks turns into its stage part in place): the stage must
+    /// exist, be marked "stage", have the same role and exactly the same sockets (so every link stays), and the chain's
+    /// thresholds must fall. A bad link is refused with the reason and dropped (the part still loads, breaking whole).
+    /// </summary>
+    private static void LinkStages(List<ConstructPartDef> list, List<string> refused)
+    {
+        foreach (var d in list)
+        {
+            if (d.DamagedName.Length == 0)
+                continue;
+            var t = list.FirstOrDefault(x => x.Name.Equals(d.DamagedName, StringComparison.OrdinalIgnoreCase));
+            string? why = t == null ? $"no part named \"{d.DamagedName}\""
+                : !t.Stage ? $"{t.Name} isn't marked \"stage\": true"
+                : t.Role != d.Role ? $"{t.Name} is a {t.Role.ToString().ToLowerInvariant()}, not a {d.Role.ToString().ToLowerInvariant()}"
+                : t.Sockets.Length != d.Sockets.Length || t.Sockets.Where((s, i) => s.Name != d.Sockets[i].Name || s.Dir != d.Sockets[i].Dir || s.Kind != d.Sockets[i].Kind || Vector3.DistanceSquared(s.At, d.Sockets[i].At) > 1e-6f).Any()
+                    ? $"{t.Name}'s sockets aren't exactly {d.Name}'s"
+                : t.DamagedName.Length > 0 && list.FirstOrDefault(x => x.Name.Equals(t.DamagedName, StringComparison.OrdinalIgnoreCase)) is { } next && t.DamagedBelow >= d.DamagedBelow
+                    ? $"{t.Name} turns into {next.Name} below {t.DamagedBelow:0.##}, not below {d.DamagedBelow:0.##}"
+                : null;
+            if (why != null)
+            {
+                refused.Add($"{d.File}: \"damaged\": {why}");
+                d.DamagedName = "";
+                continue;
+            }
+            d.DamagedTo = t!.Id;
+        }
     }
 
     // ---- Parsing ---------------------------------------------------------------------------------------------
@@ -441,7 +491,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "damaged", "stage",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -483,8 +533,19 @@ public static partial class ConstructParts
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
+        d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
+        d.Walk = Opt(root, "walk") is { } walk ? EnumOf<WalkKind>(Str(walk, file, "walk"), file, "walk") : WalkKind.None;
+        if (Opt(root, "damaged") is { } dmg)
+        {
+            if (dmg.ValueKind != JsonValueKind.Object)
+                throw new ConstructPartException($"{file}: \"damaged\" is {{\"below\": a share of its health, \"part\": the stage it turns into}}");
+            Known(dmg, ["below", "part"], $"{file}, damaged");
+            d.DamagedBelow = Num(Need(dmg, "below", $"{file}, damaged"), file, "damaged.below");
+            Range(d.DamagedBelow, 0.05f, 0.95f, file, "damaged.below");
+            d.DamagedName = StrKey(dmg, "part", $"{file}, damaged");
+        }
         d.Mass = Num(Need(root, "mass", file), file, "mass");
-        Range(d.Mass, 0.5f, 5000f, file, "mass");
+        Range(d.Mass, 0.5f, 50000f, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
         d.Health = Num(Need(root, "health", file), file, "health");
         Range(d.Health, 1f, 100000f, file, "health");
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;
@@ -585,8 +646,8 @@ public static partial class ConstructParts
             var kind = Opt(s, "kind") is { } k ? EnumOf<SocketKind>(Str(k, file, where + ".kind"), file, where + ".kind") : SocketKind.Struct;
             var axis = dir >> 1;
             var face = (dir & 1) == 0 ? d.BoundsMax[axis] : d.BoundsMin[axis];
-            if (MathF.Abs(at[axis] - face) > 0.005f)
-                throw new ConstructPartException($"{file}: socket \"{name}\" faces {DirName(dir)} but is not on that face of the part (at {at[axis]:0.###}, the face is at {face:0.###})");
+            if (MathF.Abs(at[axis] - face) > 0.005f && !OnBoxFace(d, at, dir))
+                throw new ConstructPartException($"{file}: socket \"{name}\" faces {DirName(dir)} but is not on that face of the part (at {at[axis]:0.###}, the face is at {face:0.###}), nor on that face of one of its solid boxes");
             for (var a = 0; a < 3; a++)
                 if (a != axis && (at[a] < d.BoundsMin[a] - 0.005f || at[a] > d.BoundsMax[a] + 0.005f))
                     throw new ConstructPartException($"{file}: socket \"{name}\" is outside the part");
@@ -1025,6 +1086,29 @@ public static partial class ConstructParts
     }
 
     // ---- Small helpers ------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// Is a socket at <paramref name="at"/> facing <paramref name="dir"/> on that face of one of the part's solid boxes
+    /// (inside an opening: a door's jamb, a window's sill, the edge of a floor's stairwell)?
+    /// </summary>
+    private static bool OnBoxFace(ConstructPartDef d, Vector3 at, byte dir)
+    {
+        var axis = dir >> 1;
+        for (var b = 0; b < d.SolidBoxes; b++)
+        {
+            var box = d.Boxes[b];
+            var face = (dir & 1) == 0 ? box.Center[axis] + box.Half[axis] : box.Center[axis] - box.Half[axis];
+            if (MathF.Abs(at[axis] - face) > 0.005f)
+                continue;
+            var inside = true;
+            for (var a = 0; a < 3 && inside; a++)
+                if (a != axis && MathF.Abs(at[a] - box.Center[a]) > box.Half[a] + 0.005f)
+                    inside = false;
+            if (inside)
+                return true;
+        }
+        return false;
+    }
 
     private static readonly string[] DirNames = ["+x", "-x", "+y", "-y", "+z", "-z"];
 

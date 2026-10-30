@@ -44,7 +44,7 @@ public sealed class SandboxCatalogue
     public int Key;
 
     /// <summary>The group order (the tree's), then any new group in the order met.</summary>
-    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Other"];
+    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Other"];
 
     /// <summary>
     /// A part's group and section (data first: the file's own "group" and "section", else its role, else a word in a new
@@ -158,8 +158,8 @@ public sealed class SandboxCatalogue
             var (g, s) = Classify(d);
             cat.PartGroup[d.Id] = g;
             cat.PartSection[d.Id] = s;
-            if (d.Legacy)
-                continue; // (replaced by a routed link: the linking tool makes pipes and shafts now)
+            if (!d.Offered)
+                continue; // (replaced by a routed link: the linking tool makes pipes and shafts now; or a wall's damage stage)
             partItems.Add((g, s, d.Group.Length > 0 ? GivenOrder(d) : (int)d.Role * 64 + (d.Role == PartRole.Logic ? LogicOrder(s) : 0), d.Name, d.Id));
         }
         cat.Parts = MakeTree(partItems, "part");

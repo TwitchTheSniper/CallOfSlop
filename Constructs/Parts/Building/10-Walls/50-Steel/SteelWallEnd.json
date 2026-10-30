@@ -1,0 +1,171 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Wall End",
+  "description": "A free wall's finished end: a 0.25 m post the wall's height, with a cap. Welded steel plate on a frame: tough for its weight, stops pistols, SMGs and buckshot.",
+  "group": "Building",
+  "section": "Corners and ends",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 220.0,
+  "health": 500,
+  "armour": 35,
+  "material": "steel",
+  "color": "#5f6870",
+  "attachSeconds": 2.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        2.625,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.145,
+        2.525,
+        -0.145
+      ],
+      "max": [
+        0.145,
+        2.625,
+        0.145
+      ],
+      "color": "#4c545b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mx0",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "px0",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "mz0",
+      "at": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "pz0",
+      "at": [
+        0.0,
+        0.0,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "mx5",
+      "at": [
+        -0.125,
+        1.25,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "px5",
+      "at": [
+        0.125,
+        1.25,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "mz5",
+      "at": [
+        0.0,
+        1.25,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "pz5",
+      "at": [
+        0.0,
+        1.25,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "mx10",
+      "at": [
+        -0.125,
+        2.5,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "px10",
+      "at": [
+        0.125,
+        2.5,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "mz10",
+      "at": [
+        0.0,
+        2.5,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "pz10",
+      "at": [
+        0.0,
+        2.5,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "b",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "t",
+      "at": [
+        0.0,
+        2.625,
+        0.0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

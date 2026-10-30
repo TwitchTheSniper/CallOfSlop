@@ -172,7 +172,8 @@ public static partial class SelfTest
             truncated = "refused";
         }
         var badPart = (byte[])bytes.Clone();
-        badPart[1] = 254; // (slot 0's part: no such type)
+        badPart[1] = 0xFE; // (slot 0's part: no such type; two bytes since the part ids widened)
+        badPart[2] = 0xFE;
         string unknown;
         try
         {

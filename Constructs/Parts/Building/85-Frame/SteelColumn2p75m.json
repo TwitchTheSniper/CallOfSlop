@@ -1,0 +1,128 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Column 2.75 m",
+  "description": "A 0.25 m square steel column, 2.75 m tall: holds up a floor or a roof at a module point.",
+  "group": "Building",
+  "section": "Columns and beams",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 165.0,
+  "health": 1100,
+  "armour": 30,
+  "material": "steel",
+  "color": "#5f6670",
+  "attachSeconds": 3.0,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        2.625,
+        -0.095
+      ]
+    },
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        0.095
+      ],
+      "max": [
+        0.125,
+        2.625,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.015,
+        -0.125,
+        -0.095
+      ],
+      "max": [
+        0.015,
+        2.625,
+        0.095
+      ],
+      "color": "#545a63"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "b00",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "t00",
+      "at": [
+        0.0,
+        2.625,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "f0_0",
+      "at": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "k0_0",
+      "at": [
+        0.0,
+        0.0,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "f0_5",
+      "at": [
+        0.0,
+        1.25,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "k0_5",
+      "at": [
+        0.0,
+        1.25,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "f0_10",
+      "at": [
+        0.0,
+        2.5,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "k0_10",
+      "at": [
+        0.0,
+        2.5,
+        0.125
+      ],
+      "dir": "+z"
+    }
+  ]
+}
