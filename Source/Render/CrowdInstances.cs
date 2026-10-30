@@ -170,6 +170,8 @@ public sealed class CrowdInstances
     private Vector3 _pcam;
     private float _pfog2;
     private long _ptick;
+    private float _pdt;
+    private bool _psoft;
     private readonly Action<int> _particlePass;
 
     /// <summary>Ticks a released particle takes to rise out of the ground (its mass agent sinks meanwhile).</summary>
@@ -180,11 +182,13 @@ public sealed class CrowdInstances
     /// <paramref name="cells"/>' horizon), in parallel stripes. <paramref name="tick"/>: the server tick (a particle just
     /// let out of the mass rises).
     /// </summary>
-    public void FromParticles(HordeCrowd c, Vector3 cam, float fogEnd, CrowdAgents? cells, long tick)
+    public void FromParticles(HordeCrowd c, Vector3 cam, float fogEnd, CrowdAgents? cells, long tick, float dt = 0)
     {
         if (c.Count == 0)
             return;
         _pc = c;
+        _pdt = dt;
+        _psoft = c.Tuning.SoftWake;
         _pcells = cells != null && cells.Cells > 0 ? cells : null;
         _pcam = cam;
         _pfog2 = fogEnd > 0 ? (fogEnd + 1.5f) * (fogEnd + 1.5f) : float.MaxValue;
@@ -212,6 +216,11 @@ public sealed class CrowdInstances
         var fog2 = _pfog2;
         float near2 = NearRange * NearRange, mid2 = MidRange * MidRange;
         var y = c.Y;
+        if (_psoft)
+        {
+            SoftParticles(c, st, from, to);
+            return;
+        }
         for (var i = from; i < to; i++)
         {
             float x = c.X[i], z = c.Z[i];
@@ -252,6 +261,62 @@ public sealed class CrowdInstances
             var sink = age >= 0 && age < RiseTicks ? (1f - age / (float)RiseTicks) * CrowdAgents.SinkDepth : 0f;
             var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
             st.Add(lod, x, y - sink, z, yaw, walked, BrightOf(h), c.Held[i], c.Cls[i]); // (its gait: its speed class, CrowdPace.cs)
+        }
+    }
+
+    /// <summary>
+    /// The soft wake's particles (docs/zombies/MASS-HORDE.md, "Wake waves"): each drawn where <see cref="HordeCrowd.DrawnAt"/>
+    /// says (eased out of the place of the agent it took over), facing <see cref="HordeCrowd.DrawnYaw"/>, at its own point
+    /// in the walk (<see cref="HordeCrowd.Walk"/>, metres walked, carried across tier changes) and with its drawn look;
+    /// standing on the ground there (none rises out of it). Advances each one's walk and hand-off by the frame's time.
+    /// </summary>
+    private void SoftParticles(HordeCrowd c, Stripe st, int from, int to)
+    {
+        var cam = _pcam;
+        var terrain = c.Terrain;
+        var cells = _pcells;
+        var fog2 = _pfog2;
+        var dt = _pdt;
+        float near2 = NearRange * NearRange, mid2 = MidRange * MidRange;
+        var y = c.Y;
+        for (var i = from; i < to; i++)
+        {
+            float vx = c.VX[i], vz = c.VZ[i];
+            var v2 = vx * vx + vz * vz;
+            var moving = v2 > 0.04f;
+            // Metres walked: its pace over the ground; one waiting to be promoted and held back by the front shuffles on the
+            // spot (CrowdAgents.JamPace).
+            c.Walk[i] += (moving ? MathF.Sqrt(v2) : c.Held[i] ? c.Spd[i] * CrowdAgents.JamPace : 0f) * dt;
+            var w = c.HandWeight(i);
+            float x = c.X[i] + c.HandX[i] * w, z = c.Z[i] + c.HandZ[i] * w;
+            var yaw = c.DrawnYaw(i);
+            if (c.HandLeft[i] > 0)
+                c.HandLeft[i] = MathF.Max(0f, c.HandLeft[i] - dt);
+            float dx = x - cam.X, dz = z - cam.Z;
+            var d2 = dx * dx + dz * dz;
+            if (d2 > fog2)
+            {
+                st.Culled++;
+                continue;
+            }
+            if (cells != null)
+            {
+                var cell = cells.CellAt(x, z);
+                if (cell >= 0 && cells.HiddenCell(cell))
+                {
+                    st.Culled++;
+                    continue;
+                }
+            }
+            if (terrain != null)
+                y = terrain.Sample(x, z);
+            if (!ZombieAnim.Visible(new Vector3(x, y + 0.9f, z), 1.1f))
+            {
+                st.Culled++;
+                continue;
+            }
+            var lod = d2 < near2 ? 0 : d2 < mid2 ? 1 : 2;
+            st.Add(lod, x, y, z, yaw, c.Walk[i], BrightOf(c.DrawLook[i]), c.Held[i], c.Cls[i]); // (its gait: its speed class, CrowdPace.cs)
         }
     }
 }

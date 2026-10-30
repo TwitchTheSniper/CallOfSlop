@@ -38,7 +38,8 @@ public sealed class CrowdView
     private Game? _for;
     private int _indN;
     private readonly ushort[] _ind = new ushort[Game.MaxZombies];
-    private readonly float[] _indX = new float[Game.MaxZombies], _indZ = new float[Game.MaxZombies];
+    private readonly float[] _indX = new float[Game.MaxZombies], _indZ = new float[Game.MaxZombies], _indYaw = new float[Game.MaxZombies], _indWalk = new float[Game.MaxZombies];
+    private readonly byte[] _indGait = new byte[Game.MaxZombies];
     private readonly long[] _seen = new long[65536];
     private long _frame;
 
@@ -89,17 +90,21 @@ public sealed class CrowdView
         // host did (CrowdPace.For), so its drawn crowd walks, runs and sprints as the round's individuals do.
         agents.SetPace(host ? g.Crowd.Pace : CrowdPace.For(g.ZRules, rules, g.ZRound));
         (agents.NearRange, agents.MidRange) = (inst.NearRange, inst.MidRange);
+        var soft = host ? g.Crowd.Tuning.SoftWake : rules.SoftWake;
+        agents.PullFromBehind = soft;
         if (host)
         {
             inst.AgentShade = Tiers ? 0.55f : 1f; // (with the tier colours the mass is a darker yellow)
             agents.FromMass(g.Crowd);
-            Notes(g.Crowd, agents);
+            Notes(g.Crowd, agents, soft);
+            if (soft)
+                HandOver(g.Crowd, agents);
         }
         else
         {
             inst.AgentShade = 1f;
             agents.FromPicture(g.CrowdSeen, World.Map.Terrain);
-            Individuals(g, agents);
+            Individuals(g, agents, soft);
         }
         agents.Update(cam, dt, fogEnd, inst);
         inst.CountCells(agents);
@@ -107,46 +112,91 @@ public sealed class CrowdView
         inst.Agents = inst.Total;
         if (host)
         {
-            inst.FromParticles(g.Crowd, cam, fogEnd, agents, g.ServerTick);
+            inst.FromParticles(g.Crowd, cam, fogEnd, agents, g.ServerTick, dt);
             inst.End();
         }
         PrepMs = Stopwatch.GetElapsedTime(t0).TotalMilliseconds;
     }
 
     /// <summary>The host: the crowd's merges into the mass (an agent appears where the particle was) and releases from it (the nearest agent sinks).</summary>
-    private void Notes(HordeCrowd c, CrowdAgents agents)
+    private void Notes(HordeCrowd c, CrowdAgents agents, bool soft)
     {
         var from = Math.Max(_notes, c.Notes - HordeCrowd.NoteCap);
         for (var k = from; k < c.Notes; k++)
         {
             var j = (int)(k & (HordeCrowd.NoteCap - 1));
             if (c.NoteKind[j] == 1)
-                agents.Hint(c.NoteX[j], c.NoteZ[j], c.NoteLook[j]);
-            else
-                agents.Release(c.NoteX[j], c.NoteZ[j]);
+                agents.Hint(c.NoteX[j], c.NoteZ[j], c.NoteLook[j], c.NoteYaw[j], c.NoteWalk[j], c.NoteGait[j]);
+            else if (!soft)
+                agents.Release(c.NoteX[j], c.NoteZ[j]); // (the old way: the nearest sinks while the particle rises)
         }
         _notes = c.Notes;
+    }
+
+    /// <summary>Since the start: particles let out of the mass that took over an agent, and those with none to take over (their cell wasn't drawn).</summary>
+    public long HandOvers, HandMisses;
+
+    /// <summary>The soft wake's hand-over is eased out at this speed (m/s), between these times (s).</summary>
+    public const float HandSpeed = 1.2f, HandMin = 0.2f, HandMax = 2f;
+
+    /// <summary>
+    /// The host, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): each particle the mass let out since
+    /// the last frame takes over the agent nearest it (<see cref="CrowdAgents.TakeOver"/>): it is drawn from that agent's
+    /// place, facing its way, at its point in the walk and with its look, the offset to where the particle really is eased
+    /// out over a moment (<see cref="HordeCrowd.HandWeight"/>), and the agent stops drawing that frame. Before the agents'
+    /// update, so the agent isn't drawn this frame. A serial scan of the particles' hand-off flags, only when some are due.
+    /// </summary>
+    private void HandOver(HordeCrowd c, CrowdAgents agents)
+    {
+        if (!c.HandPending)
+            return;
+        c.HandPending = false;
+        var within = c.MassCell * 3f; // (the drawn crowd can trail the counts by a cell or two at a moving front)
+        for (var i = 0; i < c.Count; i++)
+        {
+            if (c.HandLeft[i] != -1f)
+                continue;
+            if (agents.TakeOver(c.X[i], c.Z[i], within, c.Cls[i], counted: false, out var pose) < 0)
+            {
+                c.HandLeft[i] = 0;
+                HandMisses++;
+                continue;
+            }
+            float ox = pose.X - c.X[i], oz = pose.Z - c.Z[i];
+            c.HandX[i] = ox;
+            c.HandZ[i] = oz;
+            c.HandYaw[i] = pose.Yaw;
+            c.Walk[i] = pose.Walk;
+            c.DrawLook[i] = pose.Look;
+            c.HandDur[i] = c.HandLeft[i] = Math.Clamp(MathF.Sqrt(ox * ox + oz * oz) / HandSpeed, HandMin, HandMax);
+            HandOvers++;
+        }
     }
 
     /// <summary>
     /// A client: individuals that appeared since the last frame claim the nearest agent (it hides: the zombie came out of
     /// the crowd there); ones that vanished alive leave an agent where they were (back into the crowd).
     /// </summary>
-    private void Individuals(Game g, CrowdAgents agents)
+    private void Individuals(Game g, CrowdAgents agents, bool soft)
     {
         var frame = ++_frame;
         foreach (var z in g.Horde)
         {
             if (!z.Alive)
                 continue;
-            if (_seen[z.Id] != frame - 1)
-                agents.Claim(z.RenderPos.X, z.RenderPos.Z);
+            if (_seen[z.Id] != frame - 1 && !z.CrowdTook)
+                agents.Claim(z.RenderPos.X, z.RenderPos.Z); // (the old way; the soft wake's took over its agent in the game's frame: Game.CrowdHandFrame)
             _seen[z.Id] = frame;
         }
         // Last frame's living individuals not seen alive this frame and not dead in the horde: gone back into the crowd.
         for (var k = 0; k < _indN; k++)
             if (_seen[_ind[k]] != frame && !InHorde(g, _ind[k]))
-                agents.Hint(_indX[k], _indZ[k], 0);
+            {
+                if (soft)
+                    agents.Hint(_indX[k], _indZ[k], 0, _indYaw[k], _indWalk[k], _indGait[k]); // (it carries on as it was drawn)
+                else
+                    agents.Hint(_indX[k], _indZ[k], 0);
+            }
         _indN = 0;
         foreach (var z in g.Horde)
             if (z.Alive && _indN < _ind.Length)
@@ -154,6 +204,9 @@ public sealed class CrowdView
                 _ind[_indN] = z.Id;
                 _indX[_indN] = z.RenderPos.X;
                 _indZ[_indN] = z.RenderPos.Z;
+                _indYaw[_indN] = z.RenderYaw;
+                _indWalk[_indN] = z.Gait / MathF.Tau * 4f * ZombieAnim.StrideHalf(z.Speed, z.Limbs);
+                _indGait[_indN] = (byte)Math.Min((int)z.Speed, 2);
                 _indN++;
             }
     }
