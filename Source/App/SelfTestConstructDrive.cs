@@ -109,6 +109,7 @@ public static partial class SelfTest
         }
         b.StepSettings.AddRange(bp.StepSettings);
         b.Wires.AddRange(bp.Wires);
+        b.Links.AddRange(bp.Links); // (routed links: the buggy's fuel pipe)
         return b;
     }
 
@@ -281,6 +282,8 @@ public static partial class SelfTest
                 for (var i = 0; i < bp.Steps.Count; i++)
                     if (bp.Steps[i].Part == "Plate Steel 1 m")
                         bp.Steps[i] = bp.Steps[i] with { Part = "Square Beam 0.25 m", Own = "-y" }; // (the deck is in the way of wheels 2.4 m across)
+                    else if (bp.Steps[i].Part == "Fuel Tank")
+                        bp.Steps[i] = bp.Steps[i] with { On = bp.Steps.FindIndex(s => s.Part == "Engine"), Socket = "+y", Own = "-y" }; // (the tank sat on the deck: on the engine instead)
             var m = Measure(bp, $"the buggy on {name}s");
             got[name] = m;
             lines.Add($"{name} {m.Road:0.0}/{m.Dirt:0.0} m, turn {m.Turn:0}");
