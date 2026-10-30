@@ -17,7 +17,7 @@ public enum CBodyKind : byte
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 83: the charge, power and gear in the structure and the poses, and the links
+/// The constructs on the wire (protocol 88: a construct frozen by the physics gun, and by whom; protocol 83: the charge, power and gear in the structure and the poses, and the links
 /// between constructs; protocol 82: guns, ammo boxes and burning parts, Msg.CFire; protocol 81: owners, salvage, the inventory; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
@@ -57,7 +57,7 @@ public static class ConstructNet
     public static void WriteFull(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
-        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0))).U8(c.Owner); // (protocol 84: pinned)
+        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
         w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
@@ -419,6 +419,7 @@ public static class ConstructNet
         var id = r.U16();
         var flags = r.U8();
         var owner = r.U8();
+        var frozenBy = r.U8(); // (protocol 88)
         var root = r.U8();
         var driver = r.U8();
         var seat = r.U8();
@@ -541,6 +542,8 @@ public static class ConstructNet
         c.Wreck = (flags & 1) != 0;
         c.Damaged = (flags & 8) != 0;
         c.Pinned = (flags & 16) != 0;
+        c.Frozen = (flags & 32) != 0;
+        c.FrozenBy = c.Frozen ? frozenBy : (byte)255;
         c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;

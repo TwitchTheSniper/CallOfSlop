@@ -28,6 +28,11 @@ public enum CActKind : byte
     Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
     Stow, // the part in the hands into the backpack (protocol 85)
     Draw, // the next part in the backpack into empty hands (protocol 85)
+    Grab, // u16 body, 3 x i16 grab point (body frame, cm): the physics gun takes hold (protocol 88; GameSandboxPhysGun.cs)
+    GrabSteer, // u16 distance (cm), 4 x i16 turn relative to the look's yaw: the held thing's distance and turn, unreliable, up to ~30 Hz (protocol 88)
+    GrabRelease, // let go of what the physics gun holds (protocol 88)
+    GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
+    UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -159,7 +164,12 @@ public sealed partial class Game
                 SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
             _sbAlive[p.Id] = p.Alive;
             if (!p.Alive)
+            {
                 h.Edit = EditKind.None;
+                SandboxHands.Release(Constructs, p.Id); // (the physics gun lets go on death)
+            }
+            else if (h.GrabBody != 0)
+                SandboxHands.GrabTick(Constructs, p.Id, p.Eye, World.Forward(p.Yaw, p.Pitch), p.Yaw); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
@@ -326,7 +336,13 @@ public sealed partial class Game
         switch (kind)
         {
             case CActKind.Tool:
-                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker));
+                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
+            case CActKind.Grab:
+            case CActKind.GrabSteer:
+            case CActKind.GrabRelease:
+            case CActKind.GrabFreeze:
+            case CActKind.UnfreezeAll:
+                return SandboxPhysGunAct(p, kind, ref r);
             case CActKind.Attach:
             {
                 var body = r.U16();
@@ -917,7 +933,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -932,6 +948,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxLookText, white));
         if (SandboxNotice is { Length: > 0 } notice)
             lines.Add(new HudLine(notice, red));
+        else if (h.Tool == ConstructTool.PhysicsGun)
+            lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
