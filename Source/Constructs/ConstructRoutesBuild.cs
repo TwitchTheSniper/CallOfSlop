@@ -17,7 +17,6 @@ public static partial class ConstructRoutes
     public sealed class LinkSpec
     {
         public RouteType Type;
-        public byte Style;
         public int From = -1, To = -1;
         public string FromPort = "", ToPort = "";
         public int Branch = -1, BranchSeg; // a branch: the earlier link (its index in "links") and its segment
@@ -38,12 +37,7 @@ public static partial class ConstructRoutes
                 throw new ConstructPartException($"{where}: unknown key \"{p.Name}\" ({string.Join(", ", LinkKeys)})");
         s.Type = e.TryGetProperty("type", out var t) && t.ValueKind == JsonValueKind.String && TypeOf(t.GetString()!) is { } rt ? rt
             : throw new ConstructPartException($"{where}: \"type\" must be data, power, pipe, shaft or chute");
-        if (e.TryGetProperty("style", out var st))
-        {
-            if (s.Type != RouteType.Pipe)
-                throw new ConstructPartException($"{where}: only a pipe has a \"style\"");
-            s.Style = st.ValueKind == JsonValueKind.String && StyleOf(st.GetString()!) is { } ps ? (byte)ps : throw new ConstructPartException($"{where}: \"style\" must be fuel, water, oil or steam");
-        }
+        // (an old blueprint may carry a pipe "style": read and ignored, there is one pipe for every fluid)
         if (e.TryGetProperty("branch", out var br))
         {
             if (br.ValueKind != JsonValueKind.Array || br.GetArrayLength() != 2 || !e.TryGetProperty("at", out var at))
@@ -129,9 +123,9 @@ public static partial class ConstructRoutes
             nodes[i] = new CRouteNode { Pos = pos, Host = (byte)Math.Max(0, NearestPart(c, pos)) };
         }
         var junction = ConstructWorld.Quantise(s.At);
-        if (Check(world, c, s.Type, s.Style, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Nodes.Count == 0 && s.Branch < 0) is { } why)
-            return $"{Name(s.Type, s.Style)} {c.DefOf(parent == 255 ? from : c.Routes[parent].Source).Name} -> {c.DefOf(to).Name}: {why}";
-        if (Add(world, c, s.Type, s.Style, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort) < 0)
+        if (Check(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort, straight: s.Nodes.Count == 0 && s.Branch < 0) is { } why)
+            return $"{Name(s.Type)} {c.DefOf(parent == 255 ? from : c.Routes[parent].Source).Name} -> {c.DefOf(to).Name}: {why}";
+        if (Add(world, c, s.Type, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort) < 0)
             return "no room for another link";
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
         return null;
@@ -289,9 +283,8 @@ public static partial class ConstructRoutes
             for (var i = 0; i < nn; i++)
                 nodes[i].Host = (byte)a;
             var type = fuel ? RouteType.Pipe : RouteType.Shaft;
-            var style = fuel ? (byte)StyleFor(c.DefOf(a)) : (byte)0;
-            Add(world, c, type, style, a, fuel ? (byte)255 : (byte)sockA, 255, 0, default, nodes[..nn], b, fuel ? (byte)255 : (byte)sockB);
-            world.Events.Add($"construct {c.Id}: {(fuel ? "a fuel line" : "a drive shaft")} of {n} part(s) became a {Name(type, style)} link");
+            Add(world, c, type, a, fuel ? (byte)255 : (byte)sockA, 255, 0, default, nodes[..nn], b, fuel ? (byte)255 : (byte)sockB);
+            world.Events.Add($"construct {c.Id}: {(fuel ? "a fuel line" : "a drive shaft")} of {n} part(s) became a {Name(type)} link");
             c.Rebuild();
             return true;
         }
@@ -398,8 +391,6 @@ public static partial class ConstructRoutes
             if (k > 0)
                 sb.Append(',');
             sb.Append("{\"type\":\"").Append(TypeKey(r.Type)).Append('"');
-            if (r.Type == RouteType.Pipe)
-                sb.Append(",\"style\":\"").Append(StyleName(r.Style)).Append('"');
             if (r.Parent != 255)
             {
                 // (the segment as it was when this branch was built: junctions of later branches before it weren't there yet)

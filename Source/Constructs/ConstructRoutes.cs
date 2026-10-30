@@ -13,32 +13,13 @@ public enum RouteType : byte
     COUNT,
 }
 
-/// <summary>A pipe's sub-type: one per fluid, each with its own look and ratings (a wrong one is allowed, with consequences). Wire bytes: add at the end.</summary>
-public enum PipeStyle : byte
-{
-    Fuel, // thin, hazard bands: rated for fuel
-    Water, // blue with flanges
-    Oil, // dark with clamps
-    Steam, // thick lagged insulation: rated for heat and pressure
-    COUNT,
-}
-
-/// <summary>What a pipe can carry (a tank's <c>"fluid"</c>; only fuel tanks exist so far).</summary>
+/// <summary>What a pipe can carry (a tank's <c>"fluid"</c>; only fuel tanks exist so far). One pipe carries any of them (decision 28).</summary>
 public enum Fluid : byte
 {
     Fuel,
     Water,
     Oil,
     Steam,
-}
-
-/// <summary>What goes wrong when a pipe carries a fluid it isn't meant for (readable, never a refusal).</summary>
-public enum PipeIssue : byte
-{
-    None,
-    Leaks, // a flammable fluid in a pipe not rated for it: it weeps, and after a while catches fire
-    Bursts, // too hot or too much pressure for the pipe: it fails after a while
-    Sputters, // residue in the line (fuel through an oil pipe): the engine runs rough
 }
 
 /// <summary>A node of a routed link: where it sits (the rest frame of its host part's segment, on the 1 cm grid), the part it sits on, and the health of the segment that arrives at it.</summary>
@@ -57,7 +38,6 @@ public struct CRouteNode
 public struct CRoute
 {
     public RouteType Type;
-    public byte Style; // a pipe's PipeStyle (0 for the others)
     public byte From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
     public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
     public byte Parent, ParentNode; // a branch: the link and its node it starts at (255: from a part)
@@ -72,11 +52,10 @@ public struct CRoute
     public bool Fed; // its start is fed (every segment from the source to it intact)
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
     public float Share; // its share of the source's flow at its input (data copies: 1)
-    public PipeIssue Issue;
     public byte Bends; // segments meeting at an angle (a shaft's U joints)
 
     // Server state
-    public float Timer; // seconds: a wrong pipe's trouble building up, a chute's next move
+    public float Timer; // seconds: a chute's next move
     public byte Cursor; // a chute junction's round robin
 
     public readonly bool FedEnd => Fed && FirstCut > Count;
@@ -100,7 +79,6 @@ public sealed partial class Construct
     public int ShaftEdgeCount;
     public readonly CLink[] PowerEdges = new CLink[MaxRoutes];
     public int PowerEdgeCount;
-    public float FuelQuality = 1f; // this tick: 1, or less while a wrong pipe makes the engine sputter
     public bool Sparking; // client and server: a cut power cable sparks (drawn)
 
     public ref CRouteNode Node(int route, int k) => ref RouteNodes[Routes[route].Start + k];
@@ -118,7 +96,7 @@ public sealed partial class Construct
 
 /// <summary>
 /// Routed links (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"): the linking tool's physical connections,
-/// routed node by node over a construct. One system for five types (data and power cables, pipes in one style per fluid,
+/// routed node by node over a construct. One system for five types (data and power cables, one pipe for any fluid,
 /// drive shafts and chutes), each drawn by one segment piece and one elbow piece (ConstructRender), each with its
 /// routing rule (<see cref="Check"/>), health and what it carries. A link is a graph edge, never a physics body: the
 /// data links are the logic's wires (<see cref="Construct.Wires"/> is rebuilt from them), power links join the
@@ -140,19 +118,15 @@ public static partial class ConstructRoutes
     public const float MaxSegment = 8f; // and at most this long (a straight link: milestone 2's wire reach)
     public const float MaxLength = 24f; // a whole link
     public const float LeakLitres = 0.5f; // a cut fuel pipe loses this much a second while the tank holds any
-    public const float WeepLitres = 0.05f; // fuel weeping through a pipe not rated for it
-    public const float IgniteSeconds = 20f; // a weeping fuel pipe catches fire after this long
-    public const float BurstSeconds = 30f; // a pipe too weak for what it carries bursts after this long
-    public const float SputterQuality = 0.6f; // an engine fed through a pipe with residue in it
     public const float ChuteSeconds = 1f; // a chute moves one item (or a load of bulk) a second
     public const int ChuteLoad = 10; // bulk per move
     public const float ShaftBendEff = 0.99f; // what each U joint of a shaft link keeps
 
-    public static float Radius(RouteType t, byte style = 0) => t switch
+    public static float Radius(RouteType t) => t switch
     {
         RouteType.Data => 0.02f,
         RouteType.Power => 0.035f,
-        RouteType.Pipe => (PipeStyle)style switch { PipeStyle.Fuel => 0.04f, PipeStyle.Steam => 0.075f, _ => 0.05f },
+        RouteType.Pipe => 0.05f,
         RouteType.Shaft => 0.05f,
         _ => 0.15f,
     };
@@ -168,12 +142,8 @@ public static partial class ConstructRoutes
     };
 
     private static readonly string[] TypeNames = ["data cable", "power cable", "pipe", "drive shaft", "chute"];
-    private static readonly string[] StyleNames = ["fuel", "water", "oil", "steam"];
-    private static readonly string[] PipeNames = ["fuel pipe", "water pipe", "oil pipe", "steam pipe"];
 
-    public static string Name(RouteType t, byte style = 0) => t == RouteType.Pipe ? PipeNames[Math.Min((int)style, PipeNames.Length - 1)] : TypeNames[Math.Min((int)t, TypeNames.Length - 1)];
-
-    public static string StyleName(byte style) => StyleNames[Math.Min((int)style, StyleNames.Length - 1)];
+    public static string Name(RouteType t) => TypeNames[Math.Min((int)t, TypeNames.Length - 1)];
 
     public static string TypeKey(RouteType t) => t switch { RouteType.Data => "data", RouteType.Power => "power", RouteType.Pipe => "pipe", RouteType.Shaft => "shaft", _ => "chute" };
 
@@ -187,63 +157,8 @@ public static partial class ConstructRoutes
         _ => null,
     };
 
-    public static PipeStyle? StyleOf(string key) => key.ToLowerInvariant() switch
-    {
-        "fuel" => PipeStyle.Fuel,
-        "water" => PipeStyle.Water,
-        "oil" => PipeStyle.Oil,
-        "steam" or "hot" => PipeStyle.Steam,
-        _ => null,
-    };
-
-    // ---- Fluids and pipe ratings (a data table: more fluids come with production) ---------------------------------
-
-    /// <summary>A pipe style's ratings: pressure (bar), heat (degrees C), rated for flammable fluids, the residue it leaves (an oil pipe's).</summary>
-    public static (float Bar, float Heat, bool FuelSafe, bool Residue) Rating(PipeStyle s) => s switch
-    {
-        PipeStyle.Fuel => (6f, 80f, true, false),
-        PipeStyle.Water => (6f, 90f, false, false),
-        PipeStyle.Oil => (10f, 120f, true, true),
-        _ => (20f, 260f, true, false), // steam: lagged, heavy
-    };
-
-    /// <summary>A fluid's needs: pressure, temperature, flammable.</summary>
-    public static (float Bar, float Heat, bool Flammable) Needs(Fluid f) => f switch
-    {
-        Fluid.Fuel => (2f, 20f, true),
-        Fluid.Water => (2f, 20f, false),
-        Fluid.Oil => (4f, 60f, true),
-        _ => (12f, 200f, false),
-    };
-
-    /// <summary>What happens when <paramref name="f"/> runs through a pipe of style <paramref name="s"/>.</summary>
-    public static PipeIssue IssueOf(Fluid f, PipeStyle s)
-    {
-        var r = Rating(s);
-        var n = Needs(f);
-        if (n.Flammable && !r.FuelSafe)
-            return PipeIssue.Leaks;
-        if (n.Heat > r.Heat || n.Bar > r.Bar)
-            return PipeIssue.Bursts;
-        if (r.Residue && f != Fluid.Oil)
-            return PipeIssue.Sputters;
-        return PipeIssue.None;
-    }
-
-    /// <summary>The look-at line for a wrong pipe (null when it is the right one).</summary>
-    public static string? IssueText(PipeIssue i, Fluid f, PipeStyle s) => i switch
-    {
-        PipeIssue.Leaks => $"WARNING: {StyleNames[(int)f]} in a {PipeNames[(int)s]}: it isn't rated for it, so it weeps and can catch fire",
-        PipeIssue.Bursts => $"WARNING: {StyleNames[(int)f]} in a {PipeNames[(int)s]}: too hot or too much pressure, it will burst",
-        PipeIssue.Sputters => $"WARNING: {StyleNames[(int)f]} through an {PipeNames[(int)s]}: the residue makes the engine sputter",
-        _ => null,
-    };
-
     /// <summary>The fluid a part puts out (a fuel tank's fuel), or null.</summary>
     public static Fluid? FluidOf(ConstructPartDef d) => d.Role == PartRole.FuelTank ? d.TankFluid : null;
-
-    /// <summary>The pipe style a part's output pre-selects (the hybrid choice: overridable from the pipe ring).</summary>
-    public static PipeStyle StyleFor(ConstructPartDef d) => FluidOf(d) is { } f ? (PipeStyle)(byte)f : PipeStyle.Fuel;
 
     // ---- What plugs in where ------------------------------------------------------------------------------------
 
@@ -449,7 +364,7 @@ public static partial class ConstructRoutes
 
     /// <summary>
     /// With the caches (before the drive line and the circuit): each link's source, whether it is fed, its share at a
-    /// junction (split evenly for power, fluids, torque and items; data copies), a wrong pipe's issue; the data links
+    /// junction (split evenly for power, fluids, torque and items; data copies); the data links
     /// become the logic's wires, the shafts drive-line edges, the power cables circuit edges. Branches always come after
     /// the link they branch from, so one pass in order does it.
     /// </summary>
@@ -506,7 +421,6 @@ public static partial class ConstructRoutes
                     if (branches[r.Start + j] > 0)
                         end /= 1 + branches[r.Start + j];
             r.Share = end;
-            r.Issue = r.Type == RouteType.Pipe && r.Source < c.PartCount && FluidOf(c.DefOf(r.Source)) is { } f ? IssueOf(f, (PipeStyle)r.Style) : PipeIssue.None;
             if (r.Type == RouteType.Shaft)
             {
                 var prev = Vector3.Zero;
@@ -570,10 +484,10 @@ public static partial class ConstructRoutes
     /// <paramref name="nodes"/>: the nodes (rest frame, quantised, and the part each sits on). <paramref name="straight"/>:
     /// a migrated wire or fuel line (no nodes, checked for reach only).
     /// </summary>
-    public static string? Check(ConstructWorld? world, Construct c, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
+    public static string? Check(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
         ReadOnlySpan<CRouteNode> nodes, int to, byte toPort, bool straight = false)
     {
-        if (type >= RouteType.COUNT || type == RouteType.Pipe && style >= (byte)PipeStyle.COUNT || type != RouteType.Pipe && style != 0)
+        if (type >= RouteType.COUNT)
             return "no such link type";
         if (to < 0 || to >= c.PartCount)
             return "no such part";
@@ -591,8 +505,8 @@ public static partial class ConstructRoutes
             if (parent < 0 || parent >= c.RouteCount)
                 return "that link is gone";
             ref var p = ref c.Routes[parent];
-            if (p.Type != type || type == RouteType.Pipe && p.Style != style)
-                return $"a {Name(type, style)} can't branch off a {Name(p.Type, p.Style)}";
+            if (p.Type != type)
+                return $"a {Name(type)} can't branch off a {Name(p.Type)}";
             if (type == RouteType.Shaft && ShaftJunctionNeedsTBox)
                 return "a drive shaft branches only through a T gearbox: end the shaft at one and start the branch from its other port";
             if (parentSeg < 0 || parentSeg > p.Count)
@@ -620,9 +534,9 @@ public static partial class ConstructRoutes
         if (c.Parts[source].Broken || c.Parts[to].Broken)
             return "that part is wrecked";
         if (parent == 255 && !IsOutput(fd, type))
-            return $"a {fd.Name} has no {Name(type, style)} output ({OutputHint(type)})";
+            return $"a {fd.Name} has no {Name(type)} output ({OutputHint(type)})";
         if (!IsInput(td, type))
-            return $"a {td.Name} takes no {Name(type, style)} ({InputHint(type)})";
+            return $"a {td.Name} takes no {Name(type)} ({InputHint(type)})";
         if (parent == 255 && from == to && !(type == RouteType.Data && td.Role == PartRole.Logic))
             return "a part can't be linked to itself";
         if (type == RouteType.Data)
@@ -682,7 +596,7 @@ public static partial class ConstructRoutes
         }
         pts[n] = PortPoint(c, to, toPort);
         hosts[n++] = to;
-        return PathRule(c, type, style, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
     }
 
     /// <summary>
@@ -695,7 +609,7 @@ public static partial class ConstructRoutes
     /// clipping grace at the ends and the embedding forgiveness: <see cref="Grace"/>, <see cref="EmbedFraction"/>), and
     /// the type's angle rule. Null when it is fine, else the reason. Nothing allocates.
     /// </summary>
-    public static string? PathRule(Construct c, RouteType type, byte style, ReadOnlySpan<Vector3> pts, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
+    public static string? PathRule(Construct c, RouteType type, ReadOnlySpan<Vector3> pts, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
         bool straight = false)
     {
         var n = pts.Length;
@@ -704,7 +618,7 @@ public static partial class ConstructRoutes
         for (var i = 0; i < n; i++)
             if (hosts[i] < 0 || hosts[i] >= c.PartCount)
                 return "a node must sit on this construct";
-        var radius = Radius(type, style);
+        var radius = Radius(type);
         Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
         if (n > along.Length)
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
@@ -955,9 +869,9 @@ public static partial class ConstructRoutes
     public const int AdjustStepCm = 1, AdjustBigStepCm = 5; // a wheel notch (Ctrl: the big step)
 
     /// <summary>How far in (cm, negative) a node may be adjusted from its snapped spot (radius off the surface): down to the embedding limit.</summary>
-    public static int AdjustMinCm(RouteType type, byte style)
+    public static int AdjustMinCm(RouteType type)
     {
-        var r = Radius(type, style);
+        var r = Radius(type);
         return -(int)MathF.Floor((r + EmbedDepth(r)) * 100f + 1e-3f);
     }
 
@@ -969,20 +883,20 @@ public static partial class ConstructRoutes
     }
 
     /// <summary>Clamps an adjust offset to its range.</summary>
-    public static int AdjustClamp(RouteType type, byte style, int cm) => Math.Clamp(cm, AdjustMinCm(type, style), AdjustMaxCm);
+    public static int AdjustClamp(RouteType type, int cm) => Math.Clamp(cm, AdjustMinCm(type), AdjustMaxCm);
 
     /// <summary>
     /// The adjust search: from the snapped spot, out along the normal first (1 cm steps up to <see cref="AdjustMaxCm"/>),
     /// then in down to the embedding limit; the first offset whose node <paramref name="rule"/> accepts (null), or null.
     /// </summary>
-    public static int? AdjustSearch<T>(RouteType type, byte style, Vector3 basePos, Vector3 normal, ref T rule) where T : struct, INodeRule
+    public static int? AdjustSearch<T>(RouteType type, Vector3 basePos, Vector3 normal, ref T rule) where T : struct, INodeRule
     {
         if (rule.Why(AdjustPos(basePos, normal, 0)) == null)
             return 0;
         for (var cm = 1; cm <= AdjustMaxCm; cm++)
             if (rule.Why(AdjustPos(basePos, normal, cm)) == null)
                 return cm;
-        for (var cm = -1; cm >= AdjustMinCm(type, style); cm--)
+        for (var cm = -1; cm >= AdjustMinCm(type); cm--)
             if (rule.Why(AdjustPos(basePos, normal, cm)) == null)
                 return cm;
         return null;
@@ -1002,7 +916,6 @@ public static partial class ConstructRoutes
     {
         public Construct C;
         public RouteType Type;
-        public byte Style;
         public int From; // the output (when Parent is 255)
         public byte FromPort;
         public int Parent, ParentSeg; // a branch: the link and its segment (255: from a part)
@@ -1011,11 +924,11 @@ public static partial class ConstructRoutes
         public int Count;
         public byte Host; // the part the next node sits on
 
-        public readonly string? Why(Vector3 pos) => OpenPath(C, Type, Style, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), pos, Host);
+        public readonly string? Why(Vector3 pos) => OpenPath(C, Type, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), pos, Host);
     }
 
     /// <summary>The rule for a link being routed with its next node at <paramref name="next"/> on part <paramref name="host"/> (see <see cref="OpenRule"/>).</summary>
-    public static string? OpenPath(Construct c, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, Vector3 next,
+    public static string? OpenPath(Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, Vector3 next,
         int host)
     {
         if (nodes.Length >= Construct.MaxNodesPerRoute)
@@ -1046,7 +959,7 @@ public static partial class ConstructRoutes
         }
         pts[n] = next;
         hosts[n++] = host;
-        return PathRule(c, type, style, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255);
+        return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255);
     }
 
     /// <summary>The rule for a whole link (the server's <see cref="Check"/>) with node <c>Node</c> of its nodes at a spot: the input end's adjust (its last node).</summary>
@@ -1055,7 +968,6 @@ public static partial class ConstructRoutes
         public ConstructWorld? World;
         public Construct C;
         public RouteType Type;
-        public byte Style;
         public int From;
         public byte FromPort;
         public int Parent, ParentSeg;
@@ -1069,7 +981,7 @@ public static partial class ConstructRoutes
         {
             var keep = Nodes[Node].Pos;
             Nodes[Node].Pos = pos;
-            var why = Check(World, C, Type, Style, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), To, ToPort);
+            var why = Check(World, C, Type, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), To, ToPort);
             Nodes[Node].Pos = keep;
             return why;
         }
@@ -1118,9 +1030,9 @@ public static partial class ConstructRoutes
     /// straight line on from the last segment when close to it, lined up with a neighbouring link's node, then turned to
     /// the type's angle rule (a pipe's 15 degree steps, a chute's 45, a shaft's 45 degree limit). Quantised to 1 cm.
     /// </summary>
-    public static Vector3 Snap(Construct c, RouteType type, byte style, Vector3 prev, Vector3 prevDir, Vector3 surface, Vector3 normal)
+    public static Vector3 Snap(Construct c, RouteType type, Vector3 prev, Vector3 prevDir, Vector3 surface, Vector3 normal)
     {
-        var radius = Radius(type, style);
+        var radius = Radius(type);
         var n = normal.LengthSquared() > 1e-6f ? Vector3.Normalize(normal) : Vector3.UnitY;
         var p = surface + n * radius;
         // The grid, on the two axes along the surface (the normal's axis keeps the offset).
@@ -1181,7 +1093,7 @@ public static partial class ConstructRoutes
     /// Adds a checked link (call <see cref="Check"/> first): a branch inserts its junction node into the parent's
     /// segment first. Returns the new link's index, or -1 when full.
     /// </summary>
-    public static int Add(ConstructWorld? world, Construct c, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
+    public static int Add(ConstructWorld? world, Construct c, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction,
         ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         if (c.RouteCount >= Construct.MaxRoutes || c.RouteNodeCount + nodes.Length + 1 > Construct.MaxRouteNodes)
@@ -1196,7 +1108,6 @@ public static partial class ConstructRoutes
         c.Routes[k] = new CRoute
         {
             Type = type,
-            Style = style,
             From = parent != 255 ? (byte)255 : (byte)from,
             FromPort = parent != 255 ? (byte)255 : fromPort,
             To = (byte)to,
@@ -1423,7 +1334,7 @@ public static partial class ConstructRoutes
             // Check it as a new link without itself (its own "already linked" and caps).
             var saved = r;
             r.Type = RouteType.COUNT; // (not matched by the duplicate check while checked)
-            why = Check(null, c, saved.Type, saved.Style, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
+            why = Check(null, c, saved.Type, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
             r = saved;
         }
         return why != null && !why.StartsWith("at most", StringComparison.Ordinal) ? why : null;
@@ -1449,7 +1360,7 @@ public static partial class ConstructRoutes
         }
         pts[n] = PortPoint(c, r.To, r.ToPort);
         hosts[n++] = r.To;
-        return PathRule(c, r.Type, r.Style, pts[..n], hosts[..n], true, 255, true, r.ToPort);
+        return PathRule(c, r.Type, pts[..n], hosts[..n], true, 255, true, r.ToPort);
     }
 
     // ---- Damage and repair ---------------------------------------------------------------------------------------
@@ -1473,7 +1384,7 @@ public static partial class ConstructRoutes
         hp = 0;
         c.Damaged = true;
         Changed(world, c);
-        world.Events.Add($"construct {c.Id}: a {Name(r.Type, r.Style)} segment was cut");
+        world.Events.Add($"construct {c.Id}: a {Name(r.Type)} segment was cut");
         if (blast && r.Type == RouteType.Pipe && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Fuel > 0)
             world.Ignite(c, r.Source); // (a blast through a fuel line lights what leaks)
         return true;
@@ -1510,7 +1421,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            var radius = Radius(r.Type, r.Style) + 0.01f;
+            var radius = Radius(r.Type) + 0.01f;
             var a = WorldPoint(c, k, -1);
             for (var i = 0; i <= r.Count; i++)
             {
@@ -1558,13 +1469,11 @@ public static partial class ConstructRoutes
     // ---- Each tick (server) --------------------------------------------------------------------------------------
 
     /// <summary>
-    /// One tick of what the links do beyond being graph edges: a cut fuel pipe leaks, a wrong pipe's trouble builds up
-    /// (weeping fuel catches fire, a weak pipe bursts, residue makes the engine sputter), a cut power cable sparks, and
+    /// One tick of what the links do beyond being graph edges: a cut fuel pipe leaks, a cut power cable sparks, and
     /// chutes move items. Nothing allocates; a construct with no links costs nothing.
     /// </summary>
     public static void Step(ConstructWorld world, Construct c, float dt)
     {
-        c.FuelQuality = 1f;
         c.Sparking = false;
         if (c.RouteCount == 0)
             return;
@@ -1599,31 +1508,6 @@ public static partial class ConstructRoutes
         {
             c.Fuel = MathF.Max(0, c.Fuel - LeakLitres * dt); // (cut: it pours out)
             return;
-        }
-        switch (r.Issue)
-        {
-            case PipeIssue.Leaks:
-                c.Fuel = MathF.Max(0, c.Fuel - WeepLitres * dt);
-                r.Timer += dt;
-                if (r.Timer >= IgniteSeconds)
-                {
-                    r.Timer = 0;
-                    if (r.To < c.PartCount && (world.Ignite(c, r.To) || world.Ignite(c, r.Source)))
-                        world.Events.Add($"construct {c.Id}: fuel weeping from a {Name(r.Type, r.Style)} caught fire");
-                }
-                break;
-            case PipeIssue.Bursts:
-                r.Timer += dt;
-                if (r.Timer >= BurstSeconds)
-                {
-                    r.Timer = 0;
-                    Damage(world, c, k, r.Count / 2, Health(r.Type) * 2);
-                }
-                break;
-            case PipeIssue.Sputters:
-                if (r.To == c.Engine)
-                    c.FuelQuality = MathF.Min(c.FuelQuality, SputterQuality);
-                break;
         }
     }
 
@@ -1689,7 +1573,7 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            w.U8((byte)((byte)r.Type | (r.Style << 4))).U8(r.From).U8(r.FromPort).U8(r.To).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
+            w.U8((byte)r.Type).U8(r.From).U8(r.FromPort).U8(r.To).U8(r.ToPort).U8(r.Parent).U8(r.ParentNode).U8(r.Count);
             for (var i = 0; i < r.Count; i++)
             {
                 ref var n = ref c.RouteNodes[r.Start + i];
@@ -1711,11 +1595,10 @@ public static partial class ConstructRoutes
         c.RouteNodeCount = 0;
         for (var k = 0; k < count; k++)
         {
-            var ts = r.U8();
+            var ts = r.U8(); // (protocol 98: the high nibble was a pipe style; old bytes are masked off)
             var rt = new CRoute
             {
                 Type = (RouteType)(ts & 15),
-                Style = (byte)(ts >> 4),
                 From = r.U8(),
                 FromPort = r.U8(),
                 To = r.U8(),
@@ -1724,7 +1607,7 @@ public static partial class ConstructRoutes
                 ParentNode = r.U8(),
                 Count = r.U8(),
             };
-            if (rt.Type >= RouteType.COUNT || rt.Type == RouteType.Pipe ? rt.Style >= (byte)PipeStyle.COUNT : rt.Style != 0)
+            if (rt.Type >= RouteType.COUNT)
                 throw new MalformedPacketException($"link {k}: type {ts}");
             if (rt.To >= parts || (rt.Parent == 255 ? rt.From >= parts : rt.Parent >= k || rt.ParentNode >= c.Routes[rt.Parent].Count) || rt.Count > Construct.MaxNodesPerRoute
                 || c.RouteNodeCount + rt.Count > Construct.MaxRouteNodes)

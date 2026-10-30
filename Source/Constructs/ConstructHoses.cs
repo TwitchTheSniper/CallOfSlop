@@ -19,7 +19,7 @@ public struct CHose
 
 /// <summary>
 /// Hose connectors (board item wl01; docs/sandbox/CONSTRUCTS.md, "Hoses"): temporary connections. A hose outlet (a reel
-/// on a construct or a world station) holds a flexible hose (a fuel or water hose, a power or data lead) with a receiver
+/// on a construct or a world station) holds a flexible hose (a fluid hose, a power or data lead) with a receiver
 /// at its end; a matching hose inlet (a coupler socket) on any other construct takes it. F with empty hands on the reel
 /// takes the receiver (an item held while the hose is out, not a backpack item), the hose pays out as you walk, F on a
 /// matching inlet plugs it in, F on the inlet takes it out again and F on the reel hangs it back (or the Drop key lets
@@ -63,9 +63,9 @@ public sealed partial class ConstructWorld
         return -1;
     }
 
-    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fuel => "fuel hose", HoseCarry.Water => "water hose", HoseCarry.Power => "power lead", _ => "data lead" };
+    public static string HoseName(HoseCarry h) => h switch { HoseCarry.Fluid => "fluid hose", HoseCarry.Power => "power lead", _ => "data lead" };
 
-    private static string ReceiverName(HoseCarry h) => h is HoseCarry.Fuel or HoseCarry.Water ? "nozzle" : "plug";
+    private static string ReceiverName(HoseCarry h) => h == HoseCarry.Fluid ? "nozzle" : "plug";
 
     /// <summary>
     /// Server: F on hose part <paramref name="part"/> of <paramref name="c"/> by <paramref name="player"/> (in reach; the game
@@ -207,11 +207,8 @@ public sealed partial class ConstructWorld
                 }
                 switch (rd.HoseCarry)
                 {
-                    case HoseCarry.Fuel:
-                        MoveFuel(rc, -1, ic, rd.HoseFlow * dt, Fluid.Fuel);
-                        break;
-                    case HoseCarry.Water:
-                        MoveFuel(rc, -1, ic, rd.HoseFlow * dt, Fluid.Water);
+                    case HoseCarry.Fluid:
+                        MoveFuel(rc, -1, ic, rd.HoseFlow * dt); // (whatever the tanks hold, into tanks that hold the same)
                         break;
                     case HoseCarry.Power:
                         MoveCharge(rc, ic, rd.HoseFlow * dt);
