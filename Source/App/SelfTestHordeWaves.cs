@@ -94,6 +94,11 @@ public static partial class SelfTest
         ZombieAnim.SetFrustum(Matrix4x4.CreateLookAt(eye, eye + new Vector3(40, -3, 0), Vector3.UnitY) * Matrix4x4.CreatePerspectiveFieldOfView(1.1f, 16f / 9f, 0.05f, 900));
         CrowdJobs.Serial = true;
         var view = new CrowdView();
+        // (The instance arrays sized up front: they double when a frame needs more, once, which isn't what the
+        // allocation check is after; how many land in one stripe depends on the machine's processor count.)
+        foreach (var st0 in view.Inst.Stripes)
+            for (var l = 0; l < CrowdInstances.Lods; l++)
+                st0.Data[l] = new CrowdInstance[16384];
         var prev = new Dictionary<uint, (float X, float Z, bool Particle)>();
         var cur = new Dictionary<uint, (float X, float Z, bool Particle)>();
         var dup = new HashSet<uint>();
