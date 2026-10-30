@@ -724,7 +724,7 @@ public sealed partial class ConstructWorld
 
 public sealed partial class ConstructEdits
 {
-    /// <summary>After an edit: the parts a merge popped off go into the player's inventory (infinite parts off), else their hands, else drop where they were.</summary>
+    /// <summary>After an edit: the parts a merge popped off go into the player's hands, else their backpack, else drop where they were as loose parts (the shared give rule).</summary>
     private void GiveMergePops(ConstructWorld world, byte player)
     {
         if (world.MergePops.Count == 0)
@@ -735,15 +735,22 @@ public sealed partial class ConstructEdits
             var (def, at, _) = world.MergePops[k];
             if (ConstructParts.Get(def) is not { } d)
                 continue;
-            if (Inventory != null && !InfiniteParts && Inventory.Of(player).Add(def))
-            {
-                Done.Add($"player {player}: {d.Name} popped off a merged receiver into the inventory");
-                continue;
-            }
             if (h.Held == ConstructParts.None)
             {
                 h.Held = def;
-                Done.Add($"player {player}: {d.Name} popped off a merged receiver into the hand");
+                Done.Add($"player {player}: {d.Name} popped off a merged receiver into the hands");
+                continue;
+            }
+            var pack = Packs[player];
+            if (Backpack != null && PackSlotFor(pack, d, out _, out var rot) is var slot and >= 0)
+            {
+                pack.Def[slot] = def;
+                pack.Rot[slot] = rot;
+                pack.Count[slot] = 1;
+                pack.Health[slot] = 1f;
+                pack.Version++;
+                PackDirty.Add(player);
+                Done.Add($"player {player}: {d.Name} popped off a merged receiver into backpack slot {slot}");
                 continue;
             }
             if (ConstructBuild.PlaceNew(world, d, at with { Y = at.Y - 0.3f }, 0) is { } dropped)

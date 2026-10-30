@@ -245,7 +245,7 @@ public static partial class SelfTest
         var oneBarrelMass = ConstructParts.Need("Gun Barrel").Mass;
         var tags = new int[9];
         tags[0] = c.Parts[r0].Tag;
-        // Three more make a 2x2: the barrel and magazine on the first one's own sockets pop off (the hand takes one, the rest drop; the box on the magazine comes too).
+        // Three more make a 2x2: the barrel and magazine on the first one's own sockets pop off (the hands take one, the backpack or the ground the rest; the box on the magazine comes too).
         var r1 = Step("Rifle Receiver", r0, "right", "left");
         tags[1] = c.Parts[r1].Tag;
         var r2 = Step("Rifle Receiver", Find(tags[0]), "top", "bottom");
@@ -258,12 +258,16 @@ public static partial class SelfTest
         var popped = w.MergePopCount - popsBefore;
         var inHand = ConstructParts.Get(e.Hand(me).Held)?.Name ?? "nothing";
         var dropped = w.Bodies.Count - bodiesBefore;
+        var packed = 0;
+        for (var k = 0; k < e.Pack(me).SlotCount; k++)
+            if (e.Pack(me).Count[k] > 0)
+                packed++;
         var after2 = Merges();
         var lead = c.MergeCount > 0 ? c.Merges[0].Lead : -1;
         var guns2 = c.GunCount;
-        Line($"2x2: {after2}; {popped} part(s) popped off the members' own sockets (\"{inHand}\" in the hand, {dropped} new loose piece(s) or wrecks); {guns2} gun(s): \"{(c.GunCount > 0 ? c.Guns[0].Problem : "")}\"");
-        if (c.MergeCount != 1 || c.Merges[0].N != 2 || popped != 3 || inHand is not ("Gun Barrel" or "Box Magazine") || dropped < 1 || guns2 != 1)
-            problems.Add("a 2x2 didn't merge into one gun with the barrel and magazine on its members' own sockets popped off (one to the hand, the rest dropped)");
+        Line($"2x2: {after2}; {popped} part(s) popped off the members' own sockets (\"{inHand}\" in the hands, {packed} in the backpack, {dropped} dropped); {guns2} gun(s): \"{(c.GunCount > 0 ? c.Guns[0].Problem : "")}\"");
+        if (c.MergeCount != 1 || c.Merges[0].N != 2 || popped != 3 || inHand is not ("Gun Barrel" or "Box Magazine") || packed + dropped != 2 || guns2 != 1)
+            problems.Add("a 2x2 didn't merge into one gun with the barrel and magazine on its members' own sockets popped off (one to the hands, the rest to the backpack or dropped)");
         if (lead < 0)
         {
             Fail($"construct merge: {string.Join("; ", problems)}");

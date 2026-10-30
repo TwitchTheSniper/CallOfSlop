@@ -1016,8 +1016,8 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
   range unchanged. So a 2x2 is a slow cannon worth four rifles' damage a shot at four rifles' ammo, not four rifles.
   `sameTypeOnly: false` would let mixed receivers of the same size merge (the lead's type).
 - **Building** (the server settles every receiver attached or removed): when a square forms, the gun parts on its
-  members' own sockets **pop off** (with ammo boxes hanging only on them) into the builder's inventory (infinite parts
-  off), else their hands, else they drop as loose parts where they were (never lost). An old merge's centre parts move
+  members' own sockets **pop off** (with ammo boxes hanging only on them) into the builder's hands, else their backpack,
+  else they drop as loose parts where they were (never lost). An old merge's centre parts move
   onto the new merge that holds most of its members (its same socket, scaled to its size), so growing a 2x2 to a 3x3
   keeps the barrel; when there is no such merge, or something would be in the way, they pop off.
 - **Taking apart**: the wrench takes off only the member whose own cell is under the crosshair (the outline is that
@@ -1035,7 +1035,7 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
 2. **The scaling table** is the proposal, in `Constructs/ReceiverMerge.json`: damage N^2, fire rate / N, recoil N^2,
    ammo N^2 a shot, magazine N^2, spread and range unchanged, scaled gun parts' weight N^2. N from 2 to 6.
 3. **The merged receiver grows forward** (its back flush with the members'), not about their centre.
-4. **Popped parts** go to the inventory, then the hands, then drop; ammo boxes hanging only on them come too; with
+4. **Popped parts** go to the hands, then the backpack, then drop (the shared give rule); ammo boxes hanging only on them come too; with
    nobody placing (damage) they drop where they were.
 5. **The members' structural links stay** (only gun parts are refused on their own sockets), and boxes bolted to any
    member feed the gun.
@@ -1482,7 +1482,7 @@ The **Construct merged receivers** section (`Source/App/SelfTestConstructMerge.c
 bad file are refused; the diagram's shapes (T, L and 1x4 stay single; 2x2, 3x3 and 4x4 merge; a 3x4 is a 3x3 and three
 singles; two 2x2s side by side; turned and heavy squares merge, mixed types and a turned member don't); finding a 4x4's
 merges 200 times allocates nothing; built with the tools, the fourth receiver of a 2x2 pops the barrel, magazine and box
-off the first one's own sockets (the barrel into the hand, the rest dropped), the members' own sockets refuse gun parts,
+off the first one's own sockets (the barrel into the hands, the rest into the backpack), the members' own sockets refuse gun parts,
 the centre sockets refuse an ammo box and show ghosts; a barrel and magazine on the centre set are 2x (twice as long, four
 times the weight; the ammo box as it is), the gun 4x the damage, half the fire rate, 4x the magazine and recoil, firing 4
 rounds a shot out of its load and box; a client's copy and a copy rebuilt from the parts find the same merge, scales and
