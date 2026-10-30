@@ -28,6 +28,7 @@ public sealed class Settings
     public float Sensitivity = 1f; // multiplier
     public float Fov = 75f;
     public bool InvertY;
+    public bool HoldToPaint = true; // Sandbox snap build: a held press paints on further sockets after a short hold (off: one part per click)
     public bool SnapBuild = true; // Sandbox: snappy building (connection points, the magnet, quick build in creative, hold-to-paint, undo; Constructs/SnapBuild.cs)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
     public List<string> SmartRotationLearned = new(); // ...and the player's corrections ("Part|kind|side|turn"; SmartRotationMemory.Save)
@@ -406,6 +407,7 @@ public sealed class Settings
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "smart_rotation": s.SmartRotation = v != "0"; break;
                     case "snap_build": s.SnapBuild = v != "0"; break;
+                    case "hold_to_paint": s.HoldToPaint = v != "0"; break;
                     case "smart_rotation_learned":
                         foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
                             if (s.SmartRotationLearned.Count < SmartRotationMemory.MaxLearned && part.Length <= 64 && part.All(ch => ch >= 32 && ch < 127))
@@ -533,6 +535,7 @@ public sealed class Settings
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"smart_rotation={(SmartRotation ? 1 : 0)}",
                     $"snap_build={(SnapBuild ? 1 : 0)}",
+                    $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
                     $"smart_rotation_learned={string.Join(",", SmartRotationLearned)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",

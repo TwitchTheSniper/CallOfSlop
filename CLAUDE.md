@@ -208,3 +208,8 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   earlier version's carry asked whether the key was free, and `sections_for.py` had no rule for `Keybinds.cs`. Rule:
   `Keybinds.Migrate` unbinds every later-added action on its default before stepping versions, and a change to
   `Keybinds.cs` runs every keybind-migration section (`sections_for.py`).
+- 2026-10-30: snappy-build paint grew a chain of parts toward the player at frame rate (board
+  dev-sandbox-paint-too-strong-pt01, after sb01 was marked done). Why: paint re-targeted the part it had just placed (its
+  free socket sat under the crosshair), and the test only swept pre-existing sockets, never a stationary press. Rule:
+  hold-to-repeat inputs get a stationary-press test and never act on what the same stroke created; the logic lives in
+  `SnapStroke` and "Sandbox snap build" drives it (click, hold still 2 s, sweep 6, rate limit).
