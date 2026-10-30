@@ -38,7 +38,7 @@ public static partial class Program
             if (key != _ptLookKey)
             {
                 _ptLookKey = key;
-                var what = route ? char.ToUpperInvariant(ConstructRoutes.Name(c.Routes[index].Type, c.Routes[index].Style)[0]) + ConstructRoutes.Name(c.Routes[index].Type, c.Routes[index].Style)[1..] : c.DefOf(index).Name;
+                var what = route ? char.ToUpperInvariant(ConstructRoutes.Name(c.Routes[index].Type)[0]) + ConstructRoutes.Name(c.Routes[index].Type)[1..] : c.DefOf(index).Name;
                 var has = ConstructPaint.IsSet(now) ? $"painted {ConstructPaint.ToHex(now)}" : "own colours";
                 var does = mode switch { PaintMode.Whole => "whole construct", PaintMode.Reset => "reset its colour", _ => $"paint {ConstructPaint.ToHex(_paintWheel.Colour)}" };
                 _ptLook = $"{what} ({has}) - LMB: {does}, RMB: pick its colour";
@@ -54,7 +54,7 @@ public static partial class Program
         if (Pressed(GameAction.Aim))
         {
             var picked = route
-                ? ConstructPaint.IsSet(body.Routes[index].Paint) ? body.Routes[index].Paint : ConstructPaint.FromVector(RouteRender.Colour(body.Routes[index].Type, body.Routes[index].Style))
+                ? ConstructPaint.IsSet(body.Routes[index].Paint) ? body.Routes[index].Paint : ConstructPaint.FromVector(RouteRender.Colour(body.Routes[index].Type))
                 : ConstructPaint.Sample(body.Parts[index]);
             _paintWheel.SetColour(picked);
             g.SandboxSay($"picked up {ConstructPaint.ToHex(picked)}");

@@ -74,12 +74,28 @@ public static partial class SelfTest
 
     private static void WorldLinksPipe()
     {
+        WorldLinksPipeOf(Fluid.Fuel);
+        // One pipe for every fluid (decision 28): the same routing, the same RouteType.Pipe, with the tanks holding water.
+        var tank = ConstructParts.Find("Fuel Tank")!;
+        tank.TankFluid = Fluid.Water;
+        try
+        {
+            WorldLinksPipeOf(Fluid.Water);
+        }
+        finally
+        {
+            tank.TankFluid = Fluid.Fuel;
+        }
+    }
+
+    private static void WorldLinksPipeOf(Fluid fluid)
+    {
         var w = new ConstructWorld();
         var q = new HoleWorld(RoutesGround);
         if (Pinned(w, OnePart("Fuel Tank"), 0, 0, "tank A") is not { } a || Pinned(w, OnePart("Fuel Tank"), 9, 0, "tank B") is not { } b)
             return;
         b.Fuel = 0;
-        var r = ConstructRoutes.Radius(RouteType.Pipe, (byte)PipeStyle.Fuel);
+        var r = ConstructRoutes.Radius(RouteType.Pipe);
         var ta = ConstructWorld.PortWorld(a, 0, 255);
         var tb = ConstructWorld.PortWorld(b, 0, 255);
         // Down at 15 degrees to the ground, along it, and up at 15 degrees into the other tank.
@@ -87,15 +103,15 @@ public static partial class SelfTest
         Span<WNode> nodes = [Ground(new Vector3(ta.X + run, r, 0)), Ground(new Vector3(4.5f, r, 0)), Ground(new Vector3(tb.X - run, r, 0))];
         for (var i = 0; i < nodes.Length; i++)
             nodes[i].Pos = ConstructWorld.Quantise(nodes[i].Pos);
-        var ok = w.CheckWorldLink(q, RouteType.Pipe, 0, a, 0, 255, nodes, b, 0, 255);
+        var ok = w.CheckWorldLink(q, RouteType.Pipe, a, 0, 255, nodes, b, 0, 255);
         // The refusals: a node sunk into the ground, a node in the air, a bend off the 15 degree steps, a shaft.
         Span<WNode> bad = [nodes[0], nodes[1], nodes[2]];
         bad[1].Pos.Y = -0.02f;
-        var sunk = w.CheckWorldLink(q, RouteType.Pipe, 0, a, 0, 255, bad, b, 0, 255) ?? "";
+        var sunk = w.CheckWorldLink(q, RouteType.Pipe, a, 0, 255, bad, b, 0, 255) ?? "";
         bad[1].Pos = new Vector3(4.5f, r, 0.9f);
-        var bend = w.CheckWorldLink(q, RouteType.Pipe, 0, a, 0, 255, bad, b, 0, 255) ?? "";
-        var shaft = w.CheckWorldLink(q, RouteType.Shaft, 0, a, 0, 255, nodes, b, 0, 255) ?? "";
-        var added = ok == null && w.AddWorldLink(q, RouteType.Pipe, 0, a, 0, 255, nodes, b, 0, 255) >= 0;
+        var bend = w.CheckWorldLink(q, RouteType.Pipe, a, 0, 255, bad, b, 0, 255) ?? "";
+        var shaft = w.CheckWorldLink(q, RouteType.Shaft, a, 0, 255, nodes, b, 0, 255) ?? "";
+        var added = ok == null && w.AddWorldLink(q, RouteType.Pipe, a, 0, 255, nodes, b, 0, 255) >= 0;
         var before = a.Fuel;
         for (var t = 0; t < World.TickRate; t++)
             w.Step(q, World.TickDt);
@@ -105,11 +121,11 @@ public static partial class SelfTest
         for (var t = 0; t < w.WorldNodeCount + 2 && w.WorldLinkCount > 0; t++)
             w.Step(q, World.TickDt);
         var groundGone = w.WorldLinkCount == 0 && w.Events.Any(e => e.Contains("ground under it is gone"));
-        Line($"world links, pipe: across the ground between two pinned tanks {(ok ?? "accepted")}; in a second {moved:0.00} l went over (A {before:0.0} -> {a.Fuel:0.0} l); refusals: \"{sunk}\", \"{bend}\", \"{shaft}\"; the ground gone broke it {groundGone}");
+        Line($"world links, {fluid} pipe: across the ground between two pinned tanks {(ok ?? "accepted")}; in a second {moved:0.00} l went over (A {before:0.0} -> {a.Fuel:0.0} l); refusals: \"{sunk}\", \"{bend}\", \"{shaft}\"; the ground gone broke it {groundGone}");
         if (!added)
-            Fail($"world links: a pipe across the ground between two anchored constructs was refused: {ok}");
+            Fail($"world links: a {fluid} pipe across the ground between two anchored constructs was refused: {ok}");
         if (MathF.Abs(moved - ConstructWorld.PipeFlow) > 0.1f)
-            Fail($"world links: the pipe carried {moved:0.00} l in a second (expected {ConstructWorld.PipeFlow:0.0})");
+            Fail($"world links: the {fluid} pipe carried {moved:0.00} l in a second (expected {ConstructWorld.PipeFlow:0.0})");
         if (!sunk.Contains("sink") || !bend.Contains("15 degree") || !shaft.Contains("drive shaft"))
             Fail("world links: a sunk node, a wrong bend or a shaft wasn't refused for the right reason");
         if (!groundGone)
@@ -124,10 +140,10 @@ public static partial class SelfTest
         var r = ConstructRoutes.Radius(RouteType.Data);
         Span<WNode> nodes = [Ground(ConstructWorld.Quantise(new Vector3(2, r, 3)))];
         Span<WNode> high = [Ground(ConstructWorld.Quantise(new Vector3(2, 1.5f, 3)))];
-        var air = w.CheckWorldLink(RoutesGround, RouteType.Data, 0, sw, 0, 255, high, lamp, 0, 255) ?? "";
-        var ok = w.CheckWorldLink(RoutesGround, RouteType.Data, 0, sw, 0, 255, nodes, lamp, 0, 255);
+        var air = w.CheckWorldLink(RoutesGround, RouteType.Data, sw, 0, 255, high, lamp, 0, 255) ?? "";
+        var ok = w.CheckWorldLink(RoutesGround, RouteType.Data, sw, 0, 255, nodes, lamp, 0, 255);
         if (ok == null)
-            w.AddWorldLink(RoutesGround, RouteType.Data, 0, sw, 0, 255, nodes, lamp, 0, 255);
+            w.AddWorldLink(RoutesGround, RouteType.Data, sw, 0, 255, nodes, lamp, 0, 255);
         sw.Parts[0].State = 1; // (switched on)
         sw.Wake();
         for (var t = 0; t < 10; t++)
@@ -155,7 +171,7 @@ public static partial class SelfTest
         for (var i = 0; i < steps.Count; i++)
             if ((string?)steps[i]!["part"] == "Fuel Tank")
                 tank = i;
-        steps.Add(JsonNode.Parse($$"""{ "part": "Fuel Hose Inlet", "on": {{tank}}, "socket": "+x", "by": "-z" }"""));
+        steps.Add(JsonNode.Parse($$"""{ "part": "Fluid Hose Inlet", "on": {{tank}}, "socket": "+x", "by": "-z" }"""));
         steps.Add(JsonNode.Parse($$"""{ "part": "Battery", "on": {{tank}}, "socket": "+y", "by": "-y" }"""));
         root["name"] = "Hose Buggy";
         return RoutesBuild(w, root.ToJsonString(), x, z, "the hose buggy");
@@ -174,9 +190,9 @@ public static partial class SelfTest
         var top = ConstructWorld.PortWorld(car, cb, 255) + new Vector3(0, 0.125f + ConstructRoutes.Radius(RouteType.Power), 0);
         var r = ConstructRoutes.Radius(RouteType.Power);
         Span<WNode> nodes = [OnPart(car, cb, ConstructWorld.Quantise(top)), Ground(ConstructWorld.Quantise(new Vector3(3.2f, r, top.Z)))];
-        var ok = w.CheckWorldLink(RoutesGround, RouteType.Power, 0, car, cb, 255, nodes, bat, 0, 255);
+        var ok = w.CheckWorldLink(RoutesGround, RouteType.Power, car, cb, 255, nodes, bat, 0, 255);
         if (ok == null)
-            w.AddWorldLink(RoutesGround, RouteType.Power, 0, car, cb, 255, nodes, bat, 0, 255);
+            w.AddWorldLink(RoutesGround, RouteType.Power, car, cb, 255, nodes, bat, 0, 255);
         // Linked while it is still settling on its suspension: the link stays while it comes to rest.
         var p0 = car.Pos;
         var settle = 0f;
@@ -215,13 +231,13 @@ public static partial class SelfTest
     private static void WorldLinksHose()
     {
         var w = new ConstructWorld();
-        if (Pinned(w, OnePart("Fuel Tank", RouteStep("Fuel Hose Reel", 0, "+y", "-y")), 0, 6, "station") is not { } st || HoseBuggy(w, 3, 6) is not { } car)
+        if (Pinned(w, OnePart("Fuel Tank", RouteStep("Fluid Hose Reel", 0, "+y", "-y")), 0, 6, "station") is not { } st || HoseBuggy(w, 3, 6) is not { } car)
             return;
         for (var t = 0; t < 60; t++)
             w.Step(RoutesGround, World.TickDt);
         car.Fuel = 5;
-        var reel = PartNamed(st, "Fuel Hose Reel");
-        var inlet = PartNamed(car, "Fuel Hose Inlet");
+        var reel = PartNamed(st, "Fluid Hose Reel");
+        var inlet = PartNamed(car, "Fluid Hose Inlet");
         var hand = ConstructWorld.HosePoint(st, reel);
         w.Hands = id => id == 1 ? hand : null;
         var full = w.HoseUse(1, st, reel, handsFree: false) ?? "";
@@ -340,8 +356,8 @@ public static partial class SelfTest
             return c;
         }
         if (Place(OnePart("Switch"), spot) is not { } sw || Place(OnePart("Lamp"), spot + new Vector3(3, 0, 0)) is not { } lamp
-            || Place(OnePart("Fuel Tank", RouteStep("Fuel Hose Reel", 0, "+y", "-y")), spot + new Vector3(0, 0, 3)) is not { } st
-            || Place(OnePart("Fuel Tank", RouteStep("Fuel Hose Inlet", 0, "+x", "-z")), spot + new Vector3(3, 0, 3)) is not { } tank)
+            || Place(OnePart("Fuel Tank", RouteStep("Fluid Hose Reel", 0, "+y", "-y")), spot + new Vector3(0, 0, 3)) is not { } st
+            || Place(OnePart("Fuel Tank", RouteStep("Fluid Hose Inlet", 0, "+x", "-z")), spot + new Vector3(3, 0, 3)) is not { } tank)
             return;
         Pump(server, [a], 0.4, ref now, clock);
         // The client routes a data cable with a node on the ground (the linking tool out, standing by the lamp).
@@ -351,16 +367,16 @@ public static partial class SelfTest
         Pump(server, [a], 0.3, ref now, clock);
         var mid = ConstructWorld.Ground(World.Query, spot.X + 1.5f, spot.Z) + new Vector3(0, ConstructRoutes.Radius(RouteType.Data), 0);
         Span<WNode> nodes = [new WNode { Pos = ConstructWorld.Quantise(mid) }];
-        var why = server.Constructs.CheckWorldLink(World.Query, RouteType.Data, 0, sw, 0, 255, nodes, lamp, 0, 255);
-        a.SandboxSendWorldRoute(RouteType.Data, 0, sw.Id, 0, 255, nodes, lamp.Id, 0, 255);
+        var why = server.Constructs.CheckWorldLink(World.Query, RouteType.Data, sw, 0, 255, nodes, lamp, 0, 255);
+        a.SandboxSendWorldRoute(RouteType.Data, sw.Id, 0, 255, nodes, lamp.Id, 0, 255);
         Pump(server, [a], 0.5, ref now, clock);
         var routed = w.WorldLinkCount == 1;
         // The client takes the nozzle (empty hands), walks it over and plugs it in.
         server.SandboxHands.Hand(a.LocalId).Held = ConstructParts.None;
         sp.Teleport(ConstructWorld.Ground(World.Query, spot.X + 1, spot.Z + 2));
         Pump(server, [a], 0.3, ref now, clock);
-        var reel = PartNamed(st, "Fuel Hose Reel");
-        var inlet = PartNamed(tank, "Fuel Hose Inlet");
+        var reel = PartNamed(st, "Fluid Hose Reel");
+        var inlet = PartNamed(tank, "Fluid Hose Inlet");
         a.SandboxSend(CActKind.Use, body: st.Id, part: (byte)reel);
         Pump(server, [a], 0.4, ref now, clock);
         var heldOnClient = a.Constructs.HoseHeldBy(a.LocalId) >= 0;

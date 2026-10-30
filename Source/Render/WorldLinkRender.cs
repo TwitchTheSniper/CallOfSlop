@@ -17,7 +17,6 @@ public static class WorldLinkRender
     public static int PreviewCount;
     public static bool PreviewOk;
     public static RouteType PreviewType;
-    public static byte PreviewStyle;
     public static int AimLink = -1; // the world link under the crosshair (outlined)
 
     /// <summary>Where a player's hands are on this PC (the hose to a held receiver ends there); null: not drawn.</summary>
@@ -25,8 +24,7 @@ public static class WorldLinkRender
 
     public static Vector3 HoseColour(HoseCarry h) => h switch
     {
-        HoseCarry.Fuel => new Vector3(0.12f, 0.12f, 0.12f),
-        HoseCarry.Water => new Vector3(0.2f, 0.45f, 0.8f),
+        HoseCarry.Fluid => new Vector3(0.18f, 0.2f, 0.22f),
         HoseCarry.Power => new Vector3(0.85f, 0.45f, 0.1f),
         _ => new Vector3(0.25f, 0.6f, 0.3f),
     };
@@ -41,7 +39,7 @@ public static class WorldLinkRender
         for (var k = 0; k < world.WorldLinkCount; k++)
         {
             ref var l = ref world.WorldLinks[k];
-            var radius = ConstructRoutes.Radius(l.Type, l.Style);
+            var radius = ConstructRoutes.Radius(l.Type);
             if (!world.WorldPoint(k, -1, out var a))
                 continue;
             var dirPrev = Vector3.Zero;
@@ -54,10 +52,10 @@ public static class WorldLinkRender
                 if (len > 1e-4f)
                 {
                     var z = d / len;
-                    RouteRender.Piece(gfx, l.Type, l.Style, a, b, z, radius, dim: l.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires);
+                    RouteRender.Piece(gfx, l.Type, a, b, z, radius, dim: l.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires);
                     n++;
                     if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
-                        RouteRender.Elbow(gfx, l.Type, l.Style, a, dirPrev, z, radius);
+                        RouteRender.Elbow(gfx, l.Type, a, dirPrev, z, radius);
                     dirPrev = z;
                 }
                 a = b;
@@ -76,7 +74,7 @@ public static class WorldLinkRender
                 to = hand;
             else
                 continue;
-            n += Rope(gfx, from, to, rd.HoseLength, HoseColour(rd.HoseCarry), rd.HoseCarry is HoseCarry.Fuel or HoseCarry.Water ? 0.03f : 0.018f);
+            n += Rope(gfx, from, to, rd.HoseLength, HoseColour(rd.HoseCarry), rd.HoseCarry == HoseCarry.Fluid ? 0.03f : 0.018f);
             if (!h.Plugged)
             {
                 // The receiver in the hands: a nozzle or a plug.
@@ -121,14 +119,14 @@ public static class WorldLinkRender
             ref var l = ref world.WorldLinks[AimLink];
             for (var i = 0; i <= l.Count && world.WorldPoint(AimLink, i, out var b); i++)
             {
-                RouteRender.Line(gfx, a, b, new Vector3(1f, 1f, 0.4f), 0.8f, ConstructRoutes.Radius(l.Type, l.Style) * 0.8f);
+                RouteRender.Line(gfx, a, b, new Vector3(1f, 1f, 0.4f), 0.8f, ConstructRoutes.Radius(l.Type) * 0.8f);
                 a = b;
             }
         }
         if (PreviewCount >= 2)
         {
             var colour = PreviewOk ? new Vector3(0.35f, 1f, 0.45f) : new Vector3(1f, 0.3f, 0.25f);
-            var radius = ConstructRoutes.Radius(PreviewType, PreviewStyle);
+            var radius = ConstructRoutes.Radius(PreviewType);
             for (var i = 1; i < PreviewCount; i++)
             {
                 RouteRender.Line(gfx, PreviewPts[i - 1], PreviewPts[i], i == PreviewCount - 1 ? colour : new Vector3(0.9f, 0.9f, 0.4f), 0.75f, radius);

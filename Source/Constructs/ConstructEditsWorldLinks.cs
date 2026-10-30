@@ -10,7 +10,7 @@ namespace CallOfSlop;
 public sealed partial class ConstructEdits
 {
     /// <summary>The linking tool: a world link (the end the player clicked last must be in reach, its start within the link's reach). Null, or why not.</summary>
-    public string? WorldRoute(ConstructWorld world, IWorldQuery? q, byte player, Vector3 eye, RouteType type, byte style, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes,
+    public string? WorldRoute(ConstructWorld world, IWorldQuery? q, byte player, Vector3 eye, RouteType type, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes,
         ushort toBody, int to, byte toPort)
     {
         if (Linking(world, player, eye, toBody, to, out var ct) is { } why)
@@ -21,11 +21,11 @@ public sealed partial class ConstructEdits
             return defended;
         if (Vector3.Distance(eye, ConstructWorld.PortWorld(cf, from, fromPort)) > ConstructRoutes.MaxLength + ConstructBuild.Reach)
             return "too far away";
-        if (world.CheckWorldLink(q, type, style, cf, from, fromPort, nodes, ct!, to, toPort) is { } bad)
+        if (world.CheckWorldLink(q, type, cf, from, fromPort, nodes, ct!, to, toPort) is { } bad)
             return bad;
-        if (world.AddWorldLink(q, type, style, cf, from, fromPort, nodes, ct!, to, toPort) < 0)
+        if (world.AddWorldLink(q, type, cf, from, fromPort, nodes, ct!, to, toPort) < 0)
             return "no room for another link";
-        Done.Add($"player {player}: world {ConstructRoutes.Name(type, style)} {cf.DefOf(from).Name} on construct {cf.Id} -> {ct!.DefOf(to).Name} on construct {ct.Id} ({nodes.Length} nodes)");
+        Done.Add($"player {player}: world {ConstructRoutes.Name(type)} {cf.DefOf(from).Name} on construct {cf.Id} -> {ct!.DefOf(to).Name} on construct {ct.Id} ({nodes.Length} nodes)");
         return null;
     }
 
@@ -48,7 +48,7 @@ public sealed partial class ConstructEdits
                 near = MathF.Min(near, Vector3.Distance(eye, p));
         if (near > ConstructBuild.Reach + 1f)
             return "too far away";
-        var name = ConstructRoutes.Name(l.Type, l.Style);
+        var name = ConstructRoutes.Name(l.Type);
         world.RemoveWorldLink(link);
         Done.Add($"player {player}: deleted a world {name}");
         return null;

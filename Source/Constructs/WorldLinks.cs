@@ -27,7 +27,6 @@ public struct WNode
 public struct WLink
 {
     public RouteType Type;
-    public byte Style;
     public ushort TagFrom, TagTo; // server
     public ushort BodyFrom, BodyTo; // where the ends are now
     public byte From, To, FromPort, ToPort;
@@ -151,9 +150,9 @@ public sealed partial class ConstructWorld
     /// Can this world link be made? Null when it can, else why not. <paramref name="nodes"/>: each node's
     /// <see cref="WNode.Body"/> (0: the world), <see cref="WNode.Part"/> and <see cref="WNode.Pos"/> (world, or the host part's segment rest frame).
     /// </summary>
-    public string? CheckWorldLink(IWorldQuery? q, RouteType type, byte style, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort)
+    public string? CheckWorldLink(IWorldQuery? q, RouteType type, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort)
     {
-        if (type >= RouteType.COUNT || type == RouteType.Pipe && style >= (byte)PipeStyle.COUNT || type != RouteType.Pipe && style != 0)
+        if (type >= RouteType.COUNT)
             return "no such link type";
         if (type == RouteType.Shaft)
             return "a drive shaft can't run between constructs: torque stays on one body (fit the gearbox on the same construct)";
@@ -174,9 +173,9 @@ public sealed partial class ConstructWorld
         if (cf.Parts[from].Broken || ct.Parts[to].Broken)
             return "that part is wrecked";
         if (!ConstructRoutes.IsOutput(fd, type))
-            return $"a {fd.Name} has no {ConstructRoutes.Name(type, style)} output ({ConstructRoutes.OutputHint(type)})";
+            return $"a {fd.Name} has no {ConstructRoutes.Name(type)} output ({ConstructRoutes.OutputHint(type)})";
         if (!ConstructRoutes.IsWorldInput(td, type))
-            return $"a {td.Name} takes no {ConstructRoutes.Name(type, style)} from another construct ({ConstructRoutes.WorldInputHint(type)})";
+            return $"a {td.Name} takes no {ConstructRoutes.Name(type)} from another construct ({ConstructRoutes.WorldInputHint(type)})";
         if (cf == ct && from == to)
             return "a part can't be linked to itself";
         var leaves = cf != ct;
@@ -215,16 +214,16 @@ public sealed partial class ConstructWorld
         }
         pts[n] = PortWorld(ct, to, toPort);
         hosts[n++] = new ConstructRoutes.WHost { C = ct, Part = to };
-        if (ConstructRoutes.WorldPathRule(this, q, type, style, pts[..n], hosts[..n], true) is { } why)
+        if (ConstructRoutes.WorldPathRule(this, q, type, pts[..n], hosts[..n], true) is { } why)
             return why;
         for (var i = 0; i < nodes.Length; i++)
-            if (nodes[i].Body == 0 && q != null && FindSupport(q, nodes[i].Pos, ConstructRoutes.Radius(type, style)) == Vector3.Zero)
+            if (nodes[i].Body == 0 && q != null && FindSupport(q, nodes[i].Pos, ConstructRoutes.Radius(type)) == Vector3.Zero)
                 return "a node must sit on a surface (the ground, a wall, a construct)";
         return null;
     }
 
     /// <summary>Adds a checked world link (call <see cref="CheckWorldLink"/> first). Returns its index, or -1 when full.</summary>
-    public int AddWorldLink(IWorldQuery? q, RouteType type, byte style, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort)
+    public int AddWorldLink(IWorldQuery? q, RouteType type, Construct cf, int from, byte fromPort, ReadOnlySpan<WNode> nodes, Construct ct, int to, byte toPort)
     {
         if (WorldLinkCount >= MaxWorldLinks || WorldNodeCount + nodes.Length > MaxWorldNodes)
             return -1;
@@ -234,11 +233,11 @@ public sealed partial class ConstructWorld
         ref var l = ref WorldLinks[k];
         l = new WLink
         {
-            Type = type, Style = style, TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (byte)from, To = (byte)to, FromPort = fromPort,
+            Type = type, TagFrom = cf.Parts[from].Tag, TagTo = ct.Parts[to].Tag, BodyFrom = cf.Id, BodyTo = ct.Id, From = (byte)from, To = (byte)to, FromPort = fromPort,
             ToPort = toPort, Start = (ushort)WorldNodeCount, Count = (byte)nodes.Length, MadeFrom = PortWorld(cf, from, fromPort), MadeTo = PortWorld(ct, to, toPort), RotFrom = cf.Rot,
             RotTo = ct.Rot,
         };
-        var radius = ConstructRoutes.Radius(type, style);
+        var radius = ConstructRoutes.Radius(type);
         for (var i = 0; i < nodes.Length; i++)
         {
             var n = nodes[i];
@@ -395,7 +394,7 @@ public sealed partial class ConstructWorld
                 var link = LinkOfNode(_supportCursor);
                 if (link >= 0)
                 {
-                    var r = ConstructRoutes.Radius(WorldLinks[link].Type, WorldLinks[link].Style);
+                    var r = ConstructRoutes.Radius(WorldLinks[link].Type);
                     if (!query.Raycast(n.Pos, n.Support, r + SupportReach + 0.02f, QueryFilter.StaticOnly, out _))
                         BreakWorldLink(link, "the ground under it is gone", null);
                 }
@@ -425,7 +424,7 @@ public sealed partial class ConstructWorld
     public void BreakWorldLink(int k, string why, Construct? mover)
     {
         ref var l = ref WorldLinks[k];
-        var name = ConstructRoutes.Name(l.Type, l.Style);
+        var name = ConstructRoutes.Name(l.Type);
         WorldPoint(k, -1, out var a);
         WorldPoint(k, l.Count, out var b);
         var at = mover != null && Get(l.BodyTo) == mover ? b : a;
@@ -544,7 +543,7 @@ public sealed partial class ConstructWorld
         for (var k = 0; k < WorldLinkCount; k++)
         {
             ref var l = ref WorldLinks[k];
-            var radius = ConstructRoutes.Radius(l.Type, l.Style) + 0.01f;
+            var radius = ConstructRoutes.Radius(l.Type) + 0.01f;
             if (!WorldPoint(k, -1, out var a))
                 continue;
             for (var i = 0; i <= l.Count; i++)

@@ -256,7 +256,7 @@ public static class ConstructNet
         for (var k = 0; k < world.WorldLinkCount; k++)
         {
             ref var l = ref world.WorldLinks[k];
-            w.U8((byte)((byte)l.Type | l.Style << 4)).U16(l.BodyFrom).U8(l.From).U8(l.FromPort).U16(l.BodyTo).U8(l.To).U8(l.ToPort).U8(l.Count);
+            w.U8((byte)l.Type).U16(l.BodyFrom).U8(l.From).U8(l.FromPort).U16(l.BodyTo).U8(l.To).U8(l.ToPort).U8(l.Count);
             for (var i = 0; i < l.Count; i++)
             {
                 ref var n = ref world.WorldNodes[l.Start + i];
@@ -283,7 +283,7 @@ public static class ConstructNet
             var ts = r.U8();
             var l = new WLink
             {
-                Type = (RouteType)(ts & 15), Style = (byte)(ts >> 4), BodyFrom = r.U16(), From = r.U8(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U8(), ToPort = r.U8(), Count = r.U8(),
+                Type = (RouteType)(ts & 15), BodyFrom = r.U16(), From = r.U8(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U8(), ToPort = r.U8(), Count = r.U8(),
                 Start = (ushort)world.WorldNodeCount,
             };
             if (l.Type >= RouteType.COUNT || l.Count > Construct.MaxNodesPerRoute || world.WorldNodeCount + l.Count > ConstructWorld.MaxWorldNodes)

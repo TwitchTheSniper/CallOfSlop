@@ -9,7 +9,7 @@ public static partial class SelfTest
     /// "Sandbox tool wheel outer ring" (board item dev-wheel-outer-ring-wo01; RadialMenu.cs, SandboxToolWheel.cs,
     /// SandboxLinkWheel.cs): the outer ring's arcs (a few options in an arc centred on the tool, many round the full
     /// circle, each picked by direction); in an offline Sandbox game pointing at the linking tool shows the ring with every
-    /// link type, pipe style and edit mode; flicking out onto each option and letting go takes the linking tool out with
+    /// link type and edit mode (the pipe is a plain option, no third tier); flicking out onto each option and letting go takes the linking tool out with
     /// it; letting go on the linking tool itself keeps the last option; a tool with two options (the welder, given a test
     /// set) gets a partial arc, and outside it the pointer turns the inner ring as before; and the centre text (each tool's
     /// and option's name, the title, a name far too long) fits the centre circle at UI scales 0.75 to 2.
@@ -62,10 +62,9 @@ public static partial class SelfTest
         if (!full13 || !part3)
             Fail("outer ring: the choice between an arc and the full circle is wrong");
 
-        // ---- The linking tool's options cover every type, style and mode ------------------------------------------
+        // ---- The linking tool's options cover every type and mode ------------------------------------------
         var probe = new SandboxLinkWheel();
         var types = new HashSet<RouteType>();
-        var styles = new HashSet<byte>();
         var modes = new HashSet<LinkMode>();
         var highlightToggles = false;
         for (var i = 0; i < probe.Options.Length; i++)
@@ -78,34 +77,21 @@ public static partial class SelfTest
             else if (probe.Mode == LinkMode.Link)
             {
                 types.Add(probe.Type);
-                if (probe.Type == RouteType.Pipe)
-                    styles.Add(probe.Style);
             }
             else
                 modes.Add(probe.Mode);
             if (probe.Highlight == h && probe.CurrentOption != i)
                 bad.Add($"option {i} ({probe.Options[i].Label}) chosen shows {probe.CurrentOption} as current");
         }
-        var arcN = probe.Options[(int)SandboxLinkWheel.Option.Pipe].Options?.Length ?? 0;
-        for (var k = 0; k < arcN; k++)
-        {
-            probe.Mode = LinkMode.Link;
-            probe.ChooseSub((int)SandboxLinkWheel.Option.Pipe, k);
-            types.Add(probe.Type);
-            styles.Add(probe.Style);
-            if (probe.Type != RouteType.Pipe || probe.Style != SandboxLinkWheel.ArcStyles[k] || SandboxLinkWheel.ArcIndexOf(probe.Style) != k)
-                bad.Add($"pipe arc item {k} gave {probe.Type}/{probe.Style}");
-            if (probe.CurrentOption != (int)SandboxLinkWheel.Option.Pipe)
-                bad.Add($"pipe arc item {k} not current");
-        }
-        if (arcN != 5 || probe.Options.Length != 9 || SandboxLinkWheel.ArcStyles[2] != 255)
-            bad.Add($"the linking tool has {probe.Options.Length} options and a {arcN} item pipe arc (9 and 5, Auto in the middle expected)");
+        // One pipe for every fluid (decision 28): Pipe is a plain ring option, with no arc and no style on the wheel.
+        var pipeItem = probe.Options[(int)SandboxLinkWheel.Option.Pipe];
+        if (pipeItem.Options != null || pipeItem.Label != "Pipe" || probe.Options.Length != 9)
+            bad.Add($"the linking tool has {probe.Options.Length} options and Pipe is '{pipeItem.Label}' with {pipeItem.Options?.Length ?? 0} sub-options (9, a plain 'Pipe' and none expected)");
         var everyType = Enumerable.Range(0, (int)RouteType.COUNT).All(t => types.Contains((RouteType)t));
-        var everyStyle = styles.Contains(255) && Enumerable.Range(0, (int)PipeStyle.COUNT).All(s => styles.Contains((byte)s));
         var everyMode = Enum.GetValues<LinkMode>().All(m => m == LinkMode.Link || modes.Contains(m));
-        Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); every link type {everyType}, every pipe style and auto {everyStyle}, every edit mode {everyMode}, highlight toggles {highlightToggles}");
-        if (!everyType || !everyStyle || !everyMode || !highlightToggles)
-            Fail("outer ring: the linking tool's options miss a link type, a pipe style or an edit mode");
+        Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); every link type {everyType}, every edit mode {everyMode}, highlight toggles {highlightToggles}");
+        if (!everyType || !everyMode || !highlightToggles)
+            Fail("outer ring: the linking tool's options miss a link type or an edit mode");
         if (bad.Count > 0)
             Fail($"outer ring: {string.Join("; ", bad.Take(4))}");
 
@@ -186,22 +172,22 @@ public static partial class SelfTest
             var opt = w.HoveredOption;
             var tool = LetGo();
             expect.Choose(i);
-            if (hov != Linker || opt != i || w.HoveredSub != -1 || tool != ConstructTool.Linker || links.Type != expect.Type || links.Style != expect.Style || links.Mode != expect.Mode || links.Highlight != expect.Highlight)
-                wrong.Add($"option {i} ({links.Options[i].Label}): hovered {hov}/{opt}, tool {tool}, got {links.Type}/{links.Style}/{links.Mode}/{links.Highlight}, expected {expect.Type}/{expect.Style}/{expect.Mode}/{expect.Highlight}");
+            if (hov != Linker || opt != i || w.HoveredSub != -1 || tool != ConstructTool.Linker || links.Type != expect.Type || links.Mode != expect.Mode || links.Highlight != expect.Highlight)
+                wrong.Add($"option {i} ({links.Options[i].Label}): hovered {hov}/{opt}, tool {tool}, got {links.Type}/{links.Mode}/{links.Highlight}, expected {expect.Type}/{expect.Mode}/{expect.Highlight}");
         }
         Line($"outer ring picks: {links.Options.Length - wrong.Count} of {links.Options.Length} options took the linking tool out with that option{(wrong.Count > 0 ? ": " + string.Join("; ", wrong.Take(3)) : "")}");
         if (wrong.Count > 0)
             Fail($"outer ring: choosing an outer segment didn't equip it: {wrong[0]}");
 
         // Letting go on the linking tool itself keeps its last option (and it is marked when the ring shows).
-        links.ChooseSub((int)SandboxLinkWheel.Option.Pipe, SandboxLinkWheel.ArcIndexOf((byte)PipeStyle.Oil));
+        links.Choose((int)SandboxLinkWheel.Option.Shaft);
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
         Flick(new Vector2(-45, 0));
         var marked = w.Items[Linker].OptionCurrent;
         var innerTool = LetGo();
-        var kept = links.Type == RouteType.Pipe && links.Style == (byte)PipeStyle.Oil && links.Mode == LinkMode.Link;
+        var kept = links.Type == RouteType.Shaft && links.Mode == LinkMode.Link;
         links.Choose((int)SandboxLinkWheel.Option.Reroute);
         Hold();
         Flick(new Vector2(-45, 0));
@@ -214,13 +200,13 @@ public static partial class SelfTest
         Flick(new Vector2(-45, 0));
         wheel.Step(g, true, -w.Pointer, false);
         var cancelTool = LetGo();
-        Line($"outer ring, let go on the tool: the linking tool out {innerTool}, the oil pipe kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
-        if (innerTool != ConstructTool.Linker || !kept || marked != (int)SandboxLinkWheel.Option.Pipe || links.Options[(int)SandboxLinkWheel.Option.Pipe].OptionCurrent != SandboxLinkWheel.ArcIndexOf((byte)PipeStyle.Oil) || !keptMode)
+        Line($"outer ring, let go on the tool: the linking tool out {innerTool}, the shaft kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
+        if (innerTool != ConstructTool.Linker || !kept || marked != (int)SandboxLinkWheel.Option.Shaft || !keptMode)
             Fail("outer ring: letting go on the inner segment didn't take the tool out with its last option");
         if (cancelTool != ConstructTool.Wrench || links.Mode != LinkMode.Reroute)
             Fail("outer ring: letting go in the middle after the ring showed changed something");
 
-        ThirdTier(g, ref now, me, wheel, links);
+        ThirdTier(g, ref now, me, wheel, welderModes);
 
         // A partial arc (the welder with two test modes, east): an option picked; outside the arc the inner ring turns.
         Hold();
@@ -247,30 +233,34 @@ public static partial class SelfTest
     }
 
     /// <summary>
-    /// The third tier (board item dev-wheel-third-tier-pipes-wt01): resting on the Pipe option opens a 5 item arc round its
-    /// direction (well under 360 degrees), picking Water equips Pipe with the water style, letting go on Pipe itself keeps
-    /// the last style (its label says which), moving to Shaft or inward closes the arc, and the pick doesn't flicker at the
-    /// edge.
+    /// The third tier (RadialMenu.cs, IToolOptions.ChooseSub; the linking tool no longer uses it since there is one pipe, so
+    /// the welder slot is given a test set whose middle option has a 5 item arc): resting on that option opens the arc round
+    /// its direction (well under 360 degrees), picking an item calls ChooseSub, letting go on the option itself calls Choose,
+    /// moving to a neighbouring option or inward closes the arc, and the pick doesn't flicker at the edge.
     /// </summary>
-    private static void ThirdTier(Game g, ref double clock, Player me, SandboxToolWheel wheel, SandboxLinkWheel links)
+    private static void ThirdTier(Game g, ref double clock, Player me, SandboxToolWheel wheel, TestToolOptions restore)
     {
         const int N = (int)SandboxToolWheel.Slot.COUNT;
-        const int Linker = (int)SandboxToolWheel.Slot.Linker;
-        const int Pipe = (int)SandboxLinkWheel.Option.Pipe;
+        const int Owner = (int)SandboxToolWheel.Slot.Welder;
+        const int Tiered = 1;
+        var tiered = new TestTieredOptions();
+        wheel.SetOptions(SandboxToolWheel.Slot.Welder, tiered);
         var now = clock;
         var w = wheel.Menu;
-        var optN = links.Options.Length;
-        var arcN = links.Options[Pipe].Options!.Length;
-        var centre = RadialMenu.OptionAngle(Pipe, Linker, N, optN);
+        var optN = tiered.Options.Length;
+        var arcN = tiered.Options[Tiered].Options!.Length;
+        var centre = RadialMenu.OptionAngle(Tiered, Owner, N, optN);
         var edge = w.Reach + w.OuterDepth;
         Vector2 At(float radians, float r) => new(MathF.Sin(radians) * r, -MathF.Cos(radians) * r);
         void Out(float angle, float r) => wheel.Step(g, true, At(angle, r) - w.Pointer, false);
         void Open()
         {
-            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
+            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
             Run(g, ref now, 0.05);
             wheel.Step(g, true, Vector2.Zero, false);
-            wheel.Step(g, true, new Vector2(-45, 0), false);
+            wheel.Step(g, true, new Vector2(45, 0), false);
+            wheel.Step(g, true, new Vector2(45, 0), false);
+            wheel.Step(g, true, new Vector2(45, 0), false);
         }
         ConstructTool LetGo()
         {
@@ -279,94 +269,76 @@ public static partial class SelfTest
             return g.SandboxHands.Hand(me.Id).Tool;
         }
         var bad = new List<string>();
-        var fresh = new SandboxLinkWheel();
-        var firstLabel = fresh.Options[Pipe].Label;
 
-        // Resting on Pipe: the arc shows, spanning well under a full circle, centred on Pipe's direction; nothing picked yet.
-        links.Style = 255;
-        _ = links.CurrentOption;
+        // Resting on the option: the arc shows, spanning well under a full circle, centred on its direction; nothing picked yet.
         Open();
         Out(centre, w.Reach + w.OuterGap + 25);
-        var shown = w.SubRing == Pipe && w.Hovered == Linker && w.HoveredOption == Pipe && w.HoveredSub == -1;
+        var shown = w.SubRing == Tiered && w.Hovered == Owner && w.HoveredOption == Tiered && w.HoveredSub == -1;
         var spanDeg = RadialMenu.OptionStep(arcN, RadialMenu.SubStepMax) * arcN * 180f / MathF.PI;
         var mid = (RadialMenu.ArcAngle(0, centre, arcN, RadialMenu.SubStepMax) + RadialMenu.ArcAngle(arcN - 1, centre, arcN, RadialMenu.SubStepMax)) * 0.5f;
         if (!shown || arcN != 5 || spanDeg is < 100f or > 180f || MathF.Abs(mid - centre) > 1e-4f)
-            bad.Add($"resting on Pipe: arc {w.SubRing}, hovered {w.Hovered}/{w.HoveredOption}/{w.HoveredSub}, {arcN} items span {spanDeg:0.#} deg");
-        var labels = string.Join(", ", links.Options[Pipe].Options!.Select(o => o.Label));
-        var autoMid = links.Options[Pipe].Options![2].Label.StartsWith("Auto");
+            bad.Add($"resting on the option: arc {w.SubRing}, hovered {w.Hovered}/{w.HoveredOption}/{w.HoveredSub}, {arcN} items span {spanDeg:0.#} deg");
 
         // Hysteresis: out past the edge picks (at the entry distance), stays down to the keep distance, and closes inward.
-        var water = 1;
-        var angleWater = RadialMenu.ArcAngle(water, centre, arcN, RadialMenu.SubStepMax);
-        Out(angleWater, edge + RadialMenu.SubGap - 2f);
+        const int Pick = 1;
+        var anglePick = RadialMenu.ArcAngle(Pick, centre, arcN, RadialMenu.SubStepMax);
+        Out(anglePick, edge + RadialMenu.SubGap - 2f);
         var notYet = w.HoveredSub;
-        Out(angleWater, edge + RadialMenu.SubGap + 12f);
+        Out(anglePick, edge + RadialMenu.SubGap + 12f);
         var picked = w.HoveredSub;
         var pointerOut = w.Pointer.Length() > edge + 1f;
-        Out(angleWater, edge + RadialMenu.SubKeep + 3f);
+        Out(anglePick, edge + RadialMenu.SubKeep + 3f);
         var kept = w.HoveredSub;
-        Out(angleWater, edge + RadialMenu.SubKeep - 1f);
+        Out(anglePick, edge + RadialMenu.SubKeep - 1f);
         var released = w.HoveredSub;
-        var arcStays = w.SubRing == Pipe && w.Hovered == Linker;
-        Out(angleWater, edge + RadialMenu.SubGap - 2f);
+        var arcStays = w.SubRing == Tiered && w.Hovered == Owner;
+        Out(anglePick, edge + RadialMenu.SubGap - 2f);
         var noBounce = w.HoveredSub; // (not back on until the entry distance)
-        if (notYet != -1 || picked != water || !pointerOut || kept != water || released != -1 || !arcStays || noBounce != -1)
-            bad.Add($"hysteresis: before the entry {notYet}, on Water {picked} (pointer out {pointerOut}), kept {kept}, let go of {released} (arc stays {arcStays}), not bouncing {noBounce}");
+        if (notYet != -1 || picked != Pick || !pointerOut || kept != Pick || released != -1 || !arcStays || noBounce != -1)
+            bad.Add($"hysteresis: before the entry {notYet}, on item {Pick} {picked} (pointer out {pointerOut}), kept {kept}, let go of {released} (arc stays {arcStays}), not bouncing {noBounce}");
 
-        // Picking Water equips Pipe with the water style (and Water is marked on the arc next time).
-        Out(angleWater, edge + RadialMenu.SubGap + 12f);
-        var toolWater = LetGo();
-        var gotWater = links.Type == RouteType.Pipe && links.Style == (byte)PipeStyle.Water && links.Mode == LinkMode.Link && toolWater == ConstructTool.Linker;
-        var labelWater = links.Options[Pipe].Label;
-        var markWater = links.Options[Pipe].OptionCurrent;
-        if (!gotWater || labelWater != "Pipe (water)" || markWater != 1 || w.IsOpen)
-            bad.Add($"picking Water: type {links.Type}, style {links.Style}, tool {toolWater}, label '{labelWater}', marked {markWater}");
+        // Picking an item calls ChooseSub with it (and equips the tool).
+        Out(anglePick, edge + RadialMenu.SubGap + 12f);
+        var toolSub = LetGo();
+        if (tiered.SubPicks != 1 || tiered.LastOption != Tiered || tiered.LastSub != Pick || toolSub != ConstructTool.Welder || w.IsOpen)
+            bad.Add($"picking item {Pick}: {tiered.SubPicks} sub picks, option {tiered.LastOption}, item {tiered.LastSub}, tool {toolSub}");
 
-        // Letting go on Pipe itself uses the last style (and switches back to routing).
-        links.Mode = LinkMode.Delete;
+        // Letting go on the option itself calls Choose, not ChooseSub.
         Open();
         Out(centre, w.Reach + w.OuterGap + 25);
-        var onPipe = w.HoveredOption == Pipe && w.HoveredSub == -1;
-        var toolPipe = LetGo();
-        var lastKept = links.Type == RouteType.Pipe && links.Style == (byte)PipeStyle.Water && links.Mode == LinkMode.Link && toolPipe == ConstructTool.Linker;
-        if (!onPipe || !lastKept)
-            bad.Add($"letting go on Pipe: on it {onPipe}, type {links.Type}, style {links.Style}, mode {links.Mode}");
-
-        // Auto from the arc's middle, then Steam on the far end.
-        Open();
-        Out(centre, w.Reach + w.OuterGap + 25);
-        Out(RadialMenu.ArcAngle(2, centre, arcN, RadialMenu.SubStepMax), edge + RadialMenu.SubGap + 12f);
+        var onOption = w.HoveredOption == Tiered && w.HoveredSub == -1;
+        var before = tiered.SubPicks;
         LetGo();
-        var autoOk = links.Style == 255 && links.Options[Pipe].Label == "Pipe (auto)" && links.Options[Pipe].OptionCurrent == 2;
-        Open();
-        Out(centre, w.Reach + w.OuterGap + 25);
-        Out(RadialMenu.ArcAngle(4, centre, arcN, RadialMenu.SubStepMax), edge + RadialMenu.SubGap + 12f);
-        LetGo();
-        var steamOk = links.Style == (byte)PipeStyle.Steam && links.Options[Pipe].Label == "Pipe (steam)";
-        if (!autoOk || !steamOk)
-            bad.Add($"Auto from the middle {autoOk}, Steam from the end {steamOk}");
+        if (!onOption || tiered.SubPicks != before || tiered.LastChoose != Tiered)
+            bad.Add($"letting go on the option: on it {onOption}, sub picks {tiered.SubPicks} (was {before}), Choose got {tiered.LastChoose}");
 
-        // Moving round to Shaft (or inward) closes the arc and picks the shaft.
+        // The far end of the arc.
         Open();
         Out(centre, w.Reach + w.OuterGap + 25);
-        Out(angleWater, edge + RadialMenu.SubGap + 12f);
-        var shaftAngle = RadialMenu.OptionAngle((int)SandboxLinkWheel.Option.Shaft, Linker, N, optN);
-        Out(shaftAngle, w.Reach + w.OuterGap + 25);
-        var closed = w.SubRing == -1 && w.HoveredSub == -1 && w.HoveredOption == (int)SandboxLinkWheel.Option.Shaft && w.Pointer.Length() <= edge + 0.01f;
+        Out(RadialMenu.ArcAngle(arcN - 1, centre, arcN, RadialMenu.SubStepMax), edge + RadialMenu.SubGap + 12f);
+        LetGo();
+        if (tiered.LastSub != arcN - 1)
+            bad.Add($"the last item of the arc gave {tiered.LastSub}");
+
+        // Moving round to the next option (or inward) closes the arc and picks that option.
+        Open();
         Out(centre, w.Reach + w.OuterGap + 25);
-        var reopened = w.SubRing == Pipe;
+        Out(anglePick, edge + RadialMenu.SubGap + 12f);
+        var nextAngle = RadialMenu.OptionAngle(2, Owner, N, optN);
+        Out(nextAngle, w.Reach + w.OuterGap + 25);
+        var closed = w.SubRing == -1 && w.HoveredSub == -1 && w.HoveredOption == 2 && w.Pointer.Length() <= edge + 0.01f;
+        Out(centre, w.Reach + w.OuterGap + 25);
+        var reopened = w.SubRing == Tiered;
         Out(centre, 40f);
         var closedIn = w.SubRing == -1 && w.HoveredOption == -1;
-        Out(RadialMenu.SegmentAngle(Linker, N), 45f); // (back on the linking tool, then out onto Shaft)
-        Out(shaftAngle, w.Reach + w.OuterGap + 25);
+        Out(RadialMenu.SegmentAngle(Owner, N), 45f);
+        Out(nextAngle, w.Reach + w.OuterGap + 25);
         LetGo();
-        var shaftOk = links.Type == RouteType.Shaft;
-        if (!closed || !reopened || !closedIn || !shaftOk)
-            bad.Add($"closing: moving to Shaft closed it {closed}, back on Pipe reopened it {reopened}, inward closed it {closedIn}, Shaft equipped {shaftOk}");
+        if (!closed || !reopened || !closedIn || tiered.LastChoose != 2)
+            bad.Add($"closing: moving to the next option closed it {closed}, back on it reopened it {reopened}, inward closed it {closedIn}, Choose got {tiered.LastChoose}");
 
-        Line($"third tier: Pipe's arc ({labels}) spans {spanDeg:0.#} degrees, Auto in the middle {autoMid}, fresh label '{firstLabel}'; shown {shown}; hysteresis, Water, Auto, Steam, last style, closing: {bad.Count} problems");
-        if (firstLabel != "Pipe (auto)" || !autoMid)
-            bad.Add($"the fresh Pipe label is '{firstLabel}' and the arc's middle is not Auto");
+        Line($"third tier (a test set on the welder slot): a {arcN} item arc spans {spanDeg:0.#} degrees; shown {shown}; hysteresis, sub pick, option pick, last item, closing: {bad.Count} problems");
+        wheel.SetOptions(SandboxToolWheel.Slot.Welder, restore);
         clock = now;
         if (bad.Count > 0)
             Fail($"third tier: {string.Join("; ", bad.Take(3))}");
@@ -410,6 +382,34 @@ public static partial class SelfTest
         finally
         {
             ui.DisposeHeadless();
+        }
+    }
+
+    /// <summary>A test set with a third tier: three options, the middle one with a 5 item arc.</summary>
+    private sealed class TestTieredOptions : IToolOptions
+    {
+        public RadialMenu.Item[] Options { get; }
+        public RadialIcon? Icons => null;
+        public int CurrentOption => LastChoose;
+        public int LastChoose = 1, LastOption = -1, LastSub = -1, SubPicks;
+
+        public TestTieredOptions()
+        {
+            Options = new[]
+            {
+                new RadialMenu.Item { Label = "Plain", Hint = "no arc" },
+                new RadialMenu.Item { Label = "Tiered", Hint = "an arc", Options = Enumerable.Range(0, 5).Select(i => new RadialMenu.Item { Label = $"Sub {i}", Hint = "a test item" }).ToArray() },
+                new RadialMenu.Item { Label = "Other", Hint = "no arc" },
+            };
+        }
+
+        public void Choose(int option) => LastChoose = option;
+
+        public void ChooseSub(int option, int sub)
+        {
+            LastOption = option;
+            LastSub = sub;
+            SubPicks++;
         }
     }
 

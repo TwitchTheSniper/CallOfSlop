@@ -11,7 +11,7 @@ public static partial class SelfTest
     /// carries from output to input (a signal, power past a wrecked part, fuel to an engine, torque on the migrated truck,
     /// scrap down a chute); junctions copy (data) or split evenly (power, fuel, items); links follow a driving and a
     /// jointed construct; a destroyed segment cuts the flow (a cut fuel pipe leaks, a power cable sparks) and a repair
-    /// mends it; wrong pipes (fuel weeping through a water pipe catches fire, an oil pipe makes the engine sputter); the
+    /// mends it; the
     /// linking tool's server checks; blueprint and network round trips; the migrations (wires, fuel lines, drive shafts);
     /// part ids past one byte; no allocation per tick. Short scripted scenarios on flat ground.
     /// </summary>
@@ -82,17 +82,17 @@ public static partial class SelfTest
             return;
         var prev = new Vector3(-0.5f, 0.34f, -0.5f);
         var surface = prev + new Vector3(MathF.Sin(22 * MathF.PI / 180), 0, MathF.Cos(22 * MathF.PI / 180)) * 0.6f - new Vector3(0, 0.04f, 0);
-        var snapped = ConstructRoutes.Snap(c, RouteType.Pipe, 0, prev, Vector3.UnitZ, surface, Vector3.UnitY);
+        var snapped = ConstructRoutes.Snap(c, RouteType.Pipe, prev, Vector3.UnitZ, surface, Vector3.UnitY);
         var bend = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(snapped - prev), Vector3.UnitZ), -1, 1)) * 180 / MathF.PI;
         var onStep = MathF.Abs(bend - MathF.Round(bend / 15) * 15) <= ConstructRoutes.AngleSlackDeg && ConstructRoutes.BendRule(RouteType.Pipe, bend) == null;
-        var chuteSnap = ConstructRoutes.Snap(c, RouteType.Chute, 0, prev, Vector3.UnitZ, surface, Vector3.UnitY);
+        var chuteSnap = ConstructRoutes.Snap(c, RouteType.Chute, prev, Vector3.UnitZ, surface, Vector3.UnitY);
         var chuteBend = MathF.Acos(Math.Clamp(Vector3.Dot(Vector3.Normalize(chuteSnap - prev), Vector3.UnitZ), -1, 1)) * 180 / MathF.PI;
         var grid = snapped == ConstructWorld.Quantise(snapped);
         // Nodes off the surface: a point on the foundation's top comes out at each type's radius above it, never inside.
         var sunk = new List<string>();
         foreach (var t in new[] { RouteType.Data, RouteType.Power, RouteType.Pipe, RouteType.Shaft, RouteType.Chute })
         {
-            var p = ConstructRoutes.Snap(c, t, 0, new Vector3(-0.2f, 1f, -0.5f), Vector3.Zero, new Vector3(-0.17f, 0.3f, -0.43f), Vector3.UnitY);
+            var p = ConstructRoutes.Snap(c, t, new Vector3(-0.2f, 1f, -0.5f), Vector3.Zero, new Vector3(-0.17f, 0.3f, -0.43f), Vector3.UnitY);
             if (ConstructRoutes.SignedDistance(c, p, -1, -1, out _) < ConstructRoutes.Radius(t) * 0.9f - 0.012f || MathF.Abs(p.Y - (0.3f + ConstructRoutes.Radius(t))) > 0.011f)
                 sunk.Add($"{t} at {p.Y:0.000}");
         }
@@ -101,13 +101,13 @@ public static partial class SelfTest
         var lamp = PartNamed(c, "Lamp", 2);
         Span<CRouteNode> nodes = stackalloc CRouteNode[2];
         nodes[0] = new CRouteNode { Pos = new Vector3(-0.45f, 0.29f, -0.75f), Host = 0 };
-        var sinks = ConstructRoutes.Check(w, c, RouteType.Data, 0, sw, 255, 255, 0, default, nodes[..1], lamp, 255) ?? "";
+        var sinks = ConstructRoutes.Check(w, c, RouteType.Data, sw, 255, 255, 0, default, nodes[..1], lamp, 255) ?? "";
         nodes[0] = new CRouteNode { Pos = new Vector3(0.25f, 0.32f, -0.4f), Host = 0 };
         nodes[1] = new CRouteNode { Pos = new Vector3(0.25f, 0.32f, 0.9f), Host = 0 };
-        var through = ConstructRoutes.Check(w, c, RouteType.Power, 0, PartNamed(c, "Battery"), 255, 255, 0, default, nodes[..2], lamp, 255) ?? "";
+        var through = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, 255, 0, default, nodes[..2], lamp, 255) ?? "";
         // The type's ends: a pipe can't start at a switch, a chute can't end at a lamp.
-        var noOut = ConstructRoutes.Check(w, c, RouteType.Pipe, 0, sw, 255, 255, 0, default, default, lamp, 255) ?? "";
-        var noIn = ConstructRoutes.Check(w, c, RouteType.Power, 0, PartNamed(c, "Battery"), 255, 255, 0, default, default, PartNamed(c, "Fuel Tank"), 255) ?? "";
+        var noOut = ConstructRoutes.Check(w, c, RouteType.Pipe, sw, 255, 255, 0, default, default, lamp, 255) ?? "";
+        var noIn = ConstructRoutes.Check(w, c, RouteType.Power, PartNamed(c, "Battery"), 255, 255, 0, default, default, PartNamed(c, "Fuel Tank"), 255) ?? "";
         Line($"routed links rules: pipe steps {pipeOk} (22 refused: {pipeBad}), chute {chuteOk} (30 refused: {chuteBad}), shaft 30/45 {shaftOk}, 60 refused {shaftBad}, 90 needs a gearbox {shaftCorner}, cables free {freeOk}; "
              + $"a 22 degree pipe snapped to {bend:0.0} (on a step {onStep}), a chute to {chuteBend:0.0}, on the grid {grid}; nodes off the surface (sunk: {sunk.Count}); refusals: \"{sinks}\", \"{through}\", \"{noOut}\", \"{noIn}\"");
         if (!pipeOk || !pipeBad || !chuteOk || !chuteBad || !shaftOk || !shaftBad || !shaftCorner || !freeOk)
@@ -151,11 +151,11 @@ public static partial class SelfTest
         nodes[1] = new CRouteNode { Pos = new Vector3(0.25f, 0.335f, -0.45f), Host = 0 };
         nodes[2] = new CRouteNode { Pos = new Vector3(0.25f, 0.65f, -0.04f), Host = (byte)PartNamed(c, "Fuel Tank") };
         nodes[3] = new CRouteNode { Pos = new Vector3(0.25f, 0.84f, -0.04f), Host = (byte)PartNamed(c, "Fuel Tank") };
-        var why = ConstructRoutes.Check(w, c, RouteType.Power, 0, bat, 255, 255, 0, default, nodes, l3, 255);
-        var cable = why == null ? ConstructRoutes.Add(w, c, RouteType.Power, 0, bat, 255, 255, 0, default, nodes, l3, 255) : -1;
+        var why = ConstructRoutes.Check(w, c, RouteType.Power, bat, 255, 255, 0, default, nodes, l3, 255);
+        var cable = why == null ? ConstructRoutes.Add(w, c, RouteType.Power, bat, 255, 255, 0, default, nodes, l3, 255) : -1;
         var junction = new Vector3(0.5f, 0.335f, -0.45f);
-        var why2 = cable < 0 ? "no cable" : ConstructRoutes.Check(w, c, RouteType.Power, 0, -1, 255, cable, 1, junction, default, l2, 255);
-        var branch = why2 == null ? ConstructRoutes.Add(w, c, RouteType.Power, 0, -1, 255, cable, 1, junction, default, l2, 255) : -1;
+        var why2 = cable < 0 ? "no cable" : ConstructRoutes.Check(w, c, RouteType.Power, -1, 255, cable, 1, junction, default, l2, 255);
+        var branch = why2 == null ? ConstructRoutes.Add(w, c, RouteType.Power, -1, 255, cable, 1, junction, default, l2, 255) : -1;
         c.Rebuild();
         DriveSteps(w, RoutesGround, 2);
         var back = cable >= 0 && ConstructPower.On(c, l3);
@@ -174,19 +174,19 @@ public static partial class SelfTest
     }
 
     // The fuel bench: a tank and two engines on a foundation, the pipe along its top with a junction to the second engine.
-    private static string BenchB(string style) => $$"""
+    private static string BenchB(string? oldStyle = null) => $$"""
         { "format": "call-of-slop-construct-blueprint/1", "name": "Bench B",
           "steps": [ { "part": "Foundation" }, {{RouteStep("Fuel Tank", 0, "top00", "-y")}}, {{RouteStep("Engine", 0, "top03", "-y")}}, {{RouteStep("Engine", 0, "top33", "-y")}} ],
           "links": [
-            { "type": "pipe", "style": "{{style}}", "from": 1, "to": 2, "nodes": [[-0.45, 0.34, -0.75], [-0.45, 0.34, 0.75]] },
-            { "type": "pipe", "style": "{{style}}", "branch": [0, 1], "at": [-0.45, 0.34, 0], "to": 3, "nodes": [[0.45, 0.34, 0], [0.45, 0.34, 0.75]] }
+            { "type": "pipe", {{(oldStyle != null ? $"\"style\": \"{oldStyle}\", " : "")}}"from": 1, "to": 2, "nodes": [[-0.45, 0.34, -0.75], [-0.45, 0.34, 0.75]] },
+            { "type": "pipe", {{(oldStyle != null ? $"\"style\": \"{oldStyle}\", " : "")}}"branch": [0, 1], "at": [-0.45, 0.34, 0], "to": 3, "nodes": [[0.45, 0.34, 0], [0.45, 0.34, 0.75]] }
           ] }
         """;
 
     private static void RoutesPipes()
     {
         var w = new ConstructWorld();
-        if (RoutesBuild(w, BenchB("fuel"), 0, 0, "Bench B") is not { } c)
+        if (RoutesBuild(w, BenchB(), 0, 0, "Bench B") is not { } c)
             return;
         int e1 = PartNamed(c, "Engine"), e2 = PartNamed(c, "Engine", 1);
         var feeds = ConstructRoutes.PipeFeeds(c, e1) && ConstructRoutes.PipeFeeds(c, e2);
@@ -197,10 +197,10 @@ public static partial class SelfTest
         nodes[1] = new CRouteNode { Pos = new Vector3(-0.2f, 0.34f, 0.0f), Host = 0 }; // (about 71 degrees off the first leg's line)
         var w2 = new ConstructWorld();
         var angled = "";
-        if (RoutesBuild(w2, BenchB("fuel"), 0, 0, "Bench B") is { } c2)
+        if (RoutesBuild(w2, BenchB(), 0, 0, "Bench B") is { } c2)
         {
             ConstructRoutes.Remove(w2, c2, 0);
-            angled = ConstructRoutes.Check(w2, c2, RouteType.Pipe, 0, PartNamed(c2, "Fuel Tank"), 255, 255, 0, default, nodes, PartNamed(c2, "Engine"), 255) ?? "";
+            angled = ConstructRoutes.Check(w2, c2, RouteType.Pipe, PartNamed(c2, "Fuel Tank"), 255, 255, 0, default, nodes, PartNamed(c2, "Engine"), 255) ?? "";
         }
         // Cut the branch: the second engine starves, the first is still fed; a cut fuel pipe leaks.
         var fuel0 = c.Fuel;
@@ -208,37 +208,8 @@ public static partial class SelfTest
         DriveSteps(w, RoutesGround, 120);
         var leaked = fuel0 - c.Fuel;
         var cut = ConstructRoutes.PipeFeeds(c, e1) && !ConstructRoutes.PipeFeeds(c, e2);
-        // Wrong pipes: fuel through a water pipe weeps and catches fire after a while; through an oil pipe the engine sputters; a steam pipe is fine.
-        var wv = new ConstructWorld();
-        string weep = "", sputterLine = "";
-        var lit = false;
-        var sputters = false;
-        var fine = false;
-        if (RoutesBuild(wv, BenchB("water"), 0, 0, "Bench B (water pipe)") is { } wc)
-        {
-            weep = ConstructRoutes.IssueText(wc.Routes[0].Issue, Fluid.Fuel, PipeStyle.Water) ?? "";
-            var f0 = wc.Fuel;
-            DriveSteps(wv, RoutesGround, 60); // (a second of weeping: not lit yet)
-            var early = wc.Burning == 0 && wc.Routes[0].Timer > 0.9f;
-            wc.Routes[0].Timer = ConstructRoutes.IgniteSeconds - 0.5f; // (the rest of its time skipped: a short scenario)
-            DriveSteps(wv, RoutesGround, 40);
-            lit = early && wc.Fuel < f0 && wc.Burning > 0;
-        }
-        var wo = new ConstructWorld();
         if (DriveBlueprint("Buggy") is { } buggy)
         {
-            var oily = Swap(buggy);
-            oily.Links.Clear();
-            oily.Links.Add(new ConstructRoutes.LinkSpec { Type = RouteType.Pipe, Style = (byte)PipeStyle.Oil, From = buggy.Links[0].From, To = buggy.Links[0].To });
-            if (DriveSpawn(wo, oily, 0, 0, 0, "the buggy on an oil pipe") is { } car)
-            {
-                Seat(car);
-                DriveSteps(wo, RoutesGround, 30, _ => DriveKeys(car, Buttons.Forward));
-                sputters = car.Routes[0].Issue == PipeIssue.Sputters && car.FuelQuality < 1f && car.CanDrive;
-                sputterLine = ConstructRoutes.IssueText(car.Routes[0].Issue, Fluid.Fuel, PipeStyle.Oil) ?? "";
-            }
-            fine = ConstructRoutes.IssueOf(Fluid.Fuel, PipeStyle.Steam) == PipeIssue.None && ConstructRoutes.IssueOf(Fluid.Fuel, PipeStyle.Fuel) == PipeIssue.None
-                   && ConstructRoutes.IssueOf(Fluid.Steam, PipeStyle.Water) == PipeIssue.Bursts;
             // The buggy's own fuel pipe: shot through, it stops; mended with the wrench, it drives again.
             var wb = new ConstructWorld();
             if (DriveSpawn(wb, buggy, 0, 0, 0, "the buggy") is { } b)
@@ -255,15 +226,13 @@ public static partial class SelfTest
             }
         }
         Line($"routed links pipes: fuel reaches both engines {feeds}, split evenly {split}; an off-step bend refused \"{angled}\"; the branch cut: only the first fed {cut}, {leaked:0.0} l leaked in 2 s; "
-             + $"a water pipe: \"{weep}\", caught fire {lit}; an oil pipe: \"{sputterLine}\" {sputters}; the ratings {fine}");
+             + "one pipe for every fluid");
         if (!feeds || !split || !cut)
             Fail("routed links: a pipe junction doesn't split the fuel (or a cut doesn't stop it)");
         if (!angled.Contains("15 degree"))
             Fail("routed links: a pipe bend off its 15 degree steps wasn't refused");
         if (leaked < ConstructRoutes.LeakLitres * 1.5f)
             Fail($"routed links: a cut fuel pipe should leak ({leaked:0.00} l in 2 s)");
-        if (weep.Length == 0 || !lit || !sputters || !fine)
-            Fail("routed links: a wrong pipe's consequences are wrong");
     }
 
     private static void RoutesShafts()
@@ -309,7 +278,7 @@ public static partial class SelfTest
         truck.Rebuild();
         var fewer = Driven(truck);
         // A bare shaft junction is refused (it needs a T gearbox), and a shaft can't turn a corner without a gearbox.
-        var junction = front >= 0 ? ConstructRoutes.Check(w, truck, RouteType.Shaft, 0, -1, 255, front, 0, ConstructRoutes.Point(truck, front, -1, out _), default, PartNamed(truck, "Wide Differential"), 255) ?? "" : "";
+        var junction = front >= 0 ? ConstructRoutes.Check(w, truck, RouteType.Shaft, -1, 255, front, 0, ConstructRoutes.Point(truck, front, -1, out _), default, PartNamed(truck, "Wide Differential"), 255) ?? "" : "";
         var w2 = new ConstructWorld();
         const string bench = """
             { "format": "call-of-slop-construct-blueprint/1", "name": "Bench D",
@@ -327,7 +296,7 @@ public static partial class SelfTest
             ConstructRoutes.Remove(w2, d, 0);
             Span<CRouteNode> nodes = stackalloc CRouteNode[1];
             nodes[0] = new CRouteNode { Pos = new Vector3(-0.75f, 0.55f, 0f), Host = 0 };
-            corner = ConstructRoutes.Check(w2, d, RouteType.Shaft, 0, tr, fp, 255, 0, default, nodes, df, tp) ?? "";
+            corner = ConstructRoutes.Check(w2, d, RouteType.Shaft, tr, fp, 255, 0, default, nodes, df, tp) ?? "";
         }
         Line($"routed links shafts: the truck has {shafts} shaft links and {legacy} old shaft parts; drives {all} wheels in 4WD, {fewer} with its front shaft cut; a bare junction: \"{junction}\"; "
              + $"a straight shaft on a bench {straight}, one turning a corner: \"{corner}\"");
@@ -352,9 +321,9 @@ public static partial class SelfTest
         // A junction half way along the chute to the third bin.
         var mid = (ConstructRoutes.Point(c, 0, -1, out _) + ConstructRoutes.Point(c, 0, 0, out _)) * 0.5f;
         mid = ConstructWorld.Quantise(mid);
-        var why = ConstructRoutes.Check(w, c, RouteType.Chute, 0, -1, 255, 0, 0, mid, default, d, 255);
+        var why = ConstructRoutes.Check(w, c, RouteType.Chute, -1, 255, 0, 0, mid, default, d, 255);
         if (why == null)
-            ConstructRoutes.Add(w, c, RouteType.Chute, 0, -1, 255, 0, 0, mid, default, d, 255);
+            ConstructRoutes.Add(w, c, RouteType.Chute, -1, 255, 0, 0, mid, default, d, 255);
         c.Rebuild();
         w.Deposit(c, a, 200);
         DriveSteps(w, RoutesGround, 4 * World.TickRate + 2);
@@ -379,7 +348,7 @@ public static partial class SelfTest
             ConstructRoutes.Remove(w, car, 0);
             car.PartBounds(tank, out var mn, out var mx);
             one[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3((mn.X + mx.X) * 0.5f, mx.Y + 0.04f, mx.Z - 0.05f)), Host = (byte)tank };
-            ConstructRoutes.Add(w, car, RouteType.Pipe, 0, tank, 255, 255, 0, default, one, PartNamed(car, "Engine"), 255);
+            ConstructRoutes.Add(w, car, RouteType.Pipe, tank, 255, 255, 0, default, one, PartNamed(car, "Engine"), 255);
             car.Rebuild();
             Seat(car);
             var p0 = car.WorldCom;
@@ -453,9 +422,9 @@ public static partial class SelfTest
         var bat = PartNamed(c, "Battery");
         var lamp = PartNamed(c, "Lamp", 1);
         e.SetTool(me, ConstructTool.Wrench);
-        var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, 0, bat, 255, 255, 0, default, default, lamp, 255) ?? "";
+        var wrongTool = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255) ?? "";
         e.SetTool(me, ConstructTool.Linker);
-        var routed = e.Route(w, me, eye, c.Id, RouteType.Power, 0, bat, 255, 255, 0, default, default, lamp, 255);
+        var routed = e.Route(w, me, eye, c.Id, RouteType.Power, bat, 255, 255, 0, default, default, lamp, 255);
         var deleted = e.RouteEdit(w, me, eye, c.Id, RouteEditOp.Delete, c.RouteCount - 1, 0, (byte)bat, (byte)lamp, default, 0);
         Line($"routed links round trips: blueprint \"links\" {same} ({json.Length} chars); a client's copy {mirrored} ({wr.Length} bytes), a short packet refused {refused}; "
              + $"the linking tool: the wrench refused \"{wrongTool}\", routed {routed ?? "ok"}, deleted {deleted ?? "ok"}");
@@ -473,7 +442,7 @@ public static partial class SelfTest
         {
             ref var x = ref a.Routes[k];
             ref var y = ref b.Routes[k];
-            if (x.Type != y.Type || x.Style != y.Style || x.From != y.From || x.To != y.To || x.FromPort != y.FromPort || x.ToPort != y.ToPort || x.Parent != y.Parent
+            if (x.Type != y.Type || x.From != y.From || x.To != y.To || x.FromPort != y.FromPort || x.ToPort != y.ToPort || x.Parent != y.Parent
                 || x.ParentNode != y.ParentNode || x.Count != y.Count || x.FirstCut != y.FirstCut && health)
                 return false;
             for (var i = 0; i < x.Count; i++)
@@ -570,7 +539,7 @@ public static partial class SelfTest
     {
         var w = new ConstructWorld();
         var a = RoutesBuild(w, BenchA, 0, 0, "Bench A");
-        var b = RoutesBuild(w, BenchB("water"), 6, 0, "Bench B");
+        var b = RoutesBuild(w, BenchB(), 6, 0, "Bench B");
         Construct? car = DriveBlueprint("Buggy") is { } bp ? DriveSpawn(w, bp, 0, 12, 0, "the buggy") : null;
         if (a == null || b == null || car == null)
             return;

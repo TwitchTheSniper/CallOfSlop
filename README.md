@@ -1026,8 +1026,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
   up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
 - **Links** (the linking tool): on the tool wheel, point at the linking tool and flick further out onto its outer ring
-  for a **data** cable (signals), a **power** cable, a **pipe** (auto: its style comes from the tank; or a fuel, water,
-  oil or steam pipe: a wrong one leaks, bursts or makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
+  for a **data** cable (signals), a **power** cable, a **pipe** (one pipe for every fluid: fuel, water...), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
   button, lever, switch, sensor or gate for data; a battery for power; a tank for a pipe), Fire to place each node on the
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
   at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc

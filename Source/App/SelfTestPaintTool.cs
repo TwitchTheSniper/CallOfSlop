@@ -236,7 +236,7 @@ public static partial class SelfTest
     }
 
     private static uint RoutePick(Construct c, int k) =>
-        ConstructPaint.IsSet(c.Routes[k].Paint) ? c.Routes[k].Paint : ConstructPaint.FromVector(RouteRender.Colour(c.Routes[k].Type, c.Routes[k].Style));
+        ConstructPaint.IsSet(c.Routes[k].Paint) ? c.Routes[k].Paint : ConstructPaint.FromVector(RouteRender.Colour(c.Routes[k].Type));
 
     private static void PaintStrokeCases()
     {

@@ -92,17 +92,17 @@ public static partial class Program
             if (_lkFree)
                 ConstructRender.AimPart = -1;
             nrm = hit.Normal;
-            next = ConstructRoutes.WorldSnap(null, _lkType, _lkStyle, at, tailDir, hit.Point, hit.Normal);
+            next = ConstructRoutes.WorldSnap(null, _lkType, at, tailDir, hit.Point, hit.Normal);
             host = new ConstructRoutes.WHost { C = hit.Body, Part = hit.Part };
             have = true;
         }
         else if (onWorld)
         {
             nrm = wh.Normal;
-            next = ConstructRoutes.WorldSnap(World.Query, _lkType, _lkStyle, at, tailDir, eye + dir * wh.Distance, wh.Normal);
+            next = ConstructRoutes.WorldSnap(World.Query, _lkType, at, tailDir, eye + dir * wh.Distance, wh.Normal);
             have = true;
         }
-        var rule = new ConstructRoutes.WorldOpenRule { World = w, Query = World.Query, Type = _lkType, Style = _lkStyle, Pts = _lkWPts, Hosts = _lkWHosts, Count = n0, Host = host };
+        var rule = new ConstructRoutes.WorldOpenRule { World = w, Query = World.Query, Type = _lkType, Pts = _lkWPts, Hosts = _lkWHosts, Count = n0, Host = host };
         if (have)
         {
             var key = HashCode.Combine(next, endPart, endC?.Id ?? 0, host.C?.Id ?? 0, host.Part, _lkWCount, w.WorldLinkCount);
@@ -112,7 +112,7 @@ public static partial class Program
                 if (endC != null)
                 {
                     Span<WNode> nodes = _lkWNodes.AsSpan(0, _lkWCount);
-                    _lkWWhy = w.CheckWorldLink(World.Query, _lkType, _lkStyle, cf, _lkFrom, _lkFromPort, nodes, endC, endPart, 255);
+                    _lkWWhy = w.CheckWorldLink(World.Query, _lkType, cf, _lkFrom, _lkFromPort, nodes, endC, endPart, 255);
                 }
                 else
                     _lkWWhy = rule.Why(next);
@@ -128,7 +128,6 @@ public static partial class Program
         }
         WorldLinkRender.PreviewOk = _lkWhy == null;
         WorldLinkRender.PreviewType = _lkType;
-        WorldLinkRender.PreviewStyle = _lkStyle;
         if (fire && have)
         {
             if (endC != null)
@@ -137,7 +136,7 @@ public static partial class Program
                     g.SandboxSay(_lkWhy);
                 else
                 {
-                    g.SandboxSendWorldRoute(_lkType, _lkStyle, cf.Id, _lkFrom, _lkFromPort, _lkWNodes.AsSpan(0, _lkWCount), endC.Id, endPart, 255);
+                    g.SandboxSendWorldRoute(_lkType, cf.Id, _lkFrom, _lkFromPort, _lkWNodes.AsSpan(0, _lkWCount), endC.Id, endPart, 255);
                     LinkReset();
                     return;
                 }
@@ -146,7 +145,7 @@ public static partial class Program
                 g.SandboxSay($"a link has at most {Construct.MaxNodesPerRoute} nodes");
             else
             {
-                if (_lkWhy != null && ConstructRoutes.AdjustSearch(_lkType, _lkStyle, next, nrm, ref rule) is { } cm)
+                if (_lkWhy != null && ConstructRoutes.AdjustSearch(_lkType, next, nrm, ref rule) is { } cm)
                 {
                     next = ConstructRoutes.AdjustPos(next, nrm, cm); // (the nearest valid spot along the surface normal)
                     _lkWhy = null;
@@ -187,7 +186,7 @@ public static partial class Program
             _lkLookKey = key;
             var fc = g.Constructs.Get(l.BodyFrom);
             var tc = g.Constructs.Get(l.BodyTo);
-            var name = ConstructRoutes.Name(l.Type, l.Style);
+            var name = ConstructRoutes.Name(l.Type);
             _lkLook = $"World {name}: {(fc != null && l.From < fc.PartCount ? fc.DefOf(l.From).Name : "?")} -> {(tc != null && l.To < tc.PartCount ? tc.DefOf(l.To).Name : "?")}{(mode == LinkMode.Delete ? " - LMB to delete" : "")}";
         }
         g.SandboxLookText = _lkLook;
@@ -231,7 +230,7 @@ public static partial class Program
             if (onHose)
             {
                 var d = hit.Body.DefOf(hit.Part);
-                var thing = d.HoseCarry is HoseCarry.Fuel or HoseCarry.Water ? "nozzle" : "plug";
+                var thing = d.HoseCarry == HoseCarry.Fluid ? "nozzle" : "plug";
                 var hoseName = ConstructWorld.HoseName(d.HoseCarry);
                 _hoseLook = d.HoseEnd == HoseEnd.Outlet
                     ? here >= 0

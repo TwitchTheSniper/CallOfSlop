@@ -627,7 +627,7 @@ public static class ConstructDrive
                     c.Charge = MathF.Max(0, c.Charge - torque * MathF.Max(omega, 40f) / 0.9f / 1000f * dt); // kW out of the batteries
                 break;
         }
-        c.DriveTorque = torque * c.FuelQuality; // (routed links: a wrong pipe's residue makes it sputter)
+        c.DriveTorque = torque;
         // Each driven wheel's share: the torque goes to the drive groups (differentials, hubs) that touch, then within
         // each by its kind: an open differential with a wheel in the air passes almost nothing, a limited-slip one most
         // of it to the wheel that grips, a locked one all of it.

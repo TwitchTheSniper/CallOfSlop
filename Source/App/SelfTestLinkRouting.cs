@@ -38,8 +38,7 @@ public static partial class SelfTest
         c.PartBounds(engine, out var emn, out var emx);
         var tc = ConstructRoutes.PortPoint(c, tank, 255);
         var ec = ConstructRoutes.PortPoint(c, engine, 255);
-        var fuel = (byte)PipeStyle.Fuel;
-        var r = ConstructRoutes.Radius(RouteType.Pipe, fuel);
+        var r = ConstructRoutes.Radius(RouteType.Pipe);
         // 1) The grace: from below the slab's -x side, 45 degrees up over its corner into the tank and the engine.
         var d = tc.X - (fmn.X - r);
         Span<CRouteNode> nodes = stackalloc CRouteNode[4];
@@ -47,19 +46,18 @@ public static partial class SelfTest
         nodes[1] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(fmn.X - r, ec.Y - d, ec.Z)), Host = 0 };
         var below = nodes[1].Pos.Y < fmx.Y;
         var oldEnd = ConstructRoutes.Blocked(c, nodes[1].Pos, ec, r * 0.5f - 0.012f, -1, engine); // (the old rule: the box grown by half the radius less 1.2 cm)
-        var grace = ConstructRoutes.Check(w, c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes[..2], engine, 255);
-        var gracePreview = ConstructRoutes.OpenPath(c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, 0);
+        var grace = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], engine, 255);
+        var gracePreview = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, 0);
         // Past the grace the normal rule applies: on from the second node straight through the slab to its far side.
-        var farWhy = ConstructRoutes.OpenPath(c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes[..2], ConstructWorld.Quantise(new Vector3(fmx.X + r, nodes[1].Pos.Y, ec.Z)), 0);
-        Line($"link clipping grace: grace {ConstructRoutes.Grace(r):0.00} m for a fuel pipe; tank and engine on the slab's edge, end segments from below its side ({below}) over its corner: "
+        var farWhy = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], ConstructWorld.Quantise(new Vector3(fmx.X + r, nodes[1].Pos.Y, ec.Z)), 0);
+        Line($"link clipping grace: grace {ConstructRoutes.Grace(r):0.00} m for a pipe; tank and engine on the slab's edge, end segments from below its side ({below}) over its corner: "
              + $"old rule {(oldEnd is { } oe ? $"refused (the {c.DefOf(oe).Name})" : "passed")}, now \"{grace ?? "ok"}\" (preview \"{gracePreview ?? "ok"}\"); past the grace \"{farWhy ?? "ok"}\"");
         Want(below && oldEnd != null, "the rail case doesn't reproduce the old refusal (the bench changed?)");
         Want(grace == null && gracePreview == null, $"a pipe into a device on a rail isn't let through by the clipping grace ({grace ?? gracePreview})");
         Want(farWhy != null && farWhy.Contains("pass through"), $"a segment through the slab past the grace isn't refused ({farWhy ?? "ok"})");
 
-        // 2) Embedding: a steam pipe's nodes along the slab's top, 50% and 70% of its thickness sunk in.
-        var steam = (byte)PipeStyle.Steam;
-        var rs = ConstructRoutes.Radius(RouteType.Pipe, steam);
+        // 2) Embedding: a pipe's nodes along the slab's top, 50% and 70% of its thickness sunk in.
+        var rs = ConstructRoutes.Radius(RouteType.Pipe);
         string? Embedded(float frac, bool preview)
         {
             var y = fmx.Y + rs - frac * 2f * rs; // (the centreline: the pipe's underside frac x thickness below the surface)
@@ -69,21 +67,20 @@ public static partial class SelfTest
             n[2] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(0.15f, y, ec.Z)), Host = 0 };
             n[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(0.15f, ec.Y, ec.Z)), Host = 0 };
             return preview
-                ? ConstructRoutes.OpenPath(c, RouteType.Pipe, steam, tank, 255, 255, 0, default, n[..1], n[1].Pos, 0)
-                : ConstructRoutes.Check(w, c, RouteType.Pipe, steam, tank, 255, 255, 0, default, n, engine, 255);
+                ? ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, n[..1], n[1].Pos, 0)
+                : ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, n, engine, 255);
         }
         var half = Embedded(0.5f, false);
         var deep = Embedded(0.7f, false);
         var halfP = Embedded(0.5f, true);
         var deepP = Embedded(0.7f, true);
-        Line($"link clipping grace: embedding ({ConstructRoutes.EmbedFraction * 100:0}% of the thickness): a steam pipe 50% sunk \"{half ?? "ok"}\" (preview \"{halfP ?? "ok"}\"), 70% \"{deep ?? "ok"}\" (preview \"{deepP ?? "ok"}\")");
+        Line($"link clipping grace: embedding ({ConstructRoutes.EmbedFraction * 100:0}% of the thickness): a pipe 50% sunk \"{half ?? "ok"}\" (preview \"{halfP ?? "ok"}\"), 70% \"{deep ?? "ok"}\" (preview \"{deepP ?? "ok"}\")");
         Want(half == null && halfP == null, $"a node 50% embedded is refused ({half ?? halfP})");
         Want(deep != null && deep.Contains("sink") && deepP != null && deepP.Contains("sink") , $"a node 70% embedded isn't refused for sinking ({deep ?? "ok"}, preview {deepP ?? "ok"})");
 
         // 3) An outside turn over the frame block's top edge: along its top, 45 degrees down past the edge, down its side.
         c.PartBounds(block, out var bmn, out var bmx);
-        var water = (byte)PipeStyle.Water;
-        var rw = ConstructRoutes.Radius(RouteType.Pipe, water);
+        var rw = ConstructRoutes.Radius(RouteType.Pipe);
         var z = (bmn.Z + bmx.Z) * 0.5f;
         Span<Vector3> pts = stackalloc Vector3[4];
         Span<int> hosts = stackalloc int[4];
@@ -93,7 +90,7 @@ public static partial class SelfTest
         pts[3] = ConstructWorld.Quantise(new Vector3(bmn.X - rw, fmx.Y + 0.1f, z));
         for (var i = 0; i < 4; i++)
             hosts[i] = block;
-        var turn = ConstructRoutes.PathRule(c, RouteType.Pipe, water, pts, hosts, true, 255, false, 255);
+        var turn = ConstructRoutes.PathRule(c, RouteType.Pipe, pts, hosts, true, 255, false, 255);
         var oldTurn = ConstructRoutes.Blocked(c, pts[1], pts[2], rw * 0.5f - 0.012f, -1, -1);
         Line($"link clipping grace: an outside turn over the frame block's edge: old rule {(oldTurn != null ? "refused" : "passed")}, now \"{turn ?? "ok"}\"");
         Want(oldTurn != null, "the outside turn doesn't reproduce the old refusal");
@@ -107,21 +104,21 @@ public static partial class SelfTest
         Span<int> oh = stackalloc int[3];
         var normal = -Vector3.UnitX;
         var basePos = ConstructWorld.Quantise(new Vector3(bmn.X - rp + 1.4f * rp, (bmn.Y + bmx.Y) * 0.5f, z - 0.2f)); // (70% in: the centreline 0.4 x radius inside)
-        var rule = new GraceRule { C = c, Type = power, Style = 0, Start = ConstructWorld.Quantise(new Vector3(bmn.X - 0.4f, (bmn.Y + bmx.Y) * 0.5f, z - 0.2f)), Host = block };
+        var rule = new GraceRule { C = c, Type = power, Start = ConstructWorld.Quantise(new Vector3(bmn.X - 0.4f, (bmn.Y + bmx.Y) * 0.5f, z - 0.2f)), Host = block };
         var before = rule.Why(basePos);
-        var found = ConstructRoutes.AdjustSearch(power, 0, basePos, normal, ref rule);
+        var found = ConstructRoutes.AdjustSearch(power, basePos, normal, ref rule);
         var at = found is { } f0 ? ConstructRoutes.AdjustPos(basePos, normal, f0) : basePos;
         var after = rule.Why(at);
         var step1 = ConstructRoutes.AdjustPos(basePos, normal, (found ?? 0) + ConstructRoutes.AdjustStepCm) - at;
         var step5 = ConstructRoutes.AdjustPos(basePos, normal, (found ?? 0) + ConstructRoutes.AdjustBigStepCm) - at;
         var back = rule.Why(ConstructRoutes.AdjustPos(basePos, normal, (found ?? 0) - 1));
-        var clampIn = ConstructRoutes.AdjustClamp(power, 0, -1000) == ConstructRoutes.AdjustMinCm(power, 0) && ConstructRoutes.AdjustClamp(power, 0, 1000) == ConstructRoutes.AdjustMaxCm;
+        var clampIn = ConstructRoutes.AdjustClamp(power, -1000) == ConstructRoutes.AdjustMinCm(power) && ConstructRoutes.AdjustClamp(power, 1000) == ConstructRoutes.AdjustMaxCm;
         // The server's rule on the adjusted spot (PathRule, the rule Check runs).
         open[0] = rule.Start;
         open[1] = at;
         oh[0] = block;
         oh[1] = block;
-        var server = ConstructRoutes.PathRule(c, power, 0, open[..2], oh[..2], true, 255, false, 255);
+        var server = ConstructRoutes.PathRule(c, power, open[..2], oh[..2], true, 255, false, 255);
         Line($"link clipping grace: adjust: clicked into the block (\"{before ?? "ok"}\"), the search found {(found is { } ff ? $"{ff:+0;-0;0} cm" : "nothing")} (\"{after ?? "ok"}\"), "
              + $"one notch {step1.Length() * 100:0.0} cm, Ctrl {step5.Length() * 100:0.0} cm, one back in \"{back ?? "ok"}\", clamped {clampIn}; server \"{server ?? "ok"}\"");
         Want(before != null && found is > 0 && after == null && back != null, "the adjust search doesn't find the nearest valid offset out of a wall");
@@ -135,7 +132,6 @@ public static partial class SelfTest
     {
         public Construct C;
         public RouteType Type;
-        public byte Style;
         public Vector3 Start;
         public int Host;
 
@@ -147,7 +143,7 @@ public static partial class SelfTest
             p[1] = pos;
             h[0] = Host;
             h[1] = Host;
-            return ConstructRoutes.PathRule(C, Type, Style, p, h, true, 255, false, 255);
+            return ConstructRoutes.PathRule(C, Type, p, h, true, 255, false, 255);
         }
     }
 
@@ -170,8 +166,7 @@ public static partial class SelfTest
         var tank = PartNamed(c, "Fuel Tank");
         var e1 = PartNamed(c, "Engine");
         var e2 = PartNamed(c, "Engine", 1);
-        var fuel = (byte)PipeStyle.Fuel;
-        var r = ConstructRoutes.Radius(RouteType.Pipe, fuel);
+        var r = ConstructRoutes.Radius(RouteType.Pipe);
         var tc = ConstructRoutes.PortPoint(c, tank, 255);
         var e1c = ConstructRoutes.PortPoint(c, e1, 255);
         c.PartBounds(tank, out _, out var tmx);
@@ -186,10 +181,10 @@ public static partial class SelfTest
         nodes[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e1c.X, tc.Y, 0.25f)), Host = 0 };
         var endsFree = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, true);
         var endsSnap = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, false);
-        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, e2);
-        var finishOnEngine = ConstructRoutes.Check(w, c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, default, e2, 255); // (the click from the tank straight at it)
-        var past = ConstructRoutes.Check(w, c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes, e1, 255);
-        var added = past == null ? ConstructRoutes.Add(w, c, RouteType.Pipe, fuel, tank, 255, 255, 0, default, nodes, e1, 255) : -1;
+        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, e2);
+        var finishOnEngine = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, default, e2, 255); // (the click from the tank straight at it)
+        var past = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255);
+        var added = past == null ? ConstructRoutes.Add(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255) : -1;
         c.Rebuild();
         var feeds = added >= 0 && ConstructRoutes.PipeFeeds(c, e1) && !ConstructRoutes.PipeFeeds(c, e2);
         // The key: Left Shift by default, sharing it with Sprint (no clash), live in Sandbox only.
