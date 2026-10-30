@@ -9,10 +9,12 @@ public enum CBodyKind : byte
     Gone, // a construct removed
     Health, // part health changes: (id, part, health) each
     Clear, // every construct removed (a new match)
+    Links, // protocol 81: every coupling and wire between constructs (the whole list, when it changes)
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
+/// The constructs on the wire (protocol 81: the charge, power and gear in the structure and the poses, and the links
+/// between constructs; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
 /// refreshed each time so a lost packet never leaves a body wrong for long. Positions of parts travel on their 1 cm grid
@@ -22,7 +24,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1;
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 81: charge, power flags, gear, fuel)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -53,7 +55,7 @@ public static class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0)));
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
-        w.F32(c.Fuel);
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 81: the charge, power and gear)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U8((byte)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -79,6 +81,54 @@ public static class ConstructNet
         w.U8((byte)c.WireCount);
         for (var k = 0; k < c.WireCount; k++)
             w.U8(c.Wires[k].From).U8(c.Wires[k].To);
+    }
+
+    /// <summary>A construct's power on the wire: electrical, power on, the engine running, the starter failed.</summary>
+    private static byte PowerFlags(Construct c) =>
+        (byte)((c.Electrical ? 1 : 0) | (c.PowerOn ? 2 : 0) | (c.EngineRunning ? 4 : 0) | (c.StarterFailed ? 8 : 0));
+
+    private static void SetPower(Construct c, byte flags, byte gear)
+    {
+        c.Electrical = (flags & 1) != 0;
+        c.PowerOn = (flags & 2) != 0;
+        c.EngineRunning = (flags & 4) != 0;
+        c.StarterFailed = (flags & 8) != 0;
+        c.Gear = gear;
+        c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f;
+    }
+
+    /// <summary>Protocol 81: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
+    public static void WriteLinks(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Links).U8((byte)world.CouplingCount);
+        for (var k = 0; k < world.CouplingCount; k++)
+        {
+            ref var cp = ref world.Couplings[k];
+            w.U16(cp.BodyA).U8(cp.PartA).U16(cp.BodyB).U8(cp.PartB).U8((byte)Math.Clamp(MathF.Round(cp.Length * 20), 0, 255));
+        }
+        w.U8((byte)world.XWireCount);
+        for (var k = 0; k < world.XWireCount; k++)
+        {
+            ref var x = ref world.XWires[k];
+            w.U16(x.BodyFrom).U8(x.From).U16(x.BodyTo).U8(x.To);
+        }
+    }
+
+    private static void ReadLinks(ref PacketReader r, ConstructWorld world)
+    {
+        int n = r.U8();
+        if (n > ConstructWorld.MaxCouplings)
+            throw new MalformedPacketException($"{n} couplings");
+        world.CouplingCount = 0;
+        for (var k = 0; k < n; k++)
+            world.Couplings[world.CouplingCount++] = new CCoupling { BodyA = r.U16(), PartA = r.U8(), BodyB = r.U16(), PartB = r.U8(), Length = r.U8() / 20f };
+        int m = r.U8();
+        if (m > ConstructWorld.MaxXWires)
+            throw new MalformedPacketException($"{m} wires between constructs");
+        world.XWireCount = 0;
+        for (var k = 0; k < m; k++)
+            world.XWires[world.XWireCount++] = new CXWire { BodyFrom = r.U16(), From = r.U8(), BodyTo = r.U16(), To = r.U8() };
+        world.LinksDirty = false;
     }
 
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
@@ -136,6 +186,9 @@ public static class ConstructNet
             case CBodyKind.Full:
                 ReadFull(ref r, world, now);
                 break;
+            case CBodyKind.Links:
+                ReadLinks(ref r, world);
+                break;
             default:
                 throw new MalformedPacketException($"unknown construct message {kind}");
         }
@@ -149,6 +202,9 @@ public static class ConstructNet
         var driver = r.U8();
         var seat = r.U8();
         var fuel = r.F32();
+        var charge = r.F32();
+        var power = r.U8();
+        var gear = r.U8();
         var pos = r.Vec();
         var rot = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
         var vel = r.Vec();
@@ -248,6 +304,8 @@ public static class ConstructNet
         c.Asleep = (flags & 4) != 0;
         c.Root = root < parts ? root : 0;
         c.Fuel = fuel;
+        c.Charge = float.IsFinite(charge) ? charge : 0;
+        SetPower(c, power, gear);
         c.Vel = vel;
         c.AngVel = ang;
         if (fresh)
@@ -326,6 +384,7 @@ public static class ConstructNet
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
+            .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 81)
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
@@ -363,8 +422,18 @@ public static class ConstructNet
             var steer = (sbyte)r.U8() / 100f;
             var driver = r.U8();
             var asleep = r.U8() != 0;
+            var share = r.U8() / 255f;
+            var power = r.U8();
+            var gear = r.U8();
+            var fuel = r.U16() / 10f;
             int joints = r.U8();
             var c = world.Get(id);
+            if (c != null && !stale)
+            {
+                c.Charge = share * c.ChargeCapacity;
+                c.Fuel = fuel;
+                SetPower(c, power, gear);
+            }
             for (var j = 0; j < joints; j++)
             {
                 var a = R16(r.U16()) / 1000f;

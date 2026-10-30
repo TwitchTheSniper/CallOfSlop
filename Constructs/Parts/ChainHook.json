@@ -1,0 +1,101 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Chain Hook",
+  "description": "A hook on 2.5 m of chain: couple an eye to it with the wrench (F) and it hangs, swings and pulls (a wrecking ball).",
+  "role": "hitch",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 15,
+  "health": 250,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4a4d52",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.06,
+        0.1,
+        0.06
+      ],
+      "at": [
+        0,
+        -0.12,
+        0
+      ],
+      "color": "#9a9ea4",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    }
+  ],
+  "hitch": {
+    "kind": "hook",
+    "at": [
+      0,
+      -0.14,
+      0
+    ],
+    "chain": 2.5
+  }
+}

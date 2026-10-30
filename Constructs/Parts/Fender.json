@@ -1,0 +1,75 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fender",
+  "description": "A mudguard to bolt over a wheel: a thin arched panel (cover, not armour).",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 6,
+  "health": 90,
+  "armour": 1,
+  "material": "steel",
+  "color": "#9c2f2a",
+  "boxes": [
+    {
+      "min": [
+        0,
+        0,
+        -0.5
+      ],
+      "max": [
+        0.35,
+        0.05,
+        0.5
+      ]
+    },
+    {
+      "min": [
+        0.02,
+        -0.18,
+        -0.56
+      ],
+      "max": [
+        0.33,
+        0.02,
+        -0.5
+      ],
+      "color": "#86271f",
+      "detail": true
+    },
+    {
+      "min": [
+        0.02,
+        -0.18,
+        0.5
+      ],
+      "max": [
+        0.33,
+        0.02,
+        0.56
+      ],
+      "color": "#86271f",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        0,
+        0.025,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.175,
+        0.05,
+        0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

@@ -57,7 +57,98 @@ public static class ConstructRender
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
             n += DrawWheel(gfx, c, alpha, blendTicks);
         }
+        n += DrawCouplings(gfx, world, alpha, blendTicks);
         LastBoxes = n;
+    }
+
+    /// <summary>A point on part <paramref name="i"/> (in its own frame) where it is drawn this frame.</summary>
+    public static Vector3 DrawnPoint(Construct c, int i, Vector3 local, float alpha, bool blendTicks)
+    {
+        ref var p = ref c.Parts[i];
+        var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+        var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+        var sq = Quaternion.Identity;
+        var st = Vector3.Zero;
+        if (p.Seg > 0 && p.Seg <= c.JointCount)
+            SegPoseBlended(c, p.Seg, blendTicks ? alpha : 1f, out sq, out st);
+        return pos + Vector3.Transform(st + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, local), sq), rot);
+    }
+
+    /// <summary>Boxes in the last frame's chains (the self-test).</summary>
+    public static int LastChainLinks { get; private set; }
+
+    /// <summary>
+    /// The couplings (milestone 3): a chain from its hook to the eye, sagging when it is slack (links turned alternately),
+    /// and a short pin through a tow ball's eye. Drawn where both ends are this frame.
+    /// </summary>
+    private static int DrawCouplings(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
+    {
+        var n = 0;
+        LastChainLinks = 0;
+        for (var k = 0; k < world.CouplingCount; k++)
+        {
+            ref var cp = ref world.Couplings[k];
+            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || cp.PartA >= a.PartCount || cp.PartB >= b.PartCount)
+                continue;
+            var pa = DrawnPoint(a, cp.PartA, a.DefOf(cp.PartA).HitchAt, alpha, blendTicks);
+            var pb = DrawnPoint(b, cp.PartB, b.DefOf(cp.PartB).HitchAt, alpha, blendTicks);
+            var steel = new Vector3(0.32f, 0.33f, 0.35f);
+            if (cp.Length <= 0)
+            {
+                gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.14f, 0.05f) * Matrix4x4.CreateTranslation((pa + pb) * 0.5f), steel, 1f, mode: 0); // (the pin)
+                n++;
+                continue;
+            }
+            // A slack chain sags: its middle hangs down by about how much longer it is than the span.
+            var span = Vector3.Distance(pa, pb);
+            var sag = span < cp.Length ? MathF.Sqrt(MathF.Max(0, cp.Length * cp.Length - span * span)) * 0.5f : 0f;
+            var mid = (pa + pb) * 0.5f - new Vector3(0, sag, 0);
+            var links = Math.Clamp((int)(cp.Length / 0.12f), 4, 64);
+            var prev = pa;
+            for (var i = 1; i <= links; i++)
+            {
+                var t = i / (float)links;
+                var u = 1 - t;
+                var at = u * u * pa + 2 * u * t * mid + t * t * pb; // (a quadratic curve through the sag)
+                Link(gfx, prev, at, steel, (i & 1) == 0);
+                prev = at;
+                n++;
+            }
+            LastChainLinks += links;
+        }
+        return n;
+    }
+
+    /// <summary>One chain link from <paramref name="a"/> to <paramref name="b"/>, flat one way or turned a quarter.</summary>
+    private static void Link(Renderer gfx, Vector3 a, Vector3 b, Vector3 colour, bool turned)
+    {
+        var d = b - a;
+        var len = d.Length();
+        if (len < 1e-3f)
+            return;
+        var z = d / len;
+        var x = MathF.Abs(z.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z)) : Vector3.UnitX;
+        var y = Vector3.Cross(z, x);
+        var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
+        var size = turned ? new Vector3(0.018f, 0.045f, len * 1.15f) : new Vector3(0.045f, 0.018f, len * 1.15f);
+        gfx.Draw(Matrix4x4.CreateScale(size) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, 1f, mode: 0);
+    }
+
+    /// <summary>A gauge's needle (milestone 3): from its hub on the dial's face, swept 270 degrees from empty to full scale by its signal.</summary>
+    private static void DrawNeedle(Renderer gfx, ConstructPartDef d, in CPart p, in Matrix4x4 partToBody)
+    {
+        var n = ConstructParts.DirVector(d.DialDir);
+        var up = MathF.Abs(n.Y) > 0.5f ? -Vector3.UnitZ : Vector3.UnitY;
+        var right = Vector3.Cross(up, n);
+        var share = Math.Clamp(p.Out / d.DialMax, 0, 1);
+        var a = (-135f + 270f * share) * MathF.PI / 180f;
+        var dir = up * MathF.Cos(a) + right * MathF.Sin(a);
+        var x = Vector3.Cross(dir, n);
+        const float len = 0.075f;
+        var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, dir.X, dir.Y, dir.Z, 0, n.X, n.Y, n.Z, 0, 0, 0, 0, 1);
+        var at = d.DialAt + dir * (len * 0.45f) + n * 0.008f;
+        gfx.Draw(Matrix4x4.CreateScale(0.012f, len, 0.008f) * basis * Matrix4x4.CreateTranslation(at) * partToBody, new Vector3(0.95f, 0.25f, 0.15f), 1f, mode: 2);
+        gfx.Draw(Matrix4x4.CreateScale(0.02f) * Matrix4x4.CreateTranslation(d.DialAt + n * 0.008f) * partToBody, new Vector3(0.15f, 0.15f, 0.15f), 1f, mode: 0); // (the hub)
     }
 
     private static int DrawPart(Renderer gfx, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
@@ -91,6 +182,11 @@ public static class ConstructRender
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
         var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
+        if (d.HasDial && !p.Broken)
+        {
+            DrawNeedle(gfx, d, p, Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * seg * body);
+            drawn += 2;
+        }
         // A piston's rod, from its base up to where its leaf has slid to.
         if (d.Role == PartRole.Joint && d.JointType == JointType.Piston && c.JointOf(i) is var pj and >= 0 && c.Joints[pj].Angle > 0.01f)
         {
@@ -242,6 +338,20 @@ public static class ConstructRender
             }
             if (c.Id == WireFromBody && WireFromPart >= 0 && WireFromPart < c.PartCount)
                 Line(gfx, PartCentre(c, WireFromPart), WireAim, new Vector3(1f, 0.9f, 0.3f), 0.7f);
+        }
+        // Wires between constructs (milestone 3): the same, in orange while off.
+        for (var k = 0; k < world.XWireCount; k++)
+        {
+            ref var x = ref world.XWires[k];
+            if (world.Get(x.BodyFrom) is not { } cf || world.Get(x.BodyTo) is not { } ct || x.From >= cf.PartCount || x.To >= ct.PartCount)
+                continue;
+            var a = PartCentre(cf, x.From);
+            var b = PartCentre(ct, x.To);
+            if (Vector3.DistanceSquared(a, WireEye) > 900f)
+                continue;
+            Line(gfx, a, b, cf.Parts[x.From].Out >= 0.5f ? new Vector3(0.4f, 1f, 0.45f) : new Vector3(1f, 0.55f, 0.2f), 0.9f);
+            gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation(b), new Vector3(1f, 0.8f, 0.3f), 0.9f, mode: 2);
+            LastWires++;
         }
         gfx.SetDepthTest(true);
     }

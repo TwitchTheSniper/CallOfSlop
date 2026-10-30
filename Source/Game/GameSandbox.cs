@@ -16,7 +16,7 @@ public enum CActKind : byte
     Rack, // u8 pick: 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere (protocol 79)
     Drop,
     PickUp, // u16 body
-    Wire, // u16 body, u8 from part, u8 to part (the linking tool; milestone 2)
+    Wire, // u16 body, u8 from part, u8 to part, u16 to body (the linking tool; milestone 2; protocol 81: the to body, 0 the same construct)
     Unwire, // u16 body, u8 part: cut every wire on it
     Setting, // u16 body, u8 part: a logic part's next setting
     SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
@@ -187,6 +187,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StructureDirty.Clear();
+        if (Constructs.LinksDirty)
+        {
+            // (after the structures: a client resolves the links against the parts as they are now)
+            Constructs.LinksDirty = false;
+            ConstructNet.WriteLinks(w, Constructs);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
         for (var from = 0; from < Constructs.HealthDirty.Count;)
         {
             from = ConstructNet.WriteHealth(w, Constructs, Constructs.HealthDirty, from);
@@ -216,6 +223,8 @@ public sealed partial class Game
             ConstructNet.WriteFull(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        ConstructNet.WriteLinks(w, Constructs);
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------------
@@ -316,7 +325,8 @@ public sealed partial class Game
                 var body = r.U16();
                 var from = r.U8();
                 var to = r.U8();
-                return hands.Wire(Constructs, p.Id, eye, body, from, to);
+                var toBody = r.U16();
+                return hands.Wire(Constructs, p.Id, eye, body, from, to, toBody);
             }
             case CActKind.Unwire:
             {
@@ -347,7 +357,7 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or the host itself): ask the server for an action. The host's own action is handled at once.</summary>
-    public void SandboxSend(CActKind kind, ushort body = 0, byte part = 0, byte socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0)
+    public void SandboxSend(CActKind kind, ushort body = 0, byte part = 0, byte socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)kind);
@@ -369,7 +379,7 @@ public sealed partial class Game
                 w.U16(body).U8(part);
                 break;
             case CActKind.Wire:
-                w.U16(body).U8(part).U8(socket); // (from, to)
+                w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
                 break;
             case CActKind.SeatKeys:
             case CActKind.Rack:
@@ -724,11 +734,18 @@ public sealed partial class Game
         {
             var kmh = (int)MathF.Round(MathF.Abs(Vector3.Dot(car.Vel, Vector3.Transform(car.SeatForward(), car.Rot))) * 3.6f);
             var fuel = (int)(car.Fuel * 10);
-            if (_sbDrive.Stale(kmh * 100000L + fuel))
-                _sbDrive.Text = $"Driving: {kmh} km/h, fuel {fuel / 10f:0.0} l";
+            var charge = car.Electrical ? (int)MathF.Round(ConstructPower.Share(car) * 100) : -1;
+            var gears = car.Transmission >= 0 && car.Transmission < car.PartCount && car.DefOf(car.Transmission).HasGears ? car.DefOf(car.Transmission) : null;
+            if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0)))
+                _sbDrive.Text = $"Driving: {kmh} km/h, fuel {fuel / 10f:0.0} l"
+                                + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
+                                + (charge >= 0 ? $", charge {charge}%{(car.PowerOn ? "" : " (flat)")}" : "")
+                                + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
             lines.Add(new HudLine(_sbDrive.Text, white));
-            if (car.CanDrive)
-                lines.Add(new HudLine("W/S drive, A/D steer, Space brake, F get out", dim));
+            if (car.CanDrive && car.StarterFailed)
+                lines.Add(new HudLine("It won't start: the battery is flat (or no battery reaches the engine)", red));
+            else if (car.CanDrive)
+                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? "W to start the engine, S reverse, A/D steer, Space brake, F get out" : "W/S drive, A/D steer, Space brake, F get out", dim));
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))

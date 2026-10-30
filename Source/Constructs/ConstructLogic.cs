@@ -22,8 +22,9 @@ public static class ConstructLogic
     {
         if (c.Dirty)
             c.Rebuild();
-        if (!c.HasLogic)
+        if (!c.HasLogic && c.XWireIn == 0)
         {
+            SetGear(c, false, 0);
             // No logic: only a hinge's lock and the engine's wiring need clearing (nothing is wired).
             for (var i = 0; i < c.PartCount; i++)
             {
@@ -59,6 +60,20 @@ public static class ConstructLogic
             if (v >= 0.5f)
                 high[w.To]++;
         }
+        // Wires from other constructs (milestone 3): their sources' values as they were last tick (ConstructLinks.cs).
+        if (c.XWireIn > 0)
+            for (var k = 0; k < world.XWireCount; k++)
+            {
+                ref var x = ref world.XWires[k];
+                if (x.BodyTo != c.Id || x.To >= c.PartCount)
+                    continue;
+                if (count[x.To] == 0)
+                    firstFrom[x.To] = 255; // (not a seat of this construct)
+                sum[x.To] += x.Value;
+                count[x.To]++;
+                if (x.Value >= 0.5f)
+                    high[x.To]++;
+            }
         var ticks = 1f / MathF.Max(dt, 1e-4f);
         var changed = false;
         for (var i = 0; i < c.PartCount; i++)
@@ -66,8 +81,8 @@ public static class ConstructLogic
             ref var p = ref c.Parts[i];
             var d = p.D;
             float next;
-            if (p.Broken)
-                next = 0;
+            if (p.Broken || !ConstructPower.On(c, i))
+                next = 0; // (wrecked, or an electrical part with no power: milestone 3)
             else if (d.Role == PartRole.Seat)
                 next = (p.Keys & CPart.Occupied) != 0 ? 1 : 0;
             else if (d.Role != PartRole.Logic)
@@ -95,7 +110,7 @@ public static class ConstructLogic
                     case CLogic.Reader:
                     {
                         // The seat wired into it, else the driver's seat.
-                        var seat = count[i] > 0 && c.Parts[firstFrom[i]].D.Role == PartRole.Seat ? firstFrom[i] : c.DriveSeat;
+                        var seat = count[i] > 0 && firstFrom[i] < c.PartCount && c.Parts[firstFrom[i]].D.Role == PartRole.Seat ? firstFrom[i] : c.DriveSeat;
                         next = seat >= 0 && seat < c.PartCount && (c.Parts[seat].Keys & (ushort)setting) != 0 ? 1 : 0;
                         break;
                     }
@@ -178,6 +193,27 @@ public static class ConstructLogic
                     case CLogic.Scale:
                         next = sum[i] * setting;
                         break;
+                    case CLogic.FuelGauge:
+                    {
+                        var cap = c.FuelCapacity();
+                        next = cap > 0 ? MathF.Round(Math.Clamp(c.Fuel / cap, 0, 1) * 100) / 100 : 0; // (in hundredths: a slow drain doesn't change it every tick)
+                        break;
+                    }
+                    case CLogic.ChargeGauge:
+                        next = MathF.Round(ConstructPower.Share(c) * 100) / 100;
+                        break;
+                    case CLogic.Selector:
+                    {
+                        // State: the position (0 .. positions - 1; Interact or a rising input steps it on); Count: the input last tick.
+                        var positions = Math.Max(2, (int)setting);
+                        if (on && p.Count == 0)
+                            p.State = (byte)((p.State + 1) % positions);
+                        p.Count = (ushort)(on ? 1 : 0);
+                        if (p.State >= positions)
+                            p.State = 0;
+                        next = p.State + 1;
+                        break;
+                    }
                     default: // lamp, horn, brake: on while the input is
                         next = on ? 1 : 0;
                         break;
@@ -223,9 +259,33 @@ public static class ConstructLogic
             jt.Input = input;
             jt.Locked = !jt.Motorised && wired && high[part] > 0;
         }
+        var tr = c.Transmission;
+        SetGear(c, tr >= 0 && tr < c.PartCount && count[tr] > 0, tr >= 0 && tr < c.PartCount ? sum[tr] : 0);
         c.SigHash = hash;
         if (changed || c.EngineWired && c.EngineSignal != 0)
             c.Wake();
+    }
+
+    /// <summary>
+    /// The transmission's gear (milestone 3): a signal wired into it picks the gear (1 the first; rounded, held inside the
+    /// gears it has); unwired, or a signal below 0.5, it stays in the gear of its setting (the linking tool's R).
+    /// </summary>
+    private static void SetGear(Construct c, bool wired, float signal)
+    {
+        var tr = c.Transmission;
+        if (tr < 0 || tr >= c.PartCount || c.Parts[tr].D is not { HasGears: true } d)
+        {
+            c.Gear = 0;
+            c.GearRatio = 1f;
+            return;
+        }
+        var gear = Math.Min(c.Parts[tr].Setting, (byte)(d.Settings.Length - 1));
+        if (wired && signal >= 0.5f)
+            gear = (byte)Math.Clamp((int)MathF.Round(signal) - 1, 0, d.Settings.Length - 1);
+        if (gear != c.Gear)
+            c.Wake();
+        c.Gear = gear;
+        c.GearRatio = d.Settings[gear];
     }
 
     /// <summary>A signal on the wire to clients: tenths, -12.7 to 12.7.</summary>

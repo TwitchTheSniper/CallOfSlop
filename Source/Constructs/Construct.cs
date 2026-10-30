@@ -21,6 +21,10 @@ public struct CPart
     public byte SitterPlus1; // a seat: the player sitting in it, plus one (0: empty)
     public bool Stood; // a pressure plate: a player stood on it this tick
 
+    // Milestone 3 (server; they move with the part when the arrays are compacted or split)
+    public ushort Tag; // a stable id for couplings and wires between constructs (ConstructWorld gives it; 0 on a client's copy)
+    public bool Powered; // a working battery's links reach it (ConstructPower.cs; rebuilt with the caches)
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.All[Def];
@@ -164,6 +168,24 @@ public sealed class Construct
     public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
+
+    // Power (milestone 3; ConstructPower.cs): a construct with a battery is electrical (its logic parts, motors, lamps and
+    // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.
+    public bool HasBattery; // a battery part, working or not
+    public bool Electrical; // this tick: it has a battery, or the map requires power
+    public float Charge; // kJ in its working batteries
+    public float ChargeCapacity; // kJ they hold
+    public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
+    public bool EngineRunning; // the engine runs (an electrical construct's engine needs the starter first)
+    public bool StarterFailed; // it was asked to start and the battery couldn't turn the starter (the HUD)
+    public float AlternatorRate; // kW its working alternators touching the engine put in while it runs
+    public float PowerUse; // W drawn last tick (the HUD)
+    public float MotorWork; // W its motors did this tick (the physics adds it; the power step drains it)
+    public int Gear; // the transmission's gear (an index into its ratios)
+    public float GearRatio = 1f; // top speed times this, force divided by it
+    public bool Towed; // coupled to a construct that is driving (its parking brake lets go)
+    public int XWireIn; // wires from other constructs into it (its logic runs for them)
+    internal int SimIndex; // its index in the world's list this tick (the physics)
 
     // Caches
     public readonly Vector3[] Points = new Vector3[MaxPoints];
@@ -417,6 +439,7 @@ public sealed class Construct
         BuildWheels();
         BuildDrivetrain();
         BuildSegments();
+        ConstructPower.Rebuild(this);
         Anchored = false;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
@@ -433,6 +456,12 @@ public sealed class Construct
         var cap = FuelCapacity();
         if (Fuel > cap)
             Fuel = cap;
+        if (!_chargeSet)
+        {
+            Charge = ChargeCapacity; // (batteries come charged)
+            _chargeSet = PartCount > 0;
+        }
+        Charge = Math.Clamp(Charge, 0, ChargeCapacity);
         if (Driver != 255 && (DriverSeat < 0 || DriverSeat >= PartCount || Parts[DriverSeat].D.Role != PartRole.Seat))
         {
             Driver = 255;
@@ -440,7 +469,15 @@ public sealed class Construct
         }
     }
 
-    private bool _fuelSet;
+    private bool _fuelSet, _chargeSet;
+
+    /// <summary>A piece that fell away keeps no fuel or charge (salvage takes the parts, not what was in them).</summary>
+    public void Empty()
+    {
+        Fuel = 0;
+        Charge = 0;
+        _fuelSet = _chargeSet = true;
+    }
 
     /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
     private void BuildSegments()

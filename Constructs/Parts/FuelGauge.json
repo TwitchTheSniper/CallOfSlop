@@ -1,0 +1,105 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fuel Gauge",
+  "description": "Its needle and its output: the fuel left, 0 to 1 of what the tanks hold.",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 2,
+  "health": 30,
+  "armour": 0,
+  "material": "steel",
+  "color": "#26282b",
+  "boxes": [
+    {
+      "min": [
+        -0.1,
+        -0.1,
+        -0.03
+      ],
+      "max": [
+        0.1,
+        0.1,
+        0.03
+      ]
+    },
+    {
+      "size": [
+        0.16,
+        0.16,
+        0.012
+      ],
+      "at": [
+        0,
+        0,
+        0.034
+      ],
+      "color": "#e8e4d6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.05,
+        0.012,
+        0.012
+      ],
+      "at": [
+        0.045,
+        -0.055,
+        0.04
+      ],
+      "color": "#d58a3a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        -0.03
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "logic": {
+    "kind": "fuelgauge"
+  },
+  "dial": {
+    "at": [
+      0,
+      0,
+      0.04
+    ],
+    "face": "+z",
+    "max": 1
+  }
+}

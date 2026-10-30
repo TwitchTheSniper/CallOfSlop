@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Alternator",
+  "description": "Fit it touching the engine: while the engine runs it charges the batteries.",
+  "role": "alternator",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 9,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#8d9196",
+  "boxes": [
+    {
+      "size": [
+        0.25,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "size": [
+        0.27,
+        0.06,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "color": "#3b3f44",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.2,
+        0.2
+      ],
+      "at": [
+        0.13,
+        0,
+        0
+      ],
+      "color": "#c9a227",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.125,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.125,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.125,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.125,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.125
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.125
+      ],
+      "dir": "-z"
+    }
+  ],
+  "alternator": {
+    "rate": 1.5
+  }
+}

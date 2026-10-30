@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Transmission",
-  "description": "Takes the engine's drive on to the differentials: fit it touching the engine. Shoot it and nothing is driven.",
+  "description": "Takes the engine's drive on to the differentials: fit it touching the engine. Shoot it and nothing is driven. Three gears (the linking tool's R, or a signal wired in: 1, 2, 3).",
   "role": "transmission",
   "tool": "wrench",
   "attachSeconds": 2.5,
@@ -88,5 +88,18 @@
       ],
       "dir": "-z"
     }
-  ]
+  ],
+  "transmission": {
+    "gears": [
+      0.6,
+      1.0,
+      1.4
+    ],
+    "labels": [
+      "1",
+      "2",
+      "3"
+    ],
+    "gear": 2
+  }
 }

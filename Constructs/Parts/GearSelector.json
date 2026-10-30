@@ -1,0 +1,121 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gear Selector",
+  "description": "F (or a rising input) steps it on: 1, 2, 3, then 1 again. Wire it into a transmission to pick its gear.",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#3d4148",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.18,
+        0.04
+      ],
+      "at": [
+        0,
+        0.18,
+        0
+      ],
+      "color": "#c9c9c9",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.08,
+        0.08
+      ],
+      "at": [
+        0,
+        0.29,
+        0
+      ],
+      "color": "#1b1b1b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.1
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "selector",
+    "settings": [
+      3,
+      4,
+      5,
+      2
+    ],
+    "labels": [
+      "3 gears",
+      "4 gears",
+      "5 gears",
+      "2 gears"
+    ]
+  }
+}

@@ -1,0 +1,88 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bumper",
+  "description": "A rubber-faced steel bar across the front or back: soaks up knocks (heavy armour, lots of health).",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 2,
+  "mass": 22,
+  "health": 500,
+  "armour": 10,
+  "material": "steel",
+  "color": "#232527",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.12,
+        -0.08
+      ],
+      "max": [
+        0.5,
+        0.12,
+        0.08
+      ]
+    },
+    {
+      "size": [
+        1.02,
+        0.08,
+        0.04
+      ],
+      "at": [
+        0,
+        0,
+        -0.08
+      ],
+      "color": "#121314",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back0",
+      "at": [
+        -0.25,
+        0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "back1",
+      "at": [
+        0.25,
+        0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.5,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.5,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.12,
+        0
+      ],
+      "dir": "+y"
+    }
+  ]
+}

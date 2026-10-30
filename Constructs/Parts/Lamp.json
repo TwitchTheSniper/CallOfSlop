@@ -91,5 +91,6 @@
   ],
   "logic": {
     "kind": "lamp"
-  }
+  },
+  "power": 60
 }

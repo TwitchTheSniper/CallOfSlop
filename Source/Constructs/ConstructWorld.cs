@@ -17,7 +17,7 @@ public struct ConstructHit
 /// the tick inside its budget: at most <see cref="MaxBodies"/> bodies and <see cref="MaxTotalParts"/> parts in all.
 /// Changes the network must carry are queued (<see cref="StructureDirty"/>, <see cref="Removed"/>, <see cref="HealthDirty"/>).
 /// </summary>
-public sealed class ConstructWorld
+public sealed partial class ConstructWorld
 {
     public const int MaxBodies = 64;
     public const int MaxTotalParts = 1200;
@@ -89,6 +89,7 @@ public sealed class ConstructWorld
         _byId.Clear();
         StructureDirty.Clear();
         HealthDirty.Clear();
+        ClearLinks();
     }
 
     /// <summary>A new empty body at a pose (null when the caps are reached). Add parts, then it rebuilds on the next tick.</summary>
@@ -125,12 +126,14 @@ public sealed class ConstructWorld
         if (c.PartCount >= Construct.MaxParts || TotalParts >= MaxTotalParts)
             return -1;
         var i = c.PartCount++;
-        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting };
+        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag() };
         c.Dirty = true;
         c.Wake();
         StructureDirty.Add(c.Id);
         if (def.Role == PartRole.FuelTank && c.PartCount > 1)
             c.AddFuel(def.FuelCapacity);
+        if (def.Role == PartRole.Battery && c.PartCount > 1)
+            c.Charge += def.BatteryCapacity; // (a new battery comes charged)
         return i;
     }
 
@@ -331,7 +334,7 @@ public sealed class ConstructWorld
         // Moving as that bit of the old body moved.
         wreck.Vel = c.PointVel(wreck.WorldCom);
         wreck.AngVel = c.AngVel;
-        wreck.Fuel = 0;
+        wreck.Empty();
         Events.Add($"construct {c.Id}: a piece of {wreck.PartCount} part(s) fell away as wreck {wreck.Id}");
     }
 
@@ -757,17 +760,22 @@ public sealed class ConstructWorld
     /// <summary>A sandbox map's starting constructs and loose parts (server, at the start of a match).</summary>
     public void Populate(SandboxMap s, IWorldQuery q)
     {
+        PowerRequired = s.PowerRequired;
+        var spawned = new List<Construct?>(s.Constructs.Count);
         foreach (var sp in s.Constructs)
-            if (ConstructBuild.FindBlueprint(sp.Blueprint) is { } bp)
-                ConstructBuild.BuildOnGround(this, bp, Ground(q, sp.X, sp.Z), sp.Yaw, out _);
+            spawned.Add(ConstructBuild.FindBlueprint(sp.Blueprint) is { } bp ? ConstructBuild.BuildOnGround(this, bp, Ground(q, sp.X, sp.Z), sp.Yaw, out _) : null);
+        LinkSpawned(s, spawned); // (the map's couplings and wires between its constructs)
         foreach (var l in s.Loose)
             if (ConstructParts.Find(l.Part) is { } def)
                 ConstructBuild.PlaceNew(this, def, Ground(q, l.X, l.Z), l.Yaw);
     }
 
-    /// <summary>One tick: the logic (every construct in list order, every part in index order), physics, then anything that fell out of the world goes.</summary>
+    /// <summary>One tick: the links between constructs, power, the logic (every construct in list order, every part in index order), physics, then anything that fell out of the world goes.</summary>
     public void Step(IWorldQuery query, float dt)
     {
+        StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
+        foreach (var c in Bodies)
+            ConstructPower.Step(this, c, dt);
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);
