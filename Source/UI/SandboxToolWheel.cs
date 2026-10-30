@@ -9,8 +9,8 @@ namespace CallOfSlop;
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
 /// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Eight segments,
 /// clockwise from the top: the wrench (N), the physics gun (NE; it took the hoist's place), the welder (E), the configure tool (SE), hands / gun (S: out of
-/// build mode), the scanner (SW), the linking tool (W) and the hand drill (NW). The four tools that exist sit on the
-/// compass points, the physics gun and the three still to come on the diagonals, those greyed out as "coming later" (picking one says so). Taking
+/// build mode), the scanner (SW), the linking tool (W) and the paint tool (NW; board item pp01: it took the hand drill's place). The four tools that exist sit on the
+/// compass points, the physics gun and the paint tool on the diagonals; the scanner is greyed out as "coming later" (picking it says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
