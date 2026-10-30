@@ -55,6 +55,7 @@ public enum GameAction
     RotateDown,
     RollLeft, // about the axis pointing away from you (Shift + Left by default)
     RollRight,
+    SandboxInventory, // binds version 13: Sandbox, the inventory (parts, blueprints, tools; UiSandboxParts.cs) on Tab: there is no scoreboard there
     COUNT,
 }
 
@@ -96,8 +97,9 @@ public static class Keybinds
         a switch
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
-                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight => BindContext.Sandbox,
-            GameAction.SpectateNext or GameAction.SpectatePrev => BindContext.NotSandbox,
+                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory => BindContext.Sandbox,
+            // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
+            GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory => BindContext.NotSandbox,
             _ => BindContext.Any,
         };
 
@@ -193,6 +195,7 @@ public static class Keybinds
         Key(GlfwKey.Down), // Rotate down (Sandbox)
         Shift(GlfwKey.Left), // Roll left (Sandbox)
         Shift(GlfwKey.Right), // Roll right (Sandbox)
+        Key(GlfwKey.Tab), // Inventory (Sandbox): binds version 13 (the Scoreboard's Tab is off in Sandbox: other context)
     ];
 
     /// <summary>
@@ -205,8 +208,10 @@ public static class Keybinds
     /// editor F10 added (same rule). 10: Tool wheel (Sandbox) on the middle mouse button added (same rule). 11: the
     /// Sandbox backpack's Stow H and Draw J added (same rule). 12: the Sandbox ghost's rotate keys (the arrows; roll on
     /// Shift + Left / Right) added (same rule; keys only clash within overlapping contexts, see <see cref="Context"/>).
+    /// 13: the Sandbox inventory became its own action on Tab (Sandbox has no scoreboard); a player who had rebound the
+    /// parts inventory key keeps that key for the Sandbox inventory (<see cref="Carries"/>).
     /// </summary>
-    public const int DefaultsVersion = 12;
+    public const int DefaultsVersion = 13;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -237,6 +242,17 @@ public static class Keybinds
         (12, GameAction.RotateDown, Unbound, Key(GlfwKey.Down)),
         (12, GameAction.RollLeft, Unbound, Shift(GlfwKey.Left)),
         (12, GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
+        (13, GameAction.SandboxInventory, Unbound, Key(GlfwKey.Tab)),
+    ];
+
+    /// <summary>
+    /// An action split in two, per binds version: the new action <c>To</c> takes over what <c>From</c> did in its context,
+    /// so a player who had rebound <c>From</c> (off its old default <c>Default</c>) gets that key on <c>To</c> too; one who
+    /// never rebound it gets <c>To</c>'s new default (or, when another action already has that, <c>From</c>'s key).
+    /// </summary>
+    private static readonly (int Version, GameAction From, GameAction To, int Default)[] Carries =
+    [
+        (13, GameAction.Inventory, GameAction.SandboxInventory, Key(GlfwKey.I)),
     ];
 
     /// <summary>
@@ -255,6 +271,12 @@ public static class Keybinds
             foreach (var c in Changes)
                 if (c.Version == version && c.Old == Unbound && binds[(int)c.Action] == c.New)
                     binds[(int)c.Action] = Unbound; // an added action on its new default: check it like a move
+            foreach (var c in Carries)
+                if (c.Version == version && binds[(int)c.From] != c.Default && binds[(int)c.From] != Unbound && binds[(int)c.To] == Unbound && FreeFor(binds, c.To, binds[(int)c.From]))
+                {
+                    binds[(int)c.To] = binds[(int)c.From]; // a custom key carries over to the split-off action (when nothing live beside it has the key)
+                    moved.Add(c.To);
+                }
             var step = Changes.Where(c => c.Version == version && binds[(int)c.Action] == c.Old).ToList();
             var before = (int[])binds.Clone();
             foreach (var c in step)
@@ -279,8 +301,28 @@ public static class Keybinds
                 }
             }
             moved.AddRange(step.Where(c => binds[(int)c.Action] != before[(int)c.Action]).Select(c => c.Action));
+            // A split-off action whose new default was taken: it keeps the old action's key instead, when that is free in its context.
+            foreach (var c in Carries)
+            {
+                if (c.Version != version || binds[(int)c.To] != Unbound || binds[(int)c.From] == Unbound)
+                    continue;
+                if (FreeFor(binds, c.To, binds[(int)c.From]))
+                {
+                    binds[(int)c.To] = binds[(int)c.From];
+                    moved.Add(c.To);
+                }
+            }
         }
         return moved;
+    }
+
+    /// <summary>Does no other action live beside <paramref name="a"/> hold <paramref name="code"/>?</summary>
+    private static bool FreeFor(int[] binds, GameAction a, int code)
+    {
+        for (var i = 0; i < binds.Length; i++)
+            if (i != (int)a && binds[i] == code && Overlap((GameAction)i, a))
+                return false;
+        return true;
     }
 
     public static string Label(GameAction a) =>
@@ -302,7 +344,7 @@ public static class Keybinds
             GameAction.SecondaryWeapon => "Secondary weapon",
             GameAction.SwapWeapon => "Swap weapon",
             GameAction.Loadout => "Loadout menu",
-            GameAction.Scoreboard => "Scoreboard (hold)",
+            GameAction.Scoreboard => "Scoreboard (hold; not in Sandbox)",
             GameAction.Grenade => "Throw grenade (Zombies: take apart at the box)",
             GameAction.Equipment => "Use equipment",
             GameAction.Melee => "Melee",
@@ -321,7 +363,7 @@ public static class Keybinds
             GameAction.SpectatePrev => "Spectate previous player (Zombies, out)",
             GameAction.WeaponTweaks => "Weapon tweaks (debug window)",
             GameAction.DropItem => "Drop the gun in your hands (Zombies)",
-            GameAction.Inventory => "Parts inventory (Zombies: drop loose parts; Sandbox: the debug parts menu)",
+            GameAction.Inventory => "Parts inventory (Zombies: drop loose parts)",
             GameAction.PerfWindow => "Performance window (window, corner overlay, off)",
             GameAction.LookAtInspector => "Look-at inspector (dev: what the crosshair is on)",
             GameAction.CopyLookAt => "Copy the look-at reference (dev, inspector open)",
@@ -335,6 +377,7 @@ public static class Keybinds
             GameAction.RotateDown => "Tip the part away from you (Sandbox ghost)",
             GameAction.RollLeft => "Roll the part left (Sandbox ghost)",
             GameAction.RollRight => "Roll the part right (Sandbox ghost)",
+            GameAction.SandboxInventory => "Inventory (Sandbox: parts, blueprints, tools; again or Esc closes)",
             _ => a.ToString(),
         };
 

@@ -881,8 +881,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (held == null)
         {
-            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode()))
-                _sbKeys.Text = $"F at the rack or I (parts menu): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
+            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
+                _sbKeys.Text = $"F at the rack or {SandboxMenuKey} (inventory): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
             lines.Add(new HudLine(_sbKeys.Text, dim));
         }
         else
@@ -898,6 +898,9 @@ public sealed partial class Game
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);
     }
+
+    /// <summary>The Sandbox inventory key's name for the HUD (Program sets it from the binds).</summary>
+    public string SandboxMenuKey = "Tab";
 
     /// <summary>The ghost's rotate keys for the HUD (Program sets them from the binds; GhostTurn.cs).</summary>
     public string SandboxTurnKeys = "<- -> ^ v: turn, Shift + <- ->: roll, R: reset";

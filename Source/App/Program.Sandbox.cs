@@ -24,7 +24,9 @@ public static unsafe partial class Program
     private static int _sbSeatKeys = -1;
     private static long _sbWireKey = -1;
     private static byte _sbTurn; // free placement: the held part's Rot24 turn (the rotate keys turn it, R resets it)
-    private static string _sbTurnText = ""; // the rotate keys for the HUD ("<- -> ^ v: turn, ...")
+    private static string _sbTurnText = "";
+    private static string _sbRackText = ""; // the rack's look text (names the Sandbox inventory key)
+    private static int _sbMenuBind = Keybinds.Unbound; // the rotate keys for the HUD ("<- -> ^ v: turn, ...")
     private static long _sbTurnBinds = -1;
     private static string? _sbGroundWhy;
     private static readonly Vector3[] _sbFeet = new Vector3[64];
@@ -37,13 +39,14 @@ public static unsafe partial class Program
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     /// <summary>
-    /// The inventory key (I by default) in Sandbox opens the debug parts menu (UiSandboxParts.cs), the mouse free for it;
+    /// The Sandbox inventory key (Tab by default; GameAction.SandboxInventory, live only in Sandbox, where there is no
+    /// scoreboard) opens the inventory (UiSandboxParts.cs), the mouse free for it;
     /// again (or Esc) closes it (while its search box has the keyboard the game's keys are off: Esc then). Not with the chat or another menu open, in a seat, or dead; refused
     /// with a notice where the map turns the menu off.
     /// </summary>
     private static void SandboxMenuInput()
     {
-        if (_game is not { SandboxOn: true } g || !Pressed(GameAction.Inventory))
+        if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
             return;
         if (Ui.SandboxPartsOpen)
         {
@@ -145,6 +148,12 @@ public static unsafe partial class Program
         }
         g.SandboxPackKeys = _sbPackKeys;
         SandboxTurnKeys(g);
+        if (_settings.Bind(GameAction.SandboxInventory) != _sbMenuBind || _sbRackText.Length == 0)
+        {
+            _sbMenuBind = _settings.Bind(GameAction.SandboxInventory);
+            g.SandboxMenuKey = Keybinds.Name(_sbMenuBind);
+            _sbRackText = $"Parts rack: F to take a part (again for the next kind; {g.SandboxMenuKey}: the inventory)";
+        }
         if (Pressed(GameAction.Stow))
             g.SandboxSend(CActKind.Stow);
         if (Pressed(GameAction.DrawPack))
@@ -215,7 +224,7 @@ public static unsafe partial class Program
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
-            g.SandboxLookText = "Parts rack: F to take a part (again for the next kind; I: the parts menu)";
+            g.SandboxLookText = _sbRackText;
         // The welder on a part that touches another construct: F joins the two into one.
         JoinPlan jplan = default;
         var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);

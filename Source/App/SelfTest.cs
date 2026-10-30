@@ -228,6 +228,7 @@ public static partial class SelfTest
         Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation
         Section("Construct storage", CheckConstructStorage); // SelfTestConstructStorage.cs: decision 18, physical storage: slots, fits, piles, bins, spills, survival salvage, the state's bytes, no allocation, a loopback
         Section("Sandbox ghost turns", CheckGhostTurn); // SelfTestGhostTurn.cs: the rotate keys (arrows, Shift + Left / Right roll) relative to the camera: undo, full turns, the right way, sockets the same as free placement, contexts, chords, migration, no allocation
+        Section("Sandbox Tab inventory", CheckSandboxTab); // SelfTestSandboxTab.cs: per-mode keys: Tab is the inventory in Sandbox (no scoreboard there) and the scoreboard in TDM and Zombies; the binds migration keeps a rebound inventory key
         Section("Sandbox backpack", CheckSandboxBackpack); // SelfTestSandboxBackpack.cs: every player's backpack: stow and draw keys, what fits (weight, size), drawn on the back, the HUD strip, dropped on death, no allocation, a loopback
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard

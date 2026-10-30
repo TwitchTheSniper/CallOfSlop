@@ -32,7 +32,7 @@ north-west corner) and some loose parts.
 | F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
+| Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
@@ -174,8 +174,18 @@ putting a tool away brings the gun up with its equip time before it can fire; th
 
 ### The inventory (the parts menu)
 
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
-**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+**Per-mode keys** (board item dev-sandbox-tab-inventory-ti01, binds version 13): Sandbox has no scoreboard, so the
+inventory took Tab there without changing the global Scoreboard default. Each action has a context (`Keybinds.Context`):
+everywhere, Sandbox only, or every mode but Sandbox. The Scoreboard and the Zombies parts inventory (still on I) are live
+outside Sandbox only, the Sandbox inventory and the other Sandbox keys in Sandbox only, and two actions clash on a key only
+when their contexts overlap, so the keybinds screen (the Sandbox keys under their own heading) treats Tab there as no
+conflict. Settings migrate once: a player who never rebound the inventory gets Tab; one who had rebound it keeps that key
+for the Sandbox inventory; if a key used everywhere already holds Tab, the Sandbox inventory keeps I. The
+**Sandbox Tab inventory** self-test section (`Source/App/SelfTestSandboxTab.cs`) holds Tab in Sandbox, Team Deathmatch and
+Zombies matches and migrates version 12 files.
+
+**Tab** (the Sandbox inventory key, `GameAction.SandboxInventory`; rebindable under the Sandbox heading in Settings >
+Controls) opens the **Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
 list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
 
 - **Tabs**: Parts, Blueprints and Tools.
@@ -199,7 +209,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
   the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
   enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
-  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
   It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
