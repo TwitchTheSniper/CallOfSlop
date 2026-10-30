@@ -346,7 +346,8 @@ public static partial class SelfTest
         Pump(server, [a], 0.4, ref now, clock);
         var got = server.SandboxHands.Hand(sp.Id).Held == lamp.Id;
         var mirrored = a.SandboxHands.Hand(a.LocalId).Held == lamp.Id;
-        a.SandboxTakePart(249);
+        var noSuch = (ushort)ConstructParts.All.Count; // (one past the last part: no such id)
+        a.SandboxTakePart(noSuch);
         Pump(server, [a], 0.4, ref now, clock);
         var refused = a.SandboxNotice;
         var before = server.Constructs.Bodies.Count;
@@ -354,7 +355,7 @@ public static partial class SelfTest
         Pump(server, [a], 0.6, ref now, clock);
         var spawned = server.Constructs.Bodies.Count == before + 1;
         var copies = a.Constructs.Bodies.Count == server.Constructs.Bodies.Count;
-        Line($"parts menu over the wire: a client's Lamp by id reached the server {got} (and its hands {mirrored}); id 249 refused \"{refused}\"; a Gate blueprint spawned {spawned}, mirrored {copies}");
+        Line($"parts menu over the wire: a client's Lamp by id reached the server {got} (and its hands {mirrored}); id {noSuch} refused \"{refused}\"; a Gate blueprint spawned {spawned}, mirrored {copies}");
         if (!got || !mirrored || !refused.Contains("no such part") || !spawned || !copies)
             Fail("parts menu: a client's parts menu requests didn't go over the wire right");
     }
