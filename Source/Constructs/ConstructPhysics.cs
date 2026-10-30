@@ -123,8 +123,8 @@ public static class ConstructPhysics
                 c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
             if (c.Asleep && c.JointCount > 0)
                 WakeCheck(c);
-            _dyn[i] = !c.Anchored && !c.Asleep;
-            _jact[i] = !c.Asleep && c.JointCount > 0;
+            _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0; // (cargo in a frozen volume rides kinematically: ConstructCargo.cs)
+            _jact[i] = !c.Asleep && c.JointCount > 0 && c.CarriedBy == 0;
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
             _invIB[i] = _dyn[i] && c.JointCount > 0 ? c.InvInertiaBaseWorld() : default;
             if (_dyn[i])
@@ -517,6 +517,8 @@ public static class ConstructPhysics
                 if (i == j)
                     continue;
                 var b = bodies[j];
+                if (a.CarriedBy == b.Id || b.CarriedBy == a.Id || a.CarriedBy != 0 && a.CarriedBy == b.CarriedBy)
+                    continue; // (a carrier and what its frozen cargo volumes carry don't collide)
                 var reach = a.Radius + b.Radius;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;

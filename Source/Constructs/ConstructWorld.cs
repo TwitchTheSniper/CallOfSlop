@@ -1034,6 +1034,7 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);
+        ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)
             if (Bodies[i].Pos.Y < FallOutY)
             {

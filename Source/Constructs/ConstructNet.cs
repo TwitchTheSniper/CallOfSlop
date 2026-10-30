@@ -106,6 +106,10 @@ public static class ConstructNet
             }
         w.PatchU8(at, (byte)n);
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
+        // Protocol 91: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
+        w.U16(c.CarriedBy);
+        if (c.CarriedBy != 0)
+            w.U8(c.CarrySeg).Vec(c.CarryPos).F32(c.CarryRot.X).F32(c.CarryRot.Y).F32(c.CarryRot.Z).F32(c.CarryRot.W);
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -526,6 +530,16 @@ public static class ConstructNet
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
         ConstructConfig.Read(ref r, c); // protocol 89: the part settings
+        c.CarriedBy = r.U16(); // protocol 91: carried by a frozen cargo volume
+        if (c.CarriedBy != 0)
+        {
+            c.CarrySeg = r.U8();
+            c.CarryPos = r.Vec();
+            var cr = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
+            if (c.CarriedBy == id || !float.IsFinite(c.CarryPos.X + c.CarryPos.Y + c.CarryPos.Z + cr.X + cr.Y + cr.Z + cr.W) || cr.LengthSquared() < 0.5f || c.CarryPos.Length() > 100)
+                throw new MalformedPacketException("a carried construct's pose that doesn't fit");
+            c.CarryRot = Quaternion.Normalize(cr);
+        }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
@@ -732,5 +746,6 @@ public static class ConstructNet
                 wh.Spin += Vector3.Dot(c.Vel, fwd) / wh.Radius * dt;
             }
         }
+        ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)
     }
 }

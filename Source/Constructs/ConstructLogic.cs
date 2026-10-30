@@ -109,6 +109,21 @@ public static class ConstructLogic
                     case CLogic.Switch:
                         next = (p.State & 1) != 0 ? 1 : 0;
                         break;
+                    case CLogic.Cargo:
+                    {
+                        // A cargo volume (ConstructCargo.cs): Interact flips it; a change of its input sets it (the last change wins).
+                        if (count[i] > 0)
+                        {
+                            if (on != ((p.State & 2) != 0))
+                                p.State = (byte)((p.State & ~3) | (on ? 3 : 0));
+                        }
+                        else
+                            p.State = (byte)(p.State & ~2);
+                        next = (p.State & 1) != 0 ? 1 : 0;
+                        if ((next >= 0.5f) != (p.Out >= 0.5f))
+                            world.CargoScanNow = true; // (frozen or let go: the cargo step looks at once)
+                        break;
+                    }
                     case CLogic.Lever:
                         next = LeverValue(p.State);
                         break;
