@@ -1,0 +1,113 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Tracked Crawler",
+  "description": "A 7 m tracked crawler: two 5 m tracks driven by their sprockets from a wide axle at the back (a V8 and an automatic gearbox on it). No steering pivots: it steers by driving one track against the other, and turns on the spot.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Wide Differential",
+      "on": 4,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 6,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 6,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Track",
+      "on": 7,
+      "socket": "axle",
+      "by": "axle",
+      "spin": 3
+    },
+    {
+      "part": "Track",
+      "on": 8,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Corner",
+      "on": 2,
+      "socket": "end-",
+      "by": "back"
+    },
+    {
+      "part": "Corner",
+      "on": 3,
+      "socket": "end-",
+      "by": "back"
+    },
+    {
+      "part": "Seat",
+      "on": 2,
+      "socket": "y+1",
+      "by": "bottom"
+    },
+    {
+      "part": "Automatic Gearbox",
+      "on": 6,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "V8 Engine",
+      "on": 14,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 15,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Panel",
+      "on": 0,
+      "socket": "y+1",
+      "by": "back"
+    }
+  ]
+}

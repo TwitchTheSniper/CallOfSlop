@@ -117,6 +117,7 @@ public struct CWheel
     public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
     public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
     public float Share; // this tick: its share of the engine's torque (the differentials)
+    public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
 }
 
 /// <summary>

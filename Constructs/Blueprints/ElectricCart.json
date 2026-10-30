@@ -1,0 +1,106 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Electric Cart",
+  "description": "A 2.5 m electric cart: an electric motor on a battery pack, a reversing gearbox (as fast backwards as forwards), small wheels. Quiet, no fuel.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+0",
+      "by": "bottom"
+    },
+    {
+      "part": "Differential",
+      "on": 0,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Reversing Gearbox",
+      "on": 3,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "Electric Motor",
+      "on": 4,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Battery Pack",
+      "on": 1,
+      "socket": "y+0",
+      "by": "-y0"
+    },
+    {
+      "part": "Suspension",
+      "on": 3,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 3,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 0,
+      "socket": "x-0",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "x+0",
+      "by": "base"
+    },
+    {
+      "part": "Suspension",
+      "on": 9,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 10,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Small Wheel",
+      "on": 7,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Small Wheel",
+      "on": 8,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Small Wheel",
+      "on": 11,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Small Wheel",
+      "on": 12,
+      "socket": "axle",
+      "by": "axle"
+    }
+  ]
+}

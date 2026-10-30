@@ -146,7 +146,7 @@ public static partial class SelfTest
         car.DriverSeat = car.DriveSeat;
         var t0 = tr.WorldCom;
         var worst = 0f;
-        StepConstructs(w, 180, _ =>
+        StepConstructs(w, 120, _ => // (2 s: the rescaled buggy is quicker and turns wider, and the yard's plateau is to its left)
         {
             ConstructEdits.DriveInput(car, Buttons.Forward, World.TickDt);
             worst = MathF.Max(worst, HitchGap(w));
@@ -164,8 +164,8 @@ public static partial class SelfTest
         });
         var turned = MathF.Abs(World.WrapAngle(YawOf(tr) - yaw0)) * 180 / MathF.PI;
         StepConstructs(w, 90, _ => ConstructEdits.DriveInput(car, Buttons.Jump, World.TickDt));
-        Line($"towing: the trailer ({tr.Mass:0} kg) came {straight:0.0} m in 3 s behind the buggy ({behind:0.0} m behind, the buggy at {speed:0.0} m/s), then turned {turned:0} deg with it (tilting at most {maxTilt:0.0} deg); the hitch points at most {worst * 100:0.0} cm apart; braked: {car.Vel.Length():0.00} and {tr.Vel.Length():0.00} m/s");
-        if (straight < 12 || behind > -2 || worst > 0.12f || turned < 25 || maxTilt > 25 || tr.Vel.Length() > 0.6f)
+        Line($"towing: the trailer ({tr.Mass:0} kg) came {straight:0.0} m in 2 s behind the buggy ({behind:0.0} m behind, the buggy at {speed:0.0} m/s), then turned {turned:0} deg with it (tilting at most {maxTilt:0.0} deg); the hitch points at most {worst * 100:0.0} cm apart; braked: {car.Vel.Length():0.00} and {tr.Vel.Length():0.00} m/s");
+        if (straight < 9 || behind > -2 || worst > 0.12f || turned < 25 || maxTilt > 25 || tr.Vel.Length() > 0.6f)
             Fail("construct links: the trailer didn't follow the buggy on its tow ball (or came apart, or rolled over, or didn't stop with it)");
     }
 

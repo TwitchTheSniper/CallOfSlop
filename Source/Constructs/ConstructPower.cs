@@ -74,7 +74,7 @@ public static class ConstructPower
         if (c.Dirty)
             c.Rebuild();
         var electrical = c.HasBattery || world.PowerRequired;
-        var wants = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.HasFuel;
+        var wants = c.Engine >= 0 && (c.Driver != 255 || c.EngineWired) && c.HasFuel; // (an engine with nothing to drive still runs: a power take-off)
         if (electrical != c.Electrical)
         {
             c.Electrical = electrical;

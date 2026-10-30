@@ -46,6 +46,7 @@ public sealed partial class Construct
     public int GroupCount;
     public readonly bool[] PtoDriven = new bool[MaxParts]; // a moving joint on a power take-off: runs while the engine does
     public bool BeltSlipping;
+    public readonly float[] GroupGrip = new float[MaxGroups]; // this tick: the least grip among each group's touching wheels (last tick's)
 
     /// <summary>The engine has what it runs on (fuel in the tanks, or it needs none).</summary>
     public bool HasFuel => Engine < 0 || Engine >= PartCount || DefOf(Engine).FuelKind != EngineFuel.Fuel || Fuel > 0;
@@ -404,6 +405,30 @@ public static class ConstructDrive
 {
     public const float RpmPerRadS = 60f / MathF.Tau;
 
+    /// <summary>
+    /// The driver's shift keys (a manual or sequential box with nothing wired in): R up, sprint down, on the press. Server,
+    /// every tick before the logic step (which reads and clears the seats' keys).
+    /// </summary>
+    public static void ShiftKeys(Construct c)
+    {
+        if (!c.CanDrive || c.Transmission < 0 || c.Transmission >= c.PartCount || c.DriveSeat < 0 || c.DriveSeat >= c.PartCount)
+            return;
+        var keys = c.Driver != 255 ? c.Parts[c.DriveSeat].Keys : (ushort)0;
+        var shift = (ushort)(keys & (ConstructParts.KeyReload | (ushort)Buttons.Sprint));
+        var rise = (ushort)(shift & ~c.ShiftKeys);
+        c.ShiftKeys = shift;
+        ref var tp = ref c.Parts[c.Transmission];
+        var t = tp.D;
+        var gears = t.Settings.Length;
+        if (rise == 0 || t.Trans is not (TransKind.Manual or TransKind.Sequential) || gears < 2 || tp.InCount > 0)
+            return;
+        if ((rise & ConstructParts.KeyReload) != 0 && tp.Setting < gears - 1)
+            tp.Setting++;
+        if ((rise & (ushort)Buttons.Sprint) != 0 && tp.Setting > 0)
+            tp.Setting--;
+        c.Wake();
+    }
+
     /// <summary>An engine's torque at <paramref name="rpm"/> as a share of its peak (0 at and past the limiter).</summary>
     public static float Curve(ConstructPartDef d, float rpm)
     {
@@ -459,19 +484,7 @@ public static class ConstructDrive
                 open |= (ushort)(1 << g);
         }
         c.GateOpen = open;
-        // The driver's shift keys (a manual or sequential box with nothing wired in): R up, sprint down.
-        var keys = c.DriveSeat >= 0 && c.DriveSeat < c.PartCount && c.Driver != 255 ? c.Parts[c.DriveSeat].Keys : (ushort)0;
-        var shiftKeys = (ushort)(keys & (ConstructParts.KeyReload | (ushort)Buttons.Sprint));
         var gears = t.Settings.Length;
-        if (t.Trans is TransKind.Manual or TransKind.Sequential && gears > 1 && tp.InCount == 0)
-        {
-            var rise = (ushort)(shiftKeys & ~c.ShiftKeys);
-            if ((rise & ConstructParts.KeyReload) != 0 && tp.Setting < gears - 1)
-                tp.Setting++;
-            if ((rise & (ushort)Buttons.Sprint) != 0 && tp.Setting > 0)
-                tp.Setting--;
-        }
-        c.ShiftKeys = shiftKeys;
         // Which wheels the drive reaches, and how fast the engine turns through them.
         var spin = 0f; // sum of reduction / radius over the driven, reached, touching wheels
         var reached = 0;
@@ -486,10 +499,10 @@ public static class ConstructDrive
                 reached++;
             }
         }
-        var anyReach = false;
-        for (var k = 0; k < c.WheelCount && !anyReach; k++)
-            anyReach = c.Wheels[k].Driven && (c.Wheels[k].GateMask & ~open) == 0;
-        if (!anyReach)
+        var anyGated = false;
+        for (var k = 0; k < c.WheelCount && !anyGated; k++)
+            anyGated = c.Wheels[k].Driven && (c.Wheels[k].GateMask & ~open) != 0;
+        if (anyGated)
             c.Note = NoteFor(c, open);
         var avgSpin = reached > 0 ? spin / reached : 0f;
         var reverse = throttle < 0;
@@ -615,8 +628,17 @@ public static class ConstructDrive
         }
         var groups = 0;
         for (var g = 0; g < c.GroupCount; g++)
+        {
+            c.GroupGrip[g] = float.PositiveInfinity;
             if (touchIn[g] > 0)
                 groups++;
+        }
+        for (var k = 0; k < c.WheelCount; k++)
+        {
+            ref var w = ref c.Wheels[k];
+            if (w.Driven && w.Touching && w.Group < c.GroupCount && w.LastGrip > 0)
+                c.GroupGrip[w.Group] = MathF.Min(c.GroupGrip[w.Group], w.LastGrip);
+        }
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -659,8 +681,8 @@ public static class ConstructDrive
     private static DriveNote NoteFor(Construct c, ushort open)
     {
         for (var g = 0; g < c.GateCount; g++)
-            if ((open & (1 << g)) == 0)
-                return c.GateKind[g] == 0 ? DriveNote.ClutchOut : c.GateKind[g] == 2 ? DriveNote.JointAngle : DriveNote.None;
+            if ((open & (1 << g)) == 0 && c.GateKind[g] != 1) // (2WD is no fault)
+                return c.GateKind[g] == 0 ? DriveNote.ClutchOut : DriveNote.JointAngle;
         return DriveNote.None;
     }
 

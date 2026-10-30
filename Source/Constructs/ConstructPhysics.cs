@@ -32,6 +32,7 @@ public static class ConstructPhysics
     public const float MaxJointSpin = 25f; // radians (or metres) a second: anything faster is clamped
     public const int SleepAfterTicks = 40;
     public const float StillSpeed2 = 0.02f; // (m/s or rad/s, squared) slower than this counts as still, for sleep
+    public const float DirtGrip = 0.85f; // terrain (dirt) grips this much of hard ground, times a tyre's off-road grip
     public const float AirDrag = 0.006f; // a wheeled construct on the ground slows by this times its speed squared (m/s2): arcade air drag
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
     public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
@@ -211,14 +212,14 @@ public static class ConstructPhysics
                 hold = sd.SuspHold[si];
             }
             else if (sd.ActiveSuspension)
-                hold = ConstructPower.On(c, w.Suspension) ? Math.Clamp(sp.In, 0, 1) : 0f;
+                hold = !ConstructPower.On(c, w.Suspension) ? 0f : sp.InCount > 0 ? Math.Clamp(sp.In, 0, 1) : 0.5f; // (unwired: half way; no power: it sinks)
             var load = MathF.Min(share, w.MaxLoad);
             var omega = MathF.Tau * freq;
             var k_s = load * omega * omega;
             var c_d = 2 * damp * MathF.Sqrt(k_s * load);
             var rate = (w.Compression - w.PrevCompression) / dt;
             var force = hold >= 0
-                ? MathF.Max(0, k_s * (x - w.Travel * (0.85f - 0.75f * hold)) + load * g + c_d * rate) // held at a ride height (it carries the weight it is built for)
+                ? MathF.Max(0, k_s * (x - w.Travel * (0.7f - 0.6f * hold)) + load * g + c_d * rate) // held at a ride height (it carries the weight it is built for)
                 : MathF.Max(0, k_s * x + c_d * rate);
             var at = origin - up * hit.Distance; // (the contact under the wheel)
             var r = at - com;
@@ -242,7 +243,8 @@ public static class ConstructPhysics
                 fwd = -fwd;
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
             var vp = c.PointVel(at);
-            var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? w.Offroad : 1f); // (terrain is dirt: off-road tyres grip it, slicks don't)
+            var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? DirtGrip * w.Offroad : 1f); // (terrain is dirt: looser than hard ground; off-road tyres grip it, slicks don't)
+            w.LastGrip = maxFriction;
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
             var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side;
@@ -253,7 +255,12 @@ public static class ConstructPhysics
                 // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
                 var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
                 var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
-                jFwd += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
+                var jDrive = amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
+                // An open differential drives each wheel no harder than the one that grips least (a limited-slip one half as much again).
+                var kind = w.Group < c.GroupCount ? ConstructDrive.GroupKind(c, w.Group) : DiffKind.Locked;
+                if (kind != DiffKind.Locked && float.IsFinite(c.GroupGrip[w.Group]))
+                    jDrive = MathF.Min(jDrive, c.GroupGrip[w.Group] * (kind == DiffKind.Limited ? 1.5f : 1f));
+                jFwd += MathF.Sign(dir) * jDrive;
             }
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
             if (brake || ((!driving || want == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))

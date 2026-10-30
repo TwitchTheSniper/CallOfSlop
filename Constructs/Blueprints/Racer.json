@@ -1,0 +1,136 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Racer",
+  "description": "A low racer: a V8 behind the driver through a 6-speed sequential box (R up, sprint down) and a limited-slip differential, slicks on stiff suspension. Fast on hard ground, hopeless on dirt.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+0",
+      "by": "bottom"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 1,
+      "socket": "y+0",
+      "by": "-y"
+    },
+    {
+      "part": "Limited-Slip Differential",
+      "on": 0,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Sequential Gearbox",
+      "on": 4,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "V8 Engine",
+      "on": 5,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Fuel Line",
+      "on": 3,
+      "socket": "+z",
+      "by": "-x"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 4,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 4,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 10,
+      "socket": "-x",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 11,
+      "socket": "+x",
+      "by": "base"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 12,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 13,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 8,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 9,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 14,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 15,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Corner",
+      "on": 10,
+      "socket": "-z",
+      "by": "back"
+    },
+    {
+      "part": "Corner",
+      "on": 11,
+      "socket": "-z",
+      "by": "back"
+    }
+  ]
+}
