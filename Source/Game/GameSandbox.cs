@@ -13,7 +13,7 @@ public enum CActKind : byte
     Cancel,
     Use, // u16 body, u8 part
     Stand,
-    Rack, // u8 pick: 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere (protocol 79)
+    Rack, // u16 pick (protocol 87; u8 since 79): 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere
     Drop,
     PickUp, // u16 body
     Wire, // u16 body, u8 from part, u8 to part, u16 to body (the linking tool; milestone 2; protocol 83: the to body, 0 the same construct)
@@ -28,6 +28,8 @@ public enum CActKind : byte
     Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
     Stow, // the part in the hands into the backpack (protocol 85)
     Draw, // the next part in the backpack into empty hands (protocol 85)
+    Route, // u16 body, u8 type | style << 4, u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 87)
+    RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 87)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -419,6 +421,40 @@ public sealed partial class Game
                 var body = r.U16();
                 return hands.UseBin(Constructs, p.Id, eye, body, r.U8());
             }
+            case CActKind.Route:
+            {
+                var body = r.U16();
+                var ts = r.U8();
+                var from = r.U8();
+                var fromPort = r.U8();
+                var parent = r.U8();
+                var parentSeg = r.U8();
+                var junction = ReadCm(ref r);
+                var to = r.U8();
+                var toPort = r.U8();
+                int count = r.U8();
+                if (count > Construct.MaxNodesPerRoute)
+                    return "too many nodes";
+                Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
+                for (var i = 0; i < count; i++)
+                {
+                    var host = r.U8();
+                    nodes[i] = new CRouteNode { Host = host, Pos = ReadCm(ref r) };
+                }
+                return hands.Route(Constructs, p.Id, eye, body, (RouteType)(ts & 15), (byte)(ts >> 4), from, fromPort, parent, parentSeg, junction, nodes[..count], to, toPort);
+            }
+            case CActKind.RouteEdit:
+            {
+                var body = r.U16();
+                var op = r.U8();
+                var route = r.U8();
+                var node = r.U8();
+                var source = r.U8();
+                var to = r.U8();
+                var pos = ReadCm(ref r);
+                var host = r.U8();
+                return op > (byte)RouteEditOp.Repair ? "no such edit" : hands.RouteEdit(Constructs, p.Id, eye, body, (RouteEditOp)op, route, node, source, to, pos, host);
+            }
             case CActKind.SeatLook:
             {
                 ref var sh = ref hands.Hand(p.Id);
@@ -478,6 +514,48 @@ public sealed partial class Game
         }
         if (kind == CActKind.Tool)
             SandboxHands.Hand(LocalId).Tool = (ConstructTool)part; // (shown at once; the server follows)
+        if (IsServer)
+        {
+            if (Local is { } me)
+            {
+                var r = new PacketReader(w.Span[1..]);
+                if (SandboxAct(me, ref r, SandboxNow) is { } why)
+                    SandboxSay(why);
+            }
+            return;
+        }
+        Net.SendToServer(w.Span, PacketReliability.ReliableOrdered);
+    }
+
+    private static Vector3 ReadCm(ref PacketReader r) => new(unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f, unchecked((short)r.U16()) / 100f);
+
+    private static PacketWriter Cm(PacketWriter w, Vector3 v) =>
+        w.U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.X * 100), short.MinValue, short.MaxValue)))
+            .U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.Y * 100), short.MinValue, short.MaxValue)))
+            .U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.Z * 100), short.MinValue, short.MaxValue)));
+
+    /// <summary>Client (or host): ask for a routed link the linking tool laid out (the server checks it all again).</summary>
+    public void SandboxSendRoute(ushort body, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)((byte)type | style << 4)).U8((byte)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
+        Cm(w, junction).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
+        foreach (var n in nodes)
+            Cm(w.U8(n.Host), n.Pos);
+        SandboxSendBuilt(w);
+    }
+
+    /// <summary>Client (or host): an edit of a routed link (delete, move a node, repair).</summary>
+    public void SandboxSendRouteEdit(ushort body, RouteEditOp op, int route, int node, byte source, byte to, Vector3 pos = default, byte host = 0)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U8((byte)node).U8(source).U8(to);
+        Cm(w, pos).U8(host);
+        SandboxSendBuilt(w);
+    }
+
+    private void SandboxSendBuilt(PacketWriter w)
+    {
         if (IsServer)
         {
             if (Local is { } me)

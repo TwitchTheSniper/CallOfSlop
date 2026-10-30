@@ -103,7 +103,7 @@ public static unsafe partial class Program
             ToolRender.Shown(ToolRender.ViewSlot, tool, at - 2, out _);
             ToolRender.Shown(me.Id, tool, at - 2, out _);
             if (tool == ConstructTool.Linker && use)
-                _sbWireBody = 1; // (the beam: a wire being run)
+                _lkBody = 1; // (the beam: a link being routed)
         }
 
         var shotAt = 100.25;
@@ -116,7 +116,7 @@ public static unsafe partial class Program
             Hold(model, tool, true, ConstructParts.None, shotAt);
             Shot($"{model.Key}_fp_use", true, shotAt);
             Shot($"{model.Key}_tp_use", false, shotAt);
-            _sbWireBody = 0;
+            _lkBody = 0;
         }
         ToolRender.ShowModel = null;
         // A part carried to place: with the wrench out (in the off hand), and in bare hands (both hands).

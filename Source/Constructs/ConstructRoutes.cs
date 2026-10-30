@@ -125,7 +125,7 @@ public sealed partial class Construct
 /// part they are on, so links on jointed parts move with them (a cable flexes across a joint; a shaft may not cross one).
 /// Server-authoritative: the client proposes a route (CAct.Route), the server checks it with the same rules.
 /// </summary>
-public static class ConstructRoutes
+public static partial class ConstructRoutes
 {
     // ---- Tunable constants (the developer's answers of 2026-10-30, and the proposals) ------------------------------
 

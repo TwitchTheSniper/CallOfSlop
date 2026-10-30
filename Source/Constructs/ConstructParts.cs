@@ -169,6 +169,7 @@ public sealed class ConstructPartDef
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
     public Fluid TankFluid; // what the tank holds (routed links: the pipe style its output pre-selects)
+    public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
     public byte JointAxis; // hinge: the axis it turns about (0..5)
@@ -409,7 +410,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "legacy",
     ];
 
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -450,6 +451,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
+        d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, 5000f, file, "mass");
         d.Health = Num(Need(root, "health", file), file, "health");

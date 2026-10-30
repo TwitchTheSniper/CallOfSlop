@@ -286,7 +286,8 @@ public static class ConstructBuild
         public string Name = "", File = "", Description = "";
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
         public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
-        public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2)
+        public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
+        public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -381,8 +382,12 @@ public static class ConstructBuild
                         bp.Wires.Add((wire[0].GetInt32(), wire[1].GetInt32()));
                     }
                     break;
+                case "links":
+                    foreach (var link in p.Value.EnumerateArray())
+                        bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
+                    break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -464,6 +469,16 @@ public static class ConstructBuild
             }
             world.AddWire(c, partOf[from], partOf[to]);
         }
+        // The routed links, through the linking tool's rules.
+        for (var k = 0; k < bp.Links.Count; k++)
+            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf[..bp.Steps.Count]) is { } bad)
+            {
+                why = $"links[{k}]: {bad}";
+                world.Remove(c);
+                return null;
+            }
+        // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
+        ConstructRoutes.MigrateLegacy(world, c);
         c.Rebuild();
         return c;
     }

@@ -2,6 +2,7 @@
   "format": "call-of-slop-construct-part/1",
   "name": "Drive Shaft 2 m",
   "description": "A 2 m drive shaft: the drive goes in one end and out of the other (not its side). Shoot it and the wheels beyond it stop.",
+  "legacy": true,
   "role": "transfer",
   "tool": "wrench",
   "attachSeconds": 1.5,
