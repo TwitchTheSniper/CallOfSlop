@@ -301,7 +301,7 @@ public sealed partial class ConstructWorld
     {
         if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= MaxTotalWires)
             return false;
-        if (ConstructRoutes.Add(this, c, RouteType.Data, 0, from, 255, 255, 0, default, default, to, 255) < 0)
+        if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, 255) < 0)
             return false;
         c.Rebuild(); // (the wire is there at once, as it always was)
         return true;
@@ -1117,7 +1117,7 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
         {
             ConstructPower.Step(this, c, dt);
-            ConstructRoutes.Step(this, c, dt); // (routed links: leaks, wrong pipes, sparks, chutes)
+            ConstructRoutes.Step(this, c, dt); // (routed links: leaks, sparks, chutes)
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)

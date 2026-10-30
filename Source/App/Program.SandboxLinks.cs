@@ -4,7 +4,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The linking tool's routed links on this PC (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"). The tool wheel's
-/// outer ring round the linking tool picks the type, a pipe's style and the edit modes (SandboxLinkWheel). Routing: LMB on an output (a picker when it
+/// outer ring round the linking tool picks the type and the edit modes (SandboxLinkWheel). Routing: LMB on an output (a picker when it
 /// has several ports), then each LMB places a node on the surface under the crosshair (snapped; the preview turns red
 /// with the reason when a rule is broken), RMB or Backspace takes the last node off, LMB on an input finishes (a picker
 /// for its port), Esc cancels. LMB on a link of the same type branches off it. The edit modes delete a link, move a
@@ -27,7 +27,7 @@ public static partial class Program
 
     private static ushort _lkBody; // a link being routed on this construct (0: none)
     private static int _lkFrom = -1, _lkParent = 255, _lkParentSeg;
-    private static byte _lkFromPort = 255, _lkStyle;
+    private static byte _lkFromPort = 255;
     private static RouteType _lkType;
     private static Vector3 _lkJunction;
     private static readonly CRouteNode[] _lkNodes = new CRouteNode[Construct.MaxNodesPerRoute];
@@ -141,10 +141,6 @@ public static partial class Program
         return true;
     }
 
-    /// <summary>The style a new pipe from part <paramref name="from"/> gets: the wheel's override, else what the output carries.</summary>
-    private static byte LinkStyle(Construct c, int from) =>
-        _linkWheel.Type != RouteType.Pipe ? (byte)0 : _linkWheel.Style != 255 ? _linkWheel.Style : (byte)ConstructRoutes.StyleFor(c.DefOf(from));
-
     /// <summary>A point under the crosshair in the rest frame of the hit part's segment (and the normal there).</summary>
     private static void RestPoint(in ConstructHit hit, out Vector3 p, out Vector3 n)
     {
@@ -198,13 +194,13 @@ public static partial class Program
 
     private static ConstructRoutes.OpenRule LinkOpenRule(Construct c, byte host) => new()
     {
-        C = c, Type = _lkType, Style = _lkStyle, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction, Nodes = _lkNodes,
+        C = c, Type = _lkType, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction, Nodes = _lkNodes,
         Count = _lkCount, Host = host,
     };
 
     private static ConstructRoutes.ClosedRule LinkClosedRule(Construct c) => new()
     {
-        World = _game?.Constructs, C = c, Type = _lkType, Style = _lkStyle, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction,
+        World = _game?.Constructs, C = c, Type = _lkType, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction,
         Nodes = _lkNodes, Count = _lkCount, Node = _lkCount - 1, To = _lkAdjEnd, ToPort = _lkAdjEndPort,
     };
 
@@ -220,21 +216,21 @@ public static partial class Program
         _lkAdjHost = host;
         _lkScroll = 0;
         _lkAdjKey = int.MinValue;
-        LinkAdjustType(c, out var type, out var style);
+        LinkAdjustType(c, out var type);
         int? found;
         switch (kind)
         {
             case LinkAdjust.Node:
                 var open = LinkOpenRule(c, host);
-                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref open);
+                found = ConstructRoutes.AdjustSearch(type, _lkAdjBase, _lkAdjNormal, ref open);
                 break;
             case LinkAdjust.End:
                 var closed = LinkClosedRule(c);
-                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref closed);
+                found = ConstructRoutes.AdjustSearch(type, _lkAdjBase, _lkAdjNormal, ref closed);
                 break;
             default:
                 var move = new ConstructRoutes.MoveRule { C = c, Route = _lkMoveRoute, Node = _lkMoveNode, Host = host };
-                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref move);
+                found = ConstructRoutes.AdjustSearch(type, _lkAdjBase, _lkAdjNormal, ref move);
                 break;
         }
         _lkAdjCm = found ?? 0;
@@ -242,17 +238,15 @@ public static partial class Program
             g.SandboxSay($"{why} (hold LMB and scroll to move it along the surface normal)");
     }
 
-    private static void LinkAdjustType(Construct c, out RouteType type, out byte style)
+    private static void LinkAdjustType(Construct c, out RouteType type)
     {
         if (_lkAdj == LinkAdjust.Move && _lkMoveRoute >= 0 && _lkMoveRoute < c.RouteCount)
         {
             type = c.Routes[_lkMoveRoute].Type;
-            style = c.Routes[_lkMoveRoute].Style;
         }
         else
         {
             type = _lkType;
-            style = _lkStyle;
         }
     }
 
@@ -263,13 +257,13 @@ public static partial class Program
     /// </summary>
     private static void LinkAdjustFrame(Game g, Construct c, int n0)
     {
-        LinkAdjustType(c, out var type, out var style);
+        LinkAdjustType(c, out var type);
         var steps = (int)_lkScroll;
         _lkScroll -= steps;
         if (steps != 0)
         {
             var ctrl = _window.GetKey(Brutal.GlfwApi.GlfwKey.LeftControl) == Brutal.GlfwApi.GlfwKeyAction.Press || _window.GetKey(Brutal.GlfwApi.GlfwKey.RightControl) == Brutal.GlfwApi.GlfwKeyAction.Press;
-            _lkAdjCm = ConstructRoutes.AdjustClamp(type, style, _lkAdjCm + steps * (ctrl ? ConstructRoutes.AdjustBigStepCm : ConstructRoutes.AdjustStepCm));
+            _lkAdjCm = ConstructRoutes.AdjustClamp(type, _lkAdjCm + steps * (ctrl ? ConstructRoutes.AdjustBigStepCm : ConstructRoutes.AdjustStepCm));
         }
         var pos = ConstructRoutes.AdjustPos(_lkAdjBase, _lkAdjNormal, _lkAdjCm);
         // (checked again only when the spot changes)
@@ -289,7 +283,6 @@ public static partial class Program
         // The preview.
         RouteRender.PreviewBody = c;
         RouteRender.PreviewType = type;
-        RouteRender.PreviewStyle = style;
         var hostSeg = (byte)c.Parts[Math.Min((int)_lkAdjHost, c.PartCount - 1)].Seg;
         switch (_lkAdj)
         {
@@ -405,12 +398,11 @@ public static partial class Program
         _lkParent = 255;
         _lkCount = 0;
         _lkType = _linkWheel.Type;
-        _lkStyle = LinkStyle(c, from);
     }
 
     private static void LinkFinish(Game g, Construct c, int to, byte port)
     {
-        g.SandboxSendRoute(c.Id, _lkType, _lkStyle, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), to, port);
+        g.SandboxSendRoute(c.Id, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), to, port);
         LinkReset();
     }
 
@@ -426,7 +418,7 @@ public static partial class Program
         RouteRender.AimRoute = k;
         var hp = ConstructRoutes.SegmentHealth(c, k, hit.RouteSeg);
         var repair = h.Tool is ConstructTool.Wrench or ConstructTool.Welder && h.Held == ConstructParts.None;
-        var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ ((long)r.Issue << 20) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
+        var key = ((long)c.Id << 40) ^ ((long)k << 32) ^ ((long)hit.RouteSeg << 24) ^ (long)(hp * 10) ^ (repair ? 1L << 62 : 0) ^ ((long)h.Tool << 56)
                   ^ (r.FedEnd ? 1L << 61 : 0) ^ ((long)(r.Share * 100) << 12);
         if (key != _lkLookKey)
         {
@@ -435,10 +427,8 @@ public static partial class Program
             var what = r.Source < c.PartCount && r.To < c.PartCount ? $"{c.DefOf(r.Source).Name} -> {c.DefOf(r.To).Name}" : "";
             var share = r.Type != RouteType.Data && r.Share < 0.999f ? $", {r.Share * 100:0}% of the flow" : "";
             var state = hp <= 0 ? " - CUT" : !r.FedEnd ? " - cut further back" : "";
-            var issue = r.Source < c.PartCount && ConstructRoutes.FluidOf(c.DefOf(r.Source)) is { } f ? ConstructRoutes.IssueText(r.Issue, f, (PipeStyle)r.Style) : null;
             var damaged = hp < full || ConstructRoutes.SegmentHealth(c, k, r.Count) < full;
-            _lkLook = $"{char.ToUpperInvariant(ConstructRoutes.Name(r.Type, r.Style)[0])}{ConstructRoutes.Name(r.Type, r.Style)[1..]}: {what}{share} {MathF.Max(0, hp):0}/{full:0}{state}"
-                      + (issue != null ? $" | {issue}" : "")
+            _lkLook = $"{char.ToUpperInvariant(ConstructRoutes.Name(r.Type)[0])}{ConstructRoutes.Name(r.Type)[1..]}: {what}{share} {MathF.Max(0, hp):0}/{full:0}{state}"
                       + (repair && damaged ? " - LMB to repair" : "");
         }
         g.SandboxLookText = _lkLook;
@@ -499,7 +489,7 @@ public static partial class Program
                 if (aimed && hit.Body == mc && !onRoute)
                 {
                     RestPoint(hit, out var p, out var n);
-                    var at = ConstructRoutes.Snap(mc, mc.Routes[_lkMoveRoute].Type, mc.Routes[_lkMoveRoute].Style, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mc.Routes[_lkMoveRoute].Type, mc.Routes[_lkMoveRoute].Style), n);
+                    var at = ConstructRoutes.Snap(mc, mc.Routes[_lkMoveRoute].Type, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mc.Routes[_lkMoveRoute].Type), n);
                     var mk = HashCode.Combine(at, hit.Part, _lkMoveRoute, _lkMoveNode, mc.RouteCount, 1);
                     if (mk != _lkCheckKey)
                     {
@@ -509,7 +499,6 @@ public static partial class Program
                     _lkWhy = _lkCheckWhy;
                     RouteRender.PreviewBody = mc;
                     RouteRender.PreviewType = mc.Routes[_lkMoveRoute].Type;
-                    RouteRender.PreviewStyle = mc.Routes[_lkMoveRoute].Style;
                     RouteRender.PreviewPts[0] = ConstructRoutes.Point(mc, _lkMoveRoute, _lkMoveNode - 1, out var s0);
                     RouteRender.PreviewSeg[0] = (byte)s0;
                     RouteRender.PreviewPts[1] = at;
@@ -564,13 +553,11 @@ public static partial class Program
                         break;
                     case LinkMode.Reroute:
                         var type = r.Type;
-                        var style = r.Style;
                         var source = r.Source;
                         var port = r.Parent == 255 ? r.FromPort : (byte)255;
                         g.SandboxSendRouteEdit(c.Id, RouteEditOp.Delete, k, 0, r.Source, r.To);
                         w.Type = type;
                         LinkStart(c, source, port);
-                        _lkStyle = style;
                         w.Mode = LinkMode.Link;
                         break;
                 }
@@ -592,7 +579,6 @@ public static partial class Program
             var n0 = 0;
             RouteRender.PreviewBody = rc;
             RouteRender.PreviewType = _lkType;
-            RouteRender.PreviewStyle = _lkStyle;
             RouteRender.PreviewPts[n0] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(rc, _lkFrom, _lkFromPort);
             RouteRender.PreviewSeg[n0++] = (byte)(_lkParent != 255 ? rc.Parts[Math.Min(ConstructRoutes.HostOf(rc, _lkParent, _lkParentSeg), rc.PartCount - 1)].Seg : rc.Parts[_lkFrom].Seg);
             for (var i = 0; i < _lkCount; i++)
@@ -651,15 +637,15 @@ public static partial class Program
                     next = ConstructRoutes.PortPoint(rc, endPart, endPort);
                 }
                 else
-                    next = ConstructRoutes.Snap(rc, _lkType, _lkStyle, at, tailDir, p, nrm);
+                    next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, p, nrm);
                 // (checked again only when the candidate changes: the reasons are made once, not every frame)
-                var ck = HashCode.Combine(next, endPart, endPort, _lkCount, hit.Part, (int)_lkType, _lkStyle, rc.RouteCount);
+                var ck = HashCode.Combine(next, endPart, endPort, _lkCount, hit.Part, (int)_lkType, rc.RouteCount);
                 if (ck != _lkCheckKey)
                 {
                     _lkCheckKey = ck;
                     _lkCheckWhy = input
-                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkStyle, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort)
-                        : ConstructRoutes.OpenPath(rc, _lkType, _lkStyle, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
+                        ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort)
+                        : ConstructRoutes.OpenPath(rc, _lkType, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
                 }
                 _lkWhy = _lkCheckWhy;
                 RouteRender.PreviewPts[n0] = next;
@@ -713,7 +699,7 @@ public static partial class Program
                 var k = hit.RoutePlus1 - 1;
                 ref var r = ref c.Routes[k];
                 if (r.Type != w.Type)
-                    g.SandboxSay($"that is a {ConstructRoutes.Name(r.Type, r.Style)}: pick its type on the tool wheel to branch off it");
+                    g.SandboxSay($"that is a {ConstructRoutes.Name(r.Type)}: pick its type on the tool wheel to branch off it");
                 else if (r.Type == RouteType.Shaft && ConstructRoutes.ShaftJunctionNeedsTBox)
                     g.SandboxSay("a drive shaft branches only through a T gearbox");
                 else
@@ -732,14 +718,13 @@ public static partial class Program
                     _lkJunction = ConstructWorld.Quantise(on);
                     _lkCount = 0;
                     _lkType = r.Type;
-                    _lkStyle = r.Style;
                 }
             }
             else
             {
                 var d = c.DefOf(hit.Part);
                 if (!ConstructRoutes.IsOutput(d, w.Type))
-                    g.SandboxSay($"a {d.Name} has no {ConstructRoutes.Name(w.Type, LinkStyle(c, hit.Part))} output ({ConstructRoutes.OutputHint(w.Type)})");
+                    g.SandboxSay($"a {d.Name} has no {ConstructRoutes.Name(w.Type)} output ({ConstructRoutes.OutputHint(w.Type)})");
                 else
                 {
                     _lkType = w.Type;
@@ -772,8 +757,8 @@ public static partial class Program
     private static void LinkHud(Game g)
     {
         var w = _linkWheel;
-        var key = (long)w.Type ^ ((long)w.Style << 4) ^ ((long)w.Mode << 12) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
-                  ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)_lkStyle << 52) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
+        var key = (long)w.Type ^ ((long)w.Mode << 12) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
+                  ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
                   ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8) ^ (_lkWorld ? 1L << 49 : 0);
         if (key == _lkHudKey)
         {
@@ -781,9 +766,7 @@ public static partial class Program
             return;
         }
         _lkHudKey = key;
-        var type = ConstructRoutes.Name(_lkBody != 0 ? _lkType : w.Type, _lkBody != 0 ? _lkStyle : w.Type == RouteType.Pipe && w.Style != 255 ? w.Style : (byte)0);
-        if (_lkBody == 0 && w.Type == RouteType.Pipe && w.Style == 255)
-            type = "pipe (style from the output)";
+        var type = ConstructRoutes.Name(_lkBody != 0 ? _lkType : w.Type);
         if (_lkWorld)
             type = $"world {type}"; // (off its construct: Program.SandboxWorldLinks.cs)
         var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);

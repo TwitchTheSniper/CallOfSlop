@@ -34,12 +34,12 @@ public enum CActKind : byte
     GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
     UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
     Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
-    Route, // u16 body, u8 type | style << 4, u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
+    Route, // u16 body, u8 type (protocol 98: the high nibble, a pipe style, is gone), u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
     RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
     Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 92; GameSandboxSpawns.cs)
     ClearSpawns, // every spawned bot and zombie goes (protocol 92)
     Snap, // u8 op (0 undo, 1 quick building off, 2 quick building on, 3 pick: then u16 body, u8 part; 4 take a kind: u16 part id): snappy building (protocol 94; GameSandboxSnap.cs)
-    WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 95; board item wl01)
+    WorldRoute, // u8 type (protocol 98: the high nibble, a pipe style, is gone), u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 95; board item wl01)
     WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 95)
     Bench, // u8 kind (0 put, 3 take apart, 6 open, 7 spawn a standard build), u8 slot, u16 length, the build's text: the Gun Workbench (protocol 96; GameSandboxBench.cs)
     FreeformWeld, // u16 body, u8 part, u16 second body, u8 its part: the welder welds the two where they are (protocol 97; board item fw01)
@@ -526,7 +526,7 @@ public sealed partial class Game
                     var host = r.U8();
                     nodes[i] = new CRouteNode { Host = host, Pos = ReadCm(ref r) };
                 }
-                return hands.Route(Constructs, p.Id, eye, body, (RouteType)(ts & 15), (byte)(ts >> 4), from, fromPort, parent, parentSeg, junction, nodes[..count], to, toPort);
+                return hands.Route(Constructs, p.Id, eye, body, (RouteType)(ts & 15), from, fromPort, parent, parentSeg, junction, nodes[..count], to, toPort);
             }
             case CActKind.RouteEdit:
             {
@@ -626,10 +626,10 @@ public sealed partial class Game
             .U16(unchecked((ushort)(short)Math.Clamp(MathF.Round(v.Z * 100), short.MinValue, short.MaxValue)));
 
     /// <summary>Client (or host): ask for a routed link the linking tool laid out (the server checks it all again).</summary>
-    public void SandboxSendRoute(ushort body, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
+    public void SandboxSendRoute(ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)((byte)type | style << 4)).U8((byte)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
+        w.Begin(Msg.CAct).U8((byte)CActKind.Route).U16(body).U8((byte)type).U8((byte)from).U8(fromPort).U8((byte)parent).U8((byte)parentSeg);
         Cm(w, junction).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
         foreach (var n in nodes)
             Cm(w.U8(n.Host), n.Pos);

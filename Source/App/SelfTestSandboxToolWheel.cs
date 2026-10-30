@@ -217,12 +217,15 @@ public static partial class SelfTest
             var m = wheel.Menu;
             wheel.Step(g, false, Vector2.Zero, false);
             wheel.Step(g, true, Vector2.Zero, false);
-            var linkI = (int)SandboxToolWheel.Slot.Linker;
-            var pipeI = (int)SandboxLinkWheel.Option.Pipe;
+            // (the linking tool's pipe has no third tier since there is one pipe: a test set on the welder slot has one)
+            var linkI = (int)SandboxToolWheel.Slot.Welder;
+            var pipeI = 1;
+            wheel.SetOptions(SandboxToolWheel.Slot.Welder, new TestTieredOptions());
             var optN = m.Items[linkI].Options?.Length ?? 0;
             var centreA = RadialMenu.OptionAngle(pipeI, linkI, (int)SandboxToolWheel.Slot.COUNT, optN);
             var subA = RadialMenu.ArcAngle(1, centreA, 5, RadialMenu.SubStepMax);
-            wheel.Step(g, true, new Vector2(-45, 0), false);
+            var toward = RadialMenu.SegmentAngle(linkI, (int)SandboxToolWheel.Slot.COUNT);
+            wheel.Step(g, true, new Vector2(MathF.Sin(toward), -MathF.Cos(toward)) * 45f, false);
             wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * 120f - m.Pointer, false);
             wheel.Step(g, true, new Vector2(MathF.Sin(subA), -MathF.Cos(subA)) * (m.Reach + m.OuterDepth + RadialMenu.SubGap + 14f) - m.Pointer, false);
             var tierShown = m.SubRing == pipeI && m.HoveredSub == 1;

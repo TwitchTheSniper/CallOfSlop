@@ -74,14 +74,14 @@ public static partial class ConstructRoutes
     /// then the nodes, then, when <paramref name="closed"/>, the input's port. <paramref name="hosts"/>: what each point is on.
     /// Null when it is fine, else the reason.
     /// </summary>
-    public static string? WorldPathRule(ConstructWorld world, IWorldQuery? q, RouteType type, byte style, ReadOnlySpan<Vector3> pts, ReadOnlySpan<WHost> hosts, bool closed)
+    public static string? WorldPathRule(ConstructWorld world, IWorldQuery? q, RouteType type, ReadOnlySpan<Vector3> pts, ReadOnlySpan<WHost> hosts, bool closed)
     {
         var n = pts.Length;
         if (n < 2 || hosts.Length < n)
             return null;
         if (type == RouteType.Shaft)
             return "a drive shaft can't run between constructs: torque stays on one body";
-        var radius = Radius(type, style);
+        var radius = Radius(type);
         Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
         if (n > along.Length)
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
@@ -157,9 +157,9 @@ public static partial class ConstructRoutes
     /// surface by the link's radius, on the <see cref="Grid"/> across it (on the ground: the height found again under the
     /// snapped spot), then the type's angle rule (<see cref="AngleSnap"/>). Quantised to 1 cm.
     /// </summary>
-    public static Vector3 WorldSnap(IWorldQuery? q, RouteType type, byte style, Vector3 prev, Vector3 prevDir, Vector3 surface, Vector3 normal)
+    public static Vector3 WorldSnap(IWorldQuery? q, RouteType type, Vector3 prev, Vector3 prevDir, Vector3 surface, Vector3 normal)
     {
-        var radius = Radius(type, style);
+        var radius = Radius(type);
         var nrm = normal.LengthSquared() > 1e-6f ? Vector3.Normalize(normal) : Vector3.UnitY;
         var p = surface + nrm * radius;
         var axis = MathF.Abs(nrm.X) > MathF.Abs(nrm.Y) ? MathF.Abs(nrm.X) > MathF.Abs(nrm.Z) ? 0 : 2 : MathF.Abs(nrm.Y) > MathF.Abs(nrm.Z) ? 1 : 2;
@@ -180,7 +180,6 @@ public static partial class ConstructRoutes
         public ConstructWorld World;
         public IWorldQuery? Query;
         public RouteType Type;
-        public byte Style;
         public Vector3[] Pts; // the start and the nodes so far (world)
         public WHost[] Hosts;
         public int Count;
@@ -190,11 +189,11 @@ public static partial class ConstructRoutes
         {
             if (Count > Construct.MaxNodesPerRoute)
                 return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
-            if (Host.C == null && Query != null && ConstructWorld.FindSupport(Query, pos, Radius(Type, Style)) == Vector3.Zero)
+            if (Host.C == null && Query != null && ConstructWorld.FindSupport(Query, pos, Radius(Type)) == Vector3.Zero)
                 return "a node must sit on a surface (the ground, a wall, a construct)";
             Pts[Count] = pos;
             Hosts[Count] = Host;
-            return WorldPathRule(World, Query, Type, Style, Pts.AsSpan(0, Count + 1), Hosts.AsSpan(0, Count + 1), false);
+            return WorldPathRule(World, Query, Type, Pts.AsSpan(0, Count + 1), Hosts.AsSpan(0, Count + 1), false);
         }
     }
 }

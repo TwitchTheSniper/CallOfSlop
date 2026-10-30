@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
-  "name": "Fuel Hose Inlet",
-  "description": "A coupler socket for a fuel hose: plug the nozzle from a matching reel into it (F). F again takes it out.",
+  "name": "Fluid Hose Inlet",
+  "description": "A coupler socket for a fluid hose: plug the nozzle from a fluid hose reel into it (F). F again takes it out.",
   "role": "hose",
   "tool": "wrench",
   "attachSeconds": 1.0,
@@ -34,7 +34,7 @@
         0.06,
         0.1
       ],
-      "color": "#b8352c"
+      "color": "#4a6f8c"
     }
   ],
   "sockets": [
@@ -59,7 +59,7 @@
   ],
   "hose": {
     "end": "inlet",
-    "carries": "fuel",
+    "carries": "fluid",
     "at": [
       0,
       0,

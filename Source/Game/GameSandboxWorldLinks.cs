@@ -39,7 +39,7 @@ public sealed partial class Game
         Span<WNode> nodes = stackalloc WNode[Construct.MaxNodesPerRoute];
         for (var i = 0; i < count; i++)
             nodes[i] = new WNode { Body = r.U16(), Part = r.U8(), Pos = r.Vec() };
-        return SandboxHands.WorldRoute(Constructs, World.Query, p.Id, p.Eye, (RouteType)(ts & 15), (byte)(ts >> 4), fb, fp, fport, nodes[..count], tb, tp, tport);
+        return SandboxHands.WorldRoute(Constructs, World.Query, p.Id, p.Eye, (RouteType)(ts & 15), fb, fp, fport, nodes[..count], tb, tp, tport);
     }
 
     /// <summary>Server: F on a part: a hose part's own action (true), else not handled here (false: the ordinary Use).</summary>
@@ -83,10 +83,10 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or host): ask for a world link the linking tool laid out (the server checks it all again).</summary>
-    public void SandboxSendWorldRoute(RouteType type, byte style, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes, ushort toBody, int to, byte toPort)
+    public void SandboxSendWorldRoute(RouteType type, ushort fromBody, int from, byte fromPort, ReadOnlySpan<WNode> nodes, ushort toBody, int to, byte toPort)
     {
         var w = SbW;
-        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)((byte)type | style << 4)).U16(fromBody).U8((byte)from).U8(fromPort).U16(toBody).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
+        w.Begin(Msg.CAct).U8((byte)CActKind.WorldRoute).U8((byte)type).U16(fromBody).U8((byte)from).U8(fromPort).U16(toBody).U8((byte)to).U8(toPort).U8((byte)nodes.Length);
         foreach (var n in nodes)
             w.U16(n.Body).U8(n.Part).Vec(n.Pos);
         SandboxSendBuilt(w);

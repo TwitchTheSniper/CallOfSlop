@@ -18,19 +18,19 @@ public enum RouteEditOp : byte
 public sealed partial class ConstructEdits
 {
     /// <summary>The linking tool: a routed link. Null, or why not.</summary>
-    public string? Route(ConstructWorld world, byte player, Vector3 eye, ushort body, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg,
+    public string? Route(ConstructWorld world, byte player, Vector3 eye, ushort body, RouteType type, int from, byte fromPort, int parent, int parentSeg,
         Vector3 junction, ReadOnlySpan<CRouteNode> nodes, int to, byte toPort)
     {
         if (Linking(world, player, eye, body, to, out var c) is { } why)
             return why;
         if (parent == 255 && Linking(world, player, eye, body, from, out _) is { } why2)
             return why2;
-        if (ConstructRoutes.Check(world, c!, type, style, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) is { } bad)
+        if (ConstructRoutes.Check(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) is { } bad)
             return bad;
-        if (ConstructRoutes.Add(world, c!, type, style, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) < 0)
+        if (ConstructRoutes.Add(world, c!, type, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) < 0)
             return "no room for another link";
         c!.Rebuild();
-        Done.Add($"player {player}: {ConstructRoutes.Name(type, style)} {(parent == 255 ? c.DefOf(from).Name : "branch")} -> {c.DefOf(to).Name} on construct {c.Id} ({nodes.Length} nodes)");
+        Done.Add($"player {player}: {ConstructRoutes.Name(type)} {(parent == 255 ? c.DefOf(from).Name : "branch")} -> {c.DefOf(to).Name} on construct {c.Id} ({nodes.Length} nodes)");
         return null;
     }
 
@@ -62,7 +62,7 @@ public sealed partial class ConstructEdits
         switch (op)
         {
             case RouteEditOp.Delete:
-                var name = ConstructRoutes.Name(r.Type, r.Style);
+                var name = ConstructRoutes.Name(r.Type);
                 ConstructRoutes.Remove(world, c, route);
                 c.Rebuild();
                 Done.Add($"player {player}: deleted a {name} on construct {c.Id}");
@@ -76,9 +76,9 @@ public sealed partial class ConstructEdits
                 return null;
             case RouteEditOp.Repair:
                 if (!ConstructRoutes.Repair(world, c, route))
-                    return $"that {ConstructRoutes.Name(r.Type, r.Style)} isn't damaged";
+                    return $"that {ConstructRoutes.Name(r.Type)} isn't damaged";
                 c.Rebuild();
-                Done.Add($"player {player}: repaired a {ConstructRoutes.Name(r.Type, r.Style)} on construct {c.Id}");
+                Done.Add($"player {player}: repaired a {ConstructRoutes.Name(r.Type)} on construct {c.Id}");
                 return null;
         }
         return "no such edit";
