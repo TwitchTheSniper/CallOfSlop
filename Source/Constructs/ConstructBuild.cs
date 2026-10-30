@@ -235,10 +235,10 @@ public static class ConstructBuild
             return "a part can't be wired to itself";
         if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
             return "an input reader reads a seat: wire it from one";
-        for (var k = 0; k < c.WireCount; k++)
-            if (c.Wires[k].From == from && c.Wires[k].To == to)
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Data && c.Routes[k].Source == from && c.Routes[k].To == to)
                 return "those are already wired";
-        if (c.WiresInto(to) >= td.MaxInputs)
+        if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
             return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         c.PartBounds(from, out var a0, out var a1);
         c.PartBounds(to, out var b0, out var b1);
@@ -246,9 +246,9 @@ public static class ConstructBuild
         c.SegPose(c.Parts[to].Seg, out var qb, out var tb);
         if (Vector3.Distance(ta + Vector3.Transform((a0 + a1) * 0.5f, qa), tb + Vector3.Transform((b0 + b1) * 0.5f, qb)) > WireReach)
             return $"a wire reaches at most {WireReach:0} m";
-        if (c.WireCount >= Construct.MaxWires)
-            return $"at most {Construct.MaxWires} wires a construct";
-        if (world.TotalWires >= ConstructWorld.MaxTotalWires)
+        if (c.RouteCount >= Construct.MaxRoutes)
+            return $"at most {Construct.MaxRoutes} wires a construct";
+        if (world.TotalRoutes >= ConstructWorld.MaxTotalWires)
             return "the world has all the wires it can take";
         return null;
     }

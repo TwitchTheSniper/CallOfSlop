@@ -602,7 +602,9 @@ public sealed partial class Game
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
-        if (hit.SlotPlus1 > 0)
+        if (hit.RoutePlus1 > 0)
+            ConstructRoutes.Damage(Constructs, c, hit.RoutePlus1 - 1, hit.RouteSeg, damage); // (a routed link's segment: cut, it stops what it carries)
+        else if (hit.SlotPlus1 > 0)
             Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
         else
             Constructs.DamagePart(c, hit.Part, damage, out _);

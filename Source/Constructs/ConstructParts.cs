@@ -168,6 +168,7 @@ public sealed class ConstructPartDef
     public float WheelRadius, Grip = 1f; // wheel
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
+    public Fluid TankFluid; // what the tank holds (routed links: the pipe style its output pre-selects)
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
     public byte JointAxis; // hinge: the axis it turns about (0..5)
@@ -589,9 +590,10 @@ public static partial class ConstructParts
                 ParseSuspension(d, block!.Value, file, bw);
                 break;
             case PartRole.FuelTank:
-                Known(block!.Value, ["capacity"], bw);
+                Known(block!.Value, ["capacity", "fluid"], bw);
                 d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fuelTank.capacity");
                 Range(d.FuelCapacity, 0.1f, 10000, file, "fuelTank.capacity");
+                d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel; // (routed links: a pipe's style)
                 break;
             case PartRole.Seat:
                 Known(block!.Value, ["at"], bw);
