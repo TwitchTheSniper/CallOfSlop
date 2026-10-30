@@ -131,6 +131,11 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Frenzy buffs stay strong.**
 - **Smoke tests never touch real saves.** Deletions are batched for the user to approve. Ask the user one question at a time.
 - **Focused tests on branches** (the `[tests: ...]` tag). The full suite runs on main at merge.
+- **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI
+  run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong,
+  why, and the rule that prevents it. Where you can, also add a check that enforces the rule (a self-test, a CI step or
+  a script, like the all-maps sections). The coordinator reviews Lessons now and then and folds repeated lessons into
+  Gotchas or into tests, removing the entries it folded.
 
 ## Gotchas
 
@@ -159,3 +164,18 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **The map list order matters to tests.** Many self-tests use the first map. New packs and dev maps get a high `order`.
 - **`[tests: ...]` in a commit message is parsed literally**, so don't quote it in prose on a branch.
 - **Known flaky checks** are listed in `HANDOFF.md`. Re-run once before chasing them.
+
+## Lessons
+
+One line each: date, what went wrong, why, the rule (and the check, if any). See "Record lessons" above.
+
+- 2026-10-23: three map branches passed their own `[tests: ...]` tags and then failed on main. Why: the all-maps
+  sections only run in main's full suite. Rule: map, prop and decal branches always run the all-maps sections
+  (`tools/mapkit/check_branch.py` prints them).
+- 2026-10-27: a release was blocked by "Bot stuck watch" failing on Windows only. Why: a known Windows flake, and
+  branch CI ran Linux only. Rule: re-run a check listed in HANDOFF.md once before chasing it; main now runs Windows on
+  every push.
+- 2026-10-28: Back to lobby was reported disconnecting clients after it was marked done (board
+  dev-back-to-lobby-again-bl02). Why: the first fix had no test with a real host and a separate client, and the report
+  couldn't be reproduced (look-alike buttons or mismatched builds suspected). Rule: networking fixes get a test with
+  separate peers over the real transport, kept in the full suite; peers check each other's build on join.
