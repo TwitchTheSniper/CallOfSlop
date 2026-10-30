@@ -377,6 +377,11 @@ the part going, or walking more than 10 m from it.
 
 - **Anchored beside the part**: the card sits to the right of the part on screen (to its left near the edge), and
   follows it as you move; with the part off screen it sits at the right edge.
+- **A plain window, not a menu**: no dim behind it (`Ui.SceneDim`; the parts inventory doesn't dim either, the pause
+  menu still does), the match runs on, the part keeps its outline and the previews show; its background is slightly
+  see-through. **Drag it** by the title bar or any empty area (kept fully on screen): once moved, every panel opens
+  where you left it for the rest of the session; **Snap back** (or a double-click on the title bar) puts it beside
+  the part again.
 - **Header**: the part's tile (the inventory's picture of it), its name, the construct (number, and whose: yours,
   nobody's or the owner's name), the part number and a health bar.
 - **Settings, grouped** as the part file groups them (Timing, Light, Motor...), each with a plain label (units in the
