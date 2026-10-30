@@ -72,6 +72,7 @@ public sealed class SandboxCatalogue
             case PartRole.Hinge: return ("Joints", "Hinges");
             case PartRole.Joint: return ("Joints", "Moving joints");
             case PartRole.Hitch: return ("Joints", "Hitches and chains");
+            case PartRole.Hose: return ("Joints", "Hoses and leads"); // (connections between constructs, like the hitches: board item wl01)
             case PartRole.Battery: return ("Power", "Batteries");
             case PartRole.Alternator: return ("Power", "Alternators");
             case PartRole.Gun: return ("Weapons", "Guns");
