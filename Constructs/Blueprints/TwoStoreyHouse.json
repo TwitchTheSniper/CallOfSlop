@@ -1,0 +1,140 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Two-Storey House",
+  "description": "A 4 by 8 m concrete house on two foundations: a front door, windows on both floors, a straight stair up through the floor, a wooden ridge roof.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Door Corner",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Straight Stair 3 m",
+      "on": 6,
+      "socket": "k8_0",
+      "by": "r0"
+    },
+    {
+      "part": "Concrete Stair Floor 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Floor 4x4 m",
+      "on": 4,
+      "socket": "t0_0",
+      "by": "b15_15"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 9,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 9,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Concrete Wall Corner",
+      "on": 10,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Concrete Window Corner",
+      "on": 10,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 9,
+      "socket": "t0_8",
+      "by": "b15",
+      "spin": 1
+    },
+    {
+      "part": "Concrete Window Wall 4 m",
+      "on": 9,
+      "socket": "t15_8",
+      "by": "b0",
+      "spin": 2
+    },
+    {
+      "part": "Wood Ridge Roof 4x4 m",
+      "on": 11,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Wood Ridge Roof 4x4 m",
+      "on": 13,
+      "socket": "t0_0",
+      "by": "b15_15"
+    },
+    {
+      "part": "Hinge",
+      "on": 3,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Door 1.25 m",
+      "on": 19,
+      "socket": "leaf",
+      "by": "hang"
+    }
+  ]
+}

@@ -496,7 +496,7 @@ public sealed partial class ConstructEdits
         var cur = ConstructParts.Get(h.Held)?.Name;
         var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
         var next = ConstructParts.Find(sandbox.RackParts[(at + 1) % sandbox.RackParts.Count]);
-        for (var skip = 0; next is { Legacy: true } && skip < sandbox.RackParts.Count; skip++)
+        for (var skip = 0; next is { Offered: false } && skip < sandbox.RackParts.Count; skip++)
             next = ConstructParts.Find(sandbox.RackParts[(at + 2 + skip) % sandbox.RackParts.Count]); // (replaced by routed links: not offered)
         if (next == null)
             return "the rack is empty";
