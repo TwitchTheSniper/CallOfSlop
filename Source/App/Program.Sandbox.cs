@@ -353,7 +353,7 @@ public static unsafe partial class Program
                     ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
                     if (ConstructRender.GhostValid)
                         gh = shown with { Variant = v };
-                    SandboxSnapShown(c, held, in gh, now);
+                    SandboxSnapShown(g, c, held, in gh, now);
                     var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
                     if ((Pressed(GameAction.Fire) && !_swallowClick) || SandboxSnapPaint(g, in h, c, in gh))
                     {

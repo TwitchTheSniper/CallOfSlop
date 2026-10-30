@@ -43,7 +43,7 @@ public static unsafe partial class Program
         {
             if (g.Constructs.Get((ushort)_snapExpectBody) is { } c && c.PartCount >= _snapExpectCount)
             {
-                Audio.Effect3DPitched(Sfx.LandThud, _snapExpectAt, 0.5f, 1.7f); // the heavier thunk: the part is on
+                g.Audio.Effect3DPitched(Sfx.LandThud, _snapExpectAt, 0.5f, 1.7f); // the heavier thunk: the part is on
                 _snapExpectBody = -1;
             }
             else if (now > _snapExpectUntil)
@@ -122,7 +122,7 @@ public static unsafe partial class Program
     }
 
     /// <summary>The snap feel and the connections to mark, once the ghost is final: a click, a flash and an ease on a new socket; the lineups of the shown part.</summary>
-    private static void SandboxSnapShown(Construct c, ConstructPartDef held, in ConstructGhost gh, double now)
+    private static void SandboxSnapShown(Game g, Construct c, ConstructPartDef held, in ConstructGhost gh, double now)
     {
         if (!_settings.SnapBuild)
             return;
@@ -132,7 +132,7 @@ public static unsafe partial class Program
             _snapKey = key;
             _snapOwn = -1;
             SnapRender.FlashAt = now;
-            Audio.Effect(Sfx.HitTick, 0.16f); // the soft click
+            g.Audio.Effect(Sfx.HitTick, 0.16f); // the soft click
             if (_snapPrevBody == c.Id && _snapPrevSeg == gh.Seg)
             {
                 var d = _snapPrevPos - gh.Pos;
