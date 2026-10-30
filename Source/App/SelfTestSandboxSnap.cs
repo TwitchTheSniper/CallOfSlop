@@ -214,23 +214,23 @@ public static partial class SelfTest
 
         // 7. The cache: refreshed only on change, nothing allocated in a steady frame.
         var cc = new SnapCache();
-        cc.Refresh(beam, block);
+        cc.Refresh(beam, panel);
         var rebuilds = cc.Rebuilds;
         GC.Collect();
         var a0 = GC.GetAllocatedBytesForCurrentThread();
         for (var k = 0; k < 2000; k++)
         {
-            cc.Refresh(beam, block);
+            cc.Refresh(beam, panel);
             SnapBuild.Magnet(beam, cc, View(fworld), size, 80f);
         }
         var alloc = GC.GetAllocatedBytesForCurrentThread() - a0;
         Want(cc.Rebuilds == rebuilds && alloc < 4096, $"a steady frame should not rebuild or allocate ({cc.Rebuilds - rebuilds} rebuilds, {alloc} B over 2000 frames)");
-        qhand.Held = block.Id;
-        qhand.Tool = block.Tool;
-        var ng = SnapBuild.Ghosts(beam, block, cc, gh, beam.Com, 6f);
+        qhand.Held = panel.Id;
+        qhand.Tool = panel.Tool;
+        var ng = SnapBuild.Ghosts(beam, panel, cc, gh, beam.Com, 6f);
         if (ng > 0)
             qh.BeginAttach(pw, me, eye, beam.Id, gh[0].Part, gh[0].Socket, gh[0].Variant, now);
-        cc.Refresh(beam, block);
+        cc.Refresh(beam, panel);
         Want(cc.Rebuilds == rebuilds + 1, "adding a part should rebuild the cache once");
 
         Line($"snap build: barrel front cache {cache.Count}, magnet near {near} far {far}; gearbox lineups {lined}; {placed} lamps with one held part; undo {u1 ?? "ok"}; cache {cc.Rebuilds - rebuilds} rebuild, {alloc} B");
