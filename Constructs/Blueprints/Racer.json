@@ -1,135 +1,149 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Racer",
-  "description": "A low racer: a V8 behind the driver through a 6-speed sequential box (R up, sprint down) and a limited-slip differential, slicks on stiff suspension. Fast on hard ground, hopeless on dirt.",
+  "description": "A low racer on the buggy's square-beam chassis: a V8 behind the driver through a 6-speed sequential box (R up, sprint down) and a limited-slip differential, slicks on stiff suspension. Fast on hard ground, hopeless on dirt.",
   "steps": [
     {
-      "part": "Frame Beam"
+      "part": "Square Beam 2 m"
     },
     {
-      "part": "Frame Beam",
+      "part": "Square Beam 0.75 m",
       "on": 0,
-      "socket": "x+0",
-      "by": "x-0"
+      "socket": "-z",
+      "by": "+x0",
+      "spin": 3
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 1,
+      "socket": "+x2",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Limited-Slip Differential",
+      "on": 3,
+      "socket": "+z",
+      "by": "-z0"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 5,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 5,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "-z",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 8,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 9,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 6,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 7,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 10,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 11,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Plate Steel 1 m",
+      "on": 0,
+      "socket": "+y3",
+      "by": "back00",
+      "spin": 0
     },
     {
       "part": "Seat",
       "on": 0,
-      "socket": "y+0",
+      "socket": "+y1",
       "by": "bottom"
     },
     {
-      "part": "Fuel Tank",
-      "on": 1,
-      "socket": "y+0",
-      "by": "-y"
-    },
-    {
-      "part": "Limited-Slip Differential",
-      "on": 0,
-      "socket": "end+",
-      "by": "-z0"
-    },
-    {
       "part": "Sequential Gearbox",
-      "on": 4,
+      "on": 5,
       "socket": "top1",
       "by": "-y"
     },
     {
       "part": "V8 Engine",
-      "on": 5,
+      "on": 18,
       "socket": "-z",
       "by": "+z"
     },
     {
-      "part": "Fuel Line",
-      "on": 3,
-      "socket": "+z",
-      "by": "-x"
+      "part": "Small Fuel Tank",
+      "on": 19,
+      "socket": "+y",
+      "by": "-y"
     },
     {
-      "part": "Stiff Suspension",
-      "on": 4,
-      "socket": "-x",
-      "by": "mount"
-    },
-    {
-      "part": "Stiff Suspension",
-      "on": 4,
-      "socket": "+x",
-      "by": "mount"
-    },
-    {
-      "part": "Frame Block",
-      "on": 0,
-      "socket": "end-",
-      "by": "+z"
-    },
-    {
-      "part": "Frame Block",
+      "part": "Wedge 1:1 0.25 m",
       "on": 1,
-      "socket": "end-",
-      "by": "+z"
-    },
-    {
-      "part": "Steering Pivot",
-      "on": 10,
-      "socket": "-x",
-      "by": "base"
-    },
-    {
-      "part": "Steering Pivot",
-      "on": 11,
-      "socket": "+x",
-      "by": "base"
-    },
-    {
-      "part": "Stiff Suspension",
-      "on": 12,
-      "socket": "leaf",
-      "by": "mount"
-    },
-    {
-      "part": "Stiff Suspension",
-      "on": 13,
-      "socket": "leaf",
-      "by": "mount"
-    },
-    {
-      "part": "Slick Wheel",
-      "on": 8,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Slick Wheel",
-      "on": 9,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Slick Wheel",
-      "on": 14,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Slick Wheel",
-      "on": 15,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Corner",
-      "on": 10,
-      "socket": "-z",
+      "socket": "-x0",
       "by": "back"
     },
     {
-      "part": "Corner",
-      "on": 11,
-      "socket": "-z",
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x2",
+      "by": "back"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x1",
       "by": "back"
     }
   ]

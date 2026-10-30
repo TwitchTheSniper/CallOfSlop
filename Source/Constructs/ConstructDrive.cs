@@ -547,7 +547,7 @@ public static class ConstructDrive
                     gearRatio = reverse ? t.ReverseRatio : 1f;
                 break;
         }
-        if (c.ShiftGear >= 0 && c.Gear != c.ShiftGear && t.Trans != TransKind.Cvt)
+        if (c.ShiftGear >= 0 && c.Gear != c.ShiftGear && t.Trans != TransKind.Cvt && speed > 0.5f) // (a gear picked standing still costs nothing)
             c.ShiftTimer = t.ShiftSeconds;
         c.ShiftGear = c.Gear;
         c.GearRatio = gearRatio;

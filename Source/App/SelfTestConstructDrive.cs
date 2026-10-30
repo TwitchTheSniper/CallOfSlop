@@ -276,7 +276,12 @@ public static partial class SelfTest
         var got = new Dictionary<string, (float Road, float Dirt, float Turn)>();
         foreach (var name in WheelFamily)
         {
-            var m = Measure(Swap(buggy, ("Wheel", name)), $"the buggy on {name}s");
+            var bp = Swap(buggy, ("Wheel", name));
+            if (name == "Monster Wheel")
+                for (var i = 0; i < bp.Steps.Count; i++)
+                    if (bp.Steps[i].Part == "Plate Steel 1 m")
+                        bp.Steps[i] = bp.Steps[i] with { Part = "Square Beam 0.25 m", Own = "-y" }; // (the deck is in the way of wheels 2.4 m across)
+            var m = Measure(bp, $"the buggy on {name}s");
             got[name] = m;
             lines.Add($"{name} {m.Road:0.0}/{m.Dirt:0.0} m, turn {m.Turn:0}");
             if (!Differs(m.Road, std.Road) && !Differs(m.Dirt, std.Dirt) && !Differs(m.Turn, std.Turn))
@@ -350,7 +355,7 @@ public static partial class SelfTest
         var low = Measure(hyd, "the hydraulic buggy").Height;
         float Hydraulic(byte on) => Measure(hyd, "the hydraulic buggy", (w, car) =>
         {
-            var sw = Fit(w, car, 0, "x-1", "Switch", "+x");
+            var sw = Fit(w, car, 0, "-x1", "Switch", "+x");
             for (var i = 0; i < car.PartCount; i++)
                 if (car.DefOf(i).ActiveSuspension)
                     Wire(w, car, sw, i);
@@ -743,7 +748,7 @@ public static partial class SelfTest
                 return;
             var cl = RigFit(w, c, T(c), "+z", "Clutch", "-z");
             RigHub(w, c, RigFit(w, c, cl, "+z", "Drive Shaft 1 m", "end-"), "end+");
-            var sw = Fit(w, c, 0, "x-1", "Switch", "+x");
+            var sw = Fit(w, c, 0, "x-1", "Switch", "+x"); // (the rig's old frame beam)
             if (sw < 0 || cl < 0)
                 return;
             Wire(w, c, sw, cl);

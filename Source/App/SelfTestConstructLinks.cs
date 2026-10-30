@@ -449,7 +449,7 @@ public static partial class SelfTest
             car.Driver = 1;
             car.DriverSeat = car.DriveSeat;
             var t = 0;
-            StepConstructs(w, 270, _ =>
+            StepConstructs(w, 180, _ => // (3 s: the rescaled buggy in gear 3 reaches the yard's far wall by 4.5 s)
             {
                 ConstructEdits.DriveInput(car, Buttons.Forward, World.TickDt);
                 if (++t == 30)
@@ -469,7 +469,7 @@ public static partial class SelfTest
             var w = new ConstructWorld();
             if (Buggy(w, -27, 8, MathF.PI / 2) is not { } car)
                 return;
-            var sel = Fit(w, car, 0, "x-1", "Gear Selector", "+x");
+            var sel = Fit(w, car, 0, "-x1", "Gear Selector", "+x");
             Wire(w, car, sel, car.Transmission);
             var e = new ConstructEdits();
             var eye = ConstructRender.PartCentre(car, sel) + new Vector3(0, 1, -1);
@@ -480,8 +480,8 @@ public static partial class SelfTest
                 e.Use(w, 2, eye, car.Id, sel);
             }
         }
-        Line($"gears: after 0.5 s gear 1 {early[0]:0.0} m/s, gear 3 {early[2]:0.0}; after 4.5 s gear 1 {late[0]:0.0} (its top {top1:0.0}), gear 3 {late[2]:0.0}; a gear selector wired in picked gears {string.Join(", ", picked)}");
-        if (early[0] <= early[2] || late[2] <= late[0] + 2 || late[0] > top1 + 0.5f || picked[0] != 1 || picked[1] != 2 || picked[2] != 3)
+        Line($"gears: after 0.5 s gear 1 {early[0]:0.0} m/s, gear 3 {early[2]:0.0} (on the yard's dirt both are at the tyres' grip); after 3 s gear 1 {late[0]:0.0} (its top {top1:0.0}), gear 3 {late[2]:0.0}; a gear selector wired in picked gears {string.Join(", ", picked)}");
+        if (early[0] + 0.05f < early[2] || late[2] <= late[0] + 2 || late[0] > top1 + 0.5f || picked[0] != 1 || picked[1] != 2 || picked[2] != 3)
             Fail("construct links: the gears didn't change the buggy's pull and top speed (or the selector didn't pick them)");
     }
 

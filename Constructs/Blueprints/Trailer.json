@@ -1,15 +1,15 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Trailer",
-  "description": "A flatbed on two wheels with a drawbar and a tow eye: couple it to a tow hitch (the wrench, F) and tow it.",
+  "description": "A small trailer: a square-beam drawbar and a 1 m steel bed with a post on an undriven axle, a tow eye at the front.",
   "steps": [
     {
-      "part": "Frame Beam"
+      "part": "Square Beam 2 m"
     },
     {
       "part": "Differential",
       "on": 0,
-      "socket": "end+",
+      "socket": "+z",
       "by": "-z0"
     },
     {
@@ -37,21 +37,21 @@
       "by": "axle"
     },
     {
-      "part": "Panel",
+      "part": "Plate Steel 1 m",
       "on": 0,
-      "socket": "y+0",
-      "by": "back"
+      "socket": "+y2",
+      "by": "back00"
     },
     {
-      "part": "Panel",
-      "on": 0,
-      "socket": "y+2",
-      "by": "back"
+      "part": "Square Beam 0.5 m",
+      "on": 6,
+      "socket": "front33",
+      "by": "-z"
     },
     {
       "part": "Tow Eye",
       "on": 0,
-      "socket": "end-",
+      "socket": "-z",
       "by": "+z"
     }
   ]

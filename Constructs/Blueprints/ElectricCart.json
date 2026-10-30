@@ -1,70 +1,71 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Electric Cart",
-  "description": "A 2.5 m electric cart: an electric motor on a battery pack, a reversing gearbox (as fast backwards as forwards), small wheels. Quiet, no fuel.",
+  "description": "A 3 m electric cart: an electric motor under a battery pack, a reversing gearbox (as fast backwards as forwards), small wheels on square-beam rails. Quiet, no fuel.",
   "steps": [
     {
-      "part": "Frame Beam"
+      "part": "Square Beam 1 m"
     },
     {
-      "part": "Frame Beam",
+      "part": "Square Beam 0.75 m",
       "on": 0,
-      "socket": "x+0",
-      "by": "x-0"
+      "socket": "-z",
+      "by": "+x0",
+      "spin": 3
     },
     {
-      "part": "Seat",
+      "part": "Square Beam 1 m",
+      "on": 1,
+      "socket": "+x2",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
       "on": 0,
-      "socket": "y+0",
-      "by": "bottom"
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
     },
     {
       "part": "Differential",
-      "on": 0,
-      "socket": "end+",
+      "on": 3,
+      "socket": "+z",
       "by": "-z0"
     },
     {
-      "part": "Reversing Gearbox",
-      "on": 3,
-      "socket": "top1",
-      "by": "-y"
-    },
-    {
-      "part": "Electric Motor",
-      "on": 4,
-      "socket": "-z",
-      "by": "+z"
-    },
-    {
-      "part": "Battery Pack",
-      "on": 1,
-      "socket": "y+0",
-      "by": "-y0"
-    },
-    {
       "part": "Suspension",
-      "on": 3,
+      "on": 5,
       "socket": "-x",
       "by": "mount"
     },
     {
       "part": "Suspension",
-      "on": 3,
+      "on": 5,
       "socket": "+x",
       "by": "mount"
     },
     {
       "part": "Steering Pivot",
-      "on": 0,
-      "socket": "x-0",
+      "on": 1,
+      "socket": "-z",
       "by": "base"
     },
     {
       "part": "Steering Pivot",
       "on": 1,
-      "socket": "x+0",
+      "socket": "+z",
       "by": "base"
+    },
+    {
+      "part": "Suspension",
+      "on": 8,
+      "socket": "leaf",
+      "by": "mount"
     },
     {
       "part": "Suspension",
@@ -73,10 +74,10 @@
       "by": "mount"
     },
     {
-      "part": "Suspension",
-      "on": 10,
-      "socket": "leaf",
-      "by": "mount"
+      "part": "Small Wheel",
+      "on": 6,
+      "socket": "axle",
+      "by": "axle"
     },
     {
       "part": "Small Wheel",
@@ -86,7 +87,7 @@
     },
     {
       "part": "Small Wheel",
-      "on": 8,
+      "on": 10,
       "socket": "axle",
       "by": "axle"
     },
@@ -97,10 +98,47 @@
       "by": "axle"
     },
     {
-      "part": "Small Wheel",
-      "on": 12,
-      "socket": "axle",
-      "by": "axle"
+      "part": "Square Beam 0.25 m",
+      "on": 2,
+      "socket": "+y0",
+      "by": "-y"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Reversing Gearbox",
+      "on": 5,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "Electric Motor",
+      "on": 18,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Battery Pack",
+      "on": 19,
+      "socket": "+y",
+      "by": "-y",
+      "spin": 1
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x0",
+      "by": "back"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x2",
+      "by": "back"
     }
   ]
 }

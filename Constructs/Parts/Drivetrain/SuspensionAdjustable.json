@@ -68,7 +68,7 @@
     "frequency": 2.2,
     "damping": 0.7,
     "maxLoad": 800,
-    "setting": 1,
+    "setting": 0,
     "presets": [
       {
         "label": "soft",
