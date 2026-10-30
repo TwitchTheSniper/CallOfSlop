@@ -30,6 +30,7 @@ public enum PartRole : byte
     Alternator, // milestone 3: touching a running engine, charges the batteries
     Hitch, // milestone 3: couples to another construct's hitch (a tow ball to an eye, a chain hook to a ring; ConstructLinks.cs)
     Storage, // physical storage (decision 18): slots that parts are set into, or a bin of bulk material with a fill level (ConstructStorage.cs)
+    Transfer, // drivetrain parts: drive shafts, U and CV joints, gearboxes, chains and belts, clutches, transfer cases, PTOs, hubs (ConstructDrive.cs)
 }
 
 /// <summary>What a hitch part is (milestone 3): a ball or a hook couples to an eye.</summary>
@@ -197,11 +198,38 @@ public sealed class ConstructPartDef
     public byte DialDir; // the face it is on (out of the part)
     public float DialMax = 1f; // the signal at full scale (270 degrees)
 
-    /// <summary>A transmission's gear ratios are its <see cref="Settings"/> (top speed times the ratio, force divided by it).</summary>
-    public bool HasGears => Role == PartRole.Transmission && Settings.Length > 0;
+    // Drivetrain families (docs/sandbox/CONSTRUCTS.md, "Drivetrain parts"; ConstructDrive.cs)
+    public float EngineTorque; // engine: peak torque at the crank, N m
+    public float IdleRpm, PeakRpm, MaxRpm; // engine: idle, where the curve peaks, the limiter
+    public EngineCurve Curve; // engine: the torque curve's shape
+    public EngineFuel FuelKind; // engine: what it runs on (a fuel tank, the battery, nothing)
+    public bool NeedsStarter; // engine: needs a battery's starter on any construct (a diesel, a turbine)
+    public float SpoolSeconds; // engine: a turbine's time from idle to full power
+    public float Noise; // engine: 0 quiet .. 1 loud (the look line)
+    public TransKind Trans; // transmission: manual, sequential, automatic, cvt, reversing
+    public float ReverseRatio, ShiftSeconds, TransEfficiency = 1f; // transmission: reverse reduction, the power cut of a shift, what it keeps
+    public float CvtLow, CvtHigh; // a CVT's range of reductions
+    public DiffKind Diff; // differential: open, locked, limited slip, lockable
+    public float DiffRatio = 1f, DiffEfficiency = 1f; // differential: final drive reduction and what it keeps
+    public DriveKind Drive; // transfer part: what it is
+    public float DriveRatio = 1f, DriveEfficiency = 1f; // transfer part: reduction (engine side turns per output turn), what it keeps
+    public float MaxAngle; // a U or CV joint: the most it bends (radians)
+    public float MaxTorque; // a belt, U joint...: the most torque it carries before it slips (N m at the part; 0: no limit)
+    public int[] Ports = []; // transfer part: the sockets the drive goes in and out of (empty: every socket)
+    public int FrontPort = -1; // a transfer case: its switched (front) output socket
+    public float OffroadGrip = 1f, SideGrip = 1f, RollResist = 0.01f; // wheel: grip on terrain (times grip), sideways (times grip), rolling resistance
+    public bool Drivable = true, FlatTyre; // wheel: can be driven (a caster can't); goes flat at zero health instead of falling off
+    public float TrackLength; // wheel: a track unit this long (several contact rays along it)
+    public int TrackRays; // wheel: a track unit's contact rays
+    public float MaxLoad = 100000f; // suspension: kg a wheel it carries springs for (more: it sags and bottoms)
+    public bool ActiveSuspension; // suspension: a signal wired in sets its ride height (0 low .. 1 high)
+    public float[] SuspFrequency = [], SuspDamping = [], SuspHold = []; // suspension: an adjustable one's presets (its Settings); hold: ride height 0..1 (-1: a plain spring)
+
+    /// <summary>A transmission's gear reductions are its <see cref="Settings"/> (the engine turns this many times per output turn).</summary>
+    public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -240,6 +268,9 @@ public sealed class ConstructPartDef
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Transmission => 1, // milestone 3: a gear-select signal (1, 2, 3...)
+        PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
+        PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
+        PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -262,7 +293,7 @@ public sealed class ConstructPartException(string message) : Exception(message);
 /// new file). A bad file is refused with a reason (<see cref="Refused"/>; <c>--check-construct-parts</c> prints them) and
 /// the rest still load. Ids follow the file names' sorted order, so every PC with the same files gives the same ids.
 /// </summary>
-public static class ConstructParts
+public static partial class ConstructParts
 {
     public const string Format = "call-of-slop-construct-part/1";
 
@@ -306,8 +337,17 @@ public static class ConstructParts
     {
         foreach (var d in All)
             Console.WriteLine($"OK  part {d.Id,3} {d.Name,-14} {d.Role,-10} {d.Tool,-6} {d.Mass,6:0} kg {d.Health,6:0} hp armour {d.Armour:0}, {d.Boxes.Length} boxes, {d.Sockets.Length} sockets ({d.File})");
+        var detail = Environment.GetCommandLineArgs().Any(a => a.Equals("--parts", StringComparison.OrdinalIgnoreCase)); // (--parts: every blueprint's parts and where they sit)
         foreach (var b in ConstructBuild.Blueprints)
-            Console.WriteLine($"OK  blueprint {b.Name}: {b.Steps.Count} steps ({b.File})");
+        {
+            Console.WriteLine($"OK  blueprint {b.Name}: {b.Steps.Count} steps, {ConstructDrive.Describe(b)} ({b.File})");
+            if (detail && ConstructBuild.Build(new ConstructWorld(), b, System.Numerics.Vector3.Zero, System.Numerics.Quaternion.Identity, out _) is { } c)
+                for (var i = 0; i < c.PartCount; i++)
+                {
+                    c.PartBounds(i, out var mn, out var mx);
+                    Console.WriteLine($"      {i,2} {c.DefOf(i).Name,-24} {mn.X:0.00} {mn.Y:0.00} {mn.Z:0.00} .. {mx.X:0.00} {mx.Y:0.00} {mx.Z:0.00}");
+                }
+        }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
         foreach (var r in ConstructBuild.RefusedBlueprints)
@@ -368,7 +408,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive",
     ];
 
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -419,7 +459,7 @@ public static class ConstructParts
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
-            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator ? PartBreak.Disable : PartBreak.Detach;
+            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator or PartRole.Transfer ? PartBreak.Disable : PartBreak.Detach;
         d.Scrap = Opt(root, "scrap") is { } scr ? (int)MathF.Round(Num(scr, file, "scrap")) : SandboxInventory.ScrapFrom(d.Mass, d.Material);
         Range(d.Scrap, 0f, 10000f, file, "scrap");
         d.Core = Opt(root, "core") is { } core && (core.ValueKind == JsonValueKind.True ? true : core.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"core\" is true or false"));
@@ -507,7 +547,7 @@ public static class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -526,45 +566,27 @@ public static class ConstructParts
             PartRole.GunPart => "gunPart",
             PartRole.AmmoBox => "ammoBox",
             PartRole.Storage => "storage",
+            PartRole.Differential => "differential",
+            PartRole.Transfer => "drive",
             _ => "",
         };
         foreach (var key in roleKeys)
             if (key != mine && Opt(root, key) != null)
                 throw new ConstructPartException($"{file}: \"{key}\" is only for {key} parts (this one is a {d.Role.ToString().ToLowerInvariant()})");
         var block = mine.Length > 0 ? Opt(root, mine) : null;
-        if (mine.Length > 0 && block is not { ValueKind: JsonValueKind.Object } && !(d.Role == PartRole.Transmission && block == null)) // (a transmission without gears has one)
+        if (mine.Length > 0 && block is not { ValueKind: JsonValueKind.Object } && !(d.Role is PartRole.Transmission or PartRole.Differential && block == null)) // (a transmission without gears has one; a differential without a block is an open one)
             throw new ConstructPartException($"{file}: a {mine} part needs a \"{mine}\" block");
         var bw = $"{file}, {mine}";
         switch (d.Role)
         {
             case PartRole.Engine:
-                Known(block!.Value, ["force", "topSpeed", "burnRate"], bw);
-                d.EngineForce = Num(Need(block.Value, "force", bw), file, "engine.force");
-                Range(d.EngineForce, 10, 1_000_000, file, "engine.force");
-                d.TopSpeed = Num(Need(block.Value, "topSpeed", bw), file, "engine.topSpeed");
-                Range(d.TopSpeed, 0.5f, 120, file, "engine.topSpeed");
-                d.BurnRate = Opt(block.Value, "burnRate") is { } br ? Num(br, file, "engine.burnRate") : 0.05f;
-                Range(d.BurnRate, 0, 100, file, "engine.burnRate");
+                ParseEngine(d, block!.Value, file, bw);
                 break;
             case PartRole.Wheel:
-                Known(block!.Value, ["radius", "grip"], bw);
-                d.WheelRadius = Num(Need(block.Value, "radius", bw), file, "wheel.radius");
-                Range(d.WheelRadius, 0.05f, 3, file, "wheel.radius");
-                d.Grip = Opt(block.Value, "grip") is { } g ? Num(g, file, "wheel.grip") : 1f;
-                Range(d.Grip, 0.05f, 4, file, "wheel.grip");
-                if (!d.Sockets.Any(s => s.Kind == SocketKind.Axle))
-                    throw new ConstructPartException($"{file}: a wheel needs an \"axle\" socket (it bolts onto a suspension)");
+                ParseWheel(d, block!.Value, file, bw);
                 break;
             case PartRole.Suspension:
-                Known(block!.Value, ["travel", "frequency", "damping"], bw);
-                d.Travel = Num(Need(block.Value, "travel", bw), file, "suspension.travel");
-                Range(d.Travel, 0.02f, 2, file, "suspension.travel");
-                d.Frequency = Opt(block.Value, "frequency") is { } f ? Num(f, file, "suspension.frequency") : 2f;
-                Range(d.Frequency, 0.3f, 6, file, "suspension.frequency"); // stiffer than 6 Hz is unstable at 60 Hz
-                d.Damping = Opt(block.Value, "damping") is { } dm ? Num(dm, file, "suspension.damping") : 0.6f;
-                Range(d.Damping, 0, 2, file, "suspension.damping");
-                if (!d.Sockets.Any(s => s.Kind == SocketKind.Axle))
-                    throw new ConstructPartException($"{file}: a suspension needs an \"axle\" socket for its wheel");
+                ParseSuspension(d, block!.Value, file, bw);
                 break;
             case PartRole.FuelTank:
                 Known(block!.Value, ["capacity"], bw);
@@ -595,29 +617,15 @@ public static class ConstructParts
             case PartRole.Logic:
                 ParseLogic(d, block!.Value, file, bw);
                 break;
-            case PartRole.Transmission when block != null:
-            {
-                Known(block.Value, ["gears", "labels", "gear"], bw);
-                if (Opt(block.Value, "gears") is not { ValueKind: JsonValueKind.Array } gears || gears.GetArrayLength() is 0 or > 8)
-                    throw new ConstructPartException($"{file}: \"transmission.gears\" lists 1 to 8 ratios (top speed times the ratio, force divided by it)");
-                d.Settings = gears.EnumerateArray().Select(v => Num(v, file, "transmission.gears")).ToArray();
-                if (d.Settings.Any(v => v < 0.1f || v > 5f))
-                    throw new ConstructPartException($"{file}: a gear ratio is 0.1 to 5");
-                d.SettingLabels = Opt(block.Value, "labels") is { ValueKind: JsonValueKind.Array } lab
-                    ? lab.EnumerateArray().Select(v => AsciiText(v, file, "transmission.labels")).ToArray()
-                    : d.Settings.Select((_, k) => (k + 1).ToString(CultureInfo.InvariantCulture)).ToArray();
-                if (d.SettingLabels.Length != d.Settings.Length)
-                    throw new ConstructPartException($"{file}: \"transmission.labels\" must have one label per gear");
-                d.SettingName = "gear";
-                if (Opt(block.Value, "gear") is { } g0)
-                {
-                    var v = Num(g0, file, "transmission.gear");
-                    if (v < 1 || v > d.Settings.Length || v != MathF.Floor(v))
-                        throw new ConstructPartException($"{file}: \"transmission.gear\" is the starting gear, 1 to {d.Settings.Length}");
-                    d.DefaultSetting = (byte)(v - 1);
-                }
+            case PartRole.Transmission:
+                ParseTransmission(d, block, file, bw);
                 break;
-            }
+            case PartRole.Differential:
+                ParseDifferential(d, block, file, bw);
+                break;
+            case PartRole.Transfer:
+                ParseTransfer(d, block!.Value, file, bw);
+                break;
             case PartRole.Battery:
                 Known(block!.Value, ["capacity"], bw);
                 d.BatteryCapacity = Num(Need(block.Value, "capacity", bw), file, "battery.capacity");
@@ -675,7 +683,7 @@ public static class ConstructParts
                 break;
         }
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
-        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : 0f;
+        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
         if (Opt(root, "dial") is { } dial)
         {

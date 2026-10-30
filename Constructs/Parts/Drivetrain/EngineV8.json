@@ -1,0 +1,175 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "V8 Engine",
+  "description": "A 1 m V8: strong and balanced (520 N m), thirsty and loud.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 260,
+  "health": 450,
+  "armour": 9,
+  "material": "steel",
+  "color": "#5a2f2f",
+  "boxes": [
+    {
+      "size": [
+        0.6,
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.22,
+        0.14,
+        0.86
+      ],
+      "at": [
+        -0.17,
+        0.3,
+        0
+      ],
+      "color": "#b33a2a",
+      "detail": true
+    },
+    {
+      "size": [
+        0.22,
+        0.14,
+        0.86
+      ],
+      "at": [
+        0.17,
+        0.3,
+        0
+      ],
+      "color": "#b33a2a",
+      "detail": true
+    },
+    {
+      "size": [
+        0.14,
+        0.1,
+        0.7
+      ],
+      "at": [
+        0,
+        0.3,
+        0
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.06
+      ],
+      "at": [
+        0,
+        0.0,
+        -0.53
+      ],
+      "color": "#1c1f22",
+      "detail": true
+    },
+    {
+      "size": [
+        0.62,
+        0.1,
+        0.9
+      ],
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "color": "#3a3d42",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.3,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.3,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y0",
+      "at": [
+        0,
+        -0.25,
+        -0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y1",
+      "at": [
+        0,
+        -0.25,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ],
+  "engine": {
+    "torque": 520,
+    "idleRpm": 800,
+    "peakRpm": 4000,
+    "maxRpm": 6500,
+    "curve": "petrol",
+    "burnRate": 0.12,
+    "noise": 0.85
+  }
+}

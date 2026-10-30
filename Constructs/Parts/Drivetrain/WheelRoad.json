@@ -1,0 +1,82 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tank Road Wheel",
+  "description": "A steel road wheel, 0.6 m across: very tough, grips dirt, rumbles on roads.",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 50,
+  "health": 500,
+  "armour": 20,
+  "material": "steel",
+  "friction": 1.0,
+  "color": "#4a4f45",
+  "boxes": [
+    {
+      "size": [
+        0.25,
+        0.6,
+        0.252
+      ]
+    },
+    {
+      "size": [
+        0.25,
+        0.252,
+        0.6
+      ]
+    },
+    {
+      "size": [
+        0.25,
+        0.51,
+        0.51
+      ]
+    },
+    {
+      "size": [
+        0.29,
+        0.165,
+        0.165
+      ],
+      "color": "#2f332d",
+      "detail": true
+    },
+    {
+      "size": [
+        0.27,
+        0.36,
+        0.036
+      ],
+      "color": "#2f332d",
+      "detail": true
+    },
+    {
+      "size": [
+        0.27,
+        0.036,
+        0.36
+      ],
+      "color": "#2f332d",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.125,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.3,
+    "grip": 0.75,
+    "offroad": 1.15,
+    "roll": 0.02
+  }
+}

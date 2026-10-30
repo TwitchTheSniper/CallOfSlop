@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turbine",
+  "description": "A 1 m gas turbine: very high power at high revs (700 N m to 12000 rpm), but it spools up slowly (2.5 s), burns fuel even idling and needs a battery for its starter.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 160,
+  "health": 300,
+  "armour": 6,
+  "material": "steel",
+  "color": "#9a9ea4",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.54,
+        0.54,
+        0.2
+      ],
+      "at": [
+        0,
+        0,
+        -0.4
+      ],
+      "color": "#5a5e64",
+      "detail": true
+    },
+    {
+      "size": [
+        0.36,
+        0.36,
+        0.14
+      ],
+      "at": [
+        0,
+        0,
+        0.47
+      ],
+      "color": "#2a2b2e",
+      "detail": true
+    },
+    {
+      "size": [
+        0.52,
+        0.06,
+        0.6
+      ],
+      "at": [
+        0,
+        0.2,
+        0.05
+      ],
+      "color": "#c08a3a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ],
+  "engine": {
+    "torque": 700,
+    "idleRpm": 2000,
+    "peakRpm": 9000,
+    "maxRpm": 12000,
+    "curve": "turbine",
+    "burnRate": 0.35,
+    "starter": true,
+    "spool": 2.5,
+    "noise": 1.0
+  }
+}

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Steering Pivot",
-  "description": "Bolt it to a frame's side and a suspension onto it: the wheel steers with the driver (or with a wired signal).",
+  "description": "Bolt it to a frame's side and a suspension onto it: the wheel steers with the driver (or with a wired signal). A driven steered wheel needs a U joint or CV joint between its axle and the pivot.",
   "role": "joint",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,18 +13,32 @@
   "boxes": [
     {
       "size": [
-        0.2,
+        0.18,
         0.3,
         0.2
       ]
     },
     {
       "size": [
-        0.08,
-        0.4,
-        0.08
+        0.06,
+        0.42,
+        0.06
       ],
       "color": "#d0b050",
+      "detail": true
+    },
+    {
+      "size": [
+        0.18,
+        0.08,
+        0.24
+      ],
+      "at": [
+        0,
+        0.17,
+        0
+      ],
+      "color": "#6a5a2a",
       "detail": true
     }
   ],
@@ -32,7 +46,7 @@
     {
       "name": "base",
       "at": [
-        -0.1,
+        -0.09,
         0,
         0
       ],
@@ -41,7 +55,7 @@
     {
       "name": "leaf",
       "at": [
-        0.1,
+        0.09,
         0,
         0
       ],

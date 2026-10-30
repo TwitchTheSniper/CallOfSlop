@@ -480,9 +480,9 @@ public static partial class SelfTest
             var w = new ConstructWorld();
             if (Buggy(w, -27, 0, MathF.PI / 2) is not { } car)
                 return;
-            var go = Fit(w, car, 0, "x-1", "Switch", "+x");
-            var stop = Fit(w, car, 0, "x-2", "Switch", "+x");
-            var brake = Fit(w, car, 1, "x+1", "Brake", "-x");
+            var go = Fit(w, car, 0, "-x1", "Switch", "+x");
+            var stop = Fit(w, car, 0, "-x2", "Switch", "+x");
+            var brake = Fit(w, car, 2, "+x1", "Brake", "-x"); // (the right rail)
             Wire(w, car, go, car.Engine);
             Wire(w, car, stop, brake);
             StepConstructs(w, 30);

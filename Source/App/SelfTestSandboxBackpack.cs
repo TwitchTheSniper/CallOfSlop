@@ -23,7 +23,7 @@ public static partial class SelfTest
     /// "Sandbox backpack" (the developer's answer on carrying, 2026-10-30; docs/sandbox/CONSTRUCTS.md "The backpack"): the
     /// Backpack layout (eight slots: small pouches, a big bag, side pouches, a hip pouch; 40 kg at most) and its keys (H
     /// and J, unshared; a binds version 10 file gets them); in an offline Sandbox game stowing a held lamp puts it in the
-    /// smallest slot it fits, a suspension in the big bag, an engine is refused as too heavy and a wheel as too big (both
+    /// smallest slot it fits, a small fuel tank in the big bag, an engine is refused as too heavy and a wheel as too big (both
     /// stay in the hands), drawing takes the next part round the slots into empty hands (refused with full hands, or an
     /// empty pack), the pack is drawn on the player's back (its boxes behind them) with the parts in it, the HUD line and
     /// the strip of slot outlines show it (headless, no ImGui error), a death drops its contents as loose parts and
@@ -82,7 +82,7 @@ public static partial class SelfTest
         ref var hand = ref g.SandboxHands.Hand(me.Id);
         var pack = g.SandboxHands.Pack(me.Id);
         var lamp = ConstructParts.Need("Lamp");
-        var susp = ConstructParts.Need("Suspension");
+        var susp = ConstructParts.Need("Small Fuel Tank"); // (0.4 by 0.3 by 0.4 m: only the big bag takes it; the rescaled suspension is a thin plate now)
         var engine = ConstructParts.Need("Engine");
         var wheel = ConstructParts.Need("Wheel");
         int SlotOf(ConstructPartDef d)
@@ -102,7 +102,7 @@ public static partial class SelfTest
         hand.Held = susp.Id;
         g.SandboxSend(CActKind.Stow);
         var suspSlot = SlotOf(susp);
-        Want(suspSlot >= 0 && bp.Slots[suspSlot].Label == "big bag", $"a suspension goes into the big bag (slot {suspSlot})");
+        Want(suspSlot >= 0 && bp.Slots[suspSlot].Label == "big bag", $"a small fuel tank goes into the big bag (slot {suspSlot})");
         hand.Held = engine.Id;
         g.SandboxSend(CActKind.Stow);
         var heavy = g.SandboxNotice;
@@ -172,9 +172,9 @@ public static partial class SelfTest
         g.SelfTestKill(me, me, Game.MeleeKillId, now);
         Run(g, ref now, 1.0);
         var dropped = g.Constructs.Bodies.Where(b => !before.Contains(b.Id) && b.Loose && Vector3.Distance(b.WorldCom, at) < 3f).Select(b => b.DefOf(0).Name).OrderBy(n => n).ToList();
-        Want(dropped.Count == 2 && dropped.Contains(lamp.Name) && dropped.Contains(susp.Name) && pack.Items == 0, $"a death drops the lamp and suspension near the body ({string.Join(", ", dropped)}) and empties the pack");
+        Want(dropped.Count == 2 && dropped.Contains(lamp.Name) && dropped.Contains(susp.Name) && pack.Items == 0, $"a death drops the lamp and small fuel tank near the body ({string.Join(", ", dropped)}) and empties the pack");
         ToolRender.Hands = null;
-        Line($"backpack offline: lamp in slot {lampSlot}, suspension in slot {suspSlot}; engine \"{heavy}\"; wheel \"{big}\"; drew {ConstructParts.Get(first)?.Name}, {ConstructParts.Get(second)?.Name}; "
+        Line($"backpack offline: lamp in slot {lampSlot}, small fuel tank in slot {suspSlot}; engine \"{heavy}\"; wheel \"{big}\"; drew {ConstructParts.Get(first)?.Name}, {ConstructParts.Get(second)?.Name}; "
              + $"drawn {drawn.Boxes} boxes behind {behind}; HUD \"{hudLine}\"; strip {strip} slots; {allocated} B allocated; dropped on death [{string.Join(", ", dropped)}]");
         if (problems.Count > 0)
             Fail($"sandbox backpack: offline: {string.Join("; ", problems)}");

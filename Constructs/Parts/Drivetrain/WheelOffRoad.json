@@ -1,0 +1,101 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Off-Road Wheel",
+  "description": "A wide knobbly wheel, 0.9 m across: grips dirt far better than a road wheel, worse on hard ground. A punctured tyre runs flat on its rim (slow, little grip).",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 34,
+  "health": 180,
+  "armour": 3,
+  "material": "rubber",
+  "onBreak": "disable",
+  "color": "#1f2124",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.9,
+        0.378
+      ]
+    },
+    {
+      "size": [
+        0.4,
+        0.378,
+        0.9
+      ]
+    },
+    {
+      "size": [
+        0.4,
+        0.765,
+        0.765
+      ]
+    },
+    {
+      "size": [
+        0.44,
+        0.2475,
+        0.2475
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.42,
+        0.54,
+        0.054
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.42,
+        0.054,
+        0.54
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.42,
+        0.08,
+        0.9
+      ],
+      "color": "#2b2d30",
+      "detail": true
+    },
+    {
+      "size": [
+        0.42,
+        0.9,
+        0.08
+      ],
+      "color": "#2b2d30",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.45,
+    "grip": 0.85,
+    "offroad": 1.35,
+    "roll": 0.02,
+    "flat": true
+  }
+}

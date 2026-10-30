@@ -110,6 +110,17 @@ public struct CWheel
     public float Spin; // radians (drawing)
     public byte Seg; // the segment it hangs on (0, or a steering pivot's)
     public bool Driven; // its suspension is on a differential the transmission feeds
+    // Drivetrain families (ConstructDrive.cs)
+    public float Ratio, Eff; // reduction from the gearbox's output to this wheel (the final drive and transfer parts), what reaches it
+    public float CapEq; // the most gearbox-output torque its drive line carries (a belt slips above it)
+    public ushort GateMask; // the gates (clutches, a transfer case's front, U joints) its drive goes through
+    public byte Group; // the differential or hub that drives it (index into Construct.GroupPart)
+    public float Offroad, Side, Roll; // grip on terrain (times Grip), sideways, rolling resistance
+    public float MaxLoad; // kg its spring carries before it sags
+    public bool Track, Drivable; // one of a track unit's contact rays (drawn without spin); can be driven
+    public float SideSign; // which side of the centre of mass (skid steering: +1 right, -1 left)
+    public float Share; // this tick: its share of the engine's torque (the differentials)
+    public float LastGrip; // last tick: the most friction impulse its tyre had (an open differential drives its wheels no harder than the one that grips least)
 }
 
 /// <summary>
@@ -118,7 +129,7 @@ public struct CWheel
 /// the construct is: anything cut off from it falls away as a separate wreck. Anchored (a working foundation) or free.
 /// Arrays are sized once (<see cref="MaxParts"/>), so a construct allocates nothing as it is simulated or edited.
 /// </summary>
-public sealed class Construct
+public sealed partial class Construct
 {
     public const int MaxParts = 96;
     public const int MaxLinks = MaxParts * 3;
@@ -804,53 +815,6 @@ public sealed class Construct
 
     private static bool Less(Vector3 a, Vector3 b) => a.X != b.X ? a.X < b.X : a.Y != b.Y ? a.Y < b.Y : a.Z < b.Z;
 
-    private void BuildWheels()
-    {
-        var old = WheelCount;
-        Span<float> keep = stackalloc float[MaxWheels];
-        for (var k = 0; k < old; k++)
-            keep[k] = Wheels[k].Compression;
-        WheelCount = 0;
-        for (var i = 0; i < PartCount && WheelCount < MaxWheels; i++)
-        {
-            if (!IsRaycastWheel(i))
-                continue;
-            var s = SuspensionOf(i);
-            var d = Parts[i].D;
-            var sd = Parts[s].D;
-            PartBounds(i, out var mn, out var mx);
-            var centre = (mn + mx) * 0.5f;
-            // The axle: the wheel's axle socket direction, turned into the body.
-            var axleDir = (byte)0;
-            for (var k = 0; k < d.Sockets.Length; k++)
-                if (d.Sockets[k].Kind == SocketKind.Axle)
-                {
-                    axleDir = Rot24.ApplyDir(Parts[i].Rot, d.Sockets[k].Dir);
-                    break;
-                }
-            var axle = ConstructParts.DirVector(axleDir);
-            if (MathF.Abs(axle.Y) > 0.5f)
-                continue; // a wheel lying flat doesn't roll: it is a box like any other
-            ref var w = ref Wheels[WheelCount];
-            w = new CWheel
-            {
-                Part = (byte)i,
-                Suspension = (byte)s,
-                Centre = centre + new Vector3(0, sd.Travel * 0.5f, 0), // drawn and cast from the top of its travel
-                Axle = axle,
-                Radius = d.WheelRadius,
-                Travel = sd.Travel,
-                Frequency = sd.Frequency,
-                Damping = sd.Damping,
-                Grip = d.Grip * d.Friction,
-                Steers = Parts[i].Seg != 0, // (steering is a joint since milestone 2: a wheel on a steering pivot)
-                Compression = WheelCount < old ? keep[WheelCount] : 0,
-                Seg = Parts[i].Seg,
-            };
-            WheelCount++;
-        }
-    }
-
     /// <summary>A wheel's top-of-travel centre and axle in the body frame now (turned with its steering pivot).</summary>
     public void WheelFrame(int k, out Vector3 centre, out Vector3 axle)
     {
@@ -871,123 +835,6 @@ public sealed class Construct
             if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0)
                 return Rot24.Apply(Parts[i].Rot, -Vector3.UnitZ);
         return -Vector3.UnitZ;
-    }
-
-    /// <summary>
-    /// The drivetrain (decision: it works only when connected): a working seat, a working engine in the body, fuel from a
-    /// working tank that touches the engine directly or through working fuel lines, a working transmission touching the
-    /// engine, and wheels on suspensions bolted to a working differential that the transmission feeds (touching it, or
-    /// through other differentials), directly or through a steering pivot. Only those wheels are driven; the rest roll.
-    /// <see cref="DriveProblem"/> says what is missing.
-    /// </summary>
-    private void BuildDrivetrain()
-    {
-        CanDrive = false;
-        Engine = -1;
-        Transmission = -1;
-        DriveSeat = -1;
-        for (var k = 0; k < WheelCount; k++)
-            Wheels[k].Driven = false;
-        for (var i = 0; i < PartCount; i++)
-            if (Parts[i].D.Role == PartRole.Seat && Parts[i].Seg == 0 && Parts[i].Working)
-            {
-                DriveSeat = i;
-                break;
-            }
-        if (DriveSeat < 0)
-        {
-            DriveProblem = CountRole(PartRole.Seat, false) > 0 ? "the seat is wrecked" : "no seat";
-            return;
-        }
-        var anyEngine = false;
-        for (var i = 0; i < PartCount; i++)
-        {
-            if (Parts[i].D.Role != PartRole.Engine || Parts[i].Seg != 0)
-                continue;
-            anyEngine = true;
-            if (Parts[i].Working && FuelReaches(i))
-            {
-                Engine = i;
-                break;
-            }
-        }
-        if (Engine < 0)
-        {
-            DriveProblem = !anyEngine ? "no engine" : CountRole(PartRole.Engine) == 0 ? "the engine is wrecked"
-                : CountRole(PartRole.FuelTank) == 0 ? "no working fuel tank" : "no fuel line from the tank to the engine";
-            return;
-        }
-        // The transmission: on the engine.
-        var anyTransmission = false;
-        for (var k = 0; k < LinkCount && Transmission < 0; k++)
-        {
-            ref var l = ref Links[k];
-            var other = l.A == Engine ? l.B : l.B == Engine ? l.A : -1;
-            if (other < 0 || Parts[other].D.Role != PartRole.Transmission)
-                continue;
-            anyTransmission = true;
-            if (Parts[other].Working)
-                Transmission = other;
-        }
-        if (Transmission < 0)
-        {
-            DriveProblem = anyTransmission ? "the transmission is wrecked" : CountRole(PartRole.Transmission, false) > 0 ? "the transmission isn't on the engine" : "no transmission";
-            return;
-        }
-        // The differentials it feeds (touching it, or each other), and the wheels on them.
-        Span<bool> fed = stackalloc bool[MaxParts];
-        Span<byte> queue = stackalloc byte[MaxParts];
-        int head = 0, tail = 0;
-        queue[tail++] = (byte)Transmission;
-        fed[Transmission] = true;
-        var anyDiff = false;
-        while (head < tail)
-        {
-            int at = queue[head++];
-            for (var k = 0; k < LinkCount; k++)
-            {
-                ref var l = ref Links[k];
-                var other = l.A == at ? l.B : l.B == at ? l.A : -1;
-                if (other < 0 || fed[other] || Parts[other].D.Role != PartRole.Differential)
-                    continue;
-                anyDiff = true;
-                if (!Parts[other].Working)
-                    continue;
-                fed[other] = true;
-                queue[tail++] = (byte)other;
-            }
-        }
-        var driven = 0;
-        for (var k = 0; k < WheelCount; k++)
-        {
-            int s = Wheels[k].Suspension;
-            var on = false;
-            for (var l = 0; l < LinkCount && !on; l++)
-            {
-                var other = Links[l].A == s ? Links[l].B : Links[l].B == s ? Links[l].A : -1;
-                if (other < 0)
-                    continue;
-                if (Parts[other].D.Role == PartRole.Differential && fed[other])
-                    on = true;
-                else if (Parts[other].D.Role == PartRole.Joint && Parts[other].Working && Parts[other].D.JointType == JointType.Steering)
-                    for (var l2 = 0; l2 < LinkCount && !on; l2++) // through a steering pivot bolted to a differential
-                    {
-                        var o2 = Links[l2].A == other ? Links[l2].B : Links[l2].B == other ? Links[l2].A : -1;
-                        on = o2 >= 0 && Parts[o2].D.Role == PartRole.Differential && fed[o2];
-                    }
-            }
-            Wheels[k].Driven = on;
-            if (on)
-                driven++;
-        }
-        if (driven == 0)
-        {
-            DriveProblem = WheelCount == 0 ? "no wheels on suspension" : !anyDiff ? "no differential on the transmission"
-                : CountRole(PartRole.Differential) == 0 ? "the differential is wrecked" : "no wheels on the differential";
-            return;
-        }
-        CanDrive = true;
-        DriveProblem = "";
     }
 
     /// <summary>Does fuel reach engine <paramref name="engine"/>: a working tank linked to it directly or through working fuel lines?</summary>

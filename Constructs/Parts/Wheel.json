@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Wheel",
-  "description": "A rubber wheel, 0.8 m across. Bolts onto a suspension.",
+  "description": "A standard road wheel, 0.8 m across. Good on roads, fair on dirt. A punctured tyre runs flat on its rim (slow, little grip).",
   "role": "wheel",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -9,19 +9,20 @@
   "health": 120,
   "armour": 2,
   "material": "rubber",
+  "onBreak": "disable",
   "color": "#1f2124",
   "boxes": [
     {
       "size": [
         0.3,
         0.8,
-        0.34
+        0.336
       ]
     },
     {
       "size": [
         0.3,
-        0.34,
+        0.336,
         0.8
       ]
     },
@@ -37,6 +38,24 @@
         0.34,
         0.22,
         0.22
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.48,
+        0.048
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.048,
+        0.48
       ],
       "color": "#9aa0a6",
       "detail": true
@@ -56,6 +75,8 @@
   ],
   "wheel": {
     "radius": 0.4,
-    "grip": 1.0
+    "grip": 1.0,
+    "offroad": 0.9,
+    "flat": true
   }
 }

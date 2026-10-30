@@ -188,7 +188,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 85: Sandbox physical storage (docs/sandbox/CONSTRUCTS.md "Physical storage"): a construct's structure lists its storage
     //     parts' store handles, CBodyKind.Store sends one container's contents, CActKind StoreIn / TakeStored / Bin;
     //     every player's backpack: CBodyKind.Pack (a player's pack contents), CActKind Stow / Draw.
-    public const byte ProtocolVersion = 85;
+    // 86: Sandbox drivetrain parts (docs/sandbox/CONSTRUCTS.md "Drivetrain parts"): the engine's rpm and the drive note in
+    //     CBody and CPose.
+    public const byte ProtocolVersion = 86;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

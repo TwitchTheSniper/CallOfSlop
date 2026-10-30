@@ -1,0 +1,81 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Solid Wheel",
+  "description": "A solid steel-rimmed wheel, 0.8 m across: no puncture and hard to wreck, but heavy, harsh and less grippy.",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 45,
+  "health": 400,
+  "armour": 25,
+  "material": "rubber",
+  "color": "#3a3d42",
+  "boxes": [
+    {
+      "size": [
+        0.3,
+        0.8,
+        0.336
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.336,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.68,
+        0.68
+      ]
+    },
+    {
+      "size": [
+        0.34,
+        0.22,
+        0.22
+      ],
+      "color": "#6d7278",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.48,
+        0.048
+      ],
+      "color": "#6d7278",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.048,
+        0.48
+      ],
+      "color": "#6d7278",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.15,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.4,
+    "grip": 0.8,
+    "offroad": 0.85,
+    "roll": 0.025
+  }
+}

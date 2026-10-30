@@ -70,7 +70,7 @@ public static partial class SelfTest
         const string hitch = """{ "name": "H", "role": "hitch", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "hitch": { "kind": "hook", "at": [0, -0.12, 0], "chain": 2 } }""";
         const string battery = """{ "name": "B", "role": "battery", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "battery": { "capacity": 100 } }""";
         const string gauge = """{ "name": "G", "role": "logic", "tool": "wrench", "mass": 1, "health": 10, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "logic": { "kind": "chargegauge" }, "dial": { "at": [0, 0, 0.1], "face": "+z", "max": 1 } }""";
-        const string gears = """{ "name": "T", "role": "transmission", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "transmission": { "gears": [0.5, 1, 2], "gear": 2 } }""";
+        const string gears = """{ "name": "T", "role": "transmission", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "transmission": { "gears": [2, 1, 0.5], "gear": 2 } }""";
         (string Json, string Want)[] bad =
         [
             (hitch.Replace("\"hook\"", "\"magnet\""), "\"hitch.kind\" is one of"),
@@ -82,7 +82,7 @@ public static partial class SelfTest
             (gauge.Replace("\"role\": \"logic\"", "\"role\": \"frame\"").Replace(", \"logic\": { \"kind\": \"chargegauge\" }", ""), "only a logic part with an output"),
             (gauge.Replace("\"kind\": \"chargegauge\"", "\"kind\": \"lamp\""), "only a logic part with an output"),
             (gears.Replace("\"gear\": 2", "\"gear\": 4"), "\"transmission.gear\""),
-            (gears.Replace("[0.5, 1, 2]", "[0.5, 9]"), "a gear ratio is 0.1 to 5"),
+            (gears.Replace("[2, 1, 0.5]", "[40, 9]"), "a gear ratio is 0.2 to 20"),
             (gauge.Replace("\"kind\": \"chargegauge\" }", "\"kind\": \"selector\", \"settings\": [1] }").Replace(", \"dial\": { \"at\": [0, 0, 0.1], \"face\": \"+z\", \"max\": 1 }", ""), "how many positions"),
             (battery.Replace("\"health\": 50,", "\"health\": 50, \"power\": -3,"), "\"power\""),
         ];
@@ -146,7 +146,7 @@ public static partial class SelfTest
         car.DriverSeat = car.DriveSeat;
         var t0 = tr.WorldCom;
         var worst = 0f;
-        StepConstructs(w, 180, _ =>
+        StepConstructs(w, 120, _ => // (2 s: the rescaled buggy is quicker and turns wider, and the yard's plateau is to its left)
         {
             ConstructEdits.DriveInput(car, Buttons.Forward, World.TickDt);
             worst = MathF.Max(worst, HitchGap(w));
@@ -164,8 +164,8 @@ public static partial class SelfTest
         });
         var turned = MathF.Abs(World.WrapAngle(YawOf(tr) - yaw0)) * 180 / MathF.PI;
         StepConstructs(w, 90, _ => ConstructEdits.DriveInput(car, Buttons.Jump, World.TickDt));
-        Line($"towing: the trailer ({tr.Mass:0} kg) came {straight:0.0} m in 3 s behind the buggy ({behind:0.0} m behind, the buggy at {speed:0.0} m/s), then turned {turned:0} deg with it (tilting at most {maxTilt:0.0} deg); the hitch points at most {worst * 100:0.0} cm apart; braked: {car.Vel.Length():0.00} and {tr.Vel.Length():0.00} m/s");
-        if (straight < 12 || behind > -2 || worst > 0.12f || turned < 25 || maxTilt > 25 || tr.Vel.Length() > 0.6f)
+        Line($"towing: the trailer ({tr.Mass:0} kg) came {straight:0.0} m in 2 s behind the buggy ({behind:0.0} m behind, the buggy at {speed:0.0} m/s), then turned {turned:0} deg with it (tilting at most {maxTilt:0.0} deg); the hitch points at most {worst * 100:0.0} cm apart; braked: {car.Vel.Length():0.00} and {tr.Vel.Length():0.00} m/s");
+        if (straight < 9 || behind > -2 || worst > 0.12f || turned < 25 || maxTilt > 25 || tr.Vel.Length() > 0.6f)
             Fail("construct links: the trailer didn't follow the buggy on its tow ball (or came apart, or rolled over, or didn't stop with it)");
     }
 
@@ -449,7 +449,7 @@ public static partial class SelfTest
             car.Driver = 1;
             car.DriverSeat = car.DriveSeat;
             var t = 0;
-            StepConstructs(w, 270, _ =>
+            StepConstructs(w, 180, _ => // (3 s: the rescaled buggy in gear 3 reaches the yard's far wall by 4.5 s)
             {
                 ConstructEdits.DriveInput(car, Buttons.Forward, World.TickDt);
                 if (++t == 30)
@@ -457,14 +457,19 @@ public static partial class SelfTest
             });
             late[g] = car.Vel.Length();
         }
-        var top1 = ConstructParts.Need("Engine").TopSpeed * ConstructParts.Need("Transmission").Settings[0];
+        var top1 = 0f;
+        {
+            var w = new ConstructWorld();
+            if (Buggy(w, -27, 0, MathF.PI / 2) is { } car)
+                top1 = ConstructDrive.TopSpeed(car, ConstructParts.Need("Transmission").Settings[0]);
+        }
         // A gear selector wired in: each press steps the gear on.
         var picked = new int[3];
         {
             var w = new ConstructWorld();
             if (Buggy(w, -27, 8, MathF.PI / 2) is not { } car)
                 return;
-            var sel = Fit(w, car, 0, "x-1", "Gear Selector", "+x");
+            var sel = Fit(w, car, 0, "-x1", "Gear Selector", "+x");
             Wire(w, car, sel, car.Transmission);
             var e = new ConstructEdits();
             var eye = ConstructRender.PartCentre(car, sel) + new Vector3(0, 1, -1);
@@ -475,8 +480,8 @@ public static partial class SelfTest
                 e.Use(w, 2, eye, car.Id, sel);
             }
         }
-        Line($"gears: after 0.5 s gear 1 {early[0]:0.0} m/s, gear 3 {early[2]:0.0}; after 4.5 s gear 1 {late[0]:0.0} (its top {top1:0.0}), gear 3 {late[2]:0.0}; a gear selector wired in picked gears {string.Join(", ", picked)}");
-        if (early[0] <= early[2] || late[2] <= late[0] + 2 || late[0] > top1 + 0.5f || picked[0] != 1 || picked[1] != 2 || picked[2] != 3)
+        Line($"gears: after 0.5 s gear 1 {early[0]:0.0} m/s, gear 3 {early[2]:0.0} (on the yard's dirt both are at the tyres' grip); after 3 s gear 1 {late[0]:0.0} (its top {top1:0.0}), gear 3 {late[2]:0.0}; a gear selector wired in picked gears {string.Join(", ", picked)}");
+        if (early[0] + 0.05f < early[2] || late[2] <= late[0] + 2 || late[0] > top1 + 0.5f || picked[0] != 1 || picked[1] != 2 || picked[2] != 3)
             Fail("construct links: the gears didn't change the buggy's pull and top speed (or the selector didn't pick them)");
     }
 

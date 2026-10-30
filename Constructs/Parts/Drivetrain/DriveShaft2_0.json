@@ -1,0 +1,87 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Drive Shaft 2 m",
+  "description": "A 2 m drive shaft: the drive goes in one end and out of the other (not its side). Shoot it and the wheels beyond it stop.",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 20,
+  "health": 110,
+  "armour": 2,
+  "material": "steel",
+  "color": "#7a7f86",
+  "boxes": [
+    {
+      "size": [
+        0.12,
+        0.12,
+        2.0
+      ]
+    },
+    {
+      "size": [
+        0.16,
+        0.16,
+        0.04
+      ],
+      "at": [
+        0,
+        0,
+        -0.96
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    },
+    {
+      "size": [
+        0.16,
+        0.16,
+        0.04
+      ],
+      "at": [
+        0,
+        0,
+        0.96
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0,
+        0,
+        -1.0
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0,
+        0,
+        1.0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.06,
+        0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "drive": {
+    "kind": "shaft",
+    "ports": [
+      "end-",
+      "end+"
+    ],
+    "efficiency": 0.99
+  }
+}

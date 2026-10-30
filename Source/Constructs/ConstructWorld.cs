@@ -937,7 +937,10 @@ public sealed partial class ConstructWorld
     {
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         foreach (var c in Bodies)
+        {
             ConstructPower.Step(this, c, dt);
+            ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
+        }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);

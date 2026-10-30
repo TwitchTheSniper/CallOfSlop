@@ -212,7 +212,9 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
 
 ### The drivetrain (it only works when connected)
 
-A construct drives when it has a working **seat** with a driver (or a signal wired into its engine), a working **engine**
+(Since the drivetrain families the drive line can also run through shafts, gearboxes, chains, clutches and transfer cases
+to differentials and hubs: [Drivetrain parts](#drivetrain-parts-the-families), below.) A construct drives when it has a
+working **seat** with a driver (or a signal wired into its engine), a working **engine**
 in the body, **fuel** reaching the engine (a working tank linked to the engine directly, or through a chain of working
 **fuel lines**), a working **transmission** touching the engine, and **wheels on working suspensions** bolted to a working
 **differential** the transmission feeds (touching it, or through other differentials), directly or through a steering
@@ -293,9 +295,12 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
-| `engine` | `force` (N, shared by the touching wheels), `topSpeed` (m/s), `burnRate` (litres a second at full throttle). |
-| `wheel` | `radius`, `grip`. Needs an `axle` socket. |
-| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio). Needs an `axle` socket. |
+| `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
+| `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
+| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`). Needs an `axle` socket. |
+| `transmission` | `kind` (`manual`, `sequential`, `automatic`, `cvt`, `reversing`), `gears` (reductions, lowest gear first), `labels`, `gear`, `reverse`, `shift` (s), `efficiency`; a CVT's `range`. |
+| `differential` | `kind` (`open`, `locked`, `limited`, `lockable`), `ratio` (the final drive), `efficiency`. |
+| `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
 | `seat` | `at`: where the sitter's feet go. |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
@@ -329,7 +334,9 @@ step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 p
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6
 parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Turret** (6 parts, 1 wire); milestone 3:
 **Gunner Turret** (9 parts, 1 wire), **Hood Gun Buggy** (26 parts, 2 wires), **Sentry** (7 parts, 1 wire), **Gun Bench**
-(9 parts, 1 wire), **Target Wall** (8 parts) and **Ammo Dump** (3 parts).
+(9 parts, 1 wire), **Target Wall** (8 parts) and **Ammo Dump** (3 parts); the drivetrain families: **4x4 Truck** (38
+parts), **Tracked Crawler** (18), **Racer** (24) and **Electric Cart** (23), and the buggies rebuilt on the structural
+parts (the Buggy 26 parts, the Wired Buggy 34, the Hood Gun Buggy 27; [Drivetrain parts](#drivetrain-parts-the-families)).
 
 ### The map's `"sandbox"` section
 
@@ -350,7 +357,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -801,9 +808,10 @@ self-test compares).
 
 ### Gears
 
-A transmission may have `"transmission": {"gears": [ratios], "labels": [...], "gear": n}`: in gear k the engine's top
-speed is times the ratio and its force divided by it. The shipped Transmission has three (0.6, 1.0, 1.4; it starts in 2,
-which is milestone 2's drive). The linking tool's R picks its gear; a signal wired in (one input) picks it instead
+A transmission may have `"transmission": {"gears": [ratios], "labels": [...], "gear": n}`. Since the drivetrain families
+a ratio is a **reduction** (the engine turns that many times for each turn out, the lowest gear first) and the engine has
+a torque curve and a limiter ([Drivetrain parts](#drivetrain-parts-the-families)); the shipped Transmission has three
+(4.4, 3.0, 2.1; it starts in 2). The linking tool's R picks its gear; a signal wired in (one input) picks it instead
 (1 the first gear, rounded; below 0.5 the R gear). The **Gear Selector** (logic kind `selector`) steps 1, 2, 3, 1... on
 F or a rising input (an input reader on the driver's reload key makes a gear shift).
 
@@ -986,6 +994,122 @@ is pinned and theirs on its copy, and the block it then joins in is gone there t
 the limit is 12 constructs a player; joining is instant (the weld, no timer) and on F with the welder; anchoring without a
 foundation is creative-only; the core is a frame-role part with a flag rather than a new role; placing on top of another
 construct's surface without a socket isn't offered (only map surfaces).
+
+## Drivetrain parts (the families)
+
+Board item dev-sandbox-drivetrain-parts-dp01 (the developer's note, 2026-10-29). Code: `Source/Constructs/ConstructDrive.cs`
+(the drive line, the engine each tick), `ConstructDriveParts.cs` (the blocks), the wheels in `ConstructPhysics.cs`. Data:
+`Constructs/Parts/Drivetrain` (53 files) and the rescaled Wheel, Suspension, Engine, Transmission, Differential and Steering
+Pivot. The scale is the developer's "Realistic" chart ([Structural parts](#structural-parts-the-scale-chart)).
+
+### The drive line
+
+The engine must touch a working **transmission**; from it the drive runs through working **differentials** and
+**transfer parts** linked to it, each only through its **ports** (a shaft in one end and out of the other, never its side),
+to the **suspensions** bolted to a differential's or a **hub**'s ends, or on the leaf of a **steering pivot** that a **U
+joint** or **CV joint** feeds. Each driven wheel keeps its reduction (the gearbox's gear times the chain, belt and gearbox
+ratios on its way, times its differential's or hub's final drive), what is left after each part's losses, the most
+torque its line carries (a belt slips above it) and its **gates**: a clutch, a transfer case's front output, a U or CV
+joint's angle. The torque is shared between the drive groups that touch the ground and inside each group by its kind:
+**open** (a wheel in the air takes it all: 10% reaches the other, and no wheel is driven harder than the one that grips
+least), **limited slip** (60% to the wheel that grips, half as hard again), **locked** (all of it; a locked axle with both
+wheels down scrubs the turn: it damps the yaw), **lockable** (open or locked by the linking tool's R or a wire).
+
+**Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
+CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
+side: the drive goes in and out of its ends", "the drive shaft 1 m is wrecked", "a caster wheel can't be driven", "a
+piston can't carry the drive", besides milestone 2's. A **drive note** (orange, sent to clients) says why a built line
+isn't driving right now: the clutch is out, the U joint is bent past its angle, the belt is slipping, the battery is flat,
+a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
+
+### The engine each tick
+
+- **rpm**: from the driven wheels touching the ground (speed over radius times the reductions), never below idle; pulling
+  away the clutch slips and the engine revs towards its peak; in the air it revs freely; it can't go much past the
+  limiter. **Torque**: the peak times the curve at that rpm (petrol rises to its peak; diesel strong low down and falls
+  off early; electric flat to its peak then constant power; turbine low at idle; flat), times the throttle (a turbine
+  times its **spool**, which takes its `spool` seconds), and nothing at the limiter or during a **shift** (its `shift`
+  seconds). Fuel use grows with the throttle and the rpm (a turbine burns at idle too); an electric motor draws the
+  batteries (its power over 0.9); a hamster wheel needs nothing.
+- **Gears**: manual and sequential boxes take the driver's **R** (up) and **sprint** (down) when nothing is wired in, the
+  linking tool's R or a wired signal as before; an **automatic** goes up at 90% of the limiter and down when the lower gear
+  would stay under 70% (a wired signal caps its highest gear); a **CVT** holds the engine at its peak within its range; a
+  **reversing** box backs up at its one ratio (others back up in their reverse ratio, 1.1 times first). A gear picked
+  standing still costs no shift time.
+- **Starting**: a diesel or a turbine (`"starter": true`) needs a battery: without one, "It won't start". An electric
+  motor runs while a working battery's links reach it with charge. An engine with nothing to drive still runs (a power
+  take-off).
+- **Wheels**: grip on terrain (dirt) is 85% of hard ground times the tyre's `offroad`; `side` scales the sideways grip
+  (an omni wheel slides, a track unit turns on the spot); `roll` is a share of the load; a wrecked tyre with `flat` stays on
+  at three quarters of its radius with half its grip. A **track** unit is one part with several contact rays along its
+  length (6 on the 5 m Track); a construct whose driven wheels don't steer **skid-steers** (the steering drives one side
+  forward and the other back). Air drag (0.006 v squared) tops out the tall gears.
+- **Suspension**: a spring carries at most its `maxLoad` (kg a wheel): more and it sags and bottoms. An **adjustable**
+  strut's presets (R) set its stiffness, damping and, with `hold`, a ride height; an **active** (hydraulic) strut holds the
+  height its wire asks (0 low, 1 high, unwired half way, 0.36 m between) and draws 150 W on an electrical construct.
+- **PTO**: a turntable, motor hinge or piston bolted to a power take-off on the drive line runs from the engine, only while
+  it runs, with no battery.
+- The configure tool is still to come: the **HUD** shows the speed, rpm, torque, gear and fuel while driving (and "R gear
+  up, Shift gear down" for a manual), and the **look line** an engine's rpm, torque and curve, a gearbox's ratios and kind,
+  a differential's kind and ratio, a transfer part's ratio or state (2WD/4WD, engaged), a wheel's size and grip (FLAT), a
+  suspension's travel and preset or height.
+
+### The families
+
+| Family | Parts (no single best: mass, grip, power, fuel and toughness trade off) |
+| --- | --- |
+| Wheels | Wheel (0.8 m road), Small (0.6 m), Large (1.1 m), Off-Road (grips dirt, worse on roads), Monster (2.4 m, 220 kg), Solid (no puncture, armour 25, less grip), Slick (most grip on hard ground, slides on dirt), Spiked (bites dirt, skates on roads), Caster (0.4 m, swivels, can't be driven), Omni (slides sideways), Tank Road Wheel (steel), Track (5 m) and Short Track (3 m), sprockets at the back |
+| Suspensions | Suspension (0.3 m, 600 kg), Stiff (0.12 m), Long-Travel (0.6 m, soft, light loads), Leaf Spring (3 t a wheel, tough), Adjustable (soft, medium, stiff, high, low), Rigid Mount, Hydraulic (active) |
+| Engines | Engine (0.5 m petrol, 260 N m), Small Engine (0.4 m single, 70 N m, 9000 rpm), V8 (1 m, 520 N m, thirsty), Diesel (1 m, 820 N m at 1800, 3200 rpm, starter), Electric Motor (380 N m from standstill, battery), Turbine (700 N m to 12000 rpm, spools 2.5 s, thirsty, starter), Hamster Wheel |
+| Transmissions | Transmission (3-speed manual), 5-Speed, Automatic (4, 87% through), CVT (84%), Reversing, Low-Range (12:1 and 8:1), Sequential (6, 0.12 s shifts) |
+| Differentials | Differential (open, 1.1 m), Limited-Slip, Locking, Wide Differential (open, 1.6 m), Live Axle (locked, 1.6 m) |
+| Transfer | Drive Shaft 0.5, 1 and 2 m; U Joint (15 degrees), CV Joint (45); Right-Angle, T and Reduction (2:1) gearboxes; Transfer Case; Chain Drive 1:1 and 2:1, Belt Drive (0.67:1, slips over 900 N m); Clutch; Power Take-Off; Wheel Hub (4.1:1); Stub Axle |
+| Tanks, power | Small (15 l) and Large (150 l) Fuel Tank, Battery Pack (20 MJ) |
+
+### The rescaled blueprints and the examples
+
+The **Buggy** (and the Wired and Hood Gun Buggies) is 3.9 by 1.8 m on two 2.5 m square-beam rails, a cross member, a
+deck plate and a wedge nose, 0.8 m wheels 2.9 m apart; the engine sits on the gearbox over the differential, its tank
+behind on a fuel line; the steering pivots are 18 cm knuckles. The **Trailer** is a square-beam drawbar with a 1 m bed.
+New examples: the **4x4 Truck** (8.2 m: a diesel, an automatic, a transfer case in 4WD, right-angle gearboxes onto a locked
+live axle and an open wide axle with CV joints into its steering pivots, leaf springs, large wheels), the **Tracked
+Crawler** (7.1 m: a V8 and an automatic on a wide axle driving two 5 m tracks, skid steering), the **Racer** (a V8, a
+sequential box, a limited-slip differential, slicks on stiff struts) and the **Electric Cart** (2.6 m: an electric motor
+under a battery pack, a reversing box, small wheels). The truck's and crawler's ladders are still the old 2 m Frame Beams
+(their drive lines sit at a 0.5 m beam's height); everything else is on the structural parts.
+
+### Self-test and pictures
+
+The **Construct drivetrain** section (`Source/App/SelfTestConstructDrive.cs`): every part file loads and 15 bad drivetrain
+blocks are refused for the right reason; the buggy, truck and crawler match the chart; each wheel, suspension, engine and
+transmission changes the drive measurably (distance on hard ground and dirt, the turn, ride height and roll, speed off the
+line and the top speed, climbing a 15 degree ramp with a small engine; slicks faster on roads and slower on dirt, off-road
+tyres faster on dirt, a turbine slow off the line then faster, a hydraulic strut's height on a switch, the adjustable
+presets, an automatic shifting, a CVT at its peak, a reversing box as fast back as forward, a sequential box's shorter
+shift, low range climbing furthest, a diesel without a battery refused); a rear wheel in the air gets 5%, 60% or 100% of the
+drive through an open, limited-slip or locked differential, and the locked one turns less; the drive reaches a wheel
+through every transfer part kind with the right ratio, and is refused with its reason for a steering pivot without a U
+or CV joint, a stub axle, a shaft fitted by its side and a wrecked shaft; a clutch on a switch, the truck in 2WD and 4WD,
+its U joints losing the front drive at full lock (CV joints keeping it), a turntable on a PTO turning only with the engine;
+the five examples drive and turn (the crawler on the spot) and the racer is the fastest; a client gets the rpm and the
+note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in the container). `--drive-shots`
+(Program.DriveShots.cs) writes `smoke_drive_*.bmp`: the row of examples, each with a player beside it, the truck's front
+axle and transfer case, the crawler's track, part galleries and the driving HUD.
+
+### Choices made (the developer may change them)
+
+1. Gear ratios are **reductions** now (the old Transmission's 0.6/1.0/1.4 speed multipliers became 4.4/3.0/2.1), and a
+   differential has a final drive (4.1 on the buggy's).
+2. A **steered driven wheel needs a U or CV joint** between its axle and the steering pivot (milestone 2 let a pivot on
+   a differential drive); a U joint loses the drive past 15 degrees of lock.
+3. **Dirt** (terrain) grips 85% of hard ground; the old rolling resistance (a share of the speed every tick) became a share
+   of the load plus air drag, so tall gears and big engines matter; the open differential's "no harder than the least
+   grip" keeps a car straight at the grip limit.
+4. A wrecked **tyre goes flat** and stays on (the shipped wheels); shoot the suspension to drop a wheel.
+5. **Shifting by keys**: R and sprint for an unwired manual or sequential box (sprint isn't used while driving).
+6. The truck and crawler keep the old 2 m Frame Beams for their ladders (the structural parts' square beams are 0.25 m,
+   below the drive lines' 0.5 m height); a later pass can move them.
+7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids.
 
 ## Performance and caps
 

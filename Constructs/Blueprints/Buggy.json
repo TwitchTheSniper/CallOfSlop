@@ -1,98 +1,87 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Buggy",
-  "description": "Two beams, a seat, a tank, fuel lines and an engine at the back, a transmission and a differential driving the back wheels, the front wheels on steering pivots. A tow hitch at the back (the yard's trailer hangs on it).",
+  "description": "A 4 m buggy (1.8 m wide, 0.8 m wheels, 2.9 m between the axles) on two square-beam rails with a cross member: a seat, a deck plate, an engine on a 3-speed gearbox and a differential driving the back wheels (a small tank on the engine), the front wheels on steering pivots, a wedge nose. A tow hitch at the back (the yard's trailer hangs on it).",
   "steps": [
     {
-      "part": "Frame Beam"
+      "part": "Square Beam 2 m"
     },
     {
-      "part": "Frame Beam",
+      "part": "Square Beam 0.75 m",
       "on": 0,
-      "socket": "x+0",
-      "by": "x-0"
+      "socket": "-z",
+      "by": "+x0",
+      "spin": 3
     },
     {
-      "part": "Seat",
+      "part": "Square Beam 2 m",
+      "on": 1,
+      "socket": "+x2",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
       "on": 0,
-      "socket": "y+2",
-      "by": "bottom"
-    },
-    {
-      "part": "Fuel Tank",
-      "on": 1,
-      "socket": "y+0",
-      "by": "-y"
-    },
-    {
-      "part": "Engine",
-      "on": 1,
-      "socket": "y+3",
-      "by": "-y"
-    },
-    {
-      "part": "Fuel Line",
-      "on": 3,
       "socket": "+z",
-      "by": "-x"
+      "by": "-z"
     },
     {
-      "part": "Fuel Line",
-      "on": 5,
-      "socket": "+x",
-      "by": "-x"
-    },
-    {
-      "part": "Transmission",
-      "on": 4,
+      "part": "Square Beam 0.5 m",
+      "on": 2,
       "socket": "+z",
       "by": "-z"
     },
     {
       "part": "Differential",
-      "on": 0,
-      "socket": "end+",
+      "on": 3,
+      "socket": "+z",
       "by": "-z0"
     },
     {
       "part": "Suspension",
-      "on": 8,
+      "on": 5,
       "socket": "-x",
       "by": "mount"
     },
     {
       "part": "Suspension",
-      "on": 8,
+      "on": 5,
       "socket": "+x",
       "by": "mount"
     },
     {
       "part": "Steering Pivot",
-      "on": 0,
-      "socket": "x-0",
+      "on": 1,
+      "socket": "-z",
       "by": "base"
     },
     {
       "part": "Steering Pivot",
       "on": 1,
-      "socket": "x+0",
+      "socket": "+z",
       "by": "base"
     },
     {
       "part": "Suspension",
-      "on": 11,
+      "on": 8,
       "socket": "leaf",
       "by": "mount"
     },
     {
       "part": "Suspension",
-      "on": 12,
+      "on": 9,
       "socket": "leaf",
       "by": "mount"
     },
     {
       "part": "Wheel",
-      "on": 9,
+      "on": 6,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 7,
       "socket": "axle",
       "by": "axle"
     },
@@ -104,45 +93,70 @@
     },
     {
       "part": "Wheel",
-      "on": 13,
+      "on": 11,
       "socket": "axle",
       "by": "axle"
     },
     {
-      "part": "Wheel",
-      "on": 14,
-      "socket": "axle",
-      "by": "axle"
-    },
-    {
-      "part": "Frame Block",
+      "part": "Plate Steel 1 m",
       "on": 0,
-      "socket": "end-",
+      "socket": "+y3",
+      "by": "back00",
+      "spin": 0
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Transmission",
+      "on": 5,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "Engine",
+      "on": 18,
+      "socket": "-z",
       "by": "+z"
     },
     {
-      "part": "Frame Block",
-      "on": 1,
-      "socket": "end-",
-      "by": "+z"
-    },
-    {
-      "part": "Corner",
+      "part": "Fuel Line",
       "on": 19,
       "socket": "-z",
+      "by": "+x"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x0",
       "by": "back"
     },
     {
-      "part": "Corner",
-      "on": 20,
-      "socket": "-z",
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x2",
       "by": "back"
     },
     {
       "part": "Tow Hitch",
-      "on": 8,
+      "on": 5,
       "socket": "+z0",
       "by": "-z0"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x1",
+      "by": "back"
+    },
+    {
+      "part": "Fuel Tank",
+      "on": 20,
+      "socket": "-x",
+      "by": "+z"
     }
   ]
 }
