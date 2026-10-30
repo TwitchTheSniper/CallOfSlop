@@ -1008,7 +1008,10 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   choosing when you die, open a menu or the inventory, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
   part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
-  takes the part you look at off into your hand, T drops what you hold. Fire on the ground starts a new construct.
+  takes the part you look at off into your hand, T drops what you hold. Fire on any surface (not a socket) sets the
+  part down as a new construct (a ghost, green or red with the reason; R turns it; the inventory window has the grid
+  and creative anchor toggles; the Construct Core is the starter block). With the welder, F on a part touching another
+  construct joins the two.
 - **Inventory**: **I** (the inventory key, rebindable) opens the inventory: tabs for parts, blueprints and tools; on
   the left a search box and a category tree (Structure, Wheels and drivetrain, Seats, Joints, Logic...); on the right a
   grid of 3D tiles (a tile size slider below the tree). Hover a tile for its tool, mass, health, armour and description;

@@ -26,8 +26,9 @@ north-west corner) and some loose parts.
 | --- | --- |
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
-| Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair (or set it down on the ground as a new construct). Letting go early stops it. |
-| R | Turn the part on its socket (the next way round that fits). |
+| Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
+| R | Turn the part on its socket (the next way round that fits); aimed at a surface, the next of its 24 turns. |
+| F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
 | I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
@@ -198,7 +199,8 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
 - The **root** is the first seat, else the first foundation, else the first part. After any part goes, everything no
   longer joined to the root splits off as a **wreck** (its own body, moving as that piece moved). The broken part itself
   falls away as wrecked debris. A wreck has no root, can be edited like anything else, and can't be picked up whole.
-- **Anchored**: a working foundation holds the construct still (a base, a gate). Free constructs move by physics.
+- **Anchored**: a working foundation holds the construct still (a base, a gate), or it was set down **pinned** (creative's
+  "anchor to the ground"). Free constructs move by physics.
 - **Mass and centre of mass** come from the parts; inertia from their boxes.
 - Parts sit on a 1 cm grid and turn in 90 degree steps (24 turns), so every part box is axis-aligned in its body and
   overlap checks are plain box tests.
@@ -345,7 +347,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82)
+## Network (protocol 82; 84 for free placement)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -524,7 +526,7 @@ allows (at least one drawn; the count is in the tooltip). A bad block is refused
   off when they are full, ready to be carried to storage. A wrecked part still gives scrap, which counts on the player
   (until carrying is decided) and goes into bins. Creative maps keep the counted inventory as before.
 
-### Server, network and state (protocol 84)
+### Server, network and state (protocol 85)
 
 - Each storage part holds a handle (`CPart.Store`) into the world's pool of stores (`ConstructWorld.Stores`, 128 of them,
   allocated once): per slot the stored part's type, its turn, how many and the top one's health; a bin's amount. The
@@ -810,6 +812,74 @@ post, the gauges, the driving HUD and the wrecking ball.
    properties still use the rest pose.
 7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
 
+## New constructs (free placement)
+
+Board item dev-sandbox-new-construct-nc01 (the developer's note, 2026-10-29): a construct no longer only comes from a
+blueprint or the map. Holding any placeable part with a tool out, while not aiming at a construct's socket, shows a ghost
+of the part on the **surface you aim at** (terrain, the map's boxes, a floor or deck of the map); holding fire with the
+right tool for the part (decision 2: welder for frames, panels and foundations, wrench for bolted parts) sets it down
+there as a **new construct rooted at that part**, with its own sockets to build on (`Source/Constructs/ConstructPlace.cs`;
+milestone 1's "set it down on the ground", which took only a yaw, is what it generalises: the same `CActKind.PlaceNew`
+and `EditKind.PlaceNew`).
+
+- **The pose**: the construct's up follows the surface's normal, except on near-level ground (within 12 degrees), where
+  it stands upright and rests on the highest ground under its footprint's corners (a bump under one corner lifts it, so
+  it never starts inside the terrain). Its yaw is the look's. **R** steps through the part's 24 turns (`Rot24`; the four
+  upright ones first, then on its sides, then upside down). On a wall it stands out of the wall.
+- **The grid** (the inventory window's "Snap new constructs to the grid", off by default): the spot snaps to a 0.5 m world
+  grid across the surface and the yaw to 90 degrees, so constructs set down apart line up (a block set down next to
+  another one meets it face to face).
+- **Green or red**: the ghost is green when it fits and red, with the reason in the look text, when not: inside the ground
+  or a wall, someone standing there, another construct in the way (every part box of every construct near it, turned
+  boxes tested exactly), no surface, too far, or the limit reached. The server checks again when the placement starts and
+  when it is done (something may have moved there in the 1.5-2.5 s it takes).
+- **Free or anchored**: a placement is **free** (physics: it rests on what it was set on and falls if that goes) unless the
+  part is a **foundation** (anchored as before) or creative's **"Anchor new constructs to the ground"** toggle (the
+  inventory window; only on maps with infinite parts: elsewhere build on a foundation) **pins** it: `Construct.Pinned`, held
+  still like a foundation, sent in CBody's flags.
+- **The Construct Core** (`Constructs/Parts/ConstructCore.json`, `"core": true`): a 0.5 m orange welded block with a socket
+  on each face, in the inventory's Structure group: the obvious starting point. A core is never a loose part (it can't be
+  picked up with F; a single dropped Frame Block can) and is the root after seats and foundations.
+- **Building onto a wreck or a loose part** (a dropped part, the map's loose parts) counts as building on that construct:
+  the ghost sockets show on it, and the first part fitted **claims** it (no longer a wreck, the builder's own, so it no
+  longer clears away as debris).
+- **Joining two constructs**: with the welder out, aiming at a part whose free structural socket meets a free structural
+  socket of another construct (face to face, within 3 cm, both on their main bodies rather than beyond a joint, the two
+  bodies square to each other) shows "touches construct N - F to weld the two into one"; **F** joins them
+  (`CActKind.Join`, `ConstructWorld.Merge` in `ConstructJoin.cs`). The other construct's parts move into this one's frame
+  (each takes one more Rot24 turn, so nothing bends), with its welds, joints (their pivots and axes turned), wires, fuel
+  and charge; every other socket pair the two meet at welds too; a coupling between them goes; a wire between them becomes
+  one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
+  working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
+  while anyone sits in either, or past the caps (96 parts, 8 joints, 64 wires a construct).
+- **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
+  A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
+  or join two"). The world's caps (64 bodies, 1,200 parts) still hold.
+- **Network** (protocol 84): `CAct.PlaceNew` carries the surface point, its normal, the yaw, the turn and two flags (grid,
+  anchor); the server finds the surface again under the point itself. `CAct.Join` names the part. CBody's flags carry
+  "pinned". Everything else (the new construct, the merged one, the one that went) travels as before.
+- **Cost**: the client runs the pose, the fit check and the join search every frame while a part is held: fixed loops over
+  the bodies near it, no allocation (the self-test measures it).
+
+Pictures: `--placement-shots` (Program.PlacementShots.cs, under xvfb like the other shots) writes
+`smoke_placement_*.bmp`: the core's ghost on open ground with the HUD, a beam's ghost turned on its side, a red ghost over
+a construct with the reason, the core built on, the join offer, and the joined construct pushed as one.
+
+**Self-test**: the **Construct placement** section (`Source/App/SelfTestConstructPlace.cs`): the Rot24 helpers (compose,
+quaternions, nearest) and the rotate key's order; the pose on level ground, on the grid and on a wall; a beam turned on its
+side joined to a block keeps its place in the world; in an offline game on the yard the core set down on open ground is a
+one-part construct of the player's with six sockets to build on, a Frame Block attaches to it; placing over a construct,
+over a player, in the air, or anchored outside creative is refused with the reason; a free block rests on the ground and
+moves when pushed while a pinned block and a foundation don't; building onto the map's loose Frame Beam claims it; a block
+set down beside the first construct is found to touch it and joined (every part reaching the root, the other gone); at 12
+constructs a new one is refused; the placement checks allocate nothing; and over a real loopback a client's pinned core
+is pinned and theirs on its copy, and the block it then joins in is gone there too.
+
+**Choices made (the developer may change them)**: the level snap is 12 degrees; the grid is 0.5 m and off by default;
+the limit is 12 constructs a player; joining is instant (the weld, no timer) and on F with the welder; anchoring without a
+foundation is creative-only; the core is a frame-role part with a flag rather than a new role; placing on top of another
+construct's surface without a socket isn't offered (only map surfaces).
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
@@ -941,7 +1011,8 @@ wires (the linking tool's view), a broken buggy, the inventory (open, searched, 
 4. **Drivers don't shoot**; milestone 2's passengers don't either (turrets come with construct weapons).
 5. **Unpowered vehicles hold still** below 1.5 m/s (a parking brake), so parked and dead cars don't creep.
 6. Players are pushed by constructs but never push them (except passive doors); getting run over hurts since milestone 2.
-7. Parts snap to sockets in 90 degree steps on a 1 cm grid; there is no free placement.
+7. Parts snap to sockets in 90 degree steps on a 1 cm grid. (Free placement of a new construct on any surface came
+   later: [New constructs](#new-constructs-free-placement).)
 8. Constructs reset with the match (no saving); everything is in memory on the host.
 
 ## Milestone 2: joints, logic and the drivetrain

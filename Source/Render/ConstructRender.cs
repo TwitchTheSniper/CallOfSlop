@@ -20,8 +20,10 @@ public static class ConstructRender
     public static Construct? GhostBody;
     public static ConstructPartDef? GhostDef;
     public static bool GhostValid; // the selected one fits as shown
-    public static Vector3? PlaceAt; // a new construct on the ground
-    public static float PlaceYaw;
+    public static Vector3? PlaceAt; // free placement: a new construct's origin on the surface aimed at
+    public static Quaternion PlaceRot = Quaternion.Identity; // ...its frame
+    public static byte PlaceTurn; // ...the part's Rot24 turn in it
+    public static bool PlaceValid; // ...green when it fits, red when not
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
     public static bool ShowWires; // the linking tool is out: the wires are drawn (only then)
@@ -542,11 +544,10 @@ public static class ConstructRender
         }
         if (PlaceAt is { } ground && GhostDef is { } nd)
         {
-            var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -PlaceYaw);
-            var origin = ground - Vector3.Transform(new Vector3(0, nd.BoundsMin.Y - 0.01f, 0), rot);
-            var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(origin);
+            var body = Matrix4x4.CreateFromQuaternion(Rot24.Quat(PlaceTurn)) * Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground);
+            var colour = PlaceValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
             for (var b = 0; b < nd.Boxes.Length; b++)
-                gfx.Draw(Matrix4x4.CreateScale(nd.Boxes[b].Half * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(nd.Boxes[b].Center) * body, new Vector3(0.35f, 1f, 0.5f), 0.3f * pulse, mode: 2);
+                gfx.Draw(Matrix4x4.CreateScale(nd.Boxes[b].Half * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(nd.Boxes[b].Center) * body, colour, 0.3f * pulse, mode: 2);
         }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {

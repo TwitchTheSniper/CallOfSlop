@@ -20,6 +20,11 @@ public static unsafe partial class Program
     private static int _sbWirePart = -1;
     private static int _sbSeatKeys = -1;
     private static long _sbWireKey = -1;
+    private static byte _sbTurn; // free placement: the held part's Rot24 turn (R steps it)
+    private static string? _sbGroundWhy;
+    private static readonly Vector3[] _sbFeet = new Vector3[64];
+    private static long _sbJoinKey = -1;
+    private static string _sbJoinText = "";
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
@@ -187,6 +192,19 @@ public static unsafe partial class Program
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
             g.SandboxLookText = "Parts rack: F to take a part (again for the next kind; I: the parts menu)";
+        // The welder on a part that touches another construct: F joins the two into one.
+        JoinPlan jplan = default;
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
+        if (join)
+        {
+            var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32);
+            if (jk != _sbJoinKey)
+            {
+                _sbJoinKey = jk;
+                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to weld the two into one";
+            }
+            g.SandboxLookText = _sbJoinText;
+        }
         if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin))
         {
             // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
@@ -197,7 +215,9 @@ public static unsafe partial class Program
         }
         else if (Pressed(GameAction.Interact))
         {
-            if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
+            if (join)
+                g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (byte)hit.Part);
+            else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach)
                 g.SandboxSend(CActKind.Use, body: hit.Body.Id, part: (byte)hit.Part);
@@ -268,8 +288,9 @@ public static unsafe partial class Program
         if (h.Tool != ConstructTool.None && held != null && !slotted)
         {
             ConstructRender.GhostDef = held;
-            if (aimed && !hit.Body.Loose)
+            if (aimed)
             {
+                // (a loose part or a wreck too: building onto it makes it a construct, yours)
                 var c = hit.Body;
                 c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
                 var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
@@ -315,23 +336,43 @@ public static unsafe partial class Program
                     }
                 }
             }
-            else if (!aimed && wall <= ConstructBuild.Reach)
+            else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
-                // The ground: a new construct of this part.
-                var at = eye + dir * wall;
-                if (World.Query.Raycast(at + new Vector3(0, 0.3f, 0), -Vector3.UnitY, 0.6f, QueryFilter.All) < 0.6f)
+                // Free placement: the surface aimed at (terrain, the map, a floor): a new construct rooted at this part.
+                if (Pressed(GameAction.Reload))
+                    _sbTurn = ConstructPlace.NextTurn(_sbTurn);
+                var flags = (byte)((g.SandboxPlaceGrid ? ConstructPlace.FlagGrid : 0) | (g.SandboxPlaceAnchor && g.SandboxInfiniteParts ? ConstructPlace.FlagAnchor : 0));
+                var feetN = 0;
+                foreach (var pl in g.Players.Values)
+                    if (pl.Alive && feetN < _sbFeet.Length)
+                        _sbFeet[feetN++] = pl.Position;
+                var why = ConstructPlace.Pose(World.Query, held, surf.Point, surf.Normal, g.LookYaw, _sbTurn, (flags & ConstructPlace.FlagGrid) != 0, out var fp);
+                if (why == null)
                 {
-                    ConstructRender.PlaceAt = at;
-                    ConstructRender.PlaceYaw = g.LookYaw;
-                    if (_sbGroundKey != held.Id)
+                    why = ConstructPlace.LimitRefusal(g.Constructs, me.Id) ?? ConstructPlace.Fits(g.Constructs, World.Query, held, fp, _sbFeet.AsSpan(0, feetN));
+                    ConstructRender.PlaceAt = fp.Pos;
+                    ConstructRender.PlaceRot = fp.Rot;
+                    ConstructRender.PlaceTurn = fp.Turn;
+                    ConstructRender.PlaceValid = why == null;
+                }
+                var gkey = held.Id | (_sbTurn << 8) | (flags << 16) | (ConstructBuild.ToolFits(h.Tool, held) ? 1 << 20 : 0);
+                if (gkey != _sbGroundKey || !ReferenceEquals(why, _sbGroundWhy))
+                {
+                    _sbGroundKey = gkey;
+                    _sbGroundWhy = why;
+                    var how = (flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "free";
+                    _sbGroundText = why != null ? $"Can't set the {held.Name} down here: {why}"
+                        : !ConstructBuild.ToolFits(h.Tool, held) ? $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}"
+                        : $"New construct: hold fire to set down the {held.Name} ({how}{((flags & ConstructPlace.FlagGrid) != 0 ? ", on the grid" : "")}; R turns it)";
+                }
+                g.SandboxLookText = _sbGroundText;
+                if (Pressed(GameAction.Fire) && !_swallowClick)
+                {
+                    if (why != null)
+                        g.SandboxSay(why);
+                    else
                     {
-                        _sbGroundKey = held.Id;
-                        _sbGroundText = $"Ground: hold fire to set down the {held.Name} as a new construct";
-                    }
-                    g.SandboxLookText = _sbGroundText;
-                    if (Pressed(GameAction.Fire) && !_swallowClick)
-                    {
-                        g.SandboxSend(CActKind.PlaceNew, at: at, yaw: g.LookYaw);
+                        g.SandboxSend(CActKind.PlaceNew, at: surf.Point, yaw: g.LookYaw, normal: surf.Normal, variant: _sbTurn, flags: flags);
                         _sbFiring = true;
                     }
                 }

@@ -8,7 +8,7 @@ public enum CActKind : byte
 {
     Tool, // u8 tool
     Attach, // u16 body, u8 part, u8 socket, u8 variant
-    PlaceNew, // vec ground, f32 yaw
+    PlaceNew, // vec surface point, vec normal, f32 yaw, u8 Rot24 turn, u8 flags (grid, anchor): free placement (protocol 84; before: vec ground, f32 yaw)
     Remove, // u16 body, u8 part
     Cancel,
     Use, // u16 body, u8 part
@@ -22,9 +22,10 @@ public enum CActKind : byte
     SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
-    StoreIn, // u16 body, u8 part, u8 slot: the part in the hands into a storage slot (physical storage; protocol 84)
-    TakeStored, // u16 body, u8 part, u8 slot: the stored part into empty hands (protocol 84)
-    Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 84)
+    Join, // u16 body, u8 part: the welder joins the construct this part touches into this one (protocol 84)
+    StoreIn, // u16 body, u8 part, u8 slot: the part in the hands into a storage slot (physical storage; protocol 85)
+    TakeStored, // u16 body, u8 part, u8 slot: the stored part into empty hands (protocol 85)
+    Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -317,14 +318,19 @@ public sealed partial class Game
             case CActKind.PlaceNew:
             {
                 var at = r.Vec();
+                var normal = r.Vec();
                 var yaw = r.F32();
-                if (!float.IsFinite(at.X + at.Y + at.Z + yaw))
+                var turn = r.U8();
+                var flags = r.U8();
+                if (!float.IsFinite(at.X + at.Y + at.Z + normal.X + normal.Y + normal.Z + yaw))
                     return "bad place";
-                // The ground really is there (a ray from just above the point the client chose).
-                var down = World.Query.Raycast(at + new Vector3(0, 0.5f, 0), -Vector3.UnitY, 1.5f, QueryFilter.All);
-                if (down >= 1.5f)
-                    return "put it on the ground";
-                return hands.BeginPlaceNew(Constructs, p.Id, eye, at + new Vector3(0, 0.5f - down, 0), yaw, now);
+                // (ConstructPlace.Pose finds the surface again under the point the client chose)
+                return hands.BeginPlaceNew(Constructs, p.Id, eye, at, normal, yaw, turn, flags, now);
+            }
+            case CActKind.Join:
+            {
+                var body = r.U16();
+                return hands.Join(Constructs, p.Id, eye, body, r.U8());
             }
             case CActKind.Remove:
             {
@@ -405,7 +411,7 @@ public sealed partial class Game
     }
 
     /// <summary>Client (or the host itself): ask the server for an action. The host's own action is handled at once.</summary>
-    public void SandboxSend(CActKind kind, ushort body = 0, byte part = 0, byte socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0)
+    public void SandboxSend(CActKind kind, ushort body = 0, byte part = 0, byte socket = 0, byte variant = 0, Vector3 at = default, float yaw = 0, ushort body2 = 0, Vector3? normal = null, byte flags = 0)
     {
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)kind);
@@ -418,8 +424,9 @@ public sealed partial class Game
                 w.U16(body).U8(part).U8(socket).U8(variant);
                 break;
             case CActKind.PlaceNew:
-                w.Vec(at).F32(yaw);
+                w.Vec(at).Vec(normal ?? Vector3.UnitY).F32(yaw).U8(variant).U8(flags); // (variant: the part's Rot24 turn)
                 break;
+            case CActKind.Join:
             case CActKind.Remove:
             case CActKind.Use:
             case CActKind.Unwire:
@@ -901,6 +908,9 @@ public sealed partial class Game
 
     /// <summary>What the crosshair is on (set by the client's look each frame; Program.Sandbox.cs).</summary>
     public string SandboxLookText = "";
+
+    /// <summary>Free placement on this PC (the inventory window's toggles): snap new constructs to the world grid; anchor them to the ground (creative only).</summary>
+    public bool SandboxPlaceGrid, SandboxPlaceAnchor;
 
     /// <summary>The tool wheel key's name (set by the client every frame; Program.SandboxWheel.cs), for the HUD's key line.</summary>
     public string SandboxWheelKey = "Mouse Middle";

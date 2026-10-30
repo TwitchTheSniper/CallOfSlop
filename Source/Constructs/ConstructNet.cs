@@ -12,7 +12,7 @@ public enum CBodyKind : byte
     Inventory, // server -> one client: that player's own inventory (protocol 81; SandboxInventory)
     Ammo, // protocol 82: rounds and fire changes: (id, part, rounds, burning) each
     Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
-    Store, // protocol 84: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
+    Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
 }
 
 /// <summary>
@@ -56,7 +56,7 @@ public static class ConstructNet
     public static void WriteFull(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
-        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0))).U8(c.Owner);
+        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0))).U8(c.Owner); // (protocol 84: pinned)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
         w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 83: the charge, power and gear)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
@@ -68,7 +68,7 @@ public static class ConstructNet
                 .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
-        // Protocol 84: the storage parts' store handles (their contents follow in CBodyKind.Store messages).
+        // Protocol 85: the storage parts' store handles (their contents follow in CBodyKind.Store messages).
         var storesAt = w.Length;
         w.U8(0);
         var stores = 0;
@@ -286,7 +286,7 @@ public static class ConstructNet
         inv.Version++;
     }
 
-    /// <summary>One container's contents (physical storage; protocol 84): its handle, then its slots or bin amount.</summary>
+    /// <summary>One container's contents (physical storage; protocol 85): its handle, then its slots or bin amount.</summary>
     public static void WriteStore(PacketWriter w, CStore s)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Store).U16(s.Handle);
@@ -509,6 +509,7 @@ public static class ConstructNet
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
         c.Wreck = (flags & 1) != 0;
         c.Damaged = (flags & 8) != 0;
+        c.Pinned = (flags & 16) != 0;
         c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;

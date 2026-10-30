@@ -257,14 +257,21 @@ public static class ConstructBuild
     public static Construct? PlaceNew(ConstructWorld world, ConstructPartDef def, Vector3 ground, float yaw)
     {
         var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -yaw); // our yaw turns -Z towards +X
-        var c = world.Create(ground - Vector3.Transform(new Vector3(0, def.BoundsMin.Y - 0.01f, 0), rot), rot);
+        return PlaceNew(world, def, new FreePlacement { Pos = ground - Vector3.Transform(new Vector3(0, def.BoundsMin.Y - 0.01f, 0), rot), Rot = rot });
+    }
+
+    /// <summary>A new construct of one part as free placement put it (ConstructPlace.Pose): its root, with its own sockets to build on.</summary>
+    public static Construct? PlaceNew(ConstructWorld world, ConstructPartDef def, in FreePlacement fp)
+    {
+        var c = world.Create(fp.Pos, fp.Rot);
         if (c == null)
             return null;
-        if (world.AddPart(c, def, Vector3.Zero, 0) < 0)
+        if (world.AddPart(c, def, Vector3.Zero, (byte)(fp.Turn % Rot24.Count)) < 0)
         {
             world.Remove(c);
             return null;
         }
+        c.Pinned = fp.Anchor;
         c.Rebuild();
         return c;
     }
