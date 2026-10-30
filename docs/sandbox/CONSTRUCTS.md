@@ -131,7 +131,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
   moving joints are driven by a motor (milestone 2, below).
 - A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it.
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
-  along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats. A moving
+  along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
+  as part of the construct: "Seats" below). A moving
   part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
 
 ### Damage (decision 6)
@@ -243,8 +244,8 @@ The Sandbox mode is offered only on maps with this section.
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
   wheels to the ground themselves.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
-  unwire, a setting, a seated player's fire/aim/reload keys); the server re-checks everything and answers a refusal with
-  its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
+  unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
+  look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
   debug parts menu, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
@@ -394,6 +395,42 @@ input end). Wiring is instant (fitting a part is what takes time).
 - **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
   `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
   with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+
+### Seats: riders as part of the construct
+
+- **Seat types** (`SeatKind`, from where the seat is): the drive seat is the **driver's**; a seat on a moving joint's
+  segment (a turntable, a hinge) is a **gunner's**; any other is a **passenger's**. The **Gunner Turret** blueprint is
+  the Turret with a gunner's seat on its arm.
+- **The seat frame.** Every frame, on the host and every client, after the render states and before the camera
+  (`Game.UpdateSandboxSeats`, GameSandbox.cs), each seated player is put in their seat exactly as the construct is drawn
+  this frame (`ConstructRender.SeatPose`: the body's blended pose, every joint up the seat's chain blended, the seat's
+  turn): the feet at the seat's `at` point and the whole body in the seat's frame, so it tilts and turns with the
+  construct and with a turntable or hinge under the seat. There is nothing to lag, jitter or slide: the rider is a
+  seat-local pose composed with the construct's own drawing. (A client blends the construct poses there too, before the
+  camera is set.) The server still pins the simulated player to the seat each tick for hit boxes and reach.
+- **The seated pose** (`LegAnimator` seated legs): hips on the cushion, thighs forward, knees bent, feet forward on the
+  floor, leaning back a little; no gait, no foot rays, no footsteps or step sounds, no head bob, no sprint arms. The upper
+  body turns towards the look (driver 26 degrees, passenger 46, gunner 63 either way). The **driver** holds the
+  **steering wheel** (drawn in front of the drive seat, turned by the steering) with both hands and has no gun; a
+  **passenger** rests the gun across the lap; a **gunner** holds it up at their look.
+- **The look** is relative to the vehicle: the local view turns with the seat (like a turning platform's), and the look
+  stays within 100 degrees of the seat's facing for the driver, 120 for a passenger, all the way round for a gunner.
+  The camera is at the seat's head (the eye height along the seat's up).
+- **Network (protocol 80).** A seated player's snapshot entry carries the seat (construct id and seat part, in the
+  mantle extension with mantle ticks 0) and a yaw relative to the seat's facing instead of a world one; a client
+  composes it with its own drawing of the construct. The seat-relative look comes from the seated client itself
+  (`CAct.SeatLook`, unreliable, on a change, at most ~30 a second and every 0.25 s), so it is exact however fast the seat
+  turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
+  (a fallback for a construct the client doesn't have yet).
+- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear).
+- **Dying seated**: the ragdoll starts in a seated pose at the seat, with the construct's velocity there, and goes limp
+  (no death reaction).
+- The **"Seated riders"** self-test: in a game on the yard a driver and a passenger in the wired buggy and a gunner on
+  the Gunner Turret stay within 4 mm of their seats' local offsets (feet and eyes, every frame between ticks) while the
+  buggy drives at up to 12 m/s and turns 140 degrees and the turret turns; no walk cycle or footsteps; the look limits; a
+  seated ragdoll; no allocation; over a loopback two clients agree on the seat, the offset and the seat-relative look.
+  `--sandbox-shots` writes `smoke_sandbox_seated_*.bmp` (riders, the driver close up, the passenger, the driver's view,
+  the gunner).
 
 ### Decisions made for milestone 2 (the developer may change them)
 

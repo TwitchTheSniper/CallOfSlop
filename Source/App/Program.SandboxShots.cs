@@ -49,7 +49,7 @@ public static unsafe partial class Program
         var other = cars[0];
         me.Teleport(new Vector3(-20, 0, 18));
 
-        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false, bool wheel = false)
+        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false, bool wheel = false, bool players = false, bool firstPerson = false)
         {
             for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
             {
@@ -61,6 +61,16 @@ public static unsafe partial class Program
                 Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
                 DrawArena();
                 DrawSandbox(now);
+                if (players)
+                {
+                    // Every player drawn as another player sees them (the local one too, unless the camera is its own eye).
+                    LegAnimator.Viewer = eye;
+                    foreach (var p in g.Players.Values)
+                        if (p.Alive && !(firstPerson && p.Id == g.LocalId))
+                            DrawPlayer(p);
+                    if (firstPerson && ScenePresentation.Enabled)
+                        ScenePresentation.DrawLocalLegs(Gfx, me, Glfw.Time);
+                }
                 if (ghosts)
                 {
                     Gfx.SetBlend(true);
@@ -142,8 +152,57 @@ public static unsafe partial class Program
         var front = Vector3.Transform(car.SeatForward(), car.Rot);
         cd = car.WorldCom;
         Shot("steering", cd + front * 4.5f + new Vector3(0, 2.6f, 0) + Vector3.Cross(front, Vector3.UnitY) * 1.5f, cd);
+
+        // Seated (docs/sandbox/CONSTRUCTS.md "Seats"): a passenger in the second seat, the buggy driven round a bend, the
+        // driver's hands on the wheel, the passenger's gun on the lap; then the driver's own view.
+        var rider = g.SelfTestAddHuman();
+        g.SelfTestRespawn(rider, now);
+        rider.ImmuneUntil = 1e9;
+        var riderSeat = Enumerable.Range(0, car.PartCount).Where(i => car.DefOf(i).Role == PartRole.Seat && i != car.DriveSeat).FirstOrDefault(-1);
+        if (riderSeat >= 0)
+        {
+            var why = g.SandboxHands.Use(g.Constructs, rider.Id, ConstructRender.PartCentre(car, riderSeat) + new Vector3(0, 0.8f, 0), car.Id, riderSeat);
+            g.HeldButtons = Buttons.Forward | Buttons.Left;
+            Run(1.2);
+            g.HeldButtons = Buttons.Left;
+            Run(0.3);
+            var sc = car.WorldCom;
+            var sf = Vector3.Transform(car.SeatForward(), car.Rot);
+            var side = Vector3.Normalize(Vector3.Cross(sf, Vector3.UnitY));
+            Console.WriteLine($"[sandboxshots] seated: driver {me.RenderSeat}, rider {rider.RenderSeat} ({why ?? "sat"}), at {car.Vel.Length():0.0} m/s");
+            Shot("seated_riders", sc + sf * 3.2f + side * 3.4f + new Vector3(0, 2.2f, 0), sc + new Vector3(0, 0.5f, 0), players: true);
+            Shot("seated_driver_close", me.RenderPosition + sf * 0.4f - side * 1.7f + new Vector3(0, 1.5f, 0), me.RenderPosition + sf * 0.35f + new Vector3(0, 1.0f, 0), players: true);
+            Shot("seated_passenger_close", rider.RenderPosition + sf * 1.4f + side * 1.3f + new Vector3(0, 1.8f, 0), rider.RenderPosition + new Vector3(0, 1.0f, 0), players: true);
+            var eyeNow = me.RenderEye;
+            Shot("seated_first_person", eyeNow, eyeNow + g.LookDir(g.LookYaw - 0.75f, -0.55f), players: true, firstPerson: true); // (left past the passenger's head, down at the wheel)
+            g.HeldButtons = Buttons.Jump;
+            Run(1.0);
+            g.HeldButtons = Buttons.None;
+            g.SandboxStand(rider, teleport: true);
+        }
         g.SandboxSend(CActKind.Stand);
         Run(0.2);
+
+        // A gunner on the Gunner Turret, riding round as its lever turns it.
+        if (ConstructBuild.FindBlueprint("Gunner Turret") is { } gtb
+            && ConstructBuild.BuildOnGround(g.Constructs, gtb, ConstructWorld.Ground(World.Query, me.Position.X + 5, me.Position.Z + 4), 0.6f, out _) is { } gt)
+        {
+            var gs = Part(gt, "Seat");
+            Run(0.3);
+            var why = g.SandboxHands.Use(g.Constructs, rider.Id, ConstructRender.PartCentre(gt, gs) + new Vector3(0, 0.6f, 0.8f), gt.Id, gs);
+            gt.Parts[Part(gt, "Lever")].State = 1;
+            gt.Wake();
+            Run(1.6);
+            var gc = ConstructRender.PartCentre(gt, gs);
+            Console.WriteLine($"[sandboxshots] gunner turret: {rider.RenderSeat} ({why ?? "sat"}), turntable at {gt.Joints[0].Angle * 180 / MathF.PI:0} deg");
+            Shot("seated_turret", gc + new Vector3(3.0f, 1.6f, 2.0f), gc + new Vector3(0, 0.4f, 0), players: true);
+            Run(0.8);
+            gc = ConstructRender.PartCentre(gt, gs);
+            Shot("seated_turret_later", gc + new Vector3(3.0f, 1.6f, 2.0f), gc + new Vector3(0, 0.4f, 0), players: true);
+            gt.Parts[Part(gt, "Lever")].State = 0;
+            g.SandboxStand(rider, teleport: true);
+            Run(0.2);
+        }
 
         // The gate, opened.
         if (gate != null)
