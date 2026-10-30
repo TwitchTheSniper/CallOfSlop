@@ -30,7 +30,7 @@ north-west corner) and some loose parts.
 | Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
 | R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
 | F (welder out) | On a part that touches another construct: weld the two into one. |
-| Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
+| Aim (hold) | With a tool out: take the part under the crosshair off (into your hand; with your hands full, into the backpack if it fits there, else dropped where it was, with a HUD line). |
 | T | Drop the part in your hand. |
 | Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
@@ -779,9 +779,17 @@ allows (at least one drawn; the count is in the tooltip). A bad block is refused
   on bodies allow; the rest is lost and logged), and a bin's scrap as up to six scrap bundles. A loose container still
   holding something can't be picked up ("empty the Chest first").
 - **Survival salvage**: on a map with `"infiniteParts": false` and `"partsMenu": false` (survival) nothing is counted
-  abstractly: a part salvaged (or taken off your own construct) comes into your **hands**, or is set down where it came
-  off when they are full, ready to be carried to storage. A wrecked part still gives scrap, which counts on the player
+  abstractly: a part salvaged (or taken off your own construct) comes into your **hands**; when they are full it goes
+  into the backpack if it fits there, else is set down where it came off, ready to be carried to storage. A wrecked part still gives scrap, which counts on the player
   (until carrying is decided) and goes into bins. Creative maps keep the counted inventory as before.
+
+- **Giving a part to a player** (board item rc01): one rule, `ConstructEdits.Give` (ConstructGive.cs), for every path that
+  hands a part over (taking a part off, salvage into the hands, receiver-merge pop-offs): the hands if empty, else the
+  backpack (the Stow rules: a free slot it fits, at most 40 kg), else a loose pickup dropped where it was (it falls and
+  rests); what the hands hold stays held, and the player gets a HUD line ("Engine dropped: hands full"). Taking from a
+  storage slot or picking up a loose part with full hands goes into the backpack when it fits, else is refused (the
+  part stays put); drawing from the backpack with full hands is refused. A hands state naming no loaded part is logged
+  and emptied each tick, and an edit that throws is logged and dropped, never a crash.
 
 ### Server, network and state (protocol 85)
 
