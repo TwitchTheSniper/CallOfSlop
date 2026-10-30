@@ -613,7 +613,7 @@ public static class ConstructWeapons
         if (sensor >= c.PartCount)
             return null;
         var d = c.Parts[sensor].D;
-        var range = d.Settings.Length > 0 ? d.Settings[Math.Min(c.Parts[sensor].Setting, (byte)(d.Settings.Length - 1))] : 6f;
+        var range = ConstructConfig.Get(c.Parts[sensor], d, CfgKey.Radius, d.Settings.Length > 0 ? d.Settings[Math.Min(c.Parts[sensor].Setting, (byte)(d.Settings.Length - 1))] : 6f);
         var at = ConstructRender.PartCentre(c, sensor);
         Vector3? best = null;
         var bestD = range * range;

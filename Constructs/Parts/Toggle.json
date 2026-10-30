@@ -91,5 +91,8 @@
   ],
   "logic": {
     "kind": "toggle"
-  }
+  },
+  "config": [
+    {"key": "startOn", "label": "Starts on", "group": "General", "default": false, "tooltip": "A newly built toggle starts with its output on."}
+  ]
 }

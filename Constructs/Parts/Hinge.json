@@ -50,5 +50,9 @@
     "min": -100,
     "max": 100,
     "leaf": "leaf"
-  }
+  },
+  "config": [
+    {"key": "min", "label": "Swings back to", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "How far it swings one way."},
+    {"key": "max", "label": "Swings open to", "group": "Limits", "unit": "deg", "min": -100, "max": 100, "step": 1, "tooltip": "How far it swings the other way (opening it with F goes here)."}
+  ]
 }

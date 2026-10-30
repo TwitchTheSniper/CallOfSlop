@@ -88,7 +88,7 @@ public sealed class SandboxModule : GameModeModule
         for (var k = 0; k < n; k++)
         {
             var id = r.U8();
-            var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker);
+            var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Configure);
             var held = r.U8();
             var seat = r.U16();
             var seatPart = r.U8();

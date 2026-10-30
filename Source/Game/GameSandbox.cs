@@ -28,6 +28,7 @@ public enum CActKind : byte
     Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
     Stow, // the part in the hands into the backpack (protocol 85)
     Draw, // the next part in the backpack into empty hands (protocol 85)
+    Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 87)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -326,7 +327,7 @@ public sealed partial class Game
         switch (kind)
         {
             case CActKind.Tool:
-                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker));
+                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Configure));
             case CActKind.Attach:
             {
                 var body = r.U16();
@@ -399,6 +400,8 @@ public sealed partial class Game
                 var body = r.U16();
                 return hands.CycleSetting(Constructs, p.Id, eye, body, r.U8());
             }
+            case CActKind.Configure:
+                return SandboxConfigureAct(p, ref r, eye);
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
@@ -862,7 +865,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.Configure => "Configure tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -879,6 +882,8 @@ public sealed partial class Game
             lines.Add(new HudLine(notice, red));
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
+        else if (h.Tool == ConstructTool.Configure)
+            lines.Add(new HudLine(SandboxConfigHint, dim));
         else if (held == null)
         {
             if (_sbKeys.Stale(SandboxWheelKey.GetHashCode()))

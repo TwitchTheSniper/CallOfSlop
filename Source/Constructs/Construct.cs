@@ -36,6 +36,9 @@ public struct CPart
     // Physical storage (decision 18; ConstructStorage.cs): a storage part's contents, a handle into ConstructWorld.Stores (0: none). It moves with the part.
     public ushort Store;
 
+    // Settings (the configure tool; ConstructConfig.cs): one value a slot of its def's "config" schema. It moves with the part.
+    public CfgValues Cfg;
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.All[Def];
@@ -576,8 +579,22 @@ public sealed partial class Construct
             if (jt.Hinge < PartCount && Parts[jt.Hinge].D is { HasJoint: true } jd)
             {
                 jt.Type = jd.JointType;
-                jt.Speed = jd.MotorSpeed;
-                jt.Strength = jd.MotorStrength;
+                // The part's settings (the configure tool): its limits, speed and strength, inside what the part allows.
+                ref var hp = ref Parts[jt.Hinge];
+                var unit = jd.JointType == JointType.Piston ? 1f : MathF.PI / 180f;
+                jt.Speed = ConstructConfig.Has(jd, CfgKey.Speed) ? MathF.Max(0, ConstructConfig.Get(hp, jd, CfgKey.Speed, 0) * unit) : jd.MotorSpeed;
+                jt.Strength = ConstructConfig.Get(hp, jd, CfgKey.Strength, jd.MotorStrength);
+                if (jd.JointLimited && (ConstructConfig.Has(jd, CfgKey.Min) || ConstructConfig.Has(jd, CfgKey.Max)))
+                {
+                    var a = Math.Clamp(ConstructConfig.Get(hp, jd, CfgKey.Min, jd.JointMin / unit) * unit, jd.JointMin, jd.JointMax);
+                    var b = Math.Clamp(ConstructConfig.Get(hp, jd, CfgKey.Max, jd.JointMax / unit) * unit, jd.JointMin, jd.JointMax);
+                    jt.Min = MathF.Min(a, b);
+                    jt.Max = MathF.Max(MathF.Max(a, b), jt.Min + (jd.JointType == JointType.Piston ? 0.02f : 0.02f));
+                    if (jd.JointType == JointType.Piston)
+                        jt.Max = MathF.Min(jt.Max, jd.JointMax);
+                    jt.Angle = Math.Clamp(jt.Angle, jt.Min, jt.Max);
+                    jt.PrevAngle = Math.Clamp(jt.PrevAngle, jt.Min, jt.Max);
+                }
             }
         }
     }

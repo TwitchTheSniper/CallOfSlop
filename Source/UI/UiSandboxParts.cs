@@ -216,6 +216,7 @@ public sealed partial class Ui
                     ConstructTool.Wrench => "Slot 3: bolted parts",
                     ConstructTool.Welder => "Slot 4: welded parts",
                     ConstructTool.Linker => "Wires and logic settings",
+                    ConstructTool.Configure => "Part settings (the tool wheel)",
                     null => "Still to come",
                     _ => "",
                 },
@@ -247,6 +248,7 @@ public sealed partial class Ui
             ConstructTool.Welder => new ImColor8(240, 150, 40, 255),
             ConstructTool.Wrench => new ImColor8(110, 200, 255, 255),
             ConstructTool.Linker => new ImColor8(120, 230, 140, 255),
+            ConstructTool.Configure => new ImColor8(220, 130, 240, 255),
             _ => new ImColor8(0, 0, 0, 0),
         };
     }

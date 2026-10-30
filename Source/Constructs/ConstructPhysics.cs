@@ -167,7 +167,8 @@ public static class ConstructPhysics
         var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.EngineRunning; // (the power step starts and stops the engine: ConstructPower.cs)
         var throttle = c.EngineWired ? c.EngineSignal : c.Throttle; // a wired engine runs on its signal
         var steer = c.Driver != 255 ? c.SteerInput : 0f;
-        var brake = c.Brake || c.BrakeSignal >= 0.5f;
+        var brake = c.Brake || c.BrakeSignal >= 0.999f;
+        var partBrake = brake ? 0f : c.BrakeSignal; // (a wired brake set below full strength drags rather than locks)
         var touching = 0;
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Touching)
@@ -201,8 +202,8 @@ public static class ConstructPhysics
             // The spring: an adjustable one's preset, an active one's height; a load past what it is built for sags it.
             ref var sp = ref c.Parts[w.Suspension];
             var sd = sp.D;
-            var freq = w.Frequency;
-            var damp = w.Damping;
+            var freq = ConstructConfig.Get(sp, sd, CfgKey.Stiffness, w.Frequency); // (the configure tool's spring settings)
+            var damp = ConstructConfig.Get(sp, sd, CfgKey.Damping, w.Damping);
             var hold = -1f;
             if (sd.SuspFrequency.Length > 0)
             {
@@ -266,7 +267,11 @@ public static class ConstructPhysics
             if (brake || ((!driving || want == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
                 jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
+            {
                 jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), w.Roll * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
+                if (partBrake > 0)
+                    jFwd = float.Lerp(jFwd, stop, partBrake);
+            }
             // Friction circle.
             var total = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
             if (total > maxFriction && total > 0)

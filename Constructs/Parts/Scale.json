@@ -104,5 +104,11 @@
       "x 0.1"
     ],
     "setting": 0
-  }
+  },
+  "config": [
+    {"key": "factor", "label": "Multiply by", "group": "Maths", "min": -100, "max": 100, "step": 0.01, "tooltip": "Its inputs, added up, are multiplied by this."},
+    {"key": "offset", "label": "Then add", "group": "Maths", "min": -1000, "max": 1000, "step": 0.01, "default": 0, "tooltip": "Added after the multiply."},
+    {"key": "low", "label": "Lowest output", "group": "Limits", "min": -1000, "max": 1000, "step": 0.01, "default": -1000, "tooltip": "It never puts out less than this."},
+    {"key": "high", "label": "Highest output", "group": "Limits", "min": -1000, "max": 1000, "step": 0.01, "default": 1000, "tooltip": "It never puts out more than this."}
+  ]
 }

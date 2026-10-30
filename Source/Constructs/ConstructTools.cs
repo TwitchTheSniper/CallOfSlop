@@ -86,7 +86,7 @@ public static class ConstructTools
         var by = _byTool;
         if (by == null)
         {
-            by = new ToolModel?[(int)ConstructTool.Linker + 1];
+            by = new ToolModel?[(int)ConstructTool.Configure + 1];
             foreach (var m in All)
                 if (m.Tool is { } t)
                     by[(int)t] = m;
@@ -161,7 +161,7 @@ public static class ConstructTools
         var ki = Array.IndexOf(Keys, m.Key);
         if (ki < 0)
             throw new ToolModelException($"{file}: \"tool\" is one of {string.Join(", ", Keys)}, not \"{m.Key}\"");
-        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : null;
+        m.Tool = ki < 3 ? (ConstructTool)(ki + 1) : Keys[ki] == "configure" ? ConstructTool.Configure : null;
         if (Opt(root, "hold") is { } hold)
             m.Hold = Turn(Vec(hold, file, "hold"));
 
