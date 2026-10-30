@@ -63,6 +63,75 @@ shown greyed rather than left off (eight segments read cleanly as a compass, and
 closed in a seat (seated keys belong to the construct's input readers); no tool modes ring or second page yet (no tool
 has modes); no stick support yet (no Steam Input in the game).
 
+### Tools in hand
+
+Every tool has its own **held model** (board item dev-sandbox-tool-models-tm01), built from boxes as data in
+`Constructs/Tools/*.json`, drawn in place of the gun while the tool is out: in first person with the view model's arms
+(both hands on their grips through the same IK as the guns) and on other players and bots in third person (the same
+place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.cs` poses and draws them;
+`Source/Constructs/ConstructTools.cs` loads the files.
+
+- **Wrench**: a heavy adjustable spanner held upright; it **cranks** back and forth while a fit or a removal runs.
+- **Welder**: a gas torch with a blue bottle, the off hand under the barrel; while welding it shakes, its tip glows and
+  flickers, it throws **sparks**, and on a lit map it lights its surroundings with a flickering blue-white arc
+  (`LightGrid.AddDynamic`, one per welding player; unlit maps have the glow and sparks only).
+- **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
+  first click to the second) the reel turns and the probe throws a green **beam**.
+- Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
+  hook on a chain), the **configure tool** (a handset with a screen, sliders and a dial), the **scanner** (a turning
+  emitter and an aerial; a beam while it scans) and the **hand drill** (its bit spins while it works).
+
+Every tool has an idle sway (and a walk bob in first person). **Equipping**: taking out a tool (the number keys or the
+tool wheel) drops the one in your hands out of sight (0.14 s) and brings the new one up (0.24 s); from the gun the tool
+just comes up; putting a tool away drops it, then the gun comes up with its own equip (it can't fire until then). A
+**part being carried** to place (from the rack, the parts menu or picked up) shows in the off hand, scaled down to fit
+(the ghost on the construct shows where it goes, as before); with no tool out it is carried in both hands. In a seat
+nothing is in the hands.
+
+Remote players render it from what the Sandbox mode-state tail already sends (every player's tool, held part and edit in
+progress), so nothing on the wire changed (protocol 79). The linking tool's beam shows only in your own hands (the wire
+in progress isn't sent). Models are built once at load; drawing allocates nothing (fixed per-player state; a struct box
+sink feeds either the renderer or the scene graph's draw list, so the scene graph and the immediate code draw the same).
+
+A tool file:
+
+```json
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Welder",
+  "tool": "welder",
+  "description": "A gas welding torch...",
+  "hold": [4, 10, 0],
+  "boxes": [
+    { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },
+    { "size": [0.018, 0.018, 0.016], "at": [0, 0.06, -0.31], "color": "#9fd8ff", "glow": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-14, 0, 0], "shape": "wrap" },
+  "support": { "at": [0, 0.02, -0.13], "shape": "under" },
+  "tip": [0, 0.06, -0.32],
+  "use": { "motion": "jitter", "amount": 0.006, "rate": 23, "sparks": "#ffb040", "light": "#a8d4ff" }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
+| `tool` | `wrench`, `welder`, `linker`; or one still to come: `hoist`, `configure`, `scanner`, `drill`. One file a tool. |
+| `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
+| `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
+| `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
+| `tip` | Where sparks, the light and the beam come from. |
+| `use` | While it works: `motion` (`ratchet`: turns `amount` radians about `axis`; `jitter`: shakes `amount` metres; `push`: jabs forward `amount` metres; `sweep`: turns side to side; `none`) at `rate` Hz; `spin` / `idleSpin` (radians a second for the spin boxes); `sparks`, `light`, `beam` (colours) and `beamLength` (metres). |
+
+A bad file is refused with the reason (`--check-construct-parts` lists the tools too) and that tool is drawn as a plain
+grey block. `--tool-shots` writes pictures of every tool in first and third person, idle and in use, a carried part
+(with the wrench and in bare hands) and a swap half-way (`smoke_tool_*.bmp`); it runs under xvfb like `--light-shots`.
+
+Choices made (the developer may change them): the wrench is one-handed and upright (the off hand rests), the welder and
+scanner two-handed; a carried part goes in the off hand, scaled down (a frame block would hide the view at full size);
+putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
+(the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
+
 ### The debug parts menu
 
 A debugging aid for the test yard (the developer asked for one, 2026-10-29), not how the final game will hand parts out:
@@ -301,6 +370,15 @@ marked when it opens, letting go in the dead zone cancels, the hoist says "comin
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
 frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
 server.
+
+The **Sandbox tool models** section (`Source/App/SelfTestSandboxToolModels.cs`): every tool file loads as one piece with
+its hands in reach, every tool in the game and every tool still to come has a model, and 13 kinds of bad file are refused
+for the right reason (two models for one tool among them); in first person each model draws its boxes (plus sparks and a
+beam in use) with both hands on their grips, low on the right of the view, and the equip drops the old tool before the
+new one comes up and hands back to the gun after the drop; in an offline Sandbox game a bot's welder (welding: its
+sparks), a carried wheel and the local player's wrench are drawn in third person instead of the gun, the scene graph
+matching the immediate code draw for draw, and a gun again outside Sandbox; 240 frames of tools in use allocate nothing;
+and a real host and client each draw the other's tool in their hands.
 
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
