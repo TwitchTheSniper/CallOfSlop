@@ -217,6 +217,7 @@ public sealed partial class Ui
                     ConstructTool.Welder => "Slot 4: welded parts",
                     ConstructTool.Linker => "Wires and logic settings",
                     ConstructTool.Configure => "Part settings (the tool wheel)",
+                    ConstructTool.PhysicsGun => "Grab, move, turn, freeze",
                     null => "Still to come",
                     _ => "",
                 },
@@ -424,7 +425,7 @@ public sealed partial class Ui
                     ImGui.TextColored(Dim, "New constructs: free (a foundation anchors)"u8);
                 ImGui.SetNextItemWidth(-1);
                 ImGui.SliderFloat("##sbtilesize"u8, ref SandboxTileSize, SandboxTileMin, SandboxTileMax, "Tile size %.0f"u8);
-                ImGuiSafe.TextColored(Dim, $"[{Keybinds.Name(settings.Bind(GameAction.Inventory))}] or Esc closes");
+                ImGuiSafe.TextColored(Dim, $"[{Keybinds.Name(settings.Bind(GameAction.SandboxInventory))}] or Esc closes");
             }
             ImGui.EndChild();
             ImGui.SameLine();

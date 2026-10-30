@@ -36,8 +36,8 @@ def vec(*v):
     return [r(x) for x in v]
 
 
-def box(mn, mx, color=None, detail=False, hidden=False, **shape):
-    """A box from its corners (None when it would be thinner than 1 cm: Part.add skips it)."""
+def box(mn, mx, color=None, detail=False, hidden=False, glass=False, **shape):
+    """A box from its corners (None when it would be thinner than 1 cm: Part.add skips it). glass: a see-through pane."""
     if min(mx[a] - mn[a] for a in range(3)) < 0.0099:
         return None
     b = {"min": vec(*mn), "max": vec(*mx)}
@@ -47,6 +47,8 @@ def box(mn, mx, color=None, detail=False, hidden=False, **shape):
         b["detail"] = True
     if hidden:
         b["hidden"] = True
+    if glass:
+        b["glass"] = True
     b.update(shape)
     return b
 
@@ -446,7 +448,7 @@ def panel(mat, nx, nz):
         p.add(box((x0, y0, z1 - f), (x1, y1, z1), "#5a6068"))
         p.add(box((x0, y0, z0 + f), (x0 + f, y1, z1 - f), "#5a6068"))
         p.add(box((x1 - f, y0, z0 + f), (x1, y1, z1 - f), "#5a6068"))
-        p.add(box((x0 + f, y0 + 0.01, z0 + f), (x1 - f, y1 - 0.01, z1 - f)))
+        p.add(box((x0 + f, y0 + 0.01, z0 + f), (x1 - f, y1 - 0.01, z1 - f), glass=True))  # (drawn see-through, sorted)
     elif mat == "mesh":
         f = 0.03
         p.add(box((x0, y0, z0), (x1, y1, z0 + f)))

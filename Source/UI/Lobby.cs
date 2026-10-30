@@ -689,14 +689,27 @@ public sealed partial class Ui
         {
             ImGui.BeginChild("##controls"u8, panel);
             ImGui.TextColored(Dim, "Click a binding, then press a key or mouse button. Esc cancels. Taken keys swap."u8);
+            ImGui.TextColored(Dim, "Sandbox keys only work in Sandbox, so they can share a key with one that only works in the other modes. Sandbox keys may be Shift + a key."u8);
             if (ImGui.BeginTable("##binds"u8, 2, ImGuiTableFlags.RowBg | ImGuiTableFlags.BordersInnerV))
             {
                 ImGui.TableSetupColumn("Action"u8, ImGuiTableColumnFlags.WidthStretch);
                 ImGui.TableSetupColumn("Binding"u8, ImGuiTableColumnFlags.WidthFixed, 260 * _scale);
                 ImGui.TableHeadersRow();
-                for (var i = 0; i < (int)GameAction.COUNT; i++)
+                // Everything but Sandbox first, then the Sandbox keys under their own heading (Keybinds.Context).
+                for (var n = 0; n < 2 * (int)GameAction.COUNT; n++)
                 {
+                    var i = n % (int)GameAction.COUNT;
                     var action = (GameAction)i;
+                    if ((Keybinds.Context(action) == Keybinds.BindContext.Sandbox) != (n >= (int)GameAction.COUNT))
+                        continue;
+                    if (action == Keybinds.FirstSandboxAction)
+                    {
+                        // (the heading row, once, before the first Sandbox action)
+                        ImGui.TableNextRow();
+                        ImGui.TableNextColumn();
+                        ImGui.TextColored(Orange, "Sandbox"u8);
+                        ImGui.TableNextColumn();
+                    }
                     ImGui.TableNextRow();
                     ImGui.TableNextColumn();
                     ImGui.AlignTextToFramePadding();

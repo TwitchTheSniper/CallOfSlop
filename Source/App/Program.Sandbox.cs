@@ -4,7 +4,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Sandbox mode on this PC (docs/sandbox/CONSTRUCTS.md): the keys (3 wrench, 4 welder, 1/2 back to the guns; with a
-/// tool out and a part in hand, hold the fire button to fit it on the ghost socket under the crosshair, R turns it; hold
+/// tool out and a part in hand, hold the fire button to fit it on the ghost socket under the crosshair, the arrows turn it
+/// (Shift + Left / Right roll it; GhostTurn.cs) and R puts it back the default way round; hold
 /// aim to take the part you look at off; F takes from the rack, sits, opens doors, picks up; T drops), the look target and
 /// ghost sockets, and the constructs, ghosts and tool drawn in the world. The server decides everything (GameSandbox.cs).
 /// </summary>
@@ -12,7 +13,7 @@ public static unsafe partial class Program
 {
     private static string? _sbPackKeys; // (made again only when the binds change)
     private static long _sbPackBinds;
-    private static int _sbVariantShift; // R presses: which way round the chosen part goes
+    private static int _sbVariantShift; // the rotate keys: which way round the chosen part goes (from the ghost's first fit)
     private static int _sbLastGhostKey = -1;
     private static bool _sbFiring, _sbRemoving;
     private static long _sbLookKey = -1;
@@ -22,7 +23,11 @@ public static unsafe partial class Program
     private static int _sbWirePart = -1;
     private static int _sbSeatKeys = -1;
     private static long _sbWireKey = -1;
-    private static byte _sbTurn; // free placement: the held part's Rot24 turn (R steps it)
+    private static byte _sbTurn; // free placement: the held part's Rot24 turn (the rotate keys turn it, R resets it)
+    private static string _sbTurnText = "";
+    private static string _sbRackText = ""; // the rack's look text (names the Sandbox inventory key)
+    private static int _sbMenuBind = Keybinds.Unbound; // the rotate keys for the HUD ("<- -> ^ v: turn, ...")
+    private static long _sbTurnBinds = -1;
     private static string? _sbGroundWhy;
     private static readonly Vector3[] _sbFeet = new Vector3[64];
     private static long _sbJoinKey = -1;
@@ -34,13 +39,14 @@ public static unsafe partial class Program
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     /// <summary>
-    /// The inventory key (I by default) in Sandbox opens the debug parts menu (UiSandboxParts.cs), the mouse free for it;
+    /// The Sandbox inventory key (Tab by default; GameAction.SandboxInventory, live only in Sandbox, where there is no
+    /// scoreboard) opens the inventory (UiSandboxParts.cs), the mouse free for it;
     /// again (or Esc) closes it (while its search box has the keyboard the game's keys are off: Esc then). Not with the chat or another menu open, in a seat, or dead; refused
     /// with a notice where the map turns the menu off.
     /// </summary>
     private static void SandboxMenuInput()
     {
-        if (_game is not { SandboxOn: true } g || !Pressed(GameAction.Inventory))
+        if (_game is not { SandboxOn: true } g || !Pressed(GameAction.SandboxInventory))
             return;
         if (Ui.SandboxPartsOpen)
         {
@@ -141,6 +147,13 @@ public static unsafe partial class Program
             _sbPackKeys = $"{Keybinds.NameOf(_settings, GameAction.Stow)}: stow, {Keybinds.NameOf(_settings, GameAction.DrawPack)}: draw";
         }
         g.SandboxPackKeys = _sbPackKeys;
+        SandboxTurnKeys(g);
+        if (_settings.Bind(GameAction.SandboxInventory) != _sbMenuBind || _sbRackText.Length == 0)
+        {
+            _sbMenuBind = _settings.Bind(GameAction.SandboxInventory);
+            g.SandboxMenuKey = Keybinds.Name(_sbMenuBind);
+            _sbRackText = $"Parts rack: F to take a part (again for the next kind; {g.SandboxMenuKey}: the inventory)";
+        }
         if (Pressed(GameAction.Stow))
             g.SandboxSend(CActKind.Stow);
         if (Pressed(GameAction.DrawPack))
@@ -212,7 +225,7 @@ public static unsafe partial class Program
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
-            g.SandboxLookText = "Parts rack: F to take a part (again for the next kind; I: the parts menu)";
+            g.SandboxLookText = _sbRackText;
         // The welder on a part that touches another construct: F joins the two into one.
         JoinPlan jplan = default;
         var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
@@ -234,7 +247,7 @@ public static unsafe partial class Program
             else
                 g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (byte)hit.Part);
         }
-        else if (Pressed(GameAction.Interact))
+        else if (Pressed(GameAction.Interact) && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
             if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (byte)hit.Part);
@@ -245,6 +258,14 @@ public static unsafe partial class Program
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
+
+        // The physics gun: grab, move, turn, freeze (Program.PhysicsGun.cs).
+        if (h.Tool == ConstructTool.PhysicsGun)
+        {
+            PhysGunInput(g, me, ref h, eye, dir, now);
+            return true;
+        }
+        PhysGunIdle();
 
         // The linking tool: fire on an output, then fire on an input to wire them; aim cuts a part's wires; R its setting.
         if (h.Tool == ConstructTool.Linker)
@@ -351,9 +372,23 @@ public static unsafe partial class Program
                         _sbLastGhostKey = key;
                         _sbVariantShift = 0;
                     }
-                    if (Pressed(GameAction.Reload) && ConstructBuild.NextVariant(c, held, gh.Part, gh.Socket, (gh.Variant + _sbVariantShift) % (held.Sockets.Length * 4)) is var next and >= 0)
-                        _sbVariantShift = (next - gh.Variant + held.Sockets.Length * 4) % (held.Sockets.Length * 4);
-                    var v = (gh.Variant + _sbVariantShift) % (held.Sockets.Length * 4);
+                    var total = held.Sockets.Length * 4;
+                    if (Pressed(GameAction.Reload))
+                        _sbVariantShift = 0; // R: back to the default way round (the first that fits)
+                    else if (SandboxTurnPressed() is { } turnKey)
+                    {
+                        // The rotate keys: a quarter turn as you see it, snapped to the construct's axes (GhostTurn.cs).
+                        var cv = (gh.Variant + _sbVariantShift) % total;
+                        var from = ConstructBuild.Place(c, gh.Part, gh.Socket, held, cv / 4, cv % 4, out var cur) == null ? cur.Rot : gh.Rot;
+                        c.WorldFrame(c.Parts[gh.Part].Seg, out var fq, out _);
+                        SandboxCamera(g, out var camRight, out var camUp);
+                        var nv = GhostTurn.AttachVariant(c, held, gh.Part, gh.Socket, from, GhostTurn.Delta(turnKey, fq, camRight, camUp));
+                        if (nv >= 0)
+                            _sbVariantShift = (nv - gh.Variant + total) % total;
+                        else
+                            g.SandboxSay($"the {held.Name} can't turn that way on this socket");
+                    }
+                    var v = (gh.Variant + _sbVariantShift) % total;
                     ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
                     if (ConstructRender.GhostValid)
                         gh = shown with { Variant = v };
@@ -367,9 +402,16 @@ public static unsafe partial class Program
             else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
                 // Free placement: the surface aimed at (terrain, the map, a floor): a new construct rooted at this part.
-                if (Pressed(GameAction.Reload))
-                    _sbTurn = ConstructPlace.NextTurn(_sbTurn);
                 var flags = (byte)((g.SandboxPlaceGrid ? ConstructPlace.FlagGrid : 0) | (g.SandboxPlaceAnchor && g.SandboxInfiniteParts ? ConstructPlace.FlagAnchor : 0));
+                if (Pressed(GameAction.Reload))
+                    _sbTurn = 0; // R: back to the default orientation
+                else if (SandboxTurnPressed() is { } turnKey)
+                {
+                    // The rotate keys, relative to the camera in the new construct's frame (the frame Pose makes below).
+                    SandboxCamera(g, out var camRight, out var camUp);
+                    var frame = ConstructPlace.Frame(surf.Normal, ConstructPlace.FrameYaw(g.LookYaw, (flags & ConstructPlace.FlagGrid) != 0), out _);
+                    _sbTurn = Rot24.Compose(GhostTurn.Delta(turnKey, frame, camRight, camUp), _sbTurn);
+                }
                 var feetN = 0;
                 foreach (var pl in g.Players.Values)
                     if (pl.Alive && feetN < _sbFeet.Length)
@@ -383,7 +425,7 @@ public static unsafe partial class Program
                     ConstructRender.PlaceTurn = fp.Turn;
                     ConstructRender.PlaceValid = why == null;
                 }
-                var gkey = held.Id | (_sbTurn << 8) | (flags << 16) | (ConstructBuild.ToolFits(h.Tool, held) ? 1 << 20 : 0);
+                var gkey = held.Id | (_sbTurn << 8) | (flags << 16) | (ConstructBuild.ToolFits(h.Tool, held) ? 1 << 20 : 0) | (int)(_sbTurnBinds & 0xff) << 21;
                 if (gkey != _sbGroundKey || !ReferenceEquals(why, _sbGroundWhy))
                 {
                     _sbGroundKey = gkey;
@@ -391,7 +433,7 @@ public static unsafe partial class Program
                     var how = (flags & ConstructPlace.FlagAnchor) != 0 || held.Role == PartRole.Foundation ? "anchored" : "free";
                     _sbGroundText = why != null ? $"Can't set the {held.Name} down here: {why}"
                         : !ConstructBuild.ToolFits(h.Tool, held) ? $"The {held.Name} needs the {held.Tool.ToString().ToLowerInvariant()}"
-                        : $"New construct: hold fire to set down the {held.Name} ({how}{((flags & ConstructPlace.FlagGrid) != 0 ? ", on the grid" : "")}; R turns it)";
+                        : $"New construct: hold fire to set down the {held.Name} ({how}{((flags & ConstructPlace.FlagGrid) != 0 ? ", on the grid" : "")}; {_sbTurnText})";
                 }
                 g.SandboxLookText = _sbGroundText;
                 if (Pressed(GameAction.Fire) && !_swallowClick)
@@ -420,6 +462,60 @@ public static unsafe partial class Program
             _sbFiring = _sbRemoving = false;
         }
         return true;
+    }
+
+    /// <summary>Which rotate key went down this frame (a roll first: its Shift chord hides the plain arrow anyway), or null.</summary>
+    private static TurnKey? SandboxTurnPressed() =>
+        Pressed(GameAction.RollLeft) ? TurnKey.RollLeft
+        : Pressed(GameAction.RollRight) ? TurnKey.RollRight
+        : Pressed(GameAction.RotateLeft) ? TurnKey.Left
+        : Pressed(GameAction.RotateRight) ? TurnKey.Right
+        : Pressed(GameAction.RotateUp) ? TurnKey.Up
+        : Pressed(GameAction.RotateDown) ? TurnKey.Down
+        : null;
+
+    /// <summary>The camera's level right and up (world; a planet's up on a curved-gravity map).</summary>
+    private static void SandboxCamera(Game g, out Vector3 right, out Vector3 up)
+    {
+        var fwd = g.LookDir(g.LookYaw, 0);
+        right = g.LookDir(g.LookYaw + MathF.PI / 2, 0);
+        up = Vector3.Cross(right, fwd);
+    }
+
+    /// <summary>The rotate keys' HUD text from the binds (made again only when they change).</summary>
+    private static void SandboxTurnKeys(Game g)
+    {
+        var b = _settings.Binds;
+        long key = 17;
+        foreach (var a in TurnActions)
+            key = key * 31 + b[(int)a];
+        if (key != _sbTurnBinds || _sbTurnText.Length == 0)
+        {
+            _sbTurnBinds = key;
+            _sbTurnText = TurnKeysText(b);
+            _sbGroundKey = -1;
+        }
+        g.SandboxTurnKeys = _sbTurnText;
+    }
+
+    private static readonly GameAction[] TurnActions =
+        [GameAction.RotateLeft, GameAction.RotateRight, GameAction.RotateUp, GameAction.RotateDown, GameAction.RollLeft, GameAction.RollRight, GameAction.Reload];
+
+    /// <summary>"&lt;- -&gt; ^ v: turn, Shift + &lt;- -&gt;: roll, R: reset" (the arrows drawn as ASCII arrows).</summary>
+    public static string TurnKeysText(int[] b)
+    {
+        static string N(int code) =>
+            Keybinds.IsChord(code) ? "Shift + " + N(code & ~Keybinds.ShiftFlag)
+            : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Left) ? "<-"
+            : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Right) ? "->"
+            : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Up) ? "^"
+            : code == Keybinds.Key(Brutal.GlfwApi.GlfwKey.Down) ? "v"
+            : Keybinds.Name(code);
+        int B(GameAction a) => b[(int)a];
+        var rl = B(GameAction.RollLeft);
+        var rr = B(GameAction.RollRight);
+        var roll = Keybinds.IsChord(rl) && Keybinds.IsChord(rr) ? $"Shift + {N(rl & ~Keybinds.ShiftFlag)} {N(rr & ~Keybinds.ShiftFlag)}" : $"{N(rl)} / {N(rr)}";
+        return $"{N(B(GameAction.RotateLeft))} {N(B(GameAction.RotateRight))} {N(B(GameAction.RotateUp))} {N(B(GameAction.RotateDown))}: turn, {roll}: roll, {N(B(GameAction.Reload))}: reset";
     }
 
     private static long _sbStoreKey = -1;
@@ -531,6 +627,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
     }
 
@@ -552,7 +649,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a wire is being run)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a wire is being run; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

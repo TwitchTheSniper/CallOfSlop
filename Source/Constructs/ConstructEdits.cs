@@ -31,12 +31,17 @@ public struct SandboxHand
     public double RackAt; // last rack take (a press cycles to the next part)
     public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
     public bool HasSeatLook; // (none heard since sitting down: the server works it out from the world look)
+    public ushort GrabBody; // the physics gun holds this construct (0: nothing; ConstructGrab.cs)
+    public Vector3 GrabLocal; // ...at this point (its body frame)
+    public float GrabDist; // ...this far out along the look
+    public Quaternion GrabRel; // ...turned this way relative to the look's yaw (the held thing swings round with you)
+    public double GrabAskedAt; // client: when it last asked to grab or let go (the 10 Hz tail doesn't undo it meanwhile)
 
     public readonly bool Seated => SeatBody != 0;
 
     public readonly float Progress(double now) => Edit == EditKind.None || Duration <= 0 ? 0 : (float)Math.Clamp((now - Start) / Duration, 0, 1);
 
-    public static SandboxHand Empty => new() { Held = ConstructParts.None };
+    public static SandboxHand Empty => new() { Held = ConstructParts.None, GrabRel = Quaternion.Identity };
 }
 
 /// <summary>
@@ -125,6 +130,8 @@ public sealed partial class ConstructEdits
             return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
         if (world.Get(body) is not { } c)
             return "that construct is gone";
+        if (Contested(c, player) is { } defended)
+            return defended;
         if (c.Driver != 255 && c.Driver != player)
             return "someone is driving it";
         if (Claims(c, player) && ConstructPlace.LimitRefusal(world, player) is { } full)
@@ -212,6 +219,8 @@ public sealed partial class ConstructEdits
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
+        if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
+            return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
             return "that construct is someone else's: you can only join your own (or wrecks and loose parts)";
         // Which one survives: the one aimed at, unless only the other is the player's own.
@@ -253,6 +262,8 @@ public sealed partial class ConstructEdits
             return "someone is driving it";
         if (SalvageRefusal(c, player) is { } theirs)
             return theirs;
+        if (Contested(c, player) is { } defended)
+            return defended;
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
         if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
@@ -331,6 +342,8 @@ public sealed partial class ConstructEdits
                     return "failed: that part is gone";
                 if (SalvageRefusal(c, player) is { } theirs)
                     return $"failed: {theirs}";
+                if (Contested(c, player) is { } defended)
+                    return $"failed: {defended}";
                 c.WorldFrame(c.Parts[h.Part].Seg, out var q, out var t);
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
@@ -387,6 +400,8 @@ public sealed partial class ConstructEdits
         if (world.Get(body) is not { } cc || part < 0 || part >= cc.PartCount)
             return "that part is gone";
         c = cc;
+        if (Contested(cc, player) is { } defended)
+            return defended;
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
         return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach);
@@ -544,6 +559,8 @@ public sealed partial class ConstructEdits
         if (world.StoreOf(cc, part) == null)
             return "that isn't storage";
         c = cc;
+        if (Contested(cc, player) is { } defended)
+            return defended;
         cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
         cc.PartBounds(part, out var mn, out var mx);
         return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);

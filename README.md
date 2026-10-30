@@ -546,7 +546,7 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F3 | Ready up (warmup) |
 | 4 / 5 / 6 | Use a kill streak (cheapest first); for aimed ones, then fire to call it in |
 | B | Loadout menu |
-| Tab (hold) | Scoreboard |
+| Tab (hold) | Scoreboard (every mode but Sandbox; in Sandbox Tab is the inventory) |
 | Enter / Y | Chat to everyone / to your team (see Text chat and voice chat) |
 | X (hold) | Push to talk (once you've turned your microphone on in Settings > Audio) |
 | F8 | Open / close the Audio mixer debug window (see Audio mixer) |
@@ -554,7 +554,9 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | F9 | Performance window: press to cycle the full window, the corner overlay and off (see Performance window) |
 | F6 / F5 / F10 | Dev tools: look-at inspector, copy its reference line, prop editor (see Look-at inspector and prop editor) |
 | T | Zombies: drop the gun in your hands on the floor for a teammate (never your last gun) |
-| I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it). Sandbox: the inventory (parts, blueprints, tools) |
+| I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
+| Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
+| Arrow keys | Sandbox: turn the ghost part (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R resets it) |
 | Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
@@ -1007,18 +1009,21 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   letting go in the middle cancels. The number keys stay as quick favourites. Not in a seat; the wheel closes without
   choosing when you die, open a menu or the inventory, or the match ends.
 - **Building**: F at the rack takes a part (again for the next kind). With the right tool out, every free socket the
-  part fits on lights up on the construct you look at; hold fire to fit it (a second or three), R turns it, aim (hold)
+  part fits on lights up on the construct you look at; hold fire to fit it (a second or three), the arrow keys turn it
+  as you see it (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R puts it back the default way), aim (hold)
   takes the part you look at off into your hand, T drops what you hold. Fire on any surface (not a socket) sets the
-  part down as a new construct (a ghost, green or red with the reason; R turns it; the inventory window has the grid
+  part down as a new construct (a ghost, green or red with the reason, with a small front / top / right gizmo; the same
+  keys turn it; the inventory window has the grid
   and creative anchor toggles; the Construct Core is the starter block). With the welder, F on a part touching another
   construct joins the two.
-- **Inventory**: **I** (the inventory key, rebindable) opens the inventory: tabs for parts, blueprints and tools; on
+- **Inventory**: **Tab** (the Sandbox inventory key, rebindable under Settings > Controls > Sandbox; Sandbox has no
+  scoreboard) opens the inventory: tabs for parts, blueprints and tools; on
   the left a search box and a category tree (Structure, Wheels and drivetrain, Seats, Joints, Logic...); on the right a
   grid of 3D tiles (a tile size slider below the tree). Hover a tile for its tool, mass, health, armour and description;
   the badge is how many you have ("inf" while parts are endless). Click a part (or the arrow keys and Enter) and it is in
   your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
   in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
-  up; I or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
+  up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
 - **Wiring**: with the linking tool out the wires show (green while on). Fire on an output (a seat, a button, lever,
   switch, pressure plate, input reader, sensor or gate), then fire on an input (a joint, the engine, a gate, a lamp, a
   horn, a brake, a hinge's lock) to wire them; aim cuts a part's wires; R changes a logic part's setting (a timer's

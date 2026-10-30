@@ -27,28 +27,62 @@ north-west corner) and some loose parts.
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
-| R | Turn the part on its socket (the next way round that fits); aimed at a surface, the next of its 24 turns. |
+| Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
+| R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
 | F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
+| Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
+| Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
+
+### Turning the ghost
+
+Board item dev-sandbox-arrow-rotate-ar02 (`Source/Constructs/GhostTurn.cs`). Every ghost (free placement on a surface
+and attaching to a socket) turns with the same keys, each a quarter turn relative to the camera:
+
+- **Left / Right** (the arrow keys): about the vertical; Left swings the part's front to your left, whichever way you or
+  the construct face.
+- **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
+- **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
+- **R**: back to the default orientation (it no longer steps through the turns).
+
+The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
+which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
+turns the placement and the network already use: no wire change. On a socket the part's own sockets decide which turns
+are possible: a turn no socket of the part can make there (or one that would be in the way) is skipped and the next quarter
+turn the same way is taken, and of the ways round giving one turn the first is used, so a key and its opposite always undo
+each other. The ghost carries a small gizmo: its front as an orange arrow, its top green, its right red. The HUD's hint
+names the keys ("<- -> ^ v: turn, Shift + <- ->: roll, R: reset").
+
+The keys are rebindable in Settings > Controls under the **Sandbox** heading: Turn the part left / right, Tip it towards /
+away from you, Roll it left / right (binds version 12). Sandbox actions are live only in Sandbox and the Zombies spectate
+keys only outside it, so they share the arrows without a clash (`Keybinds.Context`); a Sandbox action may be bound to a
+Shift chord (hold Shift while choosing the key), and while a chord is held its plain key does nothing (Shift + Left rolls,
+it doesn't also turn).
+
+**Self-test**: the **Sandbox ghost turns** section (`Source/App/SelfTestGhostTurn.cs`): from every player yaw (15 degree
+steps), on level, wall and upside-down frames, from all 24 turns: a key then its opposite gives the same turn, four presses
+a full turn, each an exact quarter turn about the camera's snapped axis the right way (on a slope only the turn rules); on
+a Frame Block's every socket, at three construct yaws and every 30 degrees of look, a key gives the same turn as free
+placement in the same frame, its opposite comes back to the default, four come round; a Frame Beam (which can't take every
+turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
+kept; nothing allocates.
 
 ### The tool wheel (decision 17)
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
-clockwise from the top: **wrench** (N), hoist (NE), **welder** (E), configure tool (SE), **hands / gun** (S: out of
+clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
 build mode), scanner (SW), **linking tool** (W), hand drill (NW). The four tools that exist sit on the compass points, so
-the easiest flicks reach them; the tools from the design's list that don't exist yet sit on the diagonals, greyed out
-with "coming later" (letting go on one says so and changes nothing). The **configure tool** (SE) is real since board item
-dev-sandbox-configure-tool-ct01 ([The configure tool](#the-configure-tool)); it has no number key (the wheel or the
-inventory's Tools tab). While the key is held the view stands still and the
+the easiest flicks reach them, with the physics gun on the north-east; the configure tool on the south-east
+([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the two from the
+design's tool list that don't exist yet sit on the other diagonals, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
@@ -87,6 +121,8 @@ place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.
 - **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
   first click to the second) the reel turns and the probe throws a green **beam**.
 - **Configure tool**: a handset with a screen, sliders and a dial; it is "in use" (its motion) while a settings panel is open.
+- **Physics gun**: an amber beam projector held in both hands; while it holds something its coil spins, it shakes a
+  little and its tip lights the map, and a curved beam runs to the held thing ([below](#the-physics-gun)).
 - Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
   hook on a chain), the **scanner** (a turning emitter and an aerial; a beam while it scans) and the **hand drill** (its
   bit spins while it works).
@@ -126,7 +162,7 @@ A tool file:
 | Field | Meaning |
 | --- | --- |
 | space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
-| `tool` | `wrench`, `welder`, `linker`, `configure`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
+| `tool` | `wrench`, `welder`, `linker`, `physgun`, `configure`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
 | `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
 | `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
 | `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
@@ -142,10 +178,76 @@ scanner two-handed; a carried part goes in the off hand, scaled down (a frame bl
 putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
 
+### The physics gun
+
+Board item dev-sandbox-physics-gun-pg01 and decision 19. A Sandbox tool (`ConstructTool.PhysicsGun`, its wire byte 8,
+after the tools still to come) on the tool wheel's north-east segment and in the inventory's Tools tab, with its own held
+model (`Constructs/Tools/PhysicsGun.json`: an amber projector with a spinning coil and three prongs, two-handed; its
+coil spins and its tip lights the map while it holds something). The keys are the existing actions, so they rebind:
+
+| Key | With the physics gun out |
+| --- | --- |
+| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go to drop it (it keeps its speed: a flick throws it). |
+| Mouse wheel | While holding: pull it in or push it out (12% of the distance a notch, at least 25 cm; 1.2 m nearest). |
+| Interact (F) held + mouse | While holding: turn it (about up, and about your right); the view stands still meanwhile. Sprint (Shift) snaps the turn to whole 45 degree steps of yaw, pitch and roll. |
+| Aim | While holding: **freeze** it where it is and let go. |
+| Reload twice within 0.35 s | Unfreeze everything you froze (the host holding Sprint: everything, anyone's). The HUD says how many. |
+
+- **Holding**: the grab point keeps its offset on the thing, and the thing keeps its turn relative to your look's yaw
+  (turn round and it swings round with you). Each tick the server sets the beam's point (your eye plus your look times
+  the distance) and the wanted turn; inside the physics step, after gravity, a spring (`ConstructGrab.Drive`) pushes the
+  body's velocity towards the one that closes the gap over 0.1 s (at most 18 m/s) and its spin towards the one that
+  closes the turn over 0.12 s (at most 9 rad/s), by no more than the beam's strength allows that tick plus gravity (so it
+  hangs in the air). The contacts are solved after it, so the held thing collides with the map and pushes other
+  constructs instead of passing through them; it never teleports. A held body never sleeps.
+- **Strength**: 200 kN in creative (at most 40 m/s2), things up to 15 t; survival 8 kN, up to 500 kg (heavier: "too
+  heavy for the physics gun"), so heavy things are slow to pull.
+- **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
+  construct), something another player holds (one holder per construct), and in survival an enemy construct that is
+  contested (below). The look text says why before you click; a refused click flashes a short red beam and says why.
+- **Frozen**: kinematic, held still exactly like an anchored construct (other things rest on it and bump into it), drawn
+  with an icy tint and outline, and a small snowflake beside the crosshair while you look at it. Grabbing a frozen thing
+  unfreezes it. Each construct remembers who froze it (`Construct.FrozenBy`); a player who leaves leaves their frozen
+  things nobody's (only the host's "everything" reaches them).
+- **Multiplayer**: server-authoritative. `CActKind.Grab` (the construct and the grab point, 1 cm), `GrabRelease`,
+  `GrabFreeze` and `UnfreezeAll` go reliably; `GrabSteer` (distance and turn) goes unreliably on a change, at most ~30
+  times a second and every 0.25 s anyway, like a seat's look. The held thing moves by the ordinary `CPose` poses (it is
+  awake), so everyone sees it move smoothly; the mode-state tail (version 3) carries each player's held construct and
+  grab point, so every machine draws everyone's beam: a curve from the tool's tip that leaves along the holder's look and
+  bends onto the grab point. `CBody` carries the frozen flag and who froze it (protocol 88).
+- **Saving**: world saving isn't built yet; the frozen state (flag and owner) is part of a construct's structure, which
+  is what a save will hold, and the self-test round-trips it.
+- **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
+
+**Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
+editing tool (the physics gun, the wrench and welder fitting and taking off, the welder's join, the linking tool's wires
+and settings; a tool still to come calls the same helper, `ConstructGrab.Defended` / `ConstructEdits.Contested`) is
+refused on someone else's construct while its owner (a player or a bot; factions don't exist yet, so the owner is the
+faction) is alive within `ConstructGrab.ContestRadius` (40 m, tunable) of it plus its own size, which covers being in it:
+"Owned by Name - defended". The map's constructs (nobody's), wrecks and your own are never contested; once the owner is
+dead or far away it can be grabbed and salvaged. Shooting it apart works at any time.
+
+Choices made (the developer may change them): the physics gun took the hoist's segment on the wheel (decision 19 has the
+physics gun move and lift pieces; the hoist stays in the inventory's Tools tab as still to come); no new key binds (Fire,
+Aim, Interact, Sprint, Reload and the wheel, all rebindable already); the held thing turns with your yaw (not fixed in
+the world); "unfreeze everything" is the host's double-tap with Sprint held rather than a menu option; survival's caps
+(8 kN, 500 kg, 12 m) and creative's (200 kN, 15 t, 30 m); the contested radius is from the owner to the construct's
+centre of mass plus its radius.
+
 ### The inventory (the parts menu)
 
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
-**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+**Per-mode keys** (board item dev-sandbox-tab-inventory-ti01, binds version 13): Sandbox has no scoreboard, so the
+inventory took Tab there without changing the global Scoreboard default. Each action has a context (`Keybinds.Context`):
+everywhere, Sandbox only, or every mode but Sandbox. The Scoreboard and the Zombies parts inventory (still on I) are live
+outside Sandbox only, the Sandbox inventory and the other Sandbox keys in Sandbox only, and two actions clash on a key only
+when their contexts overlap, so the keybinds screen (the Sandbox keys under their own heading) treats Tab there as no
+conflict. Settings migrate once: a player who never rebound the inventory gets Tab; one who had rebound it keeps that key
+for the Sandbox inventory; if a key used everywhere already holds Tab, the Sandbox inventory keeps I. The
+**Sandbox Tab inventory** self-test section (`Source/App/SelfTestSandboxTab.cs`) holds Tab in Sandbox, Team Deathmatch and
+Zombies matches and migrates version 12 files.
+
+**Tab** (the Sandbox inventory key, `GameAction.SandboxInventory`; rebindable under the Sandbox heading in Settings >
+Controls) opens the **Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
 list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
 
 - **Tabs**: Parts, Blueprints and Tools.
@@ -169,7 +271,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
   the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
   enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
-  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
   It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
@@ -248,7 +350,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
   along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
   as part of the construct: "Seats" below). A moving
-  part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
+  part that moves into a player shoves them along and, faster than 4 m/s of its own speed, hurts them (run-over damage,
+  below).
 
 ### Damage (decision 6)
 
@@ -351,9 +454,11 @@ stored or picked up loses its settings (it goes back to the inventory as a kind)
 
 ### Server, permissions and the network
 
-The client asks with `CActKind.Configure` (protocol 87; [Network](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm)); the
+The client asks with `CActKind.Configure` (protocol 89; [Network](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm)); the
 server (`ConstructEdits.Configure`, `Game.SandboxConfigRefusal`) checks the configure tool is out, the player isn't
-seated, every part is of one kind on that construct (at most 32), the nearest is within 8 m, and **who may**
+seated, every part is of one kind on that construct (at most 32), the nearest is within 8 m, decision 19's shared
+contested rule (`ConstructEdits.Contested`, the physics gun's: in survival an enemy construct with its owner alive near is
+"defended"), and **who may**
 (decision 19, factions treated as the owner for now): your own constructs, nobody's (the map's), wrecks and loose parts;
 someone else's is refused, "Owned by NAME - defended" while its owner is alive within 40 m (plus the construct's size),
 "Owned by NAME: only its owner can configure it" otherwise. It clamps every value, rebuilds a joint's limits, speed and
@@ -493,7 +598,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering; 88 for the physics gun)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -521,9 +626,11 @@ The Sandbox mode is offered only on maps with this section.
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
   inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
-- The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
-  progress.
-- Protocol 87 (the configure tool): `CBody` ends with the part settings that are off their defaults (a u16 count, then
+- The Sandbox mode-state tail (~10 Hz, version 3): every player's tool (the linking tool and the physics gun too), held
+  part, seat and edit in progress, and (version 3) the construct the physics gun holds and the grab point.
+- Protocol 88 (the physics gun): `CBody`'s flags carry frozen (32) and a byte after the owner says who froze it;
+  `CActKind` Grab, GrabSteer, GrabRelease, GrabFreeze, UnfreezeAll ([The physics gun](#the-physics-gun)).
+- Protocol 89 (the configure tool): `CBody` ends with the part settings that are off their defaults (a u16 count, then
   part, slot and an f32 value: 6 bytes each; a choice a part already had, like a gear, stays its setting byte);
   `CActKind.Configure` (u16 construct, u8 part count, the parts, u8 setting count, slot and f32 value each) sets them on
   one or more parts of one kind; the tool id `ConstructTool.Configure` (4).
@@ -1063,9 +1170,33 @@ building rules. `--inventory-shots` adds the four groups' pages.
 
 **Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
 blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
-heavy armour everything short of a sniper rifle; glass is drawn opaque (a pale blue pane; see-through glass needs
-sorted blending); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
+heavy armour everything short of a sniper rifle; glass is see-through ([Glass](#glass), below); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
 (`"group"`, `"section"`), the top folder's parts listed after the subfolders'.
+
+### Glass
+
+A part box with `"glass": true` (or how much of it is drawn, 0.1 to 0.9; `true` is 0.3) is a see-through pane. The four
+Glass Panes' panes are (`tools/constructs/structure_parts.py` writes them); the "Construct glass" self-test checks every
+part of `"material": "glass"` has one. A glass box may be solid or a detail, not hidden.
+
+- **Drawing** (`Source/Render/ConstructRender.cs`): the opaque pass leaves panes out and keeps them for `DrawGlass`, which
+  runs in the blended pass after everything opaque (the mode's `DrawObjectives`): farthest first by distance from the eye,
+  blending on, depth writes off, lit and fogged by the box shader (mode 0, so both GL paths; no new texture units or
+  bindings). A pane is tinted by its colour, drawn more opaque and lighter at grazing angles (a little reflection), and
+  has a thin lighter strip along each long edge so it still reads as glass edge-on. At most 512 panes a frame are kept;
+  more are drawn opaque. The inventory's tiles (`SandboxTiles.DrawTile`), the part in your hands (`ToolRender.Emit`) and
+  a stored or packed pane draw it blended after the rest; a ghost's pane is fainter than its frame.
+- **Collision**: a pane is a solid box like any other: players, constructs and wrecks are stopped by it.
+- **Bullets**: a player's round goes through up to four panes (`Game.SandboxRay`), hits what is behind (a player in a
+  cab, a part, the map) and damages each pane it passed, at full strength. A construct gun's round does the same. Blasts
+  hurt glass like any part.
+- **Breaking**: glass is weak (health 13 to 48, armour 0). A broken pane **shatters**: it is removed, no wreck piece falls,
+  and a `CFireKind.Shatter` event (protocol 87: where, and its world bounds' half size in centimetres) bursts small shards
+  out of it on every PC (the prop debris pool) with the glass sound.
+
+**Choices made (the developer may change them)**: the opacity 0.3; rounds keep their full damage through glass; glass
+shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
+other may blend in the wrong order where they cross).
 
 ## New constructs (free placement)
 
@@ -1079,8 +1210,9 @@ and `EditKind.PlaceNew`).
 
 - **The pose**: the construct's up follows the surface's normal, except on near-level ground (within 12 degrees), where
   it stands upright and rests on the highest ground under its footprint's corners (a bump under one corner lifts it, so
-  it never starts inside the terrain). Its yaw is the look's. **R** steps through the part's 24 turns (`Rot24`; the four
-  upright ones first, then on its sides, then upside down). On a wall it stands out of the wall.
+  it never starts inside the terrain). Its yaw is the look's. The **arrow keys** turn the part through its 24 turns
+  (`Rot24`) relative to the camera and **R** puts it back upright ([Turning the ghost](#turning-the-ghost)). On a wall it
+  stands out of the wall.
 - **The grid** (the inventory window's "Snap new constructs to the grid", off by default): the spot snaps to a 0.5 m world
   grid across the surface and the yaw to 90 degrees, so constructs set down apart line up (a block set down next to
   another one meets it face to face).
@@ -1365,10 +1497,23 @@ segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around a
 isn't a number), the pointer held at its reach so one flick turns it; the key (an unshared middle mouse button; binds
 version 9 files get it, one that already used the button keeps it); in an offline Sandbox game a scripted
 hold-flick-release takes out the welder (east), wrench (north), linking tool (west) and hands (south), the current tool is
-marked when it opens, letting go in the dead zone cancels, the hoist says "coming later" and changes nothing, a menu and
+marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
+north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
 frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
 server.
+
+The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
+byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
+air, the wheel's distance moves it 3 m out, a snapped turn is reached, the snap maths (steps of 45 degrees, a snapped
+turn stays put); a frozen block doesn't move in 2 s against gravity; with a second player's block frozen too, player
+0's unfreeze-all frees only theirs (which then falls); a second player can't take a held block; grabbing a frozen one
+unfreezes it; a construct with someone in it, a pinned one and one too heavy for survival are refused; the frozen state
+round-trips through the structure; survival's contested rule refuses the physics gun, the welder and the linking tool
+("Owned by Rival - defended") and allows them in creative, with the owner away, on nobody's and on your own; nothing
+allocates over 30 ticks (unused, and holding); and over a real loopback a client grabs, steers and freezes a loose part
+on the server, the host can't take it, the host's own beam (its held construct and grab point) reaches the client, and
+the client's unfreeze-all frees it.
 
 The **Sandbox tool models** section (`Source/App/SelfTestSandboxToolModels.cs`): every tool file loads as one piece with
 its hands in reach, every tool in the game and every tool still to come has a model, and 13 kinds of bad file are refused
@@ -1469,9 +1614,15 @@ input end). Wiring is instant (fitting a part is what takes time).
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
 - A player standing on a part is **carried** by the body's motion and, sideways, by every joint under their feet (a
   turntable, a swinging deck); a rising lift lifts them by the step-up rule. They count towards that joint's load.
-- **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
-  `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
-  with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+- **Run-over damage** (`ConstructWorld.BlockPlayer`, `Game.SandboxRunOver`): only the **construct's own motion** counts:
+  the velocity of its part at the contact (the body's motion, linear and turning, plus every joint's up its chain: a
+  swinging arm, a turntable) along the contact normal towards the player. The player's own velocity plays no part, so
+  sprinting into a parked car only stops you, and landing on a parked car is a landing (normal fall damage only). At up
+  to `Game.RunOverSpeed` (4 m/s, tunable) the part only pushes the player along at its speed; faster, it does
+  `(speed - 4) x 9 x sqrt(mass / 500)` damage (the mass factor 0.4 to 2.5), at most once in 0.6 s, and knocks them out
+  along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
+  joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
+  "Construct run-over" self-test covers each case.
 
 ### Seats: riders as part of the construct
 

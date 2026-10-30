@@ -547,7 +547,7 @@ public static class ConstructConfig
 
     // ---- Network -----------------------------------------------------------------------------------------------------
 
-    /// <summary>Msg.CBody (protocol 87): each part setting off its default, as (part, slot, value).</summary>
+    /// <summary>Msg.CBody (protocol 89): each part setting off its default, as (part, slot, value).</summary>
     public static void Write(PacketWriter w, Construct c)
     {
         var at = w.Length;

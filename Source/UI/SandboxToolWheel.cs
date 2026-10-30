@@ -8,9 +8,9 @@ namespace CallOfSlop;
 /// Sandbox: the tool wheel (decision 17; docs/sandbox/CONSTRUCTS.md, "The tool wheel"). Hold the tool wheel key (the
 /// middle mouse button by default, <see cref="GameAction.ToolWheel"/>), flick the mouse towards a tool and let go to take
 /// it out; letting go in the middle cancels. The view is frozen while it is open and you keep walking. Eight segments,
-/// clockwise from the top: the wrench (N), the hoist (NE), the welder (E), the configure tool (SE), hands / gun (S: out of
+/// clockwise from the top: the wrench (N), the physics gun (NE; it took the hoist's place), the welder (E), the configure tool (SE), hands / gun (S: out of
 /// build mode), the scanner (SW), the linking tool (W) and the hand drill (NW). The four tools that exist sit on the
-/// compass points, the four still to come on the diagonals, greyed out as "coming later" (picking one says so). Taking
+/// compass points, the physics gun and the three still to come on the diagonals, those greyed out as "coming later" (picking one says so). Taking
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
@@ -20,7 +20,7 @@ public sealed class SandboxToolWheel
     public enum Slot
     {
         Wrench,
-        Hoist,
+        PhysicsGun, // (NE: where the hoist was; it lifts and moves pieces, decision 19)
         Welder,
         Configure,
         Hands,
@@ -46,7 +46,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Welder, "Welder", "frames, panels");
         Set(Slot.Linker, "Linking tool", "wires, settings");
         Set(Slot.Hands, "Hands / gun", "out of build mode");
-        Set(Slot.Hoist, "Hoist", "", off: true);
+        Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
         Set(Slot.Configure, "Configure tool", "part settings");
         Set(Slot.Scanner, "Scanner", "", off: true);
         Set(Slot.Drill, "Hand drill", "", off: true);
@@ -71,6 +71,7 @@ public sealed class SandboxToolWheel
             Slot.Welder => ConstructTool.Welder,
             Slot.Linker => ConstructTool.Linker,
             Slot.Configure => ConstructTool.Configure,
+            Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Hands => ConstructTool.None,
             _ => null,
         };
@@ -82,6 +83,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Welder => Slot.Welder,
             ConstructTool.Linker => Slot.Linker,
             ConstructTool.Configure => Slot.Configure,
+            ConstructTool.PhysicsGun => Slot.PhysicsGun,
             _ => Slot.Hands,
         });
 
@@ -145,7 +147,6 @@ public sealed class SandboxToolWheel
         {
             g.SandboxSay(pick switch
             {
-                (int)Slot.Hoist => "the hoist is coming later",
                 (int)Slot.Configure => "the configure tool is coming later",
                 (int)Slot.Scanner => "the scanner is coming later",
                 _ => "the hand drill is coming later",
@@ -229,14 +230,20 @@ public sealed class SandboxToolWheel
                 Box(-0.2f, -0.1f, 0.05f, 0.15f, col);
                 Box(0.55f, -0.5f, 0.65f, -0.4f, col, 0f);
                 break;
-            case Slot.Hoist: // a chain and a hook
+            case Slot.PhysicsGun: // a projector low on the left, its beam curving up onto a cube
             {
-                Line(-0.6f, -0.8f, 0.6f, -0.8f, 0.14f);
-                Line(0f, -0.8f, 0f, 0.05f, 0.1f);
-                var hook = P(0f, 0.35f);
+                Box(-0.9f, 0.35f, -0.35f, 0.65f, col);
+                Box(-0.75f, 0.65f, -0.55f, 0.9f, col);
+                var a = P(-0.32f, 0.5f);
+                var c1 = P(0.15f, 0.45f);
+                var c2 = P(0.35f, 0.1f);
+                var b = P(0.38f, -0.2f);
                 ImDrawListExtensions.PathClear(dl);
-                ImDrawListExtensions.PathArcTo(dl, in hook, 0.3f * r, -MathF.PI / 2, MathF.PI * 1.15f, 14);
-                ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.12f * r);
+                ImDrawListExtensions.PathLineTo(dl, in a);
+                ImDrawListExtensions.PathBezierCubicCurveTo(dl, in c1, in c2, in b, 12);
+                ImDrawListExtensions.PathStroke(dl, col, ImDrawFlags.None, 0.1f * r);
+                Box(0.12f, -0.82f, 0.68f, -0.26f, col);
+                Box(0.24f, -0.7f, 0.56f, -0.38f, bg, 0f);
                 break;
             }
             case Slot.Configure: // three sliders

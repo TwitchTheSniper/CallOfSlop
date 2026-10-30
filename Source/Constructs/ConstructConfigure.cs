@@ -22,6 +22,8 @@ public sealed partial class ConstructEdits
             return "take out the configure tool (the tool wheel) to change settings";
         if (world.Get(body) is not { } c)
             return "that construct is gone";
+        if (Contested(c, player) is { } defended)
+            return defended; // (decision 19's shared rule: survival, an owner alive nearby)
         if (refusal != null)
             return refusal;
         if (parts.Length == 0 || parts.Length > MaxConfigParts || slots.Length != values.Length || slots.Length > ConstructConfig.MaxSlots)

@@ -17,7 +17,7 @@ public enum CBodyKind : byte
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 83: the charge, power and gear in the structure and the poses, and the links
+/// The constructs on the wire (protocol 88: a construct frozen by the physics gun, and by whom; protocol 83: the charge, power and gear in the structure and the poses, and the links
 /// between constructs; protocol 82: guns, ammo boxes and burning parts, Msg.CFire; protocol 81: owners, salvage, the inventory; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
@@ -57,7 +57,7 @@ public static class ConstructNet
     public static void WriteFull(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
-        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0))).U8(c.Owner); // (protocol 84: pinned)
+        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0) | (c.Frozen ? 32 : 0))).U8(c.Owner).U8(c.FrozenBy); // (protocol 84: pinned; 87: frozen by the physics gun, and by whom)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
         w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
@@ -107,7 +107,7 @@ public static class ConstructNet
                 n++;
             }
         w.PatchU8(at, (byte)n);
-        ConstructConfig.Write(w, c); // protocol 87: the part settings off their defaults (the configure tool)
+        ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -139,7 +139,7 @@ public static class ConstructNet
         return i;
     }
 
-    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big).</summary>
+    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big); since 87 a glass part shattering (where, its half size in cm).</summary>
     public static void WriteFires(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CFire).U8((byte)Math.Min(world.FireCount, 255));
@@ -149,10 +149,15 @@ public static class ConstructNet
             w.U8((byte)e.Kind);
             if (e.Kind == CFireKind.Shot)
                 w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+            else if (e.Kind == CFireKind.Shatter)
+                w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
     }
+
+    /// <summary>A shatter's half size on the wire: centimetres, 1 to 255.</summary>
+    private static byte HalfByte(float half) => (byte)Math.Clamp((int)MathF.Round(half * 100f), 1, 255);
 
     /// <summary>Client: a Msg.CFire (after the id byte) into <paramref name="into"/>; returns how many events.</summary>
     public static int ReadFires(ref PacketReader r, Span<CFireEvent> into)
@@ -167,6 +172,8 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
             else if (kind is CFireKind.Blast or CFireKind.CookOff)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
+            else if (kind == CFireKind.Shatter)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
@@ -413,6 +420,7 @@ public static class ConstructNet
         var id = r.U16();
         var flags = r.U8();
         var owner = r.U8();
+        var frozenBy = r.U8(); // (protocol 88)
         var root = r.U8();
         var driver = r.U8();
         var seat = r.U8();
@@ -529,13 +537,15 @@ public static class ConstructNet
                 throw new MalformedPacketException("construct ammo for a part that isn't there");
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
-        ConstructConfig.Read(ref r, c); // protocol 87: the part settings
+        ConstructConfig.Read(ref r, c); // protocol 89: the part settings
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
         c.Wreck = (flags & 1) != 0;
         c.Damaged = (flags & 8) != 0;
         c.Pinned = (flags & 16) != 0;
+        c.Frozen = (flags & 32) != 0;
+        c.FrozenBy = c.Frozen ? frozenBy : (byte)255;
         c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;

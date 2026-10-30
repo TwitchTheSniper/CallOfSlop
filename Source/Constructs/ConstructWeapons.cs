@@ -40,6 +40,7 @@ public enum CFireKind : byte
     Shot, // a gun fired one round: body, part, where it ended
     Blast, // an explosive round's splash: where, how big
     CookOff, // an ammo box (or a burning tank) blew up: where, how big
+    Shatter, // a glass part broke (protocol 87): where, and its world bounds' half size (shards burst out of it)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>
@@ -51,6 +52,7 @@ public struct CFireEvent
     public Vector3 At; // a shot's end, a blast's centre
     public CFireHit Hit;
     public float Radius; // a blast's
+    public Vector3 Half; // a shatter's: the glass part's world bounds' half size
 }
 
 /// <summary>A blast waiting to go off (an ammo box cooking off: a beat after it is holed).</summary>
@@ -789,6 +791,15 @@ public static class ConstructWeapons
             }
             var armour = body.Parts[part].D.Armour;
             var exit = ExitDistance(body, part, at, dir);
+            if (ch.Glass)
+            {
+                // A glass pane: the round breaks it (or chips it) and goes on, as strong as it was.
+                world.DamagePart(body, part, dealt, out _);
+                hit |= CFireHit.Part | CFireHit.Through;
+                pos = at + dir * (exit + 0.01f);
+                travelled += exit + 0.01f;
+                continue;
+            }
             if ((g.Effects & GunEffect.Incendiary) != 0)
                 world.Ignite(body, part);
             world.DamagePart(body, part, dealt, out _);
@@ -808,7 +819,7 @@ public static class ConstructWeapons
     }
 
     /// <summary>How far a ray entering part <paramref name="part"/> at <paramref name="at"/> travels inside it.</summary>
-    private static float ExitDistance(Construct c, int part, Vector3 at, Vector3 dir)
+    public static float ExitDistance(Construct c, int part, Vector3 at, Vector3 dir)
     {
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         var iq = Quaternion.Conjugate(q);

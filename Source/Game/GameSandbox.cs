@@ -28,7 +28,12 @@ public enum CActKind : byte
     Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
     Stow, // the part in the hands into the backpack (protocol 85)
     Draw, // the next part in the backpack into empty hands (protocol 85)
-    Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 87)
+    Grab, // u16 body, 3 x i16 grab point (body frame, cm): the physics gun takes hold (protocol 88; GameSandboxPhysGun.cs)
+    GrabSteer, // u16 distance (cm), 4 x i16 turn relative to the look's yaw: the held thing's distance and turn, unreliable, up to ~30 Hz (protocol 88)
+    GrabRelease, // let go of what the physics gun holds (protocol 88)
+    GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
+    UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
+    Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -160,7 +165,12 @@ public sealed partial class Game
                 SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
             _sbAlive[p.Id] = p.Alive;
             if (!p.Alive)
+            {
                 h.Edit = EditKind.None;
+                SandboxHands.Release(Constructs, p.Id); // (the physics gun lets go on death)
+            }
+            else if (h.GrabBody != 0)
+                SandboxHands.GrabTick(Constructs, p.Id, p.Eye, World.Forward(p.Yaw, p.Pitch), p.Yaw); // (the held thing follows the look)
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
                 Constructs.PlayerSpots[Constructs.PlayerSpotCount++] = p.Position; // (proximity sensors)
             if (!h.Seated)
@@ -327,7 +337,13 @@ public sealed partial class Game
         switch (kind)
         {
             case CActKind.Tool:
-                return hands.SetTool(p.Id, (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Configure));
+                return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
+            case CActKind.Grab:
+            case CActKind.GrabSteer:
+            case CActKind.GrabRelease:
+            case CActKind.GrabFreeze:
+            case CActKind.UnfreezeAll:
+                return SandboxPhysGunAct(p, kind, ref r);
             case CActKind.Attach:
             {
                 var body = r.U16();
@@ -560,16 +576,33 @@ public sealed partial class Game
             SandboxRunOver(p, ref s, car);
     }
 
-    /// <summary>A moving construct part closing on a player faster than this (m/s) hurts them (run over, or hit by a swinging arm).</summary>
-    public const float RunOverSpeed = 4f;
+    /// <summary>
+    /// A construct part moving towards a player faster than this (m/s: its own speed at the contact, along the normal,
+    /// whatever the player is doing) hurts them (run over, or hit by a swinging arm or a wreck); slower, it only pushes.
+    /// Tunable (the developer's proposal: 3 to 4).
+    /// </summary>
+    public static float RunOverSpeed = 4f;
 
     public const double RunOverCooldown = 0.6;
 
     private readonly double[] _sbHitAt = new double[256];
 
-    /// <summary>Run-over damage: by how fast the part closed on them and how heavy its construct is; the driver (if any) gets the credit.</summary>
-    public static int RunOverDamage(float closing, float mass) =>
-        closing <= RunOverSpeed ? 0 : (int)MathF.Round((closing - RunOverSpeed) * 9f * Math.Clamp(MathF.Sqrt(mass / 500f), 0.4f, 2.5f));
+    /// <summary>Run-over damage: by how fast the part moved towards them (its own speed) and how heavy its construct is; the driver (if any) gets the credit.</summary>
+    public static int RunOverDamage(float speed, float mass) =>
+        speed <= RunOverSpeed ? 0 : (int)MathF.Round((speed - RunOverSpeed) * 9f * RunOverMass(mass));
+
+    /// <summary>How much a construct's mass scales run-over damage and knockback: 1 at 500 kg, 0.4 to 2.5.</summary>
+    public static float RunOverMass(float mass) => Math.Clamp(MathF.Sqrt(mass / 500f), 0.4f, 2.5f);
+
+    /// <summary>
+    /// The knockback a run-over adds on top of the push (which already carries the player along at the part's speed):
+    /// out along the contact normal and up, growing with the speed over <see cref="RunOverSpeed"/> and the mass.
+    /// </summary>
+    public static Vector3 RunOverKnock(float speed, float mass, Vector3 normal)
+    {
+        var over = MathF.Max(0, speed - RunOverSpeed) * RunOverMass(mass);
+        return normal * MathF.Min(over * 0.45f, 14f) + new Vector3(0, MathF.Min(1.5f + over * 0.18f, 7f), 0);
+    }
 
     private void SandboxRunOver(Player p, ref MoveState s, Construct car)
     {
@@ -578,8 +611,8 @@ public sealed partial class Game
             return;
         _sbHitAt[p.Id] = now;
         var dmg = RunOverDamage(Constructs.LastHitSpeed, Constructs.LastHitMass);
-        // Knocked along with the car, and a little up.
-        s.Velocity += Constructs.LastHitVel * 0.5f + new Vector3(0, 2.5f, 0);
+        // Knocked on with the car (out along the contact and up), harder the faster and heavier it is.
+        s.Velocity += RunOverKnock(Constructs.LastHitSpeed, Constructs.LastHitMass, Constructs.LastHitNormal);
         s.Grounded = false;
         var by = car.Driver != 255 && car.Driver != p.Id && Players.TryGetValue(car.Driver, out var d) ? d : p;
         Constructs.Events.Add($"player {p.Id} hit by construct {car.Id} at {Constructs.LastHitSpeed:0.0} m/s: {dmg} damage");
@@ -590,13 +623,51 @@ public sealed partial class Game
     /// <summary>Is this player in a seat? (Drivers and passengers don't shoot: construct weapons are milestone 3.)</summary>
     public bool SandboxSeated(Player p) => SandboxOn && SandboxHands.Hand(p.Id).Seated;
 
-    /// <summary>A bullet's ray against the constructs: shortens <paramref name="dist"/> to the part it hits.</summary>
+    /// <summary>The glass panes the last <see cref="SandboxRay"/> went through (where it met each, and how far along).</summary>
+    private readonly (Vector3 At, float Dist)[] _sbGlass = new (Vector3, float)[4];
+
+    private int _sbGlassCount;
+
+    /// <summary>
+    /// A bullet's ray against the constructs: shortens <paramref name="dist"/> to the part it hits. Glass panes don't stop
+    /// it: it goes on through them (up to four; noted for <see cref="SandboxGlassShot"/>, which breaks them), so a player
+    /// behind a windscreen can be hit.
+    /// </summary>
     private ConstructHit? SandboxRay(Vector3 o, Vector3 d, ref float dist)
     {
-        if (!SandboxOn || Constructs.Bodies.Count == 0 || !Constructs.Raycast(o, d, dist, out var hit))
+        _sbGlassCount = 0;
+        if (!SandboxOn || Constructs.Bodies.Count == 0)
             return null;
-        dist = hit.Distance;
-        return hit;
+        var from = 0f;
+        while (from < dist && Constructs.Raycast(o + d * from, d, dist - from, out var hit))
+        {
+            hit.Distance += from;
+            if (!hit.Glass || _sbGlassCount == _sbGlass.Length)
+            {
+                dist = hit.Distance;
+                return hit;
+            }
+            _sbGlass[_sbGlassCount++] = (hit.Point, hit.Distance);
+            from = hit.Distance + ConstructWeapons.ExitDistance(hit.Body, hit.Part, hit.Point, d) + 0.01f;
+        }
+        return null;
+    }
+
+    /// <summary>
+    /// The glass the last <see cref="SandboxRay"/> went through before <paramref name="dist"/> (where the round ended)
+    /// takes the round's damage (found again by where it was met: a pane that broke renumbers the parts after it).
+    /// </summary>
+    private void SandboxGlassShot(Vector3 d, float dist, float damage)
+    {
+        for (var k = 0; k < _sbGlassCount; k++)
+        {
+            var (at, along) = _sbGlass[k];
+            if (along > dist + 1e-3f)
+                break;
+            if (Constructs.Raycast(at - d * 0.05f, d, 0.1f, out var gh) && gh.Glass)
+                SandboxShotDamage(gh, damage);
+        }
+        _sbGlassCount = 0;
     }
 
     private void SandboxShotDamage(ConstructHit hit, float damage)
@@ -865,7 +936,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.Configure => "Configure tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -880,14 +951,16 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxLookText, white));
         if (SandboxNotice is { Length: > 0 } notice)
             lines.Add(new HudLine(notice, red));
+        else if (h.Tool == ConstructTool.PhysicsGun)
+            lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (h.Tool == ConstructTool.Configure)
             lines.Add(new HudLine(SandboxConfigHint, dim));
         else if (held == null)
         {
-            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode()))
-                _sbKeys.Text = $"F at the rack or I (parts menu): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
+            if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
+                _sbKeys.Text = $"F at the rack or {SandboxMenuKey} (inventory): take a part. Hold {SandboxWheelKey}: tool wheel. 3 wrench, 4 welder, 5 linking tool, 1/2 guns";
             lines.Add(new HudLine(_sbKeys.Text, dim));
         }
         else
@@ -895,14 +968,20 @@ public sealed partial class Game
             // The counts while holding a part (milestone 3): how many more of it the inventory holds.
             var inv = SandboxInv.Of(me.Id);
             var more = inv.Count(held.Id);
-            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0)))
-                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop. "
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0) + ((long)(SandboxTurnKeys.GetHashCode() & 0xffff) << 41)))
+                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, {SandboxTurnKeys}, T: drop. "
                                + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
         SandboxInventoryLine(me, lines, dim);
         SandboxPackLine(me, lines, dim);
     }
+
+    /// <summary>The Sandbox inventory key's name for the HUD (Program sets it from the binds).</summary>
+    public string SandboxMenuKey = "Tab";
+
+    /// <summary>The ghost's rotate keys for the HUD (Program sets them from the binds; GhostTurn.cs).</summary>
+    public string SandboxTurnKeys = "<- -> ^ v: turn, Shift + <- ->: roll, R: reset";
 
     /// <summary>The keys the backpack's line names (Program sets them from the binds).</summary>
     public string SandboxPackKeys = "H: stow, J: draw";
