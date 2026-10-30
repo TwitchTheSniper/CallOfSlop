@@ -8,7 +8,9 @@ large world, streaming, factions, enemies, points of interest, resources, scanni
 yet. **Milestone 2 adds joints, logic and the drivetrain as parts** (decisions 3 and 4): motorised hinges, turntables,
 pistons and steering pivots; logic parts wired with a linking tool; transmissions and differentials you can shoot;
 passengers, riding on moving decks and run-over damage; and the yard's lift, turret, motorised gate and wired buggy to
-test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain).
+test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain). **Milestone 3**
+(in parts) adds [salvage and the inventory](#salvage-and-the-inventory-milestone-3): taking what survives off wrecks, scrap
+from what was destroyed, building from counted parts, and wrecks cleared away when left alone.
 
 ## Playing it
 
@@ -265,6 +267,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
+| `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -302,16 +305,23 @@ parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Tur
 ```
 
 `rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the debug parts menu off (it is
-on by default). Unknown parts or blueprints refuse the map with the reason.
+on by default). Milestone 3: `"infiniteParts": false` makes the rack and the parts menu hand out only what the player's
+inventory holds (on by default, so Construct Yard stays endless); `"debrisSeconds"` (default 180, 0 to 3600, 0: never)
+and `"debrisNear"` (metres, default 12) set when wrecks are cleared away. Unknown parts or blueprints, and bad values,
+refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 79)
+## Network (protocol 81)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
   sent when it changes (an edit, a break, a split, a wire, a setting) and to each joiner; also part health batches, a
   construct gone, and "clear all" at a new match.
+- Protocol 81 (salvage): `CBody` also carries the construct's **owner** (a player id, 255: nobody's) and a **damaged**
+  flag; `CBodyKind.Inventory` sends one player their own inventory, whole, when it changes and when they join (a flags
+  byte (infinite parts), the scrap, then each part kind held as id and count, then each material held; about 8 bytes plus
+  3 a kind). Nobody else's inventory is ever sent.
 - `Msg.CPose` (unreliable sequenced, 20 Hz): the bodies that move (32 bytes plus 4 per joint, the angle and speed, plus
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
@@ -357,6 +367,54 @@ anything, the segments beyond a joint were posed from the joint value and went t
 - Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
   segment back (they are pushed out of it, as before), the body's mass properties following its joints.
 
+## Salvage and the inventory (milestone 3)
+
+Decision 7, the loot loop: what you salvage is what survives, so disabling an enemy by shooting its cheap exposed parts
+leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer approved it 2026-10-29).
+
+- **The inventory.** Every player has one on the server (`SandboxInventory`, Source/Constructs/ConstructInventory.cs):
+  a count of each part kind (by part id, up to 9,999 each), their **scrap** (up to 999,999), and room for **materials**
+  (resources come later; always empty now, but the wire carries them). Each player's client hears its own whole
+  inventory when it changes (protocol 81), so the HUD and the inventory window show it; nobody else's is sent. It resets
+  with the match like the constructs (nothing is saved yet). It survives death; a leaving player's empties (their id may
+  be someone else's next). The read API: `Game.SandboxInventory(playerId)` (counts in `Parts[partId]` or `Count(id)`,
+  `Scrap`, `Materials`, `TotalParts`, `Kinds`, `Infinite`, and `Version`, which goes up on every change so a window can
+  rebuild its text only then). On a client only the local player's is known.
+- **Owners.** A construct a player starts (sets its first part down, or spawns from the parts menu) is **theirs**, and
+  what is built onto it stays theirs; the map's constructs are nobody's. A piece that falls away keeps its owner. A
+  leaving player's constructs become nobody's.
+- **Salvage.** With the tool the part needs (wrench or welder) out, hold aim on a part: the same timed removal as taking
+  a part off (60% of its fitting time), but it goes **into the inventory**, not the hand. Anyone may salvage a **wreck**
+  (a piece cut off, or a broken-off part), a **loose part**, a construct **nobody owns**, or someone else's construct
+  once it is **disabled** (any part of it wrecked: broken off or stopped working; `Construct.Damaged`). Someone else's
+  working construct is refused: "that construct is someone else's: disable it first (shoot a part off)". Nobody may take
+  parts off while someone drives it. The look line says "hold aim to salvage it" (or "for N scrap", or "someone else's:
+  disable it to salvage").
+- **Scrap.** A part that was destroyed (a wrecked part: broken off as debris, or stopped working in place) gives
+  **scrap** instead of itself: its file's `scrap`, else from its mass and material: 0.2 a kg of steel (a 120 kg engine:
+  24, a 3 kg logic part: 1), 0.1 for rubber or wood, 0.05 for concrete, 0.15 for anything else, at least 1.
+- **Your own constructs.** With infinite parts on (Construct Yard), taking a part off your own construct puts it in your
+  hand as before. With them off, it goes back into the inventory.
+- **Building from the inventory** (the map's `"infiniteParts": false`). The rack hands out the next of its kinds that
+  your inventory holds, and the parts menu only a part you hold ("no Piston in your inventory (salvage one)"); either
+  takes one out of the inventory into your hands (what you held goes back first). Fitting or setting it down uses it,
+  and the next of the same kind comes out into your hand at once, so a row of them needs no trips back. Dropping (T)
+  sets the part down as a loose part (picked up again with F); dying puts a held part back into the inventory. With
+  infinite parts on the rack and the menu stay endless and nothing is counted.
+- **The HUD** while holding a part shows its count ("Wheel: ... 3 more in your inventory", "the last one in your
+  inventory", or "Inventory: 3 (parts are endless here)"), and a line with the totals ("Inventory: 7 parts (4 kinds), 25
+  scrap") whenever the inventory holds anything.
+- **Debris expiry.** A **wreck** (a piece cut off, or a broken-off part) is cleared away once nobody has been within
+  `debrisNear` metres of it (12 by default; or its own size) and nobody has been taking a part off it for `debrisSeconds`
+  (180 by default; 0: never), checked every half second. Constructs players build and loose parts they set down never
+  expire. The cap on bodies (64 in all) still stops new debris appearing when the world is full.
+
+Choices made (the developer may change them): salvage always goes into the inventory, even with infinite parts on (so
+the loot loop and the counts work on the yard); a construct counts as **disabled** as soon as any of its parts is
+wrecked (there is no repair yet, so it stays salvageable); after a fit the next of the same kind comes into the hand
+automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
+scrap rates by material.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
@@ -401,6 +459,19 @@ nobody in the seat and a brake part stops it; the wired buggy's horn and lamps f
 game the lift raises the player standing on it, a passenger rides along in the second seat, and a player in the
 buggy's way is hurt. "Constructs"' loopback now also checks the client and a late joiner mirror the joints, wires and
 signals.
+
+The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the scrap values and the
+map's `infiniteParts`, `debrisSeconds` and `debrisNear` (bad values refused); in an offline Sandbox game on the yard a
+wheel that fell off the buggy as a wreck is salvaged (the welder refused, the wrench timed) into the inventory with the
+hand left empty, the wrecked suspension gives its scrap, someone else's working gate is refused until a part of it is
+wrecked and then salvaged; with infinite parts off the parts menu refuses a part the inventory lacks, hands one out of
+it, a fit uses it and the next comes into the hand, the player's own gate's door goes back into the inventory, a held
+counted part goes back on respawn, and the HUD shows the counts; with them on the player's own parts come off into the
+hand; a wreck left alone goes after the map's time, one being salvaged or with a player near stays; the Sandbox tick,
+the debris check and the inventory allocate nothing; and a real host with two clients: the salvaging client sees its
+count (the other doesn't), a client's gate is owned by that client on every copy, and an expired wreck goes on the
+clients too. `--sandbox-shots` adds `smoke_sandbox_salvage_*.bmp` (half-way through salvaging a wheel, done, a counted
+part in hand) and `smoke_sandbox_debris_cleared.bmp`.
 
 The **Sandbox parts menu** section (`Source/App/SelfTestSandboxPartsMenu.cs`): the map's `partsMenu` flag reads (on by
 default, a bad value refused); in an offline Sandbox game the menu's request hands the chosen part by id to the player
@@ -579,7 +650,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 ## Next: milestone 3 and later
 
-- **Salvage**: taking surviving parts off wrecks into an inventory; scrap from destroyed parts; debris expiry.
+- **Salvage** (done, above). Still to come with it: the 3D inventory window, materials, repair, saving inventories.
 - **Construct weapons** (decision 10), mounted fixed or on turntables (the Turret is waiting for one), fired by input
   readers, sharing the weapon builder's ammo flags.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
@@ -594,4 +665,5 @@ input end). Wiring is instant (fitting a part is what takes time).
 - Done: the linking tool and logic parts (seat -> input reader -> piston), motorised hinges, turntables, pistons, steering
   as a joint, transmissions and differentials as parts you can shoot, passengers, standing on a moving deck, run-over
   damage, lights (the Lamp).
-- Still to come (above): salvage, construct weapons, saving, the large world, debris expiry, more parts, a bigger map.
+- Still to come (above): construct weapons, saving, the large world, more parts, a bigger map (salvage and debris
+  expiry came in milestone 3).

@@ -1029,6 +1029,11 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
 - **Damage**: every part has its own health and armour. Shoot the cheap fuel line and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.
+- **Salvage**: with the right tool out, aim (hold) on a wreck, a loose part, a construct nobody built, or someone else's
+  once it is disabled (a part of it shot off or wrecked) to take the part into your **inventory**; a destroyed part gives
+  **scrap** instead (by its weight and material). Someone else's working construct can't be taken apart. The HUD shows
+  your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
+  and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
 
 Each tool has its own box model in your hands (and in other players' hands), with a crank, sparks or a beam while it
 works; a part you carry sits in your off hand. Parts, blueprints and the tools' models are data files (`Constructs/Parts`,

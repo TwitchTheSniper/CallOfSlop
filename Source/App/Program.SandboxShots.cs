@@ -49,7 +49,7 @@ public static unsafe partial class Program
         var other = cars[0];
         me.Teleport(new Vector3(-20, 0, 18));
 
-        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false, bool wheel = false, bool players = false, bool firstPerson = false)
+        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool menu = false, bool wheel = false, bool players = false, bool firstPerson = false, bool hud = false)
         {
             for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
             {
@@ -97,9 +97,16 @@ public static unsafe partial class Program
                     _toolWheel.Draw(Ui.Scale);
                     Ui.EndFrame();
                 }
+                if (hud)
+                {
+                    // The HUD alone (salvage: the edit's progress, the counts).
+                    Ui.BeginFrame();
+                    Ui.DrawHud(g, now, "", _settings);
+                    Ui.EndFrame();
+                }
                 if (frame == 2)
                 {
-                    _shotFull = menu || wheel; // (full size, so the menu's text reads)
+                    _shotFull = menu || wheel || hud; // (full size, so the menu's text reads)
                     SaveScreenshot($"sandbox_{name}");
                     Console.WriteLine($"[sandboxshots] {name}: {ConstructRender.LastBoxes} construct boxes; GL error 0x{(uint)Brutal.OpenGlApi.OpenGl.Native.glGetError():x}");
                 }
@@ -328,6 +335,57 @@ public static unsafe partial class Program
         foreach (var b in g.Constructs.Bodies)
             Console.WriteLine($"[sandboxshots]   construct {b.Id}: {b.PartCount} parts ({b.DefOf(0).Name}...), at {b.WorldCom.X:0.0}, {b.WorldCom.Y:0.00}, {b.WorldCom.Z:0.0}{(b.Wreck ? ", wreck" : "")}{(b == other ? " (the broken buggy)" : "")}");
         Shot("broken", obc + new Vector3(2.5f, 3.2f, 3.6f), obc + new Vector3(0.3f, 0, 0));
+
+        // Salvage (milestone 3): a wheel shot off a buggy taken with the wrench into the inventory (half-way, then done), a
+        // part held with infinite parts off (its count on the HUD), then the wrecks left alone and cleared away.
+        if (g.Constructs.Bodies.LastOrDefault(b => b.CanDrive && b.WheelCount > 0) is { } victim)
+        {
+            g.Constructs.DamagePart(victim, victim.Wheels[0].Suspension, 10000, out _);
+            obc = victim.WorldCom;
+            Run(1.5);
+        }
+        if (World.Map.Sandbox is { } sbx && g.Constructs.Bodies.FirstOrDefault(b => b.Wreck && Part(b, "Wheel") is var k && k >= 0 && !b.Parts[k].Broken) is { } wreck)
+        {
+            var wi = Part(wreck, "Wheel");
+            var wc = ConstructRender.PartCentre(wreck, wi);
+            var away = wc - obc;
+            away.Y = 0;
+            away = away.LengthSquared() > 1e-4f ? Vector3.Normalize(away) : Vector3.UnitX;
+            var side = Vector3.Cross(away, Vector3.UnitY);
+            g.SandboxSend(CActKind.Drop); // (empty hands: salvage goes into the inventory either way)
+            me.Teleport(ConstructWorld.Ground(World.Query, wc.X + away.X * 2f, wc.Z + away.Z * 2f));
+            Run(0.3);
+            g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Wrench);
+            g.SandboxSend(CActKind.Remove, body: wreck.Id, part: (byte)wi);
+            var removeTime = ConstructBuild.RemoveSeconds(wreck.DefOf(wi));
+            Run(removeTime * 0.5);
+            var view = (me.Position + wc) * 0.5f + side * 4.2f + away * 1.2f + new Vector3(0, 2.6f, 0);
+            g.SandboxLookText = "Wheel - hold aim to salvage it";
+            Shot("salvage_progress", view, wc, players: true, hud: true);
+            Run(removeTime * 0.6 + 0.1);
+            g.SandboxLookText = "";
+            var inv = g.SandboxInventory(me.Id);
+            Console.WriteLine($"[sandboxshots] salvage: {inv.Count(ConstructParts.Need("Wheel").Id)} Wheel in the inventory, {inv.Scrap} scrap, hand {ConstructParts.Get(g.SandboxHands.Hand(me.Id).Held)?.Name ?? "empty"}");
+            Shot("salvage_done", view, wc, players: true, hud: true);
+            var keepInfinite = sbx.InfiniteParts;
+            sbx.InfiniteParts = false;
+            Run(0.1);
+            g.SandboxTakePart(ConstructParts.Need("Wheel").Id);
+            Run(0.1);
+            Shot("salvage_counted", view, wc, players: true, hud: true);
+            Console.WriteLine($"[sandboxshots] counted: in hand {ConstructParts.Get(g.SandboxHands.Hand(me.Id).Held)?.Name ?? "nothing"}, {inv.Count(ConstructParts.Need("Wheel").Id)} more; notice \"{g.SandboxNotice}\"");
+            g.SandboxSend(CActKind.Drop);
+            sbx.InfiniteParts = keepInfinite;
+            // Debris expiry: everyone away, a short time, the wrecks go.
+            var keepSeconds = sbx.DebrisSeconds;
+            sbx.DebrisSeconds = 1f;
+            var wrecksBefore = g.Constructs.Bodies.Count(b => b.Wreck);
+            me.Teleport(ConstructWorld.Ground(World.Query, 24, 24));
+            Run(2.0);
+            sbx.DebrisSeconds = keepSeconds;
+            Console.WriteLine($"[sandboxshots] debris expiry: {wrecksBefore} wrecks, {g.Constructs.Bodies.Count(b => b.Wreck)} left after 2 s alone");
+            Shot("debris_cleared", obc + new Vector3(2.5f, 3.2f, 3.6f), obc + new Vector3(0.3f, 0, 0));
+        }
         _session = null;
         g.Dispose();
         Console.WriteLine("[sandboxshots] done");
