@@ -373,7 +373,7 @@ public sealed partial class Ui
                 ImGui.ProgressBar(Math.Clamp(_cfLoadOver, 0, 1), new float2(-1, ImGui.GetTextLineHeight()), _cfLoad);
                 ImGui.PopStyleColor();
                 if (ImGui.IsItemHovered())
-                    ImGui.SetTooltip("What it holds against its rating (its Force or Torque setting). Up to the rating it holds rigidly;\nmore and it gives way, further the more it is overloaded, and comes back at its speed when the load goes."u8);
+                    ImGuiSafe.SetTooltip("What it holds against its rating (its Force or Torque setting). Up to the rating it holds rigidly;\nmore and it gives way, further the more it is overloaded, and comes back at its speed when the load goes.");
             }
 
             // The settings, group by group.
