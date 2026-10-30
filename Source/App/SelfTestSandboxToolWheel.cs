@@ -67,7 +67,7 @@ public static partial class SelfTest
         Keybinds.Migrate(taken, 9);
         Line($"tool wheel key: {Keybinds.Name(kd[(int)GameAction.ToolWheel])}; binds version 9 migrated to it {old[(int)GameAction.ToolWheel] == middle} ({moved.Count} moved); "
              + $"a file with the middle button on melee keeps it {taken[(int)GameAction.Melee] == middle} (the wheel unbound {taken[(int)GameAction.ToolWheel] == Keybinds.Unbound})");
-        if (old[(int)GameAction.ToolWheel] != middle || moved.Count != 1 || taken[(int)GameAction.Melee] != middle || taken[(int)GameAction.ToolWheel] != Keybinds.Unbound)
+        if (old[(int)GameAction.ToolWheel] != middle || moved.Count(a => a == GameAction.ToolWheel) != 1 || taken[(int)GameAction.Melee] != middle || taken[(int)GameAction.ToolWheel] != Keybinds.Unbound)
             Fail("tool wheel: the binds version 10 migration is wrong");
 
         // ---- In a Sandbox game ------------------------------------------------------------------------------------

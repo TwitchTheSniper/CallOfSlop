@@ -45,7 +45,7 @@ public struct SandboxHand
 /// redone here: the tool must fit the part, the socket must be free and within reach, nothing may be in the way.
 /// Per-player state is a fixed array: nothing allocates.
 /// </summary>
-public sealed class ConstructEdits
+public sealed partial class ConstructEdits
 {
     public readonly SandboxHand[] Hands = new SandboxHand[256];
 
@@ -60,6 +60,13 @@ public sealed class ConstructEdits
 
     /// <summary>The map's <c>infiniteParts</c> (the server sets it every tick): the rack and parts menu hand out parts from nothing.</summary>
     public bool InfiniteParts = true;
+
+    /// <summary>
+    /// Survival (physical storage, decision 18; the server sets it every tick): a map with infinite parts off and the parts
+    /// menu off. Nothing is counted abstractly there: a part salvaged or taken off comes into the hands (or is set down
+    /// where it was when the hands are full), to be carried and set into storage. Scrap still counts on the player.
+    /// </summary>
+    public bool Survival;
 
     public ConstructEdits() => Reset();
 
@@ -332,7 +339,7 @@ public sealed class ConstructEdits
                 var from = c.Id;
                 var def = world.RemovePart(c, h.Part);
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory: a wrecked part as scrap.
-                if (Inventory != null && (salvage || !InfiniteParts))
+                if (Inventory != null && (salvage || !InfiniteParts) && !(Survival && !wrecked))
                 {
                     var inv = Inventory.Of(player);
                     if (wrecked)
@@ -514,10 +521,90 @@ public sealed class ConstructEdits
             return "your hands are full (drop what you hold first)";
         if (world.Get(body) is not { } c || !c.Loose)
             return "only loose parts can be picked up";
+        if (world.StoreOf(c, 0) is { Empty: false })
+            return $"empty the {c.DefOf(0).Name} first";
         if (Reachable(eye, c.WorldCom, ConstructBuild.UseReach) is { } far)
             return far;
         h.Held = c.Parts[0].Def;
         world.Remove(c);
+        return null;
+    }
+
+    // ---- Physical storage (decision 18; ConstructStorage.cs) --------------------------------------------------------
+
+    private string? Storage(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, out Construct? c)
+    {
+        ref var h = ref Hands[player];
+        c = null;
+        if (h.Seated)
+            return "get out of the seat first";
+        if (world.Get(body) is not { } cc || part < 0 || part >= cc.PartCount)
+            return "that is gone";
+        if (world.StoreOf(cc, part) == null)
+            return "that isn't storage";
+        c = cc;
+        cc.WorldFrame(cc.Parts[part].Seg, out var q, out var t);
+        cc.PartBounds(part, out var mn, out var mx);
+        return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.UseReach);
+    }
+
+    /// <summary>The part in the hands into slot <paramref name="slot"/> of a storage part (any hands, at once). Null, or why not.</summary>
+    public string? StoreHeld(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int slot)
+    {
+        ref var h = ref Hands[player];
+        if (ConstructParts.Get(h.Held) is not { } def)
+            return "hold a part to put it away";
+        if (Storage(world, player, eye, body, part, out var c) is { } why)
+            return why;
+        if (world.SetIn(c!, part, slot, def) is { } refused)
+            return refused;
+        h.Held = ConstructParts.None;
+        h.Edit = EditKind.None;
+        Done.Add($"player {player}: stored {def.Name} in slot {slot} of the {c!.DefOf(part).Name} (construct {c.Id})");
+        return null;
+    }
+
+    /// <summary>The top stored part of a slot into empty hands. Null, or why not (someone else may have taken it first).</summary>
+    public string? TakeStored(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int slot)
+    {
+        ref var h = ref Hands[player];
+        if (h.Held != ConstructParts.None)
+            return "your hands are full (put down what you hold first)";
+        if (Storage(world, player, eye, body, part, out var c) is { } why)
+            return why;
+        if (world.TakeOut(c!, part, slot) is not { } def)
+            return "that slot is empty (someone took it)";
+        h.Held = def.Id;
+        Done.Add($"player {player}: took {def.Name} from slot {slot} of the {c!.DefOf(part).Name} (construct {c.Id})");
+        return null;
+    }
+
+    /// <summary>A bin: tip in the player's scrap (all of it that fits); with none on them, take out a load. Null, or why not.</summary>
+    public string? UseBin(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        if (Storage(world, player, eye, body, part, out var c) is { } why)
+            return why;
+        var d = c!.DefOf(part);
+        if (!d.IsBin)
+            return "that isn't a bin";
+        if (Inventory == null)
+            return "nothing to put in";
+        var inv = Inventory.Of(player);
+        var st = world.StoreOf(c, part)!;
+        if (inv.Scrap > 0)
+        {
+            var room = d.BulkCapacity - st.Amount;
+            if (room <= 0)
+                return $"the {d.Name} is full";
+            var n = world.Deposit(c, part, inv.TakeScrap(Math.Min(room, inv.Scrap)));
+            Done.Add($"player {player}: tipped {n} {d.BulkMaterial} into the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
+            return null;
+        }
+        if (st.Amount <= 0)
+            return $"the {d.Name} is empty (salvage wrecked parts for scrap)";
+        var got = world.Withdraw(c, part, Math.Min(ConstructStorage.TakeLoad, SandboxInventory.MaxScrap - inv.Scrap));
+        inv.AddScrap(got);
+        Done.Add($"player {player}: took {got} {d.BulkMaterial} from the {d.Name} (construct {c.Id}): {st.Amount}/{d.BulkCapacity}");
         return null;
     }
 

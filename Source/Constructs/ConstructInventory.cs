@@ -73,6 +73,17 @@ public sealed class SandboxInventory
         return true;
     }
 
+    /// <summary>Takes up to <paramref name="n"/> scrap out (physical storage: tipped into a bin); returns how much.</summary>
+    public int TakeScrap(int n)
+    {
+        n = Math.Clamp(n, 0, Scrap);
+        if (n == 0)
+            return 0;
+        Scrap -= n;
+        Version++;
+        return n;
+    }
+
     public void AddScrap(int n)
     {
         if (n <= 0)

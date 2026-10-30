@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Backpack",
+  "description": "A pack frame with eight slots: five small pouches, a big bag and two side pouches. Every player wears one (H stows what you hold, J draws the next thing out); it takes parts up to 40 kg. It works as storage on a construct too.",
+  "role": "storage",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 4,
+  "health": 80,
+  "material": "cloth",
+  "color": "#4d5a3a",
+  "boxes": [
+    { "min": [-0.22, -0.16, 0], "max": [0.22, 0.57, 0.035] },
+    { "min": [-0.39, 0.575, 0.46], "max": [0.39, 0.59, 0.48], "color": "#3a3a3a" },
+    { "min": [-0.39, -0.39, 0.46], "max": [0.39, -0.375, 0.48], "color": "#3a3a3a" },
+    { "min": [-0.39, -0.39, 0], "max": [-0.375, 0.59, 0.02], "color": "#3a3a3a" },
+    { "min": [0.375, -0.39, 0], "max": [0.39, 0.59, 0.02], "color": "#3a3a3a" },
+    { "min": [-0.2, 0.1, 0.035], "max": [0.2, 0.14, 0.05], "color": "#6b5a3a", "detail": true }
+  ],
+  "sockets": [
+    { "name": "back", "at": [0, 0.2, 0], "dir": "-z" }
+  ],
+  "storage": {
+    "maxMass": 40,
+    "slots": [
+      { "min": [-0.215, 0.355, 0.04], "max": [-0.005, 0.565, 0.25], "label": "small pouch" },
+      { "min": [0.005, 0.355, 0.04], "max": [0.215, 0.565, 0.25], "label": "small pouch" },
+      { "min": [-0.215, 0.355, 0.255], "max": [-0.005, 0.565, 0.465], "label": "small pouch" },
+      { "min": [0.005, 0.355, 0.255], "max": [0.215, 0.565, 0.465], "label": "small pouch" },
+      { "min": [-0.215, -0.15, 0.04], "max": [0.215, 0.35, 0.37], "label": "big bag" },
+      { "min": [0.225, -0.15, 0.04], "max": [0.37, 0.35, 0.37], "label": "side pouch" },
+      { "min": [-0.37, -0.15, 0.04], "max": [-0.225, 0.35, 0.37], "label": "side pouch" },
+      { "min": [-0.105, -0.37, 0.04], "max": [0.105, -0.16, 0.25], "label": "hip pouch" }
+    ]
+  }
+}

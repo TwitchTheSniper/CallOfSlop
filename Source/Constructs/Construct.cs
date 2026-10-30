@@ -33,6 +33,9 @@ public struct CPart
     public byte InCount; // how many wires come into it
     public float AimYaw, AimPitch; // a seat: its sitter's look (world), for a gunner aiming
 
+    // Physical storage (decision 18; ConstructStorage.cs): a storage part's contents, a handle into ConstructWorld.Stores (0: none). It moves with the part.
+    public ushort Store;
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.All[Def];

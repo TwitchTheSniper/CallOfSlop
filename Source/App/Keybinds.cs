@@ -47,6 +47,8 @@ public enum GameAction
     CopyLookAt, // copy the inspector's reference line to the clipboard
     PropEditor, // the dev prop editor on the prop under the crosshair
     ToolWheel, // binds version 10: Sandbox, hold for the tool wheel (SandboxToolWheel.cs)
+    Stow, // binds version 11: Sandbox, the part in your hands into your backpack (ConstructBackpack.cs)
+    DrawPack, // Sandbox: the next part in your backpack into your hands
     COUNT,
 }
 
@@ -105,6 +107,8 @@ public static class Keybinds
         Key(GlfwKey.F5), // Copy the look-at reference (dev)
         Key(GlfwKey.F10), // Prop editor (dev)
         Mouse(GlfwMouseButton.Middle), // Tool wheel (Sandbox): binds version 10 (Q is Swap weapon)
+        Key(GlfwKey.H), // Stow in the backpack (Sandbox): binds version 11
+        Key(GlfwKey.J), // Draw from the backpack (Sandbox)
     ];
 
     /// <summary>
@@ -114,9 +118,10 @@ public static class Keybinds
     /// 4: Audio mixer F8 added (same rule). 5: Spectate next / previous (Zombies) on the Right / Left arrows (same rule).
     /// 6: Weapon tweaks F7 added (same rule). 7: Drop item T and Parts inventory I (Zombies) added (same rule).
     /// 8: Performance window F9 added (same rule). 9: dev tools: Look-at inspector F6, Copy look-at reference F5 and Prop
-    /// editor F10 added (same rule). 10: Tool wheel (Sandbox) on the middle mouse button added (same rule).
+    /// editor F10 added (same rule). 10: Tool wheel (Sandbox) on the middle mouse button added (same rule). 11: the
+    /// Sandbox backpack's Stow H and Draw J added (same rule).
     /// </summary>
-    public const int DefaultsVersion = 10;
+    public const int DefaultsVersion = 11;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -139,6 +144,8 @@ public static class Keybinds
         (9, GameAction.CopyLookAt, Unbound, Key(GlfwKey.F5)),
         (9, GameAction.PropEditor, Unbound, Key(GlfwKey.F10)),
         (10, GameAction.ToolWheel, Unbound, Mouse(GlfwMouseButton.Middle)),
+        (11, GameAction.Stow, Unbound, Key(GlfwKey.H)),
+        (11, GameAction.DrawPack, Unbound, Key(GlfwKey.J)),
     ];
 
     /// <summary>
@@ -229,6 +236,8 @@ public static class Keybinds
             GameAction.CopyLookAt => "Copy the look-at reference (dev, inspector open)",
             GameAction.PropEditor => "Prop editor (dev: the prop under the crosshair)",
             GameAction.ToolWheel => "Tool wheel (Sandbox: hold, flick to a tool, let go)",
+            GameAction.Stow => "Stow in the backpack (Sandbox: what you hold)",
+            GameAction.DrawPack => "Draw from the backpack (Sandbox: the next part)",
             _ => a.ToString(),
         };
 

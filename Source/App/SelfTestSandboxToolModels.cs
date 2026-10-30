@@ -255,7 +255,7 @@ public static partial class SelfTest
         Line($"tool models, third person: a bot's gun {gun.New} draws; the welder {tool.New} draws ({tool.Tool} of its orange body), welding {use.New} (sparks), "
              + $"with a wheel {held.New} ({wheelDraws} wheel boxes); the local player's wrench {mine.New} ({wrenchDraws} of its grip); outside Sandbox {outside.New} (the gun); "
              + $"scene graph vs immediate: {parity.Cases} cases, {parity.Bad} differ");
-        if (tool.Tool != 1 || use.New != tool.New + 10 || wheelDraws < 1 || wrenchDraws != 1 || outside.Tool != 0 || outside.New != gun.New || gun.Tool != 0)
+        if (tool.Tool != 1 || use.New != tool.New + 10 || wheelDraws < 1 || wrenchDraws != 1 || outside.Tool != 0 || outside.New + (ConstructEdits.Backpack?.Boxes.Length ?? 0) != gun.New || gun.Tool != 0) // (in Sandbox an empty backpack on the back too)
             Fail("tool models: a third-person tool, its sparks or a carried part isn't drawn (or a gun is drawn outside Sandbox with a tool)");
 
         // No allocation: 240 frames of the first-person view and two third-person players with tools in use.

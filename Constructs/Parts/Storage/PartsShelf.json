@@ -1,0 +1,40 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Parts Shelf",
+  "description": "A two-level shelf: two big slots below, three parts bins above (each piles up to six of one small part). Carry a part to it and click a lit slot; F on a stored part takes it.",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 2.0,
+  "mass": 45,
+  "health": 260,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3f6f8f",
+  "boxes": [
+    { "size": [0.04, 1.2, 0.04], "at": [-0.58, 0.6, -0.28] },
+    { "size": [0.04, 1.2, 0.04], "at": [0.58, 0.6, -0.28] },
+    { "size": [0.04, 1.2, 0.04], "at": [-0.58, 0.6, 0.28] },
+    { "size": [0.04, 1.2, 0.04], "at": [0.58, 0.6, 0.28] },
+    { "size": [1.2, 0.04, 0.6], "at": [0, 0.02, 0], "color": "#5a7f99" },
+    { "size": [1.2, 0.04, 0.6], "at": [0, 0.62, 0], "color": "#5a7f99" },
+    { "size": [1.2, 0.04, 0.6], "at": [0, 1.18, 0], "color": "#5a7f99" },
+    { "size": [0.3, 0.05, 0.02], "at": [-0.38, 0.6, 0.31], "color": "#e8d36a", "detail": true },
+    { "size": [0.3, 0.05, 0.02], "at": [0, 1.16, 0.31], "color": "#e8d36a", "detail": true }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "top", "at": [0, 1.2, 0], "dir": "+y" },
+    { "name": "back", "at": [0, 0.6, -0.3], "dir": "-z" },
+    { "name": "+x", "at": [0.6, 0.6, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.6, 0.6, 0], "dir": "-x" }
+  ],
+  "storage": {
+    "slots": [
+      { "min": [-0.56, 0.04, -0.26], "max": [-0.01, 0.6, 0.26] },
+      { "min": [0.01, 0.04, -0.26], "max": [0.56, 0.6, 0.26] },
+      { "min": [-0.56, 0.64, -0.26], "max": [-0.2, 1.16, 0.26], "stack": 6, "label": "parts bin" },
+      { "min": [-0.18, 0.64, -0.26], "max": [0.18, 1.16, 0.26], "stack": 6, "label": "parts bin" },
+      { "min": [0.2, 0.64, -0.26], "max": [0.56, 1.16, 0.26], "stack": 6, "label": "parts bin" }
+    ]
+  }
+}

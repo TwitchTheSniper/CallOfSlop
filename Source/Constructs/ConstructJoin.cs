@@ -66,6 +66,7 @@ public sealed partial class ConstructWorld
             p.Rot = Rot24.Compose(turn, p.Rot);
             p.Seg = p.Seg == 0 ? (byte)0 : (byte)(p.Seg + joints);
             a.Parts[a.PartCount++] = p;
+            b.Parts[i].Store = 0; // (physical storage: the store moves with its part; b's removal mustn't free it)
         }
         for (var l = 0; l < b.LinkCount; l++)
         {
