@@ -104,6 +104,7 @@ public enum ConstructTool : byte
     Wrench, // bolted parts: wheels, seats, engines, doors...
     Welder, // welded parts: frames, panels, foundations
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
+    Configure = 4, // the configure tool: a part's settings panel (ConstructConfig.cs); never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -111,7 +112,7 @@ public enum ConstructTool : byte
 public static class ConstructToolWire
 {
     /// <summary>A tool from the wire (anything unknown: none).</summary>
-    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Linker || b == (byte)ConstructTool.PhysicsGun ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b == (byte)ConstructTool.PhysicsGun ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -199,6 +200,21 @@ public sealed class ConstructPartDef
     public string[] SettingLabels = []; // what the HUD shows for each
     public string SettingName = ""; // "period", "key"...
     public byte DefaultSetting;
+
+    // Settings as data (the configure tool; ConstructConfig.cs): the file's "config" schema, and each CfgKey's slot in it (-1: none)
+    public CConfigDef[] Config = [];
+    public sbyte[] CfgSlot = NoSlots;
+    internal static readonly sbyte[] NoSlots = MakeNoSlots();
+
+    private static sbyte[] MakeNoSlots()
+    {
+        var a = new sbyte[(int)CfgKey.COUNT];
+        Array.Fill(a, (sbyte)-1);
+        return a;
+    }
+
+    /// <summary>Has settings the configure tool can change.</summary>
+    public bool Configurable => Config.Length > 0;
 
     // Milestone 3: power, couplings, gauges (docs/sandbox/CONSTRUCTS.md, "Milestone 3")
     public float PowerDraw; // watts while it works (a lamp lit, a horn sounding, a logic part on; a motor: idling, on top of its work)
@@ -425,7 +441,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "legacy",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -462,7 +478,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
         d.Tool = EnumOf<ConstructTool>(StrKey(root, "tool", file), file, "tool");
-        if (d.Tool is ConstructTool.None or ConstructTool.Linker)
+        if (d.Tool is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
@@ -737,6 +753,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: only wheels and suspensions have \"axle\" sockets");
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
+        ConstructConfig.Parse(d, root, file); // (last: it folds in the role's own choice and checks the keys fit the part)
         return d;
     }
 

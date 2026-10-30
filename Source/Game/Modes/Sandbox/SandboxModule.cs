@@ -135,6 +135,7 @@ public sealed class SandboxModule : GameModeModule
         ConstructRender.DrawGlass(gfx, gfx.CameraPosition); // glass panes, back to front, over everything opaque
         ConstructRender.DrawGhosts(gfx, now);
         ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
+        ConstructRender.DrawConfigPreview(gfx, game.Constructs); // (only while a part's settings panel is open)
     }
 
     public override string? SelfTestVerify(Game game) =>

@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Timer",
-  "description": "While enabled (nothing wired in, or an input on): on and off, each for half its period.",
+  "description": "While enabled (nothing wired in, or an input on): on and off in turn, for its period (half and half unless set otherwise).",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,
@@ -104,5 +104,10 @@
       "5 s"
     ],
     "setting": 1
-  }
+  },
+  "config": [
+    {"key": "period", "label": "Period", "group": "Timing", "unit": "s", "min": 0.05, "max": 60, "step": 0.05, "tooltip": "How long one on-and-off cycle takes."},
+    {"key": "duty", "label": "On for", "group": "Timing", "unit": "%", "min": 5, "max": 95, "step": 1, "default": 50, "tooltip": "How much of each cycle it is on."},
+    {"key": "startOn", "label": "Start on", "group": "Timing", "default": false, "tooltip": "Each run begins with the on part of the cycle instead of the off part."}
+  ]
 }

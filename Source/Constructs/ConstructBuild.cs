@@ -286,6 +286,7 @@ public static class ConstructBuild
         public string Name = "", File = "", Description = "";
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
         public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
+        public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
     }
@@ -356,6 +357,7 @@ public static class ConstructBuild
                     {
                         string part = "", sock = "", own = "";
                         int on = -1, spin = 0, setting = -1;
+                        JsonElement? config = null;
                         foreach (var f in s.EnumerateObject())
                             switch (f.Name)
                             {
@@ -365,12 +367,16 @@ public static class ConstructBuild
                                 case "by": own = f.Value.GetString() ?? ""; break;
                                 case "spin": spin = f.Value.GetInt32(); break;
                                 case "setting": setting = f.Value.GetInt32(); break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting)");
+                                case "config": config = f.Value.Clone(); break;
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
                         bp.StepSettings.Add(setting);
+                        bp.StepConfig.Add(config is { } cfg
+                            ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
+                            : null);
                         k++;
                     }
                     break;
@@ -420,6 +426,7 @@ public static class ConstructBuild
             {
                 partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(spin % Rot24.Count));
                 SetSetting(c, partOf[0], def, bp.StepSettings[0]);
+                SetConfig(c, partOf[0], def, bp, 0);
                 continue;
             }
             var target = partOf[on];
@@ -451,6 +458,7 @@ public static class ConstructBuild
                 world.Remove(c);
                 return null;
             }
+            SetConfig(c, partOf[k], def, bp, k);
         }
         // The wires, through the linking tool's rules.
         foreach (var (from, to) in bp.Wires)
@@ -490,7 +498,18 @@ public static class ConstructBuild
         if (setting >= def.Settings.Length)
             return false;
         c.Parts[part].Setting = (byte)setting;
+        ConstructConfig.ApplyPreset(ref c.Parts[part], def); // (a timer's setting picks its period from the presets)
         return true;
+    }
+
+    /// <summary>A step's "config" (the part's settings), after its "setting".</summary>
+    private static void SetConfig(Construct c, int part, ConstructPartDef def, Blueprint bp, int step)
+    {
+        if (part < 0 || step >= bp.StepConfig.Count || bp.StepConfig[step] is not { } values)
+            return;
+        foreach (var (slot, v) in values)
+            ConstructConfig.Set(ref c.Parts[part], def, slot, v);
+        ConstructConfig.StartState(ref c.Parts[part], def);
     }
 
     /// <summary>A blueprint's construct set down standing on the ground at <paramref name="ground"/> (its lowest point there).</summary>

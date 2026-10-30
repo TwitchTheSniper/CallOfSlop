@@ -93,7 +93,7 @@ public static class ConstructNet
             w.U8(jt.Hinge).U8(jt.ParentSeg).U16(S16(Cm(jt.Pivot.X))).U16(S16(Cm(jt.Pivot.Y))).U16(S16(Cm(jt.Pivot.Z))).U8(AxisDir(jt.Axis))
                 .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0))).U8((byte)jt.Type);
         }
-        ConstructRoutes.Write(w, c); // (protocol 87: the routed links in place of the wires; the client rebuilds its wires from the data links)
+        ConstructRoutes.Write(w, c); // (protocol 90: the routed links in place of the wires; the client rebuilds its wires from the data links)
         // Protocol 82: the parts with rounds in them or on fire (ammo boxes, guns).
         var at = w.Length;
         w.U8(0);
@@ -105,6 +105,7 @@ public static class ConstructNet
                 n++;
             }
         w.PatchU8(at, (byte)n);
+        ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -524,6 +525,7 @@ public static class ConstructNet
                 throw new MalformedPacketException("construct ammo for a part that isn't there");
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
+        ConstructConfig.Read(ref r, c); // protocol 89: the part settings
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

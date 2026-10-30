@@ -195,11 +195,13 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 88: Sandbox physics gun (docs/sandbox/CONSTRUCTS.md "The physics gun"): CActKind Grab / GrabSteer / GrabRelease /
     //     GrabFreeze / UnfreezeAll; CBody's frozen flag and who froze it; the mode-state tail (version 3) carries each
     //     player's held construct and grab point (the beam); the physics gun's tool byte (8).
-    // 89: Sandbox routed links (docs/sandbox/CONSTRUCTS.md "Routed links"): Msg.CBody carries a construct's routed links
+    // 89: Sandbox configure tool (docs/sandbox/CONSTRUCTS.md "The configure tool"): CBody ends with the part settings off
+    //     their defaults; CActKind.Configure (the settings of one or more parts of a kind); the configure tool's tool byte (4).
+    // 90: Sandbox routed links (docs/sandbox/CONSTRUCTS.md "Routed links"): Msg.CBody carries a construct's routed links
     //     (data, power, pipe, shaft, chute: endpoints, junction, nodes on the 1 cm grid, segment health) in place of its wires;
     //     CAct.Route / RouteEdit at the end of CActKind; part ids are two bytes everywhere (CBody parts, stores, the inventory,
     //     the mode-state tail's held part, CAct.Rack's pick).
-    public const byte ProtocolVersion = 89;
+    public const byte ProtocolVersion = 90;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

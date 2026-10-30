@@ -92,5 +92,10 @@
   "logic": {
     "kind": "lamp"
   },
-  "power": 60
+  "power": 60,
+  "config": [
+    {"key": "colour", "type": "colour", "label": "Colour", "group": "Light", "default": "#ffed99", "tooltip": "The colour it glows when lit."},
+    {"key": "brightness", "label": "Brightness", "group": "Light", "unit": "%", "min": 10, "max": 200, "step": 1, "default": 100, "tooltip": "How bright it glows."},
+    {"key": "blink", "label": "Blink", "group": "Light", "unit": "Hz", "min": 0, "max": 10, "step": 0.1, "default": 0, "tooltip": "Flashes this many times a second while lit (0: steady)."}
+  ]
 }

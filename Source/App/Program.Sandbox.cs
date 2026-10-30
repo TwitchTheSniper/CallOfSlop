@@ -177,13 +177,14 @@ public static unsafe partial class Program
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
                       ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0)
                       ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
-                      ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0)
+                      ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0) ^ (d.Configurable ? (long)BitConverter.SingleToInt32Bits(ConstructConfig.At(part, d, 0)) << 20 : 0)
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0); // (an engine's rpm, a gearbox's gear)
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
-                var setting = d.Settings.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
+                var setting = d.Configurable ? $" ({d.Config[0].Label.ToLowerInvariant()} {d.Config[0].Show(ConstructConfig.At(part, d, 0))})"
+                    : d.Settings.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
                 var signal = d.IsSignal ? $" [{(d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off")}]" : "";
                 var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
                 var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
@@ -269,6 +270,13 @@ public static unsafe partial class Program
         if (h.Tool == ConstructTool.Linker)
         {
             SandboxLinkerInput(g, me, ref h, eye, dir, aimed, hit);
+            return true;
+        }
+
+        // The configure tool: fire on a part opens its settings panel; shift+fire selects more of a kind.
+        if (h.Tool == ConstructTool.Configure)
+        {
+            SandboxConfigInput(g, me, aimed, hit);
             return true;
         }
 
@@ -592,7 +600,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0), // (the linking tool: while a link is being routed; the physics gun: while it holds)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

@@ -1301,7 +1301,7 @@ public static partial class ConstructRoutes
         }
     }
 
-    // ---- The wire format (protocol 87): compact, nodes on the 1 cm grid --------------------------------------------
+    // ---- The wire format (protocol 90): compact, nodes on the 1 cm grid --------------------------------------------
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 

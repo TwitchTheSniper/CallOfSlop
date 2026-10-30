@@ -92,5 +92,9 @@
   "logic": {
     "kind": "horn"
   },
-  "power": 120
+  "power": 120,
+  "config": [
+    {"key": "pitch", "label": "Pitch", "group": "Sound", "unit": "x", "min": 0.5, "max": 2, "step": 0.01, "default": 1, "tooltip": "Higher or lower than its normal note."},
+    {"key": "volume", "label": "Volume", "group": "Sound", "unit": "%", "min": 0, "max": 100, "step": 1, "default": 100, "tooltip": "How loud it beeps."}
+  ]
 }

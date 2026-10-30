@@ -104,5 +104,9 @@
       "2 s"
     ],
     "setting": 1
-  }
+  },
+  "config": [
+    {"key": "seconds", "label": "Delay", "group": "Timing", "unit": "s", "min": 0.05, "max": 60, "step": 0.05, "tooltip": "How long its input must hold a new value before the output follows."},
+    {"key": "mode", "label": "Delays", "group": "Timing", "options": ["both ways", "switching on", "switching off"], "default": 0, "tooltip": "Which change waits for the delay; the other one follows at once."}
+  ]
 }

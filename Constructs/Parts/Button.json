@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Button",
-  "description": "Interact: on for half a second.",
+  "description": "Interact: on for half a second (or as set: longer, or latched on and off).",
   "role": "logic",
   "tool": "wrench",
   "attachSeconds": 1.0,
@@ -91,5 +91,9 @@
   ],
   "logic": {
     "kind": "button"
-  }
+  },
+  "config": [
+    {"key": "latched", "label": "Latched", "group": "General", "default": false, "tooltip": "On: each press turns it on or off. Off: it springs back after its hold time."},
+    {"key": "hold", "label": "Stays on for", "group": "General", "unit": "s", "min": 0.05, "max": 30, "step": 0.05, "default": 0.5, "tooltip": "How long a press keeps it on (when not latched)."}
+  ]
 }

@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed class SandboxInventory
 {
-    public const int MaxKinds = ConstructParts.MaxTypes; // part ids (two bytes since protocol 87)
+    public const int MaxKinds = ConstructParts.MaxTypes; // part ids (two bytes since protocol 90)
     public const int MaxMaterials = 16; // (resources: a later milestone; always zero now, but the wire carries them)
     public const ushort MaxCount = 9999; // of one kind
     public const int MaxScrap = 999_999;

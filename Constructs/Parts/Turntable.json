@@ -100,5 +100,9 @@
     "leaf": "top",
     "speed": 45,
     "strength": 6000
-  }
+  },
+  "config": [
+    {"key": "speed", "label": "Speed", "group": "Motor", "unit": "deg/s", "min": 5, "max": 360, "step": 1, "tooltip": "How fast it turns at a full signal."},
+    {"key": "strength", "label": "Torque", "group": "Motor", "unit": "N m", "min": 500, "max": 40000, "step": 100, "tooltip": "The most it can turn against."}
+  ]
 }

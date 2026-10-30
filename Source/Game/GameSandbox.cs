@@ -13,7 +13,7 @@ public enum CActKind : byte
     Cancel,
     Use, // u16 body, u8 part
     Stand,
-    Rack, // u16 pick (protocol 87; u8 since 79): 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere
+    Rack, // u16 pick (protocol 90; u8 since 79): 0 the rack's next kind (at the rack); n: part id n - 1 from the debug parts menu, anywhere
     Drop,
     PickUp, // u16 body
     Wire, // u16 body, u8 from part, u8 to part, u16 to body (the linking tool; milestone 2; protocol 83: the to body, 0 the same construct)
@@ -33,8 +33,9 @@ public enum CActKind : byte
     GrabRelease, // let go of what the physics gun holds (protocol 88)
     GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
     UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
-    Route, // u16 body, u8 type | style << 4, u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 89)
-    RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 89)
+    Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
+    Route, // u16 body, u8 type | style << 4, u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
+    RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -390,7 +391,7 @@ public sealed partial class Game
                 return null;
             case CActKind.Rack:
             {
-                var pick = r.U16(); // (protocol 87: part ids are two bytes)
+                var pick = r.U16(); // (protocol 90: part ids are two bytes)
                 return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position) : hands.TakePart(World.Map.Sandbox, p.Id, (ushort)(pick - 1));
             }
             case CActKind.Blueprint:
@@ -417,6 +418,8 @@ public sealed partial class Game
                 var body = r.U16();
                 return hands.CycleSetting(Constructs, p.Id, eye, body, r.U8());
             }
+            case CActKind.Configure:
+                return SandboxConfigureAct(p, ref r, eye);
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
@@ -1015,7 +1018,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -1034,6 +1037,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
+        else if (h.Tool == ConstructTool.Configure)
+            lines.Add(new HudLine(SandboxConfigHint, dim));
         else if (held == null)
         {
             if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
@@ -1152,7 +1157,9 @@ public sealed partial class Game
                 {
                     _sbHornAt[slot] = now;
                     c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
-                    Audio.Effect3D(Sfx.LockTone, t + Vector3.Transform(c.Parts[i].Pos, q), 1f);
+                    ref var hp = ref c.Parts[i];
+                    var hd = hp.D; // (its pitch and volume settings: the configure tool)
+                    Audio.Effect3DPitched(Sfx.LockTone, t + Vector3.Transform(hp.Pos, q), ConstructConfig.Get(hp, hd, CfgKey.Volume, 100) / 100f, ConstructConfig.Get(hp, hd, CfgKey.Pitch, 1));
                 }
                 slot++;
             }

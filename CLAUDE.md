@@ -92,7 +92,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **89**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **90**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -183,3 +183,11 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   dev-back-to-lobby-again-bl02). Why: the first fix had no test with a real host and a separate client, and the report
   couldn't be reproduced (look-alike buttons or mismatched builds suspected). Rule: networking fixes get a test with
   separate peers over the real transport, kept in the full suite; peers check each other's build on join.
+- 2026-10-30: "Frame allocations" failed twice on main's Windows CI with "Net receive 1560 B". Why: a network stall's
+  backlog arrived in one poll and the server's input queue grew from 32 to 64 commands (24 + 64 x 24 B); bounded lists
+  that only reach their cap under a hitch allocate in a steady frame, and slower Windows runners hit it. Rule: a list
+  fed by the network with a cap starts at its full size (`new(Max + 1)`); the section's input-burst check enforces it
+  for the input queue and a failure names the messages that allocated.
+- 2026-10-30: "Sandbox tool models" failed twice with "no live local player and bot" (main CI, then the PC runner after
+  a merge) and passed on rerun both times. Why: unknown, a spawn-timing flake. Rule: it is now listed in HANDOFF.md
+  (re-run once before chasing it); a third failure gets an agent to make the scene wait for its spawns.

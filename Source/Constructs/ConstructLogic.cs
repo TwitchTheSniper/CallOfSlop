@@ -96,6 +96,12 @@ public static class ConstructLogic
                 switch (d.Logic)
                 {
                     case CLogic.Button:
+                        // Latched (a setting): each press flips it on or off; else on for its hold time after a press.
+                        if (ConstructConfig.Get(p, d, CfgKey.Latched, 0) >= 0.5f)
+                        {
+                            next = (p.State & 1) != 0 ? 1 : 0;
+                            break;
+                        }
                         next = p.Count > 0 ? 1 : 0;
                         if (p.Count > 0)
                             p.Count--;
@@ -117,13 +123,20 @@ public static class ConstructLogic
                         break;
                     }
                     case CLogic.Speed:
-                        next = c.Vel.Length();
+                    {
+                        // In its units (m/s, km/h, mph); with a threshold above 0, on/off: 1 at or over it.
+                        var units = ConstructConfig.Get(p, d, CfgKey.Units, 0);
+                        var v = c.Vel.Length() * (units >= 1.5f ? 2.23694f : units >= 0.5f ? 3.6f : 1f);
+                        var threshold = ConstructConfig.Get(p, d, CfgKey.Threshold, 0);
+                        next = threshold > 0 ? v >= threshold ? 1 : 0 : v;
                         break;
+                    }
                     case CLogic.Proximity:
                     {
                         c.WorldFrame(p.Seg, out var q, out var t);
                         c.PartBounds(i, out var mn, out var mx);
                         var at = t + Vector3.Transform((mn + mx) * 0.5f, q);
+                        setting = ConstructConfig.Get(p, d, CfgKey.Radius, setting);
                         next = 0;
                         for (var k = 0; k < world.PlayerSpotCount; k++)
                             if (Vector3.DistanceSquared(world.PlayerSpots[k], at) <= setting * setting)
@@ -144,16 +157,20 @@ public static class ConstructLogic
                         break;
                     case CLogic.Timer:
                     {
-                        // On for half the period, off for the other half, while enabled (no input, or an input on).
+                        // On for its duty share of the period, off for the rest, while enabled (no input, or an input on);
+                        // "start on" begins each run with the on part.
+                        var startOn = ConstructConfig.Get(p, d, CfgKey.StartOn, 0) >= 0.5f;
                         if (count[i] > 0 && !on)
                         {
                             p.Count = 0;
-                            p.State = 0;
+                            p.State = (byte)(startOn ? 1 : 0);
                             next = 0;
                             break;
                         }
-                        var half = Math.Max(1, (int)MathF.Round(setting * 0.5f * ticks));
-                        if (++p.Count >= half)
+                        var period = ConstructConfig.Get(p, d, CfgKey.Period, setting);
+                        var duty = Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Duty, 50) / 100f, 0.01f, 0.99f);
+                        var phase = Math.Max(1, (int)MathF.Round(period * ((p.State & 1) != 0 ? duty : 1 - duty) * ticks));
+                        if (++p.Count >= phase)
                         {
                             p.Count = 0;
                             p.State ^= 1;
@@ -163,11 +180,19 @@ public static class ConstructLogic
                     }
                     case CLogic.Delay:
                     {
-                        // The output copies the input once the input has held its new value for the delay.
+                        // The output copies the input once the input has held its new value for the delay (its mode: both
+                        // ways, only switching on, or only switching off; the other way follows at once).
                         var want = on ? 1f : 0f;
+                        var mode = (int)ConstructConfig.Get(p, d, CfgKey.Mode, 0);
+                        if (want != p.Out && (mode == 1 && want == 0 || mode == 2 && want == 1))
+                        {
+                            p.Count = 0;
+                            next = want;
+                            break;
+                        }
                         if (want != p.Out)
                         {
-                            if (++p.Count >= Math.Max(1, (int)MathF.Round(setting * ticks)))
+                            if (++p.Count >= Math.Max(1, (int)MathF.Round(ConstructConfig.Get(p, d, CfgKey.Seconds, setting) * ticks)))
                             {
                                 p.Count = 0;
                                 next = want;
@@ -190,11 +215,29 @@ public static class ConstructLogic
                         break;
                     }
                     case CLogic.Compare:
-                        next = sum[i] > setting ? 1 : 0;
+                    {
+                        // Its operator against the threshold; hysteresis keeps it as it is until the sum is that far past.
+                        var th = ConstructConfig.Get(p, d, CfgKey.Threshold, setting);
+                        var hy = ConstructConfig.Get(p, d, CfgKey.Hysteresis, 0);
+                        var was = p.Out >= 0.5f;
+                        var x = sum[i];
+                        next = (int)ConstructConfig.Get(p, d, CfgKey.Operator, 0) switch
+                        {
+                            1 => x >= (was ? th - hy : th) ? 1 : 0,
+                            2 => MathF.Abs(x - th) <= MathF.Max(was ? hy * 2 : hy, 0.001f) ? 1 : 0,
+                            3 => x <= (was ? th + hy : th) ? 1 : 0,
+                            4 => x < (was ? th + hy : th) ? 1 : 0,
+                            _ => x > (was ? th - hy : th) ? 1 : 0,
+                        };
                         break;
+                    }
                     case CLogic.Scale:
-                        next = sum[i] * setting;
+                    {
+                        var lo = ConstructConfig.Get(p, d, CfgKey.Low, -MaxSignal);
+                        var hi = ConstructConfig.Get(p, d, CfgKey.High, MaxSignal);
+                        next = Math.Clamp(sum[i] * ConstructConfig.Get(p, d, CfgKey.Factor, setting) + ConstructConfig.Get(p, d, CfgKey.Offset, 0), MathF.Min(lo, hi), MathF.Max(lo, hi));
                         break;
+                    }
                     case CLogic.FuelGauge:
                     {
                         var cap = c.FuelCapacity();
@@ -244,7 +287,7 @@ public static class ConstructLogic
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;
             if (d.Logic == CLogic.Brake && p.Out >= 0.5f)
-                c.BrakeSignal = 1;
+                c.BrakeSignal = MathF.Max(c.BrakeSignal, Math.Clamp(ConstructConfig.Get(p, d, CfgKey.Strength, 100) / 100f, 0, 1)); // (its strength setting: how hard)
             if (i == c.Engine && count[i] > 0)
             {
                 c.EngineWired = true;
