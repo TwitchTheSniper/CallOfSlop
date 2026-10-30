@@ -5,6 +5,8 @@
   "group": "Panels",
   "section": "Body panels",
   "role": "panel",
+  "faces": "side",
+  "faceAxis": "+x",
   "tool": "wrench",
   "attachSeconds": 1.2,
   "mass": 6,

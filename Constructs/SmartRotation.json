@@ -1,0 +1,13 @@
+{
+  "format": "call-of-slop-smart-rotation/1",
+  "about": "Smart rotation's weights (docs/sandbox/CONSTRUCTS.md, 'Smart rotation'; Source/Constructs/SmartRotation.cs): every turn a held part fits a socket in is scored by these and the best is the ghost's first guess. upright, front and facing are times a cosine (-1 to 1); mirror, lastChoice and learned are added when the turn matches exactly; neighbour times the share of the same parts next to it that match; coveredSocket is taken off for each free socket it would cover (at most 4), facingWall when its face is right against a part. Ties keep the old fixed order. Each is 0 to 100.",
+  "upright": 2,
+  "front": 1,
+  "facing": 4,
+  "mirror": 6,
+  "neighbour": 5,
+  "lastChoice": 3.5,
+  "learned": 8,
+  "coveredSocket": 1.5,
+  "facingWall": 3
+}

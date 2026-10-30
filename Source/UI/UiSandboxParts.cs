@@ -429,6 +429,11 @@ public sealed partial class Ui
                 ImGui.EndChild();
                 ImGui.Separator();
                 ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
+                // Smart rotation (SmartRotation.cs): the ghost's first turn is a guess from the construct around it (saved).
+                if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
+                    settings.Save();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("The ghost starts at the best guess for the construct: upright, facing forward, mirroring the other side, like its neighbours, the way you turned it last time. R goes back to the guess, R again tries the next best. Off: the fixed order."u8);
                 // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
                 ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
                 if (game.SandboxInfiniteParts)
