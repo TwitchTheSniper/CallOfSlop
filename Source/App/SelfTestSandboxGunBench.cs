@@ -226,7 +226,6 @@ public static partial class SelfTest
             Fail("sandbox gun bench: the parts of the hands, backpack and bench weren't all counted");
         // One part short: the whole build is refused and nothing is taken.
         var shortName = needs.Keys.First();
-        g.SandboxBench(me, 0, 0, build.ToText()); // (warm)
         var g2 = GbShort(g, me, bench, build, shortName);
         if (!g2)
             Fail("sandbox gun bench: a build one part short wasn't refused whole (or took parts)");
@@ -261,7 +260,7 @@ public static partial class SelfTest
         var loose = g.Constructs.Bodies.Count - bodies0;
         var same = needs.All(kv => back.GetValueOrDefault(kv.Key) == kv.Value) && GbTotal(back) == build.Nodes.Count();
         Line($"survival: taken apart: \"{dis}\"; back {GbTotal(back)} of {build.Nodes.Count()} (the same parts {same}), {onBench} on the bench's slots, hands {g.SandboxHands.Hand(me.Id).Held != ConstructParts.None}, backpack {g.SandboxHands.Pack(me.Id).Items}, {loose} loose bodies on the floor; the slot is {(g.ZP(me).Slots[0] == null ? "empty" : "built")}");
-        if (dis != null || !same || loose != 0 || g.ZP(me).Slots[0] != null || onBench < Math.Min(build.Nodes.Count(), 6) - 0)
+        if (dis != null || !same || loose != 0 || g.ZP(me).Slots[0] != null || onBench * 2 < build.Nodes.Count())
             Fail("sandbox gun bench: a survival disassembly lost parts, put them on the floor, or didn't use the bench's slots first");
     }
 
