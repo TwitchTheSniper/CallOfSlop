@@ -138,9 +138,10 @@ public static unsafe partial class Program
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
         _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
+        _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _jointShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -226,6 +227,8 @@ public static unsafe partial class Program
                 RunSandboxShots(args); // --sandbox-shots: the Sandbox constructs on Construct Yard, then quit (Program.SandboxShots.cs)
             else if (_jointShots)
                 RunJointShots(); // --joint-shots: parts beyond construct joints colliding on Construct Yard, then quit (Program.JointShots.cs)
+            else if (_toolShots)
+                RunToolShots(); // --tool-shots: every Sandbox tool in the hands, first and third person, then quit (Program.ToolShots.cs)
             else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
@@ -2118,7 +2121,7 @@ public static unsafe partial class Program
             var t = (float)now * 40f;
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
-        if (local is { Alive: true })
+        if (local is { Alive: true, RenderSeat: SeatKind.None }) // (seated in a construct: no bob, the camera rides with the seat)
         {
             // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
             _headBob.Update(new HeadBobInput
@@ -2164,6 +2167,7 @@ public static unsafe partial class Program
         var pass = Perf.Pass(PerfArea.Bodies, PerfGpuPass.Bodies); // the perf window's passes (Source/Perf)
         LegAnimator.Viewer = eye; // foot IK rays only for players near the camera (Source/Render/LegAnimator.cs)
         LegAnimator.MoverTick = _game.MoverRenderTick;
+        ToolRender.Hands = _game.SandboxOn ? _game.SandboxHands : null; // Sandbox: tools in everyone's hands instead of guns (Source/Render/ToolRender.cs)
         foreach (var p in _game.Players.Values)
         {
             if (p.Id == _game.LocalId && p.Alive)

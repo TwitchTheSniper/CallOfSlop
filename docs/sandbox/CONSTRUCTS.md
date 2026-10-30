@@ -63,6 +63,75 @@ shown greyed rather than left off (eight segments read cleanly as a compass, and
 closed in a seat (seated keys belong to the construct's input readers); no tool modes ring or second page yet (no tool
 has modes); no stick support yet (no Steam Input in the game).
 
+### Tools in hand
+
+Every tool has its own **held model** (board item dev-sandbox-tool-models-tm01), built from boxes as data in
+`Constructs/Tools/*.json`, drawn in place of the gun while the tool is out: in first person with the view model's arms
+(both hands on their grips through the same IK as the guns) and on other players and bots in third person (the same
+place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.cs` poses and draws them;
+`Source/Constructs/ConstructTools.cs` loads the files.
+
+- **Wrench**: a heavy adjustable spanner held upright; it **cranks** back and forth while a fit or a removal runs.
+- **Welder**: a gas torch with a blue bottle, the off hand under the barrel; while welding it shakes, its tip glows and
+  flickers, it throws **sparks**, and on a lit map it lights its surroundings with a flickering blue-white arc
+  (`LightGrid.AddDynamic`, one per welding player; unlit maps have the glow and sparks only).
+- **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
+  first click to the second) the reel turns and the probe throws a green **beam**.
+- Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
+  hook on a chain), the **configure tool** (a handset with a screen, sliders and a dial), the **scanner** (a turning
+  emitter and an aerial; a beam while it scans) and the **hand drill** (its bit spins while it works).
+
+Every tool has an idle sway (and a walk bob in first person). **Equipping**: taking out a tool (the number keys or the
+tool wheel) drops the one in your hands out of sight (0.14 s) and brings the new one up (0.24 s); from the gun the tool
+just comes up; putting a tool away drops it, then the gun comes up with its own equip (it can't fire until then). A
+**part being carried** to place (from the rack, the parts menu or picked up) shows in the off hand, scaled down to fit
+(the ghost on the construct shows where it goes, as before); with no tool out it is carried in both hands. In a seat
+nothing is in the hands.
+
+Remote players render it from what the Sandbox mode-state tail already sends (every player's tool, held part and edit in
+progress), so nothing on the wire changed (protocol 79). The linking tool's beam shows only in your own hands (the wire
+in progress isn't sent). Models are built once at load; drawing allocates nothing (fixed per-player state; a struct box
+sink feeds either the renderer or the scene graph's draw list, so the scene graph and the immediate code draw the same).
+
+A tool file:
+
+```json
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Welder",
+  "tool": "welder",
+  "description": "A gas welding torch...",
+  "hold": [4, 10, 0],
+  "boxes": [
+    { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },
+    { "size": [0.018, 0.018, 0.016], "at": [0, 0.06, -0.31], "color": "#9fd8ff", "glow": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-14, 0, 0], "shape": "wrap" },
+  "support": { "at": [0, 0.02, -0.13], "shape": "under" },
+  "tip": [0, 0.06, -0.32],
+  "use": { "motion": "jitter", "amount": 0.006, "rate": 23, "sparks": "#ffb040", "light": "#a8d4ff" }
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
+| `tool` | `wrench`, `welder`, `linker`; or one still to come: `hoist`, `configure`, `scanner`, `drill`. One file a tool. |
+| `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
+| `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
+| `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
+| `tip` | Where sparks, the light and the beam come from. |
+| `use` | While it works: `motion` (`ratchet`: turns `amount` radians about `axis`; `jitter`: shakes `amount` metres; `push`: jabs forward `amount` metres; `sweep`: turns side to side; `none`) at `rate` Hz; `spin` / `idleSpin` (radians a second for the spin boxes); `sparks`, `light`, `beam` (colours) and `beamLength` (metres). |
+
+A bad file is refused with the reason (`--check-construct-parts` lists the tools too) and that tool is drawn as a plain
+grey block. `--tool-shots` writes pictures of every tool in first and third person, idle and in use, a carried part
+(with the wrench and in bare hands) and a swap half-way (`smoke_tool_*.bmp`); it runs under xvfb like `--light-shots`.
+
+Choices made (the developer may change them): the wrench is one-handed and upright (the off hand rests), the welder and
+scanner two-handed; a carried part goes in the off hand, scaled down (a frame block would hide the view at full size);
+putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
+(the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
+
 ### The debug parts menu
 
 A debugging aid for the test yard (the developer asked for one, 2026-10-29), not how the final game will hand parts out:
@@ -135,7 +204,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
   An anchored construct with joints sleeps too once its joints are still (a motor that is still pushing, stalled
   against something, keeps it awake); a motor asked to move, more riders than it can hold, Interact or a push wake it.
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
-  along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats. A moving
+  along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
+  as part of the construct: "Seats" below). A moving
   part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
 
 ### Damage (decision 6)
@@ -247,8 +317,8 @@ The Sandbox mode is offered only on maps with this section.
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
   wheels to the ground themselves.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
-  unwire, a setting, a seated player's fire/aim/reload keys); the server re-checks everything and answers a refusal with
-  its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
+  unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
+  look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
   debug parts menu, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
@@ -350,6 +420,15 @@ death close it without choosing (and the still-held key doesn't reopen it), and 
 frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
 server.
 
+The **Sandbox tool models** section (`Source/App/SelfTestSandboxToolModels.cs`): every tool file loads as one piece with
+its hands in reach, every tool in the game and every tool still to come has a model, and 13 kinds of bad file are refused
+for the right reason (two models for one tool among them); in first person each model draws its boxes (plus sparks and a
+beam in use) with both hands on their grips, low on the right of the view, and the equip drops the old tool before the
+new one comes up and hands back to the gun after the drop; in an offline Sandbox game a bot's welder (welding: its
+sparks), a carried wheel and the local player's wrench are drawn in third person instead of the gun, the scene graph
+matching the immediate code draw for draw, and a gun again outside Sandbox; 240 frames of tools in use allocate nothing;
+and a real host and client each draw the other's tool in their hands.
+
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
 wires (the linking tool's view), a broken buggy, the debug parts menu (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
@@ -442,6 +521,42 @@ input end). Wiring is instant (fitting a part is what takes time).
 - **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
   `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
   with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+
+### Seats: riders as part of the construct
+
+- **Seat types** (`SeatKind`, from where the seat is): the drive seat is the **driver's**; a seat on a moving joint's
+  segment (a turntable, a hinge) is a **gunner's**; any other is a **passenger's**. The **Gunner Turret** blueprint is
+  the Turret with a gunner's seat on its arm.
+- **The seat frame.** Every frame, on the host and every client, after the render states and before the camera
+  (`Game.UpdateSandboxSeats`, GameSandbox.cs), each seated player is put in their seat exactly as the construct is drawn
+  this frame (`ConstructRender.SeatPose`: the body's blended pose, every joint up the seat's chain blended, the seat's
+  turn): the feet at the seat's `at` point and the whole body in the seat's frame, so it tilts and turns with the
+  construct and with a turntable or hinge under the seat. There is nothing to lag, jitter or slide: the rider is a
+  seat-local pose composed with the construct's own drawing. (A client blends the construct poses there too, before the
+  camera is set.) The server still pins the simulated player to the seat each tick for hit boxes and reach.
+- **The seated pose** (`LegAnimator` seated legs): hips on the cushion, thighs forward, knees bent, feet forward on the
+  floor, leaning back a little; no gait, no foot rays, no footsteps or step sounds, no head bob, no sprint arms. The upper
+  body turns towards the look (driver 26 degrees, passenger 46, gunner 63 either way). The **driver** holds the
+  **steering wheel** (drawn in front of the drive seat, turned by the steering) with both hands and has no gun; a
+  **passenger** rests the gun across the lap; a **gunner** holds it up at their look.
+- **The look** is relative to the vehicle: the local view turns with the seat (like a turning platform's), and the look
+  stays within 100 degrees of the seat's facing for the driver, 120 for a passenger, all the way round for a gunner.
+  The camera is at the seat's head (the eye height along the seat's up).
+- **Network (protocol 80).** A seated player's snapshot entry carries the seat (construct id and seat part, in the
+  mantle extension with mantle ticks 0) and a yaw relative to the seat's facing instead of a world one; a client
+  composes it with its own drawing of the construct. The seat-relative look comes from the seated client itself
+  (`CAct.SeatLook`, unreliable, on a change, at most ~30 a second and every 0.25 s), so it is exact however fast the seat
+  turns; until the first one arrives the server works it out from the world look. The world position stays in the entry
+  (a fallback for a construct the client doesn't have yet).
+- **Getting in and out** keeps its rules (Use on a free seat; F gets out, beside the seat if clear).
+- **Dying seated**: the ragdoll starts in a seated pose at the seat, with the construct's velocity there, and goes limp
+  (no death reaction).
+- The **"Seated riders"** self-test: in a game on the yard a driver and a passenger in the wired buggy and a gunner on
+  the Gunner Turret stay within 4 mm of their seats' local offsets (feet and eyes, every frame between ticks) while the
+  buggy drives at up to 12 m/s and turns 140 degrees and the turret turns; no walk cycle or footsteps; the look limits; a
+  seated ragdoll; no allocation; over a loopback two clients agree on the seat, the offset and the seat-relative look.
+  `--sandbox-shots` writes `smoke_sandbox_seated_*.bmp` (riders, the driver close up, the passenger, the driver's view,
+  the gunner).
 
 ### Decisions made for milestone 2 (the developer may change them)
 

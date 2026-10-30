@@ -215,6 +215,8 @@ public static partial class SelfTest
         Section("Constructs", CheckConstructs); // SelfTestConstructs.cs: Sandbox construct parts, building with tools, driving, damage, the hinge, the wire (docs/sandbox/CONSTRUCTS.md)
         Section("Sandbox parts menu", CheckSandboxPartsMenu); // SelfTestSandboxPartsMenu.cs: the Sandbox debug parts menu: parts by id, blueprints, the map flag, the window headless (no allocation)
         Section("Sandbox tool wheel", CheckSandboxToolWheel); // SelfTestSandboxToolWheel.cs: the radial widget's maths, the tool wheel's hold-flick-release picks, cancels and closing, headless with no allocation, over the wire
+        Section("Seated riders", CheckSeated); // SelfTestSeated.cs: Sandbox seats: riders at their seats' local offsets, the seated pose (no walk, no steps), the camera, look limits, a seated ragdoll, clients agree
+        Section("Sandbox tool models", CheckSandboxToolModels); // SelfTestSandboxToolModels.cs: the tools' held models (Constructs/Tools): files, first and third person, equip, carried parts, over the wire, no allocation
         Section("Construct logic", CheckConstructLogic); // SelfTestConstructLogic.cs: milestone 2: moving joints, logic and wires, the linking tool, drivetrain parts, riding, run-over
         Section("Construct joints", CheckConstructJoints); // SelfTestConstructJoints.cs: the parts beyond joints collide: a flap stops on the ground, a motor stalls at a post or lifts its construct, a turntable stops at a wall, no tunnelling, sleep, budget
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)

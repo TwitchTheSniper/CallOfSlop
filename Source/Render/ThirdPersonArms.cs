@@ -93,7 +93,7 @@ public static class ThirdPersonArms
             reload = (float)((now - st.ReloadAt) / st.ReloadDur);
         var melee = now - st.MeleeAt < 0.35 ? (float)((now - st.MeleeAt) / 0.35) : -1f;
 
-        var wantSprint = st.Speed > World.WalkSpeed * 1.2f && reload < 0 && melee < 0 && p.RenderStance == Stance.Stand;
+        var wantSprint = st.Speed > World.WalkSpeed * 1.2f && reload < 0 && melee < 0 && p.RenderStance == Stance.Stand && p.RenderSeat == SeatKind.None; // (carried in a seat isn't running)
         st.SprintW = Math.Clamp(st.SprintW + (wantSprint ? dt * 4.5f : -dt * 6f), 0f, 1f);
         var s = ViewModelAnimator.Ease(st.SprintW);
 
@@ -156,6 +156,25 @@ public static class ThirdPersonArms
     }
 
     /// <summary>
+    /// Poses both arms onto hand targets in the world (a Sandbox tool or a carried part instead of a gun; ToolRender.cs),
+    /// from the shoulders of <paramref name="p"/>'s stance in <paramref name="body"/>. Call <see cref="Draw"/> right after.
+    /// </summary>
+    public static void PoseHands(Player p, in HandTarget right, in HandTarget left, in Matrix4x4 body)
+    {
+        var (rr, lr) = p.RenderStance switch
+        {
+            Stance.Crouch => (new Vector3(0.33f, 0.8f, 0.05f), new Vector3(-0.33f, 0.8f, -0.05f)),
+            Stance.Prone => (new Vector3(0.25f, 0.32f, -0.45f), new Vector3(-0.25f, 0.32f, -0.5f)),
+            _ => (new Vector3(0.33f, 1.38f, 0.1f), new Vector3(-0.33f, 1.38f, 0f)),
+        };
+        Right.Root = rr;
+        Left.Root = lr;
+        Right.Solve(right, body, Vector3.Zero);
+        Left.Solve(left, body, Vector3.Zero);
+        _colors = ArmColors.For(p.Color * 0.75f);
+    }
+
+    /// <summary>
     /// The pose (gun space -> world) <paramref name="def"/> was last drawn at in this player's hands, if it was drawn in
     /// the last quarter second: shots from another player start at the muzzle of the gun you see them holding.
     /// </summary>
@@ -172,6 +191,8 @@ public static class ThirdPersonArms
     /// </summary>
     public static Matrix4x4 RestGun(Player p)
     {
+        if (p.RenderSeat != SeatKind.None)
+            return SeatedGun(p) * PlayerRender.BodyFrame(p);
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var body = GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at;
@@ -182,6 +203,29 @@ public static class ThirdPersonArms
             _ => new Vector3(0.3f, 1.3f, -0.25f),
         };
         return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * body;
+    }
+
+    /// <summary>
+    /// Seated (Sandbox): where the gun is held, in the upper body's frame (feet at the origin): a passenger rests it pointing
+    /// down across the lap; a gunner holds it up at their look (past what the upper body turns); a driver has none (both
+    /// hands on the wheel: <see cref="WheelHands"/>).
+    /// </summary>
+    public static Matrix4x4 SeatedGun(Player p)
+    {
+        if (p.RenderSeat == SeatKind.Passenger)
+            return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationY(0.35f) * Matrix4x4.CreateRotationX(-0.75f) * Matrix4x4.CreateTranslation(0.24f, 1.1f, -0.34f);
+        var twist = LegAnimator.SeatTwist(p.RenderSeat);
+        var extra = Math.Clamp(p.RenderLookYaw - Math.Clamp(p.RenderLookYaw, -twist, twist), -0.6f, 0.6f);
+        return Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateRotationY(-extra) * Matrix4x4.CreateTranslation(0.3f, 1.3f, -0.25f);
+    }
+
+    /// <summary>A driver's hands on the steering wheel (the grips the seat pass put on the player), after <see cref="Animate"/>: the arms re-posed onto the rim.</summary>
+    public static void WheelHands(Player p, in Matrix4x4 body)
+    {
+        Right.Root = new Vector3(0.33f, 1.38f, 0.1f);
+        Left.Root = new Vector3(-0.33f, 1.38f, 0f);
+        Right.Solve(new HandTarget(p.RenderWheelR, p.RenderWheelRot, HandShape.Wrap), body, Vector3.Zero);
+        Left.Solve(new HandTarget(p.RenderWheelL, p.RenderWheelRot, HandShape.Wrap), body, Vector3.Zero);
     }
 
     /// <summary>The gun's pose relative to the body from the last <see cref="Animate"/> (its pose = this * body).</summary>

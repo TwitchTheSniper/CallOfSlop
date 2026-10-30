@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Welder",
+  "tool": "welder",
+  "description": "A gas welding torch: welds frames, panels and foundations. The off hand steadies the barrel; the tip throws sparks and flickers while it welds.",
+  "hold": [4, 10, 0],
+  "boxes": [
+    { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0.005], "color": "#2b2b2e" },
+    { "size": [0.05, 0.06, 0.2], "at": [0, 0.055, -0.05], "color": "#d9902a" },
+    { "size": [0.012, 0.03, 0.04], "at": [0, 0.015, -0.045], "color": "#2b2b2e" },
+    { "size": [0.022, 0.022, 0.12], "at": [0, 0.06, -0.21], "color": "#6e7278" },
+    { "size": [0.034, 0.034, 0.04], "at": [0, 0.06, -0.285], "color": "#b06a3a" },
+    { "size": [0.018, 0.018, 0.016], "at": [0, 0.06, -0.31], "color": "#9fd8ff", "glow": true },
+    { "size": [0.05, 0.05, 0.12], "at": [0, 0.11, 0.03], "color": "#3a6fb5" },
+    { "size": [0.03, 0.02, 0.02], "at": [0, 0.145, 0.06], "color": "#c8a040" },
+    { "size": [0.014, 0.06, 0.014], "at": [0.03, 0.06, 0.06], "color": "#1c1c1e" }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-14, 0, 0], "shape": "wrap" },
+  "support": { "at": [0, 0.02, -0.13], "shape": "under" },
+  "tip": [0, 0.06, -0.32],
+  "use": { "motion": "jitter", "amount": 0.006, "rate": 23, "sparks": "#ffb040", "light": "#a8d4ff" }
+}

@@ -1030,8 +1030,9 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.
 
-Parts and blueprints are data files (`Constructs/Parts`, `Constructs/Blueprints`; `--check-construct-parts` checks
-them), and a map gets the mode with a `"sandbox"` section. The design, the data format, the decisions made so far and
+Each tool has its own box model in your hands (and in other players' hands), with a crank, sparks or a beam while it
+works; a part you carry sits in your off hand. Parts, blueprints and the tools' models are data files (`Constructs/Parts`,
+`Constructs/Blueprints`, `Constructs/Tools`; `--check-construct-parts` checks them), and a map gets the mode with a `"sandbox"` section. The design, the data format, the decisions made so far and
 what comes next are in [docs/sandbox/CONSTRUCTS.md](docs/sandbox/CONSTRUCTS.md).
 
 ## Updates

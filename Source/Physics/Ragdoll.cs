@@ -36,6 +36,9 @@ public static class RagdollRig
     /// <summary>Prone: the standing pose tipped face down along the facing, as the prone hit box lies.</summary>
     public static readonly Vector3[] Prone = MakeProne();
 
+    /// <summary>Seated (a Sandbox seat, feet at its "at" point): hips on the cushion, thighs forward, shins down to the feet, hands on the lap.</summary>
+    public static readonly Vector3[] Seated = MakeSeated();
+
     /// <summary>
     /// The relaxed pose a still body's limbs drift towards (<see cref="Ragdoll"/>'s relax pull, relative to the torso):
     /// arms hanging by the body with the elbows a little bent and the hands a little forward, knees a little bent, feet
@@ -139,6 +142,31 @@ public static class RagdollRig
             var knee = hip + new Vector3(0, -0.06f, -0.436f);
             p[KneeR + s * 2] = knee;
             p[FootR + s * 2] = new Vector3(hip.X, LegAnimator.AnkleHeight, knee.Z + 0.2f);
+        }
+        return p;
+    }
+
+    private static Vector3[] MakeSeated()
+    {
+        var stand = MakeStand();
+        var p = MakeStand();
+        var down = LegAnimator.SeatedHips - new Vector3(0, LegAnimator.StandPelvis, 0);
+        for (var i = 0; i <= HandL; i++)
+            p[i] += down;
+        var thigh = Vector3.Distance(stand[HipR], stand[KneeR]);
+        var shin = Vector3.Distance(stand[KneeR], stand[FootR]);
+        var upper = Vector3.Distance(stand[ShoulderR], stand[ElbowR]);
+        var fore = Vector3.Distance(stand[ElbowR], stand[HandR]);
+        for (var s = 0; s < 2; s++)
+        {
+            var x = s == 0 ? 1f : -1f;
+            var knee = p[HipR + s] + Vector3.Normalize(new Vector3(0, 0.05f, -1f)) * thigh;
+            p[KneeR + s * 2] = knee;
+            p[FootR + s * 2] = knee + Vector3.Normalize(new Vector3(0, -1f, -0.25f)) * shin;
+            // the hands forward onto the thighs
+            var el = p[ShoulderR + s] + Vector3.Normalize(new Vector3(x * 0.1f, -1f, -0.35f)) * upper;
+            p[ElbowR + s * 2] = el;
+            p[HandR + s * 2] = el + Vector3.Normalize(new Vector3(0, -0.3f, -1f)) * fore;
         }
         return p;
     }

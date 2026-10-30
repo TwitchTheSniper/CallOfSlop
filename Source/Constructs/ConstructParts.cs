@@ -206,7 +206,7 @@ public static class ConstructParts
         }
     }
 
-    /// <summary><c>--check-construct-parts</c>: every part file and blueprint, loaded or refused with the reason. Exit code: the refusals.</summary>
+    /// <summary><c>--check-construct-parts</c>: every part file, blueprint and tool model, loaded or refused with the reason. Exit code: the refusals.</summary>
     public static int CheckCli()
     {
         foreach (var d in All)
@@ -217,7 +217,11 @@ public static class ConstructParts
             Console.WriteLine($"REFUSED {r}");
         foreach (var r in ConstructBuild.RefusedBlueprints)
             Console.WriteLine($"REFUSED {r}");
-        return Refused.Count + ConstructBuild.RefusedBlueprints.Count;
+        foreach (var m in ConstructTools.All)
+            Console.WriteLine($"OK  tool {m.Key,-9} {m.Name,-14} {m.Boxes.Length} boxes{(m.Support != null ? ", two hands" : "")}{(m.Tool == null ? " (still to come)" : "")} ({m.File})");
+        foreach (var r in ConstructTools.Refused)
+            Console.WriteLine($"REFUSED {r}");
+        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count;
     }
 
     public static ConstructPartDef? Get(byte id) => id < All.Count ? All[id] : null;

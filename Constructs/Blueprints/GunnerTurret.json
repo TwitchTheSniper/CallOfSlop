@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Gunner Turret",
+  "description": "The turret with a gunner's seat on its arm: sit in it and ride round as the lever on the base turns it (the look goes all the way round).",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "top11",
+      "by": "-y"
+    },
+    {
+      "part": "Turntable",
+      "on": 1,
+      "socket": "+y",
+      "by": "base"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 2,
+      "socket": "top",
+      "by": "y-1"
+    },
+    {
+      "part": "Panel",
+      "on": 3,
+      "socket": "end-",
+      "by": "back"
+    },
+    {
+      "part": "Lever",
+      "on": 0,
+      "socket": "x+1",
+      "by": "-x"
+    },
+    {
+      "part": "Seat",
+      "on": 3,
+      "socket": "y+2",
+      "by": "bottom"
+    }
+  ],
+  "wires": [
+    [
+      5,
+      2
+    ]
+  ]
+}

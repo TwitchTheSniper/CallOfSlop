@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Hand Drill",
+  "tool": "drill",
+  "description": "Still to come: a cordless drill, for digging and boring. Its bit spins while it works.",
+  "boxes": [
+    { "size": [0.035, 0.11, 0.045], "at": [0, -0.025, 0.005], "color": "#2a2a2c" },
+    { "size": [0.06, 0.075, 0.16], "at": [0, 0.06, -0.03], "color": "#2f8f4a" },
+    { "size": [0.06, 0.03, 0.07], "at": [0, -0.095, 0.01], "color": "#222224" },
+    { "size": [0.012, 0.025, 0.015], "at": [0, 0.01, -0.025], "color": "#c03a2a" },
+    { "size": [0.035, 0.035, 0.04], "at": [0, 0.06, -0.13], "color": "#8a8f96", "spin": true },
+    { "size": [0.01, 0.01, 0.1], "at": [0, 0.06, -0.2], "color": "#c8ccd0", "spin": true },
+    { "size": [0.02, 0.004, 0.06], "at": [0, 0.06, -0.21], "color": "#e0e4e8", "spin": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-12, 0, 0], "shape": "wrap" },
+  "tip": [0, 0.06, -0.25],
+  "spin": { "axis": [0, 0, 1], "pivot": [0, 0.06, -0.13] },
+  "use": { "motion": "push", "amount": 0.012, "rate": 14, "spin": 45 }
+}

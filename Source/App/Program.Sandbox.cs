@@ -328,16 +328,19 @@ public static unsafe partial class Program
         if (_game is not { } g || (g.Constructs.Bodies.Count == 0 && !g.SandboxOn))
             return;
         g.SandboxNow = g.IsServer ? g.SandboxNow : now;
-        if (!g.IsServer)
-        {
-            ConstructNet.Blend(g.Constructs, now, (float)FrameDt);
-            ConstructRender.FitWheels(g.Constructs, World.Query);
-        }
+        // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         g.SandboxSounds(now); // horns (GameSandbox.cs)
     }
 
-    /// <summary>The tool in your hands, instead of the gun (Sandbox only).</summary>
+    private static ToolFrame _sbTool;
+    private static ConstructTool _sbToolShown;
+
+    /// <summary>
+    /// The tool in your hands, instead of the gun (Sandbox only; Source/Render/ToolRender.cs): its model in camera space
+    /// with the view model's arms holding it, a carried part in the off hand, the equip drop between tools. Returns false
+    /// when the gun is drawn instead; when a tool has just gone down to the gun, the gun comes up with its equip.
+    /// </summary>
     private static bool DrawSandboxTool(double now, Vector3 eye, Vector3 fwd)
     {
         if (_game is not { SandboxOn: true } g || g.Local is not { Alive: true } me)
@@ -345,9 +348,30 @@ public static unsafe partial class Program
         ref var h = ref g.SandboxHands.Hand(me.Id);
         if (h.Seated)
             return true; // hands on the wheel: no gun
-        if (h.Tool == ConstructTool.None)
+        var input = new ToolRender.ViewInput
+        {
+            Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0), // (the linking tool: while a wire is being run)
+        };
+        var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
+        if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)
+            _game.EquipUntil = Math.Max(_game.EquipUntil, now + _game.Active.Def.EquipTime); // the tool is down: the gun comes up
+        _sbToolShown = shown;
+        if (!drawn)
             return false;
-        ConstructRender.DrawTool(Gfx, h.Tool, eye, fwd, now, h.Progress(g.SandboxNow));
+        Gfx.ClearDepthBuffer();
+        LightGrid.BeginViewModel(World.Map, _worldEye, _worldView, now); // (camera space: lit by one sample at the eye, like the gun)
+        var fb = _window.FramebufferSize;
+        Gfx.SetCamera(Matrix4x4.Identity, Sights.ViewModelProjection(fb.X / (float)Math.Max(fb.Y, 1)));
+        var o = new ToolGfxOut(Gfx);
+        ToolRender.Emit(ref o, _sbTool);
+        _vmAnim.Right.Solve(_sbTool.Right, Matrix4x4.Identity, Vector3.Zero);
+        _vmAnim.Left.Solve(_sbTool.Left, Matrix4x4.Identity, Vector3.Zero);
+        var armColors = ArmColors.For(me.Color * 0.5f + new Vector3(0.06f));
+        _vmAnim.Right.Draw(Gfx, armColors);
+        _vmAnim.Left.Draw(Gfx, armColors);
+        if (Matrix4x4.Invert(_worldView, out var camToWorld))
+            ToolRender.NoteViewTip(_sbTool, camToWorld); // (the welder's light, next frame)
         return true;
     }
 }

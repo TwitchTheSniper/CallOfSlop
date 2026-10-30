@@ -203,7 +203,7 @@ public sealed class Footsteps
         var vel = p.RenderVelocity;
         var flat = new Vector2(vel.X, vel.Z);
         var grounded = p.RenderGrounded || p.RenderMantling;
-        if (!st.Init || dt > 0.5f || dt < 0 || !p.Alive)
+        if (!st.Init || dt > 0.5f || dt < 0 || !p.Alive || p.RenderSeat != SeatKind.None) // (seated in a construct: carried, no steps)
         {
             st = default;
             st.Init = p.Alive;

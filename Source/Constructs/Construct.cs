@@ -27,6 +27,18 @@ public struct CPart
     public readonly bool Working => !Broken;
 }
 
+/// <summary>
+/// A seated player's seat type (Player.RenderSeat): picks the seated pose and how far the look turns from the seat's facing.
+/// None: not seated.
+/// </summary>
+public enum SeatKind : byte
+{
+    None,
+    Driver, // hands on the wheel
+    Passenger, // the gun resting on the lap
+    Gunner, // a seat on a moving joint (turntable, hinge): the gun held up, the look all the way round
+}
+
 /// <summary>A wire (milestone 2): part <see cref="From"/>'s output goes into part <see cref="To"/>. Every wire carries the value its source had last tick.</summary>
 public struct CWire
 {
@@ -255,6 +267,10 @@ public sealed class Construct
                 return i;
         return -1;
     }
+
+    /// <summary>What a seat is for (the seated pose, the look limits): the drive seat, a seat on a moving joint (a gunner's, on a turntable or hinge), or a passenger's.</summary>
+    public SeatKind SeatKindOf(int part) =>
+        part < 0 || part >= PartCount ? SeatKind.None : part == DriveSeat ? SeatKind.Driver : Parts[part].Seg != 0 ? SeatKind.Gunner : SeatKind.Passenger;
 
     /// <summary>A part box's frame in the world: rest-frame centre and half size (axis aligned there), and the world turn and offset of that frame.</summary>
     public void WorldFrame(int seg, out Quaternion q, out Vector3 t)

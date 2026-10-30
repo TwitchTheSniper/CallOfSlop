@@ -27,6 +27,8 @@ public static unsafe partial class Program
             return;
         if (now < _game.MuzzleFlashUntil)
             LightGrid.AddDynamic(eye + fwd * 0.9f, new Vector3(1.6f, 1.15f, 0.6f), 7f);
+        if (_game.SandboxOn)
+            ToolRender.AddLights(now); // a welding arc at the welder's tip (Source/Render/ToolRender.cs)
         for (var i = _game.Blasts.Count - 1; i >= 0; i--)
         {
             var b = _game.Blasts[i];

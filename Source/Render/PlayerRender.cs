@@ -9,12 +9,27 @@ namespace CallOfSlop;
 /// </summary>
 public static class PlayerRender
 {
+    /// <summary>
+    /// A player's body frame (feet at the origin, -Z = facing) in the world: turned by the render yaw (on a planet, standing
+    /// on its curve), or seated (Sandbox) in the seat's frame, tilting and turning with the construct.
+    /// </summary>
+    public static Matrix4x4 BodyFrame(Player p)
+    {
+        if (p.RenderSeat != SeatKind.None)
+            return Matrix4x4.CreateFromQuaternion(p.RenderSeatRot) * Matrix4x4.CreateTranslation(p.RenderPosition);
+        var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
+        var at = Matrix4x4.CreateTranslation(p.RenderPosition);
+        return GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at; // a planet: standing on its curve
+    }
+
     /// <summary>Draws <paramref name="p"/> at its render pose. <paramref name="time"/> is the game clock (Glfw.Time).</summary>
     public static void DrawImmediate(Renderer g, Player p, double time)
     {
         var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
         if (GravityFrames.Curved)
             rot *= GravityFrames.Basis(p.RenderPosition); // a planet: standing on its curve
+        if (p.RenderSeat != SeatKind.None && p.Alive)
+            rot = Matrix4x4.CreateFromQuaternion(p.RenderSeatRot); // seated: in the seat's frame
         var at = Matrix4x4.CreateTranslation(p.RenderPosition);
         var color = p.Color;
         var hat = HatRender.HatFor(p); // prestige hat (HatRender.cs)
@@ -48,8 +63,16 @@ public static class PlayerRender
             1 => (new Vector3(0.3f, 0.82f, -0.3f), 1.45f),
             _ => (new Vector3(0.3f, 1.3f, -0.25f), 2.05f),
         };
-        var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * up;
-        DrawArmed(g, p, gunPose, up, time);
+        var gunPose = (p.RenderSeat != SeatKind.None ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * up;
+        if (p.RenderSeat == SeatKind.Driver)
+        {
+            // Both hands on the steering wheel, no gun (Sandbox).
+            ThirdPersonArms.Animate(p, p.WeaponDef, gunPose, up, time);
+            ThirdPersonArms.WheelHands(p, up);
+            ThirdPersonArms.Draw(g);
+        }
+        else
+            DrawArmed(g, p, gunPose, up, time);
 
         var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
         g.Draw(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0) * rot * at,
@@ -66,6 +89,8 @@ public static class PlayerRender
     {
         var viewer = LegAnimator.Viewer;
         LegAnimator.Viewer = new Vector3(1e7f); // far away: no foot rays into whatever map is behind the menu
+        var hands = ToolRender.Hands;
+        ToolRender.Hands = null; // (the menu's model holds its gun, whatever a Sandbox match left in the hands)
         try
         {
             var body = Matrix4x4.CreateRotationY(-p.RenderYaw) * Matrix4x4.CreateTranslation(p.RenderPosition);
@@ -84,6 +109,7 @@ public static class PlayerRender
         finally
         {
             LegAnimator.Viewer = viewer;
+            ToolRender.Hands = hands;
         }
     }
 
@@ -111,6 +137,15 @@ public static class PlayerRender
     /// <summary>Another player's gun with arms holding it (Source/Render/ThirdPersonArms.cs).</summary>
     private static void DrawArmed(Renderer g, Player p, in Matrix4x4 gunPose, in Matrix4x4 body, double time)
     {
+        var tool = new ToolFrame();
+        if (ToolRender.ThirdPerson(p, gunPose, body, time, ref tool))
+        {
+            // A Sandbox tool (or a carried part) in their hands instead of the gun (Source/Render/ToolRender.cs).
+            var o = new ToolGfxOut(g);
+            ToolRender.Emit(ref o, tool);
+            ThirdPersonArms.Draw(g);
+            return;
+        }
         var def = p.WeaponDef;
         var shot = ThirdPersonArms.ShotFlash; // the muzzles of their last shot flash (Source/Game/GameMuzzle.cs)
         GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;

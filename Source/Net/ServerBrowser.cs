@@ -174,7 +174,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     Msg.CAct gains Wire, Unwire, Setting and SeatKeys; the Sandbox state tail's tool can be the linking tool (version 2).
     // 79: the Sandbox debug parts menu (docs/sandbox/CONSTRUCTS.md): CActKind.Rack carries a pick byte (0: the rack's next
     //     kind; n: part id n - 1, from the menu) and CActKind.Blueprint (a blueprint index) builds one in front of the player.
-    public const byte ProtocolVersion = 79;
+    // 80: seated Sandbox players (docs/sandbox/CONSTRUCTS.md "Seats"): a seated player's snapshot entry carries the seat
+    //     (construct id and seat part, in the mantle extension with mantle ticks 0) and a yaw relative to the seat's facing.
+    public const byte ProtocolVersion = 80;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

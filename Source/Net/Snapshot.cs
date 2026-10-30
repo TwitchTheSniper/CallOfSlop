@@ -16,6 +16,8 @@ public struct SnapPlayer
     public byte Shield; // Last Stand shield charges left (0-3)
     public bool Regen; // health regenerating
     public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks; protocol 33)
+    public ushort SeatBody; // Sandbox: sitting in this construct (0: not); Yaw is then the look relative to the seat (protocol 80)
+    public byte SeatPart;
 }
 
 /// <summary>Fields that rarely change ("slow"): score, loadout, attachments and perks. Sent when they change, and on a slow rotation.</summary>
@@ -69,6 +71,8 @@ public struct SnapHeader
 ///   fast entries (24 bytes, +10 while mantling): id, position (3 x 24-bit at 1/256 m), velocity (3 x 16-bit at
 ///   1/100 m/s), yaw (16-bit), pitch (16-bit), health, flags (alive, grounded, stance, mantling, 2 bits of Last Stand
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
+///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
+///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -80,6 +84,7 @@ public static class Snapshot
     public const int HeaderBytes = 1 + 4 + 4 + 1 + 4 + 1 + 1 + 4;
     public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
+    public const int SeatBytes = 4; // (protocol 80)
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling
     public const int MaxParts = 8;
@@ -111,11 +116,12 @@ public static class Snapshot
 
     // ---- Entries ---------------------------------------------------------------------------------
 
-    public static int FastSize(in SnapPlayer p) => FastBytes + (p.MantleTicks > 0 ? MantleBytes : 0);
+    public static int FastSize(in SnapPlayer p) => FastBytes + (p.SeatBody != 0 ? SeatBytes : p.MantleTicks > 0 ? MantleBytes : 0);
 
     public static void WriteFast(PacketWriter w, in SnapPlayer p)
     {
-        var mantling = p.MantleTicks > 0;
+        var seated = p.SeatBody != 0;
+        var mantling = p.MantleTicks > 0 || seated;
         w.U8(p.Id)
             .U24(Q24(p.Position.X)).U24(Q24(p.Position.Y)).U24(Q24(p.Position.Z))
             .U16(Q16(p.Velocity.X, VelScale)).U16(Q16(p.Velocity.Y, VelScale)).U16(Q16(p.Velocity.Z, VelScale))
@@ -124,7 +130,9 @@ public static class Snapshot
             .U8((byte)((p.Alive ? 1 : 0) | (p.Grounded ? 2 : 0) | ((int)p.Stance << 2) | (mantling ? 16 : 0) | (Math.Min((int)p.Shield, 3) << 5)
                        | (p.Regen ? 128 : 0)))
             .U8(p.Weapon).U8(p.Boost).U32(p.Blood);
-        if (mantling)
+        if (seated)
+            w.U8(0).U16(p.SeatBody).U8(p.SeatPart);
+        else if (mantling)
             w.U8(p.MantleTicks).U24(Q24(p.MantleTo.X)).U24(Q24(p.MantleTo.Y)).U24(Q24(p.MantleTo.Z));
     }
 
@@ -145,10 +153,16 @@ public static class Snapshot
         p.Weapon = r.U8();
         p.Boost = r.U8();
         p.Blood = r.U32();
-        if ((flags & 16) != 0 && r.Has(MantleBytes))
+        if ((flags & 16) != 0 && r.Has(SeatBytes))
         {
             p.MantleTicks = r.U8();
-            p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
+            if (p.MantleTicks == 0)
+            {
+                p.SeatBody = r.U16();
+                p.SeatPart = r.U8();
+            }
+            else if (r.Has(MantleBytes - 1))
+                p.MantleTo = new Vector3(D24(r.U24()), D24(r.U24()), D24(r.U24()));
         }
         return p;
     }
