@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (data, power, pipe auto and its four styles, shaft, chute, delete / move node / re-route, highlight all; [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish; Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (data, power, pipe auto and its four styles, shaft, chute, delete / move node / re-route, highlight all; [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -1694,6 +1694,35 @@ most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a pick
 the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
 between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
 
+**Clipping grace and embedding** (board item dev-sandbox-link-clip-grace-lg01; `ConstructRoutes.PathRule`, the one rule
+the server's `Check` and the client's preview both run). Along the first and last stretch of a link nothing clips it:
+for `Grace(radius)` = 2 x the link's diameter + 10 cm (`GraceDiameters`, `GraceExtra`) from where it leaves its output
+(or from its junction) and up to where it enters its input, nodes and segments ignore every part (the rail or frame a
+device sits on too). The grace counts from where the link leaves the device's own boxes (`ExitAlong`; a port at a part's
+centre would otherwise use it up inside the part), and the device itself stays exempt on its end segment as before.
+Past the grace a link may sink up to `EmbedFraction` (60%) of its thickness into a part: its centreline may be
+(2 x 0.6 - 1) = 0.2 x radius inside a surface (`EmbedDepth`). Nodes use a signed distance to the boxes
+(`SignedDistance`, `NodeSinks`); segments test the centreline against each box shrunk by that depth (`SegmentBlocked`),
+which is what lets a link turn round the outside of a corner. Nodes are still snapped onto the surface (decision 20).
+
+**Hold to adjust** (lg01): when the preview is red, LMB doesn't drop the node: it freezes at the click and the adjust
+mode starts. The game first searches along the surface normal (out 1 cm at a time up to 50 cm, then in down to the
+embedding limit: `AdjustSearch`) and jumps to the nearest valid offset; while LMB is held the wheel moves it along that
+normal (1 cm a notch, Ctrl 5 cm; not Shift, which is free routing) and the preview re-checks every step, red with the
+reason or green. Letting go on green places the node; on red nothing is placed (RMB cancels too). The offset shows in cm
+beside the crosshair, and the wheel neither swaps weapons nor turns the wheels meanwhile. The same works for the input
+end (the last node before the input moves along the normal it was placed on, then the link finishes) and for the edit
+mode's move node, whose preview is now checked with the server's rule (`CheckMove`) and goes red too. The node rules are
+reusable `INodeRule`s (`OpenRule`, `ClosedRule`, `MoveRule`); nothing new goes on the wire.
+
+**Free routing** (board item dev-sandbox-link-shift-free-ls01; `ConstructRoutes.ClickEnds`): while the **Free routing**
+key is held (Left Shift by default, rebindable; it shares the key with Sprint, see `Keybinds.Overlap`), aiming at any
+device places an ordinary node on its surface (the normal snap, grid, angle, grace and embedding rules) and never ends
+the link, opens the port picker or branches, so a link can run along a device with a matching port or beside another
+link. The device's highlight is hidden while it is held; the HUD line says "Left Shift: free routing (no port snap)".
+Let go of it to end at an input. Before the first click it does nothing special. It keeps working while adjusting a
+node, and a moved node may sit on a device either way. The server needs nothing new: a node on a device is a legal node.
+
 **Junctions**: Fire on a link of the type picked starts a branch at that point (a junction node goes into the link).
 Power, fluids and items split evenly at a junction (each way gets an equal share of what arrives: the look-at line shows
 the share; a chute's branches take turns); data copies the signal to every branch. Shafts don't branch.
@@ -1734,6 +1763,15 @@ and a shaft corner refused; a chute junction sharing scrap evenly; links followi
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
 
+**Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a fuel pipe from a tank to an engine on the slab's edge,
+its end segments rising from below the slab's side over its corner, passes within the grace where the old rule refused
+it, and a segment through the slab past the grace is still refused; a steam pipe's nodes 50% sunk into the slab pass,
+70% fail; an outside turn over a frame block's edge passes (the old rule refused it); a node clicked into a wall: the
+adjust search finds +1 cm, one notch moves 1 cm and Ctrl 5 cm, the range is clamped; the preview and the server agree.
+**Link free routing**: with free routing a click on an engine (an input of pipes) places a node there and the link stays
+open, without it the click ends the link; a pipe routed along that engine to another is accepted and feeds only the
+other; the key is Left Shift beside Sprint without a clash.
+
 ### Choices made (the developer may change them)
 
 1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
@@ -1749,6 +1787,10 @@ blueprint `"links"` and `CBody` round trips (a short packet refused); the server
    with no nodes are straight and checked for reach only.
 6. Repairs are instant with the wrench or the welder; junction ratios are even (the configure tool can make them
    settable later).
+7. (lg01, ls01) The grace counts from where a link leaves its device's boxes, not from the part's centre; the adjust
+   search goes out first, then in; the input end's adjust moves the last node (a link with no nodes can't be adjusted:
+   its reason is said); the adjust's big step is Ctrl (which is also Crouch: holding it crouches); Free routing shares
+   Left Shift with Sprint (holding it while routing also sprints).
 
 ## Performance and caps
 

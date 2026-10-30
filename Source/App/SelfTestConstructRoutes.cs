@@ -93,7 +93,7 @@ public static partial class SelfTest
         foreach (var t in new[] { RouteType.Data, RouteType.Power, RouteType.Pipe, RouteType.Shaft, RouteType.Chute })
         {
             var p = ConstructRoutes.Snap(c, t, 0, new Vector3(-0.2f, 1f, -0.5f), Vector3.Zero, new Vector3(-0.17f, 0.3f, -0.43f), Vector3.UnitY);
-            if (ConstructRoutes.InsidePart(c, p, ConstructRoutes.Radius(t) * 0.9f, -1, -1) != null || MathF.Abs(p.Y - (0.3f + ConstructRoutes.Radius(t))) > 0.011f)
+            if (ConstructRoutes.SignedDistance(c, p, -1, -1, out _) < ConstructRoutes.Radius(t) * 0.9f - 0.012f || MathF.Abs(p.Y - (0.3f + ConstructRoutes.Radius(t))) > 0.011f)
                 sunk.Add($"{t} at {p.Y:0.000}");
         }
         // A sunk node and a segment through a part are refused with their reasons.
