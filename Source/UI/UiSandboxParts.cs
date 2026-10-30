@@ -423,7 +423,7 @@ public sealed partial class Ui
                     ImGuiSafe.FieldFailed("sandbox inventory search", ex);
                 }
                 ImGui.Spacing();
-                var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 5.2f;
+                var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 6.2f;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
                     SbDrawTree();
                 ImGui.EndChild();
@@ -434,6 +434,11 @@ public sealed partial class Ui
                     settings.Save();
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("The ghost starts at the best guess for the construct: upright, facing forward, mirroring the other side, like its neighbours, the way you turned it last time. R goes back to the guess, R again tries the next best. Off: the fixed order."u8);
+                // Snappy building (SnapBuild.cs): connection points, the magnet, quick fitting, hold to paint, undo (saved).
+                if (ImGui.Checkbox("Snappy building"u8, ref settings.SnapBuild))
+                    settings.Save();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Shows the held part's connection points and every socket it fits, magnet-snaps wheels, doors and gun parts to their sockets, and in creative fits at once and keeps the part in your hands (hold fire and sweep to paint a row, Ctrl+Z undoes, a tap of the middle button picks the part you look at, hold L for the last 8 parts, K switches which point mates)."u8);
                 // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
                 ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
                 if (game.SandboxInfiniteParts)

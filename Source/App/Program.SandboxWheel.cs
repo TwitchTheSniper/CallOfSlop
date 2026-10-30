@@ -42,7 +42,18 @@ public static partial class Program
                 _down[(int)GameAction.Fire] = false;
             return true;
         }
+        if (!_toolWheel.Menu.IsOpen && SnapWheelStep(g, delta, blocked, dt))
+        {
+            _down[(int)GameAction.Fire] = false; // (the recent-parts wheel has the mouse)
+            _down[(int)GameAction.Aim] = false;
+            return true;
+        }
         var open = _toolWheel.Step(g, Down(GameAction.ToolWheel), new Vector2((float)delta.X, (float)delta.Y), blocked, dt);
+        if (_toolWheel.Tapped)
+        {
+            _toolWheel.Tapped = false;
+            SnapTapped();
+        }
         if (open)
         {
             // The mouse belongs to the wheel: no shooting, aiming, fitting or taking off meanwhile.
@@ -56,6 +67,7 @@ public static partial class Program
     private static void DrawToolWheelInMatch()
     {
         _toolWheel.Draw(Ui.Scale);
+        _snapWheel.Draw(Ui.Scale);
         DrawLinkWheelInMatch();
     }
 

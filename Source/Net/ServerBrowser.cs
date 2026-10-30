@@ -207,7 +207,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 92: Sandbox spawns (docs/sandbox/CONSTRUCTS.md "Spawning bots and zombies"): CAct.Spawn / ClearSpawns at the end of
     //     CActKind; routed data links may name a part's data port (0x80 | k: the Bot and Zombie Spawners' inputs and
     //     outputs); a part takes up to 12 settings (CAct.Configure); the Sandbox relays the zombie messages (ZEnts, ZEvent, ZCrowd).
-    public const byte ProtocolVersion = 92;
+    // 93: Sandbox snappy building (docs/sandbox/CONSTRUCTS.md "Snappy building"): CAct.Snap at the end of CActKind (undo the
+    //     last placements, quick building on or off, pick a part off a construct into the hands).
+    public const byte ProtocolVersion = 93;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

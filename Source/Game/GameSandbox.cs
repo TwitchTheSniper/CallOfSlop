@@ -38,6 +38,7 @@ public enum CActKind : byte
     RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
     Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 92; GameSandboxSpawns.cs)
     ClearSpawns, // every spawned bot and zombie goes (protocol 92)
+    Snap, // u8 op (0 undo, 1 quick building off, 2 quick building on, 3 pick: then u16 body, u8 part; 4 take a kind: u16 part id): snappy building (protocol 93; GameSandboxSnap.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -364,6 +365,8 @@ public sealed partial class Game
             case CActKind.Spawn:
             case CActKind.ClearSpawns:
                 return SandboxSpawnAct(p, kind, ref r); // the Spawn tab (GameSandboxSpawns.cs)
+            case CActKind.Snap:
+                return SandboxSnapAct(p, ref r, eye);
             case CActKind.Tool:
                 return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
             case CActKind.Grab:

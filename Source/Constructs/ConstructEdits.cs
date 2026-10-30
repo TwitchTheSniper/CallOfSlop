@@ -149,6 +149,8 @@ public sealed partial class ConstructEdits
         h.Variant = (byte)v;
         h.Start = now;
         h.Duration = ConstructBuild.AttachSeconds(def);
+        if (QuickBuild(player))
+            QuickFinish(world, player, ref h, eye); // (snappy building: creative fits at once, SnapEdits.cs)
         return null;
     }
 
@@ -194,6 +196,8 @@ public sealed partial class ConstructEdits
         h.Yaw = yaw;
         h.Start = now;
         h.Duration = ConstructBuild.AttachSeconds(def);
+        if (QuickBuild(player))
+            QuickFinish(world, player, ref h, eye);
         return null;
     }
 
@@ -292,25 +296,31 @@ public sealed partial class ConstructEdits
             h.Edit = EditKind.None;
             if (eyeOf((byte)pid) is not { } eye)
                 continue; // left, or dead
-            string result;
-            world.MergePlacer = (byte)pid; // (parts a merged receiver pops off go to them: ConstructMerge.cs)
-            try
-            {
-                result = Complete(world, (byte)pid, ref h, kind, eye);
-            }
-            catch (Exception ex)
-            {
-                // Never a crash: the edit is dropped and logged (a bug to fix, not a game to end).
-                result = $"failed: {ex.GetType().Name}: {ex.Message}";
-                Console.WriteLine($"[sandbox] error: player {pid}'s {kind} threw: {ex}");
-            }
-            finally
-            {
-                world.MergePlacer = 255;
-            }
-            Done.Add($"player {pid}: {kind} {result}");
-            GiveMergePops(world, (byte)pid);
+            Finish(world, (byte)pid, ref h, kind, eye);
         }
+    }
+
+    /// <summary>Does one finished edit (never throws: a bug is logged and the edit dropped) and logs it.</summary>
+    private void Finish(ConstructWorld world, byte pid, ref SandboxHand h, EditKind kind, Vector3 eye)
+    {
+        string result;
+        world.MergePlacer = pid; // (parts a merged receiver pops off go to them: ConstructMerge.cs)
+        try
+        {
+            result = Complete(world, pid, ref h, kind, eye);
+        }
+        catch (Exception ex)
+        {
+            // Never a crash: the edit is dropped and logged (a bug to fix, not a game to end).
+            result = $"failed: {ex.GetType().Name}: {ex.Message}";
+            Console.WriteLine($"[sandbox] error: player {pid}'s {kind} threw: {ex}");
+        }
+        finally
+        {
+            world.MergePlacer = 255;
+        }
+        Done.Add($"player {pid}: {kind} {result}");
+        GiveMergePops(world, pid);
     }
 
     private string Complete(ConstructWorld world, byte player, ref SandboxHand h, EditKind kind, Vector3 eye)
@@ -336,6 +346,7 @@ public sealed partial class ConstructEdits
                 }
                 h.Held = ConstructParts.None;
                 Refill(player, ref h, def);
+                SnapAfter(player, ref h, def, c, i);
                 var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the welder joins them)" : "";
                 return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
             }
@@ -352,6 +363,7 @@ public sealed partial class ConstructEdits
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
                 h.Held = ConstructParts.None;
                 Refill(player, ref h, def);
+                SnapAfter(player, ref h, def, c, 0);
                 return $"ok: {def.Name} as new construct {c.Id}";
             }
             case EditKind.Remove:
