@@ -207,7 +207,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 92: Sandbox spawns (docs/sandbox/CONSTRUCTS.md "Spawning bots and zombies"): CAct.Spawn / ClearSpawns at the end of
     //     CActKind; routed data links may name a part's data port (0x80 | k: the Bot and Zombie Spawners' inputs and
     //     outputs); a part takes up to 12 settings (CAct.Configure); the Sandbox relays the zombie messages (ZEnts, ZEvent, ZCrowd).
-    public const byte ProtocolVersion = 92;
+    // 93: World links and hoses (docs/sandbox/CONSTRUCTS.md "World links", "Hoses"; board item wl01): CBodyKind.WorldLinks
+    //     at the end of CBodyKind (every world link and hose off its reel), CAct.WorldRoute / WorldRouteEdit at the end of
+    //     CActKind, CFireKind.LinkSnap (a world link tearing off), and the hose parts' role.
+    public const byte ProtocolVersion = 93;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
