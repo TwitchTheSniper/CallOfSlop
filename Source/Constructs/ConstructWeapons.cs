@@ -43,7 +43,7 @@ public enum CFireKind : byte
     Blast, // an explosive round's splash: where, how big
     CookOff, // an ammo box (or a burning tank) blew up: where, how big
     Shatter, // a glass part broke (protocol 87): where, and its world bounds' half size (shards burst out of it)
-    LinkSnap, // a world link tore off a moving construct (protocol 94): where, and its type in Part (a pipe spills, a cable sparks)
+    LinkSnap, // a world link tore off a moving construct (protocol 95): where, and its type in Part (a pipe spills, a cable sparks)
 }
 
 /// <summary>One thing the guns did this tick (the server sends them as Msg.CFire; the host draws its own straight away).</summary>

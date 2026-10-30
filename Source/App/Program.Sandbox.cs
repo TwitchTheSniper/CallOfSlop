@@ -94,6 +94,7 @@ public static unsafe partial class Program
         if (_game is not { SandboxOn: true } g)
             return false;
         g.SandboxLookText = "";
+        SandboxSnapFrame(g, now); // (snappy building: markers off, the ease running out, the thunk; Program.SandboxSnap.cs)
         if (g.Local is not { Alive: true } me || !_mouseCaptured || MenusOpen)
         {
             _sbFiring = _sbRemoving = false;
@@ -168,6 +169,7 @@ public static unsafe partial class Program
         var dir = g.LookDir(g.LookYaw, g.LookPitch);
         var wall = World.RaycastWorld(eye, dir, ConstructBuild.Reach + 1);
         var aimed = g.Constructs.Raycast(eye, dir, MathF.Min(wall, ConstructBuild.Reach + 1), out var hit);
+        SandboxSnapGlobal(g, aimed, hit); // (quick building on or off, Ctrl+Z, the pick tap)
         if (aimed)
         {
             ConstructRender.AimBody = hit.Body;
@@ -310,7 +312,7 @@ public static unsafe partial class Program
                 var c = hit.Body;
                 c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
                 var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
-                var n = ConstructBuild.Ghosts(c, held, ConstructRender.Ghosts, near, 2.5f);
+                var n = SandboxSnapGhosts(c, held, near);
                 ConstructRender.SetGhosts(c, n);
                 // The one nearest the crosshair.
                 var best = -1;
@@ -328,6 +330,7 @@ public static unsafe partial class Program
                         best = k;
                     }
                 }
+                best = SandboxSnapSelect(c, held, ref n, best); // (a gun part, wheel or door magnet-snaps to its socket on screen)
                 ConstructRender.GhostSelected = best;
                 if (best >= 0)
                 {
@@ -335,7 +338,12 @@ public static unsafe partial class Program
                     var key = gh.Part * 64 + gh.Socket + c.Id * 4096;
                     var total = held.Sockets.Length * 4;
                     SandboxSmartGuess(c, held, in gh, key);
-                    if (Pressed(GameAction.Reload))
+                    SandboxSnapRank(held, in gh); // (only the own sockets snap building allows, the mount first)
+                    if (SandboxSnapSwitch(g, c, held, in gh))
+                    {
+                        // K: the next own connection point mates (set above)
+                    }
+                    else if (Pressed(GameAction.Reload))
                         SandboxGuessAgain(gh.Variant); // R: back to the guess (smart rotation's, else the first that fits); at the guess, the next best
                     else if (SandboxTurnPressed() is { } turnKey)
                     {
@@ -345,6 +353,8 @@ public static unsafe partial class Program
                         c.WorldFrame(c.Parts[gh.Part].Seg, out var fq, out _);
                         SandboxCamera(g, out var camRight, out var camUp);
                         var nv = GhostTurn.AttachVariant(c, held, gh.Part, gh.Socket, from, GhostTurn.Delta(turnKey, fq, camRight, camUp));
+                        if (nv >= 0 && _settings.SnapBuild && SnapBuild.OwnOrder(held).IndexOf((byte)(nv / 4)) < 0)
+                            nv = -1; // (a single-purpose part turns only on its own connection)
                         if (nv >= 0)
                         {
                             _sbVariant = nv;
@@ -357,10 +367,17 @@ public static unsafe partial class Program
                     ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
                     if (ConstructRender.GhostValid)
                         gh = shown with { Variant = v };
-                    if (Pressed(GameAction.Fire) && !_swallowClick)
+                    SandboxSnapShown(g, c, held, in gh, now);
+                    var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
+                    if ((Pressed(GameAction.Fire) && !_swallowClick) || SandboxSnapPaint(g, in h, c, in gh))
                     {
                         g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
-                        _sbFiring = true;
+                        _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)
+                        if (ConstructRender.GhostValid)
+                        {
+                            c.SegPose(c.Parts[gh.Part].Seg, out var wq, out var wt);
+                            SandboxSnapSent(c, held, in gh, c.ToWorld(wt + Vector3.Transform(gh.Pos, wq)));
+                        }
                         if (_sbRankN > 0 && ConstructRender.GhostValid)
                             SandboxLearn(SmartRotation.Placed(SmartRotation.Memory, c, held, gh.Part, gh.Socket, gh.Rot, _sbRankRot[0]));
                     }
@@ -368,6 +385,12 @@ public static unsafe partial class Program
             }
             else if (!aimed && wall <= ConstructBuild.Reach + 0.5f && World.Query.Raycast(eye, dir, ConstructBuild.Reach + 0.5f, QueryFilter.All, out var surf))
             {
+                if (_settings.SnapBuild)
+                {
+                    SnapRender.Active = true;
+                    SnapRender.Body = null;
+                    SnapRender.Held = held;
+                }
                 // Free placement: the surface aimed at (terrain, the map, a floor): a new construct rooted at this part.
                 var flags = (byte)((g.SandboxPlaceGrid ? ConstructPlace.FlagGrid : 0) | (g.SandboxPlaceAnchor && g.SandboxInfiniteParts ? ConstructPlace.FlagAnchor : 0));
                 if (_settings.SmartRotation && (held.Id != _sbFreeHeld || _sbFreeN == 0))
@@ -431,7 +454,8 @@ public static unsafe partial class Program
                     else
                     {
                         g.SandboxSend(CActKind.PlaceNew, at: surf.Point, yaw: g.LookYaw, normal: surf.Normal, variant: _sbTurn, flags: flags);
-                        _sbFiring = true;
+                        _sbFiring = !(_settings.SnapBuild && g.SandboxInfiniteParts);
+                        SandboxSnapSent(null, held, default, surf.Point);
                         if (_sbFreeN > 0)
                         {
                             SandboxLearn(SmartRotation.PlacedFree(SmartRotation.Memory, held, _sbTurn, _sbFree[0]));

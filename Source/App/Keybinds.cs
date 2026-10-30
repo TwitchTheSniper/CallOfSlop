@@ -57,6 +57,8 @@ public enum GameAction
     RollRight,
     SandboxInventory, // binds version 13: Sandbox, the inventory (parts, blueprints, tools; UiSandboxParts.cs) on Tab: there is no scoreboard there
     FreeRouting, // binds version 14: Sandbox, held while routing a link: no port snapping or branching (Program.SandboxLinks.cs; Left Shift, beside Sprint)
+    SnapSwitch, // binds version 15: Sandbox, with a part held, switch which of its own connection points mates (Constructs/SnapBuild.cs)
+    RecentParts, // Sandbox, hold for the quick wheel of the last 8 parts you placed (UI/SandboxRecentWheel.cs)
     COUNT,
 }
 
@@ -98,7 +100,7 @@ public static class Keybinds
         a switch
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
-                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting => BindContext.Sandbox,
+                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting or GameAction.SnapSwitch or GameAction.RecentParts => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -200,6 +202,8 @@ public static class Keybinds
         Shift(GlfwKey.Right), // Roll right (Sandbox)
         Key(GlfwKey.Tab), // Inventory (Sandbox): binds version 13 (the Scoreboard's Tab is off in Sandbox: other context)
         Key(GlfwKey.LeftShift), // Free routing (Sandbox linking tool): binds version 14 (shares Left Shift with Sprint: Overlap)
+        Key(GlfwKey.K), // Switch the held part's connection point (Sandbox): binds version 15 (F is Interact, the middle button the tool wheel and the pick)
+        Key(GlfwKey.L), // Recent parts wheel (Sandbox, hold)
     ];
 
     /// <summary>
@@ -215,8 +219,9 @@ public static class Keybinds
     /// 13: the Sandbox inventory became its own action on Tab (Sandbox has no scoreboard); a player who had rebound the
     /// parts inventory key keeps that key for the Sandbox inventory (<see cref="Carries"/>). 14: Free routing (Sandbox
     /// linking tool) on Left Shift added (same rule; it may share Sprint's key, see <see cref="Overlap"/>).
+    /// 15: snappy building: Switch connection point K and Recent parts wheel L (Sandbox; same rule).
     /// </summary>
-    public const int DefaultsVersion = 14;
+    public const int DefaultsVersion = 15;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -249,6 +254,8 @@ public static class Keybinds
         (12, GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
         (13, GameAction.SandboxInventory, Unbound, Key(GlfwKey.Tab)),
         (14, GameAction.FreeRouting, Unbound, Key(GlfwKey.LeftShift)),
+        (15, GameAction.SnapSwitch, Unbound, Key(GlfwKey.K)),
+        (15, GameAction.RecentParts, Unbound, Key(GlfwKey.L)),
     ];
 
     /// <summary>
@@ -385,6 +392,8 @@ public static class Keybinds
             GameAction.RollRight => "Roll the part right (Sandbox ghost)",
             GameAction.SandboxInventory => "Inventory (Sandbox: parts, blueprints, tools; again or Esc closes)",
             GameAction.FreeRouting => "Free routing (Sandbox linking tool: hold for no port snap)",
+            GameAction.SnapSwitch => "Switch connection point (Sandbox: which of the held part's points mates)",
+            GameAction.RecentParts => "Recent parts wheel (Sandbox: hold, flick, let go)",
             _ => a.ToString(),
         };
 

@@ -24,6 +24,15 @@ public delegate void RadialIcon(ImDrawListPtr dl, int icon, float2 centre, float
 /// item with no option (-1: the owner keeps its last-used option). Outside a partial arc the pointer turns the inner ring as
 /// usual.
 /// </para>
+/// <para>
+/// The third tier (board item dev-wheel-third-tier-pipes-wt01): an option on the outer ring may itself have
+/// <see cref="Item.Options"/> (its sub-options, e.g. a pipe's styles). While the pointer is on such an option a PARTIAL arc
+/// of them (<see cref="SubStepMax"/> each) grows out round the outer ring, centred on that option's direction. Flicking past
+/// <see cref="Reach"/> + <see cref="OuterDepth"/> + <see cref="SubGap"/> onto one highlights it (<see cref="HoveredSub"/>);
+/// letting go there gives <see cref="PickedSub"/>, letting go on the option itself gives -1 (the owner keeps its last
+/// sub-option). Entering and leaving a sub-option use two distances, so the arc and its pick don't flicker; moving inward
+/// or round to another option closes the arc. Any small ring can use it.
+/// </para>
 /// Drawn with ImGui's draw list; nothing is allocated per frame (every string is the owner's, made once; a name cut short
 /// is made once and kept). Used by the Sandbox tool wheel (<see cref="SandboxToolWheel"/>; the linking tool's options are
 /// <see cref="SandboxLinkWheel"/>) and the linking tool's port picker.
@@ -69,6 +78,18 @@ public sealed class RadialMenu
     /// <summary>How long the outer ring takes to animate in.</summary>
     public const float RingSeconds = 0.08f;
 
+    /// <summary>A sub-option's width in the third tier's partial arc (radians: 25 degrees).</summary>
+    public const float SubStepMax = MathF.PI * 25f / 180f;
+
+    /// <summary>With a third tier showing the pointer is held within <see cref="Reach"/> + <see cref="OuterDepth"/> + this.</summary>
+    public const float SubDepth = 56f;
+
+    /// <summary>The pointer must be this far past the outer ring's edge (<see cref="Reach"/> + <see cref="OuterDepth"/>) to pick a sub-option; it stays on it down to <see cref="SubKeep"/>.</summary>
+    public const float SubGap = 8f;
+
+    /// <summary>Once on a sub-option the pointer keeps it until it is this far past the outer ring's edge (hysteresis); it also keeps the owner option while in the arc's direction that far out.</summary>
+    public const float SubKeep = 2f;
+
     /// <summary>The middle's title with nothing highlighted, and its help (in the tooltip).</summary>
     public string Title = "", Help = "";
 
@@ -94,6 +115,18 @@ public sealed class RadialMenu
 
     /// <summary>The outer ring's animation, 0 (just shown) to 1.</summary>
     public float RingIn { get; private set; }
+
+    /// <summary>The option (on the outer ring) whose third-tier arc is showing, or -1.</summary>
+    public int SubRing { get; private set; } = -1;
+
+    /// <summary>The sub-option under the pointer on the third tier, or -1.</summary>
+    public int HoveredSub { get; private set; } = -1;
+
+    /// <summary>The sub-option chosen by the last <see cref="Release"/> (-1: none).</summary>
+    public int PickedSub { get; private set; } = -1;
+
+    /// <summary>The third tier's animation, 0 (just shown) to 1.</summary>
+    public float SubIn { get; private set; }
 
     public RadialMenu(int count)
     {
@@ -122,6 +155,22 @@ public sealed class RadialMenu
         Ring = -1;
         HoveredOption = -1;
         RingIn = 0;
+        SubRing = -1;
+        HoveredSub = -1;
+        SubIn = 0;
+    }
+
+    private bool HasSub(int ring, int option) =>
+        ring >= 0 && Items[ring].Options is { } o && option >= 0 && option < o.Length && o[option].Enabled && o[option].Options is { Length: > 0 };
+
+    private bool RingHasSub(int ring)
+    {
+        if (ring < 0 || Items[ring].Options is not { } o)
+            return false;
+        for (var i = 0; i < o.Length; i++)
+            if (o[i].Options is { Length: > 0 })
+                return true;
+        return false;
     }
 
     private bool HasRing(int i) => i >= 0 && i < Items.Length && Items[i].Enabled && Items[i].Options is { Length: > 0 };
@@ -136,17 +185,34 @@ public sealed class RadialMenu
             return;
         var p = Pointer + delta;
         var length = p.Length();
-        var reach = Ring >= 0 ? Reach + OuterDepth : Reach;
+        var edge = Reach + OuterDepth; // (the outer ring's outer edge)
+        var reach = Ring >= 0 ? RingHasSub(Ring) ? edge + SubDepth : edge : Reach;
         if (length > reach)
         {
             p *= reach / length;
             length = reach;
         }
         var option = -1;
+        var sub = -1;
         var inner = SegmentAt(p, Items.Length, DeadZone);
         if (Ring >= 0 && length >= Reach + OuterGap)
         {
-            option = OptionAt(p, Ring, Items.Length, Items[Ring].Options!.Length);
+            var opts = Items[Ring].Options!;
+            // Out past the outer ring in the direction of the open third-tier arc: it keeps its option, and picks in it.
+            if (SubRing >= 0 && length >= edge - SubKeep)
+            {
+                var subs = opts[SubRing].Options!;
+                var centreAngle = OptionAngle(SubRing, Ring, Items.Length, opts.Length);
+                var at = ArcAt(p, centreAngle, subs.Length, SubStepMax);
+                if (at >= 0)
+                {
+                    option = SubRing;
+                    if (length >= edge + (HoveredSub >= 0 ? SubKeep : SubGap))
+                        sub = at;
+                }
+            }
+            if (option < 0)
+                option = OptionAt(p, Ring, Items.Length, opts.Length);
             if (option >= 0)
                 inner = Ring; // (out on the ring: its owner stays highlighted)
         }
@@ -155,14 +221,27 @@ public sealed class RadialMenu
         {
             Ring = ring;
             RingIn = 0;
-            if (ring < 0 && length > Reach)
-                p *= Reach / length; // (no ring any more: back within the inner reach)
         }
         else if (ring >= 0)
             RingIn = MathF.Min(1f, RingIn + MathF.Max(0f, float.IsFinite(dt) ? dt : 0f) / RingSeconds);
+        var subRing = ring >= 0 && option >= 0 && HasSub(ring, option) ? option : -1;
+        if (subRing != SubRing)
+        {
+            SubRing = subRing;
+            SubIn = 0;
+        }
+        else if (subRing >= 0)
+            SubIn = MathF.Min(1f, SubIn + MathF.Max(0f, float.IsFinite(dt) ? dt : 0f) / RingSeconds);
+        if (subRing < 0)
+            sub = -1;
+        // No ring (or no arc) any more: back within the reach that is left.
+        var limit = ring < 0 ? Reach : subRing < 0 ? edge : edge + SubDepth;
+        if (length > limit)
+            p *= limit / length;
         Pointer = p;
         Hovered = inner;
         HoveredOption = option;
+        HoveredSub = sub;
     }
 
     /// <summary>Closes and returns the segment chosen (a disabled one too: the owner says why it can't be had), or -1 for a cancel; <see cref="PickedOption"/> says which option.</summary>
@@ -170,6 +249,7 @@ public sealed class RadialMenu
     {
         var pick = IsOpen ? Hovered : -1;
         PickedOption = IsOpen && pick >= 0 ? HoveredOption : -1;
+        PickedSub = PickedOption >= 0 ? HoveredSub : -1;
         Close();
         return pick;
     }
@@ -194,29 +274,37 @@ public sealed class RadialMenu
     /// <summary>The middle of segment <paramref name="i"/>, radians clockwise from up.</summary>
     public static float SegmentAngle(int i, int count) => i * MathF.Tau / Math.Max(1, count);
 
-    /// <summary>An outer ring's option width (radians): <see cref="OptionStepMax"/>, or the full circle shared out when more than fit in 300 degrees.</summary>
-    public static float OptionStep(int options) =>
-        options <= 0 ? 0f : options * OptionStepMax > MathF.Tau * (300f / 360f) ? MathF.Tau / options : OptionStepMax;
+    /// <summary>An arc's item width (radians): <paramref name="stepMax"/>, or the full circle shared out when more than fit in 300 degrees.</summary>
+    public static float OptionStep(int options, float stepMax = OptionStepMax) =>
+        options <= 0 ? 0f : options * stepMax > MathF.Tau * (300f / 360f) ? MathF.Tau / options : stepMax;
 
-    /// <summary>True when the outer ring of <paramref name="options"/> goes round the full circle.</summary>
-    public static bool FullCircle(int options) => options > 0 && OptionStep(options) < OptionStepMax;
+    /// <summary>True when an arc of <paramref name="options"/> goes round the full circle.</summary>
+    public static bool FullCircle(int options, float stepMax = OptionStepMax) => options > 0 && OptionStep(options, stepMax) < stepMax;
 
     /// <summary>The middle of option <paramref name="i"/> on item <paramref name="owner"/>'s outer ring (radians clockwise from up): the options centred on the item's direction, in order clockwise.</summary>
     public static float OptionAngle(int i, int owner, int count, int options) =>
-        SegmentAngle(owner, count) + (i - (options - 1) * 0.5f) * OptionStep(options);
+        ArcAngle(i, SegmentAngle(owner, count), options, OptionStepMax);
+
+    /// <summary>The middle of item <paramref name="i"/> of an arc of <paramref name="options"/> centred on <paramref name="centre"/> (radians clockwise from up).</summary>
+    public static float ArcAngle(int i, float centre, int options, float stepMax) =>
+        centre + (i - (options - 1) * 0.5f) * OptionStep(options, stepMax);
 
     /// <summary>The option of item <paramref name="owner"/>'s outer ring in the direction of <paramref name="p"/>, or -1 outside its arc.</summary>
-    public static int OptionAt(Vector2 p, int owner, int count, int options)
+    public static int OptionAt(Vector2 p, int owner, int count, int options) =>
+        ArcAt(p, SegmentAngle(owner, count), options, OptionStepMax);
+
+    /// <summary>The item of an arc of <paramref name="options"/> centred on <paramref name="centre"/> in the direction of <paramref name="p"/>, or -1 outside a partial arc.</summary>
+    public static int ArcAt(Vector2 p, float centre, int options, float stepMax)
     {
         if (options <= 0 || !float.IsFinite(p.X + p.Y) || p == Vector2.Zero)
             return -1;
-        var step = OptionStep(options);
-        var a = MathF.Atan2(p.X, -p.Y) - (OptionAngle(0, owner, count, options) - step * 0.5f);
+        var step = OptionStep(options, stepMax);
+        var a = MathF.Atan2(p.X, -p.Y) - (ArcAngle(0, centre, options, stepMax) - step * 0.5f);
         a %= MathF.Tau;
         if (a < 0)
             a += MathF.Tau;
         var i = (int)MathF.Floor(a / step);
-        return i >= 0 && i < options ? i : FullCircle(options) ? options - 1 : -1;
+        return i >= 0 && i < options ? i : FullCircle(options, stepMax) ? options - 1 : -1;
     }
 
     // Colours (the HUD's dark panels and orange accent).
@@ -278,6 +366,30 @@ public sealed class RadialMenu
             }
         }
 
+        // The third tier: a partial arc round the outer ring, centred on its owner option's direction.
+        if (Ring >= 0 && SubRing >= 0 && Items[Ring].Options is { } ro && ro[SubRing].Options is { Length: > 0 } subs)
+        {
+            var t = 1f - (1f - SubIn) * (1f - SubIn);
+            var owner = ro[SubRing];
+            var s2 = r1 + RingGap * scale + RingDepth * scale + RingGap * scale;
+            var s3 = s2 + SubDepth * scale * (0.35f + 0.65f * t);
+            rOut = s3;
+            var centreAngle = OptionAngle(SubRing, Ring, n, ro.Length);
+            var ss = OptionStep(subs.Length, SubStepMax);
+            var sg = MathF.Min(0.03f, ss * 0.08f);
+            var draw = owner.OptionIcons ?? Items[Ring].OptionIcons ?? icons;
+            for (var i = 0; i < subs.Length; i++)
+            {
+                var o = subs[i];
+                var mid = ArcAngle(i, centreAngle, subs.Length, SubStepMax);
+                var hover = i == HoveredSub;
+                var fill = hover && o.Enabled ? FillHover : o.Enabled ? Fill : FillOff;
+                Sector(dl, centre, s2, s3, mid - ss * 0.5f + sg, mid + ss * 0.5f - sg, fill, hover, o.Enabled, i == owner.OptionCurrent, o.Marked, scale, 6);
+                var colour = !o.Enabled ? IconOff : hover ? IconHover : IconOn;
+                draw?.Invoke(dl, o.Icon, At(centre, mid, (s2 + s3) * 0.5f), MathF.Min(20f * scale, (s3 - s2) * 0.36f), colour, fill);
+            }
+        }
+
         // The pointer's direction: a small dot inside the middle.
         if (Pointer.LengthSquared() > 1f)
         {
@@ -288,7 +400,7 @@ public sealed class RadialMenu
         }
 
         // The middle: only the name (the option's, the item's, else the title), fitted to the centre circle.
-        Item? it = Hovered >= 0 ? HoveredOption >= 0 && Items[Hovered].Options is { } ho ? ho[HoveredOption] : Items[Hovered] : null;
+        Item? it = Hovered >= 0 ? HoveredOption >= 0 && Items[Hovered].Options is { } ho ? HoveredSub >= 0 && ho[HoveredOption].Options is { } hs ? hs[HoveredSub] : ho[HoveredOption] : Items[Hovered] : null;
         var name = FitCentre(it?.Label ?? Title, scale, out var size);
         if (name.Length > 0)
         {

@@ -16,9 +16,11 @@ public enum LinkMode : byte
 /// <summary>
 /// The linking tool's options (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"): the outer ring the tool wheel shows
 /// round the linking tool (board item dev-wheel-outer-ring-wo01; it replaced the separate link wheel page and its rings
-/// opened by resting). Thirteen options round the full circle, centred on the linking tool's direction: the data and power
-/// cables, the pipe (Auto: its style from the output) and its four styles (a wrong one is allowed), the drive shaft, the
-/// chute, then the edit modes (delete, move node, re-route) and "highlight all" (a toggle). Picking a type routes links of
+/// opened by resting). Nine options in an arc, centred on the linking tool's direction: the data and power
+/// cables, the pipe, the drive shaft, the chute, then the edit modes (delete, move node, re-route) and "highlight all" (a
+/// toggle). The pipe has a third tier (board item dev-wheel-third-tier-pipes-wt01): a partial arc of its styles, Auto in the
+/// middle and fuel, water, oil and steam either side (a wrong one is allowed); letting go on the pipe itself uses the last
+/// style, shown on its label ("Pipe (fuel)"; Auto the first time). Picking a type routes links of
 /// it; the tool comes out with what was picked, or with the last pick when the wheel is let go on the linking tool itself.
 /// The state is this PC's only (nothing on the wire). Nothing allocates per frame.
 /// </summary>
@@ -29,11 +31,7 @@ public sealed class SandboxLinkWheel : IToolOptions
     {
         Data,
         Power,
-        Pipe, // Auto: the style from the output
-        FuelPipe,
-        WaterPipe,
-        OilPipe,
-        SteamPipe,
+        Pipe, // its style from the third tier's arc (the last one used; Auto: the style from the output)
         Shaft,
         Chute,
         Delete,
@@ -45,6 +43,13 @@ public sealed class SandboxLinkWheel : IToolOptions
 
     private readonly RadialMenu.Item[] _options = new RadialMenu.Item[(int)Option.COUNT];
     public RadialMenu.Item[] Options => _options;
+
+    /// <summary>The pipe's styles on the third tier's arc, in order clockwise: Auto in the middle, two either side.</summary>
+    public static readonly byte[] ArcStyles = { (byte)PipeStyle.Fuel, (byte)PipeStyle.Water, 255, (byte)PipeStyle.Oil, (byte)PipeStyle.Steam };
+
+    private static readonly string[] PipeLabels = { "Pipe (fuel)", "Pipe (water)", "Pipe (oil)", "Pipe (steam)" };
+    private const string PipeAuto = "Pipe (auto)";
+    private readonly RadialMenu.Item _pipe;
     RadialIcon? IToolOptions.Icons => Icons;
 
     // What it picked (the linking tool's state on this PC).
@@ -60,11 +65,18 @@ public sealed class SandboxLinkWheel : IToolOptions
     {
         Set(Option.Data, "Data cable", "signals", 0);
         Set(Option.Power, "Power cable", "electricity", 1);
-        Set(Option.Pipe, "Pipe (auto)", "style from the output", 2);
-        Set(Option.FuelPipe, "Fuel pipe", "thin, hazard bands", 10);
-        Set(Option.WaterPipe, "Water pipe", "blue, flanges", 11);
-        Set(Option.OilPipe, "Oil pipe", "dark, clamps", 12);
-        Set(Option.SteamPipe, "Steam pipe", "lagged: heat, pressure", 13);
+        Set(Option.Pipe, PipeAuto, "rest here, then flick out: a style", 2);
+        _pipe = _options[(int)Option.Pipe];
+        _pipe.Options = new[]
+        {
+            new RadialMenu.Item { Label = "Fuel pipe", Hint = "thin, hazard bands", Icon = 10 },
+            new RadialMenu.Item { Label = "Water pipe", Hint = "blue, flanges", Icon = 11 },
+            new RadialMenu.Item { Label = "Auto pipe", Hint = "style from the output", Icon = 2 },
+            new RadialMenu.Item { Label = "Oil pipe", Hint = "dark, clamps", Icon = 12 },
+            new RadialMenu.Item { Label = "Steam pipe", Hint = "lagged: heat, pressure", Icon = 13 },
+        };
+        _pipe.OptionIcons = Icons;
+        SyncPipe();
         Set(Option.Shaft, "Drive shaft", "torque", 3);
         Set(Option.Chute, "Chute", "items", 4);
         Set(Option.Delete, "Delete links", "click a link", 20);
@@ -76,6 +88,16 @@ public sealed class SandboxLinkWheel : IToolOptions
     private void Set(Option o, string label, string hint, int icon) =>
         _options[(int)o] = new RadialMenu.Item { Label = label, Hint = hint, Icon = icon };
 
+    /// <summary>The arc position of a pipe style (255: Auto).</summary>
+    public static int ArcIndexOf(byte style) => Array.IndexOf(ArcStyles, style < (byte)PipeStyle.COUNT ? style : (byte)255);
+
+    /// <summary>Shows the last style on the Pipe option's label and marks it on the arc (no allocation: the labels are made once).</summary>
+    private void SyncPipe()
+    {
+        _pipe.Label = Style < (byte)PipeStyle.COUNT ? PipeLabels[Style] : PipeAuto;
+        _pipe.OptionCurrent = ArcIndexOf(Style);
+    }
+
     public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", _ => "route links" };
 
     /// <summary>The option the linking tool has now (an edit mode, else the type and pipe style); "highlight all" shows as a toggle.</summary>
@@ -84,6 +106,7 @@ public sealed class SandboxLinkWheel : IToolOptions
         get
         {
             _options[(int)Option.Highlight].Marked = Highlight;
+            SyncPipe();
             return (int)(Mode switch
             {
                 LinkMode.Delete => Option.Delete,
@@ -92,7 +115,7 @@ public sealed class SandboxLinkWheel : IToolOptions
                 _ => Type switch
                 {
                     RouteType.Power => Option.Power,
-                    RouteType.Pipe => Style < (byte)PipeStyle.COUNT ? Option.FuelPipe + Style : Option.Pipe,
+                    RouteType.Pipe => Option.Pipe,
                     RouteType.Shaft => Option.Shaft,
                     RouteType.Chute => Option.Chute,
                     _ => Option.Data,
@@ -109,8 +132,7 @@ public sealed class SandboxLinkWheel : IToolOptions
         {
             case Option.Data: Pick(RouteType.Data); break;
             case Option.Power: Pick(RouteType.Power); break;
-            case Option.Pipe: Pick(RouteType.Pipe, 255); break;
-            case Option.FuelPipe or Option.WaterPipe or Option.OilPipe or Option.SteamPipe: Pick(RouteType.Pipe, (byte)(o - Option.FuelPipe)); break;
+            case Option.Pipe: Pick(RouteType.Pipe); break; // (the last style stays)
             case Option.Shaft: Pick(RouteType.Shaft); break;
             case Option.Chute: Pick(RouteType.Chute); break;
             case Option.Delete: Mode = LinkMode.Delete; break;
@@ -118,6 +140,18 @@ public sealed class SandboxLinkWheel : IToolOptions
             case Option.Reroute: Mode = LinkMode.Reroute; break;
             case Option.Highlight: Highlight = !Highlight; break;
         }
+    }
+
+    /// <summary>A pick on the third tier: the pipe with the style at that arc position.</summary>
+    public void ChooseSub(int option, int sub)
+    {
+        if ((Option)option == Option.Pipe && sub >= 0 && sub < ArcStyles.Length)
+        {
+            Pick(RouteType.Pipe, ArcStyles[sub]);
+            SyncPipe();
+        }
+        else
+            Choose(option);
     }
 
     private void Pick(RouteType t, byte? style = null)

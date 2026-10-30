@@ -42,6 +42,10 @@ public sealed class SandboxToolWheel
     public static readonly RadialIcon Icons = DrawIcon;
 
     private bool _wasHeld;
+    private long _openedAt;
+
+    /// <summary>The wheel was opened and let go at once without choosing (a tap of the key): set for one read by the owner, then cleared.</summary>
+    public bool Tapped;
     private long _keysKey = long.MinValue;
     private readonly IToolOptions?[] _options = new IToolOptions?[(int)Slot.COUNT];
 
@@ -155,6 +159,7 @@ public sealed class SandboxToolWheel
             if (!pressed)
                 return false;
             Menu.Open();
+            _openedAt = Environment.TickCount64;
             return true;
         }
         if (held)
@@ -165,7 +170,10 @@ public sealed class SandboxToolWheel
         var pick = Menu.Release();
         var option = Menu.PickedOption;
         if (pick < 0)
+        {
+            Tapped = Environment.TickCount64 - _openedAt < 220; // a quick tap of the key (snappy building: it picks the aimed part's kind)
             return false; // let go in the middle: a cancel
+        }
         if (ToolOf(pick) is not { } tool)
         {
             g.SandboxSay(pick switch
@@ -177,7 +185,13 @@ public sealed class SandboxToolWheel
             return false;
         }
         if (option >= 0 && _options[pick] is { } opts)
-            opts.Choose(option); // (on the tool itself: its last-used option stays)
+        {
+            if (Menu.PickedSub >= 0)
+                opts.ChooseSub(option, Menu.PickedSub); // (a third-tier pick)
+            else
+                opts.Choose(option); // (on the option itself: its last-used sub-option stays)
+        }
+        // (on the tool itself: its last-used option stays)
         if (tool != h.Tool)
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
@@ -320,4 +334,11 @@ public interface IToolOptions
     RadialIcon? Icons { get; }
     int CurrentOption { get; }
     void Choose(int option);
+
+    /// <summary>
+    /// A pick on the third tier: sub-option <paramref name="sub"/> of option <paramref name="option"/> (the option's own
+    /// <see cref="RadialMenu.Item.Options"/>, drawn as a partial arc). <see cref="Choose"/> is called instead when the wheel
+    /// is let go on the option itself (it keeps its last sub-option). Optional: the default ignores it.
+    /// </summary>
+    void ChooseSub(int option, int sub) => Choose(option);
 }

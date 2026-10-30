@@ -14,7 +14,7 @@ public enum CBodyKind : byte
     Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
     Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
     Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
-    WorldLinks, // protocol 94: every world link and every hose off its reel (the whole list, when it changes; WriteWorldLinks)
+    WorldLinks, // protocol 95: every world link and every hose off its reel (the whole list, when it changes; WriteWorldLinks)
 }
 
 /// <summary>
@@ -155,7 +155,7 @@ public static class ConstructNet
             else if (e.Kind == CFireKind.Shatter)
                 w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else if (e.Kind == CFireKind.LinkSnap)
-                w.Vec(e.At).U8(e.Part); // (protocol 94: the link's type)
+                w.Vec(e.At).U8(e.Part); // (protocol 95: the link's type)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }

@@ -209,10 +209,12 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     outputs); a part takes up to 12 settings (CAct.Configure); the Sandbox relays the zombie messages (ZEnts, ZEvent, ZCrowd).
     // 93: Sandbox cargo volumes (docs/sandbox/CONSTRUCTS.md "Cargo volumes"): CBody Full ends with the construct's carrier
     //     (u16, 0: free) and, when carried, its volume's segment (u8) and its pose there (vec, 4 x f32). No new messages.
-    // 94: World links and hoses (docs/sandbox/CONSTRUCTS.md "World links", "Hoses"; board item wl01): CBodyKind.WorldLinks
+    // 94: Sandbox snappy building (docs/sandbox/CONSTRUCTS.md "Snappy building"): CAct.Snap at the end of CActKind (undo the
+    //     last placements, quick building on or off, pick a part off a construct, take a kind into the hands).
+    // 95: World links and hoses (docs/sandbox/CONSTRUCTS.md "World links", "Hoses"; board item wl01): CBodyKind.WorldLinks
     //     at the end of CBodyKind (every world link and hose off its reel), CAct.WorldRoute / WorldRouteEdit at the end of
     //     CActKind, CFireKind.LinkSnap (a world link tearing off), and the hose parts' role.
-    public const byte ProtocolVersion = 94;
+    public const byte ProtocolVersion = 95;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

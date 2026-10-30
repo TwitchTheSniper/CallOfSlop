@@ -175,15 +175,29 @@ is pulled back within 70 px when it leaves a tool with a ring). The middle shows
 pointer (the option's, else the tool's, else "Tools"), at 20 px a scale, shrunk to fit the centre circle (down to 12 px),
 else cut short with "..."; hints go in the tooltip under the wheel.
 
-The **linking tool** has thirteen options, round the full circle: data cable, power cable, pipe (auto: the style from the
-output), fuel, water, oil and steam pipes, drive shaft, chute, delete links, move node, re-route, and highlight all (a
-toggle, shown with a green dot while on). Picking a type also goes back to routing links. The choice is this PC's only;
+The **linking tool** has nine options, in an arc centred on it (270 degrees): data cable, power cable, pipe, drive shaft,
+chute, delete links, move node, re-route, and highlight all (a toggle, shown with a green dot while on). Picking a type
+also goes back to routing links.
+
+**The third tier** (board item dev-wheel-third-tier-pipes-wt01): an option may have sub-options of its own
+(`RadialMenu.Item.Options` on the option; `IToolOptions.ChooseSub(option, sub)`, optional, called for a pick on the
+tier, with `Choose` kept for letting go on the option itself). While the pointer is on such an option a **partial arc**
+grows out round the outer ring, centred on that option's direction, 25 degrees an item (`RadialMenu.SubStepMax`; five
+items span 125 degrees). Flicking out past the outer ring (70 + 66 px, plus 8) onto one highlights it; letting go there
+gives it. The pointer may then go 56 px further out (`SubDepth`). Hysteresis: a sub-option is entered 8 px past the
+outer ring's edge but kept down to 2 px past it, and the arc keeps its option while the pointer is out past the edge in
+the arc's direction; moving inward, or round onto another option, closes the arc (and pulls the pointer back in). The
+pipe is the first user: Auto in the middle, then fuel, water, oil and steam either side (fuel, water, auto, oil, steam
+clockwise). Letting go on **Pipe** itself uses the last style (Auto the first time), which its label shows
+("Pipe (fuel)") and the arc marks with a green dot and arc. The wheel follows accumulated movement, so a stick would reach the arc the same way (tilt further out).
+Nothing allocates per frame (labels are made once) and nothing is on the wire. The choice is this PC's only;
 taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
 (`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the welder's
-weld / cut and the physics gun's modes can use it when they have modes.
+weld / cut and the physics gun's modes can use it when they have modes, and a third tier for other tools (actuator
+sizes, welder modes) works the same way as the pipe styles.
 
-Choices made for the outer ring (the developer may change them): the pipe styles sit on the same ring as the other
-types (no third ring); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
+Choices made for the outer ring (the developer may change them): the pipe styles first sat on the same ring as the other
+types, now on the third tier above; the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
 (no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
 ### Tools in hand
@@ -1981,7 +1995,7 @@ Hose Inlet, Water Hose Inlet, Power Lead Socket, Data Lead Socket). The inventor
   holder's hands or the inlet; nothing is simulated or collides. The look line on a reel or an inlet says what F does
   there; holding one, the HUD says how much hose is out.
 
-### Network and state (protocol 94)
+### Network and state (protocol 95)
 
 `CBodyKind.WorldLinks` carries the whole list (each link: type, ends' construct ids and parts, nodes: construct id, 0
 for the world, part, position; each hose off its reel: the reel, the holder, the inlet) whenever it changes, and to a
@@ -2088,6 +2102,47 @@ host allows everyone, then its zombies on both sides, a friendly bot and a clear
 5. Friendly bots follow the spawning player (3 m off); spawner friendlies hold near the spawner; enemy bots hunt.
 6. Zombies leave enemy bots alone; enemy bots ignore zombies.
 7. A construct swipe is a building door's (40 damage); the crowd and mass tiers ignore constructs.
+
+## Snappy building (decision 24, board item sb01)
+
+Building is quick: hold a part and its connection points show, the aim is helped by a screen magnet, and a row of parts
+is one sweep of the mouse. The server still decides everything; the client's ghost is only a preview.
+
+- **Connection types** (`ConnType`, `Source/Constructs/SnapBuild.cs`): Mount (a structural face), Barrel, Muzzle, Optic,
+  Feed, ShaftIn, ShaftOut, Fuel, Power, Data, Hub, Leaf. Part files name none of them: `SnapBuild` reads a type from the
+  part's role, the socket's face and a gun part's category, so no part file changed.
+- **Markers**: while a part is held, its own connection points are drawn on the ghost and every free socket on the aimed
+  construct it can use is drawn too (not only near the aim; they fade out with distance), colour-coded by type
+  (`SnapRender`, `SnapBuild.Colour`). Sockets the part cannot use are hidden.
+- **Single-purpose parts** (barrel, muzzle, optic, feed part, wheel, door: `SnapBuild.SinglePurpose`) show and snap only to
+  their functional sockets. The screen magnet (`SnapBuild.Magnet`) takes the cached socket nearest the crosshair within
+  80 px at 1080 lines (scaled with the window height), nearest by screen distance and then depth. A barrel therefore
+  cannot go on a frame face.
+- **Multi-connection parts** (gearbox, engine, seat) mount by their structural face first. Where one of the placed ghost's
+  functional points lines up with a free matching socket (`SnapBuild.Lineups`), the ghost marks the connection that will
+  be made. **K** (Switch connection point, binds version 15) steps to the next of the part's own sockets that fits;
+  F is Interact and the middle button the tool wheel.
+- **Item parts only**: welder and physics-only parts cannot be ghost-attached from the hands (cargo volumes, decision 21),
+  so snapping from the hands applies to item parts.
+- **Feel**: the ghost eases to a new socket, a soft click and a flash on a new snap, a heavier thunk when the part lands.
+- **Creative only** (infinite parts, and the player has asked for it with the `snap_build` setting, on by default):
+  quick building fits at once and keeps the part in the hands; **hold Fire and sweep** to place the same part on each newly
+  hovered socket (once per socket per press); a quick **middle-button tap** on a part picks its kind into the hands (a
+  held middle button is still the tool wheel); **Ctrl+Z** undoes the last placements (8 kept per player, server-checked:
+  the construct is still theirs, in reach, and the part where it was put); **L** (hold, flick, let go) is a wheel of the
+  last 8 placed kinds.
+- **Cost**: matching sockets are cached per held type and per construct (`SnapCache`), rebuilt only when the construct's
+  signature (parts, turns, links) or the held type changes. A steady frame hashes the construct and allocates nothing.
+- **Network** (protocol 94): `CAct.Snap` at the end of `CActKind` (undo, quick building on or off, pick a part off a
+  construct, take a kind into the hands). No new messages.
+
+**Self-test**: "Sandbox snap build" (`Source/App/SelfTestSandboxSnap.cs`): a barrel sees only a receiver's front and the
+magnet takes it from a near aim but not far off; a muzzle sees nothing on a bare receiver; a gearbox mounts by a face and
+a switch lines its shaft input with an engine's output; every part with sockets reports its points; the switch key; six
+lamps with one held part; pick; undo (and the refusals); the cache rebuilds once per change and allocates nothing.
+
+Choices made (the developer may change them): K and L are the new keys (F and the middle button were taken); the magnet
+is 80 px; 8 placements are kept for undo; quick building and paint are creative-only; survival keeps one press per part.
 
 ## Performance and caps
 
@@ -2226,11 +2281,14 @@ nothing; and a real client's pick reaches the server.
 The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
 option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
 nothing, the arc or full circle choice); the linking tool's options cover every link type, every pipe style and auto,
-every edit mode and the highlight toggle; in an offline Sandbox game pointing at the linking tool shows its ring with all
-thirteen, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
+every edit mode and the highlight toggle (the pipe styles through the third tier); in an offline Sandbox game pointing at
+the linking tool shows its ring with all nine, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
 tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
 arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long
-name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one).
+name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one). The third tier: five items span 125 degrees centred on Pipe;
+resting on Pipe opens the arc with nothing picked; entry and keep distances (no flicker); Water, Auto (the middle) and
+Steam equip Pipe with that style; letting go on Pipe keeps the last style and its label; moving to Shaft or inward closes
+the arc; the "Sandbox tool wheel" section draws it with a sub-option hovered and checks it allocates nothing.
 
 The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
 byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
