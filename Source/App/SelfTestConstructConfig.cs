@@ -367,8 +367,8 @@ public static partial class SelfTest
         Refused(e.Configure(w, 3, eye + new Vector3(30, 0, 0), car.Id, [(byte)lamp], [colour], [0xFF0000], null), "too far", "from 30 m");
         Refused(e.Configure(w, 3, eye, car.Id, [(byte)lamp, (byte)horn], [colour], [0xFF0000], null), "same kind", "a lamp and a horn");
         Refused(e.Configure(w, 3, eye, car.Id, [(byte)lamp], [9], [1], null), "no setting", "slot 9");
-        Refused(e.Configure(w, 3, eye, car.Id, [(byte)lamp], [colour], [0xFF0000], ConstructConfig.Refusal(car, 3, "Bob", true)), "defended", "someone else's, its owner near");
         car.Owner = 7;
+        Refused(e.Configure(w, 3, eye, car.Id, [(byte)lamp], [colour], [0xFF0000], ConstructConfig.Refusal(car, 3, "Bob", true)), "defended", "someone else's, its owner near");
         var notNear = ConstructConfig.Refusal(car, 3, "Bob", false);
         var mine = ConstructConfig.Refusal(car, 7, "Bob", true);
         car.Owner = 255;

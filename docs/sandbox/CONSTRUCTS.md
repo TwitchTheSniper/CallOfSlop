@@ -35,7 +35,8 @@ north-west corner) and some loose parts.
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
-| Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+| Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting (a preset). |
+| Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### The tool wheel (decision 17)
 
@@ -44,8 +45,10 @@ The developer's decision 17 (2026-10-29): players pick their tools from a radial
 Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
 clockwise from the top: **wrench** (N), hoist (NE), **welder** (E), configure tool (SE), **hands / gun** (S: out of
 build mode), scanner (SW), **linking tool** (W), hand drill (NW). The four tools that exist sit on the compass points, so
-the easiest flicks reach them; the four from the design's tool list that don't exist yet sit on the diagonals, greyed out
-with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
+the easiest flicks reach them; the tools from the design's list that don't exist yet sit on the diagonals, greyed out
+with "coming later" (letting go on one says so and changes nothing). The **configure tool** (SE) is real since board item
+dev-sandbox-configure-tool-ct01 ([The configure tool](#the-configure-tool)); it has no number key (the wheel or the
+inventory's Tools tab). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
@@ -83,9 +86,10 @@ place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.
   (`LightGrid.AddDynamic`, one per welding player; unlit maps have the glow and sparks only).
 - **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
   first click to the second) the reel turns and the probe throws a green **beam**.
+- **Configure tool**: a handset with a screen, sliders and a dial; it is "in use" (its motion) while a settings panel is open.
 - Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
-  hook on a chain), the **configure tool** (a handset with a screen, sliders and a dial), the **scanner** (a turning
-  emitter and an aerial; a beam while it scans) and the **hand drill** (its bit spins while it works).
+  hook on a chain), the **scanner** (a turning emitter and an aerial; a beam while it scans) and the **hand drill** (its
+  bit spins while it works).
 
 Every tool has an idle sway (and a walk bob in first person). **Equipping**: taking out a tool (the number keys or the
 tool wheel) drops the one in your hands out of sight (0.14 s) and brings the new one up (0.24 s); from the gun the tool
@@ -122,7 +126,7 @@ A tool file:
 | Field | Meaning |
 | --- | --- |
 | space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
-| `tool` | `wrench`, `welder`, `linker`; or one still to come: `hoist`, `configure`, `scanner`, `drill`. One file a tool. |
+| `tool` | `wrench`, `welder`, `linker`, `configure`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
 | `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
 | `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
 | `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
@@ -255,6 +259,136 @@ hurt every part in range, falling off with distance, and push the bodies. At zer
 tank loses its fuel). Shooting a cheap fuel line or a suspension disables a vehicle without wrecking it: the loot loop's
 core (salvage itself is milestone 2).
 
+## The configure tool
+
+Board item dev-sandbox-configure-tool-ct01. The configure tool (the tool wheel's SE segment, or the inventory's Tools
+tab) changes a part's **settings**. With it out, the look line names the part and how many settings it has; **Fire**
+on a part opens its **settings panel** (the mouse comes free for it); **Shift+Fire** adds a part to (or takes it out
+of) a selection of parts of the same kind on the same construct, which the panel then changes together; **Aim** clears
+the selection. The panel closes on Esc, its Close button, a click away from it, putting the tool away, sitting, dying,
+the part going, or walking more than 10 m from it.
+
+### The panel
+
+`Source/UI/UiSandboxConfig.cs`, drawn like the inventory (the same window style; readable at any UI scale):
+
+- **Anchored beside the part**: the card sits to the right of the part on screen (to its left near the edge), and
+  follows it as you move; with the part off screen it sits at the right edge.
+- **Header**: the part's tile (the inventory's picture of it), its name, the construct (number, and whose: yours,
+  nobody's or the owner's name), the part number and a health bar.
+- **Settings, grouped** as the part file groups them (Timing, Light, Motor...), each with a plain label (units in the
+  value: "2.5 s", "45 deg", "60 %"), a tooltip (what it does, its range and default) and a small `x` that puts that one
+  setting back to its default. The controls by type: **number**: a slider (Ctrl+click it to type) and a numeric box
+  (Enter sets it), held inside its range and on its step; **choice**: a dropdown; **toggle**: a check box; **colour**: a
+  colour picker and eight swatches; **key** (an input reader's key): "Press to bind" then the key itself (only keys a
+  seat passes on: fire, aim, reload, jump, sprint, forward, back, left, right; Esc cancels), or the dropdown.
+- **Wiring**: every wire into and out of the part ("In from: Switch (part 3)"); hovering a row highlights the part at
+  the other end in the world, clicking it opens that part's settings.
+- **Reset** (every setting to its default), **Copy** and **Paste** (only onto a part of the same kind; the button names
+  the kind it holds), **Change all N selected** (on by default with a selection) and **Apply to selected** (every value
+  shown onto all of them).
+- Changes go to the server as they are made: a dropdown, toggle, swatch or typed number at once, a dragged slider at
+  most ten times a second and when it is let go. The server's values flow back into the panel (a value just sent is
+  kept until the server's answer arrives or 0.6 s pass). Nothing is allocated per frame while it is open (every text is
+  made once; the health and wiring lines again only when they change).
+
+**Live previews** in the world while the panel is open (`Source/Render/ConstructRenderConfig.cs`, seen through parts,
+following the panel's values before the server answers): the part tinted purple (and the selected ones fainter), its
+wires (green in, orange out) and the parts at their ends; a **lamp** lit in the colour and brightness being picked; a
+**piston's** travel from its pulled-in to its pushed-out end with a ghost of the leaf at full travel; a **hinge's**
+limits as an arc about its pivot, with a line where it is now; a **proximity sensor's** range as three rings.
+
+### Settings are data
+
+Each part file lists its settings in `"config"` (up to 8), so a new part gets its panel by itself:
+
+```json
+"config": [
+  { "key": "period", "label": "Period", "group": "Timing", "unit": "s", "min": 0.05, "max": 60, "step": 0.05, "tooltip": "How long one on-and-off cycle takes." },
+  { "key": "startOn", "label": "Start on", "group": "Timing", "default": false, "tooltip": "..." },
+  { "key": "colour", "type": "colour", "default": "#ffed99" },
+  { "key": "mode", "options": ["both ways", "switching on", "switching off"], "default": 0 }
+]
+```
+
+| Field | Meaning |
+| --- | --- |
+| `key` | What the setting means to the game (below); a key the game doesn't read, or one the part's kind doesn't use, refuses the file with the reason. |
+| `type` | `number`, `choice`, `toggle`, `colour` or `key`; by default from the key (`startOn`, `latched`: toggle; `colour`; `mode`, `operator`, `units`, `setting`: choice; else number). |
+| `min`, `max`, `step` | A number's range and step (0: any value). |
+| `default` | A number, true/false, a colour, or a choice's option (name or index). Without it: what the part did before (a joint's limits, speed and strength; a suspension's spring), else 0. |
+| `unit`, `label`, `group`, `tooltip` | What the panel shows (ASCII; the group defaults to "General"). |
+| `options` | A choice's 2 to 16 names. |
+
+**Folded in.** A part's own choice from before (`ConstructPartDef.Settings`: an input reader's key, a manual gearbox's
+starting gear, a gear selector's positions, a lockable differential's lock, a transfer case's 2WD/4WD, an adjustable
+suspension's presets) is a `setting` entry by itself (a dropdown; the reader's a key field), kept in the part's setting
+byte as before, so the driver's shift keys, the HUD and the wiring work unchanged. A timer's, delay's, compare's,
+scale's or proximity sensor's old `settings` list are now **presets** of its number (period, seconds, threshold,
+factor, range): the linking tool's R steps through them as before, and the panel sets any value in range.
+
+| Key | Parts | Does |
+| --- | --- | --- |
+| `period`, `duty`, `startOn` | Timer | Seconds a cycle; % of it on; each run starts with the on part |
+| `seconds`, `mode` | Delay | How long; what waits (both ways, switching on only, switching off only; the other follows at once) |
+| `operator`, `threshold`, `hysteresis` | Compare | > >= = <= < against the threshold; once on, it holds until the sum is that far back |
+| `factor`, `offset`, `low`, `high` | Scale | sum x factor + offset, held between low and high |
+| `latched`, `hold` | Button | Push on, push off; or on for `hold` seconds after a press |
+| `startOn` | Switch, Toggle | A new one starts on |
+| `radius` | Proximity Sensor | Its range (a sentry turret aims within it too) |
+| `units`, `threshold` | Speed Sensor | m/s, km/h or mph; above 0, on/off at that speed instead of the number |
+| `colour`, `brightness`, `blink` | Lamp | Its glow's colour and brightness; flashes a second while lit |
+| `pitch`, `volume` | Horn | Its beep |
+| `min`, `max`, `speed`, `strength` | Piston, Motor Hinge, Hinge (limits), Turntable (speed, strength) | Limits (degrees; a piston's metres) inside the part's own, speed, force or torque |
+| `strength` | Brake | 100%: the wheels lock; less: they drag (`jFwd` blended towards a stop) |
+| `stiffness`, `damping` | Suspension (a plain spring) | Spring frequency (Hz) and damping ratio |
+| `setting` | Input Reader, gearboxes, selectors, differentials, transfer cases, adjustable suspensions | Their own choice, above |
+
+Values live on the part (`CPart.Cfg`, eight floats inline, so they move with the part when parts are renumbered or a
+construct splits; a colour is 0xRRGGBB, exact in a float), are read through `ConstructConfig.Get` (a table lookup, no
+allocation), start at the defaults when a part is fitted, and are clamped wherever they are set. A part taken off,
+stored or picked up loses its settings (it goes back to the inventory as a kind).
+
+### Server, permissions and the network
+
+The client asks with `CActKind.Configure` (protocol 87; [Network](#network-protocol-82-84-for-free-placement-86-for-the-drivetrains-rpm)); the
+server (`ConstructEdits.Configure`, `Game.SandboxConfigRefusal`) checks the configure tool is out, the player isn't
+seated, every part is of one kind on that construct (at most 32), the nearest is within 8 m, and **who may**
+(decision 19, factions treated as the owner for now): your own constructs, nobody's (the map's), wrecks and loose parts;
+someone else's is refused, "Owned by NAME - defended" while its owner is alive within 40 m (plus the construct's size),
+"Owned by NAME: only its owner can configure it" otherwise. It clamps every value, rebuilds a joint's limits, speed and
+strength, and sends the construct's structure again (the settings ride in `CBody`). A refusal comes back as the usual
+notice.
+
+### Self-test
+
+"Construct configure" (`SelfTestConstructConfig.cs`): every configurable part's schema is valid (slots, ranges,
+defaults, options, presets on their step; a new part at its defaults, a joint's default speed its own) and the parts that
+should have settings do; bad schemas are refused with a reason; values clamp (range, step, NaN, toggles, colours,
+choices); each setting changes behaviour (a timer's period doubles its pulses and its duty sets its on time, a delay's
+mode, a compare's operator, a scale's offset and limit, a brake's strength, a latched button and a hold time, a speed
+sensor's units and threshold, a proximity sensor's range, a piston's travel, a motor hinge's limit and speed); the
+server's checks (the tool, the reach, one kind, a missing slot, someone else's defended or not, your own and nobody's
+allowed, several parts at once); a blueprint's `"config"` builds, is written back (`ConstructConfig.ToJson`) and builds the
+same, and the construct message carries every setting; the panel headless in a game (values sent as the host, the
+preview, copy and paste between lamps, refused onto a horn, reset, a selection changed together, no allocation over 60
+open frames, refused with the tool put away); and over the real transport a client's change reaches the server and its
+own copy, and the host's construct with the host beside it is refused as defended.
+
+### Choices made (the developer may change them)
+
+- Fire (not Use) opens the panel: Use keeps working buttons, switches and doors with the configure tool out.
+- Changes apply live (no Apply button for a single part): the previews and the construct follow at once.
+- Permissions follow decision 19: someone else's construct is refused whether or not it is defended (owner only for
+  now); only the wording differs. Wrecks, loose parts and nobody's constructs are open to all.
+- The configure tool has no number key (3, 4 and 5 are taken; the wheel and the inventory have it).
+- Settings aren't kept by a part taken off or stored, and constructs aren't saved with the world yet; blueprints carry
+  them.
+- The panel's key field takes only keys a seat passes on to input readers (they are the only keys the server sees).
+- Not done: a pressure plate's "who triggers" and weight, a proximity sensor's targets and line of sight, a lamp's light
+  range (lamps cast no light yet), a seat's exposed keys, a lever's positions (the game has only players to detect, no
+  lamp lights, and seats pass on a fixed set of keys). Controller support waits for Steam Input.
+
 ## The data
 
 ### Part files: `Constructs/Parts/*.json`
@@ -308,6 +442,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
 | `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
 | `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
+| `config` | The part's settings schema (up to 8), the configure tool's panel ([The configure tool](#the-configure-tool)). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -329,7 +464,8 @@ same rules a player builds by, so a blueprint that loads proves the rules can bu
 ] }
 ```
 
-A step may carry `"setting": n` (a logic part's starting setting), and a blueprint may list `"wires": [[from step, to
+A step may carry `"setting": n` (a logic part's starting setting) and `"config": {"period": 2.5, "colour": "#ff2010",
+"startOn": true, "setting": "jump"}` (its settings by key: numbers, true/false, colours, option names), and a blueprint may list `"wires": [[from step, to
 step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 parts: rear-wheel drive through a
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6
 parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Turret** (6 parts, 1 wire); milestone 3:
@@ -387,6 +523,10 @@ The Sandbox mode is offered only on maps with this section.
   inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
+- Protocol 87 (the configure tool): `CBody` ends with the part settings that are off their defaults (a u16 count, then
+  part, slot and an f32 value: 6 bytes each; a choice a part already had, like a gear, stays its setting byte);
+  `CActKind.Configure` (u16 construct, u8 part count, the parts, u8 setting count, slot and f32 value each) sets them on
+  one or more parts of one kind; the tool id `ConstructTool.Configure` (4).
 
 ### Joint collision
 
@@ -1382,7 +1522,8 @@ input end). Wiring is instant (fitting a part is what takes time).
    (the scripted build test fits both); only wheels on a differential are driven, the rest roll.
 6. **Seats**: the first seat drives, every other is a passenger seat. Passengers don't shoot.
 7. **Logic settings** are changed with the linking tool's R (no separate configure tool); controls (buttons, switches,
-   levers) work with any hands, as Use.
+   levers) work with any hands, as Use. (Since the configure tool: R steps through the old values as presets; every
+   setting is in the configure tool's panel.)
 8. A **pressure plate** is pressed by players only (not by constructs or loose parts).
 9. **The welder and linking tool** sit on 4 and 5, the kill-streak keys (Sandbox has no streaks; the Weapon slot 4
    binding still works too), so no new key binding was added.
