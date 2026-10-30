@@ -1,4 +1,5 @@
 using System.Numerics;
+using Brutal.ImGuiApi;
 using Brutal.Numerics;
 
 namespace CallOfSlop;
@@ -539,6 +540,7 @@ public static partial class SelfTest
             Frames(60);
             least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - b0);
         }
+        ConfigWindow(ui, car, lamp, lamp2, Frames);
         // The tool put away: the program closes the panel (the server refuses a change meanwhile).
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         ui.SandboxConfigSet(g, blink, 1, now);
@@ -550,6 +552,75 @@ public static partial class SelfTest
             Fail("configure: the panel doesn't set, copy, paste, reset or apply to a selection");
         if (least > 0)
             Fail($"configure: the open panel allocates ({least} bytes in 60 frames)");
+    }
+
+    /// <summary>
+    /// The panel is a plain window (board dev-configure-no-dim-cd02): open, it doesn't dim the scene (the pause menu still
+    /// does); dragged by its title bar with the headless mouse it moves, and the next panel opens where it was left; dragged
+    /// past the screen's edges it stays fully on the screen; snapped back, it is beside the part again.
+    /// </summary>
+    private static void ConfigWindow(Ui ui, Construct car, int lamp, int lamp2, Action<int> frames)
+    {
+        var io = ImGui.GetIO();
+        void Mouse(float2 at, bool down, int n)
+        {
+            io.AddMousePosEvent(at.X, at.Y);
+            io.AddMouseButtonEvent(0, down);
+            frames(n);
+        }
+        // Drags the window by a point on its title bar to a place on the screen; returns where it ended up.
+        float2 Drag(float2 to)
+        {
+            var (p, _, _) = ui.SandboxConfigWindow;
+            var grab = new float2(p.X + 60, p.Y + 6);
+            Mouse(grab, false, 2);
+            Mouse(grab, true, 2);
+            Mouse(new float2((grab.X + to.X) * 0.5f, (grab.Y + to.Y) * 0.5f), true, 2);
+            Mouse(to, true, 2);
+            Mouse(to, false, 2);
+            return ui.SandboxConfigWindow.Pos;
+        }
+        ui.OpenSandboxConfig(car, lamp);
+        frames(2);
+        var (home, size, movedAtOpen) = ui.SandboxConfigWindow;
+        ui.MenuOpen = false; // (deployed: the loadout menu is shut, as in a match)
+        var noDim = ui.SceneDim(false, false);
+        ui.PauseOpen = true;
+        var pauseDim = ui.SceneDim(false, false);
+        ui.PauseOpen = false;
+        // A drag 300 left and 100 up.
+        var grabAt = new float2(home.X + 60, home.Y + 6);
+        var dragged = Drag(new float2(grabAt.X - 300, grabAt.Y - 100));
+        var moved = ui.SandboxConfigWindow.Moved && MathF.Abs(dragged.X - (home.X - 300)) < 2 && MathF.Abs(dragged.Y - (home.Y - 100)) < 2;
+        // The next panel opens there.
+        ui.CloseSandboxConfig();
+        ui.OpenSandboxConfig(car, lamp2);
+        frames(2);
+        var kept = ui.SandboxConfigWindow.Pos;
+        var keptOk = MathF.Abs(kept.X - dragged.X) < 1 && MathF.Abs(kept.Y - dragged.Y) < 1;
+        // Past the bottom-right corner, then past the top-left one: kept on the screen.
+        var br = Drag(new float2(1599, 899));
+        size = ui.SandboxConfigWindow.Size;
+        var brOk = br.X + size.X <= 1600.5f && br.Y + size.Y <= 900.5f && br.X > 1600 - size.X - 2 && br.Y > 900 - size.Y - 2;
+        var tl = Drag(new float2(1, 1));
+        var tlOk = tl.X >= -0.5f && tl.Y >= -0.5f && tl.X < 2 && tl.Y < 2;
+        // Snapped back beside the part.
+        ui.SandboxConfigSnapBack();
+        frames(2);
+        var back = ui.SandboxConfigWindow;
+        var backOk = !back.Moved && MathF.Abs(back.Pos.X - home.X) < 1 && MathF.Abs(back.Pos.Y - home.Y) < 1;
+        ui.CloseSandboxConfig();
+        var closedDim = ui.SceneDim(false, false);
+        Line($"configure window: open, the scene dim {noDim} (with the pause menu {pauseDim}, the mouse free and nothing open {closedDim}); opened at {home.X:0},{home.Y:0} ({size.X:0} x {size.Y:0}), moved at open {movedAtOpen}; "
+             + $"dragged to {dragged.X:0},{dragged.Y:0} {moved}; the next panel at {kept.X:0},{kept.Y:0} {keptOk}; past the corners {br.X:0},{br.Y:0} {brOk} and {tl.X:0},{tl.Y:0} {tlOk}; snapped back to {back.Pos.X:0},{back.Pos.Y:0} {backOk}");
+        if (noDim != 0 || pauseDim <= 0 || closedDim <= 0)
+            Fail("configure window: the settings panel dims the scene (or the pause menu no longer does)");
+        if (movedAtOpen || !moved || !keptOk)
+            Fail("configure window: a drag doesn't move the panel, or the next panel doesn't open where it was left");
+        if (!brOk || !tlOk)
+            Fail("configure window: the panel can be dragged off the screen");
+        if (!backOk)
+            Fail("configure window: snap back doesn't put the panel beside the part");
     }
 
     private static void ConfigOverWire(Map yard)
