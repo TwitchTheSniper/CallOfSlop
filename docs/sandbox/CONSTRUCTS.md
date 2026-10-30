@@ -1275,10 +1275,31 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
 | `creativeOnly` | Builder categories offered only with infinite parts. |
 | `skip` | Builder categories never generated. |
 
-**Not done yet** (left for a follow-up): the **Gun Workbench** part that opens the real workbench (UiWorkbench /
-BenchModel) on the parts in the hands, backpack and its own slots, consuming them in survival and returning them through
-`ConstructEdits.Give` on disassembly, and spawning standard builds complete. Sandbox players don't carry builder-built
-handheld weapons yet, so that needs a handheld-weapon item first.
+## The Gun Workbench (wp01, part 2)
+
+Code: `Source/Game/GameSandboxBench.cs` (the server's rules and the sync), `Source/Constructs/ConstructGunBench.cs` (the
+parts at a bench), `Source/UI/UiWorkbenchRun.cs` (the real workbench window in a Sandbox mode), `Source/UI/UiSandboxBuilds.cs`
+(the Builds tab); part `Constructs/Parts/Storage/GunWorkbench.json` (a storage part with `"storage": {"gunBench": true}`:
+six slots on its top, two long ones for barrels); self-test "Sandbox gun bench" (`Source/App/SelfTestSandboxGunBench.cs`).
+Protocol 96: `CActKind.Bench` (kinds 6 open, 0 build, 3 take apart, 7 spawn a standard build); `Msg.ZBuild` and `Msg.ZRun` are
+now also routed in Sandbox.
+
+- **A handheld built weapon.** The Zombies path, reused: a gun goes in slot 1 (`Player.BuiltPrimary`, replacing the
+  loadout primary), a melee weapon in `MeleeBuild`, a grenade in `GrenadeBuild`; one of each kind. Synced as the build's text
+  (`Msg.ZBuild`), so every PC assembles the same numbers (`BuildStats`); a joiner is sent everyone's builds. Ammo is endless in
+  Sandbox. It is used with bare hands (tool 1/2), like any gun. It survives death; a new match clears it.
+- **At the bench**, F (not on a lit slot) opens the same `UiWorkbench` window with slots Gun / Melee / Grenade. The server
+  needs the player within `ConstructEdits.BenchReach` of a bench; the window closes when the player walks away.
+- **Creative** (`infiniteParts`): every part, endless; building or taking apart consumes and returns nothing.
+- **Survival**: the stock is the part in the hands, the backpack and the bench's slots (`Msg.ZRun` tells the window). A build
+  is checked whole (a missing part refuses it and nothing is taken), then takes what it adds and gives back what it gave up.
+  Taking it apart returns every part through `BenchGive`: the bench's slots first, then `ConstructEdits.Give` (hands,
+  backpack, the floor). Creative-only parts have no survival item, so they can't be built with there.
+- **Standard builds**: the Tab inventory's **Builds** tab spawns any of the 141 complete into the hands (creative only).
+
+Decisions the developer may change: the gun replaces the loadout primary (taking it apart leaves empty hands in slot 1, not
+the old gun); creative disassembly returns nothing; consumption order is bench slots, backpack, hands; no auto-switch of
+tool when a weapon is built.
 
 ## Links between constructs and power (milestone 3)
 
