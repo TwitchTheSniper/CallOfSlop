@@ -339,7 +339,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 81)
+## Network (protocol 82)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -349,6 +349,11 @@ The Sandbox mode is offered only on maps with this section.
   flag; `CBodyKind.Inventory` sends one player their own inventory, whole, when it changes and when they join (a flags
   byte (infinite parts), the scrap, then each part kind held as id and count, then each material held; about 8 bytes plus
   3 a kind). Nobody else's inventory is ever sent.
+- Protocol 82 (links and power): `CBody` also carries the construct's charge (kJ), a power-flags byte (electrical, power
+  on, engine running, starter failed) and its gear; `CBodyKind.Links` sends every coupling (construct and part at each
+  end, the chain's length) and every wire between constructs (construct and part at each end), whole, whenever one is
+  made, broken or renumbered, and to each joiner; `CPose` adds 5 bytes a body (charge share, power flags, gear, fuel);
+  `CAct.Wire` carries the construct the wire goes into (0: the same one).
 - `Msg.CPose` (unreliable sequenced, 20 Hz): the bodies that move (32 bytes plus 4 per joint, the angle and speed, plus
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
@@ -442,10 +447,129 @@ wrecked (there is no repair yet, so it stays salvageable); after a fit the next 
 automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
 scrap rates by material.
 
+## Links between constructs and power (milestone 3)
+
+Board item dev-sandbox-m3, part 3 of 4 (the developer approved it 2026-10-29). Code: `Source/Constructs/ConstructLinks.cs`
+(couplings, wires between constructs), `Source/Constructs/ConstructPower.cs` (the electrical system), the coupling rows
+and joint reactions in `ConstructPhysics.cs`.
+
+### Couplings: hitches and chains
+
+- A **hitch** part (`"role": "hitch"`, a `"hitch"` block: `kind` `ball`, `eye` or `hook`, `at` the coupling point in
+  the part's frame, and for a hook its `chain` in metres) couples to a hitch on **another** construct: a ball or a hook
+  to an eye. Shipped: **Tow Hitch** (a tow ball on a crossbar), **Tow Eye** (a drawbar's eye), **Chain Hook** (2.5 m of
+  chain) and **Wrecking Ball** (450 kg with an eye on top).
+- **Coupling and uncoupling**: with the **wrench** out, F on a hitch couples it to the nearest free hitch that fits (a
+  ball's point within 0.6 m of an eye's; a hook's eye within its chain and 0.3 m) or uncouples it. Bare hands or another
+  tool: "take out the wrench (3) to couple or uncouple". A coupling also goes when either hitch is **shot off** or
+  wrecked, when its parts end up on one construct, or when the two are torn more than 1.5 m apart (a teleport, a blast).
+- **A tow ball is a free pivot**: three rows in the contact solve (one per axis) hold the two coupling points together,
+  pushing either way (no friction), so the trailer turns any way about the ball and can't come off it. **A chain** is one
+  row along the line between the points that only pulls (the ball swings and drops, but never further than the chain).
+  Each side moves its body and every joint up its hitch's chain, like a contact, so a chain hook on a turret's arm works.
+  Coupled constructs still collide everywhere except within 0.7 m of the hitch points.
+- A towed construct (coupled to one that is driving) lets go of its **parking brake**; coupled constructs wake each
+  other when one moves. Couplings name their parts by a stable tag (`CPart.Tag`), so they survive other parts coming off
+  either side (salvage, a split).
+- The chain is drawn as links along a curve that sags when it is slack; a tow ball shows a pin.
+
+### Wires between constructs
+
+- The linking tool now wires **into another construct**: fire on an output, then on an input of any construct within
+  **12 m** (part centre to part centre). The same rules as a wire inside one construct ("those are already wired", a
+  part's input limit counts both kinds), and "an input reader reads a seat of its own construct". Aim on a part cuts
+  its wires of both kinds. A wire between constructs carries its source's value from **last tick**, like every wire.
+- It **breaks** when either part is gone or wrecked, or when the parts are more than 12 m apart (a towed trailer driven
+  off, a wall button's post carried away). Drawn with the linking tool out, orange while off.
+- A map can wire its starting constructs (below): the yard's **Wall Button** runs the **Motor Gate**.
+
+### Power
+
+- A construct with a **Battery** part (`"battery": {"capacity": kJ}`; it comes charged, 300 kJ) is **electrical**: its
+  electrical parts work only while a **working battery's links reach them** (the frame is the circuit: a wrecked part
+  breaks it, so shooting the battery or the beam between cuts the power) and the batteries have charge. Electrical
+  parts: every logic part (with no power they put out 0), every moving joint's motor except steering pivots (a motor
+  with no power lets go: a lift sinks, a motor gate hangs loose), and anything with a `"power"` draw.
+- **The draw** (watts, `"power"` in a part file): a part draws while its signal is on (lamps 60 W, horns 120 W, other
+  logic parts 2 W); a motor draws 10 W while it moves plus its work (torque times speed) over 0.8. `Construct.PowerUse`
+  is last tick's total. A flat battery comes back on at 0.2 kJ (no flicker at empty).
+- **The engine needs the starter**: asked to go (the driver's throttle, or a signal into it) an electrical construct's
+  engine takes 2.5 kJ to start (the engine must be on the battery's circuit); flat: "It won't start: the battery is flat".
+  It runs until nobody asks it to. An **Alternator** touching the engine charges the batteries while it runs (1.5 kW).
+- **Optional per map** (decision): a construct without a battery runs as milestone 2 did (nothing needs power), so every
+  earlier blueprint keeps working; a map's `"power": "required"` makes every construct electrical (no battery: no logic,
+  no motors, no start). The Wired Buggy (battery, alternator, charge gauge), the Motor Gate (battery, charge gauge) and
+  the Lamp Post carry batteries; the Buggy, Gate, Lift and Turret don't.
+- The **HUD** while driving shows the gear and the charge ("charge 84%", "(flat)", "engine off"); the look line shows a
+  battery's charge and "(no power)" on an electrical part without it.
+- A future construct gun (another milestone 3 branch) draws power by giving its part a `"power"` draw and checking
+  `ConstructPower.On(construct, part)`.
+
+### Joint reactions
+
+A moving joint's motor and its stops push back on the body it is mounted on: each impulse the solve gives the joint, the
+body takes back (a turn about the joint's axis, or a piston's push at its pivot), through the inertia of what doesn't
+turn on the joint (`Construct.InvInertiaBaseLocal`: the body's own parts, and each jointed piece as its mass at its
+pivot). A turret swung hard rocks a light buggy; a turntable under a block hanging on a chain turns the block the other
+way. Steering pivots don't (they are the driver's hands on a rack). `ConstructPhysics.JointReactions` turns it off (the
+self-test compares).
+
+### Gears
+
+A transmission may have `"transmission": {"gears": [ratios], "labels": [...], "gear": n}`: in gear k the engine's top
+speed is times the ratio and its force divided by it. The shipped Transmission has three (0.6, 1.0, 1.4; it starts in 2,
+which is milestone 2's drive). The linking tool's R picks its gear; a signal wired in (one input) picks it instead
+(1 the first gear, rounded; below 0.5 the R gear). The **Gear Selector** (logic kind `selector`) steps 1, 2, 3, 1... on
+F or a rising input (an input reader on the driver's reload key makes a gear shift).
+
+### More parts
+
+**Bumper** (rubber-faced bar, armour 10, 500 health), **Fender** (a mudguard panel), **Speed Gauge**, **Fuel Gauge** and
+**Charge Gauge** (logic sensors with a **dial**: `"dial": {"at", "face", "max"}` draws a needle swept 270 degrees by the
+signal; the fuel and charge gauges put out 0 to 1, in hundredths), the **Gear Selector**, Battery, Alternator and the
+hitches above. 12 new part files; 50 in all.
+
+### The map's links and the yard
+
+The `"sandbox"` section takes `"power": "optional" | "required"`, `"couplings": [{"hitch": [construct, step], "eye":
+[construct, step]}]` (the second construct is moved so its eye meets the ball) and `"wires": [{"from": [construct,
+step], "to": [construct, step]}]`, constructs by their index in `"constructs"` and parts by blueprint step. Construct
+Yard adds a **Trailer** coupled to the Buggy (which now has a Tow Hitch), a **Wall Button** at (-6, -14) wired into the
+Motor Gate's toggle, and a battery **Lamp Post** at (-13, -5) that lights while someone is within 6 m.
+
+### Self-test and pictures
+
+The **Construct links and power** section (`Source/App/SelfTestConstructLinks.cs`): 16 bad hitch, battery, gauge, gear
+and sandbox-section files refused for the right reason; the buggy tows the trailer 19 m in 3 s and round a 90 degree
+turn with the coupling points within 1 cm; bare hands refused, the wrench uncouples (the buggy drives off alone) and
+couples again, the hitch shot off; a wrecking ball swings on its chain and never gets further than 2.5 m from the hook;
+a wall button wired into the Motor Gate opens it, the wire's refusals, and the wire breaks when the button is carried
+out of range; a flat battery stops the Motor Gate's motor, the wired buggy's lamps and its starter, a little charge
+starts it and the alternator charges it, a shot battery cuts the power, and a map that requires power stops a buggy with
+no battery; a turntable under a block hanging on the chain turns the block back (not with reactions off); gear 1 pulls
+harder and tops out at 11.4 m/s while gear 3 goes faster, and a gear selector picks gears 1, 2, 3; the yard's trailer,
+wall button wire and lamp post; a client's copy of the links, the charge and the gear, a truncated links packet
+refused; no allocation in 120 ticks of all of it. "Constructs"' loopback also checks a client and a late joiner mirror
+the couplings, the wires between constructs and the power. `--power-shots` (Program.PowerShots.cs) writes
+`smoke_power_*.bmp`: the trailer, its hitch, towed round a turn, the wall button's wire and the gate it opened, the lamp
+post, the gauges, the driving HUD and the wrecking ball.
+
+### Choices made (the developer may change them)
+
+1. Power is **optional per construct**: no battery means milestone 2's free power, unless the map says `"required"`.
+2. The **frame is the circuit** (no wire parts): power reaches whatever a working battery's links reach.
+3. Steering pivots and the engine's drive don't use the battery (only the starter does); a running engine charges only
+   through an alternator touching it.
+4. Wires between constructs reach **12 m**; couplings carry no power or signals.
+5. Coupling is **instant** with the wrench (F), not timed; a rigid coupling made up to 0.6 m apart pulls together.
+6. Joint reactions use the base's inertia (what hangs on a joint counts as its mass at the pivot); the body's mass
+   properties still use the rest pose.
+7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
-64 wires a construct (512 in all), 4 inputs a part, wires up to 8 m, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
+64 wires a construct (512 in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are
@@ -694,11 +818,9 @@ input end). Wiring is instant (fitting a part is what takes time).
 - **Construct weapons** (decision 10), mounted fixed or on turntables (the Turret is waiting for one), fired by input
   readers, sharing the weapon builder's ammo flags.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
-- Joints between separate constructs (trailers, a wall button wiring a gate), wires between constructs, joint reactions
-  rocking the body, motors that drain fuel or a battery (decision: electrical systems).
+- Links between constructs and power (done, above).
 - Saving constructs with the world, then the large world, streaming and points of interest.
-- More parts (bumpers, fenders, gauges, a battery and electrical wiring), gears in the transmission, and a bigger map built
-  over several iterations, as the developer asked.
+- A bigger map built over several iterations, as the developer asked (bumpers, fenders, gauges, batteries and gears came in milestone 3).
 
 ## Milestone 1's list, as milestone 2 left it
 
