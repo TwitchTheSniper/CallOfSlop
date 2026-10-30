@@ -8,7 +8,7 @@ namespace CallOfSlop;
 /// tools in the hands are ToolRender.cs. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
 /// each box is one draw like the movers'; lit without the world-space texture, which would swim over a moving surface.
 /// </summary>
-public static class ConstructRender
+public static partial class ConstructRender
 {
     /// <summary>Boxes drawn last frame (smoke log).</summary>
     public static int LastBoxes { get; private set; }
@@ -244,6 +244,21 @@ public static class ConstructRender
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
         var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
+        var glow = new Vector3(1f, 0.93f, 0.6f);
+        if (d.Logic == CLogic.Lamp)
+        {
+            // Its settings (the configure tool): the colour, the brightness and a blink; the panel's preview lights it.
+            var blink = ConstructConfig.Get(p, d, CfgKey.Blink, 0);
+            if (lit && blink > 0 && (Now * blink) % 1.0 >= 0.5)
+                lit = false;
+            var preview = PreviewBody == c && PreviewPart == i;
+            if (!p.Broken && preview)
+                lit = true; // (the panel's live preview: lit in the colour being picked)
+            if (ConstructConfig.Has(d, CfgKey.Colour))
+                glow = preview
+                    ? ConstructConfig.Rgb(PreviewValue(d, CfgKey.Colour, 0xFFED99)) * (PreviewValue(d, CfgKey.Brightness, 100) / 100f)
+                    : ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99)) * (ConstructConfig.Get(p, d, CfgKey.Brightness, 100) / 100f);
+        }
         if (d.HasDial && !p.Broken)
         {
             DrawNeedle(gfx, d, p, Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * seg * body);
@@ -294,7 +309,7 @@ public static class ConstructRender
                 model = box.Model(p.Rot, centre);
             model = model * wheel * seg * body;
             if (lit)
-                gfx.Draw(model, new Vector3(1f, 0.93f, 0.6f), opacity, mode: 2, shape: box.Shape);
+                gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
             else
                 gfx.Draw(model, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;

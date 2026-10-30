@@ -300,6 +300,13 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The configure tool: fire on a part opens its settings panel; shift+fire selects more of a kind.
+        if (h.Tool == ConstructTool.Configure)
+        {
+            SandboxConfigInput(g, me, aimed, hit);
+            return true;
+        }
+
         // Ghost sockets for the held part (a tool out only: bare hands never edit).
         var held = ConstructParts.Get(h.Held);
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
@@ -544,7 +551,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0), // (the linking tool: while a wire is being run)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a wire is being run)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

@@ -996,7 +996,9 @@ public sealed partial class Game
                 {
                     _sbHornAt[slot] = now;
                     c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
-                    Audio.Effect3D(Sfx.LockTone, t + Vector3.Transform(c.Parts[i].Pos, q), 1f);
+                    ref var hp = ref c.Parts[i];
+                    var hd = hp.D; // (its pitch and volume settings: the configure tool)
+                    Audio.Effect3DPitched(Sfx.LockTone, t + Vector3.Transform(hp.Pos, q), ConstructConfig.Get(hp, hd, CfgKey.Volume, 100) / 100f, ConstructConfig.Get(hp, hd, CfgKey.Pitch, 1));
                 }
                 slot++;
             }

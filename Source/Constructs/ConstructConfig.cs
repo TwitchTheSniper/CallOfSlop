@@ -66,8 +66,7 @@ public sealed class CConfigDef
     public float[] Presets = []; // the values the linking tool's R cycles a number through (the part's old "settings" list)
 
     // Text made once at load (the panel draws without allocating)
-    public string UiId = "", ResetId = "", Format = "", DefaultText = "";
-    public byte[] FormatU8 = [];
+    public string UiId = "", InputId = "", ResetId = "", CaptureId = "", Format = "", DefaultText = "", TooltipText = "";
 
     /// <summary>A value held inside what this setting takes: in range and on its step, a whole index, 0/1, a 24-bit colour.</summary>
     public float Clamp(float v)
@@ -325,11 +324,13 @@ public static class ConstructConfig
             foreach (var pv in e.Presets)
                 if (pv < e.Min || pv > e.Max)
                     throw new ConstructPartException($"{file}: \"config\" \"{e.Key}\": the preset {pv.ToString(CultureInfo.InvariantCulture)} (from \"settings\") is outside its range");
-            e.UiId = $"{e.Label}##cfg{a}";
-            e.ResetId = $"R##cfgr{a}";
+            e.UiId = $"##cfgv{a}";
+            e.InputId = $"##cfgi{a}";
+            e.ResetId = $"x##cfgr{a}";
+            e.CaptureId = $"##cfgk{a}";
             e.Format = e.Type == CfgType.Number ? "%." + (e.Step >= 1 ? 0 : e.Step >= 0.1f || e.Step == 0 && e.Max - e.Min >= 20 ? 1 : 2) + "f" + (e.Unit.Length > 0 ? " " + e.Unit.Replace("%", "%%") : "") : "";
-            e.FormatU8 = System.Text.Encoding.ASCII.GetBytes(e.Format + "\0");
             e.DefaultText = "Default: " + e.Show(e.Default);
+            e.TooltipText = (e.Tooltip.Length > 0 ? e.Tooltip + "\n" : "") + (e.Type == CfgType.Number ? $"{e.Show(e.Min)} to {e.Show(e.Max)}. " : "") + e.DefaultText + (e.Presets.Length > 0 ? " (the linking tool's R steps through presets)" : "");
         }
         d.Config = list.ToArray();
         d.CfgSlot = new sbyte[(int)CfgKey.COUNT];
