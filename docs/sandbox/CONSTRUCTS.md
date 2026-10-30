@@ -2017,6 +2017,47 @@ host allows everyone, then its zombies on both sides, a friendly bot and a clear
 6. Zombies leave enemy bots alone; enemy bots ignore zombies.
 7. A construct swipe is a building door's (40 damage); the crowd and mass tiers ignore constructs.
 
+## Snappy building (decision 24, board item sb01)
+
+Building is quick: hold a part and its connection points show, the aim is helped by a screen magnet, and a row of parts
+is one sweep of the mouse. The server still decides everything; the client's ghost is only a preview.
+
+- **Connection types** (`ConnType`, `Source/Constructs/SnapBuild.cs`): Mount (a structural face), Barrel, Muzzle, Optic,
+  Feed, ShaftIn, ShaftOut, Fuel, Power, Data, Hub, Leaf. Part files name none of them: `SnapBuild` reads a type from the
+  part's role, the socket's face and a gun part's category, so no part file changed.
+- **Markers**: while a part is held, its own connection points are drawn on the ghost and every free socket on the aimed
+  construct it can use is drawn too (not only near the aim; they fade out with distance), colour-coded by type
+  (`SnapRender`, `SnapBuild.Colour`). Sockets the part cannot use are hidden.
+- **Single-purpose parts** (barrel, muzzle, optic, feed part, wheel, door: `SnapBuild.SinglePurpose`) show and snap only to
+  their functional sockets. The screen magnet (`SnapBuild.Magnet`) takes the cached socket nearest the crosshair within
+  80 px at 1080 lines (scaled with the window height), nearest by screen distance and then depth. A barrel therefore
+  cannot go on a frame face.
+- **Multi-connection parts** (gearbox, engine, seat) mount by their structural face first. Where one of the placed ghost's
+  functional points lines up with a free matching socket (`SnapBuild.Lineups`), the ghost marks the connection that will
+  be made. **K** (Switch connection point, binds version 15) steps to the next of the part's own sockets that fits;
+  F is Interact and the middle button the tool wheel.
+- **Item parts only**: welder and physics-only parts cannot be ghost-attached from the hands (cargo volumes, decision 21),
+  so snapping from the hands applies to item parts.
+- **Feel**: the ghost eases to a new socket, a soft click and a flash on a new snap, a heavier thunk when the part lands.
+- **Creative only** (infinite parts, and the player has asked for it with the `snap_build` setting, on by default):
+  quick building fits at once and keeps the part in the hands; **hold Fire and sweep** to place the same part on each newly
+  hovered socket (once per socket per press); a quick **middle-button tap** on a part picks its kind into the hands (a
+  held middle button is still the tool wheel); **Ctrl+Z** undoes the last placements (8 kept per player, server-checked:
+  the construct is still theirs, in reach, and the part where it was put); **L** (hold, flick, let go) is a wheel of the
+  last 8 placed kinds.
+- **Cost**: matching sockets are cached per held type and per construct (`SnapCache`), rebuilt only when the construct's
+  signature (parts, turns, links) or the held type changes. A steady frame hashes the construct and allocates nothing.
+- **Network** (protocol 94): `CAct.Snap` at the end of `CActKind` (undo, quick building on or off, pick a part off a
+  construct, take a kind into the hands). No new messages.
+
+**Self-test**: "Sandbox snap build" (`Source/App/SelfTestSandboxSnap.cs`): a barrel sees only a receiver's front and the
+magnet takes it from a near aim but not far off; a muzzle sees nothing on a bare receiver; a gearbox mounts by a face and
+a switch lines its shaft input with an engine's output; every part with sockets reports its points; the switch key; six
+lamps with one held part; pick; undo (and the refusals); the cache rebuilds once per change and allocates nothing.
+
+Choices made (the developer may change them): K and L are the new keys (F and the middle button were taken); the magnet
+is 80 px; 8 placements are kept for undo; quick building and paint are creative-only; survival keeps one press per part.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),

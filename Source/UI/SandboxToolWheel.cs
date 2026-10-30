@@ -42,6 +42,10 @@ public sealed class SandboxToolWheel
     public static readonly RadialIcon Icons = DrawIcon;
 
     private bool _wasHeld;
+    private long _openedAt;
+
+    /// <summary>The wheel was opened and let go at once without choosing (a tap of the key): set for one read by the owner, then cleared.</summary>
+    public bool Tapped;
     private long _keysKey = long.MinValue;
     private readonly IToolOptions?[] _options = new IToolOptions?[(int)Slot.COUNT];
 
@@ -155,6 +159,7 @@ public sealed class SandboxToolWheel
             if (!pressed)
                 return false;
             Menu.Open();
+            _openedAt = Environment.TickCount64;
             return true;
         }
         if (held)
@@ -165,7 +170,10 @@ public sealed class SandboxToolWheel
         var pick = Menu.Release();
         var option = Menu.PickedOption;
         if (pick < 0)
+        {
+            Tapped = Environment.TickCount64 - _openedAt < 220; // a quick tap of the key (snappy building: it picks the aimed part's kind)
             return false; // let go in the middle: a cancel
+        }
         if (ToolOf(pick) is not { } tool)
         {
             g.SandboxSay(pick switch

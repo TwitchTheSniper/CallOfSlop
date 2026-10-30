@@ -24,6 +24,7 @@ public static partial class ConstructRender
     public static int GhostParts; // GhostBody's part count when the ghosts were found (a tick in between that changes it makes them stale)
     public static ConstructPartDef? GhostDef;
     public static bool GhostValid; // the selected one fits as shown
+    public static Vector3 GhostEase; // snappy building: the ghost part is drawn this far (the segment's frame) from where it will sit, easing in after a snap (SnapRender.cs)
     public static Vector3? PlaceAt; // free placement: a new construct's origin on the surface aimed at
     public static Quaternion PlaceRot = Quaternion.Identity; // ...its frame
     public static byte PlaceTurn; // ...the part's Rot24 turn in it
@@ -654,7 +655,7 @@ public static partial class ConstructRender
                         continue;
                     var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * Matrix4x4.CreateTranslation(GhostEase) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
                 Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
             }
