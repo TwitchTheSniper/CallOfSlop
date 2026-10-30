@@ -106,7 +106,7 @@ public static partial class SelfTest
         hand.Held = engine.Id;
         g.SandboxSend(CActKind.Stow);
         var heavy = g.SandboxNotice;
-        Want(hand.Held == engine.Id && heavy.Contains("too heavy"), $"an engine is refused as too heavy (\"{heavy}\")");
+        Want(hand.Held == engine.Id && heavy.Contains("physics-only (heavy"), $"an engine is refused as physics-only, too heavy (\"{heavy}\")"); // (decision 21: over the 40 kg hand-carry limit)
         hand.Held = wheel.Id;
         g.SandboxSend(CActKind.Stow);
         var big = g.SandboxNotice;

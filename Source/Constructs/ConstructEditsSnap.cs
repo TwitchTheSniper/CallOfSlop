@@ -34,14 +34,6 @@ public sealed partial class ConstructEdits
     /// <summary>How many placements this player could undo.</summary>
     public int UndoCount(byte player) => _placedCount[player];
 
-    private void QuickFinish(ConstructWorld world, byte player, ref SandboxHand h, Vector3 eye)
-    {
-        var kind = h.Edit;
-        h.Duration = 0;
-        h.Edit = EditKind.None;
-        Finish(world, player, ref h, kind, eye);
-    }
-
     /// <summary>After a fit or a set-down: a quick builder keeps holding the part, and a creative one's placement is remembered for undo.</summary>
     private void SnapAfter(byte player, ref SandboxHand h, ConstructPartDef def, Construct c, int part)
     {

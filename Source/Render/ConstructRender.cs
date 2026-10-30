@@ -105,6 +105,8 @@ public static partial class ConstructRender
                     n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
             }
             n += DrawWheel(gfx, c, alpha, blendTicks);
+            if (c.HasLogic)
+                n += DrawVolumes(gfx, c, body, blendTicks ? alpha : 1f); // (cargo volumes: a logic part each)
             if (c.Frozen)
             {
                 // Frozen by the physics gun: an icy outline round it too (ConstructGrab.cs).

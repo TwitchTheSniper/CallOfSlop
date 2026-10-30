@@ -206,6 +206,8 @@ public sealed partial class ConstructEdits
             Release(world, player);
         if (c.Frozen)
             Unfreeze(world, c);
+        if (c.CarriedBy != 0)
+            ConstructCargo.Release(world, c); // (taken out of a frozen cargo volume: it isn't caught again while held)
         c.GrabbedBy = player;
         c.GrabLocal = local;
         c.GrabTarget = at;
