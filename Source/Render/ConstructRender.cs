@@ -4,8 +4,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Draws the Sandbox constructs: every part box at its body's pose (joints turned, wheels down on their springs, turning
-/// and steering), damaged parts darker and wrecked ones near black; the ghost sockets of the held part (blended); the
-/// tool in your hands. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
+/// and steering), damaged parts darker and wrecked ones near black; the ghost sockets of the held part (blended). The
+/// tools in the hands are ToolRender.cs. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
 /// each box is one draw like the movers'; lit without the world-space texture, which would swim over a moving surface.
 /// </summary>
 public static class ConstructRender
@@ -240,40 +240,6 @@ public static class ConstructRender
             ab.PartBounds(AimPart, out var mn, out var mx);
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
-        }
-    }
-
-    /// <summary>The tool in your hands (drawn in the world just in front of the eye, low on the right).</summary>
-    public static void DrawTool(Renderer gfx, ConstructTool tool, Vector3 eye, Vector3 fwd, double now, float progress)
-    {
-        if (tool == ConstructTool.None)
-            return;
-        var right = Vector3.Normalize(Vector3.Cross(fwd, Vector3.UnitY));
-        var up = Vector3.Cross(right, fwd);
-        var basis = new Matrix4x4(right.X, right.Y, right.Z, 0, up.X, up.Y, up.Z, 0, -fwd.X, -fwd.Y, -fwd.Z, 0, 0, 0, 0, 1);
-        var work = progress > 0 ? MathF.Sin((float)now * 18f) * 0.02f : 0f;
-        var at = eye + fwd * (0.55f + work) + right * 0.28f - up * 0.24f;
-        var frame = basis * Matrix4x4.CreateTranslation(at);
-        if (tool == ConstructTool.Wrench)
-        {
-            gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.035f, 0.32f) * Matrix4x4.CreateTranslation(0, 0, -0.08f) * frame, new Vector3(0.62f, 0.64f, 0.68f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.1f, 0.03f, 0.06f) * Matrix4x4.CreateTranslation(0, 0, -0.26f) * frame, new Vector3(0.7f, 0.72f, 0.76f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.045f, 0.045f, 0.12f) * Matrix4x4.CreateTranslation(0, 0, 0.06f) * frame, new Vector3(0.75f, 0.2f, 0.15f), 1f, mode: 0);
-        }
-        else if (tool == ConstructTool.Linker)
-        {
-            // A reel of wire with a probe.
-            gfx.Draw(Matrix4x4.CreateScale(0.1f, 0.1f, 0.06f) * Matrix4x4.CreateTranslation(0, 0, 0.02f) * frame, new Vector3(0.2f, 0.45f, 0.95f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.03f, 0.03f, 0.2f) * Matrix4x4.CreateTranslation(0, 0, -0.12f) * frame, new Vector3(0.85f, 0.75f, 0.2f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.13f, 0.05f) * Matrix4x4.CreateTranslation(0, -0.09f, 0.04f) * frame, new Vector3(0.18f, 0.18f, 0.2f), 1f, mode: 0);
-        }
-        else
-        {
-            gfx.Draw(Matrix4x4.CreateScale(0.06f, 0.07f, 0.22f) * Matrix4x4.CreateTranslation(0, 0, -0.02f) * frame, new Vector3(0.95f, 0.65f, 0.15f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.025f, 0.025f, 0.16f) * Matrix4x4.CreateTranslation(0, -0.01f, -0.2f) * frame, new Vector3(0.3f, 0.3f, 0.32f), 1f, mode: 0);
-            gfx.Draw(Matrix4x4.CreateScale(0.04f, 0.12f, 0.05f) * Matrix4x4.CreateTranslation(0, -0.08f, 0.04f) * frame, new Vector3(0.18f, 0.18f, 0.2f), 1f, mode: 0);
-            if (progress > 0)
-                gfx.Draw(Matrix4x4.CreateScale(0.05f + 0.03f * MathF.Sin((float)now * 40f)) * Matrix4x4.CreateTranslation(0, -0.01f, -0.3f) * frame, new Vector3(0.7f, 0.9f, 1f), 0.9f, mode: 2);
         }
     }
 

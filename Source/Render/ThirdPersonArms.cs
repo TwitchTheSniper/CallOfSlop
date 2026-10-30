@@ -156,6 +156,25 @@ public static class ThirdPersonArms
     }
 
     /// <summary>
+    /// Poses both arms onto hand targets in the world (a Sandbox tool or a carried part instead of a gun; ToolRender.cs),
+    /// from the shoulders of <paramref name="p"/>'s stance in <paramref name="body"/>. Call <see cref="Draw"/> right after.
+    /// </summary>
+    public static void PoseHands(Player p, in HandTarget right, in HandTarget left, in Matrix4x4 body)
+    {
+        var (rr, lr) = p.RenderStance switch
+        {
+            Stance.Crouch => (new Vector3(0.33f, 0.8f, 0.05f), new Vector3(-0.33f, 0.8f, -0.05f)),
+            Stance.Prone => (new Vector3(0.25f, 0.32f, -0.45f), new Vector3(-0.25f, 0.32f, -0.5f)),
+            _ => (new Vector3(0.33f, 1.38f, 0.1f), new Vector3(-0.33f, 1.38f, 0f)),
+        };
+        Right.Root = rr;
+        Left.Root = lr;
+        Right.Solve(right, body, Vector3.Zero);
+        Left.Solve(left, body, Vector3.Zero);
+        _colors = ArmColors.For(p.Color * 0.75f);
+    }
+
+    /// <summary>
     /// The pose (gun space -> world) <paramref name="def"/> was last drawn at in this player's hands, if it was drawn in
     /// the last quarter second: shots from another player start at the muzzle of the gun you see them holding.
     /// </summary>

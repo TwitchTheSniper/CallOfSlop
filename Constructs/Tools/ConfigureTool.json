@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Configure Tool",
+  "tool": "configure",
+  "description": "Still to come: a handset with a screen, sliders and a dial, for setting up parts in detail.",
+  "boxes": [
+    { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0], "color": "#2b2b2e" },
+    { "size": [0.12, 0.09, 0.03], "at": [0, 0.075, -0.02], "color": "#3c4048" },
+    { "size": [0.09, 0.04, 0.004], "at": [0, 0.09, -0.003], "color": "#60b0ff", "glow": true },
+    { "size": [0.012, 0.02, 0.012], "at": [-0.03, 0.05, -0.001], "color": "#e08a2a" },
+    { "size": [0.012, 0.02, 0.012], "at": [0, 0.045, -0.001], "color": "#e08a2a" },
+    { "size": [0.012, 0.02, 0.012], "at": [0.03, 0.055, -0.001], "color": "#e08a2a" },
+    { "size": [0.03, 0.012, 0.03], "at": [0.04, 0.126, -0.02], "color": "#c8ccd0", "spin": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-10, 0, 0], "shape": "wrap" },
+  "hold": [18, 0, 0],
+  "tip": [0, 0.09, -0.035],
+  "spin": { "axis": [0, 1, 0], "pivot": [0.04, 0.126, -0.02] },
+  "use": { "motion": "jitter", "amount": 0.003, "rate": 9, "spin": 5 }
+}

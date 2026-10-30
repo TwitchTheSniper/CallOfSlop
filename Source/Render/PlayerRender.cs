@@ -66,6 +66,8 @@ public static class PlayerRender
     {
         var viewer = LegAnimator.Viewer;
         LegAnimator.Viewer = new Vector3(1e7f); // far away: no foot rays into whatever map is behind the menu
+        var hands = ToolRender.Hands;
+        ToolRender.Hands = null; // (the menu's model holds its gun, whatever a Sandbox match left in the hands)
         try
         {
             var body = Matrix4x4.CreateRotationY(-p.RenderYaw) * Matrix4x4.CreateTranslation(p.RenderPosition);
@@ -84,6 +86,7 @@ public static class PlayerRender
         finally
         {
             LegAnimator.Viewer = viewer;
+            ToolRender.Hands = hands;
         }
     }
 
@@ -111,6 +114,15 @@ public static class PlayerRender
     /// <summary>Another player's gun with arms holding it (Source/Render/ThirdPersonArms.cs).</summary>
     private static void DrawArmed(Renderer g, Player p, in Matrix4x4 gunPose, in Matrix4x4 body, double time)
     {
+        var tool = new ToolFrame();
+        if (ToolRender.ThirdPerson(p, gunPose, body, time, ref tool))
+        {
+            // A Sandbox tool (or a carried part) in their hands instead of the gun (Source/Render/ToolRender.cs).
+            var o = new ToolGfxOut(g);
+            ToolRender.Emit(ref o, tool);
+            ThirdPersonArms.Draw(g);
+            return;
+        }
         var def = p.WeaponDef;
         var shot = ThirdPersonArms.ShotFlash; // the muzzles of their last shot flash (Source/Game/GameMuzzle.cs)
         GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;
