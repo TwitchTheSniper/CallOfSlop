@@ -227,6 +227,8 @@ public sealed class ConstructPartDef
     public Vector3 DialAt; // the needle's hub (part frame)
     public byte DialDir; // the face it is on (out of the part)
     public float DialMax = 1f; // the signal at full scale (270 degrees)
+    public FaceHint Faces; // smart rotation (SmartRotation.cs): which way its face should point ("faces"; else its role's default)
+    public byte FaceAxis = 5; // ...and which of its own directions is that face ("faceAxis"; -z, its front, by default)
 
     // Drivetrain families (docs/sandbox/CONSTRUCTS.md, "Drivetrain parts"; ConstructDrive.cs)
     public float EngineTorque; // engine: peak torque at the crank, N m
@@ -441,7 +443,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "faces", "faceAxis",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -753,6 +755,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: only wheels and suspensions have \"axle\" sockets");
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
+        SmartRotation.ParseFaces(d, Opt(root, "faces"), Opt(root, "faceAxis"), file);
         ConstructConfig.Parse(d, root, file); // (last: it folds in the role's own choice and checks the keys fit the part)
         return d;
     }
@@ -1040,7 +1043,7 @@ public static partial class ConstructParts
         _ => -Vector3.UnitZ,
     };
 
-    private static byte DirOf(string s, string file, string where)
+    internal static byte DirOf(string s, string file, string where)
     {
         var i = Array.IndexOf(DirNames, s.ToLowerInvariant());
         return i >= 0 ? (byte)i : throw new ConstructPartException($"{file}: {where}: a direction is one of {string.Join(", ", DirNames)}");

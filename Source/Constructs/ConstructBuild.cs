@@ -379,7 +379,7 @@ public static class ConstructBuild
                                 case "on": on = f.Value.GetInt32(); break;
                                 case "socket": sock = f.Value.GetString() ?? ""; break;
                                 case "by": own = f.Value.GetString() ?? ""; break;
-                                case "spin": spin = f.Value.GetInt32(); break;
+                                case "spin": spin = f.Value.ValueKind == JsonValueKind.String && f.Value.GetString() == "auto" ? -1 : f.Value.GetInt32(); break; // ("auto": smart rotation's guess, SmartRotation.BestSpin)
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
                                 default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config)");
@@ -438,7 +438,7 @@ public static class ConstructBuild
             }
             if (k == 0)
             {
-                partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(spin % Rot24.Count));
+                partOf[0] = world.AddPart(c, def, Vector3.Zero, (byte)(Math.Max(spin, 0) % Rot24.Count));
                 SetSetting(c, partOf[0], def, bp.StepSettings[0]);
                 SetConfig(c, partOf[0], def, bp, 0);
                 continue;
@@ -453,6 +453,8 @@ public static class ConstructBuild
                 world.Remove(c);
                 return null;
             }
+            if (spin < 0)
+                spin = Math.Max(0, SmartRotation.BestSpin(c, target, ts, def, ds)); // (a step whose turn is "auto")
             if (Place(c, target, ts, def, ds, spin, out var g) is { } bad)
             {
                 why = $"step {k}: {def.Name} on {td.Name} \"{sock}\": {bad}";

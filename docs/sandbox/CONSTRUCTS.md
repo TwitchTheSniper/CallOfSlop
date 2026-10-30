@@ -49,7 +49,8 @@ and attaching to a socket) turns with the same keys, each a quarter turn relativ
   the construct face.
 - **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
 - **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
-- **R**: back to the default orientation (it no longer steps through the turns).
+- **R**: back to the default orientation: smart rotation's guess ([Smart rotation](#smart-rotation)); pressed while
+  at a guess, the next best guess.
 
 The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
 which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
@@ -72,6 +73,61 @@ a Frame Block's every socket, at three construct yaws and every 30 degrees of lo
 placement in the same frame, its opposite comes back to the default, four come round; a Frame Beam (which can't take every
 turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
 kept; nothing allocates.
+
+### Smart rotation
+
+Board item dev-sandbox-smart-rotation-sr01, design decision 22 (`Source/Constructs/SmartRotation.cs`, the weights in
+`Constructs/SmartRotation.json`). The ghost on a socket no longer starts at a fixed "upright, facing -Z" turn: every turn
+the held part can take there (each of its own sockets times four spins, one per distinct turn; turns that are in the way
+are never candidates) is scored by context and the best is the ghost's first guess, shown at once. **R** goes back to the
+guess, and pressed while the ghost is at a guess it steps to the next best, so a wrong guess is one press away; the arrow
+keys turn it as before ([Turning the ghost](#turning-the-ghost)). The signals, each weighted in the JSON file:
+
+- **The vehicle frame**: forward and up from the driver's seat, else the first seat, else the root part (an anchored or
+  pinned build takes the world's up), so a chassis built at any angle works. `upright` scores the part's top along that
+  up, `front` its front (-Z) along that forward.
+- **Facing hints** (`facing`): a part file's `"faces"` / `"faceAxis"`, else its role's default: seats and guns face
+  forward, wheels put their outer face (+X) away from the centre plane, panels their front (+Y) and doors theirs (+Z)
+  away from the construct's centre, gauges their dial towards the nearest seat. `back` and `up` are there for tail lights
+  and exhausts.
+- **Mirror symmetry** (`mirror`): if the same part sits at the mirrored spot across the centre plane (the plane through
+  the frame part's centre, square to the vehicle's right), the turn that mirrors its turn (its face and its top mirrored)
+  wins: the right wheel matches the left.
+- **Repetition**: the same parts next to it (`neighbour`, by the share of them with that turn: a row of panels or lights
+  lines up), and the turn the player last chose for this part (`lastChoice`), relative to the vehicle frame.
+- **Corrections** (`learned`): when the player places a part turned away from the guess, that turn is remembered for the
+  part, the socket kind and the side of the vehicle the socket faces (relative to the frame) and preferred next time.
+  Free placement keeps its own.
+- **Clearance**: a blocked turn is never listed; covering another part's free socket (`coveredSocket`, each, at most four;
+  a socket the part meets with one of its own doesn't count, it welds) or a facing part's face right against another
+  part (`facingWall`) scores lower.
+
+Ties break by the old fixed order (upright, then facing -Z in the construct's frame), then the lowest variant, so the
+same build always gives the same guess. Free placement uses it too: the new construct's frame is the vehicle frame, so a
+part in hand starts upright facing the look, or the way it was last set down (R steps through the 24 turns in score
+order). A blueprint step's `"spin": "auto"` takes the context guess (no memory). The physics gun's Shift snap is not
+affected: it snaps a held construct to 45 degree steps, not a part to a socket.
+
+The guess is the client's alone: the client sends the variant (own socket and spin in the fixed order) it shows, and the
+server checks it exactly as before, so nothing changed on the wire. Ranking runs only when the aimed socket, the held
+part, the construct's part count or the setting changes, never per frame, and allocates nothing (at most 24 candidates).
+The parts menu's **Smart rotation** box (on by default, saved as `smart_rotation` in settings.txt) turns it off for the
+fixed order. The corrections are saved in settings.txt too (`smart_rotation_learned`, part names, at most 256, the
+oldest going first); the last choices last the session.
+
+**Self-test**: the **Construct smart rotation** section (`Source/App/SelfTestSmartRotation.cs`): a left wheel's guess
+puts its outer face out to the left, and with the left wheel turned off its guess the right wheel's guess mirrors it; a
+seat on a chassis turned 90 degrees faces the chassis's front where the fixed order faced -Z, and a second seat faces the
+first's front; a third panel continues its row's turn; after one correction the next same seat (on another construct)
+takes it, also after a settings.txt round trip, and free placement learns the same way; with forward blocked the guess
+is a free upright turn and every listed turn fits; two identical builds rank the same; a blueprint's `"auto"` step; the
+weights file loads and a bad one is refused, as is a bad `"faces"`; ranking allocates nothing.
+
+Choices made (the developer may change them): the corrections are saved in settings.txt (Settings fitted: one line)
+rather than kept for the session only; R both resets and cycles (no new key); the centre plane passes through the frame
+part (the driver's seat), not the build's middle, so a half-built car's mirror is stable; the context for a correction is
+the part, the socket kind and the side of the vehicle the socket faces; the weights are the file's (upright 2, front 1,
+facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 each, facing a wall 3).
 
 ### The tool wheel (decision 17)
 
@@ -553,6 +609,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
 | `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
 | `config` | The part's settings schema (up to 8), the configure tool's panel ([The configure tool](#the-configure-tool)). |
+| `faces`, `faceAxis` | Smart rotation's facing hint ([Smart rotation](#smart-rotation)): `faces` is `none`, `forward`, `back`, `up`, `outward`, `side` or `toSeat`, and `faceAxis` which of the part's own directions is its face (`-z`, its front, by default). Without them the role decides (seats and guns `forward` by `-z`; wheels `side` by `+x`; panels `outward` by `+y`; doors `outward` by `+z`; gauges `toSeat` by their dial's face). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -574,7 +631,8 @@ same rules a player builds by, so a blueprint that loads proves the rules can bu
 ] }
 ```
 
-A step may carry `"setting": n` (a logic part's starting setting) and `"config": {"period": 2.5, "colour": "#ff2010",
+A step's `"spin"` (0 to 3, the fixed order) may be `"auto"`: smart rotation's context guess for that socket and `by`
+socket, without any player's memory, so every machine builds it the same ([Smart rotation](#smart-rotation)). A step may carry `"setting": n` (a logic part's starting setting) and `"config": {"period": 2.5, "colour": "#ff2010",
 "startOn": true, "setting": "jump"}` (its settings by key: numbers, true/false, colours, option names), and a blueprint may list `"wires": [[from step, to
 step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 parts: rear-wheel drive through a
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6

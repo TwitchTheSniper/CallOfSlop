@@ -28,6 +28,8 @@ public sealed class Settings
     public float Sensitivity = 1f; // multiplier
     public float Fov = 75f;
     public bool InvertY;
+    public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
+    public List<string> SmartRotationLearned = new(); // ...and the player's corrections ("Part|kind|side|turn"; SmartRotationMemory.Save)
 
     // Audio / video
     public float Volume = 0.8f;
@@ -401,6 +403,12 @@ public sealed class Settings
                     case "sensitivity" when float.TryParse(v, inv, out var f): s.Sensitivity = Math.Clamp(f, 0.1f, 5f); break;
                     case "fov" when float.TryParse(v, inv, out var f): s.Fov = Math.Clamp(f, 60f, 110f); break;
                     case "invert_y": s.InvertY = v == "1"; break;
+                    case "smart_rotation": s.SmartRotation = v != "0"; break;
+                    case "smart_rotation_learned":
+                        foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                            if (s.SmartRotationLearned.Count < SmartRotationMemory.MaxLearned && part.Length <= 64 && part.All(ch => ch >= 32 && ch < 127))
+                                s.SmartRotationLearned.Add(part);
+                        break;
                     case "volume" when float.TryParse(v, inv, out var f): s.Volume = Math.Clamp(f, 0f, 1f); break;
                     case "music_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.MusicVolume = Math.Clamp(f, 0f, 1f); break;
                     case "effects_volume" when float.TryParse(v, inv, out var f) && float.IsFinite(f): s.EffectsVolume = Math.Clamp(f, 0f, 1f); break;
@@ -521,6 +529,8 @@ public sealed class Settings
                     $"sensitivity={Sensitivity.ToString(inv)}",
                     $"fov={Fov.ToString(inv)}",
                     $"invert_y={(InvertY ? 1 : 0)}",
+                    $"smart_rotation={(SmartRotation ? 1 : 0)}",
+                    $"smart_rotation_learned={string.Join(",", SmartRotationLearned)}",
                     $"volume={Volume.ToString(inv)}",
                     $"music_volume={MusicVolume.ToString(inv)}",
                     $"effects_volume={EffectsVolume.ToString(inv)}",
