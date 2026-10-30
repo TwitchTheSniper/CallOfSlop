@@ -458,6 +458,125 @@ wrecked (there is no repair yet, so it stays salvageable); after a fit the next 
 automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
 scrap rates by material.
 
+## Physical storage (decision 18)
+
+The developer's decision 18 (2026-10-29, "Inventories"; board item dev-sandbox-physical-storage-ps02): creative keeps the
+inventory window (above); survival keeps things physical. Storage parts are construct parts with **slots** you set parts
+into in the world, and bins that hold bulk material with a visible fill level. There is no storage screen: the only UI is
+the look-at tooltip. It works on every Sandbox map (the parts are parts), so the yard's creative players can use it too.
+
+### The parts (`Constructs/Parts/Storage`)
+
+- **Chest** (wrench): two medium slots inside an open steel box. The **Chest** blueprint adds a **Lid Hinge** (a long,
+  flat motorised hinge, `power` 0) on its back edge and a **Chest Lid** on that: F on the lid opens and shuts it. Shut,
+  the lid is in the way: nobody sees into the chest or takes anything out (the look ray meets the lid).
+- **Parts Shelf** (welder): two big slots below (an engine fits), three **parts bins** above, each piling up to six of
+  one small part (a pile of lamps, of buttons...).
+- **Wheel Rack** (welder): three slots that take only wheels, standing upright (a slot's shape).
+- **Scrap Bin** (welder): an open bin of 500 **scrap**; its level rises with what is in it.
+- **Scrap Bundle**: what a broken bin spills (wrecked: salvaged with the wrench for 50 scrap).
+- Blueprint **Storage Corner**: a foundation with a shelf and a bin on it (anchored).
+
+More storage (crates, tool and gun racks, pegboards, cargo beds) is data: a part with `"role": "storage"` and a
+`"storage"` block.
+
+```json
+"storage": {
+  "slots": [
+    { "min": [-0.405, 0.045, -0.255], "max": [-0.005, 0.545, 0.255] },
+    { "min": [-0.51, 0.06, -0.42], "max": [-0.19, 0.88, 0.42], "fits": ["wheel"], "label": "wheel" },
+    { "min": [-0.56, 0.64, -0.26], "max": [-0.2, 1.16, 0.26], "stack": 6, "label": "parts bin" }
+  ]
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `slots` | Up to 12 boxes in the part's frame (`min`/`max`, or `size` and `at`), at least 5 cm a side, inside the part, clear of its solid boxes and of each other: the room a stored part takes. |
+| `fits` | Optional: only parts of these roles (`wheel`, `engine`, `gun`...): a slot of a **shape**. Without it, any part whose box fits. |
+| `stack` | 1 to 12: how many of one kind pile up in it (a bin of small loose items). |
+| `label` | What the tooltip calls the slot ("wheel", "parts bin"); without it the **size class** from its longest side: small (up to 35 cm), medium (up to 70 cm), large. |
+| `bulk` | Instead of slots: `material` (`scrap`; more materials come with resources), `capacity` (up to 60,000) and the fill box (`min`, `max`) its contents rise in. |
+
+A part **fits** a slot when its box goes inside the slot's in one of its 24 turns (upright turns are tried first, no
+turn first); it sits centred on the slot's floor in that turn. A pile stacks its copies up as far as the slot's height
+allows (at least one drawn; the count is in the tooltip). A bad block is refused with the reason
+(`--check-construct-parts`).
+
+### Using it
+
+- **Putting a part away**: carry it (from the rack, the parts menu, picked up, taken off with a tool), look at a storage
+  part within reach (3.2 m): every slot it fits lights up as a **ghost outline** (blue), the one nearest the crosshair
+  green with the part shown where it would sit. **Click** sets it in, at once, with any hands (a tool out or not). A part
+  carried in both hands no longer fires the gun.
+- **Taking it out**: look at a stored part and press **F**: it comes into your (empty) hands. Anyone may: stored parts
+  can be stolen. A pile gives one at a time.
+- **A bin**: F tips in all the scrap you carry (as much as fits); with none on you, F takes a load of 100 out.
+- **The tooltip** (the look line): "Chest: 1/2 slots used (1 part), 2 medium slots - click a lit slot to set the Lamp
+  in"; "Lamp x4 (6 fit) in the Parts Shelf, 100% - F to take one"; "Scrap Bin: 230/500 scrap - F: tip in your 40 scrap".
+- **Damage**: a stored part is hit like any part (bullets, construct guns, blasts: a blast on the container hits what is
+  in it); its armour counts, and at zero health it is destroyed. A container that goes (broken off, taken off, wrecked)
+  **spills** what it held where it was, as loose parts anyone may pick up (a pile as many as there were, while the caps
+  on bodies allow; the rest is lost and logged), and a bin's scrap as up to six scrap bundles. A loose container still
+  holding something can't be picked up ("empty the Chest first").
+- **Survival salvage**: on a map with `"infiniteParts": false` and `"partsMenu": false` (survival) nothing is counted
+  abstractly: a part salvaged (or taken off your own construct) comes into your **hands**, or is set down where it came
+  off when they are full, ready to be carried to storage. A wrecked part still gives scrap, which counts on the player
+  (until carrying is decided) and goes into bins. Creative maps keep the counted inventory as before.
+
+### Server, network and state (protocol 84)
+
+- Each storage part holds a handle (`CPart.Store`) into the world's pool of stores (`ConstructWorld.Stores`, 128 of them,
+  allocated once): per slot the stored part's type, its turn, how many and the top one's health; a bin's amount. The
+  handle moves with the part when constructs split or renumber, so nothing is copied.
+- The server decides every change (`CActKind.StoreIn`, `TakeStored`, `Bin`; checked again: reach, the hands, the fit).
+  Two players taking the same part: the first request the server handles wins; the other is told "that slot is empty".
+- A construct's structure lists its storage parts' handles; **`CBodyKind.Store`** sends one container's contents when
+  they change (four bytes a slot, or two for a bin), after the structures in the same tick; a joiner gets every live
+  store. Bad values are refused.
+- `ConstructStorage.Write` / `Read` are the state's bytes (the same as the wire's): a world save, when there is one, will
+  write them as they are. Nothing is saved yet (constructs reset with the match).
+- Drawing: each stored part's boxes are drawn with its container (its segment's pose: a store on a turntable turns with
+  it), a bin's fill as a box with lumps on top; nothing allocates per frame or per tick (the fit check the look runs each
+  frame returns a code, not text; the tooltip is rebuilt only when what it shows changes).
+
+### Self-test and pictures
+
+The **Construct storage** section (`Source/App/SelfTestConstructStorage.cs`): the storage parts load with their slots and
+ten kinds of bad block are refused for their reason; what fits (a suspension in a chest slot, not an engine; an engine on
+the shelf; a wheel in the rack, not a suspension; six lamps pile, the seventh and a button refused); the state's bytes
+read back the same (a truncated or unknown one refused); in an offline game on the yard the shut lid hides the chest's
+slot and F opens it, a suspension set in is stored, sits inside its slot and a ray finds it there, an engine is refused
+and stays in the hands, a taken slot is refused, taking out returns it to the hands, two players taking one part: the
+first wins, a stored lamp shot to pieces goes (the chest untouched), the shelf piles six lamps and refuses a button, a
+loose stocked shelf can't be picked up, the bin takes 120 scrap and gives 100 back with its level rising, a destroyed
+chest spills its suspension and battery as loose parts and frees its store, a broken bin spills six bundles, and in
+survival the gate's door salvaged comes into the hands; no allocation in 120 ticks of stocked storage, rays into the
+slots, fit checks, takes and sets and the store's message; and a real host with two clients: a client's part goes in,
+both clients see the contents, both grab the same part and exactly one gets it, and a late joiner sees the contents.
+
+`--storage-shots` (Program.StorageShots.cs) writes `smoke_storage_*.bmp` under xvfb: the row of storage empty and
+stocked, the chest shut and open, the slot outlines for a carried lamp with the tooltip, the stocked shelf, the wheel
+rack, the bin half full and full, and a destroyed chest's contents spilled.
+
+### Choices made (the developer may change them)
+
+- **Carrying is unchanged**: one part in the hands; a belt, backpack, weight and size limits are the developer's open
+  question and are not built.
+- Storage works on every Sandbox map, creative too (alongside the inventory window).
+- Setting in and taking out are **instant** (no tool, no timer); clicking with any hands.
+- Fitting is by the part's **box** (it must physically fit in some turn), plus an optional role filter for shapes;
+  smaller parts fit bigger slots.
+- The chest lid is a **motorised** hinge (a passive hinge's latch can't hold a lid up against gravity); like other
+  motors it needs power on a map that requires it.
+- **Survival salvage** goes to the hands (or is set down when they are full); scrap still counts on the player, and bins
+  store it (F tips all in, or takes 100 out). Scrap is the only bulk material until resources exist.
+- Stored parts add **no mass** to their construct yet, and keep only the top one's health in a pile (a part taken out
+  comes out whole, as the hands carry no health).
+- A spilled pile becomes as many loose parts as the caps allow; a broken bin's scrap becomes at most six bundles of 50.
+- A loose container holding anything can't be picked up; a construct that is cleared away (debris expiry) takes its
+  contents with it.
+
 ## Construct weapons (milestone 3)
 
 Decision 10: construct weapon parts like the Zombies weapon builder's, but assembled in the world into fixed or turreted
@@ -957,7 +1076,8 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 ## Next: milestone 3 and later
 
-- **Salvage** (done, above). Still to come with it: the 3D inventory window, materials, repair, saving inventories.
+- **Salvage** (done, above). Still to come with it: materials, repair, saving inventories.
+- **Physical storage** (done, above). Still to come: carrying limits (the developer's question), more storage parts, saving with the world.
 - **Construct weapons** (done, above). Still to come with them: artillery (and craters, decision 16), guided or
   flying rockets, a zoomed gunner view through an optic, enemies manning guns.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
