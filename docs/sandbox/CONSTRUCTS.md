@@ -561,10 +561,47 @@ both clients see the contents, both grab the same part and exactly one gets it, 
 stocked, the chest shut and open, the slot outlines for a carried lamp with the tooltip, the stocked shelf, the wheel
 rack, the bin half full and full, and a destroyed chest's contents spilled.
 
+### The backpack
+
+The developer's answer on carrying (2026-10-30): the hands plus a visible backpack of about eight slots of different
+sizes, still no inventory screen. Every Sandbox player wears one (`ConstructEdits.Packs`, Source/Constructs/ConstructBackpack.cs):
+
+- **The layout is data**: the **Backpack** storage part (`Constructs/Parts/Storage/Backpack.json`): a pack frame with
+  four small pouches, a big bag, two side pouches and a hip pouch, and `"maxMass": 40` (a storage block's new optional
+  limit: no part heavier than that goes in). A part goes in when its box fits a slot (as for any storage) and it weighs
+  at most 40 kg: a lamp, a battery, a suspension, a gun barrel do; an engine is too heavy, a wheel too big, and storage
+  parts never go inside storage. As a part, the backpack also works as storage bolted onto a construct.
+- **Keys** (rebindable; binds version 11, given to older files when the key is free): **Stow** (H) puts the part in
+  your hands into the smallest free slot it fits ("the Engine is too heavy for the backpack (120 kg; it takes 40)", "the
+  Wheel is too big for the backpack (carry it in your hands)", "no free backpack slot takes the Battery"); **Draw** (J)
+  takes the next part out into empty hands, round the slots from the last one drawn. Not while seated. The hands still
+  carry one part, as before.
+- **Seen**: on every player's back in third person (the pack frame and the parts in their slots; `BackpackRender`,
+  the immediate path and the scene graph's `PackNode` emit the same boxes), and in first person as a strip of the slot
+  outlines at the bottom of the screen (`UiSandboxPack.cs`), each square sized by its class with its letter (S, M) and the
+  part in it as a tiny 3D tile from the inventory's atlas (a colour swatch until the tile is made). The HUD line says
+  "Backpack 2/8: Suspension, Lamp (H: stow, J: draw)" while it holds anything.
+- **Server and network**: the server decides (`CActKind.Stow`, `CActKind.Draw`); a changed pack goes to every client
+  (`CBodyKind.Pack`: the player id and the store's bytes, the same format as storage) and a joiner gets every pack that
+  holds anything. Packs empty with a new match.
+- **Death**: the pack's contents drop round the body as loose parts anyone may pick up (the hands' part goes back as
+  before); a player who leaves drops theirs too. Chosen over keeping them: survival stays physical, and what a player
+  carried can be looted.
+
+The **Sandbox backpack** section (`Source/App/SelfTestSandboxBackpack.cs`): the layout (eight slots, three kinds, a weight
+limit) and the keys (unshared, migrated from binds version 10); in an offline game a lamp stows into a small slot and a
+suspension into the big bag, an engine is refused as too heavy and a wheel as too big (both stay in the hands), drawing
+is refused with full hands, takes both parts out in turn, then says the pack is empty; the pack is drawn behind the
+player with its parts, the HUD line and the eight-slot strip show (headless, no ImGui error, nothing allocated per
+frame); the pack's message and drawing allocate nothing; a death drops both parts near the body and empties it; and a
+real host with two clients: a client's stow reaches the server, its own copy, the other client and a late joiner.
+`--storage-shots` adds `smoke_storage_backpack_*.bmp` (from behind, from the side, the first-person strip).
+
 ### Choices made (the developer may change them)
 
-- **Carrying is unchanged**: one part in the hands; a belt, backpack, weight and size limits are the developer's open
-  question and are not built.
+- **Carrying**: one part in the hands plus the backpack above (eight slots, 40 kg a part); no belt yet.
+- **The backpack** drops its contents on death (rather than keeping them); stowing picks the smallest slot that fits;
+  drawing goes round the slots; keys H and J.
 - Storage works on every Sandbox map, creative too (alongside the inventory window).
 - Setting in and taking out are **instant** (no tool, no timer); clicking with any hands.
 - Fitting is by the part's **box** (it must physically fit in some turn), plus an optional role filter for shapes;

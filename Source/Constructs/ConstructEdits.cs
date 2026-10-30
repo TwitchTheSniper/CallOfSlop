@@ -45,7 +45,7 @@ public struct SandboxHand
 /// redone here: the tool must fit the part, the socket must be free and within reach, nothing may be in the way.
 /// Per-player state is a fixed array: nothing allocates.
 /// </summary>
-public sealed class ConstructEdits
+public sealed partial class ConstructEdits
 {
     public readonly SandboxHand[] Hands = new SandboxHand[256];
 

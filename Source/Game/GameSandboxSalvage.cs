@@ -90,6 +90,10 @@ public sealed partial class Game
         if (!IsServer)
             return;
         SandboxInv.Clear(p.Id);
+        if (p.Alive)
+            SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (what a leaving player carried stays in the world)
+        SandboxHands.Pack(p.Id).Reset(SandboxHands.Pack(p.Id).SlotCount);
+        SandboxHands.PackDirty.Add(p.Id);
         foreach (var c in Constructs.Bodies)
             if (c.Owner == p.Id)
             {

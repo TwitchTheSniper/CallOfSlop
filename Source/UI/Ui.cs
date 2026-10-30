@@ -186,6 +186,7 @@ public sealed partial class Ui : IDisposable
         var (pos, size) = HudArea(settings.HudWidth);
         var pad = 24 * _scale;
         var local = game.Local;
+        DrawSandboxPack(game, pos, size); // Sandbox: the backpack's slots (UiSandboxPack.cs)
 
         // ---- Top-left: session info -------------------------------------------------
         ImGui.SetNextWindowPos(new float2(pos.X + pad, pos.Y + pad));

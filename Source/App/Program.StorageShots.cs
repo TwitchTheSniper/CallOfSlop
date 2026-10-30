@@ -42,11 +42,12 @@ public static unsafe partial class Program
         me.ImmuneUntil = 1e9;
         var w = g.Constructs;
 
-        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool hud = false)
+        void Shot(string name, Vector3 eye, Vector3 target, bool ghosts = false, bool hud = false, bool players = false, int frames = 3)
         {
-            for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
+            for (var frame = 0; frame < frames && !_window.ShouldClose; frame++)
             {
                 Glfw.PollEvents();
+                SandboxTiles.Pump(Gfx); // (the backpack strip's tiny tiles, as the main loop makes them)
                 var fb = _window.FramebufferSize;
                 Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
                 Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),
@@ -54,6 +55,13 @@ public static unsafe partial class Program
                 Gfx.SetFog(map.Sky, map.FogStart, map.FogEnd);
                 DrawArena();
                 DrawSandbox(now);
+                if (players)
+                {
+                    LegAnimator.Viewer = eye;
+                    foreach (var p in g.Players.Values)
+                        if (p.Alive)
+                            DrawPlayer(p);
+                }
                 if (ghosts)
                 {
                     Gfx.SetBlend(true);
@@ -69,7 +77,7 @@ public static unsafe partial class Program
                     Ui.DrawHud(g, now, "", _settings);
                     Ui.EndFrame();
                 }
-                if (frame == 2)
+                if (frame == frames - 1)
                 {
                     _shotFull = hud;
                     SaveScreenshot($"storage_{name}");
@@ -167,6 +175,25 @@ public static unsafe partial class Program
         w.DamagePart(chest, box, 100000, out _);
         Run(2.0);
         Shot("chest_spilled", cc + new Vector3(0.5f, 2.2f, 2.4f), cc);
+        // The backpack: worn with a lamp, a battery, a suspension and a gun barrel in it, from behind and the side; then
+        // the first-person strip on the HUD.
+        ToolRender.Hands = g.SandboxHands;
+        me.Teleport(ConstructWorld.Ground(World.Query, x0 + 1, z0 + 6) + new Vector3(0, 0.05f, 0));
+        foreach (var name in new[] { "Lamp", "Battery", "Suspension", "Gun Barrel", "Button" })
+        {
+            hand.Held = ConstructParts.Need(name).Id;
+            g.SandboxHands.Stow(me.Id);
+        }
+        hand.Held = ConstructParts.None;
+        Run(0.5);
+        var back = me.Position + new Vector3(0, 1.2f, 0);
+        var fwd = World.FlatForward(me.Yaw);
+        Shot("backpack_behind", back - fwd * 2.4f + new Vector3(0.6f, 0.5f, 0), back, players: true);
+        Shot("backpack_side", back + new Vector3(-fwd.Z, 0, fwd.X) * 2.4f - fwd * 1.0f + new Vector3(0, 0.3f, 0), back, players: true);
+        g.SandboxLookText = "";
+        SandboxTiles.Want();
+        Shot("backpack_hud", me.Eye, me.Eye + fwd * 5f - new Vector3(0, 1f, 0), hud: true, frames: 40);
+        ToolRender.Hands = null;
         Console.WriteLine($"[storageshots] done: {w.Bodies.Count} constructs, {w.LiveStores} stores");
     }
 }

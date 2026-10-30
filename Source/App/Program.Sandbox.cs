@@ -10,6 +10,8 @@ namespace CallOfSlop;
 /// </summary>
 public static unsafe partial class Program
 {
+    private static string? _sbPackKeys; // (made again only when the binds change)
+    private static long _sbPackBinds;
     private static int _sbVariantShift; // R presses: which way round the chosen part goes
     private static int _sbLastGhostKey = -1;
     private static bool _sbFiring, _sbRemoving;
@@ -131,6 +133,18 @@ public static unsafe partial class Program
         }
         if (Pressed(GameAction.DropItem) && h.Held != ConstructParts.None)
             g.SandboxSend(CActKind.Drop);
+        // The backpack (H: stow what you hold; J: draw the next part out).
+        var packBinds = (long)_settings.Bind(GameAction.Stow) << 32 ^ (uint)_settings.Bind(GameAction.DrawPack);
+        if (_sbPackKeys == null || packBinds != _sbPackBinds)
+        {
+            _sbPackBinds = packBinds;
+            _sbPackKeys = $"{Keybinds.NameOf(_settings, GameAction.Stow)}: stow, {Keybinds.NameOf(_settings, GameAction.DrawPack)}: draw";
+        }
+        g.SandboxPackKeys = _sbPackKeys;
+        if (Pressed(GameAction.Stow))
+            g.SandboxSend(CActKind.Stow);
+        if (Pressed(GameAction.DrawPack))
+            g.SandboxSend(CActKind.Draw);
 
         // What the crosshair is on.
         var eye = me.RenderEye;

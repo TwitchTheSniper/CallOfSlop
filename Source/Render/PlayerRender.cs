@@ -57,6 +57,11 @@ public static class PlayerRender
         if (hat != null)
             HatRender.Draw(g, hat, HatRender.OnHead(hat, s.HeadSize, p, time) * Matrix4x4.CreateTranslation(s.HeadAt) * up);
         DrawLegs(g, legs, body, color);
+        if (BackpackRender.Wears(p, out var pack))
+        {
+            var po = new ToolGfxOut(g);
+            BackpackRender.Emit(ref po, pack!, BackpackRender.OnBack(p) * up); // Sandbox: the backpack and what it holds
+        }
         var (gunAt, barY) = stance switch
         {
             2 => (new Vector3(0.25f, 0.3f, -0.9f), 0.9f),

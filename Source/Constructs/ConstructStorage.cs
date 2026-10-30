@@ -13,6 +13,7 @@ public enum SlotCheck : byte
     Taken,
     OtherKind, // a pile of another part
     Full, // a pile at its limit
+    TooHeavy, // heavier than the container takes (a backpack's maxMass)
 }
 
 /// <summary>
@@ -133,6 +134,8 @@ public static class ConstructStorage
     public static bool Fits(in CSlotDef s, ConstructPartDef d, out byte rot)
     {
         rot = 0;
+        if (d.Role == PartRole.Storage)
+            return false; // (no storage inside storage: its contents would be lost)
         if (s.Fits.Length > 0 && Array.IndexOf(s.Fits, d.Role) < 0)
             return false;
         var room = s.Size + new Vector3(Fit);
@@ -156,6 +159,8 @@ public static class ConstructStorage
         if (slot < 0 || slot >= cd.Slots.Length || slot >= st.SlotCount)
             return SlotCheck.NoSlot;
         ref readonly var s = ref cd.Slots[slot];
+        if (cd.StoreMaxMass > 0 && d.Mass > cd.StoreMaxMass)
+            return SlotCheck.TooHeavy;
         if (!Fits(s, d, out rot))
             return s.Fits.Length > 0 ? SlotCheck.WrongShape : SlotCheck.TooBig;
         if (st.Def[slot] != ConstructParts.None)
@@ -184,6 +189,7 @@ public static class ConstructStorage
             SlotCheck.WrongShape => $"that slot takes a {RoleWord(s.Fits[0])}",
             SlotCheck.TooBig => $"the {d.Name} doesn't fit a {SizeClass(s)} slot",
             SlotCheck.Taken => "that slot is taken",
+            SlotCheck.TooHeavy => $"the {d.Name} is too heavy for the {cd.Name} ({d.Mass:0} kg; it takes {cd.StoreMaxMass:0})",
             SlotCheck.OtherKind => $"that bin holds {ConstructParts.Get(st.Def[slot])?.Name ?? "something"}s",
             _ => $"that bin is full ({s.Stack})",
         };
@@ -254,7 +260,9 @@ public static class ConstructStorage
     internal static void ParseStorage(ConstructPartDef d, JsonElement b, string file)
     {
         var bw = $"{file}, storage";
-        ConstructParts.Known(b, ["slots", "bulk"], bw);
+        ConstructParts.Known(b, ["slots", "bulk", "maxMass"], bw);
+        d.StoreMaxMass = ConstructParts.Opt(b, "maxMass") is { } mm ? ConstructParts.Num(mm, file, "storage.maxMass") : 0f;
+        ConstructParts.Range(d.StoreMaxMass, 0, 100000, file, "storage.maxMass");
         var slots = new List<CSlotDef>();
         if (ConstructParts.Opt(b, "slots") is { } arr)
         {

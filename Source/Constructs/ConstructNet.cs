@@ -13,6 +13,7 @@ public enum CBodyKind : byte
     Ammo, // protocol 82: rounds and fire changes: (id, part, rounds, burning) each
     Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
     Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
+    Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
 }
 
 /// <summary>
@@ -293,6 +294,13 @@ public static class ConstructNet
         ConstructStorage.Write(w, s);
     }
 
+    /// <summary>One player's backpack (protocol 85): everyone's is drawn on their back, so it goes to every client.</summary>
+    public static void WritePack(PacketWriter w, byte player, CStore pack)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Pack).U8(player);
+        ConstructStorage.Write(w, pack);
+    }
+
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
 
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
@@ -318,7 +326,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -354,6 +362,12 @@ public static class ConstructNet
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);
                 break;
+            case CBodyKind.Pack:
+            {
+                var who = r.U8();
+                ConstructStorage.Read(ref r, hands?.Pack(who) ?? new CStore()); // (no hands: read and dropped, a test's bare world)
+                break;
+            }
             case CBodyKind.Store:
             {
                 var handle = r.U16();

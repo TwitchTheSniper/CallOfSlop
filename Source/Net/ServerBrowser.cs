@@ -186,7 +186,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 84: Sandbox free placement (docs/sandbox/CONSTRUCTS.md "New constructs"): CAct.PlaceNew carries the surface normal, the
     //     part's Rot24 turn and grid/anchor flags; CAct.Join (weld two constructs into one); a construct's "pinned" flag in CBody.
     // 85: Sandbox physical storage (docs/sandbox/CONSTRUCTS.md "Physical storage"): a construct's structure lists its storage
-    //     parts' store handles, CBodyKind.Store sends one container's contents, CActKind StoreIn / TakeStored / Bin.
+    //     parts' store handles, CBodyKind.Store sends one container's contents, CActKind StoreIn / TakeStored / Bin;
+    //     every player's backpack: CBodyKind.Pack (a player's pack contents), CActKind Stow / Draw.
     public const byte ProtocolVersion = 85;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
