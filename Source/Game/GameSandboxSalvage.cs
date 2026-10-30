@@ -20,6 +20,18 @@ public sealed partial class Game
     /// </summary>
     public SandboxInventory SandboxInventory(byte player) => SandboxInv.Of(player);
 
+    /// <summary>The inventory window's count badges (Ui.SandboxCounts): the player's count, or "no limit" while parts are infinite.</summary>
+    public sealed class InventoryCounts : ISandboxPartCounts
+    {
+        public static readonly InventoryCounts Instance = new();
+
+        public int PartCount(Game game, byte playerId, byte partId)
+        {
+            var inv = game.SandboxInventory(playerId);
+            return inv.Infinite ? -1 : inv.Count(partId);
+        }
+    }
+
     /// <summary>The map's infinite parts flag (the server's rule; a client hears it with its counts).</summary>
     public bool SandboxInfiniteParts => IsServer ? World.Map.Sandbox?.InfiniteParts ?? true : SandboxInv.Of(LocalId).Infinite;
 

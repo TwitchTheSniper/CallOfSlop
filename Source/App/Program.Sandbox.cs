@@ -63,7 +63,10 @@ public static unsafe partial class Program
             return;
         var gone = _session == null || !_game.SandboxPartsMenu || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
         if (!gone)
+        {
+            Ui.SandboxCounts ??= Game.InventoryCounts.Instance; // badges from the player's inventory (GameSandboxSalvage.cs)
             Ui.DrawSandboxParts(_game, _settings);
+        }
         if (gone || !Ui.SandboxPartsOpen)
         {
             Ui.CloseSandboxParts();
