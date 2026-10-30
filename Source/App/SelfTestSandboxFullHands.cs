@@ -203,7 +203,7 @@ public static partial class SelfTest
         var took = slot >= 0 ? hands.TakeStored(w, me, eye, chest.Id, 0, slot) : "no slot takes a lamp";
         var lamps = pack.Def.Take(pack.SlotCount).Count(d => d == lamp.Id);
         Want(took == null && lamps == 2 && h.Held == engine.Id, $"taking from storage with full hands stows it (\"{took}\", {lamps} lamps in the pack)");
-        var saved = (byte[])pack.Def.Clone();
+        var saved = (ushort[])pack.Def.Clone();
         for (var k = 0; k < pack.SlotCount; k++)
             if (pack.Def[k] == ConstructParts.None)
             {
@@ -228,7 +228,7 @@ public static partial class SelfTest
         Want(pick == null && w.Get(loose.Id) == null && lamps == 3 && h.Held == engine.Id, $"picking up with full hands and room in the pack stows it (\"{pick}\", {lamps} lamps)");
 
         // A bad hands state (a part id nothing names, an edit on a construct that's gone): emptied and logged, never a crash.
-        var bad = (byte)Math.Min(ConstructParts.All.Count, ConstructParts.None - 1);
+        var bad = (ushort)Math.Min(ConstructParts.All.Count, ConstructParts.None - 1);
         h.Held = bad;
         h.Edit = EditKind.Remove;
         h.Body = 60000;
