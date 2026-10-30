@@ -1166,9 +1166,10 @@ cook-off, the flamethrower's fire and a burning wood panel. It runs under xvfb l
 1. **Feed by touch, not wires**: ammo boxes feed a gun when bolted to it or its gun parts, or through feed chutes, like
    fuel through fuel lines (wires stay for signals).
 2. **A receiver gun is its parts on the construct**: barrel, splitter, feed, ammo, muzzle device and optic are each a
-   construct part naming a weapon builder part (13 of them, a starting set; more are a file each). The action comes with
-   the receiver part (its stock action, or one named in its file), not as a part of its own. Grips, stocks, upgrades and
-   utility parts don't apply to a mounted gun.
+   construct part naming a weapon builder part (13 hand-made; since wp01 every other builder part is generated, see
+   "Weapon builder parts in Sandbox"). The action comes with the receiver part (its stock action, or one named in its
+   file) unless an Action part is bolted on; grips, stocks, upgrades and utility parts take a free builder socket the
+   builder's rules allow.
 3. **Rounds are hitscan** with travelling tracers (a cannon shell or rocket lands at once; players can't dodge it yet).
 4. **Gunners aim at what they look at** (convergence), and a seated gunner overrides the wires on the joints they point.
 5. **A sentry is a gun with a proximity sensor wired into it**; it targets any living player in range (no factions yet:
@@ -1231,6 +1232,53 @@ rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
    nobody placing (damage) they drop where they were.
 5. **The members' structural links stay** (only gun parts are refused on their own sockets), and boxes bolted to any
    member feed the gun.
+
+## Weapon builder parts in Sandbox
+
+Board item dev-sandbox-weapon-parts-wp01 (decision 23, 2026-10-30). Code: `Source/Constructs/ConstructWeaponParts.cs`;
+rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source/App/SelfTestSandboxWeaponParts.cs`).
+
+- **Every builder part is a wrench item.** Every part in `Parts/<Category>` (guns, melee and grenade parts) has a Sandbox
+  construct def, so it can be held, stowed in the backpack and storage slots, set down, and wrenched onto a construct.
+  The defs are **generated at load** from the part library, never written by hand: each builder part becomes a part
+  file's text that goes through the ordinary parser (so it is checked like any file): its model's boxes (tagged boxes
+  left out, each as the box round it turned, the biggest 15 kept) scaled by the rules' `scale` (2: the hand-made
+  construct gun parts are about twice the handheld size) and centred on their bounds, a hidden solid box round them, a
+  socket on each face (right, left, top, bottom, back, front), the builder's weight times `massScale` (at least 0.5 kg),
+  health `healthBase + healthPerKg x mass`. They are wrench-fitted and light (at most `ConstructParts.HandCarryLimit`, 40 kg), so
+  they are always items, never physics-only bodies (decision 21; the self-test checks it). A receiver becomes a `gun` on that receiver (its stock action, else the
+  first action its socket takes) with a **bottom** mount like the hand-made ones; every other part a `gunPart`.
+- **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
+  (and saves and blueprints naming them) keep their ids, and every peer with the same files gets the same ids (peers
+  check the build on join). A builder part a hand-made file already wraps (the 13 gun parts and the three receivers) is
+  not made again. With today's files: 300 generated, ids 451 to 750 of the 4096 budget. A name a construct part already
+  has gets " (W)".
+- **The inventory.** They are in the Tab inventory's **Weapon parts** group, one section per builder category in the
+  builder's order (melee and grenade sections marked "Melee:" and "Grenade:"), with their 3D tiles. They are not on the
+  parts rack by default (a map's `rackParts` can still name them).
+- **Creative-only.** The rules' `creativeOnly` categories (`upgrade` and `multiplier`, the Zombies-economy parts) are
+  offered only with infinite parts: the parts menu refuses them on a map with `"infiniteParts": false` ("the X is
+  creative-only (a Zombies-economy part)"). Question for the developer: should they ship in survival?
+- **On construct guns.** Any builder part can be wrenched onto a construct receiver. Barrels, splitters, feeds, ammo,
+  optics and muzzle devices go where they did; an **Action** part bolted on replaces the receiver's stock action; any
+  other part (grip, stock, utility, upgrade, multiplier...) takes the receiver's first free builder socket that
+  `BuildRules.SocketWhy` allows, or the gun's look line says the builder's reason. The numbers come from
+  `BuildStats.ReceiverStats` as before, so a construct gun has the Zombies builder's numbers for the same parts.
+- **Merging.** Every generated receiver is a receiver gun, so the merge rules (`Constructs/ReceiverMerge.json`) apply to
+  all of them: a merged NxN receiver has exactly one front barrel socket, at its front centre.
+
+| `WeaponParts.json` key | Meaning |
+| --- | --- |
+| `scale`, `massScale` | Model size and mass against the handheld part. |
+| `healthBase`, `healthPerKg`, `armour` | Health and armour. |
+| `attachSeconds`, `receiverAttachSeconds`, `receiverKick` | Fitting time; a receiver's kick a shot. |
+| `creativeOnly` | Builder categories offered only with infinite parts. |
+| `skip` | Builder categories never generated. |
+
+**Not done yet** (left for a follow-up): the **Gun Workbench** part that opens the real workbench (UiWorkbench /
+BenchModel) on the parts in the hands, backpack and its own slots, consuming them in survival and returning them through
+`ConstructEdits.Give` on disassembly, and spawning standard builds complete. Sandbox players don't carry builder-built
+handheld weapons yet, so that needs a handheld-weapon item first.
 
 ## Links between constructs and power (milestone 3)
 

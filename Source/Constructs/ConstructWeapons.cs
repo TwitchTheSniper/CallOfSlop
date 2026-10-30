@@ -175,7 +175,6 @@ public static class ConstructWeapons
             }
             parent.Attach(s.Name, part);
         }
-        Fit(root, "action", act);
         mine[i] = true;
         var merged = c.MergeLead(i);
         var ownSockets = d.Sockets.Length;
@@ -183,7 +182,9 @@ public static class ConstructWeapons
             for (var k = 0; k < c.PartCount; k++)
                 if (c.MergeOf[k] == c.MergeOf[i])
                     mine[k] = taken[k] = true; // (its members: boxes bolted to any of them feed it)
-        int barrel = -1, feed = -1, ammo = -1, optic = -1;
+        int barrel = -1, feed = -1, ammo = -1, optic = -1, action = -1;
+        Span<int> extras = stackalloc int[8]; // other builder parts on the receiver (grips, stocks, upgrades...): any free socket the builder's rules allow
+        var extraCount = 0;
         // The gun parts bolted straight onto the receiver.
         for (var k = 0; k < c.LinkCount; k++)
         {
@@ -199,9 +200,14 @@ public static class ConstructWeapons
                 case PartCategory.Feed: slot = ref feed; break;
                 case PartCategory.Ammo: slot = ref ammo; break;
                 case PartCategory.Optic: slot = ref optic; break;
-                default:
+                case PartCategory.Action: slot = ref action; break;
+                case PartCategory.Muzzle:
                     if (problem.Length == 0)
                         problem = $"a {c.Parts[o].D.Name} goes on a barrel, not on the receiver";
+                    continue;
+                default:
+                    if (extraCount < extras.Length)
+                        extras[extraCount++] = o;
                     continue;
             }
             if (slot >= 0)
@@ -212,6 +218,9 @@ public static class ConstructWeapons
             }
             slot = o;
         }
+        Fit(root, "action", action >= 0 ? Parts.Find(c.Parts[action].D.GunPartName)! : act); // (an action bolted on replaces the stock one)
+        if (action >= 0)
+            mine[action] = true;
         if (feed >= 0)
             Fit(root, "feed", Parts.Find(c.Parts[feed].D.GunPartName)!);
         Fit(root, "ammo", ammo >= 0 ? Parts.Find(c.Parts[ammo].D.GunPartName)! : Parts.Find("FMJ") ?? throw new InvalidOperationException("no FMJ ammo part"));
@@ -264,6 +273,17 @@ public static class ConstructWeapons
                 problem = problem.Length > 0 ? problem : why.TrimEnd('.');
             else
                 root.Attach(bs.Name, node);
+        }
+        for (var k = 0; k < extraCount; k++)
+        {
+            var o = extras[k];
+            if (FitAny(root, Parts.Find(c.Parts[o].D.GunPartName)!) is { } why)
+            {
+                if (problem.Length == 0)
+                    problem = why;
+            }
+            else
+                mine[o] = true;
         }
         if (feed >= 0)
             mine[feed] = true;
@@ -318,6 +338,28 @@ public static class ConstructWeapons
         if (merged)
             ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
         g.Def = w;
+    }
+
+    /// <summary>
+    /// Fits a builder part onto the first free socket of <paramref name="node"/> the builder's rules allow
+    /// (<see cref="BuildRules.SocketWhy"/>); null when it went on, else why not (the first socket's reason).
+    /// </summary>
+    internal static string? FitAny(BuildNode node, PartDef part)
+    {
+        string? first = null;
+        foreach (var s in node.Part.Sockets)
+        {
+            if (node.Child(s.Name) != null)
+                continue;
+            if (BuildRules.SocketWhy(node, s, part) is { } why)
+            {
+                first ??= why.TrimEnd('.');
+                continue;
+            }
+            node.Attach(s.Name, part);
+            return null;
+        }
+        return first ?? $"the {node.Part.Name} has no free socket for the {part.Name}";
     }
 
     private static void MuzzleOn(Construct c, int barrel, BuildNode node, ref string problem, Span<bool> taken, Span<bool> mine, Span<int> muzzleParts, ref int muzzles)

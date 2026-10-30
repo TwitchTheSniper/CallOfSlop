@@ -44,7 +44,7 @@ public sealed class SandboxCatalogue
     public int Key;
 
     /// <summary>The group order (the tree's), then any new group in the order met.</summary>
-    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Other"];
+    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Building", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Weapon parts", "Other"];
 
     /// <summary>
     /// A part's group and section (data first: the file's own "group" and "section", else its role, else a word in a new

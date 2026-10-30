@@ -1,0 +1,14 @@
+{
+  "format": "call-of-slop-weapon-parts/1",
+  "about": "Every Zombies weapon builder part (Parts/<Category>) is a Sandbox wrench item, generated at load from the part library (Source/Constructs/ConstructWeaponParts.cs; docs/sandbox/CONSTRUCTS.md, 'Weapon builder parts in Sandbox'). Builder parts that already have a hand-made construct part (a gunPart or gun receiver file in Constructs/Parts/Weapons) are not generated again. scale: how much bigger than the handheld part its construct model is (the hand-made construct gun parts are about twice the handheld size). creativeOnly: categories offered only on creative maps (infinite parts): the Zombies-economy parts, until the developer decides. skip: categories never generated.",
+  "scale": 2.0,
+  "massScale": 2.0,
+  "healthBase": 40,
+  "healthPerKg": 15,
+  "armour": 2,
+  "attachSeconds": 1.2,
+  "receiverAttachSeconds": 2.0,
+  "receiverKick": 6,
+  "creativeOnly": ["upgrade", "multiplier"],
+  "skip": []
+}

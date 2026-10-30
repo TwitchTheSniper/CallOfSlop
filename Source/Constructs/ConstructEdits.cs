@@ -581,6 +581,8 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (ConstructParts.Get(part) is not { } def)
             return "no such part";
+        if (def.CreativeOnly && !InfiniteParts)
+            return $"the {def.Name} is creative-only (a Zombies-economy part)";
         if (def.PhysicsOnly)
         {
             // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands).
