@@ -123,13 +123,17 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - Against the map: up to 40 **hull points** per body (part corners, the outermost kept), each probed with a ray down and
   a ray along its motion, giving speculative contacts solved with sequential impulses and friction.
 - Between constructs: hull points of one against the part boxes of the other.
+- **The parts beyond joints collide too** ([Joint collision](#joint-collision), below): against the map, other
+  constructs and wrecks, with the joint solved together with those contacts.
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
   frequency), side grip, drive force shared by the touching wheels, brakes, a friction circle, and tyre forces applied
   most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over.
-- **Joints** (reduced coordinates: each is one number on its body): a passive hinge is damped, held inside its limits,
-  latched open or shut by Interact, swung by a player walking into its leaf, and held still while its lock is on; the
-  moving joints are driven by a motor (milestone 2, below).
+- **Joints** (reduced coordinates: each is one number on its body): a passive hinge is damped, falls under gravity,
+  is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
+  while its lock is on; the moving joints are driven by a motor (milestone 2, below).
 - A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it.
+  An anchored construct with joints sleeps too once its joints are still (a motor that is still pushing, stalled
+  against something, keeps it awake); a motor asked to move, more riders than it can hold, Interact or a push wake it.
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
   along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats. A moving
   part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
@@ -249,16 +253,60 @@ The Sandbox mode is offered only on maps with this section.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
 
+### Joint collision
+
+Board item dev-sandbox-joint-collision-jc01 (a hinged beam sank into the terrain: only the body's own hull touched
+anything, the segments beyond a joint were posed from the joint value and went through whatever was there). Now:
+
+- Every segment has **contact points** (`Construct.SegPoints`, in the segment's rest frame: each part's bounds corners,
+  plus points every metre along a long part's edges so a beam can't sink in the middle; at most 64 a construct) and its
+  **long edges** (`SegEdges`, 0.3 m and longer, at most 48). Raycast wheels on a steering pivot still roll on their rays.
+- Each point is probed like a hull point (a ray down, a ray along its motion), and moves with the body *and* with every
+  joint up its segment's chain. Each long edge is cast where it is and where it will be through the tick (up to four
+  steps when it sweeps far); where one meets something, the point of the edge in the middle of what it met gets a ray
+  along its motion too, so a post that fits between two points still stops the part. Against other constructs and
+  wrecks the points test the other's part boxes (overlaps, and for a point moving faster than 3 m/s a ray along this
+  tick's travel), and a still construct's hull points test the moving segments' boxes.
+- **The solve** works on generalised velocities: the body's six and one per joint. A contact on a segment carries, for
+  each joint up its chain, the velocity a unit of joint speed gives its point; its impulse moves the body (if it is free)
+  and turns or slides each of those joints by its inverse inertia. A contact between two constructs does that on both
+  sides. The **motors and limits** are constraints in the same sequential-impulse loop (a motor's impulse clamped to its
+  strength a tick, a limit one-sided and speculative), solved before the contacts in each pass so non-penetration has
+  the last word. So a passive hinge rests on the ground; a motor pushing into a wall stalls at its strength; a strong
+  motor driving an arm into the ground lifts its free construct (the arm becomes a leg).
+  A locked hinge has no give: its contacts move the body instead.
+- **No tunnelling**: every probe is speculative (approach is allowed up to the gap, not past it) and covers the whole
+  tick's travel, using the speed a motor can reach this tick, so a stalled arm keeps seeing what it pushes against. A
+  door swung at 25 rad/s (25 m/s at its edge) stops at a 5 cm wall. Joints are capped at 25 rad/s (or m/s).
+- **Why reduced coordinates still**: the joint stays one number, so the pieces can never drift apart, stretch or explode,
+  and it stays the cheapest thing to send (`CPose` already carries each joint's angle and speed; no wire change,
+  protocol 79). Contacts drive the joint value directly, which is what constraint-linked bodies would have to work hard
+  to match. The approximation: each joint's inertia is its carried mass about its axis (as the motors already used) and
+  the body's and joints' masses are treated as independent in the solve, which only shares out how a push moves things,
+  never whether a contact holds.
+- Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
+  segment back (they are pushed out of it, as before), the body's mass properties following its joints.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
-64 wires a construct (512 in all), 4 inputs a part, wires up to 8 m, 40 hull points a body, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
+64 wires a construct (512 in all), 4 inputs a part, wires up to 8 m, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are
 unchanged).
 
 ## Self-tests
+
+The **Construct joints** section (`Source/App/SelfTestConstructJoints.cs`): a flap on a passive hinge with its axis flat,
+latched open and flung down at 6 rad/s onto the yard's terrain, stops on it (no part of it below the ground at any tick),
+then sleeps and stays put; a free arm (a beam, a motor hinge, a beam) driven into the floor lifts its own construct more
+than 0.3 m and never goes into the floor; the Motor Gate's door opening into a post stalls at it, stays stalled and
+awake, and goes on to its limit when the post is taken away; the Turret's arm turned into another (anchored) construct
+stops at it; the Gate's door swung at 10 and 25 rad/s at a 5 cm wall never gets through it; the yard's six jointed
+constructs all sleep after 3 s alone; no allocation (a stalled joint, and a dozen jointed constructs moving at once) and
+the dozen inside 2 ms a tick. Most of it on a flat test floor with box walls (`JointTestWorld`). Pictures:
+`--joint-shots` (Program.JointShots.cs) writes smoke_joints_*.bmp of the flap, the arm and the turret under xvfb.
 
 The **Constructs** section (`Source/App/SelfTestConstructs.cs`): part files load and 12 kinds of bad file are refused
 for the right reason; the buggy settles level on four wheels, drives 30+ m in 3 s, turns right, brakes, and climbs the
@@ -399,6 +447,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 1. **Joints stay reduced coordinates**: a joint is a number on one body, not a constraint between two free bodies, so it
    can't come apart or explode; its load is gravity on what it carries, and the body's mass properties use the rest pose.
+   Since the joint-collision fix contacts on the parts beyond a joint drive that number directly ([Joint collision](#joint-collision)).
 2. **Every wire takes one tick** (the default the brief suggested): order never matters, loops are clocks. Chains of
    many gates are a little slower (17 ms a part).
 3. **Wires join parts of one construct only** (a button on a wall can't run a separate gate yet), up to 8 m long.

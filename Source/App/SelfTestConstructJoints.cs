@@ -218,21 +218,34 @@ public static partial class SelfTest
             Fail("construct joints: a flap resting on the ground didn't sleep (or crept)");
     }
 
-    /// <summary>A free construct: a beam with a motor hinge and a second beam on it; driven down into the floor, the arm lifts the beam's end.</summary>
-    private static void JointArmLifts()
+    /// <summary>A free construct lying on the ground: a frame beam, a motor hinge on its end (axis flat) and a second beam on that, the arm.</summary>
+    internal static Construct? BuildArm(ConstructWorld w, IWorldQuery q, float x, float z)
     {
-        var w = new ConstructWorld();
-        var q = new JointTestWorld();
-        if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Beam"), Vector3.Zero, MathF.PI / 2) is not { } c)
-            return;
+        if (ConstructBuild.PlaceNew(w, ConstructParts.Need("Frame Beam"), ConstructWorld.Ground(q, x, z), MathF.PI / 2) is not { } c)
+            return null;
         // The beam lies along the body's z: the motor hinge goes on its end, the arm out along +z (the body frame).
         var hinge = FitTurned(w, c, 0, "end+", "Motor Hinge", "base", FlatAxisSwingingDown("Motor Hinge", Vector3.UnitZ));
         var arm = hinge < 0 ? -1 : FitTurned(w, c, hinge, "leaf", "Frame Beam", "end-", _ => true);
         if (arm < 0)
         {
+            w.Remove(c);
+            return null;
+        }
+        return c;
+    }
+
+    /// <summary>A free construct: a beam with a motor hinge and a second beam on it; driven down into the floor, the arm lifts the beam's end.</summary>
+    private static void JointArmLifts()
+    {
+        var w = new ConstructWorld();
+        var q = new JointTestWorld();
+        if (BuildArm(w, q, 0, 0) is not { } c)
+        {
             Fail("construct joints: the free arm (beam, flat motor hinge, beam) doesn't build");
             return;
         }
+        var hinge = PartNamed(c, "Motor Hinge");
+        var arm = PartNamed(c, "Frame Beam", 1);
         StepJoints(w, q, 30);
         var hingeY = ConstructRender.PartCentre(c, hinge).Y;
         c.Joints[0].Open = true; // (Interact: to its far limit, down through the floor)
@@ -310,7 +323,7 @@ public static partial class SelfTest
     /// An anchored wall: a foundation, two frame blocks and a frame beam out sideways from the top block at
     /// (<paramref name="x"/>, <paramref name="z"/>) along -x (or +x when <paramref name="mirror"/>).
     /// </summary>
-    private static Construct? BuildWallArm(ConstructWorld w, IWorldQuery q, float x, float z, bool mirror)
+    internal static Construct? BuildWallArm(ConstructWorld w, IWorldQuery q, float x, float z, bool mirror)
     {
         // The foundation's top00 block sits at (-0.75, -0.75) of its centre; turned half round for the mirror.
         var yaw = mirror ? MathF.PI : 0;
