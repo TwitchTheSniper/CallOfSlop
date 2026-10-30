@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Flamethrower",
+  "description": "A fuel-fed flame projector: a short gout of fire that sets fuel, wood and ammo alight (incendiary). Feeds from an ammo box (its fuel canisters).",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 30,
+  "health": 200,
+  "armour": 5,
+  "material": "steel",
+  "color": "#6a3a2a",
+  "boxes": [
+    {
+      "size": [
+        0.26,
+        0.26,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.5
+      ],
+      "at": [
+        0,
+        0,
+        -0.5
+      ],
+      "color": "#2f2a26"
+    },
+    {
+      "size": [
+        0.14,
+        0.14,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        -0.98
+      ],
+      "color": "#c76a2a",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.18,
+        0.18
+      ],
+      "at": [
+        0.18,
+        0.02,
+        0.05
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.13,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.13,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.13,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.13,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    }
+  ],
+  "gun": {
+    "damage": 6,
+    "rpm": 600,
+    "spread": 9,
+    "pellets": 3,
+    "range": 9,
+    "maxRange": 9,
+    "mag": 100,
+    "reload": 4.0,
+    "flags": [
+      "incendiary"
+    ],
+    "kick": 0,
+    "fx": "flame",
+    "soundOf": "Torrent",
+    "muzzle": [
+      0,
+      0,
+      -0.75
+    ]
+  }
+}

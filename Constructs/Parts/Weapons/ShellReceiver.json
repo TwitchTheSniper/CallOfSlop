@@ -1,0 +1,124 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Receiver",
+  "description": "A shotgun receiver on a mount: shell feeds; a wall of pellets at close range.",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 15,
+  "health": 170,
+  "armour": 5,
+  "material": "steel",
+  "color": "#4f3f33",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.036,
+        0.28
+      ],
+      "at": [
+        0,
+        0.105,
+        -0.02
+      ],
+      "color": "#9a7a52",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.11,
+        0.06
+      ],
+      "at": [
+        0,
+        -0.11,
+        0.128
+      ],
+      "color": "#2b2b2e",
+      "detail": true
+    },
+    {
+      "size": [
+        0.03,
+        0.03,
+        0.08
+      ],
+      "at": [
+        0.11,
+        0.03,
+        0.04
+      ],
+      "color": "#b9a26a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gun": {
+    "receiver": "Street Sweeper Receiver",
+    "kick": 8
+  }
+}

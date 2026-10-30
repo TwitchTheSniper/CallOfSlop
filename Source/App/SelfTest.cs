@@ -218,6 +218,7 @@ public static partial class SelfTest
         Section("Seated riders", CheckSeated); // SelfTestSeated.cs: Sandbox seats: riders at their seats' local offsets, the seated pose (no walk, no steps), the camera, look limits, a seated ragdoll, clients agree
         Section("Sandbox tool models", CheckSandboxToolModels); // SelfTestSandboxToolModels.cs: the tools' held models (Constructs/Tools): files, first and third person, equip, carried parts, over the wire, no allocation
         Section("Construct logic", CheckConstructLogic); // SelfTestConstructLogic.cs: milestone 2: moving joints, logic and wires, the linking tool, drivetrain parts, riding, run-over
+        Section("Construct weapons", CheckConstructWeapons); // SelfTestConstructWeapons.cs: milestone 3: guns from weapon builder parts and heavy guns, gunners and sentries, ammo boxes and cook-offs, penetrating/explosive/incendiary rounds, the wire, no allocation
         Section("Construct joints", CheckConstructJoints); // SelfTestConstructJoints.cs: the parts beyond joints collide: a flap stops on the ground, a motor stalls at a post or lifts its construct, a turntable stops at a wall, no tunnelling, sleep, budget
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard

@@ -9,10 +9,11 @@ public enum CBodyKind : byte
     Gone, // a construct removed
     Health, // part health changes: (id, part, health) each
     Clear, // every construct removed (a new match)
+    Ammo, // protocol 81: rounds and fire changes: (id, part, rounds, burning) each
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
+/// The constructs on the wire (protocol 81: guns, ammo boxes and burning parts, Msg.CFire; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
 /// refreshed each time so a lost packet never leaves a body wrong for long. Positions of parts travel on their 1 cm grid
@@ -79,6 +80,84 @@ public static class ConstructNet
         w.U8((byte)c.WireCount);
         for (var k = 0; k < c.WireCount; k++)
             w.U8(c.Wires[k].From).U8(c.Wires[k].To);
+        // Protocol 81: the parts with rounds in them or on fire (ammo boxes, guns).
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Rounds > 0 || c.Parts[i].Burn > 0 || c.Parts[i].Reload > 0)
+            {
+                w.U8((byte)i).U16(c.Parts[i].Rounds).U8(AmmoFlags(c.Parts[i]));
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+    }
+
+    private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
+
+    private static void ReadAmmo(ref CPart p, ushort rounds, byte flags)
+    {
+        p.Rounds = rounds;
+        p.Burn = (ushort)((flags & 1) != 0 ? Math.Max((int)p.Burn, 1) : 0); // (a client only knows it burns)
+        p.Reload = (ushort)((flags & 2) != 0 ? 1 : 0);
+    }
+
+    /// <summary>A batch of ammo and fire changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
+    public static int WriteAmmo(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Ammo);
+        var countAt = w.Length;
+        w.U8(0);
+        var n = 0;
+        var i = from;
+        for (; i < changes.Count && n < 200; i++)
+        {
+            var (id, part) = changes[i];
+            if (world.Get(id) is not { } c || part >= c.PartCount)
+                continue;
+            w.U16(id).U8(part).U16(c.Parts[part].Rounds).U8(AmmoFlags(c.Parts[part]));
+            n++;
+        }
+        w.PatchU8(countAt, (byte)n);
+        return i;
+    }
+
+    /// <summary>Msg.CFire (protocol 81): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big).</summary>
+    public static void WriteFires(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CFire).U8((byte)Math.Min(world.FireCount, 255));
+        for (var k = 0; k < world.FireCount && k < 255; k++)
+        {
+            ref var e = ref world.Fires[k];
+            w.U8((byte)e.Kind);
+            if (e.Kind == CFireKind.Shot)
+                w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+            else
+                w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
+        }
+    }
+
+    /// <summary>Client: a Msg.CFire (after the id byte) into <paramref name="into"/>; returns how many events.</summary>
+    public static int ReadFires(ref PacketReader r, Span<CFireEvent> into)
+    {
+        int n = r.U8();
+        var k = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var kind = (CFireKind)r.U8();
+            CFireEvent e;
+            if (kind == CFireKind.Shot)
+                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
+            else if (kind is CFireKind.Blast or CFireKind.CookOff)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
+            else
+                throw new MalformedPacketException($"unknown construct fire event {kind}");
+            if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
+                throw new MalformedPacketException("a construct fire event that isn't a number");
+            if (k < into.Length)
+                into[k++] = e;
+        }
+        return k;
     }
 
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
@@ -136,6 +215,24 @@ public static class ConstructNet
             case CBodyKind.Full:
                 ReadFull(ref r, world, now);
                 break;
+            case CBodyKind.Ammo:
+            {
+                int n = r.U8();
+                for (var k = 0; k < n; k++)
+                {
+                    var id = r.U16();
+                    var part = r.U8();
+                    var rounds = r.U16();
+                    var flags = r.U8();
+                    if (world.Get(id) is { } c && part < c.PartCount)
+                    {
+                        var was = c.Parts[part].Burn > 0;
+                        ReadAmmo(ref c.Parts[part], rounds, flags);
+                        c.Burning += (c.Parts[part].Burn > 0 ? 1 : 0) - (was ? 1 : 0);
+                    }
+                }
+                break;
+            }
             default:
                 throw new MalformedPacketException($"unknown construct message {kind}");
         }
@@ -236,6 +333,16 @@ public static class ConstructNet
             if (wire.From >= parts || wire.To >= parts)
                 throw new MalformedPacketException("a construct wire to a part that isn't there");
             c.Wires[c.WireCount++] = wire;
+        }
+        int ammo = r.U8();
+        for (var k = 0; k < ammo; k++)
+        {
+            var part = r.U8();
+            var rounds = r.U16();
+            var af = r.U8();
+            if (part >= parts)
+                throw new MalformedPacketException("construct ammo for a part that isn't there");
+            ReadAmmo(ref c.Parts[part], rounds, af);
         }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)

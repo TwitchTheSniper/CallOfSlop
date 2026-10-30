@@ -29,6 +29,8 @@ public static class ConstructLogic
             {
                 c.Parts[i].Keys = 0;
                 c.Parts[i].Stood = false;
+                c.Parts[i].In = 0;
+                c.Parts[i].InCount = 0;
             }
             for (var j = 0; j < c.JointCount; j++)
             {
@@ -200,6 +202,8 @@ public static class ConstructLogic
             p.Out = p.OutNext;
             p.Keys = 0;
             p.Stood = false;
+            p.In = sum[i]; // (a gun's trigger reads it next tick: ConstructWeapons.cs)
+            p.InCount = count[i];
             var d = p.D;
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;

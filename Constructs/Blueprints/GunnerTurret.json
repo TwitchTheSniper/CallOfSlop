@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Gunner Turret",
-  "description": "The turret with a gunner's seat on its arm: sit in it and ride round as the lever on the base turns it (the look goes all the way round).",
+  "description": "A turntable on a post with an arm, a gunner's seat on it, and a mounted machine gun on a motor hinge at the front, fed from an ammo box: sit in it and look where to shoot (the turntable turns it round, the hinge tips it up and down), fire. The lever on the base still turns it when nobody sits there.",
   "steps": [
     {
       "part": "Foundation"
@@ -25,12 +25,6 @@
       "by": "y-1"
     },
     {
-      "part": "Panel",
-      "on": 3,
-      "socket": "end-",
-      "by": "back"
-    },
-    {
       "part": "Lever",
       "on": 0,
       "socket": "x+1",
@@ -41,11 +35,29 @@
       "on": 3,
       "socket": "y+2",
       "by": "bottom"
+    },
+    {
+      "part": "Motor Hinge",
+      "on": 3,
+      "socket": "y+0",
+      "by": "base"
+    },
+    {
+      "part": "Mounted MG",
+      "on": 6,
+      "socket": "leaf",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 7,
+      "socket": "back",
+      "by": "front"
     }
   ],
   "wires": [
     [
-      5,
+      4,
       2
     ]
   ]

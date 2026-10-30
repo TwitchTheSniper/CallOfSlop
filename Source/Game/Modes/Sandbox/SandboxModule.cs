@@ -51,6 +51,7 @@ public sealed class SandboxModule : GameModeModule
             case (byte)Msg.CBody:
             case (byte)Msg.CPose:
             case (byte)Msg.CAct:
+            case (byte)Msg.CFire:
                 game.OnSandboxPacket(id, ref r, sender, now);
                 return true;
             default:

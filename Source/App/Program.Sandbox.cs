@@ -329,6 +329,7 @@ public static unsafe partial class Program
             return;
         g.SandboxNow = g.IsServer ? g.SandboxNow : now;
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
+        ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         g.SandboxSounds(now); // horns (GameSandbox.cs)
     }

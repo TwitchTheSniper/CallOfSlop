@@ -30,6 +30,27 @@ public static class ConstructRender
     public static Vector3 WireEye, WireAim; // (only the wires of constructs near the eye; a wire in progress runs to the aim)
     public static int LastWires { get; private set; }
 
+    /// <summary>The frame's clock (flames flicker, muzzle flashes fade); set before <see cref="Draw"/>.</summary>
+    public static double Now;
+
+    /// <summary>A gun's muzzle flash (milestone 3): drawn for a moment where it fired.</summary>
+    public struct Flash
+    {
+        public Vector3 At, Dir;
+        public double Born;
+        public GunFx Fx;
+    }
+
+    public static readonly Flash[] Flashes = new Flash[32];
+    private static int _flashNext;
+    public const double FlashSeconds = 0.06;
+
+    public static void AddFlash(Vector3 at, Vector3 dir, double now, GunFx fx)
+    {
+        Flashes[_flashNext] = new Flash { At = at, Dir = dir, Born = now, Fx = fx };
+        _flashNext = (_flashNext + 1) % Flashes.Length;
+    }
+
     public static void ClearAim()
     {
         GhostCount = 0;
@@ -57,7 +78,26 @@ public static class ConstructRender
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
             n += DrawWheel(gfx, c, alpha, blendTicks);
         }
+        // Muzzle flashes (unlit, bright, a few frames).
+        for (var k = 0; k < Flashes.Length; k++)
+        {
+            ref var f = ref Flashes[k];
+            var age = Now - f.Born;
+            if (f.Born <= 0 || age < 0 || age > FlashSeconds)
+                continue;
+            var size = f.Fx switch { GunFx.Cannon => 0.55f, GunFx.Rocket => 0.4f, GunFx.Flame => 0.35f, _ => 0.22f } * (1f - (float)(age / FlashSeconds) * 0.5f);
+            gfx.Draw(Matrix4x4.CreateScale(size * 0.6f, size * 0.6f, size) * Basis(f.Dir) * Matrix4x4.CreateTranslation(f.At + f.Dir * size * 0.5f), new Vector3(1f, 0.8f, 0.35f), 0.9f, mode: 2);
+            n++;
+        }
         LastBoxes = n;
+    }
+
+    private static Matrix4x4 Basis(Vector3 z)
+    {
+        z = z.LengthSquared() > 1e-6f ? Vector3.Normalize(z) : -Vector3.UnitZ;
+        var x = MathF.Abs(z.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z)) : Vector3.UnitX;
+        var y = Vector3.Cross(z, x);
+        return new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
     }
 
     private static int DrawPart(Renderer gfx, Construct c, int i, in Matrix4x4 body, float alpha, float opacity)
@@ -101,6 +141,22 @@ public static class ConstructRender
             var size = new Vector3(0.12f) + Vector3.Abs(jt.Axis) * (ext - 0.12f);
             gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(mid) * seg * body, new Vector3(0.78f, 0.8f, 0.84f) * shade, 1f, mode: 0);
             drawn++;
+        }
+        if (p.Burn > 0)
+        {
+            // On fire (incendiary rounds, milestone 3): a few flickering tongues of flame over its top.
+            c.PartBounds(i, out var mn, out var mx);
+            var top = new Vector3((mn.X + mx.X) * 0.5f, mx.Y, (mn.Z + mx.Z) * 0.5f);
+            var w = MathF.Min(mx.X - mn.X, mx.Z - mn.Z);
+            for (var f = 0; f < 3; f++)
+            {
+                var flick = 0.65f + 0.35f * MathF.Sin((float)Now * (13f + f * 4.3f) + i * 1.7f + f * 2.1f);
+                var h = (0.25f + 0.2f * f) * flick;
+                var off = new Vector3((f - 1) * w * 0.25f, h * 0.5f, (f == 1 ? 0.1f : -0.1f) * w);
+                gfx.Draw(Matrix4x4.CreateScale(w * (0.45f - f * 0.08f), h, w * (0.45f - f * 0.08f)) * Matrix4x4.CreateTranslation(top + off) * seg * body,
+                    f == 1 ? new Vector3(1f, 0.85f, 0.3f) : new Vector3(1f, 0.45f, 0.1f), 0.85f, mode: 2);
+                drawn++;
+            }
         }
         for (var b = 0; b < d.Boxes.Length; b++)
         {

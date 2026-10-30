@@ -176,7 +176,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     kind; n: part id n - 1, from the menu) and CActKind.Blueprint (a blueprint index) builds one in front of the player.
     // 80: seated Sandbox players (docs/sandbox/CONSTRUCTS.md "Seats"): a seated player's snapshot entry carries the seat
     //     (construct id and seat part, in the mantle extension with mantle ticks 0) and a yaw relative to the seat's facing.
-    public const byte ProtocolVersion = 80;
+    // 81: Sandbox construct weapons (docs/sandbox/CONSTRUCTS.md "Construct weapons"): Msg.CFire at the end of Msg (each tick's
+    //     shots, blasts and cook-offs), CBodyKind.Ammo (rounds and fire changes), and a construct's structure ends with the
+    //     parts holding rounds or on fire.
+    public const byte ProtocolVersion = 81;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

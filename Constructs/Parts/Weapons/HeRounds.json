@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "HE Rounds",
+  "description": "Explosive-tipped rounds: a small blast where each lands (explosive). Bolt it to a receiver's right side (or onto a heavy gun).",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 2,
+  "health": 50,
+  "armour": 1,
+  "material": "steel",
+  "color": "#b04030",
+  "boxes": [
+    {
+      "size": [
+        0.12,
+        0.1,
+        0.12
+      ]
+    },
+    {
+      "size": [
+        0.03,
+        0.04,
+        0.03
+      ],
+      "at": [
+        -0.03,
+        0.065,
+        -0.03
+      ],
+      "color": "#d8c070",
+      "detail": true
+    },
+    {
+      "size": [
+        0.03,
+        0.04,
+        0.03
+      ],
+      "at": [
+        -0.03,
+        0.065,
+        0.03
+      ],
+      "color": "#d8c070",
+      "detail": true
+    },
+    {
+      "size": [
+        0.03,
+        0.04,
+        0.03
+      ],
+      "at": [
+        0.03,
+        0.065,
+        -0.03
+      ],
+      "color": "#d8c070",
+      "detail": true
+    },
+    {
+      "size": [
+        0.03,
+        0.04,
+        0.03
+      ],
+      "at": [
+        0.03,
+        0.065,
+        0.03
+      ],
+      "color": "#d8c070",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.05,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.05,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.06
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.06
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Explosive Tip"
+  }
+}

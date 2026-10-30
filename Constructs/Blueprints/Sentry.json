@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Sentry",
+  "description": "An automatic sentry: a machine gun on a turntable, an ammo box, and a proximity sensor on the base wired into the gun: it turns onto the nearest player in the sensor's range (6 m; R with the linking tool for 3 or 12) and fires.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Block",
+      "on": 0,
+      "socket": "top11",
+      "by": "-y"
+    },
+    {
+      "part": "Turntable",
+      "on": 1,
+      "socket": "+y",
+      "by": "base"
+    },
+    {
+      "part": "Frame Block",
+      "on": 2,
+      "socket": "top",
+      "by": "-y"
+    },
+    {
+      "part": "Mounted MG",
+      "on": 3,
+      "socket": "+y",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 4,
+      "socket": "back",
+      "by": "front"
+    },
+    {
+      "part": "Proximity Sensor",
+      "on": 0,
+      "socket": "top22",
+      "by": "-y"
+    }
+  ],
+  "wires": [
+    [
+      6,
+      4
+    ]
+  ]
+}

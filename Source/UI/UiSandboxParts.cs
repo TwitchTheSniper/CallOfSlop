@@ -50,7 +50,7 @@ public sealed partial class Ui
     private static readonly string[] SbRoleNames =
     [
         "Frames", "Panels", "Seats", "Wheels", "Suspension", "Engines", "Fuel tanks", "Fuel lines", "Hinges", "Doors", "Foundations",
-        "Joints", "Transmissions", "Differentials", "Logic",
+        "Joints", "Transmissions", "Differentials", "Logic", "Guns", "Gun parts", "Ammo boxes", "Feed chutes",
     ];
 
     public void OpenSandboxParts(bool focusSearch = false) // (not by default: while the box has the keyboard, the game's keys, I included, are off)

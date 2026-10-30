@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gun Barrel",
+  "description": "A plain barrel: bolt its back onto a receiver's front (or a splitter's). A muzzle device goes on its front.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 4,
+  "health": 90,
+  "armour": 3,
+  "material": "steel",
+  "color": "#2f3236",
+  "boxes": [
+    {
+      "size": [
+        0.08,
+        0.08,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        0.2
+      ],
+      "color": "#4a4d52",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.04,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.04,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.04,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.04,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Standard Barrel"
+  }
+}

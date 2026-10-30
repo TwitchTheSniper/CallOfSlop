@@ -182,6 +182,7 @@ public sealed class ConstructEdits
                 var i = ConstructBuild.Attach(world, c, def, g);
                 if (i < 0)
                     return "failed: too many parts";
+                c.Owner = player; // (whoever last built on it gets a sentry's kills)
                 h.Held = ConstructParts.None;
                 return $"ok: {def.Name} as part {i} of construct {c.Id}";
             }
@@ -191,6 +192,7 @@ public sealed class ConstructEdits
                     return "failed: nothing to place";
                 if (ConstructBuild.PlaceNew(world, def, h.At, h.Yaw) is not { } c)
                     return "failed: the world is full";
+                c.Owner = player;
                 h.Held = ConstructParts.None;
                 return $"ok: {def.Name} as new construct {c.Id}";
             }
