@@ -216,6 +216,7 @@ public static partial class SelfTest
         Section("Sandbox parts menu", CheckSandboxPartsMenu); // SelfTestSandboxPartsMenu.cs: the Sandbox debug parts menu: parts by id, blueprints, the map flag, the window headless (no allocation)
         Section("Sandbox tool wheel", CheckSandboxToolWheel); // SelfTestSandboxToolWheel.cs: the radial widget's maths, the tool wheel's hold-flick-release picks, cancels and closing, headless with no allocation, over the wire
         Section("Construct logic", CheckConstructLogic); // SelfTestConstructLogic.cs: milestone 2: moving joints, logic and wires, the linking tool, drivetrain parts, riding, run-over
+        Section("Construct joints", CheckConstructJoints); // SelfTestConstructJoints.cs: the parts beyond joints collide: a flap stops on the ground, a motor stalls at a post or lifts its construct, a turntable stops at a wall, no tunnelling, sleep, budget
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
         Section("Building faces", CheckBuildingFaces); // SelfTestBuildingFaces.cs: no coplanar same-facing faces of different surfaces (z-fighting) in any building or the map Building op
