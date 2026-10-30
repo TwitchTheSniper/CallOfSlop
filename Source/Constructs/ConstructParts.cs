@@ -125,10 +125,13 @@ public enum SocketKind : byte
 /// One box of a part's model and collision, in the part's own frame (metres). A detail box is drawn only: it adds no
 /// bounds, mass, collision or hit area (and may stick out past a face). <see cref="Shape"/>: a detail box drawn as one of the weapon builder's contoured shapes (<see cref="PartShapes"/>: wedge,
 /// arc, cylinder...; 0 = a plain box). <see cref="Hidden"/>: a solid box that is never drawn (a wedge's stepped collision
-/// under its smooth shape).
+/// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
+/// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0)
 {
+    public bool IsGlass => Glass > 0;
+
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
         ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
@@ -160,6 +163,7 @@ public sealed class ConstructPartDef
     public int Scrap; // what salvaging it gives once wrecked (milestone 3: "scrap", else from its mass and material; ConstructInventory.cs)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
+    public bool HasGlass; // a box of it is a see-through glass pane ("glass": true): it shatters into small debris when it breaks
     public CSocket[] Sockets = [];
     public Vector3 BoundsMin, BoundsMax; // round every box, in the part's frame
 
@@ -302,6 +306,9 @@ public static partial class ConstructParts
 
     public const byte None = 255;
 
+    /// <summary>How much of a <c>"glass": true</c> box is drawn (its opacity; the props' glass is 0.4, Props/README.md).</summary>
+    public const float DefaultGlass = 0.3f;
+
     private static readonly List<string> _refused = new();
     private static readonly Lazy<ConstructPartDef[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
@@ -410,10 +417,10 @@ public static partial class ConstructParts
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive",
     ];
-
+    /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -501,7 +508,20 @@ public static partial class ConstructParts
             if (hidden && detail)
                 throw new ConstructPartException($"{file}: {where} is a detail (drawn only) and hidden (never drawn): a hidden box is a solid one's collision");
             var shape = ShapeOf(b, max - min, detail, file, where);
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden));
+            var glass = 0f;
+            if (Opt(b, "glass") is { } gl)
+            {
+                glass = gl.ValueKind switch
+                {
+                    JsonValueKind.True => DefaultGlass,
+                    JsonValueKind.False => 0f,
+                    JsonValueKind.Number when gl.GetSingle() is var gv && gv >= 0.1f && gv <= 0.9f => gv,
+                    _ => throw new ConstructPartException($"{file}: {where}.glass is true, or how much of the pane is drawn (0.1 to 0.9)"),
+                };
+                if (glass > 0 && hidden)
+                    throw new ConstructPartException($"{file}: {where} is hidden (never drawn) and glass (drawn see-through)");
+            }
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -510,6 +530,7 @@ public static partial class ConstructParts
         // Solid boxes first (the physics walks those), details after.
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
         d.SolidBoxes = list.Count(x => !x.Detail);
+        d.HasGlass = list.Any(x => x.IsGlass);
         d.BoundsMin = new Vector3(float.MaxValue);
         d.BoundsMax = new Vector3(float.MinValue);
         foreach (var b in d.Boxes.AsSpan(0, d.SolidBoxes))
@@ -718,7 +739,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 9))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -728,7 +749,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 9))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };

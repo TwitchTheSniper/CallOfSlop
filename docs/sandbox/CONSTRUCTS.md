@@ -288,7 +288,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
   along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
   as part of the construct: "Seats" below). A moving
-  part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
+  part that moves into a player shoves them along and, faster than 4 m/s of its own speed, hurts them (run-over damage,
+  below).
 
 ### Damage (decision 6)
 
@@ -401,7 +402,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -967,9 +968,33 @@ building rules. `--inventory-shots` adds the four groups' pages.
 
 **Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
 blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
-heavy armour everything short of a sniper rifle; glass is drawn opaque (a pale blue pane; see-through glass needs
-sorted blending); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
+heavy armour everything short of a sniper rifle; glass is see-through ([Glass](#glass), below); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
 (`"group"`, `"section"`), the top folder's parts listed after the subfolders'.
+
+### Glass
+
+A part box with `"glass": true` (or how much of it is drawn, 0.1 to 0.9; `true` is 0.3) is a see-through pane. The four
+Glass Panes' panes are (`tools/constructs/structure_parts.py` writes them); the "Construct glass" self-test checks every
+part of `"material": "glass"` has one. A glass box may be solid or a detail, not hidden.
+
+- **Drawing** (`Source/Render/ConstructRender.cs`): the opaque pass leaves panes out and keeps them for `DrawGlass`, which
+  runs in the blended pass after everything opaque (the mode's `DrawObjectives`): farthest first by distance from the eye,
+  blending on, depth writes off, lit and fogged by the box shader (mode 0, so both GL paths; no new texture units or
+  bindings). A pane is tinted by its colour, drawn more opaque and lighter at grazing angles (a little reflection), and
+  has a thin lighter strip along each long edge so it still reads as glass edge-on. At most 512 panes a frame are kept;
+  more are drawn opaque. The inventory's tiles (`SandboxTiles.DrawTile`), the part in your hands (`ToolRender.Emit`) and
+  a stored or packed pane draw it blended after the rest; a ghost's pane is fainter than its frame.
+- **Collision**: a pane is a solid box like any other: players, constructs and wrecks are stopped by it.
+- **Bullets**: a player's round goes through up to four panes (`Game.SandboxRay`), hits what is behind (a player in a
+  cab, a part, the map) and damages each pane it passed, at full strength. A construct gun's round does the same. Blasts
+  hurt glass like any part.
+- **Breaking**: glass is weak (health 13 to 48, armour 0). A broken pane **shatters**: it is removed, no wreck piece falls,
+  and a `CFireKind.Shatter` event (protocol 87: where, and its world bounds' half size in centimetres) bursts small shards
+  out of it on every PC (the prop debris pool) with the glass sound.
+
+**Choices made (the developer may change them)**: the opacity 0.3; rounds keep their full damage through glass; glass
+shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
+other may blend in the wrong order where they cross).
 
 ## New constructs (free placement)
 
@@ -1374,9 +1399,15 @@ input end). Wiring is instant (fitting a part is what takes time).
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
 - A player standing on a part is **carried** by the body's motion and, sideways, by every joint under their feet (a
   turntable, a swinging deck); a rising lift lifts them by the step-up rule. They count towards that joint's load.
-- **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
-  `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
-  with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+- **Run-over damage** (`ConstructWorld.BlockPlayer`, `Game.SandboxRunOver`): only the **construct's own motion** counts:
+  the velocity of its part at the contact (the body's motion, linear and turning, plus every joint's up its chain: a
+  swinging arm, a turntable) along the contact normal towards the player. The player's own velocity plays no part, so
+  sprinting into a parked car only stops you, and landing on a parked car is a landing (normal fall damage only). At up
+  to `Game.RunOverSpeed` (4 m/s, tunable) the part only pushes the player along at its speed; faster, it does
+  `(speed - 4) x 9 x sqrt(mass / 500)` damage (the mass factor 0.4 to 2.5), at most once in 0.6 s, and knocks them out
+  along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
+  joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
+  "Construct run-over" self-test covers each case.
 
 ### Seats: riders as part of the construct
 

@@ -5,19 +5,33 @@ namespace CallOfSlop;
 /// <summary>Where <see cref="ToolRender.Emit{T}"/> puts its boxes: the immediate <see cref="Renderer"/> or a scene <see cref="DrawList"/> (structs: no boxing).</summary>
 public interface IToolBoxOut
 {
-    void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0);
+    /// <summary>One box; <paramref name="glass"/> &gt; 0: a see-through pane (its opacity), drawn blended without depth writes.</summary>
+    void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0, float glass = 0);
 }
 
-/// <summary>Boxes straight to the renderer.</summary>
+/// <summary>Boxes straight to the renderer (in an opaque pass: a glass box turns blending on and back off around itself).</summary>
 public struct ToolGfxOut(Renderer g) : IToolBoxOut
 {
-    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0) => g.Draw(model, color, 1f, mode, shape: shape);
+    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0, float glass = 0)
+    {
+        if (glass <= 0)
+        {
+            g.Draw(model, color, 1f, mode, shape: shape);
+            return;
+        }
+        g.SetBlend(true);
+        g.SetDepthWrite(false);
+        g.Draw(model, color, glass, mode, shape: shape);
+        g.SetDepthWrite(true);
+        g.SetBlend(false);
+    }
 }
 
 /// <summary>Boxes as self-contained items of a scene draw list.</summary>
 public struct ToolListOut(DrawList list) : IToolBoxOut
 {
-    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0) => list.Add(model, Renderable.Box(color, 1f, mode) with { Shape = shape });
+    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0, float glass = 0) =>
+        list.Add(model, glass <= 0 ? Renderable.Box(color, 1f, mode) with { Shape = shape } : Renderable.Box(color, glass, mode, flags: RenderFlags.Blend | RenderFlags.NoDepthWrite) with { Shape = shape });
 }
 
 /// <summary>One frame of a tool in someone's hands, worked out by <see cref="ToolRender"/> and drawn by <see cref="ToolRender.Emit{T}"/>.</summary>
@@ -412,9 +426,15 @@ public static class ToolRender
             }
         }
         if (f.Held is { } d)
+        {
             foreach (ref readonly var b in d.Boxes.AsSpan())
-                if (!b.Hidden) // (a shaped part's stepped collision: its shape is drawn instead)
+                if (!b.Hidden && !b.IsGlass) // (a shaped part's stepped collision: its shape is drawn instead)
                     o.Box(b.Model(0, b.Center) * f.HeldPose, b.Color, 0, b.Shape);
+            if (d.HasGlass)
+                foreach (ref readonly var b in d.Boxes.AsSpan())
+                    if (b.IsGlass) // (its panes after the rest: see-through, the frame behind them shows)
+                        o.Box(b.Model(0, b.Center) * f.HeldPose, b.Color, 0, b.Shape, b.Glass);
+        }
     }
 
     /// <summary>A number in [0, 1) from an integer (the sparks' directions: the same every run).</summary>

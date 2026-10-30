@@ -117,9 +117,10 @@ public sealed class SandboxModule : GameModeModule
 
     public override void HudLines(Game game, Player me, List<HudLine> lines, ref Vector3? pointAt) => game.SandboxHud(me, lines, HudWhite, HudDim, HudOrange, HudGreen, HudRed);
 
-    /// <summary>The ghost sockets of the held part and the part under the crosshair (blended pass; ConstructRender.cs).</summary>
+    /// <summary>The constructs' glass, the ghost sockets of the held part and the part under the crosshair (blended pass; ConstructRender.cs).</summary>
     public override void DrawObjectives(Renderer gfx, Game game, double now)
     {
+        ConstructRender.DrawGlass(gfx, gfx.CameraPosition); // glass panes, back to front, over everything opaque
         ConstructRender.DrawGhosts(gfx, now);
         ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
     }

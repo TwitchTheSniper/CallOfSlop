@@ -16,7 +16,7 @@ public sealed partial class Game : IConstructTargets
     private readonly CFireEvent[] _cwIn = new CFireEvent[256];
 
     /// <summary>Fire events drawn on this machine (the self-test: a client sees the server's guns fire).</summary>
-    public int ConstructShotsSeen, ConstructBlastsSeen;
+    public int ConstructShotsSeen, ConstructBlastsSeen, ConstructShattersSeen; // (the self-test: fire events drawn here)
 
     private const int CwZombieTarget = 1000;
 
@@ -112,6 +112,10 @@ public sealed partial class Game : IConstructTargets
     private void SandboxFireFlush(double now)
     {
         var w = Constructs;
+        // Glass that broke since the last flush (shots between ticks and the guns' rounds): shards on every PC.
+        for (var k = 0; k < w.Shattered.Count && w.FireCount < w.Fires.Length; k++)
+            w.Fires[w.FireCount++] = new CFireEvent { Kind = CFireKind.Shatter, At = w.Shattered[k].Centre, Half = w.Shattered[k].Half };
+        w.Shattered.Clear();
         if (w.FireCount > 0)
         {
             ConstructNet.WriteFires(SbW, w);
@@ -138,6 +142,17 @@ public sealed partial class Game : IConstructTargets
     /// <summary>One fire event where it happens (host and clients): a shot's tracer from the gun's muzzle as drawn here, its flash and report; a blast or a cook-off.</summary>
     private void ConstructFireFx(in CFireEvent e, double now)
     {
+        if (e.Kind == CFireKind.Shatter)
+        {
+            // A glass part broke: small shards burst out of where it was (the prop debris pool), and the glass sound.
+            ConstructShattersSeen++;
+            var half = Vector3.Max(e.Half, new Vector3(0.01f));
+            var area = half.X * half.Y + half.Y * half.Z + half.X * half.Z;
+            PropDebris.SpawnBox(new Box(e.At, half), e.At + new Vector3(0, 0.3f, 0), PropDamage.Bullet, (int)(e.At.X * 131 + e.At.Z * 977) ^ (int)(PropDebris.Spawned & 0xFFFF),
+                Math.Clamp((int)(area * 10), 6, 24), 0.03f, 0.1f, 2.5f, Map.GlassColor, new Vector3(0.85f, 0.93f, 0.97f));
+            Audio.Effect3D(Sfx.BreakGlass, e.At, 0.85f);
+            return;
+        }
         if (e.Kind != CFireKind.Shot)
         {
             ConstructBlastsSeen++;

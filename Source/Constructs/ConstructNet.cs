@@ -138,7 +138,7 @@ public static class ConstructNet
         return i;
     }
 
-    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big).</summary>
+    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big); since 87 a glass part shattering (where, its half size in cm).</summary>
     public static void WriteFires(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CFire).U8((byte)Math.Min(world.FireCount, 255));
@@ -148,10 +148,15 @@ public static class ConstructNet
             w.U8((byte)e.Kind);
             if (e.Kind == CFireKind.Shot)
                 w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+            else if (e.Kind == CFireKind.Shatter)
+                w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
     }
+
+    /// <summary>A shatter's half size on the wire: centimetres, 1 to 255.</summary>
+    private static byte HalfByte(float half) => (byte)Math.Clamp((int)MathF.Round(half * 100f), 1, 255);
 
     /// <summary>Client: a Msg.CFire (after the id byte) into <paramref name="into"/>; returns how many events.</summary>
     public static int ReadFires(ref PacketReader r, Span<CFireEvent> into)
@@ -166,6 +171,8 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
             else if (kind is CFireKind.Blast or CFireKind.CookOff)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
+            else if (kind == CFireKind.Shatter)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
