@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Tube 0.5 m",
+  "description": "An 11 cm steel tube, 0.5 m long: roll cages, rails and light frames.",
+  "group": "Beams",
+  "section": "Tubes and rods",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 2.0,
+  "health": 60,
+  "armour": 5,
+  "material": "steel",
+  "color": "#8a9098",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        -0.055,
+        -0.055,
+        -0.125
+      ],
+      "max": [
+        0.055,
+        0.055,
+        0.375
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.055,
+        -0.055,
+        -0.125
+      ],
+      "max": [
+        0.055,
+        0.055,
+        0.375
+      ],
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 12
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        0.055,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -0.055,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y0",
+      "at": [
+        0.0,
+        0.055,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y0",
+      "at": [
+        0.0,
+        -0.055,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        0.055,
+        0.0,
+        0.25
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -0.055,
+        0.0,
+        0.25
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y1",
+      "at": [
+        0.0,
+        0.055,
+        0.25
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y1",
+      "at": [
+        0.0,
+        -0.055,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}

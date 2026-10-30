@@ -278,22 +278,25 @@ public static class ConstructRender
         }
         for (var b = 0; b < d.Boxes.Length; b++)
         {
+            ref readonly var box = ref d.Boxes[b];
+            if (box.Hidden)
+                continue; // (a shaped part's stepped collision: its shape is drawn instead)
             c.BoxOf(i, b, out var centre, out var half);
-            var model = Matrix4x4.CreateScale(half * 2);
+            Matrix4x4 model;
             if (isWheel)
             {
                 // Turn about the axle through the wheel's centre.
                 c.PartBounds(i, out var mn, out var mx);
                 var hub = (mn + mx) * 0.5f;
-                model *= Matrix4x4.CreateTranslation(centre - hub) * Matrix4x4.CreateFromAxisAngle(spinAxis, spin) * Matrix4x4.CreateTranslation(hub);
+                model = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateTranslation(centre - hub) * Matrix4x4.CreateFromAxisAngle(spinAxis, spin) * Matrix4x4.CreateTranslation(hub);
             }
             else
-                model *= Matrix4x4.CreateTranslation(centre);
+                model = box.Model(p.Rot, centre);
             model = model * wheel * seg * body;
             if (lit)
-                gfx.Draw(model, new Vector3(1f, 0.93f, 0.6f), opacity, mode: 2);
+                gfx.Draw(model, new Vector3(1f, 0.93f, 0.6f), opacity, mode: 2, shape: box.Shape);
             else
-                gfx.Draw(model, d.Boxes[b].Color * shade, opacity, mode: 0);
+                gfx.Draw(model, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;
         }
         return drawn;
@@ -316,11 +319,15 @@ public static class ConstructRender
                 continue;
             var shade = 0.55f + 0.45f * Math.Clamp(st.Health[k], 0, 1);
             var copies = ConstructStorage.DrawnCopies(cd.Slots[k], d, st.Rot[k], st.Count[k]);
+            var turn = Rot24.Compose(p.Rot, st.Rot[k]);
             for (var n = 0; n < copies; n++)
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
-                    ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out var half);
-                    gfx.Draw(Matrix4x4.CreateScale(half * 2) * Matrix4x4.CreateTranslation(centre) * seg * body, d.Boxes[b].Color * shade, 1f, mode: 0);
+                    ref readonly var box = ref d.Boxes[b];
+                    if (box.Hidden)
+                        continue;
+                    ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out _);
+                    gfx.Draw(box.Model(turn, centre) * seg * body, box.Color * shade, 1f, mode: 0, shape: box.Shape);
                     drawn++;
                 }
             LastStoredCount++;
@@ -511,9 +518,11 @@ public static class ConstructRender
                 // The whole part where it would go.
                 for (var b = 0; b < def.Boxes.Length; b++)
                 {
-                    var bc = g.Pos + Rot24.Apply(g.Rot, def.Boxes[b].Center);
-                    var bh = Rot24.ApplyHalf(g.Rot, def.Boxes[b].Half);
-                    gfx.Draw(Matrix4x4.CreateScale(bh * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse, mode: 2);
+                    ref readonly var box = ref def.Boxes[b];
+                    if (box.Hidden)
+                        continue;
+                    var bc = g.Pos + Rot24.Apply(g.Rot, box.Center);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse, mode: 2, shape: box.Shape);
                 }
             }
         }
@@ -535,10 +544,13 @@ public static class ConstructRender
                 gfx.Draw(Matrix4x4.CreateScale(sh * 2) * Matrix4x4.CreateTranslation(sc) * m, colour, (chosen ? 0.16f : 0.08f) * pulse * 1.6f, mode: 2);
                 if (!chosen)
                     continue;
+                var turn = Rot24.Compose(cp.Rot, SlotRot);
                 for (var b = 0; b < sdef.Boxes.Length; b++)
                 {
-                    ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, 0, b, out var bc, out var bh);
-                    gfx.Draw(Matrix4x4.CreateScale(bh * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse, mode: 2);
+                    if (sdef.Boxes[b].Hidden)
+                        continue;
+                    ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, 0, b, out var bc, out _);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * sdef.Boxes[b].Model(turn, bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse, mode: 2, shape: sdef.Boxes[b].Shape);
                 }
             }
         }
@@ -547,7 +559,8 @@ public static class ConstructRender
             var body = Matrix4x4.CreateFromQuaternion(Rot24.Quat(PlaceTurn)) * Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground);
             var colour = PlaceValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
             for (var b = 0; b < nd.Boxes.Length; b++)
-                gfx.Draw(Matrix4x4.CreateScale(nd.Boxes[b].Half * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(nd.Boxes[b].Center) * body, colour, 0.3f * pulse, mode: 2);
+                if (!nd.Boxes[b].Hidden)
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse, mode: 2, shape: nd.Boxes[b].Shape);
         }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {

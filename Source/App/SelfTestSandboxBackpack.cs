@@ -12,7 +12,7 @@ public static partial class SelfTest
         public int Boxes;
         public Vector3 Sum;
 
-        public void Box(in Matrix4x4 model, Vector3 color, int mode)
+        public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0)
         {
             Boxes++;
             Sum += model.Translation;

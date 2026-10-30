@@ -35,7 +35,9 @@ public static class BackpackRender
         var n = 0;
         foreach (ref readonly var b in bp.Boxes.AsSpan())
         {
-            o.Box(Matrix4x4.CreateScale(b.Half * 2) * Matrix4x4.CreateTranslation(b.Center) * m, b.Color, 0);
+            if (b.Hidden)
+                continue;
+            o.Box(b.Model(0, b.Center) * m, b.Color, 0, b.Shape);
             n++;
         }
         var frame = new CPart { Pos = Vector3.Zero, Rot = 0 };
@@ -45,8 +47,11 @@ public static class BackpackRender
                 continue;
             for (var b = 0; b < d.Boxes.Length; b++)
             {
-                ConstructStorage.ItemBox(frame, bp.Slots[k], d, pack.Rot[k], 0, b, out var c, out var h);
-                o.Box(Matrix4x4.CreateScale(h * 2) * Matrix4x4.CreateTranslation(c) * m, d.Boxes[b].Color, 0);
+                ref readonly var box = ref d.Boxes[b];
+                if (box.Hidden)
+                    continue;
+                ConstructStorage.ItemBox(frame, bp.Slots[k], d, pack.Rot[k], 0, b, out var c, out _);
+                o.Box(box.Model(pack.Rot[k], c) * m, box.Color, 0, box.Shape);
                 n++;
             }
         }
