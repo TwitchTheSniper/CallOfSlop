@@ -56,6 +56,7 @@ public enum GameAction
     RollLeft, // about the axis pointing away from you (Shift + Left by default)
     RollRight,
     SandboxInventory, // binds version 13: Sandbox, the inventory (parts, blueprints, tools; UiSandboxParts.cs) on Tab: there is no scoreboard there
+    FreeRouting, // binds version 14: Sandbox, held while routing a link: no port snapping or branching (Program.SandboxLinks.cs; Left Shift, beside Sprint)
     COUNT,
 }
 
@@ -97,7 +98,7 @@ public static class Keybinds
         a switch
         {
             GameAction.ToolWheel or GameAction.Stow or GameAction.DrawPack or GameAction.RotateLeft or GameAction.RotateRight or GameAction.RotateUp
-                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory => BindContext.Sandbox,
+                or GameAction.RotateDown or GameAction.RollLeft or GameAction.RollRight or GameAction.SandboxInventory or GameAction.FreeRouting => BindContext.Sandbox,
             // (Sandbox has no scoreboard at all; its inventory is GameAction.SandboxInventory, the Zombies parts inventory stays on its own key)
             GameAction.SpectateNext or GameAction.SpectatePrev or GameAction.Scoreboard or GameAction.Inventory => BindContext.NotSandbox,
             _ => BindContext.Any,
@@ -109,6 +110,8 @@ public static class Keybinds
     /// <summary>Can actions <paramref name="a"/> and <paramref name="b"/> both be live at once (so sharing a key is a clash)?</summary>
     public static bool Overlap(GameAction a, GameAction b)
     {
+        if (a == GameAction.FreeRouting && b == GameAction.Sprint || a == GameAction.Sprint && b == GameAction.FreeRouting)
+            return false; // (Free routing is a held modifier beside Sprint: both on Left Shift by default, sprinting while routing is fine)
         var x = Context(a);
         var y = Context(b);
         return x == BindContext.Any || y == BindContext.Any || x == y;
@@ -196,6 +199,7 @@ public static class Keybinds
         Shift(GlfwKey.Left), // Roll left (Sandbox)
         Shift(GlfwKey.Right), // Roll right (Sandbox)
         Key(GlfwKey.Tab), // Inventory (Sandbox): binds version 13 (the Scoreboard's Tab is off in Sandbox: other context)
+        Key(GlfwKey.LeftShift), // Free routing (Sandbox linking tool): binds version 14 (shares Left Shift with Sprint: Overlap)
     ];
 
     /// <summary>
@@ -209,9 +213,10 @@ public static class Keybinds
     /// Sandbox backpack's Stow H and Draw J added (same rule). 12: the Sandbox ghost's rotate keys (the arrows; roll on
     /// Shift + Left / Right) added (same rule; keys only clash within overlapping contexts, see <see cref="Context"/>).
     /// 13: the Sandbox inventory became its own action on Tab (Sandbox has no scoreboard); a player who had rebound the
-    /// parts inventory key keeps that key for the Sandbox inventory (<see cref="Carries"/>).
+    /// parts inventory key keeps that key for the Sandbox inventory (<see cref="Carries"/>). 14: Free routing (Sandbox
+    /// linking tool) on Left Shift added (same rule; it may share Sprint's key, see <see cref="Overlap"/>).
     /// </summary>
-    public const int DefaultsVersion = 13;
+    public const int DefaultsVersion = 14;
 
     /// <summary>Default keys that changed, per binds version: (version that changed it, action, old default, new default).</summary>
     private static readonly (int Version, GameAction Action, int Old, int New)[] Changes =
@@ -243,6 +248,7 @@ public static class Keybinds
         (12, GameAction.RollLeft, Unbound, Shift(GlfwKey.Left)),
         (12, GameAction.RollRight, Unbound, Shift(GlfwKey.Right)),
         (13, GameAction.SandboxInventory, Unbound, Key(GlfwKey.Tab)),
+        (14, GameAction.FreeRouting, Unbound, Key(GlfwKey.LeftShift)),
     ];
 
     /// <summary>
@@ -378,6 +384,7 @@ public static class Keybinds
             GameAction.RollLeft => "Roll the part left (Sandbox ghost)",
             GameAction.RollRight => "Roll the part right (Sandbox ghost)",
             GameAction.SandboxInventory => "Inventory (Sandbox: parts, blueprints, tools; again or Esc closes)",
+            GameAction.FreeRouting => "Free routing (Sandbox linking tool: hold for no port snap)",
             _ => a.ToString(),
         };
 

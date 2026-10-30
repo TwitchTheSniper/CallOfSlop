@@ -10,7 +10,11 @@ namespace CallOfSlop;
 /// for its port), Esc cancels. LMB on a link of the same type branches off it. The edit modes delete a link, move a
 /// node or re-route a link; "highlight all" shows every link through the parts. R still cycles a logic part's setting;
 /// RMB on a part (with nothing being routed) cuts its data links. The wrench or the welder repairs a damaged link (LMB).
-/// The server checks every link again (CAct.Route, CAct.RouteEdit).
+/// The server checks every link again (CAct.Route, CAct.RouteEdit) with the same rules (ConstructRoutes.PathRule).
+/// Hold to adjust (board item lg01): LMB on a red node (or a red input end, or a red moved node) freezes it and enters
+/// the adjust mode: the nearest valid offset along the surface normal is found, the wheel moves it while LMB is held
+/// (1 cm a notch, Ctrl 5 cm), and letting go on green places it (on red: nothing). Free routing (board item ls01): while
+/// the Free routing key (Left Shift) is held, aiming at a device places an ordinary node on it (no port snap, no finish).
 /// </summary>
 public static partial class Program
 {
@@ -33,6 +37,26 @@ public static partial class Program
     private static long _lkHudKey = long.MinValue, _lkLookKey = long.MinValue;
     private static string _lkHud = "", _lkLook = "";
     private static string? _lkWhy; // the preview's reason (a rule broken), or null
+    private static readonly Vector3[] _lkNormals = new Vector3[Construct.MaxNodesPerRoute]; // each placed node's surface normal (rest frame): the input end's adjust moves the last node along it
+    private static bool _lkFree; // the Free routing key is held while routing (no port snap, no finishing, no branching)
+
+    // Hold to adjust (board item lg01): a red node frozen at the click, moved along its surface normal by the wheel.
+    private enum LinkAdjust : byte
+    {
+        None,
+        Node, // the next node of the link being routed
+        End, // the last node before the input it ends at (then the link finishes)
+        Move, // the edit mode's node being moved
+    }
+
+    private static LinkAdjust _lkAdj;
+    private static Vector3 _lkAdjBase, _lkAdjNormal; // rest frame: the snapped spot at the click, its surface normal
+    private static int _lkAdjCm, _lkAdjKey = int.MinValue, _lkAdjEnd = -1, _lkAdjPorts;
+    private static byte _lkAdjHost, _lkAdjEndPort;
+    private static string? _lkAdjWhy;
+    private static double _lkScroll; // wheel notches while adjusting
+    private static string _lkAdjText = "";
+    private static int _lkAdjTextKey = int.MinValue;
 
     /// <summary>The link being routed is dropped (the tool put away, the construct gone, Esc).</summary>
     private static void LinkReset()
@@ -43,6 +67,7 @@ public static partial class Program
         _lkCount = 0;
         _lkMoveRoute = -1;
         _lkCheckKey = 0;
+        _lkAdj = LinkAdjust.None;
         _lkPicker.Close();
         RouteRender.ClearPreview();
     }
@@ -98,6 +123,23 @@ public static partial class Program
             var size = Brutal.ImGuiApi.ImGui.GetIO().DisplaySize;
             _lkPicker.Draw(Brutal.ImGuiApi.ImGui.GetForegroundDrawList(), new Brutal.Numerics.float2(size.X * 0.5f, size.Y * 0.5f), Ui.Scale * 0.8f, SandboxLinkWheel.Icons);
         }
+        if (_lkAdj != LinkAdjust.None && _lkAdjText.Length > 0)
+        {
+            // The adjust offset next to the crosshair: green while valid, red with the reason in the HUD line.
+            var size = Brutal.ImGuiApi.ImGui.GetIO().DisplaySize;
+            var px = Brutal.ImGuiApi.ImGui.GetFontSize() * 1.1f;
+            Hud.ShadowText(Brutal.ImGuiApi.ImGui.GetForegroundDrawList(), new Brutal.Numerics.float2(size.X * 0.5f + 18f * Ui.Scale, size.Y * 0.5f + 8f * Ui.Scale), px, _lkAdjText,
+                _lkAdjWhy == null ? new Vector3(0.4f, 1f, 0.5f) : new Vector3(1f, 0.4f, 0.35f), 1f);
+        }
+    }
+
+    /// <summary>The mouse wheel: true while a node is being adjusted (LMB held): the wheel moves it, not the weapon or the wheels.</summary>
+    private static bool LinkAdjustScroll(double y)
+    {
+        if (_lkAdj == LinkAdjust.None)
+            return false;
+        _lkScroll += y;
+        return true;
     }
 
     /// <summary>The style a new pipe from part <paramref name="from"/> gets: the wheel's override, else what the output carries.</summary>
@@ -136,26 +178,180 @@ public static partial class Program
             host = _lkNodes[_lkCount - 1].Host;
     }
 
-    /// <summary>Why a next point breaks the rules (length, sinking into a part, passing through one, the bend), or null.</summary>
-    private static string? LinkLeg(Construct c, Vector3 at, Vector3 dir, int fromHost, Vector3 next, int skipEnd, bool isNode)
+    /// <summary>The rule for the node being adjusted at <paramref name="pos"/> (the routing, the input end or the move: one rule with the server's).</summary>
+    private static string? LinkAdjustWhy(Construct c, Vector3 pos)
     {
-        var len = Vector3.Distance(at, next);
-        if (isNode && len < ConstructRoutes.MinSegment)
-            return "too close to the last node";
-        if (len > ConstructRoutes.MaxSegment)
-            return $"a segment reaches at most {ConstructRoutes.MaxSegment:0} m: add a node";
-        var radius = ConstructRoutes.Radius(_lkType, _lkStyle);
-        if (isNode && ConstructRoutes.InsidePart(c, next, radius * 0.9f, -1, -1) is { } inside)
-            return $"it would sink into the {c.DefOf(inside).Name}";
-        if (ConstructRoutes.Blocked(c, at, next, radius * 0.5f, _lkCount == 0 ? fromHost : -1, skipEnd) is { } wall)
-            return $"it would pass through the {c.DefOf(wall).Name}";
-        if (dir != Vector3.Zero && len > 1e-4f)
+        switch (_lkAdj)
         {
-            var bend = MathF.Acos(Math.Clamp(Vector3.Dot(dir, (next - at) / len), -1f, 1f)) * 180f / MathF.PI;
-            if (ConstructRoutes.BendRule(_lkType, bend) is { } why)
-                return why;
+            case LinkAdjust.Node:
+                var open = LinkOpenRule(c, _lkAdjHost);
+                return open.Why(pos);
+            case LinkAdjust.End:
+                var closed = LinkClosedRule(c);
+                return closed.Why(pos);
+            case LinkAdjust.Move:
+                var move = new ConstructRoutes.MoveRule { C = c, Route = _lkMoveRoute, Node = _lkMoveNode, Host = _lkAdjHost };
+                return move.Why(pos);
+            default:
+                return "nothing to adjust";
         }
-        return null;
+    }
+
+    private static ConstructRoutes.OpenRule LinkOpenRule(Construct c, byte host) => new()
+    {
+        C = c, Type = _lkType, Style = _lkStyle, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction, Nodes = _lkNodes,
+        Count = _lkCount, Host = host,
+    };
+
+    private static ConstructRoutes.ClosedRule LinkClosedRule(Construct c) => new()
+    {
+        World = _game?.Constructs, C = c, Type = _lkType, Style = _lkStyle, From = _lkFrom, FromPort = _lkFromPort, Parent = _lkParent, ParentSeg = _lkParentSeg, Junction = _lkJunction,
+        Nodes = _lkNodes, Count = _lkCount, Node = _lkCount - 1, To = _lkAdjEnd, ToPort = _lkAdjEndPort,
+    };
+
+    /// <summary>
+    /// A click on a red spot: the node freezes there and the adjust mode starts. The search jumps to the nearest valid
+    /// offset along the normal (out first, then in to the embedding limit), if any.
+    /// </summary>
+    private static void LinkAdjustStart(Game g, Construct c, LinkAdjust kind, Vector3 basePos, Vector3 normal, byte host, string why)
+    {
+        _lkAdj = kind;
+        _lkAdjBase = basePos;
+        _lkAdjNormal = normal.LengthSquared() > 1e-8f ? Vector3.Normalize(normal) : Vector3.UnitY;
+        _lkAdjHost = host;
+        _lkScroll = 0;
+        _lkAdjKey = int.MinValue;
+        LinkAdjustType(c, out var type, out var style);
+        int? found;
+        switch (kind)
+        {
+            case LinkAdjust.Node:
+                var open = LinkOpenRule(c, host);
+                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref open);
+                break;
+            case LinkAdjust.End:
+                var closed = LinkClosedRule(c);
+                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref closed);
+                break;
+            default:
+                var move = new ConstructRoutes.MoveRule { C = c, Route = _lkMoveRoute, Node = _lkMoveNode, Host = host };
+                found = ConstructRoutes.AdjustSearch(type, style, _lkAdjBase, _lkAdjNormal, ref move);
+                break;
+        }
+        _lkAdjCm = found ?? 0;
+        if (found == null)
+            g.SandboxSay($"{why} (hold LMB and scroll to move it along the surface normal)");
+    }
+
+    private static void LinkAdjustType(Construct c, out RouteType type, out byte style)
+    {
+        if (_lkAdj == LinkAdjust.Move && _lkMoveRoute >= 0 && _lkMoveRoute < c.RouteCount)
+        {
+            type = c.Routes[_lkMoveRoute].Type;
+            style = c.Routes[_lkMoveRoute].Style;
+        }
+        else
+        {
+            type = _lkType;
+            style = _lkStyle;
+        }
+    }
+
+    /// <summary>
+    /// A frame of the adjust mode (LMB held): the wheel steps the node along its normal, the preview re-checks each step;
+    /// letting go places it when valid (nothing otherwise), RMB cancels. <paramref name="n0"/>: the preview's points so
+    /// far (the routing: the link up to its last node).
+    /// </summary>
+    private static void LinkAdjustFrame(Game g, Construct c, int n0)
+    {
+        LinkAdjustType(c, out var type, out var style);
+        var steps = (int)_lkScroll;
+        _lkScroll -= steps;
+        if (steps != 0)
+        {
+            var ctrl = _window.GetKey(Brutal.GlfwApi.GlfwKey.LeftControl) == Brutal.GlfwApi.GlfwKeyAction.Press || _window.GetKey(Brutal.GlfwApi.GlfwKey.RightControl) == Brutal.GlfwApi.GlfwKeyAction.Press;
+            _lkAdjCm = ConstructRoutes.AdjustClamp(type, style, _lkAdjCm + steps * (ctrl ? ConstructRoutes.AdjustBigStepCm : ConstructRoutes.AdjustStepCm));
+        }
+        var pos = ConstructRoutes.AdjustPos(_lkAdjBase, _lkAdjNormal, _lkAdjCm);
+        // (checked again only when the spot changes)
+        var key = HashCode.Combine(pos, (int)_lkAdj, _lkAdjHost, _lkCount, c.RouteCount);
+        if (key != _lkAdjKey)
+        {
+            _lkAdjKey = key;
+            _lkAdjWhy = LinkAdjustWhy(c, pos);
+        }
+        var tk = _lkAdjCm * 2 + (_lkAdjWhy == null ? 1 : 0);
+        if (tk != _lkAdjTextKey)
+        {
+            _lkAdjTextKey = tk;
+            _lkAdjText = $"{(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm";
+        }
+        _lkWhy = _lkAdjWhy;
+        // The preview.
+        RouteRender.PreviewBody = c;
+        RouteRender.PreviewType = type;
+        RouteRender.PreviewStyle = style;
+        var hostSeg = (byte)c.Parts[Math.Min((int)_lkAdjHost, c.PartCount - 1)].Seg;
+        switch (_lkAdj)
+        {
+            case LinkAdjust.Node:
+                RouteRender.PreviewPts[n0] = pos;
+                RouteRender.PreviewSeg[n0++] = hostSeg;
+                break;
+            case LinkAdjust.End:
+                RouteRender.PreviewPts[n0 - 1] = pos; // (the last node, moved)
+                if (_lkAdjEnd >= 0 && _lkAdjEnd < c.PartCount)
+                {
+                    RouteRender.PreviewPts[n0] = ConstructRoutes.PortPoint(c, _lkAdjEnd, _lkAdjEndPort);
+                    RouteRender.PreviewSeg[n0++] = (byte)c.Parts[_lkAdjEnd].Seg;
+                }
+                break;
+            default:
+                n0 = 0;
+                RouteRender.PreviewPts[n0] = ConstructRoutes.Point(c, _lkMoveRoute, _lkMoveNode - 1, out var s0);
+                RouteRender.PreviewSeg[n0++] = (byte)s0;
+                RouteRender.PreviewPts[n0] = pos;
+                RouteRender.PreviewSeg[n0++] = hostSeg;
+                RouteRender.PreviewPts[n0] = ConstructRoutes.Point(c, _lkMoveRoute, _lkMoveNode + 1, out var s2);
+                RouteRender.PreviewSeg[n0++] = (byte)s2;
+                break;
+        }
+        RouteRender.PreviewCount = n0;
+        RouteRender.PreviewOk = _lkAdjWhy == null;
+        if (Pressed(GameAction.Aim))
+        {
+            _lkAdj = LinkAdjust.None; // (RMB: cancel the adjust; nothing placed)
+            return;
+        }
+        if (Down(GameAction.Fire))
+            return;
+        // Let go: placed when valid, else nothing.
+        var kind = _lkAdj;
+        _lkAdj = LinkAdjust.None;
+        if (_lkAdjWhy != null)
+        {
+            g.SandboxSay($"not placed: {_lkAdjWhy}");
+            return;
+        }
+        switch (kind)
+        {
+            case LinkAdjust.Node:
+                _lkNormals[_lkCount] = _lkAdjNormal;
+                _lkNodes[_lkCount++] = new CRouteNode { Pos = pos, Host = _lkAdjHost };
+                break;
+            case LinkAdjust.End:
+                _lkNodes[_lkCount - 1].Pos = pos;
+                if (_lkAdjPorts > 1)
+                    OpenPicker(c, _lkAdjEnd, end: true);
+                else
+                    LinkFinish(g, c, _lkAdjEnd, _lkAdjEndPort);
+                break;
+            default:
+                ref var mr = ref c.Routes[_lkMoveRoute];
+                g.SandboxSendRouteEdit(c.Id, RouteEditOp.MoveNode, _lkMoveRoute, _lkMoveNode, mr.Source, mr.To, pos, _lkAdjHost);
+                _lkMoveRoute = -1;
+                break;
+        }
     }
 
     /// <summary>The nearest free port of a part to a point (rest frame), and how many it has.</summary>
@@ -284,13 +480,27 @@ public static partial class Program
         // The edit modes.
         if (w.Mode != LinkMode.Link && _lkBody == 0)
         {
-            if (_lkMoveRoute >= 0 && g.Constructs.Get(_lkMoveBody) is { } mc && _lkMoveRoute < mc.RouteCount)
+            if (_lkMoveRoute >= 0 && g.Constructs.Get(_lkMoveBody) is { } mc && _lkMoveRoute < mc.RouteCount && _lkMoveNode < mc.Routes[_lkMoveRoute].Count)
             {
-                // Moving a node: the preview from its neighbours to where it would go.
+                _lkFree = Down(GameAction.FreeRouting); // (a moved node may sit on a device either way: the hint says so)
+                if (_lkAdj == LinkAdjust.Move)
+                {
+                    LinkAdjustFrame(g, mc, 0);
+                    LinkHud(g);
+                    return;
+                }
+                // Moving a node: the preview from its neighbours to where it would go, checked with the server's rule.
                 if (aimed && hit.Body == mc && !onRoute)
                 {
                     RestPoint(hit, out var p, out var n);
                     var at = ConstructRoutes.Snap(mc, mc.Routes[_lkMoveRoute].Type, mc.Routes[_lkMoveRoute].Style, p, Vector3.Zero, p - n * ConstructRoutes.Radius(mc.Routes[_lkMoveRoute].Type, mc.Routes[_lkMoveRoute].Style), n);
+                    var mk = HashCode.Combine(at, hit.Part, _lkMoveRoute, _lkMoveNode, mc.RouteCount, 1);
+                    if (mk != _lkCheckKey)
+                    {
+                        _lkCheckKey = mk;
+                        _lkCheckWhy = ConstructRoutes.CheckMove(mc, _lkMoveRoute, _lkMoveNode, at, (byte)hit.Part);
+                    }
+                    _lkWhy = _lkCheckWhy;
                     RouteRender.PreviewBody = mc;
                     RouteRender.PreviewType = mc.Routes[_lkMoveRoute].Type;
                     RouteRender.PreviewStyle = mc.Routes[_lkMoveRoute].Style;
@@ -301,14 +511,18 @@ public static partial class Program
                     RouteRender.PreviewPts[2] = ConstructRoutes.Point(mc, _lkMoveRoute, _lkMoveNode + 1, out var s2);
                     RouteRender.PreviewSeg[2] = (byte)s2;
                     RouteRender.PreviewCount = 3;
-                    RouteRender.PreviewOk = true;
-                    if (fire)
+                    RouteRender.PreviewOk = _lkWhy == null;
+                    if (fire && _lkWhy != null)
+                        LinkAdjustStart(g, mc, LinkAdjust.Move, at, n, (byte)hit.Part, _lkWhy);
+                    else if (fire)
                     {
                         ref var mr = ref mc.Routes[_lkMoveRoute];
                         g.SandboxSendRouteEdit(mc.Id, RouteEditOp.MoveNode, _lkMoveRoute, _lkMoveNode, mr.Source, mr.To, at, (byte)hit.Part);
                         _lkMoveRoute = -1;
                     }
                 }
+                else
+                    _lkWhy = null;
                 if (Pressed(GameAction.Aim))
                     _lkMoveRoute = -1;
             }
@@ -361,7 +575,8 @@ public static partial class Program
         // Routing.
         if (_lkBody != 0 && g.Constructs.Get(_lkBody) is { } rc)
         {
-            LinkTail(rc, out var at, out var tailDir, out var tailHost);
+            _lkFree = Down(GameAction.FreeRouting);
+            LinkTail(rc, out var at, out var tailDir, out _);
             // The preview: the link so far, then the next point (a node on the surface, or the input that ends it).
             var n0 = 0;
             RouteRender.PreviewBody = rc;
@@ -374,11 +589,17 @@ public static partial class Program
                 RouteRender.PreviewPts[n0] = _lkNodes[i].Pos;
                 RouteRender.PreviewSeg[n0++] = rc.Parts[Math.Min((int)_lkNodes[i].Host, rc.PartCount - 1)].Seg;
             }
+            if (_lkAdj is LinkAdjust.Node or LinkAdjust.End)
+            {
+                LinkAdjustFrame(g, rc, n0);
+                LinkHud(g);
+                return;
+            }
             _lkWhy = "point at a surface for a node, or at an input";
             var endPart = -1;
             byte endPort = 255;
             var ports = 0;
-            Vector3 next = default;
+            Vector3 next = default, nrm = default;
             if (aimed && hit.Body != rc)
             {
                 _lkWhy = _lkType == RouteType.Data && _lkCount == 0 && _lkParent == 255 ? null : "a routed link stays on one construct";
@@ -394,9 +615,12 @@ public static partial class Program
             }
             else if (aimed && !onRoute)
             {
-                RestPoint(hit, out var p, out var nrm);
+                RestPoint(hit, out var p, out nrm);
                 var d = hit.Body.DefOf(hit.Part);
-                var input = ConstructRoutes.IsInput(d, _lkType) && !(hit.Part == _lkFrom && _lkParent == 255 && !(_lkType == RouteType.Data && d.Role == PartRole.Logic));
+                // (free routing: a device is just a surface, its port highlight hidden)
+                var input = ConstructRoutes.ClickEnds(rc, _lkType, _lkFrom, _lkParent, hit.Part, _lkFree);
+                if (_lkFree)
+                    ConstructRender.AimPart = -1;
                 if (input)
                 {
                     endPart = hit.Part;
@@ -412,7 +636,7 @@ public static partial class Program
                     _lkCheckKey = ck;
                     _lkCheckWhy = input
                         ? ports == 0 ? $"every port of the {d.Name} is taken" : ConstructRoutes.Check(g.Constructs, rc, _lkType, _lkStyle, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), endPart, endPort)
-                        : _lkCount >= Construct.MaxNodesPerRoute ? $"a link has at most {Construct.MaxNodesPerRoute} nodes" : LinkLeg(rc, at, tailDir, tailHost, next, -1, true);
+                        : ConstructRoutes.OpenPath(rc, _lkType, _lkStyle, _lkFrom, _lkFromPort, _lkParent, _lkParentSeg, _lkJunction, _lkNodes.AsSpan(0, _lkCount), next, hit.Part);
                 }
                 _lkWhy = _lkCheckWhy;
                 RouteRender.PreviewPts[n0] = next;
@@ -422,7 +646,17 @@ public static partial class Program
             RouteRender.PreviewOk = _lkWhy == null;
             if (fire && aimed && hit.Body == rc && !onRoute)
             {
-                if (_lkWhy != null)
+                if (_lkWhy != null && endPart < 0 && _lkCount < Construct.MaxNodesPerRoute)
+                    LinkAdjustStart(g, rc, LinkAdjust.Node, next, nrm, (byte)hit.Part, _lkWhy); // (hold to adjust the red node)
+                else if (_lkWhy != null && endPart >= 0 && ports > 0 && _lkCount > 0)
+                {
+                    // (hold to adjust the input end: its last node moves along the normal it was placed on)
+                    _lkAdjEnd = endPart;
+                    _lkAdjEndPort = endPort;
+                    _lkAdjPorts = ports;
+                    LinkAdjustStart(g, rc, LinkAdjust.End, _lkNodes[_lkCount - 1].Pos, _lkNormals[_lkCount - 1], _lkNodes[_lkCount - 1].Host, _lkWhy);
+                }
+                else if (_lkWhy != null)
                     g.SandboxSay(_lkWhy);
                 else if (endPart >= 0)
                 {
@@ -432,7 +666,10 @@ public static partial class Program
                         LinkFinish(g, rc, endPart, endPort);
                 }
                 else
+                {
+                    _lkNormals[_lkCount] = nrm;
                     _lkNodes[_lkCount++] = new CRouteNode { Pos = next, Host = (byte)hit.Part };
+                }
             }
             if (Pressed(GameAction.Aim))
             {
@@ -513,7 +750,8 @@ public static partial class Program
     {
         var w = _linkWheel;
         var key = (long)w.Type ^ ((long)w.Style << 4) ^ ((long)w.Mode << 12) ^ ((long)_lkCount << 16) ^ ((long)_lkBody << 24) ^ (w.Highlight ? 1L << 50 : 0)
-                  ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)_lkStyle << 52) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32);
+                  ^ ((long)(_lkWhy?.GetHashCode() ?? 0) << 20) ^ (_lkMoveRoute >= 0 ? 1L << 51 : 0) ^ ((long)_lkStyle << 52) ^ ((long)g.SandboxWheelKey.GetHashCode() << 32)
+                  ^ (_lkFree ? 1L << 53 : 0) ^ ((long)_lkAdj << 54) ^ ((long)(_lkAdjCm & 0xff) << 40) ^ ((long)_settings.Bind(GameAction.FreeRouting) << 8);
         if (key == _lkHudKey)
         {
             g.SandboxWireFrom = _lkHud;
@@ -523,11 +761,17 @@ public static partial class Program
         var type = ConstructRoutes.Name(_lkBody != 0 ? _lkType : w.Type, _lkBody != 0 ? _lkStyle : w.Type == RouteType.Pipe && w.Style != 255 ? w.Style : (byte)0);
         if (_lkBody == 0 && w.Type == RouteType.Pipe && w.Style == 255)
             type = "pipe (style from the output)";
-        _lkHud = w.Mode != LinkMode.Link
-            ? _lkMoveRoute >= 0 ? "Move node: LMB where it goes (RMB: let go)" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: the link wheel"
-            : _lkBody == 0
-                ? $"Linking tool: {type}{(w.Highlight ? " (highlight all)" : "")} - LMB an output (or a link to branch). RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: link wheel"
-                : $"Routing a {type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input. RMB/Backspace: last node off. Esc: cancel{(_lkWhy != null ? $" | {_lkWhy}" : "")}";
+        var free = Keybinds.NameOf(_settings, GameAction.FreeRouting);
+        var why = _lkWhy != null ? $" | {_lkWhy}" : "";
+        _lkHud = _lkAdj != LinkAdjust.None
+            ? $"Adjusting the node {(_lkAdjCm > 0 ? "+" : "")}{_lkAdjCm} cm: scroll to move it (Ctrl: 5 cm). Let go of LMB on green to place it (on red: nothing). RMB: cancel{why}"
+            : w.Mode != LinkMode.Link
+                ? _lkMoveRoute >= 0 ? $"Move node: LMB where it goes (red: hold LMB to adjust). RMB: let go{why}" : $"Linking tool: {w.ModeName} - LMB on a link. Hold {g.SandboxWheelKey}: the link wheel"
+                : _lkBody == 0
+                    ? $"Linking tool: {type}{(w.Highlight ? " (highlight all)" : "")} - LMB an output (or a link to branch). RMB: cut a part's wires. R: setting. Hold {g.SandboxWheelKey}: link wheel"
+                    : _lkFree
+                        ? $"Free routing (no port snap): LMB places a node, on a device too. Let go of {free} to end at an input{why}"
+                        : $"Routing a {type}, {_lkCount} node{(_lkCount == 1 ? "" : "s")}: LMB a node or the input (red: hold LMB to adjust). {free}: free routing (no port snap). RMB/Backspace: last node off. Esc: cancel{why}";
         g.SandboxWireFrom = _lkHud;
     }
 }
