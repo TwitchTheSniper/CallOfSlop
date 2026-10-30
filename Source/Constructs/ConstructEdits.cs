@@ -10,6 +10,7 @@ public enum EditKind : byte
     PlaceNew, // the held part on the ground: a new construct
     Remove, // a part off a construct, into the hand (full hands: the backpack, else dropped; ConstructGive.cs)
     Weld, // a freeform weld: part Part of Body to part Part2 of Body2 where they are (board item fw01; ConstructEditsFreeform.cs)
+    SocketWeld, // a socket weld: Body's part Part by its socket Socket onto Body2's part Part2 (socket Variant, or a face point At / PlaceTurn), turned Yaw degrees (board item sw01; SocketWeld.cs)
 }
 
 /// <summary>What one player holds and is doing (server-owned, replicated in the Sandbox mode-state tail).</summary>
@@ -213,8 +214,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool is not (ConstructTool.Welder or ConstructTool.Wrench))
-            return "take out the welder (4) to weld two constructs together (or the wrench, to bolt on a loose wrench part)";
+        if (h.Tool != ConstructTool.Welder)
+            return "take out the welder (4) to weld two constructs together";
         if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -225,8 +226,6 @@ public sealed partial class ConstructEdits
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
         if (c.FreeformCount > 0 && c.FrameOf(c.Parts[part].Seg) != 0 || plan.Other.FreeformCount > 0 && plan.Other.FrameOf(plan.Other.Parts[plan.PartB].Seg) != 0)
             return "that part is on a freeform-welded piece: weld it freeform (the welder's outer ring)";
-        if (!JoinTool(h.Tool, c, plan.Other))
-            return "the wrench bolts on a loose wrench part: use the welder to weld two constructs together";
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
             return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
@@ -422,6 +421,8 @@ public sealed partial class ConstructEdits
             }
             case EditKind.Weld:
                 return CompleteFreeform(world, player, ref h);
+            case EditKind.SocketWeld:
+                return CompleteSocketWeld(world, player, ref h, eye);
         }
         return "nothing";
     }

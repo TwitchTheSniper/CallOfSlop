@@ -12,7 +12,13 @@ namespace CallOfSlop;
 public static unsafe partial class Program
 {
     /// <summary>May this build use the dev tools?</summary>
-    private static bool DevToolsAllowed => !BuildInfo.IsRelease || _settings.AllowDevTools;
+    private static bool DevToolsAllowed => !BuildInfo.IsRelease || ReleaseDevTools || _settings.AllowDevTools;
+
+    /// <summary>
+    /// Testers asked for the prop editor (developer, 2026-10-30): for now every release build has the dev tools (F6, F5,
+    /// F10) without the setting. Set false to put them back behind Settings > Graphics > "Allow the dev tools".
+    /// </summary>
+    private const bool ReleaseDevTools = true;
 
     /// <summary>How far the inspector looks (metres).</summary>
     private const float LookAtRange = 400f;

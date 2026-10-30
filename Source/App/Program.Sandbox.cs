@@ -110,6 +110,8 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Tool, part: (byte)(h.Tool == ConstructTool.Linker ? ConstructTool.None : ConstructTool.Linker));
         if ((Pressed(GameAction.PrimaryWeapon) || Pressed(GameAction.SecondaryWeapon)) && h.Tool != ConstructTool.None)
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+        if (h.Tool != ConstructTool.Welder && SocketWeldBusy)
+            _swFlow.Cancel(); // (the welder put away: the socket weld being set up goes)
         if (h.Tool != ConstructTool.Linker)
         {
             g.SandboxWireFrom = "";
@@ -238,18 +240,17 @@ public static unsafe partial class Program
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
             g.SandboxLookText = _sbRackText;
-        // The welder on a part that touches another construct: F joins the two into one.
+        // The welder on a part that touches another construct: F joins the two into one (decision 27: only the welder
+        // attaches a piece; its three-step socket weld moves one into place: Program.SandboxSocketWeld.cs).
         JoinPlan jplan = default;
-        // (decision 21: the wrench bolts on a loose wrench part the same way: a physics-only engine moved into place)
-        var join = h.Tool is ConstructTool.Welder or ConstructTool.Wrench && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan)
-                   && ConstructEdits.JoinTool(h.Tool, hit.Body, jplan.Other!);
+        var join = h.Tool == ConstructTool.Welder && aimed && hit.Distance <= ConstructBuild.Reach && ConstructPlace.FindJoin(g.Constructs, hit.Body, hit.Part, out jplan);
         if (join)
         {
             var jk = hit.Body.Id | ((long)jplan.Other!.Id << 16) | ((long)hit.Part << 32) | ((long)h.Tool << 48);
             if (jk != _sbJoinKey)
             {
                 _sbJoinKey = jk;
-                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to {(h.Tool == ConstructTool.Wrench ? "bolt" : "weld")} the two into one";
+                _sbJoinText = $"{hit.Body.DefOf(hit.Part).Name}: touches construct {jplan.Other.Id} - F to weld the two into one";
             }
             g.SandboxLookText = _sbJoinText;
         }
@@ -317,6 +318,12 @@ public static unsafe partial class Program
             SandboxFreeformInput(g, ref h, eye, dir, aimed, hit);
         // Ghost sockets for the held part (a tool out only: bare hands never edit).
         var held = ConstructParts.Get(h.Held);
+        // The welder's default mode, with nothing in the hands: the three-step socket weld (Program.SandboxSocketWeld.cs).
+        g.SandboxWeldHint = "";
+        if (h.Tool == ConstructTool.Welder && !_weldModes.Freeform && held == null && !h.Seated)
+            SocketWeldInput(g, eye, dir, aimed, hit);
+        else
+            SocketWeldIdle();
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
             g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);

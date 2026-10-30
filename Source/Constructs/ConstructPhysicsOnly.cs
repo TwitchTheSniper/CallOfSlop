@@ -138,15 +138,10 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>
-    /// The wrench (or welder) joining construct <paramref name="c"/> to <paramref name="other"/>: the welder joins any two;
-    /// the wrench bolts on a loose wrench part (a physics-only engine moved into place with the physics gun).
+    /// The tool that joins construct <paramref name="c"/> to <paramref name="other"/>: the welder only (decision 27: what
+    /// isn't attached yet is a physics-only piece, and the welder attaches those; the wrench is for small item parts).
     /// </summary>
-    public static bool JoinTool(ConstructTool tool, Construct c, Construct other) => tool switch
-    {
-        ConstructTool.Welder => true,
-        ConstructTool.Wrench => c.Loose && c.DefOf(0).Tool == ConstructTool.Wrench || other.Loose && other.DefOf(0).Tool == ConstructTool.Wrench,
-        _ => false,
-    };
+    public static bool JoinTool(ConstructTool tool, Construct c, Construct other) => tool == ConstructTool.Welder;
 
     /// <summary>Creative: a wrench fit or removal done at once (no timed progress); survival keeps the timed edits.</summary>
     private string? FinishNow(ConstructWorld world, byte player, Vector3 eye)

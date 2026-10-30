@@ -166,8 +166,8 @@ public sealed partial class Ui
                 Tool = d.Tool,
                 Line1 = d.Tool switch
                 {
-                    ConstructTool.Welder => "Fitted with the welder (4)",
-                    ConstructTool.Wrench => "Fitted with the wrench (3)",
+                    ConstructTool.Welder => "Physics only: welded on with the welder (4), socket weld",
+                    ConstructTool.Wrench => "Item: fitted with the wrench (3)",
                     ConstructTool.Linker => "Set up with the linking tool",
                     _ => "No tool needed",
                 },
@@ -215,8 +215,8 @@ public sealed partial class Ui
                 Usable = m.Tool != null,
                 Line1 = m.Tool switch
                 {
-                    ConstructTool.Wrench => "Slot 3: bolted parts",
-                    ConstructTool.Welder => "Slot 4: welded parts",
+                    ConstructTool.Wrench => "Slot 3: small parts (items) on and off",
+                    ConstructTool.Welder => "Slot 4: socket-weld physics pieces on, cut them free",
                     ConstructTool.Linker => "Wires and logic settings",
                     ConstructTool.Configure => "Part settings (the tool wheel)",
                     ConstructTool.PhysicsGun => "Grab, move, turn, freeze",

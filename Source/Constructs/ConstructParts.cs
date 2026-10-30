@@ -134,8 +134,8 @@ public enum CLogic : byte
 public enum ConstructTool : byte
 {
     None, // bare hands or a gun: use only (drive, sit, open doors), never edit
-    Wrench, // bolted parts: wheels, seats, engines, doors...
-    Welder, // welded parts: frames, panels, foundations
+    Wrench, // small parts that are items: lamps, sensors, logic, gun parts, small gearboxes... (decision 27)
+    Welder, // every physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels (decision 27)
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
     Configure = 4, // the configure tool: a part's settings panel (ConstructConfig.cs); never fits or removes a part
     Paint = 9, // the paint tool (ConstructPaint.cs): colours parts and links; never fits or removes a part
@@ -601,10 +601,12 @@ public static partial class ConstructParts
         if (d.Group.Length > 32 || d.Section.Length > 32 || (d.Section.Length > 0 && d.Group.Length == 0))
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
-        d.Tool = EnumOf<ConstructTool>(StrKey(root, "tool", file), file, "tool");
-        if (d.Tool is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun)
+        // Decision 27 (tools by function): the file's "tool" is now only a hint that the part is structural ("welder": welded,
+        // so physics-only); which tool fits it follows from that (ConstructBuild.ToolFits), so the key is optional.
+        var hint = Opt(root, "tool") is { } th ? EnumOf<ConstructTool>(Str(th, file, "tool"), file, "tool") : ConstructTool.Wrench;
+        if (hint is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
-        d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
+        d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : hint == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
         d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
         d.Stage = Opt(root, "stage") is { ValueKind: JsonValueKind.True };
@@ -622,8 +624,9 @@ public static partial class ConstructParts
         Range(d.Mass, 0.5f, 50000f, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
         // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
         var bulky = Opt(root, "physicsOnly") is { } po && (po.ValueKind == JsonValueKind.True ? true : po.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"physicsOnly\" is true or false"));
-        d.PhysicsWhy = d.Tool == ConstructTool.Welder ? "welded" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
+        d.PhysicsWhy = hint == ConstructTool.Welder ? "welded" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
         d.PhysicsOnly = d.PhysicsWhy.Length > 0;
+        d.Tool = ConstructBuild.ToolFor(d); // (decision 27: physics-only -> the welder, an item -> the wrench)
         d.Health = Num(Need(root, "health", file), file, "health");
         Range(d.Health, 1f, 100000f, file, "health");
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;

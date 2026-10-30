@@ -90,6 +90,7 @@ public static partial class ConstructRender
         AimPart = -1;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
+        SocketWeldRender.Clear();
         ShowWires = false;
         RouteRender.ClearPreview();
         WireFromBody = 0;
