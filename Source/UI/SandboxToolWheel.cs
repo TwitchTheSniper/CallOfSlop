@@ -47,7 +47,7 @@ public sealed class SandboxToolWheel
         Set(Slot.Linker, "Linking tool", "wires, settings");
         Set(Slot.Hands, "Hands / gun", "out of build mode");
         Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
-        Set(Slot.Configure, "Configure tool", "", off: true);
+        Set(Slot.Configure, "Configure tool", "part settings");
         Set(Slot.Scanner, "Scanner", "", off: true);
         Set(Slot.Drill, "Hand drill", "", off: true);
         SetKeys(null);
@@ -70,6 +70,7 @@ public sealed class SandboxToolWheel
             Slot.Wrench => ConstructTool.Wrench,
             Slot.Welder => ConstructTool.Welder,
             Slot.Linker => ConstructTool.Linker,
+            Slot.Configure => ConstructTool.Configure,
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
             Slot.Hands => ConstructTool.None,
             _ => null,
@@ -81,6 +82,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Wrench => Slot.Wrench,
             ConstructTool.Welder => Slot.Welder,
             ConstructTool.Linker => Slot.Linker,
+            ConstructTool.Configure => Slot.Configure,
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
             _ => Slot.Hands,
         });

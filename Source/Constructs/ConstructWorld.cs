@@ -227,6 +227,7 @@ public sealed partial class ConstructWorld
             return -1;
         var i = c.PartCount++;
         c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
+        ConstructConfig.Init(ref c.Parts[i], def);
         AllocStore(ref c.Parts[i], def);
         c.Dirty = true;
         c.Wake();

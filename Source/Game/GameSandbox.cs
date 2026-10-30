@@ -33,6 +33,7 @@ public enum CActKind : byte
     GrabRelease, // let go of what the physics gun holds (protocol 88)
     GrabFreeze, // freeze what the physics gun holds where it is, and let go (protocol 88)
     UnfreezeAll, // u8 everyone (the host only): unfreeze everything this player froze (protocol 88)
+    Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -415,6 +416,8 @@ public sealed partial class Game
                 var body = r.U16();
                 return hands.CycleSetting(Constructs, p.Id, eye, body, r.U8());
             }
+            case CActKind.Configure:
+                return SandboxConfigureAct(p, ref r, eye);
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
@@ -933,7 +936,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));
@@ -952,6 +955,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxPhysGunHint(h), dim));
         else if (h.Tool == ConstructTool.Linker)
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
+        else if (h.Tool == ConstructTool.Configure)
+            lines.Add(new HudLine(SandboxConfigHint, dim));
         else if (held == null)
         {
             if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))
@@ -1070,7 +1075,9 @@ public sealed partial class Game
                 {
                     _sbHornAt[slot] = now;
                     c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
-                    Audio.Effect3D(Sfx.LockTone, t + Vector3.Transform(c.Parts[i].Pos, q), 1f);
+                    ref var hp = ref c.Parts[i];
+                    var hd = hp.D; // (its pitch and volume settings: the configure tool)
+                    Audio.Effect3DPitched(Sfx.LockTone, t + Vector3.Transform(hp.Pos, q), ConstructConfig.Get(hp, hd, CfgKey.Volume, 100) / 100f, ConstructConfig.Get(hp, hd, CfgKey.Pitch, 1));
                 }
                 slot++;
             }

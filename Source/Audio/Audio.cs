@@ -492,6 +492,13 @@ public sealed partial class Audio : IDisposable
             Play(Pick(sfx), position, gain, Jitter(0.05f), bus == MixBus.Auto ? BusFor(sfx, true) : bus);
     }
 
+    /// <summary>A sound effect in the world at a set pitch (a construct horn's setting: 1 is its own note).</summary>
+    public void Effect3DPitched(Sfx sfx, System.Numerics.Vector3 position, float gain, float pitch, MixBus bus = MixBus.Auto)
+    {
+        if (Enabled && gain > 0)
+            Play(Pick(sfx), position, gain, Math.Clamp(pitch, 0.25f, 4f), bus == MixBus.Auto ? BusFor(sfx, true) : bus);
+    }
+
     /// <summary>A small, short sound in the world (impacts, whizzes): fades out sooner and is skipped beyond <paramref name="range"/>.</summary>
     public void Effect3DSmall(Sfx sfx, Vector3 position, float gain, float range = 50f, MixBus bus = MixBus.Auto)
     {
