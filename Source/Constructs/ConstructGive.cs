@@ -17,7 +17,8 @@ public enum GiveResult : byte
 /// backpack (the same fit and weight rules as the Stow key), else a loose pickup dropped where the part was (it falls
 /// and rests, like any dropped part). What the hands already hold stays there. Every path that gives a part to a player
 /// calls <see cref="Give"/> (taking a part off, salvage into the hands, receiver-merge pop-offs), so none of them can
-/// lose the part or assume the hands are free. A full-hands outcome tells the player why on the HUD (<see cref="Notices"/>).
+/// lose the part or assume the hands are free. A physics-only part (decision 21: welded, over the hand-carry limit, or
+/// bulky) never goes to the hands or the backpack: it is dropped as a body where it was. A full-hands outcome tells the player why on the HUD (<see cref="Notices"/>).
 /// </summary>
 public sealed partial class ConstructEdits
 {
@@ -32,7 +33,22 @@ public sealed partial class ConstructEdits
     {
         ref var h = ref Hands[player];
         CheckHand(player, ref h);
-        if (h.Held == ConstructParts.None)
+        if (def.PhysicsOnly)
+        {
+            // Decision 21: never an item: a body where it came from (ConstructPhysicsOnly.cs).
+            if (DropLoose(world, def, where, rot ?? Quaternion.Identity) is { } body)
+            {
+                body.Owner = player;
+                Notices.Add((player, $"{def.Name} left as a body: physics-only ({def.PhysicsWhy})"));
+                Done.Add($"player {player}: {def.Name} dropped as construct {body.Id} (physics-only: {def.PhysicsWhy})");
+                return GiveResult.Dropped;
+            }
+            if (Inventory != null && Inventory.Of(player).Add(def.Id))
+                return GiveResult.Inventory;
+            Console.WriteLine($"[sandbox] error: the physics-only {def.Name} for player {player} had nowhere to go (the world is full)");
+            return GiveResult.Lost;
+        }
+        if (h.Held == ConstructParts.None && world.HoseHeldBy(player) < 0) // (a hose's receiver in the hands counts as full hands: board item wl01)
         {
             h.Held = def.Id;
             return GiveResult.Hands;

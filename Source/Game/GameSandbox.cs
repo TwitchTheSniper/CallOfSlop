@@ -38,8 +38,8 @@ public enum CActKind : byte
     RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
     Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 92; GameSandboxSpawns.cs)
     ClearSpawns, // every spawned bot and zombie goes (protocol 92)
-    WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 93; board item wl01)
-    WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 93)
+    WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 94; board item wl01)
+    WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 94)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -107,6 +107,9 @@ public sealed partial class Game
         }
         if (SandboxOn && World.Map.Sandbox is { } sandbox)
             Constructs.Populate(sandbox, World.Query); // (their structure goes out on the first playing tick)
+        // Decision 21: a physics-only part held, in a backpack or in storage (a part file that became physics-only, a
+        // world load) drops into the world as a body.
+        SandboxHands.DropPhysicsOnly(Constructs, id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null);
     }
 
     /// <summary>Client: a match starts: nothing until the server sends it.</summary>
@@ -429,7 +432,7 @@ public sealed partial class Game
             case CActKind.Rack:
             {
                 var pick = r.U16(); // (protocol 90: part ids are two bytes)
-                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position) : hands.TakePart(World.Map.Sandbox, p.Id, (ushort)(pick - 1));
+                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position, Constructs, eye, p.Yaw) : hands.TakePart(World.Map.Sandbox, p.Id, (ushort)(pick - 1), Constructs, eye, p.Yaw);
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U8());
@@ -669,6 +672,7 @@ public sealed partial class Game
             var g1 = ConstructWorld.Ground(World.Query, at.X, at.Z);
             c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+            ConstructCargo.FollowAll(Constructs); // (what its cargo volumes carry moves with it)
         }
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
         return null;

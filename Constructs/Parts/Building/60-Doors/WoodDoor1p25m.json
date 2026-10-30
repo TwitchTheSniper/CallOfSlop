@@ -69,5 +69,6 @@
       ],
       "dir": "-z"
     }
-  ]
+  ],
+  "physicsOnly": true
 }

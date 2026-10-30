@@ -190,6 +190,17 @@ public sealed partial class Construct
     public float GrabAccel;
     public bool Asleep;
     public int SleepTicks;
+    // Cargo volumes (decision 21; ConstructCargo.cs). Carried: this body rides kinematically in a frozen cargo volume of
+    // construct CarriedBy (0: free), at CarryPos / CarryRot in the frame of that volume part's segment (CarrySeg); the
+    // server finds the volume again by its part tag. A carrier counts what it carries in Cargo (body frame) for its mass.
+    public ushort CarriedBy;
+    public ushort CarryTag;
+    public byte CarryPart, CarrySeg;
+    public Vector3 CarryPos;
+    public Quaternion CarryRot = Quaternion.Identity;
+    public readonly CCargoMass[] Cargo = new CCargoMass[ConstructCargo.MaxPerConstruct];
+    public int CargoCount;
+    public float CargoMass; // what Cargo adds up to (kg)
 
     // Pose: the body frame's origin and turn in the world.
     public Vector3 Pos;
@@ -498,6 +509,11 @@ public sealed partial class Construct
             Mass = 1;
             LocalMin = LocalMax = Vector3.Zero;
         }
+        for (var k = 0; k < CargoCount && PartCount > 0; k++)
+        {
+            com += Cargo[k].Centre * Cargo[k].Mass; // (cargo volumes: what a frozen volume carries rides as part of the body)
+            Mass += Cargo[k].Mass;
+        }
         Com = PartCount > 0 ? com / Mass : Vector3.Zero;
         InvMass = 1f / Mass;
         // Inertia about the centre of mass: each box a solid block (its share of the part's mass by volume).
@@ -521,6 +537,18 @@ public sealed partial class Construct
                 ixz -= m * r.X * r.Z;
                 iyz -= m * r.Y * r.Z;
             }
+        }
+        for (var k = 0; k < CargoCount && PartCount > 0; k++)
+        {
+            var m = Cargo[k].Mass;
+            var s = Cargo[k].Half * 2;
+            var r = Cargo[k].Centre - Com;
+            ixx += m / 12f * (s.Y * s.Y + s.Z * s.Z) + m * (r.Y * r.Y + r.Z * r.Z);
+            iyy += m / 12f * (s.X * s.X + s.Z * s.Z) + m * (r.X * r.X + r.Z * r.Z);
+            izz += m / 12f * (s.X * s.X + s.Y * s.Y) + m * (r.X * r.X + r.Y * r.Y);
+            ixy -= m * r.X * r.Y;
+            ixz -= m * r.X * r.Z;
+            iyz -= m * r.Y * r.Z;
         }
         // A little extra so thin builds don't spin like tops.
         var floor = Mass * 0.05f;

@@ -155,5 +155,6 @@
       "dir": "-x",
       "kind": "leaf"
     }
-  ]
+  ],
+  "physicsOnly": true
 }

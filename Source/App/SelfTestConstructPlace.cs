@@ -201,7 +201,7 @@ public static partial class SelfTest
         Construct? Newest(int before) => w.Bodies.Count > before ? w.Bodies[^1] : null;
 
         // 1. The core on open ground: a new construct of one part, the player's, with its socket grid.
-        g.SandboxTakePart(core.Id);
+        PlaceHold(g, me.Id, core);
         var n0 = w.Bodies.Count;
         var why1 = Place(spot);
         Run(g, ref now, core.AttachSeconds + 0.2);
@@ -219,7 +219,7 @@ public static partial class SelfTest
         Run(g, ref now, 1.5); // (settles and sleeps)
 
         // 2. A second part attaches to it (its +x face).
-        g.SandboxTakePart(block.Id);
+        PlaceHold(g, me.Id, block);
         var plusX = -1;
         ghostN = ConstructBuild.Ghosts(a, block, ghosts, Vector3.Zero, 2f);
         for (var k = 0; k < ghostN; k++)
@@ -237,7 +237,7 @@ public static partial class SelfTest
         Run(g, ref now, 1.5);
 
         // 3. Refused with a reason: over the construct, over a player, in the air, outside creative with the anchor.
-        g.SandboxTakePart(block.Id);
+        PlaceHold(g, me.Id, block);
         var over = Place(spot);
         var onMe = Place(me.Position + new Vector3(0, 0.02f, 0), flags: 0);
         var air = Place(spot + new Vector3(0, 2.5f, -1.5f), flags: 0);
@@ -255,7 +255,7 @@ public static partial class SelfTest
         {
             if (def.Tool != g.SandboxHands.Hand(me.Id).Tool)
                 g.SandboxSend(CActKind.Tool, part: (byte)def.Tool);
-            g.SandboxTakePart(def.Id);
+            PlaceHold(g, me.Id, def);
             var before = w.Bodies.Count;
             var why = Place(at, flags: flags);
             Run(g, ref now, def.AttachSeconds + 0.2);
@@ -292,7 +292,7 @@ public static partial class SelfTest
         {
             StandBy(me, loose.WorldCom, 2.0f);
             Run(g, ref now, 0.3);
-            g.SandboxTakePart(block.Id);
+            PlaceHold(g, me.Id, block);
             var gn = ConstructBuild.Ghosts(loose, block, ghosts, Vector3.Zero, 3f);
             var pick = 0;
             for (var k = 0; k < gn; k++)
@@ -317,7 +317,7 @@ public static partial class SelfTest
         var blockOnA = 1;
         var faceAt = FaceTowards(a, blockOnA, 0);
         var beside = a.ToWorld(faceAt) + new Vector3(0.25f, 0, 0);
-        g.SandboxTakePart(block.Id);
+        PlaceHold(g, me.Id, block);
         var nb = w.Bodies.Count;
         var whyB = Place(beside with { Y = spot.Y }, flags: 0);
         Run(g, ref now, block.AttachSeconds + 0.2);
@@ -364,7 +364,7 @@ public static partial class SelfTest
             f.Rebuild();
             filler.Add(f);
         }
-        g.SandboxTakePart(block.Id);
+        PlaceHold(g, me.Id, block);
         var limit = Place(spot + new Vector3(-1f, 0, 1.2f), flags: 0);
         foreach (var f in filler)
             w.Remove(f);
@@ -402,6 +402,19 @@ public static partial class SelfTest
     }
 
     /// <summary>A real host and a client: the client's core, pinned, then a block on it and a block beside it joined: its copy shows each step.</summary>
+    /// <summary>
+    /// A part into the hands for free placement: an item from the parts menu, as a player asks for it; a physics-only one
+    /// (decision 21: welded, so never an item: the menu spawns it as a body) set in the server's hands directly, since
+    /// the placement rules these tests check still apply to whatever is held.
+    /// </summary>
+    private static void PlaceHold(Game server, byte player, ConstructPartDef def, Game? client = null)
+    {
+        if (def.PhysicsOnly)
+            server.SandboxHands.Hand(player).Held = def.Id;
+        else
+            (client ?? server).SandboxTakePart(def.Id);
+    }
+
     private static void PlacementOverWire(Map yard, SandboxMap sb)
     {
         const ushort port = 26351;
@@ -436,7 +449,7 @@ public static partial class SelfTest
         var core = ConstructParts.Need("Construct Core");
         var block = ConstructParts.Need("Frame Block");
         a.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
-        a.SandboxTakePart(core.Id);
+        PlaceHold(server, a.LocalId, core, a);
         Pump(server, [a], 0.2, ref now, clock);
         var n0 = w.Bodies.Count;
         a.SandboxSend(CActKind.PlaceNew, at: spot, yaw: 0, normal: Vector3.UnitY, variant: 0, flags: ConstructPlace.FlagGrid | ConstructPlace.FlagAnchor);
@@ -445,7 +458,7 @@ public static partial class SelfTest
         var copy = c == null ? null : a.Constructs.Get(c.Id);
         var placedOk = c != null && copy is { PartCount: 1, Pinned: true, Anchored: true } && copy.Owner == a.LocalId && copy.DefOf(0).Core;
         // A block on it, then one beside that, joined.
-        a.SandboxTakePart(block.Id);
+        PlaceHold(server, a.LocalId, block, a);
         Pump(server, [a], 0.2, ref now, clock);
         var joinedOk = false;
         var b = (Construct?)null;
@@ -461,7 +474,7 @@ public static partial class SelfTest
             {
                 var faceAt = FaceTowards(c, 1, 0);
                 var beside = c.ToWorld(faceAt) + new Vector3(0.25f, 0, 0);
-                a.SandboxTakePart(block.Id);
+                PlaceHold(server, a.LocalId, block, a);
                 Pump(server, [a], 0.2, ref now, clock);
                 var nb = w.Bodies.Count;
                 a.SandboxSend(CActKind.PlaceNew, at: beside with { Y = spot.Y }, yaw: 0, normal: Vector3.UnitY, variant: 0, flags: ConstructPlace.FlagAnchor);

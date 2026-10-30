@@ -91,6 +91,8 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (ConstructParts.Get(h.Held) is not { } def)
             return "nothing in your hands to stow";
+        if (def.PhysicsOnly)
+            return PhysicsOnlyRefusal(def, "go in the backpack");
         if (Backpack is not { } bp)
             return "no backpack";
         var pack = Packs[player];

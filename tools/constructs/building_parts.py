@@ -1530,6 +1530,11 @@ def blueprints(defs):
     return out
 
 
+# Decision 21 (the cargo volumes, cv01): light but big wrench pieces that are never items (no hands, backpack or storage
+# slot): the game reads "physicsOnly". Welder pieces and pieces over 40 kg are physics-only by themselves.
+PHYSICS_ONLY = {"Wood Door 1.25 m", "Fence Gate", "Wood Railing 2 m", "Wood Railing 4 m", "Wood Beam 2 m", "Tower Brace", "Window Glass 1 m"}
+
+
 def main():
     check = "--check" in sys.argv
     parts = everything()
@@ -1538,6 +1543,9 @@ def main():
     defs = {}
     for folder, p in parts:
         d = p.json()
+        if d["name"] in PHYSICS_ONLY:
+            assert d["tool"] == "wrench" and d["mass"] <= 40, d["name"]  # (else it is physics-only already)
+            d["physicsOnly"] = True
         assert d["name"] not in names, d["name"]
         names.add(d["name"])
         defs[d["name"]] = d

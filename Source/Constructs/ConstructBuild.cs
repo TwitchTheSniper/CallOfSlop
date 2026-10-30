@@ -55,6 +55,8 @@ public static class ConstructBuild
             return $"a construct holds at most {Construct.MaxParts} parts";
         if (c.Parts[part].Broken)
             return "that part is wrecked";
+        if (ConstructCargo.IsVolume(def) && ConstructCargo.CountVolumes(c) >= ConstructCargo.MaxVolumes)
+            return $"a construct has at most {ConstructCargo.MaxVolumes} cargo volumes";
         var centre = socket >= target.Sockets.Length; // a merged receiver's centre socket (ConstructMerge.cs)
         var ts = target.Sockets[socket % target.Sockets.Length];
         var ds = def.Sockets[defSocket];
@@ -303,6 +305,7 @@ public static class ConstructBuild
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
+        public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -406,8 +409,14 @@ public static class ConstructBuild
                     foreach (var link in p.Value.EnumerateArray())
                         bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
                     break;
+                case "cargo":
+                    if (p.Value.ValueKind != JsonValueKind.Array || p.Value.GetArrayLength() > ConstructCargo.MaxPerConstruct)
+                        throw new ConstructPartException($"{file}: \"cargo\" lists up to {ConstructCargo.MaxPerConstruct} loose parts");
+                    foreach (var cg in p.Value.EnumerateArray())
+                        bp.Cargo.Add(ConstructCargo.ParseSpec(cg, file, bp.Cargo.Count));
+                    break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links, cargo)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -504,6 +513,19 @@ public static class ConstructBuild
         // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
         ConstructRoutes.MigrateLegacy(world, c);
         c.Rebuild();
+        // What it carries (decision 21): loose parts in the cargo volumes its steps start frozen.
+        if (bp.Cargo.Count > 0)
+        {
+            var made = new List<Construct>(bp.Cargo.Count);
+            if (ConstructCargo.BuildCargo(world, c, bp.Cargo, made) is { } bad)
+            {
+                why = bad;
+                foreach (var m in made)
+                    world.Remove(m);
+                world.Remove(c);
+                return null;
+            }
+        }
         return c;
     }
 
@@ -541,6 +563,8 @@ public static class ConstructBuild
             low = MathF.Min(low, c.Wheels[k].Centre.Y - c.Wheels[k].Travel * 0.5f - c.Wheels[k].Radius);
         c.Pos = ground - Vector3.Transform(new Vector3(0, low - 0.02f, 0), rot);
         c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
+        if (bp.Cargo.Count > 0)
+            ConstructCargo.FollowAll(world); // (its cargo moves with it)
         return c;
     }
 }

@@ -1,0 +1,38 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Cargo Volume",
+  "description": "A control box with a box of space above it (outlined in build mode). Frozen (F on it, or a data signal), it holds every loose thing mostly inside the box fast to the construct: no physics, its weight carried. Unfrozen, they go free at the construct's speed. Set its size with the configure tool (drag the face handles, or type it in).",
+  "group": "Storage",
+  "section": "Cargo",
+  "role": "logic",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 6,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3d4248",
+  "boxes": [
+    { "size": [0.2, 0.2, 0.2] },
+    { "size": [0.16, 0.02, 0.16], "at": [0, 0.105, 0], "color": "#c8a23a", "detail": true },
+    { "size": [0.04, 0.08, 0.04], "at": [0.05, 0.14, 0], "color": "#202326", "detail": true }
+  ],
+  "sockets": [
+    { "name": "+x", "at": [0.1, 0, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.1, 0, 0], "dir": "-x" },
+    { "name": "+y", "at": [0, 0.1, 0], "dir": "+y" },
+    { "name": "-y", "at": [0, -0.1, 0], "dir": "-y" },
+    { "name": "+z", "at": [0, 0, 0.1], "dir": "+z" },
+    { "name": "-z", "at": [0, 0, -0.1], "dir": "-z" }
+  ],
+  "logic": { "kind": "cargo" },
+  "config": [
+    { "key": "startOn", "label": "Starts frozen", "group": "Cargo", "default": false, "tooltip": "A newly built volume starts frozen (a blueprint's cargo rides in one)." },
+    { "key": "sizeX", "label": "Width", "group": "Box", "unit": "m", "min": 0.2, "max": 8, "step": 0.1, "default": 2, "tooltip": "The box's size across the part (its x)." },
+    { "key": "sizeY", "label": "Height", "group": "Box", "unit": "m", "min": 0.2, "max": 8, "step": 0.1, "default": 1, "tooltip": "The box's size up from the part (its y)." },
+    { "key": "sizeZ", "label": "Length", "group": "Box", "unit": "m", "min": 0.2, "max": 8, "step": 0.1, "default": 2, "tooltip": "The box's size along the part (its z)." },
+    { "key": "atX", "label": "Centre x", "group": "Box", "unit": "m", "min": -8, "max": 8, "step": 0.05, "default": 0, "tooltip": "Where the box's centre is from the part (x)." },
+    { "key": "atY", "label": "Centre y", "group": "Box", "unit": "m", "min": -8, "max": 8, "step": 0.05, "default": 0.6, "tooltip": "Where the box's centre is from the part (y; above it by default)." },
+    { "key": "atZ", "label": "Centre z", "group": "Box", "unit": "m", "min": -8, "max": 8, "step": 0.05, "default": 0, "tooltip": "Where the box's centre is from the part (z)." }
+  ]
+}
