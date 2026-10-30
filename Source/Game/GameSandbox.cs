@@ -41,6 +41,7 @@ public enum CActKind : byte
     Snap, // u8 op (0 undo, 1 quick building off, 2 quick building on, 3 pick: then u16 body, u8 part; 4 take a kind: u16 part id): snappy building (protocol 94; GameSandboxSnap.cs)
     WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 95; board item wl01)
     WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 95)
+    Bench, // u8 kind (0 put, 3 take apart, 6 open, 7 spawn a standard build), u8 slot, u16 length, the build's text: the Gun Workbench (protocol 96; GameSandboxBench.cs)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -98,6 +99,7 @@ public sealed partial class Game
         SandboxHands.Reset();
         SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
+        SandboxClearBuilds(); // (built weapons go with the match: GameSandboxBench.cs)
         ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         if (!IsServer)
             return;
@@ -118,6 +120,7 @@ public sealed partial class Game
     {
         if (IsServer)
             return;
+        SandboxClearBuilds();
         Constructs.Clear();
         Constructs.Removed.Clear();
         SandboxHands.Reset();
@@ -322,6 +325,7 @@ public sealed partial class Game
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         ConstructNet.WriteWorldLinks(w, Constructs); // (world links and hoses: board item wl01)
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        SendSandboxBuildsTo(to);
         SendSandboxInventory(to);
     }
 
@@ -379,6 +383,8 @@ public sealed partial class Game
             case CActKind.WorldRoute:
             case CActKind.WorldRouteEdit:
                 return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
+            case CActKind.Bench:
+                return SandboxBenchAct(p, ref r);
             case CActKind.Tool:
                 return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
             case CActKind.Grab:

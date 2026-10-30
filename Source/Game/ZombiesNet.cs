@@ -521,6 +521,11 @@ public sealed partial class Game
     {
         if (Local is not { } me)
             return;
+        if (SandboxOn)
+        {
+            SandboxSendBench(kind, slot, text); // the Gun Workbench (GameSandboxBench.cs)
+            return;
+        }
         if (IsServer)
         {
             if (ServerBench(me, kind, slot, text) is { } why)

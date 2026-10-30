@@ -1,0 +1,282 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gun Workbench",
+  "description": "The weapon builder as a bench. F opens it: build a gun, melee weapon or grenade from the parts in your hands, your backpack and its six slots (endless parts on a creative map). The finished weapon goes into your hands; Disassemble returns every part to the slots, then your hands or backpack, then the floor.",
+  "role": "storage",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 38,
+  "health": 320,
+  "armour": 4,
+  "material": "steel",
+  "group": "Weapons",
+  "section": "Workbenches",
+  "color": "#5b4a36",
+  "boxes": [
+    {
+      "size": [
+        2.4,
+        0.08,
+        1.2
+      ],
+      "at": [
+        0,
+        0.9,
+        0
+      ],
+      "color": "#7a6244"
+    },
+    {
+      "size": [
+        0.08,
+        0.86,
+        0.08
+      ],
+      "at": [
+        -1.1,
+        0.43,
+        -0.52
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        0.86,
+        0.08
+      ],
+      "at": [
+        1.1,
+        0.43,
+        -0.52
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        0.86,
+        0.08
+      ],
+      "at": [
+        -1.1,
+        0.43,
+        0.52
+      ]
+    },
+    {
+      "size": [
+        0.08,
+        0.86,
+        0.08
+      ],
+      "at": [
+        1.1,
+        0.43,
+        0.52
+      ]
+    },
+    {
+      "size": [
+        2.2,
+        0.06,
+        0.06
+      ],
+      "at": [
+        0,
+        0.3,
+        -0.52
+      ]
+    },
+    {
+      "size": [
+        2.2,
+        0.06,
+        0.06
+      ],
+      "at": [
+        0,
+        0.3,
+        0.52
+      ]
+    },
+    {
+      "size": [
+        2.4,
+        0.9,
+        0.04
+      ],
+      "at": [
+        0,
+        1.4,
+        -0.58
+      ],
+      "color": "#3d3a36"
+    },
+    {
+      "size": [
+        0.16,
+        0.12,
+        0.12
+      ],
+      "at": [
+        -1.0,
+        1.0,
+        0.5
+      ],
+      "color": "#8e9aa6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.5,
+        0.04,
+        0.02
+      ],
+      "at": [
+        0.5,
+        1.8,
+        -0.55
+      ],
+      "color": "#e8a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.9,
+        -0.6
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        1.2,
+        0.45,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -1.2,
+        0.45,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "storage": {
+    "gunBench": true,
+    "slots": [
+      {
+        "min": [
+          -1.18,
+          0.94,
+          -0.56
+        ],
+        "max": [
+          -0.04,
+          1.5,
+          -0.24
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      },
+      {
+        "min": [
+          0.04,
+          0.94,
+          -0.56
+        ],
+        "max": [
+          1.18,
+          1.5,
+          -0.24
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      },
+      {
+        "min": [
+          -1.18,
+          0.94,
+          -0.2
+        ],
+        "max": [
+          -0.62,
+          1.5,
+          0.56
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      },
+      {
+        "min": [
+          -0.58,
+          0.94,
+          -0.2
+        ],
+        "max": [
+          -0.02,
+          1.5,
+          0.56
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      },
+      {
+        "min": [
+          0.02,
+          0.94,
+          -0.2
+        ],
+        "max": [
+          0.58,
+          1.5,
+          0.56
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      },
+      {
+        "min": [
+          0.62,
+          0.94,
+          -0.2
+        ],
+        "max": [
+          1.18,
+          1.5,
+          0.56
+        ],
+        "fits": [
+          "gunPart",
+          "gun"
+        ]
+      }
+    ]
+  }
+}

@@ -441,7 +441,7 @@ public sealed partial class Ui
         ImGui.SameLine();
         ImGuiSafe.TextColored(!step1 ? Orange : Dim, !step1 ? "  >  [2] ASSEMBLE" : "  >  2 assemble");
         ImGui.SameLine();
-        ImGuiSafe.TextColored(Dim, BenchRun != null ? "      Zombies run: only the parts you own" : _wbPractice ? "      Sandbox: practice parts (Zombies rules)" : "      Sandbox: every part unlocked");
+        ImGuiSafe.TextColored(Dim, BenchRun is { Sandbox: true } ? "      Gun Workbench: your hands, backpack and the bench" : BenchRun != null ? "      Zombies run: only the parts you own" : _wbPractice ? "      Sandbox: practice parts (Zombies rules)" : "      Sandbox: every part unlocked");
         ImGui.SameLine(ImGui.GetContentRegionAvail().X + ImGui.GetCursorPosX() - 360 * _scale);
         if (ImGui.RadioButton("GUNS"u8, _wbKind == BuildKind.Gun) && _wbKind != BuildKind.Gun)
             LoadWorkbenchKind(BuildKind.Gun);

@@ -69,6 +69,10 @@ public sealed class SandboxModule : GameModeModule
             case (byte)Msg.ZCrowd:
                 game.OnZombiesPacket(id, ref r, sender, now); // the spawned zombies (GameSandboxSpawns.cs)
                 return true;
+            case (byte)Msg.ZBuild:
+            case (byte)Msg.ZRun:
+                game.OnSandboxBuildPacket(id, ref r, sender, now); // a built weapon, the parts you have at the Gun Workbench (GameSandboxBench.cs)
+                return true;
             default:
                 return false;
         }

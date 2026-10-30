@@ -329,6 +329,7 @@ public sealed class ConstructPartDef
     public int BulkCapacity; // a bin: how much of it
     public Vector3 FillMin, FillMax; // a bin: the box its contents fill from the bottom up (part frame)
     public bool IsBin => BulkCapacity > 0;
+    public bool IsGunBench; // a storage part that is also the Gun Workbench: F opens the weapon builder (GameSandboxBench.cs)
     public float StoreMaxMass; // the heaviest part (kg) it takes (0: any; a backpack's limit)
     public int BoxRounds; // an ammo box: rounds it comes with
     public float CookRadius, CookDamage; // an ammo box: its cook-off at full

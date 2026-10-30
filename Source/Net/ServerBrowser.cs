@@ -214,7 +214,8 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 95: World links and hoses (docs/sandbox/CONSTRUCTS.md "World links", "Hoses"; board item wl01): CBodyKind.WorldLinks
     //     at the end of CBodyKind (every world link and hose off its reel), CAct.WorldRoute / WorldRouteEdit at the end of
     //     CActKind, CFireKind.LinkSnap (a world link tearing off), and the hose parts' role.
-    public const byte ProtocolVersion = 95;
+    // 96: Sandbox Gun Workbench (GameSandboxBench.cs): CActKind.Bench (open, build, take apart, spawn a standard build); Msg.ZBuild and Msg.ZRun are routed in Sandbox (built weapons, the parts you have at the bench).
+    public const byte ProtocolVersion = 96;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
