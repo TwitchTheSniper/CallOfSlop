@@ -781,6 +781,12 @@ public static class ConstructWeapons
             // A construct part.
             var body = ch.Body;
             var part = ch.Part;
+            if (ch.SlotPlus1 > 0)
+            {
+                world.DamageStored(body, part, ch.SlotPlus1 - 1, dealt); // (a part stored in a container: physical storage)
+                hit |= CFireHit.Part;
+                break;
+            }
             var armour = body.Parts[part].D.Armour;
             var exit = ExitDistance(body, part, at, dir);
             if ((g.Effects & GunEffect.Incendiary) != 0)

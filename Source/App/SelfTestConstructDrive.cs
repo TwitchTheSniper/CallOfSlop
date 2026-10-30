@@ -859,7 +859,7 @@ public static partial class SelfTest
             Fail("construct drive: the racer should be the fastest example on hard ground");
     }
 
-    /// <summary>A client's copy carries the engine's rpm and the drive note (protocol 85).</summary>
+    /// <summary>A client's copy carries the engine's rpm and the drive note (protocol 86).</summary>
     private static void DriveNet()
     {
         if (DriveBlueprint("Buggy") is not { } bp)

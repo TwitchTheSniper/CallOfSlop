@@ -23,6 +23,11 @@ public enum CActKind : byte
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
     Join, // u16 body, u8 part: the welder joins the construct this part touches into this one (protocol 84)
+    StoreIn, // u16 body, u8 part, u8 slot: the part in the hands into a storage slot (physical storage; protocol 85)
+    TakeStored, // u16 body, u8 part, u8 slot: the stored part into empty hands (protocol 85)
+    Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 85)
+    Stow, // the part in the hands into the backpack (protocol 85)
+    Draw, // the next part in the backpack into empty hands (protocol 85)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -45,6 +50,7 @@ public sealed partial class Game
     public double SandboxNow;
 
     private int _sbSleepCursor;
+    private readonly bool[] _sbAlive = new bool[256]; // (last tick: a death drops the backpack)
     private uint _sbPoseTick;
     private string _sbNotice = "";
     private double _sbNoticeUntil;
@@ -77,6 +83,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
         SandboxHands.Reset();
+        SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
         if (!IsServer)
             return;
@@ -97,6 +104,7 @@ public sealed partial class Game
         Constructs.Clear();
         Constructs.Removed.Clear();
         SandboxHands.Reset();
+        SandboxHands.ResetPacks();
         SandboxInv.Reset();
         _sbPoseTick = 0;
     }
@@ -147,6 +155,9 @@ public sealed partial class Game
         foreach (var p in Players.Values)
         {
             ref var h = ref SandboxHands.Hand(p.Id);
+            if (_sbAlive[p.Id] && !p.Alive)
+                SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (a death drops the backpack's contents as pickups)
+            _sbAlive[p.Id] = p.Alive;
             if (!p.Alive)
                 h.Edit = EditKind.None;
             else if (Constructs.PlayerSpotCount < Constructs.PlayerSpots.Length)
@@ -201,6 +212,19 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StructureDirty.Clear();
+        foreach (var handle in Constructs.StoreDirty)
+        {
+            // (after the structures: a client finds the store by the handle its part came with)
+            ConstructNet.WriteStore(w, Constructs.Stores[handle]);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.StoreDirty.Clear();
+        foreach (var who in SandboxHands.PackDirty)
+        {
+            ConstructNet.WritePack(w, who, SandboxHands.Pack(who));
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        SandboxHands.PackDirty.Clear();
         if (Constructs.LinksDirty)
         {
             // (after the structures: a client resolves the links against the parts as they are now)
@@ -238,6 +262,18 @@ public sealed partial class Game
             ConstructNet.WriteFull(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        for (var k = 1; k <= ConstructWorld.MaxStores; k++)
+            if (Constructs.Stores[k].Live)
+            {
+                ConstructNet.WriteStore(w, Constructs.Stores[k]);
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
+        foreach (var p in Players.Values)
+            if (SandboxHands.Pack(p.Id).Items > 0)
+            {
+                ConstructNet.WritePack(w, p.Id, SandboxHands.Pack(p.Id));
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
         ConstructNet.WriteLinks(w, Constructs);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxInventory(to);
@@ -252,7 +288,7 @@ public sealed partial class Game
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
-                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId));
+                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId), SandboxHands);
                 break;
             case (byte)Msg.CPose when !IsServer:
                 ConstructNet.ReadPoses(ref r, Constructs, SandboxNow, ref _sbPoseTick);
@@ -366,6 +402,23 @@ public sealed partial class Game
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
+            case CActKind.StoreIn:
+            case CActKind.TakeStored:
+            {
+                var body = r.U16();
+                var part = r.U8();
+                var slot = r.U8();
+                return kind == CActKind.StoreIn ? hands.StoreHeld(Constructs, p.Id, eye, body, part, slot) : hands.TakeStored(Constructs, p.Id, eye, body, part, slot);
+            }
+            case CActKind.Stow:
+                return hands.Stow(p.Id);
+            case CActKind.Draw:
+                return hands.DrawFromPack(p.Id);
+            case CActKind.Bin:
+            {
+                var body = r.U16();
+                return hands.UseBin(Constructs, p.Id, eye, body, r.U8());
+            }
             case CActKind.SeatLook:
             {
                 ref var sh = ref hands.Hand(p.Id);
@@ -402,7 +455,12 @@ public sealed partial class Game
             case CActKind.Use:
             case CActKind.Unwire:
             case CActKind.Setting:
+            case CActKind.Bin:
                 w.U16(body).U8(part);
+                break;
+            case CActKind.StoreIn:
+            case CActKind.TakeStored:
+                w.U16(body).U8(part).U8(socket); // (the slot)
                 break;
             case CActKind.Wire:
                 w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
@@ -542,7 +600,10 @@ public sealed partial class Game
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
-        Constructs.DamagePart(c, hit.Part, damage, out _);
+        if (hit.SlotPlus1 > 0)
+            Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
+        else
+            Constructs.DamagePart(c, hit.Part, damage, out _);
     }
 
     /// <summary>A blast near constructs (grenades, kill streaks, explosive props): every part in range takes its share.</summary>
@@ -826,6 +887,29 @@ public sealed partial class Game
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
         SandboxInventoryLine(me, lines, dim);
+        SandboxPackLine(me, lines, dim);
+    }
+
+    /// <summary>The keys the backpack's line names (Program sets them from the binds).</summary>
+    public string SandboxPackKeys = "H: stow, J: draw";
+
+    private SbText _sbPackLine;
+
+    /// <summary>The backpack on the HUD (when it holds anything): how full, what is in it, the keys.</summary>
+    private void SandboxPackLine(Player me, List<HudLine> lines, Vector4 dim)
+    {
+        var pack = SandboxHands.Pack(me.Id);
+        if (_sbPackLine.Stale(pack.Version * 64L + (SandboxPackKeys.GetHashCode() & 63)))
+        {
+            var used = pack.Items;
+            var names = new List<string>(8);
+            for (var k = 0; k < pack.SlotCount; k++)
+                if (ConstructParts.Get(pack.Def[k]) is { } d)
+                    names.Add(d.Name);
+            _sbPackLine.Text = used == 0 ? "" : $"Backpack {used}/{pack.SlotCount}: {string.Join(", ", names)} ({SandboxPackKeys})";
+        }
+        if (_sbPackLine.Text.Length > 0)
+            lines.Add(new HudLine(_sbPackLine.Text, dim));
     }
 
     /// <summary>The inventory's totals on the HUD (when it holds anything): parts and scrap.</summary>

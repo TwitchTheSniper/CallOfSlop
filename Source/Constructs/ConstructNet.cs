@@ -12,6 +12,8 @@ public enum CBodyKind : byte
     Inventory, // server -> one client: that player's own inventory (protocol 81; SandboxInventory)
     Ammo, // protocol 82: rounds and fire changes: (id, part, rounds, burning) each
     Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
+    Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
+    Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
 }
 
 /// <summary>
@@ -26,7 +28,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 85: rpm, drive note)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -57,7 +59,7 @@ public static class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0))).U8(c.Owner); // (protocol 84: pinned)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 85: rpm, drive note)
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U8((byte)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -67,6 +69,17 @@ public static class ConstructNet
                 .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
+        // Protocol 85: the storage parts' store handles (their contents follow in CBodyKind.Store messages).
+        var storesAt = w.Length;
+        w.U8(0);
+        var stores = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Store != 0)
+            {
+                w.U8((byte)i).U16(c.Parts[i].Store);
+                stores++;
+            }
+        w.PatchU8(storesAt, (byte)stores);
         w.U16((ushort)c.LinkCount);
         for (var k = 0; k < c.LinkCount; k++)
         {
@@ -282,6 +295,20 @@ public static class ConstructNet
         inv.Version++;
     }
 
+    /// <summary>One container's contents (physical storage; protocol 85): its handle, then its slots or bin amount.</summary>
+    public static void WriteStore(PacketWriter w, CStore s)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Store).U16(s.Handle);
+        ConstructStorage.Write(w, s);
+    }
+
+    /// <summary>One player's backpack (protocol 85): everyone's is drawn on their back, so it goes to every client.</summary>
+    public static void WritePack(PacketWriter w, byte player, CStore pack)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Pack).U8(player);
+        ConstructStorage.Write(w, pack);
+    }
+
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
 
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
@@ -307,7 +334,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null, ConstructEdits? hands = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -343,6 +370,20 @@ public static class ConstructNet
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);
                 break;
+            case CBodyKind.Pack:
+            {
+                var who = r.U8();
+                ConstructStorage.Read(ref r, hands?.Pack(who) ?? new CStore()); // (no hands: read and dropped, a test's bare world)
+                break;
+            }
+            case CBodyKind.Store:
+            {
+                var handle = r.U16();
+                if (handle == 0 || handle > ConstructWorld.MaxStores)
+                    throw new MalformedPacketException($"construct store {handle}");
+                ConstructStorage.Read(ref r, world.Stores[handle]);
+                break;
+            }
             case CBodyKind.Ammo:
             {
                 int n = r.U8();
@@ -415,6 +456,15 @@ public static class ConstructNet
             if (setting > 0 && setting >= pd.Settings.Length)
                 throw new MalformedPacketException($"construct part {i}: setting {setting} of a {pd.Name}");
             c.Parts[c.PartCount++] = new CPart { Def = def, Pos = p, Rot = turn, Seg = seg, Health = hp, Broken = broken, Setting = setting, Out = signal, OutNext = signal };
+        }
+        int stores = r.U8();
+        for (var k = 0; k < stores; k++)
+        {
+            var part = r.U8();
+            var handle = r.U16();
+            if (part >= parts || handle == 0 || handle > ConstructWorld.MaxStores || c.Parts[part].D.Role != PartRole.Storage)
+                throw new MalformedPacketException($"a construct store {handle} on part {part}");
+            c.Parts[part].Store = handle;
         }
         int links = r.U16();
         if (links > Construct.MaxLinks)
@@ -574,7 +624,7 @@ public static class ConstructNet
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 83)
-            .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 85)
+            .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
