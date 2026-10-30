@@ -15,6 +15,7 @@ public enum CBodyKind : byte
     Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
     Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
     WorldLinks, // protocol 95: every world link and every hose off its reel (the whole list, when it changes; WriteWorldLinks)
+    Paint, // protocol 98: paint changes (the paint tool): (id, part or link, colour) each (ConstructPaint.WriteChanges)
 }
 
 /// <summary>
@@ -123,6 +124,8 @@ public static class ConstructNet
                 fw++;
             }
         w.PatchU8(fwAt, (byte)fw);
+        // Protocol 98: the paint tool's colours (board item pp01): the painted parts, then the painted links.
+        ConstructPaint.WriteFull(w, c);
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -475,6 +478,9 @@ public static class ConstructNet
                 ConstructStorage.Read(ref r, world.Stores[handle]);
                 break;
             }
+            case CBodyKind.Paint:
+                ConstructPaint.ReadChanges(ref r, world);
+                break;
             case CBodyKind.Ammo:
             {
                 int n = r.U8();
@@ -642,6 +648,7 @@ public static class ConstructNet
                 posed--;
         if (posed != 0)
             throw new MalformedPacketException("a freeform weld without its pose");
+        ConstructPaint.ReadFull(ref r, c); // protocol 98: the paint
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

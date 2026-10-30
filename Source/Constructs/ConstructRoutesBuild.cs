@@ -23,9 +23,10 @@ public static partial class ConstructRoutes
         public int Branch = -1, BranchSeg; // a branch: the earlier link (its index in "links") and its segment
         public Vector3 At; // the junction
         public List<Vector3> Nodes = new();
+        public uint Paint; // the paint tool's colour ("paint": "#rrggbb"; 0: the type's own)
     }
 
-    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at"];
+    private static readonly string[] LinkKeys = ["type", "style", "from", "to", "fromPort", "toPort", "nodes", "branch", "at", "paint"];
 
     public static LinkSpec ParseLink(JsonElement e, string file, int index)
     {
@@ -61,6 +62,8 @@ public static partial class ConstructRoutes
             s.FromPort = fp.GetString() ?? "";
         if (e.TryGetProperty("toPort", out var tp))
             s.ToPort = tp.GetString() ?? "";
+        if (e.TryGetProperty("paint", out var pt))
+            s.Paint = pt.ValueKind == JsonValueKind.String && ConstructPaint.TryParse(pt.GetString(), out var pc) ? pc : throw new ConstructPartException($"{where}: \"paint\" is a colour like \"#c04020\"");
         if (e.TryGetProperty("nodes", out var ns))
             foreach (var n in ns.EnumerateArray())
                 s.Nodes.Add(Vec3(n, where));
@@ -134,6 +137,7 @@ public static partial class ConstructRoutes
         if (Add(world, c, s.Type, s.Style, from, fromPort, parent, s.BranchSeg, junction, nodes[..s.Nodes.Count], to, toPort) < 0)
             return "no room for another link";
         c.Routes[c.RouteCount - 1].Cursor = BlueprintMark;
+        c.Routes[c.RouteCount - 1].Paint = s.Paint;
         return null;
     }
 

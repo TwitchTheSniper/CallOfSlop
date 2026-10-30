@@ -32,7 +32,7 @@ public sealed class SandboxToolWheel
         Hands,
         Scanner,
         Linker,
-        Drill,
+        Paint, // (NW: where the hand drill was going to be)
         COUNT,
     }
 
@@ -72,7 +72,7 @@ public sealed class SandboxToolWheel
         Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
         Set(Slot.Configure, "Configure tool", "part settings");
         Set(Slot.Scanner, "Scanner", "", off: true);
-        Set(Slot.Drill, "Hand drill", "", off: true);
+        Set(Slot.Paint, "Paint tool", "colour parts and links");
         SetKeys(null);
     }
 
@@ -95,6 +95,7 @@ public sealed class SandboxToolWheel
             Slot.Linker => ConstructTool.Linker,
             Slot.Configure => ConstructTool.Configure,
             Slot.PhysicsGun => ConstructTool.PhysicsGun,
+            Slot.Paint => ConstructTool.Paint,
             Slot.Hands => ConstructTool.None,
             _ => null,
         };
@@ -107,6 +108,7 @@ public sealed class SandboxToolWheel
             ConstructTool.Linker => Slot.Linker,
             ConstructTool.Configure => Slot.Configure,
             ConstructTool.PhysicsGun => Slot.PhysicsGun,
+            ConstructTool.Paint => Slot.Paint,
             _ => Slot.Hands,
         });
 
@@ -179,8 +181,7 @@ public sealed class SandboxToolWheel
             g.SandboxSay(pick switch
             {
                 (int)Slot.Configure => "the configure tool is coming later",
-                (int)Slot.Scanner => "the scanner is coming later",
-                _ => "the hand drill is coming later",
+                _ => "the scanner is coming later",
             });
             return false;
         }
@@ -305,18 +306,17 @@ public sealed class SandboxToolWheel
                 }
                 break;
             }
-            default: // the hand drill: a motor body, a pistol grip, a chuck and a long twisted bit
+            default: // the paint tool: a spray can (body, shoulder, nozzle cap) and a puff of spray dots
             {
-                Box(-0.85f, -0.45f, -0.05f, -0.05f, col, 0.12f);
-                Box(-0.65f, -0.05f, -0.35f, 0.75f, col);
-                Box(-0.05f, -0.35f, 0.2f, -0.15f, col, 0f);
-                Line(0.2f, -0.25f, 0.8f, -0.25f, 0.1f);
-                var tip = P(0.98f, -0.25f);
-                var t0 = P(0.8f, -0.31f);
-                var t1 = P(0.8f, -0.19f);
-                ImDrawListExtensions.AddTriangleFilled(dl, in t0, in tip, in t1, col);
-                for (var i = 0; i < 4; i++)
-                    Line(0.27f + i * 0.14f, -0.15f, 0.35f + i * 0.14f, -0.35f, 0.04f);
+                Box(-0.55f, -0.35f, 0.15f, 0.85f, col, 0.1f);
+                Box(-0.4f, -0.6f, 0f, -0.35f, col, 0.04f);
+                Box(-0.28f, -0.85f, -0.12f, -0.6f, col, 0.03f);
+                Box(-0.4f, 0.2f, 0f, 0.4f, bg, 0f); // (the label)
+                Disc(0.45f, -0.75f, 0.09f, col);
+                Disc(0.7f, -0.55f, 0.08f, col);
+                Disc(0.62f, -0.88f, 0.07f, col);
+                Disc(0.9f, -0.72f, 0.06f, col);
+                Disc(0.82f, -0.36f, 0.06f, col);
                 break;
             }
         }

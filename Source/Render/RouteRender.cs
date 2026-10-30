@@ -68,16 +68,16 @@ public static class RouteRender
                             // Two stubs with a gap between them.
                             var gap = MathF.Min(0.12f, len * 0.3f);
                             var half = (len - gap) * 0.5f;
-                            Piece(gfx, r.Type, r.Style, a, a + z * half, z, radius, dim: true);
-                            Piece(gfx, r.Type, r.Style, b - z * half, b, z, radius, dim: true);
+                            Piece(gfx, r.Type, r.Style, a, a + z * half, z, radius, dim: true, paint: r.Paint);
+                            Piece(gfx, r.Type, r.Style, b - z * half, b, z, radius, dim: true, paint: r.Paint);
                             if (r.Type == RouteType.Power && c.Charge > 0 && ((int)(ConstructRender.Now * 23) + k) % 3 == 0)
                                 gfx.Draw(Matrix4x4.CreateScale(0.04f) * Matrix4x4.CreateTranslation(a + z * (half + gap * 0.5f)), new Vector3(1f, 0.9f, 0.5f), 1f, mode: 2); // (sparks)
                         }
                         else
-                            Piece(gfx, r.Type, r.Style, a, b, z, radius, dim: r.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires);
+                            Piece(gfx, r.Type, r.Style, a, b, z, radius, dim: r.Type is RouteType.Data or RouteType.Power && !ConstructRender.ShowWires, paint: r.Paint);
                         n++;
                         if (dirPrev != Vector3.Zero && Vector3.Dot(dirPrev, z) < 0.9998f)
-                            Elbow(gfx, r.Type, r.Style, a, dirPrev, z, radius);
+                            Elbow(gfx, r.Type, r.Style, a, dirPrev, z, radius, r.Paint);
                         dirPrev = z;
                     }
                     a = b;
@@ -185,13 +185,13 @@ public static class RouteRender
     }
 
     /// <summary>One segment piece of a type from <paramref name="a"/> to <paramref name="b"/>.</summary>
-    internal static void Piece(Renderer gfx, RouteType type, byte style, Vector3 a, Vector3 b, Vector3 z, float radius, bool dim)
+    internal static void Piece(Renderer gfx, RouteType type, byte style, Vector3 a, Vector3 b, Vector3 z, float radius, bool dim, uint paint = 0)
     {
         var len = Vector3.Distance(a, b);
         if (len < 1e-4f)
             return;
         var mid = (a + b) * 0.5f;
-        var colour = Colour(type, style) * (dim ? 0.55f : 1f);
+        var colour = (paint != 0 ? ConstructPaint.ToVector(paint) : Colour(type, style)) * (dim ? 0.55f : 1f); // (the paint tool's colour for a painted link)
         var basis = Basis(z);
         var at = Matrix4x4.CreateTranslation(mid);
         switch (type)
@@ -235,9 +235,9 @@ public static class RouteRender
     }
 
     /// <summary>The elbow piece at a bend: a joint block (a shaft's U joint: a cross between two yokes).</summary>
-    internal static void Elbow(Renderer gfx, RouteType type, byte style, Vector3 at, Vector3 from, Vector3 to, float radius)
+    internal static void Elbow(Renderer gfx, RouteType type, byte style, Vector3 at, Vector3 from, Vector3 to, float radius, uint paint = 0)
     {
-        var colour = Colour(type, style);
+        var colour = paint != 0 ? ConstructPaint.ToVector(paint) : Colour(type, style);
         if (type == RouteType.Shaft)
         {
             var steel = new Vector3(0.32f, 0.33f, 0.35f);

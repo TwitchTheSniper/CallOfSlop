@@ -201,6 +201,7 @@ public sealed partial class ConstructWorld
         ClearLinks();
         ClearWorldLinks();
         AmmoDirty.Clear();
+        PaintDirty.Clear();
         Shattered.Clear();
         FireCount = 0;
         CookOffCount = 0;

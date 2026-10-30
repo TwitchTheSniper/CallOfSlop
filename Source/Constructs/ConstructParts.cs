@@ -139,6 +139,7 @@ public enum ConstructTool : byte
     Welder, // welded parts: frames, panels, foundations
     Linker, // milestone 2: the linking tool: wires (outputs to inputs) and logic settings; never fits or removes a part
     Configure = 4, // the configure tool: a part's settings panel (ConstructConfig.cs); never fits or removes a part
+    Paint = 9, // the paint tool (ConstructPaint.cs): colours parts and links; never fits or removes a part
     PhysicsGun = 8, // the physics gun (ConstructGrab.cs): grabs, moves, turns and freezes whole constructs; never fits or removes a part (8: after the tools still to come, ConstructTools.Keys)
 }
 
@@ -146,7 +147,7 @@ public enum ConstructTool : byte
 public static class ConstructToolWire
 {
     /// <summary>A tool from the wire (anything unknown: none).</summary>
-    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b == (byte)ConstructTool.PhysicsGun ? (ConstructTool)b : ConstructTool.None;
+    public static ConstructTool From(byte b) => b <= (byte)ConstructTool.Configure || b is (byte)ConstructTool.PhysicsGun or (byte)ConstructTool.Paint ? (ConstructTool)b : ConstructTool.None;
 }
 
 /// <summary>What happens to a part at zero health.</summary>
@@ -171,7 +172,7 @@ public enum SocketKind : byte
 /// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
 /// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f)
 {
     public bool IsGlass => Glass > 0;
 
@@ -562,7 +563,7 @@ public static partial class ConstructParts
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -594,7 +595,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
         d.Tool = EnumOf<ConstructTool>(StrKey(root, "tool", file), file, "tool");
-        if (d.Tool is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure)
+        if (d.Tool is ConstructTool.None or ConstructTool.Linker or ConstructTool.Configure or ConstructTool.Paint or ConstructTool.PhysicsGun)
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
@@ -679,7 +680,16 @@ public static partial class ConstructParts
                 if (glass > 0 && hidden)
                     throw new ConstructPartException($"{file}: {where} is hidden (never drawn) and glass (drawn see-through)");
             }
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass));
+            // The paint tool (ConstructPaint.cs): "paintable" says whether the paint colour replaces the box's own. Default: yes, but not glass and not a wheel's tyre (its solid boxes).
+            var paintable = glass <= 0 && !(d.Role == PartRole.Wheel && !detail);
+            if (Opt(b, "paintable") is { } pa)
+                paintable = pa.ValueKind switch
+                {
+                    JsonValueKind.True => true,
+                    JsonValueKind.False => false,
+                    _ => throw new ConstructPartException($"{file}: {where}.paintable is true or false"),
+                };
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour)));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -920,7 +930,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 9))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 10))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -930,7 +940,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 9))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 10))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };

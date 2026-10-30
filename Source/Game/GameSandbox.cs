@@ -44,6 +44,7 @@ public enum CActKind : byte
     Bench, // u8 kind (0 put, 3 take apart, 6 open, 7 spawn a standard build), u8 slot, u16 length, the build's text: the Gun Workbench (protocol 96; GameSandboxBench.cs)
     FreeformWeld, // u16 body, u8 part, u16 second body, u8 its part: the welder welds the two where they are (protocol 97; board item fw01)
     FreeformCut, // u16 body, u8 part, u8 weld (its joint): the welder cuts a freeform weld's seam free (protocol 97)
+    Paint, // u16 body, u8 mode (PaintMode) | 4 for a link, u8 part or link, 3 x u8 colour (r, g, b): the paint tool paints, or resets with mode Reset (protocol 98; board item pp01)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -243,6 +244,12 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StructureDirty.Clear();
+        for (var from = 0; from < Constructs.PaintDirty.Count;)
+        {
+            from = ConstructPaint.WriteChanges(w, Constructs, Constructs.PaintDirty, from);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.PaintDirty.Clear();
         foreach (var handle in Constructs.StoreDirty)
         {
             // (after the structures: a client finds the store by the handle its part came with)
@@ -438,6 +445,14 @@ public sealed partial class Game
                 var body = r.U16();
                 var part = r.U8();
                 return hands.FreeformCut(Constructs, p.Id, eye, body, part, r.U8());
+            }
+            case CActKind.Paint:
+            {
+                var body = r.U16();
+                var mode = r.U8();
+                var index = r.U8();
+                var rgb = (uint)(r.U8() << 16 | r.U8() << 8 | r.U8());
+                return hands.Paint(Constructs, p.Id, eye, body, (PaintMode)(mode & 3), (mode & 4) != 0, index, ConstructPaint.SetBit | rgb);
             }
             case CActKind.Cancel:
                 hands.Cancel(p.Id);
@@ -1091,7 +1106,7 @@ public sealed partial class Game
         var held = ConstructParts.Get(h.Held);
         if (_sbHand.Stale((long)h.Tool * 1000 + h.Held))
         {
-            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", _ => "Gun" };
+            var tool = h.Tool switch { ConstructTool.Wrench => "Wrench", ConstructTool.Welder => "Welder", ConstructTool.Linker => "Linking tool", ConstructTool.PhysicsGun => "Physics gun", ConstructTool.Configure => "Configure tool", ConstructTool.Paint => "Paint tool", _ => "Gun" };
             _sbHand.Text = $"In hand: {tool}{(held != null ? $" + {held.Name}" : "")}";
         }
         lines.Add(new HudLine(_sbHand.Text, h.Tool == ConstructTool.None ? dim : orange));

@@ -620,6 +620,7 @@ public static unsafe partial class Program
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
                 DrawSandboxConfigInMatch(now); // the configure tool's settings panel (Program.SandboxConfig.cs)
+                DrawSandboxPaintInMatch(); // the paint tool's colour picker (Program.SandboxPaint.cs)
                 DrawToolWheelInMatch(); // the Sandbox tool wheel while held (Program.SandboxWheel.cs)
                 DrawPhysGunHud(); // the Sandbox frozen snowflake on look-at (Program.PhysicsGun.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
@@ -848,7 +849,7 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => DimmingMenusOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen || Ui.SandboxPaintPickerOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
 
     /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
     private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
@@ -913,6 +914,12 @@ public static unsafe partial class Program
         if (key == GlfwKey.Escape && Ui.SandboxConfigOpen)
         {
             Ui.CloseSandboxConfig(); // Esc closes the configure tool's panel (back to building), not the match
+            SetMouseCaptured(true);
+            return;
+        }
+        if (key == GlfwKey.Escape && Ui.SandboxPaintPickerOpen)
+        {
+            Ui.CloseSandboxPaintPicker(); // Esc closes the paint tool's colour picker (back to painting)
             SetMouseCaptured(true);
             return;
         }

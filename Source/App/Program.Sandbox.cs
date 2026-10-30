@@ -304,6 +304,14 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The paint tool: LMB paints, RMB picks the colour (Program.SandboxPaint.cs).
+        if (h.Tool == ConstructTool.Paint)
+        {
+            SandboxPaintInput(g, me, aimed, hit);
+            return true;
+        }
+        PaintIdle();
+
         // The welder's freeform mode and the seam cut (Program.SandboxFreeform.cs).
         if (h.Tool == ConstructTool.Welder)
             SandboxFreeformInput(g, ref h, eye, dir, aimed, hit);

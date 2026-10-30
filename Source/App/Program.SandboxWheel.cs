@@ -32,6 +32,8 @@ public static partial class Program
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: link types, edit modes)
         if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Welder) == null)
             _toolWheel.SetOptions(SandboxToolWheel.Slot.Welder, _weldModes); // (the welder's: socket or freeform weld, board item fw01)
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Paint) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Paint, _paintWheel); // (the paint tool's: modes, swatches, custom, recent colours; board item pp01)
         var now = Environment.TickCount64;
         var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);
         _lkWheelLast = now;

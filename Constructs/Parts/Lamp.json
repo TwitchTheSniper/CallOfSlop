@@ -30,7 +30,8 @@
         0
       ],
       "color": "#fff3b0",
-      "detail": true
+      "detail": true,
+      "paintable": false
     }
   ],
   "sockets": [

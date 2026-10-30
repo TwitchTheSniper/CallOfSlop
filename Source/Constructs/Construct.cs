@@ -47,6 +47,9 @@ public struct CPart
     // Settings (the configure tool; ConstructConfig.cs): one value a slot of its def's "config" schema. It moves with the part.
     public CfgValues Cfg;
 
+    // Paint (the paint tool; ConstructPaint.cs): the colour the part's paintable boxes are drawn in, 0 when it has its own (else 0x01000000 | 0xRRGGBB). It moves with the part.
+    public uint Paint;
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.All[Def];

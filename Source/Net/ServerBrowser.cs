@@ -218,7 +218,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 97: Sandbox freeform welds (board item fw01, ConstructFreeform.cs): JointType.Fixed (wire byte 5) in CBody's joints and the
     //     welds' poses (joint, welded-on part, position, quaternion) at the end of CBody, CActKind.FreeformWeld / FreeformCut at the
     //     end of CActKind, and EditKind.Weld in the Sandbox hands tail.
-    public const byte ProtocolVersion = 97;
+    // 98: Sandbox paint tool (board item pp01, ConstructPaint.cs): the paint tool's tool byte (9), CBodyKind.Paint at the end of
+    //     CBodyKind (paint changes), CActKind.Paint at the end of CActKind, and CBody Full ends with the painted parts and links.
+    public const byte ProtocolVersion = 98;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
