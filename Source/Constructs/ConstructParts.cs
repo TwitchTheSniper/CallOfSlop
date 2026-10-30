@@ -22,6 +22,29 @@ public enum PartRole : byte
     Transmission, // milestone 2: takes the engine's drive (it must touch the engine) on to the differentials
     Differential, // milestone 2: an axle: drives the suspensions (wheels) bolted to it, fed by a transmission
     Logic, // milestone 2: a logic part (controls, sensors, gates, timers, lamps, horns, brakes), wired with the linking tool
+    Gun, // milestone 3: a gun (a weapon builder receiver, or a heavy construct gun): fires from a gunner seat or a wired signal
+    GunPart, // milestone 3: a weapon builder part (barrel, splitter, feed, ammo, muzzle, optic) bolted onto a gun
+    AmmoBox, // milestone 3: rounds for the guns its feed chain reaches; shot through, it cooks off
+    FeedChute, // milestone 3: carries rounds from an ammo box to a gun (like a fuel line)
+}
+
+/// <summary>How a construct gun looks and sounds when it fires (milestone 3; docs/sandbox/CONSTRUCTS.md, "Construct weapons").</summary>
+public enum GunFx : byte
+{
+    Bullet, // a tracer from the muzzle
+    Cannon, // a fat, slower tracer and a big report
+    Rocket, // a slow smoke trail and a blast at the end
+    Flame, // a short gout of fire
+}
+
+/// <summary>What a construct gun's rounds do (the weapon builder's ammo flags that count against constructs).</summary>
+[Flags]
+public enum GunEffect : byte
+{
+    None = 0,
+    Penetrating = 1, // on through a part into what is behind it
+    Explosive = 2, // a splash where it lands
+    Incendiary = 4, // sets fuel, wood and ammo alight
 }
 
 /// <summary>How a joint part moves (milestone 2; docs/sandbox/CONSTRUCTS.md, "Joints").</summary>
@@ -134,6 +157,24 @@ public sealed class ConstructPartDef
     public string SettingName = ""; // "period", "key"...
     public byte DefaultSetting;
 
+    // Weapons (milestone 3; ConstructWeapons.cs)
+    public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
+    public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
+    public float GunMaxRange = 300f; // how far its rounds reach at all
+    public int GunMag, GunPellets = 1;
+    public string[] GunFlags = [];
+    public Vector3 GunMuzzle; // a heavy gun's muzzle (part frame); a receiver's comes from its barrels
+    public GunFx GunFx;
+    public string GunSound = ""; // the weapon file whose report it uses
+    public string GunPartName = ""; // a gun part: the weapon builder part it is
+    public int BoxRounds; // an ammo box: rounds it comes with
+    public float CookRadius, CookDamage; // an ammo box: its cook-off at full
+
+    public bool IsReceiverGun => Role == PartRole.Gun && GunReceiver.Length > 0;
+
+    /// <summary>Catches fire from incendiary rounds (wood, rubber, fuel tanks, ammo boxes).</summary>
+    public bool Flammable => Material is "wood" or "rubber" or "cloth" || Role is PartRole.FuelTank or PartRole.AmmoBox;
+
     public bool UsesTool(ConstructTool t) => t != ConstructTool.None && t == Tool;
 
     /// <summary>A joint part: a passive hinge or a moving joint (what goes on its leaf hangs on a new joint).</summary>
@@ -145,7 +186,7 @@ public sealed class ConstructPartDef
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
     {
-        PartRole.Joint or PartRole.Hinge or PartRole.Engine => 4,
+        PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity => 0,
@@ -273,7 +314,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "scrap",
+        "gun", "gunPart", "ammoBox", "scrap",
     ];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
@@ -396,7 +437,7 @@ public static class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "gun", "gunPart", "ammoBox"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -407,6 +448,9 @@ public static class ConstructParts
             PartRole.Hinge => "hinge",
             PartRole.Joint => "joint",
             PartRole.Logic => "logic",
+            PartRole.Gun => "gun",
+            PartRole.GunPart => "gunPart",
+            PartRole.AmmoBox => "ammoBox",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -476,6 +520,33 @@ public static class ConstructParts
             case PartRole.Logic:
                 ParseLogic(d, block!.Value, file, bw);
                 break;
+            case PartRole.Gun:
+                ParseGun(d, block!.Value, file, bw);
+                break;
+            case PartRole.GunPart:
+            {
+                Known(block!.Value, ["part"], bw);
+                d.GunPartName = Str(Need(block.Value, "part", bw), file, "gunPart.part");
+                if (Parts.Find(d.GunPartName) is not { } wp)
+                    throw new ConstructPartException($"{file}: \"gunPart.part\": no weapon builder part named \"{d.GunPartName}\"");
+                if (!ConstructWeapons.GunPartCategories.Contains(wp.Category))
+                    throw new ConstructPartException($"{file}: \"gunPart.part\": a {wp.Category.ToString().ToLowerInvariant()} doesn't go on a construct gun (barrels, splitters, feeds, ammo, muzzle devices and optics do)");
+                d.GunPartName = wp.Name;
+                break;
+            }
+            case PartRole.AmmoBox:
+                Known(block!.Value, ["rounds", "cookOff"], bw);
+                d.BoxRounds = (int)Num(Need(block.Value, "rounds", bw), file, "ammoBox.rounds");
+                Range(d.BoxRounds, 1, 60000, file, "ammoBox.rounds");
+                if (Opt(block.Value, "cookOff") is { } cook)
+                {
+                    Known(cook, ["radius", "damage"], $"{bw}.cookOff");
+                    d.CookRadius = Num(Need(cook, "radius", bw), file, "ammoBox.cookOff.radius");
+                    Range(d.CookRadius, 0.5f, 20, file, "ammoBox.cookOff.radius");
+                    d.CookDamage = Num(Need(cook, "damage", bw), file, "ammoBox.cookOff.damage");
+                    Range(d.CookDamage, 1, 100000, file, "ammoBox.cookOff.damage");
+                }
+                break;
         }
         if (d.Role == PartRole.Door && !d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: a door needs a \"leaf\" socket (it hangs on a hinge)");
@@ -524,6 +595,73 @@ public static class ConstructParts
         d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
         if (d.LeafIndex < 0)
             throw new ConstructPartException($"{file}: joint \"leaf\" must name one of its struct sockets (what goes on it moves)");
+    }
+
+    private static readonly string[] GunFxNames = ["bullet", "cannon", "rocket", "flame"];
+
+    /// <summary>
+    /// A gun's block: either a weapon builder receiver (<c>"receiver"</c>, its <c>"action"</c> optional: the barrels, feed,
+    /// ammo and so on are gun parts bolted to it on the construct, and its numbers come from the weapon builder's stat
+    /// pipeline) or a heavy construct gun's own numbers (damage, rpm, spread, range, mag, reload...).
+    /// </summary>
+    private static void ParseGun(ConstructPartDef d, JsonElement b, string file, string bw)
+    {
+        Known(b, ["receiver", "action", "damage", "rpm", "spread", "range", "maxRange", "mag", "reload", "pellets", "speed", "flags", "blast", "blastDamage", "muzzle", "fx", "kick", "soundOf"], bw);
+        d.GunMaxRange = Opt(b, "maxRange") is { } mr ? Num(mr, file, "gun.maxRange") : 300f;
+        Range(d.GunMaxRange, 1, 1000, file, "gun.maxRange");
+        d.GunKick = Opt(b, "kick") is { } kick ? Num(kick, file, "gun.kick") : 0f;
+        Range(d.GunKick, 0, 100000, file, "gun.kick");
+        d.GunFx = GunFx.Bullet;
+        if (Opt(b, "fx") is { } fx)
+        {
+            var fi = Array.IndexOf(GunFxNames, Str(fx, file, "gun.fx").ToLowerInvariant());
+            if (fi < 0)
+                throw new ConstructPartException($"{file}: \"gun.fx\" is one of {string.Join(", ", GunFxNames)}");
+            d.GunFx = (GunFx)fi;
+        }
+        d.GunSound = Opt(b, "soundOf") is { } so ? Str(so, file, "gun.soundOf") : "";
+        if (d.GunSound.Length > 0 && Weapons.Find(d.GunSound) == null)
+            throw new ConstructPartException($"{file}: \"gun.soundOf\": no weapon named \"{d.GunSound}\"");
+        if (Opt(b, "receiver") is { } rec)
+        {
+            foreach (var k in new[] { "damage", "rpm", "spread", "range", "mag", "reload", "pellets", "flags", "blast", "blastDamage", "muzzle" })
+                if (Opt(b, k) != null)
+                    throw new ConstructPartException($"{file}: a gun on a receiver takes its numbers from the weapon builder (no \"{k}\")");
+            var name = Str(rec, file, "gun.receiver");
+            if (Parts.Find(name) is not { Receiver: not null } rp)
+                throw new ConstructPartException($"{file}: \"gun.receiver\": no weapon builder receiver named \"{name}\"");
+            d.GunReceiver = rp.Name;
+            var act = Opt(b, "action") is { } a ? Str(a, file, "gun.action") : rp.Receiver.StockAction ?? "";
+            if (Parts.Find(act) is not { Action: not null } ap)
+                throw new ConstructPartException($"{file}: \"gun.action\": no weapon builder action named \"{act}\"");
+            d.GunAction = ap.Name;
+            return;
+        }
+        d.GunDamage = Num(Need(b, "damage", bw), file, "gun.damage");
+        Range(d.GunDamage, 1, 100000, file, "gun.damage");
+        d.GunRpm = Num(Need(b, "rpm", bw), file, "gun.rpm");
+        Range(d.GunRpm, 1, 3600, file, "gun.rpm");
+        d.GunSpread = Opt(b, "spread") is { } sp ? Num(sp, file, "gun.spread") : 1f;
+        Range(d.GunSpread, 0, 45, file, "gun.spread");
+        d.GunRange = Opt(b, "range") is { } rg ? Num(rg, file, "gun.range") : 60f;
+        Range(d.GunRange, 1, 1000, file, "gun.range");
+        d.GunMag = (int)Num(Need(b, "mag", bw), file, "gun.mag");
+        Range(d.GunMag, 1, 5000, file, "gun.mag");
+        d.GunReload = Opt(b, "reload") is { } rl ? Num(rl, file, "gun.reload") : 2f;
+        Range(d.GunReload, 0.05f, 30, file, "gun.reload");
+        d.GunPellets = Opt(b, "pellets") is { } pe ? (int)Num(pe, file, "gun.pellets") : 1;
+        Range(d.GunPellets, 1, 24, file, "gun.pellets");
+        d.GunSpeed = Opt(b, "speed") is { } spd ? Num(spd, file, "gun.speed") : 0f;
+        Range(d.GunSpeed, 0, 2000, file, "gun.speed");
+        d.GunFlags = Opt(b, "flags") is { ValueKind: JsonValueKind.Array } fl ? fl.EnumerateArray().Select(f => Str(f, file, "gun.flags").ToLowerInvariant()).ToArray() : [];
+        foreach (var f in d.GunFlags)
+            if (f is not ("penetrating" or "explosive" or "incendiary"))
+                throw new ConstructPartException($"{file}: \"gun.flags\": \"{f}\" (a heavy gun's flags are penetrating, explosive, incendiary)");
+        d.GunBlast = Opt(b, "blast") is { } bl ? Num(bl, file, "gun.blast") : 0f;
+        Range(d.GunBlast, 0, 20, file, "gun.blast");
+        d.GunBlastDamage = Opt(b, "blastDamage") is { } bd ? Num(bd, file, "gun.blastDamage") : d.GunDamage;
+        Range(d.GunBlastDamage, 0, 100000, file, "gun.blastDamage");
+        d.GunMuzzle = Vec(Need(b, "muzzle", bw), file, "gun.muzzle");
     }
 
     private static readonly string[] LogicKinds = Enum.GetNames<CLogic>().Skip(1).Select(n => n.ToLowerInvariant()).ToArray();

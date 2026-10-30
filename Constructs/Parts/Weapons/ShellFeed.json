@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Shell Feed",
+  "description": "A box of ten shells for a shell receiver.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 3,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#5a2f26",
+  "boxes": [
+    {
+      "size": [
+        0.12,
+        0.2,
+        0.16
+      ]
+    },
+    {
+      "size": [
+        0.13,
+        0.03,
+        0.17
+      ],
+      "at": [
+        0,
+        0.085,
+        0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.08
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Shell Box"
+  }
+}

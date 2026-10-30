@@ -1,0 +1,124 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rifle Receiver",
+  "description": "A weapon builder receiver on a mount: bolt a barrel on its front, a magazine (a feed) on its left, ammo on its right, an optic on top, and an ammo box on the feed. Fires on a wired signal or from a gunner's seat.",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 14,
+  "health": 180,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4a5146",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.036,
+        0.28
+      ],
+      "at": [
+        0,
+        0.105,
+        -0.02
+      ],
+      "color": "#6d7466",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.11,
+        0.06
+      ],
+      "at": [
+        0,
+        -0.11,
+        0.128
+      ],
+      "color": "#2b2b2e",
+      "detail": true
+    },
+    {
+      "size": [
+        0.03,
+        0.03,
+        0.08
+      ],
+      "at": [
+        0.11,
+        0.03,
+        0.04
+      ],
+      "color": "#b9a26a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.1,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gun": {
+    "receiver": "Workhorse Receiver",
+    "kick": 6
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Box Magazine",
+  "description": "A 30-round box magazine (rifle calibre): bolt it to a receiver's left side, and an ammo box to it.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 3,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#26282b",
+  "boxes": [
+    {
+      "size": [
+        0.12,
+        0.2,
+        0.16
+      ]
+    },
+    {
+      "size": [
+        0.13,
+        0.04,
+        0.17
+      ],
+      "at": [
+        0,
+        -0.09,
+        0
+      ],
+      "color": "#3d4146",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.08
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.08
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Box Mag"
+  }
+}

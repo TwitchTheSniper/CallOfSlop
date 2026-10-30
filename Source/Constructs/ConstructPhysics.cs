@@ -880,6 +880,14 @@ public static class ConstructPhysics
     /// <summary>What a moving joint's motor wants this tick: a speed (turntable), or a speed towards the target its input asks for (the rest).</summary>
     private static float MotorWant(Construct c, in CJoint jt)
     {
+        if (jt.Aimed)
+        {
+            // A gunner (or a sentry) points it (milestone 3, ConstructWeapons.cs): towards the error its gun is off by.
+            if (jt.Type == JointType.Turntable)
+                return Math.Clamp(jt.AimErr * 6f, -jt.Speed, jt.Speed);
+            var aim = Math.Clamp(jt.Angle + jt.AimErr, jt.Min, jt.Max);
+            return Math.Clamp((aim - jt.Angle) * 10f, -jt.Speed, jt.Speed);
+        }
         if (jt.Type == JointType.Turntable)
             return Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
         float target;

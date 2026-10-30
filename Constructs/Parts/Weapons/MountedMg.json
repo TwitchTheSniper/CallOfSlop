@@ -1,0 +1,126 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Mounted MG",
+  "description": "A belt-fed machine gun on a pintle: bolt it on by its bottom, an ammo box on its back or sides. Ammo parts bolted to it change its rounds.",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 28,
+  "health": 220,
+  "armour": 6,
+  "material": "steel",
+  "color": "#3c4238",
+  "boxes": [
+    {
+      "size": [
+        0.22,
+        0.22,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.07,
+        0.07,
+        0.6
+      ],
+      "at": [
+        0,
+        0,
+        -0.55
+      ],
+      "color": "#25272a"
+    },
+    {
+      "size": [
+        0.1,
+        0.08,
+        0.28
+      ],
+      "at": [
+        0,
+        0.15,
+        0.02
+      ],
+      "color": "#5a6150",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        -0.6
+      ],
+      "color": "#3a3d40",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.11,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.11,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.11,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.11,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    }
+  ],
+  "gun": {
+    "damage": 24,
+    "rpm": 600,
+    "spread": 2.2,
+    "range": 70,
+    "mag": 100,
+    "reload": 3.0,
+    "kick": 12,
+    "fx": "bullet",
+    "soundOf": "Bastille",
+    "muzzle": [
+      0,
+      0,
+      -0.85
+    ]
+  }
+}

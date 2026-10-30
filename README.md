@@ -1035,6 +1035,14 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   **scrap** instead (by its weight and material). Someone else's working construct can't be taken apart. The HUD shows
   your counts. On a map with `"infiniteParts": false` the rack and the parts menu hand out only what your inventory holds
   and your own parts go back into it. Wrecks nobody is near are cleared away after a few minutes.
+- **Weapons**: guns are parts too, fitted with the wrench. Bolt a barrel, a magazine, ammo, a muzzle device and a scope
+  (weapon builder parts) onto a **receiver**, or fit a heavy gun (**Mounted MG**, **Autocannon**, **Cannon**, **Rocket
+  Pod**, **Flamethrower**), and an **ammo box** touching its feed (or at the end of feed chutes). A gun on the body points
+  with its construct; on a turntable (and a motor hinge) it follows the look of whoever sits in the **gunner's seat** on
+  it, and their fire key fires it. Anything wired into a gun fires it instead (an input reader on the driver's fire key,
+  a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
+  a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box
+  cooks off. The yard has a gunner turret, a hood-gun buggy, a sentry, a gun bench and targets.
 
 Each tool has its own box model in your hands (and in other players' hands), with a crank, sparks or a beam while it
 works; a part you carry sits in your off hand. Parts, blueprints and the tools' models are data files (`Constructs/Parts`,

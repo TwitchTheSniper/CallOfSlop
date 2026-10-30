@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Crate",
+  "description": "1,200 rounds: a big box that cooks off big.",
+  "role": "ammobox",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 45,
+  "health": 90,
+  "armour": 3,
+  "material": "steel",
+  "color": "#465236",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.4,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.03,
+        0.1
+      ],
+      "at": [
+        0,
+        0.215,
+        0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.2,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.2,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "ammoBox": {
+    "rounds": 1200,
+    "cookOff": {
+      "radius": 5.5,
+      "damage": 480
+    }
+  }
+}

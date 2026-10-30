@@ -65,6 +65,10 @@ public sealed class SandboxCatalogue
             case PartRole.Seat: return ("Seats", "Seats");
             case PartRole.Hinge: return ("Joints", "Hinges");
             case PartRole.Joint: return ("Joints", "Moving joints");
+            case PartRole.Gun: return ("Weapons", "Guns");
+            case PartRole.GunPart: return ("Weapons", "Gun parts");
+            case PartRole.AmmoBox: return ("Weapons", "Ammo boxes");
+            case PartRole.FeedChute: return ("Weapons", "Feed chutes");
             case PartRole.Logic:
                 return ("Logic", d.Logic switch
                 {

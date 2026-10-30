@@ -162,6 +162,8 @@ public sealed partial class Game
             h.SeatPart = (byte)seat; // (parts are renumbered when others come off)
             var b = p.Id == LocalId ? HeldButtons : p.LastInput.Buttons;
             c.Parts[seat].Keys = (ushort)((ushort)b | (h.SeatKeys & 0x7F00) | CPart.Occupied); // (input readers; ConstructLogic.cs)
+            c.Parts[seat].AimYaw = p.Yaw; // (a gunner points the guns with their look; ConstructWeapons.cs)
+            c.Parts[seat].AimPitch = p.Pitch;
             if (seat == c.DriveSeat)
             {
                 c.Driver = p.Id;
@@ -171,8 +173,10 @@ public sealed partial class Game
         }
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
+        Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
     }
@@ -242,6 +246,9 @@ public sealed partial class Game
                 break;
             case (byte)Msg.CPose when !IsServer:
                 ConstructNet.ReadPoses(ref r, Constructs, SandboxNow, ref _sbPoseTick);
+                break;
+            case (byte)Msg.CFire when !IsServer:
+                OnConstructFire(ref r, now);
                 break;
             case (byte)Msg.CAct when IsServer:
                 if (_clients.TryGetValue(sender.G, out var cl) && Players.TryGetValue(cl.Id, out var p))
@@ -670,7 +677,7 @@ public sealed partial class Game
             {
                 // The view turns with the seat, then stays inside the seat type's limits.
                 localSeat = ((uint)body << 8) | (uint)(part + 1);
-                if (_sbViewSeat == localSeat)
+                if (_sbViewSeat == localSeat && !(kind == SeatKind.Gunner && c.SeatAims(part))) // (a gunner who points the turret looks where they look: the turret follows)
                     LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
                 _sbViewYaw = seatYaw;
                 p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, kind);
@@ -727,6 +734,12 @@ public sealed partial class Game
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
     {
         ref var h = ref SandboxHands.Hand(me.Id);
+        if (h.Seated && Constructs.Get(h.SeatBody) is { } gunship && gunship.SeatKindOf(h.SeatPart) == SeatKind.Gunner && GunOfSeat(gunship, h.SeatPart) is var gk and >= 0)
+        {
+            lines.Add(new HudLine(GunLine(gunship, gk), gunship.Guns[gk].Problem.Length > 0 ? red : white));
+            lines.Add(new HudLine("Fire: shoot, look: aim the turret. F get out", dim));
+            return;
+        }
         if (h.Seated && Constructs.Get(h.SeatBody) is { } ride && h.SeatPart != ride.DriveSeat && ride.SeatOf(me.Id) != ride.DriveSeat)
         {
             lines.Add(new HudLine("Riding as a passenger", white));
@@ -740,6 +753,8 @@ public sealed partial class Game
             if (_sbDrive.Stale(kmh * 100000L + fuel))
                 _sbDrive.Text = $"Driving: {kmh} km/h, fuel {fuel / 10f:0.0} l";
             lines.Add(new HudLine(_sbDrive.Text, white));
+            if (car.GunCount > 0)
+                lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));
             if (car.CanDrive)
                 lines.Add(new HudLine("W/S drive, A/D steer, Space brake, F get out", dim));
             else
@@ -800,6 +815,34 @@ public sealed partial class Game
         }
         if (_sbInvLine.Text.Length > 0)
             lines.Add(new HudLine(_sbInvLine.Text, dim));
+    }
+
+    private SbText _sbGun;
+
+    /// <summary>The gun a gunner's seat works (the first), or -1.</summary>
+    private static int GunOfSeat(Construct c, int seat)
+    {
+        for (var k = 0; k < c.GunCount; k++)
+            if (c.Guns[k].Seat == seat)
+                return k;
+        return -1;
+    }
+
+    /// <summary>A gun on the HUD: its rounds loaded and in the boxes, reloading, or why it won't fire (rebuilt only when that changes).</summary>
+    private string GunLine(Construct c, int k)
+    {
+        ref var g = ref c.Guns[k];
+        ref var p = ref c.Parts[g.Part];
+        var boxes = ConstructWeapons.BoxRounds(c, k);
+        var key = ((long)c.Id << 48) ^ ((long)g.Part << 40) ^ ((long)p.Rounds << 24) ^ ((long)boxes << 2) ^ (p.Reload > 0 ? 1 : 0) ^ (p.Broken ? 2 : 0) ^ ((long)g.Problem.GetHashCode() << 16);
+        if (_sbGun.Stale(key))
+            _sbGun.Text = p.Broken ? $"{p.D.Name}: wrecked"
+                : g.Problem.Length > 0 ? $"{p.D.Name} won't fire: {g.Problem}"
+                : g.BoxCount == 0 && p.Rounds == 0 ? $"{p.D.Name}: no ammo box on its feed"
+                : p.Reload > 0 ? $"{p.D.Name}: reloading... ({boxes} in the boxes)"
+                : p.Rounds == 0 && boxes == 0 ? $"{p.D.Name}: out of ammo"
+                : $"{p.D.Name}: {p.Rounds}/{g.Mag}, {boxes} in the boxes";
+        return _sbGun.Text;
     }
 
     /// <summary>What the crosshair is on (set by the client's look each frame; Program.Sandbox.cs).</summary>

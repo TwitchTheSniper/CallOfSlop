@@ -21,6 +21,14 @@ public struct CPart
     public byte SitterPlus1; // a seat: the player sitting in it, plus one (0: empty)
     public bool Stood; // a pressure plate: a player stood on it this tick
 
+    // Weapons (milestone 3; ConstructWeapons.cs)
+    public ushort Rounds; // an ammo box: rounds left; a gun: rounds loaded
+    public ushort Cool, Reload; // a gun: ticks to its next shot, ticks of its reload left
+    public ushort Burn; // ticks it still burns (incendiary rounds, a cook-off)
+    public float In; // the wires into it this tick, added up (a gun's trigger)
+    public byte InCount; // how many wires come into it
+    public float AimYaw, AimPitch; // a seat: its sitter's look (world), for a gunner aiming
+
     public const ushort Occupied = 0x8000;
 
     public readonly ConstructPartDef D => ConstructParts.All[Def];
@@ -74,6 +82,8 @@ public struct CJoint
     public float Input; // the wires into its part, added up (last tick's values)
     public bool Wired, Locked; // something is wired into it; a passive hinge's lock is on
     public float Load; // the gravity load it held last tick (N m or N; the HUD and the self-test)
+    public bool Aimed; // milestone 3: a gunner (or a sentry's sensor) points it this tick: it turns towards AimErr
+    public float AimErr; // radians (about its axis) between where its gun points and where it should
 
     public readonly bool Slides => Type == JointType.Piston;
     public readonly bool Motorised => Type != JointType.Passive;
@@ -113,6 +123,8 @@ public sealed class Construct
     public const float SegPointSpacing = 1.0f; // a long part gets points along its edges at most this far apart (no sinking in the middle)
     public const int MaxSegEdges = 48; // the long edges of the parts beyond joints, swept against the world (a post between two points)
     public const float SegEdgeMin = 0.3f; // edges shorter than this aren't swept (the points at their ends do)
+    public const int MaxGuns = 8; // milestone 3: guns a construct
+    public const int BoxesPerGun = 4; // ammo boxes a gun's feed chain reaches (the nearest first)
 
     public ushort Id;
     public readonly CPart[] Parts = new CPart[MaxParts];
@@ -125,7 +137,7 @@ public sealed class Construct
     public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
-    public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's)
+    public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's). A sentry's kills are theirs (milestone 3)
     public bool Damaged; // a part of it has been wrecked (broken off or stopped working): disabled, so anyone may salvage it
     public double IdleSince = -1; // server: a wreck's last time with a player near or salvaging it (debris expiry; -1: not yet looked at)
     public bool Anchored; // a working foundation holds it to the ground
@@ -167,6 +179,12 @@ public sealed class Construct
     public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
+
+    // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches
+    public readonly CGun[] Guns = new CGun[MaxGuns];
+    public int GunCount;
+    public readonly byte[] GunBoxes = new byte[MaxGuns * BoxesPerGun];
+    public int Burning; // parts on fire (the server's burn step skips a body with none)
 
     // Caches
     public readonly Vector3[] Points = new Vector3[MaxPoints];
@@ -269,6 +287,24 @@ public sealed class Construct
             if (Parts[i].SitterPlus1 == player + 1)
                 return i;
         return -1;
+    }
+
+    /// <summary>The gun on part <paramref name="part"/> (its index in <see cref="Guns"/>), or -1.</summary>
+    public int GunOf(int part)
+    {
+        for (var k = 0; k < GunCount; k++)
+            if (Guns[k].Part == part)
+                return k;
+        return -1;
+    }
+
+    /// <summary>Does the gunner in seat <paramref name="part"/> aim a gun's joints with their look (the view then stays where they look as the turret turns)?</summary>
+    public bool SeatAims(int part)
+    {
+        for (var k = 0; k < GunCount; k++)
+            if (Guns[k].Seat == part && Guns[k].AimJoints > 0)
+                return true;
+        return false;
     }
 
     /// <summary>What a seat is for (the seated pose, the look limits): the drive seat, a seat on a moving joint (a gunner's, on a turntable or hinge), or a passenger's.</summary>
@@ -420,6 +456,7 @@ public sealed class Construct
         BuildWheels();
         BuildDrivetrain();
         BuildSegments();
+        ConstructWeapons.BuildGuns(this);
         Anchored = false;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)

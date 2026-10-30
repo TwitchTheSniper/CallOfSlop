@@ -1,0 +1,51 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Feed Chute",
+  "description": "A 0.5 m feed chute: carries rounds from an ammo box to a gun (like a fuel line).",
+  "role": "feedchute",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 40,
+  "armour": 1,
+  "material": "steel",
+  "color": "#6a7a4a",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.14,
+        0.14
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.07,
+        0
+      ],
+      "dir": "-y"
+    }
+  ]
+}

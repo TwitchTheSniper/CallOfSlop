@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gun Muzzle Brake",
+  "description": "A muzzle brake: a little tighter, much louder. On a barrel's front.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 1.5,
+  "health": 60,
+  "armour": 3,
+  "material": "steel",
+  "color": "#33363a",
+  "boxes": [
+    {
+      "size": [
+        0.12,
+        0.12,
+        0.12
+      ]
+    },
+    {
+      "size": [
+        0.14,
+        0.04,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        -0.02
+      ],
+      "color": "#1d1f22",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.06,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.06,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.06,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.06
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.06
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Muzzle Brake"
+  }
+}
