@@ -170,7 +170,7 @@ public sealed partial class Ui
                     ConstructTool.Linker => "Set up with the linking tool",
                     _ => "No tool needed",
                 },
-                Line2 = $"{d.Mass:0.#} kg   {d.Health:0} hp   armour {d.Armour:0.#}   fit {d.AttachSeconds:0.#} s",
+                Line2 = $"{d.Mass:0.#} kg   {d.Health:0} hp   armour {d.Armour:0.#}   fit {d.AttachSeconds:0.#} s   {(d.PhysicsOnly ? $"PHYSICS ONLY ({d.PhysicsWhy}): spawns in front of you" : "item: into your hands")}",
                 Description = $"{cat.PartGroup[d.Id]} > {cat.PartSection[d.Id]}. {d.Description}",
                 Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role} {d.Description}",
                 Color = Col8(c),
@@ -692,6 +692,13 @@ public sealed partial class Ui
         }
         if (it.Tool != ConstructTool.None)
             dl.AddCircleFilled(new float2(at.X + 9 * _scale, at.Y + 9 * _scale), 3.5f * _scale, it.ToolColor);
+        if (it.Part is { PhysicsOnly: true })
+        {
+            // Decision 21: a physics-only part (never an item): a small box outline in the top right corner.
+            var b0 = new float2(p1.X - 15 * _scale, at.Y + 5 * _scale);
+            dl.AddRect(b0, new float2(b0.X + 9 * _scale, b0.Y + 9 * _scale), it.ToolColor, 1.5f * _scale, ImDrawFlags.None, 1.5f * _scale);
+            dl.AddLine(b0, new float2(b0.X + 9 * _scale, b0.Y + 9 * _scale), it.ToolColor, 1f * _scale);
+        }
         if (named)
         {
             var clip = new float4(at.X + 4 * _scale, at.Y, p1.X - 4 * _scale, p1.Y);

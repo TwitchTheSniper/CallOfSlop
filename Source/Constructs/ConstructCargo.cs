@@ -327,6 +327,92 @@ public static class ConstructCargo
         }
     }
 
+    // ---- The volume's box handles (the configure tool; Program.SandboxCargo.cs) ----------------------------------------
+
+    /// <summary>The construct grid a volume's faces snap to (metres).</summary>
+    public const float Snap = 0.1f;
+
+    public static float SnapTo(float v) => MathF.Round(v / Snap) * Snap;
+
+    /// <summary>A point in the world in a volume part's own frame (the frame its size and centre are in).</summary>
+    public static Vector3 ToPart(Construct c, int part, Vector3 world)
+    {
+        ref var p = ref c.Parts[part];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        var rest = Vector3.Transform(world - t, Quaternion.Conjugate(q));
+        return Vector3.Transform(rest - p.Pos, Quaternion.Conjugate(Rot24.Quat(p.Rot)));
+    }
+
+    /// <summary>A point in a volume part's own frame in the world.</summary>
+    public static Vector3 FromPart(Construct c, int part, Vector3 local)
+    {
+        ref var p = ref c.Parts[part];
+        c.WorldFrame(p.Seg, out var q, out var t);
+        return t + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, local), q);
+    }
+
+    /// <summary>Face <paramref name="face"/> (0..5: +x -x +y -y +z -z, the part's frame) of a box: its centre, in the part's frame.</summary>
+    public static Vector3 FaceAt(Vector3 size, Vector3 at, int face)
+    {
+        var axis = face >> 1;
+        var f = at;
+        f[axis] += ((face & 1) == 0 ? 0.5f : -0.5f) * size[axis];
+        return f;
+    }
+
+    /// <summary>
+    /// A face handle dragged: face <paramref name="face"/> moves along its axis to where that axis passes nearest the
+    /// look ray (part frame), snapped to <see cref="Snap"/>; the opposite face stays. The new size and centre, held inside
+    /// <see cref="MinSide"/> .. <see cref="MaxSide"/>.
+    /// </summary>
+    public static void DragFace(Vector3 size0, Vector3 at0, int face, Vector3 rayFrom, Vector3 rayDir, out Vector3 size, out Vector3 at)
+    {
+        size = size0;
+        at = at0;
+        var axis = face >> 1;
+        var sign = (face & 1) == 0 ? 1f : -1f;
+        var u = Vector3.Zero;
+        u[axis] = 1;
+        var p0 = FaceAt(size0, at0, face);
+        // The point on the axis line p0 + u s nearest the ray rayFrom + rayDir t.
+        var d = rayDir.LengthSquared() > 1e-8f ? Vector3.Normalize(rayDir) : u;
+        var w0 = p0 - rayFrom;
+        var b = Vector3.Dot(u, d);
+        var den = 1 - b * b;
+        var s = den < 1e-4f ? 0 : (b * Vector3.Dot(d, w0) - Vector3.Dot(u, w0)) / den;
+        var moved = SnapTo(p0[axis] + s);
+        var keep = at0[axis] - sign * size0[axis] * 0.5f; // (the opposite face)
+        var len = Math.Clamp((moved - keep) * sign, MinSide, MaxSide);
+        size[axis] = len;
+        at[axis] = keep + sign * len * 0.5f;
+    }
+
+    /// <summary>
+    /// A box dragged out from corner <paramref name="a"/> to <paramref name="b"/> (both on the construct, part frame): it
+    /// spans them across x and z (snapped), and rises <paramref name="height"/> from the lower of the two.
+    /// </summary>
+    public static void DragOut(Vector3 a, Vector3 b, float height, out Vector3 size, out Vector3 at)
+    {
+        float x0 = SnapTo(MathF.Min(a.X, b.X)), x1 = SnapTo(MathF.Max(a.X, b.X)), z0 = SnapTo(MathF.Min(a.Z, b.Z)), z1 = SnapTo(MathF.Max(a.Z, b.Z));
+        var y0 = SnapTo(MathF.Min(a.Y, b.Y));
+        size = new Vector3(Math.Clamp(x1 - x0, MinSide, MaxSide), Math.Clamp(SnapTo(height), MinSide, MaxSide), Math.Clamp(z1 - z0, MinSide, MaxSide));
+        at = new Vector3(x0 + size.X * 0.5f, y0 + size.Y * 0.5f, z0 + size.Z * 0.5f);
+    }
+
+    /// <summary>The config slots of a volume's six box settings (size x y z, centre x y z), or false when the part lacks one.</summary>
+    public static bool BoxSlots(ConstructPartDef d, Span<byte> slots)
+    {
+        ReadOnlySpan<CfgKey> keys = [CfgKey.SizeX, CfgKey.SizeY, CfgKey.SizeZ, CfgKey.AtX, CfgKey.AtY, CfgKey.AtZ];
+        for (var k = 0; k < keys.Length; k++)
+        {
+            var s = d.CfgSlot[(int)keys[k]];
+            if (s < 0)
+                return false;
+            slots[k] = (byte)s;
+        }
+        return true;
+    }
+
     // ---- Blueprints: the cargo a blueprint is built carrying ---------------------------------------------------------
 
     /// <summary>One loose part a blueprint carries: its kind, its origin in the construct's frame and its Rot24 turn there.</summary>
