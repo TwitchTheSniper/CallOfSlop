@@ -135,6 +135,9 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
   pictures just to show the user; this overrides board notes asking for review shots. Use a picture only when you ask
   the user a question that holds up the work and the picture is relevant to the answer. Pictures tests make for their
   own checks are fine; don't send them unless such a question needs them.
+- **Lighter models when possible (2026-10-30).** Tokens are running low: launch agents on lighter models (Sonnet;
+  Haiku for small mechanical jobs) whenever the task allows, and keep Opus for hard design, physics or networking work.
+  Agents delegate searches and small edits to lighter sub-agents too.
 - **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI
   run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong,
   why, and the rule that prevents it. Where you can, also add a check that enforces the rule (a self-test, a CI step or
