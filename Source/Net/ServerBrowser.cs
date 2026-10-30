@@ -215,7 +215,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     at the end of CBodyKind (every world link and hose off its reel), CAct.WorldRoute / WorldRouteEdit at the end of
     //     CActKind, CFireKind.LinkSnap (a world link tearing off), and the hose parts' role.
     // 96: Sandbox Gun Workbench (GameSandboxBench.cs): CActKind.Bench (open, build, take apart, spawn a standard build); Msg.ZBuild and Msg.ZRun are routed in Sandbox (built weapons, the parts you have at the bench).
-    public const byte ProtocolVersion = 96;
+    // 97: Sandbox freeform welds (board item fw01, ConstructFreeform.cs): JointType.Fixed (wire byte 5) in CBody's joints and the
+    //     welds' poses (joint, welded-on part, position, quaternion) at the end of CBody, CActKind.FreeformWeld / FreeformCut at the
+    //     end of CActKind, and EditKind.Weld in the Sandbox hands tail.
+    public const byte ProtocolVersion = 97;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

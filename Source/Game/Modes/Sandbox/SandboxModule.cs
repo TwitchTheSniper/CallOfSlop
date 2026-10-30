@@ -110,7 +110,7 @@ public sealed class SandboxModule : GameModeModule
             var held = r.U16();
             var seat = r.U16();
             var seatPart = r.U8();
-            var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.Remove);
+            var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.Weld);
             var duration = r.U16() / 100.0;
             var elapsed = r.U16() / 100.0;
             var grab = r.U16();

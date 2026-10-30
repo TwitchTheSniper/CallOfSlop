@@ -31,6 +31,12 @@ public static partial class ConstructRender
     public static bool PlaceValid; // ...green when it fits, red when not
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
+    // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
+    // closest points, green when the weld is allowed and red when not; only the first part (the two-click fallback) in amber.
+    public static Construct? WeldBodyA, WeldBodyB;
+    public static int WeldPartA = -1, WeldPartB = -1;
+    public static Vector3 WeldOnA, WeldOnB;
+    public static bool WeldValid;
     public static bool ShowWires; // the linking tool is out: the wires are drawn (only then)
     public static ushort WireFromBody; // a wire in progress starts at this part
     public static int WireFromPart = -1;
@@ -82,6 +88,8 @@ public static partial class ConstructRender
         PlaceAt = null;
         AimBody = null;
         AimPart = -1;
+        WeldBodyA = WeldBodyB = null;
+        WeldPartA = WeldPartB = -1;
         ShowWires = false;
         RouteRender.ClearPreview();
         WireFromBody = 0;
@@ -699,6 +707,18 @@ public static partial class ConstructRender
                     gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse * GhostGlass(nd.Boxes[b]), mode: 2, shape: nd.Boxes[b].Shape);
             Gizmo(gfx, nd, Vector3.Zero, PlaceTurn, Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground));
         }
+        if (WeldBodyA is { } wa && WeldPartA >= 0 && WeldPartA < wa.PartCount)
+        {
+            var b = WeldBodyB is { } wb && WeldPartB >= 0 && WeldPartB < wb.PartCount ? wb : null;
+            var colour = b == null ? new Vector3(1f, 0.75f, 0.2f) : WeldValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
+            Outline(gfx, wa, WeldPartA, colour, 0.3f * pulse);
+            if (b != null)
+            {
+                Outline(gfx, b, WeldPartB, colour, 0.3f * pulse);
+                Line(gfx, WeldOnA, WeldOnB, new Vector3(1f, 0.65f, 0.2f), 0.95f);
+                gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation((WeldOnA + WeldOnB) * 0.5f), WeldValid ? new Vector3(1f, 0.7f, 0.25f) : colour, 0.9f * pulse, mode: 2);
+            }
+        }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
             ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);
@@ -706,6 +726,15 @@ public static partial class ConstructRender
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
         }
+    }
+
+    /// <summary>A part's bounds drawn as a see-through box (the freeform weld's outlines).</summary>
+    private static void Outline(Renderer gfx, Construct c, int part, Vector3 colour, float opacity)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.05f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
+        gfx.Draw(m, colour, opacity, mode: 2);
     }
 
     /// <summary>

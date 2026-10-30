@@ -111,6 +111,18 @@ public static class ConstructNet
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
             w.U8(c.CarrySeg).Vec(c.CarryPos).F32(c.CarryRot.X).F32(c.CarryRot.Y).F32(c.CarryRot.Z).F32(c.CarryRot.W);
+        // Protocol 97: the freeform welds (board item fw01): each one's joint, welded-on part and fixed pose (exact floats).
+        var fwAt = w.Length;
+        w.U8(0);
+        var fw = 0;
+        for (var j = 0; j < c.JointCount; j++)
+            if (c.Joints[j].Freeform)
+            {
+                ref var jt = ref c.Joints[j];
+                w.U8((byte)j).U8(jt.Child).Vec(jt.FixPos).F32(jt.FixRot.X).F32(jt.FixRot.Y).F32(jt.FixRot.Z).F32(jt.FixRot.W);
+                fw++;
+            }
+        w.PatchU8(fwAt, (byte)fw);
     }
 
     private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
@@ -579,7 +591,7 @@ public static class ConstructNet
             jt.Locked = (jflags & 2) != 0;
             jt.Wired = (jflags & 4) != 0;
             var type = r.U8();
-            if (type > (byte)JointType.Steering)
+            if (type > (byte)JointType.Fixed)
                 throw new MalformedPacketException($"a construct joint of type {type}");
             jt.Type = (JointType)type;
             if (jt.Hinge >= parts || jt.ParentSeg > j || !float.IsFinite(jt.Angle + jt.Vel) || float.IsNaN(jt.Min) || float.IsNaN(jt.Max))
@@ -609,6 +621,27 @@ public static class ConstructNet
                 throw new MalformedPacketException("a carried construct's pose that doesn't fit");
             c.CarryRot = Quaternion.Normalize(cr);
         }
+        int welds = r.U8(); // protocol 97: the freeform welds
+        var posed = 0;
+        for (var k = 0; k < welds; k++)
+        {
+            int j = r.U8();
+            var child = r.U8();
+            var fp = r.Vec();
+            var fq = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
+            if (j >= c.JointCount || c.Joints[j].Type != JointType.Fixed || child >= parts || c.Parts[child].Seg != j + 1
+                || !float.IsFinite(fp.X + fp.Y + fp.Z + fq.X + fq.Y + fq.Z + fq.W) || fq.LengthSquared() < 0.5f || fp.Length() > 200)
+                throw new MalformedPacketException("a freeform weld that doesn't fit");
+            c.Joints[j].Child = child;
+            c.Joints[j].FixPos = fp;
+            c.Joints[j].FixRot = Quaternion.Normalize(fq);
+            posed++;
+        }
+        for (var j = 0; j < c.JointCount; j++)
+            if (c.Joints[j].Freeform)
+                posed--;
+        if (posed != 0)
+            throw new MalformedPacketException("a freeform weld without its pose");
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");

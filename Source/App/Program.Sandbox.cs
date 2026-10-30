@@ -304,12 +304,15 @@ public static unsafe partial class Program
             return true;
         }
 
+        // The welder's freeform mode and the seam cut (Program.SandboxFreeform.cs).
+        if (h.Tool == ConstructTool.Welder)
+            SandboxFreeformInput(g, ref h, eye, dir, aimed, hit);
         // Ghost sockets for the held part (a tool out only: bare hands never edit).
         var held = ConstructParts.Get(h.Held);
         // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
         if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
             g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);
-        if (h.Tool != ConstructTool.None && held != null && !slotted)
+        if (h.Tool != ConstructTool.None && held != null && !slotted && !SandboxFreeformOn(h)) // (freeform welding: the held part isn't fitted)
         {
             ConstructRender.GhostDef = held;
             if (aimed)
