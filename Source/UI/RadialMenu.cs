@@ -26,7 +26,7 @@ public delegate void RadialIcon(ImDrawListPtr dl, int icon, float2 centre, float
 /// </para>
 /// <para>
 /// The third tier (board item dev-wheel-third-tier-pipes-wt01): an option on the outer ring may itself have
-/// <see cref="Item.Options"/> (its sub-options, e.g. a pipe's styles). While the pointer is on such an option a PARTIAL arc
+/// <see cref="Item.Options"/> (its sub-options, for a tool with a third tier). While the pointer is on such an option a PARTIAL arc
 /// of them (<see cref="SubStepMax"/> each) grows out round the outer ring, centred on that option's direction. Flicking past
 /// <see cref="Reach"/> + <see cref="OuterDepth"/> + <see cref="SubGap"/> onto one highlights it (<see cref="HoveredSub"/>);
 /// letting go there gives <see cref="PickedSub"/>, letting go on the option itself gives -1 (the owner keeps its last

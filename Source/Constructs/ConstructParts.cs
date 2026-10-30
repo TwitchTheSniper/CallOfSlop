@@ -44,8 +44,7 @@ public enum HoseEnd : byte
 /// <summary>What a hose carries (its variant). Wire bytes: add at the end.</summary>
 public enum HoseCarry : byte
 {
-    Fuel, // a fuel hose: fuel from the outlet construct's tanks into the inlet construct's
-    Water, // a water hose: water from tanks that hold water into tanks that hold water
+    Fluid, // a fluid hose (decision 28: one hose for any fluid): what the outlet construct's tanks hold into tanks of the inlet construct that hold the same
     Power, // a power lead: charge from the outlet construct's batteries into the inlet construct's
     Data, // a data lead: the signal wired into the outlet comes out of the inlet
 }
@@ -217,7 +216,7 @@ public sealed class ConstructPartDef
     public float WheelRadius, Grip = 1f; // wheel
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
-    public Fluid TankFluid; // what the tank holds (routed links: the pipe style its output pre-selects)
+    public Fluid TankFluid; // what the tank holds (hoses and world links only move it between tanks that hold the same)
     public bool Stage; // a damage stage of another part ("stage": true): what a wall turns into as it loses chunks; not offered in the parts menu or on a rack
     public WalkKind Walk; // building pieces: walked on ("walk": floor, stairs, ramp, ladder): players step up onto it, bots may path over it
     public float DamagedBelow; // below this share of its health it turns into DamagedTo (a wall losing a chunk; "damaged": {"below", "part"})
@@ -483,8 +482,16 @@ public static partial class ConstructParts
         foreach (var d in All)
             if (d.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
                 return d;
-        return null;
+        return Renamed(name) is { } now ? Find(now) : null;
     }
+
+    /// <summary>A part's current name when an older save, blueprint or map still uses a former one (decision 28: one fluid hose), else null.</summary>
+    public static string? Renamed(string name) => name.ToLowerInvariant() switch
+    {
+        "fuel hose reel" or "water hose reel" => "Fluid Hose Reel",
+        "fuel hose inlet" or "water hose inlet" => "Fluid Hose Inlet",
+        _ => null,
+    };
 
     public static ConstructPartDef Need(string name) => Find(name) ?? throw new ConstructPartException($"no construct part named \"{name}\"");
 
@@ -775,7 +782,7 @@ public static partial class ConstructParts
                 Known(block!.Value, ["capacity", "fluid"], bw);
                 d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fuelTank.capacity");
                 Range(d.FuelCapacity, 0.1f, 10000, file, "fuelTank.capacity");
-                d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel; // (routed links: a pipe's style)
+                d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel;
                 break;
             case PartRole.Seat:
                 Known(block!.Value, ["at"], bw);
@@ -839,7 +846,8 @@ public static partial class ConstructParts
             {
                 Known(block!.Value, ["end", "carries", "length", "flow", "at"], bw);
                 d.HoseEnd = EnumOf<HoseEnd>(Str(Need(block.Value, "end", bw), file, "hose.end"), file, "hose.end");
-                d.HoseCarry = EnumOf<HoseCarry>(Str(Need(block.Value, "carries", bw), file, "hose.carries"), file, "hose.carries");
+                var carries = Str(Need(block.Value, "carries", bw), file, "hose.carries");
+                d.HoseCarry = EnumOf<HoseCarry>(carries.ToLowerInvariant() is "fuel" or "water" ? "fluid" : carries, file, "hose.carries"); // (the old fuel and water hoses are the one fluid hose)
                 d.HoseAt = Vec(Need(block.Value, "at", bw), file, "hose.at");
                 if (MathF.Max(MathF.Abs(d.HoseAt.X), MathF.Max(MathF.Abs(d.HoseAt.Y), MathF.Abs(d.HoseAt.Z))) > 1.5f)
                     throw new ConstructPartException($"{file}: \"hose.at\" is more than 1.5 m from the part's origin");

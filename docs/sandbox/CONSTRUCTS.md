@@ -187,17 +187,16 @@ items span 125 degrees). Flicking out past the outer ring (70 + 66 px, plus 8) o
 gives it. The pointer may then go 56 px further out (`SubDepth`). Hysteresis: a sub-option is entered 8 px past the
 outer ring's edge but kept down to 2 px past it, and the arc keeps its option while the pointer is out past the edge in
 the arc's direction; moving inward, or round onto another option, closes the arc (and pulls the pointer back in). The
-pipe is the first user: Auto in the middle, then fuel, water, oil and steam either side (fuel, water, auto, oil, steam
-clockwise). Letting go on **Pipe** itself uses the last style (Auto the first time), which its label shows
-("Pipe (fuel)") and the arc marks with a green dot and arc. The wheel follows accumulated movement, so a stick would reach the arc the same way (tilt further out).
+pipe was the first user (styles for fuel, water, oil and steam) until decision 28 gave the game one pipe for every fluid; the
+linking tool's **Pipe** is now a plain ring option, and the mechanism waits for the next tool with sub-options. The wheel follows accumulated movement, so a stick would reach the arc the same way (tilt further out).
 Nothing allocates per frame (labels are made once) and nothing is on the wire. The choice is this PC's only;
 taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
 (`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the welder's
 weld / cut and the physics gun's modes can use it when they have modes, and a third tier for other tools (actuator
-sizes, welder modes) works the same way as the pipe styles.
+sizes, welder modes) works the same way (the self-tests give the welder slot a test set with a third tier).
 
 Choices made for the outer ring (the developer may change them): the pipe styles first sat on the same ring as the other
-types, now on the third tier above; the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
+types, then on the third tier above, and are gone with decision 28 (one pipe); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
 (no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
 ### Tools in hand
@@ -1875,17 +1874,18 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | --- | --- | --- | --- | --- |
 | Data | small flat cable | free | on/off and number signals (the logic's wires) | 20 |
 | Power | larger flat cable, red stripe | free | electricity from a battery or alternator to anything that draws it | 40 |
-| Pipe | round with rings, one style per fluid | bends in 15 degree steps | fluids from tanks to engines | 80 |
+| Pipe | round, a flange ring at each node, one neutral look | bends in 15 degree steps | fluids from tanks to engines | 80 |
 | Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port | 250 |
 | Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
 
-**Pipe styles** (the developer's hybrid choice): a pipe started at a tank takes the style of what the tank holds
-(`"fuelTank": {"fluid": ...}`, fuel by default); a style picked on the tool wheel's outer ring overrides it. Fuel: thin with hazard bands;
-water: blue with flanges; oil: dark with clamps; steam: thick lagging. Each style has ratings (pressure, heat, rated for
-flammable fluids, residue), each fluid its needs, and a **wrong pipe is allowed** with readable consequences: fuel in a
-water pipe weeps (0.05 l/s) and catches fire after 20 s; something too hot or at too much pressure for its pipe bursts it
-after 30 s; fuel through an oil pipe makes the engine sputter (60% torque). The look-at line says what is wrong and a
-warning marker sits on the pipe.
+**One pipe** (decision 28): there is a single pipe and it carries any fluid (fuel, water, oil, steam...). There are no pipe
+styles, no per-style radius or ratings (every pipe is 5 cm in radius) and no wrong-pipe failures: nothing weeps, burns,
+bursts or makes an engine sputter because of what runs through it. It is drawn one neutral way, round with a flange ring
+at each end of a section, so at every node (its colour is for the paint tool to change). Pipes still carry what the
+source tank holds to the engines it feeds; a cut pipe still pours fuel out. Blueprints and saves from before the change
+may still say `"style": "fuel"` (or water, oil, steam) on a pipe link: it is read and ignored, and the link loads as the
+one pipe. Blueprints no longer write it. On the wire the type byte of a link is the type alone (protocol 98); the high
+nibble that held the style is masked off when read.
 
 **Routing** (the linking tool): Fire on an output (a picker when it has several ports: a shaft's drive sockets); each
 Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
@@ -1959,15 +1959,21 @@ The **Construct routed links** section (`Source/App/SelfTestConstructRoutes.cs`)
 keeping it, nodes snapped off a surface never inside it, a sunk node, a segment through a part and wrong ends refused;
 a switch lights two lamps through a data junction, a cut branch and its repair; a power cable carrying the circuit past a
 wrecked tank, its junction splitting evenly, cut and sparking; fuel reaching two engines through a pipe junction, a cut
-branch starving one and leaking; a water pipe catching fire, an oil pipe sputtering, the ratings; the buggy's fuel pipe
+branch starving one and leaking; the buggy's fuel pipe
 cut and repaired; the migrated truck's shafts driving four wheels (two with the front shaft cut), a bare shaft junction
 and a shaft corner refused; a chute junction sharing scrap evenly; links following a driving buggy and a turning turret;
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
 
-**Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a fuel pipe from a tank to an engine on the slab's edge,
+**One pipe** (`Source/App/SelfTestOnePipe.cs`): blueprints that still name a pipe style (fuel, water, oil, steam, anything
+else) load as the one pipe, feed both engines of the bench and stay calm for 25 s (no weeping, fire or loss); a saved
+blueprint writes no style; a wire stream with an old style nibble reads as the same pipe; the old fuel and water hose
+names find the fluid hose; the linking tool's ring has a plain Pipe with no arc; and no source file mentions the old pipe
+style type.
+
+**Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a pipe from a tank to an engine on the slab's edge,
 its end segments rising from below the slab's side over its corner, passes within the grace where the old rule refused
-it, and a segment through the slab past the grace is still refused; a steam pipe's nodes 50% sunk into the slab pass,
+it, and a segment through the slab past the grace is still refused; a pipe's nodes 50% sunk into the slab pass,
 70% fail; an outside turn over a frame block's edge passes (the old rule refused it); a node clicked into a wall: the
 adjust search finds +1 cm, one notch moves 1 cm and Ctrl 5 cm, the range is clamped; the preview and the server agree.
 **Link free routing**: with free routing a click on an engine (an input of pipes) places a node there and the link stays
@@ -1978,8 +1984,7 @@ other; the key is Left Shift beside Sprint without a clash.
 
 1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
    degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
-   32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a weeping pipe lights after 20 s, a weak one
-   bursts after 30 s, residue gives 60% torque; a chute moves a load (10 bulk) or one part a second.
+   32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a chute moves a load (10 bulk) or one part a second.
 2. Picking a link type: the tool wheel's outer ring round the linking tool (board item dev-wheel-outer-ring-wo01; it
    replaced the link wheel and its rings opened by resting).
 3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
@@ -2032,10 +2037,12 @@ the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (t
 
 ### Hoses (temporary connections)
 
-Eight parts in `Constructs/Parts/Hoses` (role `"hose"`, a `"hose"` block: `end` outlet or inlet, `carries` fuel, water,
-power or data, `at` where the hose leaves or plugs in, and on an outlet `length` and `flow`): the Fuel Hose Reel (12 m,
-1.5 l/s), Water Hose Reel (15 m, 3 l/s), Power Lead Reel (10 m, 6 kW) and Data Lead Reel (8 m), and their inlets (Fuel
-Hose Inlet, Water Hose Inlet, Power Lead Socket, Data Lead Socket). The inventory lists them under Joints, "Hoses and leads".
+Six parts in `Constructs/Parts/Hoses` (role `"hose"`, a `"hose"` block: `end` outlet or inlet, `carries` fluid,
+power or data, `at` where the hose leaves or plugs in, and on an outlet `length` and `flow`): the Fluid Hose Reel (12 m,
+2 l/s), Power Lead Reel (10 m, 6 kW) and Data Lead Reel (8 m), and their inlets (Fluid Hose Inlet, Power Lead Socket, Data
+Lead Socket). The fluid hose replaced the fuel and water hoses (decision 28); the old names "Fuel Hose Reel", "Water Hose
+Reel" and the two inlets still load as the fluid hose (`ConstructParts.Renamed`), and `"carries": "fuel"` or `"water"` in a
+part file reads as `"fluid"`. The inventory lists them under Joints, "Hoses and leads".
 
 - F with empty hands (any tool) on a reel takes the receiver (a nozzle or plug); it is held while the hose is out, not a
   backpack item, and counts as full hands for `ConstructEdits.Give`. F on a matching inlet of another construct within
@@ -2043,8 +2050,8 @@ Hose Inlet, Water Hose Inlet, Power Lead Socket, Data Lead Socket). The inventor
   Drop key lets go (it reels back), as does dying or leaving.
 - It connects any two constructs, moving or not: pulled past its length (a vehicle driving off) a plugged hose pops out,
   and a held one slips from the hands 25 cm past it; it reels back, nothing is damaged, and the players near get a hint.
-- What flows goes from the reel's construct into the inlet's at the reel's rated flow: fuel (only between fuel tanks),
-  water (between water tanks), charge into the batteries, and a data lead's signal (wired into the reel, it comes out of
+- What flows goes from the reel's construct into the inlet's at the reel's rated flow: fluid (between tanks that hold the same
+  fluid: fuel into fuel tanks, water into water tanks), charge into the batteries, and a data lead's signal (wired into the reel, it comes out of
   the socket).
 - A hose is drawn as a sagging rope (a parabola from its slack, 12 thin boxes) from the reel to the receiver in the
   holder's hands or the inlet; nothing is simulated or collides. The look line on a reel or an inlet says what F does
@@ -2059,15 +2066,15 @@ parts (the server sees the role) and `CAct.Drop`. `CFireKind.LinkSnap` draws a s
 
 **What's missing:** world saving doesn't exist yet, so world links and hoses live as long as the match (they round-trip
 through the join snapshot); blueprints don't carry them (they are between constructs). World links take no damage yet
-(construct links do), and wrong-pipe issues (leaks, bursts, sputter) aren't simulated on them.
+(construct links do), and they carry whatever the tanks hold (fuel or water) through the same pipe.
 
 ### Self-test
 
-"World links" (`SelfTestWorldLinks.cs`): a fuel pipe across the ground between two pinned tanks carries 2 l in a second,
+"World links" (`SelfTestWorldLinks.cs`): a pipe across the ground between two pinned tanks carries 2 l of fuel in a second (and the same pipe with the tanks holding water, 2 l of water),
 and a sunk node, a wrong bend and a shaft are refused; a data cable across the ground lights a lamp on another construct,
 and a node in the air is refused; a power cable from a buggy still settling to a pinned battery stays while it comes to
 rest, charges it, and snaps within a tick of the buggy driving off with the hint and sparks; the ground going breaks a
-link; a fuel hose from a station refuels the buggy at its rated flow, unplugs and hangs back by hand, and pops out at its
+link; a fluid hose from a station refuels the buggy at its rated flow, unplugs and hangs back by hand, and pops out at its
 length when the buggy drives off, unhurt; the wire round trip; no allocation per tick; a real host and a separate client
 on the Construct Yard: the client routes a world link and plugs a hose over the network, and it and a late joiner mirror them.
 
@@ -2330,15 +2337,14 @@ nothing; and a real client's pick reaches the server.
 
 The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
 option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
-nothing, the arc or full circle choice); the linking tool's options cover every link type, every pipe style and auto,
-every edit mode and the highlight toggle (the pipe styles through the third tier); in an offline Sandbox game pointing at
+nothing, the arc or full circle choice); the linking tool's options cover every link type, every edit mode and the highlight toggle (Pipe is a plain option, with no arc); in an offline Sandbox game pointing at
 the linking tool shows its ring with all nine, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
 tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
 arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long
-name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one). The third tier: five items span 125 degrees centred on Pipe;
-resting on Pipe opens the arc with nothing picked; entry and keep distances (no flicker); Water, Auto (the middle) and
-Steam equip Pipe with that style; letting go on Pipe keeps the last style and its label; moving to Shaft or inward closes
-the arc; the "Sandbox tool wheel" section draws it with a sub-option hovered and checks it allocates nothing.
+name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one). The third tier (a test set with a five item arc on the welder slot, since the pipe lost its styles): five items span 125 degrees centred on
+the option; resting on it opens the arc with nothing picked; entry and keep distances (no flicker); an item calls `ChooseSub`,
+letting go on the option calls `Choose`; moving to the next option or inward closes the arc; the "Sandbox tool wheel" section
+draws it with a sub-option hovered and checks it allocates nothing.
 
 The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
 byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
@@ -2638,7 +2644,7 @@ either free again (a grid part with RMB held, a freeform seam with RMB on its be
 **Smart rotation learns** from step 3: confirming a grid angle other than its guess records the correction for that
 part, socket kind and side, as fitting a held part does.
 
-**Server and network (protocol 98).** The client sends `CActKind.SocketWeld`: the piece and its part and socket, the
+**Server and network (protocol 99).** The client sends `CActKind.SocketWeld`: the piece and its part and socket, the
 construct, its part and socket (255: a face point, then the point in that part's segment rest frame and its facing),
 and the angle in hundredths of a degree. The server checks the final pose with the same rules (`SocketWeld.Check`:
 the sockets, overlap with the construct, the map and players, the merge and freeform limits) plus reach, ownership and
