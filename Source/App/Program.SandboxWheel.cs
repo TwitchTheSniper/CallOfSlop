@@ -28,6 +28,20 @@ public static partial class Program
         if (!_toolWheel.Menu.IsOpen && Pressed(GameAction.ToolWheel))
             _toolWheel.SetKeys(_settings); // (the hints follow rebinding; remade only when the binds changed)
         var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen;
+        // The linking tool out: the link wheel (its Tools ring hands over to the tool wheel), and the port picker.
+        var now = Environment.TickCount64;
+        var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);
+        _lkWheelLast = now;
+        if (!_toolWheel.Menu.IsOpen && g.Local is { } who && g.SandboxHands.Hand(who.Id).Tool == ConstructTool.Linker && !g.SandboxHands.Hand(who.Id).Seated
+            && LinkWheelInput(g, new Vector2((float)delta.X, (float)delta.Y), blocked, dt))
+        {
+            _down[(int)GameAction.Aim] &= _lkPicker.IsOpen; // (the picker takes RMB as its cancel)
+            if (!_lkPicker.IsOpen)
+                _down[(int)GameAction.Fire] = false;
+            return true;
+        }
+        if (_linkWheel.IsOpen)
+            _linkWheel.Close();
         var open = _toolWheel.Step(g, Down(GameAction.ToolWheel), new Vector2((float)delta.X, (float)delta.Y), blocked);
         if (open)
         {
@@ -39,5 +53,11 @@ public static partial class Program
     }
 
     /// <summary>The open tool wheel over the HUD.</summary>
-    private static void DrawToolWheelInMatch() => _toolWheel.Draw(Ui.Scale);
+    private static void DrawToolWheelInMatch()
+    {
+        _toolWheel.Draw(Ui.Scale);
+        DrawLinkWheelInMatch();
+    }
+
+    private static long _lkWheelLast;
 }

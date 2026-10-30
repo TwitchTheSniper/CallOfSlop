@@ -34,7 +34,7 @@ public sealed partial class Ui
     private readonly byte[] _cfSendParts = new byte[ConstructEdits.MaxConfigParts];
     private readonly byte[] _cfSendSlots = new byte[ConstructConfig.MaxSlots];
     private readonly float[] _cfSendVals = new float[ConstructConfig.MaxSlots];
-    private byte _cfClipDef = ConstructParts.None;
+    private ushort _cfClipDef = ConstructParts.None;
     private readonly float[] _cfClip = new float[ConstructConfig.MaxSlots];
     private string _cfTitle = "", _cfWho = "", _cfHealth = "", _cfSelText = "", _cfClipText = "";
     private int _cfHealthKey = -1, _cfSelKey = -1, _cfWireKey = -1;

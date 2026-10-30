@@ -80,6 +80,7 @@ public static partial class ConstructRender
         AimBody = null;
         AimPart = -1;
         ShowWires = false;
+        RouteRender.ClearPreview();
         WireFromBody = 0;
         WireFromPart = -1;
     }
@@ -111,6 +112,8 @@ public static partial class ConstructRender
         LastStored = LastStoredCount;
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
+        RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
+        n += RouteRender.LastSegments;
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
         {
@@ -500,30 +503,24 @@ public static partial class ConstructRender
         LastWires = 0;
         if (!ShowWires)
             return;
+        RouteRender.DrawOverlay(gfx, world, 1f, false); // (routed links: the one being routed, the aimed one, highlight all)
         gfx.SetDepthTest(false); // (seen through the parts: the wires run inside the construct)
         foreach (var c in world.Bodies)
         {
-            if (c.WireCount == 0 && c.Id != WireFromBody)
+            if (c.WireCount == 0)
                 continue;
             if (Vector3.DistanceSquared(c.WorldCom, WireEye) > (25f + c.Radius) * (25f + c.Radius))
                 continue;
+            // The data links' signals: a small block at each input, lit while the signal is on (the cables themselves are drawn as links).
             for (var k = 0; k < c.WireCount; k++)
             {
                 ref var w = ref c.Wires[k];
                 if (w.From >= c.PartCount || w.To >= c.PartCount)
                     continue;
-                var a = PartCentre(c, w.From);
-                var b = PartCentre(c, w.To);
                 var on = c.Parts[w.From].Out >= 0.5f;
-                if (w.From == w.To)
-                    b = a + new Vector3(0, 0.25f, 0); // (a part on itself: a little loop up)
-                Line(gfx, a, b, on ? new Vector3(0.4f, 1f, 0.45f) : new Vector3(0.2f, 0.45f, 1f), 0.9f);
-                // The input end: a small block.
-                gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation(b), new Vector3(1f, 0.8f, 0.3f), 0.9f, mode: 2);
+                gfx.Draw(Matrix4x4.CreateScale(0.07f) * Matrix4x4.CreateTranslation(PartCentre(c, w.To)), on ? new Vector3(0.4f, 1f, 0.45f) : new Vector3(1f, 0.8f, 0.3f), 0.9f, mode: 2);
                 LastWires++;
             }
-            if (c.Id == WireFromBody && WireFromPart >= 0 && WireFromPart < c.PartCount)
-                Line(gfx, PartCentre(c, WireFromPart), WireAim, new Vector3(1f, 0.9f, 0.3f), 0.7f);
         }
         // Wires between constructs (milestone 3): the same, in orange while off.
         for (var k = 0; k < world.XWireCount; k++)

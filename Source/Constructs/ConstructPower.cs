@@ -54,6 +54,16 @@ public static class ConstructPower
                 c.Parts[other].Powered = true;
                 queue[tail++] = (byte)other;
             }
+            // Power cables (routed links): a cable carries the circuit to where the frame doesn't (both ways).
+            for (var k = 0; k < c.PowerEdgeCount; k++)
+            {
+                ref var e = ref c.PowerEdges[k];
+                var other = e.A == at ? e.B : e.B == at ? e.A : -1;
+                if (other < 0 || other >= c.PartCount || c.Parts[other].Powered || c.Parts[other].Broken)
+                    continue;
+                c.Parts[other].Powered = true;
+                queue[tail++] = (byte)other;
+            }
         }
         if (c.Engine >= 0)
             for (var k = 0; k < c.LinkCount; k++)

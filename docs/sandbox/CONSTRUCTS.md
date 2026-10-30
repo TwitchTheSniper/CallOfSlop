@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): hold the tool wheel key for the **link wheel** (data, power, pipe, shaft, chute; rest on Pipe for its styles, on Edit for delete / move node / re-route / highlight all, on Tools for the tool wheel). Fire on an output, Fire for each node, Fire on an input to finish; Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -628,6 +628,11 @@ The Sandbox mode is offered only on maps with this section.
   inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 3): every player's tool (the linking tool and the physics gun too), held
   part, seat and edit in progress, and (version 3) the construct the physics gun holds and the grab point.
+- Protocol 90 (routed links): `CBody` carries the construct's routed links in place of its wires (per link a type and
+  style byte, its ends and ports, its junction, its nodes on the 1 cm grid: 9 bytes plus 8 a node and a health byte a
+  segment); the client rebuilds the logic's wires from the data links. `CActKind.Route` (a whole link as the client
+  routed it) and `CActKind.RouteEdit` (delete, move a node, repair). Part ids are two bytes everywhere (`CBody` parts,
+  stores, the inventory, the mode-state tail's held part, `CAct.Rack`'s pick).
 - Protocol 88 (the physics gun): `CBody`'s flags carry frozen (32) and a byte after the owner says who froze it;
   `CActKind` Grab, GrabSteer, GrabRelease, GrabFreeze, UnfreezeAll ([The physics gun](#the-physics-gun)).
 - Protocol 89 (the configure tool): `CBody` ends with the part settings that are off their defaults (a u16 count, then
@@ -1435,12 +1440,105 @@ axle and transfer case, the crawler's track, part galleries and the driving HUD.
 5. **Shifting by keys**: R and sprint for an unwired manual or sequential box (sprint isn't used while driving).
 6. The truck and crawler keep the old 2 m Frame Beams for their ladders (the structural parts' square beams are 0.25 m,
    below the drive lines' 0.5 m height); a later pass can move them.
-7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids.
+7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
+   with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
+
+## Routed links (decision 20)
+
+Board item dev-sandbox-routed-links-rl02 (the developer's design, 2026-10-30). Code: `Source/Constructs/ConstructRoutes.cs`
+(the links, their rules, flow, damage, the wire format), `ConstructRoutesBuild.cs` (blueprints' `"links"`, the migration),
+`ConstructEditsRoutes.cs` (the server's edits), `Source/App/Program.SandboxLinks.cs` (the linking tool on this PC),
+`Source/UI/SandboxLinkWheel.cs` (the link wheel), `Source/Render/RouteRender.cs` (drawing them).
+
+One routed-link system on the linking tool replaces the invisible wires and the Fuel Line part. A link is a polyline of
+**nodes** from an **output** to an **input** on one construct, routed node by node over its surface, drawn by one
+segment piece and one elbow piece per type (instanced), and simulated as a graph edge (never a physics body).
+
+| Type | Look | Routing rule | Carries | Segment health |
+| --- | --- | --- | --- | --- |
+| Data | small flat cable | free | on/off and number signals (the logic's wires) | 20 |
+| Power | larger flat cable, red stripe | free | electricity from a battery or alternator to anything that draws it | 40 |
+| Pipe | round with rings, one style per fluid | bends in 15 degree steps | fluids from tanks to engines | 80 |
+| Drive shaft | round steel, a U joint at each bend | straight, at most 45 degrees a bend (and into a port), no corners (a gearbox does that), no bare junctions (a T gearbox does that), never across a joint (a U or CV joint device does that) | torque from engines, gearboxes, transfer parts and differentials, port to port | 250 |
+| Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
+
+**Pipe styles** (the developer's hybrid choice): a pipe started at a tank takes the style of what the tank holds
+(`"fuelTank": {"fluid": ...}`, fuel by default); the link wheel's pipe ring overrides it. Fuel: thin with hazard bands;
+water: blue with flanges; oil: dark with clamps; steam: thick lagging. Each style has ratings (pressure, heat, rated for
+flammable fluids, residue), each fluid its needs, and a **wrong pipe is allowed** with readable consequences: fuel in a
+water pipe weeps (0.05 l/s) and catches fire after 20 s; something too hot or at too much pressure for its pipe bursts it
+after 30 s; fuel through an oil pipe makes the engine sputter (60% torque). The look-at line says what is wrong and a
+warning marker sits on the pipe.
+
+**Routing** (the linking tool): Fire on an output (a picker when it has several ports: a shaft's drive sockets); each
+Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
+along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
+nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason
+when a rule is broken (too close, a node sinking into a part, a segment through a solid part, the bend, the reach: at
+most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a picker for its port); Aim or Backspace takes
+the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
+between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
+
+**Junctions**: Fire on a link of the type picked starts a branch at that point (a junction node goes into the link).
+Power, fluids and items split evenly at a junction (each way gets an equal share of what arrives: the look-at line shows
+the share; a chute's branches take turns); data copies the signal to every branch. Shafts don't branch.
+
+**Attachment**: every node sits in the rest frame of the part it is on, so links on jointed parts move with them; a cable
+or pipe crossing a joint flexes there. Links go with their parts when a construct splits or is joined, and with the
+blueprint.
+
+**Destruction and repair**: bullets, construct guns and blasts hit link segments like parts (each on its own). A cut
+segment stops the flow beyond it: a cut fuel pipe pours fuel out (0.5 l/s) and a blast through it lights the tank, a cut
+power cable sparks. The wrench or the welder (Fire, nothing in hand) mends a link; the edit ring's re-route starts it
+again from its output.
+
+**Edit modes** (the link wheel's Edit ring): delete a link (and its branches), move a node, re-route a link, highlight
+all (every link bright through the parts). Data and power cables are dimmer unless the linking tool is out.
+
+**Migration**: logic wires are data links routed straight (a blueprint's `"wires"` still work); when a blueprint is built,
+each chain of Fuel Line parts between a tank and an engine becomes a fuel pipe along the same path, and each chain of
+plain drive shafts between two drive parts a shaft link from port to port (the shipped Buggy, Wired Buggy and Hood Gun
+Buggy now carry their tank on the deck with a fuel pipe; the 4x4 Truck's five shafts became two shaft links). A chain
+whose removal would drop a part (a tank hung only on its line) keeps the old parts, which still work. The Fuel Line and
+the plain drive shafts are `"legacy": true`: not in the parts menu or on a rack. U and CV joints, gearboxes, T boxes,
+transfer cases, clutches, chain and belt drives (they have ratios), power take-offs, hubs and differentials stay devices.
+
+**Blueprints**: `"links": [{"type": "pipe", "style": "fuel", "from": step, "to": step, "nodes": [[x, y, z], ...]}]`, with
+`"fromPort"` / `"toPort"` (socket names) for shafts and `"branch": [link, segment], "at": [x, y, z]` in place of `"from"`
+for a branch; nodes in the construct's frame, each on the part nearest it.
+
+### Self-test
+
+The **Construct routed links** section (`Source/App/SelfTestConstructRoutes.cs`): each type's bend rule and the snap
+keeping it, nodes snapped off a surface never inside it, a sunk node, a segment through a part and wrong ends refused;
+a switch lights two lamps through a data junction, a cut branch and its repair; a power cable carrying the circuit past a
+wrecked tank, its junction splitting evenly, cut and sparking; fuel reaching two engines through a pipe junction, a cut
+branch starving one and leaking; a water pipe catching fire, an oil pipe sputtering, the ratings; the buggy's fuel pipe
+cut and repaired; the migrated truck's shafts driving four wheels (two with the front shaft cut), a bare shaft junction
+and a shaft corner refused; a chute junction sharing scrap evenly; links following a driving buggy and a turning turret;
+blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
+300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
+
+### Choices made (the developer may change them)
+
+1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
+   degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
+   32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a weeping pipe lights after 20 s, a weak one
+   bursts after 30 s, residue gives 60% torque; a chute moves a load (10 bulk) or one part a second.
+2. Opening the link wheel: the tool wheel key while the linking tool is out (its Tools segment, rested on, opens the tool
+   wheel); rings open by resting the pointer on Pipe, Edit or Tools for 0.3 s.
+3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
+   carries the circuit both ways.
+4. A shaft link is a drive-line edge with no ratio (each U joint keeps 99%); chain and belt drives stay devices.
+5. A link with no nodes is checked like any other (it may not pass through a part); migrated wires and blueprint links
+   with no nodes are straight and checked for reach only.
+6. Repairs are instant with the wrench or the welder; junction ratios are even (the configure tool can make them
+   settable later).
 
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
-64 wires a construct (512 in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
+64 routed links and 768 link nodes a construct (512 links in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
 nothing. Other modes never touch any of it (every hook returns at once outside Sandbox; the seeded mode digests are

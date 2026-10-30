@@ -19,8 +19,8 @@ public sealed partial class ConstructWorld
             return $"together they'd have more than {Construct.MaxParts} parts";
         if (a.JointCount + b.JointCount > Construct.MaxJoints)
             return $"together they'd have more than {Construct.MaxJoints} joints";
-        if (a.WireCount + b.WireCount > Construct.MaxWires)
-            return $"together they'd have more than {Construct.MaxWires} wires";
+        if (a.RouteCount + b.RouteCount > Construct.MaxRoutes || a.RouteNodeCount + b.RouteNodeCount > Construct.MaxRouteNodes)
+            return $"together they'd have more than {Construct.MaxRoutes} links";
         if (a.LinkCount + b.LinkCount + 8 > Construct.MaxLinks)
             return "together they'd have too many welds";
         if (a.Driver != 255 || b.Driver != 255)
@@ -75,8 +75,7 @@ public sealed partial class ConstructWorld
             link.B = (byte)(link.B + off);
             a.Links[a.LinkCount++] = link;
         }
-        for (var w = 0; w < b.WireCount; w++)
-            a.Wires[a.WireCount++] = new CWire { From = (byte)(b.Wires[w].From + off), To = (byte)(b.Wires[w].To + off) };
+        ConstructRoutes.Merge(a, b, off, plan.Offset, turn); // (routed links: nodes moved into a's frame with the parts)
         for (var k = XWireCount - 1; k >= 0; k--)
         {
             ref var x = ref XWires[k];
@@ -86,8 +85,8 @@ public sealed partial class ConstructWorld
                 continue;
             var from = ab ? x.From : x.From + off;
             var to = ab ? x.To + off : x.To;
-            if (a.WireCount < Construct.MaxWires && from < a.PartCount && to < a.PartCount)
-                a.Wires[a.WireCount++] = new CWire { From = (byte)from, To = (byte)to };
+            if (from < a.PartCount && to < a.PartCount)
+                ConstructRoutes.Add(this, a, RouteType.Data, 0, from, 255, 255, 0, default, default, to, 255); // (a wire between the two becomes a straight data link)
             XWires[k] = XWires[--XWireCount];
             LinksDirty = true;
         }

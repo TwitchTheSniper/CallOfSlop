@@ -153,7 +153,7 @@ public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketK
 /// <summary>One part type, from a JSON file in Constructs/Parts (loaded by <see cref="ConstructParts"/>).</summary>
 public sealed class ConstructPartDef
 {
-    public byte Id; // index in ConstructParts.All (the wire id)
+    public ushort Id; // index in ConstructParts.All (the wire id: two bytes since the routed links, 2026-10-30)
     public string Name = "";
     public string File = "";
     public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
@@ -181,6 +181,8 @@ public sealed class ConstructPartDef
     public float WheelRadius, Grip = 1f; // wheel
     public float Travel, Frequency, Damping; // suspension: travel (m), spring frequency (Hz), damping ratio
     public float FuelCapacity; // fuel tank (litres)
+    public Fluid TankFluid; // what the tank holds (routed links: the pipe style its output pre-selects)
+    public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
     public byte JointAxis; // hinge: the axis it turns about (0..5)
@@ -325,10 +327,10 @@ public static partial class ConstructParts
 {
     public const string Format = "call-of-slop-construct-part/1";
 
-    /// <summary>The most part types (ids are one byte on the wire; 255 means none).</summary>
-    public const int MaxTypes = 250;
+    /// <summary>The most part types (ids are two bytes on the wire since protocol 87; 65535 means none).</summary>
+    public const int MaxTypes = 4096;
 
-    public const byte None = 255;
+    public const ushort None = ushort.MaxValue;
 
     /// <summary>How much of a <c>"glass": true</c> box is drawn (its opacity; the props' glass is 0.4, Props/README.md).</summary>
     public const float DefaultGlass = 0.3f;
@@ -390,7 +392,7 @@ public static partial class ConstructParts
         return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count;
     }
 
-    public static ConstructPartDef? Get(byte id) => id < All.Count ? All[id] : null;
+    public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : null;
 
     public static ConstructPartDef? Find(string name)
     {
@@ -422,7 +424,7 @@ public static partial class ConstructParts
                     throw new ConstructPartException($"{Path.GetFileName(file)}: another file already has the name \"{def.Name}\"");
                 if (list.Count >= MaxTypes)
                     throw new ConstructPartException($"{Path.GetFileName(file)}: more than {MaxTypes} part types");
-                def.Id = (byte)list.Count;
+                def.Id = (ushort)list.Count;
                 list.Add(def);
             }
             catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)
@@ -439,7 +441,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -480,6 +482,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: \"tool\" is \"wrench\" or \"welder\"");
         d.AttachSeconds = Opt(root, "attachSeconds") is { } secs ? Num(secs, file, "attachSeconds") : d.Tool == ConstructTool.Welder ? 2.5f : 1.5f;
         Range(d.AttachSeconds, 0.2f, 20f, file, "attachSeconds");
+        d.Legacy = Opt(root, "legacy") is { ValueKind: JsonValueKind.True };
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, 5000f, file, "mass");
         d.Health = Num(Need(root, "health", file), file, "health");
@@ -634,9 +637,10 @@ public static partial class ConstructParts
                 ParseSuspension(d, block!.Value, file, bw);
                 break;
             case PartRole.FuelTank:
-                Known(block!.Value, ["capacity"], bw);
+                Known(block!.Value, ["capacity", "fluid"], bw);
                 d.FuelCapacity = Num(Need(block.Value, "capacity", bw), file, "fuelTank.capacity");
                 Range(d.FuelCapacity, 0.1f, 10000, file, "fuelTank.capacity");
+                d.TankFluid = Opt(block.Value, "fluid") is { } fl ? EnumOf<Fluid>(Str(fl, file, "fuelTank.fluid"), file, "fuelTank.fluid") : Fluid.Fuel; // (routed links: a pipe's style)
                 break;
             case PartRole.Seat:
                 Known(block!.Value, ["at"], bw);

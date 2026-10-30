@@ -667,7 +667,7 @@ public sealed partial class ConstructWorld
     public byte MergePlacer = 255;
 
     /// <summary>Parts a merge popped off, waiting for <see cref="MergePlacer"/> (ConstructEdits hands them over after the edit).</summary>
-    public readonly List<(byte Def, Vector3 At, byte Owner)> MergePops = new(16);
+    public readonly List<(ushort Def, Vector3 At, byte Owner)> MergePops = new(16);
 
     /// <summary>Parts that popped off merged receivers in all (the self-test).</summary>
     public int MergePopCount;

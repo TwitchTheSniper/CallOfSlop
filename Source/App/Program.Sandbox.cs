@@ -19,10 +19,7 @@ public static unsafe partial class Program
     private static long _sbLookKey = -1;
     private static string _sbLookText = "", _sbGroundText = "";
     private static int _sbGroundKey = -1;
-    private static ushort _sbWireBody; // the linking tool: the output a wire starts from (0: none)
-    private static int _sbWirePart = -1;
     private static int _sbSeatKeys = -1;
-    private static long _sbWireKey = -1;
     private static byte _sbTurn; // free placement: the held part's Rot24 turn (the rotate keys turn it, R resets it)
     private static string _sbTurnText = "";
     private static string _sbRackText = ""; // the rack's look text (names the Sandbox inventory key)
@@ -114,9 +111,9 @@ public static unsafe partial class Program
             g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         if (h.Tool != ConstructTool.Linker)
         {
-            _sbWireBody = 0;
-            _sbWirePart = -1;
             g.SandboxWireFrom = "";
+            if (_lkBody != 0 || _lkMoveRoute >= 0 || _lkPicker.IsOpen)
+                LinkReset(); // (the linking tool put away: the link being routed goes)
         }
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
         if (h.Seated)
@@ -267,58 +264,12 @@ public static unsafe partial class Program
         }
         PhysGunIdle();
 
-        // The linking tool: fire on an output, then fire on an input to wire them; aim cuts a part's wires; R its setting.
+        // Routed links (decision 20): the look line on a link, and the wrench's or welder's repair (Program.SandboxLinks.cs).
+        SandboxRouteLook(g, ref h, aimed, hit);
+        // The linking tool: routing links node by node, the edit modes, settings (Program.SandboxLinks.cs).
         if (h.Tool == ConstructTool.Linker)
         {
-            ConstructRender.WireFromBody = _sbWireBody;
-            ConstructRender.WireFromPart = _sbWirePart;
-            ConstructRender.WireEye = eye;
-            ConstructRender.WireAim = aimed ? hit.Point : eye + dir * 3f;
-            if (_sbWireBody != 0 && g.Constructs.Get(_sbWireBody) is null)
-            {
-                _sbWireBody = 0;
-                _sbWirePart = -1;
-            }
-            if (aimed && Pressed(GameAction.Fire) && !_swallowClick)
-            {
-                var d = hit.Body.DefOf(hit.Part);
-                if (_sbWireBody == 0)
-                {
-                    if (!d.HasOutput)
-                        g.SandboxSay($"a {d.Name} has no output (start a wire at a seat, a control, a sensor or a gate)");
-                    else
-                    {
-                        _sbWireBody = hit.Body.Id;
-                        _sbWirePart = hit.Part;
-                    }
-                }
-                else
-                {
-                    // (into the same construct, or milestone 3: into another one within reach of the wire)
-                    g.SandboxSend(CActKind.Wire, body: _sbWireBody, part: (byte)_sbWirePart, socket: (byte)hit.Part, body2: hit.Body.Id);
-                    _sbWireBody = 0;
-                    _sbWirePart = -1;
-                }
-            }
-            if (Pressed(GameAction.Aim))
-            {
-                if (_sbWireBody != 0)
-                {
-                    _sbWireBody = 0; // (aim lets go of a wire in progress)
-                    _sbWirePart = -1;
-                }
-                else if (aimed)
-                    g.SandboxSend(CActKind.Unwire, body: hit.Body.Id, part: (byte)hit.Part);
-            }
-            if (aimed && Pressed(GameAction.Reload))
-                g.SandboxSend(CActKind.Setting, body: hit.Body.Id, part: (byte)hit.Part);
-            var wk = _sbWireBody == 0 ? -1 : _sbWireBody * 256L + _sbWirePart;
-            if (wk != _sbWireKey)
-            {
-                _sbWireKey = wk;
-                g.SandboxWireFrom = _sbWireBody != 0 && g.Constructs.Get(_sbWireBody) is { } from && _sbWirePart < from.PartCount
-                    ? $"Wire from the {from.DefOf(_sbWirePart).Name}: LMB on an input to join it (RMB lets go)" : "";
-            }
+            SandboxLinkerInput(g, me, ref h, eye, dir, aimed, hit);
             return true;
         }
 
@@ -655,7 +606,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a wire is being run; the physics gun: while it holds)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _lkBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0) || (h.Tool == ConstructTool.Configure && Ui.SandboxConfigOpen), // (the linking tool: while a link is being routed; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

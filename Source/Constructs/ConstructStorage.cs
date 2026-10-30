@@ -38,7 +38,7 @@ public sealed class CStore
     public ushort Handle;
     public bool Live;
     public byte SlotCount; // the container's slots (its def's)
-    public readonly byte[] Def = new byte[MaxSlots];
+    public readonly ushort[] Def = new ushort[MaxSlots];
     public readonly byte[] Rot = new byte[MaxSlots];
     public readonly byte[] Count = new byte[MaxSlots];
     public readonly float[] Health = new float[MaxSlots];
@@ -364,7 +364,7 @@ public static class ConstructStorage
     {
         w.U8(s.SlotCount);
         for (var k = 0; k < s.SlotCount; k++)
-            w.U8(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
+            w.U16(s.Def[k]).U8(s.Rot[k]).U8(s.Count[k]).U8((byte)Math.Clamp((int)MathF.Round(s.Health[k] * 255), 1, 255));
         w.U16((ushort)Math.Clamp(s.Amount, 0, MaxBulk));
     }
 
@@ -377,7 +377,7 @@ public static class ConstructStorage
         s.Reset(n);
         for (var k = 0; k < n; k++)
         {
-            var def = r.U8();
+            var def = r.U16();
             var rot = r.U8();
             var count = r.U8();
             var hp = r.U8();

@@ -65,7 +65,7 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            w.U8(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
+            w.U16(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
                 .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
@@ -93,9 +93,7 @@ public static class ConstructNet
             w.U8(jt.Hinge).U8(jt.ParentSeg).U16(S16(Cm(jt.Pivot.X))).U16(S16(Cm(jt.Pivot.Y))).U16(S16(Cm(jt.Pivot.Z))).U8(AxisDir(jt.Axis))
                 .F32(jt.Min).F32(jt.Max).F32(jt.Angle).F32(jt.Vel).U8((byte)((jt.Open ? 1 : 0) | (jt.Locked ? 2 : 0) | (jt.Wired ? 4 : 0))).U8((byte)jt.Type);
         }
-        w.U8((byte)c.WireCount);
-        for (var k = 0; k < c.WireCount; k++)
-            w.U8(c.Wires[k].From).U8(c.Wires[k].To);
+        ConstructRoutes.Write(w, c); // (protocol 90: the routed links in place of the wires; the client rebuilds its wires from the data links)
         // Protocol 82: the parts with rounds in them or on fire (ammo boxes, guns).
         var at = w.Length;
         w.U8(0);
@@ -253,7 +251,7 @@ public static class ConstructNet
         for (var i = 0; i < inv.Parts.Length && n < 255; i++)
             if (inv.Parts[i] > 0)
             {
-                w.U8((byte)i).U16(inv.Parts[i]);
+                w.U16((ushort)i).U16(inv.Parts[i]);
                 n++;
             }
         w.PatchU8(at, (byte)n);
@@ -279,7 +277,7 @@ public static class ConstructNet
         inv?.Clear();
         for (var k = 0; k < kinds; k++)
         {
-            var id = r.U8();
+            var id = r.U16();
             var count = r.U16();
             if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
                 throw new MalformedPacketException($"an inventory of {count} of part {id}");
@@ -452,7 +450,7 @@ public static class ConstructNet
         c.PartCount = 0;
         for (var i = 0; i < parts; i++)
         {
-            var def = r.U8();
+            var def = r.U16();
             var p = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16())));
             var turn = r.U8();
             var seg = r.U8();
@@ -516,17 +514,7 @@ public static class ConstructNet
             jt.PrevAngle = jt.Angle;
             c.Joints[c.JointCount++] = jt;
         }
-        int wires = r.U8();
-        if (wires > Construct.MaxWires)
-            throw new MalformedPacketException($"a construct of {wires} wires");
-        c.WireCount = 0;
-        for (var k = 0; k < wires; k++)
-        {
-            var wire = new CWire { From = r.U8(), To = r.U8() };
-            if (wire.From >= parts || wire.To >= parts)
-                throw new MalformedPacketException("a construct wire to a part that isn't there");
-            c.Wires[c.WireCount++] = wire;
-        }
+        ConstructRoutes.Read(ref r, c, parts);
         int ammo = r.U8();
         for (var k = 0; k < ammo; k++)
         {

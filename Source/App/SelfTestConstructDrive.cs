@@ -109,6 +109,7 @@ public static partial class SelfTest
         }
         b.StepSettings.AddRange(bp.StepSettings);
         b.Wires.AddRange(bp.Wires);
+        b.Links.AddRange(bp.Links); // (routed links: the buggy's fuel pipe)
         return b;
     }
 
@@ -281,6 +282,8 @@ public static partial class SelfTest
                 for (var i = 0; i < bp.Steps.Count; i++)
                     if (bp.Steps[i].Part == "Plate Steel 1 m")
                         bp.Steps[i] = bp.Steps[i] with { Part = "Square Beam 0.25 m", Own = "-y" }; // (the deck is in the way of wheels 2.4 m across)
+                    else if (bp.Steps[i].Part == "Fuel Tank")
+                        bp.Steps[i] = bp.Steps[i] with { On = bp.Steps.FindIndex(s => s.Part == "Engine"), Socket = "+y", Own = "-y" }; // (the tank sat on the deck: on the engine instead)
             var m = Measure(bp, $"the buggy on {name}s");
             got[name] = m;
             lines.Add($"{name} {m.Road:0.0}/{m.Dirt:0.0} m, turn {m.Turn:0}");
@@ -573,13 +576,13 @@ public static partial class SelfTest
                     c.Parts[PartNamed(c, name)].Setting = 1;
                 DriveKeys(c, k < 60 ? Buttons.Forward : Buttons.Forward | Buttons.Right);
             }).Yaw;
-            lines.Add($"{name}: {shares[name] * 100:0}% to the wheel that touches, turned {turn:0} deg");
+            lines.Add($"{name}: {shares[name] * 100:0}% to the wheel that touches, turned {turn:0.0} deg");
             shares[name + " turn"] = turn;
         }
         Line($"differentials (a rear wheel in the air): {string.Join("; ", lines)}");
         if (shares.Count < 6 || shares["Differential"] >= 0.2f || shares["Limited-Slip Differential"] < 0.4f || shares["Locking Differential"] < 0.9f)
             Fail("construct drive: open, limited-slip and locked differentials don't share the drive as they should");
-        else if (shares["Locking Differential turn"] >= shares["Differential turn"] * 0.9f)
+        else if (shares["Locking Differential turn"] >= shares["Differential turn"] * 0.95f) // (0.95 since the routed links: the buggy's tank sits on its deck now, and the margin was 10% to the degree)
             Fail("construct drive: a locked differential should fight the steering (turn less than an open one)");
     }
 

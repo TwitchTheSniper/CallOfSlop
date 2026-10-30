@@ -997,9 +997,9 @@ them, and shoot their parts off one at a time. It is a Dev-only mode for now: ho
 **Sandbox**. A buggy, a wired buggy with a passenger seat, horn and headlamps, two gates (one on a motorised hinge with a
 button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and some loose parts are waiting.
 
-- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks, fuel lines,
+- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks,
   transmissions, differentials, hinges and joints, doors, logic parts), 4 the **welder** (frames, panels, corners, decks,
-  foundations), 5 the **linking tool** (wires and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
+  foundations), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
   you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting
@@ -1024,10 +1024,15 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
   in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
   up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
-- **Wiring**: with the linking tool out the wires show (green while on). Fire on an output (a seat, a button, lever,
-  switch, pressure plate, input reader, sensor or gate), then fire on an input (a joint, the engine, a gate, a lamp, a
-  horn, a brake, a hinge's lock) to wire them; aim cuts a part's wires; R changes a logic part's setting (a timer's
-  period, a reader's key...). Refused wires say why. Every wire takes one tick, so a NOT wired into itself is a clock.
+- **Links** (the linking tool): hold the tool wheel key for the link wheel and pick a **data** cable (signals), a
+  **power** cable, a **pipe** (its style comes from the tank; rest on Pipe to pick another: a wrong one leaks, bursts or
+  makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
+  button, lever, switch, sensor or gate for data; a battery for power; a tank for a pipe), Fire to place each node on the
+  surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
+  at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc
+  cancels. Fire on a link to branch off it. The Edit ring deletes, moves a node, re-routes or highlights every link.
+  Links can be shot through (a cut fuel pipe leaks, a cut cable sparks); the wrench or welder mends them. R changes a
+  logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
   with a speed and a strength (an overloaded lift sinks). Unwired, F works a motorised hinge or a piston like a door.
 - **Driving**: F on a seat to sit (the first seat drives, any other carries a passenger), W/S/A/D to drive, Space to
@@ -1035,7 +1040,7 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   and wheels on suspensions bolted to a **differential** it feeds; front wheels steer on **steering pivots**. Seated,
   fire, aim and R are free for the construct's input readers. The HUD says what's missing. Players standing on a moving
   deck, lift or turntable ride along; a construct that hits you hard enough hurts (by its speed and weight).
-- **Damage**: every part has its own health and armour. Shoot the cheap fuel line and the engine starves; shoot the
+- **Damage**: every part has its own health and armour. Shoot the fuel pipe and the engine starves; shoot the
   transmission or the differential and nothing is driven; break a suspension and its wheel falls off; anything cut off
   from the seat falls away as a wreck.
 - **Salvage**: with the right tool out, aim (hold) on a wreck, a loose part, a construct nobody built, or someone else's

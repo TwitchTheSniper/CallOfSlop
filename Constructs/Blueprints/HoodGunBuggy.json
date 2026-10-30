@@ -123,10 +123,10 @@
       "by": "+z"
     },
     {
-      "part": "Fuel Line",
-      "on": 19,
-      "socket": "-z",
-      "by": "+x"
+      "part": "Fuel Tank",
+      "on": 16,
+      "socket": "front33",
+      "by": "-y"
     },
     {
       "part": "Wedge 1:1 0.25 m",
@@ -158,12 +158,6 @@
       "socket": "-x1",
       "by": "+x",
       "setting": 0
-    },
-    {
-      "part": "Fuel Tank",
-      "on": 20,
-      "socket": "-x",
-      "by": "+z"
     }
   ],
   "wires": [
@@ -175,5 +169,13 @@
       25,
       23
     ]
+  ],
+  "links": [
+    {
+      "type": "pipe",
+      "style": "fuel",
+      "from": 20,
+      "to": 19
+    }
   ]
 }
