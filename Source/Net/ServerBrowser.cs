@@ -190,7 +190,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     every player's backpack: CBodyKind.Pack (a player's pack contents), CActKind Stow / Draw.
     // 86: Sandbox drivetrain parts (docs/sandbox/CONSTRUCTS.md "Drivetrain parts"): the engine's rpm and the drive note in
     //     CBody and CPose.
-    public const byte ProtocolVersion = 86;
+    // 87: Sandbox physics gun (docs/sandbox/CONSTRUCTS.md "The physics gun"): CActKind Grab / GrabSteer / GrabRelease /
+    //     GrabFreeze / UnfreezeAll; CBody's frozen flag and who froze it; the mode-state tail (version 3) carries each
+    //     player's held construct and grab point (the beam); the physics gun's tool byte (8).
+    public const byte ProtocolVersion = 87;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

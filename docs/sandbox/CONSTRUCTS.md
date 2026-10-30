@@ -35,6 +35,7 @@ north-west corner) and some loose parts.
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
+| Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
 
 ### The tool wheel (decision 17)
@@ -42,10 +43,10 @@ north-west corner) and some loose parts.
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
-clockwise from the top: **wrench** (N), hoist (NE), **welder** (E), configure tool (SE), **hands / gun** (S: out of
+clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
 build mode), scanner (SW), **linking tool** (W), hand drill (NW). The four tools that exist sit on the compass points, so
-the easiest flicks reach them; the four from the design's tool list that don't exist yet sit on the diagonals, greyed out
-with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
+the easiest flicks reach them, with the physics gun on the north-east; the three from the design's tool list that don't
+exist yet sit on the other diagonals, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
@@ -83,6 +84,8 @@ place a gun sits, with `ThirdPersonArms` holding it). `Source/Render/ToolRender.
   (`LightGrid.AddDynamic`, one per welding player; unlit maps have the glow and sparks only).
 - **Linking tool**: a wiring probe with a glowing screen and a reel of wire; while a wire is being run (yours: from the
   first click to the second) the reel turns and the probe throws a green **beam**.
+- **Physics gun**: an amber beam projector held in both hands; while it holds something its coil spins, it shakes a
+  little and its tip lights the map, and a curved beam runs to the held thing ([below](#the-physics-gun)).
 - Still to come, with models ready for when the tools exist (the tool wheel's diagonals): the **hoist** (a winch with a
   hook on a chain), the **configure tool** (a handset with a screen, sliders and a dial), the **scanner** (a turning
   emitter and an aerial; a beam while it scans) and the **hand drill** (its bit spins while it works).
@@ -122,7 +125,7 @@ A tool file:
 | Field | Meaning |
 | --- | --- |
 | space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
-| `tool` | `wrench`, `welder`, `linker`; or one still to come: `hoist`, `configure`, `scanner`, `drill`. One file a tool. |
+| `tool` | `wrench`, `welder`, `linker`, `physgun`; or one still to come: `hoist`, `configure`, `scanner`, `drill`. One file a tool. |
 | `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
 | `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
 | `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
@@ -137,6 +140,62 @@ Choices made (the developer may change them): the wrench is one-handed and uprig
 scanner two-handed; a carried part goes in the off hand, scaled down (a frame block would hide the view at full size);
 putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
+
+### The physics gun
+
+Board item dev-sandbox-physics-gun-pg01 and decision 19. A Sandbox tool (`ConstructTool.PhysicsGun`, its wire byte 8,
+after the tools still to come) on the tool wheel's north-east segment and in the inventory's Tools tab, with its own held
+model (`Constructs/Tools/PhysicsGun.json`: an amber projector with a spinning coil and three prongs, two-handed; its
+coil spins and its tip lights the map while it holds something). The keys are the existing actions, so they rebind:
+
+| Key | With the physics gun out |
+| --- | --- |
+| Fire (hold) | Grab the construct, wreck or loose part under the crosshair (30 m reach; 12 m in survival). Let go to drop it (it keeps its speed: a flick throws it). |
+| Mouse wheel | While holding: pull it in or push it out (12% of the distance a notch, at least 25 cm; 1.2 m nearest). |
+| Interact (F) held + mouse | While holding: turn it (about up, and about your right); the view stands still meanwhile. Sprint (Shift) snaps the turn to whole 45 degree steps of yaw, pitch and roll. |
+| Aim | While holding: **freeze** it where it is and let go. |
+| Reload twice within 0.35 s | Unfreeze everything you froze (the host holding Sprint: everything, anyone's). The HUD says how many. |
+
+- **Holding**: the grab point keeps its offset on the thing, and the thing keeps its turn relative to your look's yaw
+  (turn round and it swings round with you). Each tick the server sets the beam's point (your eye plus your look times
+  the distance) and the wanted turn; inside the physics step, after gravity, a spring (`ConstructGrab.Drive`) pushes the
+  body's velocity towards the one that closes the gap over 0.1 s (at most 18 m/s) and its spin towards the one that
+  closes the turn over 0.12 s (at most 9 rad/s), by no more than the beam's strength allows that tick plus gravity (so it
+  hangs in the air). The contacts are solved after it, so the held thing collides with the map and pushes other
+  constructs instead of passing through them; it never teleports. A held body never sleeps.
+- **Strength**: 200 kN in creative (at most 40 m/s2), things up to 15 t; survival 8 kN, up to 500 kg (heavier: "too
+  heavy for the physics gun"), so heavy things are slow to pull.
+- **Refused**: players (a construct with anyone in a seat), anything anchored to the ground (a foundation, a pinned
+  construct), something another player holds (one holder per construct), and in survival an enemy construct that is
+  contested (below). The look text says why before you click; a refused click flashes a short red beam and says why.
+- **Frozen**: kinematic, held still exactly like an anchored construct (other things rest on it and bump into it), drawn
+  with an icy tint and outline, and a small snowflake beside the crosshair while you look at it. Grabbing a frozen thing
+  unfreezes it. Each construct remembers who froze it (`Construct.FrozenBy`); a player who leaves leaves their frozen
+  things nobody's (only the host's "everything" reaches them).
+- **Multiplayer**: server-authoritative. `CActKind.Grab` (the construct and the grab point, 1 cm), `GrabRelease`,
+  `GrabFreeze` and `UnfreezeAll` go reliably; `GrabSteer` (distance and turn) goes unreliably on a change, at most ~30
+  times a second and every 0.25 s anyway, like a seat's look. The held thing moves by the ordinary `CPose` poses (it is
+  awake), so everyone sees it move smoothly; the mode-state tail (version 3) carries each player's held construct and
+  grab point, so every machine draws everyone's beam: a curve from the tool's tip that leaves along the holder's look and
+  bends onto the grab point. `CBody` carries the frozen flag and who froze it (protocol 87).
+- **Saving**: world saving isn't built yet; the frozen state (flag and owner) is part of a construct's structure, which
+  is what a save will hold, and the self-test round-trips it.
+- **Cost**: nothing when unused: the physics checks one byte a body, the server one short a player.
+
+**Contested constructs (decision 19)**, survival only (a map with infinite parts off; creative is unrestricted): every
+editing tool (the physics gun, the wrench and welder fitting and taking off, the welder's join, the linking tool's wires
+and settings; a tool still to come calls the same helper, `ConstructGrab.Defended` / `ConstructEdits.Contested`) is
+refused on someone else's construct while its owner (a player or a bot; factions don't exist yet, so the owner is the
+faction) is alive within `ConstructGrab.ContestRadius` (40 m, tunable) of it plus its own size, which covers being in it:
+"Owned by Name - defended". The map's constructs (nobody's), wrecks and your own are never contested; once the owner is
+dead or far away it can be grabbed and salvaged. Shooting it apart works at any time.
+
+Choices made (the developer may change them): the physics gun took the hoist's segment on the wheel (decision 19 has the
+physics gun move and lift pieces; the hoist stays in the inventory's Tools tab as still to come); no new key binds (Fire,
+Aim, Interact, Sprint, Reload and the wheel, all rebindable already); the held thing turns with your yaw (not fixed in
+the world); "unfreeze everything" is the host's double-tap with Sprint held rather than a menu option; survival's caps
+(8 kN, 500 kg, 12 m) and creative's (200 kN, 15 t, 30 m); the contested radius is from the owner to the construct's
+centre of mass plus its radius.
 
 ### The inventory (the parts menu)
 
@@ -357,7 +416,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for the physics gun)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -385,8 +444,10 @@ The Sandbox mode is offered only on maps with this section.
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
   inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
-- The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
-  progress.
+- The Sandbox mode-state tail (~10 Hz, version 3): every player's tool (the linking tool and the physics gun too), held
+  part, seat and edit in progress, and (version 3) the construct the physics gun holds and the grab point.
+- Protocol 87 (the physics gun): `CBody`'s flags carry frozen (32) and a byte after the owner says who froze it;
+  `CActKind` Grab, GrabSteer, GrabRelease, GrabFreeze, UnfreezeAll ([The physics gun](#the-physics-gun)).
 
 ### Joint collision
 
@@ -1225,10 +1286,23 @@ segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around a
 isn't a number), the pointer held at its reach so one flick turns it; the key (an unshared middle mouse button; binds
 version 9 files get it, one that already used the button keeps it); in an offline Sandbox game a scripted
 hold-flick-release takes out the welder (east), wrench (north), linking tool (west) and hands (south), the current tool is
-marked when it opens, letting go in the dead zone cancels, the hoist says "coming later" and changes nothing, a menu and
+marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
+north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
 frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
 server.
+
+The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
+byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
+air, the wheel's distance moves it 3 m out, a snapped turn is reached, the snap maths (steps of 45 degrees, a snapped
+turn stays put); a frozen block doesn't move in 2 s against gravity; with a second player's block frozen too, player
+0's unfreeze-all frees only theirs (which then falls); a second player can't take a held block; grabbing a frozen one
+unfreezes it; a construct with someone in it, a pinned one and one too heavy for survival are refused; the frozen state
+round-trips through the structure; survival's contested rule refuses the physics gun, the welder and the linking tool
+("Owned by Rival - defended") and allows them in creative, with the owner away, on nobody's and on your own; nothing
+allocates over 30 ticks (unused, and holding); and over a real loopback a client grabs, steers and freezes a loose part
+on the server, the host can't take it, the host's own beam (its held construct and grab point) reaches the client, and
+the client's unfreeze-all frees it.
 
 The **Sandbox tool models** section (`Source/App/SelfTestSandboxToolModels.cs`): every tool file loads as one piece with
 its hands in reach, every tool in the game and every tool still to come has a model, and 13 kinds of bad file are refused

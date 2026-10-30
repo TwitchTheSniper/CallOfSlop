@@ -216,6 +216,7 @@ public sealed partial class Ui
                     ConstructTool.Wrench => "Slot 3: bolted parts",
                     ConstructTool.Welder => "Slot 4: welded parts",
                     ConstructTool.Linker => "Wires and logic settings",
+                    ConstructTool.PhysicsGun => "Grab, move, turn, freeze",
                     null => "Still to come",
                     _ => "",
                 },

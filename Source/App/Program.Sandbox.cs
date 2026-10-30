@@ -233,7 +233,7 @@ public static unsafe partial class Program
             else
                 g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (byte)hit.Part);
         }
-        else if (Pressed(GameAction.Interact))
+        else if (Pressed(GameAction.Interact) && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
             if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (byte)hit.Part);
@@ -244,6 +244,14 @@ public static unsafe partial class Program
             else if (nearRack)
                 g.SandboxSend(CActKind.Rack);
         }
+
+        // The physics gun: grab, move, turn, freeze (Program.PhysicsGun.cs).
+        if (h.Tool == ConstructTool.PhysicsGun)
+        {
+            PhysGunInput(g, me, ref h, eye, dir, now);
+            return true;
+        }
+        PhysGunIdle();
 
         // The linking tool: fire on an output, then fire on an input to wire them; aim cuts a part's wires; R its setting.
         if (h.Tool == ConstructTool.Linker)
@@ -523,6 +531,7 @@ public static unsafe partial class Program
         // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Now = now;
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
+        DrawPhysGunBeams(g, now); // the physics guns' beams (Program.PhysicsGun.cs)
         g.SandboxSounds(now); // horns (GameSandbox.cs)
     }
 
@@ -544,7 +553,7 @@ public static unsafe partial class Program
         var input = new ToolRender.ViewInput
         {
             Tool = h.Tool, Held = ConstructParts.Get(h.Held), Now = now, Velocity = me.Sim.Velocity, Grounded = me.Sim.Grounded,
-            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0), // (the linking tool: while a wire is being run)
+            Using = h.Edit != EditKind.None || (h.Tool == ConstructTool.Linker && _sbWireBody != 0) || (h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0), // (the linking tool: while a wire is being run; the physics gun: while it holds)
         };
         var drawn = ToolRender.FirstPerson(input, ref _sbTool, out var shown);
         if (shown == ConstructTool.None && _sbToolShown != ConstructTool.None && h.Tool == ConstructTool.None)

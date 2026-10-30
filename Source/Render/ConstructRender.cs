@@ -97,6 +97,12 @@ public static class ConstructRender
                     n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
             }
             n += DrawWheel(gfx, c, alpha, blendTicks);
+            if (c.Frozen)
+            {
+                // Frozen by the physics gun: an icy outline round it too (ConstructGrab.cs).
+                Outline(gfx, (c.LocalMin + c.LocalMax) * 0.5f, (c.LocalMax - c.LocalMin) * 0.5f + new Vector3(0.02f), body, Frost, 0.5f);
+                n += 12;
+            }
         }
         LastStored = LastStoredCount;
         LastStoredCount = 0;
@@ -296,11 +302,14 @@ public static class ConstructRender
             if (lit)
                 gfx.Draw(model, new Vector3(1f, 0.93f, 0.6f), opacity, mode: 2, shape: box.Shape);
             else
-                gfx.Draw(model, box.Color * shade, opacity, mode: 0, shape: box.Shape);
+                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint)
             drawn++;
         }
         return drawn;
     }
+
+    /// <summary>The frozen tint and outline (the physics gun).</summary>
+    public static readonly Vector3 Frost = new(0.62f, 0.86f, 1f);
 
     private static readonly Vector3 ScrapColour = new(0.43f, 0.35f, 0.28f);
 
