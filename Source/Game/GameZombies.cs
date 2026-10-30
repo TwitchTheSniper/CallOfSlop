@@ -294,7 +294,8 @@ public sealed partial class Game
                 p.History[i] = new HistoryEntry { Position = home, Yaw = p.Yaw };
             b.DummyPlaced = true;
         }
-        World.Simulate(ref p.Sim, new InputCmd { Yaw = p.Yaw, Pitch = 0, Weapon = p.Weapon, SpeedPct = 100 });
+        World.Simulate(ref p.Sim, b.SelfTestHeldCmd ?? new InputCmd { Yaw = p.Yaw, Pitch = 0, Weapon = p.Weapon, SpeedPct = 100 });
+        SepPlayer(p, ref p.Sim); // a stunned bot is still a body (PlayerSeparation.cs; dummies are left out)
         return true;
     }
 
