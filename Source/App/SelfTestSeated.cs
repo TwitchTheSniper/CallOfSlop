@@ -186,7 +186,7 @@ public static partial class SelfTest
 
         // Dying seated: a limp seated ragdoll with the buggy's velocity (backing up: the rescaled buggy's wider turn ends nose to the yard's kerb).
         g.HeldButtons = Buttons.Back;
-        for (var k = 0; k < 40; k++)
+        for (var k = 0; k < 75; k++)
             Frame(World.TickDt);
         var ragdolls = Ragdolls.Enabled;
         Ragdolls.Clear();

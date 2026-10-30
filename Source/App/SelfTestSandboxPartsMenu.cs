@@ -59,7 +59,7 @@ public static partial class SelfTest
         Run(g, ref now, 0.2);
         g.SandboxTakePart(piston.Id);
         var gotPiston = hand.Held == piston.Id;
-        g.SandboxTakePart(240);
+        g.SandboxTakePart(ConstructParts.MaxTypes); // (past every id: there are up to 250 part types)
         var unknown = g.SandboxNotice;
         var keptPiston = hand.Held == piston.Id;
         g.SandboxSend(CActKind.Rack); // (far from the rack: refused as before)
@@ -69,7 +69,7 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Rack);
         var fromRack = ConstructParts.Get(hand.Held)?.Name ?? "nothing";
         var rackOk = hand.Held != piston.Id && hand.Held != ConstructParts.None;
-        Line($"parts menu request: a Piston by id in hand {gotPiston}; id 240 refused (\"{unknown}\"), hands kept {keptPiston}; the rack away from it: \"{farRack}\"; at it: {fromRack}");
+        Line($"parts menu request: a Piston by id in hand {gotPiston}; id {ConstructParts.MaxTypes} refused (\"{unknown}\"), hands kept {keptPiston}; the rack away from it: \"{farRack}\"; at it: {fromRack}");
         if (!gotPiston || !unknown.Contains("no such part") || !keptPiston)
             Fail("parts menu: the request didn't hand over the part by id, or an unknown id wasn't refused");
         if (!farRack.Contains("rack") || !rackOk)
