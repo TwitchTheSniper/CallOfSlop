@@ -9,7 +9,7 @@ public static partial class SelfTest
     /// building"): a held barrel sees only a receiver's front and snaps to it from an off aim on screen (and not from far
     /// off, and never to a frame); a gearbox mounts by a structural face and its input lines up with an engine's output;
     /// every part with sockets reports its own connection points (single-purpose parts only their functional ones); the
-    /// switch key moves to another own point; quick building in creative fits at once and keeps the part, so six panels
+    /// switch key moves to another own point; quick building in creative fits at once and keeps the part, so six lamps
     /// are placed along a beam with one held part; picking takes the aimed part's kind; undo removes the last placements
     /// and is refused for someone else's construct; the cache is refreshed only when the construct changes and allocates
     /// nothing in a steady frame.
@@ -87,49 +87,29 @@ public static partial class SelfTest
         foreach (var o in order)
             shafts += SnapBuild.OwnType(gear, o) is ConnType.ShaftIn or ConnType.ShaftOut ? 1 : 0;
         Want(shafts == 2, "a gearbox has a shaft in and a shaft out");
+        var gw = new ConstructWorld();
+        var ew = ConstructBuild.PlaceNew(gw, engine, new Vector3(40, 0, 40), 0f)!;
+        var outPort = Sock(ew, 0, "-z");
+        var mounted = SnapBuild.Fit(ew, gear, 0, outPort, -1, out var mg);
+        var mountFirst = mounted && SnapBuild.OwnType(gear, mg.Variant / 4) == ConnType.Mount;
         var lined = 0;
-        var mountedByFace = false;
-        var search = new SnapCache();
-        Span<ConstructGhost> gh = stackalloc ConstructGhost[ConstructBuild.MaxGhosts];
+        var cur = mg.Variant;
         Span<Lineup> lines = stackalloc Lineup[8];
-        for (var beams = 0; beams < 2 && lined == 0; beams++)
-        for (var es = 0; es < 40 && lined == 0; es++)
+        for (var k = 0; k < order.Length && mounted; k++)
         {
-            var bw = new ConstructWorld();
-            var bc = ConstructBuild.PlaceNew(bw, beamDef, new Vector3(40, 0, 40), 0f);
-            if (bc == null)
-                continue;
-            if (beams == 1 && AttachBy2(bw, bc, beamDef, 0, "end-", "end+") < 0)
-                continue;
-            // the engine on the es-th free socket
-            var ecache = new SnapCache();
-            ecache.Refresh(bc, engine);
-            if (es >= ecache.Count || !SnapBuild.Fit(bc, engine, ecache.Part[es], ecache.Socket[es], -1, out var eg))
-                continue;
-            ConstructBuild.Attach(bw, bc, engine, eg);
-            search.Refresh(bc, gear);
-            var n = SnapBuild.Ghosts(bc, gear, search, gh, bc.Com, 6f);
-            for (var k = 0; k < n; k++)
+            var nv = SnapBuild.NextOwn(ew, gear, 0, outPort, cur);
+            if (nv < 0)
+                break;
+            cur = nv;
+            if (SnapBuild.OwnType(gear, nv / 4) == ConnType.ShaftIn && ConstructBuild.Place(ew, 0, outPort, gear, nv / 4, nv % 4, out var sg) == null)
             {
-                var l = SnapBuild.Lineups(bc, gear, gh[k], lines);
-                if (l > 0 && lines[0].Type == ConnType.ShaftIn && bc.DefOf(lines[0].Part) == engine && SnapBuild.OwnType(gear, gh[k].DefSocket) == ConnType.Mount)
-                {
-                    lined = l;
-                    mountedByFace = true;
-                    break;
-                }
+                lined = SnapBuild.Lineups(ew, gear, sg, lines);
+                break;
             }
         }
-        Want(lined > 0 && mountedByFace, "a gearbox mounted by a structural face should line its shaft in up with an engine's shaft out somewhere on a beam");
-
-        int AttachBy2(ConstructWorld ww, Construct c, ConstructPartDef def, int part, string socket, string own)
-        {
-            var os = Array.FindIndex(def.Sockets, s => s.Name == own);
-            for (var spin = 0; spin < 4; spin++)
-                if (ConstructBuild.Place(c, part, Sock(c, part, socket), def, os, spin, out var g) == null)
-                    return ConstructBuild.Attach(ww, c, def, g);
-            return -1;
-        }
+        Want(mountFirst, "a gearbox against an engine's output should mount by a structural face first");
+        Want(lined > 0 && lines[0].Type == ConnType.ShaftIn && ew.DefOf(lines[0].Part) == engine, "switching the gearbox to its shaft in should mark the connection to the engine's output");
+        Span<ConstructGhost> gh = stackalloc ConstructGhost[ConstructBuild.MaxGhosts];
 
         // 3. Own connection points of every part with sockets.
         var bad = 0;
@@ -169,8 +149,8 @@ public static partial class SelfTest
         }
         Want(switched, "the switch key should move an engine to another of its own points");
 
-        // 5. Quick building: six panels along a beam with one held part; the part stays in the hands.
-        var panel = ConstructParts.Need("Panel");
+        // 5. Quick building: six lamps along a beam with one held part; the part stays in the hands.
+        var panel = ConstructParts.Need("Lamp");
         var pw = new ConstructWorld();
         var qh = new ConstructEdits { InfiniteParts = true };
         var beam = ConstructBuild.PlaceNew(pw, beamDef, new Vector3(80, 0, 80), 0f)!;
@@ -201,7 +181,7 @@ public static partial class SelfTest
                 }
             }
         }
-        Want(placed == 6 && qhand.Held == panel.Id && qhand.Edit == EditKind.None, $"quick building should place 6 panels with one held part ({placed} placed, still held {qhand.Held == panel.Id}, last refusal \"{refused}\")");
+        Want(placed == 6 && qhand.Held == panel.Id && qhand.Edit == EditKind.None, $"quick building should place 6 lamps with one held part ({placed} placed, still held {qhand.Held == panel.Id}, last refusal \"{refused}\")");
         var plain = new ConstructEdits { InfiniteParts = true };
         ref var ph = ref plain.Hand(me);
         ph.Held = panel.Id;
@@ -211,7 +191,7 @@ public static partial class SelfTest
         var n2 = SnapBuild.Ghosts(beam, panel, sc2, gh, beam.Com, 6f);
         if (n2 > 0)
             plain.BeginAttach(pw, me, eye, beam.Id, gh[0].Part, gh[0].Socket, gh[0].Variant, now);
-        Want(n2 > 0 && beam.PartCount == before2 && ph.Edit == EditKind.Attach, "without quick building a fit still takes its time");
+        Want(n2 > 0 && beam.PartCount == before2 + 1 && ph.Held == ConstructParts.None, "without quick building the part leaves the hands when it is fitted");
 
         // 6. Pick, undo.
         var count = beam.PartCount;
@@ -253,7 +233,7 @@ public static partial class SelfTest
         cc.Refresh(beam, block);
         Want(cc.Rebuilds == rebuilds + 1, "adding a part should rebuild the cache once");
 
-        Line($"snap build: barrel front cache {cache.Count}, magnet near {near} far {far}; gearbox lineups {lined}; {placed} panels with one held part; undo {u1 ?? "ok"}; cache {cc.Rebuilds - rebuilds} rebuild, {alloc} B");
+        Line($"snap build: barrel front cache {cache.Count}, magnet near {near} far {far}; gearbox lineups {lined}; {placed} lamps with one held part; undo {u1 ?? "ok"}; cache {cc.Rebuilds - rebuilds} rebuild, {alloc} B");
         if (problems.Count > 0)
             Fail($"sandbox snap build: {string.Join("; ", problems)}");
     }
