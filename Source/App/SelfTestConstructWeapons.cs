@@ -128,12 +128,12 @@ public static partial class SelfTest
             e.SetTool(me, tool);
             var ts = Array.FindIndex(c.DefOf(on).Sockets, s => s.Name == socket);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == by);
+            var n = c.PartCount; // (before: a wrench fit is instant in creative)
             if (e.BeginAttach(w, me, eye, c.Id, on, ts, ds * 4, now) is { } why)
             {
                 problems.Add($"{part} on {c.DefOf(on).Name} {socket}: {why}");
                 return -1;
             }
-            var n = c.PartCount;
             Wait(def.AttachSeconds + 0.1);
             return c.PartCount == n + 1 ? n : -1;
         }

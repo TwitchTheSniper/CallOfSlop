@@ -466,9 +466,23 @@ public static partial class SelfTest
         // Bare hands: a part in hand, but no tool: refused.
         var sandbox = yard.Sandbox!;
         var rackFeet = sandbox.Rack + new Vector3(0, 0, -1.5f);
-        Want(e.TakeFromRack(sandbox, me, rackFeet) == null && e.Hand(me).Held == ConstructParts.Need(sandbox.RackParts[0]).Id, "the rack hands out its first part");
-        while (ConstructParts.Get(e.Hand(me).Held)?.Name != "Frame Beam")
-            e.TakeFromRack(sandbox, me, rackFeet);
+        // Decision 21: the rack's first part (a Frame Block) is welded, so physics-only: it comes as a body in front of you.
+        var rackEye = rackFeet + new Vector3(0, 1.6f, 0);
+        Want(e.TakeFromRack(sandbox, me, rackFeet, w, rackEye, 0) == null && e.Hand(me).Held == ConstructParts.None && w.Bodies.Count == 1 && w.Bodies[0].DefOf(0).Name == sandbox.RackParts[0],
+            "the rack spawns its first part (physics-only) in front of you, not into the hands");
+        if (w.Bodies.Count > 0)
+            w.Remove(w.Bodies[0]);
+        while (ConstructParts.Get(e.Hand(me).Held)?.PhysicsOnly != false)
+            if (e.TakeFromRack(sandbox, me, rackFeet, w, rackEye, 0) is { } rackWhy && w.Bodies.Count == 0)
+            {
+                problems.Add($"the rack: {rackWhy}");
+                break;
+            }
+        Want(ConstructParts.Get(e.Hand(me).Held) is { PhysicsOnly: false }, "the rack hands out an item part (the first one it has) into the hands");
+        while (w.Bodies.Count > 0)
+            w.Remove(w.Bodies[0]);
+        w.Removed.Clear();
+        e.Hand(me).Held = ConstructParts.Need("Frame Beam").Id; // (physics-only since decision 21: set in the hands directly, as the edit rules still check it)
         Want(e.TakeFromRack(sandbox, me, ground + new Vector3(40, 0, 0)) != null, "the rack is refused from far away");
         Want(e.BeginPlaceNew(w, me, eye, ground, 0, now) is { } bare && bare.Contains("tool"), "bare hands can't build");
         e.SetTool(me, ConstructTool.Wrench);
@@ -493,13 +507,14 @@ public static partial class SelfTest
             var def = ConstructParts.Need(part);
             var ts = Array.FindIndex(car.DefOf(on).Sockets, s => s.Name == socket);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == by);
+            var n = car.PartCount; // (before: a wrench fit is instant in creative)
             var why = e.BeginAttach(w, me, eye, car.Id, on, ts, ds * 4 + spin, now);
             if (why != null)
             {
                 problems.Add($"{part} on {car.DefOf(on).Name} {socket}: {why}");
                 return -1;
             }
-            var n = car.PartCount;
+            Want(tool != ConstructTool.Wrench || car.PartCount == n + 1, $"a wrench fit is instant in creative ({part})");
             Wait(def.AttachSeconds + 0.1);
             return car.PartCount == n + 1 ? n : -1;
         }

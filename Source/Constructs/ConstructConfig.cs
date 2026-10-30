@@ -58,6 +58,12 @@ public enum CfgKey : byte
     MaxAlive, // spawners: the most alive at once from it
     Total, // spawners: how many in all (0: no limit)
     Mix, // zombie spawner: walkers only, or the zombie types mixed in
+    SizeX, // cargo volume: the box's width, height and length (metres, the part's frame; ConstructCargo.cs)
+    SizeY,
+    SizeZ,
+    AtX, // cargo volume: the box's centre (metres from the part's origin, the part's frame)
+    AtY,
+    AtZ,
     COUNT,
 }
 
@@ -196,7 +202,7 @@ public static class ConstructConfig
     /// <summary>A part's starting state from its settings (a switch or toggle set to start on).</summary>
     public static void StartState(ref CPart p, ConstructPartDef d)
     {
-        if (d.Logic is CLogic.Switch or CLogic.Toggle && Has(d, CfgKey.StartOn))
+        if (d.Logic is CLogic.Switch or CLogic.Toggle or CLogic.Cargo && Has(d, CfgKey.StartOn))
             p.State = (byte)((p.State & ~1) | (Get(p, d, CfgKey.StartOn, 0) >= 0.5f ? 1 : 0));
     }
 
@@ -475,7 +481,8 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
-                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle || d.IsSpawner,
+                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
+                CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => d.Logic == CLogic.Cargo,
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,

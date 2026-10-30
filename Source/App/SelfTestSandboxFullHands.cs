@@ -179,7 +179,8 @@ public static partial class SelfTest
         Want(li >= 0 && began == null && inPack && h.Held == engine.Id && !w.Bodies.Any(b => b.Loose && b.DefOf(0) == lamp) && packNote == $"{lamp.Name} into the backpack: hands full",
             "with the backpack free the part goes into it");
 
-        // Empty hands: into them, as before.
+        // Empty hands: an item part goes into them, as before (the lamp below); a welded frame block is physics-only
+        // (decision 21): it is cut free as a body where it was, and the hands stay empty.
         var block = PartOf(gate, PartRole.Frame);
         var blockDef = gate.DefOf(block);
         h.Held = ConstructParts.None;
@@ -188,7 +189,8 @@ public static partial class SelfTest
         began = hands.BeginRemove(w, me, eye, gate.Id, block, now);
         now += ConstructBuild.RemoveSeconds(blockDef) + 0.1;
         hands.Tick(w, now, _ => eye);
-        Want(began == null && h.Held == blockDef.Id, $"empty hands take the part (\"{began}\", {ConstructParts.Get(h.Held)?.Name ?? "empty"})");
+        var cut = w.Bodies.LastOrDefault(b => b.Loose && b.DefOf(0) == blockDef);
+        Want(began == null && h.Held == ConstructParts.None && cut != null, $"a welded part comes off as a body, the hands stay empty (\"{began}\", {ConstructParts.Get(h.Held)?.Name ?? "empty"}, body {cut?.Id})");
 
         // Storage with full hands: into the backpack when it fits; refused (still stored) when it doesn't.
         var chest = BuildAt(w, "Chest", 30, 36);

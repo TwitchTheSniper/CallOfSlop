@@ -148,8 +148,8 @@ public sealed partial class ConstructEdits
         h.Socket = (byte)socket;
         h.Variant = (byte)v;
         h.Start = now;
-        h.Duration = ConstructBuild.AttachSeconds(def);
-        return null;
+        h.Duration = EditSeconds(h.Tool, ConstructBuild.AttachSeconds(def));
+        return FinishNow(world, player, eye);
     }
 
     /// <summary>The map the edits are checked against (the server sets it; null in a bare construct world: no map checks).</summary>
@@ -193,8 +193,8 @@ public sealed partial class ConstructEdits
         h.PlaceAnchor = anchor;
         h.Yaw = yaw;
         h.Start = now;
-        h.Duration = ConstructBuild.AttachSeconds(def);
-        return null;
+        h.Duration = EditSeconds(h.Tool, ConstructBuild.AttachSeconds(def));
+        return FinishNow(world, player, eye);
     }
 
     /// <summary>Milestone 1's form: upright on the ground at <paramref name="ground"/>, turned to <paramref name="yaw"/>.</summary>
@@ -210,8 +210,8 @@ public sealed partial class ConstructEdits
         ref var h = ref Hands[player];
         if (h.Seated)
             return "get out of the seat first";
-        if (h.Tool != ConstructTool.Welder)
-            return "take out the welder (4) to weld two constructs together";
+        if (h.Tool is not (ConstructTool.Welder or ConstructTool.Wrench))
+            return "take out the welder (4) to weld two constructs together (or the wrench, to bolt on a loose wrench part)";
         if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
             return "that part is gone";
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
@@ -220,6 +220,8 @@ public sealed partial class ConstructEdits
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
+        if (!JoinTool(h.Tool, c, plan.Other))
+            return "the wrench bolts on a loose wrench part: use the welder to weld two constructs together";
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
             return defended;
         if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
@@ -273,8 +275,8 @@ public sealed partial class ConstructEdits
         h.Body = body;
         h.Part = (byte)part;
         h.Start = now;
-        h.Duration = ConstructBuild.RemoveSeconds(def);
-        return null;
+        h.Duration = EditSeconds(h.Tool, ConstructBuild.RemoveSeconds(def));
+        return FinishNow(world, player, eye);
     }
 
     public void Cancel(byte player) => Hands[player].Edit = EditKind.None;
@@ -369,7 +371,19 @@ public sealed partial class ConstructEdits
                 var wrecked = c.Parts[h.Part].Broken;
                 var partRot = c.Parts[h.Part].Rot;
                 var from = c.Id;
+                var vel = c.PointVel(where);
                 var def = world.RemovePart(c, h.Part);
+                if (def.PhysicsOnly && !wrecked)
+                {
+                    // Decision 21: a physics-only part is never an item: it is cut free as a body where it was.
+                    if (DropLoose(world, def, where, q * Rot24.Quat(partRot)) is { } freed)
+                    {
+                        freed.Owner = player;
+                        freed.Vel = vel;
+                        return $"ok: {def.Name} cut free of construct {from} as construct {freed.Id} (physics-only: {def.PhysicsWhy})";
+                    }
+                    // (the world is full: counted, as below)
+                }
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory: a wrecked part as scrap.
                 if (Inventory != null && (salvage || !InfiniteParts) && !(Survival && !wrecked))
                 {
@@ -403,7 +417,7 @@ public sealed partial class ConstructEdits
     /// <summary>Infinite parts off: after a fit, the next of the same kind comes out of the inventory into the hand (build a row of them without going back for each).</summary>
     private void Refill(byte player, ref SandboxHand h, ConstructPartDef def)
     {
-        if (!InfiniteParts && Inventory != null && h.Held == ConstructParts.None && Inventory.Of(player).Take(def.Id))
+        if (!InfiniteParts && Inventory != null && h.Held == ConstructParts.None && !def.PhysicsOnly && Inventory.Of(player).Take(def.Id))
             h.Held = def.Id;
     }
 
@@ -484,7 +498,7 @@ public sealed partial class ConstructEdits
     }
 
     /// <summary>Takes the next part type from the rack (each press moves on to the next kind).</summary>
-    public string? TakeFromRack(SandboxMap? sandbox, byte player, Vector3 feet)
+    public string? TakeFromRack(SandboxMap? sandbox, byte player, Vector3 feet, ConstructWorld? world = null, Vector3? eye = null, float yaw = 0)
     {
         ref var h = ref Hands[player];
         if (sandbox == null || sandbox.RackParts.Count == 0)
@@ -492,21 +506,35 @@ public sealed partial class ConstructEdits
         if (Vector3.Distance(feet with { Y = 0 }, sandbox.Rack) > 4.5f)
             return "go to the parts rack";
         if (!InfiniteParts && Inventory != null)
-            return RackFromInventory(sandbox, player);
+            return RackFromInventory(sandbox, player, world, eye, yaw);
         var cur = ConstructParts.Get(h.Held)?.Name;
-        var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
-        var next = ConstructParts.Find(sandbox.RackParts[(at + 1) % sandbox.RackParts.Count]);
+        var at = cur == null ? _rackAt[player] - 1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
+        var k = (at + 1) % sandbox.RackParts.Count;
+        var next = ConstructParts.Find(sandbox.RackParts[k]);
         for (var skip = 0; next is { Offered: false } && skip < sandbox.RackParts.Count; skip++)
-            next = ConstructParts.Find(sandbox.RackParts[(at + 2 + skip) % sandbox.RackParts.Count]); // (replaced by routed links: not offered)
+        {
+            k = (at + 2 + skip) % sandbox.RackParts.Count;
+            next = ConstructParts.Find(sandbox.RackParts[k]); // (replaced by routed links: not offered)
+        }
         if (next == null)
             return "the rack is empty";
+        _rackAt[player] = k + 1;
+        if (next.PhysicsOnly)
+        {
+            // Decision 21: a physics-only part comes as a body in front of you (the next press, the next kind).
+            if (world == null || eye is not { } e)
+                return PhysicsOnlyRefusal(next, "be carried");
+            return SpawnInFront(world, player, next, e, yaw, out _);
+        }
         h.Held = next.Id;
         h.Edit = EditKind.None;
         return null;
     }
 
+    private readonly int[] _rackAt = new int[256]; // (each player's last rack kind plus one: a physics-only part isn't in the hands to say)
+
     /// <summary>Infinite parts off: the rack's next kind that the player's inventory holds (what is in the hands goes back first).</summary>
-    private string? RackFromInventory(SandboxMap sandbox, byte player)
+    private string? RackFromInventory(SandboxMap sandbox, byte player, ConstructWorld? world, Vector3? eye, float yaw)
     {
         ref var h = ref Hands[player];
         var inv = Inventory!.Of(player);
@@ -516,8 +544,15 @@ public sealed partial class ConstructEdits
         if (h.Held != ConstructParts.None)
             return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
         for (var k = 1; k <= sandbox.RackParts.Count; k++)
-            if (ConstructParts.Find(sandbox.RackParts[(at + k) % sandbox.RackParts.Count]) is { } next && inv.Take(next.Id))
+            if (ConstructParts.Find(sandbox.RackParts[(at + k) % sandbox.RackParts.Count]) is { } next && (!next.PhysicsOnly || world != null && eye != null) && inv.Take(next.Id))
             {
+                if (next.PhysicsOnly)
+                {
+                    var why = SpawnInFront(world!, player, next, eye!.Value, yaw, out _);
+                    if (why != null)
+                        inv.Add(next.Id);
+                    return why;
+                }
                 h.Held = next.Id;
                 h.Edit = EditKind.None;
                 return null;
@@ -529,7 +564,7 @@ public sealed partial class ConstructEdits
     /// The debug parts menu (UiSandboxParts.cs): any loaded part, by id, straight into the hands, wherever the player is
     /// (what is in them is replaced, as at the rack). Refused when the map turns the menu off (<see cref="SandboxMap.PartsMenu"/>).
     /// </summary>
-    public string? TakePart(SandboxMap? sandbox, byte player, ushort part)
+    public string? TakePart(SandboxMap? sandbox, byte player, ushort part, ConstructWorld? world = null, Vector3? eye = null, float yaw = 0)
     {
         ref var h = ref Hands[player];
         if (sandbox is not { PartsMenu: true })
@@ -540,6 +575,19 @@ public sealed partial class ConstructEdits
             return "no such part";
         if (def.CreativeOnly && !InfiniteParts)
             return $"the {def.Name} is creative-only (a Zombies-economy part)";
+        if (def.PhysicsOnly)
+        {
+            // Decision 21: the creative inventory spawns a physics-only part as a body in front of you (never into the hands).
+            if (world == null || eye is not { } e)
+                return PhysicsOnlyRefusal(def, "be carried");
+            var counted = !InfiniteParts && Inventory != null;
+            if (counted && !Inventory!.Of(player).Take(def.Id))
+                return $"no {def.Name} in your inventory (salvage one)";
+            var why = SpawnInFront(world, player, def, e, yaw, out _);
+            if (why != null && counted)
+                Inventory!.Of(player).Add(def.Id);
+            return why;
+        }
         if (!InfiniteParts && Inventory != null)
         {
             // Counted: one out of the inventory (what the hands held goes back first).
@@ -568,6 +616,8 @@ public sealed partial class ConstructEdits
         if (Reachable(eye, c.WorldCom, ConstructBuild.UseReach) is { } far)
             return far;
         var def = c.DefOf(0);
+        if (def.PhysicsOnly)
+            return PhysicsOnlyRefusal(def, "be picked up");
         // Full hands: into the backpack if it fits there (else refused: it stays where it lies).
         if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], def, out _, out _) < 0))
             return "your hands are full (drop what you hold first)";
@@ -726,6 +776,7 @@ public sealed partial class ConstructEdits
                         lp.Count = (ushort)Math.Max(1, (int)MathF.Round(ConstructConfig.Get(lp, d, CfgKey.Hold, ConstructLogic.ButtonSeconds) * World.TickRate));
                     break;
                 case CLogic.Switch:
+                case CLogic.Cargo: // (a cargo volume: frozen or not)
                     lp.State ^= 1;
                     break;
                 case CLogic.Lever:

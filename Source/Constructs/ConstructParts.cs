@@ -110,6 +110,7 @@ public enum CLogic : byte
     Selector, // milestone 3: Interact or a rising input steps it on: 1, 2 ... its positions, then 1 again (a gear selector)
     BotSpawner, // the Spawn category (GameSandboxSpawns.cs): spawns bots while enabled; puts out how many it has alive
     ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
+    Cargo, // a cargo volume (decision 21; ConstructCargo.cs): frozen or not (Interact flips it; a change of its input sets it); its box carries loose bodies while frozen
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -181,6 +182,8 @@ public sealed class ConstructPartDef
     public float Health;
     public float Armour; // flat damage taken off every hit
     public string Material = "steel";
+    public bool PhysicsOnly; // decision 21: never an item (no hands, backpack or storage slot): welder-fitted, heavier than ConstructParts.HandCarryLimit, or "physicsOnly": true in its file
+    public string PhysicsWhy = ""; // why ("welded", "heavy: 120 kg", "bulky"; empty for an item)
     public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
     public float Friction = 0.7f;
     public PartBreak OnBreak;
@@ -287,7 +290,7 @@ public sealed class ConstructPartDef
     public bool HasGears => Role == PartRole.Transmission && (Settings.Length > 0 || Trans == TransKind.Cvt);
 
     /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
-    public bool Electric => Role == PartRole.Logic || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
+    public bool Electric => Role == PartRole.Logic && Logic != CLogic.Cargo || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0 || FuelKind == EngineFuel.Electric && Role == PartRole.Engine; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -370,6 +373,12 @@ public static partial class ConstructParts
     public const int MaxTypes = 4096;
 
     public const ushort None = ushort.MaxValue;
+
+    /// <summary>
+    /// Decision 21: the heaviest part that is still an item (kg; the backpack's limit). Heavier parts, welder-fitted ones
+    /// and those whose file says <c>"physicsOnly": true</c> exist only as bodies in the world (<see cref="ConstructPartDef.PhysicsOnly"/>).
+    /// </summary>
+    public const float HandCarryLimit = 40f;
 
     /// <summary>How much of a <c>"glass": true</c> box is drawn (its opacity; the props' glass is 0.4, Props/README.md).</summary>
     public const float DefaultGlass = 0.3f;
@@ -522,6 +531,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "damaged", "stage", "faces", "faceAxis",
+        "physicsOnly",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -576,6 +586,10 @@ public static partial class ConstructParts
         }
         d.Mass = Num(Need(root, "mass", file), file, "mass");
         Range(d.Mass, 0.5f, 50000f, file, "mass"); // (building pieces: a 4 m concrete pad is about 14 t)
+        // Decision 21: what can't be carried as an item, by the tool that fits it and its mass (so every new welder or heavy part follows without a list).
+        var bulky = Opt(root, "physicsOnly") is { } po && (po.ValueKind == JsonValueKind.True ? true : po.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"physicsOnly\" is true or false"));
+        d.PhysicsWhy = d.Tool == ConstructTool.Welder ? "welded" : d.Mass > HandCarryLimit ? $"heavy: {d.Mass:0} kg" : bulky ? "bulky" : "";
+        d.PhysicsOnly = d.PhysicsWhy.Length > 0;
         d.Health = Num(Need(root, "health", file), file, "health");
         Range(d.Health, 1f, 100000f, file, "health");
         d.Armour = Opt(root, "armour") is { } arm ? Num(arm, file, "armour") : 0f;

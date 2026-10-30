@@ -688,6 +688,81 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
+## Physics-only parts and cargo volumes (decision 21)
+
+Board item dev-sandbox-cargo-volumes-cv01, the developer's decision 21 (2026-10-30).
+
+### Physics-only parts
+
+A part is **physics-only** when it is fitted with the welder, when it is heavier than the hand-carry limit
+(`ConstructParts.HandCarryLimit`, 40 kg: the backpack's limit), or when its file says `"physicsOnly": true` (light
+but bulky pieces: `tools/constructs/building_parts.py` sets it for the 1.25 m wood door, the fence gate, the wood
+railings, the 2 m wood beam, the tower brace and the 1 m window glass). The rule reads the tool and the mass, never a
+list, so every new welder or heavy part follows by itself. Such a part is never an item:
+
+- It can't be held, stowed in the backpack, set into a storage slot or picked up; each refusal says why ("the Frame
+  Block is physics-only (welded): it can't go in the backpack - move it with the physics gun or carry it in a cargo
+  volume").
+- The give rule (`ConstructEdits.Give`) drops it as a body where it was, so every path follows it (salvage, merge
+  pop-offs, storage). Taking one off a construct cuts it free as a body at its place, moving as the construct moved.
+- The creative inventory (Tab) and the parts rack spawn it as a body a short way in front of you at eye level (clear of
+  the map, constructs and players; it then falls and settles). With the physics gun out, the gun holds it. A wrench
+  part still comes into your hands, ready to fit.
+- It is built onto things by moving it into place (physics gun) and joining it: the welder's join (F) as before, and
+  now the wrench's join for a loose wrench part (bolting on an engine).
+- The inventory tile has a small boxed corner mark and its tooltip says "PHYSICS ONLY (welded)" or "item"; the look
+  text says "physics only" too.
+- What a save held in hands, backpacks or storage that is physics-only drops into the world as bodies
+  (`ConstructEdits.DropPhysicsOnly`; world saving isn't built yet, so the server runs it at every match start).
+- **Creative** (infinite parts on): a wrench fit or removal is instant. Survival and counted parts keep the timed edits.
+
+### Cargo volumes
+
+The **Cargo Volume** part (`Constructs/Parts/Storage/CargoVolume.json`, wrench-fitted, a logic part of kind `cargo`)
+is a small control box with a box of space on its construct: its size (`sizeX/Y/Z`, 0.2 to 8 m, 10 cm steps) and
+centre (`atX/Y/Z`, from the part, in its frame) are its settings, and `startOn` makes it start frozen. Idle, only a
+faint marking of its floor shows; with a tool out the whole box is outlined (ice blue frozen, amber free) and the
+control box's lamp shows the same colour.
+
+- **Frozen**: F on the control box flips it; a data link into it sets it on a change of its input (the last change
+  wins, so both work on one part). While frozen, every loose body mostly inside the box (its centre of mass in it and
+  at least half its part mass) rides with the construct kinematically: no physics of its own, no collisions with the
+  carrier or the carrier's other cargo, its mass, centre of mass and inertia added to the carrier's. It is still a
+  body: it can be shot, stood on and picked up (an item), and other bodies hit it.
+- **Unfrozen** (or the volume broken or gone, or the box resized away from it), everything goes free at the carrier's
+  velocity at that point.
+- **Things entering while frozen** (the open choice): caught once they have settled, moving with the construct under
+  1 m/s relative to it (checked ten times a second); freezing catches everything inside at once, moving or not. A body
+  held by the physics gun is never caught, and grabbing a carried body takes it out. Not caught: anything anchored or
+  frozen by the physics gun, anyone's seat in use, something hitched to the carrier, another carrier with cargo.
+- **The volume tool** is a configure-tool mode: with the configure tool out, every volume near shows a handle on each
+  face; hold Fire on one and drag to move that face (snapped to the 10 cm grid; the opposite face stays). R on the
+  control box then Fire-drag on the construct draws a new box from corner to corner (its height kept). Fire on the
+  control box opens its settings panel, where the size and centre are numbers. Each change is the configure tool's own
+  request (`CActKind.Configure`), checked and snapped on the server.
+- **Limits**: 4 volumes a construct (a fifth is refused when fitted), 24 carried bodies a construct, 8 m a side.
+- **Blueprints**: a `"cargo"` list of loose parts (`{ "part", "at", "turn" }` in the construct's frame) built inside a
+  volume that starts frozen; `ConstructCargo.ToJson` writes a construct's cargo back in that form. The **Cargo Rack**
+  blueprint is the example. World saving isn't built yet: frozen contents round-trip through the construct message and
+  blueprints, relative to the construct.
+- **Network** (protocol 93): server-authoritative. A carried body's `CBody` ends with its carrier and its pose in the
+  frame of the volume's segment; every machine moves it with the carrier (a client after blending the poses), so a
+  carried body costs no pose traffic. The frozen state rides in the part's signal.
+- **Cost**: carried bodies skip the physics; the cargo step moves each carried body every tick and looks for what
+  entered or left ten times a second; it allocates nothing.
+
+Code: `Source/Constructs/ConstructCargo.cs` (the rules), `ConstructPhysicsOnly.cs` (the item rule),
+`Source/App/Program.SandboxCargo.cs` (the handles), `Source/Render/ConstructRenderCargo.cs` (the drawing).
+
+**Self-test**: "Sandbox physics-only parts", "Sandbox cargo volumes" and "Sandbox cargo network"
+(`Source/App/SelfTestSandboxCargo.cs`).
+
+Choices made (the developer may change them): things entering a frozen volume are caught once settled (not at once,
+not only on the next freeze); a carried body's mass counts at its place in the body (a volume on a joint carries its
+cargo with the joint, but the joint's load doesn't count it); the volume's frozen clamps need no power; no cargo in
+cargo; the volume tool is a configure-tool mode (no new tool or key); the six building pieces above plus the window
+glass are the bulky ones; creative means infinite parts on (as for the physics gun).
+
 ## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering; 88 for the physics gun)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
@@ -1156,7 +1231,8 @@ rules: `Constructs/WeaponParts.json`; self-test: "Sandbox weapon parts" (`Source
   left out, each as the box round it turned, the biggest 15 kept) scaled by the rules' `scale` (2: the hand-made
   construct gun parts are about twice the handheld size) and centred on their bounds, a hidden solid box round them, a
   socket on each face (right, left, top, bottom, back, front), the builder's weight times `massScale` (at least 0.5 kg),
-  health `healthBase + healthPerKg x mass`. A receiver becomes a `gun` on that receiver (its stock action, else the
+  health `healthBase + healthPerKg x mass`. They are wrench-fitted and light (at most `ConstructParts.HandCarryLimit`, 40 kg), so
+  they are always items, never physics-only bodies (decision 21; the self-test checks it). A receiver becomes a `gun` on that receiver (its stock action, else the
   first action its socket takes) with a **bottom** mount like the hand-made ones; every other part a `gunPart`.
 - **Ids.** The generated defs come after the hand-made files, in the builder's own sorted order, so the hand-made parts
   (and saves and blueprints naming them) keep their ids, and every peer with the same files gets the same ids (peers

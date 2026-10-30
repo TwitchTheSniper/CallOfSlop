@@ -40,7 +40,7 @@ public static partial class SelfTest
         var all = ConstructParts.All;
         var gen = all.Where(d => d.Generated).ToList();
         var missing = Parts.All.Where(p => WpDefOf(p) == null).Select(p => p.Name).ToList();
-        var noModel = gen.Where(d => d.Boxes.Length - d.SolidBoxes < 1 || d.Mass > 40 || !d.UsesTool(ConstructTool.Wrench)).Select(d => d.Name).ToList();
+        var noModel = gen.Where(d => d.Boxes.Length - d.SolidBoxes < 1 || d.Mass > ConstructParts.HandCarryLimit || d.PhysicsOnly || !d.UsesTool(ConstructTool.Wrench)).Select(d => d.Name).ToList();
         var handMade = all.Count(d => !d.Generated);
         var order = gen.Count == 0 || gen.Min(d => d.Id) == handMade && gen.Max(d => d.Id) == all.Count - 1;
         var refused = ConstructParts.Refused.Where(r => r.StartsWith("(weapon part)") || r.StartsWith("WeaponParts.json")).ToList();
@@ -53,7 +53,7 @@ public static partial class SelfTest
         var creative = gen.Where(d => d.CreativeOnly).Select(d => Parts.Find(d.GunPartName)!.Category).Distinct().OrderBy(c => c).ToList();
         var rules = ConstructWeaponParts.Current;
         var stdOk = StandardBuilds.All.Count(b => b.Build().Nodes.All(n => WpDefOf(n.Part) != null));
-        Line($"coverage: {Parts.All.Length} builder parts, {gen.Count} generated defs (ids {handMade}..{all.Count - 1} of {ConstructParts.MaxTypes}), {missing.Count} without a def{(missing.Count > 0 ? $" ({string.Join(", ", missing.Take(6))})" : "")}, {noModel.Count} bad models, {refused.Count} refused{(refused.Count > 0 ? $" ({refused[0]})" : "")}; again the same ids {same}; {grouped} in \"Weapon parts\" ({sections} sections); creative-only: {string.Join(", ", creative)} (rules: {string.Join(", ", rules.CreativeOnly)}); standard builds whose every part has a def: {stdOk}/{StandardBuilds.All.Length}");
+        Line($"coverage: {Parts.All.Length} builder parts, {gen.Count} generated defs (ids {handMade}..{all.Count - 1} of {ConstructParts.MaxTypes}), {missing.Count} without a def{(missing.Count > 0 ? $" ({string.Join(", ", missing.Take(6))})" : "")}, {noModel.Count} bad models or not items, {refused.Count} refused{(refused.Count > 0 ? $" ({refused[0]})" : "")}; again the same ids {same}; {grouped} in \"Weapon parts\" ({sections} sections); creative-only: {string.Join(", ", creative)} (rules: {string.Join(", ", rules.CreativeOnly)}); standard builds whose every part has a def: {stdOk}/{StandardBuilds.All.Length}");
         if (missing.Count > 0 || noModel.Count > 0 || refused.Count > 0 || !order || !same || all.Count > ConstructParts.MaxTypes)
             Fail("sandbox weapon parts: not every builder part has a deterministic wrench item def with a model");
         if (grouped != gen.Count || sections < 10)
