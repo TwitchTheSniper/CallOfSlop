@@ -61,6 +61,7 @@ public static class ConstructPhysics
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
     private static int _contactCount;
     private static readonly Matrix4x4[] _invI = new Matrix4x4[ConstructWorld.MaxBodies];
+    private static readonly Matrix4x4[] _invIB = new Matrix4x4[ConstructWorld.MaxBodies]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
     private static readonly bool[] _dyn = new bool[ConstructWorld.MaxBodies]; // the body itself moves (free and awake)
     private static readonly bool[] _jact = new bool[ConstructWorld.MaxBodies]; // its joints move (awake, with joints)
 
@@ -121,6 +122,7 @@ public static class ConstructPhysics
             _dyn[i] = !c.Anchored && !c.Asleep;
             _jact[i] = !c.Asleep && c.JointCount > 0;
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
+            _invIB[i] = _dyn[i] && c.JointCount > 0 ? c.InvInertiaBaseWorld() : default;
             if (_dyn[i])
             {
                 c.Vel += g * dt;
@@ -978,10 +980,10 @@ public static class ConstructPhysics
         {
             var j = -axis * impulse;
             c.Vel += j * c.InvMass;
-            c.AngVel += Construct.Mul(_invI[body], Vector3.Cross(_jPivot[slot] - c.WorldCom, j));
+            c.AngVel += Construct.Mul(_invIB[body], Vector3.Cross(_jPivot[slot] - c.WorldCom, j));
         }
         else
-            c.AngVel -= Construct.Mul(_invI[body], axis * impulse);
+            c.AngVel -= Construct.Mul(_invIB[body], axis * impulse); // (the base turns back: what swings on the joint doesn't help hold it)
     }
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------

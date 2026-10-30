@@ -48,15 +48,21 @@
     "rack": [-22, 23, 180],
     "rackParts": ["Frame Block", "Frame Beam", "Panel", "Corner", "Deck Plate", "Seat", "Engine", "Fuel Tank", "Fuel Line", "Transmission", "Differential", "Suspension", "Steering Pivot", "Wheel",
       "Hinge", "Motor Hinge", "Turntable", "Piston", "Door", "Foundation",
-      "Button", "Lever", "Switch", "Pressure Plate", "Input Reader", "Speed Sensor", "Proximity Sensor", "AND Gate", "OR Gate", "NOT Gate", "Timer", "Delay", "Toggle", "Compare", "Scale", "Lamp", "Horn", "Brake"],
+      "Button", "Lever", "Switch", "Pressure Plate", "Input Reader", "Speed Sensor", "Proximity Sensor", "AND Gate", "OR Gate", "NOT Gate", "Timer", "Delay", "Toggle", "Compare", "Scale", "Lamp", "Horn", "Brake",
+      "Battery", "Alternator", "Tow Hitch", "Tow Eye", "Chain Hook", "Wrecking Ball", "Bumper", "Fender", "Speed Gauge", "Fuel Gauge", "Charge Gauge", "Gear Selector"],
     "constructs": [
       { "blueprint": "Buggy", "at": [-8, 4], "yaw": 0 },
       { "blueprint": "Wired Buggy", "at": [-3, 4], "yaw": 0 },
       { "blueprint": "Gate", "at": [-16, -12], "yaw": 0 },
       { "blueprint": "Motor Gate", "at": [-10, -12], "yaw": 0 },
       { "blueprint": "Lift", "at": [-24, -4], "yaw": 0 },
-      { "blueprint": "Turret", "at": [-22, -19], "yaw": 0 }
+      { "blueprint": "Turret", "at": [-22, -19], "yaw": 0 },
+      { "blueprint": "Trailer", "at": [-7.75, 7.2], "yaw": 0 },
+      { "blueprint": "Wall Button", "at": [-6, -14], "yaw": 0 },
+      { "blueprint": "Lamp Post", "at": [-3, -9], "yaw": 0 }
     ],
+    "couplings": [ { "hitch": [0, 23], "eye": [6, 8] } ],
+    "wires": [ { "from": [7, 3], "to": [3, 7] } ],
     "loose": [
       { "part": "Wheel", "at": [-14, 20] },
       { "part": "Wheel", "at": [-13, 21] },
