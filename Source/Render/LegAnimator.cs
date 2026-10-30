@@ -163,6 +163,8 @@ public static class LegAnimator
     }
 
     private static bool _cacheValid, _cacheGrounded, _cacheMantling;
+    private static SeatKind _cacheSeat;
+    private static float _cacheLook;
     private static byte _cacheId;
     private static double _cacheNow;
     private static Vector3 _cachePos, _cacheVel;
@@ -194,7 +196,8 @@ public static class LegAnimator
     {
         // The same player at the same moment again (e.g. the scene graph and the reference drawing both posing it): same pose.
         if (_cacheValid && p.Id == _cacheId && now == _cacheNow && p.RenderPosition == _cachePos && p.RenderYaw == _cacheYaw && p.RenderStance == _cacheStance
-            && p.RenderVelocity == _cacheVel && p.RenderGrounded == _cacheGrounded && p.RenderMantling == _cacheMantling && States[p.Id].Init)
+            && p.RenderVelocity == _cacheVel && p.RenderGrounded == _cacheGrounded && p.RenderMantling == _cacheMantling && States[p.Id].Init
+            && p.RenderSeat == _cacheSeat && p.RenderLookYaw == _cacheLook)
             return Pose;
         _cacheValid = true;
         _cacheId = p.Id;
@@ -205,13 +208,16 @@ public static class LegAnimator
         _cacheVel = p.RenderVelocity;
         _cacheGrounded = p.RenderGrounded;
         _cacheMantling = p.RenderMantling;
+        _cacheSeat = p.RenderSeat;
+        _cacheLook = p.RenderLookYaw;
         var t0 = Stopwatch.GetTimestamp();
         ref var st = ref States[p.Id];
         var pose = Pose;
         var pos = p.RenderPosition;
         var yaw = p.RenderYaw;
         var stance = p.RenderStance;
-        var vel = GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
+        var seated = p.RenderSeat != SeatKind.None; // (carried by a construct: no gait, whatever the speed)
+        var vel = seated ? Vector3.Zero : GravityFrames.ToLocal(pos, p.RenderVelocity); // (a planet: in the body's own frame)
 
         var dt = (float)(now - st.Last);
         var fresh = !st.Init || dt > 0.5f || dt < 0;
@@ -234,7 +240,7 @@ public static class LegAnimator
 
         // ---- Velocity relative to facing, smoothed (snapshot steps and tick blends don't jitter the gait) ----
         var lv = new Vector2(Vector3.Dot(vel, right), Vector3.Dot(vel, fwd));
-        if (fresh)
+        if (fresh || seated)
             st.Vel = lv;
         else
             st.Vel = Vector2.Lerp(st.Vel, lv, 1f - MathF.Exp(-10f * dt));
@@ -297,7 +303,11 @@ public static class LegAnimator
         var near = (float.IsNaN(Viewer.X) || Vector3.DistanceSquared(Viewer, pos) <= IkRange * IkRange) && !GravityFrames.Curved; // (foot rays are Y-down: none on a planet)
         pose.GroundIk = false;
 
-        if (prone)
+        if (seated)
+        {
+            SeatedLegs(ref st, pose, p.RenderSeat, p.RenderLookYaw);
+        }
+        else if (prone)
         {
             ProneLegs(ref st, pose, speed, moving);
         }
@@ -636,6 +646,42 @@ public static class LegAnimator
             var hip = Vector3.Transform(new Vector3(side * 0.13f, 0, 0), pose.Pelvis);
             var pole = Vector3.Normalize(new Vector3(side * (0.3f + 0.9f * c), -1f, 0));
             pose.Planted[i] = false;
+            Solve(pose, i, hip, target, pole, foot);
+        }
+    }
+
+    /// <summary>The seated pelvis (body space: the feet at the seat's "at" point): on the cushion, a little back.</summary>
+    public static readonly Vector3 SeatedHips = new(0, 0.86f, 0.04f);
+
+    /// <summary>How far the seated upper body turns with the look (radians either way; the rest of the look is the head's and the aim's).</summary>
+    public static float SeatTwist(SeatKind kind) => kind switch { SeatKind.Driver => 0.45f, SeatKind.Gunner => 1.1f, _ => 0.8f };
+
+    /// <summary>
+    /// Seated (Sandbox): hips on the seat, thighs forward, knees bent, feet forward on the floor of the construct; the upper
+    /// body leaning back a little and turned towards the look (<see cref="SeatTwist"/>). Fixed: no gait, no foot rays.
+    /// </summary>
+    private static void SeatedLegs(ref State st, LegPose pose, SeatKind kind, float look)
+    {
+        st.Phase = 0;
+        st.Cadence = 0;
+        st.Drop = 0;
+        st.PelvisH = StandPelvis;
+        var lim = SeatTwist(kind);
+        var twist = Math.Clamp(look, -lim, lim);
+        pose.Pelvis = Matrix4x4.CreateTranslation(SeatedHips);
+        pose.Drop = 0;
+        var recline = kind == SeatKind.Gunner ? 0.02f : 0.1f;
+        pose.Upper = Matrix4x4.CreateTranslation(0, -StandPelvis, 0) * Matrix4x4.CreateRotationX(recline) * Matrix4x4.CreateRotationY(-twist)
+                     * Matrix4x4.CreateTranslation(SeatedHips.X, SeatedHips.Y, SeatedHips.Z);
+        var foot = FootFrame(0, 0, Vector3.UnitY);
+        for (var i = 0; i < 2; i++)
+        {
+            var side = i == 0 ? 1f : -1f;
+            var hip = Vector3.Transform(new Vector3(side * 0.19f, -HipDrop, 0), pose.Pelvis);
+            var target = new Vector3(side * 0.21f, 0.64f, -0.62f);
+            var pole = Vector3.Normalize(new Vector3(side * 0.1f, 0.8f, -1f));
+            pose.Planted[i] = true;
+            pose.Lifted[i] = false;
             Solve(pose, i, hip, target, pole, foot);
         }
     }

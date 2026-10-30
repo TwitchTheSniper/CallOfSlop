@@ -504,6 +504,8 @@ public struct Snap
     public float Yaw;
     public float Pitch;
     public bool Grounded, Mantling; // for the leg animation (Source/Render/LegAnimator.cs)
+    public ushort SeatBody; // Sandbox: in this construct's seat (0: not seated); Yaw is then relative to the seat's facing
+    public byte SeatPart;
 }
 
 /// <summary>State for one player.</summary>
@@ -611,6 +613,21 @@ public sealed class Player
     public Vector3 RenderVelocity;
     public bool RenderGrounded = true, RenderMantling;
 
+    // Sandbox: sitting in a construct's seat (GameSandbox.cs, every frame on every machine). The body is drawn in the
+    // seat's frame (RenderSeatRot at RenderPosition, the seat's "at" point) in the seated pose for the seat type; the
+    // upper body and head turn by RenderLookYaw (the look relative to the seat's facing); RenderYaw is the look in the world.
+    public SeatKind RenderSeat;
+    public SeatKind RenderSeatWas; // the seat type while last alive (dying seated: the ragdoll starts seated, limp; Ragdolls.cs)
+    public Quaternion RenderSeatRot = Quaternion.Identity;
+    public float RenderLookYaw;
+    public Vector3 RenderWheelR, RenderWheelL; // a driver's hands on the steering wheel (world), and the rim's turn
+    public Quaternion RenderWheelRot = Quaternion.Identity;
+
+    /// <summary>Client, a remote player: the seat the interpolated snapshots put them in (0: none), whose yaw is then relative to it.</summary>
+    public ushort SnapSeatBody;
+
+    public byte SnapSeatPart;
+
     // ---- Server only --------------------------------------------------------
     public readonly List<InputCmd> InputQueue = new();
     public uint LastProcessedSeq;
@@ -651,7 +668,7 @@ public sealed class Player
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera
 
     public Vector3 Eye => GravityFrames.Above(Position, World.EyeOf(Sim.Stance)); // (along "up": straight up except on a planet)
-    public Vector3 RenderEye => GravityFrames.Above(RenderPosition, RenderEyeHeight);
+    public Vector3 RenderEye => RenderSeat != SeatKind.None ? RenderPosition + Vector3.Transform(new Vector3(0, RenderEyeHeight, 0), RenderSeatRot) : GravityFrames.Above(RenderPosition, RenderEyeHeight);
     public Vector3 Chest => GravityFrames.Above(Position, World.HeightOf(Sim.Stance) * 0.65f);
 
     public void Teleport(Vector3 feet)

@@ -40,7 +40,7 @@ RULES = [
     (r"^Attachments/", ["Attachments", "Optics", "Attachment variety", "Sight pictures", "Recoil", "Loadouts and perks",
                         "Bot gear level", "Loudener", "Mode modules"]),
     (r"^Constructs/|^Source/Constructs/|^Source/Game/GameSandbox|^Source/Game/Modes/Sandbox/|^Source/Maps/MapSandbox|^Source/Render/ConstructRender",
-     ["Constructs", "Construct logic", "Sandbox parts menu", "Sandbox tool wheel", "Mode modules"]),
+     ["Constructs", "Construct logic", "Seated riders", "Sandbox parts menu", "Sandbox tool wheel", "Mode modules"]),
     (r"^Source/UI/UiSandboxParts|^Source/App/Program\.Sandbox", ["Sandbox parts menu", "Sandbox tool wheel", "Constructs"]),
     (r"^Source/UI/RadialMenu|^Source/UI/SandboxToolWheel", ["Sandbox tool wheel"]),
     (r"^Parts/", PARTS),

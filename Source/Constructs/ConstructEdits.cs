@@ -26,6 +26,8 @@ public struct SandboxHand
     public byte SeatPart;
     public ushort SeatKeys; // seated: the fire, aim and reload keys the client holds (input readers; ConstructParts.KeyFire...)
     public double RackAt; // last rack take (a press cycles to the next part)
+    public float SeatLook; // seated: the look relative to the seat's facing, as the client sends it (CActKind.SeatLook; protocol 80)
+    public bool HasSeatLook; // (none heard since sitting down: the server works it out from the world look)
 
     public readonly bool Seated => SeatBody != 0;
 
@@ -359,6 +361,7 @@ public sealed class ConstructEdits
             if (h.Seated)
                 return "you are already sitting";
             h.Edit = EditKind.None;
+            h.HasSeatLook = false;
             h.SeatBody = c.Id;
             h.SeatPart = (byte)part;
             seat.SitterPlus1 = (byte)(player + 1);
@@ -422,6 +425,7 @@ public sealed class ConstructEdits
         var c = world.Get(h.SeatBody);
         h.SeatBody = 0;
         h.SeatKeys = 0;
+        h.HasSeatLook = false;
         if (c == null)
             return null;
         var mine = c.SeatOf(player);

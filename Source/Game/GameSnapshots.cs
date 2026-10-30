@@ -79,7 +79,9 @@ public sealed partial class Game
         uint present = 0;
         foreach (var p in Players.Values)
         {
-            _snapFast.Add(FastOf(p));
+            var fast = FastOf(p);
+            SandboxSnapSeat(p, ref fast); // seated: the seat and the look relative to it (GameSandbox.cs)
+            _snapFast.Add(fast);
             if (_lastAlive[p.Id] != p.Alive)
             {
                 _lastAlive[p.Id] = p.Alive;
@@ -240,11 +242,15 @@ public sealed partial class Game
             {
                 p.Weapon = e.Weapon;
                 p.Sim = MoveOf(e, p.Perks);
-                p.Yaw = e.Yaw;
+                p.Yaw = SandboxWorldYaw(e.Yaw, e.SeatBody, e.SeatPart); // (seated: the yaw came relative to the seat)
                 p.Pitch = e.Pitch;
                 if (e.Alive && !wasAlive)
                     p.Snaps.Clear();
-                p.Snaps.Add(new Snap { Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0 });
+                p.Snaps.Add(new Snap
+                {
+                    Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0,
+                    SeatBody = e.SeatBody, SeatPart = e.SeatPart,
+                });
                 if (p.Snaps.Count > 64)
                     p.Snaps.RemoveAt(0);
             }

@@ -21,6 +21,7 @@ public enum CActKind : byte
     Setting, // u16 body, u8 part: a logic part's next setting
     SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
+    SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -330,6 +331,17 @@ public sealed partial class Game
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
+            case CActKind.SeatLook:
+            {
+                ref var sh = ref hands.Hand(p.Id);
+                var look = (short)r.U16() / 32767f * MathF.PI;
+                if (sh.Seated)
+                {
+                    sh.SeatLook = look;
+                    sh.HasSeatLook = true;
+                }
+                return null;
+            }
         }
         return null;
     }
@@ -501,6 +513,168 @@ public sealed partial class Game
     {
         if (SandboxOn && Constructs.Bodies.Count > 0)
             Constructs.Blast(center, radius, damage);
+    }
+
+    // ---- Seated players: part of the construct ---------------------------------------------------------------------
+
+    /// <summary>How far a seated player's look turns from the seat's facing (radians either way): the driver a little less than a passenger; a gunner all the way round.</summary>
+    public static float SeatLookLimit(SeatKind kind) => kind switch
+    {
+        SeatKind.Driver => 1.75f,
+        SeatKind.Passenger => 2.1f,
+        _ => MathF.PI,
+    };
+
+    /// <summary>The yaw a seat faces in the world (its -Z, flattened).</summary>
+    public static float SeatYaw(in Quaternion seat)
+    {
+        var f = Vector3.Transform(-Vector3.UnitZ, seat);
+        return MathF.Abs(f.X) + MathF.Abs(f.Z) < 1e-4f ? 0f : MathF.Atan2(f.X, -f.Z);
+    }
+
+    /// <summary>A player's look relative to a seat's facing, inside the seat type's limits.</summary>
+    public static float SeatLocalYaw(float worldYaw, float seatYaw, SeatKind kind)
+    {
+        var lim = SeatLookLimit(kind);
+        var local = World.WrapAngle(worldYaw - seatYaw);
+        return lim >= MathF.PI ? local : Math.Clamp(local, -lim, lim);
+    }
+
+    private uint _sbViewSeat; // the seat the local view last turned with (body << 8 | part + 1; 0: none)
+    private float _sbViewYaw;
+
+    private float _sbLookSent = float.NaN;
+    private double _sbLookSentAt;
+
+    /// <summary>The local player's seat-relative look to the server (the host's straight into its hands): on a change, at most ~30 times a second, and every 0.25 s anyway (it goes unreliably).</summary>
+    private void SandboxSeatLookOut(float look, double now)
+    {
+        if (IsServer)
+        {
+            ref var h = ref SandboxHands.Hand(LocalId);
+            h.SeatLook = look;
+            h.HasSeatLook = h.Seated;
+            return;
+        }
+        var since = now - _sbLookSentAt;
+        if (since < 1.0 / 30 || (MathF.Abs(look - _sbLookSent) < 0.003f && since < 0.25))
+            return;
+        _sbLookSent = look;
+        _sbLookSentAt = now;
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.SeatLook).U16(unchecked((ushort)(short)Math.Clamp((int)MathF.Round(look / MathF.PI * 32767f), -32767, 32767)));
+        Net.SendToServer(w.Span, PacketReliability.UnreliableSequenced);
+    }
+
+    /// <summary>Server, each snapshot: a seated player's entry carries the seat and the look relative to it (protocol 80), not a world look.</summary>
+    private void SandboxSnapSeat(Player p, ref SnapPlayer f)
+    {
+        if (!SandboxOn || !p.Alive)
+            return;
+        ref var h = ref SandboxHands.Hand(p.Id);
+        if (!h.Seated || Constructs.Get(h.SeatBody) is not { } c || h.SeatPart >= c.PartCount)
+            return;
+        ConstructRender.SeatPose(c, h.SeatPart, 1f, true, out var q, out _);
+        f.SeatBody = h.SeatBody;
+        f.SeatPart = h.SeatPart;
+        f.Yaw = h.HasSeatLook ? h.SeatLook : World.WrapAngle(p.Yaw - SeatYaw(q));
+        f.MantleTicks = 0;
+    }
+
+    /// <summary>Client: a snapshot's yaw in the world (a seated player's came relative to their seat; the seat as drawn now).</summary>
+    private float SandboxWorldYaw(float yaw, ushort body, byte part)
+    {
+        if (body == 0 || Constructs.Get(body) is not { } c || part >= c.PartCount)
+            return yaw;
+        ConstructRender.SeatPose(c, part, 1f, false, out var q, out _);
+        return World.WrapAngle(SeatYaw(q) + yaw);
+    }
+
+    /// <summary>
+    /// Every frame, after the render states (host and clients): the constructs are posed for this frame (a client blends
+    /// its received poses here, before the camera is set), then every seated player is put in their seat as it is drawn:
+    /// feet at the seat's "at" point, the body in the seat's frame (tilting and turning with it, on a moving joint too),
+    /// the seated pose for the seat type, the look relative to the seat (the local view turns with the seat, inside the
+    /// seat type's limits). A remote player's seat and seat-relative look come from their snapshots (protocol 80), so every
+    /// machine composes the same seat-local pose with its own drawing of the construct: no lag, jitter or slide.
+    /// </summary>
+    internal void UpdateSandboxSeats(double now, float dt)
+    {
+        if (Constructs.Bodies.Count == 0)
+        {
+            _sbViewSeat = 0;
+            foreach (var p in Players.Values)
+            {
+                p.RenderSeat = SeatKind.None;
+                if (p.Alive)
+                    p.RenderSeatWas = SeatKind.None;
+            }
+            return;
+        }
+        if (!IsServer)
+        {
+            ConstructNet.Blend(Constructs, now, dt);
+            ConstructRender.FitWheels(Constructs, World.Query);
+        }
+        var localSeat = 0u;
+        foreach (var p in Players.Values)
+        {
+            p.RenderSeat = SeatKind.None;
+            if (!p.Alive)
+                continue; // (RenderSeatWas stays: a ragdoll of a seated death starts seated)
+            p.RenderSeatWas = SeatKind.None;
+            if (!SandboxOn)
+                continue;
+            ushort body;
+            byte part;
+            var remote = !IsServer && p.Id != LocalId;
+            if (remote)
+            {
+                body = p.SnapSeatBody;
+                part = p.SnapSeatPart;
+            }
+            else
+            {
+                ref var h = ref SandboxHands.Hand(p.Id);
+                body = h.SeatBody;
+                part = h.SeatPart;
+            }
+            if (body == 0 || Constructs.Get(body) is not { } c || part >= c.PartCount || c.Parts[part].D.Role != PartRole.Seat)
+                continue;
+            ConstructRender.SeatPose(c, part, _alpha, IsServer, out var q, out var feet);
+            var kind = c.SeatKindOf(part);
+            var seatYaw = SeatYaw(q);
+            p.RenderSeat = p.RenderSeatWas = kind;
+            p.RenderSeatRot = q;
+            p.RenderPosition = feet;
+            p.RenderStance = Stance.Stand;
+            p.RenderGrounded = true;
+            p.RenderMantling = false;
+            p.RenderVelocity = c.PointVel(feet) + c.SegPointVel(c.Parts[part].Seg, feet); // (not walked: the legs ignore it seated; a ragdoll keeps it)
+            if (kind == SeatKind.Driver)
+                ConstructRender.WheelGrips(c, q, feet, out p.RenderWheelR, out p.RenderWheelL, out p.RenderWheelRot);
+            if (p.Id == LocalId)
+            {
+                // The view turns with the seat, then stays inside the seat type's limits.
+                localSeat = ((uint)body << 8) | (uint)(part + 1);
+                if (_sbViewSeat == localSeat)
+                    LookYaw = World.WrapAngle(LookYaw + World.WrapAngle(seatYaw - _sbViewYaw));
+                _sbViewYaw = seatYaw;
+                p.RenderLookYaw = SeatLocalYaw(LookYaw, seatYaw, kind);
+                LookYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
+                p.RenderYaw = LookYaw;
+                SandboxSeatLookOut(p.RenderLookYaw, now);
+            }
+            else
+            {
+                // A client's remote player: the snapshot yaw is seat-relative. The host's: the look its client sent
+                // (seat-relative: exact however the seat turns), else the world look it simulates.
+                ref var h = ref SandboxHands.Hand(p.Id);
+                p.RenderLookYaw = remote ? SeatLocalYaw(p.RenderYaw, 0, kind) : h.HasSeatLook ? SeatLocalYaw(h.SeatLook, 0, kind) : SeatLocalYaw(p.RenderYaw, seatYaw, kind);
+                p.RenderYaw = World.WrapAngle(seatYaw + p.RenderLookYaw);
+            }
+        }
+        _sbViewSeat = localSeat;
     }
 
     // ---- HUD ----------------------------------------------------------------------------------------------------------
