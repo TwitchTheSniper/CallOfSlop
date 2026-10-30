@@ -1,0 +1,162 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Diesel Engine",
+  "description": "A 1 m heavy diesel: huge torque low down (820 N m at 1800 rpm), revs to 3200 only. Needs a battery for its starter.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 5.0,
+  "mass": 380,
+  "health": 600,
+  "armour": 12,
+  "material": "steel",
+  "color": "#3d4a5c",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.7,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.36,
+        0.16,
+        0.9
+      ],
+      "at": [
+        0,
+        0.42,
+        0
+      ],
+      "color": "#58687e",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.4,
+        0.1
+      ],
+      "at": [
+        0.15,
+        0.55,
+        -0.3
+      ],
+      "color": "#2a2d30",
+      "detail": true
+    },
+    {
+      "size": [
+        0.52,
+        0.12,
+        0.92
+      ],
+      "at": [
+        0,
+        -0.3,
+        0
+      ],
+      "color": "#2b3442",
+      "detail": true
+    },
+    {
+      "size": [
+        0.3,
+        0.3,
+        0.06
+      ],
+      "at": [
+        0,
+        0.05,
+        -0.53
+      ],
+      "color": "#1c1f22",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.35,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.35,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        -0.1,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        -0.1,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y0",
+      "at": [
+        0,
+        -0.35,
+        -0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y1",
+      "at": [
+        0,
+        -0.35,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ],
+  "engine": {
+    "torque": 820,
+    "idleRpm": 700,
+    "peakRpm": 1800,
+    "maxRpm": 3200,
+    "curve": "diesel",
+    "burnRate": 0.08,
+    "starter": true,
+    "noise": 0.9
+  }
+}

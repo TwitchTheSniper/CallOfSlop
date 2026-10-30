@@ -17,7 +17,8 @@ public static class ConstructPower
 
     /// <summary>Does part <paramref name="i"/> work as far as power goes (always, on a construct that isn't electrical, or for a part that needs none)?</summary>
     public static bool On(Construct c, int i) =>
-        !c.Electrical || i < 0 || i >= c.PartCount || !c.Parts[i].D.Electric || c.PowerOn && c.Parts[i].Powered;
+        i >= 0 && i < c.PartCount && c.PtoDriven[i] ? c.EngineRunning // (a joint on a power take-off runs from the engine)
+        : !c.Electrical || i < 0 || i >= c.PartCount || !c.Parts[i].D.Electric || c.PowerOn && c.Parts[i].Powered;
 
     /// <summary>With the caches: which parts a working battery's links reach, what the batteries hold, the alternators on the engine.</summary>
     public static void Rebuild(Construct c)
@@ -73,23 +74,32 @@ public static class ConstructPower
         if (c.Dirty)
             c.Rebuild();
         var electrical = c.HasBattery || world.PowerRequired;
-        var wants = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.Fuel > 0;
+        var wants = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.HasFuel;
         if (electrical != c.Electrical)
         {
             c.Electrical = electrical;
             c.Wake();
         }
+        var engineDef = c.Engine >= 0 && c.Engine < c.PartCount ? c.DefOf(c.Engine) : null;
         if (!electrical)
         {
             c.PowerOn = true;
-            c.EngineRunning = wants; // (no starter: it runs whenever it could)
-            c.StarterFailed = false;
+            // (no battery: it runs whenever it could, unless it needs a starter: a diesel, a turbine)
+            var asked = c.Driver != 255 && c.Throttle != 0 || c.EngineWired && c.EngineSignal != 0;
+            c.EngineRunning = wants && engineDef is not { NeedsStarter: true };
+            c.StarterFailed = wants && asked && engineDef is { NeedsStarter: true };
             c.PowerUse = 0;
             c.MotorWork = 0;
             return;
         }
+        if (engineDef is { FuelKind: EngineFuel.Electric })
+        {
+            // An electric motor needs no starter: it runs while the battery reaches it and has charge.
+            c.EngineRunning = wants && c.PowerOn && c.Parts[c.Engine].Powered;
+            c.StarterFailed = false;
+        }
         // The engine: asked to go (throttle, or a signal into it) it needs the starter; it stops when nobody asks it to.
-        if (!wants)
+        else if (!wants)
         {
             c.EngineRunning = false;
             c.StarterFailed = false;

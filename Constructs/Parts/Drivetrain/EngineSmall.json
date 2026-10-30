@@ -1,0 +1,143 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Engine",
+  "description": "A 0.4 m single-cylinder petrol engine: light, revs high, little torque (70 N m). Sips fuel.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 35,
+  "health": 140,
+  "armour": 3,
+  "material": "steel",
+  "color": "#6a6f75",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.4,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.18,
+        0.2,
+        0.18
+      ],
+      "at": [
+        0,
+        0.28,
+        0
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.24,
+        0.03,
+        0.24
+      ],
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "color": "#7d8389",
+      "detail": true
+    },
+    {
+      "size": [
+        0.24,
+        0.03,
+        0.24
+      ],
+      "at": [
+        0,
+        0.31,
+        0
+      ],
+      "color": "#7d8389",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.08,
+        0.22
+      ],
+      "at": [
+        0.16,
+        0.1,
+        0.1
+      ],
+      "color": "#2a2d30",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.2,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.05,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.05,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "engine": {
+    "torque": 70,
+    "idleRpm": 1200,
+    "peakRpm": 6000,
+    "maxRpm": 9000,
+    "curve": "petrol",
+    "burnRate": 0.015,
+    "noise": 0.6
+  }
+}

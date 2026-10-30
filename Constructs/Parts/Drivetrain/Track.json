@@ -1,0 +1,186 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Track",
+  "description": "A 5 m track unit with its road wheels and a drive sprocket at the back: bolt the sprocket's axle onto a suspension. Grips dirt hard; it steers by driving the two sides against each other (no steering pivots).",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 4.0,
+  "mass": 420,
+  "health": 900,
+  "armour": 18,
+  "material": "steel",
+  "friction": 1.0,
+  "color": "#2a2c2f",
+  "boxes": [
+    {
+      "size": [
+        0.45,
+        0.7,
+        4.3
+      ]
+    },
+    {
+      "size": [
+        0.45,
+        0.42,
+        4.895
+      ]
+    },
+    {
+      "size": [
+        0.45,
+        0.175,
+        5.0
+      ]
+    },
+    {
+      "size": [
+        0.47,
+        0.04,
+        4.9
+      ],
+      "at": [
+        0,
+        0.33,
+        0
+      ],
+      "color": "#3b3e42",
+      "detail": true
+    },
+    {
+      "size": [
+        0.47,
+        0.04,
+        4.9
+      ],
+      "at": [
+        0,
+        -0.33,
+        0
+      ],
+      "color": "#3b3e42",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        -2.15
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        -1.29
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        -0.43
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        0.43
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        1.29
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.51,
+        0.32,
+        0.32
+      ],
+      "at": [
+        0,
+        -0.08,
+        2.15
+      ],
+      "color": "#5b6157",
+      "detail": true
+    },
+    {
+      "size": [
+        0.53,
+        0.5,
+        0.5
+      ],
+      "at": [
+        0,
+        0.02,
+        2.15
+      ],
+      "color": "#8a7d4a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.225,
+        0,
+        2.15
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.35,
+    "grip": 1.05,
+    "offroad": 1.4,
+    "side": 0.4,
+    "roll": 0.03,
+    "track": {
+      "length": 5.0,
+      "rays": 6
+    }
+  }
+}

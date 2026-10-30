@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Stub Axle",
+  "description": "A dead stub axle: holds a suspension out from the frame. It carries no drive: its wheel only rolls.",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 8,
+  "health": 160,
+  "armour": 4,
+  "material": "steel",
+  "onBreak": "detach",
+  "color": "#6f767f",
+  "boxes": [
+    {
+      "size": [
+        0.15,
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.17,
+        0.1,
+        0.1
+      ],
+      "color": "#4a4f55",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.075,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.075,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.15
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.15
+      ],
+      "dir": "-z"
+    }
+  ],
+  "drive": {
+    "kind": "stub"
+  }
+}

@@ -1,0 +1,102 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Adjustable Suspension",
+  "description": "A coil-over with presets: the linking tool's R picks soft, medium, stiff, high or low (stiffness, damping and ride height).",
+  "role": "suspension",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 22,
+  "health": 120,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3f6fa0",
+  "boxes": [
+    {
+      "size": [
+        0.05,
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.7,
+        0.08
+      ],
+      "color": "#80b0e0",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0.0,
+        0.35,
+        0
+      ],
+      "color": "#6a5a2a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.025,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.025,
+        0,
+        0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ],
+  "suspension": {
+    "travel": 0.4,
+    "frequency": 2.2,
+    "damping": 0.7,
+    "maxLoad": 800,
+    "setting": 1,
+    "presets": [
+      {
+        "label": "soft",
+        "frequency": 1.5,
+        "damping": 0.55
+      },
+      {
+        "label": "medium",
+        "frequency": 2.2,
+        "damping": 0.7
+      },
+      {
+        "label": "stiff",
+        "frequency": 3.4,
+        "damping": 0.9
+      },
+      {
+        "label": "high",
+        "frequency": 2.4,
+        "damping": 0.8,
+        "hold": 0.9
+      },
+      {
+        "label": "low",
+        "frequency": 2.8,
+        "damping": 0.85,
+        "hold": 0.1
+      }
+    ]
+  }
+}

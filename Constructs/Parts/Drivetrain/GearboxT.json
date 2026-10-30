@@ -1,0 +1,114 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "T Gearbox",
+  "description": "Splits the drive three ways: in at any of its marked faces, out of the other two (front and rear axles from one shaft).",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 26,
+  "health": 150,
+  "armour": 4,
+  "material": "steel",
+  "color": "#5f6b45",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.3,
+        0.52
+      ],
+      "color": "#45502f",
+      "detail": true
+    },
+    {
+      "size": [
+        0.3,
+        0.52,
+        0.3
+      ],
+      "color": "#45502f",
+      "detail": true
+    },
+    {
+      "size": [
+        0.52,
+        0.2,
+        0.2
+      ],
+      "color": "#45502f",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "drive": {
+    "kind": "gearbox",
+    "ports": [
+      "-z",
+      "+z",
+      "-y"
+    ],
+    "efficiency": 0.95
+  }
+}

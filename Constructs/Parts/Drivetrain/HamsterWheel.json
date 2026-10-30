@@ -1,0 +1,157 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Hamster Wheel",
+  "description": "A hamster in a running wheel: no fuel, no battery, no hurry (30 N m, 600 rpm).",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 25,
+  "health": 60,
+  "armour": 0,
+  "material": "steel",
+  "color": "#c8b27a",
+  "boxes": [
+    {
+      "size": [
+        0.3,
+        0.8,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.32,
+        0.06,
+        0.8
+      ],
+      "at": [
+        0,
+        0.37,
+        0
+      ],
+      "color": "#e0d0a0",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.8,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        0.37
+      ],
+      "color": "#e0d0a0",
+      "detail": true
+    },
+    {
+      "size": [
+        0.32,
+        0.8,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        -0.37
+      ],
+      "color": "#e0d0a0",
+      "detail": true
+    },
+    {
+      "size": [
+        0.12,
+        0.1,
+        0.18
+      ],
+      "at": [
+        0,
+        -0.3,
+        0
+      ],
+      "color": "#a8743c",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.06,
+        0.06
+      ],
+      "at": [
+        0,
+        -0.24,
+        -0.1
+      ],
+      "color": "#f0f0f0",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.15,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.15,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.4,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.4,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        -0.15,
+        0.4
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        -0.15,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ],
+  "engine": {
+    "torque": 30,
+    "idleRpm": 0,
+    "peakRpm": 300,
+    "maxRpm": 600,
+    "curve": "flat",
+    "fuel": "none",
+    "noise": 0.05
+  }
+}

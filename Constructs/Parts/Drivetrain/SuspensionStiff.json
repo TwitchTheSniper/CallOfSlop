@@ -1,0 +1,72 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Stiff Suspension",
+  "description": "A short, stiff racing mount: 0.12 m of travel, little roll or squat, harsh over bumps.",
+  "role": "suspension",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 14,
+  "health": 120,
+  "armour": 3,
+  "material": "steel",
+  "color": "#b08a2e",
+  "boxes": [
+    {
+      "size": [
+        0.05,
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.42,
+        0.08
+      ],
+      "color": "#d0b050",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0.0,
+        0.21,
+        0
+      ],
+      "color": "#6a5a2a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.025,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.025,
+        0,
+        0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ],
+  "suspension": {
+    "travel": 0.12,
+    "frequency": 3.6,
+    "damping": 0.9,
+    "maxLoad": 900
+  }
+}

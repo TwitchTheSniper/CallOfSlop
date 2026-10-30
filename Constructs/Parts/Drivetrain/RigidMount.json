@@ -1,0 +1,71 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rigid Mount",
+  "description": "No suspension at all: a solid wheel mount. Tough and cheap; every bump goes straight into the frame.",
+  "role": "suspension",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 8,
+  "health": 300,
+  "armour": 10,
+  "material": "steel",
+  "color": "#5c6168",
+  "boxes": [
+    {
+      "size": [
+        0.05,
+        0.3,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.33,
+        0.08
+      ],
+      "color": "#5c6168",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0.0,
+        0.165,
+        0
+      ],
+      "color": "#6a5a2a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "mount",
+      "at": [
+        -0.025,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "axle",
+      "at": [
+        0.025,
+        0,
+        0
+      ],
+      "dir": "+x",
+      "kind": "axle"
+    }
+  ],
+  "suspension": {
+    "travel": 0.03,
+    "frequency": 5.5,
+    "damping": 1.0
+  }
+}

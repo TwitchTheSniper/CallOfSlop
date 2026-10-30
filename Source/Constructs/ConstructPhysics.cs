@@ -32,6 +32,7 @@ public static class ConstructPhysics
     public const float MaxJointSpin = 25f; // radians (or metres) a second: anything faster is clamped
     public const int SleepAfterTicks = 40;
     public const float StillSpeed2 = 0.02f; // (m/s or rad/s, squared) slower than this counts as still, for sleep
+    public const float AirDrag = 0.006f; // a wheeled construct on the ground slows by this times its speed squared (m/s2): arcade air drag
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
     public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
     public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick
@@ -162,23 +163,20 @@ public static class ConstructPhysics
         var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
         var com = c.WorldCom;
         var share = c.Mass / c.WheelCount;
-        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.Fuel > 0 && (!c.Electrical || c.EngineRunning); // (an electrical construct's engine needs the starter: ConstructPower.cs)
-        var engine = driving ? c.DefOf(c.Engine) : null;
+        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.EngineRunning; // (the power step starts and stops the engine: ConstructPower.cs)
         var throttle = c.EngineWired ? c.EngineSignal : c.Throttle; // a wired engine runs on its signal
+        var steer = c.Driver != 255 ? c.SteerInput : 0f;
         var brake = c.Brake || c.BrakeSignal >= 0.5f;
         var touching = 0;
-        var drivenTouching = 0;
         for (var k = 0; k < c.WheelCount; k++)
             if (c.Wheels[k].Touching)
-            {
                 touching++;
-                if (c.Wheels[k].Driven)
-                    drivenTouching++;
-            }
         var forwardSpeed = Vector3.Dot(c.Vel, fwdBody);
-        if (driving && throttle != 0)
-            c.Fuel = MathF.Max(0, c.Fuel - engine!.BurnRate * MathF.Abs(throttle) * dt);
+        ConstructDrive.Tick(c, driving, throttle, steer, forwardSpeed, dt); // the engine: gear, rpm, torque, each wheel's share
+        var want = MathF.Max(MathF.Abs(throttle), c.SkidSteer ? MathF.Abs(steer) : 0);
+        var g = GravityAccel;
         var rot = Matrix4x4.CreateFromQuaternion(c.Rot);
+        var lockedTouch = 0;
         for (var k = 0; k < c.WheelCount; k++)
         {
             ref var w = ref c.Wheels[k];
@@ -199,11 +197,29 @@ public static class ConstructPhysics
             w.Compression = x;
             if (!wasTouching)
                 w.PrevCompression = x; // first touch: no damping kick
-            var omega = MathF.Tau * w.Frequency;
-            var k_s = share * omega * omega;
-            var c_d = 2 * w.Damping * MathF.Sqrt(k_s * share);
+            // The spring: an adjustable one's preset, an active one's height; a load past what it is built for sags it.
+            ref var sp = ref c.Parts[w.Suspension];
+            var sd = sp.D;
+            var freq = w.Frequency;
+            var damp = w.Damping;
+            var hold = -1f;
+            if (sd.SuspFrequency.Length > 0)
+            {
+                var si = Math.Min((int)sp.Setting, sd.SuspFrequency.Length - 1);
+                freq = sd.SuspFrequency[si];
+                damp = sd.SuspDamping[si];
+                hold = sd.SuspHold[si];
+            }
+            else if (sd.ActiveSuspension)
+                hold = ConstructPower.On(c, w.Suspension) ? Math.Clamp(sp.In, 0, 1) : 0f;
+            var load = MathF.Min(share, w.MaxLoad);
+            var omega = MathF.Tau * freq;
+            var k_s = load * omega * omega;
+            var c_d = 2 * damp * MathF.Sqrt(k_s * load);
             var rate = (w.Compression - w.PrevCompression) / dt;
-            var force = MathF.Max(0, k_s * x + c_d * rate);
+            var force = hold >= 0
+                ? MathF.Max(0, k_s * (x - w.Travel * (0.85f - 0.75f * hold)) + load * g + c_d * rate) // held at a ride height (it carries the weight it is built for)
+                : MathF.Max(0, k_s * x + c_d * rate);
             var at = origin - up * hit.Distance; // (the contact under the wheel)
             var r = at - com;
             // Bottomed out: a hard stop on top of the spring (whatever is left of the step, at once).
@@ -226,27 +242,24 @@ public static class ConstructPhysics
                 fwd = -fwd;
             var side = Vector3.Normalize(Vector3.Cross(n, fwd));
             var vp = c.PointVel(at);
-            var maxFriction = normalImpulse * w.Grip;
+            var maxFriction = normalImpulse * w.Grip * (hit.Kind == ShapeKind.Terrain ? w.Offroad : 1f); // (terrain is dirt: off-road tyres grip it, slicks don't)
             var vSide = Vector3.Dot(vp, side);
             var shareOf = 1f / MathF.Max(1, touching); // each wheel takes its share of stopping the body (not all of it)
-            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf;
+            var jSide = -vSide / InvMassAt(c, invI, r, side) * 0.9f * shareOf * w.Side;
             var vFwd = Vector3.Dot(vp, fwd);
             var jFwd = 0f;
-            if (driving && w.Driven && drivenTouching > 0)
+            if (driving && w.Share > 0)
             {
-                var want = throttle;
-                var top = engine!.TopSpeed * c.GearRatio; // (the gear: a low gear is slower and pulls harder)
-                var pull = engine.EngineForce / c.GearRatio;
-                if (want > 0 && forwardSpeed < top)
-                    jFwd += want * pull / drivenTouching * dt * MathF.Min(1, (top - forwardSpeed) / 3f);
-                else if (want < 0 && forwardSpeed > -top * 0.4f)
-                    jFwd += want * pull / drivenTouching * dt * 0.6f;
+                // Skid steering (no steered wheels): each side's throttle is the throttle plus or minus the steering.
+                var dir = c.SkidSteer ? Math.Clamp(throttle + steer * w.SideSign, -1, 1) : MathF.Sign(throttle);
+                var amount = !c.SkidSteer ? 1f : want > 0 ? MathF.Abs(dir) / want : 0f; // (the engine's torque already follows the throttle)
+                jFwd += MathF.Sign(dir) * amount * ConstructDrive.WheelTorque(c, k) / w.Radius * dt;
             }
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (brake || ((!driving || throttle == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
+            if (brake || ((!driving || want == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
                 jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
-                jFwd += stop * 0.01f; // rolling resistance
+                jFwd += MathF.Sign(stop) * MathF.Min(MathF.Abs(stop), w.Roll * normalImpulse); // rolling resistance (a share of the load: a knobbly or flat tyre drags more)
             // Friction circle.
             var total = MathF.Sqrt(jSide * jSide + jFwd * jFwd);
             if (total > maxFriction && total > 0)
@@ -258,7 +271,19 @@ public static class ConstructPhysics
             // Grip pushes at a point raised most of the way to the centre of mass: much less roll (an arcade anti-roll bar).
             var rGrip = r + up * (Vector3.Dot(-r, up) * AntiRoll);
             ApplyImpulse(c, invI, rGrip, side * jSide + fwd * jFwd);
-            w.Spin += vFwd / w.Radius * dt;
+            if (!w.Track)
+                w.Spin += vFwd / w.Radius * dt;
+            if (w.Share > 0 && w.Group < Construct.MaxGroups && ConstructDrive.GroupKind(c, w.Group) == DiffKind.Locked && c.GroupPart[w.Group] < c.PartCount && c.Parts[c.GroupPart[w.Group]].D.Role == PartRole.Differential)
+                lockedTouch++;
+        }
+        // Air drag on the body: what tops out a car in a tall gear before its engine's limiter does.
+        if (touching > 0)
+            c.Vel -= c.Vel * (c.Vel.Length() * AirDrag * dt);
+        // A locked axle fights the steering: its wheels can't turn at different speeds, so they scrub the turn away.
+        if (lockedTouch >= 2 && !c.SkidSteer)
+        {
+            var yaw = Vector3.Dot(c.AngVel, up);
+            c.AngVel -= up * (yaw * MathF.Min(1, 2.2f * dt));
         }
     }
 

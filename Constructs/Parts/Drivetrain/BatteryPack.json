@@ -1,0 +1,141 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Battery Pack",
+  "description": "A big traction battery (20 MJ) for an electric motor: heavy. Its links carry the power like a battery's.",
+  "role": "battery",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 150,
+  "health": 200,
+  "armour": 5,
+  "material": "steel",
+  "color": "#23272c",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.3,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.52,
+        0.04,
+        1.02
+      ],
+      "at": [
+        0,
+        0.08,
+        0
+      ],
+      "color": "#d6b13a",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.05,
+        0.06
+      ],
+      "at": [
+        -0.15,
+        0.17,
+        -0.4
+      ],
+      "color": "#c03a2b",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.05,
+        0.06
+      ],
+      "at": [
+        0.15,
+        0.17,
+        -0.4
+      ],
+      "color": "#1d1d1f",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y0",
+      "at": [
+        0,
+        -0.15,
+        -0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-y1",
+      "at": [
+        0,
+        -0.15,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ],
+  "battery": {
+    "capacity": 20000
+  }
+}

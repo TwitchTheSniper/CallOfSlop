@@ -62,6 +62,7 @@ public sealed class SandboxCatalogue
             case PartRole.FuelLine: return ("Wheels and drivetrain", "Fuel lines");
             case PartRole.Transmission: return ("Wheels and drivetrain", "Transmissions");
             case PartRole.Differential: return ("Wheels and drivetrain", "Differentials");
+            case PartRole.Transfer: return ("Wheels and drivetrain", "Shafts and gearboxes");
             case PartRole.Seat: return ("Seats", "Seats");
             case PartRole.Hinge: return ("Joints", "Hinges");
             case PartRole.Joint: return ("Joints", "Moving joints");

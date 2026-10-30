@@ -70,7 +70,7 @@ public static partial class SelfTest
         const string hitch = """{ "name": "H", "role": "hitch", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "hitch": { "kind": "hook", "at": [0, -0.12, 0], "chain": 2 } }""";
         const string battery = """{ "name": "B", "role": "battery", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "battery": { "capacity": 100 } }""";
         const string gauge = """{ "name": "G", "role": "logic", "tool": "wrench", "mass": 1, "health": 10, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "logic": { "kind": "chargegauge" }, "dial": { "at": [0, 0, 0.1], "face": "+z", "max": 1 } }""";
-        const string gears = """{ "name": "T", "role": "transmission", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "transmission": { "gears": [0.5, 1, 2], "gear": 2 } }""";
+        const string gears = """{ "name": "T", "role": "transmission", "tool": "wrench", "mass": 5, "health": 50, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "transmission": { "gears": [2, 1, 0.5], "gear": 2 } }""";
         (string Json, string Want)[] bad =
         [
             (hitch.Replace("\"hook\"", "\"magnet\""), "\"hitch.kind\" is one of"),
@@ -82,7 +82,7 @@ public static partial class SelfTest
             (gauge.Replace("\"role\": \"logic\"", "\"role\": \"frame\"").Replace(", \"logic\": { \"kind\": \"chargegauge\" }", ""), "only a logic part with an output"),
             (gauge.Replace("\"kind\": \"chargegauge\"", "\"kind\": \"lamp\""), "only a logic part with an output"),
             (gears.Replace("\"gear\": 2", "\"gear\": 4"), "\"transmission.gear\""),
-            (gears.Replace("[0.5, 1, 2]", "[0.5, 9]"), "a gear ratio is 0.1 to 5"),
+            (gears.Replace("[2, 1, 0.5]", "[40, 9]"), "a gear ratio is 0.2 to 20"),
             (gauge.Replace("\"kind\": \"chargegauge\" }", "\"kind\": \"selector\", \"settings\": [1] }").Replace(", \"dial\": { \"at\": [0, 0, 0.1], \"face\": \"+z\", \"max\": 1 }", ""), "how many positions"),
             (battery.Replace("\"health\": 50,", "\"health\": 50, \"power\": -3,"), "\"power\""),
         ];
@@ -457,7 +457,12 @@ public static partial class SelfTest
             });
             late[g] = car.Vel.Length();
         }
-        var top1 = ConstructParts.Need("Engine").TopSpeed * ConstructParts.Need("Transmission").Settings[0];
+        var top1 = 0f;
+        {
+            var w = new ConstructWorld();
+            if (Buggy(w, -27, 0, MathF.PI / 2) is { } car)
+                top1 = ConstructDrive.TopSpeed(car, ConstructParts.Need("Transmission").Settings[0]);
+        }
         // A gear selector wired in: each press steps the gear on.
         var picked = new int[3];
         {

@@ -1,0 +1,104 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Right-Angle Gearbox",
+  "description": "Turns the drive through 90 degrees: in at one face, out at the other (marked).",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 22,
+  "health": 140,
+  "armour": 4,
+  "material": "steel",
+  "color": "#6b5f45",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.3,
+        0.52
+      ],
+      "color": "#4f4532",
+      "detail": true
+    },
+    {
+      "size": [
+        0.3,
+        0.52,
+        0.3
+      ],
+      "color": "#4f4532",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "drive": {
+    "kind": "gearbox",
+    "ports": [
+      "-z",
+      "-y"
+    ],
+    "efficiency": 0.96
+  }
+}

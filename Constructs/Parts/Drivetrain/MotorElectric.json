@@ -1,0 +1,142 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Electric Motor",
+  "description": "A 0.5 m electric motor: full torque from standstill (380 N m), quiet, no fuel. Runs on the construct's batteries.",
+  "role": "engine",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 70,
+  "health": 200,
+  "armour": 5,
+  "material": "steel",
+  "color": "#2d5a8a",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.4,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.42,
+        0.06,
+        0.4
+      ],
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "color": "#1f3f62",
+      "detail": true
+    },
+    {
+      "size": [
+        0.42,
+        0.06,
+        0.4
+      ],
+      "at": [
+        0,
+        -0.05,
+        0
+      ],
+      "color": "#1f3f62",
+      "detail": true
+    },
+    {
+      "size": [
+        0.12,
+        0.12,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        0.27
+      ],
+      "color": "#c0c4c8",
+      "detail": true
+    },
+    {
+      "size": [
+        0.14,
+        0.06,
+        0.14
+      ],
+      "at": [
+        0.08,
+        0.22,
+        -0.1
+      ],
+      "color": "#d6b13a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.2,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.2,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.05,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.05,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "engine": {
+    "torque": 380,
+    "peakRpm": 3500,
+    "maxRpm": 10000,
+    "curve": "electric",
+    "fuel": "electric",
+    "noise": 0.1
+  }
+}

@@ -67,26 +67,38 @@
       "by": "mount"
     },
     {
-      "part": "Steering Pivot",
+      "part": "Frame Block",
       "on": 0,
-      "socket": "x-0",
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 1,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 11,
+      "socket": "-x",
       "by": "base"
     },
     {
       "part": "Steering Pivot",
-      "on": 1,
-      "socket": "x+0",
+      "on": 12,
+      "socket": "+x",
       "by": "base"
     },
     {
       "part": "Suspension",
-      "on": 11,
+      "on": 13,
       "socket": "leaf",
       "by": "mount"
     },
     {
       "part": "Suspension",
-      "on": 12,
+      "on": 14,
       "socket": "leaf",
       "by": "mount"
     },
@@ -104,37 +116,25 @@
     },
     {
       "part": "Wheel",
-      "on": 13,
+      "on": 15,
       "socket": "axle",
       "by": "axle"
     },
     {
       "part": "Wheel",
-      "on": 14,
+      "on": 16,
       "socket": "axle",
       "by": "axle"
     },
     {
-      "part": "Frame Block",
-      "on": 0,
-      "socket": "end-",
-      "by": "+z"
-    },
-    {
-      "part": "Frame Block",
-      "on": 1,
-      "socket": "end-",
-      "by": "+z"
-    },
-    {
       "part": "Corner",
-      "on": 19,
+      "on": 11,
       "socket": "-z",
       "by": "back"
     },
     {
       "part": "Corner",
-      "on": 20,
+      "on": 12,
       "socket": "-z",
       "by": "back"
     },

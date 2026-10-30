@@ -1,0 +1,108 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Spiked Wheel",
+  "description": "A wheel wrapped in chains and spikes, 0.84 m across: bites into mud and dirt, skates on hard ground.",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 40,
+  "health": 200,
+  "armour": 8,
+  "material": "rubber",
+  "color": "#1f2124",
+  "boxes": [
+    {
+      "size": [
+        0.32,
+        0.84,
+        0.3528
+      ]
+    },
+    {
+      "size": [
+        0.32,
+        0.3528,
+        0.84
+      ]
+    },
+    {
+      "size": [
+        0.32,
+        0.714,
+        0.714
+      ]
+    },
+    {
+      "size": [
+        0.36,
+        0.231,
+        0.231
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.34,
+        0.504,
+        0.0504
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.34,
+        0.0504,
+        0.504
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.36,
+        0.06,
+        0.9
+      ],
+      "color": "#8b8f95",
+      "detail": true
+    },
+    {
+      "size": [
+        0.36,
+        0.9,
+        0.06
+      ],
+      "color": "#8b8f95",
+      "detail": true
+    },
+    {
+      "size": [
+        0.36,
+        0.64,
+        0.64
+      ],
+      "color": "#6f7378",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.16,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.42,
+    "grip": 0.75,
+    "offroad": 1.5,
+    "roll": 0.03
+  }
+}
