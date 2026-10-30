@@ -936,6 +936,8 @@ public static unsafe partial class Program
         }
         if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
             return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SocketWeldEsc())
+            return; // (Esc cancels the socket weld being set up, not the match: Program.SandboxSocketWeld.cs)
         if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())
             return; // (Backspace takes the last node off)
         if (key == GlfwKey.Escape && Ui.ChatOpen)
@@ -982,6 +984,8 @@ public static unsafe partial class Program
     {
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
             return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && SocketWeldScroll(offset.Y))
+            return; // (the welder's socket weld, step 3: the wheel spins the piece; Program.SandboxSocketWeld.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
@@ -1179,6 +1183,7 @@ public static unsafe partial class Program
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
         var wheelOpen = ToolWheelInput(delta);
         wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
+        wheelOpen |= SocketWeldMouse(delta); // Sandbox: the welder's socket weld, step 3: mouse X spins the piece (Program.SandboxSocketWeld.cs)
 
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).
         if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)

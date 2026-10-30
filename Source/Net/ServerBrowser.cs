@@ -221,7 +221,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 98: Sandbox one pipe (board item dev-sandbox-one-pipe-op01, decision 28): a routed link's type byte (CBody's links, CAct.Route,
     //     CAct.WorldRoute, the world links list) is the type alone; the high nibble that held a pipe style is gone (read and masked off).
     //     The fuel and water hose parts became one fluid hose (HoseCarry.Fluid in the part files, not on the wire).
-    public const byte ProtocolVersion = 98;
+    // 99: Sandbox three-step socket weld (board item sw01, SocketWeld.cs): CActKind.SocketWeld at the end of CActKind (the
+    //     piece's socket, the target socket or face point, the angle) and EditKind.SocketWeld in the Sandbox hands tail.
+    public const byte ProtocolVersion = 99;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

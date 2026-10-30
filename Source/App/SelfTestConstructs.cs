@@ -525,11 +525,11 @@ public static partial class SelfTest
         var wheelGhostsBare = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
         var beamGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Frame Block"), ghosts, car.Com, 10);
         var tank = Step("Fuel Tank", b, "y+0", "-y", ConstructTool.Wrench);
-        var eng = Step("Engine", b, "y+3", "-y", ConstructTool.Wrench);
+        var eng = Step("Engine", b, "y+3", "-y", ConstructTool.Welder); // (decision 27: physics-only, so the welder)
         var l1 = Step("Fuel Line", tank, "+z", "-x", ConstructTool.Wrench);
         Step("Fuel Line", l1, "+x", "-x", ConstructTool.Wrench);
         Step("Transmission", eng, "+z", "-z", ConstructTool.Wrench);
-        var diff = Step("Differential", 0, "end+", "-z0", ConstructTool.Wrench);
+        var diff = Step("Differential", 0, "end+", "-z0", ConstructTool.Welder);
         var s0 = Step("Suspension", diff, "-x", "mount", ConstructTool.Wrench);
         var wheelGhosts = ConstructBuild.Ghosts(car, ConstructParts.Need("Wheel"), ghosts, car.Com, 10);
         var s1 = Step("Suspension", diff, "+x", "mount", ConstructTool.Wrench);

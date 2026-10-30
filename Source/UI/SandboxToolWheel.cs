@@ -65,8 +65,8 @@ public sealed class SandboxToolWheel
     {
         Menu.Title = "Tools";
         Menu.Help = "flick to a tool, let go";
-        Set(Slot.Wrench, "Wrench", "bolted parts");
-        Set(Slot.Welder, "Welder", "frames, panels");
+        Set(Slot.Wrench, "Wrench", "small parts (items)");
+        Set(Slot.Welder, "Welder", "physics pieces: socket weld");
         Set(Slot.Linker, "Linking tool", "wires, settings");
         Set(Slot.Hands, "Hands / gun", "out of build mode");
         Set(Slot.PhysicsGun, "Physics gun", "grab, move, turn, freeze");
@@ -118,8 +118,8 @@ public sealed class SandboxToolWheel
         if (key == _keysKey)
             return;
         _keysKey = key;
-        Menu.Items[(int)Slot.Wrench].Hint = $"key {Keybinds.NameOf(s, GameAction.Weapon3)}: bolted parts";
-        Menu.Items[(int)Slot.Welder].Hint = $"key {Keybinds.NameOf(s, GameAction.Streak1)}: frames, panels";
+        Menu.Items[(int)Slot.Wrench].Hint = $"key {Keybinds.NameOf(s, GameAction.Weapon3)}: small parts (items)";
+        Menu.Items[(int)Slot.Welder].Hint = $"key {Keybinds.NameOf(s, GameAction.Streak1)}: physics pieces: socket weld";
         Menu.Items[(int)Slot.Linker].Hint = $"key {Keybinds.NameOf(s, GameAction.Streak2)}: wires, settings";
         Menu.Items[(int)Slot.Hands].Hint = $"key {Keybinds.NameOf(s, GameAction.PrimaryWeapon)} / {Keybinds.NameOf(s, GameAction.SecondaryWeapon)}: your guns";
     }

@@ -166,11 +166,12 @@ public static partial class SelfTest
         Want(dropped == 3 && w.Bodies.Count == bodies + 3 && h.Held == ConstructParts.None && pack.Def[0] == ConstructParts.None && pack.Def[1] == lamp.Id && st.Def[1] == ConstructParts.None && st.Def[0] == lamp.Id,
             $"physics-only parts held, in the backpack and in storage drop into the world; the items stay ({dropped} dropped)");
 
-        // The wrench bolts on only a loose wrench part; the welder joins any two.
+        // Decision 27: only the welder joins (the engine is physics-only, so a welder piece); the wrench joins nothing.
         var looseEngine = ConstructBuild.PlaceNew(w, engine, ConstructWorld.Ground(World.Query, 30, 30) + new Vector3(0, 0.5f, 0), 0)!;
         var looseBlock = ConstructBuild.PlaceNew(w, frame, ConstructWorld.Ground(World.Query, 31, 30) + new Vector3(0, 0.5f, 0), 0)!;
-        Want(ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseEngine) && !ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseBlock) && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseBlock),
-            "the wrench joins a loose wrench part, the welder anything");
+        Want(!ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseEngine) && !ConstructEdits.JoinTool(ConstructTool.Wrench, gate, looseBlock) && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseEngine)
+             && ConstructEdits.JoinTool(ConstructTool.Welder, gate, looseBlock) && ConstructBuild.ToolFor(engine) == ConstructTool.Welder && ConstructBuild.ToolFor(lamp) == ConstructTool.Wrench,
+            "the welder joins any piece (engines too: physics-only), the wrench none; items take the wrench");
         foreach (var p in problems)
             Fail($"physics-only parts: {p}");
     }

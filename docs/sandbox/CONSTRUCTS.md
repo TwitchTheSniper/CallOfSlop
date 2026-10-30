@@ -384,9 +384,12 @@ It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in it
 survival map will): the key then says "the parts menu is off on this map" and the server refuses both requests. The
 window allocates nothing per frame while open (every tile's text is made once; the catalogue's key is taken once).
 
-Editing always needs the right tool in hand (decision 2): **welder** for frames, panels, corners, decks and foundations,
-**wrench** for everything bolted (seats, wheels, suspensions, engines, tanks, fuel lines, transmissions, differentials,
-hinges and joints, doors, logic parts), the **linking tool** for wires and logic settings. With a gun out
+Editing always needs the right tool in hand (decision 2), and since decision 27 the tool follows the part's **function**:
+the **welder** attaches and cuts free every **physics-only** piece (welded frames, panels, corners, decks and
+foundations, and every part too heavy or bulky to carry: engines, big gearboxes, big wheels, building pieces), with its
+three-step [socket weld](#socket-weld-board-item-sw01-decision-26); the **wrench** adds and removes the small parts that
+are items (seats, light wheels, suspensions, tanks, fuel lines, small gearboxes, hinges, doors, lamps, sensors, logic and
+gun parts) to and from your hands; the **linking tool** does wires and logic settings. With a gun out
 or bare hands you can only use things: sit, drive, open doors, pick up and drop loose parts. Fitting takes the part's
 `attachSeconds` (welded parts 2.5 s, bolted 1 to 3 s), taking off 60% of that. The HUD panel shows what is in your hands,
 what you look at, the edit's progress, refusals and, when driving, speed, fuel and why it won't go.
@@ -624,7 +627,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
 | `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)). |
-| `tool` | `wrench` (bolted) or `welder` (welded). The linking tool never fits parts. |
+| `tool` | Optional, `wrench` or `welder`: since decision 27 only a hint that the part is structural (`welder`: welded, so physics-only). Which tool fits a part follows from whether it is physics-only (`ConstructBuild.ToolFor`). Old files load unchanged. |
 | `attachSeconds` | Time to fit (default 1.5 wrench, 2.5 welder); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
@@ -709,7 +712,7 @@ Board item dev-sandbox-cargo-volumes-cv01, the developer's decision 21 (2026-10-
 A part is **physics-only** when it is fitted with the welder, when it is heavier than the hand-carry limit
 (`ConstructParts.HandCarryLimit`, 40 kg: the backpack's limit), or when its file says `"physicsOnly": true` (light
 but bulky pieces: `tools/constructs/building_parts.py` sets it for the 1.25 m wood door, the fence gate, the wood
-railings, the 2 m wood beam, the tower brace and the 1 m window glass). The rule reads the tool and the mass, never a
+railings, the 2 m wood beam, the tower brace and the 1 m window glass). The rule reads the welder hint and the mass, never a
 list, so every new welder or heavy part follows by itself. Such a part is never an item:
 
 - It can't be held, stowed in the backpack, set into a storage slot or picked up; each refusal says why ("the Frame
@@ -720,8 +723,9 @@ list, so every new welder or heavy part follows by itself. Such a part is never 
 - The creative inventory (Tab) and the parts rack spawn it as a body a short way in front of you at eye level (clear of
   the map, constructs and players; it then falls and settles). With the physics gun out, the gun holds it. A wrench
   part still comes into your hands, ready to fit.
-- It is built onto things by moving it into place (physics gun) and joining it: the welder's join (F) as before, and
-  now the wrench's join for a loose wrench part (bolting on an engine).
+- It is built onto things with the welder (decision 27): the three-step [socket weld](#socket-weld-board-item-sw01-decision-26)
+  (pick its socket, pick where it goes, spin it), or by moving it into place with the physics gun and joining it (F).
+  The wrench joins nothing any more: an engine moved out of a cargo volume goes on with the welder.
 - The inventory tile has a small boxed corner mark and its tooltip says "PHYSICS ONLY (welded)" or "item"; the look
   text says "physics only" too.
 - What a save held in hands, backpacks or storage that is physics-only drops into the world as bodies
@@ -2608,3 +2612,56 @@ cuts over the transport and the client's copy agrees on the pose; the welder's d
   damage, lights (the Lamp).
 - Still to come (above): construct weapons, saving, the large world, more parts, a bigger map (salvage and debris
   expiry came in milestone 3).
+
+## Socket weld (board item sw01, decision 26)
+
+The welder's default mode, **Socket weld** (the outer ring's other mode is [Freeform weld](#freeform-welds-board-item-fw01-decision-25)),
+is a three-step flow. Sockets are an alignment and snapping aid here, not a strict connection system.
+
+1. **Pick the source socket.** With the welder out and nothing in your hands, the aimed body and the bodies nearest
+   the crosshair (at most four, within 7 m, at most 64 markers, the nearest the crosshair) show their sockets as a dot
+   and a short arrow along the socket's facing: blue free, grey in use, orange the picked one, green a target, white
+   the one the crosshair snaps to (within about 4 degrees). LMB on a socket of the piece to move (a loose body or a
+   separate construct) picks it; the piece stays where it is.
+2. **Pick the target.** LMB on a socket of the construct to weld to (the magnet snap), or on any flat face of one of
+   its parts: the 1 cm grid point under the crosshair on that face is a virtual socket. A ghost of the piece shows its
+   socket on the target point, facing opposite the target's normal, turned to smart rotation's best guess (a one-part
+   piece onto a socket; others start at 0), green or red with the reason on the look line (an overlap, the ground,
+   someone standing there, someone else's construct, contested, a full construct, wheels off the grid...).
+3. **Spin it about the socket axis.** Mouse X (the view holds still) or the wheel turns the ghost; it snaps to 15
+   degree steps with a click on each 90 degree step and a ring of ticks round the socket (bigger on 90), Shift for free
+   angles, Ctrl for 5 degree steps. R takes the next facing smart rotation ranked (else half a turn: upside down). LMB
+   confirms: the weld takes the piece's fit time in survival and is instant in creative; the body snaps to the ghost.
+   RMB steps back one step (3 to 2 to 1 to nothing; at step 1 RMB is the welder's usual cut free), Esc cancels.
+
+**On the grid or freeform.** A multiple of 90 degrees onto a real free socket of the same kind on the construct's main
+body keeps the piece on the construct's Rot24 grid: the two merge as a join does, linked socket to socket, the parts
+on the centimetre grid. Any other angle, a face point, a socket of another kind, or a target on a joint's or a freeform
+piece's segment joins the piece as a fixed-pose rigid segment, exactly as a freeform weld does
+(`JointType.Fixed`, `ConstructWorld.FreeformWeld`; at most 8 a construct, no wheels on such a piece). The welder cuts
+either free again (a grid part with RMB held, a freeform seam with RMB on its bead).
+
+**Smart rotation learns** from step 3: confirming a grid angle other than its guess records the correction for that
+part, socket kind and side, as fitting a held part does.
+
+**Server and network (protocol 99).** The client sends `CActKind.SocketWeld`: the piece and its part and socket, the
+construct, its part and socket (255: a face point, then the point in that part's segment rest frame and its facing),
+and the angle in hundredths of a degree. The server checks the final pose with the same rules (`SocketWeld.Check`:
+the sockets, overlap with the construct, the map and players, the merge and freeform limits) plus reach, ownership and
+decision 19's contested rule, and in survival again when the weld time is up (`EditKind.SocketWeld`, shown as
+"Welding..."). Code: `Source/Constructs/SocketWeld.cs` (rules, pose, markers), `SocketWeldFlow.cs` (the steps),
+`ConstructEditsSocketWeld.cs` (the server), `Source/App/Program.SandboxSocketWeld.cs` (the input),
+`Source/Render/SocketWeldRender.cs` (markers, ghost, ticks).
+
+**Self-test** "Socket weld 3-step" (`SelfTestSocketWeld.cs`): decision 27's tools by function over every part file;
+an aimed loose beam lists its markers (no allocation); its end socket on a frame block's side: the ghost aligned and
+facing out; a 30 degree spin welds it as a fixed-pose segment exactly at the ghost, 90 degrees stays on the grid
+(merged and linked) and smart rotation learns the correction; R and RMB step by step; a red target (an overlap) is
+refused; a face point in survival takes the fit time; the construct message and a blueprint keep the pose; a real host
+with a separate client welds both ways and both agree.
+
+**Choices made (the developer may change them).** R steps through smart rotation's ranked facings rather than a
+separate list of "variants" (a socket has one facing; the spin covers the rest). Face points and off-grid angles are
+always freeform segments (a face point has no socket to link). A piece held to the ground (pinned or on a working
+foundation) can't be the piece moved: pick it as the target. There is no weight limit beyond the merge limits.
+
