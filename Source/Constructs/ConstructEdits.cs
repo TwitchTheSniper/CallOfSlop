@@ -49,7 +49,38 @@ public sealed class ConstructEdits
     /// <summary>A line per completed edit (the self-test reads them; the game logs them).</summary>
     public readonly List<string> Done = new(16);
 
+    /// <summary>
+    /// Every player's inventory (milestone 3: salvage; the game's, set by it). Null: no inventories (a bare construct
+    /// world in a test): everything taken off goes into the hand, as before salvage.
+    /// </summary>
+    public SandboxInventories? Inventory;
+
+    /// <summary>The map's <c>infiniteParts</c> (the server sets it every tick): the rack and parts menu hand out parts from nothing.</summary>
+    public bool InfiniteParts = true;
+
     public ConstructEdits() => Reset();
+
+    /// <summary>
+    /// Salvage (milestone 3, the loot loop): what anyone may take apart into their inventory: a wreck (cut off, or a part
+    /// broken off), a loose part, a construct nobody built (the map's), or someone else's once it is disabled (a part of it
+    /// wrecked). Someone else's working construct can't be taken apart; your own can (its parts go back into the hand, or
+    /// with <see cref="InfiniteParts"/> off back into the inventory).
+    /// </summary>
+    public static bool Salvageable(Construct c, byte player) => c.Wreck || c.Loose || c.Owner == 255 || c.Owner != player && c.Damaged;
+
+    /// <summary>Why a player may not take parts off this construct, or null.</summary>
+    public static string? SalvageRefusal(Construct c, byte player) =>
+        c.Owner == player || Salvageable(c, player) ? null : "that construct is someone else's: disable it first (shoot a part off)";
+
+    /// <summary>Server: the part in the player's hands goes back into their inventory (the parts are counted with infinite parts off).</summary>
+    public void ReturnHeld(byte player)
+    {
+        ref var h = ref Hands[player];
+        if (InfiniteParts || Inventory == null || h.Held == ConstructParts.None)
+            return;
+        if (Inventory.Of(player).Add(h.Held))
+            h.Held = ConstructParts.None;
+    }
 
     public void Reset()
     {
@@ -138,6 +169,8 @@ public sealed class ConstructEdits
             return $"the {def.Name} comes off with the {def.Tool.ToString().ToLowerInvariant()}";
         if (c.Driver != 255)
             return "someone is driving it";
+        if (SalvageRefusal(c, player) is { } theirs)
+            return theirs;
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
         c.PartBounds(part, out var mn, out var mx);
         if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
@@ -169,7 +202,7 @@ public sealed class ConstructEdits
         }
     }
 
-    private static string Complete(ConstructWorld world, byte player, ref SandboxHand h, EditKind kind, Vector3 eye)
+    private string Complete(ConstructWorld world, byte player, ref SandboxHand h, EditKind kind, Vector3 eye)
     {
         switch (kind)
         {
@@ -183,6 +216,7 @@ public sealed class ConstructEdits
                 if (i < 0)
                     return "failed: too many parts";
                 h.Held = ConstructParts.None;
+                Refill(player, ref h, def);
                 return $"ok: {def.Name} as part {i} of construct {c.Id}";
             }
             case EditKind.PlaceNew:
@@ -191,17 +225,37 @@ public sealed class ConstructEdits
                     return "failed: nothing to place";
                 if (ConstructBuild.PlaceNew(world, def, h.At, h.Yaw) is not { } c)
                     return "failed: the world is full";
+                c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
                 h.Held = ConstructParts.None;
+                Refill(player, ref h, def);
                 return $"ok: {def.Name} as new construct {c.Id}";
             }
             case EditKind.Remove:
             {
                 if (world.Get(h.Body) is not { } c || h.Part >= c.PartCount || !ConstructBuild.ToolFits(h.Tool, c.DefOf(h.Part)) || c.Driver != 255)
                     return "failed: that part is gone";
+                if (SalvageRefusal(c, player) is { } theirs)
+                    return $"failed: {theirs}";
                 c.WorldFrame(c.Parts[h.Part].Seg, out var q, out var t);
                 c.PartBounds(h.Part, out var mn, out var mx);
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
+                var salvage = Salvageable(c, player);
+                var wrecked = c.Parts[h.Part].Broken;
+                var from = c.Id;
                 var def = world.RemovePart(c, h.Part);
+                // Salvage (and, with infinite parts off, your own parts) goes into the inventory: a wrecked part as scrap.
+                if (Inventory != null && (salvage || !InfiniteParts))
+                {
+                    var inv = Inventory.Of(player);
+                    if (wrecked)
+                    {
+                        inv.AddScrap(def.Scrap);
+                        return $"ok: {def.Name} (wrecked) salvaged from construct {from} for {def.Scrap} scrap";
+                    }
+                    if (inv.Add(def.Id))
+                        return $"ok: {def.Name} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({inv.Count(def.Id)})";
+                    // (that kind is full: into the hand, or dropped, as before)
+                }
                 if (h.Held == ConstructParts.None)
                 {
                     h.Held = def.Id;
@@ -213,6 +267,13 @@ public sealed class ConstructEdits
             }
         }
         return "nothing";
+    }
+
+    /// <summary>Infinite parts off: after a fit, the next of the same kind comes out of the inventory into the hand (build a row of them without going back for each).</summary>
+    private void Refill(byte player, ref SandboxHand h, ConstructPartDef def)
+    {
+        if (!InfiniteParts && Inventory != null && h.Held == ConstructParts.None && Inventory.Of(player).Take(def.Id))
+            h.Held = def.Id;
     }
 
     // ---- The linking tool (milestone 2) -------------------------------------------------------------------------------
@@ -280,6 +341,8 @@ public sealed class ConstructEdits
             return "no parts rack on this map";
         if (Vector3.Distance(feet with { Y = 0 }, sandbox.Rack) > 4.5f)
             return "go to the parts rack";
+        if (!InfiniteParts && Inventory != null)
+            return RackFromInventory(sandbox, player);
         var cur = ConstructParts.Get(h.Held)?.Name;
         var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
         var next = ConstructParts.Find(sandbox.RackParts[(at + 1) % sandbox.RackParts.Count]);
@@ -288,6 +351,24 @@ public sealed class ConstructEdits
         h.Held = next.Id;
         h.Edit = EditKind.None;
         return null;
+    }
+
+    /// <summary>Infinite parts off: the rack's next kind that the player's inventory holds (what is in the hands goes back first).</summary>
+    private string? RackFromInventory(SandboxMap sandbox, byte player)
+    {
+        ref var h = ref Hands[player];
+        var inv = Inventory!.Of(player);
+        var cur = ConstructParts.Get(h.Held)?.Name;
+        var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
+        ReturnHeld(player);
+        for (var k = 1; k <= sandbox.RackParts.Count; k++)
+            if (ConstructParts.Find(sandbox.RackParts[(at + k) % sandbox.RackParts.Count]) is { } next && inv.Take(next.Id))
+            {
+                h.Held = next.Id;
+                h.Edit = EditKind.None;
+                return null;
+            }
+        return "your inventory has none of the rack's parts (salvage some: hold aim on a wreck with the tool it needs)";
     }
 
     /// <summary>
@@ -303,6 +384,17 @@ public sealed class ConstructEdits
             return "get out of the seat first";
         if (ConstructParts.Get(part) is not { } def)
             return "no such part";
+        if (!InfiniteParts && Inventory != null)
+        {
+            // Counted: one out of the inventory (what the hands held goes back first).
+            var inv = Inventory.Of(player);
+            if (inv.Count(def.Id) == 0 && h.Held != def.Id)
+                return $"no {def.Name} in your inventory (salvage one)";
+            if (h.Held == def.Id)
+                return null;
+            ReturnHeld(player);
+            inv.Take(def.Id);
+        }
         h.Held = def.Id;
         h.Edit = EditKind.None;
         return null;
@@ -328,8 +420,9 @@ public sealed class ConstructEdits
         if (ConstructParts.Get(h.Held) is not { } def)
             return "nothing in your hands";
         var at = feet + World.FlatForward(yaw) * 1.3f + new Vector3(0, 0.5f, 0);
-        if (ConstructBuild.PlaceNew(world, def, at, yaw) == null)
+        if (ConstructBuild.PlaceNew(world, def, at, yaw) is not { } dropped)
             return "the world is full of constructs";
+        dropped.Owner = player;
         h.Held = ConstructParts.None;
         h.Edit = EditKind.None;
         return null;

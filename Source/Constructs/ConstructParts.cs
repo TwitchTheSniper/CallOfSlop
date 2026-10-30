@@ -105,6 +105,7 @@ public sealed class ConstructPartDef
     public string Material = "steel";
     public float Friction = 0.7f;
     public PartBreak OnBreak;
+    public int Scrap; // what salvaging it gives once wrecked (milestone 3: "scrap", else from its mass and material; ConstructInventory.cs)
     public CPartBox[] Boxes = []; // solid boxes first, then detail boxes
     public int SolidBoxes; // how many of Boxes are solid
     public CSocket[] Sockets = [];
@@ -272,6 +273,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
+        "scrap",
     ];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
@@ -315,6 +317,8 @@ public static class ConstructParts
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential ? PartBreak.Disable : PartBreak.Detach;
+        d.Scrap = Opt(root, "scrap") is { } scr ? (int)MathF.Round(Num(scr, file, "scrap")) : SandboxInventory.ScrapFrom(d.Mass, d.Material);
+        Range(d.Scrap, 0f, 10000f, file, "scrap");
         var colour = Opt(root, "color") is { } col ? Colour(col, file, "color") : new Vector3(0.5f);
 
         // Boxes
