@@ -43,7 +43,13 @@ public sealed partial class HordeCrowd
     private int[] _mNext = [];
     private float[] _mFlux = [];
     private readonly int[] _mergeCand = new int[256];
+    private readonly float[] _mergeD = new float[256];
     private int _mergeN;
+
+    // The soft wake's release choice this tick: the cells nearest first (HordeCrowd.Mass.cs, ReleaseSoft).
+    private readonly int[] _relCell = new int[256];
+    private readonly float[] _relKey = new float[256], _relUX = new float[256], _relUZ = new float[256];
+    private int _relN;
     private uint _mRng = 0x6A55u;
 
     /// <summary>
@@ -56,16 +62,69 @@ public sealed partial class HordeCrowd
     public readonly float[] NoteX = new float[NoteCap], NoteZ = new float[NoteCap];
     public readonly uint[] NoteLook = new uint[NoteCap];
     public readonly byte[] NoteKind = new byte[NoteCap];
+
+    /// <summary>A merge's yaw, metres walked and gait as it was drawn (NaN yaw: none; the agent takes the cell's).</summary>
+    public readonly float[] NoteYaw = new float[NoteCap], NoteWalk = new float[NoteCap];
+
+    public readonly byte[] NoteGait = new byte[NoteCap];
     public long Notes;
 
-    private void Note(byte kind, float x, float z, uint look)
+    private void Note(byte kind, float x, float z, uint look, float yaw = float.NaN, float walk = 0, byte gait = 0)
     {
         var k = (int)(Notes & (NoteCap - 1));
         NoteKind[k] = kind;
         NoteX[k] = x;
         NoteZ[k] = z;
         NoteLook[k] = look;
+        NoteYaw[k] = yaw;
+        NoteWalk[k] = walk;
+        NoteGait[k] = gait;
         Notes++;
+    }
+
+    /// <summary>
+    /// The soft wake (<see cref="CrowdTuning.SoftWake"/>): mass cell <paramref name="c"/>'s own wake radius, the mass range
+    /// +- half the band, fixed per cell (a hash of the cell), so the wake edge is ragged rather than a circle sweeping
+    /// over a blob. Its merge radius is this plus <see cref="CrowdTuning.MassHysteresis"/>.
+    /// </summary>
+    public float WakeRadius(int c)
+    {
+        if (!Tuning.SoftWake || Tuning.MassBand <= 0)
+            return Tuning.MassRange;
+        var u = Hash((uint)c * 0x9E3779B1u ^ 0x57A6E5u) / 4294967295f;
+        return Tuning.MassRange + (u - 0.5f) * Tuning.MassBand;
+    }
+
+    /// <summary>Visual only: how much of particle <paramref name="i"/>'s hand-off offset is left (1 at the hand-off, eased to 0).</summary>
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    public float HandWeight(int i)
+    {
+        var left = HandLeft[i];
+        if (left <= 0)
+            return 0;
+        var t = MathF.Min(1f, left / MathF.Max(HandDur[i], 1e-3f));
+        return t * t * (3f - 2f * t); // (smooth at both ends: no kick as it starts or stops)
+    }
+
+    /// <summary>Visual only: where particle <paramref name="i"/> is drawn (its position plus what is left of its hand-off offset).</summary>
+    public void DrawnAt(int i, out float x, out float z)
+    {
+        var w = HandWeight(i);
+        x = X[i] + HandX[i] * w;
+        z = Z[i] + HandZ[i] * w;
+    }
+
+    /// <summary>Visual only: the yaw particle <paramref name="i"/> is drawn facing (its walk's, turned from the hand-off's while that lasts).</summary>
+    public float DrawnYaw(int i)
+    {
+        float vx = VX[i], vz = VZ[i];
+        var yaw = vx * vx + vz * vz > 0.04f ? MathF.Atan2(vx, -vz) : MathF.Atan2(DX[i], -DZ[i]);
+        var w = HandWeight(i);
+        if (w <= 0)
+            return yaw;
+        var dy = HandYaw[i] - yaw;
+        dy -= MathF.Floor((dy + MathF.PI) / MathF.Tau) * MathF.Tau;
+        return yaw + dy * w;
     }
 
     public int MassCols => _mCols;
@@ -123,11 +182,33 @@ public sealed partial class HordeCrowd
         MassTotal++;
     }
 
-    /// <summary>In the particle loop: a far, unhurt, walking particle may merge this tick (the first few found, from a turning start).</summary>
-    private void OfferMerge(int i)
+    /// <summary>
+    /// In the particle loop: a far, unhurt, walking particle may merge this tick. The old way: the first few found, from a
+    /// turning start. The soft wake: the furthest (<paramref name="d2"/>, its squared distance) kept, so the far side of
+    /// the crowd goes back first and the edge isn't eaten in index order.
+    /// </summary>
+    private void OfferMerge(int i, float d2 = 0)
     {
-        if (_mergeN < Math.Min(_mergeCand.Length, Tuning.MassPerTick))
-            _mergeCand[_mergeN++] = i;
+        var want = Math.Min(_mergeCand.Length, Tuning.MassPerTick);
+        if (!Tuning.SoftWake)
+        {
+            if (_mergeN < want)
+                _mergeCand[_mergeN++] = i;
+            return;
+        }
+        var n = _mergeN;
+        if (n == want && d2 <= _mergeD[n - 1])
+            return;
+        var k = n < want ? n++ : n - 1;
+        while (k > 0 && _mergeD[k - 1] < d2)
+        {
+            _mergeD[k] = _mergeD[k - 1];
+            _mergeCand[k] = _mergeCand[k - 1];
+            k--;
+        }
+        _mergeD[k] = d2;
+        _mergeCand[k] = i;
+        _mergeN = n;
     }
 
     /// <summary>
@@ -142,7 +223,9 @@ public sealed partial class HordeCrowd
             _mergeN = 0;
             return;
         }
-        // Merge (the candidates were found in index order: remove from the highest).
+        // Merge (removed from the highest index, so the others keep theirs: the soft wake's were kept furthest first).
+        if (Tuning.SoftWake && _mergeN > 1)
+            Array.Sort(_mergeCand, 0, _mergeN);
         for (var k = _mergeN - 1; k >= 0; k--)
         {
             var i = _mergeCand[k];
@@ -156,7 +239,14 @@ public sealed partial class HordeCrowd
             MassCount[c]++;
             MassTotal++;
             Merged++;
-            Note(1, X[i], Z[i], Look[i]);
+            if (Tuning.SoftWake)
+            {
+                // The drawing hands it to an agent exactly as it was drawn: place, yaw, walk and look (no fade).
+                DrawnAt(i, out var dx, out var dz);
+                Note(1, dx, dz, DrawLook[i], DrawnYaw(i), Walk[i], Cls[i]);
+            }
+            else
+                Note(1, X[i], Z[i], Look[i]);
             RemoveAt(i);
         }
         _mergeN = 0;
@@ -248,6 +338,11 @@ public sealed partial class HordeCrowd
         Array.Copy(_mNext, MassCount, n);
 
         Release:
+        if (Tuning.SoftWake)
+        {
+            ReleaseSoft(tick, tx, tz);
+            return;
+        }
         // Release: cells within the mass range of a player let zombies out as particles (nearest cells first would cost a
         // sort; in index order from a turning start instead, a few a tick).
         n = _mCols * _mRows;
@@ -290,6 +385,139 @@ public sealed partial class HordeCrowd
                 left--;
             }
         }
+    }
+
+    /// <summary>
+    /// The soft wake's release (docs/zombies/MASS-HORDE.md, "Wake waves"). Every mass cell inside its own wake radius
+    /// (<see cref="WakeRadius"/>) of a player is a candidate, keyed by its distance to the nearest player, plus
+    /// <see cref="CrowdTuning.MassInterior"/> if the cell one step towards that player still holds mass (the inside of a
+    /// blob, hidden behind its edge), plus up to 2 m of jitter a tick (so neighbouring cells take turns). The
+    /// <see cref="CrowdTuning.MassPerTick"/> lowest keys let out at most <see cref="CrowdTuning.MassPerCell"/> each, in key
+    /// order, until the tick's budget is spent: the edge facing the players wakes first, a cell drains over several ticks,
+    /// and the inside follows as the mass flows into the cells the edge left. Only the window of cells round the players
+    /// is looked at; no allocation.
+    /// </summary>
+    private void ReleaseSoft(long tick, ReadOnlySpan<float> tx, ReadOnlySpan<float> tz)
+    {
+        if (tx.Length == 0 || MassTotal == 0)
+            return;
+        var rmax = Tuning.MassRange + MathF.Max(0f, Tuning.MassBand) * 0.5f;
+        float x0 = float.MaxValue, x1 = float.MinValue, z0 = float.MaxValue, z1 = float.MinValue;
+        for (var t = 0; t < tx.Length; t++)
+        {
+            x0 = MathF.Min(x0, tx[t] - rmax);
+            x1 = MathF.Max(x1, tx[t] + rmax);
+            z0 = MathF.Min(z0, tz[t] - rmax);
+            z1 = MathF.Max(z1, tz[t] + rmax);
+        }
+        int c0 = Math.Max(0, (int)((x0 - MinX) / _mCell)), c1 = Math.Min(_mCols - 1, (int)((x1 - MinX) / _mCell));
+        int r0 = Math.Max(0, (int)((z0 - MinZ) / _mCell)), r1 = Math.Min(_mRows - 1, (int)((z1 - MinZ) / _mCell));
+        var want = Math.Min(_relCell.Length, Math.Max(1, Tuning.MassPerTick));
+        var rmax2 = rmax * rmax;
+        var interior = MathF.Max(0f, Tuning.MassInterior);
+        _relN = 0;
+        for (var r = r0; r <= r1; r++)
+            for (var col = c0; col <= c1; col++)
+            {
+                var c = r * _mCols + col;
+                if (MassCount[c] == 0)
+                    continue;
+                var cx = MinX + (col + 0.5f) * _mCell;
+                var cz = MinZ + (r + 0.5f) * _mCell;
+                var best = float.MaxValue;
+                float bx = 0, bz = 0;
+                for (var t = 0; t < tx.Length; t++)
+                {
+                    float ddx = tx[t] - cx, ddz = tz[t] - cz;
+                    var d2 = ddx * ddx + ddz * ddz;
+                    if (d2 < best)
+                        (best, bx, bz) = (d2, ddx, ddz);
+                }
+                if (best >= rmax2)
+                    continue;
+                var d = MathF.Sqrt(best);
+                if (d >= WakeRadius(c))
+                    continue;
+                // The edge facing the player: the cell one step towards them is off the grid, a wall, or holds no mass.
+                var front = true;
+                if (d > _mCell)
+                {
+                    int dc = MathF.Abs(bx) > 0.38f * d ? Math.Sign(bx) : 0, dr = MathF.Abs(bz) > 0.38f * d ? Math.Sign(bz) : 0;
+                    int ux = col + dc, uz = r + dr;
+                    if ((uint)ux < (uint)_mCols && (uint)uz < (uint)_mRows)
+                    {
+                        var u = uz * _mCols + ux;
+                        front = !_mWalk[u] || MassCount[u] == 0;
+                    }
+                }
+                var key = d + (front ? 0f : interior) + (Hash((uint)c * 0x85EBCA77u ^ (uint)tick * 0xC2B2AE3Du) & 1023) * (2f / 1023f);
+                // Keep the want lowest keys (insertion, lowest first).
+                var n = _relN;
+                if (n == want && key >= _relKey[n - 1])
+                    continue;
+                var k = n < want ? n++ : n - 1;
+                while (k > 0 && _relKey[k - 1] > key)
+                {
+                    _relKey[k] = _relKey[k - 1];
+                    _relCell[k] = _relCell[k - 1];
+                    _relUX[k] = _relUX[k - 1];
+                    _relUZ[k] = _relUZ[k - 1];
+                    k--;
+                }
+                _relKey[k] = key;
+                _relCell[k] = c;
+                _relUX[k] = d > 1e-3f ? bx / d : 0;
+                _relUZ[k] = d > 1e-3f ? bz / d : 0;
+                _relN = n;
+            }
+        var left = Tuning.MassPerTick;
+        var per = Math.Max(1, Tuning.MassPerCell);
+        for (var k = 0; k < _relN && left > 0; k++)
+        {
+            var c = _relCell[k];
+            float cx = MinX + (c % _mCols + 0.5f) * _mCell, cz = MinZ + (c / _mCols + 0.5f) * _mCell;
+            // (Out of the cell's back half, away from the player: where the drawn crowd, trailing the counts a little at a
+            // moving front, stands; the hand-over then has least to make up.)
+            cx -= _relUX[k] * _mCell * 0.2f;
+            cz -= _relUZ[k] * _mCell * 0.2f;
+            for (var j = 0; j < per && MassCount[c] > 0 && left > 0 && Count < X.Length; j++)
+            {
+                if (!FreeSpot(cx, cz, out var x, out var z))
+                    break; // (no room in the cell: they stay in the mass for now)
+                var p = Add(x, z, MassVX[c], MassVZ[c], _mRng, tick, TakeTop(c, MassCount[c])); // (a wounded one comes out hurt)
+                if (p >= 0)
+                {
+                    Born[p] = tick;
+                    HandLeft[p] = -1; // (the drawing hands the nearest agent's place, yaw and walk to it: no rising)
+                    HandPending = true;
+                }
+                Note(2, x, z, (uint)c); // (the cell it came out of, for the self-test)
+                MassCount[c]--;
+                MassTotal--;
+                Released++;
+                ReleasedSoft++;
+                left--;
+            }
+        }
+    }
+
+    /// <summary>Released by the soft wake (self-test).</summary>
+    public long ReleasedSoft;
+
+    /// <summary>A free spot in the mass cell round (<paramref name="cx"/>, <paramref name="cz"/>): a few tries; false if none.</summary>
+    private bool FreeSpot(float cx, float cz, out float x, out float z)
+    {
+        x = cx;
+        z = cz;
+        for (var tries = 0; tries < 6; tries++)
+        {
+            _mRng = Hash(_mRng + 0x9E3779B9u);
+            x = cx + ((_mRng & 0xFFFF) / 65535f - 0.5f) * _mCell * 0.9f;
+            z = cz + ((_mRng >> 16) / 65535f - 0.5f) * _mCell * 0.9f;
+            if (Walkable(x, z) && !Packed(x, z))
+                return true;
+        }
+        return false;
     }
 
     // The eight directions round the compass, in order (a turn of 45 degrees is the next one).

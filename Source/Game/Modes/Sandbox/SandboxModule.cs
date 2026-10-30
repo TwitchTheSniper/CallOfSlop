@@ -37,7 +37,11 @@ public sealed class SandboxModule : GameModeModule
 
     public override void OnSpawn(Game game, Player p) => game.SandboxOnSpawn(p);
 
-    public override void OnPlayerLeave(Game game, Player p) => game.SandboxStand(p, teleport: false);
+    public override void OnPlayerLeave(Game game, Player p)
+    {
+        game.SandboxStand(p, teleport: false);
+        game.SandboxLeave(p);
+    }
 
     /// <summary>The constructs, the edits, the drivers (GameSandbox.cs). Nothing ends the match.</summary>
     public override void ServerTickPlaying(Game game, double now) => game.ServerTickSandbox(now);

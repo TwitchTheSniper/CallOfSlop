@@ -140,9 +140,10 @@ public static unsafe partial class Program
         _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
         _weaponShots = args.Any(a => a.Equals("--weapon-shots", StringComparison.OrdinalIgnoreCase)); // (Program.WeaponShots.cs)
         _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
+        _inventoryShots = args.Any(a => a.Equals("--inventory-shots", StringComparison.OrdinalIgnoreCase)); // (Program.InventoryShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots | _inventoryShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -230,6 +231,8 @@ public static unsafe partial class Program
                 RunJointShots(); // --joint-shots: parts beyond construct joints colliding on Construct Yard, then quit (Program.JointShots.cs)
             else if (_weaponShots)
                 RunWeaponShots(); // --weapon-shots: the Sandbox construct weapons firing on Construct Yard, then quit (Program.WeaponShots.cs)
+            else if (_inventoryShots)
+                RunInventoryShots(); // --inventory-shots: the Sandbox inventory's tabs, categories and tile atlas, then quit (Program.InventoryShots.cs)
             else if (_toolShots)
                 RunToolShots(); // --tool-shots: every Sandbox tool in the hands, first and third person, then quit (Program.ToolShots.cs)
             else if (_shotTool)
@@ -1290,6 +1293,7 @@ public static unsafe partial class Program
                 MapThumbs.Pump(Gfx, now); // map select pictures: at most one per frame, before the scene (Source/Render/MapThumbnails.cs)
             if (Ui.WorkbenchOpen)
                 PartThumbs.Pump(Gfx); // workbench part pictures: a few per frame, cached (Source/Render/PartThumbnails.cs)
+            SandboxTiles.Pump(Gfx); // the Sandbox inventory's tile atlas: made over a few frames once the window wants it, then kept (Source/Render/SandboxTiles.cs)
             if (_session != null && InLobbyRoom)
                 RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
             else if (_session != null)

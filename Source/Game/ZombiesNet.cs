@@ -1006,6 +1006,8 @@ public sealed partial class Game
                         break;
                     }
             }
+            if (CrowdOn)
+                CrowdHandFrame(z, dt); // a mass-horde map: out of the drawn crowd seamlessly (ZombiesCrowd.cs)
             ZombieAnimFrame(z, dt); // drawn speed and the walk cycle (ZombieAnimNet.cs)
         }
         ZSounds.Frame(Audio, Horde, dt); // their voices and footsteps, from what this side knows (Source/Audio/ZombieSounds.cs)

@@ -137,10 +137,12 @@ public sealed class Construct
     public int WireCount;
     public int Root;
     public bool Wreck; // cut off from a root (no seat or foundation of its own)
+    public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's). A sentry's kills are theirs (milestone 3)
+    public bool Damaged; // a part of it has been wrecked (broken off or stopped working): disabled, so anyone may salvage it
+    public double IdleSince = -1; // server: a wreck's last time with a player near or salvaging it (debris expiry; -1: not yet looked at)
     public bool Anchored; // a working foundation holds it to the ground
     public bool Asleep;
     public int SleepTicks;
-    public byte Owner = 255; // the player who last built on it (a sentry's kills are theirs; 255: nobody, the map's own)
 
     // Pose: the body frame's origin and turn in the world.
     public Vector3 Pos;

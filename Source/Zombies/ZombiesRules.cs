@@ -1317,6 +1317,10 @@ public sealed class ZombiesRules
                             case "massHysteresis": c.MassHysteresis = Real(v, w, 2, 200); break;
                             case "massPerTick": c.MassPerTick = Whole(v, w, 1, 256); break;
                             case "massCapacity": c.MassCapacity = Whole(v, w, 1, 255); break;
+                            case "softWake": c.SoftWake = Flag(v, w); break;
+                            case "massBand": c.MassBand = Real(v, w, 0, 100); break;
+                            case "massInterior": c.MassInterior = Real(v, w, 0, 500); break;
+                            case "massPerCell": c.MassPerCell = Whole(v, w, 1, 255); break;
                             case "drawCap": c.DrawCap = Whole(v, w, 1, 255); break;
                             case "drawCapFar": c.DrawCapFar = Whole(v, w, 1, 255); break;
                             case "drawFarFrom": c.DrawFarFrom = Real(v, w, 0, 2000); break;
@@ -1338,6 +1342,10 @@ public sealed class ZombiesRules
                         throw new WeaponFileException($"{at}: thinkMin <= thinkMax");
                     if (c.MassRange < c.DemoteRange + 4)
                         throw new WeaponFileException($"{at}: massRange at least 4 m over demoteRange (individuals go back to particles before particles go into the mass)");
+                    if (c.MassBand > c.MassHysteresis)
+                        throw new WeaponFileException($"{at}: massBand at most massHysteresis (a cell's merge radius stays past every cell's wake radius)");
+                    if (c.MassRange - c.MassBand / 2 < c.DemoteRange + 4)
+                        throw new WeaponFileException($"{at}: massRange - massBand / 2 at least 4 m over demoteRange");
                     if (c.DemoteRange < c.PromoteRange + 2)
                         throw new WeaponFileException($"{at}: demoteRange at least 2 m over promoteRange (the hysteresis)");
                     break;

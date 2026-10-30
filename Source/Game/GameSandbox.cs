@@ -76,6 +76,7 @@ public sealed partial class Game
         Constructs.Removed.Clear();
         Constructs.Events.Clear();
         SandboxHands.Reset();
+        SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
         if (!IsServer)
             return;
         if (had || SandboxOn)
@@ -95,11 +96,17 @@ public sealed partial class Game
         Constructs.Clear();
         Constructs.Removed.Clear();
         SandboxHands.Reset();
+        SandboxInv.Reset();
         _sbPoseTick = 0;
     }
 
     internal void SandboxOnSpawn(Player p)
     {
+        if (IsServer)
+        {
+            SandboxRules();
+            SandboxHands.ReturnHeld(p.Id); // (counted parts aren't lost on death)
+        }
         ref var h = ref SandboxHands.Hand(p.Id);
         var tool = h.Tool;
         h = SandboxHand.Empty;
@@ -134,6 +141,7 @@ public sealed partial class Game
         SandboxNow = now;
         if (!SandboxOn)
             return;
+        SandboxRules();
         Constructs.PlayerSpotCount = 0;
         foreach (var p in Players.Values)
         {
@@ -169,6 +177,7 @@ public sealed partial class Game
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
+        SandboxDebris(now);
         SandboxFlush();
     }
 
@@ -199,6 +208,7 @@ public sealed partial class Game
         Constructs.HealthDirty.Clear();
         if (ServerTick % ConstructNet.PoseEvery == 0 && ConstructNet.WritePoses(w, Constructs, ServerTick, ref _sbSleepCursor))
             Net.Broadcast(w.Span, PacketReliability.UnreliableSequenced);
+        SandboxInventoryFlush();
         foreach (var e in Constructs.Events)
             Console.WriteLine($"[sandbox] {e}");
         Constructs.Events.Clear();
@@ -220,6 +230,7 @@ public sealed partial class Game
             ConstructNet.WriteFull(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        SendSandboxInventory(to);
     }
 
     // ---- Packets ----------------------------------------------------------------------------------------------------
@@ -231,7 +242,7 @@ public sealed partial class Game
         switch (id)
         {
             case (byte)Msg.CBody when !IsServer:
-                ConstructNet.Read(ref r, Constructs, SandboxNow);
+                ConstructNet.Read(ref r, Constructs, SandboxNow, SandboxInv.Of(LocalId));
                 break;
             case (byte)Msg.CPose when !IsServer:
                 ConstructNet.ReadPoses(ref r, Constructs, SandboxNow, ref _sbPoseTick);
@@ -265,6 +276,7 @@ public sealed partial class Game
         var kind = (CActKind)r.U8();
         var eye = p.Eye;
         var hands = SandboxHands;
+        SandboxRules();
         switch (kind)
         {
             case CActKind.Tool:
@@ -433,6 +445,7 @@ public sealed partial class Game
         var c = ConstructBuild.BuildOnGround(Constructs, bp, ConstructWorld.Ground(World.Query, probe.X, probe.Z), p.Yaw, out var why);
         if (c == null)
             return why.Length > 0 ? why : "the world is full of constructs";
+        c.Owner = p.Id; // (spawned from the menu: theirs)
         // Out past its own size (a buggy is longer than a gate): its widest reach from its origin, plus a metre and a half.
         var reach = MathF.Max(MathF.Max(MathF.Abs(c.LocalMin.X), MathF.Abs(c.LocalMax.X)), MathF.Max(MathF.Abs(c.LocalMin.Z), MathF.Abs(c.LocalMax.Z)));
         var dist = MathF.Max(3f, reach + 1.5f);
@@ -444,7 +457,6 @@ public sealed partial class Game
             c.Pos += new Vector3(at.X - probe.X, g1.Y - g0.Y, at.Z - probe.Z);
             c.PrevPos = c.NetPos = c.NetFromPos = c.Pos;
         }
-        c.Owner = p.Id;
         Constructs.Events.Add($"player {p.Id} spawned the {bp.Name} blueprint as construct {c.Id} (parts menu)");
         return null;
     }
@@ -716,7 +728,7 @@ public sealed partial class Game
         }
     }
 
-    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys;
+    private SbText _sbDrive, _sbProblem, _sbHand, _sbEdit, _sbHint, _sbKeys, _sbInvLine;
 
     /// <summary>The objective panel: what is in your hands, what you look at, the drive.</summary>
     internal void SandboxHud(Player me, List<HudLine> lines, Vector4 white, Vector4 dim, Vector4 orange, Vector4 green, Vector4 red)
@@ -781,10 +793,28 @@ public sealed partial class Game
         }
         else
         {
-            if (_sbHint.Stale(held.Id))
-                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop";
+            // The counts while holding a part (milestone 3): how many more of it the inventory holds.
+            var inv = SandboxInv.Of(me.Id);
+            var more = inv.Count(held.Id);
+            if (_sbHint.Stale(held.Id * 100000L + more + (inv.Infinite ? 1L << 40 : 0)))
+                _sbHint.Text = $"{held.Name}: needs the {held.Tool.ToString().ToLowerInvariant()}. LMB hold: fit, R: turn, T: drop. "
+                               + (inv.Infinite ? $"Inventory: {more} (parts are endless here)" : more > 0 ? $"{more} more in your inventory" : "the last one in your inventory");
             lines.Add(new HudLine(_sbHint.Text, dim));
         }
+        SandboxInventoryLine(me, lines, dim);
+    }
+
+    /// <summary>The inventory's totals on the HUD (when it holds anything): parts and scrap.</summary>
+    private void SandboxInventoryLine(Player me, List<HudLine> lines, Vector4 dim)
+    {
+        var inv = SandboxInv.Of(me.Id);
+        if (_sbInvLine.Stale(inv.Version * 2L + (inv.Infinite ? 1 : 0)))
+        {
+            var parts = inv.TotalParts;
+            _sbInvLine.Text = parts == 0 && inv.Scrap == 0 ? "" : $"Inventory: {parts} part{(parts == 1 ? "" : "s")} ({inv.Kinds} kinds), {inv.Scrap} scrap";
+        }
+        if (_sbInvLine.Text.Length > 0)
+            lines.Add(new HudLine(_sbInvLine.Text, dim));
     }
 
     private SbText _sbGun;
