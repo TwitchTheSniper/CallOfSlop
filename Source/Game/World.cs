@@ -629,7 +629,12 @@ public sealed class Player
     public byte SnapSeatPart;
 
     // ---- Server only --------------------------------------------------------
-    public readonly List<InputCmd> InputQueue = new();
+    /// <summary>Most commands <see cref="InputQueue"/> holds (Game.cs drops the oldest past it).</summary>
+    public const int MaxQueuedInputs = 60;
+
+    // At its full size from the start: growing it inside a match (a backlog after a hitch) allocated in Net receive
+    // (the "Frame allocations" failures on Windows CI, 2026-10-30).
+    public readonly List<InputCmd> InputQueue = new(MaxQueuedInputs + 1);
     public uint LastProcessedSeq;
     public uint HighestQueuedSeq;
     public InputCmd LastInput;

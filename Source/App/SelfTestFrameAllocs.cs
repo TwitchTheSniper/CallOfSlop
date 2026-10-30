@@ -16,6 +16,10 @@ public static partial class SelfTest
     /// <summary>Most bytes the least-allocating of three 60-frame rounds may allocate (a one-off, such as a log line, is allowed once).</summary>
     private const int FrameAllocAllowance = 0;
 
+    private static readonly int DiagSleep = int.TryParse(Environment.GetEnvironmentVariable("FA_SLEEP"), out var v) ? v : 0; // TEMP DIAG
+    private static readonly int DiagRounds = int.TryParse(Environment.GetEnvironmentVariable("FA_ROUNDS"), out var v) ? v : 3; // TEMP DIAG
+    private static readonly int DiagJitter = int.TryParse(Environment.GetEnvironmentVariable("FA_JITTER"), out var v) ? v : 0; // TEMP DIAG
+
     private static void CheckFrameAllocs()
     {
         if (Maps.Find("Horde Stress") is not { Zombies: not null } map)
@@ -39,6 +43,7 @@ public static partial class SelfTest
         server.Mode = GameMode.Zombies;
         server.StressSize = 1000;
         using var client = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
+        if (DiagJitter > 0) { server.Net.SimulateBadNetwork(DiagJitter, DiagJitter, 0); client.Net.SimulateBadNetwork(DiagJitter, DiagJitter, 0); } // TEMP DIAG
         Pump(server, [client], 1.0, ref now, clock);
         server.LobbyStart(true, now);
         PumpFast(server, [client], Game.LobbyCountdownSeconds + 0.5, ref now);
@@ -69,6 +74,7 @@ public static partial class SelfTest
                     now += dt;
                     server.Update(now, dt);
                     client.Update(now, dt);
+                    if (DiagSleep > 0) Thread.Sleep(DiagSleep); // TEMP DIAG
                     ui.PerfMode = view;
                     var perf = Perf.Measure(PerfArea.Ui); // (as the main loop times them)
                     ui.BeginFrame();
@@ -94,20 +100,24 @@ public static partial class SelfTest
                     Perf.TrackAllocs = true;
                     var least = long.MaxValue;
                     var areas = "";
-                    for (var round = 0; round < 3; round++)
+                    NetPeer.TrackAllocs = true; // which received messages allocated (Net.cs), named in a failure
+                    for (var round = 0; round < DiagRounds; round++)
                     {
                         Perf.ResetAllocs();
+                        NetPeer.ResetAllocs();
                         AllocProfile.Reset(); // the game's own finer sections (AllocProfile marks in Game.Update and the server tick)
                 AllocProfile.On = true;
                         var before = GC.GetAllocatedBytesForCurrentThread();
                         Frames(hud, view, 60);
                         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+                        if (DiagRounds > 3) Line($"DIAG {who} {view} round {round}: {bytes} B {AllocAreas()}{NetMsgAllocs()}"); // TEMP DIAG
                         if (bytes < least)
                         {
                             least = bytes;
-                            areas = AllocAreas();
+                            areas = AllocAreas() + NetMsgAllocs();
                         }
                     }
+                    NetPeer.TrackAllocs = false;
                     report.Add($"{who} {view} {least} B");
                     if (least > FrameAllocAllowance)
                         failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas})");
@@ -119,10 +129,26 @@ public static partial class SelfTest
         finally
         {
             Perf.TrackAllocs = false;
+            NetPeer.TrackAllocs = false;
             Perf.SetOn(wasOn);
             ui.DisposeHeadless();
         }
     }
+
+    /// <summary>The received message ids whose handlers allocated since <see cref="NetPeer.ResetAllocs"/> (both games),
+    /// as "; messages: State x3 1560 B", or "" when none did (allocates: for the report).</summary>
+    private static string NetMsgAllocs()
+    {
+        var parts = Enumerable.Range(0, 256).Where(i => NetPeer.AllocByMsg[i] > 0).OrderByDescending(i => NetPeer.AllocByMsg[i])
+            .Select(i => $"{MsgName((byte)i)} x{NetPeer.CountByMsg[i]} {NetPeer.AllocByMsg[i]} B").ToList();
+        return parts.Count > 0 ? $"; messages: {string.Join(", ", parts)}" : "";
+    }
+
+    /// <summary>A message id's name: a game <see cref="Msg"/>, a RakNet system message, or the number.</summary>
+    private static string MsgName(byte id) =>
+        Enum.IsDefined((Msg)id) ? ((Msg)id).ToString()
+        : Enum.IsDefined((Brutal.RakNetApi.DefaultMessageIDTypes)id) ? ((Brutal.RakNetApi.DefaultMessageIDTypes)id).ToString()
+        : $"id {id}";
 
     /// <summary>The perf areas that allocated since <see cref="Perf.ResetAllocs"/>, most first (allocates: for the report).</summary>
     private static string AllocAreas()
