@@ -102,7 +102,7 @@ public sealed class CrowdAgents
     public const float ClaimSeconds = 1.5f;
 
     /// <summary>The furthest an agent moves in a frame of <c>dt</c> s (self-test): its fastest walk.</summary>
-    public float MaxStep(float dt) => MathF.Max(MoveSpeed, Speed * 1.3f + EaseSpeed) * dt + 1e-3f;
+    public float MaxStep(float dt) => MathF.Max(MathF.Max(MoveSpeed, (_paced ? _pace.Mean : Speed) * 1.3f), Speed * 1.3f + EaseSpeed) * dt + 1e-3f;
 
     // ---- The grid ---------------------------------------------------------------------------------------
 
@@ -112,7 +112,7 @@ public sealed class CrowdAgents
 
     private int _n;
     private int[] _want = [], _target = [], _members = [], _visFrame = [], _occStamp = [];
-    private byte[] _head = [], _cap = [], _vis = [], _occ = [], _fresh = [];
+    private byte[] _head = [], _cap = [], _vis = [], _occ = [], _fresh = [], _handed = [];
     private float[] _hx = [], _hz = [], _move = [], _flow = [], _yawC = [], _gy = [], _top = [], _surT = [], _defT = [];
 
     // ---- The agents (structure of arrays, indices 0..Count-1) ------------------------------------------
@@ -144,6 +144,24 @@ public sealed class CrowdAgents
     /// <summary>Since the start (self-test, log): agents raised, filled in at once, sunk, dropped at once, passed to a neighbour, crossed, claimed.</summary>
     public long Raised, Filled, Sunk, Dropped, Passed, Crossed, Claims;
 
+    /// <summary>
+    /// Since the start: agents handed over to a zombie of another tier (<see cref="TakeOver"/>: it carries on from the
+    /// agent's place, yaw and walk), and the swaps a hand-over made in a cell drawn at its cap (an agent put in at once at
+    /// the cell's back for one taken over, or taken out at once there for one handed in): the cap only samples such a
+    /// cell, so the sample changes out of sight instead of an agent rising or sinking in view.
+    /// </summary>
+    public long HandedOver, Backfilled, Swapped;
+
+    /// <summary>Since the start: agents pulled forward into a cell short of them from the cell its walk comes from (<see cref="PullFromBehind"/>).</summary>
+    public long Pulled;
+
+    /// <summary>
+    /// A cell short of agents pulls one from the cell behind it along its walk (which then pulls from the one behind it),
+    /// so a moving crowd's agents walk forward rather than rising at its front while those at its back sink (the soft
+    /// wake's drawing; off: the old way, short cells raise new ones).
+    /// </summary>
+    public bool PullFromBehind;
+
     public readonly CrowdHorizon Horizon = new();
     private readonly CrowdJobs _jobs;
     private Vector3 _cam;
@@ -162,12 +180,13 @@ public sealed class CrowdAgents
     // Per cell, the agents in it (counting sort; rebuilt each frame and when asked).
     private int[] _start = [], _items = [];
     private long _listFrame = -1;
+    private bool _listDirty;
     private int _listCount = -1;
 
     // Tier changes waiting for this frame: kind 0 claim, 1 hint, 2 release.
-    private readonly float[] _evX = new float[256], _evZ = new float[256];
+    private readonly float[] _evX = new float[256], _evZ = new float[256], _evYaw = new float[256], _evWalk = new float[256];
     private readonly uint[] _evLook = new uint[256];
-    private readonly byte[] _evKind = new byte[256];
+    private readonly byte[] _evKind = new byte[256], _evGait = new byte[256];
     private int _evN;
 
     /// <summary>Unit directions for the 255 heading bytes (index 0: none).</summary>
@@ -238,6 +257,7 @@ public sealed class CrowdAgents
         _vis = new byte[_n];
         _occ = new byte[_n];
         _fresh = new byte[_n];
+        _handed = new byte[_n];
         _hx = new float[_n];
         _hz = new float[_n];
         _move = new float[_n];
@@ -318,8 +338,20 @@ public sealed class CrowdAgents
     /// <summary>An individual zombie appeared at (x, z) out of the crowd: the nearest agent hides and stands in for it.</summary>
     public void Claim(float x, float z) => Event(0, x, z, 0);
 
-    /// <summary>A zombie joined the far crowd at (x, z) (an individual or particle left): an agent appears right there.</summary>
-    public void Hint(float x, float z, uint look) => Event(1, x, z, look);
+    /// <summary>
+    /// A zombie joined the far crowd at (x, z) (an individual or particle left): an agent appears right there, with
+    /// <paramref name="look"/> (0: its own), and, given a <paramref name="yaw"/> (not NaN), facing that way,
+    /// <paramref name="walk"/> m into its walk in gait <paramref name="gait"/>: it carries on exactly as the zombie was drawn.
+    /// </summary>
+    public void Hint(float x, float z, uint look, float yaw = float.NaN, float walk = 0, byte gait = 0)
+    {
+        if (_evN >= _evX.Length)
+            return;
+        Event(1, x, z, look);
+        _evYaw[_evN - 1] = yaw;
+        _evWalk[_evN - 1] = walk;
+        _evGait[_evN - 1] = gait;
+    }
 
     /// <summary>The host's mass let a zombie out as a particle at (x, z): the nearest agent sinks while the particle rises.</summary>
     public void Release(float x, float z) => Event(2, x, z, 0);
@@ -332,7 +364,64 @@ public sealed class CrowdAgents
         _evX[_evN] = x;
         _evZ[_evN] = z;
         _evLook[_evN] = look;
+        _evYaw[_evN] = float.NaN;
         _evN++;
+    }
+
+    /// <summary>Where an agent stood as it was handed over (<see cref="TakeOver"/>), as it was last drawn.</summary>
+    public struct Pose
+    {
+        public float X, Y, Z, Yaw, Walk;
+        public uint Look;
+        public byte Gait;
+    }
+
+    /// <summary>
+    /// The seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): a zombie of another tier takes over the agent
+    /// nearest (x, z) within <paramref name="within"/> m (one in gait <paramref name="gait"/> first, so its stride doesn't
+    /// change; -1: any), carrying on from <paramref name="pose"/> (where it was last drawn, its yaw, walk and look); the
+    /// agent stops drawing at once, no fade. <paramref name="counted"/>: the cell's count still holds the zombie (a
+    /// client: its picture drops it with the next crowd message), so the agent hides and stands in for it until then (as a
+    /// <see cref="Claim"/>); otherwise (the host: the mass let it out this tick) it goes now. In a cell drawn at its cap
+    /// another agent takes its place at once at the cell's back (out of sight: the cap only samples the cell). Call before
+    /// <see cref="Update"/>; returns the agent's index, -1 if there is none near (nothing to hand over: the zombie wasn't
+    /// drawn as an agent).
+    /// </summary>
+    public int TakeOver(float x, float z, float within, int gait, bool counted, out Pose pose)
+    {
+        pose = default;
+        if (_n == 0 || Count == 0)
+            return -1;
+        var c = CellAt(x, z);
+        if (c < 0)
+            return -1;
+        if (_listFrame != Frame || _listCount != Count || _listDirty)
+            BuildLists();
+        // (Its own cell or a neighbour's: at the edge the mass's count often flows into a cell and out of it again as a
+        // particle before any agent has walked across, so the agent standing for it is still in the cell behind.)
+        var i = gait >= 0 ? Nearest(c, x, z, within, claimable: true, gait) : -1;
+        if (i < 0)
+            i = Nearest(c, x, z, within, claimable: true);
+        if (i < 0)
+            return -1;
+        pose = new Pose { X = X[i], Y = Y[i] - (1f - Fade[i]) * SinkDepth, Z = Z[i], Yaw = Yaw[i], Walk = Walk[i], Look = Look[i], Gait = Gait[i] };
+        var ac = CellOf[i];
+        if (counted && _want[ac] < _cap[ac])
+        {
+            State[i] = Mode.Claimed;
+            Timer[i] = ClaimSeconds;
+            Claims++;
+        }
+        else
+        {
+            _members[ac]--;
+            State[i] = Mode.Sinking;
+            Fade[i] = 0f; // (gone at once: the zombie that took over is drawn there instead)
+            if (_handed[ac] < 255)
+                _handed[ac]++;
+        }
+        HandedOver++;
+        return i;
     }
 
     // ---- The frame ----------------------------------------------------------------------------------------
@@ -374,6 +463,7 @@ public sealed class CrowdAgents
         BuildLists();
         Events();
         Rebalance();
+        _listDirty = true; // (the passes and spawns moved agents between cells: the lists are built again when next asked)
         _fillAll = false;
         _out = null;
     }
@@ -612,14 +702,16 @@ public sealed class CrowdAgents
             {
                 float ex = SX[i] - x, ez = SZ[i] - z;
                 var el = MathF.Sqrt(ex * ex + ez * ez);
-                if (el <= MoveSpeed * dt)
+                var ms = Timer[i] > 0 ? Timer[i] : MoveSpeed; // (pulled forward: at the crowd's pace, so the drawn front keeps up with the counts)
+                if (el <= ms * dt)
                 {
                     (vx, vz) = (ex / MathF.Max(dt, 1e-4f), ez / MathF.Max(dt, 1e-4f));
                     State[i] = Mode.Live;
+                    Timer[i] = 0;
                 }
                 else
                 {
-                    (vx, vz) = (ex / el * MoveSpeed, ez / el * MoveSpeed);
+                    (vx, vz) = (ex / el * ms, ez / el * ms);
                     turnTo = MathF.Atan2(vx, -vz);
                 }
             }
@@ -858,6 +950,7 @@ public sealed class CrowdAgents
         _start[0] = 0;
         _listFrame = Frame;
         _listCount = Count;
+        _listDirty = false;
     }
 
     private void Events()
@@ -882,9 +975,21 @@ public sealed class CrowdAgents
                     break;
                 }
                 case 1: // hint: one appears right there (counted; if the count never comes, it sinks after a moment)
-                    Spawn(c, x, z, Mode.Live, 1f, _evLook[e]);
+                {
+                    var i = Spawn(c, x, z, Mode.Live, 1f, _evLook[e]);
+                    if (!float.IsNaN(_evYaw[e]))
+                    {
+                        // Carrying on as the zombie was drawn: its yaw, its walk, its gait (it eases into its cell's walk).
+                        Yaw[i] = _evYaw[e];
+                        Walk[i] = _evWalk[e];
+                        Gait[i] = Math.Min(_evGait[e], (byte)2);
+                        if (_handed[c] < 255)
+                            _handed[c]++;
+                        DrawNow(i); // (drawn this frame already: the zombie it carries on from isn't drawn any more)
+                    }
                     Filled++;
                     break;
+                }
                 default: // release: the nearest sinks
                 {
                     var i = Nearest(c, x, z, Cell * 1.5f, claimable: true);
@@ -897,14 +1002,23 @@ public sealed class CrowdAgents
         _evN = 0;
     }
 
+    /// <summary>Writes agent <paramref name="i"/>'s instance now (one put in after this frame's pass), as the pass would.</summary>
+    private void DrawNow(int i)
+    {
+        if (_out == null)
+            return;
+        _out.StripeAt(0).Add(Lod[i], X[i], Y[i] - (1f - Fade[i]) * SinkDepth, Z[i], Yaw[i], Walk[i], _out.Bright(Look[i]), _move[CellOf[i]] < 0.5f, Gait[i]);
+    }
+
     /// <summary>The nearest counted agent to (x, z) within <paramref name="within"/> m, in cell <paramref name="c"/> and its neighbours (-1: none).</summary>
-    private int Nearest(int c, float x, float z, float within, bool claimable)
+    private int Nearest(int c, float x, float z, float within, bool claimable, int gait = -1)
     {
         var best = -1;
         var bd = within * within;
         int cc = c % Cols, cr = c / Cols;
-        for (var dr = -1; dr <= 1; dr++)
-            for (var dc = -1; dc <= 1; dc++)
+        var ring = within <= Cell * 1.5f ? 1 : (int)MathF.Ceiling(within / Cell); // (the cell and its neighbours; further for a wider search)
+        for (var dr = -ring; dr <= ring; dr++)
+            for (var dc = -ring; dc <= ring; dc++)
             {
                 int ux = cc + dc, uz = cr + dr;
                 if ((uint)ux >= (uint)Cols || (uint)uz >= (uint)Rows)
@@ -913,7 +1027,7 @@ public sealed class CrowdAgents
                 for (var k = _start[u]; k < _start[u + 1]; k++)
                 {
                     var i = _items[k];
-                    if (i >= Count || CellOf[i] != u || claimable && State[i] is Mode.Claimed or Mode.Sinking)
+                    if (i >= Count || CellOf[i] != u || claimable && State[i] is Mode.Claimed or Mode.Sinking || gait >= 0 && Gait[i] != gait)
                         continue;
                     var d = (X[i] - x) * (X[i] - x) + (Z[i] - z) * (Z[i] - z);
                     if (d < bd)
@@ -945,6 +1059,25 @@ public sealed class CrowdAgents
         for (var c = 0; c < _n; c++)
         {
             var diff = _members[c] - _target[c];
+            var handed = (int)_handed[c];
+            _handed[c] = 0;
+            var capped = handed > 0 && _vis[c] != 0 && _want[c] >= _cap[c];
+            if (diff > 0 && capped)
+            {
+                // A zombie handed in to a cell drawn at its cap: the cap only samples the cell, so the sample changes at the
+                // cell's back, out of sight, at once (no agent sinking into the ground in view for a zombie that only changed
+                // tier).
+                for (; diff > 0 && handed > 0; diff--, handed--)
+                {
+                    var i = Furthest(c);
+                    if (i < 0)
+                        break;
+                    _members[c]--;
+                    State[i] = Mode.Sinking;
+                    Fade[i] = 0f;
+                    Swapped++;
+                }
+            }
             if (diff == 0)
             {
                 _surT[c] = _defT[c] = 0;
@@ -1004,6 +1137,31 @@ public sealed class CrowdAgents
                 if (_vis[c] == 0)
                     continue;
                 var fresh = _fresh[c] != 0;
+                // Pulled from behind: the neighbour the cell's walk comes from passes its agent nearest across (it walks
+                // over), and is short in turn, so a moving crowd's agents walk forward into the cells its count flowed into
+                // (and out of which the mass let zombies out) instead of rising out of the ground at its front while those
+                // behind sink. The chain ends where the count left (the crowd's back).
+                for (var pulls = 0; diff < 0 && pulls < 4 && !fresh && PullFromBehind; pulls++)
+                {
+                    var u = Upstream(c);
+                    if (u < 0 || !PassTo(u, c, walking: true))
+                        break;
+                    diff++;
+                    Pulled++;
+                }
+                // A zombie taken over in a cell drawn at its cap, with nobody behind to step in: another is put in at the
+                // cell's back at once, out of sight (the cap only samples the cell).
+                for (; diff < 0 && capped && handed > 0; diff++, handed--)
+                {
+                    BackSpot(c, out var bx, out var bz);
+                    Spawn(c, bx, bz, Mode.Live, 1f, 0);
+                    Backfilled++;
+                }
+                if (diff == 0)
+                {
+                    _defT[c] = 0;
+                    continue;
+                }
                 if (!fresh)
                 {
                     _defT[c] += dt;
@@ -1022,6 +1180,69 @@ public sealed class CrowdAgents
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// The neighbouring cell in view that cell <paramref name="c"/>'s walk comes from (the step from it to
+    /// <paramref name="c"/> along the cell's heading, within about 67 degrees), with a live agent to pass, and one with
+    /// agents to spare first (-1: none, or the cell isn't walking).
+    /// </summary>
+    private int Upstream(int c)
+    {
+        if (_move[c] < 0.3f)
+            return -1;
+        float hx = _hx[c], hz = _hz[c];
+        int cc = c % Cols, cr = c / Cols;
+        var best = -1;
+        var bs = float.MinValue;
+        for (var dr = -1; dr <= 1; dr++)
+            for (var dc = -1; dc <= 1; dc++)
+            {
+                int ux = cc + dc, uz = cr + dr;
+                if ((dc | dr) == 0 || (uint)ux >= (uint)Cols || (uint)uz >= (uint)Rows)
+                    continue;
+                var u = uz * Cols + ux;
+                if (_vis[u] == 0 || _members[u] == 0)
+                    continue;
+                var dot = (-dc * hx - dr * hz) / ((dc != 0 && dr != 0) ? 1.41421356f : 1f);
+                if (dot < 0.38f)
+                    continue;
+                var score = dot + (_members[u] > _target[u] ? 1f : 0f);
+                if (score > bs)
+                    (bs, best) = (score, u);
+            }
+        return best;
+    }
+
+    /// <summary>Of four spots in cell <paramref name="c"/>, the one furthest from the camera (the cell's back).</summary>
+    private void BackSpot(int c, out float x, out float z)
+    {
+        x = z = 0;
+        var best = -1f;
+        for (var k = 0; k < 4; k++)
+        {
+            Spot(c, _nextId * 0x85EBCA77u + (uint)k * 0x27D4EB2Fu, out var sx, out var sz);
+            var d = (sx - _cam.X) * (sx - _cam.X) + (sz - _cam.Z) * (sz - _cam.Z);
+            if (d > best)
+                (best, x, z) = (d, sx, sz);
+        }
+    }
+
+    /// <summary>The live agent of cell <paramref name="c"/> furthest from the camera (-1: none).</summary>
+    private int Furthest(int c)
+    {
+        var best = -1;
+        var bd = -1f;
+        for (var k = _start[c]; k < _start[c + 1]; k++)
+        {
+            var i = _items[k];
+            if (i >= Count || CellOf[i] != c || State[i] != Mode.Live)
+                continue;
+            var d = (X[i] - _cam.X) * (X[i] - _cam.X) + (Z[i] - _cam.Z) * (Z[i] - _cam.Z);
+            if (d > bd)
+                (bd, best) = (d, i);
+        }
+        return best;
     }
 
     /// <summary>A neighbouring cell in view with fewer agents than it should have (-1: none).</summary>
@@ -1045,7 +1266,7 @@ public sealed class CrowdAgents
     }
 
     /// <summary>Cell <paramref name="c"/> passes its agent nearest cell <paramref name="u"/> across to it.</summary>
-    private bool PassTo(int c, int u)
+    private bool PassTo(int c, int u, bool walking = false)
     {
         float ux = MinX + (u % Cols + 0.5f) * Cell, uz = MinZ + (u / Cols + 0.5f) * Cell;
         var best = -1;
@@ -1053,7 +1274,7 @@ public sealed class CrowdAgents
         for (var k = _start[c]; k < _start[c + 1]; k++)
         {
             var i = _items[k];
-            if (i >= Count || CellOf[i] != c || State[i] != Mode.Live)
+            if (i >= Count || CellOf[i] != c || !(State[i] == Mode.Live || walking && State[i] == Mode.Moving))
                 continue;
             var d = (X[i] - ux) * (X[i] - ux) + (Z[i] - uz) * (Z[i] - uz);
             if (d < bd)
@@ -1064,8 +1285,17 @@ public sealed class CrowdAgents
         // Its spot: just inside the new cell, the nearest point of it.
         float x0 = MinX + u % Cols * Cell, z0 = MinZ + u / Cols * Cell;
         var m = Cell * 0.12f;
-        SX[best] = Math.Clamp(X[best], x0 + m, x0 + Cell - m);
-        SZ[best] = Math.Clamp(Z[best], z0 + m, z0 + Cell - m);
+        Timer[best] = 0;
+        if (walking)
+        {
+            Spot(u, Look[best] ^ Id[best] * 0x9E3779B1u, out SX[best], out SZ[best]); // (pulled forward: on to a spot of its own in the cell, so the front fills out rather than bunching at its back)
+            Timer[best] = MathF.Max(MoveSpeed, (_paced ? _pace.Mean : Speed) * 1.3f);
+        }
+        else
+        {
+            SX[best] = Math.Clamp(X[best], x0 + m, x0 + Cell - m);
+            SZ[best] = Math.Clamp(Z[best], z0 + m, z0 + Cell - m);
+        }
         State[best] = Mode.Moving;
         CellOf[best] = u;
         _members[c]--;
@@ -1086,6 +1316,7 @@ public sealed class CrowdAgents
             Array.Clear(_hx);
             Array.Clear(_hz);
             Array.Clear(_cap);
+            Array.Clear(_handed);
         }
         _evN = 0;
         _listFrame = -1;

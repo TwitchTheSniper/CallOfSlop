@@ -98,6 +98,20 @@ public sealed class CrowdTuning
     public int MassPerTick = 40, MassCapacity = 40, DrawCap = 28;
 
     /// <summary>
+    /// The soft wake edge (docs/zombies/MASS-HORDE.md, "Wake waves"): on; each mass cell wakes within its own radius,
+    /// <see cref="MassRange"/> +- half of <see cref="MassBand"/> (fixed per cell, so the edge is ragged, not a circle), and
+    /// merges back past that plus <see cref="MassHysteresis"/>. The cells nearest a player go first, those whose cell
+    /// towards the player still holds mass (the inside of a blob) only once they count <see cref="MassInterior"/> m nearer;
+    /// at most <see cref="MassPerCell"/> from one cell a tick, so a cell drains over several ticks. The merges go furthest
+    /// first. Off: the old release (any cell within <see cref="MassRange"/>, in index order, emptied at once) and merge.
+    /// </summary>
+    public bool SoftWake = true;
+
+    public float MassBand = 8f, MassInterior = 24f;
+
+    public int MassPerCell = 2;
+
+    /// <summary>
     /// Drawing the far crowd (CrowdAgents): a cell further than <see cref="DrawFarFrom"/> m from the camera draws fewer
     /// than <see cref="DrawCap"/>, down to <see cref="DrawCapFar"/> at <see cref="DrawFarTo"/> m and beyond.
     /// </summary>
@@ -180,6 +194,20 @@ public sealed partial class HordeCrowd
     public uint[] Look = [];
 
     public long[] Born = [];
+
+    /// <summary>
+    /// Visual only, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"; written by the drawing, never read
+    /// by the game): the look it is drawn with (its <see cref="Look"/>, or the look of the mass agent it took over), the
+    /// metres walked (its walk cycle's phase, carried across tier changes), and the hand-off: the offset (m) from where it
+    /// is to where the agent it took over stood, eased out over <see cref="HandDur"/> s (<see cref="HandLeft"/> s left; -1:
+    /// let out of the mass and not yet drawn), and that agent's yaw.
+    /// </summary>
+    public uint[] DrawLook = [];
+
+    public float[] Walk = [], HandX = [], HandZ = [], HandYaw = [], HandLeft = [], HandDur = [];
+
+    /// <summary>Visual only: a particle let out of the mass is waiting for the drawing to hand it over (<see cref="HandLeft"/> -1).</summary>
+    public bool HandPending;
 
     /// <summary>
     /// Waking and sleeping: the tick before which a zombie just put to sleep isn't woken again unless it is near enough
@@ -399,6 +427,13 @@ public sealed partial class HordeCrowd
         Array.Resize(ref Look, n);
         Array.Resize(ref Born, n);
         Array.Resize(ref RestUntil, n);
+        Array.Resize(ref DrawLook, n);
+        Array.Resize(ref Walk, n);
+        Array.Resize(ref HandX, n);
+        Array.Resize(ref HandZ, n);
+        Array.Resize(ref HandYaw, n);
+        Array.Resize(ref HandLeft, n);
+        Array.Resize(ref HandDur, n);
         var m = n + Game.MaxZombies;
         _sItem = new int[m];
         _sX = new float[m];
@@ -476,6 +511,10 @@ public sealed partial class HordeCrowd
         Look[i] = h;
         Born[i] = long.MinValue;
         RestUntil[i] = 0;
+        DrawLook[i] = h;
+        Walk[i] = (h >> 10 & 255) / 64f;
+        HandX[i] = HandZ[i] = HandYaw[i] = HandLeft[i] = 0;
+        HandDur[i] = 1;
         return i;
     }
 
@@ -501,6 +540,13 @@ public sealed partial class HordeCrowd
         Look[i] = Look[last];
         Born[i] = Born[last];
         RestUntil[i] = RestUntil[last];
+        DrawLook[i] = DrawLook[last];
+        Walk[i] = Walk[last];
+        HandX[i] = HandX[last];
+        HandZ[i] = HandZ[last];
+        HandYaw[i] = HandYaw[last];
+        HandLeft[i] = HandLeft[last];
+        HandDur[i] = HandDur[last];
     }
 
     public static uint Hash(uint x)
@@ -563,7 +609,9 @@ public sealed partial class HordeCrowd
         var sepR = Tuning.SeparationRadius;
         var sepS = Tuning.SeparationStrength;
         var thinkSpan = (uint)Math.Max(1, Tuning.ThinkMax - Tuning.ThinkMin + 1);
-        var mr = Tuning.MassRange + Tuning.MassHysteresis;
+        var soft = Tuning.SoftWake;
+        // (The soft wake: the nearest any cell merges is the range less half the band, plus the hysteresis.)
+        var mr = Tuning.MassRange + Tuning.MassHysteresis - (soft ? MathF.Max(0f, Tuning.MassBand) * 0.5f : 0f);
         var merge2 = Tuning.Mass && targets > 0 ? mr * mr : float.MaxValue;
         var mergeTurn = (int)(tick & 7);
         _mergeN = 0;
@@ -622,8 +670,21 @@ public sealed partial class HordeCrowd
             else
             {
                 Held[i] = false;
-                if (best > merge2 && (i & 7) == mergeTurn && HP[i] >= MassHP)
-                    OfferMerge(i); // far from everyone: into the mass (HordeCrowd.Mass.cs)
+                if (best > merge2 && HP[i] >= MassHP)
+                {
+                    if (!soft)
+                    {
+                        if ((i & 7) == mergeTurn)
+                            OfferMerge(i); // far from everyone: into the mass (HordeCrowd.Mass.cs)
+                    }
+                    else
+                    {
+                        // The soft wake: past its cell's own merge radius, the furthest first (HordeCrowd.Mass.cs).
+                        var mr2 = WakeRadius(MassCellOf(x, z)) + Tuning.MassHysteresis;
+                        if (best > mr2 * mr2)
+                            OfferMerge(i, best);
+                    }
+                }
             }
             if ((i & 1) == parity)
                 Separate(i, x, z, sepR, sepS);
