@@ -244,7 +244,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
   along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
   as part of the construct: "Seats" below). A moving
-  part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
+  part that moves into a player shoves them along and, faster than 4 m/s of its own speed, hurts them (run-over damage,
+  below).
 
 ### Damage (decision 6)
 
@@ -1353,9 +1354,15 @@ input end). Wiring is instant (fitting a part is what takes time).
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
 - A player standing on a part is **carried** by the body's motion and, sideways, by every joint under their feet (a
   turntable, a swinging deck); a rising lift lifts them by the step-up rule. They count towards that joint's load.
-- **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
-  `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
-  with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+- **Run-over damage** (`ConstructWorld.BlockPlayer`, `Game.SandboxRunOver`): only the **construct's own motion** counts:
+  the velocity of its part at the contact (the body's motion, linear and turning, plus every joint's up its chain: a
+  swinging arm, a turntable) along the contact normal towards the player. The player's own velocity plays no part, so
+  sprinting into a parked car only stops you, and landing on a parked car is a landing (normal fall damage only). At up
+  to `Game.RunOverSpeed` (4 m/s, tunable) the part only pushes the player along at its speed; faster, it does
+  `(speed - 4) x 9 x sqrt(mass / 500)` damage (the mass factor 0.4 to 2.5), at most once in 0.6 s, and knocks them out
+  along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
+  joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
+  "Construct run-over" self-test covers each case.
 
 ### Seats: riders as part of the construct
 

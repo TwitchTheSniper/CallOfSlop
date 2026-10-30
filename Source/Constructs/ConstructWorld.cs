@@ -46,9 +46,14 @@ public sealed partial class ConstructWorld
     /// </summary>
     public readonly List<(Vector3 Centre, Vector3 Half)> Shattered = new(32);
 
-    /// <summary>What the last <see cref="BlockPlayer"/> call found: the hardest push by a moving part (run-over damage), and who pushed.</summary>
+    /// <summary>
+    /// What the last <see cref="BlockPlayer"/> call found: the hardest push by a moving part (run-over damage), and who
+    /// pushed. The speed is the construct's own: its contact point's velocity (the body's motion, linear and turning, and
+    /// any joint's under it) along the contact normal towards the player. The player's own velocity plays no part, so
+    /// running into a parked car is not an impact.
+    /// </summary>
     public float LastHitSpeed, LastHitMass;
-    public Vector3 LastHitVel;
+    public Vector3 LastHitVel, LastHitNormal;
     public Construct? LastHitBody;
 
     // ---- Weapons (milestone 3; ConstructWeapons.cs) ----------------------------------------------------------------
@@ -738,6 +743,7 @@ public sealed partial class ConstructWorld
         var standSeg = 0;
         LastHitSpeed = 0;
         LastHitBody = null;
+        LastHitNormal = Vector3.Zero;
         for (var bi = 0; bi < Bodies.Count; bi++)
         {
             var c = Bodies[bi];
@@ -824,14 +830,16 @@ public sealed partial class ConstructWorld
                         s.Position.X += nx * depth;
                         s.Position.Z += nz * depth;
                         var vn = s.Velocity.X * nx + s.Velocity.Z * nz;
-                        // A moving part (a car, a swinging arm) shoves the player along with it, and hits them as hard as it closes.
+                        // A moving part (a car, a swinging arm) shoves the player along with it, and hits them as hard as it
+                        // moves towards them: only the part's own speed at the contact counts, never the player's.
                         var pv = (c.Anchored || c.Asleep ? Vector3.Zero : c.PointVel(wclosest)) + c.SegPointVel(p.Seg, wclosest);
                         var pn = pv.X * nx + pv.Z * nz;
-                        if (pn - vn > LastHitSpeed)
+                        if (pn > LastHitSpeed)
                         {
-                            LastHitSpeed = pn - vn;
+                            LastHitSpeed = pn;
                             LastHitMass = c.Mass;
                             LastHitVel = pv;
+                            LastHitNormal = new Vector3(nx, 0, nz);
                             LastHitBody = c;
                         }
                         if (vn < pn && pn > 0)

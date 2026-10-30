@@ -557,16 +557,33 @@ public sealed partial class Game
             SandboxRunOver(p, ref s, car);
     }
 
-    /// <summary>A moving construct part closing on a player faster than this (m/s) hurts them (run over, or hit by a swinging arm).</summary>
-    public const float RunOverSpeed = 4f;
+    /// <summary>
+    /// A construct part moving towards a player faster than this (m/s: its own speed at the contact, along the normal,
+    /// whatever the player is doing) hurts them (run over, or hit by a swinging arm or a wreck); slower, it only pushes.
+    /// Tunable (the developer's proposal: 3 to 4).
+    /// </summary>
+    public static float RunOverSpeed = 4f;
 
     public const double RunOverCooldown = 0.6;
 
     private readonly double[] _sbHitAt = new double[256];
 
-    /// <summary>Run-over damage: by how fast the part closed on them and how heavy its construct is; the driver (if any) gets the credit.</summary>
-    public static int RunOverDamage(float closing, float mass) =>
-        closing <= RunOverSpeed ? 0 : (int)MathF.Round((closing - RunOverSpeed) * 9f * Math.Clamp(MathF.Sqrt(mass / 500f), 0.4f, 2.5f));
+    /// <summary>Run-over damage: by how fast the part moved towards them (its own speed) and how heavy its construct is; the driver (if any) gets the credit.</summary>
+    public static int RunOverDamage(float speed, float mass) =>
+        speed <= RunOverSpeed ? 0 : (int)MathF.Round((speed - RunOverSpeed) * 9f * RunOverMass(mass));
+
+    /// <summary>How much a construct's mass scales run-over damage and knockback: 1 at 500 kg, 0.4 to 2.5.</summary>
+    public static float RunOverMass(float mass) => Math.Clamp(MathF.Sqrt(mass / 500f), 0.4f, 2.5f);
+
+    /// <summary>
+    /// The knockback a run-over adds on top of the push (which already carries the player along at the part's speed):
+    /// out along the contact normal and up, growing with the speed over <see cref="RunOverSpeed"/> and the mass.
+    /// </summary>
+    public static Vector3 RunOverKnock(float speed, float mass, Vector3 normal)
+    {
+        var over = MathF.Max(0, speed - RunOverSpeed) * RunOverMass(mass);
+        return normal * MathF.Min(over * 0.45f, 14f) + new Vector3(0, MathF.Min(1.5f + over * 0.18f, 7f), 0);
+    }
 
     private void SandboxRunOver(Player p, ref MoveState s, Construct car)
     {
@@ -575,8 +592,8 @@ public sealed partial class Game
             return;
         _sbHitAt[p.Id] = now;
         var dmg = RunOverDamage(Constructs.LastHitSpeed, Constructs.LastHitMass);
-        // Knocked along with the car, and a little up.
-        s.Velocity += Constructs.LastHitVel * 0.5f + new Vector3(0, 2.5f, 0);
+        // Knocked on with the car (out along the contact and up), harder the faster and heavier it is.
+        s.Velocity += RunOverKnock(Constructs.LastHitSpeed, Constructs.LastHitMass, Constructs.LastHitNormal);
         s.Grounded = false;
         var by = car.Driver != 255 && car.Driver != p.Id && Players.TryGetValue(car.Driver, out var d) ? d : p;
         Constructs.Events.Add($"player {p.Id} hit by construct {car.Id} at {Constructs.LastHitSpeed:0.0} m/s: {dmg} damage");
