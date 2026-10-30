@@ -19,8 +19,11 @@ public struct SandboxHand
     public EditKind Edit;
     public ushort Body;
     public byte Part, Socket, Variant;
-    public Vector3 At; // PlaceNew: the ground point
+    public Vector3 At; // PlaceNew: the new construct's origin
     public float Yaw;
+    public Quaternion PlaceRot; // PlaceNew: the new construct's frame (free placement)
+    public byte PlaceTurn; // ...and the part's Rot24 turn in it
+    public bool PlaceAnchor; // ...pinned to the ground
     public double Start, Duration;
     public ushort SeatBody; // 0: not sitting
     public byte SeatPart;
@@ -117,6 +120,8 @@ public sealed class ConstructEdits
             return "that construct is gone";
         if (c.Driver != 255 && c.Driver != player)
             return "someone is driving it";
+        if (Claims(c, player) && ConstructPlace.LimitRefusal(world, player) is { } full)
+            return full;
         var v = variant % Math.Max(1, def.Sockets.Length * 4);
         if (ConstructBuild.Place(c, part, socket, def, v / 4, v % 4, out var g) is { } why)
             return why;
@@ -132,7 +137,19 @@ public sealed class ConstructEdits
         return null;
     }
 
-    public string? BeginPlaceNew(ConstructWorld world, byte player, Vector3 eye, Vector3 ground, float yaw, double now)
+    /// <summary>The map the edits are checked against (the server sets it; null in a bare construct world: no map checks).</summary>
+    public IWorldQuery? Query;
+
+    /// <summary>Where the players stand (the server's <see cref="ConstructWorld.PlayerSpots"/>): nothing is set down on them.</summary>
+    private static ReadOnlySpan<Vector3> Feet(ConstructWorld world) => world.PlayerSpots.AsSpan(0, world.PlayerSpotCount);
+
+    /// <summary>
+    /// Free placement (milestone 1's "set it down on the ground", generalised): the held part on the surface at
+    /// <paramref name="point"/> facing <paramref name="normal"/>, turned <paramref name="turn"/> (Rot24), as a new construct
+    /// rooted at it. <paramref name="flags"/>: <see cref="ConstructPlace.FlagGrid"/> snaps it to the world grid,
+    /// <see cref="ConstructPlace.FlagAnchor"/> pins it to the ground (creative only: infinite parts). Null, or why not.
+    /// </summary>
+    public string? BeginPlaceNew(ConstructWorld world, byte player, Vector3 eye, Vector3 point, Vector3 normal, float yaw, byte turn, byte flags, double now)
     {
         ref var h = ref Hands[player];
         if (h.Seated)
@@ -143,15 +160,73 @@ public sealed class ConstructEdits
             return "take out a tool to build (3: wrench, 4: welder)";
         if (!ConstructBuild.ToolFits(h.Tool, def))
             return $"the {def.Name} needs the {def.Tool.ToString().ToLowerInvariant()}";
-        if (Reachable(eye, ground, ConstructBuild.Reach) is { } far)
+        if (Reachable(eye, point, ConstructBuild.Reach) is { } far)
             return far;
-        if (world.Bodies.Count >= ConstructWorld.MaxBodies || world.TotalParts >= ConstructWorld.MaxTotalParts)
-            return "the world is full of constructs";
+        var anchor = (flags & ConstructPlace.FlagAnchor) != 0;
+        if (anchor && !InfiniteParts)
+            return "anchoring to the ground is for creative: build on a foundation instead";
+        if (ConstructPlace.LimitRefusal(world, player) is { } full)
+            return full;
+        if (ConstructPlace.Pose(Query, def, point, normal, yaw, turn, (flags & ConstructPlace.FlagGrid) != 0, out var fp) is { } where)
+            return where;
+        if (ConstructPlace.Fits(world, Query, def, fp, Feet(world)) is { } blocked)
+            return blocked;
         h.Edit = EditKind.PlaceNew;
-        h.At = ground;
+        h.At = fp.Pos;
+        h.PlaceRot = fp.Rot;
+        h.PlaceTurn = fp.Turn;
+        h.PlaceAnchor = anchor;
         h.Yaw = yaw;
         h.Start = now;
         h.Duration = ConstructBuild.AttachSeconds(def);
+        return null;
+    }
+
+    /// <summary>Milestone 1's form: upright on the ground at <paramref name="ground"/>, turned to <paramref name="yaw"/>.</summary>
+    public string? BeginPlaceNew(ConstructWorld world, byte player, Vector3 eye, Vector3 ground, float yaw, double now) =>
+        BeginPlaceNew(world, player, eye, ground, Vector3.UnitY, yaw, 0, 0, now);
+
+    /// <summary>
+    /// The welder on a part that touches another construct (<see cref="ConstructPlace.FindJoin"/>): the two become one.
+    /// Your own, or one anyone may salvage (a wreck, a loose part, the map's); not someone else's working construct.
+    /// </summary>
+    public string? Join(ConstructWorld world, byte player, Vector3 eye, ushort body, int part)
+    {
+        ref var h = ref Hands[player];
+        if (h.Seated)
+            return "get out of the seat first";
+        if (h.Tool != ConstructTool.Welder)
+            return "take out the welder (4) to weld two constructs together";
+        if (world.Get(body) is not { } c || part < 0 || part >= c.PartCount)
+            return "that part is gone";
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        if (Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach) is { } far)
+            return far;
+        if (!ConstructPlace.FindJoin(world, c, part, out var plan))
+            return "it doesn't touch another construct (free sockets face to face, square to each other)";
+        if (SalvageRefusal(c, player) != null || SalvageRefusal(plan.Other, player) != null)
+            return "that construct is someone else's: you can only join your own (or wrecks and loose parts)";
+        // Which one survives: the one aimed at, unless only the other is the player's own.
+        var keep = c;
+        if (c.Owner != player && plan.Other.Owner == player)
+        {
+            keep = plan.Other;
+            if (!ConstructPlace.FindJoin(world, keep, plan.PartB, out plan, only: c))
+                return "they don't meet square";
+        }
+        var other = plan.Other;
+        if (world.CanMerge(keep, plan.Other) is { } why)
+            return why;
+        // Edits in progress on the one that goes stop.
+        for (var i = 0; i < Hands.Length; i++)
+            if (Hands[i].Edit is EditKind.Attach or EditKind.Remove && Hands[i].Body == other.Id)
+                Hands[i].Edit = EditKind.None;
+        var from = other.Id;
+        if (!world.Merge(keep, plan))
+            return "they can't be joined";
+        keep.Owner = player; // (both were the player's, or free for anyone to take)
+        Done.Add($"player {player}: joined construct {from} into construct {keep.Id}");
         return null;
     }
 
@@ -212,18 +287,31 @@ public sealed class ConstructEdits
                     return "failed: nothing to attach";
                 if (ConstructBuild.Place(c, h.Part, h.Socket, def, h.Variant / 4, h.Variant % 4, out var g) is { } why)
                     return $"failed: {why}";
+                var claim = Claims(c, player);
                 var i = ConstructBuild.Attach(world, c, def, g);
                 if (i < 0)
                     return "failed: too many parts";
+                if (claim)
+                {
+                    // Building onto a wreck or a loose part: it becomes a construct, the builder's.
+                    c.Wreck = false;
+                    c.Owner = player;
+                    world.StructureDirty.Add(c.Id);
+                }
                 h.Held = ConstructParts.None;
                 Refill(player, ref h, def);
-                return $"ok: {def.Name} as part {i} of construct {c.Id}";
+                var touches = ConstructPlace.FindJoin(world, c, i, out var jp) ? $" (it touches construct {jp.Other.Id}: F with the welder joins them)" : "";
+                return $"ok: {def.Name} as part {i} of construct {c.Id}{(claim ? " (claimed)" : "")}{touches}";
             }
             case EditKind.PlaceNew:
             {
                 if (ConstructParts.Get(h.Held) is not { } def || !ConstructBuild.ToolFits(h.Tool, def))
                     return "failed: nothing to place";
-                if (ConstructBuild.PlaceNew(world, def, h.At, h.Yaw) is not { } c)
+                // Checked again: something may have moved there meanwhile.
+                var fp = new FreePlacement { Pos = h.At, Rot = h.PlaceRot, Turn = h.PlaceTurn, Anchor = h.PlaceAnchor };
+                if ((ConstructPlace.LimitRefusal(world, player) ?? ConstructPlace.Fits(world, Query, def, fp, Feet(world))) is { } why)
+                    return $"failed: {why}";
+                if (ConstructBuild.PlaceNew(world, def, fp) is not { } c)
                     return "failed: the world is full";
                 c.Owner = player; // (what a player sets down is theirs, and everything built onto it)
                 h.Held = ConstructParts.None;
@@ -268,6 +356,9 @@ public sealed class ConstructEdits
         }
         return "nothing";
     }
+
+    /// <summary>Building onto this claims it: a wreck, or a loose part on the ground (it becomes the builder's construct).</summary>
+    public static bool Claims(Construct c, byte player) => c.Wreck || c.Loose && c.Owner != player;
 
     /// <summary>Infinite parts off: after a fit, the next of the same kind comes out of the inventory into the hand (build a row of them without going back for each).</summary>
     private void Refill(byte player, ref SandboxHand h, ConstructPartDef def)

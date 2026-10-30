@@ -408,12 +408,18 @@ public sealed partial class Ui
                     ImGuiSafe.FieldFailed("sandbox inventory search", ex);
                 }
                 ImGui.Spacing();
-                var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 3.2f;
+                var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 5.2f;
                 if (ImGui.BeginChild("##sbtree"u8, new float2(0, MathF.Max(60 * _scale, treeH)), ImGuiChildFlags.None))
                     SbDrawTree();
                 ImGui.EndChild();
                 ImGui.Separator();
                 ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
+                // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
+                ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
+                if (game.SandboxInfiniteParts)
+                    ImGui.Checkbox("Anchor new constructs to the ground"u8, ref game.SandboxPlaceAnchor);
+                else
+                    ImGui.TextColored(Dim, "New constructs: free (a foundation anchors)"u8);
                 ImGui.SetNextItemWidth(-1);
                 ImGui.SliderFloat("##sbtilesize"u8, ref SandboxTileSize, SandboxTileMin, SandboxTileMax, "Tile size %.0f"u8);
                 ImGuiSafe.TextColored(Dim, $"[{Keybinds.Name(settings.Bind(GameAction.Inventory))}] or Esc closes");

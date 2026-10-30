@@ -144,7 +144,8 @@ public sealed class Construct
     public byte Owner = 255; // the player who built it (set down its first part, or spawned its blueprint); 255: nobody's (the map's). A sentry's kills are theirs (milestone 3)
     public bool Damaged; // a part of it has been wrecked (broken off or stopped working): disabled, so anyone may salvage it
     public double IdleSince = -1; // server: a wreck's last time with a player near or salvaging it (debris expiry; -1: not yet looked at)
-    public bool Anchored; // a working foundation holds it to the ground
+    public bool Anchored; // a working foundation holds it to the ground (or it is pinned)
+    public bool Pinned; // set down "anchored to the ground" (creative's free placement toggle): held still without a foundation
     public bool Asleep;
     public int SleepTicks;
 
@@ -402,11 +403,14 @@ public sealed class Construct
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation)
                 return i;
+        for (var i = 0; i < PartCount; i++)
+            if (Parts[i].D.Core)
+                return i;
         return 0;
     }
 
     /// <summary>A loose part: one part, whole, not a seat or a foundation (can be picked up; wrecked debris can't).</summary>
-    public bool Loose => PartCount == 1 && !Parts[0].Broken && Parts[0].D.Role is not (PartRole.Seat or PartRole.Foundation) && !Anchored;
+    public bool Loose => PartCount == 1 && !Parts[0].Broken && Parts[0].D.Role is not (PartRole.Seat or PartRole.Foundation) && !Parts[0].D.Core && !Anchored;
 
     public void Wake()
     {
@@ -481,7 +485,7 @@ public sealed class Construct
         BuildSegments();
         ConstructPower.Rebuild(this);
         ConstructWeapons.BuildGuns(this);
-        Anchored = false;
+        Anchored = Pinned && PartCount > 0;
         for (var i = 0; i < PartCount; i++)
             if (Parts[i].D.Role == PartRole.Foundation && Parts[i].Working && Parts[i].Seg == 0)
                 Anchored = true;

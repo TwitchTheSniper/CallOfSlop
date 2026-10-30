@@ -1,0 +1,28 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Construct Core",
+  "description": "The start of a new construct: set it down on any surface and build onto its six faces. Never a loose part.",
+  "role": "frame",
+  "tool": "welder",
+  "core": true,
+  "attachSeconds": 1.5,
+  "mass": 40,
+  "health": 400,
+  "armour": 6,
+  "material": "steel",
+  "color": "#d08a2c",
+  "boxes": [
+    { "size": [0.5, 0.5, 0.5] },
+    { "size": [0.52, 0.12, 0.52], "color": "#3a3f46", "detail": true },
+    { "size": [0.12, 0.52, 0.52], "color": "#3a3f46", "detail": true },
+    { "size": [0.52, 0.52, 0.12], "color": "#3a3f46", "detail": true }
+  ],
+  "sockets": [
+    { "name": "+x", "at": [0.25, 0, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.25, 0, 0], "dir": "-x" },
+    { "name": "+y", "at": [0, 0.25, 0], "dir": "+y" },
+    { "name": "-y", "at": [0, -0.25, 0], "dir": "-y" },
+    { "name": "+z", "at": [0, 0, 0.25], "dir": "+z" },
+    { "name": "-z", "at": [0, 0, -0.25], "dir": "-z" }
+  ]
+}
