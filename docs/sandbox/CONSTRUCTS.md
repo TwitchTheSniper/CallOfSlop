@@ -539,7 +539,7 @@ An ammo box's block: `"ammoBox": { "rounds": 300, "cookOff": { "radius": 3.5, "d
 - **Who gets the kill**: the gunner, else the player the construct belongs to (a sentry's kills are its owner's), else
   nobody (the victim's own, like being run over by a driverless car).
 - **Weight**: guns, boxes and gun parts weigh what their files say, like any part (the Hood Gun Buggy is 46 kg
-  heavier than the Buggy), and a free construct is pushed back by each shot's `kick`.
+  heavier than the Buggy without its tow hitch), and a free construct is pushed back by each shot's `kick`.
 
 ### The yard
 
