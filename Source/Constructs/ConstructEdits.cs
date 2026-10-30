@@ -15,7 +15,7 @@ public enum EditKind : byte
 public struct SandboxHand
 {
     public ConstructTool Tool; // None: a gun or bare hands (use only, never edit)
-    public byte Held; // the part in hand (ConstructParts id, 255: none)
+    public ushort Held; // the part in hand (ConstructParts id, ConstructParts.None: none)
     public EditKind Edit;
     public ushort Body;
     public byte Part, Socket, Variant;
@@ -496,6 +496,8 @@ public sealed partial class ConstructEdits
         var cur = ConstructParts.Get(h.Held)?.Name;
         var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
         var next = ConstructParts.Find(sandbox.RackParts[(at + 1) % sandbox.RackParts.Count]);
+        for (var skip = 0; next is { Legacy: true } && skip < sandbox.RackParts.Count; skip++)
+            next = ConstructParts.Find(sandbox.RackParts[(at + 2 + skip) % sandbox.RackParts.Count]); // (replaced by routed links: not offered)
         if (next == null)
             return "the rack is empty";
         h.Held = next.Id;
@@ -527,7 +529,7 @@ public sealed partial class ConstructEdits
     /// The debug parts menu (UiSandboxParts.cs): any loaded part, by id, straight into the hands, wherever the player is
     /// (what is in them is replaced, as at the rack). Refused when the map turns the menu off (<see cref="SandboxMap.PartsMenu"/>).
     /// </summary>
-    public string? TakePart(SandboxMap? sandbox, byte player, byte part)
+    public string? TakePart(SandboxMap? sandbox, byte player, ushort part)
     {
         ref var h = ref Hands[player];
         if (sandbox is not { PartsMenu: true })

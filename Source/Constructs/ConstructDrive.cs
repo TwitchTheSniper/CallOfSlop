@@ -180,11 +180,27 @@ public sealed partial class Construct
                 : CountRole(PartRole.FuelTank) == 0 ? "no working fuel tank" : "no fuel line from the tank to the engine";
             return;
         }
+        // The drive line's edges: the attachments, then the shaft links (routed links: a shaft from port to port, its U
+        // joints each losing a little).
+        Span<CLink> edges = stackalloc CLink[MaxLinks + MaxRoutes];
+        Span<float> edgeEff = stackalloc float[MaxLinks + MaxRoutes];
+        var edgeCount = 0;
+        for (var k = 0; k < LinkCount; k++)
+        {
+            edgeEff[edgeCount] = 1f;
+            edges[edgeCount++] = Links[k];
+        }
+        for (var k = 0; k < ShaftEdgeCount; k++)
+            if (ShaftEdges[k].A < PartCount && ShaftEdges[k].B < PartCount)
+            {
+                edgeEff[edgeCount] = ShaftEff[k];
+                edges[edgeCount++] = ShaftEdges[k];
+            }
         // The transmission: on the engine.
         var anyTransmission = false;
-        for (var k = 0; k < LinkCount && Transmission < 0; k++)
+        for (var k = 0; k < edgeCount && Transmission < 0; k++)
         {
-            ref var l = ref Links[k];
+            ref var l = ref edges[k];
             var other = l.A == Engine ? l.B : l.B == Engine ? l.A : -1;
             if (other < 0 || Parts[other].D.Role != PartRole.Transmission)
                 continue;
@@ -228,9 +244,10 @@ public sealed partial class Construct
                 outMask |= AddGate(at, 0, -1, 0);
             if (da.Role == PartRole.Transfer && da.Drive is DriveKind.Hub or DriveKind.Stub)
                 continue; // (a hub drives only its suspension: after this loop)
-            for (var k = 0; k < LinkCount; k++)
+            for (var k = 0; k < edgeCount; k++)
             {
-                ref var l = ref Links[k];
+                ref var l = ref edges[k];
+                var linkEff = edgeEff[k];
                 int other, sa, sb;
                 if (l.A == at) (other, sa, sb) = (l.B, l.SA, l.SB);
                 else if (l.B == at) (other, sa, sb) = (l.A, l.SB, l.SA);
@@ -303,7 +320,7 @@ public sealed partial class Construct
                 // Out of a differential's axle (into a U or CV joint): its final drive, and its wheels are its group.
                 var axleOut = da.Role == PartRole.Differential && dob.Role == PartRole.Transfer && dob.Drive is DriveKind.UJoint or DriveKind.CvJoint;
                 ratio[other] = axleOut ? outRatio * da.DiffRatio : outRatio;
-                eff[other] = axleOut ? outEff * da.DiffEfficiency : outEff;
+                eff[other] = (axleOut ? outEff * da.DiffEfficiency : outEff) * linkEff;
                 cap[other] = outCap;
                 mask[other] = m;
                 group[other] = axleOut ? (byte)at : group[at];
@@ -610,7 +627,7 @@ public static class ConstructDrive
                     c.Charge = MathF.Max(0, c.Charge - torque * MathF.Max(omega, 40f) / 0.9f / 1000f * dt); // kW out of the batteries
                 break;
         }
-        c.DriveTorque = torque;
+        c.DriveTorque = torque * c.FuelQuality; // (routed links: a wrong pipe's residue makes it sputter)
         // Each driven wheel's share: the torque goes to the drive groups (differentials, hubs) that touch, then within
         // each by its kind: an open differential with a wheel in the air passes almost nothing, a limited-slip one most
         // of it to the wheel that grips, a locked one all of it.

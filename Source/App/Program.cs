@@ -1672,6 +1672,10 @@ public static unsafe partial class Program
             SetMouseCaptured(true);
             return;
         }
+        if (_session != null && key == GlfwKey.Escape && !Ui.ChatOpen && SandboxLinkEsc())
+            return; // (Esc cancels the link being routed, not the match: Program.SandboxLinks.cs)
+        if (_session != null && key == GlfwKey.Backspace && !Ui.ChatOpen && SandboxLinkBack())
+            return; // (Backspace takes the last node off)
         if (key == GlfwKey.Escape && Ui.ChatOpen)
         {
             Ui.CloseChat(); // Esc leaves the chat line, not the match

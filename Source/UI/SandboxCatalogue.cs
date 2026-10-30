@@ -158,6 +158,8 @@ public sealed class SandboxCatalogue
             var (g, s) = Classify(d);
             cat.PartGroup[d.Id] = g;
             cat.PartSection[d.Id] = s;
+            if (d.Legacy)
+                continue; // (replaced by a routed link: the linking tool makes pipes and shafts now)
             partItems.Add((g, s, d.Group.Length > 0 ? GivenOrder(d) : (int)d.Role * 64 + (d.Role == PartRole.Logic ? LogicOrder(s) : 0), d.Name, d.Id));
         }
         cat.Parts = MakeTree(partItems, "part");

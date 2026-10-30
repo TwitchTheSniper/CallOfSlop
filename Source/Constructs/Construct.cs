@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>One placed part of a construct: its type, where it sits in its segment's rest frame, its turn and its health.</summary>
 public struct CPart
 {
-    public byte Def; // ConstructParts id
+    public ushort Def; // ConstructParts id (two bytes since protocol 87)
     public Vector3 Pos; // the part's origin in the rest frame (every segment's rest frame is the body frame at joint angle 0)
     public byte Rot; // Rot24 turn
     public byte Seg; // 0: the body itself; k > 0: hangs on joint k - 1
@@ -514,6 +514,7 @@ public sealed partial class Construct
         _ = oldWorldCom;
         Radius = MathF.Max(Vector3.Distance(Com, LocalMin), Vector3.Distance(Com, LocalMax)) + 0.5f;
 
+        ConstructRoutes.Rebuild(this); // (routed links: the logic's wires, the shafts' and cables' edges, before the drive line and the circuit)
         BuildPoints();
         BuildSegPoints();
         Radius = MathF.Max(Radius, JointReach() + 0.5f);
@@ -874,9 +875,11 @@ public sealed partial class Construct
         return -Vector3.UnitZ;
     }
 
-    /// <summary>Does fuel reach engine <paramref name="engine"/>: a working tank linked to it directly or through working fuel lines?</summary>
+    /// <summary>Does fuel reach engine <paramref name="engine"/>: an intact pipe from a working tank, or a working tank linked to it directly or through working (legacy) fuel line parts?</summary>
     private bool FuelReaches(int engine)
     {
+        if (ConstructRoutes.PipeFeeds(this, engine))
+            return true;
         Span<bool> seen = stackalloc bool[MaxParts];
         Span<byte> queue = stackalloc byte[MaxParts];
         int head = 0, tail = 0;

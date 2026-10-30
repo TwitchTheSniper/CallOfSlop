@@ -10,6 +10,8 @@ public struct ConstructHit
     public float Distance;
     public Vector3 Point, Normal;
     public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
+    public byte RoutePlus1; // routed links: the link hit (plus one; 0: a part), its segment in RouteSeg (Part: the part at that segment's end)
+    public byte RouteSeg;
     public bool Glass; // the box hit is a glass pane: rounds go on through it (and break it)
 }
 
@@ -160,6 +162,18 @@ public sealed partial class ConstructWorld
         }
     }
 
+    /// <summary>Routed links in all (the world's cap is the old wire cap).</summary>
+    public int TotalRoutes
+    {
+        get
+        {
+            var n = 0;
+            foreach (var c in Bodies)
+                n += c.RouteCount;
+            return n;
+        }
+    }
+
     public int TotalParts
     {
         get
@@ -274,36 +288,27 @@ public sealed partial class ConstructWorld
         return (byte)c.JointCount;
     }
 
-    /// <summary>A wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (call <see cref="ConstructBuild.CanWire"/> first). False when full.</summary>
+    /// <summary>
+    /// A wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (call <see cref="ConstructBuild.CanWire"/>
+    /// first): since the routed links, a data link routed straight between the two (the logic's wires are rebuilt from the
+    /// data links). False when full.
+    /// </summary>
     public bool AddWire(Construct c, int from, int to)
     {
-        if (c.WireCount >= Construct.MaxWires || TotalWires >= MaxTotalWires)
+        if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= MaxTotalWires)
             return false;
-        c.Wires[c.WireCount++] = new CWire { From = (byte)from, To = (byte)to };
-        c.Dirty = true;
-        c.Wake();
-        StructureDirty.Add(c.Id);
+        if (ConstructRoutes.Add(this, c, RouteType.Data, 0, from, 255, 255, 0, default, default, to, 255) < 0)
+            return false;
+        c.Rebuild(); // (the wire is there at once, as it always was)
         return true;
     }
 
-    /// <summary>Cuts every wire into or out of part <paramref name="part"/>. Returns how many went.</summary>
+    /// <summary>Cuts every data link (wire) into or out of part <paramref name="part"/>. Returns how many went.</summary>
     public int RemoveWires(Construct c, int part)
     {
-        var n = 0;
-        for (var k = 0; k < c.WireCount; k++)
-        {
-            if (c.Wires[k].From == part || c.Wires[k].To == part)
-                continue;
-            c.Wires[n++] = c.Wires[k];
-        }
-        var cut = c.WireCount - n;
-        c.WireCount = n;
+        var cut = ConstructRoutes.RemoveAt(this, c, part, RouteType.Data);
         if (cut > 0)
-        {
-            c.Dirty = true;
-            c.Wake();
-            StructureDirty.Add(c.Id);
-        }
+            c.Rebuild();
         return cut;
     }
 
@@ -437,9 +442,7 @@ public sealed partial class ConstructWorld
             if (map[link.A] >= 0 && map[link.B] >= 0)
                 AddLink(wreck, map[link.A], link.SA, map[link.B], link.SB);
         }
-        for (var wi = 0; wi < c.WireCount && wreck.WireCount < Construct.MaxWires; wi++)
-            if (map[c.Wires[wi].From] >= 0 && map[c.Wires[wi].To] >= 0)
-                wreck.Wires[wreck.WireCount++] = new CWire { From = (byte)map[c.Wires[wi].From], To = (byte)map[c.Wires[wi].To] };
+        ConstructRoutes.Remap(c, map[..c.PartCount], wreck); // (the routed links wholly on the piece go with it; the logic's wires follow from them)
         for (var i = 0; i < wreck.PartCount; i++)
             wreck.Parts[i].SitterPlus1 = 0; // (a seat that falls away throws its sitter out)
         wreck.Wreck = true;
@@ -477,17 +480,7 @@ public sealed partial class ConstructWorld
             c.Links[ln++] = link;
         }
         c.LinkCount = ln;
-        var wn = 0;
-        for (var k = 0; k < c.WireCount; k++)
-        {
-            var wire = c.Wires[k];
-            if (wire.From >= oldCount || wire.To >= oldCount || map[wire.From] < 0 || map[wire.To] < 0)
-                continue;
-            wire.From = (byte)map[wire.From];
-            wire.To = (byte)map[wire.To];
-            c.Wires[wn++] = wire;
-        }
-        c.WireCount = wn;
+        ConstructRoutes.Remap(c, map[..oldCount], c); // (routed links: renumbered, or gone with an end; the wires are rebuilt from them)
         // Joints whose hinge is gone: their segment's parts went with their own piece (or are gone too).
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
         segMap[0] = 0;
@@ -636,6 +629,13 @@ public sealed partial class ConstructWorld
             }
         }
         _blasted.Clear();
+        // Routed links in range: each segment on its own (a blast through a fuel line lights it).
+        for (var bi = 0; bi < Bodies.Count; bi++)
+        {
+            var c = Bodies[bi];
+            if (c.RouteCount > 0 && Vector3.Distance(c.WorldCom, centre) <= radius + c.Radius)
+                ConstructRoutes.Blast(this, c, centre, radius, maxDamage);
+        }
         // The push: every body nearby gets an impulse away from the blast.
         foreach (var c in Bodies)
         {
@@ -707,6 +707,7 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * d;
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
                         hit.SlotPlus1 = 0;
+                        hit.RoutePlus1 = 0;
                         hit.Glass = p.D.Boxes[bi].IsGlass; // (solid boxes come first: the same index)
                     }
                 }
@@ -724,9 +725,23 @@ public sealed partial class ConstructWorld
                         hit.Point = origin + dir * best;
                         hit.Normal = -dir;
                         hit.SlotPlus1 = (byte)(slot + 1);
+                        hit.RoutePlus1 = 0;
                         hit.Glass = false;
                     }
                 }
+            }
+            // Routed links (cables, pipes, shafts, chutes on the outside): hit like parts, each segment on its own.
+            if (c.RouteCount > 0 && ConstructRoutes.Ray(c, origin, dir, ref best, out var route, out var rseg, out var rp))
+            {
+                found = true;
+                hit.Body = c;
+                hit.Part = ConstructRoutes.HostOf(c, route, rseg);
+                hit.Distance = best;
+                hit.Point = rp;
+                hit.Normal = -dir;
+                hit.SlotPlus1 = 0;
+                hit.RoutePlus1 = (byte)(route + 1);
+                hit.RouteSeg = (byte)rseg;
             }
         }
         return found;
@@ -979,6 +994,7 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
         {
             ConstructPower.Step(this, c, dt);
+            ConstructRoutes.Step(this, c, dt); // (routed links: leaks, wrong pipes, sparks, chutes)
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)

@@ -249,10 +249,10 @@ public static class ConstructBuild
             return "a part can't be wired to itself";
         if (td.Logic == CLogic.Reader && fd.Role != PartRole.Seat)
             return "an input reader reads a seat: wire it from one";
-        for (var k = 0; k < c.WireCount; k++)
-            if (c.Wires[k].From == from && c.Wires[k].To == to)
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == RouteType.Data && c.Routes[k].Source == from && c.Routes[k].To == to)
                 return "those are already wired";
-        if (c.WiresInto(to) >= td.MaxInputs)
+        if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
             return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         c.PartBounds(from, out var a0, out var a1);
         c.PartBounds(to, out var b0, out var b1);
@@ -260,9 +260,9 @@ public static class ConstructBuild
         c.SegPose(c.Parts[to].Seg, out var qb, out var tb);
         if (Vector3.Distance(ta + Vector3.Transform((a0 + a1) * 0.5f, qa), tb + Vector3.Transform((b0 + b1) * 0.5f, qb)) > WireReach)
             return $"a wire reaches at most {WireReach:0} m";
-        if (c.WireCount >= Construct.MaxWires)
-            return $"at most {Construct.MaxWires} wires a construct";
-        if (world.TotalWires >= ConstructWorld.MaxTotalWires)
+        if (c.RouteCount >= Construct.MaxRoutes)
+            return $"at most {Construct.MaxRoutes} wires a construct";
+        if (world.TotalRoutes >= ConstructWorld.MaxTotalWires)
             return "the world has all the wires it can take";
         return null;
     }
@@ -301,7 +301,8 @@ public static class ConstructBuild
         public List<(string Part, int On, string Socket, string Own, int Spin)> Steps = new();
         public List<int> StepSettings = new(); // each step's logic setting (-1: the part's default)
         public List<List<(int Slot, float Value)>?> StepConfig = new(); // each step's part settings ("config": the configure tool's values; null: defaults)
-        public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2)
+        public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
+        public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -401,8 +402,12 @@ public static class ConstructBuild
                         bp.Wires.Add((wire[0].GetInt32(), wire[1].GetInt32()));
                     }
                     break;
+                case "links":
+                    foreach (var link in p.Value.EnumerateArray())
+                        bp.Links.Add(ConstructRoutes.ParseLink(link, file, bp.Links.Count));
+                    break;
                 default:
-                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires)");
+                    throw new ConstructPartException($"{file}: unknown key \"{p.Name}\" (format, name, description, steps, wires, links)");
             }
         if (bp.Name.Length == 0 || bp.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be plain ASCII text");
@@ -486,6 +491,16 @@ public static class ConstructBuild
             }
             world.AddWire(c, partOf[from], partOf[to]);
         }
+        // The routed links, through the linking tool's rules.
+        for (var k = 0; k < bp.Links.Count; k++)
+            if (ConstructRoutes.BuildLink(world, c, bp.Links[k], partOf[..bp.Steps.Count]) is { } bad)
+            {
+                why = $"links[{k}]: {bad}";
+                world.Remove(c);
+                return null;
+            }
+        // Fuel line parts and plain drive shafts become pipe and shaft links (blueprints auto-converted).
+        ConstructRoutes.MigrateLegacy(world, c);
         c.Rebuild();
         return c;
     }

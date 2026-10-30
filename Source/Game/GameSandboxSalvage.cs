@@ -25,7 +25,7 @@ public sealed partial class Game
     {
         public static readonly InventoryCounts Instance = new();
 
-        public int PartCount(Game game, byte playerId, byte partId)
+        public int PartCount(Game game, byte playerId, ushort partId)
         {
             var inv = game.SandboxInventory(playerId);
             return inv.Infinite ? -1 : inv.Count(partId);

@@ -10,7 +10,7 @@ namespace CallOfSlop;
 public interface ISandboxPartCounts
 {
     /// <summary>How many of part <paramref name="partId"/> player <paramref name="playerId"/> holds, or a negative number for no limit.</summary>
-    int PartCount(Game game, byte playerId, byte partId);
+    int PartCount(Game game, byte playerId, ushort partId);
 }
 
 /// <summary>
@@ -69,7 +69,7 @@ public sealed partial class Ui
     private int _sbVisibleCount, _sbSel = -1, _sbFilterVersion, _sbFilterBuilt = -1;
     private ImInputString? _sbSearchInput;
     private string _sbSearch = "";
-    private readonly byte[] _sbRecent = [ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None];
+    private readonly ushort[] _sbRecent = [ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None];
     private bool _sbFocusSearch, _sbScrollToSel;
     private int _sbColumns = 1;
 
@@ -83,7 +83,7 @@ public sealed partial class Ui
     public int SandboxInventoryHighlight => _sbSel;
 
     /// <summary>The recent row, newest first (self-test).</summary>
-    public ReadOnlySpan<byte> SandboxPartsRecent => _sbRecent;
+    public ReadOnlySpan<ushort> SandboxPartsRecent => _sbRecent;
 
     /// <summary>The categories the window shows (self-test).</summary>
     public SandboxCatalogue? SandboxInventoryCatalogue => _sbCat;

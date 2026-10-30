@@ -16,7 +16,7 @@ public static partial class SelfTest
     {
         var cat = SandboxCatalogue.Make();
         var parts = ConstructParts.All;
-        string Cover(SandboxCatalogue.Tree tree, int count)
+        string Cover(SandboxCatalogue.Tree tree, int count, Func<int, bool>? hidden = null)
         {
             var seen = new int[count];
             var outside = 0;
@@ -26,12 +26,15 @@ public static partial class SelfTest
                         seen[i]++;
                     else
                         outside++;
-            var missing = seen.Count(n => n == 0);
+            // (legacy parts, replaced by routed links, are left out: shown, they'd count as wrong)
+            var missing = Enumerable.Range(0, count).Count(i => seen[i] == 0 && hidden?.Invoke(i) != true);
+            var shown = Enumerable.Range(0, count).Count(i => seen[i] > 0 && hidden?.Invoke(i) == true);
             var twice = seen.Count(n => n > 1);
             var groupSum = tree.Groups.Sum(x => x.Items);
-            return missing == 0 && twice == 0 && outside == 0 && groupSum == count && tree.Items == count ? "" : $"{missing} missing, {twice} twice, {outside} unknown, groups hold {groupSum} of {count}";
+            var want = count - Enumerable.Range(0, count).Count(i => hidden?.Invoke(i) == true);
+            return missing == 0 && shown == 0 && twice == 0 && outside == 0 && groupSum == want && tree.Items == want ? "" : $"{missing} missing, {shown} legacy shown, {twice} twice, {outside} unknown, groups hold {groupSum} of {want}";
         }
-        var partsCover = Cover(cat.Parts, parts.Count);
+        var partsCover = Cover(cat.Parts, parts.Count, i => parts[i].Legacy);
         var bpCover = Cover(cat.Blueprints, ConstructBuild.Blueprints.Count);
         var toolCover = Cover(cat.Tools, ConstructTools.All.Count);
         var groups = string.Join(", ", cat.Parts.Groups.Select(x => $"{x.Name} {x.Items}"));

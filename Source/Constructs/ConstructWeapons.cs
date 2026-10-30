@@ -807,6 +807,12 @@ public static class ConstructWeapons
             // A construct part.
             var body = ch.Body;
             var part = ch.Part;
+            if (ch.RoutePlus1 > 0)
+            {
+                ConstructRoutes.Damage(world, body, ch.RoutePlus1 - 1, ch.RouteSeg, dealt); // (a routed link's segment: a cable, a pipe, a shaft)
+                hit |= CFireHit.Part;
+                break;
+            }
             if (ch.SlotPlus1 > 0)
             {
                 world.DamageStored(body, part, ch.SlotPlus1 - 1, dealt); // (a part stored in a container: physical storage)

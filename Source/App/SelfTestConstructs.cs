@@ -92,8 +92,8 @@ public static partial class SelfTest
         var notice = a.SandboxNotice;
         var refused = notice.Contains("tool");
         // A part the server breaks breaks on the client.
-        var line = PartOf(car, PartRole.FuelLine);
-        server.Constructs.DamagePart(car, line, 1000, out _);
+        var line = RouteOf(car, RouteType.Pipe); // (the fuel pipe: a routed link since decision 20)
+        ConstructRoutes.Damage(server.Constructs, car, line, 0, 1000);
         Pump(server, [a], 0.5, ref now, clock);
         copy = a.Constructs.Get(car.Id);
         var broke = copy != null && copy.PartCount == car.PartCount && !copy.CanDrive;
@@ -332,20 +332,30 @@ public static partial class SelfTest
         return -1;
     }
 
+    /// <summary>The first routed link of a type on a construct (-1: none).</summary>
+    private static int RouteOf(Construct c, RouteType t)
+    {
+        for (var k = 0; k < c.RouteCount; k++)
+            if (c.Routes[k].Type == t)
+                return k;
+        return -1;
+    }
+
     private static void ConstructBreaks(Map yard)
     {
-        // A shot-off fuel line: the engine starves, the buggy stops driving.
+        // A shot-off fuel pipe (a routed link): the engine starves, the buggy stops driving.
         var w = new ConstructWorld();
         if (Buggy(w, -8, 4, 0) is not { } car)
             return;
         StepConstructs(w, 60);
         car.Driver = 1;
         car.DriverSeat = car.Root;
-        var line = PartOf(car, PartRole.FuelLine);
-        var hp = car.Parts[line].Health;
-        w.DamagePart(car, line, 5, out var dealt); // armour 0: a pistol round's worth chips it
-        var chipped = car.Parts[line].Health < hp;
-        w.DamagePart(car, line, 1000, out _);
+        var line = RouteOf(car, RouteType.Pipe);
+        var hp = ConstructRoutes.SegmentHealth(car, line, 0);
+        const float dealt = 5; // (a pistol round's worth chips it: links have no armour)
+        ConstructRoutes.Damage(w, car, line, 0, dealt);
+        var chipped = ConstructRoutes.SegmentHealth(car, line, 0) < hp;
+        ConstructRoutes.Damage(w, car, line, 0, 1000);
         StepConstructs(w, 1);
         var p0 = car.WorldCom;
         StepConstructs(w, 120, _ => ConstructEdits.DriveInput(car, Buttons.Forward, World.TickDt));
