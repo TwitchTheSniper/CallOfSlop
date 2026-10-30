@@ -42,6 +42,7 @@ public sealed partial class Game
     {
         var infinite = World.Map.Sandbox?.InfiniteParts ?? true;
         SandboxHands.Inventory = SandboxInv;
+        SandboxHands.Query = World.Query; // (free placement checks the map)
         if (SandboxHands.InfiniteParts != infinite)
         {
             SandboxHands.InfiniteParts = infinite;

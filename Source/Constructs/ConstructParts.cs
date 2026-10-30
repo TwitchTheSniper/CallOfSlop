@@ -140,6 +140,7 @@ public sealed class ConstructPartDef
     public float Health;
     public float Armour; // flat damage taken off every hit
     public string Material = "steel";
+    public bool Core; // a construct core ("core": true): the starter block of a new construct (never a loose part; the root after seats and foundations)
     public float Friction = 0.7f;
     public PartBreak OnBreak;
     public int Scrap; // what salvaging it gives once wrecked (milestone 3: "scrap", else from its mass and material; ConstructInventory.cs)
@@ -346,7 +347,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core",
     ];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
@@ -392,6 +393,7 @@ public static class ConstructParts
             : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator ? PartBreak.Disable : PartBreak.Detach;
         d.Scrap = Opt(root, "scrap") is { } scr ? (int)MathF.Round(Num(scr, file, "scrap")) : SandboxInventory.ScrapFrom(d.Mass, d.Material);
         Range(d.Scrap, 0f, 10000f, file, "scrap");
+        d.Core = Opt(root, "core") is { } core && (core.ValueKind == JsonValueKind.True ? true : core.ValueKind == JsonValueKind.False ? false : throw new ConstructPartException($"{file}: \"core\" is true or false"));
         var colour = Opt(root, "color") is { } col ? Colour(col, file, "color") : new Vector3(0.5f);
 
         // Boxes
@@ -996,6 +998,34 @@ public static class Rot24
     {
         var c = Cols[r % Count][dir >> 1];
         return (byte)((dir & 1) == 0 ? c : c ^ 1);
+    }
+
+    /// <summary>The turn that does <paramref name="b"/> and then <paramref name="a"/> (Apply(result, v) == Apply(a, Apply(b, v))).</summary>
+    public static byte Compose(byte a, byte b)
+    {
+        var x = ApplyDir(a, ApplyDir(b, 0));
+        var y = ApplyDir(a, ApplyDir(b, 2));
+        for (byte r = 0; r < Count; r++)
+            if (ApplyDir(r, 0) == x && ApplyDir(r, 2) == y)
+                return r;
+        return 0;
+    }
+
+    /// <summary>The turn nearest a rotation, and how near (|dot| of the quaternions: 1 is exact).</summary>
+    public static byte Nearest(Quaternion q, out float match)
+    {
+        byte best = 0;
+        match = -1;
+        for (byte r = 0; r < Count; r++)
+        {
+            var d = MathF.Abs(Quaternion.Dot(Quats[r], q));
+            if (d > match)
+            {
+                match = d;
+                best = r;
+            }
+        }
+        return best;
     }
 
     /// <summary>The turns that take direction <paramref name="from"/> (part frame) to <paramref name="to"/> (body frame), in a fixed order: four of them.</summary>
