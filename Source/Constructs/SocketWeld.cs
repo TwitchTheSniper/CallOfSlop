@@ -157,6 +157,11 @@ public static class SocketWeld
             return false;
         relRot = Turn(sDir, tDir, degrees);
         relPos = tAt - Vector3.Transform(sAt, relRot);
+        if (OnRotGrid(mover, part, socket, target, w, degrees))
+        {
+            relRot = Rot24.Quat(Rot24.Nearest(relRot, out _));
+            relPos = ConstructWorld.Quantise(relPos); // (on the grid the parts sit on the centimetre grid, as an attached part does)
+        }
         target.WorldFrame(target.Parts[w.Part].Seg, out var qs, out var ts);
         rot = Quaternion.Normalize(qs * relRot);
         pos = ts + Vector3.Transform(relPos, qs);

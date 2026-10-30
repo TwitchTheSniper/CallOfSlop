@@ -998,9 +998,11 @@ them, and shoot their parts off one at a time. It is a Dev-only mode for now: ho
 **Sandbox**. A buggy, a wired buggy with a passenger seat, horn and headlamps, two gates (one on a motorised hinge with a
 button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and some loose parts are waiting.
 
-- **Tools**: 3 takes out the **wrench** (bolted parts: seats, wheels, suspensions, engines, tanks,
-  transmissions, differentials, hinges and joints, doors, logic parts), 4 the **welder** (frames, panels, corners, decks,
-  foundations), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
+- **Tools**: 3 takes out the **wrench** (small parts that are items, to and from your hands: seats, light wheels,
+  suspensions, tanks, small gearboxes, hinges, doors, lamps, sensors, logic and gun parts), 4 the **welder** (every
+  physics-only piece: frames, panels, foundations, engines, big gearboxes, big wheels, building pieces; its socket weld
+  is three clicks: LMB a socket on the piece, LMB where it goes, spin it with the mouse or wheel (Shift free, Ctrl 5
+  degrees, R next facing) and LMB to weld; RMB steps back, Esc cancels), 5 the **linking tool** (routed links and logic settings); 1 or 2 back to your guns. With a gun out or bare hands
   you can only use things (sit, drive, open doors, press buttons, flip switches and levers), never build or wire.
 - **Tool wheel**: hold the **middle mouse button** (*Tool wheel* in Settings > Controls) and a ring of tools appears in
   the middle of the screen; the view stands still while you flick the mouse towards one (you keep walking), and letting

@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The welder's modes on the tool wheel's outer ring (board item dev-sandbox-freeform-weld-fw01, decision 25): "Socket
-/// weld" (the default: held parts snap onto sockets) and "Freeform weld" (two bodies welded where they are:
+/// weld" (the default: the three-step socket weld, Program.SandboxSocketWeld.cs) and "Freeform weld" (two bodies welded where they are:
 /// Program.SandboxFreeform.cs). Letting go on the welder itself keeps the last mode. This PC's state only (nothing on the
 /// wire: the server is asked for each weld). Nothing allocates per frame.
 /// </summary>
@@ -20,7 +20,7 @@ public sealed class SandboxWeldModes : IToolOptions
 
     private readonly RadialMenu.Item[] _options =
     {
-        new() { Label = "Socket weld", Hint = "held parts onto sockets", Icon = 0 },
+        new() { Label = "Socket weld", Hint = "pick a socket, where it goes, spin", Icon = 0 },
         new() { Label = "Freeform weld", Hint = "two bodies, where they are", Icon = 1 },
     };
 
