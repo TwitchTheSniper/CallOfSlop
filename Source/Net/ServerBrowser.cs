@@ -183,7 +183,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     parts holding rounds or on fire.
     // 83: Sandbox milestone 3 links and power (docs/sandbox/CONSTRUCTS.md "Milestone 3"): CBodyKind.Links (couplings and wires
     //     between constructs), the charge, power flags and gear in CBody and CPose (and the fuel in CPose), CAct.Wire's to-construct.
-    public const byte ProtocolVersion = 83;
+    // 84: Sandbox free placement (docs/sandbox/CONSTRUCTS.md "New constructs"): CAct.PlaceNew carries the surface normal, the
+    //     part's Rot24 turn and grid/anchor flags; CAct.Join (weld two constructs into one); a construct's "pinned" flag in CBody.
+    public const byte ProtocolVersion = 84;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
