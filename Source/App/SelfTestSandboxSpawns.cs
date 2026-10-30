@@ -180,7 +180,7 @@ public static partial class SelfTest
         Line($"spawns 500k: \"{r4 ?? "ok"}\"; after {ticks} ticks {total:N0} zombies ({mass:N0} in the mass tier, {g.Crowd.Count} particles), worst tick {worst:0.0} ms while spawning, {steady:0.0} ms steady (the crowd's own {crowdMs:0.00} ms a tick, {g.Crowd.FlowCells} flow cells, {g.Crowd.MassCount.Length} mass cells), +{mem:0.0} MB, {allocated} B allocated in 60 spawn ticks; a cap of 1,000: \"{r5}\", {underCap} spawned");
         if (r4 != null || total != 500000 || mass < 400000 || underCap != 1000 || r5 == null || allocated > 0)
             Fail("spawns: 500,000 zombies weren't accepted into the mass tier (or the cap didn't hold)");
-        if (OperatingSystem.IsWindows() && (worst > 60 || steady > 30)) // (wall clock: only the Windows runners are quiet enough to judge it)
+        if (OperatingSystem.IsWindows() && (worst > 30 || steady > 20)) // (wall clock: only the Windows runners are quiet enough to judge it)
             Fail($"spawns: a tick with 500,000 zombies took {worst:0.0} ms");
 
         // Bots and constructs: a friendly bot walking to the host round a construct in the way.
