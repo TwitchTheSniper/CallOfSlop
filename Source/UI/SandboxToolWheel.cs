@@ -14,6 +14,12 @@ namespace CallOfSlop;
 /// a tool out goes through the same request as the number keys (3 / 4 / 5, still the quick favourites), so the server
 /// decides and multiplayer is unchanged. Not in a seat, and it closes (without choosing) on death, a menu, the chat, the
 /// parts menu or the match ending.
+/// <para>
+/// A tool with options (<see cref="IToolOptions"/>, given with <see cref="SetOptions"/>: the linking tool's link types and
+/// edit modes first, the welder's and physics gun's modes later) shows them on an outer ring while it is pointed at
+/// (<see cref="RadialMenu"/>, board item dev-wheel-outer-ring-wo01): letting go on an option takes the tool out with it,
+/// letting go on the tool itself takes it out with its last-used option.
+/// </para>
 /// </summary>
 public sealed class SandboxToolWheel
 {
@@ -37,6 +43,19 @@ public sealed class SandboxToolWheel
 
     private bool _wasHeld;
     private long _keysKey = long.MinValue;
+    private readonly IToolOptions?[] _options = new IToolOptions?[(int)Slot.COUNT];
+
+    /// <summary>Gives a tool its options (its outer ring); null takes them away.</summary>
+    public void SetOptions(Slot s, IToolOptions? options)
+    {
+        _options[(int)s] = options;
+        var it = Menu.Items[(int)s];
+        it.Options = options?.Options;
+        it.OptionIcons = options?.Icons;
+        it.OptionCurrent = options?.CurrentOption ?? -1;
+    }
+
+    public IToolOptions? OptionsOf(Slot s) => _options[(int)s];
 
     public SandboxToolWheel()
     {
@@ -108,7 +127,7 @@ public sealed class SandboxToolWheel
     /// number keys' request) or cancels. Returns true while it is open (the caller freezes the view and keeps the mouse
     /// buttons from the gun and tools).
     /// </summary>
-    public bool Step(Game g, bool held, Vector2 delta, bool blocked)
+    public bool Step(Game g, bool held, Vector2 delta, bool blocked, float dt = 1f / 60)
     {
         var pressed = held && !_wasHeld;
         _wasHeld = held;
@@ -128,6 +147,9 @@ public sealed class SandboxToolWheel
         }
         ref var h = ref g.SandboxHands.Hand(me!.Id);
         Menu.Current = SlotOf(h.Tool);
+        for (var i = 0; i < _options.Length; i++)
+            if (_options[i] is { } o)
+                Menu.Items[i].OptionCurrent = o.CurrentOption;
         if (!Menu.IsOpen)
         {
             if (!pressed)
@@ -137,10 +159,11 @@ public sealed class SandboxToolWheel
         }
         if (held)
         {
-            Menu.Move(delta);
+            Menu.Move(delta, dt);
             return true;
         }
         var pick = Menu.Release();
+        var option = Menu.PickedOption;
         if (pick < 0)
             return false; // let go in the middle: a cancel
         if (ToolOf(pick) is not { } tool)
@@ -153,6 +176,8 @@ public sealed class SandboxToolWheel
             });
             return false;
         }
+        if (option >= 0 && _options[pick] is { } opts)
+            opts.Choose(option); // (on the tool itself: its last-used option stays)
         if (tool != h.Tool)
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
@@ -282,4 +307,17 @@ public sealed class SandboxToolWheel
             }
         }
     }
+}
+
+/// <summary>
+/// A tool's options on the tool wheel's outer ring (its modes: the linking tool's link types and edit modes, later the
+/// welder's and the physics gun's). The items are made once; <see cref="CurrentOption"/> is the last-used one (marked);
+/// <see cref="Choose"/> applies a pick. Nothing here may allocate (it is asked every frame the wheel is open).
+/// </summary>
+public interface IToolOptions
+{
+    RadialMenu.Item[] Options { get; }
+    RadialIcon? Icons { get; }
+    int CurrentOption { get; }
+    void Choose(int option);
 }

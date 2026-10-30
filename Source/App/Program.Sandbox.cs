@@ -13,7 +13,7 @@ public static unsafe partial class Program
 {
     private static string? _sbPackKeys; // (made again only when the binds change)
     private static long _sbPackBinds;
-    private static int _sbVariantShift; // the rotate keys: which way round the chosen part goes (from the ghost's first fit)
+    private static int _sbVariant = -1; // the aimed socket: which way round the held part goes (own socket * 4 + spin; smart rotation's guess first)
     private static int _sbLastGhostKey = -1;
     private static bool _sbFiring, _sbRemoving;
     private static long _sbLookKey = -1;
@@ -32,7 +32,7 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     /// <summary>
@@ -134,6 +134,8 @@ public static unsafe partial class Program
             _sbSeatKeys = 0;
             g.SandboxSend(CActKind.SeatKeys, part: 0);
         }
+        if (SandboxSpawnInput(g, me))
+            return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
         if (Pressed(GameAction.DropItem) && h.Held != ConstructParts.None)
             g.SandboxSend(CActKind.Drop);
         // The backpack (H: stow what you hold; J: draw the next part out).
@@ -317,28 +319,27 @@ public static unsafe partial class Program
                 {
                     ref var gh = ref ConstructRender.Ghosts[best];
                     var key = gh.Part * 64 + gh.Socket + c.Id * 4096;
-                    if (key != _sbLastGhostKey)
-                    {
-                        _sbLastGhostKey = key;
-                        _sbVariantShift = 0;
-                    }
                     var total = held.Sockets.Length * 4;
+                    SandboxSmartGuess(c, held, in gh, key);
                     if (Pressed(GameAction.Reload))
-                        _sbVariantShift = 0; // R: back to the default way round (the first that fits)
+                        SandboxGuessAgain(gh.Variant); // R: back to the guess (smart rotation's, else the first that fits); at the guess, the next best
                     else if (SandboxTurnPressed() is { } turnKey)
                     {
                         // The rotate keys: a quarter turn as you see it, snapped to the construct's axes (GhostTurn.cs).
-                        var cv = (gh.Variant + _sbVariantShift) % total;
+                        var cv = _sbVariant;
                         var from = ConstructBuild.Place(c, gh.Part, gh.Socket, held, cv / 4, cv % 4, out var cur) == null ? cur.Rot : gh.Rot;
                         c.WorldFrame(c.Parts[gh.Part].Seg, out var fq, out _);
                         SandboxCamera(g, out var camRight, out var camUp);
                         var nv = GhostTurn.AttachVariant(c, held, gh.Part, gh.Socket, from, GhostTurn.Delta(turnKey, fq, camRight, camUp));
                         if (nv >= 0)
-                            _sbVariantShift = (nv - gh.Variant + total) % total;
+                        {
+                            _sbVariant = nv;
+                            _sbRankPos = _sbRank.AsSpan(0, _sbRankN).IndexOf(nv);
+                        }
                         else
                             g.SandboxSay($"the {held.Name} can't turn that way on this socket");
                     }
-                    var v = (gh.Variant + _sbVariantShift) % total;
+                    var v = _sbVariant >= 0 && _sbVariant < total ? _sbVariant : gh.Variant;
                     ConstructRender.GhostValid = ConstructBuild.Place(c, gh.Part, gh.Socket, held, v / 4, v % 4, out var shown) == null;
                     if (ConstructRender.GhostValid)
                         gh = shown with { Variant = v };
@@ -346,6 +347,8 @@ public static unsafe partial class Program
                     {
                         g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
                         _sbFiring = true;
+                        if (_sbRankN > 0 && ConstructRender.GhostValid)
+                            SandboxLearn(SmartRotation.Placed(SmartRotation.Memory, c, held, gh.Part, gh.Socket, gh.Rot, _sbRankRot[0]));
                     }
                 }
             }
@@ -353,10 +356,31 @@ public static unsafe partial class Program
             {
                 // Free placement: the surface aimed at (terrain, the map, a floor): a new construct rooted at this part.
                 var flags = (byte)((g.SandboxPlaceGrid ? ConstructPlace.FlagGrid : 0) | (g.SandboxPlaceAnchor && g.SandboxInfiniteParts ? ConstructPlace.FlagAnchor : 0));
+                if (_settings.SmartRotation && (held.Id != _sbFreeHeld || _sbFreeN == 0))
+                {
+                    SandboxSmartLoad();
+                    // Smart rotation: a new part in hand starts at its guess (upright and facing forward, or the way you last set it down).
+                    _sbFreeHeld = held.Id;
+                    _sbFreeN = SmartRotation.RankFree(held, SmartRotation.Memory, _sbFree);
+                    _sbFreePos = 0;
+                    _sbTurn = _sbFree[0];
+                }
+                else if (!_settings.SmartRotation)
+                    _sbFreeN = 0;
                 if (Pressed(GameAction.Reload))
-                    _sbTurn = 0; // R: back to the default orientation
+                {
+                    // R: back to the default orientation (smart rotation's guess); at the guess, the next best.
+                    if (_sbFreeN > 0)
+                    {
+                        _sbFreePos = _sbFreePos >= 0 && _sbTurn == _sbFree[_sbFreePos] ? (_sbFreePos + 1) % _sbFreeN : 0;
+                        _sbTurn = _sbFree[_sbFreePos];
+                    }
+                    else
+                        _sbTurn = 0;
+                }
                 else if (SandboxTurnPressed() is { } turnKey)
                 {
+                    _sbFreePos = -1;
                     // The rotate keys, relative to the camera in the new construct's frame (the frame Pose makes below).
                     SandboxCamera(g, out var camRight, out var camUp);
                     var frame = ConstructPlace.Frame(surf.Normal, ConstructPlace.FrameYaw(g.LookYaw, (flags & ConstructPlace.FlagGrid) != 0), out _);
@@ -394,6 +418,11 @@ public static unsafe partial class Program
                     {
                         g.SandboxSend(CActKind.PlaceNew, at: surf.Point, yaw: g.LookYaw, normal: surf.Normal, variant: _sbTurn, flags: flags);
                         _sbFiring = true;
+                        if (_sbFreeN > 0)
+                        {
+                            SandboxLearn(SmartRotation.PlacedFree(SmartRotation.Memory, held, _sbTurn, _sbFree[0]));
+                            _sbFreeN = 0; // (the next guess counts this one)
+                        }
                     }
                 }
             }

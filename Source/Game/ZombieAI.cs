@@ -286,8 +286,8 @@ public sealed partial class Game
         z.Yaw = z.RenderYaw = sp.Window >= 0 ? zm.Windows[sp.Window].Yaw : ZRand() * MathF.Tau;
         for (var i = 0; i < z.History.Length; i++)
             z.History[i] = pos;
-        if (World.Map.Zombies is { } hz)
-            HordeSetup(hz);
+        if (ZMap is { } hz)
+            HordeSetup(hz); // (the map's, or the Sandbox's stand-in)
         z.Hm.Slot = TakeZombieSlot();
         HordeController<Zombie>.Joined(z);
         Horde.Add(z);
@@ -524,14 +524,14 @@ public sealed partial class Game
     /// <summary>The nearest player standing (re-picked twice a second), or null.</summary>
     private Player? ZombieTarget(Zombie z, double now)
     {
-        if (now >= z.NextTarget || !Players.TryGetValue(z.Target, out var t) || !IsStanding(t))
+        if (now >= z.NextTarget || !Players.TryGetValue(z.Target, out var t) || !ZPrey(t))
         {
             z.NextTarget = now + 0.5;
             Player? best = null;
             var bestD = float.MaxValue;
             foreach (var p in Players.Values)
             {
-                if (!IsStanding(p))
+                if (!ZPrey(p))
                     continue;
                 var d = Vector3.DistanceSquared(p.Position, z.Position) + (ZMap!.AreaAt(p.Position) == z.Area ? 0 : 400f);
                 if (d < bestD || (d == bestD && best != null && p.Id < best.Id))

@@ -276,6 +276,10 @@ public static partial class ConstructRender
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
+        // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
+        var strain = 0f;
+        if (d.Role == PartRole.Joint && !p.Broken && c.JointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
+            strain = Math.Clamp(c.Joints[oj].Over - 1, 0, 1) * (0.75f + 0.25f * MathF.Sin((float)Now * 9f));
         var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
         var glow = new Vector3(1f, 0.93f, 0.6f);
         if (d.Logic == CLogic.Lamp)
@@ -291,6 +295,11 @@ public static partial class ConstructRender
                 glow = preview
                     ? ConstructConfig.Rgb(PreviewValue(d, CfgKey.Colour, 0xFFED99)) * (PreviewValue(d, CfgKey.Brightness, 100) / 100f)
                     : ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99)) * (ConstructConfig.Get(p, d, CfgKey.Brightness, 100) / 100f);
+        }
+        if (d.IsSpawner && ConstructSpawners.Active(c, i))
+        {
+            lit = true; // a spawner that is on shows its light (GameSandboxSpawns.cs)
+            glow = d.Logic == CLogic.BotSpawner ? new Vector3(0.45f, 0.75f, 1f) : new Vector3(0.6f, 1f, 0.35f);
         }
         if (d.HasDial && !p.Broken)
         {
@@ -354,11 +363,14 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint)
+                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(box.Color * shade, OverloadTint, 0.2f + 0.5f * strain) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;
     }
+
+    /// <summary>An overloaded actuator's tint (the strength model, ConstructPhysics.MotorPrep).</summary>
+    public static readonly Vector3 OverloadTint = new(0.95f, 0.18f, 0.12f);
 
     /// <summary>The frozen tint and outline (the physics gun).</summary>
     public static readonly Vector3 Frost = new(0.62f, 0.86f, 1f);
@@ -580,6 +592,24 @@ public static partial class ConstructRender
     private static bool _ghostThrew;
 
     /// <summary>The ghost sockets (blended, depth-tested, no depth write): small markers on every free socket the held part fits, the chosen one as the whole part.</summary>
+    /// <summary>The Sandbox's spawn placement: a ghost circle where the spawn would stand, green when it can, red when not (GameSandboxSpawns.cs).</summary>
+    public static void DrawSpawnGhost(Renderer gfx, Game game, double now)
+    {
+        if (!game.SpawnPlacing || !game.SpawnGhostShown)
+            return;
+        var colour = game.SpawnGhostOk ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
+        var radius = game.SpawnPick == SbSpawnKind.Zombies ? MathF.Min(12f, MathF.Max(1f, MathF.Sqrt(game.SpawnZombies) * 0.45f)) : 0.8f + 0.3f * MathF.Min(game.SpawnBots, 8);
+        var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
+        const int n = 24;
+        for (var k = 0; k < n; k++)
+        {
+            var a = k * MathF.Tau / n;
+            var at = game.SpawnGhost + new Vector3(MathF.Sin(a) * radius, 0.05f, MathF.Cos(a) * radius);
+            gfx.Draw(Matrix4x4.CreateScale(0.12f + radius * 0.2f, 0.04f, 0.08f) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(at), colour, 0.8f * pulse, mode: 2);
+        }
+        gfx.Draw(Matrix4x4.CreateScale(0.12f, 1.8f, 0.12f) * Matrix4x4.CreateTranslation(game.SpawnGhost + new Vector3(0, 0.9f, 0)), colour, 0.35f * pulse, mode: 2);
+    }
+
     public static void DrawGhosts(Renderer gfx, double now)
     {
         try

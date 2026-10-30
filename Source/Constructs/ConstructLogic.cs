@@ -46,15 +46,33 @@ public static class ConstructLogic
         Span<byte> count = stackalloc byte[Construct.MaxParts];
         Span<byte> high = stackalloc byte[Construct.MaxParts];
         Span<byte> firstFrom = stackalloc byte[Construct.MaxParts];
+        Span<float> sum1 = stackalloc float[Construct.MaxParts], sum2 = stackalloc float[Construct.MaxParts]; // (named data ports 1 and 2: the spawners' spawn now and rate)
+        Span<byte> count1 = stackalloc byte[Construct.MaxParts], count2 = stackalloc byte[Construct.MaxParts];
         sum.Clear();
         count.Clear();
         high.Clear();
+        sum1.Clear();
+        sum2.Clear();
+        count1.Clear();
+        count2.Clear();
         for (var k = 0; k < c.WireCount; k++)
         {
             ref var w = ref c.Wires[k];
             if (w.From >= c.PartCount || w.To >= c.PartCount)
                 continue;
-            var v = c.Parts[w.From].Broken ? 0f : c.Parts[w.From].Out;
+            var v = c.Parts[w.From].Broken ? 0f : w.FromPort == 1 ? c.Parts[w.From].Out1 : c.Parts[w.From].Out;
+            if (w.ToPort == 1)
+            {
+                sum1[w.To] += v;
+                count1[w.To]++;
+                continue;
+            }
+            if (w.ToPort >= 2)
+            {
+                sum2[w.To] += v;
+                count2[w.To]++;
+                continue;
+            }
             if (count[w.To] == 0)
                 firstFrom[w.To] = w.From;
             sum[w.To] += v;
@@ -274,6 +292,10 @@ public static class ConstructLogic
                         next = p.State + 1;
                         break;
                     }
+                    case CLogic.BotSpawner:
+                    case CLogic.ZombieSpawner:
+                        next = p.SpawnAlive; // (how many it has alive: the game counts them, GameSandboxSpawns.cs)
+                        break;
                     default: // lamp, horn, brake: on while the input is
                         next = on ? 1 : 0;
                         break;
@@ -298,6 +320,10 @@ public static class ConstructLogic
             p.Stood = false;
             p.In = sum[i]; // (a gun's trigger reads it next tick: ConstructWeapons.cs)
             p.InCount = count[i];
+            p.In1 = sum1[i];
+            p.InCount1 = count1[i];
+            p.In2 = sum2[i];
+            p.InCount2 = count2[i];
             var d = p.D;
             if (d.IsSignal)
                 hash = (hash ^ (uint)Quantise(p.Out)) * 16777619u;

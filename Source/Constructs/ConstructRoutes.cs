@@ -59,7 +59,7 @@ public struct CRoute
     public RouteType Type;
     public byte Style; // a pipe's PipeStyle (0 for the others)
     public byte From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
-    public byte FromPort, ToPort; // a socket of the part (shafts), or 255: the part itself
+    public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
     public byte Parent, ParentNode; // a branch: the link and its node it starts at (255: from a part)
     public ushort Start;
     public byte Count;
@@ -67,6 +67,7 @@ public struct CRoute
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
     public byte Source; // the output part at the root of its tree
+    public byte SourcePort; // the port it leaves that part by (the root link's FromPort)
     public byte FirstCut; // the first destroyed segment (Count + 1: none)
     public bool Fed; // its start is fed (every segment from the source to it intact)
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
@@ -266,6 +267,20 @@ public static partial class ConstructRoutes
         _ => d.Role == PartRole.Storage,
     };
 
+    /// <summary>
+    /// Does a click on part <paramref name="part"/> end a link of type <paramref name="type"/> being routed from part
+    /// <paramref name="from"/> (<paramref name="parent"/> 255; else a branch)? On an input of its type, not back on its own
+    /// output (a logic part may feed itself). Never with <paramref name="free"/> routing (board item ls01: the device is
+    /// then only a surface for an ordinary node, so a link can run along a device with a matching port).
+    /// </summary>
+    public static bool ClickEnds(Construct c, RouteType type, int from, int parent, int part, bool free)
+    {
+        if (free || part < 0 || part >= c.PartCount)
+            return false;
+        var d = c.DefOf(part);
+        return IsInput(d, type) && !(part == from && parent == 255 && !(type == RouteType.Data && d.Role == PartRole.Logic));
+    }
+
     public static string OutputHint(RouteType t) => t switch
     {
         RouteType.Data => "start a data cable at a seat, a control, a sensor or a gate",
@@ -284,18 +299,36 @@ public static partial class ConstructRoutes
         _ => "end it at a storage part",
     };
 
+    /// <summary>A named data port's byte in a link (<see cref="CRoute.FromPort"/>, <see cref="CRoute.ToPort"/>): port 0 is 255 (the part itself), port k is this | k.</summary>
+    public const byte DataPortBase = 0x80;
+
+    /// <summary>The byte for data port <paramref name="k"/> (0: the part itself, 255).</summary>
+    public static byte DataPortByte(int k) => k <= 0 ? (byte)255 : (byte)(DataPortBase | k);
+
+    /// <summary>A data link's port byte as a port index (255: 0), or -1 for a byte that names no data port.</summary>
+    public static int DataPort(byte port) => port == 255 ? 0 : (port & DataPortBase) != 0 && (port & 0x7F) < 16 ? port & 0x7F : -1;
+
     /// <summary>
     /// The ports of part <paramref name="part"/> a link of type <paramref name="t"/> can use (shafts: its free drive
-    /// sockets; the others: the part itself, port 255). Returns how many were written into <paramref name="ports"/>.
+    /// sockets; a data link at a part with named data ports, the spawners: each of its inputs, or outputs when
+    /// <paramref name="input"/> is false; the others: the part itself, port 255). Returns how many were written into <paramref name="ports"/>.
     /// </summary>
-    public static int Ports(Construct c, int part, RouteType t, Span<byte> ports)
+    public static int Ports(Construct c, int part, RouteType t, Span<byte> ports, bool input = true)
     {
         if (part < 0 || part >= c.PartCount || ports.Length == 0)
             return 0;
         if (t != RouteType.Shaft)
         {
-            ports[0] = 255;
-            return 1;
+            var names = t == RouteType.Data ? input ? c.DefOf(part).DataIn : c.DefOf(part).DataOut : [];
+            if (names.Length <= 1)
+            {
+                ports[0] = 255;
+                return 1;
+            }
+            var k = 0;
+            for (; k < names.Length && k < ports.Length; k++)
+                ports[k] = DataPortByte(k);
+            return k;
         }
         var d = c.DefOf(part);
         var n = 0;
@@ -309,6 +342,38 @@ public static partial class ConstructRoutes
         }
         return n;
     }
+
+    /// <summary>A port's name for the picker and blueprints: a socket's, a named data port's ("spawn now"), or "" for the part itself.</summary>
+    public static string PortName(ConstructPartDef d, RouteType t, byte port, bool input)
+    {
+        if (port == 255)
+            return t == RouteType.Data && (input ? d.DataIn : d.DataOut) is { Length: > 1 } named ? named[0] : "";
+        if (t == RouteType.Data)
+        {
+            var names = input ? d.DataIn : d.DataOut;
+            var k = DataPort(port);
+            return k >= 0 && k < names.Length ? names[k] : "";
+        }
+        return port < d.Sockets.Length ? d.Sockets[port].Name : "";
+    }
+
+    /// <summary>The port byte a name stands for on a part (a socket, or a named data port for a data link), or 255 when there's no such port.</summary>
+    public static byte PortByName(ConstructPartDef d, RouteType t, string name, bool input)
+    {
+        if (t == RouteType.Data)
+        {
+            var names = input ? d.DataIn : d.DataOut;
+            var k = Array.IndexOf(names, name);
+            return k > 0 ? DataPortByte(k) : (byte)255; // (port 0 is the part itself)
+        }
+        for (var s = 0; s < d.Sockets.Length; s++)
+            if (d.Sockets[s].Name == name)
+                return (byte)s;
+        return 255;
+    }
+
+    /// <summary>Does a part have a data port named <paramref name="name"/> (an input, or an output)?</summary>
+    public static bool HasDataPort(ConstructPartDef d, string name, bool input) => Array.IndexOf(input ? d.DataIn : d.DataOut, name) >= 0;
 
     private static bool ShaftOnPort(Construct c, int part, int socket)
     {
@@ -418,6 +483,7 @@ public static partial class ConstructRoutes
             {
                 ref var p = ref c.Routes[r.Parent];
                 r.Source = p.Source;
+                r.SourcePort = p.SourcePort;
                 r.Fed = p.Fed && p.FirstCut > r.ParentNode;
                 // The flow reaching the junction node, shared between the parent's way on and every branch there.
                 arrive = p.Share0;
@@ -429,6 +495,7 @@ public static partial class ConstructRoutes
             else
             {
                 r.Source = r.From;
+                r.SourcePort = r.FromPort;
                 r.Fed = r.From < c.PartCount;
                 arrive = 1f;
             }
@@ -460,10 +527,12 @@ public static partial class ConstructRoutes
             {
                 case RouteType.Data:
                     var dup = false;
+                    var fromK = (byte)Math.Max(0, DataPort(r.SourcePort));
+                    var toK = (byte)Math.Max(0, DataPort(r.ToPort));
                     for (var w = 0; w < c.WireCount && !dup; w++)
-                        dup = c.Wires[w].From == r.Source && c.Wires[w].To == r.To;
+                        dup = c.Wires[w].From == r.Source && c.Wires[w].To == r.To && c.Wires[w].FromPort == fromK && c.Wires[w].ToPort == toK;
                     if (!dup && c.WireCount < Construct.MaxWires)
-                        c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To };
+                        c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To, FromPort = fromK, ToPort = toK };
                     break;
                 case RouteType.Shaft:
                     if (r.Parent == 255 && c.ShaftEdgeCount < Construct.MaxRoutes)
@@ -563,8 +632,9 @@ public static partial class ConstructRoutes
             if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
                 return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         }
+        var srcPort = parent != 255 ? c.Routes[parent].SourcePort : fromPort;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == type && c.Routes[k].Source == source && c.Routes[k].To == to)
+            if (c.Routes[k].Type == type && c.Routes[k].Source == source && c.Routes[k].To == to && (type != RouteType.Data || c.Routes[k].SourcePort == srcPort && c.Routes[k].ToPort == toPort))
                 return "those are already linked";
         if (type == RouteType.Shaft)
         {
@@ -576,21 +646,30 @@ public static partial class ConstructRoutes
             if (!Contains(ports[..Ports(c, to, type, ports)], toPort))
                 return $"that port of the {td.Name} is taken or carries no drive";
         }
+        else if (type == RouteType.Data && (fromPort != 255 || toPort != 255))
+        {
+            // Named data ports (the spawners): an output port of the source, an input port of the part it goes into.
+            var fk = DataPort(fromPort);
+            var tk = DataPort(toPort);
+            if (fk < 0 || fromPort != 255 && (parent != 255 || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && tk >= td.DataIn.Length)
+                return "that part has no such data port";
+        }
         else if (fromPort != 255 || toPort != 255)
             return "only a drive shaft goes into a socket";
-        // The geometry: every point in the rest frame (each segment at joint angle 0).
+        // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
+        // client's preview uses too (PathRule).
         Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
-        Span<int> segs = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
         var n = 0;
         if (parent != 255)
         {
             pts[n] = junction;
-            segs[n++] = HostSeg(c, parent, parentSeg);
+            hosts[n++] = HostOf(c, parent, parentSeg);
         }
         else
         {
             pts[n] = PortPoint(c, from, fromPort);
-            segs[n++] = c.Parts[from].Seg;
+            hosts[n++] = from;
         }
         for (var i = 0; i < nodes.Length; i++)
         {
@@ -599,12 +678,37 @@ public static partial class ConstructRoutes
             if (!float.IsFinite(nodes[i].Pos.X + nodes[i].Pos.Y + nodes[i].Pos.Z))
                 return "bad node";
             pts[n] = nodes[i].Pos;
-            segs[n++] = c.Parts[nodes[i].Host].Seg;
+            hosts[n++] = nodes[i].Host;
         }
         pts[n] = PortPoint(c, to, toPort);
-        segs[n++] = c.Parts[to].Seg;
+        hosts[n++] = to;
+        return PathRule(c, type, style, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
+    }
+
+    /// <summary>
+    /// The routing rule for a path (rest frame), one rule for the server's <see cref="Check"/> and the client's preview:
+    /// <paramref name="pts"/>[0] is the start (the output's port point, or a junction on a parent link when
+    /// <paramref name="junctionStart"/>), then the nodes, then, when <paramref name="closed"/>, the input's port point
+    /// (an open path is a link still being routed: its last point is the candidate node). <paramref name="hosts"/>: the
+    /// part each point is on (the start's: the output, or the parent segment's host; the end's: the input). Checks the
+    /// segment lengths, a shaft crossing a joint, nodes sinking into parts and segments passing through them (with the
+    /// clipping grace at the ends and the embedding forgiveness: <see cref="Grace"/>, <see cref="EmbedFraction"/>), and
+    /// the type's angle rule. Null when it is fine, else the reason. Nothing allocates.
+    /// </summary>
+    public static string? PathRule(Construct c, RouteType type, byte style, ReadOnlySpan<Vector3> pts, ReadOnlySpan<int> hosts, bool junctionStart, byte fromPort, bool closed, byte toPort,
+        bool straight = false)
+    {
+        var n = pts.Length;
+        if (n < 2 || hosts.Length < n)
+            return null;
+        for (var i = 0; i < n; i++)
+            if (hosts[i] < 0 || hosts[i] >= c.PartCount)
+                return "a node must sit on this construct";
         var radius = Radius(type, style);
-        var length = 0f;
+        Span<float> along = stackalloc float[Construct.MaxNodesPerRoute + 3];
+        if (n > along.Length)
+            return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
+        along[0] = 0;
         for (var i = 1; i < n; i++)
         {
             var len = Vector3.Distance(pts[i - 1], pts[i]);
@@ -612,30 +716,49 @@ public static partial class ConstructRoutes
                 return "those nodes are too close together";
             if (len > MaxSegment)
                 return $"a segment reaches at most {MaxSegment:0} m: add a node";
-            length += len;
+            along[i] = along[i - 1] + len;
         }
+        var length = along[n - 1];
         if (length > MaxLength)
             return $"a link reaches at most {MaxLength:0} m";
         if (straight)
             return null;
         if (type == RouteType.Shaft)
             for (var i = 1; i < n; i++)
-                if (segs[i] != segs[0])
+                if (c.Parts[hosts[i]].Seg != c.Parts[hosts[0]].Seg)
                     return "a drive shaft can't cross a joint: fit a U joint or CV joint there";
-        // Nodes never sink into a part: each sits at least the link's radius off every solid box.
-        for (var i = 0; i < nodes.Length; i++)
-            if (InsidePart(c, nodes[i].Pos, radius * 0.9f, -1, -1) is { } inside)
+        // The clipping grace (board item lg01): from where the link leaves its output (or from its junction) and up to
+        // where it enters its input, nothing clips it for Grace(radius).
+        var graceStart = Grace(radius) + (junctionStart ? 0f : ExitAlong(c, hosts[0], pts[0], pts[1]));
+        var graceEnd = closed ? Grace(radius) + ExitAlong(c, hosts[n - 1], pts[n - 1], pts[n - 2]) : 0f;
+        // Nodes don't sink into a part (deeper than the embedding forgiveness), outside the grace.
+        var last = closed ? n - 1 : n;
+        for (var i = 1; i < last; i++)
+        {
+            if (along[i] <= graceStart || closed && length - along[i] <= graceEnd)
+                continue;
+            if (NodeSinks(c, pts[i], radius) is { } inside)
                 return $"that node would sink into the {c.DefOf(inside).Name}: place it on the surface";
-        // Segments don't pass through solid parts (the parts at the two ends excepted, where it plugs in).
+        }
+        // Segments don't pass through solid parts (the output and input themselves excepted on the end segments, where it
+        // plugs in), outside the grace.
         for (var i = 1; i < n; i++)
         {
-            var skipA = i == 1 ? (parent == 255 ? from : HostOf(c, parent, parentSeg)) : nodes[i - 2].Host;
-            var skipB = i == n - 1 ? to : nodes[i - 1].Host;
-            if (Blocked(c, pts[i - 1], pts[i], radius * 0.5f, i == 1 ? skipA : -1, i == n - 1 ? skipB : -1) is { } wall)
+            var a = pts[i - 1];
+            var b = pts[i];
+            var len = along[i] - along[i - 1];
+            var t0 = MathF.Max(0f, graceStart - along[i - 1]);
+            var t1 = len - (closed ? MathF.Max(0f, graceEnd - (length - along[i])) : 0f);
+            if (t1 <= t0 || len < 1e-6f)
+                continue;
+            var d = (b - a) / len;
+            var skipA = i == 1 ? hosts[0] : -1;
+            var skipB = closed && i == n - 1 ? hosts[n - 1] : -1;
+            if (SegmentBlocked(c, a + d * t0, a + d * t1, radius, skipA, skipB) is { } wall)
                 return $"it would pass through the {c.DefOf(wall).Name}: route it round (or through an opening)";
         }
         // The type's angle rule.
-        var prev = type == RouteType.Shaft ? PortDir(c, from, fromPort) : Vector3.Zero;
+        var prev = type == RouteType.Shaft && !junctionStart ? PortDir(c, hosts[0], fromPort) : Vector3.Zero;
         for (var i = 1; i < n; i++)
         {
             var d = Vector3.Normalize(pts[i] - pts[i - 1]);
@@ -647,9 +770,9 @@ public static partial class ConstructRoutes
             }
             prev = d;
         }
-        if (type == RouteType.Shaft)
+        if (type == RouteType.Shaft && closed)
         {
-            var into = -PortDir(c, to, toPort);
+            var into = -PortDir(c, hosts[n - 1], toPort);
             var bend = MathF.Acos(Math.Clamp(Vector3.Dot(prev, into), -1f, 1f)) * 180f / MathF.PI;
             if (bend > ShaftMaxBendDeg + AngleSlackDeg)
                 return $"a drive shaft goes into a port at most {ShaftMaxBendDeg:0} degrees off its line ({bend:0} here)";
@@ -690,12 +813,6 @@ public static partial class ConstructRoutes
         }
     }
 
-    private static int HostSeg(Construct c, int route, int seg)
-    {
-        var h = HostOf(c, route, seg);
-        return h >= 0 && h < c.PartCount ? c.Parts[h].Seg : 0;
-    }
-
     /// <summary>The part a segment of a link is fixed to at its far end (a junction on it sits there).</summary>
     public static int HostOf(Construct c, int route, int seg)
     {
@@ -703,9 +820,24 @@ public static partial class ConstructRoutes
         return seg < r.Count ? c.RouteNodes[r.Start + seg].Host : r.To;
     }
 
-    /// <summary>The solid part a point at <paramref name="radius"/> would sink into (rest frame), or null.</summary>
-    public static int? InsidePart(Construct c, Vector3 p, float radius, int skipA, int skipB)
+    // ---- Clipping grace and embedding forgiveness (board item dev-sandbox-link-clip-grace-lg01) -------------------
+
+    public const float GraceDiameters = 2f; // the clipping grace at each end: this many of the link's diameters...
+    public const float GraceExtra = 0.10f; // ...plus this much (metres)
+    public const float EmbedFraction = 0.6f; // a link may sink this much of its thickness into a part
+    public const float EmbedSlack = 0.002f; // (float noise on the 1 cm grid)
+
+    /// <summary>How far from its output (or junction) and from its input a link of <paramref name="radius"/> clips nothing.</summary>
+    public static float Grace(float radius) => GraceDiameters * 2f * radius + GraceExtra;
+
+    /// <summary>How far a link's centreline may be inside a part's surface: (2 x EmbedFraction - 1) x radius (0.2 x radius at 60%).</summary>
+    public static float EmbedDepth(float radius) => (2f * EmbedFraction - 1f) * radius;
+
+    /// <summary>The signed distance from <paramref name="p"/> to the nearest solid box (rest frame; negative inside one), and its part (-1: none).</summary>
+    public static float SignedDistance(Construct c, Vector3 p, int skipA, int skipB, out int part)
     {
+        var best = float.MaxValue;
+        part = -1;
         for (var i = 0; i < c.PartCount; i++)
         {
             if (i == skipA || i == skipB)
@@ -715,15 +847,29 @@ public static partial class ConstructRoutes
             {
                 c.BoxOf(i, b, out var centre, out var half);
                 var q = Vector3.Abs(p - centre) - half;
-                var outside = Vector3.Max(q, Vector3.Zero).Length();
-                if (outside < radius - 0.012f)
-                    return i;
+                var sd = Vector3.Max(q, Vector3.Zero).Length() + MathF.Min(MathF.Max(q.X, MathF.Max(q.Y, q.Z)), 0f);
+                if (sd < best)
+                {
+                    best = sd;
+                    part = i;
+                }
             }
         }
-        return null;
+        return best;
     }
 
-    /// <summary>The solid part segment ab passes through (each box shrunk by a centimetre, grown by <paramref name="grow"/>), or null.</summary>
+    /// <summary>The solid part a node of a link of <paramref name="radius"/> at <paramref name="p"/> sinks into past the embedding forgiveness (rest frame), or null.</summary>
+    public static int? NodeSinks(Construct c, Vector3 p, float radius, int skipA = -1, int skipB = -1)
+    {
+        var sd = SignedDistance(c, p, skipA, skipB, out var part);
+        return part >= 0 && sd < -(EmbedDepth(radius) + EmbedSlack) ? part : null;
+    }
+
+    /// <summary>The solid part a segment of a link of <paramref name="radius"/> passes through past the embedding forgiveness (each box shrunk by <see cref="EmbedDepth"/>), or null.</summary>
+    public static int? SegmentBlocked(Construct c, Vector3 a, Vector3 b, float radius, int skipA, int skipB) =>
+        Blocked(c, a, b, -(EmbedDepth(radius) + EmbedSlack), skipA, skipB);
+
+    /// <summary>The solid part segment ab passes through (each box grown by <paramref name="grow"/>, shrunk when negative), or null.</summary>
     public static int? Blocked(Construct c, Vector3 a, Vector3 b, float grow, int skipA, int skipB)
     {
         var d = b - a;
@@ -735,7 +881,7 @@ public static partial class ConstructRoutes
             for (var k = 0; k < def.SolidBoxes; k++)
             {
                 c.BoxOf(i, k, out var centre, out var half);
-                var h = half + new Vector3(grow - 0.012f);
+                var h = half + new Vector3(grow);
                 if (h.X <= 0 || h.Y <= 0 || h.Z <= 0)
                     continue;
                 if (SegmentHitsBox(a - centre, d, h))
@@ -743,6 +889,200 @@ public static partial class ConstructRoutes
             }
         }
         return null;
+    }
+
+    /// <summary>How far along segment ab (from a) it runs inside part <paramref name="part"/>'s solid boxes before it leaves them (0: a is outside).</summary>
+    public static float ExitAlong(Construct c, int part, Vector3 a, Vector3 b)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return 0f;
+        var d = b - a;
+        var len = d.Length();
+        if (len < 1e-6f)
+            return 0f;
+        var def = c.DefOf(part);
+        var exit = 0f;
+        // (boxes that touch: keep extending while one starts where the run so far ends)
+        for (var pass = 0; pass < 4; pass++)
+        {
+            var grew = false;
+            for (var k = 0; k < def.SolidBoxes; k++)
+            {
+                c.BoxOf(part, k, out var centre, out var half);
+                if (!SegmentBoxSpan(a - centre, d, half, out var t0, out var t1))
+                    continue;
+                if (t0 * len <= exit + 1e-3f && t1 * len > exit + 1e-5f)
+                {
+                    exit = MathF.Min(t1, 1f) * len;
+                    grew = true;
+                }
+            }
+            if (!grew)
+                break;
+        }
+        return exit;
+    }
+
+    private static bool SegmentBoxSpan(Vector3 o, Vector3 d, Vector3 h, out float t0, out float t1)
+    {
+        t0 = float.MinValue;
+        t1 = float.MaxValue;
+        for (var ax = 0; ax < 3; ax++)
+        {
+            var oa = o[ax];
+            var da = d[ax];
+            if (MathF.Abs(da) < 1e-9f)
+            {
+                if (oa < -h[ax] || oa > h[ax])
+                    return false;
+                continue;
+            }
+            var ta = (-h[ax] - oa) / da;
+            var tb = (h[ax] - oa) / da;
+            if (ta > tb)
+                (ta, tb) = (tb, ta);
+            t0 = MathF.Max(t0, ta);
+            t1 = MathF.Min(t1, tb);
+            if (t0 > t1)
+                return false;
+        }
+        return t1 >= 0f && t0 <= 1f;
+    }
+
+    // ---- Hold to adjust a node (board item lg01: the client's adjust mode; the server re-checks the result) -------
+
+    public const int AdjustMaxCm = 50; // the search and the wheel go at most this far out along the normal
+    public const int AdjustStepCm = 1, AdjustBigStepCm = 5; // a wheel notch (Ctrl: the big step)
+
+    /// <summary>How far in (cm, negative) a node may be adjusted from its snapped spot (radius off the surface): down to the embedding limit.</summary>
+    public static int AdjustMinCm(RouteType type, byte style)
+    {
+        var r = Radius(type, style);
+        return -(int)MathF.Floor((r + EmbedDepth(r)) * 100f + 1e-3f);
+    }
+
+    /// <summary>The node <paramref name="cm"/> centimetres along <paramref name="normal"/> from <paramref name="basePos"/> (rest frame, on the 1 cm grid).</summary>
+    public static Vector3 AdjustPos(Vector3 basePos, Vector3 normal, int cm)
+    {
+        var nrm = normal.LengthSquared() > 1e-8f ? Vector3.Normalize(normal) : Vector3.UnitY;
+        return ConstructWorld.Quantise(basePos + nrm * (cm * 0.01f));
+    }
+
+    /// <summary>Clamps an adjust offset to its range.</summary>
+    public static int AdjustClamp(RouteType type, byte style, int cm) => Math.Clamp(cm, AdjustMinCm(type, style), AdjustMaxCm);
+
+    /// <summary>
+    /// The adjust search: from the snapped spot, out along the normal first (1 cm steps up to <see cref="AdjustMaxCm"/>),
+    /// then in down to the embedding limit; the first offset whose node <paramref name="rule"/> accepts (null), or null.
+    /// </summary>
+    public static int? AdjustSearch<T>(RouteType type, byte style, Vector3 basePos, Vector3 normal, ref T rule) where T : struct, INodeRule
+    {
+        if (rule.Why(AdjustPos(basePos, normal, 0)) == null)
+            return 0;
+        for (var cm = 1; cm <= AdjustMaxCm; cm++)
+            if (rule.Why(AdjustPos(basePos, normal, cm)) == null)
+                return cm;
+        for (var cm = -1; cm >= AdjustMinCm(type, style); cm--)
+            if (rule.Why(AdjustPos(basePos, normal, cm)) == null)
+                return cm;
+        return null;
+    }
+
+    /// <summary>A rule for one node's spot (the adjust search tries spots through it): null when the link is fine with the node there.</summary>
+    public interface INodeRule
+    {
+        string? Why(Vector3 pos);
+    }
+
+    /// <summary>
+    /// The rule for a link being routed (open) with its next node at a spot: the start (an output's port, or a junction on
+    /// <paramref name="Parent"/>), the nodes so far, then the spot. One rule with the server's (<see cref="PathRule"/>).
+    /// </summary>
+    public struct OpenRule : INodeRule
+    {
+        public Construct C;
+        public RouteType Type;
+        public byte Style;
+        public int From; // the output (when Parent is 255)
+        public byte FromPort;
+        public int Parent, ParentSeg; // a branch: the link and its segment (255: from a part)
+        public Vector3 Junction;
+        public CRouteNode[] Nodes; // the nodes so far (Count of them)
+        public int Count;
+        public byte Host; // the part the next node sits on
+
+        public readonly string? Why(Vector3 pos) => OpenPath(C, Type, Style, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), pos, Host);
+    }
+
+    /// <summary>The rule for a link being routed with its next node at <paramref name="next"/> on part <paramref name="host"/> (see <see cref="OpenRule"/>).</summary>
+    public static string? OpenPath(Construct c, RouteType type, byte style, int from, byte fromPort, int parent, int parentSeg, Vector3 junction, ReadOnlySpan<CRouteNode> nodes, Vector3 next,
+        int host)
+    {
+        if (nodes.Length >= Construct.MaxNodesPerRoute)
+            return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
+        if (host < 0 || host >= c.PartCount)
+            return "a node must sit on this construct";
+        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
+        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var n = 0;
+        if (parent != 255)
+        {
+            if (parent < 0 || parent >= c.RouteCount)
+                return "that link is gone";
+            pts[n] = junction;
+            hosts[n++] = HostOf(c, parent, parentSeg);
+        }
+        else
+        {
+            if (from < 0 || from >= c.PartCount)
+                return "no such part";
+            pts[n] = PortPoint(c, from, fromPort);
+            hosts[n++] = from;
+        }
+        for (var i = 0; i < nodes.Length; i++)
+        {
+            pts[n] = nodes[i].Pos;
+            hosts[n++] = nodes[i].Host;
+        }
+        pts[n] = next;
+        hosts[n++] = host;
+        return PathRule(c, type, style, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, false, 255);
+    }
+
+    /// <summary>The rule for a whole link (the server's <see cref="Check"/>) with node <c>Node</c> of its nodes at a spot: the input end's adjust (its last node).</summary>
+    public struct ClosedRule : INodeRule
+    {
+        public ConstructWorld? World;
+        public Construct C;
+        public RouteType Type;
+        public byte Style;
+        public int From;
+        public byte FromPort;
+        public int Parent, ParentSeg;
+        public Vector3 Junction;
+        public CRouteNode[] Nodes;
+        public int Count, Node;
+        public int To;
+        public byte ToPort;
+
+        public readonly string? Why(Vector3 pos)
+        {
+            var keep = Nodes[Node].Pos;
+            Nodes[Node].Pos = pos;
+            var why = Check(World, C, Type, Style, From, FromPort, Parent, ParentSeg, Junction, Nodes.AsSpan(0, Count), To, ToPort);
+            Nodes[Node].Pos = keep;
+            return why;
+        }
+    }
+
+    /// <summary>The rule for moving node <c>Node</c> of link <c>Route</c> (the edit mode's move node; the server's <see cref="CheckMove"/>).</summary>
+    public struct MoveRule : INodeRule
+    {
+        public Construct C;
+        public int Route, Node;
+        public byte Host;
+
+        public readonly string? Why(Vector3 pos) => CheckMove(C, Route, Node, pos, Host);
     }
 
     private static bool SegmentHitsBox(Vector3 o, Vector3 d, Vector3 h)
@@ -1038,11 +1378,25 @@ public static partial class ConstructRoutes
         }
     }
 
-    /// <summary>Moves node <paramref name="node"/> of link <paramref name="route"/> (the edit mode's "move node"): the whole link is re-checked with it moved. Null, or why not.</summary>
+    /// <summary>Moves node <paramref name="node"/> of link <paramref name="route"/> (the edit mode's "move node"): the whole link is re-checked with it moved (<see cref="CheckMove"/>). Null, or why not.</summary>
     public static string? MoveNode(ConstructWorld? world, Construct c, int route, int node, Vector3 pos, byte host)
+    {
+        if (CheckMove(c, route, node, pos, host) is { } why)
+            return why;
+        ref var r = ref c.Routes[route];
+        c.RouteNodes[r.Start + node].Pos = ConstructWorld.Quantise(pos);
+        c.RouteNodes[r.Start + node].Host = host;
+        Changed(world, c);
+        return null;
+    }
+
+    /// <summary>Can node <paramref name="node"/> of link <paramref name="route"/> move to <paramref name="pos"/> on part <paramref name="host"/>? Null, or why not (the server's rule and the client's preview).</summary>
+    public static string? CheckMove(Construct c, int route, int node, Vector3 pos, byte host)
     {
         if (route < 0 || route >= c.RouteCount || node < 0 || node >= c.Routes[route].Count)
             return "no such node";
+        if (host >= c.PartCount)
+            return "a node must sit on this construct";
         ref var r = ref c.Routes[route];
         for (var k = 0; k < c.RouteCount; k++)
             if (c.Routes[k].Parent == route && c.Routes[k].ParentNode == node)
@@ -1051,42 +1405,41 @@ public static partial class ConstructRoutes
         for (var i = 0; i < r.Count; i++)
             nodes[i] = c.RouteNodes[r.Start + i];
         nodes[node] = new CRouteNode { Pos = ConstructWorld.Quantise(pos), Host = host, Health = nodes[node].Health };
-        // Check it as a new link without itself (its own "already linked" and caps).
-        var saved = r;
-        r.Type = RouteType.COUNT; // (not matched by the duplicate check while checked)
-        var parentSeg = 0;
-        var junction = Vector3.Zero;
-        if (saved.Parent != 255)
+        string? why;
+        if (r.Parent != 255)
+            why = CheckBranchMove(c, r, nodes[..r.Count]);
+        else
         {
-            junction = Point(c, route, -1, out _);
-            parentSeg = saved.ParentNode; // (the junction is the parent's node: on the segment ending there)
+            // Check it as a new link without itself (its own "already linked" and caps).
+            var saved = r;
+            r.Type = RouteType.COUNT; // (not matched by the duplicate check while checked)
+            why = Check(null, c, saved.Type, saved.Style, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
+            r = saved;
         }
-        var why = saved.Parent != 255
-            ? CheckBranchMove(c, saved, nodes[..saved.Count], route)
-            : Check(null, c, saved.Type, saved.Style, saved.From, saved.FromPort, 255, 0, Vector3.Zero, nodes[..saved.Count], saved.To, saved.ToPort);
-        _ = parentSeg;
-        _ = junction;
-        r = saved;
-        if (why != null && !why.StartsWith("at most", StringComparison.Ordinal))
-            return why;
-        c.RouteNodes[r.Start + node].Pos = ConstructWorld.Quantise(pos);
-        c.RouteNodes[r.Start + node].Host = host;
-        Changed(world, c);
-        return null;
+        return why != null && !why.StartsWith("at most", StringComparison.Ordinal) ? why : null;
     }
 
-    private static string? CheckBranchMove(Construct c, in CRoute r, ReadOnlySpan<CRouteNode> nodes, int route)
+    /// <summary>A branch with its nodes moved: the path rule from its junction (the parent's node) to its input.</summary>
+    private static string? CheckBranchMove(Construct c, in CRoute r, ReadOnlySpan<CRouteNode> nodes)
     {
-        var radius = Radius(r.Type, r.Style);
+        if (r.Parent >= c.RouteCount || r.ParentNode >= c.Routes[r.Parent].Count || r.To >= c.PartCount)
+            return "that link is gone";
+        Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
+        Span<int> hosts = stackalloc int[Construct.MaxNodesPerRoute + 2];
+        var n = 0;
+        ref var pn = ref c.Node(r.Parent, r.ParentNode);
+        pts[n] = pn.Pos;
+        hosts[n++] = pn.Host;
         for (var i = 0; i < nodes.Length; i++)
         {
             if (nodes[i].Host >= c.PartCount)
                 return "a node must sit on this construct";
-            if (InsidePart(c, nodes[i].Pos, radius * 0.9f, -1, -1) is { } inside)
-                return $"that node would sink into the {c.DefOf(inside).Name}: place it on the surface";
+            pts[n] = nodes[i].Pos;
+            hosts[n++] = nodes[i].Host;
         }
-        _ = route;
-        return null;
+        pts[n] = PortPoint(c, r.To, r.ToPort);
+        hosts[n++] = r.To;
+        return PathRule(c, r.Type, r.Style, pts[..n], hosts[..n], true, 255, true, r.ToPort);
     }
 
     // ---- Damage and repair ---------------------------------------------------------------------------------------

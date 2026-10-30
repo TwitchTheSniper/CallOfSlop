@@ -1721,6 +1721,8 @@ public static unsafe partial class Program
 
     private static void OnScroll(GlfwWindow window, double2 offset)
     {
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && LinkAdjustScroll(offset.Y))
+            return; // (the linking tool adjusting a red node with LMB held: the wheel moves it along its normal; Program.SandboxLinks.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
             return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)

@@ -78,6 +78,21 @@ public sealed partial class Game
             SendCasinoTo(guid); // the casino tables (ZombiesCasinoNet.cs)
             SendTraderTo(guid); // the trader and his shelf (ZombiesTrader.cs)
         }
+        SendZEnts();
+        ServerSendCrowd(); // a mass-horde map: the crowd's cells (ZombiesCrowdNet.cs)
+        if (ServerTick % (World.SnapshotEvery * 3) == 0)
+        {
+            WriteZWorld(_w);
+            Net.Broadcast(_w.Span, PacketReliability.Unreliable);
+        }
+    }
+
+    /// <summary>
+    /// Server, every tick (Zombies, and the Sandbox's spawned zombies: GameSandboxSpawns.cs): the zombies to each client on
+    /// snapshot ticks, interest-managed.
+    /// </summary>
+    private void SendZEnts()
+    {
         if (ServerTick % World.SnapshotEvery == 0 && (Horde.Count > 0 || _zEntsLive))
         {
             // Interest-managed (protocol 58): each client gets the zombies that matter most to it this snapshot.
@@ -94,12 +109,6 @@ public sealed partial class Game
             _zEntsLive = Horde.Count > 0;
             if (_zViews.Count > _clients.Count)
                 ForgetGoneViews();
-        }
-        ServerSendCrowd(); // a mass-horde map: the crowd's cells (ZombiesCrowdNet.cs)
-        if (ServerTick % (World.SnapshotEvery * 3) == 0)
-        {
-            WriteZWorld(_w);
-            Net.Broadcast(_w.Span, PacketReliability.Unreliable);
         }
     }
 
@@ -958,7 +967,7 @@ public sealed partial class Game
     /// <summary>Where every zombie is drawn this frame (the host blends ticks; clients interpolate snapshots like players), the points popups, late builds.</summary>
     private void UpdateZombiesFrame(double now, float dt)
     {
-        if (Mode != GameMode.Zombies)
+        if (Mode != GameMode.Zombies && !SandboxOn) // (the Sandbox's spawned zombies too: GameSandboxSpawns.cs)
         {
             if (World.Map.Zombies is { } zmap && zmap.Doors.Count > 0 && !World.Map.IsDoorOpen(0))
                 World.Map.OpenAllDoors(); // a Zombies map in another mode: one big map (clients learn the mode after joining)
@@ -966,7 +975,8 @@ public sealed partial class Game
         }
         if (!IsServer)
             DropStaleZombies(now);
-        SyncZombiesGrenades(now);
+        if (Mode == GameMode.Zombies)
+            SyncZombiesGrenades(now);
         foreach (var z in Horde)
         {
             if (IsServer)

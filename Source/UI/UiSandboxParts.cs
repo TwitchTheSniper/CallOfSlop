@@ -47,6 +47,7 @@ public sealed partial class Ui
         Parts,
         Blueprints,
         Tools,
+        Spawn, // bots and zombies (UiSandboxSpawn.cs; creative worlds)
     }
 
     /// <summary>What a tile shows: a part, a blueprint or a tool, its texts made once.</summary>
@@ -264,7 +265,7 @@ public sealed partial class Ui
     /// <summary>The visible tiles (only when the search, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
-        if (_sbFilterBuilt == _sbFilterVersion)
+        if (_sbFilterBuilt == _sbFilterVersion || _sbTab == SbTab.Spawn)
             return;
         _sbFilterBuilt = _sbFilterVersion;
         _sbVisibleCount = 0;
@@ -331,6 +332,8 @@ public sealed partial class Ui
     /// <summary>Takes the highlighted tile of the current tab, as Enter does (self-test). False when nothing is highlighted.</summary>
     public bool SandboxInventoryTake(Game game)
     {
+        if (_sbTab == SbTab.Spawn)
+            return false;
         SbFilter();
         var items = _sbItems[(int)_sbTab];
         if (_sbSel < 0 || _sbSel >= items.Length)
@@ -386,9 +389,18 @@ public sealed partial class Ui
                 SbTabItem("Parts"u8, SbTab.Parts);
                 SbTabItem("Blueprints"u8, SbTab.Blueprints);
                 SbTabItem("Tools"u8, SbTab.Tools);
+                SbTabItem("Spawn"u8, SbTab.Spawn);
                 ImGui.EndTabBar();
             }
             _sbTabRequest = -1;
+            if (_sbTab == SbTab.Spawn)
+            {
+                SbDrawSpawn(game, me); // bots and zombies (UiSandboxSpawn.cs)
+                ImGui.End();
+                if (!open)
+                    CloseSandboxParts();
+                return;
+            }
             SbFilter();
             var paneW = 240 * _scale;
             // Left: the search box, the tree, the options.
@@ -419,6 +431,11 @@ public sealed partial class Ui
                 ImGui.EndChild();
                 ImGui.Separator();
                 ImGui.Checkbox("Keep open after picking"u8, ref SandboxPartsKeepOpen);
+                // Smart rotation (SmartRotation.cs): the ghost's first turn is a guess from the construct around it (saved).
+                if (ImGui.Checkbox("Smart rotation"u8, ref settings.SmartRotation))
+                    settings.Save();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("The ghost starts at the best guess for the construct: upright, facing forward, mirroring the other side, like its neighbours, the way you turned it last time. R goes back to the guess, R again tries the next best. Off: the fixed order."u8);
                 // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
                 ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
                 if (game.SandboxInfiniteParts)

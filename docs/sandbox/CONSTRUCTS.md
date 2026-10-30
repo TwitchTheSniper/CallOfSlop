@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): hold the tool wheel key for the **link wheel** (data, power, pipe, shaft, chute; rest on Pipe for its styles, on Edit for delete / move node / re-route / highlight all, on Tools for the tool wheel). Fire on an output, Fire for each node, Fire on an input to finish; Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (data, power, pipe auto and its four styles, shaft, chute, delete / move node / re-route, highlight all; [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -49,7 +49,8 @@ and attaching to a socket) turns with the same keys, each a quarter turn relativ
   the construct face.
 - **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
 - **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
-- **R**: back to the default orientation (it no longer steps through the turns).
+- **R**: back to the default orientation: smart rotation's guess ([Smart rotation](#smart-rotation)); pressed while
+  at a guess, the next best guess.
 
 The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
 which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
@@ -73,6 +74,61 @@ placement in the same frame, its opposite comes back to the default, four come r
 turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
 kept; nothing allocates.
 
+### Smart rotation
+
+Board item dev-sandbox-smart-rotation-sr01, design decision 22 (`Source/Constructs/SmartRotation.cs`, the weights in
+`Constructs/SmartRotation.json`). The ghost on a socket no longer starts at a fixed "upright, facing -Z" turn: every turn
+the held part can take there (each of its own sockets times four spins, one per distinct turn; turns that are in the way
+are never candidates) is scored by context and the best is the ghost's first guess, shown at once. **R** goes back to the
+guess, and pressed while the ghost is at a guess it steps to the next best, so a wrong guess is one press away; the arrow
+keys turn it as before ([Turning the ghost](#turning-the-ghost)). The signals, each weighted in the JSON file:
+
+- **The vehicle frame**: forward and up from the driver's seat, else the first seat, else the root part (an anchored or
+  pinned build takes the world's up), so a chassis built at any angle works. `upright` scores the part's top along that
+  up, `front` its front (-Z) along that forward.
+- **Facing hints** (`facing`): a part file's `"faces"` / `"faceAxis"`, else its role's default: seats and guns face
+  forward, wheels put their outer face (+X) away from the centre plane, panels their front (+Y) and doors theirs (+Z)
+  away from the construct's centre, gauges their dial towards the nearest seat. `back` and `up` are there for tail lights
+  and exhausts.
+- **Mirror symmetry** (`mirror`): if the same part sits at the mirrored spot across the centre plane (the plane through
+  the frame part's centre, square to the vehicle's right), the turn that mirrors its turn (its face and its top mirrored)
+  wins: the right wheel matches the left.
+- **Repetition**: the same parts next to it (`neighbour`, by the share of them with that turn: a row of panels or lights
+  lines up), and the turn the player last chose for this part (`lastChoice`), relative to the vehicle frame.
+- **Corrections** (`learned`): when the player places a part turned away from the guess, that turn is remembered for the
+  part, the socket kind and the side of the vehicle the socket faces (relative to the frame) and preferred next time.
+  Free placement keeps its own.
+- **Clearance**: a blocked turn is never listed; covering another part's free socket (`coveredSocket`, each, at most four;
+  a socket the part meets with one of its own doesn't count, it welds) or a facing part's face right against another
+  part (`facingWall`) scores lower.
+
+Ties break by the old fixed order (upright, then facing -Z in the construct's frame), then the lowest variant, so the
+same build always gives the same guess. Free placement uses it too: the new construct's frame is the vehicle frame, so a
+part in hand starts upright facing the look, or the way it was last set down (R steps through the 24 turns in score
+order). A blueprint step's `"spin": "auto"` takes the context guess (no memory). The physics gun's Shift snap is not
+affected: it snaps a held construct to 45 degree steps, not a part to a socket.
+
+The guess is the client's alone: the client sends the variant (own socket and spin in the fixed order) it shows, and the
+server checks it exactly as before, so nothing changed on the wire. Ranking runs only when the aimed socket, the held
+part, the construct's part count or the setting changes, never per frame, and allocates nothing (at most 24 candidates).
+The parts menu's **Smart rotation** box (on by default, saved as `smart_rotation` in settings.txt) turns it off for the
+fixed order. The corrections are saved in settings.txt too (`smart_rotation_learned`, part names, at most 256, the
+oldest going first); the last choices last the session.
+
+**Self-test**: the **Construct smart rotation** section (`Source/App/SelfTestSmartRotation.cs`): a left wheel's guess
+puts its outer face out to the left, and with the left wheel turned off its guess the right wheel's guess mirrors it; a
+seat on a chassis turned 90 degrees faces the chassis's front where the fixed order faced -Z, and a second seat faces the
+first's front; a third panel continues its row's turn; after one correction the next same seat (on another construct)
+takes it, also after a settings.txt round trip, and free placement learns the same way; with forward blocked the guess
+is a free upright turn and every listed turn fits; two identical builds rank the same; a blueprint's `"auto"` step; the
+weights file loads and a bad one is refused, as is a bad `"faces"`; ranking allocates nothing.
+
+Choices made (the developer may change them): the corrections are saved in settings.txt (Settings fitted: one line)
+rather than kept for the session only; R both resets and cycles (no new key); the centre plane passes through the frame
+part (the driver's seat), not the build's middle, so a half-built car's mirror is stable; the context for a correction is
+the part, the socket kind and the side of the vehicle the socket faces; the weights are the file's (upright 2, front 1,
+facing 4, mirror 6, neighbour 5, last choice 3.5, learned 8, covered socket 1.5 each, facing a wall 3).
+
 ### The tool wheel (decision 17)
 
 The developer's decision 17 (2026-10-29): players pick their tools from a radial menu. Hold **Tool wheel**
@@ -85,7 +141,7 @@ the easiest flicks reach them, with the physics gun on the north-east; the confi
 design's tool list that don't exist yet sit on the other diagonals, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
-orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
+orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
 with a green inner arc and dot. Letting go takes the tool out through the very request the number keys send
 (`CActKind.Tool`, server-authoritative), so nothing on the wire changed (protocol 79) and the number keys stay as the
 favourites. Letting go in the middle cancels. You keep walking while it's open; the mouse buttons don't reach the gun or
@@ -103,8 +159,32 @@ chain, three sliders, a handset with waves, a drill); `Source/App/Program.Sandbo
 Choices made for the wheel (the developer may change them): the middle mouse button, not Q (Q swaps weapons); the wheel
 sits at the screen centre (the cursor is captured, so "around the cursor" is the centre); the tools still to come are
 shown greyed rather than left off (eight segments read cleanly as a compass, and they show what is planned); it is
-closed in a seat (seated keys belong to the construct's input readers); no tool modes ring or second page yet (no tool
-has modes); no stick support yet (no Steam Input in the game).
+closed in a seat (seated keys belong to the construct's input readers); no stick support yet (no Steam Input in the game).
+
+#### The outer ring: a tool's options
+
+Board item dev-wheel-outer-ring-wo01 (the developer's design, 2026-10-30) replaced the linking tool's separate link wheel
+page (and its rings opened by resting the pointer) with a concentric **outer ring**. Pointing at a tool that has options
+shows a second ring around the inner one at once (it grows out in 0.08 s); the inner wheel stays and the tool stays
+highlighted. Its segments sit in an arc centred on the tool's direction, 30 degrees each, or round the full circle when
+more than fit in 300 degrees. With the ring showing the pointer may go further out (to 70 + 66 px); past 70 + 24 px
+(a band that keeps the inner pick) it picks the option in its direction. **Letting go on an option** takes the tool out
+with that option; **letting go on the tool** (the inner segment) takes it out with its last-used option (marked green on
+the ring); letting go in the middle still cancels. Outside a partial arc the pointer turns the inner ring as usual (and
+is pulled back within 70 px when it leaves a tool with a ring). The middle shows only the name of what is under the
+pointer (the option's, else the tool's, else "Tools"), at 20 px a scale, shrunk to fit the centre circle (down to 12 px),
+else cut short with "..."; hints go in the tooltip under the wheel.
+
+The **linking tool** has thirteen options, round the full circle: data cable, power cable, pipe (auto: the style from the
+output), fuel, water, oil and steam pipes, drive shaft, chute, delete links, move node, re-route, and highlight all (a
+toggle, shown with a green dot while on). Picking a type also goes back to routing links. The choice is this PC's only;
+taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
+(`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the welder's
+weld / cut and the physics gun's modes can use it when they have modes.
+
+Choices made for the outer ring (the developer may change them): the pipe styles sit on the same ring as the other
+types (no third ring); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
+(no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
 ### Tools in hand
 
@@ -341,7 +421,7 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
   frequency), side grip, drive force shared by the touching wheels, brakes, a friction circle, and tyre forces applied
   most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over.
-- **Joints** (reduced coordinates: each is one number on its body): a passive hinge is damped, falls under gravity,
+- **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
   while its lock is on; the moving joints are driven by a motor (milestone 2, below).
 - A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it.
@@ -556,6 +636,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `walk` | Building pieces: `floor`, `stairs`, `ramp` or `ladder`. Players and bots step up onto it ([Building pieces](#building-pieces)); bots' navigation may treat its tops as ground. |
 | `damaged` | `{"below": 0.6, "part": "Concrete Wall 4 m Damaged"}`: below that share of its health the part turns into that stage in place (a wall losing a chunk). The stage needs `"stage": true`, the same role and exactly the same sockets; a chain's shares must fall. |
 | `stage` | `true`: a damage stage of another part; not offered in the parts menu or on a rack. |
+| `faces`, `faceAxis` | Smart rotation's facing hint ([Smart rotation](#smart-rotation)): `faces` is `none`, `forward`, `back`, `up`, `outward`, `side` or `toSeat`, and `faceAxis` which of the part's own directions is its face (`-z`, its front, by default). Without them the role decides (seats and guns `forward` by `-z`; wheels `side` by `+x`; panels `outward` by `+y`; doors `outward` by `+z`; gauges `toSeat` by their dial's face). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -577,7 +658,8 @@ same rules a player builds by, so a blueprint that loads proves the rules can bu
 ] }
 ```
 
-A step may carry `"setting": n` (a logic part's starting setting) and `"config": {"period": 2.5, "colour": "#ff2010",
+A step's `"spin"` (0 to 3, the fixed order) may be `"auto"`: smart rotation's context guess for that socket and `by`
+socket, without any player's memory, so every machine builds it the same ([Smart rotation](#smart-rotation)). A step may carry `"setting": n` (a logic part's starting setting) and `"config": {"period": 2.5, "colour": "#ff2010",
 "startOn": true, "setting": "jump"}` (its settings by key: numbers, true/false, colours, option names), and a blueprint may list `"wires": [[from step, to
 step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 parts: rear-wheel drive through a
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6
@@ -1401,7 +1483,7 @@ and `EditKind.PlaceNew`).
   and charge; every other socket pair the two meet at welds too; a coupling between them goes; a wire between them becomes
   one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
   working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
-  while anyone sits in either, or past the caps (96 parts, 8 joints, 64 wires a construct).
+  while anyone sits in either, or past the caps (96 parts, 16 joints, 64 wires a construct).
 - **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
   A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
   or join two"). The world's caps (64 bodies, 1,200 parts) still hold.
@@ -1547,12 +1629,99 @@ axle and transfer case, the crawler's track, part galleries and the driving HUD.
 7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
    with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
 
+## Actuator sizes and strength
+
+Board item dev-sandbox-actuator-sizes-as01 (protocol 91). Every moving joint now comes in sizes, and has a **rating**:
+the most force or torque it holds rigidly.
+
+### The size families (`Constructs/Parts/Actuators`)
+
+Written by `tools/constructs/actuator_parts.py` (run it from the repo root; `--check` compares), as the structural
+parts are: three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) times three lengths (short, medium, long), 27
+parts in the inventory's Joints group (sections Pistons, Motor hinges, Turntables).
+
+| Family | Width sets | Length sets | Ratings (1x1 / 2x2 / 3x3) | Length steps |
+| --- | --- | --- | --- | --- |
+| Piston | push and pull force; side load it takes | stroke (and its top speed, 1 m/s per metre of stroke) | 6,000 / 24,000 / 60,000 N; side 2,000 / 8,000 / 20,000 N | 0.5 / 1 / 2 m |
+| Motor hinge | torque | speed (a longer housing holds a bigger motor) | 4,000 / 12,000 / 30,000 N m | 45 / 90 / 180 deg/s |
+| Turntable | torque | speed | 3,000 / 12,000 / 36,000 N m | 45 / 90 / 180 deg/s |
+
+Mass, health, armour, idle power and fitting time grow with the size (width squared times length). The three parts that
+were there before are one size each and keep their names, shapes, sockets and default settings, so blueprints and
+constructs built with them still fit and behave as before: **Piston** is the 2x2 long piston (14,000 N by default, up
+to 24,000), **Motor Hinge** the 1x1 medium hinge (3,000 N m, up to 4,000) and **Turntable** the 2x2 short turntable
+(6,000 N m, up to 12,000). New sizes start at their full rating and speed. Part ids follow the sorted file names, so
+they moved; blueprints and saves name parts, so nothing breaks.
+
+In a part file the `joint` block takes three more keys: `give` (how far it has given at twice its rating: metres for a
+piston, degrees otherwise; default a quarter of a piston's stroke, 20 degrees), `sideLoad` (a piston: N across its axis
+before it gives; 0 no limit) and `overloadDamage` (hp a second at twice the rating while overloaded; 0, off, on every
+shipped part).
+
+### The configure tool
+
+Strength (Force or Torque) and Speed run from a tenth of the size's maximum up to it, in the part's `config` schema, so
+they clamp to the size's range like every setting; a lower strength caps the power it can draw (the drain is the
+motor's push times its speed), and a lower speed draws less while it moves. The panel shows a **Load** bar: what the joint holds against its rating ("Load 4200 /
+6000 N (70%)"), green up to the rating and red past it ("overloaded, giving way"). Overloaded actuators are tinted red
+in the world, deeper the further past their rating (full at twice), pulsing a little. The load comes from the server in
+the pose (a byte a joint, hundredths of the rating).
+
+### The strength model (`ConstructPhysics.MotorPrep`)
+
+- A moving joint's motor follows a **reference**: the target its input asks for (a turntable: its speed, or where it
+  stopped when its input is 0), reached at the joint's speed.
+- The motor holds the joint on the reference with at most its rating: a velocity constraint solved with the contacts
+  and the other joints (the joints and the contacts on jointed constructs get 6 more solver passes than the rest, so a
+  chain of actuators converges). **Up to its rating the joint is rigid**: no spring, no sag, no jitter.
+- A load past the rating pushes it off the reference, and the further off it is the harder the motor pushes: rating x
+  (1 + sqrt(behind / give)). It settles where that meets the load, **give x (load / rating - 1)^2** behind: a little
+  just over the rating, more and more as the overload grows. Moving off the reference is damped (no bounce).
+- It never asks to move faster than its speed, so when the load goes it comes back **at its speed**.
+- At 4 times its rating it slips (the reference is dragged along): a hugely overloaded lift sinks to its stop.
+- A piston loaded across its axis past its side load holds that much less along it (rating / (side load / its side
+  rating)).
+- The load counts everything: the weight it carries (riders too), the contacts on the parts beyond it (feet on the
+  ground, a post in the way), inertia and other joints. A motor driving into an obstacle shows as overloaded and pushes
+  at it a little past its rating (more the further its reference has run ahead, at most 4 times).
+- A gunner's or sentry's aim and steering pivots keep the plain motor (at most their strength).
+- An overloaded joint stays awake (it doesn't sleep giving way); one at rest within its rating sleeps as before.
+
+### Caps and cost
+
+A construct may have 16 joints (was 8), so a 10-joint leg or arm fits; still 128 in all. A 10-joint arm costs about
+0.06 ms a tick on the cloud box; no allocation per tick.
+
+### Self-test
+
+"Construct actuators" (`SelfTestConstructActuators.cs`): the three families' nine sizes each (width raises the rating,
+length the stroke or speed, size the mass, health and power; overload damage off); a construct on four piston legs, and
+one on two-joint legs (motor hinge knees), each rated a quarter over its load and kept awake for 5 s: no sag or tilt
+over 0.2 mm (it measures thousandths), then it sleeps still; a lift loaded to 1.25, 1.5 and 2 times its rating gives way
+along the curve without bouncing and comes back at its speed, a client hears the load and the panel's text says so,
+overload damage takes nothing while off and wears the part when on; the size in play (stroke, force, speed); the
+configure values clamp to the size's range and change what the piston holds and how fast it goes; a tower of six
+pistons and a ten-hinge arm worked by seeded inputs and overloaded stay finite and in one piece, the bent arm holds its
+tip still, ten joints travel to a client, no allocation, and the arm's tick cost (budget 1 ms).
+
+### Decisions made (the developer may change them)
+
+- **Overload damage is off** (the developer's open question): `overloadDamage` is 0 on every part; set it (hp a second
+  at twice the rating) to make sustained overload wear a part.
+- The yield curve (give x (overload - 1)^2), the give (a quarter of a piston's stroke, 20 degrees for hinges and
+  turntables) and the slip at 4 times the rating.
+- The ratings, side loads, strokes and speeds in the table; a longer motor hinge or turntable is faster (not slower and
+  stronger, as a gearbox would be), since the width already sets the torque.
+- New sizes are plain boxes centred on their origin (not offset onto the 0.25 m lattice for even widths); the old three
+  keep their shapes.
+- Steering pivots have no sizes (they are mechanical, not motors).
+
 ## Routed links (decision 20)
 
 Board item dev-sandbox-routed-links-rl02 (the developer's design, 2026-10-30). Code: `Source/Constructs/ConstructRoutes.cs`
 (the links, their rules, flow, damage, the wire format), `ConstructRoutesBuild.cs` (blueprints' `"links"`, the migration),
 `ConstructEditsRoutes.cs` (the server's edits), `Source/App/Program.SandboxLinks.cs` (the linking tool on this PC),
-`Source/UI/SandboxLinkWheel.cs` (the link wheel), `Source/Render/RouteRender.cs` (drawing them).
+`Source/UI/SandboxLinkWheel.cs` (the linking tool's options on the tool wheel's outer ring), `Source/Render/RouteRender.cs` (drawing them).
 
 One routed-link system on the linking tool replaces the invisible wires and the Fuel Line part. A link is a polyline of
 **nodes** from an **output** to an **input** on one construct, routed node by node over its surface, drawn by one
@@ -1567,7 +1736,7 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
 
 **Pipe styles** (the developer's hybrid choice): a pipe started at a tank takes the style of what the tank holds
-(`"fuelTank": {"fluid": ...}`, fuel by default); the link wheel's pipe ring overrides it. Fuel: thin with hazard bands;
+(`"fuelTank": {"fluid": ...}`, fuel by default); a style picked on the tool wheel's outer ring overrides it. Fuel: thin with hazard bands;
 water: blue with flanges; oil: dark with clamps; steam: thick lagging. Each style has ratings (pressure, heat, rated for
 flammable fluids, residue), each fluid its needs, and a **wrong pipe is allowed** with readable consequences: fuel in a
 water pipe weeps (0.05 l/s) and catches fire after 20 s; something too hot or at too much pressure for its pipe bursts it
@@ -1583,6 +1752,35 @@ most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a pick
 the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
 between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
 
+**Clipping grace and embedding** (board item dev-sandbox-link-clip-grace-lg01; `ConstructRoutes.PathRule`, the one rule
+the server's `Check` and the client's preview both run). Along the first and last stretch of a link nothing clips it:
+for `Grace(radius)` = 2 x the link's diameter + 10 cm (`GraceDiameters`, `GraceExtra`) from where it leaves its output
+(or from its junction) and up to where it enters its input, nodes and segments ignore every part (the rail or frame a
+device sits on too). The grace counts from where the link leaves the device's own boxes (`ExitAlong`; a port at a part's
+centre would otherwise use it up inside the part), and the device itself stays exempt on its end segment as before.
+Past the grace a link may sink up to `EmbedFraction` (60%) of its thickness into a part: its centreline may be
+(2 x 0.6 - 1) = 0.2 x radius inside a surface (`EmbedDepth`). Nodes use a signed distance to the boxes
+(`SignedDistance`, `NodeSinks`); segments test the centreline against each box shrunk by that depth (`SegmentBlocked`),
+which is what lets a link turn round the outside of a corner. Nodes are still snapped onto the surface (decision 20).
+
+**Hold to adjust** (lg01): when the preview is red, LMB doesn't drop the node: it freezes at the click and the adjust
+mode starts. The game first searches along the surface normal (out 1 cm at a time up to 50 cm, then in down to the
+embedding limit: `AdjustSearch`) and jumps to the nearest valid offset; while LMB is held the wheel moves it along that
+normal (1 cm a notch, Ctrl 5 cm; not Shift, which is free routing) and the preview re-checks every step, red with the
+reason or green. Letting go on green places the node; on red nothing is placed (RMB cancels too). The offset shows in cm
+beside the crosshair, and the wheel neither swaps weapons nor turns the wheels meanwhile. The same works for the input
+end (the last node before the input moves along the normal it was placed on, then the link finishes) and for the edit
+mode's move node, whose preview is now checked with the server's rule (`CheckMove`) and goes red too. The node rules are
+reusable `INodeRule`s (`OpenRule`, `ClosedRule`, `MoveRule`); nothing new goes on the wire.
+
+**Free routing** (board item dev-sandbox-link-shift-free-ls01; `ConstructRoutes.ClickEnds`): while the **Free routing**
+key is held (Left Shift by default, rebindable; it shares the key with Sprint, see `Keybinds.Overlap`), aiming at any
+device places an ordinary node on its surface (the normal snap, grid, angle, grace and embedding rules) and never ends
+the link, opens the port picker or branches, so a link can run along a device with a matching port or beside another
+link. The device's highlight is hidden while it is held; the HUD line says "Left Shift: free routing (no port snap)".
+Let go of it to end at an input. Before the first click it does nothing special. It keeps working while adjusting a
+node, and a moved node may sit on a device either way. The server needs nothing new: a node on a device is a legal node.
+
 **Junctions**: Fire on a link of the type picked starts a branch at that point (a junction node goes into the link).
 Power, fluids and items split evenly at a junction (each way gets an equal share of what arrives: the look-at line shows
 the share; a chute's branches take turns); data copies the signal to every branch. Shafts don't branch.
@@ -1596,7 +1794,7 @@ segment stops the flow beyond it: a cut fuel pipe pours fuel out (0.5 l/s) and a
 power cable sparks. The wrench or the welder (Fire, nothing in hand) mends a link; the edit ring's re-route starts it
 again from its output.
 
-**Edit modes** (the link wheel's Edit ring): delete a link (and its branches), move a node, re-route a link, highlight
+**Edit modes** (options on the tool wheel's outer ring round the linking tool): delete a link (and its branches), move a node, re-route a link, highlight
 all (every link bright through the parts). Data and power cables are dimmer unless the linking tool is out.
 
 **Migration**: logic wires are data links routed straight (a blueprint's `"wires"` still work); when a blueprint is built,
@@ -1623,14 +1821,23 @@ and a shaft corner refused; a chute junction sharing scrap evenly; links followi
 blueprint `"links"` and `CBody` round trips (a short packet refused); the server's linking tool checks; the migrations;
 300 part files with their own ids; no allocation in 120 ticks of three constructs with links, nor in rays at a cable.
 
+**Link clipping grace** (`Source/App/SelfTestLinkRouting.cs`): a fuel pipe from a tank to an engine on the slab's edge,
+its end segments rising from below the slab's side over its corner, passes within the grace where the old rule refused
+it, and a segment through the slab past the grace is still refused; a steam pipe's nodes 50% sunk into the slab pass,
+70% fail; an outside turn over a frame block's edge passes (the old rule refused it); a node clicked into a wall: the
+adjust search finds +1 cm, one notch moves 1 cm and Ctrl 5 cm, the range is clamped; the preview and the server agree.
+**Link free routing**: with free routing a click on an engine (an input of pipes) places a node there and the link stays
+open, without it the click ends the link; a pipe routed along that engine to another is accepted and feeds only the
+other; the key is Left Shift beside Sprint without a clash.
+
 ### Choices made (the developer may change them)
 
 1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
    degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
    32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a weeping pipe lights after 20 s, a weak one
    bursts after 30 s, residue gives 60% torque; a chute moves a load (10 bulk) or one part a second.
-2. Opening the link wheel: the tool wheel key while the linking tool is out (its Tools segment, rested on, opens the tool
-   wheel); rings open by resting the pointer on Pipe, Edit or Tools for 0.3 s.
+2. Picking a link type: the tool wheel's outer ring round the linking tool (board item dev-wheel-outer-ring-wo01; it
+   replaced the link wheel and its rings opened by resting).
 3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
    carries the circuit both ways.
 4. A shaft link is a drive-line edge with no ratio (each U joint keeps 99%); chain and belt drives stay devices.
@@ -1638,10 +1845,92 @@ blueprint `"links"` and `CBody` round trips (a short packet refused); the server
    with no nodes are straight and checked for reach only.
 6. Repairs are instant with the wrench or the welder; junction ratios are even (the configure tool can make them
    settable later).
+7. (lg01, ls01) The grace counts from where a link leaves its device's boxes, not from the part's centre; the adjust
+   search goes out first, then in; the input end's adjust moves the last node (a link with no nodes can't be adjusted:
+   its reason is said); the adjust's big step is Ctrl (which is also Crouch: holding it crouches); Free routing shares
+   Left Shift with Sprint (holding it while routing also sprints).
+
+## Spawning bots and zombies
+
+Board items dev-sandbox-spawn-npcs-sn01 and dev-sandbox-spawn-bots-zombies-sb02, done as one feature (2026-10-30). Code:
+`Source/Game/GameSandboxSpawns.cs` (requests, the queue, sides, the spawners' tick, zombies on constructs, bots round
+constructs), `Source/UI/UiSandboxSpawn.cs` (the inventory's Spawn tab), `Source/App/Program.SandboxSpawn.cs` (placing:
+the ghost circle), parts in `Constructs/Parts/Spawn`. Protocol 92.
+
+**One category, "Spawn"**: the inventory has a **Spawn** tab (the direct spawns, clear all, the host's settings and a
+button for each spawner part), and the two spawner parts sit in the Parts tab's **Spawn** group (section "Spawner
+parts"), so a search or the tree finds them like any other part.
+
+**Direct spawns** (creative worlds only: a map with `"infiniteParts": false` refuses them, "its enemies come from the
+world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8 zombie mix, u32 count, the aimed spot)
+and `ClearSpawns`. The server checks the permission (the host, or everyone when the host allows it), the spot (`SandboxSpawnSpot`:
+ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and the caps (a request over a cap is
+cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a bot a tick, 8 individual zombies
+a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+
+**Sides**: a spawned bot is a full bot (the bot AI, the nav graph) with team 10 (friendly) or 11 (enemy), replicated in the
+mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots
+never against people or each other; people still free-for-all among themselves. A friendly bot follows whoever spawned it
+(a spawner's holds near the spawner), and with zombies within 22 m fights them as a Zombies co-op bot does; an enemy bot
+hunts. Spawned bots never respawn: 3 s after dying they leave. Bots need player ids: at most 28 spawned bots (the host's
+cap, 16 by default; one id is always kept free for a person joining).
+
+**Zombies**: the Sandbox gives the Zombies AI a stand-in Zombies map (`SandboxZMap`: one area over the whole map, one
+spawner out of the ground, no doors, windows or buyables, a crowd so the mass horde is on), ticked from the Sandbox tick
+with none of the mode's rounds, points or downs: a zombie's hit is an ordinary hit and a death "killed by the enemy".
+Zombies hunt people and friendly bots (`ZPrey`), not enemy bots. Up to 64 come as individuals rising at the spot (exactly
+that many); a bigger group goes into the crowd round the spot, the first 4,000 as particles and the rest straight into
+the mass tier (a count per cell), and the tiers wake the nearest as individuals as on a crowd map. `Game.StressMax` is now
+500,000 (the Horde Stress lobby's custom size too). Constructs keep individuals out as they keep players out, and one held
+off by a construct swipes the part in its way like a building door (40 damage, every windup + 0.6 s): doors and panels
+give way. Crowd and mass zombies pass through constructs (they are far away). The zombie messages (ZEnts, ZEvent, ZCrowd)
+go to Sandbox clients as in Zombies.
+
+**Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the wrench): settings from the
+configure tool (team, difficulty, gun class; or walkers / mixed types; rate a minute, group size, max alive, total (0: no
+limit), radius, start on; a part takes up to 12 settings now) and named **data ports**: inputs **enabled** (port 0, the
+part itself), **spawn now**, **rate**; outputs **alive** (port 0: how many it has out) and **spawned** (a one-tick pulse).
+A data link names a port in its port byte (`0x80 | k`, k > 0; 255 is port 0), the linking tool's picker lists them, a
+blueprint link says `"toPort": "spawn now"` / `"fromPort": "spawned"`, and the logic's wires carry the ports
+(`CWire.FromPort` / `ToPort`). Enabled (its input on, or unwired and set to start on), a spawner spawns a group at once,
+then one each 60 / rate seconds, while it has fewer than its max alive out and its total isn't reached (and the host's
+caps allow); a rising "spawn now" spawns a group at once, on or off. What a spawner made carries its construct and the
+part's stable tag, so it counts them back however the parts are renumbered; its zombies are never put back into the
+crowd (they'd stop counting). It shows a light (blue, green) while on. A wire from another construct goes into port 0.
+
+**Bots and constructs**: after a bot steers, a solid part box of a construct in the way (in the part's frame, a player's
+radius round it, from a step up to head height: a floor it can step onto or a doorway between walls is not in the way)
+turns it along the box's side towards its goal, and a bot held up against one for 1.5 s marks the path edge it was on
+blocked for 8 s and plans again (A* goes round). Bots already step up onto builds with the players' mover. The nav graph
+stays the map's (deterministic). Follow-ups for bots inside built buildings (from the building pieces work): the tops of
+walkable parts as nav nodes, nav links through door openings (opened with Interact first), and a nav patch when a
+construct is built, changed or broken.
+
+### Self-test
+
+**Sandbox spawns** (`Source/App/SelfTestSandboxSpawns.cs`): the parts' files and ports; 3 friendly and 3 enemy bots take
+sides (friendly bots aim at enemy bots, never the host; an SMG class holds); mid-air, a survival world and the bot cap
+refused; clear all; 7 zombies spawn exactly 7; 500,000 accepted and in the mass tier after 60 ticks, the tick time and
+no allocation in 60 steady spawn ticks; a cap of 1,000 holds; a friendly bot reaches the host past a construct; a Zombie
+Spawner on a switch (off: none; on: one at once, one a second, at most 3 alive, its alive output 3, its spawned pulse
+toggles a toggle; refilled to its total of 5; spawn now off); a Bot Spawner's two enemy Easy shotgun bots; blueprint links
+and the construct message round trip with their ports and settings; over the real transport a client refused until the
+host allows everyone, then its zombies on both sides, a friendly bot and a clear all.
+
+### Choices made (the developer may change them)
+
+1. One "Spawn" tab plus the spawner parts in the Parts tab's Spawn group (not a Characters group).
+2. Spawner parts work in survival worlds too (only the direct spawns are creative); a survival world gets them only as
+   its rack or salvage hands them out.
+3. Host caps: 16 bots (at most 28: player ids), 500,000 zombies; the host settings aren't saved between sessions.
+4. Individuals up to 64 a group; spawner zombies are individuals only (max alive at most 64 a spawner).
+5. Friendly bots follow the spawning player (3 m off); spawner friendlies hold near the spawner; enemy bots hunt.
+6. Zombies leave enemy bots alone; enemy bots ignore zombies.
+7. A construct swipe is a building door's (40 damage); the crowd and mass tiers ignore constructs.
 
 ## Performance and caps
 
-At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
+At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),
 64 routed links and 768 link nodes a construct (512 links in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
@@ -1770,8 +2059,17 @@ hold-flick-release takes out the welder (east), wrench (north), linking tool (we
 marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
 north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
-frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
-server.
+frames with the pointer going round (the linking tool's outer ring among them) draw without an ImGui error and allocate
+nothing; and a real client's pick reaches the server.
+
+The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
+option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
+nothing, the arc or full circle choice); the linking tool's options cover every link type, every pipe style and auto,
+every edit mode and the highlight toggle; in an offline Sandbox game pointing at the linking tool shows its ring with all
+thirteen, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
+tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
+arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long
+name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one).
 
 The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
 byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
@@ -1835,7 +2133,7 @@ centre of mass stay those of the rest pose (cheap; a swinging arm doesn't rock i
 | Steering Pivot | -1..1 of its limit | Follows the driver's steering |
 
 Wheels steer only on steering pivots now (milestone 1 steered every wheel ahead of the centre of mass): a suspension
-bolted to a pivot's leaf, and the wheel on it, turn with it, and its axle sets the tyre's direction. Caps: 8 joints a
+bolted to a pivot's leaf, and the wheel on it, turn with it, and its axle sets the tyre's direction. Caps: 16 joints a
 construct, 128 in all.
 
 ### Logic

@@ -50,6 +50,14 @@ public enum CfgKey : byte
     Strength, // joints: N m (N); brake: %
     Stiffness, // suspension: spring frequency, Hz
     Damping, // suspension: damping ratio
+    Team, // bot spawner: friendly or enemy (GameSandboxSpawns.cs)
+    Difficulty, // bot spawner: Easy .. Insane
+    Loadout, // bot spawner: any gun, or a weapon class
+    Rate, // spawners: spawns a minute
+    Group, // spawners: how many each spawn
+    MaxAlive, // spawners: the most alive at once from it
+    Total, // spawners: how many in all (0: no limit)
+    Mix, // zombie spawner: walkers only, or the zombie types mixed in
     SizeX, // cargo volume: the box's width, height and length (metres, the part's frame; ConstructCargo.cs)
     SizeY,
     SizeZ,
@@ -124,7 +132,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 8;
+    public const int MaxSlots = 12; // (12 since the spawners: a bot spawner has 9 settings)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;
@@ -473,14 +481,17 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
-                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo,
+                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => d.Logic == CLogic.Cargo,
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,
                 CfgKey.Latched or CfgKey.Hold => d.Logic == CLogic.Button,
-                CfgKey.Radius => d.Logic == CLogic.Proximity,
+                CfgKey.Radius => d.Logic == CLogic.Proximity || d.IsSpawner,
+                CfgKey.Rate or CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
+                CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
+                CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
                 CfgKey.Units => d.Logic == CLogic.Speed,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,

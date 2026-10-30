@@ -5,7 +5,7 @@ namespace CallOfSlop;
 
 /// <summary>
 /// The Sandbox tool wheel on this PC (SandboxToolWheel.cs; docs/sandbox/CONSTRUCTS.md, "The tool wheel"): hold the tool
-/// wheel key, flick the mouse to a tool, let go. While it is open the view stands still (the mouse moves the wheel's
+/// wheel key, flick the mouse to a tool (further out onto its outer ring for one of its options), let go. While it is open the view stands still (the mouse moves the wheel's
 /// pointer instead) and the mouse buttons don't reach the gun or the tools; walking carries on.
 /// </summary>
 public static partial class Program
@@ -28,10 +28,12 @@ public static partial class Program
         if (!_toolWheel.Menu.IsOpen && Pressed(GameAction.ToolWheel))
             _toolWheel.SetKeys(_settings); // (the hints follow rebinding; remade only when the binds changed)
         var blocked = !_mouseCaptured || MenusOpen || Ui.ChatOpen;
-        // The linking tool out: the link wheel (its Tools ring hands over to the tool wheel), and the port picker.
+        if (_toolWheel.OptionsOf(SandboxToolWheel.Slot.Linker) == null)
+            _toolWheel.SetOptions(SandboxToolWheel.Slot.Linker, _linkWheel); // (the linking tool's outer ring: link types, edit modes)
         var now = Environment.TickCount64;
         var dt = Math.Clamp((now - _lkWheelLast) / 1000f, 0f, 0.1f);
         _lkWheelLast = now;
+        // The linking tool's port picker (an output or input with several ports) has the mouse while it is open.
         if (!_toolWheel.Menu.IsOpen && g.Local is { } who && g.SandboxHands.Hand(who.Id).Tool == ConstructTool.Linker && !g.SandboxHands.Hand(who.Id).Seated
             && LinkWheelInput(g, new Vector2((float)delta.X, (float)delta.Y), blocked, dt))
         {
@@ -40,9 +42,7 @@ public static partial class Program
                 _down[(int)GameAction.Fire] = false;
             return true;
         }
-        if (_linkWheel.IsOpen)
-            _linkWheel.Close();
-        var open = _toolWheel.Step(g, Down(GameAction.ToolWheel), new Vector2((float)delta.X, (float)delta.Y), blocked);
+        var open = _toolWheel.Step(g, Down(GameAction.ToolWheel), new Vector2((float)delta.X, (float)delta.Y), blocked, dt);
         if (open)
         {
             // The mouse belongs to the wheel: no shooting, aiming, fitting or taking off meanwhile.

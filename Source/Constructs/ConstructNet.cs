@@ -106,7 +106,7 @@ public static class ConstructNet
             }
         w.PatchU8(at, (byte)n);
         ConstructConfig.Write(w, c); // protocol 89: the part settings off their defaults (the configure tool)
-        // Protocol 91: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
+        // Protocol 93: carried by a frozen cargo volume (ConstructCargo.cs): the carrier, and the pose in its volume's segment frame.
         w.U16(c.CarriedBy);
         if (c.CarriedBy != 0)
             w.U8(c.CarrySeg).Vec(c.CarryPos).F32(c.CarryRot.X).F32(c.CarryRot.Y).F32(c.CarryRot.Z).F32(c.CarryRot.W);
@@ -530,7 +530,7 @@ public static class ConstructNet
             ReadAmmo(ref c.Parts[part], rounds, af);
         }
         ConstructConfig.Read(ref r, c); // protocol 89: the part settings
-        c.CarriedBy = r.U16(); // protocol 91: carried by a frozen cargo volume
+        c.CarriedBy = r.U16(); // protocol 93: carried by a frozen cargo volume
         if (c.CarriedBy != 0)
         {
             c.CarrySeg = r.U8();
@@ -624,7 +624,10 @@ public static class ConstructNet
         return n;
     }
 
-    private static int PoseSize(Construct c) => PoseBytes + c.JointCount * 4 + 1 + (c.HasLogic ? SignalParts(c) : 0);
+    /// <summary>A joint's load against its rating in a byte: hundredths, up to 2.55 (the bar's end).</summary>
+    public static byte OverByte(float over) => (byte)Math.Clamp(MathF.Round(over * 100), 0, 255);
+
+    private static int PoseSize(Construct c) => PoseBytes + c.JointCount * 5 + 1 + (c.HasLogic ? SignalParts(c) : 0);
 
     private static void WritePose(PacketWriter w, Construct c)
     {
@@ -642,7 +645,8 @@ public static class ConstructNet
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
-                .U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Vel * 100), short.MinValue, short.MaxValue)));
+                .U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Vel * 100), short.MinValue, short.MaxValue)))
+                .U8(OverByte(c.Joints[j].Over)); // (protocol 91: its load against its rating, for the configure panel's bar and the tint)
         // The signal parts' values, in part order (only with logic: the client knows which parts they are).
         var at = w.Length;
         w.U8(0);
@@ -695,8 +699,10 @@ public static class ConstructNet
             {
                 var a = R16(r.U16()) / 1000f;
                 var v = R16(r.U16()) / 100f;
+                var over = r.U8() / 100f;
                 if (c != null && !stale && j < c.JointCount)
                 {
+                    c.Joints[j].Over = over;
                     c.Joints[j].PrevAngle = c.Joints[j].Angle;
                     c.Joints[j].Angle = a;
                     c.Joints[j].Vel = v;

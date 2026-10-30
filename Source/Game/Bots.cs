@@ -296,6 +296,8 @@ public sealed partial class Game
         AllocProfile.Mark("bot: steer");
         var steer = BotSteer(p, b, target, visible, def, now);
         AllocProfile.Mark("bot: stuck watch");
+        if (SandboxOn && Constructs.Bodies.Count > 0)
+            SandboxBotAvoid(p, b, ref steer, now); // constructs are obstacles (GameSandboxSpawns.cs)
         if (BotStuckWatch(p, b, ref steer, visible, now))
             return; // stuck for too long: it killed itself, like the pause menu's "Kill yourself" (BotStuck.cs)
         AllocProfile.Mark("bot: doors, blind");

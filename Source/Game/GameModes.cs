@@ -161,7 +161,7 @@ public sealed partial class Game
     public Player? GunLeader => ModuleOf<GunGameModule>().Leader(this);
 
     /// <summary>Are these two on opposite sides? Everyone is an enemy in free-for-all and Gun Game; teammates never are; nobody is in co-op (Zombies).</summary>
-    public bool AreEnemies(Player a, Player b) => a != b && !Module.CoOp && (!IsTeamMode || a.Team > 1 || a.Team != b.Team);
+    public bool AreEnemies(Player a, Player b) => a != b && !Module.CoOp && (Mode == GameMode.Sandbox ? SandboxEnemies(a, b) : !IsTeamMode || a.Team > 1 || a.Team != b.Team); // (the Sandbox's sides: GameSandboxSpawns.cs)
 
     /// <summary>Did the local player (or their team) win the match that just ended?</summary>
     public bool LocalWon =>

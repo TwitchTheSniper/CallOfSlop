@@ -108,6 +108,8 @@ public enum CLogic : byte
     FuelGauge, // milestone 3: its construct's fuel, 0..1 of what the tanks hold (a dial)
     ChargeGauge, // milestone 3: its construct's charge, 0..1 of what the batteries hold (a dial)
     Selector, // milestone 3: Interact or a rising input steps it on: 1, 2 ... its positions, then 1 again (a gear selector)
+    BotSpawner, // the Spawn category (GameSandboxSpawns.cs): spawns bots while enabled; puts out how many it has alive
+    ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
     Cargo, // a cargo volume (decision 21; ConstructCargo.cs): frozen or not (Interact flips it; a change of its input sets it); its box carries loose bodies while frozen
 }
 
@@ -214,6 +216,9 @@ public sealed class ConstructPartDef
     public JointType JointType; // hinge: Passive; joint: the rest
     public float MotorSpeed, MotorStrength; // joint: radians (metres for a piston) a second; N m (N for a piston)
     public bool JointLimited = true; // a turntable without min/max turns forever
+    public float JointGive; // joint: how far it has given at twice its rating ("give": metres for a piston, else degrees; radians here)
+    public float SideLoad; // piston: the most load across its axis before it gives ("sideLoad", N; 0: no limit)
+    public float OverloadDamage; // joint: hp a second at twice its rating while overloaded ("overloadDamage"; 0, the default: none)
     public int LeafIndex = -1; // hinge, joint: the leaf socket's index
 
     // Logic (milestone 2)
@@ -249,6 +254,8 @@ public sealed class ConstructPartDef
     public Vector3 DialAt; // the needle's hub (part frame)
     public byte DialDir; // the face it is on (out of the part)
     public float DialMax = 1f; // the signal at full scale (270 degrees)
+    public FaceHint Faces; // smart rotation (SmartRotation.cs): which way its face should point ("faces"; else its role's default)
+    public byte FaceAxis = 5; // ...and which of its own directions is that face ("faceAxis"; -z, its front, by default)
 
     // Drivetrain families (docs/sandbox/CONSTRUCTS.md, "Drivetrain parts"; ConstructDrive.cs)
     public float EngineTorque; // engine: peak torque at the crank, N m
@@ -315,6 +322,16 @@ public sealed class ConstructPartDef
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake));
 
+    /// <summary>
+    /// Named data ports (the spawners; GameSandboxSpawns.cs): the inputs a data link can end at and the outputs it can start
+    /// at. Port 0 is the part itself (every other part has just that one each way); a link names one by
+    /// <see cref="ConstructRoutes.DataPort"/>. Empty: the one port.
+    /// </summary>
+    public string[] DataIn = [], DataOut = [];
+
+    /// <summary>A spawner part (the Spawn category).</summary>
+    public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
+
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
     {
@@ -327,6 +344,7 @@ public sealed class ConstructPartDef
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector => 1,
+            CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
         },
         _ => 0,
@@ -500,7 +518,7 @@ public static partial class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "damaged", "stage",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "damaged", "stage", "faces", "faceAxis",
         "physicsOnly",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
@@ -828,6 +846,7 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: only wheels and suspensions have \"axle\" sockets");
         if (d.Role is not (PartRole.Hinge or PartRole.Door) && d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: only hinges and doors have \"leaf\" sockets");
+        SmartRotation.ParseFaces(d, Opt(root, "faces"), Opt(root, "faceAxis"), file);
         ConstructConfig.Parse(d, root, file); // (last: it folds in the role's own choice and checks the keys fit the part)
         return d;
     }
@@ -923,7 +942,7 @@ public static partial class ConstructParts
     /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
     private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength"], bw);
+        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage"], bw);
         var type = Str(Need(b, "type", bw), file, "joint.type").ToLowerInvariant();
         var ti = Array.IndexOf(JointTypes, type);
         if (ti < 0)
@@ -952,6 +971,15 @@ public static partial class ConstructParts
         Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
         d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
         Range(d.MotorStrength, 1, 1_000_000, file, "joint.strength");
+        // The strength model (ConstructPhysics.cs): how far it gives above its rating, side loads, overload damage (off unless given).
+        d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
+        Range(d.JointGive, 0.001f, piston ? 4f : MathF.PI, file, "joint.give");
+        d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
+        Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
+        if (d.SideLoad > 0 && !piston)
+            throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
+        d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;
+        Range(d.OverloadDamage, 0, 100_000, file, "joint.overloadDamage");
         d.LeafSocket = Str(Need(b, "leaf", bw), file, "joint.leaf");
         d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
         if (d.LeafIndex < 0)
@@ -1079,6 +1107,11 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a {kind} needs \"settings\" (the values its setting cycles through)");
         else if (Opt(b, "labels") != null)
             throw new ConstructPartException($"{file}: a {kind} has no setting");
+        if (d.IsSpawner)
+        {
+            d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)
+            d.DataOut = ["alive", "spawned"]; // (how many it has alive; a pulse each time it spawns)
+        }
         d.SettingName = Opt(b, "settingName") is { } sn ? AsciiText(sn, file, "logic.settingName") : d.Logic switch
         {
             CLogic.Reader => "key",
@@ -1138,7 +1171,7 @@ public static partial class ConstructParts
         _ => -Vector3.UnitZ,
     };
 
-    private static byte DirOf(string s, string file, string where)
+    internal static byte DirOf(string s, string file, string where)
     {
         var i = Array.IndexOf(DirNames, s.ToLowerInvariant());
         return i >= 0 ? (byte)i : throw new ConstructPartException($"{file}: {where}: a direction is one of {string.Join(", ", DirNames)}");

@@ -557,10 +557,11 @@ These are the defaults; everything except Esc and the mouse wheel can be rebound
 | I | Zombies: the parts inventory (pick loose parts and how many to drop; I or Esc closes it) |
 | Tab | Sandbox: the inventory (parts, blueprints, tools; Tab again or Esc closes it). Sandbox has no scoreboard |
 | Arrow keys | Sandbox: turn the ghost part (Left / Right, Up / Down tip it, Shift + Left / Right roll it; R resets it) |
+| Left Shift (with the linking tool) | Sandbox: free routing while held: a node goes on a device instead of ending the link there (rebindable as Free routing; it also sprints) |
 | Middle mouse (hold) | Sandbox: the tool wheel (flick to a tool, let go to take it out; see Sandbox and constructs) |
 | Esc | Close the menu / release the mouse (click to recapture) |
 
-Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, and `binds_version=10` the Sandbox tool wheel on the middle mouse button.
+Interact used to be E and Use equipment F; they swapped (Interact F, tactical equipment E). Older `settings.txt` files are updated once on load (saved as `binds_version=2`): an action still on its old default moves to the new one, a key you rebound yourself stays, and a move that would put two actions on one key is skipped. `binds_version=3` added Chat (all) Enter, Chat (team) Y and Push to talk X: an older file gets each of them only if no other action already uses that key (otherwise it stays unbound; bind it in Settings > Controls). `binds_version=4` added the Audio mixer on F8 the same way, `binds_version=6` the weapon tweak window on F7, `binds_version=7` Drop item T and the Parts inventory I (Zombies), `binds_version=8` the Performance window on F9, `binds_version=9` the dev tools on F6 / F5 / F10, `binds_version=10` the Sandbox tool wheel on the middle mouse button, and `binds_version=14` Free routing (Sandbox linking tool) on Left Shift, which it shares with Sprint.
 
 ### Display
 
@@ -1024,13 +1025,13 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
   in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
   up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
-- **Links** (the linking tool): hold the tool wheel key for the link wheel and pick a **data** cable (signals), a
-  **power** cable, a **pipe** (its style comes from the tank; rest on Pipe to pick another: a wrong one leaks, bursts or
-  makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
+- **Links** (the linking tool): on the tool wheel, point at the linking tool and flick further out onto its outer ring
+  for a **data** cable (signals), a **power** cable, a **pipe** (auto: its style comes from the tank; or a fuel, water,
+  oil or steam pipe: a wrong one leaks, bursts or makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
   button, lever, switch, sensor or gate for data; a battery for power; a tank for a pipe), Fire to place each node on the
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
   at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc
-  cancels. Fire on a link to branch off it. The Edit ring deletes, moves a node, re-routes or highlights every link.
+  cancels. Fire on a link to branch off it. The ring's edit modes delete, move a node, re-route or highlight every link; letting go on the linking tool itself keeps the last pick.
   Links can be shot through (a cut fuel pipe leaks, a cut cable sparks); the wrench or welder mends them. R changes a
   logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor
@@ -1056,6 +1057,23 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box
   cooks off. The yard has a gunner turret, a hood-gun buggy, a sentry, a gun bench and targets.
+- **Spawning bots and zombies** (creative worlds; the inventory's **Spawn** tab): pick a **friendly bot** (on your
+  side: it follows you and fights enemy bots and zombies), an **enemy bot** (fights players and friendly bots) or a
+  **zombie group**; a bot's difficulty (Easy to Insane), its gun (any, a weapon class or one gun) and how many; a zombie
+  group's size, 1 to 500,000 (a slider, a number and presets 10/100/1k/10k/100k/500k; above 100,000 it warns it may be
+  slow), and whether the zombie types are mixed in. **PLACE** closes the window: a ghost circle follows the crosshair
+  (red with the reason in a wall, in mid-air or on a construct), Fire spawns there (again and again), RMB or Esc stops.
+  Up to 64 zombies come as full zombies rising at the spot; a bigger group goes into the mass horde round it (the nearest
+  wake as full zombies). Zombies hunt players and friendly bots and swipe at constructs in their way (doors and panels
+  give way). **CLEAR ALL** removes every spawned bot and zombie. Spawned bots don't respawn. Only the host spawns and
+  clears unless the host ticks "Everyone can spawn"; the host also sets the most bots (16 by default) and zombies
+  (500,000). Survival worlds have no direct spawns.
+- **Spawner parts** (Spawn group): a **Bot Spawner** and a **Zombie Spawner** are parts like any other (wrench, anchored
+  or on a vehicle, moved with the physics gun, saved in blueprints). The configure tool sets what they spawn (team,
+  difficulty and gun; or walkers or mixed types), the rate a minute, the group size, the most alive at once, the total
+  (0: no limit), the radius and whether they start on. With the linking tool their data inputs **enabled**, **spawn
+  now** and **rate** and outputs **alive** (how many it has out) and **spawned** (a pulse) appear in the port picker: a
+  pressure plate can start a wave, a compare on "alive" can stop it. A spawner shows a light while it is on.
 
 Each tool has its own box model in your hands (and in other players' hands), with a crank, sparks or a beam while it
 works; a part you carry sits in your off hand. Parts, blueprints and the tools' models are data files (`Constructs/Parts`,

@@ -514,6 +514,16 @@ public sealed class Player
     public byte Id;
     public string Name = "";
     public BotBrain? Bot; // server-side AI, null for people
+
+    // The Sandbox's spawned bots (GameSandboxSpawns.cs; server): spawned (never respawns), who spawned it directly (255: a
+    // spawner part or nobody), the spawner part it came from (its construct and stable tag; 0: none), its spot, when it
+    // died, and since when a construct has held it up.
+    public bool SbSpawned;
+    public byte SbOwner = 255;
+    public ushort SbBody, SbTag;
+    public byte SbPart;
+    public System.Numerics.Vector3 SbHome;
+    public double SbDeadAt = -1, SbBlockedSince = -1;
     public MoveState Sim; // authoritative on the server, predicted for the local player on a client
     public float Yaw;
     public float Pitch;
