@@ -50,6 +50,11 @@ public static partial class Program
     /// <summary>Esc while routing: cancels the link (true: the key was used).</summary>
     private static bool SandboxLinkEsc()
     {
+        if (_game is { SpawnPlacing: true } sg)
+        {
+            sg.SpawnPlacing = false; // (placing a spawn: Esc stops, Program.SandboxSpawn.cs)
+            return true;
+        }
         if (_lkPicker.IsOpen || _lkBody != 0 || _lkMoveRoute >= 0)
         {
             LinkReset();
@@ -159,10 +164,10 @@ public static partial class Program
     }
 
     /// <summary>The nearest free port of a part to a point (rest frame), and how many it has.</summary>
-    private static int NearestPort(Construct c, int part, Vector3 near, out byte port)
+    private static int NearestPort(Construct c, int part, Vector3 near, out byte port, bool input)
     {
         Span<byte> ports = stackalloc byte[8];
-        var n = ConstructRoutes.Ports(c, part, _lkType, ports);
+        var n = ConstructRoutes.Ports(c, part, _lkType, ports, input);
         port = 255;
         var best = float.MaxValue;
         for (var i = 0; i < n; i++)
@@ -180,16 +185,16 @@ public static partial class Program
     private static void OpenPicker(Construct c, int part, bool end)
     {
         Span<byte> ports = stackalloc byte[8];
-        _lkPickCount = ConstructRoutes.Ports(c, part, _lkType, ports);
+        _lkPickCount = ConstructRoutes.Ports(c, part, _lkType, ports, input: end);
         for (var i = 0; i < _lkPickCount; i++)
         {
             _lkPickPorts[i] = ports[i];
-            _lkPickNames[i] = c.DefOf(part).Sockets[ports[i]].Name;
+            _lkPickNames[i] = ConstructRoutes.PortName(c.DefOf(part), _lkType, ports[i], input: end);
         }
         for (var i = 0; i < _lkPicker.Items.Length; i++)
         {
             var it = _lkPicker.Items[i];
-            it.Label = i < _lkPickCount ? $"port {_lkPickNames[i]}" : "";
+            it.Label = i < _lkPickCount ? _lkType == RouteType.Data ? $"{(end ? "in" : "out")}: {_lkPickNames[i]}" : $"port {_lkPickNames[i]}" : "";
             it.Hint = "";
             it.Enabled = i < _lkPickCount;
             it.Icon = 3;
@@ -400,7 +405,7 @@ public static partial class Program
                 if (input)
                 {
                     endPart = hit.Part;
-                    ports = NearestPort(rc, endPart, p, out endPort);
+                    ports = NearestPort(rc, endPart, p, out endPort, input: true);
                     next = ConstructRoutes.PortPoint(rc, endPart, endPort);
                 }
                 else
@@ -484,7 +489,7 @@ public static partial class Program
                 {
                     _lkType = w.Type;
                     RestPoint(hit, out var p, out _);
-                    var nports = NearestPort(c, hit.Part, p, out var port);
+                    var nports = NearestPort(c, hit.Part, p, out var port, input: false);
                     if (nports == 0)
                         g.SandboxSay($"every port of the {d.Name} is taken");
                     else if (nports > 1)

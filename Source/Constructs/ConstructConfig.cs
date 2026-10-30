@@ -50,6 +50,14 @@ public enum CfgKey : byte
     Strength, // joints: N m (N); brake: %
     Stiffness, // suspension: spring frequency, Hz
     Damping, // suspension: damping ratio
+    Team, // bot spawner: friendly or enemy (GameSandboxSpawns.cs)
+    Difficulty, // bot spawner: Easy .. Insane
+    Loadout, // bot spawner: any gun, or a weapon class
+    Rate, // spawners: spawns a minute
+    Group, // spawners: how many each spawn
+    MaxAlive, // spawners: the most alive at once from it
+    Total, // spawners: how many in all (0: no limit)
+    Mix, // zombie spawner: walkers only, or the zombie types mixed in
     COUNT,
 }
 
@@ -118,7 +126,7 @@ public struct CfgValues
 /// </summary>
 public static class ConstructConfig
 {
-    public const int MaxSlots = 8;
+    public const int MaxSlots = 12; // (12 since the spawners: a bot spawner has 9 settings)
 
     /// <summary>How far away a part can be configured from (metres to the part's centre).</summary>
     public const float Reach = 8f;

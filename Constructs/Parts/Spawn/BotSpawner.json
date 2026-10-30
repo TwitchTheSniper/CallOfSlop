@@ -1,0 +1,216 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Bot Spawner",
+  "description": "Spawns bots while enabled (inputs: enabled, spawn now, rate; outputs: alive, spawned). Set it up with the configure tool.",
+  "role": "logic",
+  "tool": "wrench",
+  "group": "Spawn",
+  "section": "Spawner parts",
+  "attachSeconds": 1.5,
+  "mass": 25,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#2c3c58",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.3,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.06,
+        0.3
+      ],
+      "at": [
+        0,
+        0.18,
+        0
+      ],
+      "color": "#78c0ff",
+      "detail": true
+    },
+    {
+      "size": [
+        0.44,
+        0.04,
+        0.44
+      ],
+      "at": [
+        0,
+        -0.13,
+        0
+      ],
+      "color": "#202226",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "logic": {
+    "kind": "botspawner"
+  },
+  "config": [
+    {
+      "key": "team",
+      "type": "choice",
+      "label": "Team",
+      "group": "Bots",
+      "options": [
+        "friendly",
+        "enemy"
+      ],
+      "default": "enemy",
+      "tooltip": "Friendly bots fight for the players; enemy bots fight players and friendly bots."
+    },
+    {
+      "key": "difficulty",
+      "type": "choice",
+      "label": "Difficulty",
+      "group": "Bots",
+      "options": [
+        "Easy",
+        "Normal",
+        "Hard",
+        "Insane"
+      ],
+      "default": "Normal",
+      "tooltip": "How well they aim and react."
+    },
+    {
+      "key": "loadout",
+      "type": "choice",
+      "label": "Gun",
+      "group": "Bots",
+      "options": [
+        "any",
+        "pistol",
+        "smg",
+        "rifle",
+        "dmr",
+        "sniper",
+        "shotgun",
+        "lmg"
+      ],
+      "default": "any",
+      "tooltip": "Their gun: any, or one of a weapon class."
+    },
+    {
+      "key": "rate",
+      "label": "Rate",
+      "group": "Spawning",
+      "unit": "/min",
+      "min": 0,
+      "max": 600,
+      "step": 0.5,
+      "default": 6,
+      "tooltip": "Groups a minute while enabled (a wired rate input takes over)."
+    },
+    {
+      "key": "group",
+      "label": "Group size",
+      "group": "Spawning",
+      "min": 1,
+      "max": 16,
+      "step": 1,
+      "default": 1,
+      "tooltip": "How many come out each time."
+    },
+    {
+      "key": "maxAlive",
+      "label": "Max alive",
+      "group": "Limits",
+      "min": 1,
+      "max": 64,
+      "step": 1,
+      "default": 4,
+      "tooltip": "The most it has out at once."
+    },
+    {
+      "key": "total",
+      "label": "Total",
+      "group": "Limits",
+      "min": 0,
+      "max": 10000,
+      "step": 1,
+      "default": 0,
+      "tooltip": "How many it spawns in all (0: no limit)."
+    },
+    {
+      "key": "radius",
+      "label": "Radius",
+      "group": "Spawning",
+      "unit": "m",
+      "min": 1.5,
+      "max": 20,
+      "step": 0.5,
+      "default": 4,
+      "tooltip": "How far round it they appear."
+    },
+    {
+      "key": "startOn",
+      "label": "Start on",
+      "group": "Spawning",
+      "default": true,
+      "tooltip": "Spawns with nothing wired into its enabled input."
+    }
+  ]
+}

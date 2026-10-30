@@ -159,7 +159,7 @@ public sealed partial class Game
         ai.ClearTargets();
         // Players standing, in id order (deterministic).
         for (var id = 0; id < 256 && ai.TargetCount < HordeController<Zombie>.MaxTargets; id++)
-            if (Players.TryGetValue((byte)id, out var p) && IsStanding(p))
+            if (Players.TryGetValue((byte)id, out var p) && ZPrey(p))
                 ai.AddTarget(p.Id, p.Position, zm.AreaAt(p.Position));
             else if (id > 0 && Players.Count == 0)
                 break;

@@ -36,6 +36,8 @@ public enum CActKind : byte
     Configure, // u16 body, u8 n, n x u8 part, u8 m, m x (u8 slot, f32 value): the configure tool sets settings (protocol 89)
     Route, // u16 body, u8 type | style << 4, u8 from, u8 from port, u8 parent link, u8 parent segment, 3 x i16 junction (cm), u8 to, u8 to port, u8 nodes, then each: u8 host part, 3 x i16 (cm): a routed link (protocol 90)
     RouteEdit, // u16 body, u8 op, u8 link, u8 node, u8 its source, u8 its to, 3 x i16 (cm), u8 host: delete, move a node, repair (protocol 90)
+    Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 91; GameSandboxSpawns.cs)
+    ClearSpawns, // every spawned bot and zombie goes (protocol 91)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -93,6 +95,7 @@ public sealed partial class Game
         SandboxHands.Reset();
         SandboxHands.ResetPacks(); // (backpacks empty with the match)
         SandboxInv.Reset(); // (salvage: inventories reset with the match, like the constructs)
+        ResetSandboxSpawns(); // (no spawns queued, no spawned zombies: GameSandboxSpawns.cs)
         if (!IsServer)
             return;
         if (had || SandboxOn)
@@ -114,6 +117,8 @@ public sealed partial class Game
         SandboxHands.Reset();
         SandboxHands.ResetPacks();
         SandboxInv.Reset();
+        ResetSandboxSpawns();
+        SpawnPlacing = false;
         _sbPoseTick = 0;
     }
 
@@ -201,6 +206,7 @@ public sealed partial class Game
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
+        SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
         SandboxFireFlush(now); // (before the structure: the shots name the gun parts as they were when they fired)
         SandboxDebris(now);
         SandboxFlush();
@@ -355,6 +361,9 @@ public sealed partial class Game
         SandboxRules();
         switch (kind)
         {
+            case CActKind.Spawn:
+            case CActKind.ClearSpawns:
+                return SandboxSpawnAct(p, kind, ref r); // the Spawn tab (GameSandboxSpawns.cs)
             case CActKind.Tool:
                 return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
             case CActKind.Grab:

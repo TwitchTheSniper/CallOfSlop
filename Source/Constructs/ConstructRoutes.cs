@@ -59,7 +59,7 @@ public struct CRoute
     public RouteType Type;
     public byte Style; // a pipe's PipeStyle (0 for the others)
     public byte From, To; // parts (From is the branch's source part once rebuilt; while Parent is set, From is unused: 255)
-    public byte FromPort, ToPort; // a socket of the part (shafts), or 255: the part itself
+    public byte FromPort, ToPort; // a socket of the part (shafts), a named data port (DataPortBase | k, the spawners), or 255: the part itself
     public byte Parent, ParentNode; // a branch: the link and its node it starts at (255: from a part)
     public ushort Start;
     public byte Count;
@@ -67,6 +67,7 @@ public struct CRoute
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
     public byte Source; // the output part at the root of its tree
+    public byte SourcePort; // the port it leaves that part by (the root link's FromPort)
     public byte FirstCut; // the first destroyed segment (Count + 1: none)
     public bool Fed; // its start is fed (every segment from the source to it intact)
     public float Share0; // its share where it starts (1 from a part; at a junction, the parent's flow there split evenly)
@@ -284,18 +285,36 @@ public static partial class ConstructRoutes
         _ => "end it at a storage part",
     };
 
+    /// <summary>A named data port's byte in a link (<see cref="CRoute.FromPort"/>, <see cref="CRoute.ToPort"/>): port 0 is 255 (the part itself), port k is this | k.</summary>
+    public const byte DataPortBase = 0x80;
+
+    /// <summary>The byte for data port <paramref name="k"/> (0: the part itself, 255).</summary>
+    public static byte DataPortByte(int k) => k <= 0 ? (byte)255 : (byte)(DataPortBase | k);
+
+    /// <summary>A data link's port byte as a port index (255: 0), or -1 for a byte that names no data port.</summary>
+    public static int DataPort(byte port) => port == 255 ? 0 : (port & DataPortBase) != 0 && (port & 0x7F) < 16 ? port & 0x7F : -1;
+
     /// <summary>
     /// The ports of part <paramref name="part"/> a link of type <paramref name="t"/> can use (shafts: its free drive
-    /// sockets; the others: the part itself, port 255). Returns how many were written into <paramref name="ports"/>.
+    /// sockets; a data link at a part with named data ports, the spawners: each of its inputs, or outputs when
+    /// <paramref name="input"/> is false; the others: the part itself, port 255). Returns how many were written into <paramref name="ports"/>.
     /// </summary>
-    public static int Ports(Construct c, int part, RouteType t, Span<byte> ports)
+    public static int Ports(Construct c, int part, RouteType t, Span<byte> ports, bool input = true)
     {
         if (part < 0 || part >= c.PartCount || ports.Length == 0)
             return 0;
         if (t != RouteType.Shaft)
         {
-            ports[0] = 255;
-            return 1;
+            var names = t == RouteType.Data ? input ? c.DefOf(part).DataIn : c.DefOf(part).DataOut : [];
+            if (names.Length <= 1)
+            {
+                ports[0] = 255;
+                return 1;
+            }
+            var k = 0;
+            for (; k < names.Length && k < ports.Length; k++)
+                ports[k] = DataPortByte(k);
+            return k;
         }
         var d = c.DefOf(part);
         var n = 0;
@@ -309,6 +328,38 @@ public static partial class ConstructRoutes
         }
         return n;
     }
+
+    /// <summary>A port's name for the picker and blueprints: a socket's, a named data port's ("spawn now"), or "" for the part itself.</summary>
+    public static string PortName(ConstructPartDef d, RouteType t, byte port, bool input)
+    {
+        if (port == 255)
+            return t == RouteType.Data && (input ? d.DataIn : d.DataOut) is { Length: > 1 } named ? named[0] : "";
+        if (t == RouteType.Data)
+        {
+            var names = input ? d.DataIn : d.DataOut;
+            var k = DataPort(port);
+            return k >= 0 && k < names.Length ? names[k] : "";
+        }
+        return port < d.Sockets.Length ? d.Sockets[port].Name : "";
+    }
+
+    /// <summary>The port byte a name stands for on a part (a socket, or a named data port for a data link), or 255 when there's no such port.</summary>
+    public static byte PortByName(ConstructPartDef d, RouteType t, string name, bool input)
+    {
+        if (t == RouteType.Data)
+        {
+            var names = input ? d.DataIn : d.DataOut;
+            var k = Array.IndexOf(names, name);
+            return k > 0 ? DataPortByte(k) : (byte)255; // (port 0 is the part itself)
+        }
+        for (var s = 0; s < d.Sockets.Length; s++)
+            if (d.Sockets[s].Name == name)
+                return (byte)s;
+        return 255;
+    }
+
+    /// <summary>Does a part have a data port named <paramref name="name"/> (an input, or an output)?</summary>
+    public static bool HasDataPort(ConstructPartDef d, string name, bool input) => Array.IndexOf(input ? d.DataIn : d.DataOut, name) >= 0;
 
     private static bool ShaftOnPort(Construct c, int part, int socket)
     {
@@ -418,6 +469,7 @@ public static partial class ConstructRoutes
             {
                 ref var p = ref c.Routes[r.Parent];
                 r.Source = p.Source;
+                r.SourcePort = p.SourcePort;
                 r.Fed = p.Fed && p.FirstCut > r.ParentNode;
                 // The flow reaching the junction node, shared between the parent's way on and every branch there.
                 arrive = p.Share0;
@@ -429,6 +481,7 @@ public static partial class ConstructRoutes
             else
             {
                 r.Source = r.From;
+                r.SourcePort = r.FromPort;
                 r.Fed = r.From < c.PartCount;
                 arrive = 1f;
             }
@@ -460,10 +513,12 @@ public static partial class ConstructRoutes
             {
                 case RouteType.Data:
                     var dup = false;
+                    var fromK = (byte)Math.Max(0, DataPort(r.SourcePort));
+                    var toK = (byte)Math.Max(0, DataPort(r.ToPort));
                     for (var w = 0; w < c.WireCount && !dup; w++)
-                        dup = c.Wires[w].From == r.Source && c.Wires[w].To == r.To;
+                        dup = c.Wires[w].From == r.Source && c.Wires[w].To == r.To && c.Wires[w].FromPort == fromK && c.Wires[w].ToPort == toK;
                     if (!dup && c.WireCount < Construct.MaxWires)
-                        c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To };
+                        c.Wires[c.WireCount++] = new CWire { From = r.Source, To = r.To, FromPort = fromK, ToPort = toK };
                     break;
                 case RouteType.Shaft:
                     if (r.Parent == 255 && c.ShaftEdgeCount < Construct.MaxRoutes)
@@ -563,8 +618,9 @@ public static partial class ConstructRoutes
             if (c.RoutesInto(to, RouteType.Data) >= td.MaxInputs)
                 return $"a {td.Name} takes at most {td.MaxInputs} input{(td.MaxInputs == 1 ? "" : "s")}";
         }
+        var srcPort = parent != 255 ? c.Routes[parent].SourcePort : fromPort;
         for (var k = 0; k < c.RouteCount; k++)
-            if (c.Routes[k].Type == type && c.Routes[k].Source == source && c.Routes[k].To == to)
+            if (c.Routes[k].Type == type && c.Routes[k].Source == source && c.Routes[k].To == to && (type != RouteType.Data || c.Routes[k].SourcePort == srcPort && c.Routes[k].ToPort == toPort))
                 return "those are already linked";
         if (type == RouteType.Shaft)
         {
@@ -575,6 +631,14 @@ public static partial class ConstructRoutes
                 return $"that port of the {fd.Name} is taken or carries no drive";
             if (!Contains(ports[..Ports(c, to, type, ports)], toPort))
                 return $"that port of the {td.Name} is taken or carries no drive";
+        }
+        else if (type == RouteType.Data && (fromPort != 255 || toPort != 255))
+        {
+            // Named data ports (the spawners): an output port of the source, an input port of the part it goes into.
+            var fk = DataPort(fromPort);
+            var tk = DataPort(toPort);
+            if (fk < 0 || fromPort != 255 && (parent != 255 || fk >= fd.DataOut.Length) || tk < 0 || toPort != 255 && tk >= td.DataIn.Length)
+                return "that part has no such data port";
         }
         else if (fromPort != 255 || toPort != 255)
             return "only a drive shaft goes into a socket";

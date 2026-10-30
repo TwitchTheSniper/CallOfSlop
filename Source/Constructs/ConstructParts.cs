@@ -95,6 +95,8 @@ public enum CLogic : byte
     FuelGauge, // milestone 3: its construct's fuel, 0..1 of what the tanks hold (a dial)
     ChargeGauge, // milestone 3: its construct's charge, 0..1 of what the batteries hold (a dial)
     Selector, // milestone 3: Interact or a rising input steps it on: 1, 2 ... its positions, then 1 again (a gear selector)
+    BotSpawner, // the Spawn category (GameSandboxSpawns.cs): spawns bots while enabled; puts out how many it has alive
+    ZombieSpawner, // the Spawn category: spawns zombies while enabled; puts out how many it has alive
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -293,6 +295,16 @@ public sealed class ConstructPartDef
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
     public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake));
 
+    /// <summary>
+    /// Named data ports (the spawners; GameSandboxSpawns.cs): the inputs a data link can end at and the outputs it can start
+    /// at. Port 0 is the part itself (every other part has just that one each way); a link names one by
+    /// <see cref="ConstructRoutes.DataPort"/>. Empty: the one port.
+    /// </summary>
+    public string[] DataIn = [], DataOut = [];
+
+    /// <summary>A spawner part (the Spawn category).</summary>
+    public bool IsSpawner => Logic is CLogic.BotSpawner or CLogic.ZombieSpawner;
+
     /// <summary>How many wires may come into it (0: it takes no input).</summary>
     public int MaxInputs => Role switch
     {
@@ -305,6 +317,7 @@ public sealed class ConstructPartDef
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
             CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector => 1,
+            CLogic.BotSpawner or CLogic.ZombieSpawner => 6, // (over its three inputs)
             _ => 4,
         },
         _ => 0,
@@ -1004,6 +1017,11 @@ public static partial class ConstructParts
             throw new ConstructPartException($"{file}: a {kind} needs \"settings\" (the values its setting cycles through)");
         else if (Opt(b, "labels") != null)
             throw new ConstructPartException($"{file}: a {kind} has no setting");
+        if (d.IsSpawner)
+        {
+            d.DataIn = ["enabled", "spawn now", "rate"]; // (GameSandboxSpawns.cs: on/off, a pulse, spawns a minute)
+            d.DataOut = ["alive", "spawned"]; // (how many it has alive; a pulse each time it spawns)
+        }
         d.SettingName = Opt(b, "settingName") is { } sn ? AsciiText(sn, file, "logic.settingName") : d.Logic switch
         {
             CLogic.Reader => "key",

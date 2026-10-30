@@ -37,6 +37,12 @@ public sealed class SandboxModule : GameModeModule
 
     public override void OnSpawn(Game game, Player p) => game.SandboxOnSpawn(p);
 
+    /// <summary>Spawned bots never come back (GameSandboxSpawns.cs): dead, they go.</summary>
+    public override bool CanRespawn(Game game, Player p, double now) => !p.SbSpawned;
+
+    /// <summary>Spawned bots: friendly ones follow (or fight zombies near them), enemy ones hunt (GameSandboxSpawns.cs).</summary>
+    public override bool BotTick(Game game, Player bot, BotBrain brain, double now) => game.SandboxBotTick(bot, brain, now);
+
     public override void OnPlayerLeave(Game game, Player p)
     {
         game.SandboxStand(p, teleport: false);
@@ -57,6 +63,11 @@ public sealed class SandboxModule : GameModeModule
             case (byte)Msg.CAct:
             case (byte)Msg.CFire:
                 game.OnSandboxPacket(id, ref r, sender, now);
+                return true;
+            case (byte)Msg.ZEnts:
+            case (byte)Msg.ZEvent:
+            case (byte)Msg.ZCrowd:
+                game.OnZombiesPacket(id, ref r, sender, now); // the spawned zombies (GameSandboxSpawns.cs)
                 return true;
             default:
                 return false;
@@ -136,6 +147,7 @@ public sealed class SandboxModule : GameModeModule
         ConstructRender.DrawGhosts(gfx, now);
         ConstructRender.DrawWires(gfx, game.Constructs); // (only while the linking tool is out)
         ConstructRender.DrawConfigPreview(gfx, game.Constructs); // (only while a part's settings panel is open)
+        ConstructRender.DrawSpawnGhost(gfx, game, now); // (only while placing a spawn: GameSandboxSpawns.cs)
     }
 
     public override string? SelfTestVerify(Game game) =>

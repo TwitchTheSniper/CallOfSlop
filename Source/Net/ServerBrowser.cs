@@ -201,7 +201,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     (data, power, pipe, shaft, chute: endpoints, junction, nodes on the 1 cm grid, segment health) in place of its wires;
     //     CAct.Route / RouteEdit at the end of CActKind; part ids are two bytes everywhere (CBody parts, stores, the inventory,
     //     the mode-state tail's held part, CAct.Rack's pick).
-    public const byte ProtocolVersion = 90;
+    // 91: Sandbox spawns (docs/sandbox/CONSTRUCTS.md "Spawning bots and zombies"): CAct.Spawn / ClearSpawns at the end of
+    //     CActKind; routed data links may name a part's data port (0x80 | k: the Bot and Zombie Spawners' inputs and
+    //     outputs); a part takes up to 12 settings (CAct.Configure); the Sandbox relays the zombie messages (ZEnts, ZEvent, ZCrowd).
+    public const byte ProtocolVersion = 91;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

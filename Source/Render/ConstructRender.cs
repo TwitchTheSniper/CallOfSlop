@@ -292,6 +292,11 @@ public static partial class ConstructRender
                     ? ConstructConfig.Rgb(PreviewValue(d, CfgKey.Colour, 0xFFED99)) * (PreviewValue(d, CfgKey.Brightness, 100) / 100f)
                     : ConstructConfig.Rgb(ConstructConfig.Get(p, d, CfgKey.Colour, 0xFFED99)) * (ConstructConfig.Get(p, d, CfgKey.Brightness, 100) / 100f);
         }
+        if (d.IsSpawner && ConstructSpawners.Active(c, i))
+        {
+            lit = true; // a spawner that is on shows its light (GameSandboxSpawns.cs)
+            glow = d.Logic == CLogic.BotSpawner ? new Vector3(0.45f, 0.75f, 1f) : new Vector3(0.6f, 1f, 0.35f);
+        }
         if (d.HasDial && !p.Broken)
         {
             DrawNeedle(gfx, d, p, Matrix4x4.CreateFromQuaternion(Rot24.Quat(p.Rot)) * Matrix4x4.CreateTranslation(p.Pos) * seg * body);
@@ -580,6 +585,24 @@ public static partial class ConstructRender
     private static bool _ghostThrew;
 
     /// <summary>The ghost sockets (blended, depth-tested, no depth write): small markers on every free socket the held part fits, the chosen one as the whole part.</summary>
+    /// <summary>The Sandbox's spawn placement: a ghost circle where the spawn would stand, green when it can, red when not (GameSandboxSpawns.cs).</summary>
+    public static void DrawSpawnGhost(Renderer gfx, Game game, double now)
+    {
+        if (!game.SpawnPlacing || !game.SpawnGhostShown)
+            return;
+        var colour = game.SpawnGhostOk ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
+        var radius = game.SpawnPick == SbSpawnKind.Zombies ? MathF.Min(12f, MathF.Max(1f, MathF.Sqrt(game.SpawnZombies) * 0.45f)) : 0.8f + 0.3f * MathF.Min(game.SpawnBots, 8);
+        var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
+        const int n = 24;
+        for (var k = 0; k < n; k++)
+        {
+            var a = k * MathF.Tau / n;
+            var at = game.SpawnGhost + new Vector3(MathF.Sin(a) * radius, 0.05f, MathF.Cos(a) * radius);
+            gfx.Draw(Matrix4x4.CreateScale(0.12f + radius * 0.2f, 0.04f, 0.08f) * Matrix4x4.CreateRotationY(a) * Matrix4x4.CreateTranslation(at), colour, 0.8f * pulse, mode: 2);
+        }
+        gfx.Draw(Matrix4x4.CreateScale(0.12f, 1.8f, 0.12f) * Matrix4x4.CreateTranslation(game.SpawnGhost + new Vector3(0, 0.9f, 0)), colour, 0.35f * pulse, mode: 2);
+    }
+
     public static void DrawGhosts(Renderer gfx, double now)
     {
         try
