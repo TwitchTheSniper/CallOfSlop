@@ -11,8 +11,13 @@ namespace CallOfSlop;
 /// <item>between constructs: hull points of one against the part boxes of the other;</item>
 /// <item>wheels are raycast wheels: a spring-damper along the suspension, side grip, drive and brakes, clamped to a
 /// friction circle;</item>
-/// <item>joints are angles (reduced coordinates): a passive hinge swings, damped, between its limits;</item>
-/// <item>a body that stays still sleeps and costs nothing until something wakes it.</item>
+/// <item>joints are angles (reduced coordinates), and the parts beyond them collide too: each segment has its own
+/// contact points (<see cref="Construct.SegPoints"/>) probed like the hull's (and swept against other constructs when
+/// they move fast), and every contact's impulse acts on the body and on each joint up its segment's chain at once
+/// (generalised velocities: the body's six and one per joint). The motors and the joint limits are solved in the same
+/// loop, so a blocked piece stops its joint: a passive hinge rests on the ground, a motor stalls at its strength or, if
+/// it is strong enough, lifts or pushes its construct;</item>
+/// <item>a body that stays still sleeps and costs nothing until something wakes it (an anchored one with joints too).</item>
 /// </list>
 /// Everything uses fixed arrays: no allocation per tick.
 /// </summary>
@@ -24,8 +29,10 @@ public static class ConstructPhysics
     public const float Beta = 0.25f;
     public const float MaxSpeed = 60f;
     public const float MaxSpin = 18f;
+    public const float MaxJointSpin = 25f; // radians (or metres) a second: anything faster is clamped
     public const int SleepAfterTicks = 40;
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
+    public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
 
     public struct Contact
     {
@@ -36,26 +43,51 @@ public static class ConstructPhysics
         public float Jn, Jt1, Jt2; // accumulated impulses
         public Vector3 T1, T2;
         public float MassN, MassT1, MassT2, Bias;
+        public Vector3 RA, RB; // from each body's centre of mass
+        public int UA, UB; // each side's joint chain in the chain arrays (start; the count is NA, NB)
+        public byte NA, NB;
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
     private static int _contactCount;
-    private static Matrix4x4[] _invI = new Matrix4x4[ConstructWorld.MaxBodies];
+    private static readonly Matrix4x4[] _invI = new Matrix4x4[ConstructWorld.MaxBodies];
+    private static readonly bool[] _dyn = new bool[ConstructWorld.MaxBodies]; // the body itself moves (free and awake)
+    private static readonly bool[] _jact = new bool[ConstructWorld.MaxBodies]; // its joints move (awake, with joints)
+
+    // Joints this tick, by slot (body index * MaxJoints + joint): their world axis and pivot, inverse inertia, motor and limits.
+    private const int Slots = ConstructWorld.MaxBodies * Construct.MaxJoints;
+    private static readonly Vector3[] _jAxis = new Vector3[Slots], _jPivot = new Vector3[Slots];
+    private static readonly float[] _jInvI = new float[Slots], _jWant = new float[Slots], _jMotorMax = new float[Slots];
+    private static readonly float[] _jLoB = new float[Slots], _jHiB = new float[Slots], _jP = new float[Slots], _jLo = new float[Slots], _jHi = new float[Slots];
+    private static readonly short[] _active = new short[Slots];
+    private static int _activeCount;
+    // Segment frames this tick (body index * (MaxJoints + 1) + segment).
+    private static readonly Quaternion[] _segQ = new Quaternion[ConstructWorld.MaxBodies * (Construct.MaxJoints + 1)];
+    private static readonly Vector3[] _segT = new Vector3[ConstructWorld.MaxBodies * (Construct.MaxJoints + 1)];
+    // A contact's joint chain: for each joint up its segment's chain, the velocity a unit of joint speed gives the point.
+    private static readonly Vector3[] _chainU = new Vector3[MaxChain];
+    private static readonly short[] _chainSlot = new short[MaxChain];
+    private static int _chainCount;
+    private static IList<Construct> _bodies = Array.Empty<Construct>();
 
     public static int LastContacts => _contactCount;
     public static int LastRays { get; private set; }
+    /// <summary>Of <see cref="LastContacts"/>, how many were on parts beyond joints.</summary>
+    public static int LastJointContacts { get; private set; }
 
     public static float GravityAccel => World.Gravity * World.GravityScale;
 
-    /// <summary>One tick for every awake free body of <paramref name="world"/>.</summary>
+    /// <summary>One tick for every awake free body of <paramref name="world"/>, and the joints of every awake body.</summary>
     public static void Step(ConstructWorld world, IWorldQuery query, float dt)
     {
         var bodies = world.Bodies;
-        var n = bodies.Count;
-        if (_invI.Length < n)
-            _invI = new Matrix4x4[n];
+        _bodies = bodies;
+        var n = Math.Min(bodies.Count, ConstructWorld.MaxBodies);
         _contactCount = 0;
+        _chainCount = 0;
+        _activeCount = 0;
         LastRays = 0;
+        LastJointContacts = 0;
         var g = new Vector3(0, -GravityAccel, 0);
         for (var i = 0; i < n; i++)
         {
@@ -66,28 +98,36 @@ public static class ConstructPhysics
             c.PrevRot = c.Rot;
             for (var j = 0; j < c.JointCount; j++)
                 c.Joints[j].PrevAngle = c.Joints[j].Angle;
-            if (c.Anchored || c.Asleep)
+            if (c.Asleep && c.JointCount > 0)
+                WakeCheck(c);
+            _dyn[i] = !c.Anchored && !c.Asleep;
+            _jact[i] = !c.Asleep && c.JointCount > 0;
+            _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
+            if (_dyn[i])
             {
-                _invI[i] = default;
-                StepJoints(c, dt);
-                continue;
+                c.Vel += g * dt;
+                if (c.WheelCount > 0)
+                    Wheels(c, query, _invI[i], dt);
+                WorldContacts(c, (short)i, query, dt);
             }
-            _invI[i] = c.InvInertiaWorld();
-            c.Vel += g * dt;
-            if (c.WheelCount > 0)
-                Wheels(c, query, _invI[i], dt);
-            WorldContacts(c, (short)i, query, dt);
+            if (_jact[i])
+            {
+                JointPrep(c, i, dt);
+                SegmentWorldContacts(c, (short)i, query, dt);
+                SegmentEdgeContacts(c, (short)i, query, dt);
+            }
         }
-        BodyContacts(world, dt);
-        Solve(world, dt);
+        BodyContacts(world, n, dt);
+        Solve(dt);
         for (var i = 0; i < n; i++)
         {
             var c = bodies[i];
-            if (c.Anchored || c.Asleep)
-                continue;
-            Integrate(c, dt);
-            StepJoints(c, dt);
-            Sleep(c);
+            if (_dyn[i])
+                Integrate(c, dt);
+            if (_jact[i])
+                IntegrateJoints(c, dt);
+            if (_dyn[i] || _jact[i])
+                Sleep(c);
         }
     }
 
@@ -215,37 +255,122 @@ public static class ConstructPhysics
     private static void WorldContacts(Construct c, short index, IWorldQuery query, float dt)
     {
         var com = c.WorldCom;
-        var up = Vector3.UnitY;
         for (var k = 0; k < c.PointCount; k++)
         {
             if (_contactCount >= MaxContacts - 2)
                 return;
             var p = c.ToWorld(c.Points[k]);
             var v = c.Vel + Vector3.Cross(c.AngVel, p - com);
-            // Down: the ground under this corner.
-            const float lift = 0.4f;
-            var reach = lift + MathF.Max(0.05f, -v.Y * dt * 2 + 0.05f);
-            LastRays++;
-            if (query.Raycast(p + up * lift, -up, reach, QueryFilter.All, out var hit))
-                Add(index, -1, p, hit.Normal, hit.Distance - lift, 0.7f);
-            // Along the motion: walls and kerbs.
-            var speed = v.Length();
-            if (speed * dt > 0.002f)
-            {
-                var dir = v / speed;
-                if (dir.Y > -0.7f && dir.Y < 0.5f) // (straight down is the first ray's job; rising points never meet a wall that matters)
-                {
-                    const float back = 0.25f;
-                    LastRays++;
-                    if (query.Raycast(p - dir * back, dir, back + speed * dt + 0.05f, QueryFilter.All, out var hit2) && hit2.Distance > 1e-3f && Vector3.Dot(hit2.Normal, dir) < -0.1f) // (a ray starting inside something tells nothing)
-                        Add(index, -1, p, hit2.Normal, (hit2.Distance - back) * MathF.Max(0.1f, -Vector3.Dot(hit2.Normal, dir)), 0.6f);
-                }
-            }
+            ProbeWorld(index, p, v, query, dt, 0, 0);
         }
     }
 
-    private static void Add(short a, short b, Vector3 p, Vector3 n, float gap, float friction)
+    /// <summary>
+    /// A point's two rays against the world: down (the ground under it) and along its motion (walls, kerbs, and for a fast
+    /// piece the whole of this tick's travel, so a long arm swung hard can't pass through a thin wall between ticks).
+    /// </summary>
+    private static bool ProbeWorld(short index, Vector3 p, Vector3 v, IWorldQuery query, float dt, int u0, int un)
     {
+        var up = Vector3.UnitY;
+        var added = false;
+        // Down: the ground under this corner.
+        const float lift = 0.4f;
+        var reach = lift + MathF.Max(0.05f, -v.Y * dt * 2 + 0.05f);
+        LastRays++;
+        if (query.Raycast(p + up * lift, -up, reach, QueryFilter.All, out var hit))
+            added |= Add(index, -1, p, hit.Normal, hit.Distance - lift, 0.7f, u0, un);
+        // Along the motion: walls and kerbs.
+        var speed = v.Length();
+        if (speed * dt > 0.002f)
+        {
+            var dir = v / speed;
+            if (dir.Y > -0.7f && (dir.Y < 0.5f || un > 0)) // (straight down is the first ray's job; a rising hull point never meets a wall that matters, a rising arm may)
+                added |= ProbeMotion(index, p, v, query, dt, u0, un);
+        }
+        return added;
+    }
+
+    /// <summary>A point's ray along its motion (from a little behind it to this tick's travel and a bit): a speculative contact with what it would reach.</summary>
+    private static bool ProbeMotion(short index, Vector3 p, Vector3 v, IWorldQuery query, float dt, int u0, int un)
+    {
+        var speed = v.Length();
+        if (speed * dt <= 0.002f)
+            return false;
+        var dir = v / speed;
+        const float back = 0.25f;
+        LastRays++;
+        return query.Raycast(p - dir * back, dir, back + speed * dt + 0.05f, QueryFilter.All, out var hit) && hit.Distance > 1e-3f && Vector3.Dot(hit.Normal, dir) < -0.1f // (a ray starting inside something tells nothing)
+               && Add(index, -1, p, hit.Normal, (hit.Distance - back) * MathF.Max(0.1f, -Vector3.Dot(hit.Normal, dir)), 0.6f, u0, un);
+    }
+
+    /// <summary>
+    /// The long edges of the parts beyond the joints against the world: each edge is cast where it is now and where it
+    /// will be through this tick (a few steps when it moves far), and where one meets something the point of the edge
+    /// there gets a ray along its motion like any other: a post or a kerb between two of a part's points still stops it.
+    /// </summary>
+    private static void SegmentEdgeContacts(Construct c, short index, IWorldQuery query, float dt)
+    {
+        var com = c.WorldCom;
+        var baseSeg = index * (Construct.MaxJoints + 1);
+        for (var k = 0; k < c.SegEdgeCount; k++)
+        {
+            if (_contactCount >= MaxContacts - 1)
+                return;
+            int seg = c.SegEdgeSeg[k];
+            if (seg > c.JointCount)
+                continue;
+            var sq = _segQ[baseSeg + seg];
+            var st = _segT[baseSeg + seg];
+            var a = st + Vector3.Transform(c.SegEdgeA[k], sq);
+            var b = st + Vector3.Transform(c.SegEdgeB[k], sq);
+            if (Chain(c, index, seg, a, out var va) < 0 || Chain(c, index, seg, b, out var vb) < 0)
+                return;
+            if (_dyn[index])
+            {
+                va += c.Vel + Vector3.Cross(c.AngVel, a - com);
+                vb += c.Vel + Vector3.Cross(c.AngVel, b - com);
+            }
+            var sweep = MathF.Max(va.Length(), vb.Length()) * dt;
+            if (sweep < 0.002f)
+                continue; // (still: its points hold it)
+            var steps = Math.Clamp((int)MathF.Ceiling(sweep / 0.15f), 1, 4);
+            var f = -1f;
+            for (var s = 0; s <= steps && f < 0; s++)
+            {
+                var along = dt * s / steps;
+                var a1 = a + va * along;
+                var ab = b + vb * along - a1;
+                var len = ab.Length();
+                if (len < 1e-3f)
+                    continue;
+                LastRays++;
+                if (!query.Raycast(a1, ab / len, len, QueryFilter.All, out var hit))
+                    continue;
+                // Where the edge comes out again (cast back from its far end): the middle of the piece in the way is what it meets.
+                var enter = hit.Distance / len;
+                var exit = 1f;
+                LastRays++;
+                if (query.Raycast(a1 + ab, -ab / len, len - hit.Distance, QueryFilter.All, out var back))
+                    exit = 1 - back.Distance / len;
+                f = (enter + MathF.Max(enter, exit)) * 0.5f;
+            }
+            if (f < 0 || f > 1)
+                continue;
+            var p = a + (b - a) * f;
+            var un = Chain(c, index, seg, p, out var v);
+            if (un < 0)
+                return;
+            if (_dyn[index])
+                v += c.Vel + Vector3.Cross(c.AngVel, p - com);
+            if (ProbeMotion(index, p, v, query, dt, _chainCount, un))
+                _chainCount += un;
+        }
+    }
+
+    private static bool Add(short a, short b, Vector3 p, Vector3 n, float gap, float friction, int ua = 0, int na = 0, int ub = 0, int nb = 0)
+    {
+        if (_contactCount >= MaxContacts)
+            return false;
         ref var ct = ref _contacts[_contactCount++];
         ct = default;
         ct.A = a;
@@ -254,18 +379,75 @@ public static class ConstructPhysics
         ct.Normal = n;
         ct.Gap = gap;
         ct.Friction = friction;
+        ct.UA = ua;
+        ct.NA = (byte)na;
+        ct.UB = ub;
+        ct.NB = (byte)nb;
+        if (na + nb > 0)
+            LastJointContacts++;
+        return true;
     }
 
-    /// <summary>Hull points of each moving body against the part boxes of every body near it.</summary>
-    private static void BodyContacts(ConstructWorld world, float dt)
+    /// <summary>
+    /// Writes the joint chain of a point on segment <paramref name="seg"/> of body <paramref name="index"/> into the chain
+    /// arrays (not yet kept: <see cref="_chainCount"/> moves on only when a contact uses it), and the velocity the joints may
+    /// give the point this tick (for the probes). Returns how many joints, -1 when full.
+    /// </summary>
+    private static int Chain(Construct c, int index, int seg, Vector3 p, out Vector3 vel)
+    {
+        vel = Vector3.Zero;
+        var n = 0;
+        for (var guard = 0; seg > 0 && seg <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            if (_chainCount + n >= MaxChain)
+                return -1;
+            var j = seg - 1;
+            var slot = index * Construct.MaxJoints + j;
+            var u = c.Joints[j].Slides ? _jAxis[slot] : Vector3.Cross(_jAxis[slot], p - _jPivot[slot]);
+            _chainU[_chainCount + n] = u;
+            _chainSlot[_chainCount + n] = (short)slot;
+            // (the speed it may reach this tick: a motor can get to what it wants, so a stalled arm still looks ahead)
+            var jv = c.Joints[j].Vel;
+            vel += u * (_jMotorMax[slot] > 0 && MathF.Abs(_jWant[slot]) > MathF.Abs(jv) ? _jWant[slot] : jv);
+            n++;
+            seg = c.Joints[j].ParentSeg;
+        }
+        return n;
+    }
+
+    /// <summary>The parts beyond the joints against the world: each segment's points, moving with the body and every joint up their chain.</summary>
+    private static void SegmentWorldContacts(Construct c, short index, IWorldQuery query, float dt)
+    {
+        var com = c.WorldCom;
+        var baseSeg = index * (Construct.MaxJoints + 1);
+        for (var k = 0; k < c.SegPointCount; k++)
+        {
+            if (_contactCount >= MaxContacts - 2)
+                return;
+            int seg = c.SegPointSeg[k];
+            if (seg > c.JointCount)
+                continue;
+            var p = _segT[baseSeg + seg] + Vector3.Transform(c.SegPoints[k], _segQ[baseSeg + seg]);
+            var un = Chain(c, index, seg, p, out var v);
+            if (un < 0)
+                return;
+            if (_dyn[index])
+                v += c.Vel + Vector3.Cross(c.AngVel, p - com);
+            if (ProbeWorld(index, p, v, query, dt, _chainCount, un))
+                _chainCount += un;
+        }
+    }
+
+    /// <summary>Hull points (and the points beyond joints) of each moving body against the part boxes of every body near it.</summary>
+    private static void BodyContacts(ConstructWorld world, int n, float dt)
     {
         var bodies = world.Bodies;
-        for (var i = 0; i < bodies.Count; i++)
+        for (var i = 0; i < n; i++)
         {
-            var a = bodies[i];
-            if (a.Anchored || a.Asleep)
+            if (!_dyn[i] && !_jact[i])
                 continue;
-            for (var j = 0; j < bodies.Count; j++)
+            var a = bodies[i];
+            for (var j = 0; j < n; j++)
             {
                 if (i == j)
                     continue;
@@ -273,11 +455,112 @@ public static class ConstructPhysics
                 var reach = a.Radius + b.Radius;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
-                if (b.Asleep && !b.Anchored)
-                    b.Wake();
-                PointsAgainst(a, (short)i, b, (short)j);
+                if (_dyn[i] && b.Asleep && !b.Anchored)
+                    b.Wake(); // (moves from the next tick)
+                if (_dyn[i])
+                    PointsAgainst(a, (short)i, b, (short)j);
+                if (_jact[i])
+                {
+                    SegPointsAgainst(a, (short)i, b, (short)j, dt);
+                    if (!_dyn[j])
+                        PointsIntoSegments(a, (short)i, b, (short)j); // (a moving b's own points do this the other way round)
+                }
             }
         }
+    }
+
+    /// <summary>Is a point at world <paramref name="p"/> inside one of <paramref name="b"/>'s part boxes: the shallowest way out, and the part's segment.</summary>
+    private static bool Inside(Construct b, Vector3 p, out Vector3 normal, out float pen, out int seg)
+    {
+        pen = float.MaxValue;
+        normal = Vector3.Zero;
+        seg = 0;
+        for (var pi = 0; pi < b.PartCount; pi++)
+        {
+            ref var part = ref b.Parts[pi];
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
+            var boxes = part.D.SolidBoxes;
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                b.BoxOf(pi, bi, out var centre, out var half);
+                var d = local - centre;
+                var o = half + new Vector3(0.02f) - Vector3.Abs(d);
+                if (o.X <= 0 || o.Y <= 0 || o.Z <= 0)
+                    continue;
+                // The shallowest way out.
+                Vector3 nLocal;
+                float pn;
+                if (o.X < o.Y && o.X < o.Z)
+                {
+                    pn = o.X;
+                    nLocal = new Vector3(MathF.Sign(d.X) is var s && s == 0 ? 1 : s, 0, 0);
+                }
+                else if (o.Y < o.Z)
+                {
+                    pn = o.Y;
+                    nLocal = new Vector3(0, MathF.Sign(d.Y) is var s && s == 0 ? 1 : s, 0);
+                }
+                else
+                {
+                    pn = o.Z;
+                    nLocal = new Vector3(0, 0, MathF.Sign(d.Z) is var s && s == 0 ? 1 : s);
+                }
+                if (pn < pen)
+                {
+                    pen = pn;
+                    normal = Vector3.Transform(nLocal, q);
+                    seg = part.Seg;
+                }
+            }
+        }
+        return pen < float.MaxValue;
+    }
+
+    /// <summary>The nearest of <paramref name="b"/>'s part boxes along a ray (its distance, entry normal and segment).</summary>
+    private static bool RayBody(Construct b, Vector3 origin, Vector3 dir, float maxDist, out float dist, out Vector3 normal, out int seg)
+    {
+        dist = maxDist;
+        normal = Vector3.Zero;
+        seg = 0;
+        var found = false;
+        for (var pi = 0; pi < b.PartCount; pi++)
+        {
+            ref var part = ref b.Parts[pi];
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var iq = Quaternion.Conjugate(q);
+            var lo = Vector3.Transform(origin - t, iq);
+            var ld = Vector3.Transform(dir, iq);
+            var boxes = part.D.SolidBoxes;
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                b.BoxOf(pi, bi, out var centre, out var half);
+                if (Geometry.RayAabb(centre - half, centre + half, lo, ld, dist) is { } d && d < dist)
+                {
+                    dist = d;
+                    found = true;
+                    seg = part.Seg;
+                    normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
+                }
+            }
+        }
+        return found;
+    }
+
+    /// <summary>The other side of a contact on <paramref name="b"/>: its index (-1: it can't move there) and its joint chain at the point.</summary>
+    private static short OtherSide(Construct b, short ib, int seg, Vector3 p, out int u0, out int un)
+    {
+        u0 = _chainCount;
+        un = 0;
+        if (seg > 0 && _jact[ib])
+        {
+            un = Chain(b, ib, seg, p, out _);
+            if (un < 0)
+                un = 0;
+        }
+        else if (seg > 0 && b.Asleep)
+            b.Wake(); // something pushes a sleeping joint: it answers from the next tick
+        return _dyn[ib] || un > 0 ? ib : (short)-1;
     }
 
     private static void PointsAgainst(Construct a, short ia, Construct b, short ib)
@@ -291,94 +574,238 @@ public static class ConstructPhysics
             var p = a.ToWorld(a.Points[k]);
             if (Vector3.DistanceSquared(p, bc) > r2)
                 continue;
-            var bestPen = float.MaxValue;
-            var bestN = Vector3.Zero;
-            for (var pi = 0; pi < b.PartCount; pi++)
-            {
-                ref var part = ref b.Parts[pi];
-                b.WorldFrame(part.Seg, out var q, out var t);
-                var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
-                var boxes = part.D.SolidBoxes;
-                for (var bi = 0; bi < boxes; bi++)
-                {
-                    b.BoxOf(pi, bi, out var centre, out var half);
-                    var d = local - centre;
-                    var o = half + new Vector3(0.02f) - Vector3.Abs(d);
-                    if (o.X <= 0 || o.Y <= 0 || o.Z <= 0)
-                        continue;
-                    // The shallowest way out.
-                    Vector3 nLocal;
-                    float pen;
-                    if (o.X < o.Y && o.X < o.Z)
-                    {
-                        pen = o.X;
-                        nLocal = new Vector3(MathF.Sign(d.X) is var s && s == 0 ? 1 : s, 0, 0);
-                    }
-                    else if (o.Y < o.Z)
-                    {
-                        pen = o.Y;
-                        nLocal = new Vector3(0, MathF.Sign(d.Y) is var s && s == 0 ? 1 : s, 0);
-                    }
-                    else
-                    {
-                        pen = o.Z;
-                        nLocal = new Vector3(0, 0, MathF.Sign(d.Z) is var s && s == 0 ? 1 : s);
-                    }
-                    if (pen < bestPen)
-                    {
-                        bestPen = pen;
-                        bestN = Vector3.Transform(nLocal, q);
-                    }
-                }
-            }
-            if (bestPen < float.MaxValue)
-                Add(ia, b.Anchored ? (short)-1 : ib, p, bestN, -(bestPen - 0.02f), 0.6f);
+            if (!Inside(b, p, out var normal, out var pen, out var seg))
+                continue;
+            var other = OtherSide(b, ib, seg, p, out var u0, out var un);
+            if (Add(ia, other, p, normal, -(pen - 0.02f), 0.6f, 0, 0, u0, other >= 0 ? un : 0) && other >= 0)
+                _chainCount += un;
         }
     }
 
-    private static void Solve(ConstructWorld world, float dt)
+    /// <summary>
+    /// The hull points of a body that doesn't move itself (anchored, or asleep) against the parts beyond
+    /// <paramref name="a"/>'s joints: a thin wall's corners inside a swinging door stop the door.
+    /// </summary>
+    private static void PointsIntoSegments(Construct a, short ia, Construct b, short ib)
     {
-        var bodies = world.Bodies;
+        var ac = a.WorldCom;
+        var r2 = a.Radius * a.Radius;
+        for (var k = 0; k < b.PointCount; k++)
+        {
+            if (_contactCount >= MaxContacts - 1)
+                return;
+            var p = b.ToWorld(b.Points[k]);
+            if (Vector3.DistanceSquared(p, ac) > r2)
+                continue;
+            if (!Inside(a, p, out var normal, out var pen, out var seg) || seg == 0)
+                continue;
+            var un = Chain(a, ia, seg, p, out _);
+            if (un <= 0)
+                continue;
+            // (the normal points out of a's box towards the point: from b into a is the other way)
+            if (Add(ia, -1, p, -normal, -(pen - 0.02f), 0.6f, _chainCount, un))
+            {
+                _chainCount += un;
+                if (b.Asleep && !b.Anchored)
+                    b.Wake();
+            }
+        }
+    }
+
+    /// <summary>
+    /// The points beyond <paramref name="a"/>'s joints against <paramref name="b"/>'s part boxes: overlaps, and for a point
+    /// moving fast a ray along this tick's travel (a speculative contact: a swung arm stops at a thin panel, not past it).
+    /// </summary>
+    private static void SegPointsAgainst(Construct a, short ia, Construct b, short ib, float dt)
+    {
+        var bc = b.WorldCom;
+        var com = a.WorldCom;
+        var baseSeg = ia * (Construct.MaxJoints + 1);
+        for (var k = 0; k < a.SegPointCount; k++)
+        {
+            if (_contactCount >= MaxContacts - 1)
+                return;
+            int seg = a.SegPointSeg[k];
+            if (seg > a.JointCount)
+                continue;
+            var p = _segT[baseSeg + seg] + Vector3.Transform(a.SegPoints[k], _segQ[baseSeg + seg]);
+            var v2 = 0f;
+            var near = Vector3.DistanceSquared(p, bc) <= b.Radius * b.Radius;
+            var ua = _chainCount;
+            var na = Chain(a, ia, seg, p, out var v);
+            if (na < 0)
+                return;
+            if (_dyn[ia])
+                v += a.Vel + Vector3.Cross(a.AngVel, p - com);
+            v2 = v.LengthSquared();
+            var step = MathF.Sqrt(v2) * dt;
+            if (!near && step < 0.05f)
+                continue;
+            _chainCount += na; // (kept for now: given back below when nothing touches)
+            var used = false;
+            if (near && Inside(b, p, out var normal, out var pen, out var hitSeg))
+            {
+                var other = OtherSide(b, ib, hitSeg, p, out var u0, out var un);
+                if (Add(ia, other, p, normal, -(pen - 0.02f), 0.6f, ua, na, u0, other >= 0 ? un : 0))
+                {
+                    used = true;
+                    if (other >= 0)
+                        _chainCount += un;
+                }
+            }
+            else if (step >= 0.05f)
+            {
+                const float back = 0.25f;
+                var dir = v / MathF.Sqrt(v2);
+                if (RayBody(b, p - dir * back, dir, back + step + 0.05f, out var dist, out var n2, out var raySeg) && dist > 1e-3f && Vector3.Dot(n2, dir) < -0.1f)
+                {
+                    var at = p + dir * (dist - back);
+                    var other = OtherSide(b, ib, raySeg, at, out var u0, out var un);
+                    if (Add(ia, other, p, n2, (dist - back) * MathF.Max(0.1f, -Vector3.Dot(n2, dir)), 0.6f, ua, na, u0, other >= 0 ? un : 0))
+                    {
+                        used = true;
+                        if (other >= 0)
+                            _chainCount += un;
+                    }
+                }
+            }
+            if (!used && _chainCount == ua + na)
+                _chainCount = ua;
+        }
+    }
+
+    // ---- The solver: contacts, motors and limits on generalised velocities ------------------------------------------
+
+    /// <summary>How easily a side moves along <paramref name="d"/> at its contact: the body's share, and each joint's up the chain.</summary>
+    private static float EffSide(int body, Vector3 r, Vector3 d, int u0, int un)
+    {
+        var e = 0f;
+        if (_dyn[body])
+        {
+            var c = _bodies[body];
+            var rn = Vector3.Cross(r, d);
+            e = c.InvMass + Vector3.Dot(rn, Construct.Mul(_invI[body], rn));
+        }
+        for (var k = 0; k < un; k++)
+        {
+            var ud = Vector3.Dot(_chainU[u0 + k], d);
+            e += _jInvI[_chainSlot[u0 + k]] * ud * ud;
+        }
+        return e;
+    }
+
+    private static Vector3 VelSide(int body, Vector3 r, int u0, int un)
+    {
+        var v = Vector3.Zero;
+        var c = _bodies[body];
+        if (_dyn[body])
+            v = c.Vel + Vector3.Cross(c.AngVel, r);
+        for (var k = 0; k < un; k++)
+        {
+            int slot = _chainSlot[u0 + k];
+            v += _chainU[u0 + k] * _bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints].Vel;
+        }
+        return v;
+    }
+
+    private static void PushSide(int body, Vector3 r, int u0, int un, Vector3 j)
+    {
+        var c = _bodies[body];
+        if (_dyn[body])
+        {
+            c.Vel += j * c.InvMass;
+            c.AngVel += Construct.Mul(_invI[body], Vector3.Cross(r, j));
+        }
+        for (var k = 0; k < un; k++)
+        {
+            int slot = _chainSlot[u0 + k];
+            _bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints].Vel += _jInvI[slot] * Vector3.Dot(_chainU[u0 + k], j);
+        }
+    }
+
+    private static float Eff2(in Contact ct, Vector3 d) =>
+        EffSide(ct.A, ct.RA, d, ct.UA, ct.NA) + (ct.B >= 0 ? EffSide(ct.B, ct.RB, d, ct.UB, ct.NB) : 0);
+
+    private static Vector3 Rel(in Contact ct) =>
+        VelSide(ct.A, ct.RA, ct.UA, ct.NA) - (ct.B >= 0 ? VelSide(ct.B, ct.RB, ct.UB, ct.NB) : Vector3.Zero);
+
+    private static void Push2(in Contact ct, Vector3 j)
+    {
+        PushSide(ct.A, ct.RA, ct.UA, ct.NA, j);
+        if (ct.B >= 0)
+            PushSide(ct.B, ct.RB, ct.UB, ct.NB, -j);
+    }
+
+    private static void Solve(float dt)
+    {
+        var bodies = _bodies;
         // Prepare.
         for (var k = 0; k < _contactCount; k++)
         {
             ref var ct = ref _contacts[k];
-            var a = bodies[ct.A];
-            var b = ct.B >= 0 ? bodies[ct.B] : null;
-            var ra = ct.Point - a.WorldCom;
-            var rb = b != null ? ct.Point - b.WorldCom : Vector3.Zero;
-            ct.MassN = 1f / MathF.Max(1e-6f, Eff(a, _invI[ct.A], ra, ct.Normal) + (b != null ? Eff(b, _invI[ct.B], rb, ct.Normal) : 0));
+            ct.RA = ct.Point - bodies[ct.A].WorldCom;
+            ct.RB = ct.B >= 0 ? ct.Point - bodies[ct.B].WorldCom : Vector3.Zero;
+            var en = Eff2(ct, ct.Normal);
+            ct.MassN = en > 1e-9f ? 1f / MathF.Max(1e-6f, en) : 0; // (0: nothing on either side can move there)
             var t1 = MathF.Abs(ct.Normal.X) < 0.9f ? Vector3.Cross(ct.Normal, Vector3.UnitX) : Vector3.Cross(ct.Normal, Vector3.UnitZ);
             t1 = Vector3.Normalize(t1);
             var t2 = Vector3.Cross(ct.Normal, t1);
             ct.T1 = t1;
             ct.T2 = t2;
-            ct.MassT1 = 1f / MathF.Max(1e-6f, Eff(a, _invI[ct.A], ra, t1) + (b != null ? Eff(b, _invI[ct.B], rb, t1) : 0));
-            ct.MassT2 = 1f / MathF.Max(1e-6f, Eff(a, _invI[ct.A], ra, t2) + (b != null ? Eff(b, _invI[ct.B], rb, t2) : 0));
+            var e1 = Eff2(ct, t1);
+            var e2 = Eff2(ct, t2);
+            ct.MassT1 = e1 > 1e-9f ? 1f / MathF.Max(1e-6f, e1) : 0;
+            ct.MassT2 = e2 > 1e-9f ? 1f / MathF.Max(1e-6f, e2) : 0;
             // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick.
             ct.Bias = ct.Gap > 0 ? ct.Gap / dt : MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
         }
         for (var it = 0; it < Iterations; it++)
         {
+            // The joints first (motors, limits), then the contacts: what can't pass through has the last word.
+            for (var a = 0; a < _activeCount; a++)
+            {
+                int slot = _active[a];
+                var inv = _jInvI[slot];
+                if (inv <= 0)
+                    continue;
+                ref var jt = ref bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints];
+                var max = _jMotorMax[slot];
+                if (max > 0)
+                {
+                    var old = _jP[slot];
+                    _jP[slot] = Math.Clamp(old + (_jWant[slot] - jt.Vel) / inv, -max, max);
+                    jt.Vel += (_jP[slot] - old) * inv;
+                }
+                if (float.IsFinite(_jLoB[slot]))
+                {
+                    var old = _jLo[slot];
+                    _jLo[slot] = MathF.Max(0, old + (_jLoB[slot] - jt.Vel) / inv);
+                    jt.Vel += (_jLo[slot] - old) * inv;
+                }
+                if (float.IsFinite(_jHiB[slot]))
+                {
+                    var old = _jHi[slot];
+                    _jHi[slot] = MathF.Min(0, old + (_jHiB[slot] - jt.Vel) / inv);
+                    jt.Vel += (_jHi[slot] - old) * inv;
+                }
+            }
             for (var k = 0; k < _contactCount; k++)
             {
                 ref var ct = ref _contacts[k];
-                var a = bodies[ct.A];
-                var b = ct.B >= 0 ? bodies[ct.B] : null;
-                var ra = ct.Point - a.WorldCom;
-                var rb = b != null ? ct.Point - b.WorldCom : Vector3.Zero;
-                var rel = a.Vel + Vector3.Cross(a.AngVel, ra) - (b != null ? b.Vel + Vector3.Cross(b.AngVel, rb) : Vector3.Zero);
+                if (ct.MassN <= 0)
+                    continue;
+                var rel = Rel(ct);
                 var vn = Vector3.Dot(rel, ct.Normal);
                 var dj = -(vn + ct.Bias) * ct.MassN;
                 var old = ct.Jn;
                 ct.Jn = MathF.Max(0, old + dj);
                 dj = ct.Jn - old;
                 if (dj != 0)
-                    Push(a, _invI[ct.A], ra, b, ct.B >= 0 ? _invI[ct.B] : default, rb, ct.Normal * dj);
+                    Push2(ct, ct.Normal * dj);
                 if (ct.Jn <= 0)
                     continue;
                 // Friction (two tangents, inside the cone).
-                rel = a.Vel + Vector3.Cross(a.AngVel, ra) - (b != null ? b.Vel + Vector3.Cross(b.AngVel, rb) : Vector3.Zero);
+                rel = Rel(ct);
                 var max = ct.Friction * ct.Jn;
                 var d1 = -Vector3.Dot(rel, ct.T1) * ct.MassT1;
                 var o1 = ct.Jt1;
@@ -388,30 +815,8 @@ public static class ConstructPhysics
                 ct.Jt2 = Math.Clamp(o2 + d2, -max, max);
                 var jt = ct.T1 * (ct.Jt1 - o1) + ct.T2 * (ct.Jt2 - o2);
                 if (jt != Vector3.Zero)
-                    Push(a, _invI[ct.A], ra, b, ct.B >= 0 ? _invI[ct.B] : default, rb, jt);
+                    Push2(ct, jt);
             }
-        }
-    }
-
-    private static float Eff(Construct c, in Matrix4x4 invI, Vector3 r, Vector3 n)
-    {
-        if (c.Anchored || c.Asleep)
-            return 0;
-        var rn = Vector3.Cross(r, n);
-        return c.InvMass + Vector3.Dot(rn, Construct.Mul(invI, rn));
-    }
-
-    private static void Push(Construct a, in Matrix4x4 ia, Vector3 ra, Construct? b, in Matrix4x4 ib, Vector3 rb, Vector3 j)
-    {
-        if (!a.Anchored && !a.Asleep)
-        {
-            a.Vel += j * a.InvMass;
-            a.AngVel += Construct.Mul(ia, Vector3.Cross(ra, j));
-        }
-        if (b != null && !b.Anchored && !b.Asleep)
-        {
-            b.Vel -= j * b.InvMass;
-            b.AngVel -= Construct.Mul(ib, Vector3.Cross(rb, j));
         }
     }
 
@@ -444,15 +849,68 @@ public static class ConstructPhysics
     }
 
     /// <summary>
-    /// The joints. A passive hinge swings, damped, towards its latch (or holds still while its lock is on). A moving joint
-    /// is driven by a motor: a position joint (motorised hinge, piston, steering pivot) towards the angle or extension its
-    /// input asks for, a turntable at the speed it asks for; the motor pushes with at most its strength against the load
-    /// (gravity on everything the joint carries, players standing on it included), so an overloaded lift sinks. Everything
-    /// stays inside the limits, and a joint that isn't a number any more is put back at rest.
+    /// A joint's load this tick: gravity on what it carries (its segment and everything hanging on it, and the riders),
+    /// about its axis (N m) or along it (N), and the inertia it moves with; its axis and pivot in the world.
     /// </summary>
-    private static void StepJoints(Construct c, float dt)
+    private static void JointLoad(Construct c, int j, int riders, out float load, out float inertia, out Vector3 axis, out Vector3 pivot)
     {
-        var g = GravityAccel;
+        ref var jt = ref c.Joints[j];
+        var seg = j + 1;
+        c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
+        axis = Vector3.Transform(jt.Axis, pq);
+        pivot = pt + Vector3.Transform(jt.Pivot, pq);
+        var mass = c.SegMass[seg] + riders * Construct.RiderMass;
+        c.SegPose(seg, out var sq, out var st);
+        var com = c.ToWorld(Vector3.Transform(c.SegCom[seg], sq) + st);
+        var down = new Vector3(0, -GravityAccel * mass, 0);
+        if (jt.Slides)
+        {
+            load = Vector3.Dot(down, axis);
+            inertia = MathF.Max(mass, 1f);
+        }
+        else
+        {
+            var r = com - pivot;
+            load = Vector3.Dot(Vector3.Cross(r, down), axis);
+            var across = r - axis * Vector3.Dot(r, axis);
+            inertia = MathF.Max(mass * (across.LengthSquared() + 0.05f), 0.5f);
+        }
+    }
+
+    /// <summary>What a moving joint's motor wants this tick: a speed (turntable), or a speed towards the target its input asks for (the rest).</summary>
+    private static float MotorWant(Construct c, in CJoint jt)
+    {
+        if (jt.Type == JointType.Turntable)
+            return Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
+        float target;
+        var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
+        if (jt.Type == JointType.Steering && !jt.Wired)
+        {
+            // Unwired, a steering pivot follows the driver (c.Steer: right is positive; a turn about +y is to the left).
+            var upRest = Vector3.Dot(jt.Axis, Vector3.UnitY) >= 0 ? 1f : -1f;
+            target = -c.Steer * upRest;
+        }
+        else if (jt.Slides)
+            target = Math.Clamp(input, 0, 1) * jt.Max;
+        else
+        {
+            input = Math.Clamp(input, -1, 1);
+            target = input >= 0 ? input * jt.Max : -input * jt.Min;
+        }
+        target = Math.Clamp(target, jt.Min, jt.Max);
+        return Math.Clamp((target - jt.Angle) * 10f, -jt.Speed, jt.Speed);
+    }
+
+    /// <summary>
+    /// The joints before the solve. A passive hinge swings, damped, towards its latch (or holds still while its lock is on)
+    /// and falls under gravity. A moving joint is driven by a motor: a position joint (motorised hinge, piston, steering
+    /// pivot) towards the angle or extension its input asks for, a turntable at the speed it asks for; the motor pushes
+    /// with at most its strength (solved with the contacts) against the load (gravity on everything the joint carries,
+    /// players standing on it included), so an overloaded lift sinks and a blocked arm stalls. A joint that isn't a number
+    /// any more is put back at rest. Also each segment's frame in the world for this tick.
+    /// </summary>
+    private static void JointPrep(Construct c, int index, float dt)
+    {
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
@@ -464,78 +922,90 @@ public static class ConstructPhysics
             var seg = j + 1;
             var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[seg]);
             c.RiderBits[seg] = 0;
+            JointLoad(c, j, riders, out var load, out var inertia, out var axis, out var pivot);
+            jt.Load = load;
+            var slot = index * Construct.MaxJoints + j;
+            _jAxis[slot] = axis;
+            _jPivot[slot] = pivot;
+            _jP[slot] = _jLo[slot] = _jHi[slot] = 0;
+            _jMotorMax[slot] = 0;
+            _jWant[slot] = 0;
+            _active[_activeCount++] = (short)slot;
             if (jt.Type == JointType.Passive)
             {
                 if (jt.Locked)
                 {
                     jt.Vel = 0; // a lock holds it where it is
+                    _jInvI[slot] = 0;
+                    _jLoB[slot] = _jHiB[slot] = float.NaN;
                     continue;
                 }
                 var target = jt.Open ? (jt.Max >= -jt.Min ? jt.Max : jt.Min) * 0.95f : 0f;
                 jt.Vel += (target - jt.Angle) * 30f * dt;
                 jt.Vel *= MathF.Max(0, 1 - 7f * dt);
-                jt.Angle += jt.Vel * dt;
-                Limit(ref jt);
+            }
+            else
+            {
+                _jWant[slot] = MotorWant(c, jt);
+                _jMotorMax[slot] = jt.Strength * dt;
+            }
+            jt.Vel += load / inertia * dt; // the load acts whatever the motor does
+            _jInvI[slot] = 1f / inertia;
+            _jLoB[slot] = float.IsFinite(jt.Min) ? (jt.Min - jt.Angle) / dt : float.NaN;
+            _jHiB[slot] = float.IsFinite(jt.Max) ? (jt.Max - jt.Angle) / dt : float.NaN;
+        }
+        var baseSeg = index * (Construct.MaxJoints + 1);
+        for (var s = 0; s <= c.JointCount; s++)
+            c.WorldFrame(s, out _segQ[baseSeg + s], out _segT[baseSeg + s]);
+    }
+
+    /// <summary>After the solve: each joint moves at the speed it was left with, inside its limits.</summary>
+    private static void IntegrateJoints(Construct c, float dt)
+    {
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (jt.Type == JointType.Passive && jt.Locked)
+            {
+                jt.Vel = 0;
                 continue;
             }
-            // The load: gravity on what it carries (its segment and everything hanging on it, and the riders), along its motion.
-            c.WorldFrame(jt.ParentSeg, out var pq, out var pt);
-            var axis = Vector3.Transform(jt.Axis, pq);
-            var mass = c.SegMass[seg] + riders * Construct.RiderMass;
-            c.SegPose(seg, out var sq, out var st);
-            var comBody = Vector3.Transform(c.SegCom[seg], sq) + st;
-            var com = c.ToWorld(comBody);
-            var down = new Vector3(0, -g * mass, 0);
-            float load, inertia;
-            if (jt.Slides)
-            {
-                load = Vector3.Dot(down, axis);
-                inertia = MathF.Max(mass, 1f);
-            }
-            else
-            {
-                var r = com - (pt + Vector3.Transform(jt.Pivot, pq));
-                load = Vector3.Dot(Vector3.Cross(r, down), axis);
-                var across = r - axis * Vector3.Dot(r, axis);
-                inertia = MathF.Max(mass * (across.LengthSquared() + 0.05f), 0.5f);
-            }
-            jt.Load = load;
-            // What the motor wants: a speed (turntable), or a speed towards a target (the rest).
-            float want;
-            if (jt.Type == JointType.Turntable)
-                want = Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
-            else
-            {
-                float target;
-                var input = jt.Wired ? jt.Input : jt.Open ? 1f : 0f;
-                if (jt.Type == JointType.Steering && !jt.Wired)
-                {
-                    // Unwired, a steering pivot follows the driver (c.Steer: right is positive; a turn about +y is to the left).
-                    var upRest = Vector3.Dot(jt.Axis, Vector3.UnitY) >= 0 ? 1f : -1f;
-                    target = -c.Steer * upRest;
-                }
-                else if (jt.Slides)
-                    target = Math.Clamp(input, 0, 1) * jt.Max;
-                else
-                {
-                    input = Math.Clamp(input, -1, 1);
-                    target = input >= 0 ? input * jt.Max : -input * jt.Min;
-                }
-                target = Math.Clamp(target, jt.Min, jt.Max);
-                var err = target - jt.Angle;
-                want = Math.Clamp(err * 10f, -jt.Speed, jt.Speed);
-            }
-            // The motor's push, no more than its strength; the load acts whatever the motor does.
-            var push = Math.Clamp((want - jt.Vel) * inertia / dt - load, -jt.Strength, jt.Strength);
-            jt.Vel += (push + load) / inertia * dt;
-            jt.Vel = Math.Clamp(jt.Vel, -MathF.Max(jt.Speed * 3, 2f), MathF.Max(jt.Speed * 3, 2f));
+            var cap = jt.Motorised ? MathF.Max(jt.Speed * 3, 2f) : MaxJointSpin;
+            jt.Vel = Math.Clamp(jt.Vel, -cap, cap);
             jt.Angle += jt.Vel * dt;
             if (jt.Type == JointType.Turntable && !float.IsFinite(jt.Min))
                 jt.Angle = World.WrapAngle(jt.Angle);
             Limit(ref jt);
-            if (jt.Vel != 0 && !c.Anchored)
-                c.Wake();
         }
+    }
+
+    /// <summary>
+    /// A sleeping body with joints: does something ask them to move (a motor's input, the driver's steering, more riders
+    /// than a motor can hold)? Then it wakes. Doors and hinges are woken by whatever pushes or opens them.
+    /// </summary>
+    private static void WakeCheck(Construct c)
+    {
+        var wake = false;
+        for (var j = 0; j < c.JointCount && !wake; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (!jt.Motorised)
+                continue;
+            if (MathF.Abs(MotorWant(c, jt)) > 0.05f)
+                wake = true;
+            else if (c.RiderBits[j + 1] != 0)
+            {
+                JointLoad(c, j, System.Numerics.BitOperations.PopCount(c.RiderBits[j + 1]), out var load, out _, out _, out _);
+                wake = MathF.Abs(load) > jt.Strength;
+            }
+        }
+        if (wake)
+        {
+            c.Wake();
+            return; // (the riders count in this tick's step)
+        }
+        for (var s = 0; s <= c.JointCount; s++)
+            c.RiderBits[s] = 0;
     }
 
     private static void Limit(ref CJoint jt)
@@ -554,10 +1024,13 @@ public static class ConstructPhysics
 
     private static void Sleep(Construct c)
     {
-        var still = c.Vel.LengthSquared() < 0.02f && c.AngVel.LengthSquared() < 0.02f && (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0))
-                    && !(c.EngineWired && c.EngineSignal != 0);
+        var still = c.Anchored || c.Vel.LengthSquared() < 0.02f && c.AngVel.LengthSquared() < 0.02f;
+        still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0)) && !(c.EngineWired && c.EngineSignal != 0);
         for (var j = 0; j < c.JointCount && still; j++)
-            still = MathF.Abs(c.Joints[j].Vel) < 0.05f;
+        {
+            ref var jt = ref c.Joints[j];
+            still = MathF.Abs(jt.Vel) < 0.05f && (!jt.Motorised || MathF.Abs(MotorWant(c, jt)) <= 0.05f); // (a stalled motor still pushes)
+        }
         if (!still)
         {
             c.SleepTicks = 0;
@@ -567,6 +1040,8 @@ public static class ConstructPhysics
         {
             c.Asleep = true;
             c.Vel = c.AngVel = Vector3.Zero;
+            for (var j = 0; j < c.JointCount; j++)
+                c.Joints[j].Vel = 0;
         }
     }
 }

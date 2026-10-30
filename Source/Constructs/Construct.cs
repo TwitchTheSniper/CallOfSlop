@@ -109,6 +109,10 @@ public sealed class Construct
     public const int MaxPoints = 40; // contact points against the world
     public const int MaxWheels = 12;
     public const int MaxWires = 64;
+    public const int MaxSegPoints = 64; // contact points on the parts beyond joints (every segment's, in all)
+    public const float SegPointSpacing = 1.0f; // a long part gets points along its edges at most this far apart (no sinking in the middle)
+    public const int MaxSegEdges = 48; // the long edges of the parts beyond joints, swept against the world (a post between two points)
+    public const float SegEdgeMin = 0.3f; // edges shorter than this aren't swept (the points at their ends do)
 
     public ushort Id;
     public readonly CPart[] Parts = new CPart[MaxParts];
@@ -166,6 +170,12 @@ public sealed class Construct
     public int PointCount;
     public readonly CWheel[] Wheels = new CWheel[MaxWheels];
     public int WheelCount;
+    public readonly Vector3[] SegPoints = new Vector3[MaxSegPoints]; // rest frame of their segment (the parts beyond joints)
+    public readonly byte[] SegPointSeg = new byte[MaxSegPoints];
+    public int SegPointCount;
+    public readonly Vector3[] SegEdgeA = new Vector3[MaxSegEdges], SegEdgeB = new Vector3[MaxSegEdges]; // rest frame of their segment
+    public readonly byte[] SegEdgeSeg = new byte[MaxSegEdges];
+    public int SegEdgeCount;
     public bool Dirty = true;
 
     // Client: the pose it is drawn at (blended towards the last one received).
@@ -402,6 +412,8 @@ public sealed class Construct
         Radius = MathF.Max(Vector3.Distance(Com, LocalMin), Vector3.Distance(Com, LocalMax)) + 0.5f;
 
         BuildPoints();
+        BuildSegPoints();
+        Radius = MathF.Max(Radius, JointReach() + 0.5f);
         BuildWheels();
         BuildDrivetrain();
         BuildSegments();
@@ -548,6 +560,100 @@ public sealed class Construct
         for (var k = 0; k < n; k++)
             Points[k] = scratch[k];
         PointCount = n;
+    }
+
+    /// <summary>
+    /// The contact points of the parts beyond joints (in their segment's rest frame): every part's bounds corners, and on
+    /// a long part more along its long edges (<see cref="SegPointSpacing"/> apart), so a beam lying on a bump can't sink
+    /// in the middle; and those long edges themselves (swept against the world, for a post that fits between the points).
+    /// Raycast wheels on a steering pivot roll on their rays instead.
+    /// </summary>
+    private void BuildSegPoints()
+    {
+        SegPointCount = 0;
+        SegEdgeCount = 0;
+        Span<float> steps = stackalloc float[8];
+        for (var i = 0; i < PartCount; i++)
+        {
+            var seg = Parts[i].Seg;
+            if (seg == 0 || IsRaycastWheel(i))
+                continue;
+            PartBounds(i, out var mn, out var mx);
+            var size = mx - mn;
+            for (var axis = 0; axis < 3; axis++)
+            {
+                // Its long edges along this axis, swept against the world each tick.
+                if (size[axis] >= SegEdgeMin)
+                    for (var c = 0; c < 4 && SegEdgeCount < MaxSegEdges; c++)
+                    {
+                        var a = Vector3.Zero;
+                        var a1 = (axis + 1) % 3;
+                        var a2 = (axis + 2) % 3;
+                        a[a1] = (c & 1) != 0 ? mx[a1] : mn[a1];
+                        a[a2] = (c & 2) != 0 ? mx[a2] : mn[a2];
+                        var b = a;
+                        a[axis] = mn[axis];
+                        b[axis] = mx[axis];
+                        SegEdgeA[SegEdgeCount] = a;
+                        SegEdgeB[SegEdgeCount] = b;
+                        SegEdgeSeg[SegEdgeCount++] = seg;
+                    }
+                // Along this axis: both ends, and between them every SegPointSpacing (corners: the other two axes at their ends).
+                var cuts = Math.Min(7, (int)MathF.Ceiling(size[axis] / SegPointSpacing));
+                var n = 0;
+                for (var k = 0; k <= cuts; k++)
+                    steps[n++] = mn[axis] + size[axis] * k / Math.Max(1, cuts);
+                for (var k = 0; k < n; k++)
+                for (var c = 0; c < 4; c++)
+                {
+                    var p = Vector3.Zero;
+                    p[axis] = steps[k];
+                    var a1 = (axis + 1) % 3;
+                    var a2 = (axis + 2) % 3;
+                    p[a1] = (c & 1) != 0 ? mx[a1] : mn[a1];
+                    p[a2] = (c & 2) != 0 ? mx[a2] : mn[a2];
+                    AddSegPoint(p, seg);
+                }
+            }
+        }
+    }
+
+    private void AddSegPoint(Vector3 p, byte seg)
+    {
+        if (SegPointCount >= MaxSegPoints)
+            return;
+        for (var k = 0; k < SegPointCount; k++)
+            if (SegPointSeg[k] == seg && Vector3.DistanceSquared(SegPoints[k], p) < 1e-4f)
+                return;
+        SegPoints[SegPointCount] = p;
+        SegPointSeg[SegPointCount++] = seg;
+    }
+
+    /// <summary>How far from the centre of mass any part beyond a joint can reach, whatever its joints' values (the broad phase's radius).</summary>
+    private float JointReach()
+    {
+        var reach = 0f;
+        for (var k = 0; k < SegPointCount; k++)
+        {
+            // From the point back up its chain: each turn keeps the distance to its pivot, each slide adds its travel.
+            var p = SegPoints[k];
+            var d = 0f;
+            var from = p;
+            for (int s = SegPointSeg[k], guard = 0; s > 0 && s <= JointCount && guard <= MaxJoints; guard++)
+            {
+                ref var j = ref Joints[s - 1];
+                if (j.Slides)
+                    d += MathF.Max(MathF.Abs(j.Min), MathF.Abs(j.Max));
+                else
+                {
+                    d += Vector3.Distance(from, j.Pivot);
+                    from = j.Pivot;
+                }
+                s = j.ParentSeg;
+            }
+            reach = MathF.Max(reach, d + Vector3.Distance(from, Com));
+        }
+        return reach;
     }
 
     private float Score(Vector3 p)
