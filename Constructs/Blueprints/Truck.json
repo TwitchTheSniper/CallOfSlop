@@ -1,0 +1,234 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "4x4 Truck",
+  "description": "An 8 m 4x4 truck on a ladder of six beams: a diesel (its battery turns the starter), an automatic gearbox and a transfer case in 4WD (the linking tool's R: 2WD). Right-angle gearboxes take the shafts down onto a locked live axle at the back and an open wide axle at the front, whose wheels are driven through CV joints into their steering pivots. Leaf springs, large wheels, a tow hitch.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "x+0",
+      "by": "x-0"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 1,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Frame Block",
+      "on": 2,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Frame Block",
+      "on": 3,
+      "socket": "end-",
+      "by": "+z"
+    },
+    {
+      "part": "Wide Differential",
+      "on": 6,
+      "socket": "-z",
+      "by": "+z0"
+    },
+    {
+      "part": "Live Axle",
+      "on": 4,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "y+2",
+      "by": "bottom"
+    },
+    {
+      "part": "Diesel Engine",
+      "on": 3,
+      "socket": "y+1",
+      "by": "-y0"
+    },
+    {
+      "part": "Automatic Gearbox",
+      "on": 11,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Transfer Case",
+      "on": 12,
+      "socket": "+z",
+      "by": "in",
+      "setting": 1
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 13,
+      "socket": "front",
+      "by": "-z",
+      "spin": 2
+    },
+    {
+      "part": "Drive Shaft 2 m",
+      "on": 14,
+      "socket": "-y",
+      "by": "end+"
+    },
+    {
+      "part": "Drive Shaft 0.5 m",
+      "on": 15,
+      "socket": "end-",
+      "by": "end+"
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 16,
+      "socket": "end-",
+      "by": "-z"
+    },
+    {
+      "part": "Drive Shaft 2 m",
+      "on": 13,
+      "socket": "rear",
+      "by": "end-"
+    },
+    {
+      "part": "Drive Shaft 1 m",
+      "on": 18,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Drive Shaft 0.5 m",
+      "on": 19,
+      "socket": "end+",
+      "by": "end-"
+    },
+    {
+      "part": "Right-Angle Gearbox",
+      "on": 20,
+      "socket": "end+",
+      "by": "-z"
+    },
+    {
+      "part": "CV Joint",
+      "on": 8,
+      "socket": "-x",
+      "by": "+x"
+    },
+    {
+      "part": "CV Joint",
+      "on": 8,
+      "socket": "+x",
+      "by": "-x"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 22,
+      "socket": "-x",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 23,
+      "socket": "+x",
+      "by": "base"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 24,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 25,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 9,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Leaf Spring",
+      "on": 9,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 26,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 27,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 28,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Wheel",
+      "on": 29,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Large Fuel Tank",
+      "on": 11,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 4,
+      "socket": "y+1",
+      "by": "-y"
+    },
+    {
+      "part": "Bumper",
+      "on": 8,
+      "socket": "-z0",
+      "by": "back0"
+    },
+    {
+      "part": "Tow Hitch",
+      "on": 9,
+      "socket": "+z0",
+      "by": "-z0"
+    }
+  ]
+}

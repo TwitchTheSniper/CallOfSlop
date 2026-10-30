@@ -1,0 +1,150 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Racer",
+  "description": "A low racer on the buggy's square-beam chassis: a V8 behind the driver through a 6-speed sequential box (R up, sprint down) and a limited-slip differential, slicks on stiff suspension. Fast on hard ground, hopeless on dirt.",
+  "steps": [
+    {
+      "part": "Square Beam 2 m"
+    },
+    {
+      "part": "Square Beam 0.75 m",
+      "on": 0,
+      "socket": "-z",
+      "by": "+x0",
+      "spin": 3
+    },
+    {
+      "part": "Square Beam 2 m",
+      "on": 1,
+      "socket": "+x2",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 0,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Square Beam 0.5 m",
+      "on": 2,
+      "socket": "+z",
+      "by": "-z"
+    },
+    {
+      "part": "Limited-Slip Differential",
+      "on": 3,
+      "socket": "+z",
+      "by": "-z0"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 5,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 5,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "-z",
+      "by": "base"
+    },
+    {
+      "part": "Steering Pivot",
+      "on": 1,
+      "socket": "+z",
+      "by": "base"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 8,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Stiff Suspension",
+      "on": 9,
+      "socket": "leaf",
+      "by": "mount"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 6,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 7,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 10,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Slick Wheel",
+      "on": 11,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Plate Steel 1 m",
+      "on": 0,
+      "socket": "+y3",
+      "by": "back00",
+      "spin": 0
+    },
+    {
+      "part": "Seat",
+      "on": 0,
+      "socket": "+y1",
+      "by": "bottom"
+    },
+    {
+      "part": "Sequential Gearbox",
+      "on": 5,
+      "socket": "top1",
+      "by": "-y"
+    },
+    {
+      "part": "V8 Engine",
+      "on": 18,
+      "socket": "-z",
+      "by": "+z"
+    },
+    {
+      "part": "Small Fuel Tank",
+      "on": 19,
+      "socket": "+y",
+      "by": "-y"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x0",
+      "by": "back"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x2",
+      "by": "back"
+    },
+    {
+      "part": "Wedge 1:1 0.25 m",
+      "on": 1,
+      "socket": "-x1",
+      "by": "back"
+    }
+  ]
+}

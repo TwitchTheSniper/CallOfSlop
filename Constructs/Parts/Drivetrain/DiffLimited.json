@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Limited-Slip Differential",
+  "description": "A limited-slip axle, 1.1 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Most of a spinning wheel's drive goes to the one that grips.",
+  "role": "differential",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 58,
+  "health": 170,
+  "armour": 5,
+  "material": "steel",
+  "color": "#5a4d3f",
+  "boxes": [
+    {
+      "size": [
+        1.1,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.32,
+        0.32,
+        0.56
+      ],
+      "color": "#3c4a34",
+      "detail": true
+    },
+    {
+      "size": [
+        1.12,
+        0.14,
+        0.14
+      ],
+      "color": "#2f3a28",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z0",
+      "at": [
+        -0.25,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        0.25,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        -0.25,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        0.25,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top0",
+      "at": [
+        -0.25,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top1",
+      "at": [
+        0.25,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        -0.25,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        0.25,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.55,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.55,
+        0,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "differential": {
+    "kind": "limited",
+    "ratio": 4.1,
+    "efficiency": 0.96
+  }
+}

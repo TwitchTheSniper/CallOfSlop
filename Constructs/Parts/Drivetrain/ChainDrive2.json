@@ -1,0 +1,98 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Chain Drive 2:1",
+  "description": "A small sprocket driving a big one on a chain, 1.5 m: halves the speed and doubles the pull (the ratio is the sprockets' sizes).",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 18,
+  "health": 100,
+  "armour": 2,
+  "material": "steel",
+  "color": "#5a5d62",
+  "boxes": [
+    {
+      "size": [
+        0.15,
+        0.6,
+        1.5
+      ]
+    },
+    {
+      "size": [
+        0.17,
+        0.2,
+        0.2
+      ],
+      "at": [
+        0,
+        0,
+        -0.55
+      ],
+      "color": "#8a8d92",
+      "detail": true
+    },
+    {
+      "size": [
+        0.17,
+        0.5,
+        0.5
+      ],
+      "at": [
+        0,
+        0,
+        0.45
+      ],
+      "color": "#8a8d92",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "in",
+      "at": [
+        -0.075,
+        0,
+        -0.55
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "out",
+      "at": [
+        0.075,
+        0,
+        0.45
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.3,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.3,
+        0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "drive": {
+    "kind": "chain",
+    "ratio": 2.0,
+    "ports": [
+      "in",
+      "out"
+    ],
+    "efficiency": 0.97,
+    "maxTorque": 3000
+  }
+}

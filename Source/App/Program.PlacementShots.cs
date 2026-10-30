@@ -69,6 +69,7 @@ public static unsafe partial class Program
                 DrawSandbox(now);
                 Gfx.SetBlend(true);
                 Gfx.SetDepthWrite(false);
+                ConstructRender.DrawGlass(Gfx, Gfx.CameraPosition);
                 ConstructRender.DrawGhosts(Gfx, now);
                 Gfx.SetDepthWrite(true);
                 Gfx.SetBlend(false);
@@ -100,7 +101,7 @@ public static unsafe partial class Program
             ConstructRender.PlaceRot = fp.Rot;
             ConstructRender.PlaceTurn = fp.Turn;
             ConstructRender.PlaceValid = why == null;
-            g.SandboxLookText = why != null ? $"Can't set the {def.Name} down here: {why}" : $"New construct: hold fire to set down the {def.Name} (free{(grid ? ", on the grid" : "")}; R turns it)";
+            g.SandboxLookText = why != null ? $"Can't set the {def.Name} down here: {why}" : $"New construct: hold fire to set down the {def.Name} (free{(grid ? ", on the grid" : "")}; {TurnKeysText(Keybinds.Defaults)})";
             Console.WriteLine($"[placementshots] ghost {def.Name} turn {turn}: {(why ?? "fits")}");
         }
         var core = ConstructParts.Need("Construct Core");

@@ -7,6 +7,9 @@ namespace CallOfSlop;
 /// and steering), damaged parts darker and wrecked ones near black; the ghost sockets of the held part (blended). The
 /// tools in the hands are ToolRender.cs. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
 /// each box is one draw like the movers'; lit without the world-space texture, which would swim over a moving surface.
+/// Glass panes (<see cref="CPartBox.Glass"/>) are left out of the opaque pass and kept for <see cref="DrawGlass"/>, which
+/// draws them in the blended pass after everything opaque: back to front, without depth writes, lit and fogged by the
+/// box shader like any part, with a slight tint, a little reflection at grazing angles and a highlight along the edges.
 /// </summary>
 public static class ConstructRender
 {
@@ -85,6 +88,7 @@ public static class ConstructRender
     public static void Draw(Renderer gfx, ConstructWorld world, float alpha, bool blendTicks)
     {
         var n = 0;
+        GlassCount = 0;
         foreach (var c in world.Bodies)
         {
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
@@ -295,6 +299,12 @@ public static class ConstructRender
             model = model * wheel * seg * body;
             if (lit)
                 gfx.Draw(model, new Vector3(1f, 0.93f, 0.6f), opacity, mode: 2, shape: box.Shape);
+            else if (box.IsGlass)
+            {
+                if (!QueueGlass(model, box.Color * shade, box.Glass * opacity, box.Shape))
+                    gfx.Draw(model, box.Color * shade, opacity, mode: 0, shape: box.Shape); // (more panes than the list holds: opaque)
+                continue;
+            }
             else
                 gfx.Draw(model, box.Color * shade, opacity, mode: 0, shape: box.Shape);
             drawn++;
@@ -327,6 +337,8 @@ public static class ConstructRender
                     if (box.Hidden)
                         continue;
                     ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out _);
+                    if (box.IsGlass && QueueGlass(box.Model(turn, centre) * seg * body, box.Color * shade, box.Glass, box.Shape))
+                        continue; // (a stored pane: see-through too)
                     gfx.Draw(box.Model(turn, centre) * seg * body, box.Color * shade, 1f, mode: 0, shape: box.Shape);
                     drawn++;
                 }
@@ -522,8 +534,9 @@ public static class ConstructRender
                     if (box.Hidden)
                         continue;
                     var bc = g.Pos + Rot24.Apply(g.Rot, box.Center);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse, mode: 2, shape: box.Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
+                Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
             }
         }
         if (SlotBody is { } sbody && SlotDef is { } sdef && SlotPart >= 0 && SlotPart < sbody.PartCount)
@@ -550,7 +563,7 @@ public static class ConstructRender
                     if (sdef.Boxes[b].Hidden)
                         continue;
                     ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, 0, b, out var bc, out _);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * sdef.Boxes[b].Model(turn, bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse, mode: 2, shape: sdef.Boxes[b].Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * sdef.Boxes[b].Model(turn, bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse * GhostGlass(sdef.Boxes[b]), mode: 2, shape: sdef.Boxes[b].Shape);
                 }
             }
         }
@@ -560,7 +573,8 @@ public static class ConstructRender
             var colour = PlaceValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f);
             for (var b = 0; b < nd.Boxes.Length; b++)
                 if (!nd.Boxes[b].Hidden)
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse, mode: 2, shape: nd.Boxes[b].Shape);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * nd.Boxes[b].Model(0, nd.Boxes[b].Center) * body, colour, 0.3f * pulse * GhostGlass(nd.Boxes[b]), mode: 2, shape: nd.Boxes[b].Shape);
+            Gizmo(gfx, nd, Vector3.Zero, PlaceTurn, Matrix4x4.CreateFromQuaternion(PlaceRot) * Matrix4x4.CreateTranslation(ground));
         }
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
@@ -569,6 +583,136 @@ public static class ConstructRender
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
         }
+    }
+
+    /// <summary>
+    /// The ghost's orientation gizmo (board item dev-sandbox-arrow-rotate-ar02): from the part's middle, its front (-z) as
+    /// an orange arrow with a head, its top (+y) green and its right (+x) red, each poking out of the part, so the rotate
+    /// keys' effect reads at a glance. <paramref name="pos"/> and <paramref name="turn"/> place the part in the frame <paramref name="frame"/>.
+    /// </summary>
+    private static void Gizmo(Renderer gfx, ConstructPartDef def, Vector3 pos, byte turn, in Matrix4x4 frame)
+    {
+        var mid = pos + Rot24.Apply(turn, (def.BoundsMin + def.BoundsMax) * 0.5f);
+        var half = Rot24.ApplyHalf(turn, (def.BoundsMax - def.BoundsMin) * 0.5f);
+        var centre = Vector3.Transform(mid, frame);
+        for (var k = 0; k < 3; k++)
+        {
+            var local = k == 0 ? -Vector3.UnitZ : k == 1 ? Vector3.UnitY : Vector3.UnitX;
+            var d = Rot24.Apply(turn, local); // (an axis of the frame, signed)
+            var reach = Vector3.Dot(Vector3.Abs(d), half) + (k == 0 ? 0.22f : 0.12f);
+            var tip = Vector3.Transform(mid + d * reach, frame);
+            var colour = k == 0 ? new Vector3(1f, 0.6f, 0.15f) : k == 1 ? new Vector3(0.35f, 1f, 0.4f) : new Vector3(1f, 0.3f, 0.3f);
+            Line(gfx, centre, tip, colour, 0.9f);
+            if (k == 0)
+                gfx.Draw(Matrix4x4.CreateScale(0.09f) * Matrix4x4.CreateTranslation(tip), colour, 0.95f, mode: 2);
+        }
+    }
+
+    /// <summary>A ghost's glass pane is fainter than the rest of it (the frame round it reads, the pane shows through).</summary>
+    public static float GhostGlass(in CPartBox box) => box.IsGlass ? 0.45f : 1f;
+
+    // ---- Glass (the blended pass) -------------------------------------------------------------------------------------
+
+    /// <summary>The most glass boxes drawn see-through in a frame (more are drawn opaque: a few hundred panes is plenty).</summary>
+    public const int MaxGlass = 512;
+
+    private struct GlassBox
+    {
+        public Matrix4x4 Model;
+        public Vector3 Color;
+        public float Alpha;
+        public ushort Shape;
+    }
+
+    private static readonly GlassBox[] _glass = new GlassBox[MaxGlass];
+    private static readonly float[] _glassKey = new float[MaxGlass];
+    private static readonly int[] _glassOrder = new int[MaxGlass];
+
+    /// <summary>Glass boxes <see cref="Draw"/> kept for <see cref="DrawGlass"/> this frame.</summary>
+    public static int GlassCount { get; private set; }
+
+    /// <summary>Glass boxes (and their edge highlights) the last <see cref="DrawGlass"/> drew (the self-test).</summary>
+    public static int LastGlass { get; private set; }
+
+    /// <summary>Keeps a glass box for the blended pass; false when the list is full (then it is drawn opaque).</summary>
+    public static bool QueueGlass(in Matrix4x4 model, Vector3 colour, float alpha, ushort shape)
+    {
+        if (GlassCount >= MaxGlass)
+            return false;
+        _glass[GlassCount++] = new GlassBox { Model = model, Color = colour, Alpha = Math.Clamp(alpha, 0.05f, 0.95f), Shape = shape };
+        return true;
+    }
+
+    /// <summary>The highlight along a pane's edges: its width (m) and how much lighter than the pane it is.</summary>
+    private const float EdgeWidth = 0.012f;
+
+    private static readonly Vector3 GlassSheen = new(0.86f, 0.92f, 0.97f);
+
+    /// <summary>
+    /// The glass <see cref="Draw"/> kept: call it in the blended pass (it turns blending on and depth writes off, and leaves
+    /// them so), after everything opaque, so what is behind a pane (a player in the cab, the far side of the yard) shows
+    /// through it. Farthest first (sorted by the distance from <paramref name="eye"/>), so panes behind panes blend right.
+    /// Each pane is lit and fogged by the box shader (mode 0, both GL paths); it reflects a little more and takes a sheen
+    /// at grazing angles, and a thin lighter strip runs along each long edge so it still reads as glass edge-on.
+    /// </summary>
+    public static void DrawGlass(Renderer gfx, Vector3 eye)
+    {
+        var n = GlassCount;
+        LastGlass = 0;
+        if (n == 0)
+            return;
+        gfx.SetBlend(true);
+        gfx.SetDepthWrite(false);
+        for (var k = 0; k < n; k++)
+        {
+            _glassOrder[k] = k;
+            _glassKey[k] = -Vector3.DistanceSquared(_glass[k].Model.Translation, eye); // (farthest first)
+        }
+        Array.Sort(_glassKey, _glassOrder, 0, n);
+        var drawn = 0;
+        for (var k = 0; k < n; k++)
+        {
+            ref readonly var g = ref _glass[_glassOrder[k]];
+            var m = g.Model;
+            var centre = m.Translation;
+            // The pane's thinnest axis is its normal (the model's rows are its scaled axes).
+            Span<Vector3> axes = [new(m.M11, m.M12, m.M13), new(m.M21, m.M22, m.M23), new(m.M31, m.M32, m.M33)];
+            var size = new Vector3(axes[0].Length(), axes[1].Length(), axes[2].Length());
+            var thin = size.X <= size.Y && size.X <= size.Z ? 0 : size.Y <= size.Z ? 1 : 2;
+            var normal = axes[thin] / MathF.Max(size[thin], 1e-5f);
+            var view = centre - eye;
+            var len = view.Length();
+            var facing = len > 1e-4f ? MathF.Abs(Vector3.Dot(view / len, normal)) : 1f;
+            var graze = 1f - facing;
+            var sheen = graze * graze;
+            var colour = Vector3.Lerp(g.Color, GlassSheen, 0.35f * sheen);
+            var alpha = g.Alpha + (0.85f - g.Alpha) * 0.6f * sheen * graze;
+            gfx.Draw(m, colour, alpha, mode: 0, shape: g.Shape);
+            drawn++;
+            if (g.Shape != 0)
+                continue;
+            // The edges: a thin strip along both ends of each of the pane's two long axes, a hair proud of its faces.
+            for (var a = 0; a < 3; a++)
+            {
+                if (a == thin)
+                    continue;
+                var b = 3 - a - thin; // (the other long axis: the strip sits at its two ends)
+                if (size[b] < EdgeWidth * 3)
+                    continue;
+                var w = EdgeWidth / size[b];
+                for (var e = -1; e <= 1; e += 2)
+                {
+                    var scale = Vector3.One;
+                    scale[b] = w;
+                    scale[thin] = 1.08f;
+                    var off = Vector3.Zero;
+                    off[b] = e * (0.5f - w * 0.5f);
+                    gfx.Draw(Matrix4x4.CreateScale(scale) * Matrix4x4.CreateTranslation(off) * m, Vector3.Lerp(g.Color, GlassSheen, 0.6f), MathF.Min(0.9f, g.Alpha + 0.3f + 0.3f * graze), mode: 0);
+                    drawn++;
+                }
+            }
+        }
+        LastGlass = drawn;
     }
 
     /// <summary>A box's twelve edges as thin bars (a slot's ghost outline).</summary>

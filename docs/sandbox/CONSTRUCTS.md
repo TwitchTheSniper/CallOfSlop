@@ -27,15 +27,49 @@ north-west corner) and some loose parts.
 | 3 / 4 / 5 | Take out the **wrench** / the **welder** / the **linking tool** (press again to put it away). 1 or 2 go back to your guns. (4 and 5 are the kill-streak keys elsewhere; Sandbox has no streaks.) |
 | F | At the rack: take a part (press again for the next kind). On a seat: sit (the first seat drives, any other rides). On a door, hinge, motorised hinge or piston: open or shut it (unless its wires run it, or it's locked). On a button, switch or lever: work it. On a loose part: pick it up. In a seat: get out. |
 | Fire (hold) | With a tool out and a part in hand: fit the part on the ghost socket under the crosshair, or set it down on the surface you aim at as a **new construct** ([New constructs](#new-constructs-free-placement)). Letting go early stops it. |
-| R | Turn the part on its socket (the next way round that fits); aimed at a surface, the next of its 24 turns. |
+| Arrow keys | Turn the ghost part 90 degrees as you see it ([Turning the ghost](#turning-the-ghost)): Left / Right about the vertical, Up / Down tip it towards / away from you, Shift + Left / Right roll it. The same on a socket and on a surface. |
+| R | Put the ghost part back the default way round (on a socket: the first way that fits; on a surface: upright, facing your look). |
 | F (welder out) | On a part that touches another construct: weld the two into one. |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
+| Tab | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. Tab again or Esc closes it. Sandbox has no scoreboard. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Linking tool | Fire on an output, then fire on an input: a wire. Aim on a part: cut its wires (or let go of a wire in progress). R on a logic part: its next setting. |
+
+### Turning the ghost
+
+Board item dev-sandbox-arrow-rotate-ar02 (`Source/Constructs/GhostTurn.cs`). Every ghost (free placement on a surface
+and attaching to a socket) turns with the same keys, each a quarter turn relative to the camera:
+
+- **Left / Right** (the arrow keys): about the vertical; Left swings the part's front to your left, whichever way you or
+  the construct face.
+- **Up / Down**: about your view's right axis; Up tips the part's top towards you (its front rises), Down away.
+- **Shift + Left / Right**: roll about the axis pointing away from you; roll left takes the top to your left.
+- **R**: back to the default orientation (it no longer steps through the turns).
+
+The camera's up and right are snapped to the nearest axes of the frame the part's turn lives in (the new construct's frame,
+which follows the look's yaw and the surface; or the construct the socket is on), so every result is one of the 24 `Rot24`
+turns the placement and the network already use: no wire change. On a socket the part's own sockets decide which turns
+are possible: a turn no socket of the part can make there (or one that would be in the way) is skipped and the next quarter
+turn the same way is taken, and of the ways round giving one turn the first is used, so a key and its opposite always undo
+each other. The ghost carries a small gizmo: its front as an orange arrow, its top green, its right red. The HUD's hint
+names the keys ("<- -> ^ v: turn, Shift + <- ->: roll, R: reset").
+
+The keys are rebindable in Settings > Controls under the **Sandbox** heading: Turn the part left / right, Tip it towards /
+away from you, Roll it left / right (binds version 12). Sandbox actions are live only in Sandbox and the Zombies spectate
+keys only outside it, so they share the arrows without a clash (`Keybinds.Context`); a Sandbox action may be bound to a
+Shift chord (hold Shift while choosing the key), and while a chord is held its plain key does nothing (Shift + Left rolls,
+it doesn't also turn).
+
+**Self-test**: the **Sandbox ghost turns** section (`Source/App/SelfTestGhostTurn.cs`): from every player yaw (15 degree
+steps), on level, wall and upside-down frames, from all 24 turns: a key then its opposite gives the same turn, four presses
+a full turn, each an exact quarter turn about the camera's snapped axis the right way (on a slope only the turn rules); on
+a Frame Block's every socket, at three construct yaws and every 30 degrees of look, a key gives the same turn as free
+placement in the same frame, its opposite comes back to the default, four come round; a Frame Beam (which can't take every
+turn there) still undoes; the default keys, contexts and chords; a binds version 11 file gets the keys, a taken key is
+kept; nothing allocates.
 
 ### The tool wheel (decision 17)
 
@@ -140,8 +174,18 @@ putting a tool away brings the gun up with its equip time before it can fire; th
 
 ### The inventory (the parts menu)
 
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
-**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+**Per-mode keys** (board item dev-sandbox-tab-inventory-ti01, binds version 13): Sandbox has no scoreboard, so the
+inventory took Tab there without changing the global Scoreboard default. Each action has a context (`Keybinds.Context`):
+everywhere, Sandbox only, or every mode but Sandbox. The Scoreboard and the Zombies parts inventory (still on I) are live
+outside Sandbox only, the Sandbox inventory and the other Sandbox keys in Sandbox only, and two actions clash on a key only
+when their contexts overlap, so the keybinds screen (the Sandbox keys under their own heading) treats Tab there as no
+conflict. Settings migrate once: a player who never rebound the inventory gets Tab; one who had rebound it keeps that key
+for the Sandbox inventory; if a key used everywhere already holds Tab, the Sandbox inventory keeps I. The
+**Sandbox Tab inventory** self-test section (`Source/App/SelfTestSandboxTab.cs`) holds Tab in Sandbox, Team Deathmatch and
+Zombies matches and migrates version 12 files.
+
+**Tab** (the Sandbox inventory key, `GameAction.SandboxInventory`; rebindable under the Sandbox heading in Settings >
+Controls) opens the **Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
 list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
 
 - **Tabs**: Parts, Blueprints and Tools.
@@ -165,7 +209,7 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
   refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
   the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
   enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
-  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; Tab again or Esc closes it.
   It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
 - **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
   `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
@@ -212,7 +256,9 @@ what you look at, the edit's progress, refusals and, when driving, speed, fuel a
 
 ### The drivetrain (it only works when connected)
 
-A construct drives when it has a working **seat** with a driver (or a signal wired into its engine), a working **engine**
+(Since the drivetrain families the drive line can also run through shafts, gearboxes, chains, clutches and transfer cases
+to differentials and hubs: [Drivetrain parts](#drivetrain-parts-the-families), below.) A construct drives when it has a
+working **seat** with a driver (or a signal wired into its engine), a working **engine**
 in the body, **fuel** reaching the engine (a working tank linked to the engine directly, or through a chain of working
 **fuel lines**), a working **transmission** touching the engine, and **wheels on working suspensions** bolted to a working
 **differential** the transmission feeds (touching it, or through other differentials), directly or through a steering
@@ -242,7 +288,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
   along by the body and by any joint under their feet), and drivers and passengers are pinned to their seats (and drawn
   as part of the construct: "Seats" below). A moving
-  part that closes on a player shoves them along and, faster than 4 m/s, hurts them (run-over damage, below).
+  part that moves into a player shoves them along and, faster than 4 m/s of its own speed, hurts them (run-over damage,
+  below).
 
 ### Damage (decision 6)
 
@@ -293,9 +340,12 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
 | `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
-| `engine` | `force` (N, shared by the touching wheels), `topSpeed` (m/s), `burnRate` (litres a second at full throttle). |
-| `wheel` | `radius`, `grip`. Needs an `axle` socket. |
-| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio). Needs an `axle` socket. |
+| `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
+| `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
+| `suspension` | `travel` (m), `frequency` (Hz, at most 6), `damping` (ratio), `maxLoad` (kg a wheel), `active` (a wired signal sets its height), `presets` (`label`, `frequency`, `damping`, `hold`). Needs an `axle` socket. |
+| `transmission` | `kind` (`manual`, `sequential`, `automatic`, `cvt`, `reversing`), `gears` (reductions, lowest gear first), `labels`, `gear`, `reverse`, `shift` (s), `efficiency`; a CVT's `range`. |
+| `differential` | `kind` (`open`, `locked`, `limited`, `lockable`), `ratio` (the final drive), `efficiency`. |
+| `drive` | A transfer part (role `transfer`): `kind` (`shaft`, `ujoint`, `cvjoint`, `gearbox`, `chain`, `belt`, `clutch`, `transfercase`, `pto`, `hub`, `stub`), `ratio`, `efficiency`, `ports`, `maxAngle`, `maxTorque`, `front`, `setting`. |
 | `fuelTank` | `capacity` (litres; a tank comes full). |
 | `seat` | `at`: where the sitter's feet go. |
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
@@ -329,7 +379,9 @@ step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 p
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6
 parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Turret** (6 parts, 1 wire); milestone 3:
 **Gunner Turret** (9 parts, 1 wire), **Hood Gun Buggy** (26 parts, 2 wires), **Sentry** (7 parts, 1 wire), **Gun Bench**
-(9 parts, 1 wire), **Target Wall** (8 parts) and **Ammo Dump** (3 parts).
+(9 parts, 1 wire), **Target Wall** (8 parts) and **Ammo Dump** (3 parts); the drivetrain families: **4x4 Truck** (38
+parts), **Tracked Crawler** (18), **Racer** (24) and **Electric Cart** (23), and the buggies rebuilt on the structural
+parts (the Buggy 26 parts, the Wired Buggy 34, the Hood Gun Buggy 27; [Drivetrain parts](#drivetrain-parts-the-families)).
 
 ### The map's `"sandbox"` section
 
@@ -350,7 +402,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 82; 84 for free placement)
+## Network (protocol 82; 84 for free placement; 86 for the drivetrain's rpm; 87 for glass shattering)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -801,9 +853,10 @@ self-test compares).
 
 ### Gears
 
-A transmission may have `"transmission": {"gears": [ratios], "labels": [...], "gear": n}`: in gear k the engine's top
-speed is times the ratio and its force divided by it. The shipped Transmission has three (0.6, 1.0, 1.4; it starts in 2,
-which is milestone 2's drive). The linking tool's R picks its gear; a signal wired in (one input) picks it instead
+A transmission may have `"transmission": {"gears": [ratios], "labels": [...], "gear": n}`. Since the drivetrain families
+a ratio is a **reduction** (the engine turns that many times for each turn out, the lowest gear first) and the engine has
+a torque curve and a limiter ([Drivetrain parts](#drivetrain-parts-the-families)); the shipped Transmission has three
+(4.4, 3.0, 2.1; it starts in 2). The linking tool's R picks its gear; a signal wired in (one input) picks it instead
 (1 the first gear, rounded; below 0.5 the R gear). The **Gear Selector** (logic kind `selector`) steps 1, 2, 3, 1... on
 F or a rising input (an input reader on the driver's reload key makes a gear shift).
 
@@ -915,9 +968,33 @@ building rules. `--inventory-shots` adds the four groups' pages.
 
 **Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
 blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
-heavy armour everything short of a sniper rifle; glass is drawn opaque (a pale blue pane; see-through glass needs
-sorted blending); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
+heavy armour everything short of a sniper rifle; glass is see-through ([Glass](#glass), below); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
 (`"group"`, `"section"`), the top folder's parts listed after the subfolders'.
+
+### Glass
+
+A part box with `"glass": true` (or how much of it is drawn, 0.1 to 0.9; `true` is 0.3) is a see-through pane. The four
+Glass Panes' panes are (`tools/constructs/structure_parts.py` writes them); the "Construct glass" self-test checks every
+part of `"material": "glass"` has one. A glass box may be solid or a detail, not hidden.
+
+- **Drawing** (`Source/Render/ConstructRender.cs`): the opaque pass leaves panes out and keeps them for `DrawGlass`, which
+  runs in the blended pass after everything opaque (the mode's `DrawObjectives`): farthest first by distance from the eye,
+  blending on, depth writes off, lit and fogged by the box shader (mode 0, so both GL paths; no new texture units or
+  bindings). A pane is tinted by its colour, drawn more opaque and lighter at grazing angles (a little reflection), and
+  has a thin lighter strip along each long edge so it still reads as glass edge-on. At most 512 panes a frame are kept;
+  more are drawn opaque. The inventory's tiles (`SandboxTiles.DrawTile`), the part in your hands (`ToolRender.Emit`) and
+  a stored or packed pane draw it blended after the rest; a ghost's pane is fainter than its frame.
+- **Collision**: a pane is a solid box like any other: players, constructs and wrecks are stopped by it.
+- **Bullets**: a player's round goes through up to four panes (`Game.SandboxRay`), hits what is behind (a player in a
+  cab, a part, the map) and damages each pane it passed, at full strength. A construct gun's round does the same. Blasts
+  hurt glass like any part.
+- **Breaking**: glass is weak (health 13 to 48, armour 0). A broken pane **shatters**: it is removed, no wreck piece falls,
+  and a `CFireKind.Shatter` event (protocol 87: where, and its world bounds' half size in centimetres) bursts small shards
+  out of it on every PC (the prop debris pool) with the glass sound.
+
+**Choices made (the developer may change them)**: the opacity 0.3; rounds keep their full damage through glass; glass
+shatters whole (the frame round a Glass Pane goes with it); sorting is by each pane's centre (two panes crossing each
+other may blend in the wrong order where they cross).
 
 ## New constructs (free placement)
 
@@ -931,8 +1008,9 @@ and `EditKind.PlaceNew`).
 
 - **The pose**: the construct's up follows the surface's normal, except on near-level ground (within 12 degrees), where
   it stands upright and rests on the highest ground under its footprint's corners (a bump under one corner lifts it, so
-  it never starts inside the terrain). Its yaw is the look's. **R** steps through the part's 24 turns (`Rot24`; the four
-  upright ones first, then on its sides, then upside down). On a wall it stands out of the wall.
+  it never starts inside the terrain). Its yaw is the look's. The **arrow keys** turn the part through its 24 turns
+  (`Rot24`) relative to the camera and **R** puts it back upright ([Turning the ghost](#turning-the-ghost)). On a wall it
+  stands out of the wall.
 - **The grid** (the inventory window's "Snap new constructs to the grid", off by default): the spot snaps to a 0.5 m world
   grid across the surface and the yaw to 90 degrees, so constructs set down apart line up (a block set down next to
   another one meets it face to face).
@@ -986,6 +1064,122 @@ is pinned and theirs on its copy, and the block it then joins in is gone there t
 the limit is 12 constructs a player; joining is instant (the weld, no timer) and on F with the welder; anchoring without a
 foundation is creative-only; the core is a frame-role part with a flag rather than a new role; placing on top of another
 construct's surface without a socket isn't offered (only map surfaces).
+
+## Drivetrain parts (the families)
+
+Board item dev-sandbox-drivetrain-parts-dp01 (the developer's note, 2026-10-29). Code: `Source/Constructs/ConstructDrive.cs`
+(the drive line, the engine each tick), `ConstructDriveParts.cs` (the blocks), the wheels in `ConstructPhysics.cs`. Data:
+`Constructs/Parts/Drivetrain` (53 files) and the rescaled Wheel, Suspension, Engine, Transmission, Differential and Steering
+Pivot. The scale is the developer's "Realistic" chart ([Structural parts](#structural-parts-the-scale-chart)).
+
+### The drive line
+
+The engine must touch a working **transmission**; from it the drive runs through working **differentials** and
+**transfer parts** linked to it, each only through its **ports** (a shaft in one end and out of the other, never its side),
+to the **suspensions** bolted to a differential's or a **hub**'s ends, or on the leaf of a **steering pivot** that a **U
+joint** or **CV joint** feeds. Each driven wheel keeps its reduction (the gearbox's gear times the chain, belt and gearbox
+ratios on its way, times its differential's or hub's final drive), what is left after each part's losses, the most
+torque its line carries (a belt slips above it) and its **gates**: a clutch, a transfer case's front output, a U or CV
+joint's angle. The torque is shared between the drive groups that touch the ground and inside each group by its kind:
+**open** (a wheel in the air takes it all: 10% reaches the other, and no wheel is driven harder than the one that grips
+least), **limited slip** (60% to the wheel that grips, half as hard again), **locked** (all of it; a locked axle with both
+wheels down scrubs the turn: it damps the yaw), **lockable** (open or locked by the linking tool's R or a wire).
+
+**Why it won't go** (the HUD's red line): "the electric motor needs a working battery", "a steered wheel needs a U joint or
+CV joint to be driven", "a stub axle carries no drive: fit a hub or a differential", "the drive shaft 1 m is fitted by its
+side: the drive goes in and out of its ends", "the drive shaft 1 m is wrecked", "a caster wheel can't be driven", "a
+piston can't carry the drive", besides milestone 2's. A **drive note** (orange, sent to clients) says why a built line
+isn't driving right now: the clutch is out, the U joint is bent past its angle, the belt is slipping, the battery is flat,
+a diesel needs a battery for its starter; "shifting" and "spooling up" in grey.
+
+### The engine each tick
+
+- **rpm**: from the driven wheels touching the ground (speed over radius times the reductions), never below idle; pulling
+  away the clutch slips and the engine revs towards its peak; in the air it revs freely; it can't go much past the
+  limiter. **Torque**: the peak times the curve at that rpm (petrol rises to its peak; diesel strong low down and falls
+  off early; electric flat to its peak then constant power; turbine low at idle; flat), times the throttle (a turbine
+  times its **spool**, which takes its `spool` seconds), and nothing at the limiter or during a **shift** (its `shift`
+  seconds). Fuel use grows with the throttle and the rpm (a turbine burns at idle too); an electric motor draws the
+  batteries (its power over 0.9); a hamster wheel needs nothing.
+- **Gears**: manual and sequential boxes take the driver's **R** (up) and **sprint** (down) when nothing is wired in, the
+  linking tool's R or a wired signal as before; an **automatic** goes up at 90% of the limiter and down when the lower gear
+  would stay under 70% (a wired signal caps its highest gear); a **CVT** holds the engine at its peak within its range; a
+  **reversing** box backs up at its one ratio (others back up in their reverse ratio, 1.1 times first). A gear picked
+  standing still costs no shift time.
+- **Starting**: a diesel or a turbine (`"starter": true`) needs a battery: without one, "It won't start". An electric
+  motor runs while a working battery's links reach it with charge. An engine with nothing to drive still runs (a power
+  take-off).
+- **Wheels**: grip on terrain (dirt) is 85% of hard ground times the tyre's `offroad`; `side` scales the sideways grip
+  (an omni wheel slides, a track unit turns on the spot); `roll` is a share of the load; a wrecked tyre with `flat` stays on
+  at three quarters of its radius with half its grip. A **track** unit is one part with several contact rays along its
+  length (6 on the 5 m Track); a construct whose driven wheels don't steer **skid-steers** (the steering drives one side
+  forward and the other back). Air drag (0.006 v squared) tops out the tall gears.
+- **Suspension**: a spring carries at most its `maxLoad` (kg a wheel): more and it sags and bottoms. An **adjustable**
+  strut's presets (R) set its stiffness, damping and, with `hold`, a ride height; an **active** (hydraulic) strut holds the
+  height its wire asks (0 low, 1 high, unwired half way, 0.36 m between) and draws 150 W on an electrical construct.
+- **PTO**: a turntable, motor hinge or piston bolted to a power take-off on the drive line runs from the engine, only while
+  it runs, with no battery.
+- The configure tool is still to come: the **HUD** shows the speed, rpm, torque, gear and fuel while driving (and "R gear
+  up, Shift gear down" for a manual), and the **look line** an engine's rpm, torque and curve, a gearbox's ratios and kind,
+  a differential's kind and ratio, a transfer part's ratio or state (2WD/4WD, engaged), a wheel's size and grip (FLAT), a
+  suspension's travel and preset or height.
+
+### The families
+
+| Family | Parts (no single best: mass, grip, power, fuel and toughness trade off) |
+| --- | --- |
+| Wheels | Wheel (0.8 m road), Small (0.6 m), Large (1.1 m), Off-Road (grips dirt, worse on roads), Monster (2.4 m, 220 kg), Solid (no puncture, armour 25, less grip), Slick (most grip on hard ground, slides on dirt), Spiked (bites dirt, skates on roads), Caster (0.4 m, swivels, can't be driven), Omni (slides sideways), Tank Road Wheel (steel), Track (5 m) and Short Track (3 m), sprockets at the back |
+| Suspensions | Suspension (0.3 m, 600 kg), Stiff (0.12 m), Long-Travel (0.6 m, soft, light loads), Leaf Spring (3 t a wheel, tough), Adjustable (soft, medium, stiff, high, low), Rigid Mount, Hydraulic (active) |
+| Engines | Engine (0.5 m petrol, 260 N m), Small Engine (0.4 m single, 70 N m, 9000 rpm), V8 (1 m, 520 N m, thirsty), Diesel (1 m, 820 N m at 1800, 3200 rpm, starter), Electric Motor (380 N m from standstill, battery), Turbine (700 N m to 12000 rpm, spools 2.5 s, thirsty, starter), Hamster Wheel |
+| Transmissions | Transmission (3-speed manual), 5-Speed, Automatic (4, 87% through), CVT (84%), Reversing, Low-Range (12:1 and 8:1), Sequential (6, 0.12 s shifts) |
+| Differentials | Differential (open, 1.1 m), Limited-Slip, Locking, Wide Differential (open, 1.6 m), Live Axle (locked, 1.6 m) |
+| Transfer | Drive Shaft 0.5, 1 and 2 m; U Joint (15 degrees), CV Joint (45); Right-Angle, T and Reduction (2:1) gearboxes; Transfer Case; Chain Drive 1:1 and 2:1, Belt Drive (0.67:1, slips over 900 N m); Clutch; Power Take-Off; Wheel Hub (4.1:1); Stub Axle |
+| Tanks, power | Small (15 l) and Large (150 l) Fuel Tank, Battery Pack (20 MJ) |
+
+### The rescaled blueprints and the examples
+
+The **Buggy** (and the Wired and Hood Gun Buggies) is 3.9 by 1.8 m on two 2.5 m square-beam rails, a cross member, a
+deck plate and a wedge nose, 0.8 m wheels 2.9 m apart; the engine sits on the gearbox over the differential, its tank
+behind on a fuel line; the steering pivots are 18 cm knuckles. The **Trailer** is a square-beam drawbar with a 1 m bed.
+New examples: the **4x4 Truck** (8.2 m: a diesel, an automatic, a transfer case in 4WD, right-angle gearboxes onto a locked
+live axle and an open wide axle with CV joints into its steering pivots, leaf springs, large wheels), the **Tracked
+Crawler** (7.1 m: a V8 and an automatic on a wide axle driving two 5 m tracks, skid steering), the **Racer** (a V8, a
+sequential box, a limited-slip differential, slicks on stiff struts) and the **Electric Cart** (2.6 m: an electric motor
+under a battery pack, a reversing box, small wheels). The truck's and crawler's ladders are still the old 2 m Frame Beams
+(their drive lines sit at a 0.5 m beam's height); everything else is on the structural parts.
+
+### Self-test and pictures
+
+The **Construct drivetrain** section (`Source/App/SelfTestConstructDrive.cs`): every part file loads and 15 bad drivetrain
+blocks are refused for the right reason; the buggy, truck and crawler match the chart; each wheel, suspension, engine and
+transmission changes the drive measurably (distance on hard ground and dirt, the turn, ride height and roll, speed off the
+line and the top speed, climbing a 15 degree ramp with a small engine; slicks faster on roads and slower on dirt, off-road
+tyres faster on dirt, a turbine slow off the line then faster, a hydraulic strut's height on a switch, the adjustable
+presets, an automatic shifting, a CVT at its peak, a reversing box as fast back as forward, a sequential box's shorter
+shift, low range climbing furthest, a diesel without a battery refused); a rear wheel in the air gets 5%, 60% or 100% of the
+drive through an open, limited-slip or locked differential, and the locked one turns less; the drive reaches a wheel
+through every transfer part kind with the right ratio, and is refused with its reason for a steering pivot without a U
+or CV joint, a stub axle, a shaft fitted by its side and a wrecked shaft; a clutch on a switch, the truck in 2WD and 4WD,
+its U joints losing the front drive at full lock (CV joints keeping it), a turntable on a PTO turning only with the engine;
+the five examples drive and turn (the crawler on the spot) and the racer is the fastest; a client gets the rpm and the
+note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in the container). `--drive-shots`
+(Program.DriveShots.cs) writes `smoke_drive_*.bmp`: the row of examples, each with a player beside it, the truck's front
+axle and transfer case, the crawler's track, part galleries and the driving HUD.
+
+### Choices made (the developer may change them)
+
+1. Gear ratios are **reductions** now (the old Transmission's 0.6/1.0/1.4 speed multipliers became 4.4/3.0/2.1), and a
+   differential has a final drive (4.1 on the buggy's).
+2. A **steered driven wheel needs a U or CV joint** between its axle and the steering pivot (milestone 2 let a pivot on
+   a differential drive); a U joint loses the drive past 15 degrees of lock.
+3. **Dirt** (terrain) grips 85% of hard ground; the old rolling resistance (a share of the speed every tick) became a share
+   of the load plus air drag, so tall gears and big engines matter; the open differential's "no harder than the least
+   grip" keeps a car straight at the grip limit.
+4. A wrecked **tyre goes flat** and stays on (the shipped wheels); shoot the suspension to drop a wheel.
+5. **Shifting by keys**: R and sprint for an unwired manual or sequential box (sprint isn't used while driving).
+6. The truck and crawler keep the old 2 m Frame Beams for their ladders (the structural parts' square beams are 0.25 m,
+   below the drive lines' 0.5 m height); a later pass can move them.
+7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids.
 
 ## Performance and caps
 
@@ -1205,9 +1399,15 @@ input end). Wiring is instant (fitting a part is what takes time).
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
 - A player standing on a part is **carried** by the body's motion and, sideways, by every joint under their feet (a
   turntable, a swinging deck); a rising lift lifts them by the step-up rule. They count towards that joint's load.
-- **Run-over damage**: a moving part (a car, a swinging arm) that closes on a player faster than 4 m/s does
-  `(speed - 4) x 9 x sqrt(mass / 500)` (the mass factor 0.4 to 2.5) damage, at most once in 0.6 s, and knocks them along
-  with it; the driver gets the kill (shown as a melee kill), or nobody for a driverless construct.
+- **Run-over damage** (`ConstructWorld.BlockPlayer`, `Game.SandboxRunOver`): only the **construct's own motion** counts:
+  the velocity of its part at the contact (the body's motion, linear and turning, plus every joint's up its chain: a
+  swinging arm, a turntable) along the contact normal towards the player. The player's own velocity plays no part, so
+  sprinting into a parked car only stops you, and landing on a parked car is a landing (normal fall damage only). At up
+  to `Game.RunOverSpeed` (4 m/s, tunable) the part only pushes the player along at its speed; faster, it does
+  `(speed - 4) x 9 x sqrt(mass / 500)` damage (the mass factor 0.4 to 2.5), at most once in 0.6 s, and knocks them out
+  along the contact and up, harder the faster and heavier it is (`Game.RunOverKnock`). The same rule holds for moving
+  joints and wrecks. The driver gets the kill (shown as a melee kill), or nobody for a driverless construct. The
+  "Construct run-over" self-test covers each case.
 
 ### Seats: riders as part of the construct
 

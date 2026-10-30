@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Suspension",
-  "description": "A sprung wheel mount: bolt it to a frame's side, then a wheel onto it.",
+  "description": "A sprung wheel mount: bolt it to a frame's side (or a differential's end), then a wheel onto it. 0.3 m of travel, a medium spring.",
   "role": "suspension",
   "tool": "wrench",
   "attachSeconds": 1.5,
@@ -13,23 +13,32 @@
   "boxes": [
     {
       "size": [
-        0.3,
+        0.05,
         0.3,
         0.3
       ]
     },
     {
       "size": [
-        0.12,
-        0.44,
-        0.12
-      ],
-      "at": [
-        0,
-        0,
-        0
+        0.04,
+        0.6,
+        0.08
       ],
       "color": "#d0b050",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0.0,
+        0.3,
+        0
+      ],
+      "color": "#6a5a2a",
       "detail": true
     }
   ],
@@ -37,7 +46,7 @@
     {
       "name": "mount",
       "at": [
-        -0.15,
+        -0.025,
         0,
         0
       ],
@@ -46,7 +55,7 @@
     {
       "name": "axle",
       "at": [
-        0.15,
+        0.025,
         0,
         0
       ],
@@ -57,6 +66,7 @@
   "suspension": {
     "travel": 0.3,
     "frequency": 2.2,
-    "damping": 0.7
+    "damping": 0.7,
+    "maxLoad": 600
   }
 }

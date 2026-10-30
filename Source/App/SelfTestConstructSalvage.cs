@@ -318,7 +318,7 @@ public static partial class SelfTest
         Run(g, ref now, 2.0);
         var keptGoneAfter = w.Get(kept.Id) == null;
         // A player near keeps one.
-        w.DamagePart(car, PartOf(car, PartRole.Wheel) is var wh and >= 0 ? wh : 0, 100000, out _);
+        w.DamagePart(car, PartOf(car, PartRole.Suspension) is var wh and >= 0 ? wh : 0, 100000, out _); // (a wrecked tyre goes flat and stays on: shoot a suspension to drop a wheel)
         Run(g, ref now, 0.5);
         var near = w.Bodies.LastOrDefault(b => b.Wreck);
         var nearKept = false;

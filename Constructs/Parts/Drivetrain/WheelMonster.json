@@ -1,0 +1,101 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Monster Wheel",
+  "description": "A huge tractor tyre, 2.4 m across: climbs anything, heavy and slow to turn. A punctured tyre runs flat on its rim (slow, little grip).",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 220,
+  "health": 600,
+  "armour": 6,
+  "material": "rubber",
+  "onBreak": "disable",
+  "color": "#1f2124",
+  "boxes": [
+    {
+      "size": [
+        0.8,
+        2.4,
+        1.008
+      ]
+    },
+    {
+      "size": [
+        0.8,
+        1.008,
+        2.4
+      ]
+    },
+    {
+      "size": [
+        0.8,
+        2.04,
+        2.04
+      ]
+    },
+    {
+      "size": [
+        0.84,
+        0.66,
+        0.66
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.82,
+        1.44,
+        0.144
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.82,
+        0.144,
+        1.44
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.82,
+        0.2,
+        2.2
+      ],
+      "color": "#26282b",
+      "detail": true
+    },
+    {
+      "size": [
+        0.82,
+        2.2,
+        0.2
+      ],
+      "color": "#26282b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.4,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 1.2,
+    "grip": 0.9,
+    "offroad": 1.35,
+    "roll": 0.03,
+    "flat": true
+  }
+}

@@ -1,0 +1,173 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Live Axle",
+  "description": "A locked heavy truck axle, 1.6 m: the suspensions bolted to its ends are driven when the drive line reaches it (a transmission or a shaft touching it). Both wheels always turn together: great in mud, scrubs in turns.",
+  "role": "differential",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 120,
+  "health": 420,
+  "armour": 10,
+  "material": "steel",
+  "color": "#3e4636",
+  "boxes": [
+    {
+      "size": [
+        1.6,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.32,
+        0.32,
+        0.56
+      ],
+      "color": "#3c4a34",
+      "detail": true
+    },
+    {
+      "size": [
+        1.62,
+        0.14,
+        0.14
+      ],
+      "color": "#2f3a28",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z0",
+      "at": [
+        -0.25,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        0.25,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z0",
+      "at": [
+        -0.25,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+z1",
+      "at": [
+        0.25,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top0",
+      "at": [
+        -0.25,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top1",
+      "at": [
+        0.25,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom0",
+      "at": [
+        -0.25,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        0.25,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.8,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.8,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top2",
+      "at": [
+        -0.75,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "top3",
+      "at": [
+        0.75,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom2",
+      "at": [
+        -0.75,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "bottom3",
+      "at": [
+        0.75,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "differential": {
+    "kind": "locked",
+    "ratio": 4.6,
+    "efficiency": 0.96
+  }
+}

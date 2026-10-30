@@ -28,7 +28,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 83: charge, power flags, gear, fuel)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -59,7 +59,7 @@ public static class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0) | (c.Pinned ? 16 : 0))).U8(c.Owner); // (protocol 84: pinned)
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 83: the charge, power and gear)
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear).U16(RpmOut(c)).U8((byte)c.Note); // (protocol 83: the charge, power and gear; 86: rpm, drive note)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U8((byte)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -138,7 +138,7 @@ public static class ConstructNet
         return i;
     }
 
-    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big).</summary>
+    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big); since 87 a glass part shattering (where, its half size in cm).</summary>
     public static void WriteFires(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CFire).U8((byte)Math.Min(world.FireCount, 255));
@@ -148,10 +148,15 @@ public static class ConstructNet
             w.U8((byte)e.Kind);
             if (e.Kind == CFireKind.Shot)
                 w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+            else if (e.Kind == CFireKind.Shatter)
+                w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
     }
+
+    /// <summary>A shatter's half size on the wire: centimetres, 1 to 255.</summary>
+    private static byte HalfByte(float half) => (byte)Math.Clamp((int)MathF.Round(half * 100f), 1, 255);
 
     /// <summary>Client: a Msg.CFire (after the id byte) into <paramref name="into"/>; returns how many events.</summary>
     public static int ReadFires(ref PacketReader r, Span<CFireEvent> into)
@@ -166,6 +171,8 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
             else if (kind is CFireKind.Blast or CFireKind.CookOff)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
+            else if (kind == CFireKind.Shatter)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
@@ -180,6 +187,14 @@ public static class ConstructNet
     private static byte PowerFlags(Construct c) =>
         (byte)((c.Electrical ? 1 : 0) | (c.PowerOn ? 2 : 0) | (c.EngineRunning ? 4 : 0) | (c.StarterFailed ? 8 : 0));
 
+    private static ushort RpmOut(Construct c) => (ushort)Math.Clamp(MathF.Round(c.Rpm), 0, 65535);
+
+    private static void SetDrive(Construct c, ushort rpm, byte note)
+    {
+        c.Rpm = rpm;
+        c.Note = note <= (byte)DriveNote.Spooling ? (DriveNote)note : DriveNote.None;
+    }
+
     private static void SetPower(Construct c, byte flags, byte gear)
     {
         c.Electrical = (flags & 1) != 0;
@@ -187,7 +202,7 @@ public static class ConstructNet
         c.EngineRunning = (flags & 4) != 0;
         c.StarterFailed = (flags & 8) != 0;
         c.Gear = gear;
-        c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f;
+        c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f; // (a CVT's ratio isn't sent: the HUD shows its rpm)
     }
 
     /// <summary>Protocol 83: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
@@ -411,6 +426,8 @@ public static class ConstructNet
         var charge = r.F32();
         var power = r.U8();
         var gear = r.U8();
+        var rpm = r.U16();
+        var note = r.U8();
         var pos = r.Vec();
         var rot = new Quaternion(r.F32(), r.F32(), r.F32(), r.F32());
         var vel = r.Vec();
@@ -534,6 +551,7 @@ public static class ConstructNet
         c.Fuel = fuel;
         c.Charge = float.IsFinite(charge) ? charge : 0;
         SetPower(c, power, gear);
+        SetDrive(c, rpm, note);
         c.Vel = vel;
         c.AngVel = ang;
         if (fresh)
@@ -613,6 +631,7 @@ public static class ConstructNet
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
             .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 83)
+            .U16(RpmOut(c)).U8((byte)c.Note) // (protocol 86)
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))
@@ -654,6 +673,8 @@ public static class ConstructNet
             var power = r.U8();
             var gear = r.U8();
             var fuel = r.U16() / 10f;
+            var rpm = r.U16();
+            var note = r.U8();
             int joints = r.U8();
             var c = world.Get(id);
             if (c != null && !stale)
@@ -661,6 +682,7 @@ public static class ConstructNet
                 c.Charge = share * c.ChargeCapacity;
                 c.Fuel = fuel;
                 SetPower(c, power, gear);
+                SetDrive(c, rpm, note);
             }
             for (var j = 0; j < joints; j++)
             {

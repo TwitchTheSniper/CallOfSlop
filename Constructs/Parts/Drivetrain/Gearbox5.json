@@ -1,0 +1,117 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "5-Speed Gearbox",
+  "description": "A 5-speed manual gearbox: low gears to pull, tall ones to cruise. Fit it touching the engine; the drive goes on through differentials, shafts and gearboxes it touches. The driver shifts with R (up) and sprint (down); the linking tool's R or a wired signal (1, 2, 3...) picks the gear too.",
+  "role": "transmission",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 55,
+  "health": 110,
+  "armour": 3,
+  "material": "steel",
+  "color": "#4f6545",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.6
+      ]
+    },
+    {
+      "size": [
+        0.3,
+        0.12,
+        0.62
+      ],
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "color": "#3c4a34",
+      "detail": true
+    },
+    {
+      "size": [
+        0.05,
+        0.25,
+        0.05
+      ],
+      "at": [
+        0,
+        0.37,
+        0.1
+      ],
+      "color": "#1b1b1b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        -0.05
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.3
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.3
+      ],
+      "dir": "-z"
+    }
+  ],
+  "transmission": {
+    "kind": "manual",
+    "gears": [
+      5.2,
+      3.6,
+      2.7,
+      2.1,
+      1.7
+    ],
+    "gear": 1
+  }
+}

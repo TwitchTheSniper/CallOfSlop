@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Large Fuel Tank",
+  "description": "Holds 150 litres, 1 m long. Feeds an engine it touches, or one at the end of fuel lines.",
+  "role": "fueltank",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 70,
+  "health": 180,
+  "armour": 4,
+  "material": "steel",
+  "color": "#b8352c",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        1.0
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        0.1,
+        0.12
+      ],
+      "at": [
+        0.1,
+        0.29,
+        0.35
+      ],
+      "color": "#d8d8d8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.5
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.5
+      ],
+      "dir": "-z"
+    }
+  ],
+  "fuelTank": {
+    "capacity": 150
+  }
+}

@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "CVT",
+  "description": "A continuously variable transmission: always at the engine's peak, no shifts, but only 84% gets through. Fit it touching the engine; the drive goes on through differentials, shafts and gearboxes it touches.",
+  "role": "transmission",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 45,
+  "health": 90,
+  "armour": 2,
+  "material": "steel",
+  "color": "#6a6a4a",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.52,
+        0.3,
+        0.3
+      ],
+      "at": [
+        0,
+        0.05,
+        0
+      ],
+      "color": "#4a4a32",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "transmission": {
+    "kind": "cvt",
+    "range": [
+      5.0,
+      1.5
+    ]
+  }
+}

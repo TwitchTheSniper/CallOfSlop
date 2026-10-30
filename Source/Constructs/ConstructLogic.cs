@@ -283,6 +283,8 @@ public static class ConstructLogic
             c.GearRatio = 1f;
             return;
         }
+        if (d.Trans is TransKind.Automatic or TransKind.Cvt)
+            return; // (they pick their own gear: ConstructDrive.Tick)
         var gear = Math.Min(c.Parts[tr].Setting, (byte)(d.Settings.Length - 1));
         if (wired && signal >= 0.5f)
             gear = (byte)Math.Clamp((int)MathF.Round(signal) - 1, 0, d.Settings.Length - 1);

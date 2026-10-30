@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Engine",
-  "description": "Drives every wheel of its construct, while a driver sits in the seat and fuel reaches it.",
+  "description": "A 0.5 m petrol engine: the all-rounder. Drives the wheels through a transmission touching it, while fuel reaches it. 260 N m.",
   "role": "engine",
   "tool": "wrench",
   "attachSeconds": 3.0,
@@ -44,6 +44,34 @@
         0
       ],
       "color": "#353b42",
+      "detail": true
+    },
+    {
+      "size": [
+        0.16,
+        0.16,
+        0.06
+      ],
+      "at": [
+        0.12,
+        0.05,
+        -0.27
+      ],
+      "color": "#1c1f22",
+      "detail": true
+    },
+    {
+      "size": [
+        0.3,
+        0.06,
+        0.06
+      ],
+      "at": [
+        0,
+        0.33,
+        -0.12
+      ],
+      "color": "#8a9096",
       "detail": true
     }
   ],
@@ -88,7 +116,7 @@
       "name": "+z",
       "at": [
         0,
-        0,
+        0.0,
         0.25
       ],
       "dir": "+z"
@@ -97,15 +125,19 @@
       "name": "-z",
       "at": [
         0,
-        0,
+        0.0,
         -0.25
       ],
       "dir": "-z"
     }
   ],
   "engine": {
-    "force": 5200,
-    "topSpeed": 19,
-    "burnRate": 0.05
+    "torque": 260,
+    "idleRpm": 900,
+    "peakRpm": 4200,
+    "maxRpm": 6500,
+    "curve": "petrol",
+    "burnRate": 0.05,
+    "noise": 0.5
   }
 }

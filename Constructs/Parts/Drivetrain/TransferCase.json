@@ -1,0 +1,116 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Transfer Case",
+  "description": "Splits the drive to the rear (its +z face) and the front (its marked side): 4WD, or rear only in 2WD (the linking tool's R, or a wired signal: on for 4WD).",
+  "role": "transfer",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 45,
+  "health": 200,
+  "armour": 6,
+  "material": "steel",
+  "color": "#4f5a66",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.52,
+        0.2,
+        0.3
+      ],
+      "at": [
+        0,
+        -0.05,
+        0
+      ],
+      "color": "#38414a",
+      "detail": true
+    },
+    {
+      "size": [
+        0.06,
+        0.12,
+        0.12
+      ],
+      "at": [
+        -0.27,
+        0,
+        0
+      ],
+      "color": "#c03a2b",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "in",
+      "at": [
+        0,
+        0,
+        -0.25
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "rear",
+      "at": [
+        0,
+        0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.25,
+        0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "drive": {
+    "kind": "transfercase",
+    "ports": [
+      "in",
+      "rear",
+      "front"
+    ],
+    "front": "front",
+    "efficiency": 0.96
+  }
+}

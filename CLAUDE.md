@@ -92,7 +92,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **85**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **87**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -131,6 +131,10 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Frenzy buffs stay strong.**
 - **Smoke tests never touch real saves.** Deletions are batched for the user to approve. Ask the user one question at a time.
 - **Focused tests on branches** (the `[tests: ...]` tag). The full suite runs on main at merge.
+- **No review pictures unless asked (2026-10-30).** Don't render screenshots, smoke shots, clips or before/after
+  pictures just to show the user; this overrides board notes asking for review shots. Use a picture only when you ask
+  the user a question that holds up the work and the picture is relevant to the answer. Pictures tests make for their
+  own checks are fine; don't send them unless such a question needs them.
 - **Record lessons (2026-10-29).** When you fix something that was already marked done on the board, or a test or CI
   run fails for a reason seen before, add a one-line entry to **Lessons** at the end of this file: what went wrong,
   why, and the rule that prevents it. Where you can, also add a check that enforces the rule (a self-test, a CI step or

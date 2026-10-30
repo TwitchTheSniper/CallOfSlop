@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Fuel Tank",
+  "description": "Holds 15 litres. Feeds an engine it touches, or one at the end of fuel lines.",
+  "role": "fueltank",
+  "tool": "wrench",
+  "attachSeconds": 2.0,
+  "mass": 14,
+  "health": 60,
+  "armour": 1,
+  "material": "steel",
+  "color": "#b8352c",
+  "boxes": [
+    {
+      "size": [
+        0.4,
+        0.3,
+        0.4
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        0.1,
+        0.12
+      ],
+      "at": [
+        0.05,
+        0.19,
+        0.05
+      ],
+      "color": "#d8d8d8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+x",
+      "at": [
+        0.2,
+        0.0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.2,
+        0.0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0.0,
+        0.2
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0.0,
+        -0.2
+      ],
+      "dir": "-z"
+    }
+  ],
+  "fuelTank": {
+    "capacity": 15
+  }
+}

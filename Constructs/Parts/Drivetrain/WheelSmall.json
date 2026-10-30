@@ -1,0 +1,83 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Small Wheel",
+  "description": "A small road wheel, 0.6 m across: light carts and trailers. A punctured tyre runs flat on its rim (slow, little grip).",
+  "role": "wheel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 12,
+  "health": 80,
+  "armour": 1,
+  "material": "rubber",
+  "onBreak": "disable",
+  "color": "#1f2124",
+  "boxes": [
+    {
+      "size": [
+        0.22,
+        0.6,
+        0.252
+      ]
+    },
+    {
+      "size": [
+        0.22,
+        0.252,
+        0.6
+      ]
+    },
+    {
+      "size": [
+        0.22,
+        0.51,
+        0.51
+      ]
+    },
+    {
+      "size": [
+        0.26,
+        0.165,
+        0.165
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.24,
+        0.36,
+        0.036
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    },
+    {
+      "size": [
+        0.24,
+        0.036,
+        0.36
+      ],
+      "color": "#9aa0a6",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "axle",
+      "at": [
+        -0.11,
+        0,
+        0
+      ],
+      "dir": "-x",
+      "kind": "axle"
+    }
+  ],
+  "wheel": {
+    "radius": 0.3,
+    "grip": 0.95,
+    "offroad": 0.8,
+    "roll": 0.012,
+    "flat": true
+  }
+}

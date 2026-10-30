@@ -212,8 +212,8 @@ public static partial class SelfTest
             (good.Replace("\"health\": 50", "\"health\": 50, \"colour\": 1"), "unknown key \"colour\""),
             (good.Replace("\"boxes\": [ { \"size\": [0.5, 0.5, 0.5] } ]", "\"boxes\": []"), "\"boxes\""),
             (good.Replace("\"role\": \"frame\"", "\"role\": \"wheel\""), "needs a \"wheel\" block"),
-            (good.Replace("\"role\": \"frame\"", "\"role\": \"engine\", \"engine\": { \"force\": 10 }"), "missing \"topSpeed\""),
-            (good.Replace("\"role\": \"frame\"", "\"role\": \"frame\", \"engine\": { \"force\": 10, \"topSpeed\": 5 }"), "only for engine parts"),
+            (good.Replace("\"role\": \"frame\"", "\"role\": \"engine\", \"engine\": { \"torque\": 10 }"), "missing \"maxRpm\""),
+            (good.Replace("\"role\": \"frame\"", "\"role\": \"frame\", \"engine\": { \"torque\": 10, \"maxRpm\": 5000 }"), "only for engine parts"),
             (good.Replace("\"name\": \"T\"", "\"name\": \"\""), "\"name\""),
         ];
         var ok = 0;
