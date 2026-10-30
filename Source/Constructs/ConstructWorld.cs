@@ -783,7 +783,7 @@ public sealed partial class ConstructWorld
                 // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
                 // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
                 var stepper = c.Anchored || p.D.Walk != WalkKind.None;
-                var margin = stepper ? World.PlayerRadius * 0.9f : 0.05f;
+                var margin = stepper ? World.PlayerRadius + 0.02f : 0.05f; // (just past where the disc is pushed off: it steps up first)
                 for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
                     c.BoxOf(i, bi2, out var centre, out var half);
