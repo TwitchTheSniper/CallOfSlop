@@ -31,8 +31,15 @@ public static class ConstructPhysics
     public const float MaxSpin = 18f;
     public const float MaxJointSpin = 25f; // radians (or metres) a second: anything faster is clamped
     public const int SleepAfterTicks = 40;
+    public const float StillSpeed2 = 0.02f; // (m/s or rad/s, squared) slower than this counts as still, for sleep
     public const float AntiRoll = 0.7f; // 0: tyres push at the ground; 1: at the centre of mass's height (no roll at all)
     public const int MaxChain = 4096; // the joint chain entries of every contact on a segment, in all
+    public const float PivotBeta = 0.3f; // a coupling's free pivot: the share of its error put right each tick
+    public const float PivotMaxFix = 4f; // m/s at most to put it right (a coupling made apart pulls together, not snaps)
+    public const float HitchClear = 0.7f; // coupled constructs' parts this near a hitch point don't collide with each other
+
+    /// <summary>A motor's push and a joint's stops push the body back (milestone 3: a turret swung hard rocks a light buggy). The self-test turns it off to compare.</summary>
+    public static bool JointReactions = true;
 
     public struct Contact
     {
@@ -46,11 +53,15 @@ public static class ConstructPhysics
         public Vector3 RA, RB; // from each body's centre of mass
         public int UA, UB; // each side's joint chain in the chain arrays (start; the count is NA, NB)
         public byte NA, NB;
+        public bool Bilateral; // a coupling's free pivot (milestone 3): pushes either way, no friction; Gap is the error along the normal
+        public bool TwoPoints; // a coupling: B's point is PointB (each body's own hitch point)
+        public Vector3 PointB;
     }
 
     private static readonly Contact[] _contacts = new Contact[MaxContacts];
     private static int _contactCount;
     private static readonly Matrix4x4[] _invI = new Matrix4x4[ConstructWorld.MaxBodies];
+    private static readonly Matrix4x4[] _invIB = new Matrix4x4[ConstructWorld.MaxBodies]; // what a joint's push turns (Construct.InvInertiaBaseLocal)
     private static readonly bool[] _dyn = new bool[ConstructWorld.MaxBodies]; // the body itself moves (free and awake)
     private static readonly bool[] _jact = new bool[ConstructWorld.MaxBodies]; // its joints move (awake, with joints)
 
@@ -69,6 +80,13 @@ public static class ConstructPhysics
     private static readonly short[] _chainSlot = new short[MaxChain];
     private static int _chainCount;
     private static IList<Construct> _bodies = Array.Empty<Construct>();
+    private static ConstructWorld? _world;
+    // Coupled pairs this tick (milestone 3): their parts near the hitch points don't collide with each other.
+    private static readonly short[] _exA = new short[ConstructWorld.MaxCouplings], _exB = new short[ConstructWorld.MaxCouplings];
+    private static readonly Vector3[] _exPa = new Vector3[ConstructWorld.MaxCouplings], _exPb = new Vector3[ConstructWorld.MaxCouplings];
+    private static int _exCount;
+    private static bool _exOn; // the pair being tested is coupled: skip points near
+    private static Vector3 _exP0, _exP1;
 
     public static int LastContacts => _contactCount;
     public static int LastRays { get; private set; }
@@ -94,6 +112,7 @@ public static class ConstructPhysics
             var c = bodies[i];
             if (c.Dirty)
                 c.Rebuild();
+            c.SimIndex = i;
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;
             for (var j = 0; j < c.JointCount; j++)
@@ -103,6 +122,7 @@ public static class ConstructPhysics
             _dyn[i] = !c.Anchored && !c.Asleep;
             _jact[i] = !c.Asleep && c.JointCount > 0;
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
+            _invIB[i] = _dyn[i] && c.JointCount > 0 ? c.InvInertiaBaseWorld() : default;
             if (_dyn[i])
             {
                 c.Vel += g * dt;
@@ -117,7 +137,10 @@ public static class ConstructPhysics
                 SegmentEdgeContacts(c, (short)i, query, dt);
             }
         }
+        _world = world;
+        CouplingExclusions(world, n);
         BodyContacts(world, n, dt);
+        CouplingRows(world, n, dt);
         Solve(dt);
         for (var i = 0; i < n; i++)
         {
@@ -125,7 +148,7 @@ public static class ConstructPhysics
             if (_dyn[i])
                 Integrate(c, dt);
             if (_jact[i])
-                IntegrateJoints(c, dt);
+                IntegrateJoints(c, i, dt);
             if (_dyn[i] || _jact[i])
                 Sleep(c);
         }
@@ -139,7 +162,7 @@ public static class ConstructPhysics
         var fwdBody = Vector3.Transform(c.SeatForward(), c.Rot);
         var com = c.WorldCom;
         var share = c.Mass / c.WheelCount;
-        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.Fuel > 0;
+        var driving = c.CanDrive && (c.Driver != 255 || c.EngineWired) && c.Fuel > 0 && (!c.Electrical || c.EngineRunning); // (an electrical construct's engine needs the starter: ConstructPower.cs)
         var engine = driving ? c.DefOf(c.Engine) : null;
         var throttle = c.EngineWired ? c.EngineSignal : c.Throttle; // a wired engine runs on its signal
         var brake = c.Brake || c.BrakeSignal >= 0.5f;
@@ -212,15 +235,16 @@ public static class ConstructPhysics
             if (driving && w.Driven && drivenTouching > 0)
             {
                 var want = throttle;
-                var top = engine!.TopSpeed;
+                var top = engine!.TopSpeed * c.GearRatio; // (the gear: a low gear is slower and pulls harder)
+                var pull = engine.EngineForce / c.GearRatio;
                 if (want > 0 && forwardSpeed < top)
-                    jFwd += want * engine.EngineForce / drivenTouching * dt * MathF.Min(1, (top - forwardSpeed) / 3f);
+                    jFwd += want * pull / drivenTouching * dt * MathF.Min(1, (top - forwardSpeed) / 3f);
                 else if (want < 0 && forwardSpeed > -top * 0.4f)
-                    jFwd += want * engine.EngineForce / drivenTouching * dt * 0.6f;
+                    jFwd += want * pull / drivenTouching * dt * 0.6f;
             }
             var stop = -vFwd / InvMassAt(c, invI, r, fwd) * shareOf;
-            if (brake || ((!driving || throttle == 0) && MathF.Abs(vFwd) < 1.5f))
-                jFwd = stop; // brakes (and a car left in neutral stays put)
+            if (brake || ((!driving || throttle == 0) && MathF.Abs(vFwd) < 1.5f && !c.Towed))
+                jFwd = stop; // brakes (and a car left in neutral stays put, unless something drives it on a tow)
             else
                 jFwd += stop * 0.01f; // rolling resistance
             // Friction circle.
@@ -455,8 +479,9 @@ public static class ConstructPhysics
                 var reach = a.Radius + b.Radius;
                 if (Vector3.DistanceSquared(a.WorldCom, b.WorldCom) > reach * reach)
                     continue;
-                if (_dyn[i] && b.Asleep && !b.Anchored)
-                    b.Wake(); // (moves from the next tick)
+                if (_dyn[i] && b.Asleep && !b.Anchored && (a.Vel.LengthSquared() >= StillSpeed2 || a.AngVel.LengthSquared() >= StillSpeed2))
+                    b.Wake(); // (moves from the next tick; a body settling as still as sleep asks doesn't keep waking its neighbours)
+                Exclusion((short)i, (short)j);
                 if (_dyn[i])
                     PointsAgainst(a, (short)i, b, (short)j);
                 if (_jact[i])
@@ -572,7 +597,7 @@ public static class ConstructPhysics
             if (_contactCount >= MaxContacts - 1)
                 return;
             var p = a.ToWorld(a.Points[k]);
-            if (Vector3.DistanceSquared(p, bc) > r2)
+            if (Vector3.DistanceSquared(p, bc) > r2 || NearHitch(p))
                 continue;
             if (!Inside(b, p, out var normal, out var pen, out var seg))
                 continue;
@@ -595,7 +620,7 @@ public static class ConstructPhysics
             if (_contactCount >= MaxContacts - 1)
                 return;
             var p = b.ToWorld(b.Points[k]);
-            if (Vector3.DistanceSquared(p, ac) > r2)
+            if (Vector3.DistanceSquared(p, ac) > r2 || NearHitch(p))
                 continue;
             if (!Inside(a, p, out var normal, out var pen, out var seg) || seg == 0)
                 continue;
@@ -629,6 +654,8 @@ public static class ConstructPhysics
             if (seg > a.JointCount)
                 continue;
             var p = _segT[baseSeg + seg] + Vector3.Transform(a.SegPoints[k], _segQ[baseSeg + seg]);
+            if (NearHitch(p))
+                continue;
             var v2 = 0f;
             var near = Vector3.DistanceSquared(p, bc) <= b.Radius * b.Radius;
             var ua = _chainCount;
@@ -744,7 +771,7 @@ public static class ConstructPhysics
         {
             ref var ct = ref _contacts[k];
             ct.RA = ct.Point - bodies[ct.A].WorldCom;
-            ct.RB = ct.B >= 0 ? ct.Point - bodies[ct.B].WorldCom : Vector3.Zero;
+            ct.RB = ct.B >= 0 ? (ct.TwoPoints ? ct.PointB : ct.Point) - bodies[ct.B].WorldCom : Vector3.Zero;
             var en = Eff2(ct, ct.Normal);
             ct.MassN = en > 1e-9f ? 1f / MathF.Max(1e-6f, en) : 0; // (0: nothing on either side can move there)
             var t1 = MathF.Abs(ct.Normal.X) < 0.9f ? Vector3.Cross(ct.Normal, Vector3.UnitX) : Vector3.Cross(ct.Normal, Vector3.UnitZ);
@@ -756,8 +783,9 @@ public static class ConstructPhysics
             var e2 = Eff2(ct, t2);
             ct.MassT1 = e1 > 1e-9f ? 1f / MathF.Max(1e-6f, e1) : 0;
             ct.MassT2 = e2 > 1e-9f ? 1f / MathF.Max(1e-6f, e2) : 0;
-            // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick.
-            ct.Bias = ct.Gap > 0 ? ct.Gap / dt : MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
+            // Speculative: approaching is fine up to the gap; overlap is pushed out a share per tick. A free pivot: its error, a share per tick.
+            ct.Bias = ct.Bilateral ? Math.Clamp(PivotBeta * ct.Gap / dt, -PivotMaxFix, PivotMaxFix)
+                : ct.Gap > 0 ? ct.Gap / dt : MathF.Max(-2.5f, Beta * (ct.Gap + Slop) / dt);
         }
         for (var it = 0; it < Iterations; it++)
         {
@@ -770,24 +798,30 @@ public static class ConstructPhysics
                     continue;
                 ref var jt = ref bodies[slot / Construct.MaxJoints].Joints[slot % Construct.MaxJoints];
                 var max = _jMotorMax[slot];
+                var react = 0f; // (milestone 3: what the motor and the stops push the joint with, the body takes back)
                 if (max > 0)
                 {
                     var old = _jP[slot];
                     _jP[slot] = Math.Clamp(old + (_jWant[slot] - jt.Vel) / inv, -max, max);
                     jt.Vel += (_jP[slot] - old) * inv;
+                    react += _jP[slot] - old;
                 }
                 if (float.IsFinite(_jLoB[slot]))
                 {
                     var old = _jLo[slot];
                     _jLo[slot] = MathF.Max(0, old + (_jLoB[slot] - jt.Vel) / inv);
                     jt.Vel += (_jLo[slot] - old) * inv;
+                    react += _jLo[slot] - old;
                 }
                 if (float.IsFinite(_jHiB[slot]))
                 {
                     var old = _jHi[slot];
                     _jHi[slot] = MathF.Min(0, old + (_jHiB[slot] - jt.Vel) / inv);
                     jt.Vel += (_jHi[slot] - old) * inv;
+                    react += _jHi[slot] - old;
                 }
+                if (react != 0 && JointReactions)
+                    React(slot, react);
             }
             for (var k = 0; k < _contactCount; k++)
             {
@@ -797,6 +831,12 @@ public static class ConstructPhysics
                 var rel = Rel(ct);
                 var vn = Vector3.Dot(rel, ct.Normal);
                 var dj = -(vn + ct.Bias) * ct.MassN;
+                if (ct.Bilateral)
+                {
+                    ct.Jn += dj; // (a free pivot holds either way)
+                    Push2(ct, ct.Normal * dj);
+                    continue;
+                }
                 var old = ct.Jn;
                 ct.Jn = MathF.Max(0, old + dj);
                 dj = ct.Jn - old;
@@ -818,6 +858,134 @@ public static class ConstructPhysics
                     Push2(ct, jt);
             }
         }
+    }
+
+    // ---- Couplings between constructs (milestone 3; ConstructLinks.cs) ----------------------------------------------
+
+    /// <summary>The coupled pairs this tick and their hitch points (their parts near them don't collide with each other).</summary>
+    private static void CouplingExclusions(ConstructWorld world, int n)
+    {
+        _exCount = 0;
+        _exOn = false;
+        for (var k = 0; k < world.CouplingCount; k++)
+        {
+            ref var cp = ref world.Couplings[k];
+            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || a.SimIndex >= n || b.SimIndex >= n
+                || cp.PartA >= a.PartCount || cp.PartB >= b.PartCount || !ReferenceEquals(_bodies[a.SimIndex], a) || !ReferenceEquals(_bodies[b.SimIndex], b))
+                continue;
+            _exA[_exCount] = (short)a.SimIndex;
+            _exB[_exCount] = (short)b.SimIndex;
+            _exPa[_exCount] = ConstructWorld.HitchPoint(a, cp.PartA);
+            _exPb[_exCount] = ConstructWorld.HitchPoint(b, cp.PartB);
+            _exCount++;
+        }
+    }
+
+    private static void Exclusion(short i, short j)
+    {
+        _exOn = false;
+        for (var k = 0; k < _exCount; k++)
+            if (_exA[k] == i && _exB[k] == j || _exA[k] == j && _exB[k] == i)
+            {
+                _exOn = true;
+                _exP0 = _exPa[k];
+                _exP1 = _exPb[k];
+                return;
+            }
+    }
+
+    private static bool NearHitch(Vector3 p) =>
+        _exOn && (Vector3.DistanceSquared(p, _exP0) < HitchClear * HitchClear || Vector3.DistanceSquared(p, _exP1) < HitchClear * HitchClear);
+
+    /// <summary>
+    /// Each coupling's rows in the solve: a tow ball holds the two hitch points together (three rows that push either way:
+    /// a free pivot), a chain keeps them within its length (one row that only pulls). Each side moves its body (when it is
+    /// free and awake) and every joint up its hitch's chain, like a contact.
+    /// </summary>
+    private static void CouplingRows(ConstructWorld world, int n, float dt)
+    {
+        _exOn = false;
+        for (var k = 0; k < world.CouplingCount; k++)
+        {
+            ref var cp = ref world.Couplings[k];
+            if (world.Get(cp.BodyA) is not { } a || world.Get(cp.BodyB) is not { } b || a.SimIndex >= n || b.SimIndex >= n
+                || cp.PartA >= a.PartCount || cp.PartB >= b.PartCount || !ReferenceEquals(_bodies[a.SimIndex], a) || !ReferenceEquals(_bodies[b.SimIndex], b))
+                continue;
+            var pa = ConstructWorld.HitchPoint(a, cp.PartA);
+            var pb = ConstructWorld.HitchPoint(b, cp.PartB);
+            int sa = a.Parts[cp.PartA].Seg, sb = b.Parts[cp.PartB].Seg;
+            short ia = (short)a.SimIndex, ib = (short)b.SimIndex;
+            var movesA = _dyn[ia] || sa > 0 && _jact[ia];
+            var movesB = _dyn[ib] || sb > 0 && _jact[ib];
+            if (!movesA && !movesB)
+                continue;
+            if (!movesA)
+            {
+                (a, b, pa, pb, sa, sb, ia, ib) = (b, a, pb, pa, sb, sa, ib, ia);
+                movesB = false;
+            }
+            if (cp.Length > 0)
+            {
+                var d = pb - pa;
+                var dist = d.Length();
+                if (dist < cp.Length - 0.5f || dist < 1e-4f)
+                    continue; // (slack: nothing to hold)
+                Row(a, ia, sa, pa, b, ib, sb, pb, movesB, d / dist, cp.Length - dist, false);
+            }
+            else
+            {
+                var e = pa - pb;
+                Row(a, ia, sa, pa, b, ib, sb, pb, movesB, Vector3.UnitX, e.X, true);
+                Row(a, ia, sa, pa, b, ib, sb, pb, movesB, Vector3.UnitY, e.Y, true);
+                Row(a, ia, sa, pa, b, ib, sb, pb, movesB, Vector3.UnitZ, e.Z, true);
+            }
+        }
+        _ = dt;
+    }
+
+    private static void Row(Construct a, short ia, int sa, Vector3 pa, Construct b, short ib, int sb, Vector3 pb, bool movesB, Vector3 normal, float gap, bool bilateral)
+    {
+        if (_contactCount >= MaxContacts)
+            return;
+        var ua = _chainCount;
+        var na = sa > 0 && _jact[ia] ? Chain(a, ia, sa, pa, out _) : 0;
+        if (na < 0)
+            return;
+        _chainCount += na;
+        var ub = _chainCount;
+        var nb = movesB && sb > 0 && _jact[ib] ? Chain(b, ib, sb, pb, out _) : 0;
+        if (nb < 0)
+            nb = 0;
+        _chainCount += nb;
+        if (!Add(ia, movesB ? ib : (short)-1, pa, normal, gap, 0f, ua, na, ub, nb))
+            return;
+        ref var ct = ref _contacts[_contactCount - 1];
+        ct.Bilateral = bilateral;
+        ct.TwoPoints = true;
+        ct.PointB = pb;
+        if (na + nb > 0)
+            LastJointContacts--; // (not a contact on a joint's parts)
+    }
+
+    /// <summary>A joint's push (from its motor or its stops) taken back by its body: a turn about its axis, or a piston's push along it at its pivot.</summary>
+    private static void React(int slot, float impulse)
+    {
+        var body = slot / Construct.MaxJoints;
+        if (!_dyn[body])
+            return;
+        var c = _bodies[body];
+        var axis = _jAxis[slot];
+        ref var jt = ref c.Joints[slot % Construct.MaxJoints];
+        if (jt.Type == JointType.Steering)
+            return; // (a steering pivot is the driver's hands on a rack: it doesn't swing the car about)
+        if (jt.Slides)
+        {
+            var j = -axis * impulse;
+            c.Vel += j * c.InvMass;
+            c.AngVel += Construct.Mul(_invIB[body], Vector3.Cross(_jPivot[slot] - c.WorldCom, j));
+        }
+        else
+            c.AngVel -= Construct.Mul(_invIB[body], axis * impulse); // (the base turns back: what swings on the joint doesn't help hold it)
     }
 
     // ---- Integration, joints, sleep -------------------------------------------------------------------------------
@@ -880,6 +1048,8 @@ public static class ConstructPhysics
     /// <summary>What a moving joint's motor wants this tick: a speed (turntable), or a speed towards the target its input asks for (the rest).</summary>
     private static float MotorWant(Construct c, in CJoint jt)
     {
+        if (!ConstructPower.On(c, jt.Hinge))
+            return 0; // (milestone 3: an electrical construct's motor with no power)
         if (jt.Aimed)
         {
             // A gunner (or a sentry) points it (milestone 3, ConstructWeapons.cs): towards the error its gun is off by.
@@ -952,11 +1122,13 @@ public static class ConstructPhysics
                 jt.Vel += (target - jt.Angle) * 30f * dt;
                 jt.Vel *= MathF.Max(0, 1 - 7f * dt);
             }
-            else
+            else if (ConstructPower.On(c, jt.Hinge))
             {
                 _jWant[slot] = MotorWant(c, jt);
                 _jMotorMax[slot] = jt.Strength * dt;
             }
+            else
+                jt.Vel *= MathF.Max(0, 1 - 2f * dt); // (no power: the motor lets go, a little drag in its gears)
             jt.Vel += load / inertia * dt; // the load acts whatever the motor does
             _jInvI[slot] = 1f / inertia;
             _jLoB[slot] = float.IsFinite(jt.Min) ? (jt.Min - jt.Angle) / dt : float.NaN;
@@ -968,11 +1140,14 @@ public static class ConstructPhysics
     }
 
     /// <summary>After the solve: each joint moves at the speed it was left with, inside its limits.</summary>
-    private static void IntegrateJoints(Construct c, float dt)
+    private static void IntegrateJoints(Construct c, int index, float dt)
     {
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
+            var slot = index * Construct.MaxJoints + j;
+            if (_jMotorMax[slot] > 0)
+                c.MotorWork += MathF.Abs(_jP[slot] / dt * jt.Vel); // (the power drain: torque x speed, ConstructPower.cs)
             if (jt.Type == JointType.Passive && jt.Locked)
             {
                 jt.Vel = 0;
@@ -1032,7 +1207,7 @@ public static class ConstructPhysics
 
     private static void Sleep(Construct c)
     {
-        var still = c.Anchored || c.Vel.LengthSquared() < 0.02f && c.AngVel.LengthSquared() < 0.02f;
+        var still = c.Anchored || c.Vel.LengthSquared() < StillSpeed2 && c.AngVel.LengthSquared() < StillSpeed2;
         still &= (c.Driver == 255 || (c.Throttle == 0 && c.SteerInput == 0)) && !(c.EngineWired && c.EngineSignal != 0);
         for (var j = 0; j < c.JointCount && still; j++)
         {

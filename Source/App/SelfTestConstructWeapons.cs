@@ -222,7 +222,8 @@ public static partial class SelfTest
         var fired = w.ShotsFired - before;
         StepConstructs(w, 30, _ => car.Parts[seat].Keys = CPart.Occupied);
         var after = w.ShotsFired - before - fired;
-        var extra = car.Mass - (plain?.Mass ?? 0);
+        var hitches = plain == null ? 0 : Enumerable.Range(0, plain.PartCount).Where(i => plain.DefOf(i).Role == PartRole.Hitch).Sum(i => plain.DefOf(i).Mass); // (the yard's Buggy tows the trailer: its tow hitch isn't the gun's)
+        var extra = car.Mass - ((plain?.Mass ?? 0) - hitches);
         Line($"hood gun: the gun points within {worst * 180 / MathF.PI:0.00} deg of the buggy's facing as it turns; the driver's fire key fired {fired} shots in 1 s (then {after} with it let go), every round within {spread * 180 / MathF.PI:0.0} deg of the barrel; the buggy weighs {extra:0} kg more with it; drives {car.CanDrive}");
         if (worst > 0.01f || fired < 8 || after > 1 || spread > car.Guns[0].Spread * 1.5f + 0.01f || extra < 40 || !car.CanDrive || gun < 0)
             Fail("construct weapons: the hood gun doesn't point with its buggy, or its driver's fire key doesn't fire it (or it weighs nothing)");

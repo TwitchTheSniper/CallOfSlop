@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wrecking Ball",
+  "description": "Half a tonne of steel with an eye on top: hang it on a chain hook and swing it.",
+  "role": "hitch",
+  "tool": "wrench",
+  "attachSeconds": 3,
+  "mass": 450,
+  "health": 3000,
+  "armour": 30,
+  "material": "steel",
+  "color": "#2b2d31",
+  "boxes": [
+    {
+      "size": [
+        0.7,
+        0.7,
+        0.7
+      ]
+    },
+    {
+      "size": [
+        0.8,
+        0.5,
+        0.5
+      ],
+      "color": "#2b2d31"
+    },
+    {
+      "size": [
+        0.5,
+        0.8,
+        0.5
+      ],
+      "color": "#2b2d31"
+    },
+    {
+      "size": [
+        0.5,
+        0.5,
+        0.8
+      ],
+      "color": "#2b2d31"
+    },
+    {
+      "size": [
+        0.14,
+        0.12,
+        0.06
+      ],
+      "at": [
+        0,
+        0.46,
+        0
+      ],
+      "color": "#7d8187",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.4,
+        0
+      ],
+      "dir": "+y"
+    }
+  ],
+  "hitch": {
+    "kind": "eye",
+    "at": [
+      0,
+      0.5,
+      0
+    ]
+  }
+}

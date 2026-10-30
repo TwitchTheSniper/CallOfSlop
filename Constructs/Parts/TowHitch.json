@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tow Hitch",
+  "description": "A tow ball on a crossbar: bolt it across the back, back up to a trailer's eye and couple them with the wrench (F). A free pivot.",
+  "role": "hitch",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 12,
+  "health": 220,
+  "armour": 6,
+  "material": "steel",
+  "color": "#40454c",
+  "boxes": [
+    {
+      "min": [
+        -0.5,
+        -0.1,
+        -0.1
+      ],
+      "max": [
+        0.5,
+        0.1,
+        0.1
+      ]
+    },
+    {
+      "min": [
+        -0.06,
+        -0.06,
+        0.1
+      ],
+      "max": [
+        0.06,
+        0.06,
+        0.28
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0,
+        0.05,
+        0.28
+      ],
+      "color": "#a7abb1",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z0",
+      "at": [
+        -0.25,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-z1",
+      "at": [
+        0.25,
+        0,
+        -0.1
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "hitch": {
+    "kind": "ball",
+    "at": [
+      0,
+      0.05,
+      0.3
+    ]
+  }
+}

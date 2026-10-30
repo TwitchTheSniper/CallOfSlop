@@ -1,7 +1,7 @@
 {
   "format": "call-of-slop-construct-blueprint/1",
   "name": "Buggy",
-  "description": "Two beams, a seat, a tank, fuel lines and an engine at the back, a transmission and a differential driving the back wheels, the front wheels on steering pivots.",
+  "description": "Two beams, a seat, a tank, fuel lines and an engine at the back, a transmission and a differential driving the back wheels, the front wheels on steering pivots. A tow hitch at the back (the yard's trailer hangs on it).",
   "steps": [
     {
       "part": "Frame Beam"
@@ -137,6 +137,12 @@
       "on": 20,
       "socket": "-z",
       "by": "back"
+    },
+    {
+      "part": "Tow Hitch",
+      "on": 8,
+      "socket": "+z0",
+      "by": "-z0"
     }
   ]
 }

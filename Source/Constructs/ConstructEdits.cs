@@ -294,11 +294,26 @@ public sealed class ConstructEdits
         return Reachable(eye, t + Vector3.Transform((mn + mx) * 0.5f, q), ConstructBuild.Reach);
     }
 
-    /// <summary>The linking tool: a wire from part <paramref name="from"/>'s output into part <paramref name="to"/> (same construct). Null, or why not.</summary>
-    public string? Wire(ConstructWorld world, byte player, Vector3 eye, ushort body, int from, int to)
+    /// <summary>
+    /// The linking tool: a wire from part <paramref name="from"/>'s output into part <paramref name="to"/>: on the same
+    /// construct, or (milestone 3) into another construct's part within <see cref="ConstructWorld.XWireReach"/> (a wall
+    /// button into a gate). Null, or why not.
+    /// </summary>
+    public string? Wire(ConstructWorld world, byte player, Vector3 eye, ushort body, int from, int to, ushort toBody = 0)
     {
         if (Linking(world, player, eye, body, from, out var c) is { } why)
             return why;
+        if (toBody != 0 && toBody != body)
+        {
+            if (Linking(world, player, eye, toBody, to, out var ct) is { } far)
+                return far;
+            if (world.CanCrossWire(c!, from, ct!, to) is { } no)
+                return no;
+            if (!world.AddXWire(c!, from, ct!, to))
+                return "no room for another wire";
+            Done.Add($"player {player}: wire {c!.DefOf(from).Name} {from} of construct {c.Id} -> {ct!.DefOf(to).Name} {to} of construct {ct.Id}");
+            return null;
+        }
         if (Linking(world, player, eye, body, to, out _) is { } why2)
             return why2;
         if (ConstructBuild.CanWire(world, c!, from, to) is { } bad)
@@ -314,7 +329,8 @@ public sealed class ConstructEdits
     {
         if (Linking(world, player, eye, body, part, out var c) is { } why)
             return why;
-        return world.RemoveWires(c!, part) > 0 ? null : $"no wires on the {c!.DefOf(part).Name}";
+        var cut = world.RemoveWires(c!, part) + world.RemoveXWires(c!, part); // (its own construct's wires, and those to other constructs)
+        return cut > 0 ? null : $"no wires on the {c!.DefOf(part).Name}";
     }
 
     /// <summary>The linking tool: the next value of a logic part's setting (a timer's period, a reader's key...).</summary>
@@ -482,12 +498,17 @@ public sealed class ConstructEdits
                 case CLogic.Lever:
                     lp.State = (byte)((lp.State + 1) & 3);
                     break;
+                case CLogic.Selector:
+                    lp.State = (byte)((lp.State + 1) % Math.Max(2, (int)d.Settings[Math.Min(lp.Setting, (byte)(d.Settings.Length - 1))]));
+                    break;
                 default:
                     return d.Settings.Length > 0 ? $"{d.Name}: the linking tool (5) changes its {d.SettingName} (R)" : "nothing to use there";
             }
             c.Wake();
             return null;
         }
+        if (d.Role == PartRole.Hitch)
+            return Hitch(world, player, c, part);
         var seg = c.Parts[part].Seg;
         if (d.HasJoint && c.JointOf(part) is var own and >= 0)
             seg = (byte)(own + 1);
@@ -507,6 +528,32 @@ public sealed class ConstructEdits
         if (c.Loose)
             return PickUp(world, player, eye, body);
         return "nothing to use there";
+    }
+
+    /// <summary>
+    /// Use on a hitch (milestone 3) with the wrench out: uncouple it, or couple it to the nearest free hitch of another
+    /// construct that fits (a ball or a hook to an eye, the points together or within the chain's reach).
+    /// </summary>
+    private string? Hitch(ConstructWorld world, byte player, Construct c, int part)
+    {
+        ref var h = ref Hands[player];
+        if (h.Tool != ConstructTool.Wrench)
+            return "take out the wrench (3) to couple or uncouple";
+        if (c.Parts[part].Broken)
+            return "that hitch is wrecked";
+        if (world.CouplingOf(c, part) is var k and >= 0)
+        {
+            world.Decouple(k, $"player {player} uncoupled it");
+            Done.Add($"player {player}: uncoupled construct {c.Id}");
+            return null;
+        }
+        if (world.NearestHitch(c, part, out var other) is var at and >= 0 && other != null)
+        {
+            world.Couple(c, part, other, at);
+            Done.Add($"player {player}: coupled construct {c.Id} to construct {other.Id}");
+            return null;
+        }
+        return c.DefOf(part).Hitch == HitchKind.Eye ? "no ball or hook near enough to couple to" : c.DefOf(part).HitchChain > 0 ? "no eye within the chain's reach" : "no eye near enough: back the ball up to one";
     }
 
     /// <summary>Out of the seat (or the seat went). Returns where the feet should go (beside the seat), or null if not seated.</summary>

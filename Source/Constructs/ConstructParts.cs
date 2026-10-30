@@ -26,6 +26,17 @@ public enum PartRole : byte
     GunPart, // milestone 3: a weapon builder part (barrel, splitter, feed, ammo, muzzle, optic) bolted onto a gun
     AmmoBox, // milestone 3: rounds for the guns its feed chain reaches; shot through, it cooks off
     FeedChute, // milestone 3: carries rounds from an ammo box to a gun (like a fuel line)
+    Battery, // milestone 3: stores charge (kJ) for the electrical parts its construct's links reach (ConstructPower.cs)
+    Alternator, // milestone 3: touching a running engine, charges the batteries
+    Hitch, // milestone 3: couples to another construct's hitch (a tow ball to an eye, a chain hook to a ring; ConstructLinks.cs)
+}
+
+/// <summary>What a hitch part is (milestone 3): a ball or a hook couples to an eye.</summary>
+public enum HitchKind : byte
+{
+    Ball, // a tow ball: a rigid free pivot (a trailer)
+    Eye, // a ring or tow eye: what a ball or a hook couples to
+    Hook, // a chain hook: a chain that only pulls (a wrecking ball)
 }
 
 /// <summary>How a construct gun looks and sounds when it fires (milestone 3; docs/sandbox/CONSTRUCTS.md, "Construct weapons").</summary>
@@ -79,6 +90,9 @@ public enum CLogic : byte
     Lamp, // lights while its input is on
     Horn, // sounds while its input is on
     Brake, // brakes its construct while its input is on
+    FuelGauge, // milestone 3: its construct's fuel, 0..1 of what the tanks hold (a dial)
+    ChargeGauge, // milestone 3: its construct's charge, 0..1 of what the batteries hold (a dial)
+    Selector, // milestone 3: Interact or a rising input steps it on: 1, 2 ... its positions, then 1 again (a gear selector)
 }
 
 /// <summary>The tool a part is attached and removed with (decision 2: editing always needs a tool in hand).</summary>
@@ -157,6 +171,23 @@ public sealed class ConstructPartDef
     public string SettingName = ""; // "period", "key"...
     public byte DefaultSetting;
 
+    // Milestone 3: power, couplings, gauges (docs/sandbox/CONSTRUCTS.md, "Milestone 3")
+    public float PowerDraw; // watts while it works (a lamp lit, a horn sounding, a logic part on; a motor: idling, on top of its work)
+    public float BatteryCapacity; // battery: kJ (comes full)
+    public float AlternatorRate; // alternator: kW into the batteries while the engine it touches runs
+    public HitchKind Hitch; // hitch
+    public Vector3 HitchAt; // hitch: the coupling point (part frame)
+    public float HitchChain; // hitch: a chain this long (m; 0: a rigid ball joint)
+    public bool HasDial; // a gauge's dial: a needle on a face, turned by its signal
+    public Vector3 DialAt; // the needle's hub (part frame)
+    public byte DialDir; // the face it is on (out of the part)
+    public float DialMax = 1f; // the signal at full scale (270 degrees)
+
+    /// <summary>A transmission's gear ratios are its <see cref="Settings"/> (top speed times the ratio, force divided by it).</summary>
+    public bool HasGears => Role == PartRole.Transmission && Settings.Length > 0;
+
+    /// <summary>Uses power on an electrical construct (logic parts, moving joints, anything with a draw; the engine's starter separately).</summary>
+    public bool Electric => Role == PartRole.Logic || Role == PartRole.Joint && JointType != JointType.Steering || PowerDraw > 0; // (steering is mechanical)
     // Weapons (milestone 3; ConstructWeapons.cs)
     public string GunReceiver = "", GunAction = ""; // a gun on a weapon builder receiver (its action: the receiver's stock one unless named)
     public float GunDamage, GunRpm, GunSpread, GunRange, GunReload, GunSpeed, GunBlast, GunBlastDamage, GunKick; // a heavy gun's own numbers
@@ -187,10 +218,11 @@ public sealed class ConstructPartDef
     public int MaxInputs => Role switch
     {
         PartRole.Joint or PartRole.Hinge or PartRole.Engine or PartRole.Gun => 4,
+        PartRole.Transmission => 1, // milestone 3: a gear-select signal (1, 2, 3...)
         PartRole.Logic => Logic switch
         {
-            CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity => 0,
-            CLogic.Reader or CLogic.Timer or CLogic.Delay => 1,
+            CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
+            CLogic.Reader or CLogic.Timer or CLogic.Delay or CLogic.Selector => 1,
             _ => 4,
         },
         _ => 0,
@@ -314,7 +346,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "gun", "gunPart", "ammoBox", "scrap",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap",
     ];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
@@ -357,7 +389,7 @@ public static class ConstructParts
         d.Friction = Opt(root, "friction") is { } fr ? Num(fr, file, "friction") : d.Material == "rubber" ? 1.0f : 0.6f;
         Range(d.Friction, 0f, 2f, file, "friction");
         d.OnBreak = Opt(root, "onBreak") is { } ob ? EnumOf<PartBreak>(Str(ob, file, "onBreak"), file, "onBreak")
-            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential ? PartBreak.Disable : PartBreak.Detach;
+            : d.Role is PartRole.Engine or PartRole.FuelTank or PartRole.Seat or PartRole.Transmission or PartRole.Differential or PartRole.Battery or PartRole.Alternator ? PartBreak.Disable : PartBreak.Detach;
         d.Scrap = Opt(root, "scrap") is { } scr ? (int)MathF.Round(Num(scr, file, "scrap")) : SandboxInventory.ScrapFrom(d.Mass, d.Material);
         Range(d.Scrap, 0f, 10000f, file, "scrap");
         var colour = Opt(root, "color") is { } col ? Colour(col, file, "color") : new Vector3(0.5f);
@@ -437,7 +469,7 @@ public static class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "gun", "gunPart", "ammoBox"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -448,6 +480,10 @@ public static class ConstructParts
             PartRole.Hinge => "hinge",
             PartRole.Joint => "joint",
             PartRole.Logic => "logic",
+            PartRole.Transmission => "transmission",
+            PartRole.Battery => "battery",
+            PartRole.Alternator => "alternator",
+            PartRole.Hitch => "hitch",
             PartRole.Gun => "gun",
             PartRole.GunPart => "gunPart",
             PartRole.AmmoBox => "ammoBox",
@@ -457,7 +493,7 @@ public static class ConstructParts
             if (key != mine && Opt(root, key) != null)
                 throw new ConstructPartException($"{file}: \"{key}\" is only for {key} parts (this one is a {d.Role.ToString().ToLowerInvariant()})");
         var block = mine.Length > 0 ? Opt(root, mine) : null;
-        if (mine.Length > 0 && block is not { ValueKind: JsonValueKind.Object })
+        if (mine.Length > 0 && block is not { ValueKind: JsonValueKind.Object } && !(d.Role == PartRole.Transmission && block == null)) // (a transmission without gears has one)
             throw new ConstructPartException($"{file}: a {mine} part needs a \"{mine}\" block");
         var bw = $"{file}, {mine}";
         switch (d.Role)
@@ -520,6 +556,54 @@ public static class ConstructParts
             case PartRole.Logic:
                 ParseLogic(d, block!.Value, file, bw);
                 break;
+            case PartRole.Transmission when block != null:
+            {
+                Known(block.Value, ["gears", "labels", "gear"], bw);
+                if (Opt(block.Value, "gears") is not { ValueKind: JsonValueKind.Array } gears || gears.GetArrayLength() is 0 or > 8)
+                    throw new ConstructPartException($"{file}: \"transmission.gears\" lists 1 to 8 ratios (top speed times the ratio, force divided by it)");
+                d.Settings = gears.EnumerateArray().Select(v => Num(v, file, "transmission.gears")).ToArray();
+                if (d.Settings.Any(v => v < 0.1f || v > 5f))
+                    throw new ConstructPartException($"{file}: a gear ratio is 0.1 to 5");
+                d.SettingLabels = Opt(block.Value, "labels") is { ValueKind: JsonValueKind.Array } lab
+                    ? lab.EnumerateArray().Select(v => AsciiText(v, file, "transmission.labels")).ToArray()
+                    : d.Settings.Select((_, k) => (k + 1).ToString(CultureInfo.InvariantCulture)).ToArray();
+                if (d.SettingLabels.Length != d.Settings.Length)
+                    throw new ConstructPartException($"{file}: \"transmission.labels\" must have one label per gear");
+                d.SettingName = "gear";
+                if (Opt(block.Value, "gear") is { } g0)
+                {
+                    var v = Num(g0, file, "transmission.gear");
+                    if (v < 1 || v > d.Settings.Length || v != MathF.Floor(v))
+                        throw new ConstructPartException($"{file}: \"transmission.gear\" is the starting gear, 1 to {d.Settings.Length}");
+                    d.DefaultSetting = (byte)(v - 1);
+                }
+                break;
+            }
+            case PartRole.Battery:
+                Known(block!.Value, ["capacity"], bw);
+                d.BatteryCapacity = Num(Need(block.Value, "capacity", bw), file, "battery.capacity");
+                Range(d.BatteryCapacity, 1, 100000, file, "battery.capacity");
+                break;
+            case PartRole.Alternator:
+                Known(block!.Value, ["rate"], bw);
+                d.AlternatorRate = Num(Need(block.Value, "rate", bw), file, "alternator.rate");
+                Range(d.AlternatorRate, 0.01f, 1000, file, "alternator.rate");
+                break;
+            case PartRole.Hitch:
+            {
+                Known(block!.Value, ["kind", "at", "chain"], bw);
+                d.Hitch = EnumOf<HitchKind>(Str(Need(block.Value, "kind", bw), file, "hitch.kind"), file, "hitch.kind");
+                d.HitchAt = Vec(Need(block.Value, "at", bw), file, "hitch.at");
+                if (MathF.Max(MathF.Abs(d.HitchAt.X), MathF.Max(MathF.Abs(d.HitchAt.Y), MathF.Abs(d.HitchAt.Z))) > 1.5f)
+                    throw new ConstructPartException($"{file}: \"hitch.at\" is more than 1.5 m from the part's origin");
+                d.HitchChain = Opt(block.Value, "chain") is { } ch ? Num(ch, file, "hitch.chain") : 0f;
+                Range(d.HitchChain, 0, 8, file, "hitch.chain");
+                if (d.HitchChain > 0 && d.Hitch != HitchKind.Hook)
+                    throw new ConstructPartException($"{file}: only a hook has a \"chain\"");
+                if (d.Hitch == HitchKind.Hook && d.HitchChain < 0.3f)
+                    throw new ConstructPartException($"{file}: a hook needs a \"chain\" of 0.3 to 8 m");
+                break;
+            }
             case PartRole.Gun:
                 ParseGun(d, block!.Value, file, bw);
                 break;
@@ -547,6 +631,22 @@ public static class ConstructParts
                     Range(d.CookDamage, 1, 100000, file, "ammoBox.cookOff.damage");
                 }
                 break;
+        }
+        // Milestone 3: a power draw (watts while it works) and a gauge's dial.
+        d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : 0f;
+        Range(d.PowerDraw, 0, 1_000_000, file, "power");
+        if (Opt(root, "dial") is { } dial)
+        {
+            if (dial.ValueKind != JsonValueKind.Object)
+                throw new ConstructPartException($"{file}: \"dial\" is an object (at, face, max)");
+            if (d.Role != PartRole.Logic || !d.HasOutput)
+                throw new ConstructPartException($"{file}: only a logic part with an output (a sensor, a gauge) has a \"dial\"");
+            Known(dial, ["at", "face", "max"], $"{file}, dial");
+            d.HasDial = true;
+            d.DialAt = Vec(Need(dial, "at", $"{file}, dial"), file, "dial.at");
+            d.DialDir = DirOf(Str(Need(dial, "face", $"{file}, dial"), file, "dial.face"), file, "dial.face");
+            d.DialMax = Opt(dial, "max") is { } dm ? Num(dm, file, "dial.max") : 1f;
+            Range(d.DialMax, 0.01f, 1000, file, "dial.max");
         }
         if (d.Role == PartRole.Door && !d.Sockets.Any(s => s.Kind == SocketKind.Leaf))
             throw new ConstructPartException($"{file}: a door needs a \"leaf\" socket (it hangs on a hinge)");
@@ -675,7 +775,7 @@ public static class ConstructParts
         if (ki < 0)
             throw new ConstructPartException($"{file}: \"logic.kind\" is one of {string.Join(", ", LogicKinds)}, not \"{kind}\"");
         d.Logic = (CLogic)(ki + 1);
-        var needs = d.Logic is CLogic.Reader or CLogic.Proximity or CLogic.Timer or CLogic.Delay or CLogic.Compare or CLogic.Scale;
+        var needs = d.Logic is CLogic.Reader or CLogic.Proximity or CLogic.Timer or CLogic.Delay or CLogic.Compare or CLogic.Scale or CLogic.Selector;
         if (d.Logic == CLogic.Reader)
         {
             // A reader's settings are key names.
@@ -704,6 +804,8 @@ public static class ConstructParts
             if (set.GetArrayLength() is 0 or > 16)
                 throw new ConstructPartException($"{file}: \"logic.settings\" lists 1 to 16 values");
             d.Settings = set.EnumerateArray().Select(v => Num(v, file, "logic.settings")).ToArray();
+            if (d.Logic == CLogic.Selector && d.Settings.Any(v => v < 2 || v > 9 || v != MathF.Floor(v)))
+                throw new ConstructPartException($"{file}: a selector's settings are how many positions it has, 2 to 9");
             if (d.Logic is CLogic.Timer or CLogic.Delay or CLogic.Proximity && d.Settings.Any(v => v < 0.05f || v > 60))
                 throw new ConstructPartException($"{file}: a {kind}'s settings are 0.05 to 60 ({(d.Logic == CLogic.Proximity ? "metres" : "seconds")})");
             d.SettingLabels = Opt(b, "labels") is { ValueKind: JsonValueKind.Array } lab
@@ -724,6 +826,7 @@ public static class ConstructParts
             CLogic.Delay => "delay",
             CLogic.Compare => "threshold",
             CLogic.Scale => "factor",
+            CLogic.Selector => "positions",
             _ => "",
         };
         if (Opt(b, "setting") is { } def)

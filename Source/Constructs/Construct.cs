@@ -21,6 +21,10 @@ public struct CPart
     public byte SitterPlus1; // a seat: the player sitting in it, plus one (0: empty)
     public bool Stood; // a pressure plate: a player stood on it this tick
 
+    // Milestone 3 (server; they move with the part when the arrays are compacted or split)
+    public ushort Tag; // a stable id for couplings and wires between constructs (ConstructWorld gives it; 0 on a client's copy)
+    public bool Powered; // a working battery's links reach it (ConstructPower.cs; rebuilt with the caches)
+
     // Weapons (milestone 3; ConstructWeapons.cs)
     public ushort Rounds; // an ammo box: rounds left; a gun: rounds loaded
     public ushort Cool, Reload; // a gun: ticks to its next shot, ticks of its reload left
@@ -155,6 +159,7 @@ public sealed class Construct
     public float Mass, InvMass;
     public Vector3 Com; // body frame
     public Matrix4x4 InvInertiaLocal; // 3x3 in the top left (body frame, about the centre of mass)
+    public Matrix4x4 InvInertiaBaseLocal; // milestone 3: the same for what doesn't turn on a joint (what hangs on one counts as its mass at the pivot): a joint's push turns this
     public Vector3 LocalMin, LocalMax; // round every part, rest frame
     public float Radius; // from the centre of mass, round everything (joints included)
 
@@ -179,6 +184,24 @@ public sealed class Construct
     public readonly float[] SegMass = new float[MaxJoints + 1]; // mass carried by each segment, its own and every segment hanging on it
     public readonly Vector3[] SegCom = new Vector3[MaxJoints + 1]; // its centre (rest frame)
     public const float RiderMass = 85f; // a player standing on a joint's segment, for its load
+
+    // Power (milestone 3; ConstructPower.cs): a construct with a battery is electrical (its logic parts, motors, lamps and
+    // horns run on the charge, and its engine needs the starter); one without runs as milestone 2 did.
+    public bool HasBattery; // a battery part, working or not
+    public bool Electrical; // this tick: it has a battery, or the map requires power
+    public float Charge; // kJ in its working batteries
+    public float ChargeCapacity; // kJ they hold
+    public bool PowerOn = true; // the batteries have charge (or it isn't electrical)
+    public bool EngineRunning; // the engine runs (an electrical construct's engine needs the starter first)
+    public bool StarterFailed; // it was asked to start and the battery couldn't turn the starter (the HUD)
+    public float AlternatorRate; // kW its working alternators touching the engine put in while it runs
+    public float PowerUse; // W drawn last tick (the HUD)
+    public float MotorWork; // W its motors did this tick (the physics adds it; the power step drains it)
+    public int Gear; // the transmission's gear (an index into its ratios)
+    public float GearRatio = 1f; // top speed times this, force divided by it
+    public bool Towed; // coupled to a construct that is driving (its parking brake lets go)
+    public int XWireIn; // wires from other constructs into it (its logic runs for them)
+    internal int SimIndex; // its index in the world's list this tick (the physics)
 
     // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches
     public readonly CGun[] Guns = new CGun[MaxGuns];
@@ -456,6 +479,7 @@ public sealed class Construct
         BuildWheels();
         BuildDrivetrain();
         BuildSegments();
+        ConstructPower.Rebuild(this);
         ConstructWeapons.BuildGuns(this);
         Anchored = false;
         for (var i = 0; i < PartCount; i++)
@@ -473,6 +497,12 @@ public sealed class Construct
         var cap = FuelCapacity();
         if (Fuel > cap)
             Fuel = cap;
+        if (!_chargeSet)
+        {
+            Charge = ChargeCapacity; // (batteries come charged)
+            _chargeSet = PartCount > 0;
+        }
+        Charge = Math.Clamp(Charge, 0, ChargeCapacity);
         if (Driver != 255 && (DriverSeat < 0 || DriverSeat >= PartCount || Parts[DriverSeat].D.Role != PartRole.Seat))
         {
             Driver = 255;
@@ -480,7 +510,15 @@ public sealed class Construct
         }
     }
 
-    private bool _fuelSet;
+    private bool _fuelSet, _chargeSet;
+
+    /// <summary>A piece that fell away keeps no fuel or charge (salvage takes the parts, not what was in them).</summary>
+    public void Empty()
+    {
+        Fuel = 0;
+        Charge = 0;
+        _fuelSet = _chargeSet = true;
+    }
 
     /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
     private void BuildSegments()
@@ -512,6 +550,7 @@ public sealed class Construct
         for (var s = 0; s <= JointCount; s++)
             if (SegMass[s] > 0)
                 SegCom[s] /= SegMass[s];
+        BaseInertia();
         // The motors come from their parts (a client's copy too: the wire carries only the type).
         for (var j = 0; j < JointCount; j++)
         {
@@ -523,6 +562,57 @@ public sealed class Construct
                 jt.Strength = jd.MotorStrength;
             }
         }
+    }
+
+    /// <summary>
+    /// The inertia a joint's push turns (milestone 3: the reaction): the parts of the body itself as boxes, and what hangs
+    /// on each of its joints as that mass at the joint's pivot (it swings freely about its own joint, so only its weight
+    /// rides with the body). Without joints it is the body's own.
+    /// </summary>
+    private void BaseInertia()
+    {
+        if (JointCount == 0)
+        {
+            InvInertiaBaseLocal = InvInertiaLocal;
+            return;
+        }
+        float ixx = 0, iyy = 0, izz = 0, ixy = 0, ixz = 0, iyz = 0;
+        void Point(float m, Vector3 r, Vector3 s)
+        {
+            ixx += m / 12f * (s.Y * s.Y + s.Z * s.Z) + m * (r.Y * r.Y + r.Z * r.Z);
+            iyy += m / 12f * (s.X * s.X + s.Z * s.Z) + m * (r.X * r.X + r.Z * r.Z);
+            izz += m / 12f * (s.X * s.X + s.Y * s.Y) + m * (r.X * r.X + r.Y * r.Y);
+            ixy -= m * r.X * r.Y;
+            ixz -= m * r.X * r.Z;
+            iyz -= m * r.Y * r.Z;
+        }
+        for (var i = 0; i < PartCount; i++)
+        {
+            if (Parts[i].Seg != 0)
+                continue;
+            var d = Parts[i].D;
+            var vol = 0f;
+            for (var b = 0; b < d.SolidBoxes; b++)
+                vol += d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z;
+            for (var b = 0; b < d.SolidBoxes; b++)
+            {
+                BoxOf(i, b, out var c, out var h);
+                Point(d.Mass * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f), c - Com, h * 2);
+            }
+        }
+        for (var j = 0; j < JointCount; j++)
+            if (Joints[j].ParentSeg == 0)
+                Point(SegMass[j + 1], Joints[j].Pivot - Com, Vector3.Zero);
+        var floor = Mass * 0.05f;
+        var inertia = new Matrix4x4(ixx + floor, ixy, ixz, 0, ixy, iyy + floor, iyz, 0, ixz, iyz, izz + floor, 0, 0, 0, 0, 1);
+        InvInertiaBaseLocal = Matrix4x4.Invert(inertia, out var inv) ? inv : InvInertiaLocal;
+    }
+
+    /// <summary>World-space inverse of <see cref="InvInertiaBaseLocal"/>.</summary>
+    public Matrix4x4 InvInertiaBaseWorld()
+    {
+        var r = Matrix4x4.CreateFromQuaternion(Rot);
+        return Matrix4x4.Transpose(r) * InvInertiaBaseLocal * r;
     }
 
     /// <summary>Litres the working tanks hold.</summary>

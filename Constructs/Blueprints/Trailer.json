@@ -1,0 +1,58 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Trailer",
+  "description": "A flatbed on two wheels with a drawbar and a tow eye: couple it to a tow hitch (the wrench, F) and tow it.",
+  "steps": [
+    {
+      "part": "Frame Beam"
+    },
+    {
+      "part": "Differential",
+      "on": 0,
+      "socket": "end+",
+      "by": "-z0"
+    },
+    {
+      "part": "Suspension",
+      "on": 1,
+      "socket": "-x",
+      "by": "mount"
+    },
+    {
+      "part": "Suspension",
+      "on": 1,
+      "socket": "+x",
+      "by": "mount"
+    },
+    {
+      "part": "Wheel",
+      "on": 2,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Wheel",
+      "on": 3,
+      "socket": "axle",
+      "by": "axle"
+    },
+    {
+      "part": "Panel",
+      "on": 0,
+      "socket": "y+0",
+      "by": "back"
+    },
+    {
+      "part": "Panel",
+      "on": 0,
+      "socket": "y+2",
+      "by": "back"
+    },
+    {
+      "part": "Tow Eye",
+      "on": 0,
+      "socket": "end-",
+      "by": "+z"
+    }
+  ]
+}

@@ -146,20 +146,27 @@ public static unsafe partial class Program
             var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
                       ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0)
+                      ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
                       ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0)
-                      ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 61 : 0) ^ (part.Reload > 0 ? 1L << 60 : 0);
+                      ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0);
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
                 var setting = d.Settings.Length > 0 ? $" ({d.SettingName} {d.SettingLabels[Math.Min(part.Setting, (byte)(d.SettingLabels.Length - 1))]})" : "";
-                var signal = d.IsSignal ? $" [{(d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off")}]" : "";
+                var signal = d.IsSignal ? $" [{(d.Logic == CLogic.Speed ? part.Out.ToString("0.0") : d.Logic is CLogic.FuelGauge or CLogic.ChargeGauge ? $"{part.Out * 100:0}%" : d.Logic == CLogic.Selector ? part.Out.ToString("0") : part.Out >= 0.5f ? "on" : part.Out <= -0.5f ? "back" : "off")}]" : "";
+                var coupled = d.Role == PartRole.Hitch && g.Constructs.CouplingOf(hit.Body, hit.Part) >= 0;
+                var charge = (int)MathF.Round(ConstructPower.Share(hit.Body) * 100);
+                var unpowered = hit.Body.Electrical && d.Electric && !ConstructPower.On(hit.Body, hit.Part) ? " (no power)" : "";
                 _sbLookText = d.Role switch
                 {
-                    _ when h.Tool == ConstructTool.Linker => $"{d.Name}{setting}{signal}{(d.HasOutput ? " - output" : "")}{(d.MaxInputs > 0 ? $" - takes {d.MaxInputs} input{(d.MaxInputs == 1 ? "" : "s")}" : "")}",
+                    _ when h.Tool == ConstructTool.Linker => $"{d.Name}{setting}{signal}{unpowered}{(d.HasOutput ? " - output" : "")}{(d.MaxInputs > 0 ? $" - takes {d.MaxInputs} input{(d.MaxInputs == 1 ? "" : "s")}" : "")}",
+                    PartRole.Hitch when near => $"{d.Name}: {(coupled ? "coupled" : "free")}{(h.Tool == ConstructTool.Wrench ? coupled ? " - F to uncouple" : " - F to couple" : " - take out the wrench (3) to couple")}",
+                    PartRole.Battery => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{charge}%{(hit.Body.PowerOn ? "" : ", flat")}")}",
+                    PartRole.Transmission when d.HasGears => $"{d.Name}: gear {d.SettingLabels[Math.Min(hit.Body.Gear, d.SettingLabels.Length - 1)]}{(part.Broken ? " (wrecked)" : "")}",
                     PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? "Seat: taken" : hit.Part == hit.Body.DriveSeat ? "Seat: F to drive" : "Seat: F to ride",
-                    PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever => $"{d.Name}{signal}: F to {(d.Logic == CLogic.Button ? "press" : "flip")}",
+                    PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
-                    PartRole.Logic => $"{d.Name}{setting}{signal}",
+                    PartRole.Logic => $"{d.Name}{setting}{signal}{unpowered}",
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
                     PartRole.AmmoBox => $"{d.Name}: {part.Rounds} rounds{(part.Burn > 0 ? " - ON FIRE" : "")}{(part.Broken ? " (wrecked)" : "")}",
                     _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
@@ -208,15 +215,10 @@ public static unsafe partial class Program
                         _sbWirePart = hit.Part;
                     }
                 }
-                else if (_sbWireBody != hit.Body.Id)
-                {
-                    g.SandboxSay("wires only join parts of the same construct");
-                    _sbWireBody = 0;
-                    _sbWirePart = -1;
-                }
                 else
                 {
-                    g.SandboxSend(CActKind.Wire, body: hit.Body.Id, part: (byte)_sbWirePart, socket: (byte)hit.Part);
+                    // (into the same construct, or milestone 3: into another one within reach of the wire)
+                    g.SandboxSend(CActKind.Wire, body: _sbWireBody, part: (byte)_sbWirePart, socket: (byte)hit.Part, body2: hit.Body.Id);
                     _sbWireBody = 0;
                     _sbWirePart = -1;
                 }

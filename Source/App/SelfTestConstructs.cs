@@ -121,6 +121,15 @@ public static partial class SelfTest
                     if (sc.Parts[i].D.IsSignal && ConstructLogic.Quantise(sc.Parts[i].Out) != ConstructLogic.Quantise(cc.Parts[i].Out) && sc.Parts[i].D.Logic != CLogic.Speed)
                         signalsSame = false;
             }
+            // Milestone 3: the couplings and the wires between constructs, and the power.
+            var linksSame = client.Constructs.CouplingCount == server.Constructs.CouplingCount && client.Constructs.XWireCount == server.Constructs.XWireCount && server.Constructs.CouplingCount > 0;
+            for (var k = 0; k < server.Constructs.XWireCount && linksSame; k++)
+                linksSame = client.Constructs.XWires[k].BodyTo == server.Constructs.XWires[k].BodyTo && client.Constructs.XWires[k].To == server.Constructs.XWires[k].To;
+            foreach (var sc in server.Constructs.Bodies)
+                if (client.Constructs.Get(sc.Id) is { } cc && (cc.Electrical != sc.Electrical || MathF.Abs(ConstructPower.Share(cc) - ConstructPower.Share(sc)) > 0.02f))
+                    return $"construct {sc.Id}'s power differs";
+            if (!linksSame)
+                return "the couplings or the wires between constructs differ";
             // (the turntable keeps turning: 45 deg/s for a pose interval and the round trip is a few degrees)
             return worstJoint > 0.15f ? $"a joint is off by {worstJoint * 180 / MathF.PI:0.0} deg" : !wiresSame ? "the wires differ" : !signalsSame ? "a signal differs" : "";
         }
@@ -130,7 +139,7 @@ public static partial class SelfTest
         using var b = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Bravo", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
         Pump(server, [a, b], 1.5, ref now, clock);
         var mirrorB = Mirror(b);
-        Line($"loopback, milestone 2: the motor gate's button {pressed ?? "ok"}, its door {mgate.Joints[0].Angle * 180 / MathF.PI:0} deg on the server and {openA * 180 / MathF.PI:0} deg on the client; the client mirrors joints, {a.Constructs.TotalWires} wires and signals: {(mirrorA.Length == 0 ? "yes" : mirrorA)}; the late joiner: {(mirrorB.Length == 0 ? "yes" : mirrorB)}");
+        Line($"loopback, milestone 2: the motor gate's button {pressed ?? "ok"}, its door {mgate.Joints[0].Angle * 180 / MathF.PI:0} deg on the server and {openA * 180 / MathF.PI:0} deg on the client; the client mirrors joints, {a.Constructs.TotalWires} wires and signals, {a.Constructs.CouplingCount} coupling, {a.Constructs.XWireCount} wire between constructs and the power: {(mirrorA.Length == 0 ? "yes" : mirrorA)}; the late joiner: {(mirrorB.Length == 0 ? "yes" : mirrorB)}");
         if (pressed != null || mgate.Joints[0].Angle < 1.5f || mirrorA.Length > 0 || mirrorB.Length > 0)
             Fail("constructs loopback: a client (or a late joiner) doesn't mirror the joints, wires and signals");
         var joined = b.Constructs.Bodies.Count == server.Constructs.Bodies.Count && b.Constructs.TotalParts == server.Constructs.TotalParts;

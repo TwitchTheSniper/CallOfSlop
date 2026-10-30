@@ -181,7 +181,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 82: Sandbox construct weapons (docs/sandbox/CONSTRUCTS.md "Construct weapons"): Msg.CFire at the end of Msg (each tick's
     //     shots, blasts and cook-offs), CBodyKind.Ammo (rounds and fire changes), and a construct's structure ends with the
     //     parts holding rounds or on fire.
-    public const byte ProtocolVersion = 82;
+    // 83: Sandbox milestone 3 links and power (docs/sandbox/CONSTRUCTS.md "Milestone 3"): CBodyKind.Links (couplings and wires
+    //     between constructs), the charge, power flags and gear in CBody and CPose (and the fuel in CPose), CAct.Wire's to-construct.
+    public const byte ProtocolVersion = 83;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

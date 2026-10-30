@@ -91,5 +91,6 @@
   ],
   "logic": {
     "kind": "horn"
-  }
+  },
+  "power": 120
 }

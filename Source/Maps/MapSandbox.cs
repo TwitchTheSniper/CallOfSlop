@@ -36,6 +36,18 @@ public sealed class SandboxMap
     public bool PartsMenu = true;
 
     /// <summary>
+    /// Milestone 3: <c>"power": "required"</c> makes every construct need a battery for its lamps, horns, motors and logic
+    /// (and the starter); the default, <c>"optional"</c>, leaves a construct without a battery running as milestone 2 did.
+    /// </summary>
+    public bool PowerRequired;
+
+    /// <summary>Couplings between the starting constructs: (construct, its blueprint step: a ball or hook) to (construct, step: an eye).</summary>
+    public List<(int A, int PartA, int B, int PartB)> Couplings = new();
+
+    /// <summary>Wires between the starting constructs: (construct, step: an output) into (construct, step: an input).</summary>
+    public List<(int A, int PartA, int B, int PartB)> Wires = new();
+
+    /// <summary>
     /// Endless parts (milestone 3): the rack and the debug parts menu hand out parts from nothing, as before. Off
     /// (<c>"infiniteParts": false</c>), they hand out only what the player's inventory holds, and taking a part off your own
     /// construct puts it back there. On by default (Construct Yard).
@@ -94,6 +106,32 @@ public sealed class SandboxMap
                         s.Loose.Add(new SandboxLoose { Part = name, X = x, Z = z, Yaw = yaw });
                     }
                     break;
+                case "power":
+                    s.PowerRequired = p.Value.GetString() switch
+                    {
+                        "required" => true,
+                        "optional" => false,
+                        _ => throw new MapFileException($"{source}: sandbox.power: \"optional\" or \"required\""),
+                    };
+                    break;
+                case "couplings":
+                case "wires":
+                {
+                    var couple = p.Name.Equals("couplings", StringComparison.OrdinalIgnoreCase);
+                    var (ka, kb) = couple ? ("hitch", "eye") : ("from", "to");
+                    foreach (var c in p.Value.EnumerateArray())
+                    {
+                        var (a, pa) = Ends(c, ka, source, p.Name);
+                        var (b, pb) = Ends(c, kb, source, p.Name);
+                        foreach (var (ci, step) in new[] { (a, pa), (b, pb) })
+                            if (ci < 0 || ci >= s.Constructs.Count || step < 0 || step >= ConstructBuild.FindBlueprint(s.Constructs[ci].Blueprint)!.Steps.Count)
+                                throw new MapFileException($"{source}: sandbox.{p.Name}: [{ci}, {step}] is not a step of one of the constructs listed before it");
+                        if (a == b)
+                            throw new MapFileException($"{source}: sandbox.{p.Name}: both ends are on construct {a} (wire a construct's own parts in its blueprint)");
+                        (couple ? s.Couplings : s.Wires).Add((a, pa, b, pb));
+                    }
+                    break;
+                }
                 case "partsmenu":
                     if (p.Value.ValueKind is not (JsonValueKind.True or JsonValueKind.False))
                         throw new MapFileException($"{source}: sandbox.partsMenu: expected true or false");
@@ -111,11 +149,19 @@ public sealed class SandboxMap
                     s.DebrisNear = Number(p.Value, source, "sandbox.debrisNear", 0, 200);
                     break;
                 default:
-                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu, infiniteParts, debrisSeconds, debrisNear)");
+                    throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu, infiniteParts, debrisSeconds, debrisNear, power, couplings, wires)");
             }
         if (s.RackParts.Count == 0)
             s.RackParts.AddRange(ConstructParts.All.Select(d => d.Name));
         return s;
+    }
+
+    private static (int Construct, int Step) Ends(JsonElement e, string key, string source, string what)
+    {
+        if (e.ValueKind != JsonValueKind.Object || !e.TryGetProperty(key, out var v) || v.ValueKind != JsonValueKind.Array || v.GetArrayLength() != 2
+            || !v[0].TryGetInt32(out var c) || !v[1].TryGetInt32(out var step))
+            throw new MapFileException($"{source}: sandbox.{what}: each needs \"{key}\": [construct index, blueprint step]");
+        return (c, step);
     }
 
     private static float Number(JsonElement e, string source, string where, float lo, float hi)

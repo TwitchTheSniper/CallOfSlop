@@ -1,0 +1,47 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Lamp Post",
+  "description": "A lamp on a post, run by a battery: it lights while someone is within 6 m (the gauge shows the charge going down).",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Frame Beam",
+      "on": 0,
+      "socket": "top11",
+      "by": "end-"
+    },
+    {
+      "part": "Lamp",
+      "on": 1,
+      "socket": "end+",
+      "by": "-y"
+    },
+    {
+      "part": "Battery",
+      "on": 1,
+      "socket": "x+0",
+      "by": "-x"
+    },
+    {
+      "part": "Proximity Sensor",
+      "on": 1,
+      "socket": "x-1",
+      "by": "+x",
+      "setting": 1
+    },
+    {
+      "part": "Charge Gauge",
+      "on": 1,
+      "socket": "y+0",
+      "by": "back"
+    }
+  ],
+  "wires": [
+    [
+      4,
+      2
+    ]
+  ]
+}

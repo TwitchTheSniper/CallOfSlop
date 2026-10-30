@@ -1,0 +1,91 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Tow Eye",
+  "description": "A drawbar's eye: what a tow ball or a chain hook couples to (the wrench, F, on either).",
+  "role": "hitch",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 8,
+  "health": 200,
+  "armour": 6,
+  "material": "steel",
+  "color": "#5b5f66",
+  "boxes": [
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.16,
+        0.04,
+        0.12
+      ],
+      "at": [
+        0,
+        0.05,
+        -0.17
+      ],
+      "color": "#3a3d42",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "+z",
+      "at": [
+        0,
+        0,
+        0.15
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.1,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.1,
+        0,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "hitch": {
+    "kind": "eye",
+    "at": [
+      0,
+      0.05,
+      -0.2
+    ]
+  }
+}

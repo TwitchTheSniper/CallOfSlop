@@ -65,6 +65,9 @@ public sealed class SandboxCatalogue
             case PartRole.Seat: return ("Seats", "Seats");
             case PartRole.Hinge: return ("Joints", "Hinges");
             case PartRole.Joint: return ("Joints", "Moving joints");
+            case PartRole.Hitch: return ("Joints", "Hitches and chains");
+            case PartRole.Battery: return ("Power", "Batteries");
+            case PartRole.Alternator: return ("Power", "Alternators");
             case PartRole.Gun: return ("Weapons", "Guns");
             case PartRole.GunPart: return ("Weapons", "Gun parts");
             case PartRole.AmmoBox: return ("Weapons", "Ammo boxes");
@@ -72,8 +75,9 @@ public sealed class SandboxCatalogue
             case PartRole.Logic:
                 return ("Logic", d.Logic switch
                 {
-                    CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Reader => "Controls",
+                    CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Reader or CLogic.Selector => "Controls",
                     CLogic.Speed or CLogic.Proximity => "Sensors",
+                    CLogic.FuelGauge or CLogic.ChargeGauge => "Gauges",
                     CLogic.And or CLogic.Or or CLogic.Not or CLogic.Compare or CLogic.Scale or CLogic.Toggle => "Gates",
                     CLogic.Timer or CLogic.Delay => "Timing",
                     CLogic.Lamp or CLogic.Horn or CLogic.Brake => "Outputs",
