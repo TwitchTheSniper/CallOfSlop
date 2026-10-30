@@ -295,8 +295,7 @@ public static unsafe partial class Program
                 c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
                 var near = Vector3.Transform(hit.Point - t, Quaternion.Conjugate(q));
                 var n = ConstructBuild.Ghosts(c, held, ConstructRender.Ghosts, near, 2.5f);
-                ConstructRender.GhostBody = c;
-                ConstructRender.GhostCount = n;
+                ConstructRender.SetGhosts(c, n);
                 // The one nearest the crosshair.
                 var best = -1;
                 var bestD = 0.8f;

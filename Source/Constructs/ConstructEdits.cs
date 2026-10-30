@@ -8,7 +8,7 @@ public enum EditKind : byte
     None,
     Attach, // the held part onto a socket of a construct
     PlaceNew, // the held part on the ground: a new construct
-    Remove, // a part off a construct, into the hand
+    Remove, // a part off a construct, into the hand (full hands: the backpack, else dropped; ConstructGive.cs)
 }
 
 /// <summary>What one player holds and is doing (server-owned, replicated in the Sandbox mode-state tail).</summary>
@@ -59,7 +59,7 @@ public sealed partial class ConstructEdits
 
     /// <summary>
     /// Every player's inventory (milestone 3: salvage; the game's, set by it). Null: no inventories (a bare construct
-    /// world in a test): everything taken off goes into the hand, as before salvage.
+    /// world in a test): everything taken off goes to the player by <see cref="Give"/> (the hands, the backpack, or dropped).
     /// </summary>
     public SandboxInventories? Inventory;
 
@@ -68,8 +68,9 @@ public sealed partial class ConstructEdits
 
     /// <summary>
     /// Survival (physical storage, decision 18; the server sets it every tick): a map with infinite parts off and the parts
-    /// menu off. Nothing is counted abstractly there: a part salvaged or taken off comes into the hands (or is set down
-    /// where it was when the hands are full), to be carried and set into storage. Scrap still counts on the player.
+    /// menu off. Nothing is counted abstractly there: a part salvaged or taken off comes to the player by <see cref="Give"/>
+    /// (the hands; full hands, the backpack, else set down where it was), to be carried and set into storage. Scrap
+    /// still counts on the player.
     /// </summary>
     public bool Survival;
 
@@ -284,15 +285,29 @@ public sealed partial class ConstructEdits
         for (var pid = 0; pid < Hands.Length; pid++)
         {
             ref var h = ref Hands[pid];
+            CheckHand((byte)pid, ref h); // (a bad hands state is logged and emptied, never indexed with)
             if (h.Edit == EditKind.None || now < h.Start + h.Duration)
                 continue;
             var kind = h.Edit;
             h.Edit = EditKind.None;
             if (eyeOf((byte)pid) is not { } eye)
                 continue; // left, or dead
+            string result;
             world.MergePlacer = (byte)pid; // (parts a merged receiver pops off go to them: ConstructMerge.cs)
-            var result = Complete(world, (byte)pid, ref h, kind, eye);
-            world.MergePlacer = 255;
+            try
+            {
+                result = Complete(world, (byte)pid, ref h, kind, eye);
+            }
+            catch (Exception ex)
+            {
+                // Never a crash: the edit is dropped and logged (a bug to fix, not a game to end).
+                result = $"failed: {ex.GetType().Name}: {ex.Message}";
+                Console.WriteLine($"[sandbox] error: player {pid}'s {kind} threw: {ex}");
+            }
+            finally
+            {
+                world.MergePlacer = 255;
+            }
             Done.Add($"player {pid}: {kind} {result}");
             GiveMergePops(world, (byte)pid);
         }
@@ -352,6 +367,7 @@ public sealed partial class ConstructEdits
                 var where = t + Vector3.Transform((mn + mx) * 0.5f, q);
                 var salvage = Salvageable(c, player);
                 var wrecked = c.Parts[h.Part].Broken;
+                var partRot = c.Parts[h.Part].Rot;
                 var from = c.Id;
                 var def = world.RemovePart(c, h.Part);
                 // Salvage (and, with infinite parts off, your own parts) goes into the inventory: a wrecked part as scrap.
@@ -365,16 +381,17 @@ public sealed partial class ConstructEdits
                     }
                     if (inv.Add(def.Id))
                         return $"ok: {def.Name} {(salvage ? "salvaged" : "taken back")} from construct {from} into the inventory ({inv.Count(def.Id)})";
-                    // (that kind is full: into the hand, or dropped, as before)
+                    // (that kind is full: to the player, as below)
                 }
-                if (h.Held == ConstructParts.None)
+                // The hands; full hands, the backpack; else a pickup dropped where it was (what is held stays held).
+                return Give(world, player, def, where, q * Rot24.Quat(partRot)) switch
                 {
-                    h.Held = def.Id;
-                    return $"ok: {def.Name} into the hand";
-                }
-                // Hands full: it drops where it was.
-                ConstructBuild.PlaceNew(world, def, where with { Y = where.Y - 0.3f }, 0);
-                return $"ok: {def.Name} dropped";
+                    GiveResult.Hands => $"ok: {def.Name} into the hand",
+                    GiveResult.Backpack => $"ok: {def.Name} into the backpack (hands full)",
+                    GiveResult.Dropped => $"ok: {def.Name} dropped (hands full)",
+                    GiveResult.Inventory => $"ok: {def.Name} into the inventory (hands full, no room to drop it)",
+                    _ => $"failed: nowhere for the {def.Name}",
+                };
             }
         }
         return "nothing";
@@ -496,6 +513,8 @@ public sealed partial class ConstructEdits
         var cur = ConstructParts.Get(h.Held)?.Name;
         var at = cur == null ? -1 : sandbox.RackParts.FindIndex(n => n.Equals(cur, StringComparison.OrdinalIgnoreCase));
         ReturnHeld(player);
+        if (h.Held != ConstructParts.None)
+            return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
         for (var k = 1; k <= sandbox.RackParts.Count; k++)
             if (ConstructParts.Find(sandbox.RackParts[(at + k) % sandbox.RackParts.Count]) is { } next && inv.Take(next.Id))
             {
@@ -528,6 +547,8 @@ public sealed partial class ConstructEdits
             if (h.Held == def.Id)
                 return null;
             ReturnHeld(player);
+            if (h.Held != ConstructParts.None)
+                return $"your inventory has no room for the {ConstructParts.Get(h.Held)?.Name ?? "part"} you hold";
             inv.Take(def.Id);
         }
         h.Held = def.Id;
@@ -538,16 +559,18 @@ public sealed partial class ConstructEdits
     public string? PickUp(ConstructWorld world, byte player, Vector3 eye, ushort body)
     {
         ref var h = ref Hands[player];
-        if (h.Held != ConstructParts.None)
-            return "your hands are full (drop what you hold first)";
         if (world.Get(body) is not { } c || !c.Loose)
             return "only loose parts can be picked up";
         if (world.StoreOf(c, 0) is { Empty: false })
             return $"empty the {c.DefOf(0).Name} first";
         if (Reachable(eye, c.WorldCom, ConstructBuild.UseReach) is { } far)
             return far;
-        h.Held = c.Parts[0].Def;
+        var def = c.DefOf(0);
+        // Full hands: into the backpack if it fits there (else refused: it stays where it lies).
+        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], def, out _, out _) < 0))
+            return "your hands are full (drop what you hold first)";
         world.Remove(c);
+        Give(world, player, def, c.WorldCom);
         return null;
     }
 
@@ -591,13 +614,17 @@ public sealed partial class ConstructEdits
     public string? TakeStored(ConstructWorld world, byte player, Vector3 eye, ushort body, int part, int slot)
     {
         ref var h = ref Hands[player];
-        if (h.Held != ConstructParts.None)
-            return "your hands are full (put down what you hold first)";
         if (Storage(world, player, eye, body, part, out var c) is { } why)
             return why;
+        var st = world.StoreOf(c!, part)!;
+        if (slot < 0 || slot >= st.SlotCount || ConstructParts.Get(st.Def[slot]) is not { } top)
+            return "that slot is empty (someone took it)";
+        // Full hands: into the backpack if it fits there (else refused: it stays stored).
+        if (h.Held != ConstructParts.None && (Backpack == null || PackSlotFor(Packs[player], top, out _, out _) < 0))
+            return "your hands are full (put down what you hold first)";
         if (world.TakeOut(c!, part, slot) is not { } def)
             return "that slot is empty (someone took it)";
-        h.Held = def.Id;
+        Give(world, player, def, eye);
         Done.Add($"player {player}: took {def.Name} from slot {slot} of the {c!.DefOf(part).Name} (construct {c.Id})");
         return null;
     }

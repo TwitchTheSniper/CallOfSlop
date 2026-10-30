@@ -260,6 +260,23 @@ public sealed partial class Game
         foreach (var e in SandboxHands.Done)
             Console.WriteLine($"[sandbox] {e}");
         SandboxHands.Done.Clear();
+        SandboxNoticesFlush();
+    }
+
+    /// <summary>Server: the HUD lines edits left for players (a part dropped because the hands were full...): the host's own at once, a client's as a notice.</summary>
+    private void SandboxNoticesFlush()
+    {
+        foreach (var (who, text) in SandboxHands.Notices)
+        {
+            if (who == LocalId)
+                SandboxSay(text);
+            else if (!Net.IsOffline && Players.TryGetValue(who, out var p) && GuidOf(p) is { } g)
+            {
+                SbW.Begin(Msg.CAct).U8((byte)CActKind.Notice).Str(text);
+                Net.SendTo(g, SbW.Span, PacketReliability.ReliableOrdered);
+            }
+        }
+        SandboxHands.Notices.Clear();
     }
 
     /// <summary>Server: a joining client gets every construct as it is now.</summary>

@@ -21,6 +21,7 @@ public static partial class ConstructRender
     public static int GhostCount;
     public static int GhostSelected = -1;
     public static Construct? GhostBody;
+    public static int GhostParts; // GhostBody's part count when the ghosts were found (a tick in between that changes it makes them stale)
     public static ConstructPartDef? GhostDef;
     public static bool GhostValid; // the selected one fits as shown
     public static Vector3? PlaceAt; // free placement: a new construct's origin on the surface aimed at
@@ -75,6 +76,7 @@ public static partial class ConstructRender
         GhostCount = 0;
         GhostSelected = -1;
         GhostBody = null;
+        GhostParts = 0;
         GhostDef = null;
         PlaceAt = null;
         AimBody = null;
@@ -553,8 +555,48 @@ public static partial class ConstructRender
         gfx.Draw(Matrix4x4.CreateScale(0.035f, 0.035f, len) * basis * Matrix4x4.CreateTranslation((a + b) * 0.5f), colour, opacity, mode: 2);
     }
 
+    /// <summary>The ghosts found this frame for <paramref name="c"/> (the input sets them; the draw checks them against it).</summary>
+    public static void SetGhosts(Construct c, int count)
+    {
+        GhostBody = c;
+        GhostParts = c.PartCount;
+        GhostCount = Math.Clamp(count, 0, Ghosts.Length);
+    }
+
+    /// <summary>
+    /// Ghost <paramref name="k"/> still names a part and socket of <paramref name="c"/> as it is now. The input finds the
+    /// ghosts before the frame's tick or packets, which may take a part off the same construct (board item rc01: taking a
+    /// part off while holding one crashed here, the stale part and socket indices running off the arrays); stale ghosts
+    /// are skipped for that frame.
+    /// </summary>
+    public static bool GhostLive(Construct c, int k)
+    {
+        if (k < 0 || k >= GhostCount || c.PartCount != GhostParts || c.PartCount == 0)
+            return false;
+        ref var g = ref Ghosts[k];
+        return g.Part >= 0 && g.Part < c.PartCount && ConstructParts.Get(c.Parts[g.Part].Def) is { } pd && g.Socket >= 0 && (g.Socket < pd.Sockets.Length || c.MergeLead(g.Part)); // (a merged receiver's centre sockets come after its own)
+    }
+
+    private static bool _ghostThrew;
+
     /// <summary>The ghost sockets (blended, depth-tested, no depth write): small markers on every free socket the held part fits, the chosen one as the whole part.</summary>
     public static void DrawGhosts(Renderer gfx, double now)
+    {
+        try
+        {
+            DrawGhostsUnsafe(gfx, now);
+        }
+        catch (Exception ex)
+        {
+            // Never a crash over a preview: logged once, and the aim state cleared for the frame.
+            if (!_ghostThrew)
+                Console.WriteLine($"[sandbox] error: drawing the ghosts threw (cleared): {ex}");
+            _ghostThrew = true;
+            ClearAim();
+        }
+    }
+
+    private static void DrawGhostsUnsafe(Renderer gfx, double now)
     {
         var pulse = 0.55f + 0.25f * MathF.Sin((float)now * 6f);
         if (GhostBody is { } c && GhostDef is { } def)
@@ -562,6 +604,8 @@ public static partial class ConstructRender
             var body = Matrix4x4.CreateFromQuaternion(c.Rot) * Matrix4x4.CreateTranslation(c.Pos);
             for (var k = 0; k < GhostCount; k++)
             {
+                if (!GhostLive(c, k))
+                    continue;
                 ref var g = ref Ghosts[k];
                 c.SocketAt(g.Part, g.Socket, out var at, out var dir);
                 c.SegPose(c.Parts[g.Part].Seg, out var q, out var t);

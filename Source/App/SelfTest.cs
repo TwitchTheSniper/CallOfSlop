@@ -236,6 +236,7 @@ public static partial class SelfTest
         Section("Construct glass", CheckConstructGlass); // SelfTestConstructGlass.cs: see-through glass parts: the blended glass pass (back to front, no depth writes), tiles, held part and ghosts, bullets through glass hit what's behind and break it (shards), the shatter event, no allocation
         Section("Construct run-over", CheckConstructRunOver); // SelfTestConstructRunOver.cs: run-over damage from the construct's own motion only: sprinting into a parked car, a slow nudge, speed and mass scaling, landing on a car, a swinging hinged leaf
         Section("Sandbox backpack", CheckSandboxBackpack); // SelfTestSandboxBackpack.cs: every player's backpack: stow and draw keys, what fits (weight, size), drawn on the back, the HUD strip, dropped on death, no allocation, a loopback
+        Section("Sandbox full hands", CheckSandboxFullHands); // SelfTestSandboxFullHands.cs: a part given to full hands (taken off, salvaged, from storage, the backpack, the physics gun) goes to the backpack or drops as a pickup, never lost and never a crash; host and client over the wire
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
         Section("Building faces", CheckBuildingFaces); // SelfTestBuildingFaces.cs: no coplanar same-facing faces of different surfaces (z-fighting) in any building or the map Building op

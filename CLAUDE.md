@@ -191,3 +191,9 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
 - 2026-10-30: "Sandbox tool models" failed twice with "no live local player and bot" (main CI, then the PC runner after
   a merge) and passed on rerun both times. Why: unknown, a spawn-timing flake. Rule: it is now listed in HANDOFF.md
   (re-run once before chasing it); a third failure gets an agent to make the scene wait for its spawns.
+- 2026-10-30: taking a construct part off while holding one crashed the game (board dev-sandbox-remove-crash-rc01):
+  IndexOutOfRangeException in `Construct.SocketAt` from `ConstructRender.DrawGhosts`. Why: the input found the held
+  part's ghost sockets (part and socket indices) before the frame's tick or packets took a part off the same construct,
+  and the draw used the stale indices on the compacted parts. Rule: per-frame state that holds indices into a construct
+  is checked against the construct as it is when used (`ConstructRender.GhostLive`, like `AimPart < PartCount`), and a
+  part given to a player goes through `ConstructEdits.Give` (hands, backpack, drop); "Sandbox full hands" checks both.

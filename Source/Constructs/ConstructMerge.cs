@@ -729,33 +729,13 @@ public sealed partial class ConstructEdits
     {
         if (world.MergePops.Count == 0)
             return;
-        ref var h = ref Hands[player];
         for (var k = 0; k < world.MergePops.Count; k++)
         {
             var (def, at, _) = world.MergePops[k];
             if (ConstructParts.Get(def) is not { } d)
                 continue;
-            if (h.Held == ConstructParts.None)
-            {
-                h.Held = def;
-                Done.Add($"player {player}: {d.Name} popped off a merged receiver into the hands");
-                continue;
-            }
-            var pack = Packs[player];
-            if (Backpack != null && PackSlotFor(pack, d, out _, out var rot) is var slot and >= 0)
-            {
-                pack.Def[slot] = def;
-                pack.Rot[slot] = rot;
-                pack.Count[slot] = 1;
-                pack.Health[slot] = 1f;
-                pack.Version++;
-                PackDirty.Add(player);
-                Done.Add($"player {player}: {d.Name} popped off a merged receiver into backpack slot {slot}");
-                continue;
-            }
-            if (ConstructBuild.PlaceNew(world, d, at with { Y = at.Y - 0.3f }, 0) is { } dropped)
-                dropped.Owner = player;
-            Done.Add($"player {player}: {d.Name} popped off a merged receiver and dropped");
+            var where = Give(world, player, d, at); // (the one rule: ConstructGive.cs)
+            Done.Add($"player {player}: {d.Name} popped off a merged receiver {where switch { GiveResult.Hands => "into the hands", GiveResult.Backpack => "into the backpack", GiveResult.Dropped => "and dropped", GiveResult.Inventory => "into the inventory", _ => "with nowhere to go" }}");
         }
         world.MergePops.Clear();
     }
