@@ -218,7 +218,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 97: Sandbox freeform welds (board item fw01, ConstructFreeform.cs): JointType.Fixed (wire byte 5) in CBody's joints and the
     //     welds' poses (joint, welded-on part, position, quaternion) at the end of CBody, CActKind.FreeformWeld / FreeformCut at the
     //     end of CActKind, and EditKind.Weld in the Sandbox hands tail.
-    public const byte ProtocolVersion = 97;
+    // 98: Sandbox one pipe (board item dev-sandbox-one-pipe-op01, decision 28): a routed link's type byte (CBody's links, CAct.Route,
+    //     CAct.WorldRoute, the world links list) is the type alone; the high nibble that held a pipe style is gone (read and masked off).
+    //     The fuel and water hose parts became one fluid hose (HoseCarry.Fluid in the part files, not on the wire).
+    public const byte ProtocolVersion = 98;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
