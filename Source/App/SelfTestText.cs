@@ -90,7 +90,8 @@ public static partial class SelfTest
         Add("default loadout name", LoadoutStore.DefaultName(0), TextKind.Label);
         // The Sandbox tool wheel: its tools and the linking tool's outer ring (names in the middle, hints in the tooltip).
         var wheel = new SandboxToolWheel();
-        foreach (var it in wheel.Menu.Items.Concat(new SandboxLinkWheel().Options))
+        var linkOptions = new SandboxLinkWheel().Options;
+        foreach (var it in wheel.Menu.Items.Concat(linkOptions).Concat(linkOptions.SelectMany(o => o.Options ?? Array.Empty<RadialMenu.Item>())))
         {
             Add($"tool wheel item '{it.Label}'", it.Label, TextKind.Label);
             if (it.Hint.Length > 0)

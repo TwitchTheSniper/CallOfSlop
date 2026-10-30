@@ -177,7 +177,13 @@ public sealed class SandboxToolWheel
             return false;
         }
         if (option >= 0 && _options[pick] is { } opts)
-            opts.Choose(option); // (on the tool itself: its last-used option stays)
+        {
+            if (Menu.PickedSub >= 0)
+                opts.ChooseSub(option, Menu.PickedSub); // (a third-tier pick)
+            else
+                opts.Choose(option); // (on the option itself: its last-used sub-option stays)
+        }
+        // (on the tool itself: its last-used option stays)
         if (tool != h.Tool)
             g.SandboxSend(CActKind.Tool, part: (byte)tool);
         return false;
@@ -320,4 +326,11 @@ public interface IToolOptions
     RadialIcon? Icons { get; }
     int CurrentOption { get; }
     void Choose(int option);
+
+    /// <summary>
+    /// A pick on the third tier: sub-option <paramref name="sub"/> of option <paramref name="option"/> (the option's own
+    /// <see cref="RadialMenu.Item.Options"/>, drawn as a partial arc). <see cref="Choose"/> is called instead when the wheel
+    /// is let go on the option itself (it keeps its last sub-option). Optional: the default ignores it.
+    /// </summary>
+    void ChooseSub(int option, int sub) => Choose(option);
 }
