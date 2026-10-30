@@ -193,6 +193,8 @@ public static partial class SelfTest
             plain.BeginAttach(pw, me, eye, beam.Id, gh[0].Part, gh[0].Socket, gh[0].Variant, now);
         Want(n2 > 0 && beam.PartCount == before2 + 1 && ph.Held == ConstructParts.None, "without quick building the part leaves the hands when it is fitted");
 
+        SnapStrokeCases(problems, beamDef, panel);
+
         // 6. Pick, undo.
         var count = beam.PartCount;
         Want(qh.UndoCount(me) == 6, $"six placements should be remembered ({qh.UndoCount(me)})");
@@ -236,5 +238,108 @@ public static partial class SelfTest
         Line($"snap build: barrel front cache {cache.Count}, magnet near {near} far {far}; gearbox lineups {lined}; {placed} lamps with one held part; undo {u1 ?? "ok"}; cache {cc.Rebuilds - rebuilds} rebuild, {alloc} B");
         if (problems.Count > 0)
             Fail($"sandbox snap build: {string.Join("; ", problems)}");
+    }
+
+    /// <summary>
+    /// Hold to paint (board item dev-sandbox-paint-too-strong-pt01): a press places exactly one part even when the new
+    /// part's own socket ends up under the crosshair; holding still places no more; sweeping across free beam sockets
+    /// places one per socket and never on a part the stroke placed; the repeat rate is limited; the setting turns it off.
+    /// A stationary press is the case the first version never tested (a chain grew toward the player at frame rate).
+    /// </summary>
+    private static void SnapStrokeCases(List<string> problems, ConstructPartDef beamDef, ConstructPartDef lamp)
+    {
+        // Runs one stroke: hover(t) names the socket index under the crosshair at time t (-1: the newest part's socket).
+        // Returns the times of the placements and whether any landed on a part the stroke placed.
+        static (List<double> times, bool onOwn, int start, int end) Stroke(ConstructPartDef beamDef, ConstructPartDef lamp, double release, Func<double, int> hover, double step, bool paintOn = true)
+        {
+            var wd = new ConstructWorld();
+            var ed = new ConstructEdits { InfiniteParts = true };
+            var b = ConstructBuild.PlaceNew(wd, beamDef, new Vector3(120, 0, 120), 0f)!;
+            b.Owner = 0;
+            ed.SetQuick(0, true);
+            ref var hd = ref ed.Hand(0);
+            hd.Held = lamp.Id;
+            hd.Tool = lamp.Tool;
+            var eyeAt = b.WorldCom + new Vector3(0, 1.2f, 0);
+            var cache = new SnapCache();
+            var gs = new ConstructGhost[128];
+            // a second beam joined end to end: a straight side of eight sockets to sweep along
+            var nb = SnapBuild.Ghosts(b, beamDef, new SnapCache(), gs, b.Com, 6f);
+            for (var k = 0; k < nb; k++)
+                if (gs[k].Part == 0 && gs[k].Socket == 0)
+                {
+                    ConstructBuild.Attach(wd, b, beamDef, in gs[k]);
+                    break;
+                }
+            var n0 = SnapBuild.Ghosts(b, lamp, cache, gs, b.Com, 10f);
+            // the free sockets as first seen, in order along the beam (end-, x+0 .. x+3, end+ line up on the beam's axis)
+            var cand = new List<(int part, int socket, float z)>();
+            for (var k = 0; k < n0; k++)
+                if (!cand.Exists(x => x.part == gs[k].Part && x.socket == gs[k].Socket) && Math.Abs(gs[k].Pos.Y) < 0.01f && gs[k].Pos.X > 0.3f)
+                    cand.Add((gs[k].Part, gs[k].Socket, gs[k].Pos.Z));
+            cand.Sort((a, c2) => a.z.CompareTo(c2.z));
+            if (cand.Count > 6)
+                cand.RemoveRange(6, cand.Count - 6);
+            var stroke = new SnapStroke();
+            var times = new List<double>();
+            var onOwn = false;
+            var start = b.PartCount;
+            var t = 0.0;
+            for (var f = 0; t <= release + 1e-9; f++, t = f * step)
+            {
+                if (f == 0)
+                    stroke.Press(b.Id, b.PartCount, t);
+                var idx = hover(t);
+                var n = SnapBuild.Ghosts(b, lamp, cache, gs, b.Com, 10f);
+                var pick = -1;
+                for (var k = 0; k < n && pick < 0; k++)
+                    if (idx < 0 ? gs[k].Part >= start : idx < cand.Count && gs[k].Part == cand[idx].part && gs[k].Socket == cand[idx].socket)
+                        pick = k;
+                if (pick < 0)
+                    continue;
+                ref var g0 = ref gs[pick];
+                b.SegPose(b.Parts[g0.Part].Seg, out var wq, out var wt);
+                var at = b.ToWorld(wt + Vector3.Transform(g0.Pos, wq));
+                var key = ((long)b.Id << 24) | ((long)g0.Part << 8) | (uint)g0.Socket;
+                var go = f == 0 || (paintOn && stroke.Want(t, b.Id, b.PartCount, g0.Part, key, at));
+                if (!go)
+                    continue;
+                var before = b.PartCount;
+                if (ed.BeginAttach(wd, 0, eyeAt, b.Id, g0.Part, g0.Socket, g0.Variant, t) == null && b.PartCount == before + 1)
+                {
+                    onOwn |= g0.Part >= start;
+                    stroke.Sent(b.Id, b.PartCount, t, key, at);
+                    times.Add(t);
+                }
+            }
+            return (times, onOwn, start, b.PartCount);
+        }
+
+        // A click with the new part's socket under the crosshair at once: exactly one.
+        var click = Stroke(beamDef, lamp, 0.05, t => t < 0.001 ? 0 : -1, 1.0 / 60);
+        Want1(click.times.Count == 1, $"a click should place exactly 1 part ({click.times.Count})");
+        // Holding still for 2 s on the new part's socket: still one (and none on the stroke's own parts).
+        var still = Stroke(beamDef, lamp, 2.0, t => t < 0.001 ? 0 : -1, 1.0 / 60);
+        Want1(still.times.Count == 1 && !still.onOwn, $"holding still 2 s should place 1 ({still.times.Count}, onOwn {still.onOwn})");
+        // Holding still on the same pre-existing socket: one.
+        var same = Stroke(beamDef, lamp, 2.0, _ => 0, 1.0 / 60);
+        Want1(same.times.Count == 1, $"holding still on one socket should place 1 ({same.times.Count})");
+        // Sweeping across six free sockets, 0.4 s each, the first at the press: six, none on the stroke's own parts.
+        var sweep = Stroke(beamDef, lamp, 6 * 0.4, t => (int)(t / 0.4), 1.0 / 60);
+        Want1(sweep.times.Count == 6 && !sweep.onOwn && sweep.end == sweep.start + 6, $"sweeping 6 sockets should place 6, none on stroke parts ({sweep.times.Count}, onOwn {sweep.onOwn})");
+        // A fast sweep (30 ms per socket) cannot out-run the limit; a sweep that ends before the hold time paints nothing.
+        var fast = Stroke(beamDef, lamp, 1.2, t => (int)(t / 0.03) % 6, 1.0 / 240);
+        var gapOk = true;
+        for (var k = 1; k < fast.times.Count; k++)
+            gapOk &= fast.times[k] - fast.times[k - 1] >= SnapStroke.MinGap - 1e-6;
+        Want1(gapOk && (fast.times.Count < 2 || fast.times[1] >= SnapStroke.HoldSecs - 1e-6), $"paints should keep {SnapStroke.MinGap} s apart and wait {SnapStroke.HoldSecs} s ({string.Join(",", fast.times.Select(x => x.ToString("0.00")))})");
+        var quickSweep = Stroke(beamDef, lamp, 0.25, t => (int)(t / 0.04), 1.0 / 60);
+        Want1(quickSweep.times.Count == 1, $"a stroke released before the hold time should place 1 ({quickSweep.times.Count})");
+
+        void Want1(bool ok, string what)
+        {
+            if (!ok)
+                problems.Add(what);
+        }
     }
 }
