@@ -130,8 +130,7 @@ public static unsafe partial class Program
         {
             var def = ConstructParts.Need(held);
             ConstructRender.GhostDef = def;
-            ConstructRender.GhostBody = other;
-            ConstructRender.GhostCount = ConstructBuild.Ghosts(other, def, ConstructRender.Ghosts, other.Com, 10);
+            ConstructRender.SetGhosts(other, ConstructBuild.Ghosts(other, def, ConstructRender.Ghosts, other.Com, 10));
             ConstructRender.GhostSelected = ConstructRender.GhostCount > 0 ? 0 : -1;
             ConstructRender.GhostValid = true;
             var oc = other.WorldCom;
