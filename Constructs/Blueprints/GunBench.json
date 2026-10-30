@@ -7,50 +7,44 @@
       "part": "Foundation"
     },
     {
-      "part": "Frame Block",
+      "part": "Rifle Receiver",
       "on": 0,
       "socket": "top11",
-      "by": "-y"
-    },
-    {
-      "part": "Rifle Receiver",
-      "on": 1,
-      "socket": "+y",
       "by": "bottom"
     },
     {
       "part": "Gun Barrel",
-      "on": 2,
+      "on": 1,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Gun Muzzle Brake",
-      "on": 3,
+      "on": 2,
       "socket": "front",
       "by": "back"
     },
     {
       "part": "Box Magazine",
-      "on": 2,
+      "on": 1,
       "socket": "left",
       "by": "right"
     },
     {
       "part": "Ammo Box",
-      "on": 5,
+      "on": 4,
       "socket": "left",
       "by": "right"
     },
     {
       "part": "AP Rounds",
-      "on": 2,
+      "on": 1,
       "socket": "right",
       "by": "left"
     },
     {
       "part": "Gun Scope",
-      "on": 2,
+      "on": 1,
       "socket": "top",
       "by": "bottom"
     },
@@ -63,8 +57,8 @@
   ],
   "wires": [
     [
-      9,
-      2
+      8,
+      1
     ]
   ]
 }

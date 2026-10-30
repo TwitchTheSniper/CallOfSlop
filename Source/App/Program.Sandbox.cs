@@ -139,7 +139,8 @@ public static unsafe partial class Program
             var fits = h.Tool != ConstructTool.None && ConstructBuild.ToolFits(h.Tool, d);
             var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
-                      ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0);
+                      ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0)
+                      ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 61 : 0) ^ (part.Reload > 0 ? 1L << 60 : 0);
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -152,6 +153,9 @@ public static unsafe partial class Program
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever => $"{d.Name}{signal}: F to {(d.Logic == CLogic.Button ? "press" : "flip")}",
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
                     PartRole.Logic => $"{d.Name}{setting}{signal}",
+                    PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
+                    PartRole.AmmoBox => $"{d.Name}: {part.Rounds} rounds{(part.Burn > 0 ? " - ON FIRE" : "")}{(part.Broken ? " (wrecked)" : "")}",
+                    _ when part.Burn > 0 => $"{d.Name} - ON FIRE {part.Health:0}/{d.Health:0}",
                     _ when hit.Body.Loose && near => $"{d.Name}: F to pick up",
                     _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(fits ? " - hold aim to take it off" : "")}",
                 };
@@ -320,6 +324,17 @@ public static unsafe partial class Program
             _sbFiring = _sbRemoving = false;
         }
         return true;
+    }
+
+    /// <summary>A gun under the crosshair: rounds loaded and in its boxes, reloading, or why it won't fire (the look text's cache rebuilds it only on a change).</summary>
+    private static string GunLook(Construct c, int k, in CPart p)
+    {
+        ref var g = ref c.Guns[k];
+        var d = p.D;
+        return p.Broken ? $"{d.Name} (wrecked)"
+            : g.Problem.Length > 0 ? $"{d.Name}: won't fire: {g.Problem}"
+            : g.BoxCount == 0 && p.Rounds == 0 ? $"{d.Name}: no ammo box on its feed"
+            : $"{d.Name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != 255 ? " - a sentry" : " - wire a signal into it to fire")}";
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

@@ -138,10 +138,11 @@ public static unsafe partial class Program
         _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
         _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
         _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
+        _weaponShots = args.Any(a => a.Equals("--weapon-shots", StringComparison.OrdinalIgnoreCase)); // (Program.WeaponShots.cs)
         _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -227,6 +228,8 @@ public static unsafe partial class Program
                 RunSandboxShots(args); // --sandbox-shots: the Sandbox constructs on Construct Yard, then quit (Program.SandboxShots.cs)
             else if (_jointShots)
                 RunJointShots(); // --joint-shots: parts beyond construct joints colliding on Construct Yard, then quit (Program.JointShots.cs)
+            else if (_weaponShots)
+                RunWeaponShots(); // --weapon-shots: the Sandbox construct weapons firing on Construct Yard, then quit (Program.WeaponShots.cs)
             else if (_toolShots)
                 RunToolShots(); // --tool-shots: every Sandbox tool in the hands, first and third person, then quit (Program.ToolShots.cs)
             else if (_shotTool)
