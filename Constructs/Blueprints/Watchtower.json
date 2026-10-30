@@ -1,0 +1,94 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Watchtower",
+  "description": "A wooden watchtower on a concrete pad: a 2 m lookout platform 3 m up with a parapet, reached by a ship ladder, under a corrugated roof.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 0,
+      "socket": "t8_8",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 0,
+      "socket": "t15_8",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 0,
+      "socket": "t8_15",
+      "by": "b00"
+    },
+    {
+      "part": "Wood Post 2.75 m",
+      "on": 0,
+      "socket": "t15_15",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 3,
+      "socket": "r0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 1,
+      "socket": "k0_0",
+      "by": "r0"
+    },
+    {
+      "part": "Tower Brace",
+      "on": 2,
+      "socket": "k0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Tower Platform 2x2 m",
+      "on": 1,
+      "socket": "t00",
+      "by": "b0_0"
+    },
+    {
+      "part": "Ship Ladder 3 m",
+      "on": 8,
+      "socket": "front4",
+      "by": "k2_11"
+    },
+    {
+      "part": "Tower Post 1.25 m",
+      "on": 8,
+      "socket": "t0_0",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Post 1.25 m",
+      "on": 8,
+      "socket": "t7_0",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Post 1.25 m",
+      "on": 8,
+      "socket": "t0_7",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Post 1.25 m",
+      "on": 8,
+      "socket": "t7_7",
+      "by": "b00"
+    },
+    {
+      "part": "Tower Roof 2x2 m",
+      "on": 10,
+      "socket": "t00",
+      "by": "b0_0"
+    }
+  ]
+}

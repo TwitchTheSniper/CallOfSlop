@@ -1,0 +1,74 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Bunker",
+  "description": "A reinforced bunker module on a concrete pad, slits facing front, a steel door at the back opening onto a sandbagged yard.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Bunker Module",
+      "on": 0,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t0_0",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t15_0",
+      "by": "b0_0",
+      "spin": 2
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 1,
+      "socket": "t15_8",
+      "by": "b0_0",
+      "spin": 2
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 4,
+      "socket": "k0",
+      "by": "l1"
+    },
+    {
+      "part": "Sandbag Wall 1 m",
+      "on": 6,
+      "socket": "k7",
+      "by": "r1"
+    },
+    {
+      "part": "Hinge",
+      "on": 2,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Steel Door 1.25 m",
+      "on": 9,
+      "socket": "leaf",
+      "by": "hang"
+    }
+  ]
+}

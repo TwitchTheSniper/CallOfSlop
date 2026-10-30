@@ -530,6 +530,8 @@ public sealed partial class ConstructWorld
         if (p.Health > 0)
         {
             HealthDirty.Add((c.Id, (byte)part));
+            if (d.DamagedTo >= 0 && p.Health < d.DamagedBelow * d.Health)
+                LoseChunk(c, part);
             return false;
         }
         p.Health = 0;
@@ -764,6 +766,7 @@ public sealed partial class ConstructWorld
         LastHitSpeed = 0;
         LastHitBody = null;
         LastHitNormal = Vector3.Zero;
+        var feet0 = s.Position.Y; // (a step up is measured from where the feet were: one step's rise a tick at most)
         for (var bi = 0; bi < Bodies.Count; bi++)
         {
             var c = Bodies[bi];
@@ -777,6 +780,10 @@ public sealed partial class ConstructWorld
                 var iq = Quaternion.Conjugate(q);
                 var upLocal = Vector3.Transform(Vector3.UnitY, iq);
                 var boxes = p.D.SolidBoxes;
+                // Anchored builds and walkable parts (stairs, ramps, floors) are stepped up onto when the player's disc
+                // reaches them, as the map's steps are; anything else only when the feet's centre is over it.
+                var stepper = c.Anchored || p.D.Walk != WalkKind.None;
+                var margin = stepper ? World.PlayerRadius * 0.9f : 0.05f;
                 for (var bi2 = 0; bi2 < boxes; bi2++)
                 {
                     c.BoxOf(i, bi2, out var centre, out var half);
@@ -794,8 +801,8 @@ public sealed partial class ConstructWorld
                         continue;
                     // In the box's frame: the closest point of the box to the player's axis, at feet and at a few heights.
                     var lf = Vector3.Transform(feet - t, iq);
-                    var top = TopAt(lf, centre, half, upLocal, t, q, feet);
-                    if (top is { } topY && feet.Y >= topY - World.StepHeight && feet.Y <= topY + 0.06f && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
+                    var top = TopAt(lf, centre, half, upLocal, t, q, feet, margin);
+                    if (top is { } topY && MathF.Min(feet.Y, stepper ? feet0 : feet.Y) >= topY - World.StepHeight && feet.Y <= topY + 0.06f && s.Velocity.Y <= 0.5f && upLocal.Y > 0.7f)
                     {
                         s.Position.Y = topY;
                         if (s.Velocity.Y < 0)
@@ -812,6 +819,8 @@ public sealed partial class ConstructWorld
                         }
                         continue;
                     }
+                    if (wc.Y + wh.Y <= s.Position.Y + 0.06f)
+                        continue; // (below the feet: walking over it, onto the next step or the next slab of a floor, never pushes)
                     var pushed = false;
                     for (var h = 0; h < 3 && !pushed; h++)
                     {
@@ -891,7 +900,7 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>The box's top surface height over the feet (world y), when the box is upright and the feet are over it.</summary>
-    private static float? TopAt(Vector3 lf, Vector3 centre, Vector3 half, Vector3 upLocal, Vector3 t, Quaternion q, Vector3 feet)
+    private static float? TopAt(Vector3 lf, Vector3 centre, Vector3 half, Vector3 upLocal, Vector3 t, Quaternion q, Vector3 feet, float margin = 0.05f)
     {
         // Upright enough boxes only: the box's local axis nearest world up.
         var ax = MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Y) ? (MathF.Abs(upLocal.X) > MathF.Abs(upLocal.Z) ? 0 : 2) : (MathF.Abs(upLocal.Y) > MathF.Abs(upLocal.Z) ? 1 : 2);
@@ -900,11 +909,35 @@ public sealed partial class ConstructWorld
             return null;
         // Over the box (the feet's centre within the top face, a little inside the edge).
         for (var a = 0; a < 3; a++)
-            if (a != ax && MathF.Abs(lf[a] - centre[a]) > half[a] + 0.05f)
+            if (a != ax && MathF.Abs(lf[a] - centre[a]) > half[a] + margin)
                 return null;
         var topLocal = lf;
         topLocal[ax] = centre[ax] + sign * half[ax];
         return (t + Vector3.Transform(topLocal, q)).Y;
+    }
+
+    /// <summary>Wall chunks lost (the self-test reads it).</summary>
+    public int ChunksLost;
+
+    /// <summary>
+    /// A part with damage stages ("damaged" in its file: a wall) dropped below a stage's share of its health: it turns
+    /// into that stage in place (the same sockets, so every link stays; fewer boxes: a chunk is gone), and on through any
+    /// later stage it is already below. The structure goes out again (the part's id is in it): no wire change.
+    /// </summary>
+    private void LoseChunk(Construct c, int part)
+    {
+        ref var p = ref c.Parts[part];
+        for (var guard = 0; guard < 8; guard++)
+        {
+            var d = p.D;
+            if (d.DamagedTo < 0 || p.Health >= d.DamagedBelow * d.Health)
+                break;
+            p.Def = (ushort)d.DamagedTo;
+            ChunksLost++;
+            Events.Add($"construct {c.Id}: {d.Name} lost a chunk");
+        }
+        c.Dirty = true;
+        StructureDirty.Add(c.Id);
     }
 
     /// <summary>A push on a hinged segment at a world point: the joint picks up some swing.</summary>
