@@ -607,14 +607,20 @@ public static unsafe partial class Program
     }
 
     /// <summary>A gun under the crosshair: rounds loaded and in its boxes, reloading, or why it won't fire (the look text's cache rebuilds it only on a change).</summary>
-    private static string GunLook(Construct c, int k, in CPart p)
+    private static string GunLook(Construct c, int k, in CPart hitPart)
     {
         ref var g = ref c.Guns[k];
-        var d = p.D;
-        return p.Broken ? $"{d.Name} (wrecked)"
-            : g.Problem.Length > 0 ? $"{d.Name}: won't fire: {g.Problem}"
-            : g.BoxCount == 0 && p.Rounds == 0 ? $"{d.Name}: no ammo box on its feed"
-            : $"{d.Name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != 255 ? " - a sentry" : " - wire a signal into it to fire")}";
+        ref readonly var p = ref g.Part < c.PartCount ? ref c.Parts[g.Part] : ref hitPart; // (a merged receiver's member: its lead's gun)
+        var name = p.D.Name;
+        if (g.MergeN > 1)
+        {
+            ConstructMerge.Health(c, g.Part, out var hp, out var most);
+            name = $"{name} ({g.MergeN}x{g.MergeN} merged, {hp:0}/{most:0})";
+        }
+        return p.Broken ? $"{name} (wrecked)"
+            : g.Problem.Length > 0 ? $"{name}: won't fire: {g.Problem}"
+            : g.BoxCount == 0 && p.Rounds == 0 ? $"{name}: no ammo box on its feed"
+            : $"{name}: {p.Rounds}/{g.Mag}{(p.Reload > 0 ? " reloading" : "")}, {ConstructWeapons.BoxRounds(c, k)} in the boxes{(g.Seat >= 0 ? " - a gunner's seat works it" : g.Sensor != 255 ? " - a sentry" : " - wire a signal into it to fire")}";
     }
 
     /// <summary>The constructs, ghosts and tool (called from the world pass; nothing outside Sandbox).</summary>

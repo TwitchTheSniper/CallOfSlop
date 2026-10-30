@@ -10,7 +10,7 @@ public static partial class SelfTest
     /// The cause: the ghost sockets of the held part are found by the input before the frame's tick (or packets) takes the
     /// part off the same construct, and the draw then indexed the compacted parts with stale part and socket numbers
     /// (IndexOutOfRangeException in Construct.SocketAt, from ConstructRender.DrawGhosts). Checked here: stale ghosts are
-    /// skipped for every blueprint with every part taken off (the unchecked loop throws on some, so the case is real);
+    /// skipped for every blueprint with every part taken off;
     /// one rule gives a part to a player (ConstructEdits.Give: the hands, else the backpack by the Stow rules, else a loose
     /// pickup where it was, with a HUD line): taking a part off with full hands drops it as a pickup that falls and rests
     /// (hands unchanged), or stows it when it fits the backpack; empty hands take it; taking from storage and picking up
@@ -87,8 +87,10 @@ public static partial class SelfTest
             }
         ConstructRender.ClearAim();
         Line($"full hands: stale ghosts: {cases} take-offs over {ConstructBuild.Blueprints.Count} blueprints; the unchecked draw threw on {uncheckedThrows} (first: {first ?? "none"}), the checked draw on {checkedThrows}, {stale} stale ghosts skipped");
-        if (cases == 0 || uncheckedThrows == 0 || checkedThrows != 0)
-            Fail($"sandbox full hands: stale ghosts after a take-off: the checked draw threw {checkedThrows} times (the unchecked one {uncheckedThrows} of {cases})");
+        // (Before the receiver merge, SocketAt indexed the sockets unchecked and the unchecked loop threw on about half the
+        // take-offs; it now wraps the socket index, so a stale ghost draws in the wrong place instead: the check still skips it.)
+        if (cases == 0 || stale == 0 || checkedThrows != 0)
+            Fail($"sandbox full hands: stale ghosts after a take-off: {stale} skipped, the checked draw threw {checkedThrows} times (the unchecked one {uncheckedThrows} of {cases})");
     }
 
     private static Vector3 EyeBy(Construct c, int part) => PartCentre(c, part) + new Vector3(0, 0.4f, 1.2f);

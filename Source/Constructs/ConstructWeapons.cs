@@ -20,6 +20,8 @@ public struct CGun
     public sbyte Seat; // the gunner's seat that fires and aims it (when nothing is wired into it), or -1
     public byte Sensor; // a proximity sensor wired into it: a sentry, pointing at the nearest player in the sensor's range (255: none)
     public byte AimJoints; // turntables and motor hinges up its chain that a gunner or a sensor can point
+    public ushort PerShot; // rounds a shot takes from its load (a merged receiver's: N squared; 0 or 1: one)
+    public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
 }
 
 /// <summary>What a construct gun's shot met (the fire events' flags).</summary>
@@ -117,6 +119,8 @@ public static class ConstructWeapons
                 c.Burning++;
             if (c.Parts[i].D.Role != PartRole.Gun || c.GunCount >= Construct.MaxGuns)
                 continue;
+            if (c.MergeOf[i] != 0 && !c.MergeLead(i))
+                continue; // (a merged receiver's other members: its lead is the gun)
             ref var g = ref c.Guns[c.GunCount];
             g = new CGun { Part = (byte)i, Seg = c.Parts[i].Seg, Problem = "", Seat = -1, Sensor = 255 };
             Span<bool> mine = stackalloc bool[Construct.MaxParts];
@@ -173,6 +177,12 @@ public static class ConstructWeapons
         }
         Fit(root, "action", act);
         mine[i] = true;
+        var merged = c.MergeLead(i);
+        var ownSockets = d.Sockets.Length;
+        if (merged)
+            for (var k = 0; k < c.PartCount; k++)
+                if (c.MergeOf[k] == c.MergeOf[i])
+                    mine[k] = taken[k] = true; // (its members: boxes bolted to any of them feed it)
         int barrel = -1, feed = -1, ammo = -1, optic = -1;
         // The gun parts bolted straight onto the receiver.
         for (var k = 0; k < c.LinkCount; k++)
@@ -180,6 +190,8 @@ public static class ConstructWeapons
             var o = GunNeighbour(c, i, k);
             if (o < 0 || taken[o] || !c.Parts[o].Working || c.Parts[o].D.Role != PartRole.GunPart || Parts.Find(c.Parts[o].D.GunPartName) is not { } wp)
                 continue;
+            if (merged && (c.Links[k].A == i ? c.Links[k].SA : c.Links[k].SB) < ownSockets)
+                continue; // (a merged receiver takes gun parts on its centre sockets only)
             ref var slot = ref barrel;
             switch (wp.Category)
             {
@@ -303,6 +315,8 @@ public static class ConstructWeapons
         g.Kick = d.GunKick;
         g.Fx = d.GunFx;
         g.Speed = 0;
+        if (merged)
+            ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
         g.Def = w;
     }
 
@@ -537,7 +551,16 @@ public static class ConstructWeapons
             if (p.Reload > 0 && --p.Reload == 0)
                 Load(world, c, k);
             var seated = g.Seat >= 0 && g.Seat < c.PartCount && (c.Parts[g.Seat].Keys & CPart.Occupied) != 0 && c.Parts[g.Seat].Working;
-            var trigger = p.InCount > 0 ? p.In >= 0.5f : seated && (c.Parts[g.Seat].Keys & ConstructParts.KeyFire) != 0;
+            var wiredIn = p.InCount;
+            var signal = p.In;
+            if (g.MergeN > 1)
+                for (var m = 0; m < c.PartCount; m++)
+                    if (m != g.Part && c.MergeOf[m] == c.MergeOf[g.Part])
+                    {
+                        wiredIn += c.Parts[m].InCount; // (a merged receiver: a wire into any of its members is its trigger)
+                        signal += c.Parts[m].In;
+                    }
+            var trigger = wiredIn > 0 ? signal >= 0.5f : seated && (c.Parts[g.Seat].Keys & ConstructParts.KeyFire) != 0;
             if (seated && g.AimJoints > 0)
             {
                 // At what the gunner looks at (the guns converge on it: no parallax from the gun sitting off the eye).
@@ -551,14 +574,15 @@ public static class ConstructWeapons
                 if (off > SentryHoldFire)
                     trigger = false; // (a sentry turns onto its target first)
             }
-            if (p.Rounds == 0 && p.Reload == 0 && BoxRounds(c, k) > 0)
+            var per = Math.Max((ushort)1, g.PerShot);
+            if (p.Rounds < per && p.Reload == 0 && BoxRounds(c, k) > 0)
             {
                 p.Reload = g.ReloadTicks;
                 world.NoteAmmo(c, g.Part);
             }
-            if (!trigger || p.Cool > 0 || p.Rounds == 0 || p.Reload > 0)
+            if (!trigger || p.Cool > 0 || p.Rounds < per || p.Reload > 0)
                 continue;
-            p.Rounds--;
+            p.Rounds -= per;
             p.Cool = g.Interval;
             world.NoteAmmo(c, g.Part);
             c.Wake();

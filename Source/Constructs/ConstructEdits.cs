@@ -293,6 +293,7 @@ public sealed partial class ConstructEdits
             if (eyeOf((byte)pid) is not { } eye)
                 continue; // left, or dead
             string result;
+            world.MergePlacer = (byte)pid; // (parts a merged receiver pops off go to them: ConstructMerge.cs)
             try
             {
                 result = Complete(world, (byte)pid, ref h, kind, eye);
@@ -303,7 +304,12 @@ public sealed partial class ConstructEdits
                 result = $"failed: {ex.GetType().Name}: {ex.Message}";
                 Console.WriteLine($"[sandbox] error: player {pid}'s {kind} threw: {ex}");
             }
+            finally
+            {
+                world.MergePlacer = 255;
+            }
             Done.Add($"player {pid}: {kind} {result}");
+            GiveMergePops(world, (byte)pid);
         }
     }
 
