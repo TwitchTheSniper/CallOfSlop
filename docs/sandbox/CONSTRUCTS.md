@@ -25,7 +25,7 @@ north-west corner) and some loose parts.
 | R | Turn the part on its socket (the next way round that fits). |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The debug **parts menu** (below): any part into your hands, any blueprint in front of you. I or Esc closes it. |
+| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
@@ -132,24 +132,51 @@ scanner two-handed; a carried part goes in the off hand, scaled down (a frame bl
 putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
 
-### The debug parts menu
+### The inventory (the parts menu)
 
-A debugging aid for the test yard (the developer asked for one, 2026-10-29), not how the final game will hand parts out:
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens **Parts
-(debug)** (`Source/UI/UiSandboxParts.cs`), the mouse free for it. It lists every loaded part grouped by role (frames,
-panels, seats, wheels, ..., logic), with a search box (name, role or description), and for each its colour swatch (its
-first and last boxes' colours), the tool it needs, mass, health, armour, fitting time and description. Click a part, or
-move the highlight with Up/Down and press Enter: the client asks the server for it by id (the rack's `CActKind.Rack`
-request with a part id, so the server checks it: an unknown id is refused) and takes out the tool it needs, so the
-ghost sockets, fitting and dropping work exactly as with a part from the rack. A **recent** row keeps the last six picks.
-The **blueprint buttons** (one per blueprint file) ask the server to build that blueprint standing on the ground in front
-of you, facing the way you look, far enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). The
-window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it. It closes itself when you
-die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
+**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
+**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
+
+- **Tabs**: Parts, Blueprints and Tools.
+- **Left**: a search box (name, group, section, role or description) and a **category tree**: "All", then the groups
+  (Structure, Wheels and drivetrain, Seats, Joints, Logic, then Power, Weapons, Storage or Other when parts of those
+  kinds exist) with their sections (frames, panels, doors...; logic by kind: controls, sensors, gates, timing, outputs).
+  The tree is made from the loaded data (`Source/UI/SandboxCatalogue.cs`), never from a list of part names: each part
+  goes by its role, and a **role this build doesn't know** (a new one from another branch) goes by a word in its name
+  (power, battery, gun, turret, storage...) or else into **Other** under its own name. Blueprints are grouped as vehicles
+  (a seat and wheels), machines (joints) or structures; tools as in the game or still to come. Below the tree: "Keep open
+  after picking" and the tile size slider.
+- **Right**: a scrolling grid of square **3D tiles** under big headers (a group's tiles flow together; a section picked
+  in the tree gets its own header), each the thing drawn from its boxes at a 3/4 view with the default light. A tile's
+  dot is the tool it needs (orange welder, blue wrench, green linking tool), its badge how many you have, and hovering
+  shows its name, tool, mass, health, armour, fitting time, how many you have and its description. Above the grid: what
+  is in your hands, how many tiles are shown, and the **recent** row (small tiles of your last eight parts).
+- **Picking**: click a tile, or move the highlight with the arrow keys and press Enter. A part: the client asks the
+  server for it by id (the rack's `CActKind.Rack` request with a part id, so the server checks it: an unknown id is
+  refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
+  the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
+  enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
+- **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
+  `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
+  (infinite parts, as now); a count of 0 shows red (the tile can still be clicked: the server decides).
+
+**The tile atlas** (`Source/Render/SandboxTiles.cs`): every part, blueprint (built in a scratch construct world through
+the server's own rules: joints at rest, wheels on their springs) and tool model is drawn once into 128 px tiles of
+2048 px atlas pages (256 tiles a page; slots are parts by id, then blueprints, then tools). Each tile is drawn at twice
+its size into a small offscreen framebuffer, orthographic and framed tight round its boxes, on a clear backdrop, and
+blitted down into its page (smooth edges), then the page's mipmaps are made: plain framebuffer objects and blits, the
+same on the GL 4.1 and 4.6 paths. The window asks for the atlas when it opens; the main loop's `SandboxTiles.Pump`, before
+the scene, draws up to 12 tiles a frame within a 3 ms budget (the first frame's GL set-up aside), so opening the window
+never stalls a frame for long (on Mesa's software GL the 52 tiles took about 20 frames). The atlas is kept for the session
+and made again only when the loaded parts, blueprints or tools change; until a tile is ready (or if the framebuffer can't
+be made) its card shows a plain colour swatch instead.
 
 It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section (a future
 survival map will): the key then says "the parts menu is off on this map" and the server refuses both requests. The
-window allocates nothing per frame while open (every row's text is made once).
+window allocates nothing per frame while open (every tile's text is made once; the catalogue's key is taken once).
 
 Editing always needs the right tool in hand (decision 2): **welder** for frames, panels, corners, decks and foundations,
 **wrench** for everything bolted (seats, wheels, suspensions, engines, tanks, fuel lines, transmissions, differentials,
@@ -301,7 +328,7 @@ parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Tur
 }
 ```
 
-`rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the debug parts menu off (it is
+`rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the inventory off (it is
 on by default). Unknown parts or blueprints refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
@@ -319,7 +346,7 @@ The Sandbox mode is offered only on maps with this section.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
-  debug parts menu, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
+  inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
 
@@ -408,7 +435,20 @@ anywhere, an unknown id is refused (the hands kept), the rack still refuses from
 rack, a Turret spawns in front of the player and a bad blueprint index is refused, and the map flag turns both off; the
 window draws headless (every part listed, a search narrows it, a pick puts the part in hand with its tool out and closes
 the window) with no ImGui error and no allocation per frame while open; a real client's part by id and blueprint go over
-the wire; and outside Sandbox a blueprint spawn is refused.
+the wire; and outside Sandbox a blueprint spawn is refused. The inventory's tabs and tree headless: every tree node (each
+group, each section) lists exactly its own parts, a search narrows within a node ("lamp" in Logic finds the Lamp, in
+Structure nothing), the Blueprints tab lists every blueprint and taking the highlighted one ("buggy") builds it, the Tools
+tab lists every tool model and taking the first one puts it in hand; steady open frames allocate nothing with "inf" badges
+and with counts from a source.
+
+The **Sandbox inventory** section (`Source/App/SelfTestSandboxInventory.cs`), headless: the catalogue holds every part,
+blueprint and tool exactly once, today's parts all have a named group (none in Other) and the five main groups exist, an
+unknown role goes to Other; every tile slot gets boxes (a blueprint built as the server builds it) and a camera that keeps
+every box corner inside its square while filling at least 75% of it; and every slot has its own place in its atlas page.
+
+`--inventory-shots` draws the atlas as the game does (the log says how many frames it took and the slowest one) and
+writes pictures of the inventory over the yard: the Parts tab, one group, one section, a search, the largest tiles, and
+the Blueprints and Tools tabs (`smoke_inventory_*.bmp`); it runs under xvfb like `--light-shots`.
 
 The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): the direction-to-segment maths (every
 segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
@@ -431,7 +471,7 @@ and a real host and client each draw the other's tool in their hands.
 
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
-wires (the linking tool's view), a broken buggy, the debug parts menu (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
+wires (the linking tool's view), a broken buggy, the inventory (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
 
 ## Decisions made for milestone 1 (open questions it touches; the developer may change them)
 

@@ -54,6 +54,7 @@ public static unsafe partial class Program
             for (var frame = 0; frame < 3 && !_window.ShouldClose; frame++)
             {
                 Glfw.PollEvents();
+                SandboxTiles.Pump(Gfx); // (the inventory's tiles, as the main loop does: --inventory-shots shows them made)
                 var fb = _window.FramebufferSize;
                 Gfx.BeginFrame(fb.X, fb.Y, map.Sky);
                 Gfx.SetCamera(Matrix4x4.CreateLookAt(eye, target, Vector3.UnitY),

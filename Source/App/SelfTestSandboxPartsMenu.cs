@@ -177,28 +177,46 @@ public static partial class SelfTest
             if (all != ConstructParts.All.Count || wheels < 1 || wheels >= all || none != 0 || !picked)
                 Fail("parts menu: the window doesn't list, search or pick parts right");
 
-            // Open, steady frames: nothing allocated (least of three 60-frame rounds after a warm-up).
+            SandboxInventoryTabs(g, ui, Frames);
+
+            // Open, steady frames: nothing allocated (least of three 60-frame rounds after a warm-up), with the badges
+            // showing "inf" (no count source) and with counts from a source.
+            ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
+            ui.SetSandboxInventoryNode(-1, -1);
             ui.SetSandboxPartsSearch("");
             ui.SandboxPartsKeepOpen = true;
             ui.OpenSandboxParts(focusSearch: false);
-            Frames(40);
-            Thread.Sleep(200); // (the tiered JIT)
-            Frames(20);
-            var least = long.MaxValue;
-            for (var round = 0; round < 3; round++)
+            long Steady()
             {
-                var b0 = GC.GetAllocatedBytesForCurrentThread();
-                Frames(60);
-                least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - b0);
+                Frames(40);
+                Thread.Sleep(200); // (the tiered JIT)
+                Frames(20);
+                var least = long.MaxValue;
+                for (var round = 0; round < 3; round++)
+                {
+                    var b0 = GC.GetAllocatedBytesForCurrentThread();
+                    Frames(60);
+                    least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - b0);
+                }
+                return least;
             }
+            ui.SandboxCounts = null;
+            var leastInf = Steady();
+            var tiles = ui.SandboxTilesWithPicture + ui.SandboxTilesPlain;
+            ui.SandboxCounts = new FakePartCounts();
+            var leastCounts = Steady();
+            ui.SandboxCounts = null;
             var stillOpen = ui.SandboxPartsOpen;
             ui.CloseSandboxParts();
             Frames(2); // (closed: nothing drawn, ImGui still balanced)
-            Line($"parts menu window: {frames} headless frames, ImGui error: {error ?? "none"}; open steady frames allocate {least} B per 60 (least of three); stayed open {stillOpen}");
+            Line($"parts menu window: {frames} headless frames, ImGui error: {error ?? "none"}; open steady frames allocate {leastInf} B per 60 with \"inf\" badges, {leastCounts} B with counts "
+                 + $"(least of three); {tiles} tiles drawn a frame (headless: plain swatches); stayed open {stillOpen}");
             if (error != null)
                 Fail($"parts menu: the window threw in ImGui: {error}");
-            if (least > 0)
-                Fail($"parts menu: the open window allocates {least} B per 60 frames (should be nothing)");
+            if (leastInf > 0 || leastCounts > 0)
+                Fail($"parts menu: the open window allocates {leastInf} / {leastCounts} B per 60 frames (should be nothing)");
+            if (tiles < 1)
+                Fail("parts menu: the inventory grid drew no tiles");
             if (!stillOpen)
                 Fail("parts menu: the window closed by itself while kept open");
         }
@@ -206,6 +224,98 @@ public static partial class SelfTest
         {
             ui.DisposeHeadless();
         }
+    }
+
+    /// <summary>The count badges' source for the self-test: a few of each part, none of some.</summary>
+    private sealed class FakePartCounts : ISandboxPartCounts
+    {
+        public int PartCount(Game game, byte playerId, byte partId) => partId % 4 == 0 ? 0 : partId * 7;
+    }
+
+    /// <summary>
+    /// The inventory's tabs and tree headless: each tree node lists exactly its section's (or group's) items, a search
+    /// narrows within a node, the Blueprints tab lists every blueprint and taking one builds it in front of the player,
+    /// the Tools tab lists every tool model and taking one takes it out.
+    /// </summary>
+    private static void SandboxInventoryTabs(Game g, Ui ui, Action<int> frames)
+    {
+        var me = g.Local!;
+        ui.SandboxPartsKeepOpen = true;
+        ui.SetSandboxPartsSearch("");
+        ui.OpenSandboxParts(focusSearch: false);
+        frames(2);
+        var cat = ui.SandboxInventoryCatalogue;
+        if (cat == null)
+        {
+            Fail("inventory: the window made no catalogue");
+            return;
+        }
+        // Every tree node lists its own items.
+        var wrong = new List<string>();
+        for (var gi = 0; gi < cat.Parts.Groups.Length; gi++)
+        {
+            var grp = cat.Parts.Groups[gi];
+            ui.SetSandboxInventoryNode(gi, -1);
+            frames(1);
+            if (ui.SandboxPartsListed != grp.Items)
+                wrong.Add($"{grp.Name}: {ui.SandboxPartsListed} listed of {grp.Items}");
+            foreach (var s in grp.Sections)
+            {
+                ui.SetSandboxInventoryNode(gi, s);
+                frames(1);
+                if (ui.SandboxPartsListed != cat.Parts.Sections[s].Items.Length)
+                    wrong.Add($"{grp.Name} > {cat.Parts.Sections[s].Name}: {ui.SandboxPartsListed} listed of {cat.Parts.Sections[s].Items.Length}");
+            }
+        }
+        // A search within a node: "lamp" in Logic, and the same search in Structure finds nothing.
+        var logic = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Logic");
+        var structure = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure");
+        ui.SetSandboxInventoryNode(logic, -1);
+        ui.SetSandboxPartsSearch("lamp");
+        frames(1);
+        var lampInLogic = ui.SandboxPartsListed;
+        var lampPick = ui.SandboxPartsHighlighted?.Name ?? "none";
+        ui.SetSandboxInventoryNode(structure, -1);
+        frames(1);
+        var lampInStructure = ui.SandboxPartsListed;
+        ui.SetSandboxPartsSearch("");
+        ui.SetSandboxInventoryNode(-1, -1);
+        frames(1);
+        Line($"inventory tree: {cat.Parts.Groups.Length} groups, {cat.Parts.Sections.Length} sections; nodes listing the wrong items: {(wrong.Count == 0 ? "none" : string.Join("; ", wrong))}; "
+             + $"\"lamp\" in Logic {lampInLogic} (highlight {lampPick}), in Structure {lampInStructure}");
+        if (wrong.Count > 0 || logic < 0 || structure < 0 || lampInLogic < 1 || lampPick != "Lamp" || lampInStructure != 0)
+            Fail("inventory: the category tree or the search within it doesn't list the right parts");
+
+        // Blueprints: every one listed; taking the highlighted one builds it in front of the player.
+        ui.SetSandboxInventoryTab(Ui.SbTab.Blueprints);
+        frames(2);
+        var bpListed = ui.SandboxPartsListed;
+        ui.SetSandboxPartsSearch("buggy");
+        frames(1);
+        var bpSearch = ui.SandboxPartsListed;
+        var bpPick = ui.SandboxInventoryHighlight;
+        var before = g.Constructs.Bodies.Count;
+        var took = ui.SandboxInventoryTake(g);
+        var built = g.Constructs.Bodies.Count == before + 1;
+        ui.SetSandboxPartsSearch("");
+        Line($"inventory blueprints: {bpListed} of {ConstructBuild.Blueprints.Count} listed, \"buggy\" {bpSearch}; taking the {(bpPick >= 0 ? ConstructBuild.Blueprints[bpPick].Name : "?")} built it {built}");
+        if (bpListed != ConstructBuild.Blueprints.Count || bpSearch < 1 || bpSearch >= bpListed || !took || !built)
+            Fail("inventory: the Blueprints tab doesn't list or build the blueprints");
+
+        // Tools: every model listed; taking the highlighted (one in the game) takes it out.
+        ui.SetSandboxInventoryTab(Ui.SbTab.Tools);
+        frames(2);
+        var toolsListed = ui.SandboxPartsListed;
+        var tool = ui.SandboxInventoryHighlight >= 0 ? ConstructTools.All[ui.SandboxInventoryHighlight].Tool : null;
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+        ui.SandboxInventoryTake(g);
+        var inHand = g.SandboxHands.Hand(me.Id).Tool;
+        Line($"inventory tools: {toolsListed} of {ConstructTools.All.Count} listed; taking the first ({tool?.ToString() ?? "none"}) put the {inHand} in hand");
+        if (toolsListed != ConstructTools.All.Count || tool == null || inHand != tool)
+            Fail("inventory: the Tools tab doesn't list the tools or take one out");
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
+        ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
+        frames(2);
     }
 
     /// <summary>A real client: the part by id and a blueprint go over the wire, an unknown id comes back refused.</summary>
