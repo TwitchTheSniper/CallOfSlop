@@ -18,8 +18,7 @@ public sealed class PlayerRig
     public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2];
     private readonly SceneNode _upper, _gear, _pelvisBox, _tool;
     private readonly ToolNode _toolDraw = new();
-    private readonly SceneNode _pack;
-    private readonly PackNode _packDraw = new();
+    private readonly PackNode _packDraw = new(); // (the gear node's own draw: the backpack, before the gun and arms)
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
     private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
@@ -67,14 +66,12 @@ public sealed class PlayerRig
         }
 
         _gear = Root.Add("upper_gear");
+        _gear.Custom = _packDraw; // Sandbox: the backpack and what it holds (Source/Render/BackpackRender.cs); nothing outside Sandbox
         Gun = new GunRig();
         _gear.Add(Gun.Root);
         _tool = _gear.Add("tool"); // a Sandbox tool or a carried part instead of the gun (Source/Render/ToolRender.cs)
         _tool.Custom = _toolDraw;
         _tool.Visible = false;
-        _pack = _gear.Add("backpack"); // Sandbox: the backpack and what it holds (Source/Render/BackpackRender.cs)
-        _pack.Custom = _packDraw;
-        _pack.Visible = false;
         Right = new ArmNodes("r", +1, carry: false);
         Left = new ArmNodes("l", -1, carry: false);
         _gear.Add(Right.Root);
@@ -206,8 +203,7 @@ public sealed class PlayerRig
         var def = p.WeaponDef;
         var seated = p.RenderSeat != SeatKind.None;
         var gunPose = (seated ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * upper;
-        _pack.Visible = BackpackRender.Wears(p, out _packDraw.Pack);
-        if (_pack.Visible)
+        if (BackpackRender.Wears(p, out _packDraw.Pack))
             _packDraw.Frame = BackpackRender.OnBack(p) * upper;
         var tool = ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame);
         _tool.Visible = tool;
