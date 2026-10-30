@@ -49,7 +49,7 @@ public sealed partial class ConstructEdits
             Console.WriteLine($"[sandbox] error: the physics-only {def.Name} for player {player} had nowhere to go (the world is full)");
             return GiveResult.Lost;
         }
-        if (h.Held == ConstructParts.None)
+        if (h.Held == ConstructParts.None && world.HoseHeldBy(player) < 0) // (a hose's receiver in the hands counts as full hands: board item wl01)
         {
             h.Held = def.Id;
             return GiveResult.Hands;

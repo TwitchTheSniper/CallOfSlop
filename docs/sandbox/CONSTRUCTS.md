@@ -1987,6 +1987,92 @@ other; the key is Left Shift beside Sprint without a clash.
    its reason is said); the adjust's big step is Ctrl (which is also Crouch: holding it crouches); Free routing shares
    Left Shift with Sprint (holding it while routing also sprints).
 
+## World links (board item wl01)
+
+A routed link may leave its construct: a base can be laid out on the ground with pipes, cables and chutes running across
+the terrain between constructs. The code is `Source/Constructs/WorldLinks.cs` (the list and its tick),
+`ConstructRoutesWorld.cs` (the rules), `ConstructEditsWorldLinks.cs` (the server's checks), `Game/GameSandboxWorldLinks.cs`
+(actions, the network, hints) and `App/Program.SandboxWorldLinks.cs` (the linking tool).
+
+- **What it is.** A server-owned list beside the constructs (`ConstructWorld.WorldLinks`, at most 64, 1024 nodes). Each
+  end is a construct's part (named by its tag, resolved each tick like the wires between constructs); each node is either
+  on the world (a world position on the terrain or static map geometry: map boxes, buildings, props) or on a construct's
+  part (the rest frame of that part's segment, like an ordinary link's node).
+- **Routing.** With the linking tool, start a link at an output as usual; the first click off the construct (on the ground,
+  a wall or another construct) makes it a world link. Each LMB places a node on whatever is under the crosshair, snapped
+  off the surface by the link's radius (on the ground, the height is found again under the snapped spot), on the 5 cm
+  grid and to the type's angle rule (`ConstructRoutes.WorldSnap`, sharing `AngleSnap` with the construct links). A red
+  node moves to the nearest valid spot along its surface normal when there is one (the shared `AdjustSearch` with
+  `WorldOpenRule`). LMB on a matching input of any construct finishes it; RMB or Backspace takes the last node off; Esc
+  cancels. A data cable clicked straight into another construct's input with no nodes is still milestone 3's straight
+  wire. The delete mode deletes a world link; its look line names its ends.
+- **The rules** (`ConstructRoutes.WorldPathRule`, one rule for the server and the preview): the construct links' segment
+  and length limits (8 m, 24 m), angle rules, clipping grace at the ends and embedding forgiveness, checked against every
+  construct near the path (in its rest frame) and against the static world by rays (a segment lifted by the embedding
+  depth must not hit anything; a world node must not sink deeper than it). A world node must sit on a surface (within its
+  radius plus 15 cm). The end must be in reach of the player; the start within the link's reach.
+- **What flows.** Fuel from a tank into another construct's tank (2 l/s, while it has room); charge from a battery or
+  alternator into another construct's batteries (5 kW); signals (the logic reads the source's value like a wire between
+  constructs); items from storage to storage (a chute's move a second). Anchored constructs count as the world.
+- **Moving constructs.** A link with any point on a free (not anchored) construct snaps when that point moves more than
+  5 cm or its construct turns more than 3 degrees since the link was made (`SnapMetres`, `SnapDegrees`): it is removed,
+  the end sparks (a power cable) or spills (a pipe) (`CFireKind.LinkSnap`), and the players within 25 m get the hint
+  "the power cable to the vehicle tore off, sparking: it moved". Nothing is damaged. Making a link doesn't wake a free
+  construct (a parked buggy woken on flat ground creeps about 5 cm before it sleeps again, which would snap it at once).
+- **Ground going.** Each tick one world node checks its surface is still there (a ray the way it found it when made); if
+  it is gone the link breaks ("the ground under it is gone"). Nothing digs the terrain yet (craters, decision 16); the
+  self-test stands in a world that loses its ground.
+
+### Hoses (temporary connections)
+
+Eight parts in `Constructs/Parts/Hoses` (role `"hose"`, a `"hose"` block: `end` outlet or inlet, `carries` fuel, water,
+power or data, `at` where the hose leaves or plugs in, and on an outlet `length` and `flow`): the Fuel Hose Reel (12 m,
+1.5 l/s), Water Hose Reel (15 m, 3 l/s), Power Lead Reel (10 m, 6 kW) and Data Lead Reel (8 m), and their inlets (Fuel
+Hose Inlet, Water Hose Inlet, Power Lead Socket, Data Lead Socket). The inventory lists them under Joints, "Hoses and leads".
+
+- F with empty hands (any tool) on a reel takes the receiver (a nozzle or plug); it is held while the hose is out, not a
+  backpack item, and counts as full hands for `ConstructEdits.Give`. F on a matching inlet of another construct within
+  the hose's length plugs it in; F on the plugged inlet takes it out into the hands; F on its reel hangs it back; the
+  Drop key lets go (it reels back), as does dying or leaving.
+- It connects any two constructs, moving or not: pulled past its length (a vehicle driving off) a plugged hose pops out,
+  and a held one slips from the hands 25 cm past it; it reels back, nothing is damaged, and the players near get a hint.
+- What flows goes from the reel's construct into the inlet's at the reel's rated flow: fuel (only between fuel tanks),
+  water (between water tanks), charge into the batteries, and a data lead's signal (wired into the reel, it comes out of
+  the socket).
+- A hose is drawn as a sagging rope (a parabola from its slack, 12 thin boxes) from the reel to the receiver in the
+  holder's hands or the inlet; nothing is simulated or collides. The look line on a reel or an inlet says what F does
+  there; holding one, the HUD says how much hose is out.
+
+### Network and state (protocol 95)
+
+`CBodyKind.WorldLinks` carries the whole list (each link: type, ends' construct ids and parts, nodes: construct id, 0
+for the world, part, position; each hose off its reel: the reel, the holder, the inlet) whenever it changes, and to a
+joiner. `CAct.WorldRoute` and `CAct.WorldRouteEdit` (delete) are at the end of `CActKind`; hoses use `CAct.Use` on their
+parts (the server sees the role) and `CAct.Drop`. `CFireKind.LinkSnap` draws a snap's sparks or spill.
+
+**What's missing:** world saving doesn't exist yet, so world links and hoses live as long as the match (they round-trip
+through the join snapshot); blueprints don't carry them (they are between constructs). World links take no damage yet
+(construct links do), and wrong-pipe issues (leaks, bursts, sputter) aren't simulated on them.
+
+### Self-test
+
+"World links" (`SelfTestWorldLinks.cs`): a fuel pipe across the ground between two pinned tanks carries 2 l in a second,
+and a sunk node, a wrong bend and a shaft are refused; a data cable across the ground lights a lamp on another construct,
+and a node in the air is refused; a power cable from a buggy still settling to a pinned battery stays while it comes to
+rest, charges it, and snaps within a tick of the buggy driving off with the hint and sparks; the ground going breaks a
+link; a fuel hose from a station refuels the buggy at its rated flow, unplugs and hangs back by hand, and pops out at its
+length when the buggy drives off, unhurt; the wire round trip; no allocation per tick; a real host and a separate client
+on the Construct Yard: the client routes a world link and plugs a hose over the network, and it and a late joiner mirror them.
+
+### Choices made (the developer may change them)
+
+- A drive shaft can't be a world link: torque stays on one body (two bodies' drive lines would need joining).
+- A world pipe ends at a tank, not an engine: the engine runs from its own tank (one fuel pool per construct).
+- The hold-to-adjust mode is for construct links; a red world node jumps to the nearest valid spot along its normal.
+- Links keep the construct links' limits (8 m segments, 24 m in all); hoses pick up with E only (not LMB).
+- Hoses go from the reel's construct to the inlet's (a station refuels, a base charges); a reel is a station's or a
+  vehicle's alike.
+
 ## Spawning bots and zombies
 
 Board items dev-sandbox-spawn-npcs-sn01 and dev-sandbox-spawn-bots-zombies-sb02, done as one feature (2026-10-30). Code:

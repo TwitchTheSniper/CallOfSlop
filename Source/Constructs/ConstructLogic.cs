@@ -94,6 +94,21 @@ public static class ConstructLogic
                 if (x.Value >= 0.5f)
                     high[x.To]++;
             }
+        // World links (board item wl01): data links from another construct's output, and plugged data leads (last tick's values).
+        if (c.XWireIn > 0)
+            for (var k = 0; k < world.WorldLinkCount; k++)
+            {
+                ref var l = ref world.WorldLinks[k];
+                if (l.Type != RouteType.Data || l.BodyTo != c.Id || l.To >= c.PartCount || world.Get(l.BodyFrom) is not { } cf || l.From >= cf.PartCount)
+                    continue;
+                var v = cf.Parts[l.From].Broken ? 0f : cf.Parts[l.From].Out;
+                if (count[l.To] == 0)
+                    firstFrom[l.To] = 255;
+                sum[l.To] += v;
+                count[l.To]++;
+                if (v >= 0.5f)
+                    high[l.To]++;
+            }
         var ticks = 1f / MathF.Max(dt, 1e-4f);
         var changed = false;
         for (var i = 0; i < c.PartCount; i++)
@@ -105,6 +120,10 @@ public static class ConstructLogic
                 next = 0; // (wrecked, or an electrical part with no power: milestone 3)
             else if (d.Role == PartRole.Seat)
                 next = (p.Keys & CPart.Occupied) != 0 ? 1 : 0;
+            else if (d.Role == PartRole.Hose)
+                next = d.HoseCarry != HoseCarry.Data ? 0 // (a data lead: the reel takes the signal wired into it, the socket puts out what the plugged lead carries)
+                    : d.HoseEnd == HoseEnd.Outlet ? count[i] > 0 ? Math.Clamp(sum[i], -MaxSignal, MaxSignal) : 0
+                    : world.HoseSignal(c, i);
             else if (d.Role != PartRole.Logic)
                 next = 0;
             else

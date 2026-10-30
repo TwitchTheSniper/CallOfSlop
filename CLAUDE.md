@@ -92,7 +92,7 @@ tools/              package.ps1, Package.bat, BuildCheck.bat, TESTERS.txt (the z
 - **Partial classes.** `Program` and `Game` are split into one partial file per feature (`Program.Zombies.cs`, `GameDestruction.cs`, ...). Follow that pattern.
 - **Game modes.** A new mode is a module in `Source/Game/Modes/<Mode>/`, registered in `GameModeRegistry`. Add its id at the END of `enum GameMode`, and never renumber: ids are wire bytes. See `Source/Game/Modes/README.md`.
 - **Protocol.**
-  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **94**. Add a comment line in the history above it.
+  - Any wire-format change bumps `ServerBrowser.ProtocolVersion`, which is currently **96**. Add a comment line in the history above it.
   - New messages go at the end of `Msg`.
   - When two branches bump it, the merger renumbers.
 - **Saves.**
@@ -203,3 +203,8 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
 - 2026-10-30: adding 178 building parts (and, the same day, 24 actuator parts on another branch) broke "Sandbox parts menu" and "Construct storage", which used part ids 249 and
   254 as "no such part". Why: hard-coded ids stop being unknown as the parts grow. Rule: a test's unknown id is
   `ConstructParts.All.Count` (or far above `MaxTypes`), never a fixed number.
+- 2026-10-30: main broke "Sandbox Tab inventory" after the snappy-build merge (binds version 15 put SnapSwitch on K),
+  and neither the branch nor the merge check ran that section. Why: an action added later kept its new default while an
+  earlier version's carry asked whether the key was free, and `sections_for.py` had no rule for `Keybinds.cs`. Rule:
+  `Keybinds.Migrate` unbinds every later-added action on its default before stepping versions, and a change to
+  `Keybinds.cs` runs every keybind-migration section (`sections_for.py`).

@@ -14,6 +14,7 @@ public enum CBodyKind : byte
     Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
     Store, // protocol 85: one container's contents (physical storage): its handle, then ConstructStorage.Write's bytes
     Pack, // protocol 85: one player's backpack: the player id, then ConstructStorage.Write's bytes
+    WorldLinks, // protocol 95: every world link and every hose off its reel (the whole list, when it changes; WriteWorldLinks)
 }
 
 /// <summary>
@@ -153,6 +154,8 @@ public static class ConstructNet
                 w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
             else if (e.Kind == CFireKind.Shatter)
                 w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
+            else if (e.Kind == CFireKind.LinkSnap)
+                w.Vec(e.At).U8(e.Part); // (protocol 95: the link's type)
             else
                 w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
         }
@@ -176,6 +179,8 @@ public static class ConstructNet
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
             else if (kind == CFireKind.Shatter)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Half = new Vector3(r.U8(), r.U8(), r.U8()) * 0.01f };
+            else if (kind == CFireKind.LinkSnap)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Part = r.U8() };
             else
                 throw new MalformedPacketException($"unknown construct fire event {kind}");
             if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
@@ -223,6 +228,67 @@ public static class ConstructNet
             ref var x = ref world.XWires[k];
             w.U16(x.BodyFrom).U8(x.From).U16(x.BodyTo).U8(x.To);
         }
+    }
+
+    /// <summary>
+    /// Protocol 93 (board item wl01): every world link (type, its ends' construct ids and parts, its nodes: a construct
+    /// id, 0 for the world, a part and a position, world or the part's segment rest frame) and every hose off its reel
+    /// (the reel, who holds it, the inlet it is in). Resolved: construct ids and part indices as the server has them now.
+    /// </summary>
+    public static void WriteWorldLinks(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.WorldLinks).U8((byte)world.WorldLinkCount);
+        for (var k = 0; k < world.WorldLinkCount; k++)
+        {
+            ref var l = ref world.WorldLinks[k];
+            w.U8((byte)((byte)l.Type | l.Style << 4)).U16(l.BodyFrom).U8(l.From).U8(l.FromPort).U16(l.BodyTo).U8(l.To).U8(l.ToPort).U8(l.Count);
+            for (var i = 0; i < l.Count; i++)
+            {
+                ref var n = ref world.WorldNodes[l.Start + i];
+                w.U16(n.Body).U8(n.Part).Vec(n.Pos);
+            }
+        }
+        w.U8((byte)world.HoseCount);
+        for (var k = 0; k < world.HoseCount; k++)
+        {
+            ref var h = ref world.Hoses[k];
+            w.U16(h.BodyOut).U8(h.PartOut).U8(h.Holder).U16(h.BodyIn).U8(h.PartIn);
+        }
+    }
+
+    private static void ReadWorldLinks(ref PacketReader r, ConstructWorld world)
+    {
+        int n = r.U8();
+        if (n > ConstructWorld.MaxWorldLinks)
+            throw new MalformedPacketException($"{n} world links");
+        world.WorldLinkCount = 0;
+        world.WorldNodeCount = 0;
+        for (var k = 0; k < n; k++)
+        {
+            var ts = r.U8();
+            var l = new WLink
+            {
+                Type = (RouteType)(ts & 15), Style = (byte)(ts >> 4), BodyFrom = r.U16(), From = r.U8(), FromPort = r.U8(), BodyTo = r.U16(), To = r.U8(), ToPort = r.U8(), Count = r.U8(),
+                Start = (ushort)world.WorldNodeCount,
+            };
+            if (l.Type >= RouteType.COUNT || l.Count > Construct.MaxNodesPerRoute || world.WorldNodeCount + l.Count > ConstructWorld.MaxWorldNodes)
+                throw new MalformedPacketException($"world link {k} doesn't fit");
+            for (var i = 0; i < l.Count; i++)
+            {
+                var node = new WNode { Body = r.U16(), Part = r.U8(), Pos = r.Vec() };
+                if (!float.IsFinite(node.Pos.X + node.Pos.Y + node.Pos.Z))
+                    throw new MalformedPacketException($"world link {k}: a node that isn't a number");
+                world.WorldNodes[world.WorldNodeCount++] = node;
+            }
+            world.WorldLinks[world.WorldLinkCount++] = l;
+        }
+        int m = r.U8();
+        if (m > ConstructWorld.MaxHoses)
+            throw new MalformedPacketException($"{m} hoses");
+        world.HoseCount = 0;
+        for (var k = 0; k < m; k++)
+            world.Hoses[world.HoseCount++] = new CHose { BodyOut = r.U16(), PartOut = r.U8(), Holder = r.U8(), BodyIn = r.U16(), PartIn = r.U8() };
+        world.WorldLinksDirty = false;
     }
 
     private static void ReadLinks(ref PacketReader r, ConstructWorld world)
@@ -376,6 +442,9 @@ public static class ConstructNet
                 break;
             case CBodyKind.Links:
                 ReadLinks(ref r, world);
+                break;
+            case CBodyKind.WorldLinks:
+                ReadWorldLinks(ref r, world);
                 break;
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);

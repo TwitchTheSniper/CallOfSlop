@@ -62,6 +62,7 @@ RULES = [
     (r"^Source/UI/", ["HUD layout", "Keybinds", "Weapon select", "Loadout navigation", "Appearance", "Text"]),
     (r"^Source/Updates/", ["Updates", "Update cleanup", "Save folder"]),
     (r"^Source/App/Settings|^Source/App/SavePaths", ["Save folder", "Keybinds", "Map select"]),
+    (r"^Source/App/Keybinds", ["Keybinds", "Sandbox Tab inventory", "Sandbox ghost turns", "Link free routing", "Sandbox snap build"]),
     (r"^Source/Game/", ["Mode modules", "Matches", "Health", "Kill streaks", "Melee", "Launchers"]),
 ]
 

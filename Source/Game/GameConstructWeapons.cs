@@ -140,6 +140,9 @@ public sealed partial class Game : IConstructTargets
     }
 
     /// <summary>One fire event where it happens (host and clients): a shot's tracer from the gun's muzzle as drawn here, its flash and report; a blast or a cook-off.</summary>
+    /// <summary>World links seen tearing off (the self-test).</summary>
+    public int ConstructSnapsSeen;
+
     private void ConstructFireFx(in CFireEvent e, double now)
     {
         if (e.Kind == CFireKind.Shatter)
@@ -151,6 +154,15 @@ public sealed partial class Game : IConstructTargets
             PropDebris.SpawnBox(new Box(e.At, half), e.At + new Vector3(0, 0.3f, 0), PropDamage.Bullet, (int)(e.At.X * 131 + e.At.Z * 977) ^ (int)(PropDebris.Spawned & 0xFFFF),
                 Math.Clamp((int)(area * 10), 6, 24), 0.03f, 0.1f, 2.5f, Map.GlassColor, new Vector3(0.85f, 0.93f, 0.97f));
             Audio.Effect3D(Sfx.BreakGlass, e.At, 0.85f);
+            return;
+        }
+        if (e.Kind == CFireKind.LinkSnap)
+        {
+            // A world link tore off (board item wl01): a pipe spills a splash of dark fuel, a cable throws a few sparks.
+            ConstructSnapsSeen++;
+            var spill = e.Part == (byte)RouteType.Pipe;
+            PropDebris.SpawnBox(new Box(e.At, new Vector3(0.04f)), e.At + new Vector3(0, 0.2f, 0), PropDamage.Bullet, (int)(e.At.X * 131 + e.At.Z * 977) ^ (int)(PropDebris.Spawned & 0xFFFF),
+                8, 0.015f, 0.04f, spill ? 1.2f : 2.5f, spill ? new Vector3(0.18f, 0.15f, 0.08f) : new Vector3(1f, 0.85f, 0.4f), spill ? new Vector3(0.3f, 0.25f, 0.1f) : new Vector3(1f, 1f, 0.7f));
             return;
         }
         if (e.Kind != CFireKind.Shot)

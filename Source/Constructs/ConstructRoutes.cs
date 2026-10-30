@@ -1133,6 +1133,16 @@ public static partial class ConstructRoutes
             for (var a = 0; a < 3; a++)
                 if (a != axis && MathF.Abs(c.RouteNodes[k].Pos[a] - p[a]) < 0.04f && MathF.Abs(c.RouteNodes[k].Pos[axis] - p[axis]) < 0.3f)
                     p[a] = c.RouteNodes[k].Pos[a];
+        return AngleSnap(type, prev, prevDir, p);
+    }
+
+    /// <summary>
+    /// The angle part of <see cref="Snap"/> (shared with the world links' <see cref="WorldSnap"/>): a point
+    /// <paramref name="p"/> on from <paramref name="prev"/> goes onto the straight line on when close to it, else turned to
+    /// the type's angle rule (a pipe's 15 degree steps, a chute's 45, a shaft's 45 degree limit). Quantised to 1 cm.
+    /// </summary>
+    public static Vector3 AngleSnap(RouteType type, Vector3 prev, Vector3 prevDir, Vector3 p)
+    {
         var d = p - prev;
         var len = d.Length();
         if (len < 1e-4f)
@@ -1626,32 +1636,46 @@ public static partial class ConstructRoutes
         if (r.Timer < period)
             return;
         r.Timer -= period;
-        if (r.Source >= c.PartCount || r.To >= c.PartCount || world.StoreOf(c, r.Source) is not { } from || world.StoreOf(c, r.To) is not { } into)
-            return;
-        var fd = c.DefOf(r.Source);
-        var td = c.DefOf(r.To);
+        ChuteMove(world, c, r.Source, c, r.To);
+    }
+
+    /// <summary>
+    /// One move of a chute from storage part <paramref name="from"/> of <paramref name="cf"/> into <paramref name="to"/>
+    /// of <paramref name="ct"/> (the same construct, or another through a world link): a load of bulk between bins, else
+    /// the first stored item that fits a slot. True when something moved.
+    /// </summary>
+    public static bool ChuteMove(ConstructWorld world, Construct cf, int from, Construct ct, int to)
+    {
+        if (from < 0 || from >= cf.PartCount || to < 0 || to >= ct.PartCount || world.StoreOf(cf, from) is not { } src || world.StoreOf(ct, to) is not { } into)
+            return false;
+        var fd = cf.DefOf(from);
+        var td = ct.DefOf(to);
         if (fd.IsBin && td.IsBin)
         {
-            var load = Math.Min(ChuteLoad, from.Amount);
+            var load = Math.Min(ChuteLoad, src.Amount);
             if (load <= 0)
-                return;
-            var put = world.Deposit(c, r.To, load);
+                return false;
+            var put = world.Deposit(ct, to, load);
             if (put > 0)
-                world.Withdraw(c, r.Source, put);
-            return;
+                world.Withdraw(cf, from, put);
+            return put > 0;
         }
-        for (var s = 0; s < from.SlotCount; s++)
+        for (var s = 0; s < src.SlotCount; s++)
         {
-            if (from.Def[s] == ConstructParts.None || ConstructParts.Get(from.Def[s]) is not { } item)
+            if (src.Def[s] == ConstructParts.None || ConstructParts.Get(src.Def[s]) is not { } item)
                 continue;
             for (var t = 0; t < into.SlotCount; t++)
                 if (ConstructStorage.Check(td, into, t, item, out _) == SlotCheck.Ok)
                 {
-                    if (world.TakeOut(c, r.Source, s) is { } moved)
-                        world.SetIn(c, r.To, t, moved);
-                    return;
+                    if (world.TakeOut(cf, from, s) is { } moved)
+                    {
+                        world.SetIn(ct, to, t, moved);
+                        return true;
+                    }
+                    return false;
                 }
         }
+        return false;
     }
 
     // ---- The wire format (protocol 90): compact, nodes on the 1 cm grid --------------------------------------------

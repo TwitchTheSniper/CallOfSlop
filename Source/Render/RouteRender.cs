@@ -171,7 +171,7 @@ public static class RouteRender
         _ => new Vector3(0.45f, 0.47f, 0.42f),
     };
 
-    private static Matrix4x4 Basis(Vector3 z, float roll = 0)
+    internal static Matrix4x4 Basis(Vector3 z, float roll = 0)
     {
         var x = MathF.Abs(z.Y) < 0.95f ? Vector3.Normalize(Vector3.Cross(Vector3.UnitY, z)) : Vector3.UnitX;
         var y = Vector3.Cross(z, x);
@@ -185,7 +185,7 @@ public static class RouteRender
     }
 
     /// <summary>One segment piece of a type from <paramref name="a"/> to <paramref name="b"/>.</summary>
-    private static void Piece(Renderer gfx, RouteType type, byte style, Vector3 a, Vector3 b, Vector3 z, float radius, bool dim)
+    internal static void Piece(Renderer gfx, RouteType type, byte style, Vector3 a, Vector3 b, Vector3 z, float radius, bool dim)
     {
         var len = Vector3.Distance(a, b);
         if (len < 1e-4f)
@@ -235,7 +235,7 @@ public static class RouteRender
     }
 
     /// <summary>The elbow piece at a bend: a joint block (a shaft's U joint: a cross between two yokes).</summary>
-    private static void Elbow(Renderer gfx, RouteType type, byte style, Vector3 at, Vector3 from, Vector3 to, float radius)
+    internal static void Elbow(Renderer gfx, RouteType type, byte style, Vector3 at, Vector3 from, Vector3 to, float radius)
     {
         var colour = Colour(type, style);
         if (type == RouteType.Shaft)
@@ -252,7 +252,7 @@ public static class RouteRender
         gfx.Draw(Matrix4x4.CreateScale(size) * Basis(mid.LengthSquared() > 1e-6f ? mid : from) * Matrix4x4.CreateTranslation(at), colour * 0.9f);
     }
 
-    private static void Line(Renderer gfx, Vector3 a, Vector3 b, Vector3 colour, float opacity, float radius)
+    internal static void Line(Renderer gfx, Vector3 a, Vector3 b, Vector3 colour, float opacity, float radius)
     {
         var d = b - a;
         var len = d.Length();
