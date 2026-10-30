@@ -44,11 +44,16 @@ public sealed class SandboxCatalogue
     public int Key;
 
     /// <summary>The group order (the tree's), then any new group in the order met.</summary>
-    public static readonly string[] GroupOrder = ["Structure", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Other"];
+    public static readonly string[] GroupOrder = ["Structure", "Beams", "Panels", "Armour", "Shapes", "Wheels and drivetrain", "Seats", "Joints", "Logic", "Power", "Weapons", "Other"];
 
-    /// <summary>A part's group and section (data first: its role, else a word in a new role's name, else "Other").</summary>
+    /// <summary>
+    /// A part's group and section (data first: the file's own "group" and "section", else its role, else a word in a new
+    /// role's name, else "Other"). A "group" without a "section" goes in a section named like the group.
+    /// </summary>
     public static (string Group, string Section) Classify(ConstructPartDef d)
     {
+        if (d.Group.Length > 0)
+            return (d.Group, d.Section.Length > 0 ? d.Section : d.Group);
         switch (d.Role)
         {
             case PartRole.Frame: return ("Structure", "Frames");
@@ -153,7 +158,7 @@ public sealed class SandboxCatalogue
             var (g, s) = Classify(d);
             cat.PartGroup[d.Id] = g;
             cat.PartSection[d.Id] = s;
-            partItems.Add((g, s, (int)d.Role * 64 + (d.Role == PartRole.Logic ? LogicOrder(s) : 0), d.Name, d.Id));
+            partItems.Add((g, s, d.Group.Length > 0 ? GivenOrder(d) : (int)d.Role * 64 + (d.Role == PartRole.Logic ? LogicOrder(s) : 0), d.Name, d.Id));
         }
         cat.Parts = MakeTree(partItems, "part");
 
@@ -175,6 +180,12 @@ public sealed class SandboxCatalogue
         cat.Tools = MakeTree(toolItems, "tool");
         return cat;
     }
+
+    /// <summary>
+    /// The order of a part that names its own group and section: the files' order (so a folder's sections come in the
+    /// order of its subfolders, Structure/Beams/10-Square before 20-I-beams), the top folder's parts after the subfolders'.
+    /// </summary>
+    private static int GivenOrder(ConstructPartDef d) => 10_000 + (d.Folder.Length == 0 ? ConstructParts.MaxTypes : 0) + d.Id;
 
     private static int LogicOrder(string section) => section switch
     {

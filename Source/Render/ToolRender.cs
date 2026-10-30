@@ -5,19 +5,19 @@ namespace CallOfSlop;
 /// <summary>Where <see cref="ToolRender.Emit{T}"/> puts its boxes: the immediate <see cref="Renderer"/> or a scene <see cref="DrawList"/> (structs: no boxing).</summary>
 public interface IToolBoxOut
 {
-    void Box(in Matrix4x4 model, Vector3 color, int mode);
+    void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0);
 }
 
 /// <summary>Boxes straight to the renderer.</summary>
 public struct ToolGfxOut(Renderer g) : IToolBoxOut
 {
-    public void Box(in Matrix4x4 model, Vector3 color, int mode) => g.Draw(model, color, 1f, mode);
+    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0) => g.Draw(model, color, 1f, mode, shape: shape);
 }
 
 /// <summary>Boxes as self-contained items of a scene draw list.</summary>
 public struct ToolListOut(DrawList list) : IToolBoxOut
 {
-    public void Box(in Matrix4x4 model, Vector3 color, int mode) => list.Add(model, Renderable.Box(color, 1f, mode));
+    public void Box(in Matrix4x4 model, Vector3 color, int mode, ushort shape = 0) => list.Add(model, Renderable.Box(color, 1f, mode) with { Shape = shape });
 }
 
 /// <summary>One frame of a tool in someone's hands, worked out by <see cref="ToolRender"/> and drawn by <see cref="ToolRender.Emit{T}"/>.</summary>
@@ -357,7 +357,10 @@ public static class ToolRender
     /// <summary>Boxes <see cref="Emit{T}"/> draws for a frame (the self-test checks the count).</summary>
     public static int BoxCount(in ToolFrame f)
     {
-        var n = f.Held?.Boxes.Length ?? 0;
+        var n = 0;
+        if (f.Held is { } held)
+            foreach (ref readonly var b in held.Boxes.AsSpan())
+                n += b.Hidden ? 0 : 1;
         if (f.Model is { } m)
         {
             n += m.Boxes.Length;
@@ -410,7 +413,8 @@ public static class ToolRender
         }
         if (f.Held is { } d)
             foreach (ref readonly var b in d.Boxes.AsSpan())
-                o.Box(Matrix4x4.CreateScale(b.Half * 2) * Matrix4x4.CreateTranslation(b.Center) * f.HeldPose, b.Color, 0);
+                if (!b.Hidden) // (a shaped part's stepped collision: its shape is drawn instead)
+                    o.Box(b.Model(0, b.Center) * f.HeldPose, b.Color, 0, b.Shape);
     }
 
     /// <summary>A number in [0, 1) from an integer (the sparks' directions: the same every run).</summary>

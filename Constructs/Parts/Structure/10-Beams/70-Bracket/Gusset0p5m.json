@@ -1,0 +1,103 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Gusset 0.5 m",
+  "description": "A triangular steel plate, 0.5 m on its two short sides: stands in a corner to stiffen it.",
+  "group": "Beams",
+  "section": "Brackets and gussets",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 1.4,
+  "health": 70,
+  "armour": 6,
+  "material": "steel",
+  "color": "#858b92",
+  "attachSeconds": 1.2,
+  "boxes": [
+    {
+      "min": [
+        -0.015,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.015,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "min": [
+        -0.015,
+        -0.125,
+        0.0
+      ],
+      "max": [
+        0.015,
+        0.125,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.015,
+        -0.125,
+        0.125
+      ],
+      "max": [
+        0.015,
+        0.25,
+        0.25
+      ]
+    },
+    {
+      "min": [
+        -0.015,
+        -0.125,
+        0.25
+      ],
+      "max": [
+        0.015,
+        0.375,
+        0.375
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom0",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back0",
+      "at": [
+        0.0,
+        0.0,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "bottom1",
+      "at": [
+        0.0,
+        -0.125,
+        0.25
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back1",
+      "at": [
+        0.0,
+        0.25,
+        0.375
+      ],
+      "dir": "+z"
+    }
+  ]
+}
