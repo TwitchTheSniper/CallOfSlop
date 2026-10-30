@@ -213,6 +213,44 @@ public static partial class SelfTest
                 Frames(60);
                 least = Math.Min(least, GC.GetAllocatedBytesForCurrentThread() - b0);
             }
+            // The third tier showing with a sub-option under the pointer: drawn and held still, it allocates nothing either.
+            var m = wheel.Menu;
+            wheel.Step(g, false, Vector2.Zero, false);
+            wheel.Step(g, true, Vector2.Zero, false);
+            var linkI = (int)SandboxToolWheel.Slot.Linker;
+            var pipeI = (int)SandboxLinkWheel.Option.Pipe;
+            var optN = m.Items[linkI].Options?.Length ?? 0;
+            var centreA = RadialMenu.OptionAngle(pipeI, linkI, (int)SandboxToolWheel.Slot.COUNT, optN);
+            var subA = RadialMenu.ArcAngle(1, centreA, 5, RadialMenu.SubStepMax);
+            wheel.Step(g, true, new Vector2(-45, 0), false);
+            wheel.Step(g, true, new Vector2(MathF.Sin(centreA), -MathF.Cos(centreA)) * 120f - m.Pointer, false);
+            wheel.Step(g, true, new Vector2(MathF.Sin(subA), -MathF.Cos(subA)) * (m.Reach + m.OuterDepth + RadialMenu.SubGap + 14f) - m.Pointer, false);
+            var tierShown = m.SubRing == pipeI && m.HoveredSub == 1;
+            var tierLeast = long.MaxValue;
+            for (var round = 0; round < 3; round++)
+            {
+                var b0 = GC.GetAllocatedBytesForCurrentThread();
+                for (var i = 0; i < 60 && error == null; i++)
+                {
+                    try
+                    {
+                        wheel.Step(g, true, Vector2.Zero, false);
+                        ui.BeginFrame();
+                        wheel.Draw(ui.Scale);
+                        ui.EndFrame();
+                    }
+                    catch (Exception ex)
+                    {
+                        error = ex.Message;
+                    }
+                }
+                tierLeast = Math.Min(tierLeast, GC.GetAllocatedBytesForCurrentThread() - b0);
+            }
+            Line($"tool wheel third tier drawn: showing with a sub-option hovered {tierShown}, ImGui error: {error ?? "none"}; allocates {tierLeast} B per 60 frames");
+            if (!tierShown)
+                Fail("tool wheel: the third tier didn't show with a sub-option hovered");
+            if (tierLeast > 0)
+                Fail($"tool wheel: the third tier allocates {tierLeast} B per 60 frames (should be nothing)");
             var stillOpen = wheel.Menu.IsOpen;
             wheel.Menu.Close();
             ui.BeginFrame();

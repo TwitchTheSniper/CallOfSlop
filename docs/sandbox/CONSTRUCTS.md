@@ -175,15 +175,29 @@ is pulled back within 70 px when it leaves a tool with a ring). The middle shows
 pointer (the option's, else the tool's, else "Tools"), at 20 px a scale, shrunk to fit the centre circle (down to 12 px),
 else cut short with "..."; hints go in the tooltip under the wheel.
 
-The **linking tool** has thirteen options, round the full circle: data cable, power cable, pipe (auto: the style from the
-output), fuel, water, oil and steam pipes, drive shaft, chute, delete links, move node, re-route, and highlight all (a
-toggle, shown with a green dot while on). Picking a type also goes back to routing links. The choice is this PC's only;
+The **linking tool** has nine options, in an arc centred on it (270 degrees): data cable, power cable, pipe, drive shaft,
+chute, delete links, move node, re-route, and highlight all (a toggle, shown with a green dot while on). Picking a type
+also goes back to routing links.
+
+**The third tier** (board item dev-wheel-third-tier-pipes-wt01): an option may have sub-options of its own
+(`RadialMenu.Item.Options` on the option; `IToolOptions.ChooseSub(option, sub)`, optional, called for a pick on the
+tier, with `Choose` kept for letting go on the option itself). While the pointer is on such an option a **partial arc**
+grows out round the outer ring, centred on that option's direction, 25 degrees an item (`RadialMenu.SubStepMax`; five
+items span 125 degrees). Flicking out past the outer ring (70 + 66 px, plus 8) onto one highlights it; letting go there
+gives it. The pointer may then go 56 px further out (`SubDepth`). Hysteresis: a sub-option is entered 8 px past the
+outer ring's edge but kept down to 2 px past it, and the arc keeps its option while the pointer is out past the edge in
+the arc's direction; moving inward, or round onto another option, closes the arc (and pulls the pointer back in). The
+pipe is the first user: Auto in the middle, then fuel, water, oil and steam either side (fuel, water, auto, oil, steam
+clockwise). Letting go on **Pipe** itself uses the last style (Auto the first time), which its label shows
+("Pipe (fuel)") and the arc marks with a green dot and arc. The wheel follows accumulated movement, so a stick would reach the arc the same way (tilt further out).
+Nothing allocates per frame (labels are made once) and nothing is on the wire. The choice is this PC's only;
 taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
 (`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the welder's
-weld / cut and the physics gun's modes can use it when they have modes.
+weld / cut and the physics gun's modes can use it when they have modes, and a third tier for other tools (actuator
+sizes, welder modes) works the same way as the pipe styles.
 
-Choices made for the outer ring (the developer may change them): the pipe styles sit on the same ring as the other
-types (no third ring); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
+Choices made for the outer ring (the developer may change them): the pipe styles first sat on the same ring as the other
+types, now on the third tier above; the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
 (no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
 ### Tools in hand
@@ -2140,11 +2154,14 @@ nothing; and a real client's pick reaches the server.
 The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
 option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
 nothing, the arc or full circle choice); the linking tool's options cover every link type, every pipe style and auto,
-every edit mode and the highlight toggle; in an offline Sandbox game pointing at the linking tool shows its ring with all
-thirteen, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
+every edit mode and the highlight toggle (the pipe styles through the third tier); in an offline Sandbox game pointing at
+the linking tool shows its ring with all nine, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
 tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
 arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long
-name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one).
+name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one). The third tier: five items span 125 degrees centred on Pipe;
+resting on Pipe opens the arc with nothing picked; entry and keep distances (no flicker); Water, Auto (the middle) and
+Steam equip Pipe with that style; letting go on Pipe keeps the last style and its label; moving to Shaft or inward closes
+the arc; the "Sandbox tool wheel" section draws it with a sub-option hovered and checks it allocates nothing.
 
 The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
 byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the
