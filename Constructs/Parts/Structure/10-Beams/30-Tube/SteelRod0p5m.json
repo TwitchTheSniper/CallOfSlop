@@ -1,0 +1,137 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Steel Rod 0.5 m",
+  "description": "A 5 cm steel rod, 0.5 m long: railings, bars and grilles.",
+  "group": "Beams",
+  "section": "Tubes and rods",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 0.8,
+  "health": 30,
+  "armour": 3,
+  "material": "steel",
+  "color": "#9aa0a6",
+  "attachSeconds": 1.5,
+  "boxes": [
+    {
+      "min": [
+        -0.025,
+        -0.025,
+        -0.125
+      ],
+      "max": [
+        0.025,
+        0.025,
+        0.375
+      ],
+      "hidden": true
+    },
+    {
+      "min": [
+        -0.025,
+        -0.025,
+        -0.125
+      ],
+      "max": [
+        0.025,
+        0.025,
+        0.375
+      ],
+      "detail": true,
+      "shape": "cylinder",
+      "segments": 8
+    }
+  ],
+  "sockets": [
+    {
+      "name": "end-",
+      "at": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "end+",
+      "at": [
+        0.0,
+        0.0,
+        0.375
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "+x0",
+      "at": [
+        0.025,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x0",
+      "at": [
+        -0.025,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y0",
+      "at": [
+        0.0,
+        0.025,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y0",
+      "at": [
+        0.0,
+        -0.025,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "+x1",
+      "at": [
+        0.025,
+        0.0,
+        0.25
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x1",
+      "at": [
+        -0.025,
+        0.0,
+        0.25
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+y1",
+      "at": [
+        0.0,
+        0.025,
+        0.25
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "-y1",
+      "at": [
+        0.0,
+        -0.025,
+        0.25
+      ],
+      "dir": "-y"
+    }
+  ]
+}

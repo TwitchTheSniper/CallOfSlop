@@ -145,8 +145,10 @@ list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and
 
 - **Tabs**: Parts, Blueprints and Tools.
 - **Left**: a search box (name, group, section, role or description) and a **category tree**: "All", then the groups
-  (Structure, Wheels and drivetrain, Seats, Joints, Logic, then Power, Weapons, Storage or Other when parts of those
-  kinds exist) with their sections (frames, panels, doors...; logic by kind: controls, sensors, gates, timing, outputs).
+  (Structure, Beams, Panels, Armour, Shapes, Wheels and drivetrain, Seats, Joints, Logic, then Power, Weapons, Storage or
+  Other when parts of those kinds exist) with their sections (square beams, I-beams, braces...; sheet steel, glass,
+  openings...; logic by kind: controls, sensors, gates, timing, outputs). A part file may name its own group and section
+  (`"group"`, `"section"`: the structural parts do); otherwise it goes by its role.
   The tree is made from the loaded data (`Source/UI/SandboxCatalogue.cs`), never from a list of part names: each part
   goes by its role, and a **role this build doesn't know** (a new one from another branch) goes by a word in its name
   (power, battery, gun, turret, storage...) or else into **Other** under its own name. Blueprints are grouped as vehicles
@@ -287,7 +289,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. |
+| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `force` (N, shared by the touching wheels), `topSpeed` (m/s), `burnRate` (litres a second at full throttle). |
 | `wheel` | `radius`, `grip`. Needs an `axle` socket. |
@@ -297,6 +299,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
+| `group`, `section` | The inventory's group and section for it (each up to 32 characters; a section needs a group). Without them it goes by its role. |
 | `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
@@ -691,6 +694,73 @@ post, the gauges, the driving HUD and the wrecking ball.
    properties still use the rest pose.
 7. Gears: three in the shipped transmission, the second as before; no reverse gear (S still reverses).
 
+## Structural parts (the scale chart)
+
+The developer's scale chart (2026-10-29, "Realistic"): a player is 1.8 m, a buggy 4.0 by 1.8 m, a truck 8 m, a crawler
+7 m; **frame step 0.25 m** (beams and plates 0.25 to 2 m); wheels 0.2 to 1.2 m radius; engines 0.4 to 1.0 m; the 1 cm
+grid and the 24 turns unchanged. The structural parts are written by `tools/constructs/structure_parts.py` into
+`Constructs/Parts/Structure` (110 files; run it again after changing a family, `--check` compares) and are plain part
+files like any other.
+
+**The cell rules** (the "Structural parts" self-test checks every part in every turn):
+
+- A part is made of 0.25 m cells, and its origin is the centre of one of them. Every socket sits on a cell face, in the
+  middle of the cell's face. Out of the face a socket is half a centimetre off the whole ones (12.5 cm from a cell
+  centre; a thin plate's front, a rod's side and a cap's front likewise: thicknesses are whole centimetres, rods and
+  tubes 5 and 11 cm across), along the face on a cell centre. So two sockets that meet always put the new part's
+  origin on a whole centimetre, and its cells carry on the old part's 0.25 m lattice.
+- A thin plate lies on the face of its cells (its back on the cell face): a plate on a beam sits flush on it, a plate
+  on a plate stacks. Its edge sockets are 1 cm into the plate, so a plate edge welded to a beam's side sits on the
+  beam's middle.
+- The old big pieces (Frame Block, Frame Beam, Panel, Corner, Deck Plate, Wood Panel, Bumper, Fender) keep their sizes
+  and sockets, so every blueprint and test that uses them still builds (they are on a 0.5 m grid: a new part on one of
+  their sockets lands half a centimetre off its lattice, which nobody sees). The blueprints move to the new parts
+  separately (the drivetrain work); the old pieces can then be retired.
+
+**The families** (the inventory's groups and sections come from each file's `"group"` and `"section"`):
+
+| Group | Sections and parts |
+| --- | --- |
+| Beams | Square beams 0.25 (a cube: the frame's node), 0.5, 0.75, 1, 1.5, 2 m; I-beams 0.5 to 2 m; steel tubes (11 cm) and rods (5 cm) 0.5, 1, 2 m; angle iron and channel 0.5, 1, 2 m; braces 45 degrees across 0.5, 1, 2 m and 1:2 across 0.5x1, 1x2 m, cross braces 0.5 and 1 m; junctions (corner, T, cross, 3-way corner, 6-way hub); L and corner brackets, gussets 0.25 and 0.5 m; beam and tube end caps; Blocks (the old Frame Block and Frame Beam) |
+| Panels | sheet steel and plate steel 0.25 to 2 m (squares, halves 0.5x1 and 1x2, quarters); wood planks, glass panes, mesh grates, tread plate; openings (window frames 1 m and 1x0.5 m, gun port, vent, hatch frame, door frame 1x2 m: real holes, rounds go through them); triangle plates 0.5, 1, 2 m; Body panels (the old Bumper and Fender) |
+| Armour | armour plate 0.5 to 2 m, heavy armour 0.5 to 2 m, gun ports in both |
+| Shapes | wedges 1:1 (0.25, 0.5, 1 m), 1:2 and 2:1; slope (outer) and inner corners 0.5 and 1 m; quarter rounds 0.25, 0.5, 1 m and curved plates (quarter pipes) 1 and 2 m; pyramid caps; round and chamfer trims 1 and 2 m |
+
+**Materials** (mass and health grow with the area or length; the armour is the flat amount taken off every hit, the
+same for bullets, the construct guns' rounds and blasts; burning ignores it):
+
+| Material | Thickness | kg per m2 | Health (1 m2) | Armour | What it stops |
+| --- | --- | --- | --- | --- | --- |
+| Glass | 3 cm | 9 | 28 | 0 | nothing (any round breaks it) |
+| Wood | 5 cm | 7 | 90 | 1 | nothing; it burns |
+| Mesh grate | 3 cm | 5 | 80 | 3 | bars you see and shoot through |
+| Sheet steel | 2 cm | 8 | 70 | 6 | the toy blaster |
+| Tread plate | 3 cm | 12 | 140 | 10 | buckshot pellets up to 10 |
+| Plate steel | 5 cm | 20 | 160 | 20 | pistols and SMGs up to 20, every buckshot pellet |
+| Armour plate | 8 cm | 45 | 320 | 40 | every SMG, rifle, LMG and buckshot round, pistols up to 40, the mounted MG |
+| Heavy armour | 12 cm | 80 | 550 | 68 | every pistol, SMG, rifle, LMG and marksman round and buckshot (snipers over 68, the slug, the autocannon, cannon, rockets and blasts get through) |
+
+Steel beams: square 10 kg a metre, armour 8; I-beam 13 kg, armour 10 (tougher); tube 4 kg, armour 5; rod 1.6 kg, armour
+3; angle 4 kg and channel 6 kg, armour 6 and 7. Shapes are solid steel (armour 8). Armour panels give more scrap than
+their weight in steel (their `"scrap"`). Wood and glass are fitted with the wrench, everything else with the welder;
+heavy armour takes 5 s to weld.
+
+**Shapes**: a part box may take one of the weapon builder's contoured shapes (`"shape"`: wedge, arc, cylinder, bevel,
+rounded...; `Source/Zombies/PartShapes.cs`, Parts/README.md "Shapes"), but only as a detail box (drawn only): collision
+and hit areas stay boxes, so a shaped part stands on **hidden** solid boxes (`"hidden": true`: solid, never drawn) that
+step along its shape (a wedge's slope in 4 to 12 steps). The shape turns with its part (`CPartBox.Model`); the tiles,
+ghosts and the part in your hands draw it too.
+
+**Pictures**: `--structure-shots` writes `smoke_structure_*.bmp`: a gallery wall per group (every part of the group on
+the ground in the inventory's order, from above and close up) and a small frame welded from the parts through the
+building rules. `--inventory-shots` adds the four groups' pages.
+
+**Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
+blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
+heavy armour everything short of a sniper rifle; glass is drawn opaque (a pale blue pane; see-through glass needs
+sorted blending); a mesh grate is solid bars with real gaps (rounds pass between them); a part's inventory place is data
+(`"group"`, `"section"`), the top folder's parts listed after the subfolders'.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
@@ -701,6 +771,18 @@ nothing. Other modes never touch any of it (every hook returns at once outside S
 unchanged).
 
 ## Self-tests
+
+The **Structural parts** section (`Source/App/SelfTestStructureParts.cs`): every file in `Constructs/Parts/Structure`
+loads (none refused anywhere) and keeps the cell rules; each one goes onto a 0.25 m cube by every socket on all six
+faces in all four spins (every part reaches all 24 turns; about 53,000 placements), its origin always on a whole
+centimetre and its cells on the cube's lattice; every socket takes a copy of the same part, which welds on; each shaped
+box turns exactly with its part in all 24 turns; armour against the real guns' damage (armour plate stops every SMG,
+rifle, LMG and buckshot round and pistols up to 40, lets marksman and sniper rounds through; heavy armour stops every
+small arm up to 68 and lets bigger sniper rounds through; plate steel stops buckshot, not rifles; sheet steel and glass
+stop nothing; the mounted MG is stopped by armour plate, the autocannon, cannon and rockets get through heavy armour);
+the materials ladder (glass to heavy armour) stops more at each step; a round down through the Gun Port Panel's slit goes
+through while one beside it hits the plate; the fitting checks and blocked hits allocate nothing; and the inventory lists
+every structural part under its group and section, with the old blocks after the new beam sections.
 
 The **Construct weapons** section (`Source/App/SelfTestConstructWeapons.cs`, milestone 3): the weapon part files load
 (eight guns, the five heavy ones among them, the gun parts, the boxes) and ten kinds of bad file are refused for the

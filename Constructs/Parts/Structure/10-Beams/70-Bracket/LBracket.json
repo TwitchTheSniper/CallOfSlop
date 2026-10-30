@@ -1,0 +1,79 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "L Bracket",
+  "description": "A 0.25 m steel angle bracket for an inside corner: weld it into the corner between a floor and a wall.",
+  "group": "Beams",
+  "section": "Brackets and gussets",
+  "role": "frame",
+  "tool": "welder",
+  "mass": 0.8,
+  "health": 40,
+  "armour": 5,
+  "material": "steel",
+  "color": "#8c9298",
+  "attachSeconds": 1.2,
+  "boxes": [
+    {
+      "min": [
+        -0.125,
+        -0.125,
+        -0.125
+      ],
+      "max": [
+        0.125,
+        -0.105,
+        0.125
+      ]
+    },
+    {
+      "min": [
+        -0.125,
+        -0.105,
+        -0.125
+      ],
+      "max": [
+        -0.105,
+        0.125,
+        0.125
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.125,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.125
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.125
+      ],
+      "dir": "+z"
+    }
+  ]
+}
