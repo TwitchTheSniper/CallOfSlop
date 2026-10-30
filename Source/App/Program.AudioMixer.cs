@@ -44,38 +44,4 @@ public static unsafe partial class Program
             _swallowClick = true;
         }
     }
-
-    private static int _smokeMixerStep;
-    private static double _smokeMixerStart;
-
-    /// <summary>
-    /// Smoke step: opens the Audio mixer over the match, fires a test shot of your weapon and an enemy shot at 30 m, and
-    /// screenshots it with the meters moving (smoke_audiomixer.bmp); logs the voices and the master estimate, and the
-    /// frame time with the window open. Never saves anything (no button is pressed).
-    /// </summary>
-    private static void SmokeAudioMixer(double now)
-    {
-        switch (_smokeMixerStep)
-        {
-            case 0:
-                _smokeMixerStart = now;
-                Ui.AudioMixerOpen = true;
-                _smokeMixerStep = 1;
-                break;
-            case 1 when now - _smokeMixerStart > 0.4:
-                var w = _session?.Local?.WeaponDef ?? Weapons.All[0];
-                AudioSystem.TestShot(w, 0f, 0f);
-                AudioSystem.TestShot(w, 30f, 60f);
-                _smokeMixerStep = 2;
-                break;
-            case 2 when now - _smokeMixerStart > 0.5:
-                SmokeShot("audiomixer");
-                var m = AudioSystem.Meters;
-                Console.WriteLine($"[smoke] audio mixer: open, {m.ActiveVoices} voices, master est. peak {AudioMix.GainToDb(m.MasterHold):0.0} dBFS, own gun {AudioMix.GainToDb(m.Hold[(int)MixBus.GunOwn]):0.0} dBFS, "
-                                  + $"near layer {AudioMix.GainToDb(m.Hold[(int)MixBus.GunOtherNear]):0.0} dBFS, mix {(AudioSystem.Mix.IsDefault ? "defaults" : $"{AudioSystem.Mix.Changed} changed")}, frame {FrameDt * 1000:0.00} ms");
-                Ui.AudioMixerOpen = false;
-                _smokeMixerStep = 3;
-                break;
-        }
-    }
 }

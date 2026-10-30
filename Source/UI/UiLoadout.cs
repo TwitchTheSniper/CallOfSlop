@@ -47,8 +47,6 @@ public sealed partial class Ui
     /// <summary>Attachments on a gun in the loadout being edited (or the gun's last build if it isn't in it).</summary>
     private uint KitOf(WeaponDef w)
     {
-        if (LoadoutStore.SmokeKit is { } smoke)
-            return Attachments.Sanitize(w, smoke(w.Id));
         var kit = w.Id == Edit.Primary ? Edit.PrimaryKit : w.Id == Edit.Secondary ? Edit.SecondaryKit : LoadoutStore.KitMemory(w.Id);
         return Attachments.Sanitize(w, kit, Progress);
     }
@@ -107,7 +105,6 @@ public sealed partial class Ui
     private bool GoBack()
     {
         _renaming = false;
-        _wsSmoke = false;
         Acted();
         if (!_nav.Back())
         {
@@ -127,7 +124,6 @@ public sealed partial class Ui
     private void ResetLoadoutScreen()
     {
         _nav.Reset();
-        _wsSmoke = false;
         _renaming = false;
         _editSlot = LoadoutStore.UnlockedSlot(LoadoutStore.Selected, Progress);
         _hoverThrowable = null;
@@ -161,46 +157,12 @@ public sealed partial class Ui
     }
 
     // Smoke-test hooks (see Program.SmokeTick)
-    /// <summary>
-    /// Smoke test: 4/5 = primary/secondary attachments (opened through the weapon select, so Back would
-    /// return there), 6 = perks, 7 = the progression page, 8 = kill streaks, 0 = back to the overview. (Hats moved to the
-    /// APPEARANCE screen, UiAppearance.cs.)
-    /// </summary>
-    public void SmokeTab(int tab)
-    {
-        _nav.Reset();
-        _wsSmoke = false;
-        var eff = LoadoutStore.Effective(Edit, Progress);
-        switch (tab)
-        {
-            case 4:
-            case 5:
-                OpenPage(tab == 4 ? LoadoutPage.Primary : LoadoutPage.Secondary);
-                OpenPage(LoadoutPage.Attachments, eff.WeaponIn(tab - 4));
-                break;
-            case 6:
-                OpenPage(LoadoutPage.Perks);
-                break;
-            case 7:
-                OpenPage(LoadoutPage.Progression);
-                break;
-            case 8:
-                OpenPage(LoadoutPage.Streaks);
-                break;
-        }
-    }
 
     public void SmokeRespawn(Game game, double now)
     {
         ApplySelection(game, now);
         game.RequestRespawn();
         MenuOpen = false;
-    }
-
-    public void SmokeSelect(byte primary, byte secondary)
-    {
-        LoadoutStore.SetWeapon(Edit, 0, primary, Progress);
-        LoadoutStore.SetWeapon(Edit, 1, secondary, Progress);
     }
 
     // ---- Entry points ----------------------------------------------------------------------

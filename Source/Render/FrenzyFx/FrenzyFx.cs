@@ -33,7 +33,7 @@ public static partial class FrenzyFx
     /// <summary>The frenzy music's current level (the edge tint pulses with it).</summary>
     public static int MusicLevel;
 
-    /// <summary>Smoke test only: every player shows this level and class.</summary>
+    /// <summary>Self-test only: every player shows this level and class.</summary>
     public static (int Level, WeaponClass Class)? Override;
 
     /// <summary>How far you're aimed down the sights (0..1): your gun's glow fades out as you aim, so it never sits in the sight picture.</summary>
@@ -102,7 +102,7 @@ public static partial class FrenzyFx
     /// <summary>The look you're showing now.</summary>
     public static FrenzyLook LocalLook => FrenzyLooks.Get(Override?.Class ?? LocalClass);
 
-    /// <summary>Your level as drawn (the smoke override included).</summary>
+    /// <summary>Your level as drawn (the test override included).</summary>
     public static int LocalShownLevel => Override?.Level ?? LocalLevel;
 
     // =====================================================================

@@ -1090,31 +1090,4 @@ public sealed partial class Game
 
     public int SelfTestPendingStrikes => _pendingBlasts.Count;
 
-    /// <summary>
-    /// Smoke test (single player): gives the local player a Recon Sweep, Mortar Barrage and Sentry Turret, then calls all
-    /// three in: the turret just ahead, the mortar ~16 m in front; then a Napalm Strike across the view ~26 m out, a
-    /// Gunship and a Hunter Drone. Returns a line for the log.
-    /// </summary>
-    public string SmokeCallStreaks(double now)
-    {
-        if (!IsServer || Local is not { Alive: true } me)
-            return "local player not alive, skipped";
-        me.Streak.Slots = new StreakSet(StreakId.ReconSweep, StreakId.MortarBarrage, StreakId.SentryTurret).Sanitized();
-        me.Streak.Ready = 0xFF;
-        LookPitch = -0.12f;
-        var fwd = World.FlatForward(LookYaw);
-        var turret = ServerUseStreak(me, StreakId.SentryTurret, me.Position, LookYaw, now);
-        var spot = KillStreaks.GroundAt(me.Position.X + fwd.X * 16, me.Position.Z + fwd.Z * 16, me.Position.Y);
-        var mortar = ServerUseStreak(me, StreakId.MortarBarrage, spot, LookYaw, now);
-        var sweep = ServerUseStreak(me, StreakId.ReconSweep, me.Position, LookYaw, now);
-        // The later streaks with visuals worth a look: napalm further out, a gunship overhead, a hunter drone (KillStreaksMore.cs).
-        me.Streak.Slots = new StreakSet(StreakId.NapalmStrike, StreakId.Gunship, StreakId.HunterDrone).Sanitized();
-        me.Streak.Ready = 0xFFFF;
-        var far = KillStreaks.GroundAt(me.Position.X + fwd.X * 26, me.Position.Z + fwd.Z * 26, me.Position.Y);
-        var napalm = ServerUseStreak(me, StreakId.NapalmStrike, far, LookYaw + MathF.PI / 2, now);
-        var ship = ServerUseStreak(me, StreakId.Gunship, me.Position, LookYaw, now);
-        var hunter = ServerUseStreak(me, StreakId.HunterDrone, me.Position, LookYaw, now);
-        return $"turret {turret}, mortar {mortar} at ({spot.X:0.0}, {spot.Y:0.0}, {spot.Z:0.0}), recon sweep {sweep}, napalm {napalm}, gunship {ship}, hunter drone {hunter}, "
-               + $"entities {StreakEntities.Count}, shells {_pendingBlasts.Count}, fire patches {FireZones.Count}";
-    }
 }

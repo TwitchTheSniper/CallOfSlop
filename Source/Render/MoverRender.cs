@@ -10,14 +10,11 @@ namespace CallOfSlop;
 /// </summary>
 public static class MoverRender
 {
-    /// <summary>Boxes drawn last frame (for the smoke log).</summary>
-    public static int LastBoxes { get; private set; }
-
     /// <summary>Draws every mover of <paramref name="map"/> at the (fractional) server tick <paramref name="tick"/>.</summary>
     public static void Draw(Renderer gfx, Map map, double tick)
     {
         if (ScenePresentation.Enabled) // mover frame -> part boxes (Source/Scene/Rigs/MoverRig.cs)
-            LastBoxes = ScenePresentation.DrawMovers(gfx, map, tick);
+            ScenePresentation.DrawMovers(gfx, map, tick);
         else
             DrawImmediate(gfx, map, tick);
     }
@@ -25,7 +22,6 @@ public static class MoverRender
     /// <summary>The old immediate drawing (the scene graph's reference in the self-test, and its fallback).</summary>
     public static void DrawImmediate(Renderer gfx, Map map, double tick)
     {
-        var n = 0;
         foreach (var m in map.Movers)
         {
             var pose = m.PoseAt(tick);
@@ -35,9 +31,7 @@ public static class MoverRender
                             * Matrix4x4.CreateRotationY(-(pose.Yaw + p.Yaw)) // our yaw turns +X towards +Z; CreateRotationY turns the other way
                             * Matrix4x4.CreateTranslation(pose.ToWorld(p.Center));
                 gfx.Draw(model, p.Color, 1f, mode: 0);
-                n++;
             }
         }
-        LastBoxes = n;
     }
 }

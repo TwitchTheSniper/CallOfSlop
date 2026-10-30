@@ -37,26 +37,4 @@ public static unsafe partial class Program
             _swallowClick = true;
         }
     }
-
-    private static int _smokeTweakStep;
-    private static double _smokeTweakStart;
-
-    /// <summary>Smoke step: opens the weapon tweak window over the match on your weapon and screenshots it (smoke_weapontweaks.bmp); changes nothing.</summary>
-    private static void SmokeWeaponTweaks(double now)
-    {
-        switch (_smokeTweakStep)
-        {
-            case 0:
-                _smokeTweakStart = now;
-                Ui.WeaponTweaksOpen = true;
-                _smokeTweakStep = 1;
-                break;
-            case 1 when now - _smokeTweakStart > 0.5:
-                SmokeShot("weapontweaks");
-                Console.WriteLine($"[smoke] weapon tweaks: open, {WeaponTweaks.Fields.Length} stats, {(WeaponTweaks.Active ? "tweaks active" : "nothing changed")}, frame {FrameDt * 1000:0.00} ms");
-                Ui.WeaponTweaksOpen = false;
-                _smokeTweakStep = 2;
-                break;
-        }
-    }
 }

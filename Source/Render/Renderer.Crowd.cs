@@ -35,9 +35,6 @@ public sealed unsafe partial class Renderer
     private StreamRing? _crowdRing;
     private int _crowdRingGen = -1;
 
-    /// <summary>Instanced crowd draws and the zombies in them since the last read (smoke test, perf).</summary>
-    public int CrowdDraws, CrowdZombies;
-
     /// <summary>The crowd's debug tier colours: crowd and held back.</summary>
     public static readonly Vector3 CrowdTierYellow = new(0.95f, 0.82f, 0.2f), CrowdTierOrange = new(1f, 0.45f, 0.1f);
 
@@ -118,8 +115,6 @@ public sealed unsafe partial class Renderer
                 Native.glDrawArraysInstanced(GL_TRIANGLES, 0, 36 * c.Rig.Boxes, n);
             }
             PerfCounters.Draw(36 * c.Rig.Boxes, n);
-            CrowdDraws++;
-            CrowdZombies += n;
         }
         Native.glActiveTexture(GL_TEXTURE0);
         _program.Use();

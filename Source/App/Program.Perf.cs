@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// The performance window (Source/UI/UiPerf.cs, Source/Perf) from the game's side: the key that cycles it (F9 by
 /// default, rebindable: window, corner overlay, off; Esc closes the window), the cursor (the full window counts as a
-/// menu, the overlay doesn't), the GPU timer made once GL is up, the smoke step, and <c>--perf-shot</c>: a short
+/// menu, the overlay doesn't), the GPU timer made once GL is up, and <c>--perf-shot</c>: a short
 /// single-player match with the window and then the overlay screenshotted (smoke_perf_window.bmp, smoke_perf_overlay.bmp,
 /// full size) and the allocations per frame with the window open logged, then quit. Every mode, every build.
 /// </summary>
@@ -66,45 +66,13 @@ public static unsafe partial class Program
         Ui.DrawPerf(_session, now, _settings.Bind(GameAction.PerfWindow));
         if (Ui.PerfMode != PerfView.Off)
         {
-            var bytes = GC.GetAllocatedBytesForCurrentThread() - before; // (the smoke and --perf-shot log lines report it)
+            var bytes = GC.GetAllocatedBytesForCurrentThread() - before; // (the --perf-shot log lines report it)
             _perfUiBytes += bytes;
             _perfUiFrames++;
             if (bytes > 0)
                 _perfUiAllocFrames++;
         }
         PerfCursor(wasWindow);
-    }
-
-    // ---- Smoke step -------------------------------------------------------------------------------------------
-
-    private static int _smokePerfStep;
-    private static double _smokePerfStart;
-
-    /// <summary>Smoke step: opens the perf window over the match, screenshots it (smoke_perfwindow.bmp), then the overlay; logs what it saw.</summary>
-    private static void SmokePerf(double now)
-    {
-        switch (_smokePerfStep)
-        {
-            case 0:
-                _smokePerfStart = now;
-                Ui.PerfMode = PerfView.Window;
-                _smokePerfStep = 1;
-                break;
-            case 1 when now - _smokePerfStart > 1.2:
-                SmokeShot("perfwindow");
-                LogPerfLine("[smoke] perf window");
-                Ui.PerfMode = PerfView.Overlay;
-                _smokePerfStep = 2;
-                break;
-            case 2 when now - _smokePerfStart > 1.6:
-                SmokeShot("perfoverlay");
-                _smokePerfStep = 3;
-                break;
-            case 3 when now - _smokePerfStart > 1.7:
-                Ui.PerfMode = PerfView.Off;
-                _smokePerfStep = 4;
-                break;
-        }
     }
 
     /// <summary>One log line: what the window shows right now (fps, the busiest areas, GPU, draws, allocations per frame).</summary>
