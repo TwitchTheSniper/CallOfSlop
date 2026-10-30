@@ -111,8 +111,11 @@ public static class ConstructBuild
             var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
             if (c.MergeCount > 0 && ConstructMerge.InMerged(c, bc, bh + new Vector3(0.01f), seg < 0 ? 0 : seg))
                 return true; // (the front of a merged receiver, beyond its members)
+            var frame = c.FreeformCount > 0 ? c.FrameOf(seg < 0 ? 0 : seg) : 0;
             for (var i = 0; i < c.PartCount; i++)
             {
+                if (c.FreeformCount > 0 && c.FrameOf(c.Parts[i].Seg) != frame)
+                    continue; // (a freeform segment's parts are in a frame of their own: board item fw01)
                 var d = c.DefOf(i);
                 for (var k = 0; k < d.SolidBoxes; k++)
                 {
@@ -306,6 +309,7 @@ public static class ConstructBuild
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
+        public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
     }
 
     private static readonly List<string> _refusedBlueprints = new();
@@ -375,6 +379,7 @@ public static class ConstructBuild
                         string part = "", sock = "", own = "";
                         int on = -1, spin = 0, setting = -1;
                         JsonElement? config = null;
+                        (Vector3, Quaternion)? weld = null;
                         foreach (var f in s.EnumerateObject())
                             switch (f.Name)
                             {
@@ -385,12 +390,14 @@ public static class ConstructBuild
                                 case "spin": spin = f.Value.ValueKind == JsonValueKind.String && f.Value.GetString() == "auto" ? -1 : f.Value.GetInt32(); break; // ("auto": smart rotation's guess, SmartRotation.BestSpin)
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config)");
+                                case "weld": weld = ParseWeld(f.Value, file, k, ref on); break;
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config, weld)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
                         bp.StepSettings.Add(setting);
+                        bp.StepWeld.Add(weld);
                         bp.StepConfig.Add(config is { } cfg
                             ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
                             : null);
@@ -425,6 +432,38 @@ public static class ConstructBuild
         return bp;
     }
 
+    /// <summary>A step's "weld" (a freeform weld, board item fw01): {"on": step, "pos": [x, y, z], "rot": [x, y, z, w]} (the part's frame in that step's segment frame; rot a quaternion).</summary>
+    private static (Vector3, Quaternion) ParseWeld(JsonElement e, string file, int k, ref int on)
+    {
+        if (e.ValueKind != JsonValueKind.Object)
+            throw new ConstructPartException($"{file}: steps[{k}]: \"weld\" is {{\"on\": step, \"pos\": [x, y, z], \"rot\": [x, y, z, w]}}");
+        var pos = Vector3.Zero;
+        var rot = Quaternion.Identity;
+        foreach (var f in e.EnumerateObject())
+            switch (f.Name)
+            {
+                case "on": on = f.Value.GetInt32(); break;
+                case "pos":
+                    if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 3)
+                        throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" is [x, y, z]");
+                    pos = new Vector3(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle());
+                    break;
+                case "rot":
+                    if (f.Value.ValueKind != JsonValueKind.Array || f.Value.GetArrayLength() != 4)
+                        throw new ConstructPartException($"{file}: steps[{k}]: weld \"rot\" is a quaternion [x, y, z, w]");
+                    rot = new Quaternion(f.Value[0].GetSingle(), f.Value[1].GetSingle(), f.Value[2].GetSingle(), f.Value[3].GetSingle());
+                    break;
+                default: throw new ConstructPartException($"{file}: steps[{k}]: weld: unknown key \"{f.Name}\" (on, pos, rot)");
+            }
+        if (!float.IsFinite(pos.X + pos.Y + pos.Z + rot.X + rot.Y + rot.Z + rot.W) || rot.LengthSquared() < 0.5f || pos.Length() > 50)
+            throw new ConstructPartException($"{file}: steps[{k}]: weld \"pos\" / \"rot\" must be finite, rot a unit quaternion, pos within 50 m");
+        return (pos, Quaternion.Normalize(rot));
+    }
+
+    /// <summary>A freeform weld as a blueprint step's "weld" text (the inverse of the parser; the self-test's round trip).</summary>
+    public static string WeldJson(int on, Vector3 pos, Quaternion rot) =>
+        FormattableString.Invariant($"{{\"on\": {on}, \"pos\": [{pos.X:R}, {pos.Y:R}, {pos.Z:R}], \"rot\": [{rot.X:R}, {rot.Y:R}, {rot.Z:R}, {rot.W:R}]}}");
+
     /// <summary>Builds a blueprint as a new construct at a pose, through the same rules as a player (null and the reason on a step that doesn't fit).</summary>
     public static Construct? Build(ConstructWorld world, Blueprint bp, Vector3 pos, Quaternion rot, out string why)
     {
@@ -454,6 +493,20 @@ public static class ConstructBuild
             }
             var target = partOf[on];
             var td = c.DefOf(target);
+            if (k < bp.StepWeld.Count && bp.StepWeld[k] is { } weld)
+            {
+                // A freeform weld (board item fw01): the part on a new rigid segment at its stored pose.
+                partOf[k] = world.AddFreeform(c, target, def, weld.Pos, weld.Rot);
+                if (partOf[k] < 0)
+                {
+                    why = $"step {k}: too many parts or freeform welds";
+                    world.Remove(c);
+                    return null;
+                }
+                SetSetting(c, partOf[k], def, bp.StepSettings[k]);
+                SetConfig(c, partOf[k], def, bp, k);
+                continue;
+            }
             var ts = Array.FindIndex(td.Sockets, s => s.Name == sock);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == own);
             if (ts < 0 || ds < 0)

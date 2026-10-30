@@ -385,11 +385,23 @@ public sealed partial class ConstructWorld
                 comp[other] = id;
                 queue[tail++] = (byte)other;
             }
+            for (var j = 0; j < c.JointCount; j++)
+            {
+                // A freeform weld joins its anchor and its welded-on part (no socket link: board item fw01).
+                ref var jt = ref c.Joints[j];
+                if (!jt.Freeform || jt.Cut)
+                    continue;
+                var other = jt.Hinge == at ? jt.Child : jt.Child == at ? jt.Hinge : -1;
+                if (other < 0 || other >= c.PartCount || comp[other] != -1)
+                    continue;
+                comp[other] = id;
+                queue[tail++] = (byte)other;
+            }
         }
     }
 
     /// <summary>Component <paramref name="k"/> of <paramref name="c"/> becomes a body of its own, moving as that part of the body moved.</summary>
-    private void SplitOff(Construct c, Span<int> comp, int k)
+    private Construct? SplitOff(Construct c, Span<int> comp, int k)
     {
         // Its frame: the segment none of its joints hang it from (its own hinge isn't in the piece), so its parts keep their turns.
         var baseSeg = -1;
@@ -397,10 +409,7 @@ public sealed partial class ConstructWorld
         {
             if (comp[i] != k)
                 continue;
-            var s = c.Parts[i].Seg;
-            while (s > 0 && comp[c.Joints[s - 1].Hinge] == k)
-                s = c.Joints[s - 1].ParentSeg;
-            baseSeg = s;
+            baseSeg = BaseSeg(c, comp, k, c.Parts[i].Seg);
         }
         c.WorldFrame(baseSeg, out var q, out var t);
         var wreck = Create(t, q);
@@ -409,7 +418,7 @@ public sealed partial class ConstructWorld
             for (var i = 0; i < c.PartCount; i++)
                 if (comp[i] == k && c.Parts[i].Store != 0)
                     FreeStore(ref c.Parts[i]);
-            return; // the caps are full: the piece is simply lost
+            return null; // the caps are full: the piece is simply lost
         }
         // Copy the parts; segments other than the base keep their joints (when their hinge came along).
         Span<int> map = stackalloc int[Construct.MaxParts];
@@ -418,7 +427,7 @@ public sealed partial class ConstructWorld
             segMap[s] = -1;
         segMap[baseSeg] = 0;
         for (var j = 0; j < c.JointCount; j++)
-            if (comp[c.Joints[j].Hinge] == k && wreck.JointCount < Construct.MaxJoints)
+            if (comp[c.Joints[j].Hinge] == k && wreck.JointCount < Construct.MaxJoints && !(c.Joints[j].Freeform && (c.Joints[j].Cut || comp[c.Joints[j].Child] != k)))
             {
                 wreck.Joints[wreck.JointCount] = c.Joints[j];
                 segMap[j + 1] = ++wreck.JointCount;
@@ -438,6 +447,8 @@ public sealed partial class ConstructWorld
         {
             ref var jt = ref wreck.Joints[j];
             jt.Hinge = (byte)map[jt.Hinge];
+            if (jt.Freeform)
+                jt.Child = (byte)map[jt.Child];
             jt.ParentSeg = (byte)Math.Max(0, segMap[jt.ParentSeg]);
         }
         for (var l = 0; l < c.LinkCount; l++)
@@ -458,11 +469,41 @@ public sealed partial class ConstructWorld
         wreck.AngVel = c.AngVel;
         wreck.Empty();
         Events.Add($"construct {c.Id}: a piece of {wreck.PartCount} part(s) fell away as wreck {wreck.Id}");
+        return wreck;
+    }
+
+    /// <summary>A piece's frame: up from segment <paramref name="s"/> while the joint (or freeform weld) it hangs on came along with piece <paramref name="k"/>.</summary>
+    private static int BaseSeg(Construct c, Span<int> comp, int k, int s)
+    {
+        for (var guard = 0; s > 0 && s <= c.JointCount && guard <= Construct.MaxJoints; guard++)
+        {
+            ref var jt = ref c.Joints[s - 1];
+            if (comp[jt.Hinge] != k || jt.Freeform && (jt.Cut || jt.Child >= c.PartCount || comp[jt.Child] != k))
+                break;
+            s = jt.ParentSeg;
+        }
+        return s;
     }
 
     /// <summary>Keeps only the parts of component <paramref name="keep"/>, renumbering links, joints, the seat and the root.</summary>
     private static void Compact(Construct c, Span<int> comp, int keep)
     {
+        // What stays may hang beyond a freeform weld that went (its anchor or the root came off that side): the body then
+        // takes that segment's frame where it is, so its parts don't jump (board item fw01). Plain joints keep milestone 1's way.
+        var rebase = false;
+        var rebaseQ = Quaternion.Identity;
+        var rebaseT = Vector3.Zero;
+        for (var i = 0; i < c.PartCount; i++)
+            if (comp[i] == keep)
+            {
+                var bs = BaseSeg(c, comp, keep, c.Parts[i].Seg);
+                if (bs != 0 && c.FrameOf(bs) != 0)
+                {
+                    rebase = true;
+                    c.WorldFrame(bs, out rebaseQ, out rebaseT);
+                }
+                break;
+            }
         Span<int> map = stackalloc int[Construct.MaxParts];
         var n = 0;
         for (var i = 0; i < c.PartCount; i++)
@@ -492,12 +533,28 @@ public sealed partial class ConstructWorld
         for (var j = 0; j < c.JointCount; j++)
         {
             var jt = c.Joints[j];
-            if (map[jt.Hinge] < 0)
+            if (jt.Freeform && !jt.Cut && (jt.Child >= oldCount || map[jt.Child] < 0))
+            {
+                // Its welded-on part went: another part still on that segment holds the weld (else it goes).
+                for (var i = 0; i < oldCount; i++)
+                    if (map[i] >= 0 && c.Parts[map[i]].Seg == j + 1)
+                    {
+                        jt.Child = (byte)i;
+                        break;
+                    }
+            }
+            if (jt.Freeform && jt.Cut)
+                for (var i = 0; i < oldCount && jt.Cut; i++)
+                    if (map[i] >= 0 && c.Parts[map[i]].Seg == j + 1 && map[jt.Hinge] >= 0)
+                        jt.Cut = false; // (still joined another way: the weld stays)
+            if (map[jt.Hinge] < 0 || jt.Freeform && (jt.Cut || jt.Child >= oldCount || map[jt.Child] < 0))
             {
                 segMap[j + 1] = 0;
                 continue;
             }
             jt.Hinge = (byte)map[jt.Hinge];
+            if (jt.Freeform)
+                jt.Child = (byte)map[jt.Child];
             jt.ParentSeg = (byte)segMap[jt.ParentSeg];
             c.Joints[jn] = jt;
             segMap[j + 1] = ++jn;
@@ -505,6 +562,11 @@ public sealed partial class ConstructWorld
         c.JointCount = jn;
         for (var i = 0; i < c.PartCount; i++)
             c.Parts[i].Seg = (byte)segMap[c.Parts[i].Seg];
+        if (rebase)
+        {
+            c.Pos = c.PrevPos = c.NetPos = c.NetFromPos = rebaseT;
+            c.Rot = c.PrevRot = c.NetRot = c.NetFromRot = rebaseQ;
+        }
         if (c.DriverSeat >= 0)
         {
             c.DriverSeat = c.DriverSeat < oldCount ? map[c.DriverSeat] : -1;
@@ -950,8 +1012,8 @@ public sealed partial class ConstructWorld
         if (seg <= 0 || seg > c.JointCount)
             return;
         ref var j = ref c.Joints[seg - 1];
-        if (j.Motorised || j.Locked)
-            return; // a motor holds its joint, and a lock its hinge
+        if (j.Motorised || j.Locked || j.Freeform)
+            return; // a motor holds its joint, and a lock its hinge (a freeform weld has none)
         c.WorldFrame(j.ParentSeg, out var q, out var t);
         var axis = Vector3.Transform(j.Axis, q);
         var pivot = t + Vector3.Transform(j.Pivot, q);

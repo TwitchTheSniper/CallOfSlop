@@ -98,6 +98,7 @@ public enum JointType : byte
     Turntable, // turns at a speed (signal -1..1 of its speed), no limits unless given
     Piston, // slides along its axis (signal 0..1 of its travel)
     Steering, // a steering pivot: follows the driver's steering, or a wired signal (-1..1)
+    Fixed, // a freeform weld (board item fw01; ConstructFreeform.cs): no joint part and no freedom, the segment sits at CJoint.FixRot / FixPos on its parent (wire byte 5, protocol 97)
 }
 
 /// <summary>What a logic part does (milestone 2; docs/sandbox/CONSTRUCTS.md, "Logic").</summary>

@@ -1,0 +1,329 @@
+using System.Numerics;
+
+namespace CallOfSlop;
+
+/// <summary>
+/// Freeform welds (board item dev-sandbox-freeform-weld-fw01, the developer's decision 25; docs/sandbox/CONSTRUCTS.md,
+/// "Freeform welds"). The welder's second mode welds two bodies exactly where they are: the piece (its whole body) joins
+/// the other construct as a new rigid segment whose rest frame sits at a fixed, arbitrary pose on its parent segment
+/// (<see cref="JointType.Fixed"/>: <see cref="CJoint.FixRot"/> / <see cref="CJoint.FixPos"/>; the anchor part is
+/// <see cref="CJoint.Hinge"/>, the welded-on part <see cref="CJoint.Child"/>). Nothing solves it: its parts are hull points
+/// of the body, its mass and inertia are the body's, and inside it every part stays on its own Rot24 grid, so socket parts
+/// still fit onto it. The welder cuts the seam free again; losing the anchor part (or the welded-on one) splits it off
+/// like any part. Nothing here allocates.
+/// </summary>
+public static class Freeform
+{
+    public const float MaxGap = 0.25f; // the closest boxes of the two parts at most this far apart (touching not needed: the bead bridges it)
+    public const int MaxPerConstruct = 8; // freeform welds a construct (they share Construct.MaxJoints with the joints)
+    public const float WeldSeconds = 2.5f; // survival: a freeform weld takes as long as welding a part on (creative: at once)
+    public const float SeamReach = 0.6f; // the welder this near a seam's bead (on one of its two parts) cuts it
+
+    /// <summary>Part <paramref name="part"/>'s bounds as a box in the world: its turn, centre and half size.</summary>
+    public static void PartBox(Construct c, int part, out Quaternion q, out Vector3 centre, out Vector3 half)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out q, out var t);
+        c.PartBounds(part, out var mn, out var mx);
+        centre = t + Vector3.Transform((mn + mx) * 0.5f, q);
+        half = (mx - mn) * 0.5f;
+    }
+
+    private static Vector3 Closest(Quaternion q, Vector3 c, Vector3 h, Vector3 p)
+    {
+        var l = Vector3.Transform(p - c, Quaternion.Conjugate(q));
+        return c + Vector3.Transform(Vector3.Clamp(l, -h, h), q);
+    }
+
+    /// <summary>
+    /// The gap between two parts' boxes (0 when they overlap) and its closest points (the weld bead's ends), by alternating
+    /// projections between the two boxes (convex: it converges on the closest pair).
+    /// </summary>
+    public static float Gap(Construct a, int pa, Construct b, int pb, out Vector3 onA, out Vector3 onB)
+    {
+        PartBox(a, pa, out var qa, out var ca, out var ha);
+        PartBox(b, pb, out var qb, out var cb, out var hb);
+        onA = ca;
+        onB = cb;
+        for (var k = 0; k < 24; k++)
+        {
+            onA = Closest(qa, ca, ha, onB);
+            var nb = Closest(qb, cb, hb, onA);
+            var moved = Vector3.DistanceSquared(nb, onB);
+            onB = nb;
+            if (moved < 1e-10f)
+                break;
+        }
+        return Vector3.Distance(onA, onB);
+    }
+
+    /// <summary>Held to the ground for real (a working foundation or pinned; not just frozen by the physics gun).</summary>
+    public static bool Grounded(Construct c)
+    {
+        if (c.Pinned)
+            return true;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].D.Role == PartRole.Foundation && c.Parts[i].Working && c.Parts[i].Seg == 0)
+                return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Which of the two keeps its frame (the other is welded on as the freeform segment): one held to the ground, else
+    /// not a loose part, else the one with more parts, else <paramref name="b"/> (the second picked: the vehicle a piece
+    /// is held against).
+    /// </summary>
+    public static bool KeepsFirst(Construct a, Construct b)
+    {
+        bool ga = Grounded(a), gb = Grounded(b);
+        if (ga != gb)
+            return ga;
+        if (a.Loose != b.Loose)
+            return b.Loose;
+        if (a.PartCount != b.PartCount)
+            return a.PartCount > b.PartCount;
+        return false;
+    }
+
+    /// <summary>
+    /// The physical rules for welding part <paramref name="pa"/> of <paramref name="a"/> to part <paramref name="pb"/> of
+    /// <paramref name="b"/> where they are (the server's and the preview's; permissions are the server's,
+    /// <see cref="ConstructEdits.BeginFreeform"/>). Null, or why not.
+    /// </summary>
+    public static string? Check(ConstructWorld world, Construct a, int pa, Construct b, int pb)
+    {
+        if (a == b)
+            return "both parts are on one body already: pick a part on another body";
+        if (pa < 0 || pa >= a.PartCount || pb < 0 || pb >= b.PartCount)
+            return "that part is gone";
+        if (a.Parts[pa].Broken || b.Parts[pb].Broken)
+            return "that part is wrecked";
+        var gap = Gap(a, pa, b, pb, out _, out _);
+        if (gap > MaxGap)
+            return gap < 10 ? $"too far apart: {gap:0.00} m (at most {MaxGap:0.00} m)" : "too far apart";
+        var keep = KeepsFirst(a, b) ? a : b;
+        var mover = keep == a ? b : a;
+        if (keep.FreeformCount + mover.FreeformCount + 1 > MaxPerConstruct)
+            return $"at most {MaxPerConstruct} freeform welds a construct";
+        if (keep.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
+            return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
+        if (world.TotalJoints + 1 > ConstructWorld.MaxTotalJoints)
+            return "the world has too many joints";
+        if (mover.WheelCount > 0)
+            return "that piece has wheels: weld it on with socket welds (wheels roll in the body's own frame)";
+        if (a.CarriedBy != 0 || b.CarriedBy != 0)
+            return "it rides in a cargo volume: let it go first";
+        if (mover.CargoCount > 0)
+            return "that piece carries cargo: let the cargo go first";
+        return world.CanMerge(keep, mover);
+    }
+
+    /// <summary>
+    /// The ray-through pick: past the part the crosshair hit (<paramref name="first"/>) to the next part along the ray on a
+    /// different body (no stored item, no routed link). False when nothing is behind it (the two-click fallback).
+    /// </summary>
+    public static bool Behind(ConstructWorld world, in ConstructHit first, Vector3 eye, Vector3 dir, float reach, out ConstructHit behind) =>
+        world.Raycast(eye, dir, reach, out behind, ignore: first.Body) && behind.SlotPlus1 == 0 && behind.RoutePlus1 == 0;
+
+    /// <summary>The freeform weld whose seam is at world point <paramref name="at"/> on part <paramref name="part"/> (its anchor or its welded-on part), or -1.</summary>
+    public static int SeamAt(Construct c, int part, Vector3 at)
+    {
+        for (var j = 0; j < c.JointCount; j++)
+        {
+            ref var jt = ref c.Joints[j];
+            if (!jt.Freeform || jt.Hinge >= c.PartCount || jt.Child >= c.PartCount || jt.Hinge != part && jt.Child != part)
+                continue;
+            Gap(c, jt.Hinge, c, jt.Child, out var a, out var b);
+            if (Vector3.Distance(at, (a + b) * 0.5f) <= SeamReach)
+                return j;
+        }
+        return -1;
+    }
+
+    /// <summary>
+    /// A freeform weld as a blueprint step's "weld" (ConstructBuild, "weld": on, pos, rot): the welded-on part's own frame
+    /// (its origin and turn) in its anchor's segment frame.
+    /// </summary>
+    public static void StepPose(Construct c, int joint, out Vector3 pos, out Quaternion rot)
+    {
+        ref var jt = ref c.Joints[joint];
+        ref var p = ref c.Parts[jt.Child];
+        rot = Quaternion.Normalize(jt.FixRot * Rot24.Quat(p.Rot));
+        pos = jt.FixPos + Vector3.Transform(p.Pos, jt.FixRot);
+    }
+
+    /// <summary>A pose's world position and turn for part <paramref name="part"/> (its origin and turn): the self-test compares them.</summary>
+    public static void PartWorld(Construct c, int part, out Vector3 pos, out Quaternion rot)
+    {
+        c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
+        rot = Quaternion.Normalize(q * Rot24.Quat(c.Parts[part].Rot));
+        pos = t + Vector3.Transform(c.Parts[part].Pos, q);
+    }
+}
+
+public sealed partial class ConstructWorld
+{
+    /// <summary>
+    /// Welds <paramref name="mover"/> onto <paramref name="keep"/> where it is (call <see cref="Freeform.Check"/> first):
+    /// every part, link, joint and routed link of the mover comes across unchanged in its own frame, on a new freeform
+    /// segment hanging on the anchor part's segment at the pose the two have now. The mover goes. Returns the new weld's
+    /// joint index, or -1.
+    /// </summary>
+    public int FreeformWeld(Construct keep, int anchor, Construct mover, int welded)
+    {
+        if (keep == mover || CanMerge(keep, mover) != null || keep.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
+            return -1;
+        if (keep.Dirty)
+            keep.Rebuild();
+        if (mover.Dirty)
+            mover.Rebuild();
+        for (var k = CouplingCount - 1; k >= 0; k--)
+            if (Couplings[k].BodyA == keep.Id && Couplings[k].BodyB == mover.Id || Couplings[k].BodyA == mover.Id && Couplings[k].BodyB == keep.Id)
+                Decouple(k, "the two were welded into one");
+        // The new segment's rest frame (the mover's body frame) in the anchor segment's rest frame, as they are now.
+        keep.WorldFrame(keep.Parts[anchor].Seg, out var qs, out var ts);
+        var iq = Quaternion.Conjugate(qs);
+        var fixRot = Quaternion.Normalize(iq * mover.Rot);
+        var fixPos = Vector3.Transform(mover.Pos - ts, iq);
+        var off = (byte)keep.PartCount;
+        var joint = keep.JointCount;
+        var seg = (byte)(joint + 1);
+        var momentum = keep.Vel * keep.Mass + mover.Vel * mover.Mass;
+        var mass = keep.Mass + mover.Mass;
+        keep.Joints[keep.JointCount++] = new CJoint
+        {
+            Type = JointType.Fixed,
+            Hinge = (byte)anchor,
+            Child = (byte)(welded + off),
+            ParentSeg = keep.Parts[anchor].Seg,
+            FixRot = fixRot,
+            FixPos = fixPos,
+            Axis = Vector3.UnitY,
+        };
+        for (var j = 0; j < mover.JointCount; j++)
+        {
+            var jt = mover.Joints[j];
+            jt.Hinge = (byte)(jt.Hinge + off);
+            if (jt.Freeform)
+                jt.Child = (byte)(jt.Child + off);
+            jt.ParentSeg = (byte)(jt.ParentSeg + seg);
+            keep.Joints[keep.JointCount++] = jt;
+        }
+        for (var i = 0; i < mover.PartCount; i++)
+        {
+            var p = mover.Parts[i];
+            p.Seg = (byte)(p.Seg + seg);
+            keep.Parts[keep.PartCount++] = p;
+            mover.Parts[i].Store = 0; // (physical storage: the store moves with its part)
+        }
+        for (var l = 0; l < mover.LinkCount; l++)
+        {
+            var link = mover.Links[l];
+            link.A = (byte)(link.A + off);
+            link.B = (byte)(link.B + off);
+            keep.Links[keep.LinkCount++] = link;
+        }
+        ConstructRoutes.Merge(keep, mover, off, Vector3.Zero, 0); // (routed links: their nodes stay in their hosts' frames)
+        for (var k = XWireCount - 1; k >= 0; k--)
+        {
+            ref var x = ref XWires[k];
+            var km = x.BodyFrom == keep.Id && x.BodyTo == mover.Id;
+            var mk = x.BodyFrom == mover.Id && x.BodyTo == keep.Id;
+            if (!km && !mk)
+                continue;
+            var from = km ? x.From : x.From + off;
+            var to = km ? x.To + off : x.To;
+            if (from < keep.PartCount && to < keep.PartCount)
+                ConstructRoutes.Add(this, keep, RouteType.Data, 0, from, 255, 255, 0, default, default, to, 255);
+            XWires[k] = XWires[--XWireCount];
+            LinksDirty = true;
+        }
+        keep.AddFuel(mover.Fuel);
+        keep.Charge += mover.Charge;
+        keep.Damaged |= mover.Damaged;
+        keep.Wreck = false;
+        var from2 = mover.Id;
+        Remove(mover);
+        keep.Dirty = true;
+        keep.Rebuild();
+        keep.Vel = mass > 0 ? momentum / mass : keep.Vel;
+        keep.Wake();
+        StructureDirty.Add(keep.Id);
+        Events.Add($"construct {from2} freeform-welded onto construct {keep.Id} (weld {joint}, {keep.PartCount} parts)");
+        return joint;
+    }
+
+    /// <summary>
+    /// The welder cuts freeform weld <paramref name="joint"/> of <paramref name="c"/>: what it held falls away as a body of
+    /// its own where it is (moving as it moved). Returns that body (null when nothing came off).
+    /// </summary>
+    public Construct? FreeformCut(Construct c, int joint)
+    {
+        if (joint < 0 || joint >= c.JointCount || !c.Joints[joint].Freeform)
+            return null;
+        c.Joints[joint].Cut = true;
+        var piece = Resplit(c, out var _);
+        if (piece != null)
+        {
+            piece.Wreck = false; // (cut free, not broken off)
+            piece.Damaged = c.Damaged;
+            piece.Owner = c.Owner;
+            StructureDirty.Add(piece.Id);
+        }
+        return piece;
+    }
+
+    /// <summary>
+    /// A blueprint's weld step: part <paramref name="def"/> as a new freeform segment on part <paramref name="anchor"/>,
+    /// its own frame at <paramref name="pos"/> / <paramref name="rot"/> in the anchor's segment frame. Its index, or -1.
+    /// </summary>
+    public int AddFreeform(Construct c, int anchor, ConstructPartDef def, Vector3 pos, Quaternion rot)
+    {
+        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= MaxTotalJoints)
+            return -1;
+        var n = 0;
+        for (var j = 0; j < c.JointCount; j++)
+            if (c.Joints[j].Freeform)
+                n++;
+        if (n >= Freeform.MaxPerConstruct)
+            return -1;
+        var seg = (byte)(c.JointCount + 1);
+        var i = AddPart(c, def, Vector3.Zero, 0, seg);
+        if (i < 0)
+            return -1;
+        c.Joints[c.JointCount++] = new CJoint
+        {
+            Type = JointType.Fixed,
+            Hinge = (byte)anchor,
+            Child = (byte)i,
+            ParentSeg = c.Parts[anchor].Seg,
+            FixRot = Quaternion.Normalize(rot),
+            FixPos = pos,
+            Axis = Vector3.UnitY,
+        };
+        c.Dirty = true;
+        return i;
+    }
+
+    /// <summary>Splits off every piece of <paramref name="c"/> no longer joined to its root (a cut weld) as bodies of their own; the first one, and how many.</summary>
+    private Construct? Resplit(Construct c, out int pieces)
+    {
+        Span<int> comp = stackalloc int[Construct.MaxParts];
+        for (var i = 0; i < c.PartCount; i++)
+            comp[i] = -1;
+        var comps = 0;
+        if (c.PartCount > 0)
+            Flood(c, c.Root >= 0 && c.Root < c.PartCount ? c.Root : 0, comps++, comp);
+        for (var i = 0; i < c.PartCount; i++)
+            if (comp[i] == -1)
+                Flood(c, i, comps++, comp);
+        Construct? first = null;
+        for (var k = 1; k < comps; k++)
+            first ??= SplitOff(c, comp, k);
+        pieces = comps - 1;
+        Compact(c, comp, 0);
+        c.Dirty = true;
+        c.Wake();
+        StructureDirty.Add(c.Id);
+        return first;
+    }
+}

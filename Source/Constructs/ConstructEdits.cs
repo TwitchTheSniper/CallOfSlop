@@ -9,6 +9,7 @@ public enum EditKind : byte
     Attach, // the held part onto a socket of a construct
     PlaceNew, // the held part on the ground: a new construct
     Remove, // a part off a construct, into the hand (full hands: the backpack, else dropped; ConstructGive.cs)
+    Weld, // a freeform weld: part Part of Body to part Part2 of Body2 where they are (board item fw01; ConstructEditsFreeform.cs)
 }
 
 /// <summary>What one player holds and is doing (server-owned, replicated in the Sandbox mode-state tail).</summary>
@@ -19,6 +20,8 @@ public struct SandboxHand
     public EditKind Edit;
     public ushort Body;
     public byte Part, Socket, Variant;
+    public ushort Body2; // Weld: the second body and its part
+    public byte Part2;
     public Vector3 At; // PlaceNew: the new construct's origin
     public float Yaw;
     public Quaternion PlaceRot; // PlaceNew: the new construct's frame (free placement)
@@ -220,6 +223,8 @@ public sealed partial class ConstructEdits
             return far;
         if (!ConstructPlace.FindJoin(world, c, part, out var plan))
             return "it doesn't touch another construct (free sockets face to face, square to each other)";
+        if (c.FreeformCount > 0 && c.FrameOf(c.Parts[part].Seg) != 0 || plan.Other.FreeformCount > 0 && plan.Other.FrameOf(plan.Other.Parts[plan.PartB].Seg) != 0)
+            return "that part is on a freeform-welded piece: weld it freeform (the welder's outer ring)";
         if (!JoinTool(h.Tool, c, plan.Other))
             return "the wrench bolts on a loose wrench part: use the welder to weld two constructs together";
         if ((Contested(c, player) ?? Contested(plan.Other, player)) is { } defended)
@@ -415,6 +420,8 @@ public sealed partial class ConstructEdits
                     _ => $"failed: nowhere for the {def.Name}",
                 };
             }
+            case EditKind.Weld:
+                return CompleteFreeform(world, player, ref h);
         }
         return "nothing";
     }

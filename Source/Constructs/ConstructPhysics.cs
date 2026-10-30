@@ -128,12 +128,12 @@ public static class ConstructPhysics
                 c.Joints[j].PrevAngle = c.Joints[j].Angle;
             if (c.GrabbedBy != 255)
                 c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
-            if (c.Asleep && c.JointCount > 0)
+            if (c.Asleep && c.MovingJoints > 0)
                 WakeCheck(c);
             _dyn[i] = !c.Anchored && !c.Asleep && c.CarriedBy == 0; // (cargo in a frozen volume rides kinematically: ConstructCargo.cs)
-            _jact[i] = !c.Asleep && c.JointCount > 0 && c.CarriedBy == 0;
+            _jact[i] = !c.Asleep && c.MovingJoints > 0 && c.CarriedBy == 0; // (freeform welds are rigid: their parts are hull points)
             _invI[i] = _dyn[i] ? c.InvInertiaWorld() : default;
-            _invIB[i] = _dyn[i] && c.JointCount > 0 ? c.InvInertiaBaseWorld() : default;
+            _invIB[i] = _dyn[i] && c.MovingJoints > 0 ? c.InvInertiaBaseWorld() : default;
             if (_dyn[i])
             {
                 c.Vel += g * dt;
@@ -474,6 +474,11 @@ public static class ConstructPhysics
             if (_chainCount + n >= MaxChain)
                 return -1;
             var j = seg - 1;
+            if (c.Joints[j].Freeform)
+            {
+                seg = c.Joints[j].ParentSeg; // (a freeform weld: no freedom, rigid with its parent)
+                continue;
+            }
             var slot = index * Construct.MaxJoints + j;
             var u = c.Joints[j].Slides ? _jAxis[slot] : Vector3.Cross(_jAxis[slot], p - _jPivot[slot]);
             _chainU[_chainCount + n] = u;
@@ -1158,6 +1163,11 @@ public static class ConstructPhysics
                 jt.Angle = 0;
                 jt.Vel = 0;
             }
+            if (jt.Freeform)
+            {
+                jt.Vel = jt.Angle = 0; // (a freeform weld: nothing to solve)
+                continue;
+            }
             var seg = j + 1;
             var riders = System.Numerics.BitOperations.PopCount(c.RiderBits[seg]);
             c.RiderBits[seg] = 0;
@@ -1290,6 +1300,8 @@ public static class ConstructPhysics
         for (var j = 0; j < c.JointCount; j++)
         {
             ref var jt = ref c.Joints[j];
+            if (jt.Freeform)
+                continue;
             var slot = index * Construct.MaxJoints + j;
             if (_jMotorMax[slot] > 0)
             {

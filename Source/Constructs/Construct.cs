@@ -111,9 +111,16 @@ public struct CJoint
     public float Force; // the load the motor held, smoothed (N m; a piston's N)
     public float Over; // load against rating (1: at its rating, more: overloaded); clients hear it in the pose
     public float Strain; // overload damage owed to its part (hp; only with the part's overloadDamage on)
+    // A freeform weld (JointType.Fixed; board item fw01, ConstructFreeform.cs): Hinge is the anchor part (on ParentSeg),
+    // Child the welded-on part (on this segment); the segment's rest frame sits at FixRot / FixPos in its parent's.
+    public Quaternion FixRot;
+    public Vector3 FixPos;
+    public byte Child;
+    public bool Cut; // server, transient: the welder cut this seam (the split no longer crosses it)
 
     public readonly bool Slides => Type == JointType.Piston;
-    public readonly bool Motorised => Type != JointType.Passive;
+    public readonly bool Motorised => Type is not (JointType.Passive or JointType.Fixed);
+    public readonly bool Freeform => Type == JointType.Fixed;
 }
 
 /// <summary>A raycast wheel's cached set-up (rebuilt when the construct changes).</summary>
@@ -304,6 +311,12 @@ public sealed partial class Construct
             return;
         ref var j = ref Joints[seg - 1];
         SegPose(j.ParentSeg, out var pq, out var pt);
+        if (j.Freeform)
+        {
+            q = pq * j.FixRot;
+            t = pt + Vector3.Transform(j.FixPos, pq);
+            return;
+        }
         if (j.Slides)
         {
             q = pq;
@@ -316,6 +329,55 @@ public sealed partial class Construct
         q = pq * turn;
         t = pt + Vector3.Transform(local, pq);
     }
+
+    /// <summary>
+    /// Segment <paramref name="seg"/>'s rest pose: rest frame -> body frame with every moving joint at 0 (only the freeform
+    /// welds up its chain turn it; identity for the body and a plain joint's segment).
+    /// </summary>
+    public void RestPose(int seg, out Quaternion q, out Vector3 t)
+    {
+        q = Quaternion.Identity;
+        t = Vector3.Zero;
+        if (seg <= 0 || seg > JointCount)
+            return;
+        ref var j = ref Joints[seg - 1];
+        RestPose(j.ParentSeg, out var pq, out var pt);
+        if (!j.Freeform)
+        {
+            q = pq;
+            t = pt;
+            return;
+        }
+        q = pq * j.FixRot;
+        t = pt + Vector3.Transform(j.FixPos, pq);
+    }
+
+    /// <summary>The frame a segment's parts are placed in: the nearest freeform segment up its chain (itself included), else 0 (the body's).</summary>
+    public int FrameOf(int seg)
+    {
+        for (var guard = 0; seg > 0 && seg <= JointCount && guard <= MaxJoints; guard++)
+        {
+            if (Joints[seg - 1].Freeform)
+                return seg;
+            seg = Joints[seg - 1].ParentSeg;
+        }
+        return 0;
+    }
+
+    /// <summary>Is segment <paramref name="seg"/> rigid with the body (the body itself, or only freeform welds up its chain)?</summary>
+    public bool Rigid(int seg)
+    {
+        for (var guard = 0; seg > 0 && guard <= MaxJoints; guard++)
+        {
+            if (seg > JointCount || !Joints[seg - 1].Freeform)
+                return false;
+            seg = Joints[seg - 1].ParentSeg;
+        }
+        return true;
+    }
+
+    /// <summary>Freeform welds on this construct (rebuilt with the caches); joints that move (the rest).</summary>
+    public int FreeformCount, MovingJoints;
 
     /// <summary>
     /// The velocity a joint segment gives a world point on it (on top of the body's own): every joint up its chain, a
@@ -342,7 +404,7 @@ public sealed partial class Construct
     public int JointOf(int part)
     {
         for (var j = 0; j < JointCount; j++)
-            if (Joints[j].Hinge == part)
+            if (Joints[j].Hinge == part && !Joints[j].Freeform) // (a freeform weld's anchor is any part, not a joint part)
                 return j;
         return -1;
     }
@@ -488,6 +550,12 @@ public sealed partial class Construct
     {
         Dirty = false;
         ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
+        FreeformCount = MovingJoints = 0;
+        for (var j = 0; j < JointCount; j++)
+            if (Joints[j].Freeform)
+                FreeformCount++;
+            else
+                MovingJoints++;
         var oldCom = Com;
         var oldWorldCom = WorldCom;
         Mass = 0;
@@ -497,7 +565,7 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
         {
             var d = Parts[i].D;
-            PartBounds(i, out var mn, out var mx);
+            RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
             var pm = PartMass(i);
@@ -524,11 +592,29 @@ public sealed partial class Construct
             var vol = 0f;
             for (var b = 0; b < d.SolidBoxes; b++)
                 vol += d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z;
+            var turned = FreeformCount > 0 && Parts[i].Seg != 0;
+            var rq = Quaternion.Identity;
+            var rt = Vector3.Zero;
+            if (turned)
+                RestPose(Parts[i].Seg, out rq, out rt);
             for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
                 var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
                 var s = h * 2;
+                if (turned)
+                {
+                    // A freeform segment's box (board item fw01): turned off the body's axes, its own inertia turns with it.
+                    var r2 = rt + Vector3.Transform(c, rq) - Com;
+                    TurnedBox(m, s, rq, ref ixx, ref iyy, ref izz, ref ixy, ref ixz, ref iyz);
+                    ixx += m * (r2.Y * r2.Y + r2.Z * r2.Z);
+                    iyy += m * (r2.X * r2.X + r2.Z * r2.Z);
+                    izz += m * (r2.X * r2.X + r2.Y * r2.Y);
+                    ixy -= m * r2.X * r2.Y;
+                    ixz -= m * r2.X * r2.Z;
+                    iyz -= m * r2.Y * r2.Z;
+                    continue;
+                }
                 var r = c - Com;
                 ixx += m / 12f * (s.Y * s.Y + s.Z * s.Z) + m * (r.Y * r.Y + r.Z * r.Z);
                 iyy += m / 12f * (s.X * s.X + s.Z * s.Z) + m * (r.X * r.X + r.Z * r.Z);
@@ -607,6 +693,40 @@ public sealed partial class Construct
         _fuelSet = _chargeSet = true;
     }
 
+    /// <summary>Part <paramref name="i"/>'s bounds in the body frame at rest (a freeform segment's part turned into it: the box round it).</summary>
+    public void RestBounds(int i, out Vector3 min, out Vector3 max)
+    {
+        PartBounds(i, out min, out max);
+        var seg = Parts[i].Seg;
+        if (FreeformCount == 0 || seg == 0 || FrameOf(seg) == 0)
+            return;
+        RestPose(seg, out var q, out var t);
+        var c = t + Vector3.Transform((min + max) * 0.5f, q);
+        var h = (max - min) * 0.5f;
+        var m = Matrix4x4.CreateFromQuaternion(q);
+        var e = new Vector3(
+            MathF.Abs(m.M11) * h.X + MathF.Abs(m.M21) * h.Y + MathF.Abs(m.M31) * h.Z,
+            MathF.Abs(m.M12) * h.X + MathF.Abs(m.M22) * h.Y + MathF.Abs(m.M32) * h.Z,
+            MathF.Abs(m.M13) * h.X + MathF.Abs(m.M23) * h.Y + MathF.Abs(m.M33) * h.Z);
+        min = c - e;
+        max = c + e;
+    }
+
+    /// <summary>Adds a solid box's own inertia (mass <paramref name="m"/>, size <paramref name="s"/>) turned by <paramref name="q"/> into the body frame (R D R^T).</summary>
+    private static void TurnedBox(float m, Vector3 s, Quaternion q, ref float xx, ref float yy, ref float zz, ref float xy, ref float xz, ref float yz)
+    {
+        var dx = m / 12f * (s.Y * s.Y + s.Z * s.Z);
+        var dy = m / 12f * (s.X * s.X + s.Z * s.Z);
+        var dz = m / 12f * (s.X * s.X + s.Y * s.Y);
+        var r = Matrix4x4.CreateFromQuaternion(q); // (row k: where local axis k points in the body frame)
+        xx += r.M11 * r.M11 * dx + r.M21 * r.M21 * dy + r.M31 * r.M31 * dz;
+        yy += r.M12 * r.M12 * dx + r.M22 * r.M22 * dy + r.M32 * r.M32 * dz;
+        zz += r.M13 * r.M13 * dx + r.M23 * r.M23 * dy + r.M33 * r.M33 * dz;
+        xy += r.M11 * r.M12 * dx + r.M21 * r.M22 * dy + r.M31 * r.M32 * dz;
+        xz += r.M11 * r.M13 * dx + r.M21 * r.M23 * dy + r.M31 * r.M33 * dz;
+        yz += r.M12 * r.M13 * dx + r.M22 * r.M23 * dy + r.M32 * r.M33 * dz;
+    }
+
     /// <summary>Each segment's carried mass and its centre (its parts and every segment hanging on it); whether logic runs.</summary>
     private void BuildSegments()
     {
@@ -623,10 +743,21 @@ public sealed partial class Construct
                 HasLogic = true;
             PartBounds(i, out var mn, out var mx);
             var c = (mn + mx) * 0.5f;
+            var cb = c; // (with freeform welds: the body frame at rest, turned into each segment's own frame below)
+            if (FreeformCount > 0 && Parts[i].Seg != 0)
+            {
+                RestPose(Parts[i].Seg, out var pq, out var pt);
+                cb = pt + Vector3.Transform(c, pq);
+            }
             for (int s = Parts[i].Seg, guard = 0; guard <= MaxJoints; guard++)
             {
                 if (s < 0 || s > JointCount)
                     break;
+                if (FreeformCount > 0)
+                {
+                    RestPose(s, out var sq, out var st);
+                    c = Vector3.Transform(cb - st, Quaternion.Conjugate(sq));
+                }
                 SegMass[s] += PartMass(i);
                 SegCom[s] += c * PartMass(i);
                 if (s == 0)
@@ -674,9 +805,9 @@ public sealed partial class Construct
     /// </summary>
     private void BaseInertia()
     {
-        if (JointCount == 0)
+        if (MovingJoints == 0)
         {
-            InvInertiaBaseLocal = InvInertiaLocal;
+            InvInertiaBaseLocal = InvInertiaLocal; // (freeform welds are rigid: the whole body turns)
             return;
         }
         float ixx = 0, iyy = 0, izz = 0, ixy = 0, ixz = 0, iyz = 0;
@@ -691,21 +822,42 @@ public sealed partial class Construct
         }
         for (var i = 0; i < PartCount; i++)
         {
-            if (Parts[i].Seg != 0)
+            var turned = Parts[i].Seg != 0;
+            if (turned && !(FreeformCount > 0 && Rigid(Parts[i].Seg)))
                 continue;
             var d = Parts[i].D;
             var vol = 0f;
             for (var b = 0; b < d.SolidBoxes; b++)
                 vol += d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z;
+            var rq = Quaternion.Identity;
+            var rt = Vector3.Zero;
+            if (turned)
+                RestPose(Parts[i].Seg, out rq, out rt);
             for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
-                Point(PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f), c - Com, h * 2);
+                var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
+                if (turned)
+                {
+                    TurnedBox(m, h * 2, rq, ref ixx, ref iyy, ref izz, ref ixy, ref ixz, ref iyz); // (a freeform segment rides with the body)
+                    Point(m, rt + Vector3.Transform(c, rq) - Com, Vector3.Zero);
+                }
+                else
+                    Point(m, c - Com, h * 2);
             }
         }
         for (var j = 0; j < JointCount; j++)
+        {
+            if (Joints[j].Freeform)
+                continue;
             if (Joints[j].ParentSeg == 0)
                 Point(SegMass[j + 1], Joints[j].Pivot - Com, Vector3.Zero);
+            else if (FreeformCount > 0 && Rigid(Joints[j].ParentSeg))
+            {
+                RestPose(Joints[j].ParentSeg, out var pq, out var pt);
+                Point(SegMass[j + 1], pt + Vector3.Transform(Joints[j].Pivot, pq) - Com, Vector3.Zero);
+            }
+        }
         var floor = Mass * 0.05f;
         var inertia = new Matrix4x4(ixx + floor, ixy, ixz, 0, ixy, iyy + floor, iyz, 0, ixz, iyz, izz + floor, 0, 0, 0, 0, 1);
         InvInertiaBaseLocal = Matrix4x4.Invert(inertia, out var inv) ? inv : InvInertiaLocal;
@@ -767,12 +919,20 @@ public sealed partial class Construct
         var n = 0;
         for (var i = 0; i < PartCount && n + 8 <= scratch.Length; i++)
         {
-            if (Parts[i].Seg != 0 || IsRaycastWheel(i))
+            var seg = Parts[i].Seg;
+            var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)
+            if (seg != 0 && !turned || IsRaycastWheel(i))
                 continue;
             PartBounds(i, out var mn, out var mx);
+            var rq = Quaternion.Identity;
+            var rt = Vector3.Zero;
+            if (turned)
+                RestPose(seg, out rq, out rt);
             for (var c = 0; c < 8; c++)
             {
                 var p = new Vector3((c & 1) != 0 ? mx.X : mn.X, (c & 2) != 0 ? mx.Y : mn.Y, (c & 4) != 0 ? mx.Z : mn.Z);
+                if (turned)
+                    p = rt + Vector3.Transform(p, rq);
                 var dup = false;
                 for (var k = 0; k < n && !dup; k++)
                     dup = Vector3.DistanceSquared(scratch[k], p) < 1e-4f;
@@ -809,8 +969,8 @@ public sealed partial class Construct
         for (var i = 0; i < PartCount; i++)
         {
             var seg = Parts[i].Seg;
-            if (seg == 0 || IsRaycastWheel(i))
-                continue;
+            if (seg == 0 || IsRaycastWheel(i) || FreeformCount > 0 && Rigid(seg))
+                continue; // (a freeform segment's corners are hull points)
             PartBounds(i, out var mn, out var mx);
             var size = mx - mn;
             for (var axis = 0; axis < 3; axis++)
@@ -875,7 +1035,9 @@ public sealed partial class Construct
             for (int s = SegPointSeg[k], guard = 0; s > 0 && s <= JointCount && guard <= MaxJoints; guard++)
             {
                 ref var j = ref Joints[s - 1];
-                if (j.Slides)
+                if (j.Freeform)
+                    from = j.FixPos + Vector3.Transform(from, j.FixRot); // (into its parent's frame: a weld adds no reach)
+                else if (j.Slides)
                     d += MathF.Max(MathF.Abs(j.Min), MathF.Abs(j.Max));
                 else
                 {

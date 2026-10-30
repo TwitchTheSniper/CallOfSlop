@@ -42,6 +42,8 @@ public enum CActKind : byte
     WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 95; board item wl01)
     WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 95)
     Bench, // u8 kind (0 put, 3 take apart, 6 open, 7 spawn a standard build), u8 slot, u16 length, the build's text: the Gun Workbench (protocol 96; GameSandboxBench.cs)
+    FreeformWeld, // u16 body, u8 part, u16 second body, u8 its part: the welder welds the two where they are (protocol 97; board item fw01)
+    FreeformCut, // u16 body, u8 part, u8 weld (its joint): the welder cuts a freeform weld's seam free (protocol 97)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -424,6 +426,19 @@ public sealed partial class Game
                 var part = r.U8();
                 return hands.BeginRemove(Constructs, p.Id, eye, body, part, now);
             }
+            case CActKind.FreeformWeld:
+            {
+                var body = r.U16();
+                var part = r.U8();
+                var body2 = r.U16();
+                return hands.BeginFreeform(Constructs, p.Id, eye, body, part, body2, r.U8(), now);
+            }
+            case CActKind.FreeformCut:
+            {
+                var body = r.U16();
+                var part = r.U8();
+                return hands.FreeformCut(Constructs, p.Id, eye, body, part, r.U8());
+            }
             case CActKind.Cancel:
                 hands.Cancel(p.Id);
                 return null;
@@ -570,6 +585,12 @@ public sealed partial class Game
                 break;
             case CActKind.Wire:
                 w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
+                break;
+            case CActKind.FreeformWeld:
+                w.U16(body).U8(part).U16(body2).U8(socket); // (socket: the second body's part)
+                break;
+            case CActKind.FreeformCut:
+                w.U16(body).U8(part).U8(socket); // (socket: the weld)
                 break;
             case CActKind.SeatKeys:
             case CActKind.Blueprint:
@@ -1078,7 +1099,7 @@ public sealed partial class Game
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);
             if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
-                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : "Fitting")}... {pct}%";
+                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit == EditKind.Weld ? "Welding" : "Fitting")}... {pct}%";
             lines.Add(new HudLine(_sbEdit.Text, green));
         }
         else if (SandboxLookText.Length > 0)
