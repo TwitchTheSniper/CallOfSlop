@@ -10,7 +10,10 @@ pistons and steering pivots; logic parts wired with a linking tool; transmission
 passengers, riding on moving decks and run-over damage; and the yard's lift, turret, motorised gate and wired buggy to
 test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain). **Milestone 3**
 (in parts) adds [salvage and the inventory](#salvage-and-the-inventory-milestone-3): taking what survives off wrecks, scrap
-from what was destroyed, building from counted parts, and wrecks cleared away when left alone.
+from what was destroyed, building from counted parts, and wrecks cleared away when left alone; and
+[construct weapons](#construct-weapons-milestone-3): guns put together on a construct from the weapon builder's parts or
+as heavy guns, fixed or on turrets, fired by a gunner or by logic (sentries), fed from ammo boxes that cook off, with the
+weapon builder's penetrating, explosive and incendiary rounds.
 
 ## Playing it
 
@@ -278,7 +281,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | Field | Meaning |
 | --- | --- |
 | `name` | Unique, 1-32 ASCII characters. Blueprints, maps and the rack name parts by it. |
-| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`. |
+| `role` | `frame`, `panel`, `seat`, `wheel`, `suspension`, `engine`, `fueltank`, `fuelline`, `hinge`, `door`, `foundation`; milestone 2: `joint`, `transmission`, `differential`, `logic`; milestone 3: `gun`, `gunpart`, `ammobox`, `feedchute` ([Construct weapons](#construct-weapons-milestone-3)). |
 | `tool` | `wrench` (bolted) or `welder` (welded). The linking tool never fits parts. |
 | `attachSeconds` | Time to fit (default 1.5 wrench, 2.5 welder); removing takes 60% of it. |
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
@@ -299,7 +302,8 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
 Differential; Button, Lever, Switch, Pressure Plate, Input Reader, Speed Sensor, Proximity Sensor, AND Gate, OR Gate, NOT
-Gate, Timer, Delay, Toggle, Compare, Scale, Lamp, Horn and Brake.
+Gate, Timer, Delay, Toggle, Compare, Scale, Lamp, Horn and Brake. Milestone 3's weapons add 25 (in `Constructs/Parts/Weapons`:
+three receivers, thirteen gun parts, five heavy guns, two ammo boxes and the feed chute) and the Wood Panel.
 
 ### Blueprints: `Constructs/Blueprints/*.json`
 
@@ -318,7 +322,9 @@ same rules a player builds by, so a blueprint that loads proves the rules can bu
 A step may carry `"setting": n` (a logic part's starting setting), and a blueprint may list `"wires": [[from step, to
 step], ...]`, each checked by the linking tool's rules. Shipped: **Buggy** (23 parts: rear-wheel drive through a
 transmission and a differential, front wheels on steering pivots), **Wired Buggy** (30 parts, 6 wires), **Gate** (6
-parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Turret** (6 parts, 1 wire).
+parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Turret** (6 parts, 1 wire); milestone 3:
+**Gunner Turret** (9 parts, 1 wire), **Hood Gun Buggy** (26 parts, 2 wires), **Sentry** (7 parts, 1 wire), **Gun Bench**
+(9 parts, 1 wire), **Target Wall** (8 parts) and **Ammo Dump** (3 parts).
 
 ### The map's `"sandbox"` section
 
@@ -339,7 +345,7 @@ refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 81)
+## Network (protocol 82)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
@@ -349,6 +355,11 @@ The Sandbox mode is offered only on maps with this section.
   flag; `CBodyKind.Inventory` sends one player their own inventory, whole, when it changes and when they join (a flags
   byte (infinite parts), the scrap, then each part kind held as id and count, then each material held; about 8 bytes plus
   3 a kind). Nobody else's inventory is ever sent.
+- Protocol 82 (construct weapons): `CBody` ends with the parts holding rounds or on fire (part, rounds, a burning /
+  reloading flag: 4 bytes each); `CBodyKind.Ammo` batches the changes (a box's rounds, a gun's load, a part catching fire
+  or going out: 6 bytes each); `Msg.CFire` (reliable, only on ticks a gun fires) carries what the guns did that tick: each
+  round (construct id, gun part, where it ended, what it met: 17 bytes) and each blast or cook-off (where, how big: 14
+  bytes). Clients draw the tracers from their own copy of the gun's muzzle.
 - `Msg.CPose` (unreliable sequenced, 20 Hz): the bodies that move (32 bytes plus 4 per joint, the angle and speed, plus
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
@@ -442,6 +453,119 @@ wrecked (there is no repair yet, so it stays salvageable); after a fit the next 
 automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
 scrap rates by material.
 
+## Construct weapons (milestone 3)
+
+Decision 10: construct weapon parts like the Zombies weapon builder's, but assembled in the world into fixed or turreted
+guns on vehicles and bases. Board item dev-sandbox-m3, part 1 of 4 (the developer approved it 2026-10-29). Everything is
+a part fitted with the **wrench** like any other (no workbench, decision 2), and every part's weight counts.
+
+### The parts (`Constructs/Parts/Weapons`)
+
+- **Guns on a weapon builder receiver** (`"gun": { "receiver": ..., "action": ... }`): **Rifle Receiver** (the
+  Workhorse, full auto), **Heavy Receiver** (the Thumper chain gun, heavy calibre) and **Shell Receiver** (the Street
+  Sweeper). Each is a 20-26 cm block with six sockets: **front** (a barrel or a splitter), **left** (a feed), **right**
+  (ammo), **top** (an optic), **bottom** (its mount) and **back**. The gun parts bolted to it are put together as the
+  weapon builder would (a `BuildNode` tree: its action, the feed, the ammo, the barrel or splitter with its barrels, a
+  muzzle device on each barrel's front) and checked by the weapon builder's own socket rules (`BuildRules.SocketWhy`: a
+  shell feed on a rifle receiver is refused with the workbench's reason); its numbers come from the weapon builder's
+  stat pipeline (`BuildStats.ReceiverStats`: damage, fire rate, magazine, reload, spread, range, pellets, its flags).
+- **Gun parts** (`"gunPart": { "part": ... }`, a weapon builder part by name): **Gun Barrel** (Standard Barrel), **Long
+  Gun Barrel**, **Twin Splitter** (Y-Splitter: two front sockets for two barrels), **Box Magazine** (30, rifle), **Belt
+  Feed** (150, rifle or heavy), **Shell Feed**, **FMJ / AP / HE / Incendiary Rounds** (FMJ, Armour Piercing, Explosive
+  Tip, Dragon's Breath), **Gun Muzzle Brake**, **Gun Suppressor** and **Gun Scope** (4x Scope: a gun with an optic has
+  60% of its spread). A receiver with no ammo part fires FMJ.
+- **Heavy construct guns** (their own numbers in the `"gun"` block; original designs): **Mounted MG** (24 damage, 600
+  rpm, 100 a belt), **Autocannon** (explosive 30 mm shells, 150 rpm, a 1.8 m splash), **Cannon** (one 260-damage
+  explosive shell, a 3.5 m splash, 3.5 s reload, a big kick back), **Rocket Pod** (six rockets, a slow smoke streak and
+  a 3 m blast each) and **Flamethrower** (a 9 m gout of incendiary fire). Each mounts by its **bottom** socket, has
+  sockets for a box on its back, left, right and top, and takes an ammo gun part bolted to it (the weapon builder's
+  universal ammo: AP rounds make the MG penetrating, HE explosive).
+- **Ammo Box** (300 rounds) and **Ammo Crate** (1,200), and the **Feed Chute** (a 0.5 m pipe, like a fuel line).
+- **Wood Panel**: a cheap 1 m plank panel that burns (for targets; material `wood`).
+
+| `gun` key | Meaning |
+| --- | --- |
+| `receiver`, `action` | A weapon builder receiver (its numbers come from the parts bolted to it) and its action (default: the receiver's stock action). Not with the numbers below. |
+| `damage`, `rpm`, `spread`, `range`, `mag`, `reload`, `pellets` | A heavy gun's numbers (`spread` in degrees, the whole cone; `range` the full-damage range in metres). |
+| `flags` | `penetrating`, `explosive`, `incendiary`. |
+| `blast`, `blastDamage` | An explosive round's splash: radius (m) and damage at the centre (default: its damage). |
+| `maxRange` | How far its rounds reach at all (default 300 m; the flamethrower's 9). |
+| `muzzle` | Where its rounds come out (part frame; -Z is forward). |
+| `kick` | The push back on a free construct a shot (N s). |
+| `fx`, `soundOf` | `bullet`, `cannon`, `rocket` or `flame` (how its tracer and flash look); the weapon file whose report it uses. |
+
+An ammo box's block: `"ammoBox": { "rounds": 300, "cookOff": { "radius": 3.5, "damage": 260 } }`. A gun part's:
+`"gunPart": { "part": "Long Barrel" }` (barrels, splitters, feeds, ammo, muzzle devices and optics only).
+
+### How a gun works
+
+- **Its feed.** A gun is fed by the ammo boxes **bolted to it, or to any of its gun parts** (a receiver's magazine), or
+  at the end of a chain of **feed chutes** (up to four boxes, the nearest first). It loads a magazine's (or a belt's)
+  worth from them, taking the reload time, as soon as it is empty and a box has rounds, then fires those; a gun with no
+  box fires what it has loaded and then nothing. The HUD and the look line say "no ammo box on its feed", "reloading",
+  "out of ammo" or "24/30, 270 in the boxes".
+- **Its trigger.** A gun is a logic **input** (it takes up to 4 wires): with anything wired into it, it fires while the
+  wires add up to 0.5 or more (a switch, a button, an input reader on a driver's fire key, a proximity sensor, a timer).
+  With nothing wired in, the **gunner** fires it: the sitter of a **gunner's seat** (a seat on a moving joint's segment)
+  on the gun's segment or one up its chain, with their fire key. Every shot fires each barrel's pellets at once, at the
+  gun's rate; semi-automatic and burst actions fire at their rate while held (no trigger discipline on a mount).
+- **Its aim.** A **fixed** gun (on the body) points where its construct points. A gun on a **turntable** (and on a **motor
+  hinge** for elevation) is pointed by its gunner's **look**: every turntable and motor hinge up the gun's chain turns,
+  each about its own axis, until the gun points at what the gunner looks at (a ray from the gunner's eye along their
+  look: the map, another construct or a player, else the gun's reach), so the rounds go where the crosshair is however
+  far the gun sits from the eye. A hinge lying across the gun only tips it up and down (it never swings over the top to
+  point behind; the turntable does the bearing). A seated gunner overrides the wires on those joints (the Gunner Turret's
+  lever turns it when nobody sits there). The gunner's own view no longer turns with a seat that the gunner points:
+  they look where they look and the turret follows.
+- **A sentry.** A gun with a **proximity sensor** wired into it points its turntables and motor hinges (unwired ones)
+  at the nearest player in the sensor's range and holds fire until it points within 8 degrees of them (it aims at the
+  chest). The sensor's output is the trigger, so it fires only while someone is in range.
+- **Rounds** are resolved at once (hitscan; a cannon shell or a rocket is drawn travelling at its `speed` but lands at
+  once): the nearest of the map, a construct part (never its own construct's) and a player, bot or zombie. A part takes
+  the round's damage less its armour. **Penetrating** rounds go on through the part (75% of their damage left, less 1.5
+  times its armour; up to 3 parts), so an AP round through a plank panel hits the block behind it. **Explosive** rounds
+  splash where they stop (every construct part in range, falling off with distance, and players at half that, walls
+  shielding). **Incendiary** rounds set **flammable** parts alight (wood, rubber, fuel tanks, ammo boxes): a burning part
+  burns for 12 s, losing a tenth of its health (plus 2) a second whatever its armour, and half-way sets flammable parts
+  bolted to it alight. Players hit by incendiary rounds burn as from the weapon builder's guns.
+- **Cook-off.** An ammo box holed to zero health (shot, blasted or burnt) blows up 0.35 s later, by how full it was
+  (radius and damage from its file, half to all of it): a blast that can set off the box next to it. A **fuel tank** that
+  gives way while burning goes up too (by the fuel in it).
+- **Who gets the kill**: the gunner, else the player the construct belongs to (a sentry's kills are its owner's), else
+  nobody (the victim's own, like being run over by a driverless car).
+- **Weight**: guns, boxes and gun parts weigh what their files say, like any part (the Hood Gun Buggy is 46 kg
+  heavier than the Buggy), and a free construct is pushed back by each shot's `kick`.
+
+### The yard
+
+Construct Yard gains a **Gunner Turret** (a turntable, a gunner's seat on the arm, a Mounted MG on a motor hinge at the
+front and an ammo box: sit in it, look, fire) facing a **Target Wall** (a steel panel on a post, a fuel tank and an ammo
+box behind, a wood panel on the side); a **Hood Gun Buggy** (the buggy with a Mounted MG on its hood, fired by the driver's
+fire key through an input reader); a **Sentry** (a Mounted MG on a turntable with a 6 m proximity sensor wired into it,
+south-east, away from the spawns); a **Gun Bench** (a weapon builder gun from parts: a rifle receiver, barrel, muzzle
+brake, box magazine fed by an ammo box, AP rounds and a scope, fired by a switch on its base) pointing at an **Ammo Dump**
+(two crates: shoot one, and it sets off the other). Each is a blueprint in the parts menu too. The rack hands out every
+weapon part. `--weapon-shots` writes pictures (`smoke_weapons_*.bmp`): the yard's guns, the gunner turret firing at the
+target wall (two views), the hood gun, the sentry turned onto a player, the gun bench, the five heavy guns firing, a
+cook-off, the flamethrower's fire and a burning wood panel. It runs under xvfb like `--light-shots`.
+
+### Decisions made for construct weapons (the developer may change them)
+
+1. **Feed by touch, not wires**: ammo boxes feed a gun when bolted to it or its gun parts, or through feed chutes, like
+   fuel through fuel lines (wires stay for signals).
+2. **A receiver gun is its parts on the construct**: barrel, splitter, feed, ammo, muzzle device and optic are each a
+   construct part naming a weapon builder part (13 of them, a starting set; more are a file each). The action comes with
+   the receiver part (its stock action, or one named in its file), not as a part of its own. Grips, stocks, upgrades and
+   utility parts don't apply to a mounted gun.
+3. **Rounds are hitscan** with travelling tracers (a cannon shell or rocket lands at once; players can't dodge it yet).
+4. **Gunners aim at what they look at** (convergence), and a seated gunner overrides the wires on the joints they point.
+5. **A sentry is a gun with a proximity sensor wired into it**; it targets any living player in range (no factions yet:
+   its owner too) and only players (bots are players; zombies only when it is a gunner's gun or a credited sentry).
+6. **Optics**: a gun with an optic has 60% of its spread (no zoomed gunner view yet). **Semi and burst actions** fire
+   at their rate while the trigger is held.
+7. Players take **half** a blast's construct damage (a cannon would otherwise one-shot from across the yard).
+8. **The Gunner Turret lost its shield panel**: the motor hinge and the gun sit on the arm's front instead.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
@@ -452,6 +576,24 @@ nothing. Other modes never touch any of it (every hook returns at once outside S
 unchanged).
 
 ## Self-tests
+
+The **Construct weapons** section (`Source/App/SelfTestConstructWeapons.cs`, milestone 3): the weapon part files load
+(eight guns, the five heavy ones among them, the gun parts, the boxes) and ten kinds of bad file are refused for the
+right reason; a rifle gun built part by part with the tools (the welder refused on a gun part; its problem goes from "no
+barrel" to "no feed" to none as the barrel and magazine go on; 600 rpm, a 30-round magazine, AP penetrating, the scope
+tightening it; the parts weigh what their files say; a switch wired in by the linking tool fires 10 shots a second from a
+magazine loaded out of the box); the Hood Gun Buggy's gun points with the buggy as it turns and its driver's fire key
+fires it (and stops when let go); the Gunner Turret follows its gunner's look three ways round and its fire key fires it,
+the lever turning it again when the seat is empty; the Sentry draws no fire (and doesn't turn) for a player beyond its
+sensor's range, turns onto and fires at one in range, and stops when they go; an ammo box feeds its gun through a feed
+chute, 25 rounds fire exactly 25 shots, and a shot-off chute leaves the gun with no box; a gun's rounds hole an ammo box
+which cooks off a beat later and hurts a block a metre away; ball rounds stop at a wood panel, AP rounds go through it into
+the block behind (and only that), HE rounds splash a block off the line, incendiary rounds set the wood alight but not the
+steel and it burns down on its own; in an offline game the local player in the yard's Gunner Turret turns it with their
+look (their view held) and shoots a player 9 m out (credited), and the yard's sentry shoots a player who walks up but not
+one beyond its range; no allocation in 120 ticks of a sentry and a gunner's turret firing (aiming, loading, the fire and
+ammo messages written); and a real host and client: the client draws every round the server's gun bench fires from its
+own copy of the gun, its ammo matches, and a late joiner gets the rounds.
 
 The **Construct joints** section (`Source/App/SelfTestConstructJoints.cs`): a flap on a passive hinge with its axis flat,
 latched open and flung down at 6 rad/s onto the yard's terrain, stops on it (no part of it below the ground at any tick),
@@ -691,8 +833,8 @@ input end). Wiring is instant (fitting a part is what takes time).
 ## Next: milestone 3 and later
 
 - **Salvage** (done, above). Still to come with it: the 3D inventory window, materials, repair, saving inventories.
-- **Construct weapons** (decision 10), mounted fixed or on turntables (the Turret is waiting for one), fired by input
-  readers, sharing the weapon builder's ammo flags.
+- **Construct weapons** (done, above). Still to come with them: artillery (and craters, decision 16), guided or
+  flying rockets, a zoomed gunner view through an optic, enemies manning guns.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
 - Joints between separate constructs (trailers, a wall button wiring a gate), wires between constructs, joint reactions
   rocking the body, motors that drain fuel or a battery (decision: electrical systems).
