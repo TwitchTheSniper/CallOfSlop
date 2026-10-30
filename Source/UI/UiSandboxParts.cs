@@ -451,6 +451,13 @@ public sealed partial class Ui
                     settings.Save();
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Shows the held part's connection points and every socket it fits, magnet-snaps wheels, doors and gun parts to their sockets, and in creative fits at once and keeps the part in your hands (hold fire and sweep to paint a row, Ctrl+Z undoes, a tap of the middle button picks the part you look at, hold L for the last 8 parts, K switches which point mates)."u8);
+                if (settings.SnapBuild)
+                {
+                    if (ImGui.Checkbox("Hold to paint"u8, ref settings.HoldToPaint))
+                        settings.Save();
+                    if (ImGui.IsItemHovered())
+                        ImGui.SetTooltip("Creative: hold fire for a moment, then sweep across free sockets to place the part on each. Off: one part per click."u8);
+                }
                 // Free placement (a part set down on a surface as a new construct): the world grid, and creative's anchor.
                 ImGui.Checkbox("Snap new constructs to the grid"u8, ref game.SandboxPlaceGrid);
                 if (game.SandboxInfiniteParts)

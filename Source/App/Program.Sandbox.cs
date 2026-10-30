@@ -385,7 +385,8 @@ public static unsafe partial class Program
                         gh = shown with { Variant = v };
                     SandboxSnapShown(g, c, held, in gh, now);
                     var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
-                    if ((Pressed(GameAction.Fire) && !_swallowClick) || SandboxSnapPaint(g, in h, c, in gh))
+                    var pressed = Pressed(GameAction.Fire) && !_swallowClick;
+                    if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
                     {
                         g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)v);
                         _sbFiring = !quick; // (quick building fits at once: nothing to hold, so nothing to cancel)
