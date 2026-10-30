@@ -297,8 +297,8 @@ public sealed partial class Ui
             ImGui.Dummy(new float2(icon, icon));
             ImGui.SameLine();
             ImGui.BeginGroup();
-            ImGui.TextColored(CfAccentF, _cfTitle);
-            ImGui.TextColored(Dim, _cfWho);
+            ImGuiSafe.TextColored(CfAccentF, _cfTitle);
+            ImGuiSafe.TextColored(Dim, _cfWho);
             var hp = Math.Clamp(part.Health / MathF.Max(1, d.Health), 0, 1);
             ImGui.ProgressBar(hp, new float2(-1, ImGui.GetTextLineHeight()), _cfHealth);
             ImGui.EndGroup();
