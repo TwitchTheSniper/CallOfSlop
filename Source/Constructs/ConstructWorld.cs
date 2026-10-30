@@ -43,6 +43,85 @@ public sealed partial class ConstructWorld
     public Vector3 LastHitVel;
     public Construct? LastHitBody;
 
+    // ---- Weapons (milestone 3; ConstructWeapons.cs) ----------------------------------------------------------------
+
+    /// <summary>Who the guns can hit besides parts and the map (the game sets it on the server; null: parts and the map only).</summary>
+    public IConstructTargets? Targets;
+
+    /// <summary>What the guns did this tick (shots, blasts, cook-offs): the server sends them, the host draws them. Cleared at the start of each step.</summary>
+    public readonly CFireEvent[] Fires = new CFireEvent[256];
+    public int FireCount;
+    public int ShotsFired; // shots in all (the self-test)
+    public ushort LastShotBody; // the last round's gun's construct and where it ended (the self-test)
+    public Vector3 LastShotEnd;
+
+    /// <summary>Ammo and fire changes the network must carry (a box's rounds, a gun's load, a part catching fire or going out).</summary>
+    public readonly List<(ushort Body, byte Part)> AmmoDirty = new(256);
+
+    /// <summary>Blasts waiting to go off (ammo boxes cooking off).</summary>
+    public readonly CCookOff[] CookOffs = new CCookOff[32];
+    public int CookOffCount;
+
+    public void AddFire(in CFireEvent e)
+    {
+        if (e.Kind == CFireKind.Shot)
+        {
+            LastShotBody = e.Body;
+            LastShotEnd = e.At;
+        }
+        if (FireCount < Fires.Length)
+            Fires[FireCount++] = e;
+    }
+
+    public void NoteAmmo(Construct c, int part)
+    {
+        var key = (c.Id, (byte)part);
+        var n = AmmoDirty.Count;
+        if (n > 0 && AmmoDirty[n - 1] == key)
+            return;
+        if (n < 1024)
+            AmmoDirty.Add(key);
+    }
+
+    /// <summary>Sets a flammable part alight (incendiary rounds, a neighbour burning): it burns for <see cref="ConstructWeapons.BurnSeconds"/>.</summary>
+    public bool Ignite(Construct c, int part)
+    {
+        if (part < 0 || part >= c.PartCount || !c.Parts[part].D.Flammable)
+            return false;
+        ref var p = ref c.Parts[part];
+        if (p.Burn == 0)
+            c.Burning++;
+        p.Burn = (ushort)(ConstructWeapons.BurnSeconds * World.TickRate);
+        NoteAmmo(c, part);
+        return true;
+    }
+
+    private void CookOff(Construct c, int part, Vector3 at)
+    {
+        ref var p = ref c.Parts[part];
+        var d = p.D;
+        float radius, damage;
+        if (d.Role == PartRole.AmmoBox && p.Rounds > 0 && d.CookRadius > 0)
+        {
+            var fill = Math.Clamp(p.Rounds / (float)Math.Max(1, d.BoxRounds), 0, 1);
+            radius = d.CookRadius * (0.5f + 0.5f * fill);
+            damage = d.CookDamage * (0.4f + 0.6f * fill);
+            p.Rounds = 0;
+        }
+        else if (d.Role == PartRole.FuelTank && p.Burn > 0 && c.Fuel > 0.5f)
+        {
+            // A burning tank that gives way goes up with the fuel in it.
+            var share = Math.Clamp(c.Fuel / MathF.Max(1, c.FuelCapacity()), 0, 1);
+            radius = 3f + 1.5f * share;
+            damage = 120f + 260f * share;
+        }
+        else
+            return;
+        if (CookOffCount < CookOffs.Length)
+            CookOffs[CookOffCount++] = new CCookOff { At = at, Radius = radius, Damage = damage, Ticks = (int)(ConstructWeapons.CookOffDelay * World.TickRate), Body = c.Id };
+        Events.Add($"construct {c.Id}: the {d.Name} cooks off");
+    }
+
     /// <summary>A line per notable event (a part broke, a piece fell off): the game shows some, the self-test reads them.</summary>
     public readonly List<string> Events = new(32);
 
@@ -90,6 +169,9 @@ public sealed partial class ConstructWorld
         StructureDirty.Clear();
         HealthDirty.Clear();
         ClearLinks();
+        AmmoDirty.Clear();
+        FireCount = 0;
+        CookOffCount = 0;
     }
 
     /// <summary>A new empty body at a pose (null when the caps are reached). Add parts, then it rebuilds on the next tick.</summary>
@@ -126,7 +208,7 @@ public sealed partial class ConstructWorld
         if (c.PartCount >= Construct.MaxParts || TotalParts >= MaxTotalParts)
             return -1;
         var i = c.PartCount++;
-        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag() };
+        c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
         c.Dirty = true;
         c.Wake();
         StructureDirty.Add(c.Id);
@@ -409,14 +491,14 @@ public sealed partial class ConstructWorld
     /// Damage to one part: its armour takes a flat amount off first. At zero health it breaks off (and anything cut off
     /// from the root falls away as a wreck) or, for engines, tanks and seats, stops working. Returns true if it broke.
     /// </summary>
-    public bool DamagePart(Construct c, int part, float damage, out float dealt)
+    public bool DamagePart(Construct c, int part, float damage, out float dealt, bool raw = false)
     {
         dealt = 0;
         if (part < 0 || part >= c.PartCount)
             return false;
         ref var p = ref c.Parts[part];
         var d = p.D;
-        dealt = MathF.Max(0, damage - d.Armour);
+        dealt = raw ? MathF.Max(0, damage) : MathF.Max(0, damage - d.Armour); // (raw: burning, which armour doesn't stop)
         if (dealt <= 0 || p.Broken)
             return false;
         p.Health -= dealt;
@@ -428,6 +510,8 @@ public sealed partial class ConstructWorld
         }
         p.Health = 0;
         c.Damaged = true; // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
+        if (d.Role is PartRole.AmmoBox or PartRole.FuelTank)
+            CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
         if (d.OnBreak == PartBreak.Disable)
         {
             p.Broken = true;
@@ -821,6 +905,7 @@ public sealed partial class ConstructWorld
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         foreach (var c in Bodies)
             ConstructPower.Step(this, c, dt);
+        ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);

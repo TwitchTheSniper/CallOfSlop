@@ -139,11 +139,12 @@ public static unsafe partial class Program
         _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
         _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
         _powerShots = args.Any(a => a.Equals("--power-shots", StringComparison.OrdinalIgnoreCase)); // (Program.PowerShots.cs)
+        _weaponShots = args.Any(a => a.Equals("--weapon-shots", StringComparison.OrdinalIgnoreCase)); // (Program.WeaponShots.cs)
         _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
         _inventoryShots = args.Any(a => a.Equals("--inventory-shots", StringComparison.OrdinalIgnoreCase)); // (Program.InventoryShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _inventoryShots | _powerShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots | _inventoryShots | _powerShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -231,6 +232,8 @@ public static unsafe partial class Program
                 RunPowerShots(); // --power-shots: couplings, wires between constructs and power on Construct Yard, then quit (Program.PowerShots.cs)
             else if (_jointShots)
                 RunJointShots(); // --joint-shots: parts beyond construct joints colliding on Construct Yard, then quit (Program.JointShots.cs)
+            else if (_weaponShots)
+                RunWeaponShots(); // --weapon-shots: the Sandbox construct weapons firing on Construct Yard, then quit (Program.WeaponShots.cs)
             else if (_inventoryShots)
                 RunInventoryShots(); // --inventory-shots: the Sandbox inventory's tabs, categories and tile atlas, then quit (Program.InventoryShots.cs)
             else if (_toolShots)

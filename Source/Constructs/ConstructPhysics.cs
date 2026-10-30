@@ -1050,6 +1050,14 @@ public static class ConstructPhysics
     {
         if (!ConstructPower.On(c, jt.Hinge))
             return 0; // (milestone 3: an electrical construct's motor with no power)
+        if (jt.Aimed)
+        {
+            // A gunner (or a sentry) points it (milestone 3, ConstructWeapons.cs): towards the error its gun is off by.
+            if (jt.Type == JointType.Turntable)
+                return Math.Clamp(jt.AimErr * 6f, -jt.Speed, jt.Speed);
+            var aim = Math.Clamp(jt.Angle + jt.AimErr, jt.Min, jt.Max);
+            return Math.Clamp((aim - jt.Angle) * 10f, -jt.Speed, jt.Speed);
+        }
         if (jt.Type == JointType.Turntable)
             return Math.Clamp(jt.Wired ? jt.Input : 0, -1, 1) * jt.Speed;
         float target;

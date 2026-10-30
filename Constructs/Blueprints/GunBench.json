@@ -1,0 +1,64 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Gun Bench",
+  "description": "A weapon builder gun on a bench: a rifle receiver with a barrel and muzzle brake, a box magazine fed by an ammo box, AP rounds and a scope, fired by a switch on the base.",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Rifle Receiver",
+      "on": 0,
+      "socket": "top11",
+      "by": "bottom"
+    },
+    {
+      "part": "Gun Barrel",
+      "on": 1,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Gun Muzzle Brake",
+      "on": 2,
+      "socket": "front",
+      "by": "back"
+    },
+    {
+      "part": "Box Magazine",
+      "on": 1,
+      "socket": "left",
+      "by": "right"
+    },
+    {
+      "part": "Ammo Box",
+      "on": 4,
+      "socket": "left",
+      "by": "right"
+    },
+    {
+      "part": "AP Rounds",
+      "on": 1,
+      "socket": "right",
+      "by": "left"
+    },
+    {
+      "part": "Gun Scope",
+      "on": 1,
+      "socket": "top",
+      "by": "bottom"
+    },
+    {
+      "part": "Switch",
+      "on": 0,
+      "socket": "top33",
+      "by": "-y"
+    }
+  ],
+  "wires": [
+    [
+      8,
+      1
+    ]
+  ]
+}

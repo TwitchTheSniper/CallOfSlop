@@ -1,0 +1,22 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Ammo Dump",
+  "description": "Two ammo crates on a pad: shoot one and watch it cook off (and set off the other).",
+  "steps": [
+    {
+      "part": "Foundation"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 0,
+      "socket": "top11",
+      "by": "bottom"
+    },
+    {
+      "part": "Ammo Crate",
+      "on": 0,
+      "socket": "top22",
+      "by": "bottom"
+    }
+  ]
+}

@@ -92,6 +92,7 @@ public enum Msg : byte
     CBody, // server -> all (on a change) and each joiner: Sandbox: one construct's parts, links, joints and pose, a part's health, or a construct gone (a CBodyKind first) (reliable ordered; ConstructNet.cs, protocol 77; wires, logic settings and signals: 78)
     CPose, // server -> all: Sandbox: the moving constructs' poses (tick, then id, position, turn, velocity, steering, joint angles and speeds, signals each) (unreliable sequenced, 20 Hz; protocol 77, 78)
     CAct, // client -> server: Sandbox: an action (a CActKind first): hold a tool, attach or remove a part, cancel, use (sit, stand, a door, pick up), take from the rack (or a part by id from the debug parts menu), drop; wire, unwire, a setting, a seat's keys, a blueprint from the parts menu (reliable ordered; GameSandbox.cs, protocol 77, 78, 79)
+    CFire, // server -> all: Sandbox: what the construct guns did this tick: shots (body, gun part, end, what it met), blasts and cook-offs (where, how big) (reliable ordered; ConstructNet.cs, protocol 82)
 }
 
 /// <summary>Tiny little-endian packet writer.</summary>

@@ -1,0 +1,109 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Long Gun Barrel",
+  "description": "A long barrel: further full-damage range, a little tighter.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 6,
+  "health": 110,
+  "armour": 3,
+  "material": "steel",
+  "color": "#2a2c30",
+  "boxes": [
+    {
+      "size": [
+        0.08,
+        0.08,
+        0.8
+      ]
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.06
+      ],
+      "at": [
+        0,
+        0,
+        0.35
+      ],
+      "color": "#4a4d52",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.04
+      ],
+      "at": [
+        0,
+        0,
+        -0.1
+      ],
+      "color": "#4a4d52",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.04,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.04,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.04,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.04,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.4
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.4
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Long Barrel"
+  }
+}

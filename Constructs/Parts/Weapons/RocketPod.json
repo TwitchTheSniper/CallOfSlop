@@ -1,0 +1,188 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Rocket Pod",
+  "description": "Six unguided rockets in a pod: each a slow streak and a blast. Reloads from an ammo box.",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 60,
+  "health": 260,
+  "armour": 5,
+  "material": "steel",
+  "color": "#52583e",
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.36,
+        0.7
+      ]
+    },
+    {
+      "size": [
+        0.2,
+        0.2,
+        0.15
+      ],
+      "at": [
+        0,
+        0,
+        -0.425
+      ],
+      "color": "#3a3d40"
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        -0.15,
+        -0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        -0.15,
+        0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        0,
+        -0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        0,
+        0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        0.15,
+        -0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.02
+      ],
+      "at": [
+        0.15,
+        0.08,
+        -0.351
+      ],
+      "color": "#141414",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.18,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.18,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.25,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.25,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0.35
+      ],
+      "dir": "+z"
+    }
+  ],
+  "gun": {
+    "damage": 120,
+    "rpm": 180,
+    "spread": 2.5,
+    "range": 200,
+    "mag": 6,
+    "reload": 6.0,
+    "flags": [
+      "explosive"
+    ],
+    "blast": 3.0,
+    "blastDamage": 220,
+    "kick": 30,
+    "fx": "rocket",
+    "speed": 45,
+    "soundOf": "Mule RPG",
+    "muzzle": [
+      0,
+      0,
+      -0.5
+    ]
+  }
+}

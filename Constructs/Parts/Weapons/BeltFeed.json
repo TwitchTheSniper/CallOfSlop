@@ -1,0 +1,95 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Belt Feed",
+  "description": "A belt box (rifle or heavy calibre): 150 rounds a load, a slow reload.",
+  "role": "gunpart",
+  "tool": "wrench",
+  "attachSeconds": 1.2,
+  "mass": 6,
+  "health": 90,
+  "armour": 3,
+  "material": "steel",
+  "color": "#3b4232",
+  "boxes": [
+    {
+      "size": [
+        0.16,
+        0.2,
+        0.22
+      ]
+    },
+    {
+      "size": [
+        0.04,
+        0.06,
+        0.18
+      ],
+      "at": [
+        -0.09,
+        0.04,
+        0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.08,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.11
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.11
+      ],
+      "dir": "-z"
+    }
+  ],
+  "gunPart": {
+    "part": "Belt Box"
+  }
+}

@@ -10,12 +10,13 @@ public enum CBodyKind : byte
     Health, // part health changes: (id, part, health) each
     Clear, // every construct removed (a new match)
     Inventory, // server -> one client: that player's own inventory (protocol 81; SandboxInventory)
-    Links, // protocol 82: every coupling and wire between constructs (the whole list, when it changes)
+    Ammo, // protocol 82: rounds and fire changes: (id, part, rounds, burning) each
+    Links, // protocol 83: every coupling and wire between constructs (the whole list, when it changes)
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 82: the charge, power and gear in the structure and the poses, and the links
-/// between constructs; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
+/// The constructs on the wire (protocol 83: the charge, power and gear in the structure and the poses, and the links
+/// between constructs; protocol 82: guns, ammo boxes and burning parts, Msg.CFire; protocol 81: owners, salvage, the inventory; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
 /// refreshed each time so a lost packet never leaves a body wrong for long. Positions of parts travel on their 1 cm grid
@@ -25,7 +26,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 82: charge, power flags, gear, fuel)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 83: charge, power flags, gear, fuel)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -56,7 +57,7 @@ public static class ConstructNet
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
         w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0))).U8(c.Owner);
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 82: the charge, power and gear)
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 83: the charge, power and gear)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U8((byte)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -82,6 +83,84 @@ public static class ConstructNet
         w.U8((byte)c.WireCount);
         for (var k = 0; k < c.WireCount; k++)
             w.U8(c.Wires[k].From).U8(c.Wires[k].To);
+        // Protocol 82: the parts with rounds in them or on fire (ammo boxes, guns).
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Rounds > 0 || c.Parts[i].Burn > 0 || c.Parts[i].Reload > 0)
+            {
+                w.U8((byte)i).U16(c.Parts[i].Rounds).U8(AmmoFlags(c.Parts[i]));
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+    }
+
+    private static byte AmmoFlags(in CPart p) => (byte)((p.Burn > 0 ? 1 : 0) | (p.Reload > 0 ? 2 : 0));
+
+    private static void ReadAmmo(ref CPart p, ushort rounds, byte flags)
+    {
+        p.Rounds = rounds;
+        p.Burn = (ushort)((flags & 1) != 0 ? Math.Max((int)p.Burn, 1) : 0); // (a client only knows it burns)
+        p.Reload = (ushort)((flags & 2) != 0 ? 1 : 0);
+    }
+
+    /// <summary>A batch of ammo and fire changes (the caller keeps it under the MTU: at most ~200 entries).</summary>
+    public static int WriteAmmo(PacketWriter w, ConstructWorld world, List<(ushort Body, byte Part)> changes, int from)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Ammo);
+        var countAt = w.Length;
+        w.U8(0);
+        var n = 0;
+        var i = from;
+        for (; i < changes.Count && n < 200; i++)
+        {
+            var (id, part) = changes[i];
+            if (world.Get(id) is not { } c || part >= c.PartCount)
+                continue;
+            w.U16(id).U8(part).U16(c.Parts[part].Rounds).U8(AmmoFlags(c.Parts[part]));
+            n++;
+        }
+        w.PatchU8(countAt, (byte)n);
+        return i;
+    }
+
+    /// <summary>Msg.CFire (protocol 82): what the guns did this tick: each shot (body, gun part, where it ended, what it met), blast and cook-off (where, how big).</summary>
+    public static void WriteFires(PacketWriter w, ConstructWorld world)
+    {
+        w.Begin(Msg.CFire).U8((byte)Math.Min(world.FireCount, 255));
+        for (var k = 0; k < world.FireCount && k < 255; k++)
+        {
+            ref var e = ref world.Fires[k];
+            w.U8((byte)e.Kind);
+            if (e.Kind == CFireKind.Shot)
+                w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+            else
+                w.Vec(e.At).U8((byte)Math.Clamp((int)MathF.Round(e.Radius * 10), 0, 255));
+        }
+    }
+
+    /// <summary>Client: a Msg.CFire (after the id byte) into <paramref name="into"/>; returns how many events.</summary>
+    public static int ReadFires(ref PacketReader r, Span<CFireEvent> into)
+    {
+        int n = r.U8();
+        var k = 0;
+        for (var i = 0; i < n; i++)
+        {
+            var kind = (CFireKind)r.U8();
+            CFireEvent e;
+            if (kind == CFireKind.Shot)
+                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
+            else if (kind is CFireKind.Blast or CFireKind.CookOff)
+                e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
+            else
+                throw new MalformedPacketException($"unknown construct fire event {kind}");
+            if (!float.IsFinite(e.At.X + e.At.Y + e.At.Z))
+                throw new MalformedPacketException("a construct fire event that isn't a number");
+            if (k < into.Length)
+                into[k++] = e;
+        }
+        return k;
     }
 
     /// <summary>A construct's power on the wire: electrical, power on, the engine running, the starter failed.</summary>
@@ -98,7 +177,7 @@ public static class ConstructNet
         c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f;
     }
 
-    /// <summary>Protocol 82: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
+    /// <summary>Protocol 83: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
     public static void WriteLinks(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Links).U8((byte)world.CouplingCount);
@@ -256,6 +335,24 @@ public static class ConstructNet
             case CBodyKind.Inventory:
                 ReadInventory(ref r, mine);
                 break;
+            case CBodyKind.Ammo:
+            {
+                int n = r.U8();
+                for (var k = 0; k < n; k++)
+                {
+                    var id = r.U16();
+                    var part = r.U8();
+                    var rounds = r.U16();
+                    var flags = r.U8();
+                    if (world.Get(id) is { } c && part < c.PartCount)
+                    {
+                        var was = c.Parts[part].Burn > 0;
+                        ReadAmmo(ref c.Parts[part], rounds, flags);
+                        c.Burning += (c.Parts[part].Burn > 0 ? 1 : 0) - (was ? 1 : 0);
+                    }
+                }
+                break;
+            }
             default:
                 throw new MalformedPacketException($"unknown construct message {kind}");
         }
@@ -361,6 +458,16 @@ public static class ConstructNet
                 throw new MalformedPacketException("a construct wire to a part that isn't there");
             c.Wires[c.WireCount++] = wire;
         }
+        int ammo = r.U8();
+        for (var k = 0; k < ammo; k++)
+        {
+            var part = r.U8();
+            var rounds = r.U16();
+            var af = r.U8();
+            if (part >= parts)
+                throw new MalformedPacketException("construct ammo for a part that isn't there");
+            ReadAmmo(ref c.Parts[part], rounds, af);
+        }
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
@@ -454,7 +561,7 @@ public static class ConstructNet
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
-            .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 82)
+            .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 83)
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))

@@ -1,0 +1,132 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Autocannon",
+  "description": "A 30 mm autocannon: slow, heavy, explosive shells. Kicks.",
+  "role": "gun",
+  "tool": "wrench",
+  "attachSeconds": 3.0,
+  "mass": 140,
+  "health": 420,
+  "armour": 12,
+  "material": "steel",
+  "color": "#4a5040",
+  "boxes": [
+    {
+      "size": [
+        0.32,
+        0.3,
+        0.7
+      ]
+    },
+    {
+      "size": [
+        0.12,
+        0.12,
+        0.9
+      ],
+      "at": [
+        0,
+        0,
+        -0.8
+      ],
+      "color": "#2d3033"
+    },
+    {
+      "size": [
+        0.16,
+        0.16,
+        0.12
+      ],
+      "at": [
+        0,
+        0,
+        -0.5
+      ],
+      "color": "#3a3d40",
+      "detail": true
+    },
+    {
+      "size": [
+        0.08,
+        0.12,
+        0.3
+      ],
+      "at": [
+        0.2,
+        0.0,
+        0.05
+      ],
+      "color": "#6d7466",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.15,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.15,
+        0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.16,
+        0,
+        0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "right",
+      "at": [
+        0.16,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0.35
+      ],
+      "dir": "+z"
+    }
+  ],
+  "gun": {
+    "damage": 70,
+    "rpm": 150,
+    "spread": 1.0,
+    "range": 140,
+    "mag": 20,
+    "reload": 4.0,
+    "flags": [
+      "explosive"
+    ],
+    "blast": 1.8,
+    "blastDamage": 90,
+    "kick": 120,
+    "fx": "cannon",
+    "speed": 260,
+    "soundOf": "Leviathan .50",
+    "muzzle": [
+      0,
+      0,
+      -1.25
+    ]
+  }
+}

@@ -68,6 +68,10 @@ public sealed class SandboxCatalogue
             case PartRole.Hitch: return ("Joints", "Hitches and chains");
             case PartRole.Battery: return ("Power", "Batteries");
             case PartRole.Alternator: return ("Power", "Alternators");
+            case PartRole.Gun: return ("Weapons", "Guns");
+            case PartRole.GunPart: return ("Weapons", "Gun parts");
+            case PartRole.AmmoBox: return ("Weapons", "Ammo boxes");
+            case PartRole.FeedChute: return ("Weapons", "Feed chutes");
             case PartRole.Logic:
                 return ("Logic", d.Logic switch
                 {

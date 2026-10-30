@@ -1,0 +1,99 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Ammo Box",
+  "description": "300 rounds for any gun whose feed it touches (bolted to the gun, its feed or ammo, or at the end of feed chutes). Holed, it cooks off.",
+  "role": "ammobox",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 15,
+  "health": 60,
+  "armour": 2,
+  "material": "steel",
+  "color": "#4d5a3a",
+  "boxes": [
+    {
+      "size": [
+        0.3,
+        0.2,
+        0.3
+      ]
+    },
+    {
+      "size": [
+        0.18,
+        0.03,
+        0.06
+      ],
+      "at": [
+        0,
+        0.115,
+        0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "right",
+      "at": [
+        0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "left",
+      "at": [
+        -0.15,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.1,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "bottom",
+      "at": [
+        0,
+        -0.1,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "back",
+      "at": [
+        0,
+        0.0,
+        0.15
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "front",
+      "at": [
+        0,
+        0.0,
+        -0.15
+      ],
+      "dir": "-z"
+    }
+  ],
+  "ammoBox": {
+    "rounds": 300,
+    "cookOff": {
+      "radius": 3.5,
+      "damage": 260
+    }
+  }
+}
