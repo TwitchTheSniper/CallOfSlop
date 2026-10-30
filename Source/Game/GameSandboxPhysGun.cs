@@ -64,8 +64,11 @@ public sealed partial class Game
     public void SandboxGrab(ushort body, Vector3 local)
     {
         ref var h = ref SandboxHands.Hand(LocalId);
-        h.GrabBody = body; // (shown at once; the server answers with its own in the tail, or a refusal)
-        h.GrabLocal = local;
+        if (!IsServer)
+        {
+            h.GrabBody = body; // (shown at once; the server answers with its own in the tail, or a refusal. The host's hands are the server's)
+            h.GrabLocal = local;
+        }
         h.GrabAskedAt = SandboxNow;
         _sbSteerSent = float.NaN;
         PhysGunSend(CActKind.Grab, body, local, 0);
@@ -75,7 +78,8 @@ public sealed partial class Game
     public void SandboxLetGo(bool freeze)
     {
         ref var h = ref SandboxHands.Hand(LocalId);
-        h.GrabBody = 0;
+        if (!IsServer)
+            h.GrabBody = 0; // (shown at once; the host's own hands are the server's, which lets go itself)
         h.GrabAskedAt = SandboxNow;
         PhysGunSend(freeze ? CActKind.GrabFreeze : CActKind.GrabRelease, 0, default, 0);
     }

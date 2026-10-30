@@ -315,15 +315,18 @@ public static partial class SelfTest
         {
             host.Teleport(ConstructWorld.Ground(World.Query, other.WorldCom.X - 3f, other.WorldCom.Z));
             Pump(server, [a], 0.3, ref now, clock);
-            var hg = server.SandboxHands.Grab(server.Constructs, host.Id, host.Eye, host.Yaw, other.Id, other.Com);
+            server.SandboxGrab(other.Id, other.Com); // (the host's own request: straight into the server's hands)
             Pump(server, [a], 0.5, ref now, clock);
-            hostBeam = hg == null && a.SandboxHands.Hand(host.Id).GrabBody == other.Id && Vector3.Distance(a.SandboxHands.Hand(host.Id).GrabLocal, other.Com) < 0.011f;
+            hostBeam = other.GrabbedBy == host.Id && a.SandboxHands.Hand(host.Id).GrabBody == other.Id && Vector3.Distance(a.SandboxHands.Hand(host.Id).GrabLocal, other.Com) < 0.011f;
+            server.SandboxLetGo(freeze: true); // (and the host's freeze)
+            Pump(server, [a], 0.3, ref now, clock);
+            hostBeam &= other.Frozen && other.FrozenBy == host.Id && other.GrabbedBy == 255 && server.SandboxHands.Hand(host.Id).GrabBody == 0;
         }
         // The client's double-tap: unfreeze-all frees it.
         a.SandboxUnfreezeAll(everyone: false);
         Pump(server, [a], 0.5, ref now, clock);
         var thawed = !part.Frozen && a.Constructs.Get(part.Id) is { Frozen: false };
-        Line($"physics gun loopback: the client holds the part on the server {held}; the host refused (\"{hostTry}\"); steered {steered}; frozen on both {frozen}; the host's beam on the client {hostBeam}; unfreeze-all {thawed} (\"{a.SandboxNotice}\")");
+        Line($"physics gun loopback: the client holds the part on the server {held}; the host refused (\"{hostTry}\"); steered {steered}; frozen on both {frozen}; the host's beam on the client and its own freeze {hostBeam}; unfreeze-all {thawed} (\"{a.SandboxNotice}\")");
         if (!held || hostTry == null || !steered || !frozen || !hostBeam || !thawed)
             Fail("physics gun loopback: grab, steer, freeze or unfreeze didn't go through the server, or the beam didn't reach the other machine");
     }
