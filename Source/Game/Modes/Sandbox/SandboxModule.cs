@@ -77,7 +77,7 @@ public sealed class SandboxModule : GameModeModule
             if (n++ == 64)
                 break;
             ref var h = ref hands.Hand(p.Id);
-            w.U8(p.Id).U8((byte)h.Tool).U8(h.Held).U16(h.SeatBody).U8(h.SeatPart).U8((byte)h.Edit)
+            w.U8(p.Id).U8((byte)h.Tool).U16(h.Held).U16(h.SeatBody).U8(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
         }
     }
@@ -89,7 +89,7 @@ public sealed class SandboxModule : GameModeModule
         {
             var id = r.U8();
             var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker);
-            var held = r.U8();
+            var held = r.U16();
             var seat = r.U16();
             var seatPart = r.U8();
             var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.Remove);

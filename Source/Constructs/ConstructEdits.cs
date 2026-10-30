@@ -15,7 +15,7 @@ public enum EditKind : byte
 public struct SandboxHand
 {
     public ConstructTool Tool; // None: a gun or bare hands (use only, never edit)
-    public byte Held; // the part in hand (ConstructParts id, 255: none)
+    public ushort Held; // the part in hand (ConstructParts id, ConstructParts.None: none)
     public EditKind Edit;
     public ushort Body;
     public byte Part, Socket, Variant;
@@ -489,7 +489,7 @@ public sealed partial class ConstructEdits
     /// The debug parts menu (UiSandboxParts.cs): any loaded part, by id, straight into the hands, wherever the player is
     /// (what is in them is replaced, as at the rack). Refused when the map turns the menu off (<see cref="SandboxMap.PartsMenu"/>).
     /// </summary>
-    public string? TakePart(SandboxMap? sandbox, byte player, byte part)
+    public string? TakePart(SandboxMap? sandbox, byte player, ushort part)
     {
         ref var h = ref Hands[player];
         if (sandbox is not { PartsMenu: true })

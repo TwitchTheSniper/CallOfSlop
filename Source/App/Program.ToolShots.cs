@@ -93,7 +93,7 @@ public static unsafe partial class Program
         }
 
         // Hold a tool, fully raised (the swap long done), idle or in use.
-        void Hold(ToolModel model, ConstructTool tool, bool use, byte held, double at)
+        void Hold(ToolModel model, ConstructTool tool, bool use, ushort held, double at)
         {
             ToolRender.Reset();
             ToolRender.ShowModel = model;

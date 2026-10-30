@@ -65,7 +65,7 @@ public static class ConstructNet
         for (var i = 0; i < c.PartCount; i++)
         {
             ref var p = ref c.Parts[i];
-            w.U8(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
+            w.U16(p.Def).U16(S16(Cm(p.Pos.X))).U16(S16(Cm(p.Pos.Y))).U16(S16(Cm(p.Pos.Z))).U8(p.Rot).U8(p.Seg)
                 .U16((ushort)Math.Clamp(MathF.Ceiling(p.Health), 0, 65535)).U8((byte)(p.Broken ? 1 : 0))
                 .U8(p.Setting).U8(unchecked((byte)ConstructLogic.Quantise(p.Out)));
         }
@@ -245,7 +245,7 @@ public static class ConstructNet
         for (var i = 0; i < inv.Parts.Length && n < 255; i++)
             if (inv.Parts[i] > 0)
             {
-                w.U8((byte)i).U16(inv.Parts[i]);
+                w.U16((ushort)i).U16(inv.Parts[i]);
                 n++;
             }
         w.PatchU8(at, (byte)n);
@@ -271,7 +271,7 @@ public static class ConstructNet
         inv?.Clear();
         for (var k = 0; k < kinds; k++)
         {
-            var id = r.U8();
+            var id = r.U16();
             var count = r.U16();
             if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
                 throw new MalformedPacketException($"an inventory of {count} of part {id}");
@@ -443,7 +443,7 @@ public static class ConstructNet
         c.PartCount = 0;
         for (var i = 0; i < parts; i++)
         {
-            var def = r.U8();
+            var def = r.U16();
             var p = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16())));
             var turn = r.U8();
             var seg = r.U8();

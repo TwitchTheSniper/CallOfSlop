@@ -141,7 +141,7 @@ public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketK
 /// <summary>One part type, from a JSON file in Constructs/Parts (loaded by <see cref="ConstructParts"/>).</summary>
 public sealed class ConstructPartDef
 {
-    public byte Id; // index in ConstructParts.All (the wire id)
+    public ushort Id; // index in ConstructParts.All (the wire id: two bytes since the routed links, 2026-10-30)
     public string Name = "";
     public string File = "";
     public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
@@ -297,10 +297,10 @@ public static partial class ConstructParts
 {
     public const string Format = "call-of-slop-construct-part/1";
 
-    /// <summary>The most part types (ids are one byte on the wire; 255 means none).</summary>
-    public const int MaxTypes = 250;
+    /// <summary>The most part types (ids are two bytes on the wire since protocol 87; 65535 means none).</summary>
+    public const int MaxTypes = 4096;
 
-    public const byte None = 255;
+    public const ushort None = ushort.MaxValue;
 
     private static readonly List<string> _refused = new();
     private static readonly Lazy<ConstructPartDef[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
@@ -359,7 +359,7 @@ public static partial class ConstructParts
         return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count;
     }
 
-    public static ConstructPartDef? Get(byte id) => id < All.Count ? All[id] : null;
+    public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : null;
 
     public static ConstructPartDef? Find(string name)
     {
@@ -391,7 +391,7 @@ public static partial class ConstructParts
                     throw new ConstructPartException($"{Path.GetFileName(file)}: another file already has the name \"{def.Name}\"");
                 if (list.Count >= MaxTypes)
                     throw new ConstructPartException($"{Path.GetFileName(file)}: more than {MaxTypes} part types");
-                def.Id = (byte)list.Count;
+                def.Id = (ushort)list.Count;
                 list.Add(def);
             }
             catch (Exception ex) when (ex is ConstructPartException or JsonException or IOException)

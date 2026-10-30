@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>One placed part of a construct: its type, where it sits in its segment's rest frame, its turn and its health.</summary>
 public struct CPart
 {
-    public byte Def; // ConstructParts id
+    public ushort Def; // ConstructParts id (two bytes since protocol 87)
     public Vector3 Pos; // the part's origin in the rest frame (every segment's rest frame is the body frame at joint angle 0)
     public byte Rot; // Rot24 turn
     public byte Seg; // 0: the body itself; k > 0: hangs on joint k - 1

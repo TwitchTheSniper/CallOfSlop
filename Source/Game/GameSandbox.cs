@@ -372,8 +372,8 @@ public sealed partial class Game
                 return null;
             case CActKind.Rack:
             {
-                var pick = r.U8();
-                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position) : hands.TakePart(World.Map.Sandbox, p.Id, (byte)(pick - 1));
+                var pick = r.U16(); // (protocol 87: part ids are two bytes)
+                return pick == 0 ? hands.TakeFromRack(World.Map.Sandbox, p.Id, p.Position) : hands.TakePart(World.Map.Sandbox, p.Id, (ushort)(pick - 1));
             }
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U8());
@@ -466,9 +466,11 @@ public sealed partial class Game
                 w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
                 break;
             case CActKind.SeatKeys:
-            case CActKind.Rack:
             case CActKind.Blueprint:
                 w.U8(part);
+                break;
+            case CActKind.Rack:
+                w.U16(body); // (the pick: 0 the rack's next kind, n part id n - 1)
                 break;
             case CActKind.PickUp:
                 w.U16(body);
@@ -495,7 +497,7 @@ public sealed partial class Game
     public bool SandboxPartsMenu => SandboxOn && World.Map.Sandbox is { PartsMenu: true };
 
     /// <summary>Client (or host): ask for a part by id from the debug parts menu (the rack's request with a part id).</summary>
-    public void SandboxTakePart(byte id) => SandboxSend(CActKind.Rack, part: (byte)(id + 1));
+    public void SandboxTakePart(ushort id) => SandboxSend(CActKind.Rack, body: (ushort)(id + 1));
 
     /// <summary>
     /// Server: the debug parts menu's blueprint button: the blueprint is built standing on the ground in front of the

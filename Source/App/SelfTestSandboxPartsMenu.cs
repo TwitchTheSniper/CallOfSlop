@@ -229,7 +229,7 @@ public static partial class SelfTest
     /// <summary>The count badges' source for the self-test: a few of each part, none of some.</summary>
     private sealed class FakePartCounts : ISandboxPartCounts
     {
-        public int PartCount(Game game, byte playerId, byte partId) => partId % 4 == 0 ? 0 : partId * 7;
+        public int PartCount(Game game, byte playerId, ushort partId) => partId % 4 == 0 ? 0 : partId * 7;
     }
 
     /// <summary>

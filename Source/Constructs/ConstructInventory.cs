@@ -9,7 +9,7 @@ namespace CallOfSlop;
 /// </summary>
 public sealed class SandboxInventory
 {
-    public const int MaxKinds = 256; // part ids are bytes
+    public const int MaxKinds = ConstructParts.MaxTypes; // part ids (two bytes since protocol 87)
     public const int MaxMaterials = 16; // (resources: a later milestone; always zero now, but the wire carries them)
     public const ushort MaxCount = 9999; // of one kind
     public const int MaxScrap = 999_999;
@@ -28,7 +28,7 @@ public sealed class SandboxInventory
     /// <summary>Goes up on every change, so a window can rebuild its text only when something changed.</summary>
     public int Version;
 
-    public int Count(byte part) => Parts[part];
+    public int Count(ushort part) => Parts[part];
 
     /// <summary>How many parts in all (every kind).</summary>
     public int TotalParts
@@ -55,7 +55,7 @@ public sealed class SandboxInventory
         }
     }
 
-    public bool Add(byte part, int n = 1)
+    public bool Add(ushort part, int n = 1)
     {
         if (part == ConstructParts.None || n <= 0 || Parts[part] >= MaxCount)
             return false;
@@ -64,7 +64,7 @@ public sealed class SandboxInventory
         return true;
     }
 
-    public bool Take(byte part)
+    public bool Take(ushort part)
     {
         if (part == ConstructParts.None || Parts[part] == 0)
             return false;
