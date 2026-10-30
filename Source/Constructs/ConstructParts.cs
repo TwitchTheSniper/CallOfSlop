@@ -29,6 +29,7 @@ public enum PartRole : byte
     Battery, // milestone 3: stores charge (kJ) for the electrical parts its construct's links reach (ConstructPower.cs)
     Alternator, // milestone 3: touching a running engine, charges the batteries
     Hitch, // milestone 3: couples to another construct's hitch (a tow ball to an eye, a chain hook to a ring; ConstructLinks.cs)
+    Storage, // physical storage (decision 18): slots that parts are set into, or a bin of bulk material with a fill level (ConstructStorage.cs)
 }
 
 /// <summary>What a hitch part is (milestone 3): a ball or a hook couples to an eye.</summary>
@@ -198,6 +199,12 @@ public sealed class ConstructPartDef
     public GunFx GunFx;
     public string GunSound = ""; // the weapon file whose report it uses
     public string GunPartName = ""; // a gun part: the weapon builder part it is
+    // Physical storage (decision 18; ConstructStorage.cs)
+    public CSlotDef[] Slots = []; // the slots parts are set into (part frame)
+    public string BulkMaterial = ""; // a bin: the bulk material it holds ("scrap"; more come with resources)
+    public int BulkCapacity; // a bin: how much of it
+    public Vector3 FillMin, FillMax; // a bin: the box its contents fill from the bottom up (part frame)
+    public bool IsBin => BulkCapacity > 0;
     public int BoxRounds; // an ammo box: rounds it comes with
     public float CookRadius, CookDamage; // an ammo box: its cook-off at full
 
@@ -346,7 +353,7 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "storage",
     ];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
@@ -469,7 +476,7 @@ public static class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -487,6 +494,7 @@ public static class ConstructParts
             PartRole.Gun => "gun",
             PartRole.GunPart => "gunPart",
             PartRole.AmmoBox => "ammoBox",
+            PartRole.Storage => "storage",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -618,6 +626,9 @@ public static class ConstructParts
                 d.GunPartName = wp.Name;
                 break;
             }
+            case PartRole.Storage:
+                ConstructStorage.ParseStorage(d, block!.Value, file);
+                break;
             case PartRole.AmmoBox:
                 Known(block!.Value, ["rounds", "cookOff"], bw);
                 d.BoxRounds = (int)Num(Need(block.Value, "rounds", bw), file, "ammoBox.rounds");
@@ -860,14 +871,14 @@ public static class ConstructParts
         return i >= 0 ? (byte)i : throw new ConstructPartException($"{file}: {where}: a direction is one of {string.Join(", ", DirNames)}");
     }
 
-    private static void Known(JsonElement obj, string[] keys, string where)
+    internal static void Known(JsonElement obj, string[] keys, string where)
     {
         foreach (var p in obj.EnumerateObject())
             if (!keys.Any(k => k.Equals(p.Name, StringComparison.OrdinalIgnoreCase)))
                 throw new ConstructPartException($"{where}: unknown key \"{p.Name}\" (known: {string.Join(", ", keys)})");
     }
 
-    private static JsonElement? Opt(JsonElement obj, string name)
+    internal static JsonElement? Opt(JsonElement obj, string name)
     {
         foreach (var p in obj.EnumerateObject())
             if (p.Name.Equals(name, StringComparison.OrdinalIgnoreCase))
@@ -875,12 +886,12 @@ public static class ConstructParts
         return null;
     }
 
-    private static JsonElement Need(JsonElement obj, string name, string where) =>
+    internal static JsonElement Need(JsonElement obj, string name, string where) =>
         Opt(obj, name) ?? throw new ConstructPartException($"{where}: missing \"{name}\"");
 
     private static string StrKey(JsonElement obj, string name, string file) => Str(Need(obj, name, file), file, name);
 
-    private static string Str(JsonElement e, string file, string what) =>
+    internal static string Str(JsonElement e, string file, string what) =>
         e.ValueKind == JsonValueKind.String ? e.GetString()! : throw new ConstructPartException($"{file}: \"{what}\" must be text");
 
     private static string AsciiText(JsonElement e, string file, string what)
@@ -889,21 +900,21 @@ public static class ConstructParts
         return s.Any(c => c < 32 || c > 126) ? throw new ConstructPartException($"{file}: \"{what}\" must be plain ASCII") : s;
     }
 
-    private static float Num(JsonElement e, string file, string what) =>
+    internal static float Num(JsonElement e, string file, string what) =>
         e.ValueKind == JsonValueKind.Number && float.IsFinite(e.GetSingle()) ? e.GetSingle() : throw new ConstructPartException($"{file}: \"{what}\" must be a number");
 
-    private static void Range(float v, float lo, float hi, string file, string what)
+    internal static void Range(float v, float lo, float hi, string file, string what)
     {
         if (v < lo || v > hi)
             throw new ConstructPartException($"{file}: \"{what}\" is {v.ToString(CultureInfo.InvariantCulture)}, it must be {lo.ToString(CultureInfo.InvariantCulture)} to {hi.ToString(CultureInfo.InvariantCulture)}");
     }
 
-    private static Vector3 Vec(JsonElement e, string file, string what) =>
+    internal static Vector3 Vec(JsonElement e, string file, string what) =>
         e.ValueKind == JsonValueKind.Array && e.GetArrayLength() == 3
             ? new Vector3(Num(e[0], file, what), Num(e[1], file, what), Num(e[2], file, what))
             : throw new ConstructPartException($"{file}: \"{what}\" must be [x, y, z]");
 
-    private static Vector3 Colour(JsonElement e, string file, string what)
+    internal static Vector3 Colour(JsonElement e, string file, string what)
     {
         try
         {

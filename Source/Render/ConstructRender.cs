@@ -51,8 +51,22 @@ public static class ConstructRender
         _flashNext = (_flashNext + 1) % Flashes.Length;
     }
 
+    // Physical storage (decision 18): the slots the held part fits on the storage part under the crosshair (ghost outlines).
+    public static Construct? SlotBody;
+    public static int SlotPart = -1;
+    public static int SlotMask; // bit k: slot k takes the held part
+    public static int SlotSelected = -1; // the one a click sets it into
+    public static byte SlotRot; // the turn it would go in at
+    public static ConstructPartDef? SlotDef; // the held part
+    public static int LastStored { get; private set; } // stored parts drawn last frame (the self-test)
+
     public static void ClearAim()
     {
+        SlotBody = null;
+        SlotPart = -1;
+        SlotMask = 0;
+        SlotSelected = -1;
+        SlotDef = null;
         GhostCount = 0;
         GhostSelected = -1;
         GhostBody = null;
@@ -75,9 +89,15 @@ public static class ConstructRender
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
             var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
             for (var i = 0; i < c.PartCount; i++)
+            {
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
+                if (c.Parts[i].Store != 0)
+                    n += DrawStored(gfx, world, c, i, body, blendTicks ? alpha : 1f);
+            }
             n += DrawWheel(gfx, c, alpha, blendTicks);
         }
+        LastStored = LastStoredCount;
+        LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
@@ -277,6 +297,49 @@ public static class ConstructRender
         return drawn;
     }
 
+    private static readonly Vector3 ScrapColour = new(0.43f, 0.35f, 0.28f);
+
+    /// <summary>What a storage part holds, where it sits (each stored part's boxes in its slot, a pile stacked up), and a bin's fill level.</summary>
+    private static int DrawStored(Renderer gfx, ConstructWorld world, Construct c, int i, in Matrix4x4 body, float alpha)
+    {
+        if (world.StoreOf(c, i) is not { } st)
+            return 0;
+        ref var p = ref c.Parts[i];
+        var cd = p.D;
+        var seg = p.Seg > 0 && p.Seg <= c.JointCount ? SegMatrix(c, p.Seg, alpha) : Matrix4x4.Identity;
+        var drawn = 0;
+        for (var k = 0; k < st.SlotCount && k < cd.Slots.Length; k++)
+        {
+            if (ConstructParts.Get(st.Def[k]) is not { } d)
+                continue;
+            var shade = 0.55f + 0.45f * Math.Clamp(st.Health[k], 0, 1);
+            var copies = ConstructStorage.DrawnCopies(cd.Slots[k], d, st.Rot[k], st.Count[k]);
+            for (var n = 0; n < copies; n++)
+                for (var b = 0; b < d.Boxes.Length; b++)
+                {
+                    ConstructStorage.ItemBox(p, cd.Slots[k], d, st.Rot[k], n, b, out var centre, out var half);
+                    gfx.Draw(Matrix4x4.CreateScale(half * 2) * Matrix4x4.CreateTranslation(centre) * seg * body, d.Boxes[b].Color * shade, 1f, mode: 0);
+                    drawn++;
+                }
+            LastStoredCount++;
+        }
+        if (ConstructStorage.FillBox(p, cd, st.Amount, out var fc, out var fh))
+        {
+            gfx.Draw(Matrix4x4.CreateScale(fh * 2) * Matrix4x4.CreateTranslation(fc) * seg * body, ScrapColour, 1f, mode: 0);
+            // A few lumps on top, so it reads as a heap.
+            for (var l = 0; l < 3; l++)
+            {
+                var off = new Vector3((l - 1) * fh.X * 0.5f, fh.Y, (l == 1 ? -0.3f : 0.25f) * fh.Z);
+                var size = new Vector3(fh.X * 0.35f, MathF.Min(0.06f, fh.Y), fh.Z * 0.35f);
+                gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(fc + off) * seg * body, ScrapColour * (0.8f + 0.15f * l), 1f, mode: 0);
+            }
+            drawn += 4;
+        }
+        return drawn;
+    }
+
+    private static int LastStoredCount;
+
     /// <summary>A segment's pose (rest frame -> body frame) blended between the last two ticks' joint values.</summary>
     public static Matrix4x4 SegMatrix(Construct c, int seg, float alpha)
     {
@@ -452,6 +515,31 @@ public static class ConstructRender
                 }
             }
         }
+        if (SlotBody is { } sbody && SlotDef is { } sdef && SlotPart >= 0 && SlotPart < sbody.PartCount)
+        {
+            // The slots the held part fits, as ghost outlines; the chosen one with the part where it would sit.
+            ref var cp = ref sbody.Parts[SlotPart];
+            var cd = cp.D;
+            sbody.SegPose(cp.Seg, out var q, out var t);
+            var m = Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t) * Matrix4x4.CreateFromQuaternion(sbody.Rot) * Matrix4x4.CreateTranslation(sbody.Pos);
+            for (var k = 0; k < cd.Slots.Length; k++)
+            {
+                if ((SlotMask & (1 << k)) == 0)
+                    continue;
+                ConstructStorage.SlotBox(cp, cd.Slots[k], out var sc, out var sh);
+                var chosen = k == SlotSelected;
+                var colour = chosen ? new Vector3(0.3f, 1f, 0.45f) : new Vector3(0.35f, 0.75f, 1f);
+                Outline(gfx, sc, sh, m, colour, chosen ? 0.9f : 0.6f);
+                gfx.Draw(Matrix4x4.CreateScale(sh * 2) * Matrix4x4.CreateTranslation(sc) * m, colour, (chosen ? 0.16f : 0.08f) * pulse * 1.6f, mode: 2);
+                if (!chosen)
+                    continue;
+                for (var b = 0; b < sdef.Boxes.Length; b++)
+                {
+                    ConstructStorage.ItemBox(cp, cd.Slots[k], sdef, SlotRot, 0, b, out var bc, out var bh);
+                    gfx.Draw(Matrix4x4.CreateScale(bh * 2 + new Vector3(0.01f)) * Matrix4x4.CreateTranslation(bc) * m, new Vector3(0.35f, 1f, 0.5f), 0.35f * pulse, mode: 2);
+                }
+            }
+        }
         if (PlaceAt is { } ground && GhostDef is { } nd)
         {
             var rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, -PlaceYaw);
@@ -467,6 +555,24 @@ public static class ConstructRender
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
             gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
         }
+    }
+
+    /// <summary>A box's twelve edges as thin bars (a slot's ghost outline).</summary>
+    private static void Outline(Renderer gfx, Vector3 c, Vector3 h, in Matrix4x4 m, Vector3 colour, float opacity)
+    {
+        const float w = 0.012f;
+        for (var axis = 0; axis < 3; axis++)
+            for (var e = 0; e < 4; e++)
+            {
+                var size = new Vector3(w);
+                size[axis] = h[axis] * 2 + w;
+                var at = c;
+                var a1 = (axis + 1) % 3;
+                var a2 = (axis + 2) % 3;
+                at[a1] += (e & 1) == 0 ? -h[a1] : h[a1];
+                at[a2] += (e & 2) == 0 ? -h[a2] : h[a2];
+                gfx.Draw(Matrix4x4.CreateScale(size) * Matrix4x4.CreateTranslation(at) * m, colour, opacity, mode: 2);
+            }
     }
 
     /// <summary>The wheels' springs on a client (or the host's drawing between ticks): where each wheel meets the ground now.</summary>

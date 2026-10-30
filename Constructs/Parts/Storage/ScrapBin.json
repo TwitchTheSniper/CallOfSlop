@@ -1,0 +1,30 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrap Bin",
+  "description": "An open bin for scrap: F tips in all the scrap you carry, or with none on you takes a load of 100 out. Its level shows how full it is.",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 2.0,
+  "mass": 40,
+  "health": 300,
+  "armour": 5,
+  "material": "steel",
+  "color": "#5d6b4a",
+  "boxes": [
+    { "min": [-0.4, 0, -0.4], "max": [0.4, 0.04, 0.4] },
+    { "min": [-0.4, 0.04, 0.36], "max": [0.4, 0.6, 0.4] },
+    { "min": [-0.4, 0.04, -0.4], "max": [0.4, 0.6, -0.36] },
+    { "min": [-0.4, 0.04, -0.36], "max": [-0.36, 0.6, 0.36] },
+    { "min": [0.36, 0.04, -0.36], "max": [0.4, 0.6, 0.36] },
+    { "min": [-0.41, 0.5, 0.4], "max": [0.41, 0.54, 0.42], "color": "#e8d36a", "detail": true }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "+x", "at": [0.4, 0.3, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.4, 0.3, 0], "dir": "-x" },
+    { "name": "back", "at": [0, 0.3, -0.4], "dir": "-z" }
+  ],
+  "storage": {
+    "bulk": { "material": "scrap", "capacity": 500, "min": [-0.355, 0.045, -0.355], "max": [0.355, 0.58, 0.355] }
+  }
+}

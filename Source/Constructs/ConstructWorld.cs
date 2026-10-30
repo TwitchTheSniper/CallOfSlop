@@ -9,6 +9,7 @@ public struct ConstructHit
     public int Part;
     public float Distance;
     public Vector3 Point, Normal;
+    public byte SlotPlus1; // physical storage: the stored part hit is in this slot of the part (plus one; 0: the part itself)
 }
 
 /// <summary>
@@ -172,6 +173,7 @@ public sealed partial class ConstructWorld
         AmmoDirty.Clear();
         FireCount = 0;
         CookOffCount = 0;
+        ClearStores();
     }
 
     /// <summary>A new empty body at a pose (null when the caps are reached). Add parts, then it rebuilds on the next tick.</summary>
@@ -196,6 +198,9 @@ public sealed partial class ConstructWorld
 
     public void Remove(Construct c)
     {
+        for (var i = 0; i < c.PartCount; i++)
+            if (c.Parts[i].Store != 0)
+                FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
         Bodies.Remove(c);
         _byId.Remove(c.Id);
         StructureDirty.Remove(c.Id);
@@ -209,6 +214,7 @@ public sealed partial class ConstructWorld
             return -1;
         var i = c.PartCount++;
         c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
+        AllocStore(ref c.Parts[i], def);
         c.Dirty = true;
         c.Wake();
         StructureDirty.Add(c.Id);
@@ -294,6 +300,8 @@ public sealed partial class ConstructWorld
     public ConstructPartDef RemovePart(Construct c, int index)
     {
         var def = c.DefOf(index);
+        if (c.Parts[index].Store != 0)
+            Spill(c, index); // (a container that goes spills what it holds: physical storage)
         var keepDriver = c.Driver;
         // Every part, by component: what still reaches the root (or part 0 when the root is the one going) stays.
         Span<int> comp = stackalloc int[Construct.MaxParts];
@@ -370,7 +378,12 @@ public sealed partial class ConstructWorld
         c.WorldFrame(baseSeg, out var q, out var t);
         var wreck = Create(t, q);
         if (wreck == null)
+        {
+            for (var i = 0; i < c.PartCount; i++)
+                if (comp[i] == k && c.Parts[i].Store != 0)
+                    FreeStore(ref c.Parts[i]);
             return; // the caps are full: the piece is simply lost
+        }
         // Copy the parts; segments other than the base keep their joints (when their hinge came along).
         Span<int> map = stackalloc int[Construct.MaxParts];
         Span<int> segMap = stackalloc int[Construct.MaxJoints + 1];
@@ -512,6 +525,8 @@ public sealed partial class ConstructWorld
         c.Damaged = true; // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.Role is PartRole.AmmoBox or PartRole.FuelTank)
             CookOff(c, part, ConstructRender.PartCentre(c, part)); // (a holed box, a burning tank: a beat later)
+        if (p.Store != 0)
+            Spill(c, part); // (a destroyed container spills what it holds)
         if (d.OnBreak == PartBreak.Disable)
         {
             p.Broken = true;
@@ -525,7 +540,7 @@ public sealed partial class ConstructWorld
         Events.Add($"construct {c.Id}: {d.Name} broke off");
         // The broken part itself falls away too, as wrecked debris (scrap to salvage later), moving as it was.
         c.WorldFrame(p.Seg, out var q, out var t);
-        var debris = p with { Seg = 0, Broken = true, Health = 0, SitterPlus1 = 0 };
+        var debris = p with { Seg = 0, Broken = true, Health = 0, SitterPlus1 = 0, Store = 0 };
         c.PartBounds(part, out var mn, out var mx);
         var at = t + Vector3.Transform((mn + mx) * 0.5f, q);
         var vel = c.PointVel(at);
@@ -578,6 +593,7 @@ public sealed partial class ConstructWorld
                     break;
                 _blasted.Add(((ulong)c.Id << 32) | (uint)Ident(c, best));
                 var k = 1f - bestD / radius;
+                BlastStored(c, best, maxDamage * k * k); // (what is stored in it first: it may spill)
                 DamagePart(c, best, maxDamage * k * k, out _);
                 hits++;
                 if (!Bodies.Contains(c))
@@ -655,6 +671,23 @@ public sealed partial class ConstructWorld
                         hit.Distance = d;
                         hit.Point = origin + dir * d;
                         hit.Normal = Vector3.Transform(Geometry.BoxEntryNormal(centre - half, centre + half, lo, ld, d), q);
+                        hit.SlotPlus1 = 0;
+                    }
+                }
+                if (p.Store != 0)
+                {
+                    // Physical storage: what is stored in it (and a bin's fill) is hit like a part of it.
+                    var was = best;
+                    var slot = RayStored(c, i, lo, ld, ref best);
+                    if (slot >= -1 && best < was)
+                    {
+                        found = true;
+                        hit.Body = c;
+                        hit.Part = i;
+                        hit.Distance = best;
+                        hit.Point = origin + dir * best;
+                        hit.Normal = -dir;
+                        hit.SlotPlus1 = (byte)(slot + 1);
                     }
                 }
             }

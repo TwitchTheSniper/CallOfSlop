@@ -1,0 +1,31 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Wheel Rack",
+  "description": "A rack that stands three wheels upright. Only wheels fit its slots.",
+  "role": "storage",
+  "tool": "welder",
+  "attachSeconds": 2.0,
+  "mass": 30,
+  "health": 220,
+  "armour": 3,
+  "material": "steel",
+  "color": "#4c5560",
+  "boxes": [
+    { "min": [-0.55, 0, -0.45], "max": [0.55, 0.06, 0.45] },
+    { "min": [-0.55, 0.06, -0.45], "max": [-0.53, 0.9, 0.45] },
+    { "min": [0.53, 0.06, -0.45], "max": [0.55, 0.9, 0.45] },
+    { "min": [-0.53, 0.86, -0.45], "max": [0.53, 0.9, -0.43], "color": "#646e7a" }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "+x", "at": [0.55, 0.45, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.55, 0.45, 0], "dir": "-x" }
+  ],
+  "storage": {
+    "slots": [
+      { "min": [-0.51, 0.06, -0.42], "max": [-0.19, 0.88, 0.42], "fits": ["wheel"], "label": "wheel" },
+      { "min": [-0.16, 0.06, -0.42], "max": [0.16, 0.88, 0.42], "fits": ["wheel"], "label": "wheel" },
+      { "min": [0.19, 0.06, -0.42], "max": [0.51, 0.88, 0.42], "fits": ["wheel"], "label": "wheel" }
+    ]
+  }
+}

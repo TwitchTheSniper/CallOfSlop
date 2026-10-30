@@ -23,7 +23,8 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated);
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+            || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     /// <summary>
     /// The inventory key (I by default) in Sandbox opens the debug parts menu (UiSandboxParts.cs), the mouse free for it;
@@ -176,11 +177,25 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbLookText;
         }
+        // Physical storage (decision 18): a storage part, or a part stored in one, under the crosshair.
+        var storage = aimed ? g.Constructs.StoreOf(hit.Body, hit.Part) : null;
+        var storeNear = aimed && hit.Distance <= ConstructBuild.UseReach;
+        var slotted = storage != null && storeNear && ConstructParts.Get(h.Held) is { } carried && StorageSlots(g, hit, storage, carried, eye, dir);
+        if (storage != null)
+            g.SandboxLookText = StorageLook(g, me, hit, storage, storeNear, ConstructParts.Get(h.Held));
         var feet = me.Position;
         var nearRack = World.Map.Sandbox is { } sb && Vector3.Distance(feet with { Y = 0 }, sb.Rack) <= 4.5f;
         if (nearRack && !aimed)
             g.SandboxLookText = "Parts rack: F to take a part (again for the next kind; I: the parts menu)";
-        if (Pressed(GameAction.Interact))
+        if (Pressed(GameAction.Interact) && storage != null && storeNear && (hit.SlotPlus1 > 0 || hit.Body.DefOf(hit.Part).IsBin))
+        {
+            // F on a stored part takes it into the hands; on a bin tips your scrap in (or takes a load out).
+            if (hit.SlotPlus1 > 0)
+                g.SandboxSend(CActKind.TakeStored, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)(hit.SlotPlus1 - 1));
+            else
+                g.SandboxSend(CActKind.Bin, body: hit.Body.Id, part: (byte)hit.Part);
+        }
+        else if (Pressed(GameAction.Interact))
         {
             if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);
@@ -247,7 +262,10 @@ public static unsafe partial class Program
 
         // Ghost sockets for the held part (a tool out only: bare hands never edit).
         var held = ConstructParts.Get(h.Held);
-        if (h.Tool != ConstructTool.None && held != null)
+        // Storage first: the slots the held part fits light up (any hands); a click sets it into the chosen one.
+        if (slotted && Pressed(GameAction.Fire) && !_swallowClick && ConstructRender.SlotSelected >= 0)
+            g.SandboxSend(CActKind.StoreIn, body: hit.Body.Id, part: (byte)hit.Part, socket: (byte)ConstructRender.SlotSelected);
+        if (h.Tool != ConstructTool.None && held != null && !slotted)
         {
             ConstructRender.GhostDef = held;
             if (aimed && !hit.Body.Loose)
@@ -320,7 +338,7 @@ public static unsafe partial class Program
             }
         }
         // Taking a part off: hold aim on it with the tool it needs.
-        if (h.Tool != ConstructTool.None && aimed && Pressed(GameAction.Aim) && !hit.Body.Loose)
+        if (h.Tool != ConstructTool.None && aimed && Pressed(GameAction.Aim) && !hit.Body.Loose && hit.SlotPlus1 == 0) // (a stored part is taken with F, not a tool)
         {
             g.SandboxSend(CActKind.Remove, body: hit.Body.Id, part: (byte)hit.Part);
             _sbRemoving = true;
@@ -332,6 +350,95 @@ public static unsafe partial class Program
                 g.SandboxSend(CActKind.Cancel);
             _sbFiring = _sbRemoving = false;
         }
+        return true;
+    }
+
+    private static long _sbStoreKey = -1;
+    private static string _sbStoreText = "";
+
+    /// <summary>
+    /// The storage look-at tooltip (the only storage UI): the container's name, what it holds and its room; a stored part's
+    /// name and how many (a pile); a bin's level. Rebuilt only when what it shows changes (the store's version, the hands).
+    /// </summary>
+    private static string StorageLook(Game g, Player me, in ConstructHit hit, CStore st, bool near, ConstructPartDef? held)
+    {
+        var scrap = g.SandboxInventory(me.Id).Scrap;
+        var key = ((long)hit.Body.Id << 40) ^ ((long)hit.Part << 32) ^ ((long)hit.SlotPlus1 << 26) ^ ((long)st.Version << 6) ^ ((long)(held?.Id ?? 255) << 52) ^ (near ? 1L << 62 : 0) ^ ((long)Math.Min(scrap, 1 << 20) << 8);
+        if (key == _sbStoreKey)
+            return _sbStoreText;
+        _sbStoreKey = key;
+        var cd = hit.Body.DefOf(hit.Part);
+        if (cd.IsBin)
+        {
+            var act = !near ? "" : scrap > 0 ? $" - F: tip in your {Math.Min(scrap, cd.BulkCapacity - st.Amount)} {cd.BulkMaterial}" : st.Amount > 0 ? $" - F: take {Math.Min(ConstructStorage.TakeLoad, st.Amount)} {cd.BulkMaterial}" : "";
+            return _sbStoreText = $"{cd.Name}: {st.Amount}/{cd.BulkCapacity} {cd.BulkMaterial}{act}";
+        }
+        if (hit.SlotPlus1 > 0 && hit.SlotPlus1 - 1 < st.SlotCount && ConstructParts.Get(st.Def[hit.SlotPlus1 - 1]) is { } d)
+        {
+            var k = hit.SlotPlus1 - 1;
+            var slot = cd.Slots[k];
+            var pile = slot.Stack > 1 ? $" x{st.Count[k]} ({slot.Stack} fit)" : "";
+            var take = !near ? "" : held != null ? " - put down what you hold to take it" : slot.Stack > 1 ? " - F to take one" : " - F to take it";
+            return _sbStoreText = $"{d.Name}{pile} in the {cd.Name}, {st.Health[k] * 100:0}%{take}";
+        }
+        var used = 0;
+        for (var k = 0; k < st.SlotCount; k++)
+            used += st.Def[k] == ConstructParts.None ? 0 : 1;
+        var what = used == 0 ? "empty" : $"{used}/{st.SlotCount} slots used ({st.Items} part{(st.Items == 1 ? "" : "s")})";
+        var hint = held == null || !near ? "" : ConstructRender.SlotMask != 0 ? $" - click a lit slot to set the {held.Name} in" : $" - no free slot takes the {held.Name}";
+        return _sbStoreText = $"{cd.Name}: {what}, {SlotSizes(cd)}{hint}";
+    }
+
+    /// <summary>"2 medium slots", "3 wheel slots, ..." (the container's room, by size class).</summary>
+    private static string SlotSizes(ConstructPartDef cd)
+    {
+        var parts = new List<string>(4);
+        foreach (var label in cd.Slots.Select(x => ConstructStorage.SizeClass(x)).Distinct())
+        {
+            var n = cd.Slots.Count(x => ConstructStorage.SizeClass(x) == label);
+            parts.Add($"{n} {label} slot{(n == 1 ? "" : "s")}");
+        }
+        return string.Join(", ", parts);
+    }
+
+    /// <summary>The slots of the storage part under the crosshair that take the held part (ConstructRender draws them); the chosen one is the free fitting slot nearest the crosshair. False when the part has none at all.</summary>
+    private static bool StorageSlots(Game g, in ConstructHit hit, CStore st, ConstructPartDef held, Vector3 eye, Vector3 dir)
+    {
+        var c = hit.Body;
+        var cd = c.DefOf(hit.Part);
+        if (cd.Slots.Length == 0)
+            return false;
+        ref var cp = ref c.Parts[hit.Part];
+        c.WorldFrame(cp.Seg, out var q, out var t);
+        var mask = 0;
+        var best = -1;
+        var bestD = float.MaxValue;
+        byte bestRot = 0;
+        for (var k = 0; k < cd.Slots.Length && k < st.SlotCount; k++)
+        {
+            if (ConstructStorage.Check(cd, st, k, held, out var rot) != SlotCheck.Ok)
+                continue;
+            mask |= 1 << k;
+            ConstructStorage.SlotBox(cp, cd.Slots[k], out var sc, out _);
+            var world = t + Vector3.Transform(sc, q);
+            var along = Vector3.Dot(world - eye, dir);
+            var off = Vector3.Distance(world, eye + dir * along);
+            if (hit.SlotPlus1 - 1 == k)
+                off = -1; // (aiming at the pile itself)
+            if (off < bestD)
+            {
+                bestD = off;
+                best = k;
+                bestRot = rot;
+            }
+        }
+        ConstructRender.SlotBody = c;
+        ConstructRender.SlotPart = hit.Part;
+        ConstructRender.SlotMask = mask;
+        ConstructRender.SlotSelected = best;
+        ConstructRender.SlotRot = bestRot;
+        ConstructRender.SlotDef = held;
+        _ = g;
         return true;
     }
 

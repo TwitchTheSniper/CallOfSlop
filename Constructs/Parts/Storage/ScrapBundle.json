@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Scrap Bundle",
+  "description": "A bundle of scrap, as a broken bin spills it: salvage it with the wrench for its scrap.",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 12,
+  "health": 60,
+  "material": "steel",
+  "scrap": 50,
+  "color": "#7a5a3c",
+  "boxes": [
+    { "size": [0.4, 0.2, 0.3], "at": [0, 0.1, 0] },
+    { "size": [0.42, 0.03, 0.05], "at": [0, 0.12, 0], "color": "#4a4a4a", "detail": true }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" }
+  ]
+}

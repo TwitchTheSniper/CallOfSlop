@@ -1,0 +1,52 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Chest Lid",
+  "description": "The lid of a chest. Goes on a Lid Hinge's leaf; F on it opens and shuts it. Shut, nobody sees or takes what is inside.",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 8,
+  "health": 160,
+  "armour": 4,
+  "material": "steel",
+  "color": "#7a6442",
+  "boxes": [
+    {
+      "min": [
+        -0.45,
+        -0.02,
+        0
+      ],
+      "max": [
+        0.45,
+        0.02,
+        0.56
+      ]
+    },
+    {
+      "size": [
+        0.2,
+        0.04,
+        0.04
+      ],
+      "at": [
+        0,
+        0.03,
+        0.5
+      ],
+      "color": "#c8c8c8",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "hang",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "-z"
+    }
+  ]
+}

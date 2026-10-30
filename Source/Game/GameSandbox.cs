@@ -22,6 +22,9 @@ public enum CActKind : byte
     SeatKeys, // u8: seated, the fire / aim / reload keys held (input readers)
     Blueprint, // u8 blueprint index: the debug parts menu builds it in front of the player (protocol 79)
     SeatLook, // i16: seated, the look's yaw relative to the seat's facing (x pi / 32767), unreliable, up to ~30 Hz (protocol 80)
+    StoreIn, // u16 body, u8 part, u8 slot: the part in the hands into a storage slot (physical storage; protocol 84)
+    TakeStored, // u16 body, u8 part, u8 slot: the stored part into empty hands (protocol 84)
+    Bin, // u16 body, u8 part: tip scrap into a bin, or take a load out (protocol 84)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -200,6 +203,13 @@ public sealed partial class Game
                 Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
             }
         Constructs.StructureDirty.Clear();
+        foreach (var handle in Constructs.StoreDirty)
+        {
+            // (after the structures: a client finds the store by the handle its part came with)
+            ConstructNet.WriteStore(w, Constructs.Stores[handle]);
+            Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
+        }
+        Constructs.StoreDirty.Clear();
         if (Constructs.LinksDirty)
         {
             // (after the structures: a client resolves the links against the parts as they are now)
@@ -237,6 +247,12 @@ public sealed partial class Game
             ConstructNet.WriteFull(w, c);
             Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         }
+        for (var k = 1; k <= ConstructWorld.MaxStores; k++)
+            if (Constructs.Stores[k].Live)
+            {
+                ConstructNet.WriteStore(w, Constructs.Stores[k]);
+                Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+            }
         ConstructNet.WriteLinks(w, Constructs);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxInventory(to);
@@ -360,6 +376,19 @@ public sealed partial class Game
             case CActKind.SeatKeys:
                 hands.Hand(p.Id).SeatKeys = (ushort)((r.U8() & 7) << 8);
                 return null;
+            case CActKind.StoreIn:
+            case CActKind.TakeStored:
+            {
+                var body = r.U16();
+                var part = r.U8();
+                var slot = r.U8();
+                return kind == CActKind.StoreIn ? hands.StoreHeld(Constructs, p.Id, eye, body, part, slot) : hands.TakeStored(Constructs, p.Id, eye, body, part, slot);
+            }
+            case CActKind.Bin:
+            {
+                var body = r.U16();
+                return hands.UseBin(Constructs, p.Id, eye, body, r.U8());
+            }
             case CActKind.SeatLook:
             {
                 ref var sh = ref hands.Hand(p.Id);
@@ -395,7 +424,12 @@ public sealed partial class Game
             case CActKind.Use:
             case CActKind.Unwire:
             case CActKind.Setting:
+            case CActKind.Bin:
                 w.U16(body).U8(part);
+                break;
+            case CActKind.StoreIn:
+            case CActKind.TakeStored:
+                w.U16(body).U8(part).U8(socket); // (the slot)
                 break;
             case CActKind.Wire:
                 w.U16(body).U8(part).U8(socket).U16(body2); // (from, to, to's construct)
@@ -535,7 +569,10 @@ public sealed partial class Game
     {
         if (Constructs.Get(hit.Body.Id) is not { } c || hit.Part >= c.PartCount)
             return;
-        Constructs.DamagePart(c, hit.Part, damage, out _);
+        if (hit.SlotPlus1 > 0)
+            Constructs.DamageStored(c, hit.Part, hit.SlotPlus1 - 1, damage); // (a part stored in a container: physical storage)
+        else
+            Constructs.DamagePart(c, hit.Part, damage, out _);
     }
 
     /// <summary>A blast near constructs (grenades, kill streaks, explosive props): every part in range takes its share.</summary>

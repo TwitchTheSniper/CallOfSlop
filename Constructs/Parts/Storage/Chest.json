@@ -1,0 +1,36 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Chest",
+  "description": "A steel chest with two slots. Fit the Lid Hinge and Chest Lid on top (the Chest blueprint), carry a part to it and click a lit slot to set it in; look at a stored part and press F to take it out.",
+  "role": "storage",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 28,
+  "health": 220,
+  "armour": 4,
+  "material": "steel",
+  "color": "#6f5a3a",
+  "boxes": [
+    { "min": [-0.45, 0, -0.3], "max": [0.45, 0.04, 0.3] },
+    { "min": [-0.45, 0.04, 0.26], "max": [0.45, 0.55, 0.3] },
+    { "min": [-0.45, 0.04, -0.3], "max": [0.45, 0.55, -0.26] },
+    { "min": [-0.45, 0.04, -0.26], "max": [-0.41, 0.55, 0.26] },
+    { "min": [0.41, 0.04, -0.26], "max": [0.45, 0.55, 0.26] },
+    { "min": [-0.46, 0.08, -0.31], "max": [0.46, 0.12, 0.31], "color": "#3d3a36", "detail": true },
+    { "min": [-0.46, 0.44, -0.31], "max": [0.46, 0.48, 0.31], "color": "#3d3a36", "detail": true }
+  ],
+  "sockets": [
+    { "name": "bottom", "at": [0, 0, 0], "dir": "-y" },
+    { "name": "lid", "at": [0, 0.55, -0.28], "dir": "+y" },
+    { "name": "+x", "at": [0.45, 0.27, 0], "dir": "+x" },
+    { "name": "-x", "at": [-0.45, 0.27, 0], "dir": "-x" },
+    { "name": "front", "at": [0, 0.27, 0.3], "dir": "+z" },
+    { "name": "back", "at": [0, 0.27, -0.3], "dir": "-z" }
+  ],
+  "storage": {
+    "slots": [
+      { "min": [-0.405, 0.045, -0.255], "max": [-0.005, 0.545, 0.255] },
+      { "min": [0.005, 0.045, -0.255], "max": [0.405, 0.545, 0.255] }
+    ]
+  }
+}

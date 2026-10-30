@@ -1,0 +1,10 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Chest",
+  "description": "A chest with a lid on a hinge: two slots for parts, shut away from sight.",
+  "steps": [
+    { "part": "Chest" },
+    { "part": "Lid Hinge", "on": 0, "socket": "lid", "by": "base" },
+    { "part": "Chest Lid", "on": 1, "socket": "leaf", "by": "hang" }
+  ]
+}
