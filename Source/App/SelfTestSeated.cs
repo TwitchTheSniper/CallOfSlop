@@ -184,8 +184,8 @@ public static partial class SelfTest
         if (least > 0)
             Fail("seated: the seat pass or the seated legs allocate");
 
-        // Dying seated: a limp seated ragdoll with the buggy's velocity.
-        g.HeldButtons = Buttons.Forward;
+        // Dying seated: a limp seated ragdoll with the buggy's velocity (backing up: the rescaled buggy's wider turn ends nose to the yard's kerb).
+        g.HeldButtons = Buttons.Back;
         for (var k = 0; k < 40; k++)
             Frame(World.TickDt);
         var ragdolls = Ragdolls.Enabled;
