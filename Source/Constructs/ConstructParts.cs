@@ -192,6 +192,9 @@ public sealed class ConstructPartDef
     public JointType JointType; // hinge: Passive; joint: the rest
     public float MotorSpeed, MotorStrength; // joint: radians (metres for a piston) a second; N m (N for a piston)
     public bool JointLimited = true; // a turntable without min/max turns forever
+    public float JointGive; // joint: how far it has given at twice its rating ("give": metres for a piston, else degrees; radians here)
+    public float SideLoad; // piston: the most load across its axis before it gives ("sideLoad", N; 0: no limit)
+    public float OverloadDamage; // joint: hp a second at twice its rating while overloaded ("overloadDamage"; 0, the default: none)
     public int LeafIndex = -1; // hinge, joint: the leaf socket's index
 
     // Logic (milestone 2)
@@ -848,7 +851,7 @@ public static partial class ConstructParts
     /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
     private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
     {
-        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength"], bw);
+        Known(b, ["type", "axis", "pivot", "min", "max", "leaf", "speed", "strength", "give", "sideLoad", "overloadDamage"], bw);
         var type = Str(Need(b, "type", bw), file, "joint.type").ToLowerInvariant();
         var ti = Array.IndexOf(JointTypes, type);
         if (ti < 0)
@@ -877,6 +880,15 @@ public static partial class ConstructParts
         Range(d.MotorSpeed, 0.05f, piston ? 10f : 4 * MathF.Tau, file, "joint.speed");
         d.MotorStrength = Num(Need(b, "strength", bw), file, "joint.strength");
         Range(d.MotorStrength, 1, 1_000_000, file, "joint.strength");
+        // The strength model (ConstructPhysics.cs): how far it gives above its rating, side loads, overload damage (off unless given).
+        d.JointGive = Opt(b, "give") is { } gv ? Num(gv, file, "joint.give") * unit : piston ? 0.25f * d.JointMax : 20 * MathF.PI / 180f;
+        Range(d.JointGive, 0.001f, piston ? 4f : MathF.PI, file, "joint.give");
+        d.SideLoad = Opt(b, "sideLoad") is { } sl ? Num(sl, file, "joint.sideLoad") : 0f;
+        Range(d.SideLoad, 0, 10_000_000, file, "joint.sideLoad");
+        if (d.SideLoad > 0 && !piston)
+            throw new ConstructPartException($"{file}: only a piston takes \"sideLoad\"");
+        d.OverloadDamage = Opt(b, "overloadDamage") is { } od ? Num(od, file, "joint.overloadDamage") : 0f;
+        Range(d.OverloadDamage, 0, 100_000, file, "joint.overloadDamage");
         d.LeafSocket = Str(Need(b, "leaf", bw), file, "joint.leaf");
         d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
         if (d.LeafIndex < 0)

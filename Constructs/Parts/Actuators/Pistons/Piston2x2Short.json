@@ -1,0 +1,149 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Piston 2x2 Short",
+  "description": "Pushes what sits on its top out along it, up to 0.5 m: a signal of 1 extends it fully, 0 pulls it in. Interact works it when nothing is wired in. Size 2x2 short: holds up to 24000 N rigidly (8000 N across it); more and it gives way.",
+  "group": "Joints",
+  "section": "Pistons",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 20.0,
+  "health": 180,
+  "armour": 6,
+  "material": "steel",
+  "color": "#6d747c",
+  "power": 5.0,
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.25,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.52,
+        0.06,
+        0.52
+      ],
+      "at": [
+        0.0,
+        0.095,
+        0.0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.125,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.125,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "joint": {
+    "type": "piston",
+    "axis": "+y",
+    "min": 0,
+    "max": 0.5,
+    "leaf": "top",
+    "speed": 0.2,
+    "strength": 24000,
+    "give": 0.125,
+    "sideLoad": 8000,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "min",
+      "label": "Pulled in to",
+      "group": "Travel",
+      "unit": "m",
+      "min": 0.0,
+      "max": 0.5,
+      "step": 0.01,
+      "tooltip": "How far out it rests when pulled in."
+    },
+    {
+      "key": "max",
+      "label": "Pushed out to",
+      "group": "Travel",
+      "unit": "m",
+      "min": 0.0,
+      "max": 0.5,
+      "step": 0.01,
+      "tooltip": "How far out it goes when pushed out (a signal of 1)."
+    },
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "m/s",
+      "min": 0.05,
+      "max": 0.5,
+      "step": 0.05,
+      "tooltip": "How fast it slides (this size: up to 0.5 m/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Force",
+      "group": "Motor",
+      "unit": "N",
+      "min": 2400.0,
+      "max": 24000.0,
+      "step": 100,
+      "tooltip": "Its rating: what it holds rigidly (this size: up to 24000 N). More load and it gives way; a lower setting uses less power."
+    }
+  ]
+}

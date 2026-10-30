@@ -1,0 +1,131 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Turntable 2x2 Medium",
+  "description": "Turns what sits on it round and round: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Size 2x2 medium: holds up to 12000 N m rigidly; more and it gives way.",
+  "group": "Joints",
+  "section": "Turntables",
+  "role": "joint",
+  "tool": "wrench",
+  "attachSeconds": 2.5,
+  "mass": 67.5,
+  "health": 400,
+  "armour": 8,
+  "material": "steel",
+  "color": "#5b6168",
+  "power": 15.0,
+  "boxes": [
+    {
+      "size": [
+        0.5,
+        0.3,
+        0.5
+      ]
+    },
+    {
+      "size": [
+        0.4,
+        0.04,
+        0.4
+      ],
+      "at": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "color": "#c7a23a",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "base",
+      "at": [
+        0.0,
+        -0.15,
+        0.0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "top",
+      "at": [
+        0.0,
+        0.15,
+        0.0
+      ],
+      "dir": "+y"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "dir": "-x"
+    },
+    {
+      "name": "+z",
+      "at": [
+        0.0,
+        0.0,
+        0.25
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "dir": "-z"
+    }
+  ],
+  "joint": {
+    "type": "turntable",
+    "axis": "+y",
+    "pivot": [
+      0.0,
+      0.15,
+      0.0
+    ],
+    "leaf": "top",
+    "speed": 90,
+    "strength": 12000,
+    "give": 20,
+    "overloadDamage": 0
+  },
+  "config": [
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 5.0,
+      "max": 90.0,
+      "step": 1,
+      "tooltip": "How fast it turns at a full signal (this size: up to 90 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 1200.0,
+      "max": 12000.0,
+      "step": 100,
+      "tooltip": "Its rating: what it holds rigidly (this size: up to 12000 N m). More load and it gives way; a lower setting uses less power."
+    }
+  ]
+}

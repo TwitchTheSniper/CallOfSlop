@@ -1,15 +1,18 @@
 {
   "format": "call-of-slop-construct-part/1",
   "name": "Turntable",
-  "description": "Turns what sits on it round and round: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it.",
+  "description": "Turns what sits on it round and round: a signal of 1 turns it one way at full speed, -1 the other, 0 holds it. Size 2x2 short: holds up to 12000 N m rigidly; more and it gives way.",
+  "group": "Joints",
+  "section": "Turntables",
   "role": "joint",
   "tool": "wrench",
   "attachSeconds": 2.5,
-  "mass": 45,
+  "mass": 45.0,
   "health": 300,
   "armour": 8,
   "material": "steel",
   "color": "#5b6168",
+  "power": 10.0,
   "boxes": [
     {
       "size": [
@@ -25,9 +28,9 @@
         0.5
       ],
       "at": [
-        0,
+        0.0,
         0.1,
-        0
+        0.0
       ],
       "color": "#c7a23a",
       "detail": true
@@ -37,18 +40,18 @@
     {
       "name": "base",
       "at": [
-        0,
+        0.0,
         -0.1,
-        0
+        0.0
       ],
       "dir": "-y"
     },
     {
       "name": "top",
       "at": [
-        0,
+        0.0,
         0.1,
-        0
+        0.0
       ],
       "dir": "+y"
     },
@@ -56,8 +59,8 @@
       "name": "+x",
       "at": [
         0.3,
-        0,
-        0
+        0.0,
+        0.0
       ],
       "dir": "+x"
     },
@@ -65,16 +68,16 @@
       "name": "-x",
       "at": [
         -0.3,
-        0,
-        0
+        0.0,
+        0.0
       ],
       "dir": "-x"
     },
     {
       "name": "+z",
       "at": [
-        0,
-        0,
+        0.0,
+        0.0,
         0.3
       ],
       "dir": "+z"
@@ -82,8 +85,8 @@
     {
       "name": "-z",
       "at": [
-        0,
-        0,
+        0.0,
+        0.0,
         -0.3
       ],
       "dir": "-z"
@@ -93,16 +96,36 @@
     "type": "turntable",
     "axis": "+y",
     "pivot": [
-      0,
+      0.0,
       0.1,
-      0
+      0.0
     ],
     "leaf": "top",
     "speed": 45,
-    "strength": 6000
+    "strength": 6000,
+    "give": 20,
+    "overloadDamage": 0
   },
   "config": [
-    {"key": "speed", "label": "Speed", "group": "Motor", "unit": "deg/s", "min": 5, "max": 360, "step": 1, "tooltip": "How fast it turns at a full signal."},
-    {"key": "strength", "label": "Torque", "group": "Motor", "unit": "N m", "min": 500, "max": 40000, "step": 100, "tooltip": "The most it can turn against."}
+    {
+      "key": "speed",
+      "label": "Speed",
+      "group": "Motor",
+      "unit": "deg/s",
+      "min": 5.0,
+      "max": 45.0,
+      "step": 1,
+      "tooltip": "How fast it turns at a full signal (this size: up to 45 deg/s)."
+    },
+    {
+      "key": "strength",
+      "label": "Torque",
+      "group": "Motor",
+      "unit": "N m",
+      "min": 1200.0,
+      "max": 12000.0,
+      "step": 100,
+      "tooltip": "Its rating: what it holds rigidly (this size: up to 12000 N m). More load and it gives way; a lower setting uses less power."
+    }
   ]
 }
