@@ -475,13 +475,16 @@ public static class ConstructConfig
             {
                 CfgKey.Setting => true,
                 CfgKey.Period or CfgKey.Duty => d.Logic == CLogic.Timer,
-                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle,
+                CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle || d.IsSpawner,
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,
                 CfgKey.Latched or CfgKey.Hold => d.Logic == CLogic.Button,
-                CfgKey.Radius => d.Logic == CLogic.Proximity,
+                CfgKey.Radius => d.Logic == CLogic.Proximity || d.IsSpawner,
+                CfgKey.Rate or CfgKey.Group or CfgKey.MaxAlive or CfgKey.Total => d.IsSpawner, // (the spawners: GameSandboxSpawns.cs)
+                CfgKey.Team or CfgKey.Difficulty or CfgKey.Loadout => d.Logic == CLogic.BotSpawner,
+                CfgKey.Mix => d.Logic == CLogic.ZombieSpawner,
                 CfgKey.Units => d.Logic == CLogic.Speed,
                 CfgKey.Colour or CfgKey.Brightness or CfgKey.Blink => d.Logic == CLogic.Lamp,
                 CfgKey.Pitch or CfgKey.Volume => d.Logic == CLogic.Horn,

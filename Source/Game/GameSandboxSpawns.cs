@@ -82,7 +82,7 @@ public sealed partial class Game
     public const double SpawnBotGone = 3.0;
 
     /// <summary>Per tick: bots, individual zombies, and crowd zombies added (a big group spreads over ticks: no hitch).</summary>
-    public const int SpawnBotsPerTick = 1, SpawnZombiesPerTick = 8, SpawnCrowdPerTick = 50000;
+    public const int SpawnBotsPerTick = 1, SpawnZombiesPerTick = 8, SpawnCrowdPerTick = 10000;
 
     /// <summary>The spawners' setting ranges (their part files hold the same).</summary>
     public const float SpawnerRateMax = 600, SpawnerAliveMax = 64, SpawnerGroupMax = 16;
@@ -736,7 +736,7 @@ public sealed partial class Game
                     LoadValue = lv,
                     Mix = (byte)Math.Clamp((int)ConstructConfig.Get(p, d, CfgKey.Mix, 0), 0, 1),
                     Left = want,
-                    At = new Vector3(centre.X, MathF.Min(centre.Y, ground.Y + 0.5f) is var y && float.IsFinite(ground.Y) ? ground.Y : centre.Y, centre.Z),
+                    At = new Vector3(centre.X, float.IsFinite(ground.Y) ? ground.Y : centre.Y, centre.Z),
                     Radius = MathF.Max(1.5f, ConstructConfig.Get(p, d, CfgKey.Radius, 4)),
                     Owner = c.Owner,
                     Body = c.Id,
