@@ -110,7 +110,7 @@ public static partial class SelfTest
         (GameMode.FreeForAll, 7, 0, 4101, 20, 0x3443E22BC1957A1D),
         (GameMode.TeamDeathmatch, 7, 0, 4102, 20, 0x6387879825A82FC6),
         (GameMode.KingOfTheHill, 7, 1, 4103, 20, 0x1DC4EA95C97536F5),
-        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0xB93280B2F71DCC0A),
+        (GameMode.CaptureTheFlag, 7, 1, 4104, 20, 0x54CA9A155DACDFBF),
         (GameMode.GunGame, 7, 0, 4105, 20, 0x931D3A8B47203A68),
         // Zombies re-recorded for milestone 3: kills roll for power-ups (one more random draw each; ZombiesPowerUps.cs).
         (GameMode.Zombies, 2, 0, 4106, 20, 0x1979D2A8FD9FF9A0), // (re-recorded 2026-10-26: bots shop, the power-up schedule; 2026-10-27: the player scaling, 3 players send more; 2026-10-28: zombie types roll a type per spawn)

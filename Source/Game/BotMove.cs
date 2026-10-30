@@ -153,7 +153,8 @@ public sealed partial class Game
             s.Sprint = false;
             s.Stationary = true;
         }
-        BotSeparate(p, ref s.Wish);
+        if (!b.SelfTestHold)
+            BotSeparate(p, ref s.Wish); // step away from other bodies (PlayerSeparation.cs)
         BotAvoidMines(p, ref s.Wish); // step round landmines (GameMines.cs)
         BotUnstick(p, b, ref s, now);
         return s;
@@ -318,19 +319,6 @@ public sealed partial class Game
         return best;
     }
 
-    /// <summary>Simple separation: step away from bots closer than 1.2 m so doorways don't jam.</summary>
-    private void BotSeparate(Player p, ref Vector3 wish)
-    {
-        foreach (var o in Players.Values)
-        {
-            if (o == p || !o.Alive || o.Bot == null)
-                continue;
-            var d = FlatVec(p.Position - o.Position);
-            var dist = d.Length();
-            if (dist is < 1.2f and > 0.001f)
-                wish += d / dist * (1.2f - dist) * 1.5f;
-        }
-    }
 
     /// <summary>
     /// Not getting anywhere? First hop/mantle, then avoid the edge we're stuck on and re-plan, then give up on the goal.

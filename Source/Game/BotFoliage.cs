@@ -39,6 +39,9 @@ public sealed partial class BotBrain
 
     /// <summary>Self-test: the bot stays where it is (it still looks, aims and shoots). Never set in the game.</summary>
     public bool SelfTestHold;
+
+    /// <summary>Self-test: a held (stunned) bot moves with this input instead of standing (PlayerSeparation.cs).</summary>
+    public InputCmd? SelfTestHeldCmd;
 }
 
 /// <summary>

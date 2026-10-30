@@ -862,6 +862,8 @@ public sealed partial class Game : IDisposable
 
         me.PrevPosition = me.Position;
         ZBlockBuild(client: true); // the zombie bodies as last heard (ZombieBlock.cs)
+        _sepAtTick = cmd.Tick;
+        SepBuild(); // the other players' and bots' bodies as last heard (PlayerSeparation.cs)
         if (me.Alive)
         {
             World.Simulate(ref me.Sim, cmd);
@@ -895,8 +897,14 @@ public sealed partial class Game : IDisposable
         var predicted = me.Position;
         var state = server;
         if (alive)
+        {
+            _sepAtTick = _pendingInputs.Count > 0 ? _pendingInputs[0].Tick : 0;
+            SepBuild(); // (the bodies as just heard)
+        }
+        if (alive)
             foreach (var cmd in _pendingInputs)
             {
+                _sepAtTick = cmd.Tick; // (the other bodies carried on to it: PlayerSeparation.cs)
                 World.Simulate(ref state, cmd);
                 ZBlockPlayer(me, ref state); // (the zombies as last heard)
                 if (_pendingKnocks.Count > 0)
@@ -1067,6 +1075,7 @@ public sealed partial class Game : IDisposable
         ServerTickFallKill(now); // fell off a void map into the clouds (GameFallKill.cs)
         ServerTickFrenzy(now); // per-player kill frenzy (Source/Game/Frenzy/FrenzyServer.cs)
 
+        SepBuild(); // everyone's body before anyone moves: the soft push apart (PlayerSeparation.cs)
         foreach (var p in Players.Values)
         {
             p.PrevPosition = p.Position;
@@ -1151,7 +1160,9 @@ public sealed partial class Game : IDisposable
         if (p.Alive)
         {
             World.Simulate(ref p.Sim, cmd);
+            _sepAtTick = p.Bot == null ? cmd.Tick : 0; // a client's input meets the bodies at its stamped tick (PlayerSeparation.cs)
             ZBlockPlayer(p, ref p.Sim); // out of zombie bodies (ZombieBlock.cs)
+            _sepAtTick = 0;
         }
         SprintSpread.Tick(p, cmd.Buttons); // sprint inaccuracy (SprintSpread.cs)
     }
@@ -1187,6 +1198,8 @@ public sealed partial class Game : IDisposable
         {
             var guess = p.LastInput;
             guess.Seq = p.LastProcessedSeq + 1;
+            if (guess.Tick != 0)
+                guess.Tick++; // the next command's stamp: what the client predicted it at (movers, player separation)
             ApplyCmd(p, guess);
         }
     }
