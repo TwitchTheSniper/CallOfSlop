@@ -192,7 +192,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     CBody and CPose.
     // 87: Sandbox glass (docs/sandbox/CONSTRUCTS.md "Glass"): CFireKind.Shatter in Msg.CFire (a glass part broke: where, its
     //     half size), so every PC bursts it into shards.
-    public const byte ProtocolVersion = 87;
+    // 88: Sandbox physics gun (docs/sandbox/CONSTRUCTS.md "The physics gun"): CActKind Grab / GrabSteer / GrabRelease /
+    //     GrabFreeze / UnfreezeAll; CBody's frozen flag and who froze it; the mode-state tail (version 3) carries each
+    //     player's held construct and grab point (the beam); the physics gun's tool byte (8).
+    public const byte ProtocolVersion = 88;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

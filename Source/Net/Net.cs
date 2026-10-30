@@ -362,7 +362,29 @@ public sealed class NetPeer : IDisposable
     private void OnCounted(RakNetGUID sender, ReadOnlySpan<byte> data)
     {
         BytesReceived += data.Length;
+        if (!TrackAllocs)
+        {
+            _handler!(sender, data);
+            return;
+        }
+        var before = GC.GetAllocatedBytesForCurrentThread();
         _handler!(sender, data);
+        var id = data[0];
+        AllocByMsg[id] += GC.GetAllocatedBytesForCurrentThread() - before;
+        CountByMsg[id]++;
+    }
+
+    /// <summary>Self-test ("Frame allocations"): while on, the bytes each received message id's handler allocated on
+    /// this thread, and how many of each arrived, so an allocating Net receive names its messages. Off: one bool test.</summary>
+    public static bool TrackAllocs;
+
+    public static readonly long[] AllocByMsg = new long[256];
+    public static readonly int[] CountByMsg = new int[256];
+
+    public static void ResetAllocs()
+    {
+        Array.Clear(AllocByMsg);
+        Array.Clear(CountByMsg);
     }
 
     // ---- Discovery (server browser, LAN broadcast, master server) ---------------------------

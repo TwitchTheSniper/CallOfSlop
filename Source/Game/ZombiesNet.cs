@@ -795,7 +795,7 @@ public sealed partial class Game
             z.Sim.Position = pos;
             z.Yaw = yaw;
             z.Snaps.Add((tick, pos, yaw));
-            if (z.Snaps.Count > 6)
+            if (z.Snaps.Count > Zombie.MaxSnaps)
                 z.Snaps.RemoveAt(0);
         }
         if (latest && total == 0 && Horde.Count > 0)

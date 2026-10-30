@@ -65,7 +65,7 @@ public sealed class SandboxModule : GameModeModule
 
     // ---- Each player's hands, ~10 Hz -------------------------------------------------------------------------------
 
-    public override byte StateVersion => 2; // 2: the linking tool (milestone 2)
+    public override byte StateVersion => 3; // 2: the linking tool (milestone 2); 3: the physics gun's held construct and grab point (protocol 88)
 
     public override void WriteState(Game game, PacketWriter w)
     {
@@ -79,6 +79,9 @@ public sealed class SandboxModule : GameModeModule
             ref var h = ref hands.Hand(p.Id);
             w.U8(p.Id).U8((byte)h.Tool).U8(h.Held).U16(h.SeatBody).U8(h.SeatPart).U8((byte)h.Edit)
                 .U16((ushort)Math.Clamp(h.Duration * 100, 0, 65535)).U16((ushort)Math.Clamp((game.SandboxNow - h.Start) * 100, 0, 65535));
+            w.U16(h.GrabBody);
+            if (h.GrabBody != 0)
+                w.U16(Cm(h.GrabLocal.X)).U16(Cm(h.GrabLocal.Y)).U16(Cm(h.GrabLocal.Z));
         }
     }
 
@@ -88,13 +91,15 @@ public sealed class SandboxModule : GameModeModule
         for (var k = 0; k < n; k++)
         {
             var id = r.U8();
-            var tool = (ConstructTool)Math.Min(r.U8(), (byte)ConstructTool.Linker);
+            var tool = ConstructToolWire.From(r.U8());
             var held = r.U8();
             var seat = r.U16();
             var seatPart = r.U8();
             var edit = (EditKind)Math.Min(r.U8(), (byte)EditKind.Remove);
             var duration = r.U16() / 100.0;
             var elapsed = r.U16() / 100.0;
+            var grab = r.U16();
+            var grabAt = grab == 0 ? Vector3.Zero : new Vector3((short)r.U16(), (short)r.U16(), (short)r.U16()) / 100f;
             if (game.IsServer)
                 continue;
             ref var h = ref game.SandboxHands.Hand(id);
@@ -106,8 +111,15 @@ public sealed class SandboxModule : GameModeModule
             h.Edit = edit;
             h.Duration = duration;
             h.Start = game.SandboxNow - elapsed;
+            if (id != game.LocalId || game.SandboxNow > h.GrabAskedAt + 0.4) // (what the local player just asked for stands until the server has heard it)
+            {
+                h.GrabBody = grab;
+                h.GrabLocal = grabAt;
+            }
         }
     }
+
+    private static ushort Cm(float v) => unchecked((ushort)(short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue));
 
     // ---- HUD -----------------------------------------------------------------------------------------------------------
 

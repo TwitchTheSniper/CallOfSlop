@@ -1,0 +1,27 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Physics Gun",
+  "tool": "physgun",
+  "description": "A grab beam projector: holds a construct, a wreck or a loose part in its beam, moves and turns it, and freezes it in the air. Its coil spins up and its three prongs throw the beam while it holds something.",
+  "boxes": [
+    { "size": [0.034, 0.1, 0.042], "at": [0, -0.02, 0.005], "color": "#26282d" },
+    { "size": [0.07, 0.075, 0.26], "at": [0, 0.065, -0.06], "color": "#c9862f" },
+    { "size": [0.06, 0.06, 0.07], "at": [0, 0.07, 0.105], "color": "#3a3f46" },
+    { "size": [0.062, 0.012, 0.05], "at": [0, 0.07, 0.105], "color": "#7fe0ff", "glow": true },
+    { "size": [0.04, 0.025, 0.16], "at": [0, 0.115, -0.07], "color": "#3a3f46" },
+    { "size": [0.09, 0.02, 0.03], "at": [0, 0.065, -0.2], "color": "#5a6470", "spin": true },
+    { "size": [0.02, 0.09, 0.03], "at": [0, 0.065, -0.2], "color": "#5a6470", "spin": true },
+    { "size": [0.07, 0.07, 0.015], "at": [0, 0.065, -0.222], "color": "#26282d" },
+    { "size": [0.03, 0.03, 0.06], "at": [0, 0.065, -0.24], "color": "#26282d" },
+    { "size": [0.022, 0.022, 0.012], "at": [0, 0.065, -0.276], "color": "#8fe8ff", "glow": true },
+    { "size": [0.012, 0.012, 0.07], "at": [0, 0.09, -0.255], "color": "#d9dde2" },
+    { "size": [0.012, 0.012, 0.07], "at": [-0.03, 0.05, -0.255], "color": "#d9dde2" },
+    { "size": [0.012, 0.012, 0.07], "at": [0.03, 0.05, -0.255], "color": "#d9dde2" },
+    { "size": [0.03, 0.06, 0.035], "at": [0, 0.0, -0.13], "color": "#26282d" }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-10, 0, 0], "shape": "wrap" },
+  "support": { "at": [0, -0.01, -0.13], "shape": "under" },
+  "tip": [0, 0.065, -0.29],
+  "spin": { "axis": [0, 0, 1], "pivot": [0, 0.065, -0.2] },
+  "use": { "motion": "jitter", "amount": 0.002, "rate": 18, "spin": 18, "idleSpin": 2, "light": "#7fd8ff" }
+}

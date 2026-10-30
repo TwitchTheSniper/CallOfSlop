@@ -629,7 +629,12 @@ public sealed class Player
     public byte SnapSeatPart;
 
     // ---- Server only --------------------------------------------------------
-    public readonly List<InputCmd> InputQueue = new();
+    /// <summary>Most commands <see cref="InputQueue"/> holds (Game.cs drops the oldest past it).</summary>
+    public const int MaxQueuedInputs = 60;
+
+    // At its full size from the start: growing it inside a match (a backlog after a hitch) allocated in Net receive
+    // (the "Frame allocations" failures on Windows CI, 2026-10-30).
+    public readonly List<InputCmd> InputQueue = new(MaxQueuedInputs + 1);
     public uint LastProcessedSeq;
     public uint HighestQueuedSeq;
     public InputCmd LastInput;
@@ -662,7 +667,11 @@ public sealed class Player
     public readonly HistoryEntry[] History = new HistoryEntry[HistorySize]; // per tick, for lag compensation
 
     // ---- Client only (remote players) ---------------------------------------
-    public readonly List<Snap> Snaps = new();
+    /// <summary>Most snapshots <see cref="Snaps"/> holds (GameSnapshots.cs drops the oldest past it).</summary>
+    public const int MaxSnaps = 64;
+
+    // At its full size from the start, like InputQueue: a burst of snapshots after a stall mustn't grow it in Net receive.
+    public readonly List<Snap> Snaps = new(MaxSnaps + 1);
 
     public Stance RenderStance; // stance being drawn (interpolated for remote players)
     public float RenderEyeHeight = World.EyeHeight; // smoothed so crouching doesn't snap the camera

@@ -119,12 +119,19 @@ public static partial class SelfTest
         // A cancel in the dead zone, a tool still to come, and the number keys' favourites unchanged.
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         var cancel = Flick(new Vector2(8, -6), out var hC, out _);
-        var later = Flick(new Vector2(30, -30), out var hL, out _);
+        var later = Flick(new Vector2(-30, 30), out var hL, out _);
         var laterSaid = g.SandboxNotice;
-        Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the north-east ({(hL >= 0 ? w.Items[hL].Label : "?")}) kept the {later} and said \"{laterSaid}\"");
+        Line($"tool wheel: let go in the middle kept the {cancel} (hovered {hC}); the south-west ({(hL >= 0 ? w.Items[hL].Label : "?")}) kept the {later} and said \"{laterSaid}\"");
+        // The physics gun on the north-east (where the hoist was).
+        var phys = Flick(new Vector2(30, -30), out var hP, out _);
+        Line($"tool wheel: the north-east ({(hP >= 0 ? w.Items[hP].Label : "?")}) took out the {phys}");
+        if (phys != ConstructTool.PhysicsGun || hP != (int)SandboxToolWheel.Slot.PhysicsGun)
+            Fail("tool wheel: the north-east flick didn't take out the physics gun");
+        g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
+        Run(g, ref now, 0.05);
         if (cancel != ConstructTool.Welder || hC != -1)
             Fail("tool wheel: letting go in the dead zone didn't cancel");
-        if (later != ConstructTool.Welder || hL != (int)SandboxToolWheel.Slot.Hoist || !laterSaid.Contains("coming later") || w.Items[hL].Enabled)
+        if (later != ConstructTool.Welder || hL != (int)SandboxToolWheel.Slot.Scanner || !laterSaid.Contains("coming later") || w.Items[hL].Enabled)
             Fail("tool wheel: a tool still to come was taken out, or nothing said why not");
 
         // Closing without choosing: a menu (or the parts menu) over it, death; not opening in a seat or while the key stays held.

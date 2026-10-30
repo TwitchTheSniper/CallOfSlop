@@ -94,24 +94,32 @@ public static partial class SelfTest
                     Perf.TrackAllocs = true;
                     var least = long.MaxValue;
                     var areas = "";
+                    var rounds = "";
+                    NetPeer.TrackAllocs = true; // which received messages allocated (Net.cs), named in a failure
                     for (var round = 0; round < 3; round++)
                     {
                         Perf.ResetAllocs();
+                        NetPeer.ResetAllocs();
                         AllocProfile.Reset(); // the game's own finer sections (AllocProfile marks in Game.Update and the server tick)
                 AllocProfile.On = true;
                         var before = GC.GetAllocatedBytesForCurrentThread();
                         Frames(hud, view, 60);
                         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+                        rounds += $"{(round > 0 ? ", " : "")}{bytes} B"; // (after the round: every round is named in a failure)
+                        if (bytes > 0)
+                            rounds += $" [{AllocAreas()}{NetMsgAllocs()}]";
                         if (bytes < least)
                         {
                             least = bytes;
-                            areas = AllocAreas();
+                            areas = AllocAreas() + NetMsgAllocs();
                         }
                     }
+                    NetPeer.TrackAllocs = false;
                     report.Add($"{who} {view} {least} B");
                     if (least > FrameAllocAllowance)
-                        failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas})");
+                        failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas}; the rounds: {rounds})");
                 }
+            CheckInputBurst(server, client, ref now, failures, report);
             Line($"frame allocations (loopback host and client on {map.Name}, {server.Crowd.Total} in the crowd, HUD and perf window drawn headless; least of three 60-frame rounds): {string.Join(", ", report)}");
             if (failures.Count > 0)
                 Fail($"steady frames should allocate nothing on the main thread: {string.Join("; ", failures)}");
@@ -119,10 +127,63 @@ public static partial class SelfTest
         finally
         {
             Perf.TrackAllocs = false;
+            NetPeer.TrackAllocs = false;
             Perf.SetOn(wasOn);
             ui.DisposeHeadless();
         }
     }
+
+    /// <summary>
+    /// A network stall's burst (the "Frame allocations" failures on Windows CI, 2026-10-30: "Net receive 1560 B", the
+    /// server's input queue growing from 32 to 64 commands when a backlog arrived in one poll): a full queue's worth of
+    /// input commands in one go must allocate nothing, and the client's own bounded lists start at their full size.
+    /// </summary>
+    private static void CheckInputBurst(Game server, Game client, ref double now, List<string> failures, List<string> report)
+    {
+        if (!server.Players.TryGetValue(client.LocalId, out var p))
+        {
+            failures.Add("input burst: the server has no player for the client");
+            return;
+        }
+        var guid = server.SelfTestClientGuid(client.LocalId);
+        var w = new PacketWriter(1024);
+        var packets = new List<byte[]>();
+        var seq = Math.Max(p.HighestQueuedSeq, p.LastProcessedSeq);
+        for (var sent = 0; sent < Player.MaxQueuedInputs + 16; sent += 16)
+        {
+            w.Begin(Msg.Input).U8(16);
+            for (var i = 1; i <= 16; i++)
+                w.U32(seq + (uint)(sent + i)).U8(0).F32(p.Yaw).F32(p.Pitch).U8(p.Weapon).U8(100);
+            for (var i = 0; i < 16; i++)
+                w.U32(0);
+            packets.Add(w.Span.ToArray());
+        }
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        foreach (var packet in packets)
+            server.SelfTestPacket(guid, packet, now);
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var queued = p.InputQueue.Count;
+        report.Add($"input burst {queued} queued {bytes} B");
+        if (queued < Player.MaxQueuedInputs || bytes > 0)
+            failures.Add($"input burst: {packets.Count * 16} commands in one go queued {queued} (want {Player.MaxQueuedInputs}) and allocated {bytes} B (want 0)");
+        if (client.SelfTestPendingInputCapacity <= Game.MaxPendingInputs)
+            failures.Add($"input burst: the client's unacknowledged inputs start at {client.SelfTestPendingInputCapacity}, not their full size");
+    }
+
+    /// <summary>The received message ids whose handlers allocated since <see cref="NetPeer.ResetAllocs"/> (both games),
+    /// as "; messages: State x3 1560 B", or "" when none did (allocates: for the report).</summary>
+    private static string NetMsgAllocs()
+    {
+        var parts = Enumerable.Range(0, 256).Where(i => NetPeer.AllocByMsg[i] > 0).OrderByDescending(i => NetPeer.AllocByMsg[i])
+            .Select(i => $"{MsgName((byte)i)} x{NetPeer.CountByMsg[i]} {NetPeer.AllocByMsg[i]} B").ToList();
+        return parts.Count > 0 ? $"; messages: {string.Join(", ", parts)}" : "";
+    }
+
+    /// <summary>A message id's name: a game <see cref="Msg"/>, a RakNet system message, or the number.</summary>
+    private static string MsgName(byte id) =>
+        Enum.IsDefined((Msg)id) ? ((Msg)id).ToString()
+        : Enum.IsDefined((Brutal.RakNetApi.DefaultMessageIDTypes)id) ? ((Brutal.RakNetApi.DefaultMessageIDTypes)id).ToString()
+        : $"id {id}";
 
     /// <summary>The perf areas that allocated since <see cref="Perf.ResetAllocs"/>, most first (allocates: for the report).</summary>
     private static string AllocAreas()

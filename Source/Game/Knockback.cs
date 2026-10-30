@@ -205,7 +205,9 @@ public sealed partial class Game
     public const int KnockBytes = 16;
 
     // Client: the pushes the server has sent that its acknowledged state doesn't include yet (sequence, impulse).
-    private readonly List<(uint Seq, Vector3 Impulse)> _pendingKnocks = new();
+    private readonly List<(uint Seq, Vector3 Impulse)> _pendingKnocks = new(MaxPendingKnocks); // (its full size: no growth in Net receive)
+
+    private const int MaxPendingKnocks = 32;
     private MoveState _lastServerMove;
     private uint _lastAckSeq;
     private bool _haveServerMove;
@@ -277,7 +279,7 @@ public sealed partial class Game
                 Reconcile(me, _lastAckSeq, _lastServerMove, true, false);
             return;
         }
-        if (_pendingKnocks.Count >= 32)
+        if (_pendingKnocks.Count >= MaxPendingKnocks)
             _pendingKnocks.RemoveAt(0);
         _pendingKnocks.Add((seq, impulse));
         Reconcile(me, _lastAckSeq, _lastServerMove, true, false); // predict it now: the replay puts it in after input `seq`
