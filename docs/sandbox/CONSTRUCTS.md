@@ -1687,10 +1687,13 @@ caps allow); a rising "spawn now" spawns a group at once, on or off. What a spaw
 part's stable tag, so it counts them back however the parts are renumbered; its zombies are never put back into the
 crowd (they'd stop counting). It shows a light (blue, green) while on. A wire from another construct goes into port 0.
 
-**Bots and constructs**: after a bot steers, a construct's box in the way (its bounds in its own frame, a player's
-radius round them, from a step up to head height) turns it along the box's side towards its goal, and a bot held up
-against one for 1.5 s marks the path edge it was on blocked for 8 s and plans again (A* goes round). No nav-graph patch
-for anchored builds yet (the graph stays the map's, deterministic).
+**Bots and constructs**: after a bot steers, a solid part box of a construct in the way (in the part's frame, a player's
+radius round it, from a step up to head height: a floor it can step onto or a doorway between walls is not in the way)
+turns it along the box's side towards its goal, and a bot held up against one for 1.5 s marks the path edge it was on
+blocked for 8 s and plans again (A* goes round). Bots already step up onto builds with the players' mover. The nav graph
+stays the map's (deterministic). Follow-ups for bots inside built buildings (from the building pieces work): the tops of
+walkable parts as nav nodes, nav links through door openings (opened with Interact first), and a nav patch when a
+construct is built, changed or broken.
 
 ### Self-test
 

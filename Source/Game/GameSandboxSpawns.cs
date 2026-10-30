@@ -1012,40 +1012,47 @@ public static class ConstructSpawners
     }
 
     /// <summary>
-    /// A construct box in the way: a point <paramref name="ahead"/> m along <paramref name="dir"/> from
-    /// <paramref name="feet"/> (and half way) inside a construct's bounds (its body frame, a player's radius round it, from
-    /// a step above the feet to head height). <paramref name="away"/>: flat, from the box towards the feet.
+    /// A construct part in the way: a point <paramref name="ahead"/> m along <paramref name="dir"/> from
+    /// <paramref name="feet"/> (and half way) inside one of a construct's solid part boxes (in the part's frame, a player's
+    /// radius round it, from a step above the feet to head height; so a floor a bot can step onto, or a doorway between
+    /// walls, is not in the way). <paramref name="away"/>: flat, from the box towards the feet.
     /// </summary>
     public static bool Obstacle(ConstructWorld w, Vector3 feet, Vector3 dir, float ahead, out Construct? hit, out Vector3 away)
     {
         hit = null;
         away = Vector3.Zero;
+        var r = World.PlayerRadius + 0.1f;
         for (var bi = 0; bi < w.Bodies.Count; bi++)
         {
             var c = w.Bodies[bi];
             var reach = c.Radius + ahead + 1f;
             if (Vector3.DistanceSquared(feet, c.WorldCom) > reach * reach)
                 continue;
-            var iq = Quaternion.Conjugate(c.Rot);
-            var grow = new Vector3(World.PlayerRadius + 0.1f, 0, World.PlayerRadius + 0.1f);
-            var mn = c.LocalMin - grow;
-            var mx = c.LocalMax + grow;
-            for (var s = 1; s <= 2; s++)
+            for (var i = 0; i < c.PartCount; i++)
             {
-                var probe = feet + dir * (ahead * s * 0.5f);
-                var l0 = Vector3.Transform(probe + new Vector3(0, World.StepHeight + 0.05f, 0) - c.Pos, iq);
-                var l1 = Vector3.Transform(probe + new Vector3(0, 1.6f, 0) - c.Pos, iq);
-                var lmin = Vector3.Min(l0, l1);
-                var lmax = Vector3.Max(l0, l1);
-                if (lmax.X < mn.X || lmin.X > mx.X || lmax.Y < mn.Y || lmin.Y > mx.Y || lmax.Z < mn.Z || lmin.Z > mx.Z)
-                    continue;
-                // Towards the feet from the box's middle (flat).
-                var centre = c.Pos + Vector3.Transform((c.LocalMin + c.LocalMax) * 0.5f, c.Rot);
-                var a = feet - centre;
-                a.Y = 0;
-                away = a.LengthSquared() > 1e-6f ? Vector3.Normalize(a) : -dir;
-                hit = c;
-                return true;
+                c.WorldFrame(c.Parts[i].Seg, out var q, out var t);
+                var iq = Quaternion.Conjugate(q);
+                var boxes = c.Parts[i].D.SolidBoxes;
+                for (var k = 0; k < boxes; k++)
+                {
+                    c.BoxOf(i, k, out var centre, out var half);
+                    var grow = half + new Vector3(r, 0, r);
+                    for (var s = 1; s <= 2; s++)
+                    {
+                        var probe = feet + dir * (ahead * s * 0.5f);
+                        var l0 = Vector3.Transform(probe + new Vector3(0, World.StepHeight + 0.05f, 0) - t, iq) - centre;
+                        var l1 = Vector3.Transform(probe + new Vector3(0, 1.6f, 0) - t, iq) - centre;
+                        var lmin = Vector3.Min(l0, l1);
+                        var lmax = Vector3.Max(l0, l1);
+                        if (lmax.X < -grow.X || lmin.X > grow.X || lmax.Y < -grow.Y || lmin.Y > grow.Y || lmax.Z < -grow.Z || lmin.Z > grow.Z)
+                            continue;
+                        var a = feet - (t + Vector3.Transform(centre, q));
+                        a.Y = 0;
+                        away = a.LengthSquared() > 1e-6f ? Vector3.Normalize(a) : -dir;
+                        hit = c;
+                        return true;
+                    }
+                }
             }
         }
         return false;
