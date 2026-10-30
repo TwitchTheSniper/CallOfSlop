@@ -48,6 +48,9 @@ public struct RagdollDeath
     public float OverkillFraction;
     public bool Legless;
 
+    /// <summary>Died in a construct's seat (Sandbox): the body starts seated and goes limp in place, with the construct's velocity.</summary>
+    public bool Seated;
+
     public RagdollDeath()
     {
         Cause = DeathCause.Unknown;
@@ -353,7 +356,8 @@ public static class Ragdolls
         var killer = game.Players.GetValueOrDefault(kill.Killer);
         var d = new RagdollDeath
         {
-            Feet = p.RenderPosition, Yaw = p.RenderYaw, Stance = p.RenderStance, Velocity = p.RenderVelocity,
+            Feet = p.RenderPosition, Yaw = p.RenderSeatWas != SeatKind.None ? Game.SeatYaw(p.RenderSeatRot) : p.RenderYaw, Stance = p.RenderStance, Velocity = p.RenderVelocity,
+            Seated = p.RenderSeatWas != SeatKind.None,
             Victim = p.Id, Killer = kill.Killer, KillId = kill.KillId, Headshot = kill.Headshot,
             HitPart = kill.HitPart, Cause = kill.Cause, OverkillHp = kill.OverkillHp, OverkillFraction = kill.OverkillFraction,
         };
@@ -611,7 +615,7 @@ public static class Ragdolls
         body.HatOff = body.HatResting = false;
         _spawned++;
         RagdollTuning.EnsureLoaded();
-        var pose = d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
+        var pose = d.Seated ? RagdollRig.Seated : d.Stance switch { Stance.Prone => RagdollRig.Prone, Stance.Crouch => RagdollRig.Crouch, _ => RagdollRig.Stand };
         var toWorld = GravityFrames.Curved // a planet: the body falls from standing on its curve
             ? Matrix4x4.CreateRotationY(-d.Yaw) * GravityFrames.Basis(d.Feet) * Matrix4x4.CreateTranslation(d.Feet)
             : Matrix4x4.CreateRotationY(-d.Yaw) * Matrix4x4.CreateTranslation(d.Feet);
@@ -624,7 +628,7 @@ public static class Ragdolls
         body.Act = default;
         // A near thing: a short active phase (the death reaction), if there's room among the powered bodies.
         var choice = RagdollActive.Choose(d);
-        if (choice.Reaction >= 0 && ActiveRoom(body.Look == RagdollLook.Zombie))
+        if (choice.Reaction >= 0 && !d.Seated && ActiveRoom(body.Look == RagdollLook.Zombie)) // (seated: limp, no reaction)
             RagdollActive.Start(body.Sim, ref body.Act, choice, d);
         var rng = new Foliage.Rng(Seed(d));
         ApplyDeath(body, d, ref rng);

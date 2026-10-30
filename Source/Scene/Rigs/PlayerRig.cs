@@ -143,9 +143,7 @@ public sealed class PlayerRig
     public void Pose(Player p, double time, bool legsOnly = false)
     {
         BodyBloodRender.Reset(); // marks are placed below for a living body (Source/Render/BodyBloodRender.cs)
-        var rot = Matrix4x4.CreateRotationY(-p.RenderYaw);
-        var at = Matrix4x4.CreateTranslation(p.RenderPosition);
-        var body = GravityFrames.Curved ? rot * GravityFrames.Basis(p.RenderPosition) * at : rot * at; // a planet: standing on its curve
+        var body = PlayerRender.BodyFrame(p); // (a planet: standing on its curve; Sandbox: seated in the seat's frame)
         Root.SetLocalMatrix(legsOnly ? Matrix4x4.CreateTranslation(0, 0, FirstPersonBack) * body : body);
         var color = p.Color;
         if (color != _color)
@@ -197,8 +195,12 @@ public sealed class PlayerRig
             _ => (new Vector3(0.3f, 1.3f, -0.25f), 2.05f),
         };
         var def = p.WeaponDef;
-        var gunPose = Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt) * upper;
+        var seated = p.RenderSeat != SeatKind.None;
+        var gunPose = (seated ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * upper;
         ThirdPersonArms.Animate(p, def, gunPose, upper, time);
+        if (p.RenderSeat == SeatKind.Driver)
+            ThirdPersonArms.WheelHands(p, upper); // Sandbox: both hands on the steering wheel, no gun
+        Gun.Root.Visible = p.RenderSeat != SeatKind.Driver;
         Gun.Ensure(def);
         var shot = ThirdPersonArms.ShotFlash; // the muzzles of their last shot flash (Source/Game/GameMuzzle.cs)
         GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;

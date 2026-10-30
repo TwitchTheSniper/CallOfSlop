@@ -291,6 +291,7 @@ public sealed partial class Game : IDisposable
         FollowMoverYaw(); // before the render states: the view turns with a rotating platform under you
         AllocProfile.Mark("render states");
         UpdateRenderStates((float)frameDt);
+        UpdateSandboxSeats(now, (float)frameDt); // Sandbox: seated players drawn in their seats, the view turning with the seat (GameSandbox.cs)
         AllocProfile.Mark("frame visuals");
         UpdateLauncherVisuals(now, (float)frameDt); // rockets drawn between ticks, trails, motors, the lock-on (GameLaunchersNet.cs)
         UpdateZombiesFrame(now, (float)frameDt); // Zombies: where zombies are drawn, points popups (ZombiesNet.cs)
@@ -956,6 +957,7 @@ public sealed partial class Game : IDisposable
         var snaps = p.Snaps;
         if (snaps.Count == 0)
         {
+            p.SnapSeatBody = 0;
             p.RenderPosition = p.Position;
             p.RenderYaw = p.Yaw;
             p.RenderPitch = p.Pitch;
@@ -971,6 +973,7 @@ public sealed partial class Game : IDisposable
         if (renderTick <= first.Tick)
         {
             Set(p, first.Position, first.Yaw, first.Pitch);
+            Seat(p, first);
             p.RenderStance = first.Stance;
             SetMotion(p, first.Velocity, first.Grounded, first.Mantling);
         }
@@ -979,6 +982,7 @@ public sealed partial class Game : IDisposable
             var ahead = (float)Math.Min(renderTick - last.Tick, 8) * World.TickDt;
             var pos = World.ClampToArena(last.Position + new Vector3(last.Velocity.X, 0, last.Velocity.Z) * ahead);
             Set(p, pos, last.Yaw, last.Pitch);
+            Seat(p, last);
             p.RenderStance = last.Stance;
             SetMotion(p, last.Velocity, last.Grounded, last.Mantling);
         }
@@ -990,11 +994,21 @@ public sealed partial class Game : IDisposable
                 if (renderTick < a.Tick || renderTick > b.Tick)
                     continue;
                 var t = (float)((renderTick - a.Tick) / Math.Max(1, b.Tick - a.Tick));
-                Set(p, Vector3.Lerp(a.Position, b.Position, t), World.LerpAngle(a.Yaw, b.Yaw, t), float.Lerp(a.Pitch, b.Pitch, t));
+                // (getting in or out between the two: a seat-relative yaw doesn't blend with a world one)
+                var sameSeat = a.SeatBody == b.SeatBody && a.SeatPart == b.SeatPart;
+                var yaw = sameSeat ? World.LerpAngle(a.Yaw, b.Yaw, t) : t < 0.5f ? a.Yaw : b.Yaw;
+                Set(p, Vector3.Lerp(a.Position, b.Position, t), yaw, float.Lerp(a.Pitch, b.Pitch, t));
+                Seat(p, sameSeat || t < 0.5f ? a : b);
                 p.RenderStance = t < 0.5f ? a.Stance : b.Stance;
                 SetMotion(p, Vector3.Lerp(a.Velocity, b.Velocity, t), t < 0.5f ? a.Grounded : b.Grounded, t < 0.5f ? a.Mantling : b.Mantling);
                 break;
             }
+        }
+
+        static void Seat(Player p, in Snap s)
+        {
+            p.SnapSeatBody = s.SeatBody;
+            p.SnapSeatPart = s.SeatPart;
         }
 
         static void SetMotion(Player p, Vector3 vel, bool grounded, bool mantling)

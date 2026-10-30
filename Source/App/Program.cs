@@ -2115,7 +2115,7 @@ public static unsafe partial class Program
             var t = (float)now * 40f;
             eye += new Vector3(MathF.Sin(t * 1.3f), MathF.Sin(t * 1.7f + 1), MathF.Sin(t * 1.1f + 2)) * 0.08f * _game.Shake;
         }
-        if (local is { Alive: true })
+        if (local is { Alive: true, RenderSeat: SeatKind.None }) // (seated in a construct: no bob, the camera rides with the seat)
         {
             // Head bob (Source/Render/HeadBob.cs): moves only the rendered eye; aim and bullets keep the unbobbed eye.
             _headBob.Update(new HeadBobInput

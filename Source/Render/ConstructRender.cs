@@ -55,6 +55,7 @@ public static class ConstructRender
             var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
             for (var i = 0; i < c.PartCount; i++)
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
+            n += DrawWheel(gfx, c, alpha, blendTicks);
         }
         LastBoxes = n;
     }
@@ -127,6 +128,66 @@ public static class ConstructRender
     /// <summary>A segment's pose (rest frame -> body frame) blended between the last two ticks' joint values.</summary>
     public static Matrix4x4 SegMatrix(Construct c, int seg, float alpha)
     {
+        SegPoseBlended(c, seg, alpha, out var q, out var t);
+        return Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
+    }
+
+    /// <summary>
+    /// Where a seat is drawn this frame, exactly as <see cref="Draw"/> places its boxes: the seat's turn in the world (its
+    /// -Z the way the sitter faces, its +Y their up) and the sitter's feet (the seat's "at" point). A seated player is
+    /// drawn, and the local camera put, from this, so they ride as part of the construct (no lag, no slide).
+    /// </summary>
+    public static void SeatPose(Construct c, int part, float alpha, bool blendTicks, out Quaternion rot, out Vector3 feet)
+    {
+        ref var p = ref c.Parts[part];
+        var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
+        var body = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+        var sq = Quaternion.Identity;
+        var st = Vector3.Zero;
+        if (p.Seg > 0 && p.Seg <= c.JointCount)
+            SegPoseBlended(c, p.Seg, blendTicks ? alpha : 1f, out sq, out st);
+        rot = Quaternion.Normalize(body * sq * Rot24.Quat(p.Rot));
+        feet = pos + Vector3.Transform(st + Vector3.Transform(p.Pos + Rot24.Apply(p.Rot, p.D.SeatAt), sq), body);
+    }
+
+    /// <summary>The steering wheel in front of a drive seat, from the sitter's feet in the seat's frame: the rim's centre (tilted back to face the driver).</summary>
+    public static readonly Vector3 WheelAt = new(0, 1.12f, -0.5f);
+
+    public const float WheelTilt = 0.55f, WheelRadius = 0.17f;
+
+    /// <summary>Where the driver's hands hold the steering wheel (world), turned by the steering: right hand, left hand, and the rim's turn.</summary>
+    public static void WheelGrips(Construct c, in Quaternion seat, Vector3 feet, out Vector3 right, out Vector3 left, out Quaternion rim)
+    {
+        rim = seat * Quaternion.CreateFromAxisAngle(Vector3.UnitX, WheelTilt) * Quaternion.CreateFromAxisAngle(Vector3.UnitZ, -c.Steer * 2.5f);
+        var centre = feet + Vector3.Transform(WheelAt, seat);
+        right = centre + Vector3.Transform(new Vector3(WheelRadius, 0, 0), rim);
+        left = centre + Vector3.Transform(new Vector3(-WheelRadius, 0, 0), rim);
+    }
+
+    /// <summary>The steering wheel of every drive seat (a rim of four bars, a hub and a column), turned by the steering.</summary>
+    private static int DrawWheel(Renderer gfx, Construct c, float alpha, bool blendTicks)
+    {
+        if (c.DriveSeat < 0 || c.DriveSeat >= c.PartCount || c.Parts[c.DriveSeat].Broken)
+            return 0;
+        SeatPose(c, c.DriveSeat, alpha, blendTicks, out var seat, out var feet);
+        WheelGrips(c, seat, feet, out var r, out var l, out var rim);
+        var centre = (r + l) * 0.5f;
+        var frame = Matrix4x4.CreateFromQuaternion(rim) * Matrix4x4.CreateTranslation(centre);
+        var dark = new Vector3(0.12f, 0.12f, 0.13f);
+        const float k = WheelRadius, t = 0.035f;
+        gfx.Draw(Matrix4x4.CreateScale(t, k * 2 + t, t) * Matrix4x4.CreateTranslation(k, 0, 0) * frame, dark, 1f, mode: 0);
+        gfx.Draw(Matrix4x4.CreateScale(t, k * 2 + t, t) * Matrix4x4.CreateTranslation(-k, 0, 0) * frame, dark, 1f, mode: 0);
+        gfx.Draw(Matrix4x4.CreateScale(k * 2 + t, t, t) * Matrix4x4.CreateTranslation(0, k, 0) * frame, dark, 1f, mode: 0);
+        gfx.Draw(Matrix4x4.CreateScale(k * 2 + t, t, t) * Matrix4x4.CreateTranslation(0, -k, 0) * frame, dark, 1f, mode: 0);
+        gfx.Draw(Matrix4x4.CreateScale(k * 2, 0.03f, 0.02f) * frame, new Vector3(0.3f, 0.3f, 0.32f), 1f, mode: 0); // spoke
+        // The column, from the hub down and forward to the seat's front.
+        gfx.Draw(Matrix4x4.CreateScale(0.05f, 0.05f, 0.4f) * Matrix4x4.CreateTranslation(0, 0, -0.2f) * frame, dark, 1f, mode: 0);
+        return 6;
+    }
+
+    /// <summary>A segment's pose (rest frame -> body frame) with every joint up its chain blended between its last two ticks' values.</summary>
+    public static void SegPoseBlended(Construct c, int seg, float alpha, out Quaternion q, out Vector3 t)
+    {
         // Every joint up the chain at its blended value (a turntable that wrapped round blends the short way).
         Span<float> keep = stackalloc float[Construct.MaxJoints];
         for (var j = 0; j < c.JointCount; j++)
@@ -138,10 +199,9 @@ public static class ConstructRender
                 from += MathF.Sign(jt.Angle - from) * MathF.Tau;
             jt.Angle = float.Lerp(from, jt.Angle, alpha);
         }
-        c.SegPose(seg, out var q, out var t);
+        c.SegPose(seg, out q, out t);
         for (var j = 0; j < c.JointCount; j++)
             c.Joints[j].Angle = keep[j];
-        return Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
     }
 
     /// <summary>A part's centre in the world (its segment as it is now).</summary>

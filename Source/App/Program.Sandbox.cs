@@ -328,11 +328,7 @@ public static unsafe partial class Program
         if (_game is not { } g || (g.Constructs.Bodies.Count == 0 && !g.SandboxOn))
             return;
         g.SandboxNow = g.IsServer ? g.SandboxNow : now;
-        if (!g.IsServer)
-        {
-            ConstructNet.Blend(g.Constructs, now, (float)FrameDt);
-            ConstructRender.FitWheels(g.Constructs, World.Query);
-        }
+        // (a client's constructs were blended to this frame's pose in Game.UpdateSandboxSeats, before the camera was set)
         ConstructRender.Draw(Gfx, g.Constructs, g.TickAlpha, blendTicks: g.IsServer);
         g.SandboxSounds(now); // horns (GameSandbox.cs)
     }
