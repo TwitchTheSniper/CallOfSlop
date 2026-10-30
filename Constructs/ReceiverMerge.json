@@ -1,0 +1,17 @@
+{
+  "format": "call-of-slop-receiver-merge/1",
+  "about": "Construct receivers (Constructs/Parts/Weapons) side by side in one plane, facing the same way, in an NxN square (N >= minSize) merge into one receiver drawn N times bigger with one centre socket set; the gun parts on its centre sockets are drawn and simulated N times bigger too. Each number below is a power of N: the merged gun's value is the single receiver's times N to that power (2: N squared, -1: divided by N, 0: unchanged). docs/sandbox/CONSTRUCTS.md, 'Merged receivers'.",
+  "minSize": 2,
+  "maxSize": 6,
+  "sameTypeOnly": true,
+  "powers": {
+    "damage": 2,
+    "fireRate": -1,
+    "recoil": 2,
+    "ammoPerShot": 2,
+    "magazine": 2,
+    "spread": 0,
+    "range": 0,
+    "partMass": 2
+  }
+}

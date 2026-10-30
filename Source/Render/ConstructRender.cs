@@ -221,6 +221,17 @@ public static class ConstructRender
     {
         ref var p = ref c.Parts[i];
         var d = p.D;
+        // A merged receiver (ConstructMerge.cs): its lead draws it N times bigger; the other members aren't drawn.
+        var mergeScale = 0f;
+        var mergeOrigin = Vector3.Zero;
+        if (c.MergeOf[i] != 0)
+        {
+            if (!c.MergeLead(i))
+                return 0;
+            ref var m = ref c.Merges[c.MergeOf[i] - 1];
+            mergeScale = m.N;
+            mergeOrigin = m.Origin;
+        }
         // The segment's pose (a door turned on its hinge).
         var seg = Matrix4x4.Identity;
         if (p.Seg > 0 && p.Seg <= c.JointCount)
@@ -244,7 +255,14 @@ public static class ConstructRender
             spinAxis = w.Axle;
             break;
         }
-        var health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
+        float health;
+        if (mergeScale > 0)
+        {
+            ConstructMerge.Health(c, i, out var hp, out var most);
+            health = Math.Clamp(hp / MathF.Max(1, most), 0, 1);
+        }
+        else
+            health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
         var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
@@ -294,6 +312,10 @@ public static class ConstructRender
                 var hub = (mn + mx) * 0.5f;
                 model = box.Model(p.Rot, Vector3.Zero) * Matrix4x4.CreateTranslation(centre - hub) * Matrix4x4.CreateFromAxisAngle(spinAxis, spin) * Matrix4x4.CreateTranslation(hub);
             }
+            else if (mergeScale > 0)
+                model = Matrix4x4.CreateScale(mergeScale) * box.Model(p.Rot, mergeOrigin + Rot24.Apply(p.Rot, box.Center * mergeScale));
+            else if (c.PartScale[i] > 1)
+                model = Matrix4x4.CreateScale(c.PartScale[i]) * box.Model(p.Rot, centre); // (a gun part on a merged receiver: N times bigger)
             else
                 model = box.Model(p.Rot, centre);
             model = model * wheel * seg * body;
@@ -533,8 +555,9 @@ public static class ConstructRender
                     ref readonly var box = ref def.Boxes[b];
                     if (box.Hidden)
                         continue;
-                    var bc = g.Pos + Rot24.Apply(g.Rot, box.Center);
-                    gfx.Draw(Matrix4x4.CreateScale(1.01f) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
+                    var gs = g.Scale > 1 ? g.Scale : 1f; // (a gun part going on a merged receiver: N times bigger)
+                    var bc = g.Pos + Rot24.Apply(g.Rot, box.Center * gs);
+                    gfx.Draw(Matrix4x4.CreateScale(1.01f * gs) * box.Model(g.Rot, bc) * seg * body, GhostValid ? new Vector3(0.35f, 1f, 0.5f) : new Vector3(1f, 0.35f, 0.3f), 0.35f * pulse * GhostGlass(box), mode: 2, shape: box.Shape);
                 }
                 Gizmo(gfx, def, g.Pos, g.Rot, seg * body);
             }

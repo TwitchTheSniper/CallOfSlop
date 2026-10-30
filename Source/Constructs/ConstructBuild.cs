@@ -10,6 +10,7 @@ public struct ConstructGhost
     public Vector3 Pos; // the new part's origin, rest frame
     public byte Rot, Seg;
     public bool NewJoint; // onto a hinge's leaf: the part hangs on a new joint
+    public byte Scale; // a gun part on a merged receiver's centre socket (or on a scaled gun part): drawn and simulated this many times bigger (0 or 1: as its file)
 }
 
 /// <summary>
@@ -48,14 +49,19 @@ public static class ConstructBuild
         if (part < 0 || part >= c.PartCount)
             return "no such part";
         var target = c.DefOf(part);
-        if (socket < 0 || socket >= target.Sockets.Length || defSocket < 0 || defSocket >= def.Sockets.Length)
+        if (socket < 0 || socket >= c.SocketCount(part) || defSocket < 0 || defSocket >= def.Sockets.Length)
             return "no such socket";
         if (c.PartCount >= Construct.MaxParts)
             return $"a construct holds at most {Construct.MaxParts} parts";
         if (c.Parts[part].Broken)
             return "that part is wrecked";
-        var ts = target.Sockets[socket];
+        var centre = socket >= target.Sockets.Length; // a merged receiver's centre socket (ConstructMerge.cs)
+        var ts = target.Sockets[socket % target.Sockets.Length];
         var ds = def.Sockets[defSocket];
+        if (centre && def.Role != PartRole.GunPart)
+            return "the merged receiver's centre sockets take gun parts";
+        if (!centre && c.MergeOf[part] != 0 && def.Role == PartRole.GunPart)
+            return "that receiver is merged: fit gun parts to the merged receiver's centre sockets";
         var onLeaf = target.HasJoint && socket == target.LeafIndex; // what goes on a joint's leaf hangs on a new joint
         if (ts.Kind != ds.Kind && !(onLeaf && ds.Kind == SocketKind.Leaf))
             return "those don't fit together";
@@ -78,15 +84,16 @@ public static class ConstructBuild
             if (Upright(turns[b]) > Upright(turns[a]))
                 (turns[a], turns[b]) = (turns[b], turns[a]);
         var rot = turns[((spin % n) + n) % n];
-        var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At));
+        var scale = ConstructMerge.ScaleFor(c, part, socket, def);
+        var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
         var seg = c.Parts[part].Seg;
         var newJoint = onLeaf;
         if (newJoint && c.JointCount >= Construct.MaxJoints)
             return $"at most {Construct.MaxJoints} joints a construct";
         if (newJoint && c.JointOf(part) >= 0)
             return "something already hangs on that joint";
-        g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint };
-        if (Blocked(c, def, pos, rot))
+        g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
+        if (Blocked(c, def, pos, rot, scale, seg))
             return "something is in the way";
         return null;
     }
@@ -94,12 +101,14 @@ public static class ConstructBuild
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
 
     /// <summary>Would a part there overlap one already on (all compared in the rest frame, a centimetre of slack)?</summary>
-    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot)
+    public static bool Blocked(Construct c, ConstructPartDef def, Vector3 pos, byte rot, float scale = 1f, int seg = -1)
     {
         for (var b = 0; b < def.SolidBoxes; b++)
         {
-            var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center);
-            var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half) - new Vector3(0.01f);
+            var bc = pos + Rot24.Apply(rot, def.Boxes[b].Center * scale);
+            var bh = Rot24.ApplyHalf(rot, def.Boxes[b].Half * scale) - new Vector3(0.01f);
+            if (c.MergeCount > 0 && ConstructMerge.InMerged(c, bc, bh + new Vector3(0.01f), seg < 0 ? 0 : seg))
+                return true; // (the front of a merged receiver, beyond its members)
             for (var i = 0; i < c.PartCount; i++)
             {
                 var d = c.DefOf(i);
@@ -126,7 +135,7 @@ public static class ConstructBuild
             if (c.Parts[i].Broken)
                 continue;
             var td = c.DefOf(i);
-            for (var s = 0; s < td.Sockets.Length && n < into.Length; s++)
+            for (var s = 0; s < c.SocketCount(i) && n < into.Length; s++)
             {
                 c.SocketAt(i, s, out var at, out _);
                 if (Vector3.DistanceSquared(at, near) > radius * radius)
@@ -165,6 +174,8 @@ public static class ConstructBuild
     public static int Attach(ConstructWorld world, Construct c, ConstructPartDef def, in ConstructGhost g)
     {
         var seg = g.Seg;
+        if (def.IsReceiverGun && c.Dirty)
+            c.Rebuild(); // (the merges as they stand, before this receiver: ConstructMerge.Settle)
         if (g.NewJoint)
         {
             seg = world.AddJoint(c, g.Part);
@@ -174,8 +185,11 @@ public static class ConstructBuild
         var i = world.AddPart(c, def, g.Pos, g.Rot, seg);
         if (i < 0)
             return -1;
+        c.PartScale[i] = g.Scale; // (until the rebuild derives it: its other sockets link where they are)
         world.AddLink(c, g.Part, g.Socket, i, g.DefSocket);
         AutoLink(world, c, i);
+        if (def.IsReceiverGun)
+            i = ConstructMerge.Settle(world, c, -1, i); // (a square of receivers merges: gun parts on their own sockets pop off)
         return i;
     }
 

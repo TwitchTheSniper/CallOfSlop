@@ -312,6 +312,10 @@ public sealed partial class ConstructWorld
     /// </summary>
     public ConstructPartDef RemovePart(Construct c, int index)
     {
+        if (c.DefOf(index).IsReceiverGun && c.Dirty)
+            c.Rebuild(); // (the merges as they stand)
+        if (c.DefOf(index).IsReceiverGun && c.MergeOf[index] != 0)
+            index = ConstructMerge.Settle(this, c, index, index); // (a merged receiver's cell: the rest re-merge, its centre parts move or pop off)
         var def = c.DefOf(index);
         if (c.Parts[index].Store != 0)
             Spill(c, index); // (a container that goes spills what it holds: physical storage)

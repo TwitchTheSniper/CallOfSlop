@@ -330,6 +330,8 @@ public sealed partial class Construct
     /// <summary>The gun on part <paramref name="part"/> (its index in <see cref="Guns"/>), or -1.</summary>
     public int GunOf(int part)
     {
+        if ((uint)part < (uint)PartCount && MergeOf[part] != 0)
+            part = Merges[MergeOf[part] - 1].Lead; // (a merged receiver's member: its lead is the gun)
         for (var k = 0; k < GunCount; k++)
             if (Guns[k].Part == part)
                 return k;
@@ -362,8 +364,9 @@ public sealed partial class Construct
     {
         ref var p = ref Parts[i];
         var box = p.D.Boxes[b];
-        centre = p.Pos + Rot24.Apply(p.Rot, box.Center);
-        half = Rot24.ApplyHalf(p.Rot, box.Half);
+        var k = ScaleOf(i); // (a gun part on a merged receiver: N times bigger)
+        centre = p.Pos + Rot24.Apply(p.Rot, box.Center * k);
+        half = Rot24.ApplyHalf(p.Rot, box.Half * k);
     }
 
     /// <summary>Part <paramref name="i"/>'s bounds in the rest frame.</summary>
@@ -371,8 +374,9 @@ public sealed partial class Construct
     {
         ref var p = ref Parts[i];
         var d = p.D;
-        var c = (d.BoundsMin + d.BoundsMax) * 0.5f;
-        var h = (d.BoundsMax - d.BoundsMin) * 0.5f;
+        var k = ScaleOf(i);
+        var c = (d.BoundsMin + d.BoundsMax) * 0.5f * k;
+        var h = (d.BoundsMax - d.BoundsMin) * 0.5f * k;
         var wc = p.Pos + Rot24.Apply(p.Rot, c);
         var wh = Rot24.ApplyHalf(p.Rot, h);
         min = wc - wh;
@@ -383,8 +387,14 @@ public sealed partial class Construct
     public void SocketAt(int i, int s, out Vector3 at, out byte dir)
     {
         ref var p = ref Parts[i];
-        var sock = p.D.Sockets[s];
-        at = p.Pos + Rot24.Apply(p.Rot, sock.At);
+        var len = p.D.Sockets.Length;
+        if (s >= len && MergeLead(i))
+        {
+            ConstructMerge.CentreSocket(this, Merges[MergeOf[i] - 1], s - len, out at, out dir); // (a merged receiver's centre socket)
+            return;
+        }
+        var sock = p.D.Sockets[s % len];
+        at = p.Pos + Rot24.Apply(p.Rot, sock.At * ScaleOf(i));
         dir = Rot24.ApplyDir(p.Rot, sock.Dir);
     }
 
@@ -438,6 +448,7 @@ public sealed partial class Construct
     public void Rebuild()
     {
         Dirty = false;
+        ConstructMerge.Refresh(this); // (merged receivers first: they scale gun parts)
         var oldCom = Com;
         var oldWorldCom = WorldCom;
         Mass = 0;
@@ -450,8 +461,9 @@ public sealed partial class Construct
             PartBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
-            com += (mn + mx) * 0.5f * d.Mass;
-            Mass += d.Mass;
+            var pm = PartMass(i);
+            com += (mn + mx) * 0.5f * pm;
+            Mass += pm;
         }
         if (PartCount == 0)
         {
@@ -471,7 +483,7 @@ public sealed partial class Construct
             for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
-                var m = d.Mass * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
+                var m = PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f);
                 var s = h * 2;
                 var r = c - Com;
                 ixx += m / 12f * (s.Y * s.Y + s.Z * s.Z) + m * (r.Y * r.Y + r.Z * r.Z);
@@ -558,8 +570,8 @@ public sealed partial class Construct
             {
                 if (s < 0 || s > JointCount)
                     break;
-                SegMass[s] += d.Mass;
-                SegCom[s] += c * d.Mass;
+                SegMass[s] += PartMass(i);
+                SegCom[s] += c * PartMass(i);
                 if (s == 0)
                     break;
                 s = Joints[s - 1].ParentSeg;
@@ -615,7 +627,7 @@ public sealed partial class Construct
             for (var b = 0; b < d.SolidBoxes; b++)
             {
                 BoxOf(i, b, out var c, out var h);
-                Point(d.Mass * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f), c - Com, h * 2);
+                Point(PartMass(i) * (d.Boxes[b].Half.X * d.Boxes[b].Half.Y * d.Boxes[b].Half.Z) / MathF.Max(vol, 1e-9f), c - Com, h * 2);
             }
         }
         for (var j = 0; j < JointCount; j++)
