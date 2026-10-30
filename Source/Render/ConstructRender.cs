@@ -367,6 +367,7 @@ public static partial class ConstructRender
             else
                 model = box.Model(p.Rot, centre);
             model = model * wheel * seg * body;
+            var tint = ConstructPaint.BoxColour(p.Paint, in box) * shade; // (the paint tool: a painted part's paintable boxes, ConstructPaint.cs)
             if (lit)
                 gfx.Draw(model, glow, opacity, mode: 2, shape: box.Shape);
             else if (box.IsGlass)
@@ -376,7 +377,7 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(box.Color * shade, OverloadTint, 0.2f + 0.5f * strain) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
+                gfx.Draw(model, c.Frozen ? Vector3.Lerp(tint, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(tint, OverloadTint, 0.2f + 0.5f * strain) : tint, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;

@@ -135,10 +135,10 @@ The developer's decision 17 (2026-10-29): players pick their tools from a radial
 (`GameAction.ToolWheel`, the **middle mouse button** by default, rebindable; added by binds version 10. Q was taken by
 Swap weapon, and the middle button was free everywhere) and eight segments appear around the middle of the screen,
 clockwise from the top: **wrench** (N), **physics gun** (NE; it took the hoist's place, [below](#the-physics-gun)), **welder** (E), configure tool (SE), **hands / gun** (S: out of
-build mode), scanner (SW), **linking tool** (W), hand drill (NW). The four tools that exist sit on the compass points, so
+build mode), scanner (SW), **linking tool** (W), **paint tool** (NW; it took the hand drill's place, [below](#the-paint-tool-board-item-pp01)). The four tools that exist sit on the compass points, so
 the easiest flicks reach them, with the physics gun on the north-east; the configure tool on the south-east
-([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the two from the
-design's tool list that don't exist yet sit on the other diagonals, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
+([The configure tool](#the-configure-tool); no number key: the wheel or the inventory's Tools tab); the one from the
+design's tool list that doesn't exist yet (the scanner) sits on the south-west diagonal, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
 orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
@@ -255,7 +255,7 @@ A tool file:
 | Field | Meaning |
 | --- | --- |
 | space | Like a gun's: metres, the origin where the strong hand holds it, -Z forward, +Y up. Third person draws it 1.3 times as big, as guns are. |
-| `tool` | `wrench`, `welder`, `linker`, `physgun`, `configure`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
+| `tool` | `wrench`, `welder`, `linker`, `physgun`, `configure`, `paint`; or one still to come: `hoist`, `scanner`, `drill`. One file a tool. |
 | `hold` | How it is turned in the hand (degrees: pitch, yaw, roll), about the grip. |
 | `boxes` | Up to 24: `size` (and `at`) or `min`/`max`, each 2 mm to 60 cm a side, `color`; `"glow": true` draws it unlit and bright (flickering in use, a slow pulse otherwise); `"spin": true` turns it about the `spin` section's `axis` through its `pivot`. The boxes must touch into one piece. |
 | `grip` / `support` | The strong hand (`at` within 15 cm of the origin) and the off hand (optional: without it the off hand rests): `at`, `rot` (degrees), `shape` (`wrap`, `under`, `cup`, `flat`). |
@@ -632,7 +632,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). |
+| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
@@ -2086,6 +2086,57 @@ on the Construct Yard: the client routes a world link and plugs a hose over the 
 - Links keep the construct links' limits (8 m segments, 24 m in all); hoses pick up with E only (not LMB).
 - Hoses go from the reel's construct to the inlet's (a station refuels, a base charges); a reel is a station's or a
   vehicle's alike.
+
+## The paint tool (board item pp01)
+
+Decision 29. A spray can on the tool wheel's north-west segment (it took the hand drill's place: the wheel keeps eight
+segments and the compass-point flicks of the other tools stay where they were). With it out, **LMB** paints the part (or
+routed link: a pipe, cable, shaft or chute) under the crosshair; **hold LMB and sweep** to paint every part the crosshair
+passes over, each once per stroke (`PaintStroke`: a set of what is done, cleared when the button goes up, so a click
+paints one and a part is never acted on twice); **RMB** is the eyedropper (it reads this PC's copy of the part: its paint,
+else its own main colour; nothing is sent) and puts the colour in the can.
+
+**The ring round the tool** (`SandboxPaintWheel`, an `IToolOptions`): the modes **Part** (the default), **Whole
+construct** (every part and link of the aimed construct; in survival the first click asks for a second within four
+seconds) and **Reset colour** (back to the part's or link's own colours); ten swatches (orange, black, white, grey, rust,
+olive, sand, red, blue, yellow); **Custom...**, which frees the mouse and opens a small ImGui picker (hue, saturation and
+value, the recent colours, Use / Close; Esc closes it); and **Recent colours**, whose third-tier arc holds the last eight
+colours used (moved to the front when used again). Letting go on the tool itself keeps the last mode and colour. The
+recent colours are kept for the session only (nothing is saved).
+
+**What takes paint.** A part's colour is `CPart.Paint` and a link's `CRoute.Paint`: a `uint`, 0 for "own colours", else
+`0x01000000 | 0xRRGGBB` (`ConstructPaint`). It moves with its part or link when the arrays close up, split or join. A part
+file's box says `"paintable"`: by default every box is, except **glass** and a **wheel's tyre** (a wheel's solid boxes;
+its rim details take paint); the Lamp's lens says `"paintable": false`. A painted part's paintable boxes are drawn in
+the paint times their **tone** (the box's brightness against the part's main colour, kept between 0.65 and 1.3), so a
+hinge's dark pin stays darker than its plate; the other boxes keep their colours. Frozen and overloaded tints, damage
+shading and a lit lamp's glow work as before. A painted link's segments, elbows and caps are drawn in the colour (a
+pipe's bands keep theirs). Cargo volume outlines and stored items are not painted. **World links are not paintable yet.**
+
+**Free and instant** in both modes; the server (`ConstructEdits.Paint`) checks the paint tool is out, no seat, the reach
+and decision 19's contested-construct rule (`Contested`: survival, an enemy construct while its owner is alive nearby).
+A part with nothing that takes paint says so.
+
+**Network (protocol 100).** `CActKind.Paint` (construct, mode | 4 for a link, part or link index, r, g, b) at the end of
+`CActKind`; the server sends changes in `CBodyKind.Paint` (at the end of `CBodyKind`: construct, kind, index, colour; at
+most 150 a message, flushed with the structure each tick), and `CBody` Full ends with the painted parts and links (so a
+late joiner, a structure resend and a copy made for a save have it). Nothing allocates while painting. **Blueprints**:
+a step and a link take `"paint": "#rrggbb"`.
+
+**Self-test** "Paint tool": the wheel's segment and ring; only paintable boxes change (pane, wheel, lamp, panel); the
+eyedropper; a link; whole-construct fill and Reset; the stroke acts on each swept part once; the refusals (tool, reach,
+seat, bad colour, a defended construct in survival); the construct message and the change messages; the blueprint
+round trip and bad colours; paint stays with its part when another is taken off; no allocation; and a real host with a
+separate client and a late joiner agree.
+
+### Choices made (the developer may change them)
+
+- The paint tool took the hand drill's slot (north-west) instead of adding a ninth segment, which would have moved every
+  other tool off its compass point.
+- Reset acts on one part or link (hold and sweep to reset several); Whole construct paints, it does not reset.
+- Painting is free in survival (a paint item could come later); only the whole-construct mode asks twice there.
+- A box keeps its tone against the part's main colour instead of going flat.
+- The recent colours are not saved between sessions.
 
 ## Spawning bots and zombies
 

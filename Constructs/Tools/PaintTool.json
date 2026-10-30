@@ -1,0 +1,18 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Paint Tool",
+  "tool": "paint",
+  "description": "A spray can: LMB paints the part under the crosshair (hold and sweep to paint more), RMB picks up its colour. The tool wheel's ring round it holds the colours and the modes.",
+  "boxes": [
+    { "size": [0.07, 0.07, 0.16], "at": [0, 0, 0], "color": "#d9702a" },
+    { "size": [0.072, 0.072, 0.06], "at": [0, 0, 0.015], "color": "#2b2b2e" },
+    { "size": [0.055, 0.055, 0.025], "at": [0, 0, -0.0925], "color": "#b8bcc2" },
+    { "size": [0.03, 0.03, 0.02], "at": [0, 0, -0.115], "color": "#9aa0a6" },
+    { "size": [0.04, 0.025, 0.03], "at": [0, 0.012, -0.14], "color": "#2b2b2e" },
+    { "size": [0.022, 0.015, 0.022], "at": [0, 0.035, -0.105], "color": "#e8e8e2" },
+    { "size": [0.012, 0.012, 0.012], "at": [0, 0.012, -0.161], "color": "#101010" }
+  ],
+  "grip": { "at": [0, -0.01, 0.02], "rot": [-12, 0, 0], "shape": "wrap" },
+  "hold": [6, 8, 0],
+  "tip": [0, 0.012, -0.17]
+}

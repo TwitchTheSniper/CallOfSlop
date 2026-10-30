@@ -314,6 +314,7 @@ public static class ConstructBuild
         public List<(int From, int To)> Wires = new(); // wires between steps' parts (milestone 2): straight data links since the routed links
         public List<ConstructRoutes.LinkSpec> Links = new(); // routed links between steps' parts (decision 20)
         public List<ConstructCargo.CargoSpec> Cargo = new(); // loose parts it is built carrying in its frozen cargo volumes (decision 21)
+        public List<uint> StepPaint = new(); // each step's paint colour ("paint": "#rrggbb"; 0: its own colours; ConstructPaint.cs)
         public List<(Vector3 Pos, Quaternion Rot)?> StepWeld = new(); // a step freeform-welded on (board item fw01): the part's frame in its "on" step's segment frame; null: socket steps
     }
 
@@ -383,6 +384,7 @@ public static class ConstructBuild
                     {
                         string part = "", sock = "", own = "";
                         int on = -1, spin = 0, setting = -1;
+                        var paint = 0u;
                         JsonElement? config = null;
                         (Vector3, Quaternion)? weld = null;
                         foreach (var f in s.EnumerateObject())
@@ -396,13 +398,18 @@ public static class ConstructBuild
                                 case "setting": setting = f.Value.GetInt32(); break;
                                 case "config": config = f.Value.Clone(); break;
                                 case "weld": weld = ParseWeld(f.Value, file, k, ref on); break;
-                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config, weld)");
+                                case "paint":
+                                    if (f.Value.ValueKind != JsonValueKind.String || !ConstructPaint.TryParse(f.Value.GetString(), out paint))
+                                        throw new ConstructPartException($"{file}: steps[{k}]: \"paint\" is a colour like \"#c04020\"");
+                                    break;
+                                default: throw new ConstructPartException($"{file}: steps[{k}]: unknown key \"{f.Name}\" (part, on, socket, by, spin, setting, config, weld, paint)");
                             }
                         if (k > 0 && (on < 0 || on >= k))
                             throw new ConstructPartException($"{file}: steps[{k}]: \"on\" must name an earlier step (0 to {k - 1})");
                         bp.Steps.Add((part, k == 0 ? -1 : on, sock, own, spin));
                         bp.StepSettings.Add(setting);
                         bp.StepWeld.Add(weld);
+                        bp.StepPaint.Add(paint);
                         bp.StepConfig.Add(config is { } cfg
                             ? ConstructParts.Find(part) is { } cdef ? ConstructConfig.ParseValues(cdef, cfg, $"{file}: steps[{k}]") : throw new ConstructPartException($"{file}: steps[{k}]: no part named \"{part}\"")
                             : null);
@@ -543,6 +550,9 @@ public static class ConstructBuild
             }
             SetConfig(c, partOf[k], def, bp, k);
         }
+        for (var k = 0; k < bp.Steps.Count && k < bp.StepPaint.Count; k++)
+            if (bp.StepPaint[k] != 0)
+                c.Parts[partOf[k]].Paint = bp.StepPaint[k]; // (the paint tool's colours; a part with nothing to paint just carries it)
         // The wires, through the linking tool's rules.
         foreach (var (from, to) in bp.Wires)
         {

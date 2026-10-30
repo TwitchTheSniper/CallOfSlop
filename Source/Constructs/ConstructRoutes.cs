@@ -44,6 +44,7 @@ public struct CRoute
     public ushort Start;
     public byte Count;
     public float EndHealth; // the last segment (last node -> the input)
+    public uint Paint; // the paint tool's colour for its segments (0: the type's own; else 0x01000000 | 0xRRGGBB; ConstructPaint.cs)
 
     // Rebuilt with the caches (Construct.Rebuild -> ConstructRoutes.Rebuild)
     public byte Source; // the output part at the root of its tree

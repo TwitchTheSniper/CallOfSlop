@@ -223,7 +223,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     The fuel and water hose parts became one fluid hose (HoseCarry.Fluid in the part files, not on the wire).
     // 99: Sandbox three-step socket weld (board item sw01, SocketWeld.cs): CActKind.SocketWeld at the end of CActKind (the
     //     piece's socket, the target socket or face point, the angle) and EditKind.SocketWeld in the Sandbox hands tail.
-    public const byte ProtocolVersion = 99;
+    // 100: Sandbox paint tool (board item pp01, ConstructPaint.cs): the paint tool's tool byte (9), CBodyKind.Paint at the end of
+    //     CBodyKind (paint changes), CActKind.Paint at the end of CActKind, and CBody Full ends with the painted parts and links.
+    public const byte ProtocolVersion = 100;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
