@@ -15,7 +15,7 @@ public static unsafe partial class Program
 {
     private static int _snapOwn = -1; // the own socket the player switched to (-1: the structural mount first)
     private static long _snapKey = long.MinValue; // the selected ghost's identity (construct, part, socket): a change is a snap
-    private static long _snapPaintKey = -1; // the socket a held press last placed on (paint places once per socket)
+    private static readonly SnapStroke _snapStroke = new(); // the held press's paint rules (SnapStroke.cs)
     private static long _snapLineKey = long.MinValue;
     private static Vector3 _snapPrevPos;
     private static int _snapPrevBody = -1, _snapPrevSeg = -1;
@@ -36,6 +36,8 @@ public static unsafe partial class Program
         SnapRender.Clear();
         var dt = (float)Math.Clamp(now - _snapLast, 0, 0.1);
         _snapLast = now;
+        if (!Down(GameAction.Fire))
+            _snapStroke.Reset();
         ConstructRender.GhostEase *= MathF.Exp(-dt * 26f);
         if (ConstructRender.GhostEase.LengthSquared() < 1e-6f)
             ConstructRender.GhostEase = Vector3.Zero;
@@ -151,18 +153,24 @@ public static unsafe partial class Program
         }
     }
 
-    /// <summary>Paint: a held press places the same part on each newly hovered valid socket (creative; quick building).</summary>
-    private static bool SandboxSnapPaint(Game g, in SandboxHand h, Construct c, in ConstructGhost gh)
+    /// <summary>Paint: a held press places the part on further sockets (creative; quick building) by SnapStroke's rules. A press only starts the stroke.</summary>
+    private static bool SandboxSnapPaint(Game g, in SandboxHand h, Construct c, in ConstructGhost gh, bool pressed)
     {
-        if (!_settings.SnapBuild || !g.SandboxInfiniteParts || h.Held == ConstructParts.None || !ConstructRender.GhostValid || _swallowClick)
+        if (!_settings.SnapBuild || !g.SandboxInfiniteParts || h.Held == ConstructParts.None || _swallowClick)
             return false;
-        if (!Down(GameAction.Fire))
-        {
-            _snapPaintKey = -1;
+        if (pressed)
+            _snapStroke.Press(c.Id, c.PartCount, _snapLast);
+        if (pressed || !_settings.HoldToPaint || !ConstructRender.GhostValid || !Down(GameAction.Fire))
             return false;
-        }
-        var key = ((long)c.Id << 24) | ((long)gh.Part << 8) | (uint)gh.Socket;
-        return !Pressed(GameAction.Fire) && key != _snapPaintKey;
+        return _snapStroke.Want(_snapLast, c.Id, c.PartCount, gh.Part, SnapPaintKey(c, in gh), SnapWorldAt(c, in gh));
+    }
+
+    private static long SnapPaintKey(Construct c, in ConstructGhost gh) => ((long)c.Id << 24) | ((long)gh.Part << 8) | (uint)gh.Socket;
+
+    private static Vector3 SnapWorldAt(Construct c, in ConstructGhost gh)
+    {
+        c.SegPose(c.Parts[gh.Part].Seg, out var wq, out var wt);
+        return c.ToWorld(wt + Vector3.Transform(gh.Pos, wq));
     }
 
     /// <summary>The part was sent: remembered for the paint, the recent wheel and the thunk.</summary>
@@ -171,7 +179,7 @@ public static unsafe partial class Program
         _snapWheel.Placed(held.Id);
         if (c == null)
             return;
-        _snapPaintKey = ((long)c.Id << 24) | ((long)gh.Part << 8) | (uint)gh.Socket;
+        _snapStroke.Sent(c.Id, c.PartCount + 1, _snapLast, SnapPaintKey(c, in gh), worldAt);
         _snapExpectBody = c.Id;
         _snapExpectCount = c.PartCount + 1;
         _snapExpectUntil = _snapLast + 1.0;
