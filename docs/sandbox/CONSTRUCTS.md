@@ -1792,6 +1792,84 @@ other; the key is Left Shift beside Sprint without a clash.
    its reason is said); the adjust's big step is Ctrl (which is also Crouch: holding it crouches); Free routing shares
    Left Shift with Sprint (holding it while routing also sprints).
 
+## Spawning bots and zombies
+
+Board items dev-sandbox-spawn-npcs-sn01 and dev-sandbox-spawn-bots-zombies-sb02, done as one feature (2026-10-30). Code:
+`Source/Game/GameSandboxSpawns.cs` (requests, the queue, sides, the spawners' tick, zombies on constructs, bots round
+constructs), `Source/UI/UiSandboxSpawn.cs` (the inventory's Spawn tab), `Source/App/Program.SandboxSpawn.cs` (placing:
+the ghost circle), parts in `Constructs/Parts/Spawn`. Protocol 92.
+
+**One category, "Spawn"**: the inventory has a **Spawn** tab (the direct spawns, clear all, the host's settings and a
+button for each spawner part), and the two spawner parts sit in the Parts tab's **Spawn** group (section "Spawner
+parts"), so a search or the tree finds them like any other part.
+
+**Direct spawns** (creative worlds only: a map with `"infiniteParts": false` refuses them, "its enemies come from the
+world"): Msg.CAct `Spawn` (u8 what, u8 difficulty, u8 gun kind, u8 its value, u8 zombie mix, u32 count, the aimed spot)
+and `ClearSpawns`. The server checks the permission (the host, or everyone when the host allows it), the spot (`SandboxSpawnSpot`:
+ground within 3 m below, not inside a wall, not on a construct; at most 150 m away) and the caps (a request over a cap is
+cut down to it, with a note), then queues it. The queue spreads big asks over ticks: a bot a tick, 8 individual zombies
+a tick, 10,000 crowd zombies a tick (500,000 take 50 ticks).
+
+**Sides**: a spawned bot is a full bot (the bot AI, the nav graph) with team 10 (friendly) or 11 (enemy), replicated in the
+mode state like any team. The Sandbox's `AreEnemies`: enemy bots against everyone else and never each other; friendly bots
+never against people or each other; people still free-for-all among themselves. A friendly bot follows whoever spawned it
+(a spawner's holds near the spawner), and with zombies within 22 m fights them as a Zombies co-op bot does; an enemy bot
+hunts. Spawned bots never respawn: 3 s after dying they leave. Bots need player ids: at most 28 spawned bots (the host's
+cap, 16 by default; one id is always kept free for a person joining).
+
+**Zombies**: the Sandbox gives the Zombies AI a stand-in Zombies map (`SandboxZMap`: one area over the whole map, one
+spawner out of the ground, no doors, windows or buyables, a crowd so the mass horde is on), ticked from the Sandbox tick
+with none of the mode's rounds, points or downs: a zombie's hit is an ordinary hit and a death "killed by the enemy".
+Zombies hunt people and friendly bots (`ZPrey`), not enemy bots. Up to 64 come as individuals rising at the spot (exactly
+that many); a bigger group goes into the crowd round the spot, the first 4,000 as particles and the rest straight into
+the mass tier (a count per cell), and the tiers wake the nearest as individuals as on a crowd map. `Game.StressMax` is now
+500,000 (the Horde Stress lobby's custom size too). Constructs keep individuals out as they keep players out, and one held
+off by a construct swipes the part in its way like a building door (40 damage, every windup + 0.6 s): doors and panels
+give way. Crowd and mass zombies pass through constructs (they are far away). The zombie messages (ZEnts, ZEvent, ZCrowd)
+go to Sandbox clients as in Zombies.
+
+**Spawner parts** (`"logic": {"kind": "botspawner"}` / `"zombiespawner"`, role logic, the wrench): settings from the
+configure tool (team, difficulty, gun class; or walkers / mixed types; rate a minute, group size, max alive, total (0: no
+limit), radius, start on; a part takes up to 12 settings now) and named **data ports**: inputs **enabled** (port 0, the
+part itself), **spawn now**, **rate**; outputs **alive** (port 0: how many it has out) and **spawned** (a one-tick pulse).
+A data link names a port in its port byte (`0x80 | k`, k > 0; 255 is port 0), the linking tool's picker lists them, a
+blueprint link says `"toPort": "spawn now"` / `"fromPort": "spawned"`, and the logic's wires carry the ports
+(`CWire.FromPort` / `ToPort`). Enabled (its input on, or unwired and set to start on), a spawner spawns a group at once,
+then one each 60 / rate seconds, while it has fewer than its max alive out and its total isn't reached (and the host's
+caps allow); a rising "spawn now" spawns a group at once, on or off. What a spawner made carries its construct and the
+part's stable tag, so it counts them back however the parts are renumbered; its zombies are never put back into the
+crowd (they'd stop counting). It shows a light (blue, green) while on. A wire from another construct goes into port 0.
+
+**Bots and constructs**: after a bot steers, a solid part box of a construct in the way (in the part's frame, a player's
+radius round it, from a step up to head height: a floor it can step onto or a doorway between walls is not in the way)
+turns it along the box's side towards its goal, and a bot held up against one for 1.5 s marks the path edge it was on
+blocked for 8 s and plans again (A* goes round). Bots already step up onto builds with the players' mover. The nav graph
+stays the map's (deterministic). Follow-ups for bots inside built buildings (from the building pieces work): the tops of
+walkable parts as nav nodes, nav links through door openings (opened with Interact first), and a nav patch when a
+construct is built, changed or broken.
+
+### Self-test
+
+**Sandbox spawns** (`Source/App/SelfTestSandboxSpawns.cs`): the parts' files and ports; 3 friendly and 3 enemy bots take
+sides (friendly bots aim at enemy bots, never the host; an SMG class holds); mid-air, a survival world and the bot cap
+refused; clear all; 7 zombies spawn exactly 7; 500,000 accepted and in the mass tier after 60 ticks, the tick time and
+no allocation in 60 steady spawn ticks; a cap of 1,000 holds; a friendly bot reaches the host past a construct; a Zombie
+Spawner on a switch (off: none; on: one at once, one a second, at most 3 alive, its alive output 3, its spawned pulse
+toggles a toggle; refilled to its total of 5; spawn now off); a Bot Spawner's two enemy Easy shotgun bots; blueprint links
+and the construct message round trip with their ports and settings; over the real transport a client refused until the
+host allows everyone, then its zombies on both sides, a friendly bot and a clear all.
+
+### Choices made (the developer may change them)
+
+1. One "Spawn" tab plus the spawner parts in the Parts tab's Spawn group (not a Characters group).
+2. Spawner parts work in survival worlds too (only the direct spawns are creative); a survival world gets them only as
+   its rack or salvage hands them out.
+3. Host caps: 16 bots (at most 28: player ids), 500,000 zombies; the host settings aren't saved between sessions.
+4. Individuals up to 64 a group; spawner zombies are individuals only (max alive at most 64 a spawner).
+5. Friendly bots follow the spawning player (3 m off); spawner friendlies hold near the spawner; enemy bots hunt.
+6. Zombies leave enemy bots alone; enemy bots ignore zombies.
+7. A construct swipe is a building door's (40 damage); the crowd and mass tiers ignore constructs.
+
 ## Performance and caps
 
 At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),

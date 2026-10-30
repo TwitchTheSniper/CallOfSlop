@@ -36,6 +36,14 @@ public struct CPart
     // Physical storage (decision 18; ConstructStorage.cs): a storage part's contents, a handle into ConstructWorld.Stores (0: none). It moves with the part.
     public ushort Store;
 
+    // The spawners (GameSandboxSpawns.cs; server): their second and third inputs (spawn now, rate) added up and how many
+    // wires come into each, the second output (the spawned pulse), how many it has alive (its first output), how many it
+    // has spawned in all, and its clock towards the next spawn (one spawn at 1).
+    public float In1, In2;
+    public byte InCount1, InCount2;
+    public float Out1;
+    public float SpawnAlive, SpawnTotal, SpawnClock;
+
     // Settings (the configure tool; ConstructConfig.cs): one value a slot of its def's "config" schema. It moves with the part.
     public CfgValues Cfg;
 
@@ -61,6 +69,7 @@ public enum SeatKind : byte
 public struct CWire
 {
     public byte From, To;
+    public byte FromPort, ToPort; // named data ports (the spawners: ConstructPartDef.DataIn / DataOut); 0: the part itself
 }
 
 /// <summary>An attachment between two parts: which socket of each (a weld or a bolt; a hinge's leaf link carries a joint).</summary>

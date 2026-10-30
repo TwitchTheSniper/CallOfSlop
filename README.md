@@ -1057,6 +1057,23 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   a switch); a **proximity sensor** wired in makes it a **sentry** that turns onto anyone in range. AP rounds go through
   a part into what is behind it, HE rounds splash, incendiary rounds set wood, fuel and ammo alight, and a holed ammo box
   cooks off. The yard has a gunner turret, a hood-gun buggy, a sentry, a gun bench and targets.
+- **Spawning bots and zombies** (creative worlds; the inventory's **Spawn** tab): pick a **friendly bot** (on your
+  side: it follows you and fights enemy bots and zombies), an **enemy bot** (fights players and friendly bots) or a
+  **zombie group**; a bot's difficulty (Easy to Insane), its gun (any, a weapon class or one gun) and how many; a zombie
+  group's size, 1 to 500,000 (a slider, a number and presets 10/100/1k/10k/100k/500k; above 100,000 it warns it may be
+  slow), and whether the zombie types are mixed in. **PLACE** closes the window: a ghost circle follows the crosshair
+  (red with the reason in a wall, in mid-air or on a construct), Fire spawns there (again and again), RMB or Esc stops.
+  Up to 64 zombies come as full zombies rising at the spot; a bigger group goes into the mass horde round it (the nearest
+  wake as full zombies). Zombies hunt players and friendly bots and swipe at constructs in their way (doors and panels
+  give way). **CLEAR ALL** removes every spawned bot and zombie. Spawned bots don't respawn. Only the host spawns and
+  clears unless the host ticks "Everyone can spawn"; the host also sets the most bots (16 by default) and zombies
+  (500,000). Survival worlds have no direct spawns.
+- **Spawner parts** (Spawn group): a **Bot Spawner** and a **Zombie Spawner** are parts like any other (wrench, anchored
+  or on a vehicle, moved with the physics gun, saved in blueprints). The configure tool sets what they spawn (team,
+  difficulty and gun; or walkers or mixed types), the rate a minute, the group size, the most alive at once, the total
+  (0: no limit), the radius and whether they start on. With the linking tool their data inputs **enabled**, **spawn
+  now** and **rate** and outputs **alive** (how many it has out) and **spawned** (a pulse) appear in the port picker: a
+  pressure plate can start a wave, a compare on "alive" can stop it. A spawner shows a light while it is on.
 
 Each tool has its own box model in your hands (and in other players' hands), with a crank, sparks or a beam while it
 works; a part you carry sits in your off hand. Parts, blueprints and the tools' models are data files (`Constructs/Parts`,

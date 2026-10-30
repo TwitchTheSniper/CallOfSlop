@@ -18,6 +18,8 @@ public sealed partial class Zombie
     {
         // ZombieAI.cs
         Id = 0;
+        SbBody = SbTag = 0; // (GameSandboxSpawns.cs)
+        SbPart = 0;
         Sim = default;
         Yaw = 0;
         Health = MaxHealth = 0;

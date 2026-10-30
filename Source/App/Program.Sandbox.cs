@@ -32,7 +32,7 @@ public static unsafe partial class Program
 
     /// <summary>Sandbox with a tool out (or in a seat): the trigger and aim belong to the tools, not the gun.</summary>
     private static bool SandboxHoldsTrigger =>
-        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
+        _game is { SandboxOn: true } g && g.Local is { Alive: true } me && (g.SpawnPlacing || g.SandboxHands.Hand(me.Id).Tool != ConstructTool.None || g.SandboxHands.Hand(me.Id).Seated
             || g.SandboxHands.Hand(me.Id).Held != ConstructParts.None); // (a part carried in both hands: the click sets it into storage, never fires the gun)
 
     /// <summary>
@@ -134,6 +134,8 @@ public static unsafe partial class Program
             _sbSeatKeys = 0;
             g.SandboxSend(CActKind.SeatKeys, part: 0);
         }
+        if (SandboxSpawnInput(g, me))
+            return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
         if (Pressed(GameAction.DropItem) && h.Held != ConstructParts.None)
             g.SandboxSend(CActKind.Drop);
         // The backpack (H: stow what you hold; J: draw the next part out).

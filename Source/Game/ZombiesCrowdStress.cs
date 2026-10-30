@@ -28,7 +28,7 @@ public sealed partial class Game
     public static readonly int[] StressSizeChoices = [1000, 2500, 5000, 10000, 25000, 50000, 100000];
 
     /// <summary>The most zombies a stress round may have at once (endless waves stop adding there).</summary>
-    public const int StressMax = 200000;
+    public const int StressMax = 500000; // (500,000 since the Sandbox's spawns: the mass tier is a count a cell, GameSandboxSpawns.cs)
 
     /// <summary>Host setting: the stress map's horde size (0: the map's "crowd").</summary>
     public int StressSize;

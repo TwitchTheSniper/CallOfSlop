@@ -37,9 +37,9 @@ public static unsafe partial class Program
     private static void DrawZombiesMode(double now)
     {
         var map = World.Map;
-        if (map.Zombies is not { } zm)
-            return;
-        var live = _game.Mode == GameMode.Zombies;
+        if ((_game.SandboxOn ? _game.ZMap : map.Zombies) is not { } zm)
+            return; // (the Sandbox: its spawned zombies on their stand-in map, GameSandboxSpawns.cs)
+        var live = _game.Mode == GameMode.Zombies || _game.SandboxOn;
         var t = (float)now;
         var animDt = (float)Math.Clamp(now - _zAnimLast, 0, 0.1);
         _zAnimLast = now;

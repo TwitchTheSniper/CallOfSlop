@@ -125,7 +125,7 @@ public sealed partial class Game
         var sight = Crowd.Sight;
         sight.Begin(tuning);
         for (var id = 0; id < 256 && targets < _crowdTX.Length; id++)
-            if (Players.TryGetValue((byte)id, out var p) && IsStanding(p))
+            if (Players.TryGetValue((byte)id, out var p) && ZPrey(p))
             {
                 _crowdTX[targets] = p.Position.X;
                 _crowdTZ[targets] = p.Position.Z;
@@ -171,7 +171,7 @@ public sealed partial class Game
             // Never one swinging at a player, at a window, on a climb, grabbing, pouncing, a slug, or burning, stunned or
             // slowed (those end in a moment; a burn's damage is still to pay), or one just woken.
             if (z.State != ZState.Chase || now - z.CrowdWokeAt < tuning.MinAwake || z.Slug || z.Grabbing || z.PounceUntil > now
-                || z.BurnUntil > now || z.StunnedUntil > now || z.SlowUntil > now)
+                || z.BurnUntil > now || z.StunnedUntil > now || z.SlowUntil > now || z.SbBody != 0) // (nor a Sandbox spawner's own: it counts them, GameSandboxSpawns.cs)
                 continue;
             var healthy = z.Health == z.MaxHealth && z.Limbs == 0;
             // Far: a healthy one as soon as it counts past the demote range (awake a while); a stray (hurt, or a limb

@@ -177,7 +177,7 @@ public sealed partial class Game
     public ZombiesRules ZRules = ZombiesRules.Current;
 
     /// <summary>The map's Zombies layout while playing the Zombies mode, else null.</summary>
-    public ZombiesMap? ZMap => Mode == GameMode.Zombies ? World.Map.Zombies : null;
+    public ZombiesMap? ZMap => Mode == GameMode.Zombies ? World.Map.Zombies : Mode == GameMode.Sandbox ? SandboxZMap : null; // (the Sandbox: its spawned zombies' stand-in map, GameSandboxSpawns.cs)
 
     public bool IsZombies => ZMap != null;
 
@@ -877,6 +877,8 @@ public sealed partial class Game
     /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>. False: it did nothing (immune, down, or an armour plate took it), so a type's special doesn't follow.</summary>
     public bool ZombieHurt(Player p, int damage, double now, Vector3? from = null)
     {
+        if (SandboxOn)
+            return SandboxZombieHurt(p, damage, now, from); // (the Sandbox's spawned zombies: an ordinary hit, a death, no downs; GameSandboxSpawns.cs)
         var zp = ZP(p);
         if (!p.Alive || zp.Downed || !DamageEnabled || now < p.ImmuneUntil)
             return false;

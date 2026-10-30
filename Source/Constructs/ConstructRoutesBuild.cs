@@ -118,10 +118,10 @@ public static partial class ConstructRoutes
         }
         var fromPort = (byte)255;
         var toPort = (byte)255;
-        if (s.FromPort.Length > 0 && from >= 0 && (fromPort = SocketIndex(c, from, s.FromPort)) == 255)
-            return $"a {c.DefOf(from).Name} has no socket \"{s.FromPort}\"";
-        if (s.ToPort.Length > 0 && (toPort = SocketIndex(c, to, s.ToPort)) == 255)
-            return $"a {c.DefOf(to).Name} has no socket \"{s.ToPort}\"";
+        if (s.FromPort.Length > 0 && from >= 0 && (fromPort = PortByName(c.DefOf(from), s.Type, s.FromPort, input: false)) == 255 && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(from), s.FromPort, false)))
+            return $"a {c.DefOf(from).Name} has no {(s.Type == RouteType.Data ? "data output" : "socket")} \"{s.FromPort}\"";
+        if (s.ToPort.Length > 0 && (toPort = PortByName(c.DefOf(to), s.Type, s.ToPort, input: true)) == 255 && !(s.Type == RouteType.Data && HasDataPort(c.DefOf(to), s.ToPort, true)))
+            return $"a {c.DefOf(to).Name} has no {(s.Type == RouteType.Data ? "data input" : "socket")} \"{s.ToPort}\"";
         Span<CRouteNode> nodes = stackalloc CRouteNode[Construct.MaxNodesPerRoute];
         for (var i = 0; i < s.Nodes.Count; i++)
         {
@@ -414,9 +414,9 @@ public static partial class ConstructRoutes
                 sb.Append(",\"from\":").Append(r.From);
             sb.Append(",\"to\":").Append(r.To);
             if (r.FromPort != 255 && r.Parent == 255)
-                sb.Append(",\"fromPort\":\"").Append(c.DefOf(r.From).Sockets[r.FromPort].Name).Append('"');
+                sb.Append(",\"fromPort\":\"").Append(PortName(c.DefOf(r.From), r.Type, r.FromPort, input: false)).Append('"');
             if (r.ToPort != 255)
-                sb.Append(",\"toPort\":\"").Append(c.DefOf(r.To).Sockets[r.ToPort].Name).Append('"');
+                sb.Append(",\"toPort\":\"").Append(PortName(c.DefOf(r.To), r.Type, r.ToPort, input: true)).Append('"');
             if (r.Count > 0)
             {
                 sb.Append(",\"nodes\":[");
