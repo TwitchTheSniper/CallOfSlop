@@ -327,6 +327,8 @@ public sealed class ConstructWorld
         for (var i = 0; i < wreck.PartCount; i++)
             wreck.Parts[i].SitterPlus1 = 0; // (a seat that falls away throws its sitter out)
         wreck.Wreck = true;
+        wreck.Owner = c.Owner;
+        wreck.Damaged = true;
         wreck.Rebuild();
         // Moving as that bit of the old body moved.
         wreck.Vel = c.PointVel(wreck.WorldCom);
@@ -422,6 +424,7 @@ public sealed class ConstructWorld
             return false;
         }
         p.Health = 0;
+        c.Damaged = true; // (disabled: anyone may salvage it now; ConstructEdits.BeginRemove)
         if (d.OnBreak == PartBreak.Disable)
         {
             p.Broken = true;
@@ -449,6 +452,8 @@ public sealed class ConstructWorld
             piece.Parts[0] = debris;
             piece.PartCount = 1;
             piece.Wreck = true;
+            piece.Owner = c.Owner;
+            piece.Damaged = true;
             piece.Rebuild();
             piece.Vel = vel + outward + new Vector3(0, 2.5f, 0); // knocked off: out and up
             piece.AngVel = spin + new Vector3(1.3f, 0.4f, -0.9f);
@@ -763,6 +768,46 @@ public sealed class ConstructWorld
         foreach (var l in s.Loose)
             if (ConstructParts.Find(l.Part) is { } def)
                 ConstructBuild.PlaceNew(this, def, Ground(q, l.X, l.Z), l.Yaw);
+    }
+
+    /// <summary>
+    /// Debris expiry (server, every half second or so): a wreck (a piece cut off, or a part broken off) goes once no player
+    /// has been within <paramref name="near"/> metres of it and nobody has been salvaging it for <paramref name="seconds"/>
+    /// (0: never). Built constructs and loose parts set down by players never expire. Returns how many went.
+    /// </summary>
+    public int ExpireDebris(double now, float seconds, float near, ConstructEdits edits)
+    {
+        if (seconds <= 0)
+            return 0;
+        // Being salvaged (or anything else being taken off it): kept.
+        var hands = edits.Hands;
+        for (var pid = 0; pid < hands.Length; pid++)
+            if (hands[pid].Edit == EditKind.Remove && Get(hands[pid].Body) is { } busy)
+                busy.IdleSince = now;
+        var gone = 0;
+        var near2 = near * near;
+        for (var i = Bodies.Count - 1; i >= 0; i--)
+        {
+            var c = Bodies[i];
+            if (!c.Wreck)
+                continue;
+            if (c.IdleSince < 0)
+                c.IdleSince = now;
+            var com = c.WorldCom;
+            var reach = near + c.Radius;
+            for (var k = 0; k < PlayerSpotCount; k++)
+                if (Vector3.DistanceSquared(PlayerSpots[k], com) <= MathF.Max(near2, reach * reach))
+                {
+                    c.IdleSince = now;
+                    break;
+                }
+            if (now - c.IdleSince < seconds)
+                continue;
+            Events.Add($"wreck {c.Id} ({c.PartCount} part(s)) cleared away after {seconds:0} s alone");
+            Remove(c);
+            gone++;
+        }
+        return gone;
     }
 
     /// <summary>One tick: the logic (every construct in list order, every part in index order), physics, then anything that fell out of the world goes.</summary>

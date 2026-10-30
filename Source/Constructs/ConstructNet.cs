@@ -9,6 +9,7 @@ public enum CBodyKind : byte
     Gone, // a construct removed
     Health, // part health changes: (id, part, health) each
     Clear, // every construct removed (a new match)
+    Inventory, // server -> one client: that player's own inventory (protocol 81; SandboxInventory)
 }
 
 /// <summary>
@@ -51,7 +52,7 @@ public static class ConstructNet
     public static void WriteFull(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
-        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0)));
+        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0))).U8(c.Owner);
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
         w.F32(c.Fuel);
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
@@ -81,6 +82,69 @@ public static class ConstructNet
             w.U8(c.Wires[k].From).U8(c.Wires[k].To);
     }
 
+    /// <summary>
+    /// A player's own inventory, whole (it is small): flags (1: infinite parts), scrap, then each part kind held (id,
+    /// count) and each material held (id, count; none yet). About 8 bytes plus 3 a kind.
+    /// </summary>
+    public static void WriteInventory(PacketWriter w, SandboxInventory inv)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0)).U32((uint)inv.Scrap);
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        for (var i = 0; i < inv.Parts.Length && n < 255; i++)
+            if (inv.Parts[i] > 0)
+            {
+                w.U8((byte)i).U16(inv.Parts[i]);
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+        at = w.Length;
+        w.U8(0);
+        n = 0;
+        for (var i = 0; i < inv.Materials.Length; i++)
+            if (inv.Materials[i] > 0)
+            {
+                w.U8((byte)i).U16(inv.Materials[i]);
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+    }
+
+    private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
+    {
+        var flags = r.U8();
+        var scrap = r.U32();
+        int kinds = r.U8();
+        if (scrap > SandboxInventory.MaxScrap)
+            throw new MalformedPacketException($"an inventory with {scrap} scrap");
+        inv?.Clear();
+        for (var k = 0; k < kinds; k++)
+        {
+            var id = r.U8();
+            var count = r.U16();
+            if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of part {id}");
+            if (inv != null)
+                inv.Parts[id] = count;
+        }
+        int mats = r.U8();
+        for (var k = 0; k < mats; k++)
+        {
+            var id = r.U8();
+            var count = r.U16();
+            if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of material {id}");
+            if (inv != null)
+                inv.Materials[id] = count;
+        }
+        if (inv == null)
+            return;
+        inv.Scrap = (int)scrap;
+        inv.Infinite = (flags & 1) != 0;
+        inv.Version++;
+    }
+
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
 
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
@@ -106,7 +170,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -136,6 +200,9 @@ public static class ConstructNet
             case CBodyKind.Full:
                 ReadFull(ref r, world, now);
                 break;
+            case CBodyKind.Inventory:
+                ReadInventory(ref r, mine);
+                break;
             default:
                 throw new MalformedPacketException($"unknown construct message {kind}");
         }
@@ -145,6 +212,7 @@ public static class ConstructNet
     {
         var id = r.U16();
         var flags = r.U8();
+        var owner = r.U8();
         var root = r.U8();
         var driver = r.U8();
         var seat = r.U8();
@@ -241,6 +309,8 @@ public static class ConstructNet
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
         c.Wreck = (flags & 1) != 0;
+        c.Damaged = (flags & 8) != 0;
+        c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;
         c.Rebuild();
