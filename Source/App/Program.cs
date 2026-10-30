@@ -1369,6 +1369,7 @@ public static unsafe partial class Program
                 DrawInventoryInMatch(); // the Zombies parts inventory, over the match (Program.Zombies.cs)
                 DrawSandboxPartsInMatch(); // the Sandbox debug parts menu, over the match (Program.Sandbox.cs)
                 DrawToolWheelInMatch(); // the Sandbox tool wheel while held (Program.SandboxWheel.cs)
+                DrawPhysGunHud(); // the Sandbox frozen snowflake on look-at (Program.PhysicsGun.cs)
                 if (Ui.DrawLoadoutMenu(g, now))
                 {
                     SetMouseCaptured(true);
@@ -1615,7 +1616,12 @@ public static unsafe partial class Program
         if (Ui.Rebinding is { } rebind)
         {
             if (key != GlfwKey.Escape && key != GlfwKey.Unknown)
-                Keybinds.Assign(_settings.Binds, rebind, Keybinds.Key(key));
+            {
+                // Shift held with another key: a Shift chord (Sandbox actions only take one; Keybinds.Assign drops it for the rest).
+                var shift = key is not (GlfwKey.LeftShift or GlfwKey.RightShift)
+                            && (window.GetKey(GlfwKey.LeftShift) == GlfwKeyAction.Press || window.GetKey(GlfwKey.RightShift) == GlfwKeyAction.Press);
+                Keybinds.Assign(_settings.Binds, rebind, shift ? Keybinds.Shift(key) : Keybinds.Key(key));
+            }
             Ui.Rebinding = null;
             return;
         }
@@ -1702,6 +1708,8 @@ public static unsafe partial class Program
 
     private static void OnScroll(GlfwWindow window, double2 offset)
     {
+        if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1 && PhysGunScroll(offset.Y))
+            return; // (the physics gun holding something: the wheel pulls it in or pushes it out; Program.PhysicsGun.cs)
         if (_session != null && _mouseCaptured && Math.Abs(offset.Y) > 0.1)
             _game.SwitchTo(_game.NextSlot, Glfw.Time); // 2 slots, or up to 4 with the Zombies slot upgrade
     }
@@ -1752,6 +1760,7 @@ public static unsafe partial class Program
         var blocked = Ui.WantsTextInput || Ui.Rebinding != null || Ui.ChatOpen; // typing in the chat suspends the game controls
         for (var i = 0; i < _down.Length; i++)
             _down[i] = !blocked && Keybinds.IsDown(_window, _settings.Binds[i]);
+        Keybinds.Resolve(_settings.Binds, _session != null && _game is { SandboxOn: true }, _down); // (per-mode keys; a Shift chord hides its plain key)
     }
 
     private static void UpdateLocalPlayer(double now)
@@ -1892,6 +1901,7 @@ public static unsafe partial class Program
 
         // Sandbox: the tool wheel takes the mouse while it is held open (Program.SandboxWheel.cs).
         var wheelOpen = ToolWheelInput(delta);
+        wheelOpen |= PhysGunMouse(delta); // Sandbox: F held with the physics gun holding something: the mouse turns it (Program.PhysicsGun.cs)
 
         // Mouse look is applied every frame (never waits for a tick or the network). Not while typing in the chat (or with the tool wheel open).
         if (_mouseCaptured && !Ui.ChatOpen && !wheelOpen)

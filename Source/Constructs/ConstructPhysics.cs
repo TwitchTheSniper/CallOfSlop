@@ -119,6 +119,8 @@ public static class ConstructPhysics
             c.PrevRot = c.Rot;
             for (var j = 0; j < c.JointCount; j++)
                 c.Joints[j].PrevAngle = c.Joints[j].Angle;
+            if (c.GrabbedBy != 255)
+                c.Wake(); // (held by a physics gun: never asleep, ConstructGrab.cs)
             if (c.Asleep && c.JointCount > 0)
                 WakeCheck(c);
             _dyn[i] = !c.Anchored && !c.Asleep;
@@ -128,6 +130,8 @@ public static class ConstructPhysics
             if (_dyn[i])
             {
                 c.Vel += g * dt;
+                if (c.GrabbedBy != 255)
+                    ConstructGrab.Drive(c, dt); // (the physics gun's spring, after gravity: the contacts below still stop it)
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);

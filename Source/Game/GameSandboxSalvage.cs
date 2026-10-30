@@ -43,6 +43,7 @@ public sealed partial class Game
         var infinite = World.Map.Sandbox?.InfiniteParts ?? true;
         SandboxHands.Inventory = SandboxInv;
         SandboxHands.Query = World.Query; // (free placement checks the map)
+        SandboxPhysGunRules(); // (the contested rule's lookups; GameSandboxPhysGun.cs)
         SandboxHands.Survival = World.Map.Sandbox is { InfiniteParts: false, PartsMenu: false }; // (physical storage: salvage comes into the hands)
         if (SandboxHands.InfiniteParts != infinite)
         {
@@ -90,6 +91,7 @@ public sealed partial class Game
         if (!IsServer)
             return;
         SandboxInv.Clear(p.Id);
+        SandboxHands.GrabLeave(Constructs, p.Id); // (the physics gun lets go; what they froze is nobody's)
         if (p.Alive)
             SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (what a leaving player carried stays in the world)
         SandboxHands.Pack(p.Id).Reset(SandboxHands.Pack(p.Id).SlotCount);

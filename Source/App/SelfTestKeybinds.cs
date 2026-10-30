@@ -21,7 +21,7 @@ public static partial class SelfTest
             Fail($"keybinds: Interact defaults to {(GlfwKey)d[(int)GameAction.Interact]}, not F");
         if (d[(int)GameAction.Equipment] != Keybinds.Key(GlfwKey.E))
             Fail($"keybinds: tactical equipment defaults to {(GlfwKey)d[(int)GameAction.Equipment]}, not E");
-        Line($"defaults: {d.Count(c => c != Keybinds.Unbound)} bound actions, no shared keys; Interact F, Use equipment E, Throw grenade {(GlfwKey)d[(int)GameAction.Grenade]}, Melee {(GlfwKey)d[(int)GameAction.Melee]}");
+        Line($"defaults: {d.Count(c => c != Keybinds.Unbound)} bound actions, no shared keys (within a context); Interact F, Use equipment E, Throw grenade {(GlfwKey)d[(int)GameAction.Grenade]}, Melee {(GlfwKey)d[(int)GameAction.Melee]}");
 
         var e = Keybinds.Key(GlfwKey.E);
         var f = Keybinds.Key(GlfwKey.F);
@@ -110,12 +110,15 @@ public static partial class SelfTest
         }
     }
 
-    /// <summary>Actions sharing a key, as "Key: A, B; ..." (empty when there are none). Unbound doesn't count.</summary>
+    /// <summary>
+    /// Actions sharing a key while both are live, as "Key: A, B; ..." (empty when there are none). Unbound doesn't count,
+    /// nor does a Sandbox key shared with one live only outside Sandbox (Keybinds.Overlap).
+    /// </summary>
     private static string Duplicates(int[] binds) =>
         string.Join("; ", Enumerable.Range(0, binds.Length)
             .Where(i => binds[i] != Keybinds.Unbound)
             .GroupBy(i => binds[i])
-            .Where(g => g.Count() > 1)
+            .Where(g => g.Any(a => g.Any(b => a != b && Keybinds.Overlap((GameAction)a, (GameAction)b))))
             .Select(g => $"{Code(g.Key)}: {string.Join(", ", g.Select(i => (GameAction)i))}"));
 
     private static string Describe(int[] binds) =>

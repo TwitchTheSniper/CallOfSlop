@@ -51,7 +51,7 @@ public static class BackpackRender
                 if (box.Hidden)
                     continue;
                 ConstructStorage.ItemBox(frame, bp.Slots[k], d, pack.Rot[k], 0, b, out var c, out _);
-                o.Box(box.Model(pack.Rot[k], c) * m, box.Color, 0, box.Shape);
+                o.Box(box.Model(pack.Rot[k], c) * m, box.Color, 0, box.Shape, box.Glass); // (a pane in the pack: see-through)
                 n++;
             }
         }

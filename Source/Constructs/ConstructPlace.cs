@@ -7,7 +7,7 @@ public struct FreePlacement
 {
     public Vector3 Pos; // the new construct's origin (the part's origin) in the world
     public Quaternion Rot; // the construct's frame: up along the surface (or straight up on near-level ground), turned to the look
-    public byte Turn; // the part's Rot24 turn in that frame (the rotate key steps through them)
+    public byte Turn; // the part's Rot24 turn in that frame (the rotate keys turn it: GhostTurn.cs)
     public bool Anchor; // pinned to the ground (creative's "anchor to ground"); a foundation anchors itself
 }
 
@@ -25,8 +25,8 @@ public struct JoinPlan
 /// aimed at a surface rather than a construct's socket, is set down there as a new construct rooted at that part. The
 /// rules are shared by the client (the ghost, green or red with the reason) and the server (which checks again when the
 /// placement starts and when it is done): the pose follows the surface's normal (level on near-level ground, resting on
-/// the highest ground under its footprint), the optional world grid snaps the spot and the yaw, the rotate key steps
-/// through the 24 turns, and the part's boxes must be clear of the map, players and other constructs. Nothing allocates.
+/// the highest ground under its footprint), the optional world grid snaps the spot and the yaw, the rotate keys turn
+/// the part through the 24 turns relative to the camera (GhostTurn.cs), and the part's boxes must be clear of the map, players and other constructs. Nothing allocates.
 /// </summary>
 public static class ConstructPlace
 {
@@ -49,6 +49,9 @@ public static class ConstructPlace
 
     /// <summary>The turn after <paramref name="turn"/> in the rotate key's order.</summary>
     public static byte NextTurn(byte turn) => Turns[(Array.IndexOf(Turns, turn) + 1) % Turns.Length];
+
+    /// <summary>The yaw a new construct's frame takes: the look's, squared to 90 degrees on the grid.</summary>
+    public static float FrameYaw(float yaw, bool grid) => grid ? MathF.Round(yaw / (MathF.PI / 2)) * (MathF.PI / 2) : yaw;
 
     /// <summary>A construct's frame on a surface: its up along <paramref name="normal"/> (straight up on near-level ground), turned to <paramref name="yaw"/>.</summary>
     public static Quaternion Frame(Vector3 normal, float yaw, out bool level)
@@ -89,8 +92,7 @@ public static class ConstructPlace
         if (!float.IsFinite(point.X + point.Y + point.Z + normal.X + normal.Y + normal.Z + yaw))
             return "no surface there";
         turn = (byte)(turn % Rot24.Count);
-        if (grid)
-            yaw = MathF.Round(yaw / (MathF.PI / 2)) * (MathF.PI / 2);
+        yaw = FrameYaw(yaw, grid);
         var rot = Frame(normal, yaw, out var level);
         var n = level ? Vector3.UnitY : Vector3.Normalize(normal);
         if (grid)

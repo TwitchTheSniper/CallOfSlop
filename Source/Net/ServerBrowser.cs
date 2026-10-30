@@ -190,11 +190,16 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     every player's backpack: CBodyKind.Pack (a player's pack contents), CActKind Stow / Draw.
     // 86: Sandbox drivetrain parts (docs/sandbox/CONSTRUCTS.md "Drivetrain parts"): the engine's rpm and the drive note in
     //     CBody and CPose.
-    // 87: Sandbox routed links (docs/sandbox/CONSTRUCTS.md "Routed links"): Msg.CBody carries a construct's routed links
+    // 87: Sandbox glass (docs/sandbox/CONSTRUCTS.md "Glass"): CFireKind.Shatter in Msg.CFire (a glass part broke: where, its
+    //     half size), so every PC bursts it into shards.
+    // 88: Sandbox physics gun (docs/sandbox/CONSTRUCTS.md "The physics gun"): CActKind Grab / GrabSteer / GrabRelease /
+    //     GrabFreeze / UnfreezeAll; CBody's frozen flag and who froze it; the mode-state tail (version 3) carries each
+    //     player's held construct and grab point (the beam); the physics gun's tool byte (8).
+    // 89: Sandbox routed links (docs/sandbox/CONSTRUCTS.md "Routed links"): Msg.CBody carries a construct's routed links
     //     (data, power, pipe, shaft, chute: endpoints, junction, nodes on the 1 cm grid, segment health) in place of its wires;
     //     CAct.Route / RouteEdit at the end of CActKind; part ids are two bytes everywhere (CBody parts, stores, the inventory,
     //     the mode-state tail's held part, CAct.Rack's pick).
-    public const byte ProtocolVersion = 87;
+    public const byte ProtocolVersion = 89;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

@@ -1515,7 +1515,7 @@ public sealed partial class Game : IDisposable
             var dist = World.Query.Raycast(o, d, World.Range, QueryFilter.Shots); // bullets pass Zombies window openings
             dist = PenetrateAfterHit(def, o, d, dist); // on through thin walls the round is big enough for (GamePenetration.cs)
             var turret = StreakRaycast(o, d, ref dist, shooter); // enemy turrets and drones stop bullets too
-            var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets (GameSandbox.cs)
+            var construct = SandboxOn ? SandboxRay(o, d, ref dist) : null; // Sandbox: construct parts stop bullets, glass lets them through (GameSandbox.cs)
             (Player P, Box Hitbox, HistoryEntry At)? hit = null;
             foreach (var t in targets)
             {
@@ -1557,6 +1557,8 @@ public sealed partial class Game : IDisposable
                 SandboxShotDamage(ch, ray.Damage * def.DamageMultAt(dist) * pen); // the part it hit (armour first; GameSandbox.cs)
                 flags |= 1;
             }
+            if (SandboxOn)
+                SandboxGlassShot(d, dist, ray.Damage * def.DamageMultAt(dist) * pen); // the glass it went through on the way breaks (GameSandbox.cs)
             if (pen < 1f && (hit != null || turret != null || zombie != null || device != null))
                 flags |= ShotWallbang;
             PenetratedShotEffects(shooter, o, d, dist, ray.Damage * def.DamageMultAt(dist), hit == null && turret == null && zombie == null, now); // breakable props, doors and glass (GamePenetration.cs)

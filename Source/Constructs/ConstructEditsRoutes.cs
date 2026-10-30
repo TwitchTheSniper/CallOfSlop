@@ -25,8 +25,6 @@ public sealed partial class ConstructEdits
             return why;
         if (parent == 255 && Linking(world, player, eye, body, from, out _) is { } why2)
             return why2;
-        if (ConstructEdits.SalvageRefusal(c!, player) is { } theirs && c!.Owner != player && c.Owner != 255)
-            return theirs;
         if (ConstructRoutes.Check(world, c!, type, style, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) is { } bad)
             return bad;
         if (ConstructRoutes.Add(world, c!, type, style, from, fromPort, parent, parentSeg, junction, nodes, to, toPort) < 0)
@@ -59,8 +57,8 @@ public sealed partial class ConstructEdits
             near = MathF.Min(near, Vector3.Distance(eye, ConstructRoutes.WorldPoint(c, route, i)));
         if (near > ConstructBuild.Reach + 1f)
             return "too far away";
-        if (c.Owner != player && c.Owner != 255 && SalvageRefusal(c, player) is { } theirs)
-            return theirs;
+        if (Contested(c, player) is { } defended)
+            return defended; // (decision 19: an enemy's construct while its owner is near)
         switch (op)
         {
             case RouteEditOp.Delete:

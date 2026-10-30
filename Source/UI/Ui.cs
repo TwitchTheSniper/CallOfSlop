@@ -205,7 +205,10 @@ public sealed partial class Ui : IDisposable
                     ImGuiSafe.TextColored(Dim, $"Steam {(st.Relayed ? "relay" : "direct")}   quality {st.QualityLocal * 100:0}% / {st.QualityRemote * 100:0}%   out {st.OutBytesPerSec / 1024:0.0} KB/s   in {st.InBytesPerSec / 1024:0.0} KB/s   queued {st.PendingReliable + st.PendingUnreliable} B");
             }
             ImGui.PushTextWrapPos(MathF.Max(size.X * 0.32f, 300 * _scale)); // keep the key help clear of the match bar
-            ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
+            if (game.SandboxOn) // (Sandbox: no scoreboard; its inventory on the same key by default)
+                ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.SandboxInventory)}: inventory   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
+            else
+                ImGuiSafe.TextColored(Dim, $"Esc: menu   {K(GameAction.Loadout)}: loadout   {K(GameAction.Scoreboard)}: scores   {K(GameAction.SwapWeapon)}/wheel: switch   {K(GameAction.Aim)}: aim   {K(GameAction.Melee)}: melee   {K(GameAction.CrouchHold)}: crouch (tap) / prone (hold)   {K(GameAction.ChatAll)}/{K(GameAction.ChatTeam)}: chat");
             ImGui.PopTextWrapPos();
         }
         ImGui.End();
