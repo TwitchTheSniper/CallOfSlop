@@ -251,7 +251,7 @@ public sealed partial class Game
                     Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0,
                     SeatBody = e.SeatBody, SeatPart = e.SeatPart,
                 });
-                if (p.Snaps.Count > 64)
+                if (p.Snaps.Count > Player.MaxSnaps)
                     p.Snaps.RemoveAt(0);
             }
         }

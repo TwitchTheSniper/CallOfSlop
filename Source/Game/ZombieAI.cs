@@ -111,7 +111,10 @@ public sealed partial class Zombie
     public byte HealthByte = 255;
     public double DiedAt = -1;
     public bool Ragdolled; // its body became a ragdoll (Source/Render/Ragdolls.cs; drawing only)
-    public readonly List<(double Tick, Vector3 Pos, float Yaw)> Snaps = new(4);
+    public readonly List<(double Tick, Vector3 Pos, float Yaw)> Snaps = new(MaxSnaps + 1); // (its full size: no growth in Net receive)
+
+    /// <summary>Most snapshots <see cref="Snaps"/> holds (ZombiesNet.cs drops the oldest past it).</summary>
+    public const int MaxSnaps = 6;
     public double HeardAt;
     public float Gait; // walk cycle phase (drawing)
     public ZState SeenState = (ZState)255;

@@ -121,7 +121,8 @@ public sealed partial class Game : IDisposable
 
     // ---- Client prediction ------------------------------------------------
     private uint _nextSeq = 1;
-    private const int MaxPendingInputs = 240;
+    /// <summary>Most unacknowledged input commands a client keeps (the oldest goes past it).</summary>
+    public const int MaxPendingInputs = 240;
 
     // At its full size from the start: growing it when acks fall behind (a hitch) allocated in a steady frame.
     private readonly List<InputCmd> _pendingInputs = new(MaxPendingInputs + 1);

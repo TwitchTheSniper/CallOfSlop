@@ -16,10 +16,6 @@ public static partial class SelfTest
     /// <summary>Most bytes the least-allocating of three 60-frame rounds may allocate (a one-off, such as a log line, is allowed once).</summary>
     private const int FrameAllocAllowance = 0;
 
-    private static readonly int DiagSleep = int.TryParse(Environment.GetEnvironmentVariable("FA_SLEEP"), out var v) ? v : 0; // TEMP DIAG
-    private static readonly int DiagRounds = int.TryParse(Environment.GetEnvironmentVariable("FA_ROUNDS"), out var v) ? v : 3; // TEMP DIAG
-    private static readonly int DiagJitter = int.TryParse(Environment.GetEnvironmentVariable("FA_JITTER"), out var v) ? v : 0; // TEMP DIAG
-
     private static void CheckFrameAllocs()
     {
         if (Maps.Find("Horde Stress") is not { Zombies: not null } map)
@@ -43,7 +39,6 @@ public static partial class SelfTest
         server.Mode = GameMode.Zombies;
         server.StressSize = 1000;
         using var client = new Game(NetPeer.Join("127.0.0.1", port), new Audio(), "Alpha", Weapons.DefaultPrimary.Id, Weapons.DefaultSecondary.Id);
-        if (DiagJitter > 0) { server.Net.SimulateBadNetwork(DiagJitter, DiagJitter, 0); client.Net.SimulateBadNetwork(DiagJitter, DiagJitter, 0); } // TEMP DIAG
         Pump(server, [client], 1.0, ref now, clock);
         server.LobbyStart(true, now);
         PumpFast(server, [client], Game.LobbyCountdownSeconds + 0.5, ref now);
@@ -74,7 +69,6 @@ public static partial class SelfTest
                     now += dt;
                     server.Update(now, dt);
                     client.Update(now, dt);
-                    if (DiagSleep > 0) Thread.Sleep(DiagSleep); // TEMP DIAG
                     ui.PerfMode = view;
                     var perf = Perf.Measure(PerfArea.Ui); // (as the main loop times them)
                     ui.BeginFrame();
@@ -100,8 +94,9 @@ public static partial class SelfTest
                     Perf.TrackAllocs = true;
                     var least = long.MaxValue;
                     var areas = "";
+                    var rounds = "";
                     NetPeer.TrackAllocs = true; // which received messages allocated (Net.cs), named in a failure
-                    for (var round = 0; round < DiagRounds; round++)
+                    for (var round = 0; round < 3; round++)
                     {
                         Perf.ResetAllocs();
                         NetPeer.ResetAllocs();
@@ -110,7 +105,9 @@ public static partial class SelfTest
                         var before = GC.GetAllocatedBytesForCurrentThread();
                         Frames(hud, view, 60);
                         var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-                        if (DiagRounds > 3) Line($"DIAG {who} {view} round {round}: {bytes} B {AllocAreas()}{NetMsgAllocs()}"); // TEMP DIAG
+                        rounds += $"{(round > 0 ? ", " : "")}{bytes} B"; // (after the round: every round is named in a failure)
+                        if (bytes > 0)
+                            rounds += $" [{AllocAreas()}{NetMsgAllocs()}]";
                         if (bytes < least)
                         {
                             least = bytes;
@@ -120,8 +117,9 @@ public static partial class SelfTest
                     NetPeer.TrackAllocs = false;
                     report.Add($"{who} {view} {least} B");
                     if (least > FrameAllocAllowance)
-                        failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas})");
+                        failures.Add($"{who} with the perf window {view}: {least} B over 60 frames ({areas}; the rounds: {rounds})");
                 }
+            CheckInputBurst(server, client, ref now, failures, report);
             Line($"frame allocations (loopback host and client on {map.Name}, {server.Crowd.Total} in the crowd, HUD and perf window drawn headless; least of three 60-frame rounds): {string.Join(", ", report)}");
             if (failures.Count > 0)
                 Fail($"steady frames should allocate nothing on the main thread: {string.Join("; ", failures)}");
@@ -133,6 +131,43 @@ public static partial class SelfTest
             Perf.SetOn(wasOn);
             ui.DisposeHeadless();
         }
+    }
+
+    /// <summary>
+    /// A network stall's burst (the "Frame allocations" failures on Windows CI, 2026-10-30: "Net receive 1560 B", the
+    /// server's input queue growing from 32 to 64 commands when a backlog arrived in one poll): a full queue's worth of
+    /// input commands in one go must allocate nothing, and the client's own bounded lists start at their full size.
+    /// </summary>
+    private static void CheckInputBurst(Game server, Game client, ref double now, List<string> failures, List<string> report)
+    {
+        if (!server.Players.TryGetValue(client.LocalId, out var p))
+        {
+            failures.Add("input burst: the server has no player for the client");
+            return;
+        }
+        var guid = server.SelfTestClientGuid(client.LocalId);
+        var w = new PacketWriter(1024);
+        var packets = new List<byte[]>();
+        var seq = Math.Max(p.HighestQueuedSeq, p.LastProcessedSeq);
+        for (var sent = 0; sent < Player.MaxQueuedInputs + 16; sent += 16)
+        {
+            w.Begin(Msg.Input).U8(16);
+            for (var i = 1; i <= 16; i++)
+                w.U32(seq + (uint)(sent + i)).U8(0).F32(p.Yaw).F32(p.Pitch).U8(p.Weapon).U8(100);
+            for (var i = 0; i < 16; i++)
+                w.U32(0);
+            packets.Add(w.Span.ToArray());
+        }
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        foreach (var packet in packets)
+            server.SelfTestPacket(guid, packet, now);
+        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var queued = p.InputQueue.Count;
+        report.Add($"input burst {queued} queued {bytes} B");
+        if (queued < Player.MaxQueuedInputs || bytes > 0)
+            failures.Add($"input burst: {packets.Count * 16} commands in one go queued {queued} (want {Player.MaxQueuedInputs}) and allocated {bytes} B (want 0)");
+        if (client.SelfTestPendingInputCapacity <= Game.MaxPendingInputs)
+            failures.Add($"input burst: the client's unacknowledged inputs start at {client.SelfTestPendingInputCapacity}, not their full size");
     }
 
     /// <summary>The received message ids whose handlers allocated since <see cref="NetPeer.ResetAllocs"/> (both games),

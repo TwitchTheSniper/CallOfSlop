@@ -34,6 +34,18 @@ public sealed partial class Game
 
     // ---- Self-test hooks ----------------------------------------------------------------------------------
 
+    /// <summary>Self-test: the connection of the client playing as <paramref name="id"/> (default when there is none).</summary>
+    public RakNetGUID SelfTestClientGuid(byte id)
+    {
+        foreach (var (guid, cid) in _clients.Values)
+            if (cid == id)
+                return guid;
+        return default;
+    }
+
+    /// <summary>Self-test: the client's list of unacknowledged inputs, how many it holds before growing.</summary>
+    public int SelfTestPendingInputCapacity => _pendingInputs.Capacity;
+
     /// <summary>Self-test: a packet straight into the handlers, without the safety net (so the test sees what they throw).</summary>
     public void SelfTestPacketRaw(RakNetGUID sender, ReadOnlySpan<byte> data, double now) => OnPacket(sender, data, now);
 
