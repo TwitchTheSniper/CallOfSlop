@@ -341,7 +341,7 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - **Raycast wheels**: a spring-damper along each suspension (stiffness from the body's mass and the suspension's
   frequency), side grip, drive force shared by the touching wheels, brakes, a friction circle, and tyre forces applied
   most of the way up to the centre of mass (an arcade anti-roll bar) so a buggy turns without rolling over.
-- **Joints** (reduced coordinates: each is one number on its body): a passive hinge is damped, falls under gravity,
+- **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
   while its lock is on; the moving joints are driven by a motor (milestone 2, below).
 - A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it.
@@ -1310,7 +1310,7 @@ and `EditKind.PlaceNew`).
   and charge; every other socket pair the two meet at welds too; a coupling between them goes; a wire between them becomes
   one of its own. Both must be yours, or free for anyone to take (a wreck, a loose part, the map's): someone else's
   working construct can't be joined. The one aimed at stays (unless only the other is yours) and becomes yours. Refused
-  while anyone sits in either, or past the caps (96 parts, 8 joints, 64 wires a construct).
+  while anyone sits in either, or past the caps (96 parts, 16 joints, 64 wires a construct).
 - **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
   A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
   or join two"). The world's caps (64 bodies, 1,200 parts) still hold.
@@ -1456,6 +1456,93 @@ axle and transfer case, the crawler's track, part galleries and the driving HUD.
 7. 247 of the 250 part ids are used (structure 110, drivetrain 53, storage); more part families need 2-byte ids (done
    with the routed links: part ids are two bytes since protocol 90, up to 4,096 types).
 
+## Actuator sizes and strength
+
+Board item dev-sandbox-actuator-sizes-as01 (protocol 91). Every moving joint now comes in sizes, and has a **rating**:
+the most force or torque it holds rigidly.
+
+### The size families (`Constructs/Parts/Actuators`)
+
+Written by `tools/constructs/actuator_parts.py` (run it from the repo root; `--check` compares), as the structural
+parts are: three widths (1x1, 2x2 and 3x3 cells of the 0.25 m frame step) times three lengths (short, medium, long), 27
+parts in the inventory's Joints group (sections Pistons, Motor hinges, Turntables).
+
+| Family | Width sets | Length sets | Ratings (1x1 / 2x2 / 3x3) | Length steps |
+| --- | --- | --- | --- | --- |
+| Piston | push and pull force; side load it takes | stroke (and its top speed, 1 m/s per metre of stroke) | 6,000 / 24,000 / 60,000 N; side 2,000 / 8,000 / 20,000 N | 0.5 / 1 / 2 m |
+| Motor hinge | torque | speed (a longer housing holds a bigger motor) | 4,000 / 12,000 / 30,000 N m | 45 / 90 / 180 deg/s |
+| Turntable | torque | speed | 3,000 / 12,000 / 36,000 N m | 45 / 90 / 180 deg/s |
+
+Mass, health, armour, idle power and fitting time grow with the size (width squared times length). The three parts that
+were there before are one size each and keep their names, shapes, sockets and default settings, so blueprints and
+constructs built with them still fit and behave as before: **Piston** is the 2x2 long piston (14,000 N by default, up
+to 24,000), **Motor Hinge** the 1x1 medium hinge (3,000 N m, up to 4,000) and **Turntable** the 2x2 short turntable
+(6,000 N m, up to 12,000). New sizes start at their full rating and speed. Part ids follow the sorted file names, so
+they moved; blueprints and saves name parts, so nothing breaks.
+
+In a part file the `joint` block takes three more keys: `give` (how far it has given at twice its rating: metres for a
+piston, degrees otherwise; default a quarter of a piston's stroke, 20 degrees), `sideLoad` (a piston: N across its axis
+before it gives; 0 no limit) and `overloadDamage` (hp a second at twice the rating while overloaded; 0, off, on every
+shipped part).
+
+### The configure tool
+
+Strength (Force or Torque) and Speed run from a tenth of the size's maximum up to it, in the part's `config` schema, so
+they clamp to the size's range like every setting; a lower strength caps the power it can draw (the drain is the
+motor's push times its speed), and a lower speed draws less while it moves. The panel shows a **Load** bar: what the joint holds against its rating ("Load 4200 /
+6000 N (70%)"), green up to the rating and red past it ("overloaded, giving way"). Overloaded actuators are tinted red
+in the world, deeper the further past their rating (full at twice), pulsing a little. The load comes from the server in
+the pose (a byte a joint, hundredths of the rating).
+
+### The strength model (`ConstructPhysics.MotorPrep`)
+
+- A moving joint's motor follows a **reference**: the target its input asks for (a turntable: its speed, or where it
+  stopped when its input is 0), reached at the joint's speed.
+- The motor holds the joint on the reference with at most its rating: a velocity constraint solved with the contacts
+  and the other joints (the joints and the contacts on jointed constructs get 6 more solver passes than the rest, so a
+  chain of actuators converges). **Up to its rating the joint is rigid**: no spring, no sag, no jitter.
+- A load past the rating pushes it off the reference, and the further off it is the harder the motor pushes: rating x
+  (1 + sqrt(behind / give)). It settles where that meets the load, **give x (load / rating - 1)^2** behind: a little
+  just over the rating, more and more as the overload grows. Moving off the reference is damped (no bounce).
+- It never asks to move faster than its speed, so when the load goes it comes back **at its speed**.
+- At 4 times its rating it slips (the reference is dragged along): a hugely overloaded lift sinks to its stop.
+- A piston loaded across its axis past its side load holds that much less along it (rating / (side load / its side
+  rating)).
+- The load counts everything: the weight it carries (riders too), the contacts on the parts beyond it (feet on the
+  ground, a post in the way), inertia and other joints. A motor driving into an obstacle shows as overloaded and pushes
+  at it a little past its rating (more the further its reference has run ahead, at most 4 times).
+- A gunner's or sentry's aim and steering pivots keep the plain motor (at most their strength).
+- An overloaded joint stays awake (it doesn't sleep giving way); one at rest within its rating sleeps as before.
+
+### Caps and cost
+
+A construct may have 16 joints (was 8), so a 10-joint leg or arm fits; still 128 in all. A 10-joint arm costs about
+0.06 ms a tick on the cloud box; no allocation per tick.
+
+### Self-test
+
+"Construct actuators" (`SelfTestConstructActuators.cs`): the three families' nine sizes each (width raises the rating,
+length the stroke or speed, size the mass, health and power; overload damage off); a construct on four piston legs, and
+one on two-joint legs (motor hinge knees), each rated a quarter over its load and kept awake for 5 s: no sag or tilt
+over 0.2 mm (it measures thousandths), then it sleeps still; a lift loaded to 1.25, 1.5 and 2 times its rating gives way
+along the curve without bouncing and comes back at its speed, a client hears the load and the panel's text says so,
+overload damage takes nothing while off and wears the part when on; the size in play (stroke, force, speed); the
+configure values clamp to the size's range and change what the piston holds and how fast it goes; a tower of six
+pistons and a ten-hinge arm worked by seeded inputs and overloaded stay finite and in one piece, the bent arm holds its
+tip still, ten joints travel to a client, no allocation, and the arm's tick cost (budget 1 ms).
+
+### Decisions made (the developer may change them)
+
+- **Overload damage is off** (the developer's open question): `overloadDamage` is 0 on every part; set it (hp a second
+  at twice the rating) to make sustained overload wear a part.
+- The yield curve (give x (overload - 1)^2), the give (a quarter of a piston's stroke, 20 degrees for hinges and
+  turntables) and the slip at 4 times the rating.
+- The ratings, side loads, strokes and speeds in the table; a longer motor hinge or turntable is faster (not slower and
+  stronger, as a gearbox would be), since the width already sets the torque.
+- New sizes are plain boxes centred on their origin (not offset onto the 0.25 m lattice for even widths); the old three
+  keep their shapes.
+- Steering pivots have no sizes (they are mechanical, not motors).
+
 ## Routed links (decision 20)
 
 Board item dev-sandbox-routed-links-rl02 (the developer's design, 2026-10-30). Code: `Source/Constructs/ConstructRoutes.cs`
@@ -1550,7 +1637,7 @@ blueprint `"links"` and `CBody` round trips (a short packet refused); the server
 
 ## Performance and caps
 
-At most 64 bodies, 96 parts a construct, 1,200 parts in all, 8 joints and 12 wheels a construct (128 joints in all),
+At most 64 bodies, 96 parts a construct, 1,200 parts in all, 16 joints and 12 wheels a construct (128 joints in all),
 64 routed links and 768 link nodes a construct (512 links in all), 4 inputs a part, wires up to 8 m (12 m between constructs, 64 of those), 32 couplings, 40 hull points a body, 64 points and 48 swept edges beyond joints a construct, 1,024 contacts a tick. Fixed arrays throughout: the self-test drives a buggy round the yard for 120 ticks and
 measures **no allocation** (with the turret turning, the lift and the motorised gate moving and their logic running);
 the yard's constructs take about 0.1-0.4 ms a tick in the container. The logic step is a few spans on the stack. Sleeping bodies cost
@@ -1744,7 +1831,7 @@ centre of mass stay those of the rest pose (cheap; a swinging arm doesn't rock i
 | Steering Pivot | -1..1 of its limit | Follows the driver's steering |
 
 Wheels steer only on steering pivots now (milestone 1 steered every wheel ahead of the centre of mass): a suspension
-bolted to a pivot's leaf, and the wheel on it, turn with it, and its axle sets the tyre's direction. Caps: 8 joints a
+bolted to a pivot's leaf, and the wheel on it, turn with it, and its axle sets the tyre's direction. Caps: 16 joints a
 construct, 128 in all.
 
 ### Logic

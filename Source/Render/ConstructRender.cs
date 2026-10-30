@@ -276,6 +276,10 @@ public static partial class ConstructRender
             health = Math.Clamp(p.Health / MathF.Max(1, d.Health), 0, 1);
         var shade = p.Broken ? 0.25f : 0.55f + 0.45f * health;
         var drawn = 0;
+        // An overloaded actuator (the strength model): tinted red, deeper the more it is past its rating (full at twice), pulsing a little.
+        var strain = 0f;
+        if (d.Role == PartRole.Joint && !p.Broken && c.JointOf(i) is var oj and >= 0 && c.Joints[oj].Over > 1)
+            strain = Math.Clamp(c.Joints[oj].Over - 1, 0, 1) * (0.75f + 0.25f * MathF.Sin((float)Now * 9f));
         var lit = d.Logic == CLogic.Lamp && p.Out >= 0.5f && !p.Broken; // a lamp that is on glows (unlit, bright)
         var glow = new Vector3(1f, 0.93f, 0.6f);
         if (d.Logic == CLogic.Lamp)
@@ -354,11 +358,14 @@ public static partial class ConstructRender
                 continue;
             }
             else
-                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint)
+                gfx.Draw(model, c.Frozen ? Vector3.Lerp(box.Color * shade, Frost, 0.45f) : strain > 0 ? Vector3.Lerp(box.Color * shade, OverloadTint, 0.2f + 0.5f * strain) : box.Color * shade, opacity, mode: 0, shape: box.Shape); // (frozen by the physics gun: an icy tint; overloaded: red)
             drawn++;
         }
         return drawn;
     }
+
+    /// <summary>An overloaded actuator's tint (the strength model, ConstructPhysics.MotorPrep).</summary>
+    public static readonly Vector3 OverloadTint = new(0.95f, 0.18f, 0.12f);
 
     /// <summary>The frozen tint and outline (the physics gun).</summary>
     public static readonly Vector3 Frost = new(0.62f, 0.86f, 1f);

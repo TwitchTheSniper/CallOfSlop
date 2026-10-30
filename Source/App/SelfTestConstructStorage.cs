@@ -172,7 +172,7 @@ public static partial class SelfTest
             truncated = "refused";
         }
         var badPart = (byte[])bytes.Clone();
-        badPart[1] = 254; // (slot 0's part: no such type)
+        System.Buffers.Binary.BinaryPrimitives.WriteUInt16LittleEndian(badPart.AsSpan(1), (ushort)ConstructParts.All.Count); // (slot 0's part: no such type, however many parts there are)
         string unknown;
         try
         {

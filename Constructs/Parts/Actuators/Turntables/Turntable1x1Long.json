@@ -125,7 +125,7 @@
       "min": 300.0,
       "max": 3000.0,
       "step": 100,
-      "tooltip": "Its rating: what it holds rigidly (this size: up to 3000 N m). More load and it gives way; a lower setting uses less power."
+      "tooltip": "Its rating: what it holds rigidly (this size: up to 3000 N m). More load and it gives way; a lower setting caps the power it draws."
     }
   ]
 }

@@ -39,6 +39,9 @@ public sealed partial class Ui
     private readonly float[] _cfClip = new float[ConstructConfig.MaxSlots];
     private string _cfTitle = "", _cfWho = "", _cfHealth = "", _cfSelText = "", _cfClipText = "";
     private int _cfHealthKey = -1, _cfSelKey = -1, _cfWireKey = -1;
+    private string _cfLoad = ""; // a moving joint's load against its rating (the strength model: made only when it changes)
+    private int _cfLoadKey = -1;
+    private float _cfLoadOver;
     private string[] _cfWireRows = [];
     private int[] _cfWireIndex = [], _cfWireOther = [];
     private string[] _cfGroups = [];
@@ -139,7 +142,7 @@ public sealed partial class Ui
         for (var s = 0; s < d.Config.Length; s++)
             _cfVals[s] = ConstructConfig.At(c.Parts[part], d, s);
         _cfTitle = d.Name;
-        _cfHealthKey = _cfSelKey = _cfWireKey = -1;
+        _cfHealthKey = _cfSelKey = _cfWireKey = _cfLoadKey = -1;
         var groups = new List<string>();
         foreach (var e in d.Config)
             if (!groups.Contains(e.Group))
@@ -254,6 +257,12 @@ public sealed partial class Ui
         game.SandboxConfigure(_cfBody, _cfSendParts.AsSpan(0, n), _cfSendSlots.AsSpan(0, m), _cfSendVals.AsSpan(0, m));
     }
 
+    private static readonly float4 CfOverload = new(0.85f, 0.25f, 0.2f, 1), CfLoadOk = new(0.35f, 0.65f, 0.4f, 1);
+
+    /// <summary>The load bar's text: "Load 4200 / 6000 N (70%)", and the warning past the rating.</summary>
+    internal static string SandboxLoadText(float over, float rating, bool piston) =>
+        $"Load {over * rating:0} / {rating:0} {(piston ? "N" : "N m")} ({over * 100:0}%){(over > 1 ? " - overloaded, giving way" : "")}";
+
     /// <summary>The panel, every frame while open. Returns false when it closed itself (the part or construct went).</summary>
     public bool DrawSandboxConfig(Game game, double now)
     {
@@ -287,6 +296,15 @@ public sealed partial class Ui
         {
             _cfSelKey = sk;
             _cfSelText = _cfSelCount > 1 ? $"Change all {_cfSelCount} selected {d.Name}s" : "";
+        }
+        // A moving joint's load against its rating (the server's, in the pose), live.
+        var lj = d.Role == PartRole.Joint && d.JointType != JointType.Steering ? c.JointOf(_cfPart) : -1;
+        _cfLoadOver = lj >= 0 ? c.Joints[lj].Over : -1;
+        var lk = lj >= 0 ? (int)MathF.Round(_cfLoadOver * 100) : -1;
+        if (lk != _cfLoadKey)
+        {
+            _cfLoadKey = lk;
+            _cfLoad = lj < 0 ? "" : SandboxLoadText(_cfLoadOver, c.Joints[lj].Strength, d.JointType == JointType.Piston);
         }
         SandboxConfigWiring(c);
         // Previews in the world.
@@ -347,6 +365,16 @@ public sealed partial class Ui
             ImGui.EndGroup();
             if (_cfSelText.Length > 0)
                 ImGui.Checkbox(_cfSelText, ref _cfAll);
+            if (_cfLoadOver >= 0)
+            {
+                // The load bar: full at its rating; red past it (it gives way).
+                ImGui.SeparatorText("Load"u8);
+                ImGui.PushStyleColor(ImGuiCol.PlotHistogram, _cfLoadOver > 1 ? CfOverload : CfLoadOk);
+                ImGui.ProgressBar(Math.Clamp(_cfLoadOver, 0, 1), new float2(-1, ImGui.GetTextLineHeight()), _cfLoad);
+                ImGui.PopStyleColor();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("What it holds against its rating (its Force or Torque setting). Up to the rating it holds rigidly;\nmore and it gives way, further the more it is overloaded, and comes back at its speed when the load goes."u8);
+            }
 
             // The settings, group by group.
             foreach (var group in _cfGroups)

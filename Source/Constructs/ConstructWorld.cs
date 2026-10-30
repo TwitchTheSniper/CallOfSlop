@@ -988,6 +988,29 @@ public sealed partial class ConstructWorld
     }
 
     /// <summary>One tick: the links between constructs, power, the logic (every construct in list order, every part in index order), physics, then anything that fell out of the world goes.</summary>
+    /// <summary>
+    /// The strength model's optional overload damage (a joint part's "overloadDamage", 0 on every shipped part: the
+    /// developer's open question): what a joint owes from being held past its rating is taken off its part, a whole hp at a
+    /// time, raw (armour doesn't stop strain). One part a construct a tick, since a part that breaks changes its joints.
+    /// </summary>
+    private void OverloadDamage()
+    {
+        for (var i = Bodies.Count - 1; i >= 0; i--)
+        {
+            var c = Bodies[i];
+            for (var j = 0; j < c.JointCount; j++)
+            {
+                ref var jt = ref c.Joints[j];
+                if (jt.Strain < 1)
+                    continue;
+                var hp = MathF.Floor(jt.Strain);
+                jt.Strain -= hp;
+                DamagePart(c, jt.Hinge, hp, out _, raw: true);
+                break;
+            }
+        }
+    }
+
     public void Step(IWorldQuery query, float dt)
     {
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
@@ -1001,6 +1024,7 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);
+        OverloadDamage();
         for (var i = Bodies.Count - 1; i >= 0; i--)
             if (Bodies[i].Pos.Y < FallOutY)
             {

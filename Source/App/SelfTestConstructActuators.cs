@@ -262,6 +262,43 @@ public static partial class SelfTest
             var sag = top - jt.Angle;
             var over = jt.Over;
             var overshoot = jt.Angle - lowest;
+            var hp0 = c.Parts[jt.Hinge].Health;
+            if (r == 2f)
+            {
+                // A client hears the load (the panel's bar and the tint), and the panel's text says so.
+                var client = new ConstructWorld();
+                var pw = new PacketWriter(16384);
+                ConstructNet.WriteFull(pw, c);
+                var pr = new PacketReader(pw.Span[1..]);
+                ConstructNet.Read(ref pr, client, 0);
+                var cursor = 0;
+                uint last = 0;
+                c.Wake();
+                ConstructNet.WritePoses(pw, w, 100, ref cursor);
+                pr = new PacketReader(pw.Span[1..]);
+                ConstructNet.ReadPoses(ref pr, client, 1.0, ref last);
+                var copy = client.Get(c.Id);
+                var text = Ui.SandboxLoadText(copy?.Joints[0].Over ?? 0, copy?.Joints[0].Strength ?? 0, true);
+                parts.Add($"a client's copy shows \"{text}\"");
+                if (copy == null || MathF.Abs(copy.Joints[0].Over - over) > 0.01f || !text.Contains("overloaded"))
+                    Fail("construct actuators: a client's copy didn't hear an overloaded joint's load");
+                // Overload damage is off (every shipped part): nothing taken off; turned on, the strain wears the part.
+                var d = c.DefOf(jt.Hinge);
+                var keep = d.OverloadDamage;
+                try
+                {
+                    d.OverloadDamage = 40;
+                    StepJoints(w, q, 60, _ => c.RiderBits[1] = 15);
+                }
+                finally
+                {
+                    d.OverloadDamage = keep;
+                }
+                var worn = hp0 - c.Parts[jt.Hinge].Health;
+                parts.Add($"overload damage off: {hp0:0} hp kept; turned on (40 hp/s at 2x) a second took {worn:0} hp");
+                if (hp0 != d.Health || worn < 20 || worn > 60)
+                    Fail("construct actuators: overload damage hurt a part while off, or didn't when on");
+            }
             // The load goes: back up at its speed.
             var back = -1;
             StepJoints(w, q, 180, t =>
@@ -455,6 +492,16 @@ public static partial class SelfTest
         {
             SetJointCfg(arm, j, CfgKey.Min, -15);
             SetJointCfg(arm, j, CfgKey.Max, 15);
+        }
+        // Ten joints travel to a client (a construct may have 16).
+        {
+            var client = new ConstructWorld();
+            var pw = new PacketWriter(65536);
+            ConstructNet.WriteFull(pw, arm);
+            var pr = new PacketReader(pw.Span[1..]);
+            ConstructNet.Read(ref pr, client, 0);
+            if (client.Get(arm.Id) is not { JointCount: 10 })
+                bad.Add("a client's copy of the ten-hinge arm didn't get its ten joints");
         }
         var rng = new Random(1234);
         var finite = true;

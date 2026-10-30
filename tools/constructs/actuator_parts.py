@@ -107,7 +107,7 @@ def piston(w, l, legacy=False):
             num("max", "Pushed out to", "Travel", "m", 0, stroke, 0.01, "How far out it goes when pushed out (a signal of 1)."),
             num("speed", "Speed", "Motor", "m/s", 0.05, top, 0.05, f"How fast it slides (this size: up to {top:g} m/s)."),
             num("strength", "Force", "Motor", "N", force / 10, force, 100,
-                f"Its rating: what it holds rigidly (this size: up to {force} N). More load and it gives way; a lower setting uses less power."),
+                f"Its rating: what it holds rigidly (this size: up to {force} N). More load and it gives way; a lower setting caps the power it draws."),
         ],
     }
     return d
@@ -159,7 +159,7 @@ def motor_hinge(w, l, legacy=False):
             num("max", "Highest angle", "Limits", "deg", -100, 100, 1, "The far end a signal of 1 (or opening it) turns it to."),
             num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns (this size: up to {top} deg/s)."),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 50,
-                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting uses less power."),
+                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting caps the power it draws."),
         ],
     }
     return d
@@ -208,7 +208,7 @@ def turntable(w, l, legacy=False):
         "config": [
             num("speed", "Speed", "Motor", "deg/s", 5, top, 1, f"How fast it turns at a full signal (this size: up to {top} deg/s)."),
             num("strength", "Torque", "Motor", "N m", torque / 10, torque, 100,
-                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting uses less power."),
+                f"Its rating: what it holds rigidly (this size: up to {torque} N m). More load and it gives way; a lower setting caps the power it draws."),
         ],
     }
     return d
