@@ -152,7 +152,7 @@ public sealed class SandboxMap
                     throw new MapFileException($"{source}: sandbox: unknown key \"{p.Name}\" (rack, rackParts, constructs, loose, partsMenu, infiniteParts, debrisSeconds, debrisNear, power, couplings, wires)");
             }
         if (s.RackParts.Count == 0)
-            s.RackParts.AddRange(ConstructParts.All.Select(d => d.Name));
+            s.RackParts.AddRange(ConstructParts.All.Where(d => !d.Generated).Select(d => d.Name)); // (the generated weapon builder parts are in the parts menu, not on the rack)
         return s;
     }
 

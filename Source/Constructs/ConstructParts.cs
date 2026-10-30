@@ -203,6 +203,8 @@ public sealed class ConstructPartDef
     public string DamagedName = ""; // the stage it turns into (resolved after loading)
     public int DamagedTo = -1; // ...its id, or -1
     public bool Offered => !Legacy && !Stage; // listed in the parts menu and on racks
+    public bool Generated; // made at load from a weapon builder part (ConstructWeaponParts.cs), not from a file here
+    public bool CreativeOnly; // offered only with infinite parts (Constructs/WeaponParts.json "creativeOnly": the Zombies-economy parts)
     public bool Legacy; // replaced by a routed link (the Fuel Line, plain drive shafts): still loads and works, but isn't offered in the parts menu or on a rack
     public float BurnRate; // engine: litres a second at full throttle
     public Vector3 SeatAt; // seat: where the sitter's feet go (part frame)
@@ -373,9 +375,19 @@ public static partial class ConstructParts
     public const float DefaultGlass = 0.3f;
 
     private static readonly List<string> _refused = new();
-    private static readonly Lazy<ConstructPartDef[]> _all = new(() => LoadFolder(Folder, _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
+    private static readonly Lazy<ConstructPartDef[]> _all = new(() => WithWeaponParts(LoadFolder(Folder, _refused), _refused), LazyThreadSafetyMode.ExecutionAndPublication); // (maps load in parallel)
 
     public static string Folder => Path.Combine(AppFolders.Data, "Constructs", "Parts");
+
+    /// <summary>The hand-made parts, then one generated def for every other weapon builder part (ConstructWeaponParts.cs).</summary>
+    public static ConstructPartDef[] WithWeaponParts(ConstructPartDef[] files, List<string> refused)
+    {
+        var path = ConstructWeaponParts.FilePath;
+        var rules = File.Exists(path) ? ConstructWeaponParts.Load(File.ReadAllText(path), "WeaponParts.json", refused) : new ConstructWeaponParts.Rules();
+        var list = new List<ConstructPartDef>(files);
+        ConstructWeaponParts.Append(list, refused, Parts.All, rules);
+        return list.ToArray();
+    }
 
     public static IReadOnlyList<ConstructPartDef> All => _all.Value;
 
@@ -788,8 +800,8 @@ public static partial class ConstructParts
                 d.GunPartName = Str(Need(block.Value, "part", bw), file, "gunPart.part");
                 if (Parts.Find(d.GunPartName) is not { } wp)
                     throw new ConstructPartException($"{file}: \"gunPart.part\": no weapon builder part named \"{d.GunPartName}\"");
-                if (!ConstructWeapons.GunPartCategories.Contains(wp.Category))
-                    throw new ConstructPartException($"{file}: \"gunPart.part\": a {wp.Category.ToString().ToLowerInvariant()} doesn't go on a construct gun (barrels, splitters, feeds, ammo, muzzle devices and optics do)");
+                if (wp.Category == PartCategory.Receiver)
+                    throw new ConstructPartException($"{file}: \"gunPart.part\": a receiver doesn't go on a construct gun as a gun part (make it a \"gun\" with a \"receiver\")");
                 d.GunPartName = wp.Name;
                 break;
             }

@@ -538,6 +538,8 @@ public sealed partial class ConstructEdits
             return "get out of the seat first";
         if (ConstructParts.Get(part) is not { } def)
             return "no such part";
+        if (def.CreativeOnly && !InfiniteParts)
+            return $"the {def.Name} is creative-only (a Zombies-economy part)";
         if (!InfiniteParts && Inventory != null)
         {
             // Counted: one out of the inventory (what the hands held goes back first).
