@@ -308,9 +308,9 @@ public sealed partial class ConstructWorld
                 continue;
             }
             // Wake each other (a driven buggy pulls its sleeping trailer), and a towed construct's parking brake lets go.
-            if (!ca.Asleep && !ca.Anchored && cb.Asleep)
+            if (Moving(ca) && cb.Asleep)
                 cb.Wake();
-            if (!cb.Asleep && !cb.Anchored && ca.Asleep)
+            if (Moving(cb) && ca.Asleep)
                 ca.Wake();
             if (Drives(ca))
                 cb.Towed = true;
@@ -351,6 +351,9 @@ public sealed partial class ConstructWorld
         to?.Wake();
         LinksDirty = true;
     }
+
+    private static bool Moving(Construct c) =>
+        !c.Asleep && !c.Anchored && (c.Vel.LengthSquared() >= ConstructPhysics.StillSpeed2 || c.AngVel.LengthSquared() >= ConstructPhysics.StillSpeed2 || c.Driver != 255 && c.Throttle != 0);
 
     private static bool Drives(Construct c) => c.CanDrive && (c.Driver != 255 || c.EngineWired) && (!c.Electrical || c.EngineRunning);
 

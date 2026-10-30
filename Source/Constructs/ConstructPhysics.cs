@@ -976,6 +976,8 @@ public static class ConstructPhysics
         var c = _bodies[body];
         var axis = _jAxis[slot];
         ref var jt = ref c.Joints[slot % Construct.MaxJoints];
+        if (jt.Type == JointType.Steering)
+            return; // (a steering pivot is the driver's hands on a rack: it doesn't swing the car about)
         if (jt.Slides)
         {
             var j = -axis * impulse;

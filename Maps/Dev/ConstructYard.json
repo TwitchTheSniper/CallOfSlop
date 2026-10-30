@@ -59,7 +59,7 @@
       { "blueprint": "Turret", "at": [-22, -19], "yaw": 0 },
       { "blueprint": "Trailer", "at": [-7.75, 7.2], "yaw": 0 },
       { "blueprint": "Wall Button", "at": [-6, -14], "yaw": 0 },
-      { "blueprint": "Lamp Post", "at": [-3, -9], "yaw": 0 }
+      { "blueprint": "Lamp Post", "at": [-13, -5], "yaw": 0 }
     ],
     "couplings": [ { "hitch": [0, 23], "eye": [6, 8] } ],
     "wires": [ { "from": [7, 3], "to": [3, 7] } ],
