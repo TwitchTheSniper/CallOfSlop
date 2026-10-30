@@ -830,8 +830,11 @@ public sealed partial class Game
             var fuel = (int)(car.Fuel * 10);
             var charge = car.Electrical ? (int)MathF.Round(ConstructPower.Share(car) * 100) : -1;
             var gears = car.Transmission >= 0 && car.Transmission < car.PartCount && car.DefOf(car.Transmission).HasGears ? car.DefOf(car.Transmission) : null;
-            if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0)))
-                _sbDrive.Text = $"Driving: {kmh} km/h, fuel {fuel / 10f:0.0} l"
+            var rpm = (int)MathF.Round(car.Rpm / 100) * 100; // (the configure tool is still to come: the engine's rpm and torque show here and on the look line)
+            var engine = car.Engine >= 0 && car.Engine < car.PartCount ? car.DefOf(car.Engine) : null;
+            var torque = engine == null || !car.EngineRunning ? 0 : (int)MathF.Round(engine.EngineTorque * ConstructDrive.Curve(engine, car.Rpm) / 10) * 10;
+            if (_sbDrive.Stale(kmh * 100000L + fuel + ((long)(charge + 1) << 40) + ((long)car.Gear << 50) + (car.PowerOn ? 1L << 56 : 0) + (car.EngineRunning ? 1L << 57 : 0) + (gears != null ? 1L << 58 : 0) ^ ((long)rpm << 20) ^ ((long)torque << 33)))
+                _sbDrive.Text = $"Driving: {kmh} km/h, {rpm} rpm, {torque} N m, {(engine?.FuelKind == EngineFuel.Fuel ? $"fuel {fuel / 10f:0.0} l" : engine?.FuelKind == EngineFuel.Electric ? "electric" : "no fuel needed")}"
                                 + (gears != null ? $", gear {gears.SettingLabels[Math.Min(car.Gear, gears.SettingLabels.Length - 1)]}" : "")
                                 + (charge >= 0 ? $", charge {charge}%{(car.PowerOn ? "" : " (flat)")}" : "")
                                 + (car.Electrical && car.CanDrive && !car.EngineRunning ? ", engine off" : "");
@@ -839,9 +842,15 @@ public sealed partial class Game
             if (car.GunCount > 0)
                 lines.Add(new HudLine(GunLine(car, 0), car.Guns[0].Problem.Length > 0 ? red : white));
             if (car.CanDrive && car.StarterFailed)
-                lines.Add(new HudLine("It won't start: the battery is flat (or no battery reaches the engine)", red));
+                lines.Add(new HudLine(car.Electrical ? "It won't start: the battery is flat (or no battery reaches the engine)" : ConstructDrive.NoteText(DriveNote.NeedsStarter), red));
             else if (car.CanDrive)
-                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? "W to start the engine, S reverse, A/D steer, Space brake, F get out" : "W/S drive, A/D steer, Space brake, F get out", dim));
+            {
+                if (car.Note != DriveNote.None)
+                    lines.Add(new HudLine(ConstructDrive.NoteText(car.Note), car.Note is DriveNote.Shifting or DriveNote.Spooling ? dim : orange));
+                var shifts = gears is { Trans: TransKind.Manual or TransKind.Sequential } && gears.Settings.Length > 1 && car.Parts[car.Transmission].InCount == 0;
+                lines.Add(new HudLine(car.Electrical && !car.EngineRunning ? "W to start the engine, S reverse, A/D steer, Space brake, F get out"
+                    : shifts ? "W/S drive, A/D steer, Space brake, R gear up, Shift gear down, F get out" : "W/S drive, A/D steer, Space brake, F get out", dim));
+            }
             else
             {
                 if (_sbProblem.Stale(car.DriveProblem.GetHashCode()))

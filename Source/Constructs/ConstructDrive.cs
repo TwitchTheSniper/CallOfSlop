@@ -563,7 +563,7 @@ public static class ConstructDrive
             var want = e.IdleRpm + MathF.Abs(throttle) * (e.MaxRpm * 0.95f - e.IdleRpm);
             rpm = c.Rpm + Math.Clamp(want - c.Rpm, -e.MaxRpm * 2 * dt, e.MaxRpm * 2 * dt);
         }
-        c.Rpm = rpm;
+        c.Rpm = MathF.Min(rpm, e.MaxRpm * 1.1f); // (the wheels can spin it past the limiter, coasting downhill or in a shift; not without bound)
         if (!driving)
         {
             c.Spool = MathF.Max(0, c.Spool - dt);
@@ -743,6 +743,17 @@ public static class ConstructDrive
         DriveNote.Shifting => "shifting",
         DriveNote.Spooling => "spooling up",
         _ => "",
+    };
+
+    /// <summary>A transfer part's numbers for the look line.</summary>
+    public static string TransferLine(ConstructPartDef d, in CPart p) => d.Drive switch
+    {
+        DriveKind.Clutch => p.InCount > 0 && p.In < 0.5f ? "disengaged" : "engaged",
+        DriveKind.TransferCase => (p.InCount > 0 ? p.In >= 0.5f : p.Setting == 1) ? "4WD" : "2WD",
+        DriveKind.UJoint or DriveKind.CvJoint => $"bends up to {d.MaxAngle * 180 / MathF.PI:0} degrees",
+        DriveKind.Stub => "carries no drive",
+        DriveKind.Pto => "runs the joints on it from the engine",
+        _ => d.DriveRatio != 1 ? $"{d.DriveRatio:0.##}:1{(d.MaxTorque > 0 ? $", slips over {d.MaxTorque:0} N m" : "")}" : d.MaxTorque > 0 ? $"carries up to {d.MaxTorque:0} N m" : "1:1",
     };
 
     /// <summary>An engine's numbers for the look line (the configure tool is still to come).</summary>

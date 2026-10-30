@@ -140,6 +140,7 @@ public static unsafe partial class Program
         _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
         _placementShots = args.Any(a => a.Equals("--placement-shots", StringComparison.OrdinalIgnoreCase)); // (Program.PlacementShots.cs)
         _powerShots = args.Any(a => a.Equals("--power-shots", StringComparison.OrdinalIgnoreCase)); // (Program.PowerShots.cs)
+        _driveShots = args.Any(a => a.Equals("--drive-shots", StringComparison.OrdinalIgnoreCase)); // (Program.DriveShots.cs)
         _storageShots = args.Any(a => a.Equals("--storage-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StorageShots.cs)
         _weaponShots = args.Any(a => a.Equals("--weapon-shots", StringComparison.OrdinalIgnoreCase)); // (Program.WeaponShots.cs)
         _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
@@ -147,7 +148,7 @@ public static unsafe partial class Program
         _structureShots = args.Any(a => a.Equals("--structure-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StructureShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots | _inventoryShots | _powerShots | _placementShots | _structureShots | _storageShots;
+        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots | _inventoryShots | _powerShots | _placementShots | _structureShots | _storageShots | _driveShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -233,6 +234,8 @@ public static unsafe partial class Program
                 RunSandboxShots(args); // --sandbox-shots: the Sandbox constructs on Construct Yard, then quit (Program.SandboxShots.cs)
             else if (_storageShots)
                 RunStorageShots(); // --storage-shots: Sandbox physical storage on Construct Yard, then quit (Program.StorageShots.cs)
+            else if (_driveShots)
+                RunDriveShots(); // --drive-shots: the drivetrain families and example vehicles on Construct Yard, then quit (Program.DriveShots.cs)
             else if (_powerShots)
                 RunPowerShots(); // --power-shots: couplings, wires between constructs and power on Construct Yard, then quit (Program.PowerShots.cs)
             else if (_placementShots)
