@@ -218,7 +218,9 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     // 97: Sandbox freeform welds (board item fw01, ConstructFreeform.cs): JointType.Fixed (wire byte 5) in CBody's joints and the
     //     welds' poses (joint, welded-on part, position, quaternion) at the end of CBody, CActKind.FreeformWeld / FreeformCut at the
     //     end of CActKind, and EditKind.Weld in the Sandbox hands tail.
-    public const byte ProtocolVersion = 97;
+    // 98: Sandbox three-step socket weld (board item sw01, SocketWeld.cs): CActKind.SocketWeld at the end of CActKind (the
+    //     piece's socket, the target socket or face point, the angle) and EditKind.SocketWeld in the Sandbox hands tail.
+    public const byte ProtocolVersion = 98;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

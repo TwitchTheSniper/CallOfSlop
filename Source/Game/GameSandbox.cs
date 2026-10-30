@@ -44,6 +44,7 @@ public enum CActKind : byte
     Bench, // u8 kind (0 put, 3 take apart, 6 open, 7 spawn a standard build), u8 slot, u16 length, the build's text: the Gun Workbench (protocol 96; GameSandboxBench.cs)
     FreeformWeld, // u16 body, u8 part, u16 second body, u8 its part: the welder welds the two where they are (protocol 97; board item fw01)
     FreeformCut, // u16 body, u8 part, u8 weld (its joint): the welder cuts a freeform weld's seam free (protocol 97)
+    SocketWeld, // u16 piece, u8 part, u8 socket, u16 construct, u8 part, u8 socket (255: a face point), vec face point, u8 its facing, u16 angle (0.01 deg): the welder's three-step socket weld (protocol 98; board item sw01)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -56,6 +57,9 @@ public enum CActKind : byte
 /// </summary>
 public sealed partial class Game
 {
+    /// <summary>The welder's socket-weld step on this PC, for the HUD (Program.SandboxSocketWeld.cs sets it; empty: none).</summary>
+    public string SandboxWeldHint = "";
+
     /// <summary>Every construct of the match (server: simulated; client: as last heard).</summary>
     public readonly ConstructWorld Constructs = new();
 
@@ -439,6 +443,17 @@ public sealed partial class Game
                 var part = r.U8();
                 return hands.FreeformCut(Constructs, p.Id, eye, body, part, r.U8());
             }
+            case CActKind.SocketWeld:
+            {
+                var body = r.U16();
+                var part = r.U8();
+                var socket = r.U8();
+                var w = new WeldTarget { Body = r.U16(), Part = r.U8(), Socket = r.U8(), At = r.Vec(), Dir = r.U8() };
+                var angle = SocketWeld.FromWire(r.U16());
+                if (!float.IsFinite(w.At.X + w.At.Y + w.At.Z) || w.Dir > 5)
+                    return "bad weld";
+                return hands.BeginSocketWeld(Constructs, p.Id, eye, body, part, socket, w, angle, now);
+            }
             case CActKind.Cancel:
                 hands.Cancel(p.Id);
                 return null;
@@ -642,6 +657,15 @@ public sealed partial class Game
         var w = SbW;
         w.Begin(Msg.CAct).U8((byte)CActKind.RouteEdit).U16(body).U8((byte)op).U8((byte)route).U8((byte)node).U8(source).U8(to);
         Cm(w, pos).U8(host);
+        SandboxSendBuilt(w);
+    }
+
+    /// <summary>Client (or host): the welder's socket weld of piece <paramref name="body"/> (its part's socket) onto <paramref name="target"/> at <paramref name="degrees"/> (SocketWeld.cs).</summary>
+    public void SandboxSendSocketWeld(ushort body, int part, int socket, in WeldTarget target, float degrees)
+    {
+        var w = SbW;
+        w.Begin(Msg.CAct).U8((byte)CActKind.SocketWeld).U16(body).U8((byte)part).U8((byte)socket)
+            .U16(target.Body).U8(target.Part).U8(target.Socket).Vec(target.At).U8(target.Dir).U16(SocketWeld.WireAngle(degrees));
         SandboxSendBuilt(w);
     }
 
@@ -1099,7 +1123,7 @@ public sealed partial class Game
         {
             var pct = (int)(h.Progress(SandboxNow) * 100);
             if (_sbEdit.Stale((long)h.Edit * 1000 + pct))
-                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit == EditKind.Weld ? "Welding" : "Fitting")}... {pct}%";
+                _sbEdit.Text = $"{(h.Edit == EditKind.Remove ? "Taking it off" : h.Edit is EditKind.Weld or EditKind.SocketWeld ? "Welding" : "Fitting")}... {pct}%";
             lines.Add(new HudLine(_sbEdit.Text, green));
         }
         else if (SandboxLookText.Length > 0)
@@ -1112,6 +1136,8 @@ public sealed partial class Game
             lines.Add(new HudLine(SandboxWireFrom.Length > 0 ? SandboxWireFrom : "LMB: wire from an output, then LMB on an input. RMB: cut its wires. R: its setting", dim));
         else if (h.Tool == ConstructTool.Configure)
             lines.Add(new HudLine(SandboxConfigHint, dim));
+        else if (h.Tool == ConstructTool.Welder && held == null && SandboxWeldHint.Length > 0)
+            lines.Add(new HudLine(SandboxWeldHint, dim));
         else if (held == null)
         {
             if (_sbKeys.Stale(SandboxWheelKey.GetHashCode() ^ (long)SandboxMenuKey.GetHashCode() << 32))

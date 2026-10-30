@@ -33,9 +33,14 @@ public static class ConstructBuild
 
     /// <summary>
     /// Can <paramref name="tool"/> edit with part <paramref name="d"/>? Decision 2: editing always needs the right tool in
-    /// hand (wrench for bolted parts, welder for welded ones); bare hands or a gun never edit.
+    /// hand; bare hands or a gun never edit. Decision 27 (tools by function): the welder attaches and cuts free every
+    /// physics-only piece (welded parts, engines, big gearboxes, big wheels...: its three-step socket weld), the wrench adds
+    /// and removes the small parts that are items (<see cref="ToolFor"/>).
     /// </summary>
-    public static bool ToolFits(ConstructTool tool, ConstructPartDef d) => tool != ConstructTool.None && d.Tool == tool;
+    public static bool ToolFits(ConstructTool tool, ConstructPartDef d) => tool != ConstructTool.None && tool == ToolFor(d);
+
+    /// <summary>The tool a part goes on and comes off with (decision 27): physics-only, the welder; an item, the wrench.</summary>
+    public static ConstructTool ToolFor(ConstructPartDef d) => d.PhysicsOnly ? ConstructTool.Welder : ConstructTool.Wrench;
 
     private static byte Opposite(byte dir) => (byte)(dir ^ 1);
 
