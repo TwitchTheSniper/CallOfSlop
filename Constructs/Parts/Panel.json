@@ -2,6 +2,8 @@
   "format": "call-of-slop-construct-part/1",
   "name": "Panel",
   "description": "A 1 m armour plate. Cover for whatever is behind it.",
+  "group": "Panels",
+  "section": "Plate steel",
   "role": "panel",
   "tool": "welder",
   "mass": 18,

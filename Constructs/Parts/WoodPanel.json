@@ -2,6 +2,8 @@
   "format": "call-of-slop-construct-part/1",
   "name": "Wood Panel",
   "description": "A 1 m plank panel: light, cheap cover that burns (incendiary rounds set it alight).",
+  "group": "Panels",
+  "section": "Wood",
   "role": "panel",
   "tool": "wrench",
   "mass": 10,

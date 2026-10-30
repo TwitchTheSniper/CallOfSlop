@@ -111,6 +111,11 @@ public static unsafe partial class Program
         Ui.SetSandboxInventoryNode(Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure"), -1);
         Shot("big_tiles");
         Ui.SandboxTileSize = keep;
+        foreach (var grp in new[] { "Beams", "Panels", "Armour", "Shapes" }) // (the structural parts' groups: docs/sandbox/CONSTRUCTS.md, "Structural parts")
+        {
+            Ui.SetSandboxInventoryNode(Array.FindIndex(cat.Parts.Groups, x => x.Name == grp), -1);
+            Shot(grp.ToLowerInvariant());
+        }
         Ui.SetSandboxInventoryNode(-1, -1);
         Ui.SetSandboxInventoryTab(Ui.SbTab.Blueprints);
         Shot("blueprints");

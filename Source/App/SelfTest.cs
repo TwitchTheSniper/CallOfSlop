@@ -224,6 +224,7 @@ public static partial class SelfTest
         Section("Construct joints", CheckConstructJoints); // SelfTestConstructJoints.cs: the parts beyond joints collide: a flap stops on the ground, a motor stalls at a post or lifts its construct, a turntable stops at a wall, no tunnelling, sleep, budget
         Section("Construct salvage", CheckConstructSalvage); // SelfTestConstructSalvage.cs: milestone 3: salvage into the inventory, scrap, infinite parts off, the owner's counts on a client, debris expiry, no allocation
         Section("Construct placement", CheckConstructPlacement); // SelfTestConstructPlace.cs: free placement: a part set down on a surface is a new construct (grid, turns, fit checks, anchored or free), claiming loose parts, joining two constructs, the per-player limit, client sync, no allocation
+        Section("Structural parts", CheckStructureParts); // SelfTestStructureParts.cs: the Sandbox's beams, panels, armour and shapes: files, the 0.25 m cell rules, every socket on a cube in all 24 turns, neighbours weld, shapes turn, armour against the real guns, a gun port's slit, the inventory, no allocation
         Section("Props", CheckProps); // map props, clutter and breakables (SelfTestProps.cs)
         Section("Buildings", CheckBuildings); // SelfTestBuildings.cs: building files, variants, doors, windows, replication, bots, Building Yard
         Section("Building faces", CheckBuildingFaces); // SelfTestBuildingFaces.cs: no coplanar same-facing faces of different surfaces (z-fighting) in any building or the map Building op

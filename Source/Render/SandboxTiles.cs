@@ -6,7 +6,7 @@ using static Brutal.OpenGlApi.OpenGl;
 namespace CallOfSlop;
 
 /// <summary>One box of a tile's picture: its model matrix (the unit cube scaled, turned and placed) and its colour.</summary>
-public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color);
+public readonly record struct TileBox(Matrix4x4 Model, Vector3 Color, ushort Shape = 0);
 
 /// <summary>
 /// The Sandbox inventory's 3D tiles (UiSandboxParts.cs; docs/sandbox/CONSTRUCTS.md, "The inventory"): every construct
@@ -133,7 +133,8 @@ public static unsafe class SandboxTiles
         if (slot < parts.Count)
         {
             foreach (var b in parts[slot].Boxes)
-                boxes.Add(new TileBox(Matrix4x4.CreateScale(b.Half * 2) * Matrix4x4.CreateTranslation(b.Center), b.Color));
+                if (!b.Hidden)
+                    boxes.Add(new TileBox(b.Model(0, b.Center), b.Color, b.Shape));
             return boxes.Count > 0;
         }
         slot -= parts.Count;
@@ -153,8 +154,10 @@ public static unsafe class SandboxTiles
                         drop = Matrix4x4.CreateTranslation(0, c.Wheels[k].Compression - c.Wheels[k].Travel * 0.5f, 0);
                 for (var b = 0; b < d.Boxes.Length; b++)
                 {
-                    c.BoxOf(i, b, out var centre, out var half);
-                    boxes.Add(new TileBox(Matrix4x4.CreateScale(half * 2) * Matrix4x4.CreateTranslation(centre) * drop * seg, d.Boxes[b].Color));
+                    if (d.Boxes[b].Hidden)
+                        continue;
+                    c.BoxOf(i, b, out var centre, out _);
+                    boxes.Add(new TileBox(d.Boxes[b].Model(c.Parts[i].Rot, centre) * drop * seg, d.Boxes[b].Color, d.Boxes[b].Shape));
                 }
             }
             world.Remove(c);
@@ -276,7 +279,7 @@ public static unsafe class SandboxTiles
                     gfx.SetCamera(view, proj);
                     gfx.SetFog(Vector3.Zero, 0, 0);
                     foreach (var b in Scratch)
-                        gfx.Draw(b.Model, b.Color, 1f, mode: 0);
+                        gfx.Draw(b.Model, b.Color, 1f, mode: 0, shape: b.Shape);
                 }
                 // Down into the page, averaging 2x2 (smooth edges).
                 Native.glBindFramebuffer(GL_READ_FRAMEBUFFER, _tileFbo);

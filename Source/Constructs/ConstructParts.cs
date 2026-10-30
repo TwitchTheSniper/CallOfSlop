@@ -119,9 +119,19 @@ public enum SocketKind : byte
     Leaf, // a door onto a hinge's leaf
 }
 
-/// <summary>One box of a part's model and collision, in the part's own frame (metres).</summary>
-/// <summary>A detail box is drawn only: it adds no bounds, mass, collision or hit area (and may stick out past a face).</summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false);
+/// <summary>
+/// One box of a part's model and collision, in the part's own frame (metres). A detail box is drawn only: it adds no
+/// bounds, mass, collision or hit area (and may stick out past a face). <see cref="Shape"/>: a detail box drawn as one of the weapon builder's contoured shapes (<see cref="PartShapes"/>: wedge,
+/// arc, cylinder...; 0 = a plain box). <see cref="Hidden"/>: a solid box that is never drawn (a wedge's stepped collision
+/// under its smooth shape).
+/// </summary>
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false)
+{
+    /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
+    public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
+        ? Matrix4x4.CreateScale(Rot24.ApplyHalf(rot, Half) * 2) * Matrix4x4.CreateTranslation(centre)
+        : Matrix4x4.CreateScale(Half * 2) * Matrix4x4.CreateFromQuaternion(Rot24.Quat(rot)) * Matrix4x4.CreateTranslation(centre);
+}
 
 /// <summary>An attachment point: where on the part (on a face of its bounds) and which way it faces (an axis, 0..5: +X -X +Y -Y +Z -Z).</summary>
 public readonly record struct CSocket(string Name, Vector3 At, byte Dir, SocketKind Kind);
@@ -132,7 +142,9 @@ public sealed class ConstructPartDef
     public byte Id; // index in ConstructParts.All (the wire id)
     public string Name = "";
     public string File = "";
+    public string Folder = ""; // the subfolder of Constructs/Parts it is in ("" for the top; "Structure/Beams"...)
     public string Description = "";
+    public string Group = "", Section = ""; // the inventory's group and section for it ("group", "section"; empty: by its role, SandboxCatalogue.cs)
     public PartRole Role;
     public ConstructTool Tool;
     public float AttachSeconds;
@@ -326,6 +338,7 @@ public static class ConstructParts
             try
             {
                 var def = Parse(File.ReadAllText(file), Path.GetFileName(file));
+                def.Folder = (Path.GetDirectoryName(Path.GetRelativePath(folder, file)) ?? "").Replace('\\', '/');
                 if (!names.Add(def.Name))
                     throw new ConstructPartException($"{Path.GetFileName(file)}: another file already has the name \"{def.Name}\"");
                 if (list.Count >= MaxTypes)
@@ -347,8 +360,12 @@ public static class ConstructParts
     [
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
-        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core",
+        "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section",
     ];
+
+    /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
+    private static readonly string[] BoxKeys =
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -374,6 +391,10 @@ public static class ConstructParts
         if (d.Name.Length is 0 or > 32 || d.Name.Any(c => c < 32 || c > 126))
             throw new ConstructPartException($"{file}: \"name\" must be 1-32 plain ASCII characters");
         d.Description = Opt(root, "description") is { } desc ? AsciiText(desc, file, "description") : "";
+        d.Group = Opt(root, "group") is { } grp ? AsciiText(grp, file, "group") : "";
+        d.Section = Opt(root, "section") is { } sec ? AsciiText(sec, file, "section") : "";
+        if (d.Group.Length > 32 || d.Section.Length > 32 || (d.Section.Length > 0 && d.Group.Length == 0))
+            throw new ConstructPartException($"{file}: \"group\" and \"section\" are at most 32 characters, and a \"section\" needs a \"group\"");
         d.Role = EnumOf<PartRole>(StrKey(root, "role", file), file, "role");
         d.Tool = EnumOf<ConstructTool>(StrKey(root, "tool", file), file, "tool");
         if (d.Tool is ConstructTool.None or ConstructTool.Linker)
@@ -406,7 +427,7 @@ public static class ConstructParts
         foreach (var b in boxes.EnumerateArray())
         {
             var where = $"boxes[{bi++}]";
-            Known(b, ["min", "max", "at", "size", "color", "detail"], $"{file}, {where}");
+            Known(b, BoxKeys, $"{file}, {where}");
             Vector3 min, max;
             if (Opt(b, "min") is { } mn && Opt(b, "max") is { } mx)
             {
@@ -427,10 +448,17 @@ public static class ConstructParts
             if (Vector3.Max(Vector3.Abs(min), Vector3.Abs(max)) is var far && MathF.Max(far.X, MathF.Max(far.Y, far.Z)) > 4f)
                 throw new ConstructPartException($"{file}: {where} reaches more than 4 m from the part's origin");
             var c = Opt(b, "color") is { } bc ? Colour(bc, file, where + ".color") : colour;
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, Opt(b, "detail") is { ValueKind: JsonValueKind.True }));
+            var detail = Opt(b, "detail") is { ValueKind: JsonValueKind.True };
+            var hidden = Opt(b, "hidden") is { ValueKind: JsonValueKind.True };
+            if (hidden && detail)
+                throw new ConstructPartException($"{file}: {where} is a detail (drawn only) and hidden (never drawn): a hidden box is a solid one's collision");
+            var shape = ShapeOf(b, max - min, detail, file, where);
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
+        if (list.All(x => x.Hidden))
+            throw new ConstructPartException($"{file}: every box is hidden: at least one must be drawn");
         // Solid boxes first (the physics walks those), details after.
         d.Boxes = list.Where(x => !x.Detail).Concat(list.Where(x => x.Detail)).ToArray();
         d.SolidBoxes = list.Count(x => !x.Detail);
@@ -660,6 +688,92 @@ public static class ConstructParts
     }
 
     private static readonly string[] JointTypes = ["motor", "turntable", "piston", "steering"];
+
+    /// <summary>
+    /// A box's contoured shape (the weapon builder's <see cref="PartShapes"/>; 0: a plain box). Only a detail box may have
+    /// one: collision and hit areas stay boxes, so a shaped part draws its shape over hidden solid boxes that stand for it.
+    /// </summary>
+    private static ushort ShapeOf(JsonElement b, Vector3 size, bool detail, string file, string where)
+    {
+        var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
+        if (shape == "box")
+        {
+            foreach (var k in BoxKeys.AsSpan(8))
+                if (Opt(b, k) != null)
+                    throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
+            return 0;
+        }
+        if (Array.IndexOf(PartShapes.Names, shape) < 0)
+            throw new ConstructPartException($"{file}: {where}.shape is box or one of {string.Join(", ", PartShapes.Names)}, not \"{shape}\"");
+        if (!detail)
+            throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
+        var settings = PartShapes.SettingsOf(shape);
+        foreach (var k in BoxKeys.AsSpan(8))
+            if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
+                throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
+        var pb = new PartBox { Shape = shape, Size = size };
+        if (Opt(b, "segments") is { } sg)
+        {
+            pb.Segments = (int)Num(sg, file, where + ".segments");
+            Range(pb.Segments, 3, 48, file, where + ".segments");
+        }
+        if (Opt(b, "inner") is { } inn)
+        {
+            pb.Inner = Num(inn, file, where + ".inner");
+            Range(pb.Inner, 0, 0.98f, file, where + ".inner");
+        }
+        if (Opt(b, "ends") is { } en)
+        {
+            pb.Ends = Str(en, file, where + ".ends");
+            if (pb.Ends is not ("closed" or "open" or "front" or "back"))
+                throw new ConstructPartException($"{file}: {where}.ends is closed, open, front or back");
+        }
+        if (Opt(b, "taper") is { } tp)
+        {
+            if (tp.ValueKind != JsonValueKind.Array || tp.GetArrayLength() != 2)
+                throw new ConstructPartException($"{file}: {where}.taper is [x, y]");
+            pb.Taper = new Vector2(Num(tp[0], file, where + ".taper"), Num(tp[1], file, where + ".taper"));
+            Range(MathF.Min(pb.Taper.X, pb.Taper.Y), 0, 1, file, where + ".taper");
+            Range(MathF.Max(pb.Taper.X, pb.Taper.Y), 0, 1, file, where + ".taper");
+        }
+        if (Opt(b, "shift") is { } sf)
+        {
+            if (sf.ValueKind != JsonValueKind.Array || sf.GetArrayLength() != 2)
+                throw new ConstructPartException($"{file}: {where}.shift is [x, y]");
+            pb.Shift = new Vector2(Num(sf[0], file, where + ".shift"), Num(sf[1], file, where + ".shift"));
+            Range(MathF.Min(pb.Shift.X, pb.Shift.Y), -0.5f, 0.5f, file, where + ".shift");
+            Range(MathF.Max(pb.Shift.X, pb.Shift.Y), -0.5f, 0.5f, file, where + ".shift");
+        }
+        if (Opt(b, "radius") is { } rd)
+        {
+            pb.Radius = Num(rd, file, where + ".radius");
+            Range(pb.Radius, 0.01f, 0.5f, file, where + ".radius");
+        }
+        if (Opt(b, "edges") is { } ed)
+        {
+            pb.Edges = Str(ed, file, where + ".edges");
+            if (pb.Edges is not ("all" or "long"))
+                throw new ConstructPartException($"{file}: {where}.edges is all or long");
+        }
+        if (Opt(b, "angle") is { } an)
+        {
+            pb.Angle = Num(an, file, where + ".angle");
+            Range(pb.Angle, 1, 360, file, where + ".angle");
+        }
+        if (Opt(b, "dir") is { } dr)
+        {
+            pb.Dir = Num(dr, file, where + ".dir");
+            Range(pb.Dir, -360, 360, file, where + ".dir");
+        }
+        try
+        {
+            return PartShapes.For(pb);
+        }
+        catch (WeaponFileException ex)
+        {
+            throw new ConstructPartException($"{file}: {where}: {ex.Message}");
+        }
+    }
 
     /// <summary>A moving joint's block: type, axis, pivot, limits, its leaf socket (a struct socket: anything can go on it), speed and strength.</summary>
     private static void ParseJoint(ConstructPartDef d, JsonElement b, string file, string bw)
