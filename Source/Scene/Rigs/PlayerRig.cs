@@ -16,7 +16,8 @@ public sealed class PlayerRig
     public readonly ArmNodes Right, Left;
     public readonly SceneNode Pelvis;
     public readonly SceneNode[] Thighs = new SceneNode[2], Shins = new SceneNode[2], Feet = new SceneNode[2];
-    private readonly SceneNode _upper, _gear, _pelvisBox;
+    private readonly SceneNode _upper, _gear, _pelvisBox, _tool;
+    private readonly ToolNode _toolDraw = new();
     private readonly SceneNode[] _stances = new SceneNode[3]; // Stand, Crouch, Prone
     private readonly SceneNode[] _legBoxes = new SceneNode[LegAnimator.LegParts.Length * 2];
     private readonly SceneNode _health, _corpse;
@@ -66,6 +67,9 @@ public sealed class PlayerRig
         _gear = Root.Add("upper_gear");
         Gun = new GunRig();
         _gear.Add(Gun.Root);
+        _tool = _gear.Add("tool"); // a Sandbox tool or a carried part instead of the gun (Source/Render/ToolRender.cs)
+        _tool.Custom = _toolDraw;
+        _tool.Visible = false;
         Right = new ArmNodes("r", +1, carry: false);
         Left = new ArmNodes("l", -1, carry: false);
         _gear.Add(Right.Root);
@@ -197,6 +201,22 @@ public sealed class PlayerRig
         var def = p.WeaponDef;
         var seated = p.RenderSeat != SeatKind.None;
         var gunPose = (seated ? ThirdPersonArms.SeatedGun(p) : Matrix4x4.CreateScale(1.3f) * Matrix4x4.CreateRotationX(p.RenderPitch) * Matrix4x4.CreateTranslation(gunAt)) * upper;
+        var tool = ToolRender.ThirdPerson(p, gunPose, upper, time, ref _toolDraw.Frame);
+        _tool.Visible = tool;
+        Gun.Root.Visible = !tool;
+        if (tool)
+            PoseArms(upper);
+        else
+            PoseGun(p, def, gunPose, upper, time);
+
+        var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
+        _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));
+        _health.Renderable.Color = Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac);
+    }
+
+    /// <summary>The gun in hand (posed by <see cref="ThirdPersonArms"/>) and both arms on it.</summary>
+    private void PoseGun(Player p, WeaponDef def, in Matrix4x4 gunPose, in Matrix4x4 upper, double time)
+    {
         ThirdPersonArms.Animate(p, def, gunPose, upper, time);
         if (p.RenderSeat == SeatKind.Driver)
             ThirdPersonArms.WheelHands(p, upper); // Sandbox: both hands on the steering wheel, no gun
@@ -206,13 +226,15 @@ public sealed class PlayerRig
         GunModel.FlashBarrels = shot != 0 ? shot : GunModel.AllBarrels;
         Gun.Pose(ThirdPersonArms.LastGunLocal, 0f, Vector3.Zero, false, shot != 0, (float)time);
         GunModel.FlashBarrels = GunModel.AllBarrels;
+        PoseArms(upper);
+    }
+
+    /// <summary>Both arms as <see cref="ThirdPersonArms"/> last solved them (on the gun, or on a tool).</summary>
+    private void PoseArms(in Matrix4x4 upper)
+    {
         var (r, l) = ThirdPersonArms.Rigs;
         var colors = ThirdPersonArms.Colors;
         Right.Pose(r, upper, colors);
         Left.Pose(l, upper, colors);
-
-        var frac = Math.Clamp(p.Health / (float)World.MaxHealth, 0f, 1f);
-        _health.SetLocalMatrix(Matrix4x4.CreateScale(0.8f * frac, 0.06f, 0.06f) * Matrix4x4.CreateTranslation(0, barY, 0));
-        _health.Renderable.Color = Vector3.Lerp(new Vector3(1, 0.1f, 0.1f), new Vector3(0.2f, 1, 0.2f), frac);
     }
 }

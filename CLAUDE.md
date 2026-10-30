@@ -76,7 +76,7 @@ Parts/<Category>/       weapon-builder parts (Action, Ammo, Barrel, Feed, Grip, 
                         Upgrade, Utility, Multiplier, Hilt, Head, MeleeMod; grenades: Casing, Fuse, Payload, GrenadeMod);
                         Parts/Builds (141 standard builds);
                         Parts/Tables (ZombiesRules.json, DropTables.json); _Registry.json, _Bases, _Fragments, _Template
-Constructs/Parts, Constructs/Blueprints   Sandbox construct parts and build scripts (--check-construct-parts)
+Constructs/Parts, Constructs/Blueprints, Constructs/Tools   Sandbox construct parts, build scripts and the tools' held models (--check-construct-parts)
 Props/ Buildings/ Models/ Decals/ Materials/ Cosmetics/ Audio/ Branding/   data, copied next to the exe
 docs/zombies/       ZOMBIES-MODE.md, WEAPON-BUILDER.md (the design + decisions); docs/pve/DESIGN.md; docs/net/SERVER-DISCOVERY.md;
                     docs/mapkit/MAPKIT.md (writing a map generator with the C# map kit)

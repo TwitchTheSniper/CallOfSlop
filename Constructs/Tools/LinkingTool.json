@@ -1,0 +1,19 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Linking Tool",
+  "tool": "linker",
+  "description": "A wiring probe on a reel of wire: joins outputs to inputs and sets logic parts. Its screen glows; the probe throws a beam while a wire is being run.",
+  "boxes": [
+    { "size": [0.032, 0.095, 0.04], "at": [0, -0.02, 0], "color": "#22252a" },
+    { "size": [0.07, 0.07, 0.13], "at": [0, 0.06, -0.03], "color": "#2d6fd0" },
+    { "size": [0.05, 0.03, 0.004], "at": [0, 0.075, 0.037], "color": "#6cff9a", "glow": true },
+    { "size": [0.012, 0.012, 0.16], "at": [0, 0.06, -0.175], "color": "#d8c040" },
+    { "size": [0.016, 0.016, 0.016], "at": [0, 0.06, -0.262], "color": "#ffe060", "glow": true },
+    { "size": [0.03, 0.06, 0.06], "at": [0.05, 0.06, -0.03], "color": "#c04030", "spin": true },
+    { "size": [0.034, 0.012, 0.012], "at": [0.05, 0.06, -0.03], "color": "#e0e4e8", "spin": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-12, 0, 0], "shape": "wrap" },
+  "tip": [0, 0.06, -0.27],
+  "spin": { "axis": [1, 0, 0], "pivot": [0.05, 0.06, -0.03] },
+  "use": { "motion": "push", "amount": 0.025, "rate": 6, "spin": 14, "beam": "#6cff9a", "beamLength": 2.5 }
+}

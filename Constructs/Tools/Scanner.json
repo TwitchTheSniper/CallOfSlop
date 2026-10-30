@@ -1,0 +1,20 @@
+{
+  "format": "call-of-slop-construct-tool/1",
+  "name": "Scanner",
+  "tool": "scanner",
+  "description": "Still to come: a handheld scanner with a turning emitter and an aerial, for finding parts and resources.",
+  "boxes": [
+    { "size": [0.032, 0.1, 0.04], "at": [0, -0.02, 0], "color": "#2b2b2e" },
+    { "size": [0.06, 0.06, 0.14], "at": [0, 0.06, -0.04], "color": "#6a6f78" },
+    { "size": [0.09, 0.09, 0.02], "at": [0, 0.06, -0.12], "color": "#c0c4ca", "spin": true },
+    { "size": [0.02, 0.09, 0.022], "at": [0, 0.06, -0.12], "color": "#8a8f96", "spin": true },
+    { "size": [0.03, 0.03, 0.01], "at": [0, 0.06, -0.135], "color": "#80ffd0", "glow": true },
+    { "size": [0.008, 0.1, 0.008], "at": [0.022, 0.14, 0.0], "color": "#1c1c1e" },
+    { "size": [0.014, 0.014, 0.014], "at": [0.022, 0.195, 0.0], "color": "#ff5040", "glow": true }
+  ],
+  "grip": { "at": [0, 0, 0], "rot": [-12, 0, 0], "shape": "wrap" },
+  "support": { "at": [0, 0.025, -0.07], "shape": "under" },
+  "tip": [0, 0.06, -0.14],
+  "spin": { "axis": [0, 0, 1], "pivot": [0, 0.06, -0.12] },
+  "use": { "motion": "sweep", "amount": 0.25, "rate": 1.6, "spin": 6, "idleSpin": 1, "beam": "#80ffd0", "beamLength": 4 }
+}
