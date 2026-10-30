@@ -277,13 +277,16 @@ public static class Keybinds
     public static List<GameAction> Migrate(int[] binds, int fromVersion)
     {
         var moved = new List<GameAction>();
+        // Every action added after the file's version that sits on its new default is unbound first (and checked like a
+        // move at its own version), so an action added later can't hold a key while an earlier version's carry asks
+        // whether that key is free (a v12 file's rebound inventory key K and v15's SnapSwitch on K).
+        foreach (var c in Changes)
+            if (c.Version > fromVersion && c.Old == Unbound && binds[(int)c.Action] == c.New)
+                binds[(int)c.Action] = Unbound;
         foreach (var version in Changes.Select(c => c.Version).Distinct().Order())
         {
             if (version <= fromVersion)
                 continue;
-            foreach (var c in Changes)
-                if (c.Version == version && c.Old == Unbound && binds[(int)c.Action] == c.New)
-                    binds[(int)c.Action] = Unbound; // an added action on its new default: check it like a move
             foreach (var c in Carries)
                 if (c.Version == version && binds[(int)c.From] != c.Default && binds[(int)c.From] != Unbound && binds[(int)c.To] == Unbound && FreeFor(binds, c.To, binds[(int)c.From]))
                 {

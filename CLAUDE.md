@@ -203,3 +203,8 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
 - 2026-10-30: adding 178 building parts (and, the same day, 24 actuator parts on another branch) broke "Sandbox parts menu" and "Construct storage", which used part ids 249 and
   254 as "no such part". Why: hard-coded ids stop being unknown as the parts grow. Rule: a test's unknown id is
   `ConstructParts.All.Count` (or far above `MaxTypes`), never a fixed number.
+- 2026-10-30: main broke "Sandbox Tab inventory" after the snappy-build merge (binds version 15 put SnapSwitch on K),
+  and neither the branch nor the merge check ran that section. Why: an action added later kept its new default while an
+  earlier version's carry asked whether the key was free, and `sections_for.py` had no rule for `Keybinds.cs`. Rule:
+  `Keybinds.Migrate` unbinds every later-added action on its default before stepping versions, and a change to
+  `Keybinds.cs` runs every keybind-migration section (`sections_for.py`).
