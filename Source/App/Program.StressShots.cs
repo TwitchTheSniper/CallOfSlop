@@ -13,7 +13,8 @@ namespace CallOfSlop;
 /// player's eye while the hordes wait on their pads, as they descend, when they have merged and as they advance, with
 /// the tier counts, the crowd's tick and the instances drawn in the log ("[stressshots]"). Uses the smoke test's
 /// throwaway save copy; runs under a virtual X server with Mesa's software GL. <c>--stress-shots wake</c>: the horde
-/// round the player instead (Program.WakeShots.cs).
+/// round the player instead (Program.WakeShots.cs); <c>--stress-shots waves</c>: a strip of the blob's front waking
+/// (Program.WaveShots.cs).
 /// </summary>
 public static unsafe partial class Program
 {
@@ -25,6 +26,11 @@ public static unsafe partial class Program
         if (arg != null && arg.Equals("wake", StringComparison.OrdinalIgnoreCase))
         {
             RunWakeShots(args); // --stress-shots wake: a horde round the player on the valley floor (Program.WakeShots.cs)
+            return;
+        }
+        if (arg != null && arg.Equals("waves", StringComparison.OrdinalIgnoreCase))
+        {
+            RunWaveShots(args); // --stress-shots waves: the blob's front waking, a strip of pictures (Program.WaveShots.cs)
             return;
         }
         var size = arg != null && int.TryParse(arg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var n) ? n : 10000;

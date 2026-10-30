@@ -162,6 +162,9 @@ public sealed class CrowdAgents
     /// </summary>
     public bool PullFromBehind;
 
+    /// <summary>Cells pull from behind only within this far (m) of the camera (<see cref="PullFromBehind"/>).</summary>
+    public float PullRange = 90f;
+
     public readonly CrowdHorizon Horizon = new();
     private readonly CrowdJobs _jobs;
     private Vector3 _cam;
@@ -1141,7 +1144,10 @@ public sealed class CrowdAgents
                 // over), and is short in turn, so a moving crowd's agents walk forward into the cells its count flowed into
                 // (and out of which the mass let zombies out) instead of rising out of the ground at its front while those
                 // behind sink. The chain ends where the count left (the crowd's back).
-                for (var pulls = 0; diff < 0 && pulls < 4 && !fresh && PullFromBehind; pulls++)
+                // Only near the camera (within PullRange: where the players are and the wake happens); far off a short cell
+                // raises one as before (out there a lane drained down a long chain would show more).
+                var near = PullFromBehind && !fresh && CellDist2(c) < PullRange * PullRange;
+                for (var pulls = 0; diff < 0 && pulls < 4 && near; pulls++)
                 {
                     var u = Upstream(c);
                     if (u < 0 || !PassTo(u, c, walking: true))
@@ -1185,7 +1191,7 @@ public sealed class CrowdAgents
     /// <summary>
     /// The neighbouring cell in view that cell <paramref name="c"/>'s walk comes from (the step from it to
     /// <paramref name="c"/> along the cell's heading, within about 67 degrees), with a live agent to pass, and one with
-    /// agents to spare first (-1: none, or the cell isn't walking).
+    /// agents to spare first, then the fullest (-1: none, or the cell isn't walking).
     /// </summary>
     private int Upstream(int c)
     {
@@ -1207,11 +1213,18 @@ public sealed class CrowdAgents
                 var dot = (-dc * hx - dr * hz) / ((dc != 0 && dr != 0) ? 1.41421356f : 1f);
                 if (dot < 0.38f)
                     continue;
-                var score = dot + (_members[u] > _target[u] ? 1f : 0f);
+                var score = (_members[u] - _target[u]) * 4f + dot; // (the fullest first: a front's needs spread back over the crowd, not down one lane)
                 if (score > bs)
                     (bs, best) = (score, u);
             }
         return best;
+    }
+
+    /// <summary>Cell <paramref name="c"/>'s middle's squared flat distance from the camera.</summary>
+    private float CellDist2(int c)
+    {
+        float dx = MinX + (c % Cols + 0.5f) * Cell - _cam.X, dz = MinZ + (c / Cols + 0.5f) * Cell - _cam.Z;
+        return dx * dx + dz * dz;
     }
 
     /// <summary>Of four spots in cell <paramref name="c"/>, the one furthest from the camera (the cell's back).</summary>

@@ -29,6 +29,10 @@ public sealed class CrowdJobs
     public CrowdJobs(int stripes)
     {
         Stripes = Math.Max(1, stripes);
+        // (A first blocking wait makes the event's lock object: done here, once, so a run that has to block later (a busy
+        // machine) allocates nothing; the self-tests count every byte.)
+        _done.Reset();
+        _done.Wait(1);
         _threads = new Thread[Stripes - 1];
         _go = new SemaphoreSlim[Stripes - 1];
         for (var k = 0; k < _threads.Length; k++)
