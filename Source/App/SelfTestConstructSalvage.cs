@@ -154,7 +154,10 @@ public static partial class SelfTest
         Run(g, ref now, ConstructBuild.RemoveSeconds(wheelDef) * 0.5 + 0.15);
         var wheels = inv.Count(wheelDef.Id);
         Line($"salvage a wreck's wheel: the welder refused (\"{wrongTool}\"); the wrench began {began}, half-way {early}, done: {wheels} Wheel in the inventory, hand {(hand.Held == ConstructParts.None ? "empty" : "full")}");
-        Want(wrongTool.Contains("wrench") && began && early == 0 && wheels == 1 && hand.Held == ConstructParts.None, "a wreck's wheel is salvaged (timed, with the wrench) into the inventory");
+        // (decision 21: with infinite parts on, creative, a wrench removal is instant; counted, it is timed)
+        var instant = g.SandboxHands.Creative;
+        Want(wrongTool.Contains("wrench") && (instant ? !began && early == 1 : began && early == 0) && wheels == 1 && hand.Held == ConstructParts.None,
+            $"a wreck's wheel is salvaged ({(instant ? "at once in creative" : "timed")}, with the wrench) into the inventory");
 
         // Scrap from the wrecked suspension.
         StandBy(me, suspDebris.WorldCom, 2.2f, car.WorldCom);
@@ -298,7 +301,10 @@ public static partial class SelfTest
         }
         var kept = wrecks[0];
         var alone = wrecks[1];
-        // Salvaging the first (slowly: a long removal) while the time runs out; nobody near the second.
+        // Salvaging the first (slowly: a long removal) while the time runs out; nobody near the second. (Counted parts for
+        // this: a creative wrench removal is instant, decision 21.)
+        var infinite = sb.InfiniteParts;
+        sb.InfiniteParts = false;
         sb.DebrisSeconds = 1.0f;
         sb.DebrisNear = 0.5f;
         var wi = PartOf(kept, PartRole.Wheel);
@@ -314,6 +320,7 @@ public static partial class SelfTest
         var keptWhile = w.Get(kept.Id) != null && hand.Edit == EditKind.Remove;
         var aloneGone = w.Get(alone.Id) == null;
         g.SandboxSend(CActKind.Cancel);
+        sb.InfiniteParts = infinite;
         StandAt(me, 20, 24);
         Run(g, ref now, 2.0);
         var keptGoneAfter = w.Get(kept.Id) == null;

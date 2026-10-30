@@ -119,7 +119,8 @@ public static partial class SelfTest
         var other = ConstructStorage.CanSet(shelf, pile, 2, ConstructParts.Need("Button"), out _);
         Line($"storage fits: Suspension in a Chest slot {suspOk ?? "yes"}; Engine: \"{engineNo}\"; Engine on the shelf's big slot {engineShelf ?? "yes"}; Wheel in the rack {wheelRack ?? "yes"} (turn {wheelRot}); "
              + $"Suspension in the rack: \"{suspRack}\"; {piled} Lamps pile in a parts bin, then \"{seventh}\", a Button there: \"{other}\"");
-        if (suspOk != null || engineNo == null || !engineNo.Contains("doesn't fit") || engineShelf != null || wheelRack != null || suspRack == null || !suspRack.Contains("wheel")
+        // (decision 21: the 120 kg engine is physics-only, so no slot takes it, the shelf's big one included)
+        if (suspOk != null || engineNo == null || !engineNo.Contains("physics-only") || engineShelf == null || !engineShelf.Contains("physics-only") || wheelRack != null || suspRack == null || !suspRack.Contains("wheel")
             || piled != 6 || seventh == null || !seventh.Contains("full") || other == null)
             Fail("construct storage: what fits which slot is wrong");
     }
@@ -277,8 +278,8 @@ public static partial class SelfTest
         hand.Held = engine.Id;
         g.SandboxSend(CActKind.StoreIn, body: chest.Id, part: (byte)box, socket: 1);
         Run(g, ref now, 0.1);
-        var refused = st.Def[1] == ConstructParts.None && hand.Held == engine.Id && g.SandboxNotice.Contains("doesn't fit");
-        Want(refused, $"the engine is refused by a medium slot and stays in the hands (notice \"{g.SandboxNotice}\")");
+        var refused = st.Def[1] == ConstructParts.None && hand.Held == engine.Id && g.SandboxNotice.Contains("physics-only");
+        Want(refused, $"the engine (physics-only) is refused by the slot (notice \"{g.SandboxNotice}\")");
         g.SandboxSend(CActKind.StoreIn, body: chest.Id, part: (byte)box, socket: 0);
         Run(g, ref now, 0.1);
         var taken = st.Def[0] == susp.Id && hand.Held == engine.Id; // (slot taken)

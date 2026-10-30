@@ -23,8 +23,8 @@ public sealed partial class ConstructEdits
     /// <summary>What a part is, for the inventory tile and the look text: "item", or "physics only (welded)".</summary>
     public static string ClassText(ConstructPartDef d) => d.PhysicsOnly ? $"physics only ({d.PhysicsWhy})" : "item";
 
-    /// <summary>Creative (the map's parts menu or infinite parts on): wrench fits and removals are instant there.</summary>
-    public bool Creative => !Survival;
+    /// <summary>Creative (the map's infinite parts on, as the physics gun and the contested rule read it): wrench fits and removals are instant there.</summary>
+    public bool Creative => InfiniteParts;
 
     /// <summary>
     /// Server: physics-only part <paramref name="def"/> spawned as a body in front of the player (a short way ahead at eye

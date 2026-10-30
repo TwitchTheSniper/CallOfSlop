@@ -292,11 +292,13 @@ public sealed partial class Ui
 
     /// <summary>
     /// A part picked (a click, Enter, the recent row, or the self-test): the server is asked for it by id, the tool it
-    /// needs comes out, it goes to the front of the recent row, and the window closes unless it is kept open.
+    /// needs comes out, it goes to the front of the recent row, and the window closes unless it is kept open. A
+    /// physics-only part (decision 21) is spawned as a body in front of you instead, and the tool in your hands stays (with
+    /// the physics gun out, it holds the new body).
     /// </summary>
     public void SandboxPartsPick(Game game, ConstructPartDef def)
     {
-        if (game.Local is { } me && def.Tool != ConstructTool.None && game.SandboxHands.Hand(me.Id).Tool != def.Tool)
+        if (game.Local is { } me && !def.PhysicsOnly && def.Tool != ConstructTool.None && game.SandboxHands.Hand(me.Id).Tool != def.Tool)
             game.SandboxSend(CActKind.Tool, part: (byte)def.Tool);
         game.SandboxTakePart(def.Id);
         var at = Array.IndexOf(_sbRecent, def.Id);

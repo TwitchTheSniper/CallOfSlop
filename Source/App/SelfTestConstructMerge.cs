@@ -189,15 +189,15 @@ public static partial class SelfTest
             e.SetTool(me, tool);
             var ts = Array.FindIndex(c.DefOf(on).Sockets, s => s.Name == socket) + (centre ? c.DefOf(on).Sockets.Length : 0);
             var ds = Array.FindIndex(def.Sockets, s => s.Name == by);
+            var newest = 0; // (before: a wrench fit is instant in creative)
+            for (var i = 0; i < c.PartCount; i++)
+                newest = Math.Max(newest, c.Parts[i].Tag);
+            e.Done.Clear();
             if (e.BeginAttach(w, me, eye, c.Id, on, ts, ds * 4, now) is { } why)
             {
                 problems.Add($"{part} on {c.DefOf(on).Name} {socket}{(centre ? " (centre)" : "")}: {why}");
                 return -1;
             }
-            var newest = 0;
-            for (var i = 0; i < c.PartCount; i++)
-                newest = Math.Max(newest, c.Parts[i].Tag);
-            e.Done.Clear();
             Wait(def.AttachSeconds + 0.1);
             for (var i = 0; i < c.PartCount; i++)
                 if (c.Parts[i].Tag > newest && c.Parts[i].Def == def.Id)
@@ -209,13 +209,14 @@ public static partial class SelfTest
         {
             e.Hand(me).Held = ConstructParts.None;
             e.SetTool(me, ConstructTool.Wrench);
+            var n = c.PartCount; // (before: a wrench removal is instant in creative)
+            var rdef = part >= 0 && part < c.PartCount ? c.DefOf(part) : ConstructParts.All[0];
             if (e.BeginRemove(w, me, eye, c.Id, part, now) is { } why)
             {
                 problems.Add($"removing part {part}: {why}");
                 return -1;
             }
-            var n = c.PartCount;
-            Wait(ConstructBuild.RemoveSeconds(c.DefOf(part)) + 0.1);
+            Wait(ConstructBuild.RemoveSeconds(rdef) + 0.1);
             return n - c.PartCount;
         }
         int Find(int tag)

@@ -165,13 +165,13 @@ public static partial class SelfTest
             ui.SetSandboxPartsSearch("zzzz nothing");
             Frames(2);
             var none = ui.SandboxPartsListed;
-            ui.SetSandboxPartsSearch("transmission");
+            ui.SetSandboxPartsSearch("lamp");
             Frames(2);
             var pick = ui.SandboxPartsHighlighted;
             if (pick != null)
                 ui.SandboxPartsPick(g, pick);
             ref var hand = ref g.SandboxHands.Hand(me.Id);
-            var picked = pick != null && hand.Held == pick.Id && hand.Tool == pick.Tool && !ui.SandboxPartsOpen && ui.SandboxPartsRecent[0] == pick.Id;
+            var picked = pick != null && !pick.PhysicsOnly && hand.Held == pick.Id && hand.Tool == pick.Tool && !ui.SandboxPartsOpen && ui.SandboxPartsRecent[0] == pick.Id; // (an item part: a physics-only one spawns in front, "Sandbox physics-only parts")
             Line($"parts menu window: {all} of {ConstructParts.All.Count} parts listed; \"wheel\" {wheels} (highlight {first?.Name ?? "none"}), nonsense {none}; "
                  + $"picking the {pick?.Name ?? "?"} put it in hand with the {hand.Tool.ToString().ToLowerInvariant()} out and closed the window: {picked}");
             if (all != ConstructParts.All.Count(d => d.Offered) || wheels < 1 || wheels >= all || none != 0 || !picked)
