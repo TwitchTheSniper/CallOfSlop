@@ -1024,13 +1024,13 @@ button), a lift, a turret on a turntable, a parts rack (the yellow shelf) and so
   your hands, with its tool out, exactly as if you took it from the rack; a blueprint (Buggy, Gate, Lift, ...) is built
   in front of you; a tool comes out. The recent row keeps your last picks. "Keep open after picking" leaves the window
   up; Tab again or Esc closes it. A map can turn it off with `"partsMenu": false` in its `"sandbox"` section.
-- **Links** (the linking tool): hold the tool wheel key for the link wheel and pick a **data** cable (signals), a
-  **power** cable, a **pipe** (its style comes from the tank; rest on Pipe to pick another: a wrong one leaks, bursts or
-  makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
+- **Links** (the linking tool): on the tool wheel, point at the linking tool and flick further out onto its outer ring
+  for a **data** cable (signals), a **power** cable, a **pipe** (auto: its style comes from the tank; or a fuel, water,
+  oil or steam pipe: a wrong one leaks, bursts or makes the engine sputter), a **drive shaft** or a **chute** (items between storage). Fire on an output (a seat, a
   button, lever, switch, sensor or gate for data; a battery for power; a tank for a pipe), Fire to place each node on the
   surface (the preview goes red and says why when a rule is broken: pipes bend in 15 degree steps, chutes in 45, shafts
   at most 45 and never round a corner), Fire on an input to finish; RMB or Backspace takes the last node off, Esc
-  cancels. Fire on a link to branch off it. The Edit ring deletes, moves a node, re-routes or highlights every link.
+  cancels. Fire on a link to branch off it. The ring's edit modes delete, move a node, re-route or highlight every link; letting go on the linking tool itself keeps the last pick.
   Links can be shot through (a cut fuel pipe leaks, a cut cable sparks); the wrench or welder mends them. R changes a
   logic part's setting. Every data link takes one tick, so a NOT linked to itself is a clock.
 - **Joints**: a motorised hinge, a turntable, a piston and a steering pivot move what is fitted on them, pushed by a motor

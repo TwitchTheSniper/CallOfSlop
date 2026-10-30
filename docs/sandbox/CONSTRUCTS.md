@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): hold the tool wheel key for the **link wheel** (data, power, pipe, shaft, chute; rest on Pipe for its styles, on Edit for delete / move node / re-route / highlight all, on Tools for the tool wheel). Fire on an output, Fire for each node, Fire on an input to finish; Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (data, power, pipe auto and its four styles, shaft, chute, delete / move node / re-route, highlight all; [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish; Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -85,7 +85,7 @@ the easiest flicks reach them, with the physics gun on the north-east; the confi
 design's tool list that don't exist yet sit on the other diagonals, greyed out with "coming later" (letting go on one says so and changes nothing). While the key is held the view stands still and the
 mouse moves the wheel's pointer instead (accumulated, held within 70 px of the middle, so a small flick turns it to
 another segment); the segment is picked by direction (a 22 px dead zone in the middle). The highlighted segment gets an
-orange arc and its name and favourite key show in the middle ("key 5: wires, settings"); the tool in your hands is marked
+orange arc and its name shows in the middle (only the name, fitted to the centre circle); its favourite key and hint ("key 5: wires, settings") show in a tooltip under the wheel; the tool in your hands is marked
 with a green inner arc and dot. Letting go takes the tool out through the very request the number keys send
 (`CActKind.Tool`, server-authoritative), so nothing on the wire changed (protocol 79) and the number keys stay as the
 favourites. Letting go in the middle cancels. You keep walking while it's open; the mouse buttons don't reach the gun or
@@ -103,8 +103,32 @@ chain, three sliders, a handset with waves, a drill); `Source/App/Program.Sandbo
 Choices made for the wheel (the developer may change them): the middle mouse button, not Q (Q swaps weapons); the wheel
 sits at the screen centre (the cursor is captured, so "around the cursor" is the centre); the tools still to come are
 shown greyed rather than left off (eight segments read cleanly as a compass, and they show what is planned); it is
-closed in a seat (seated keys belong to the construct's input readers); no tool modes ring or second page yet (no tool
-has modes); no stick support yet (no Steam Input in the game).
+closed in a seat (seated keys belong to the construct's input readers); no stick support yet (no Steam Input in the game).
+
+#### The outer ring: a tool's options
+
+Board item dev-wheel-outer-ring-wo01 (the developer's design, 2026-10-30) replaced the linking tool's separate link wheel
+page (and its rings opened by resting the pointer) with a concentric **outer ring**. Pointing at a tool that has options
+shows a second ring around the inner one at once (it grows out in 0.08 s); the inner wheel stays and the tool stays
+highlighted. Its segments sit in an arc centred on the tool's direction, 30 degrees each, or round the full circle when
+more than fit in 300 degrees. With the ring showing the pointer may go further out (to 70 + 66 px); past 70 + 24 px
+(a band that keeps the inner pick) it picks the option in its direction. **Letting go on an option** takes the tool out
+with that option; **letting go on the tool** (the inner segment) takes it out with its last-used option (marked green on
+the ring); letting go in the middle still cancels. Outside a partial arc the pointer turns the inner ring as usual (and
+is pulled back within 70 px when it leaves a tool with a ring). The middle shows only the name of what is under the
+pointer (the option's, else the tool's, else "Tools"), at 20 px a scale, shrunk to fit the centre circle (down to 12 px),
+else cut short with "..."; hints go in the tooltip under the wheel.
+
+The **linking tool** has thirteen options, round the full circle: data cable, power cable, pipe (auto: the style from the
+output), fuel, water, oil and steam pipes, drive shaft, chute, delete links, move node, re-route, and highlight all (a
+toggle, shown with a green dot while on). Picking a type also goes back to routing links. The choice is this PC's only;
+taking the tool out goes through the same request as before, so nothing on the wire changed. The widget is generic
+(`RadialMenu.Item.Options`; a tool gets them through `IToolOptions` and `SandboxToolWheel.SetOptions`), so the welder's
+weld / cut and the physics gun's modes can use it when they have modes.
+
+Choices made for the outer ring (the developer may change them): the pipe styles sit on the same ring as the other
+types (no third ring); the edit modes and highlight all are options too; the ring shows the moment a tool is pointed at
+(no rest needed); 30 degree option segments; "Tools" is gone from the linking tool (the tool wheel always opens now).
 
 ### Tools in hand
 
@@ -1552,7 +1576,7 @@ axle and transfer case, the crawler's track, part galleries and the driving HUD.
 Board item dev-sandbox-routed-links-rl02 (the developer's design, 2026-10-30). Code: `Source/Constructs/ConstructRoutes.cs`
 (the links, their rules, flow, damage, the wire format), `ConstructRoutesBuild.cs` (blueprints' `"links"`, the migration),
 `ConstructEditsRoutes.cs` (the server's edits), `Source/App/Program.SandboxLinks.cs` (the linking tool on this PC),
-`Source/UI/SandboxLinkWheel.cs` (the link wheel), `Source/Render/RouteRender.cs` (drawing them).
+`Source/UI/SandboxLinkWheel.cs` (the linking tool's options on the tool wheel's outer ring), `Source/Render/RouteRender.cs` (drawing them).
 
 One routed-link system on the linking tool replaces the invisible wires and the Fuel Line part. A link is a polyline of
 **nodes** from an **output** to an **input** on one construct, routed node by node over its surface, drawn by one
@@ -1567,7 +1591,7 @@ segment piece and one elbow piece per type (instanced), and simulated as a graph
 | Chute | square duct with rims | bends in 45 degree steps | items between storage parts (a load of bulk or one stored part a second) | 80 |
 
 **Pipe styles** (the developer's hybrid choice): a pipe started at a tank takes the style of what the tank holds
-(`"fuelTank": {"fluid": ...}`, fuel by default); the link wheel's pipe ring overrides it. Fuel: thin with hazard bands;
+(`"fuelTank": {"fluid": ...}`, fuel by default); a style picked on the tool wheel's outer ring overrides it. Fuel: thin with hazard bands;
 water: blue with flanges; oil: dark with clamps; steam: thick lagging. Each style has ratings (pressure, heat, rated for
 flammable fluids, residue), each fluid its needs, and a **wrong pipe is allowed** with readable consequences: fuel in a
 water pipe weeps (0.05 l/s) and catches fire after 20 s; something too hot or at too much pressure for its pipe bursts it
@@ -1596,7 +1620,7 @@ segment stops the flow beyond it: a cut fuel pipe pours fuel out (0.5 l/s) and a
 power cable sparks. The wrench or the welder (Fire, nothing in hand) mends a link; the edit ring's re-route starts it
 again from its output.
 
-**Edit modes** (the link wheel's Edit ring): delete a link (and its branches), move a node, re-route a link, highlight
+**Edit modes** (options on the tool wheel's outer ring round the linking tool): delete a link (and its branches), move a node, re-route a link, highlight
 all (every link bright through the parts). Data and power cables are dimmer unless the linking tool is out.
 
 **Migration**: logic wires are data links routed straight (a blueprint's `"wires"` still work); when a blueprint is built,
@@ -1629,8 +1653,8 @@ blueprint `"links"` and `CBody` round trips (a short packet refused); the server
    degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
    32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a weeping pipe lights after 20 s, a weak one
    bursts after 30 s, residue gives 60% torque; a chute moves a load (10 bulk) or one part a second.
-2. Opening the link wheel: the tool wheel key while the linking tool is out (its Tools segment, rested on, opens the tool
-   wheel); rings open by resting the pointer on Pipe, Edit or Tools for 0.3 s.
+2. Picking a link type: the tool wheel's outer ring round the linking tool (board item dev-wheel-outer-ring-wo01; it
+   replaced the link wheel and its rings opened by resting).
 3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
    carries the circuit both ways.
 4. A shaft link is a drive-line edge with no ratio (each U joint keeps 99%); chain and belt drives stay devices.
@@ -1770,8 +1794,17 @@ hold-flick-release takes out the welder (east), wrench (north), linking tool (we
 marked when it opens, letting go in the dead zone cancels, the scanner says "coming later" and changes nothing, the
 north-east takes out the physics gun, a menu and
 death close it without choosing (and the still-held key doesn't reopen it), and it doesn't open in a seat; 240 headless
-frames with the pointer going round draw without an ImGui error and allocate nothing; and a real client's pick reaches the
-server.
+frames with the pointer going round (the linking tool's outer ring among them) draw without an ImGui error and allocate
+nothing; and a real client's pick reaches the server.
+
+The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
+option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
+nothing, the arc or full circle choice); the linking tool's options cover every link type, every pipe style and auto,
+every edit mode and the highlight toggle; in an offline Sandbox game pointing at the linking tool shows its ring with all
+thirteen, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
+tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
+arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long
+name fit the centre circle at UI scales 0.75 to 2 (shrunk, or cut short only for the over-long one).
 
 The **Sandbox physics gun** section (`Source/App/SelfTestSandboxPhysGun.cs`): the model, the wheel slot and the tool
 byte; in a bare construct world on the yard a grabbed block is pulled onto the beam's point (2 m up) and held in the

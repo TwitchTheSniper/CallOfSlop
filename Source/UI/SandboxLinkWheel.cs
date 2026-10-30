@@ -4,7 +4,7 @@ using Brutal.Numerics;
 
 namespace CallOfSlop;
 
-/// <summary>The linking tool's edit modes (the link wheel's Edit ring).</summary>
+/// <summary>The linking tool's edit modes (options on the tool wheel's outer ring round the linking tool).</summary>
 public enum LinkMode : byte
 {
     Link, // route a new link (or branch off one)
@@ -14,43 +14,38 @@ public enum LinkMode : byte
 }
 
 /// <summary>
-/// The linking tool's second-tier radial (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"): with the linking tool
-/// out, holding the tool wheel key opens the link wheel instead of the tool wheel (the same <see cref="RadialMenu"/>).
-/// Its ring: data, power, pipe, shaft, chute, Edit and Tools. Letting go on a type picks it; resting the pointer on Pipe,
-/// Edit or Tools for a moment opens their ring in place: the pipe styles (Auto: what the output carries, or a style to
-/// override it; a wrong one is allowed), the edit modes (link, delete, move node, re-route, highlight all), or the tool
-/// wheel itself. Nothing allocates per frame.
+/// The linking tool's options (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"): the outer ring the tool wheel shows
+/// round the linking tool (board item dev-wheel-outer-ring-wo01; it replaced the separate link wheel page and its rings
+/// opened by resting). Thirteen options round the full circle, centred on the linking tool's direction: the data and power
+/// cables, the pipe (Auto: its style from the output) and its four styles (a wrong one is allowed), the drive shaft, the
+/// chute, then the edit modes (delete, move node, re-route) and "highlight all" (a toggle). Picking a type routes links of
+/// it; the tool comes out with what was picked, or with the last pick when the wheel is let go on the linking tool itself.
+/// The state is this PC's only (nothing on the wire). Nothing allocates per frame.
 /// </summary>
-public sealed class SandboxLinkWheel
+public sealed class SandboxLinkWheel : IToolOptions
 {
-    public enum Ring
-    {
-        Main,
-        Pipe,
-        Edit,
-    }
-
-    private enum MainSlot
+    /// <summary>The outer ring's options, in order clockwise.</summary>
+    public enum Option
     {
         Data,
         Power,
-        Pipe,
+        Pipe, // Auto: the style from the output
+        FuelPipe,
+        WaterPipe,
+        OilPipe,
+        SteamPipe,
         Shaft,
         Chute,
-        Edit,
-        Tools,
+        Delete,
+        MoveNode,
+        Reroute,
+        Highlight,
         COUNT,
     }
 
-    public const float DwellSeconds = 0.3f; // resting on Pipe, Edit or Tools this long opens its ring
-
-    public readonly RadialMenu Main = new((int)MainSlot.COUNT);
-    public readonly RadialMenu Pipes = new(1 + (int)PipeStyle.COUNT);
-    public readonly RadialMenu Edits = new(5);
-
-    public Ring Showing { get; private set; }
-    public RadialMenu Menu => Showing switch { Ring.Pipe => Pipes, Ring.Edit => Edits, _ => Main };
-    public bool IsOpen => Menu.IsOpen;
+    private readonly RadialMenu.Item[] _options = new RadialMenu.Item[(int)Option.COUNT];
+    public RadialMenu.Item[] Options => _options;
+    RadialIcon? IToolOptions.Icons => Icons;
 
     // What it picked (the linking tool's state on this PC).
     public RouteType Type = RouteType.Data;
@@ -58,162 +53,79 @@ public sealed class SandboxLinkWheel
     public LinkMode Mode = LinkMode.Link;
     public bool Highlight; // every link drawn bright, through the parts
 
-    /// <summary>Set when the pointer rested on Tools: the caller opens the tool wheel in its place (the key still held).</summary>
-    public bool WantsTools;
-
-    private bool _wasHeld;
-    private int _dwellOn = -1;
-    private float _dwell;
-
+    /// <summary>The options' icons (the port picker uses them too), made once.</summary>
     public static readonly RadialIcon Icons = DrawIcon;
 
     public SandboxLinkWheel()
     {
-        Main.Title = "Links";
-        Main.Help = "flick to a type, let go (rest on a ring to open it)";
-        SetItem(Main, (int)MainSlot.Data, "Data cable", "signals", 0);
-        SetItem(Main, (int)MainSlot.Power, "Power cable", "electricity", 1);
-        SetItem(Main, (int)MainSlot.Pipe, "Pipe", "rest: pick a style", 2);
-        SetItem(Main, (int)MainSlot.Shaft, "Drive shaft", "torque", 3);
-        SetItem(Main, (int)MainSlot.Chute, "Chute", "items", 4);
-        SetItem(Main, (int)MainSlot.Edit, "Edit links", "rest: delete, move, re-route", 5);
-        SetItem(Main, (int)MainSlot.Tools, "Tools", "rest: the tool wheel", 6);
-        Pipes.Title = "Pipe style";
-        Pipes.Help = "Auto: what the output carries";
-        SetItem(Pipes, 0, "Auto", "from the output", 2);
-        SetItem(Pipes, 1, "Fuel pipe", "thin, hazard bands", 10);
-        SetItem(Pipes, 2, "Water pipe", "blue, flanges", 11);
-        SetItem(Pipes, 3, "Oil pipe", "dark, clamps", 12);
-        SetItem(Pipes, 4, "Steam pipe", "lagged: heat, pressure", 13);
-        Edits.Title = "Edit links";
-        Edits.Help = "flick to a mode, let go";
-        SetItem(Edits, 0, "Route links", "click output, nodes, input", 0);
-        SetItem(Edits, 1, "Delete", "click a link", 20);
-        SetItem(Edits, 2, "Move node", "click a node, then its place", 21);
-        SetItem(Edits, 3, "Re-route", "click a link: start it again", 22);
-        SetItem(Edits, 4, "Highlight all", "every link, through parts", 23);
+        Set(Option.Data, "Data cable", "signals", 0);
+        Set(Option.Power, "Power cable", "electricity", 1);
+        Set(Option.Pipe, "Pipe (auto)", "style from the output", 2);
+        Set(Option.FuelPipe, "Fuel pipe", "thin, hazard bands", 10);
+        Set(Option.WaterPipe, "Water pipe", "blue, flanges", 11);
+        Set(Option.OilPipe, "Oil pipe", "dark, clamps", 12);
+        Set(Option.SteamPipe, "Steam pipe", "lagged: heat, pressure", 13);
+        Set(Option.Shaft, "Drive shaft", "torque", 3);
+        Set(Option.Chute, "Chute", "items", 4);
+        Set(Option.Delete, "Delete links", "click a link", 20);
+        Set(Option.MoveNode, "Move node", "click a node, then its place", 21);
+        Set(Option.Reroute, "Re-route", "click a link: start it again", 22);
+        Set(Option.Highlight, "Highlight all", "every link, through parts (on / off)", 23);
     }
 
-    private static void SetItem(RadialMenu m, int i, string label, string hint, int icon)
-    {
-        m.Items[i].Label = label;
-        m.Items[i].Hint = hint;
-        m.Items[i].Icon = icon;
-    }
+    private void Set(Option o, string label, string hint, int icon) =>
+        _options[(int)o] = new RadialMenu.Item { Label = label, Hint = hint, Icon = icon };
 
     public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", _ => "route links" };
 
-    /// <summary>
-    /// One frame (the same shape as the tool wheel's): <paramref name="held"/> the wheel key, <paramref name="delta"/> the
-    /// mouse movement, <paramref name="dt"/> the frame's seconds. Returns true while it is open.
-    /// </summary>
-    public bool Step(bool held, Vector2 delta, float dt, bool blocked)
+    /// <summary>The option the linking tool has now (an edit mode, else the type and pipe style); "highlight all" shows as a toggle.</summary>
+    public int CurrentOption
     {
-        var pressed = held && !_wasHeld;
-        _wasHeld = held;
-        WantsTools = false;
-        if (blocked)
+        get
         {
-            Close();
-            return false;
-        }
-        Main.Current = (int)(Type switch { RouteType.Power => MainSlot.Power, RouteType.Pipe => MainSlot.Pipe, RouteType.Shaft => MainSlot.Shaft, RouteType.Chute => MainSlot.Chute, _ => MainSlot.Data });
-        Pipes.Current = Style == 255 ? 0 : Style + 1;
-        Edits.Current = (int)Mode;
-        if (!Menu.IsOpen)
-        {
-            if (!pressed)
-                return false;
-            Showing = Ring.Main;
-            Main.Open();
-            _dwellOn = -1;
-            _dwell = 0;
-            return true;
-        }
-        if (held)
-        {
-            Menu.Move(delta);
-            if (Showing == Ring.Main)
+            _options[(int)Option.Highlight].Marked = Highlight;
+            return (int)(Mode switch
             {
-                var on = Main.Hovered;
-                if (on != _dwellOn)
+                LinkMode.Delete => Option.Delete,
+                LinkMode.Move => Option.MoveNode,
+                LinkMode.Reroute => Option.Reroute,
+                _ => Type switch
                 {
-                    _dwellOn = on;
-                    _dwell = 0;
-                }
-                else if (on is (int)MainSlot.Pipe or (int)MainSlot.Edit or (int)MainSlot.Tools)
-                {
-                    _dwell += dt;
-                    if (_dwell >= DwellSeconds)
-                    {
-                        Main.Close();
-                        if (on == (int)MainSlot.Tools)
-                        {
-                            WantsTools = true;
-                            return false;
-                        }
-                        if (on == (int)MainSlot.Pipe)
-                            Type = RouteType.Pipe;
-                        Showing = on == (int)MainSlot.Pipe ? Ring.Pipe : Ring.Edit;
-                        Menu.Open();
-                    }
-                }
-            }
-            return true;
+                    RouteType.Power => Option.Power,
+                    RouteType.Pipe => Style < (byte)PipeStyle.COUNT ? Option.FuelPipe + Style : Option.Pipe,
+                    RouteType.Shaft => Option.Shaft,
+                    RouteType.Chute => Option.Chute,
+                    _ => Option.Data,
+                },
+            });
         }
-        var ring = Showing;
-        var pick = Menu.Release();
-        Showing = Ring.Main;
-        if (pick < 0)
-            return false;
-        switch (ring)
-        {
-            case Ring.Main:
-                switch ((MainSlot)pick)
-                {
-                    case MainSlot.Data: Pick(RouteType.Data); break;
-                    case MainSlot.Power: Pick(RouteType.Power); break;
-                    case MainSlot.Pipe: Pick(RouteType.Pipe); break;
-                    case MainSlot.Shaft: Pick(RouteType.Shaft); break;
-                    case MainSlot.Chute: Pick(RouteType.Chute); break;
-                    case MainSlot.Tools: WantsTools = true; break;
-                }
-                break;
-            case Ring.Pipe:
-                Type = RouteType.Pipe;
-                Style = pick == 0 ? (byte)255 : (byte)(pick - 1);
-                Mode = LinkMode.Link;
-                break;
-            case Ring.Edit:
-                if (pick == 4)
-                    Highlight = !Highlight;
-                else
-                    Mode = (LinkMode)pick;
-                break;
-        }
-        return false;
     }
 
-    private void Pick(RouteType t)
+    /// <summary>Applies an outer ring pick: a type (and pipe style) routes links of it; an edit mode; "highlight all" toggles.</summary>
+    public void Choose(int option)
+    {
+        var o = (Option)option;
+        switch (o)
+        {
+            case Option.Data: Pick(RouteType.Data); break;
+            case Option.Power: Pick(RouteType.Power); break;
+            case Option.Pipe: Pick(RouteType.Pipe, 255); break;
+            case Option.FuelPipe or Option.WaterPipe or Option.OilPipe or Option.SteamPipe: Pick(RouteType.Pipe, (byte)(o - Option.FuelPipe)); break;
+            case Option.Shaft: Pick(RouteType.Shaft); break;
+            case Option.Chute: Pick(RouteType.Chute); break;
+            case Option.Delete: Mode = LinkMode.Delete; break;
+            case Option.MoveNode: Mode = LinkMode.Move; break;
+            case Option.Reroute: Mode = LinkMode.Reroute; break;
+            case Option.Highlight: Highlight = !Highlight; break;
+        }
+    }
+
+    private void Pick(RouteType t, byte? style = null)
     {
         Type = t;
+        if (style is { } s)
+            Style = s;
         Mode = LinkMode.Link;
-    }
-
-    public void Close()
-    {
-        Main.Close();
-        Pipes.Close();
-        Edits.Close();
-        Showing = Ring.Main;
-    }
-
-    public void Draw(float scale)
-    {
-        if (!Menu.IsOpen)
-            return;
-        var size = ImGui.GetIO().DisplaySize;
-        Menu.Draw(ImGui.GetForegroundDrawList(), new float2(size.X * 0.5f, size.Y * 0.5f), scale, Icons);
     }
 
     // ---- Icons: each link type's profile, the pipe styles, the edit modes ------------------------------------------
@@ -272,14 +184,6 @@ public sealed class SandboxLinkWheel
             case 5: // edit: a pencil
                 Line(-0.6f, 0.6f, 0.5f, -0.5f, 0.22f, col);
                 Line(0.5f, -0.5f, 0.75f, -0.75f, 0.1f, accent);
-                break;
-            case 6: // tools: a small ring of dots
-                for (var i = 0; i < 6; i++)
-                {
-                    var a = i * MathF.Tau / 6;
-                    var p = P(MathF.Sin(a) * 0.55f, -MathF.Cos(a) * 0.55f);
-                    ImDrawListExtensions.AddCircleFilled(dl, p, 0.15f * r, col, 10);
-                }
                 break;
             case 20: // delete: a cable cut by a cross
                 Line(-0.8f, 0f, 0.8f, 0f, 0.12f, col);
