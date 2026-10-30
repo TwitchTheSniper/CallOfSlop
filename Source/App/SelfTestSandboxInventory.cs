@@ -10,7 +10,7 @@ public static partial class SelfTest
     /// named group (none in "Other"); a role the catalogue doesn't know lands in "Other" (or a group its name suggests).
     /// Every tile slot (each part, blueprint and tool model) gets boxes to draw, a blueprint built as the server builds
     /// it, and a camera that frames every box inside its square with the thing filling most of it; slots sit in distinct
-    /// places inside their atlas pages. (The atlas itself is drawn with GL: --inventory-shots.)
+    /// places inside their atlas pages.
     /// </summary>
     private static void CheckSandboxInventory()
     {

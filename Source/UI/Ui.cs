@@ -29,9 +29,6 @@ public sealed partial class Ui : IDisposable
     public bool MenuOpen = true; // open on launch so you pick a loadout first
     public bool ShowScoreboard;
 
-    /// <summary>Smoke test: holds the scoreboard open for its screenshot (Program.Scoreboard.cs).</summary>
-    public bool SmokeScoreboard;
-
     private AttachmentDef? _hoverAttachment;
     private string _lastNotice = "";
     private double _noticeTime;
@@ -423,7 +420,7 @@ public sealed partial class Ui : IDisposable
         if (_lastNotice.Length > 0 && now - _noticeTime < 4 && !MenuOpen)
             CenterText(size, pos, _lastNotice.Replace("[E]", K(GameAction.Interact)), 0.75f); // "[E]": the interact key (as in Zombies prompts)
 
-        if (ShowScoreboard || SmokeScoreboard)
+        if (ShowScoreboard)
         {
             DrawScoreboard(game, size, pos);
             if (game.WeaponsTweaked)

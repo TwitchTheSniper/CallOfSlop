@@ -428,9 +428,7 @@ row. Individuals keep their own voices (`ZombieSounds`, 8 vocal and 8 step voice
 - **Layout.** A 160 x 160 m field with `"crowd": 10000`. There is a low plaza in the middle with the hill and the box.
   Four long walls at 30 m have gaps; there is an L of crates in each quarter and a ring of pillars at 62 m.
 - **Debug views.** `--crowd-tiers` tints the tiers (yellow crowd, orange held, darker yellow mass); every individual
-  has a red marker over its head. `--crowd-shots [count]` runs an offline game on the map and saves
-  `smoke_crowd_<view>_<s>s.bmp` (from above and from near the player, at 0, 3, 8 and 16 s). In the container, run it
-  under `xvfb-run -a -s "-screen 0 1280x720x24"`.
+  has a red marker over its head.
 
 ## Rules
 

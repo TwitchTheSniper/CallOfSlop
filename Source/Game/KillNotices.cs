@@ -130,24 +130,6 @@ public sealed partial class Game
             KillInfo.NameFor(kill.KillId), streak, revenge);
     }
 
-    /// <summary>
-    /// Smoke test (single player): the local player kills the nearest living bot with a headshot through the normal
-    /// damage path, so the kill notice shows. Returns a line for the log.
-    /// </summary>
-    public string SmokeKillNearestBot(double now)
-    {
-        if (!IsServer || Local is not { Alive: true } me)
-            return "skipped (no living local player)";
-        Player? best = null;
-        foreach (var p in Players.Values)
-            if (p.Bot != null && p.Alive && (best == null || Vector3.DistanceSquared(p.Position, me.Position) < Vector3.DistanceSquared(best.Position, me.Position)))
-                best = p;
-        if (best == null || !DebugKill(me, best, me.Weapon, true, now))
-            return "skipped (no bot to kill)";
-        var n = KillNotices.Lines.Count > 0 ? KillNotices.Lines[^1] : default;
-        return $"killed {NameOf(best.Id)}: notice 'KILLED {n.Victim}' [{n.Tags}], {KillNotices.Lines.Count} line(s)";
-    }
-
     /// <summary>Self-test: feeds a packet (with its message id) to this game as if it arrived from the network.</summary>
     public void SelfTestPacket(ReadOnlySpan<byte> packet, double now) => OnPacket(default, packet, now);
 }

@@ -1014,34 +1014,4 @@ public sealed partial class Game
         Phase = phase;
     }
 
-    /// <summary>
-    /// Smoke test (host only): lays out one of each device in a fan in front of <paramref name="p"/> (looking along
-    /// <paramref name="yaw"/>), each on the ground and clear of walls where it can be. Returns how many went down.
-    /// </summary>
-    public int SmokePlaceTactical(Player p, float yaw, double now)
-    {
-        if (!IsServer)
-            return 0;
-        var fwd = World.FlatForward(yaw);
-        var right = World.FlatRight(yaw);
-        var free = World.RaycastWorld(p.Eye, fwd, 12f);
-        var reach = Math.Clamp(free - 1f, 2.5f, 7f);
-        (ThrowableKind Kind, float Ahead, float Side)[] layout =
-        [
-            (ThrowableKind.Cover, reach, 0f), (ThrowableKind.Trophy, reach * 0.6f, -1.6f), (ThrowableKind.MotionSensor, reach * 0.6f, 1.6f),
-            (ThrowableKind.Insertion, reach * 0.4f, -0.6f), (ThrowableKind.Decoy, reach * 0.4f, 0.8f),
-        ];
-        var placed = 0;
-        foreach (var (kind, ahead, side) in layout)
-        {
-            var spot = p.Position + fwd * ahead + right * side;
-            var down = World.Query.Raycast(spot + new Vector3(0, 1.5f, 0), -Vector3.UnitY, 3f, QueryFilter.All);
-            if (down < 2.99f)
-                spot.Y += 1.5f - down;
-            var e = NewTacDevice(p, kind, spot, yaw + MathF.PI, now); // facing back at the camera
-            e.Until = now + 30;
-            placed++;
-        }
-        return placed;
-    }
 }

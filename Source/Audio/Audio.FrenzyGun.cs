@@ -33,9 +33,6 @@ public sealed partial class Audio
     /// <summary>Settings > Audio "Frenzy gun sound".</summary>
     public FrenzyGunSoundMode FrenzyGunMode = FrenzyGunSoundMode.Full;
 
-    /// <summary>Frenzy layer voices started (for the smoke log).</summary>
-    public int FrenzyVoicesStarted { get; private set; }
-
     /// <summary>Bakes and uploads the frenzy buffers and opens their voices. A failure only turns the feature off.</summary>
     private void InitFrenzyGun(SoundSet pcm)
     {
@@ -118,7 +115,6 @@ public sealed partial class Audio
             src.Position = new float3(x, 0f, -0.4f);
         _frenzyStartedAt[pick] = now;
         _played++;
-        FrenzyVoicesStarted++;
     }
 
     private void DisposeFrenzyGun()

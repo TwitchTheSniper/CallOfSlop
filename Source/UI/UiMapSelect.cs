@@ -18,7 +18,6 @@ public sealed partial class Ui
     private MapSelectState _ms;
     private int _msClickedPack = -1, _msClickedEntry = -1; // what the last single click landed on (a double-click must start there)
     private bool _msScrollPack, _msScrollEntry; // keyboard moved: scroll the selection into view this frame
-    private bool _msSmoke; // smoke test: ignore the real mouse's hover
 
     /// <summary>Is the map select screen up?</summary>
     public bool MapSelectOpen => _msOpen;
@@ -51,25 +50,6 @@ public sealed partial class Ui
         _msOpen = true;
     }
 
-    /// <summary>Smoke test: opens the screen from the Single player page with <paramref name="packName"/> open (Random selected).</summary>
-    public void SmokeOpenMapSelect(Settings s, string packName)
-    {
-        _page = Page.SinglePlayer;
-        OpenMapSelect(s);
-        _ms.OpenPack(MapSelect.IndexOf(MapSelect.Current, packName));
-        _msSmoke = true;
-    }
-
-    /// <summary>Smoke test: closes the screen without changing the settings.</summary>
-    public void SmokeCloseMapSelect()
-    {
-        _msOpen = false;
-        _msSmoke = false;
-    }
-
-    /// <summary>The maps the smoke test's screenshot shows (the open pack's collage and visible entries), for its log line.</summary>
-    public int MapSelectVisibleMaps => _msOpen && MapSelect.Current is { Count: > 0 } l ? l.Sum(p => p.Collage.Length) + l[Math.Clamp(_ms.Pack, 0, l.Count - 1)].Maps.Length : 0;
-
     private void ChooseMap(Settings s, Audio audio, MapSelectPack p, int entry)
     {
         MapSelect.Apply(s, p, entry);
@@ -90,33 +70,30 @@ public sealed partial class Ui
         var players = _page == Page.Multiplayer ? s.HostBots + 1 : s.Bots + 1; // you + bots, as the lobby's slider has it
 
         // ---- Keyboard ----------------------------------------------------------------------------
-        if (!_msSmoke)
+        if (ImGui.IsKeyPressed(ImGuiKey.Escape, false) || ImGui.IsKeyPressed(ImGuiKey.Backspace, false))
         {
-            if (ImGui.IsKeyPressed(ImGuiKey.Escape, false) || ImGui.IsKeyPressed(ImGuiKey.Backspace, false))
-            {
-                _msOpen = false;
-                return;
-            }
-            if (ImGui.IsKeyPressed(ImGuiKey.Enter, false) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter, false))
-            {
-                ChooseMap(s, audio, list[_ms.Pack], _ms.Entry);
-                return;
-            }
-            var before = _ms;
-            if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
-                _ms.Step(1, list);
-            if (ImGui.IsKeyPressed(ImGuiKey.UpArrow))
-                _ms.Step(-1, list);
-            if (ImGui.IsKeyPressed(ImGuiKey.RightArrow) || ImGui.IsKeyPressed(ImGuiKey.PageDown))
-                _ms.StepPack(1, list);
-            if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow) || ImGui.IsKeyPressed(ImGuiKey.PageUp))
-                _ms.StepPack(-1, list);
-            if (_ms.Pack != before.Pack || _ms.Entry != before.Entry)
-            {
-                _msScrollPack = _ms.Pack != before.Pack;
-                _msScrollEntry = true;
-                audio.Effect(Sfx.HitTick, 0.3f);
-            }
+            _msOpen = false;
+            return;
+        }
+        if (ImGui.IsKeyPressed(ImGuiKey.Enter, false) || ImGui.IsKeyPressed(ImGuiKey.KeypadEnter, false))
+        {
+            ChooseMap(s, audio, list[_ms.Pack], _ms.Entry);
+            return;
+        }
+        var before = _ms;
+        if (ImGui.IsKeyPressed(ImGuiKey.DownArrow))
+            _ms.Step(1, list);
+        if (ImGui.IsKeyPressed(ImGuiKey.UpArrow))
+            _ms.Step(-1, list);
+        if (ImGui.IsKeyPressed(ImGuiKey.RightArrow) || ImGui.IsKeyPressed(ImGuiKey.PageDown))
+            _ms.StepPack(1, list);
+        if (ImGui.IsKeyPressed(ImGuiKey.LeftArrow) || ImGui.IsKeyPressed(ImGuiKey.PageUp))
+            _ms.StepPack(-1, list);
+        if (_ms.Pack != before.Pack || _ms.Entry != before.Entry)
+        {
+            _msScrollPack = _ms.Pack != before.Pack;
+            _msScrollEntry = true;
+            audio.Effect(Sfx.HitTick, 0.3f);
         }
 
         var vp = ImGui.GetMainViewport();
@@ -160,7 +137,7 @@ public sealed partial class Ui
                     }
                     var p0 = ImGui.GetCursorScreenPos();
                     var clicked = ImGui.InvisibleButton($"##mspack{i}", new float2(tw, tileH));
-                    var hot = ImGui.IsItemHovered() && !_msSmoke;
+                    var hot = ImGui.IsItemHovered();
                     var dbl = hot && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && _msClickedPack == i;
                     if (i == _ms.Pack && _msScrollPack)
                         ImGui.SetScrollHereY(0.5f);
@@ -276,7 +253,7 @@ public sealed partial class Ui
                     continue;
                 }
                 var clicked = ImGui.InvisibleButton($"##msentry{e}", new float2(tw, tileH));
-                var hot = ImGui.IsItemHovered() && !_msSmoke;
+                var hot = ImGui.IsItemHovered();
                 var dbl = hot && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && _msClickedEntry == e;
                 if (e == _ms.Entry && _msScrollEntry)
                     ImGui.SetScrollHereY(0.5f);

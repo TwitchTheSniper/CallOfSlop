@@ -22,7 +22,6 @@ public sealed partial class Ui
     private int _wsFlashId = -1; // tile flashing after an equip (or a refused locked one)
     private double _wsFlashTime = -10;
     private bool _wsFlashLocked;
-    private bool _wsSmoke; // smoke test: ignore the real mouse's hover
 
     private static readonly ImColor8 Orange8 = new(240, 150, 40, 255);
     private static readonly ImColor8 White8 = new(236, 238, 242, 255);
@@ -34,31 +33,6 @@ public sealed partial class Ui
     private static readonly ImColor8 Panel8 = new(13, 14, 18, 215);
     private static readonly ImColor8 XpBar8 = new(100, 242, 255, 255);
     private static readonly ImColor8 Select8 = new(110, 200, 255, 255); // the selected tile's outline (hover is orange)
-
-    /// <summary>Smoke test: opens "Choose primary". With <paramref name="hoverLocked"/>, the first locked primary is selected (previewed); returns its name (null if none is locked).</summary>
-    public string? SmokeChoose(bool hoverLocked)
-    {
-        if (_nav.Current != LoadoutPage.Primary)
-        {
-            _nav.Reset();
-            OpenPage(LoadoutPage.Primary);
-        }
-        _wsSmoke = true;
-        if (!hoverLocked)
-            return null;
-        foreach (var c in WeaponSelect.Tabs(Slot.Primary))
-            foreach (var w in WeaponSelect.InTab(c))
-                if (WeaponSelect.UnlockLevel(w) > Progress.Level)
-                {
-                    _wsFresh = false;
-                    _wsSlot = 0;
-                    _wsSelected = w;
-                    _wsTab = c;
-                    _wsScrollToEquipped = true;
-                    return w.Name;
-                }
-        return null;
-    }
 
     /// <summary>
     /// EQUIP (or a double-click on a tile): puts the gun in this loadout's slot, saves, plays its equip
@@ -177,7 +151,7 @@ public sealed partial class Ui
                     continue;
                 }
                 var clicked = ImGui.InvisibleButton($"##wst{w.Id}", new float2(tw, tileH)) && !SecondClick;
-                var hovering = ImGui.IsItemHovered() && !_wsSmoke;
+                var hovering = ImGui.IsItemHovered();
                 // Double-click = EQUIP. It must start on this tile (not on a card of the page before).
                 var doubleClicked = hovering && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && _wsClickedId == w.Id && !SecondClick;
                 if (isTarget && _wsScrollToEquipped)
@@ -203,7 +177,7 @@ public sealed partial class Ui
         ImGui.EndChild();
         _wsScrollToEquipped = false;
 
-        var shown = _wsSmoke ? selected : hovered ?? _wsSelected ?? gun;
+        var shown = hovered ?? _wsSelected ?? gun;
         DrawWeaponHero(audio, gunSlot, shown, gun, new float2(origin.X + listW + 14 * _scale, bodyTop), new float2(area.X - listW - 14 * _scale, bodyH), winPos, winSize);
     }
 

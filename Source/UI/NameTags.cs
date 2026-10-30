@@ -223,9 +223,6 @@ public sealed class NameTags
     /// <summary>Smoke clouds block enemy tags too (set by <see cref="Update(Game, Vector3, Vector3, NameTagMode, double, byte)"/>).</summary>
     public Game? SmokeSource;
 
-    /// <summary>Smoke test only: these player ids (bit per id below 64) count as teammates, so one free-for-all screenshot shows both kinds.</summary>
-    public static ulong SmokeFriends;
-
     private readonly TagCandidate[] _cands = new TagCandidate[Capacity];
     private byte _losId = None;
     private double _losAt = double.NegativeInfinity;
@@ -261,7 +258,7 @@ public sealed class NameTags
                 continue;
             if (n >= _cands.Length)
                 break;
-            var friendly = !game.AreEnemies(local, p) || (p.Id < 64 && (SmokeFriends & (1UL << p.Id)) != 0);
+            var friendly = !game.AreEnemies(local, p);
             var hb = World.BodyBounds(p.RenderPosition, p.RenderStance, p.RenderYaw); // (the hit box; on a planet the box round it)
             var revealed = !friendly && mode == NameTagMode.All && Vector3.DistanceSquared(eye, hb.Center) <= range2 && game.IsRevealed(p, now);
             _cands[n++] = new TagCandidate
