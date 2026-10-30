@@ -1589,7 +1589,10 @@ public static unsafe partial class Program
     // Input
     // =====================================================================
 
-    private static bool MenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen; // (a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows; the Sandbox parts menu)
+    private static bool MenusOpen => DimmingMenusOpen || Ui.SandboxPartsOpen || Ui.SandboxConfigOpen; // (and the Sandbox parts menu and settings panel, which free the mouse but don't dim the scene)
+
+    /// <summary>The menus that dim the scene behind them (Ui.SceneDim): a Zombies workbench too; the lobby room; the Audio mixer, weapon tweak, perf and prop editor windows.</summary>
+    private static bool DimmingMenusOpen => Ui.MenuOpen || Ui.PauseOpen || Ui.BenchRun != null || Ui.InventoryOpen || InLobbyRoom || Ui.AudioMixerOpen || Ui.WeaponTweaksOpen || Ui.PerfWindowOpen || Ui.PropEditorOpen;
 
     /// <summary>The results / map vote screen is up: the cursor stays free there (CursorPolicy).</summary>
     private static bool ResultsScreen => _session is { Phase: MatchPhase.Ended } && !InLobbyRoom;
@@ -2656,8 +2659,8 @@ public static unsafe partial class Program
         TacticalHud.DrawOverlay(Gfx, _game, now, w, h); // flashbang white-out, stun edges (TacticalHud.cs)
         if (local is { Alive: false })
             Gfx.Rect(0, 0, w, h, new Vector3(0.5f, 0f, 0f), 0.35f);
-        if (!_mouseCaptured)
-            Gfx.Rect(0, 0, w, h, black, MenusOpen ? 0.55f : 0.35f);
+        if (Ui.SceneDim(_mouseCaptured, DimmingMenusOpen) is > 0 and var dim)
+            Gfx.Rect(0, 0, w, h, black, dim); // (not behind the Sandbox's panels: Ui.SceneDim)
 
         Gfx.SetBlend(false);
         Gfx.SetDepthTest(true);
