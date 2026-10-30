@@ -197,3 +197,6 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   and the draw used the stale indices on the compacted parts. Rule: per-frame state that holds indices into a construct
   is checked against the construct as it is when used (`ConstructRender.GhostLive`, like `AimPart < PartCount`), and a
   part given to a player goes through `ConstructEdits.Give` (hands, backpack, drop); "Sandbox full hands" checks both.
+- 2026-10-30: adding 178 building parts broke "Sandbox parts menu" and "Construct storage", which used part ids 249 and
+  254 as "no such part". Why: hard-coded ids stop being unknown as the parts grow. Rule: a test's unknown id is
+  `ConstructParts.All.Count` (or far above `MaxTypes`), never a fixed number.

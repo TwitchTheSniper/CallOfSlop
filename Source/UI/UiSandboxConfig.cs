@@ -5,7 +5,8 @@ namespace CallOfSlop;
 
 /// <summary>
 /// Sandbox: the configure tool's settings panel (docs/sandbox/CONSTRUCTS.md, "The configure tool"). Fire on a part with
-/// the configure tool opens it, anchored beside the part on the screen: a header (the part's tile, name, construct and
+/// the configure tool opens it, beside the part on the screen (a plain window: no dim behind it; the player can drag it,
+/// and later panels open where it was left until snapped back): a header (the part's tile, name, construct and
 /// health), the settings grouped as the part file's schema groups them (sliders with numeric entry, dropdowns, toggles,
 /// colour pickers with swatches, a key-capture field), each with a tooltip and a reset; Reset, Copy and Paste between
 /// parts of a kind; the shift-selected parts of the same kind changed together; and the part's wiring (hover a row to
@@ -42,6 +43,31 @@ public sealed partial class Ui
     private int[] _cfWireIndex = [], _cfWireOther = [];
     private string[] _cfGroups = [];
     private int _cfOpenRequest = -1; // a wiring row clicked: open that part next frame
+    private float2 _cfPos, _cfSize; // where the window is on the screen, and its size (last frame)
+    private bool _cfMoved; // the player dragged it: every panel opens there this session, until snapped back
+    private bool _cfPlace; // put the window at _cfPos next frame (a panel opening where the player left the last one)
+    private bool _cfSeen; // the window has been drawn since this panel opened (so a change of position is a drag)
+
+    /// <summary>The window's place and size on the screen (last frame), and whether the player has moved it (self-test).</summary>
+    public (float2 Pos, float2 Size, bool Moved) SandboxConfigWindow => (_cfPos, _cfSize, _cfMoved);
+
+    /// <summary>Back beside the part (the Snap back button, or a double-click on the title bar).</summary>
+    public void SandboxConfigSnapBack() => _cfMoved = false;
+
+    /// <summary>
+    /// How dark the scene is drawn behind the UI while the mouse is free (Program.cs's HUD overlay): the menus dim it
+    /// (<paramref name="menuOpen"/>: the pause menu, a workbench, the mixer...), a free mouse alone dims it a little, and
+    /// the Sandbox's non-modal panels (this settings panel, the parts inventory) don't dim it at all: the world, the part's
+    /// outline and the previews stay at full brightness behind them.
+    /// </summary>
+    public float SceneDim(bool mouseCaptured, bool menuOpen)
+    {
+        if (mouseCaptured)
+            return 0;
+        if (menuOpen || MenuOpen || PauseOpen)
+            return 0.55f;
+        return SandboxConfigOpen || SandboxPartsOpen ? 0 : 0.35f;
+    }
 
     /// <summary>The panel's construct and part (self-test), or (0, -1).</summary>
     public (ushort Body, int Part) SandboxConfigTarget => SandboxConfigOpen ? (_cfBody, _cfPart) : ((ushort)0, -1);
@@ -106,6 +132,8 @@ public sealed partial class Ui
         _cfBody = c.Id;
         _cfPart = part;
         _cfDef = d;
+        _cfPlace = _cfMoved;
+        _cfSeen = false;
         _cfPending = 0;
         Array.Clear(_cfHoldUntil);
         for (var s = 0; s < d.Config.Length; s++)
@@ -269,25 +297,40 @@ public sealed partial class Ui
         Array.Copy(_cfSel, ConstructRender.PreviewSelected, _cfSelCount);
         ConstructRender.PreviewHighlightWire = -1;
 
-        // Anchored beside the part on the screen (else on the right edge).
+        // A plain movable window (no dim behind it: Ui.SceneDim). Until the player drags it, it sits beside the part on the
+        // screen, following it, but not while a mouse button is down (that may be the start of a drag); once dragged it
+        // stays where it was left, for every panel this session, until snapped back (the button, or a double-click on the
+        // title bar).
         var vp = ImGui.GetMainViewport();
         var w = 430 * _scale;
-        var pos = new float2(vp.WorkPos.X + vp.WorkSize.X - w - 24 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.18f);
-        var cam = Hud.Camera;
-        if (cam.Valid && Hud.Project(cam.ViewProj, ConstructRender.PartCentre(c, _cfPart), vp.WorkSize.X, vp.WorkSize.Y, out var sp, out _))
-        {
-            var x = sp.X + 70 * _scale;
-            if (x + w > vp.WorkSize.X - 12 * _scale)
-                x = sp.X - 70 * _scale - w; // (the other side when it would run off)
-            pos = new float2(vp.WorkPos.X + Math.Clamp(x, 12 * _scale, MathF.Max(12 * _scale, vp.WorkSize.X - w - 12 * _scale)),
-                vp.WorkPos.Y + Math.Clamp(sp.Y - 120 * _scale, 12 * _scale, vp.WorkSize.Y * 0.45f));
-        }
-        ImGui.SetNextWindowPos(pos, ImGuiCond.Always);
+        if (!_cfMoved && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
+            ImGui.SetNextWindowPos(SandboxConfigAnchor(c, w), ImGuiCond.Always);
+        else if (_cfMoved && _cfPlace)
+            ImGui.SetNextWindowPos(_cfPos, ImGuiCond.Always);
+        _cfPlace = false;
         ImGui.SetNextWindowSize(new float2(w, 0), ImGuiCond.Always);
-        ImGui.SetNextWindowBgAlpha(0.94f);
+        ImGui.SetNextWindowBgAlpha(0.82f); // (slightly see-through: the world and the previews show behind it)
         var open = true;
         var labelW = 150 * _scale;
-        if (ImGui.Begin("Settings###sbconfig"u8, ref open, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize))
+        var shown = ImGui.Begin("Settings###sbconfig"u8, ref open, ImGuiWindowFlags.NoSavedSettings | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.AlwaysAutoResize);
+        {
+            // Kept fully on the screen; a position the panel didn't set itself is the player's drag.
+            var wp = ImGui.GetWindowPos();
+            var ws = ImGui.GetWindowSize();
+            var min = vp.WorkPos;
+            var max = new float2(MathF.Max(min.X, vp.WorkPos.X + vp.WorkSize.X - ws.X), MathF.Max(min.Y, vp.WorkPos.Y + vp.WorkSize.Y - ws.Y));
+            var cp = new float2(Math.Clamp(wp.X, min.X, max.X), Math.Clamp(wp.Y, min.Y, max.Y));
+            if (cp.X != wp.X || cp.Y != wp.Y)
+                ImGui.SetWindowPos(cp, ImGuiCond.Always);
+            if (_cfSeen && (wp.X != _cfPos.X || wp.Y != _cfPos.Y) && ImGui.IsMouseDown(ImGuiMouseButton.Left))
+                _cfMoved = true;
+            _cfPos = cp;
+            _cfSize = ws;
+            _cfSeen = true;
+            if (ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left) && ImGui.IsMouseHoveringRect(cp, new float2(cp.X + ws.X, cp.Y + ImGui.GetFrameHeight())))
+                SandboxConfigSnapBack();
+        }
+        if (shown)
         {
             // Header: the tile, the name, the construct, the health.
             var icon = ImGui.GetFrameHeight() * 2.3f;
@@ -363,10 +406,18 @@ public sealed partial class Ui
                 if (ImGui.IsItemHovered())
                     ImGui.SetTooltip("Every setting shown here onto all the selected parts"u8);
             }
+            if (_cfMoved)
+            {
+                ImGui.SameLine();
+                if (ImGui.Button("Snap back"u8))
+                    SandboxConfigSnapBack();
+                if (ImGui.IsItemHovered())
+                    ImGui.SetTooltip("Back beside the part (or double-click the title bar)"u8);
+            }
             ImGui.SameLine();
             if (ImGui.Button("Close"u8))
                 open = false;
-            ImGui.TextColored(Dim, "Esc closes. Shift+LMB with the tool selects more of a kind."u8);
+            ImGui.TextColored(Dim, "Esc closes. Drag to move. Shift+LMB with the tool selects more of a kind."u8);
         }
         ImGui.End();
         SandboxConfigFlush(game, now, !ImGui.IsAnyItemActive());
@@ -384,6 +435,23 @@ public sealed partial class Ui
             return false;
         }
         return true;
+    }
+
+    /// <summary>Beside the part on the screen, on whichever side keeps it clear of the part (else on the right edge).</summary>
+    private float2 SandboxConfigAnchor(Construct c, float w)
+    {
+        var vp = ImGui.GetMainViewport();
+        var pos = new float2(vp.WorkPos.X + vp.WorkSize.X - w - 24 * _scale, vp.WorkPos.Y + vp.WorkSize.Y * 0.18f);
+        var cam = Hud.Camera;
+        if (cam.Valid && Hud.Project(cam.ViewProj, ConstructRender.PartCentre(c, _cfPart), vp.WorkSize.X, vp.WorkSize.Y, out var sp, out _))
+        {
+            var x = sp.X + 70 * _scale;
+            if (x + w > vp.WorkSize.X - 12 * _scale)
+                x = sp.X - 70 * _scale - w; // (the other side when it would run off)
+            pos = new float2(vp.WorkPos.X + Math.Clamp(x, 12 * _scale, MathF.Max(12 * _scale, vp.WorkSize.X - w - 12 * _scale)),
+                vp.WorkPos.Y + Math.Clamp(sp.Y - 120 * _scale, 12 * _scale, vp.WorkSize.Y * 0.45f));
+        }
+        return pos;
     }
 
     private void SandboxConfigRow(Game game, ConstructPartDef d, CConfigDef e, int s, float labelW, double now)

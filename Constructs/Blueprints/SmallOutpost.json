@@ -1,0 +1,97 @@
+{
+  "format": "call-of-slop-construct-blueprint/1",
+  "name": "Small Outpost",
+  "description": "A corrugated hut with a wooden door on two concrete pads, its yard fenced with a gate on the east side and sandbagged at the front.",
+  "steps": [
+    {
+      "part": "Concrete Foundation 4x4 m"
+    },
+    {
+      "part": "Concrete Foundation 4x4 m",
+      "on": 0,
+      "socket": "k0",
+      "by": "f0"
+    },
+    {
+      "part": "Corrugated Door Corner",
+      "on": 1,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t8_0",
+      "by": "b0_7",
+      "spin": 2
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t8_15",
+      "by": "b7_0",
+      "spin": 3
+    },
+    {
+      "part": "Corrugated Wall Corner",
+      "on": 1,
+      "socket": "t0_8",
+      "by": "b7_0",
+      "spin": 1
+    },
+    {
+      "part": "Corrugated Roof Slope 4x4 m",
+      "on": 2,
+      "socket": "t0_0",
+      "by": "b0_0"
+    },
+    {
+      "part": "Wire Fence 4 m",
+      "on": 2,
+      "socket": "fa0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Wire Fence 2 m",
+      "on": 3,
+      "socket": "fb0_0",
+      "by": "l0"
+    },
+    {
+      "part": "Sandbag Wall 2 m",
+      "on": 0,
+      "socket": "t8_0",
+      "by": "b7_0"
+    },
+    {
+      "part": "Sandbag Wall 1 m",
+      "on": 9,
+      "socket": "r0",
+      "by": "l0"
+    },
+    {
+      "part": "Hinge",
+      "on": 2,
+      "socket": "hinge",
+      "by": "base"
+    },
+    {
+      "part": "Wood Door 1.25 m",
+      "on": 11,
+      "socket": "leaf",
+      "by": "hang"
+    },
+    {
+      "part": "Hinge",
+      "on": 8,
+      "socket": "r4",
+      "by": "base"
+    },
+    {
+      "part": "Fence Gate",
+      "on": 13,
+      "socket": "leaf",
+      "by": "hang"
+    }
+  ]
+}
