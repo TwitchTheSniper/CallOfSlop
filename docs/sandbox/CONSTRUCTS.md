@@ -986,6 +986,60 @@ cook-off, the flamethrower's fire and a burning wood panel. It runs under xvfb l
 7. Players take **half** a blast's construct damage (a cannon would otherwise one-shot from across the yard).
 8. **The Gunner Turret lost its shield panel**: the motor hinge and the gun sit on the arm's front instead.
 
+## Merged receivers
+
+Board item dev-sandbox-receiver-merge-rm01 (the developer approved it 2026-10-30). Code: `Source/Constructs/ConstructMerge.cs`;
+rules: `Constructs/ReceiverMerge.json`; self-test: "Construct merged receivers".
+
+- **What merges.** Weapon builder receivers (Rifle Receiver, Heavy Receiver: the `gun` parts with a `receiver`) of the
+  **same type**, turned the same way, on the same segment, side by side in one plane (their backs flush, on the grid of
+  their own size) and forming an **NxN square** (N from `minSize`, 2, to `maxSize`, 6) are one **merged receiver** drawn
+  N times bigger: its sides flush with the square's, its back with the members' backs, so it reaches N times as far
+  forward. T, L and 1x4 shapes stay single receivers. A broken receiver takes no part.
+- **Found greedily, largest first**: every size from the largest that could fit down to 2, each scanned in rows (the
+  receivers' up, then their right); a square whose cells are all free is taken. A 3x3 inside a complete 4x4 is the 4x4;
+  a 3x4 is a 3x3 and three singles. The member with the lowest part index **leads**: it is the merged gun.
+- **Derived, never stored**: the merges (and the scale of their gun parts) are worked out from the parts and links with
+  every rebuild, so every client and every copy of a construct finds the same ones; nothing new goes on the wire (the
+  protocol is unchanged) and a saved construct would need nothing either. Finding them allocates nothing.
+- **One centre socket set.** The members' own sockets take no gun parts ("that receiver is merged: fit gun parts to the
+  merged receiver's centre sockets"; their structural links stay: mounts, frames, each other). The lead gets the merged
+  receiver's sockets after its own (socket index `own count + s`): the receiver's sockets N times out from the merged
+  origin (the barrel at the front centre, the feed on the left, ammo on the right, the optic on top...). They take gun
+  parts only. Ghosts show them like any socket.
+- **Scaled gun parts.** A gun part on a centre socket, and every gun part bolted on through it (a muzzle device on the
+  barrel, a splitter's barrels), is drawn and simulated **N times bigger** (its boxes, sockets, hits and contact points)
+  and weighs N to the `partMass` power times its file (N squared). Ammo boxes stay their size. Ammo boxes bolted to any
+  member feed the merged gun; a wire into any member is its trigger.
+- **Its numbers** (each a power of N in the rules file, so the developer can change them): damage N^2, fire rate / N,
+  recoil (kick) N^2, rounds a shot N^2 (out of its load and boxes), magazine N^2 (the same shots a load), spread and
+  range unchanged. So a 2x2 is a slow cannon worth four rifles' damage a shot at four rifles' ammo, not four rifles.
+  `sameTypeOnly: false` would let mixed receivers of the same size merge (the lead's type).
+- **Building** (the server settles every receiver attached or removed): when a square forms, the gun parts on its
+  members' own sockets **pop off** (with ammo boxes hanging only on them) into the builder's hands, else their backpack,
+  else they drop as loose parts where they were (never lost). An old merge's centre parts move
+  onto the new merge that holds most of its members (its same socket, scaled to its size), so growing a 2x2 to a 3x3
+  keeps the barrel; when there is no such merge, or something would be in the way, they pop off.
+- **Taking apart**: the wrench takes off only the member whose own cell is under the crosshair (the outline is that
+  cell, never the block); the rest merge again (a 3x3 less a corner is a 2x2 and four singles, its centre parts at 2x).
+- **Damage**: each member keeps its own health and hitbox; a round damages the cell it hits; the look line shows the
+  members' health together ("Rifle Receiver (2x2 merged, 620/720): ..."). A cell shot to pieces breaks the merge as
+  taking it off does (its centre parts move or drop: nobody placed them).
+- The merged receiver's reach beyond its members is solid to building (nothing can be fitted into it) but not to rounds
+  or the world: rounds hit the members and the gun parts.
+
+### Decisions made for merged receivers (the developer may change them)
+
+1. **Only identical receiver types merge** (`sameTypeOnly`), turned the same way (the proposal; mixed types: the
+   developer's question, not asked yet).
+2. **The scaling table** is the proposal, in `Constructs/ReceiverMerge.json`: damage N^2, fire rate / N, recoil N^2,
+   ammo N^2 a shot, magazine N^2, spread and range unchanged, scaled gun parts' weight N^2. N from 2 to 6.
+3. **The merged receiver grows forward** (its back flush with the members'), not about their centre.
+4. **Popped parts** go to the hands, then the backpack, then drop (the shared give rule); ammo boxes hanging only on them come too; with
+   nobody placing (damage) they drop where they were.
+5. **The members' structural links stay** (only gun parts are refused on their own sockets), and boxes bolted to any
+   member feed the gun.
+
 ## Links between constructs and power (milestone 3)
 
 Board item dev-sandbox-m3, part 3 of 4 (the developer approved it 2026-10-29). Code: `Source/Constructs/ConstructLinks.cs`
@@ -1423,6 +1477,20 @@ look (their view held) and shoots a player 9 m out (credited), and the yard's se
 one beyond its range; no allocation in 120 ticks of a sentry and a gunner's turret firing (aiming, loading, the fire and
 ammo messages written); and a real host and client: the client draws every round the server's gun bench fires from its
 own copy of the gun, its ammo matches, and a late joiner gets the rounds.
+
+The **Construct merged receivers** section (`Source/App/SelfTestConstructMerge.cs`): the rules file loads and six kinds of
+bad file are refused; the diagram's shapes (T, L and 1x4 stay single; 2x2, 3x3 and 4x4 merge; a 3x4 is a 3x3 and three
+singles; two 2x2s side by side; turned and heavy squares merge, mixed types and a turned member don't); finding a 4x4's
+merges 200 times allocates nothing; built with the tools, the fourth receiver of a 2x2 pops the barrel, magazine and box
+off the first one's own sockets (the barrel into the hands, the rest into the backpack), the members' own sockets refuse gun parts,
+the centre sockets refuse an ammo box and show ghosts; a barrel and magazine on the centre set are 2x (twice as long, four
+times the weight; the ammo box as it is), the gun 4x the damage, half the fire rate, 4x the magazine and recoil, firing 4
+rounds a shot out of its load and box; a client's copy and a copy rebuilt from the parts find the same merge, scales and
+gun; five more receivers make a 3x3 with the barrel and magazine moved on at 3x (9x the damage, 9 a shot); the wrench on
+the bottom-right corner takes only that receiver (a 2x2 and four singles left, the centre parts back at 2x); then the
+bottom row's second: the 2x2 above takes over and the barrel follows onto its centre front; then the middle: no square
+left, the centre parts pop off; a 2x2 has its members' health together, and a cell shot to pieces breaks it and drops its
+centre barrel as a loose part.
 
 The **Construct joints** section (`Source/App/SelfTestConstructJoints.cs`): a flap on a passive hinge with its axis flat,
 latched open and flung down at 6 rad/s onto the yard's terrain, stops on it (no part of it below the ground at any tick),

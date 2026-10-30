@@ -290,8 +290,11 @@ public sealed partial class ConstructEdits
             h.Edit = EditKind.None;
             if (eyeOf((byte)pid) is not { } eye)
                 continue; // left, or dead
+            world.MergePlacer = (byte)pid; // (parts a merged receiver pops off go to them: ConstructMerge.cs)
             var result = Complete(world, (byte)pid, ref h, kind, eye);
+            world.MergePlacer = 255;
             Done.Add($"player {pid}: {kind} {result}");
+            GiveMergePops(world, (byte)pid);
         }
     }
 
