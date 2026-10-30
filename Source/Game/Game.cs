@@ -121,7 +121,11 @@ public sealed partial class Game : IDisposable
 
     // ---- Client prediction ------------------------------------------------
     private uint _nextSeq = 1;
-    private readonly List<InputCmd> _pendingInputs = new();
+    /// <summary>Most unacknowledged input commands a client keeps (the oldest goes past it).</summary>
+    public const int MaxPendingInputs = 240;
+
+    // At its full size from the start: growing it when acks fall behind (a hitch) allocated in a steady frame.
+    private readonly List<InputCmd> _pendingInputs = new(MaxPendingInputs + 1);
     private Vector3 _correction;
     public float LastCorrection;
     private bool _localInitialized;
@@ -853,7 +857,7 @@ public sealed partial class Game : IDisposable
         var cmd = FreezeFilter(SampleLocalInput(_nextSeq++));
         cmd.Tick = NextMoverTick(cmd.Seq); // the tick the server will simulate it at (mover poses; GameMovers.cs)
         _pendingInputs.Add(cmd);
-        if (_pendingInputs.Count > 240)
+        if (_pendingInputs.Count > MaxPendingInputs)
             _pendingInputs.RemoveAt(0);
 
         me.PrevPosition = me.Position;
@@ -1814,7 +1818,7 @@ public sealed partial class Game : IDisposable
                     if (cmd.SpeedPct == 0 || cmd.SpeedPct > maxSpeed)
                         cmd.SpeedPct = maxSpeed; // no speed hacks beyond your fastest weapon
                     p.HighestQueuedSeq = cmd.Seq;
-                    if (p.InputQueue.Count >= 60)
+                    if (p.InputQueue.Count >= Player.MaxQueuedInputs)
                         p.InputQueue.RemoveAt(0);
                     p.InputQueue.Add(cmd);
                 }
