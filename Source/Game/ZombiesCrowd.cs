@@ -18,6 +18,18 @@ public sealed partial class Zombie
 
     /// <summary>A crowd map: since when it has counted past the demote range (-1: it doesn't now), the far clock a stray goes back to the crowd by.</summary>
     public double CrowdFarAt = -1;
+
+    /// <summary>
+    /// Visual only, the seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves"): the offset (m, flat) from where
+    /// it is to where the crowd zombie it came out of was drawn, eased out over <see cref="CrowdOffDur"/> s
+    /// (<see cref="CrowdOffLeft"/> left), and that one's yaw; <see cref="CrowdTook"/>: a client has looked for the drawn
+    /// crowd zombie it came out of.
+    /// </summary>
+    public Vector3 CrowdOff;
+
+    public float CrowdOffLeft, CrowdOffDur = 1, CrowdOffYaw;
+
+    public bool CrowdTook;
 }
 
 public sealed partial class Game
@@ -196,6 +208,8 @@ public sealed partial class Game
                 if (pi >= 0)
                 {
                     Crowd.RestUntil[pi] = ServerTick + (long)(tuning.MinAwake * World.TickRate);
+                    if (tuning.SoftWake)
+                        Crowd.Walk[pi] = z.Gait / MathF.Tau * 4f * ZombieAnim.StrideHalf(z.Speed, z.Limbs); // (its point in the walk, drawn on)
                     CrowdNoteSleep(Crowd.Look[pi], now);
                 }
             }
@@ -250,6 +264,12 @@ public sealed partial class Game
             var vz = Crowd.VZ[i];
             var hp = Crowd.HP[i];
             var cls = (ZSpeed)Crowd.Cls[i];
+            // (Visual: what is left of its hand-over from the mass, and its point in the walk, go with it.)
+            var hw = Crowd.HandWeight(i);
+            var hoff = new Vector3(Crowd.HandX[i] * hw, 0, Crowd.HandZ[i] * hw);
+            var hleft = Crowd.HandLeft[i] > 0 ? Crowd.HandLeft[i] : 0f;
+            var hyaw = Crowd.HandYaw[i];
+            var walked = Crowd.Walk[i];
             CrowdNoteWake(Crowd.Look[i], now);
             if (sight.Views > 0)
             {
@@ -271,9 +291,50 @@ public sealed partial class Game
             z.CrowdWokeAt = z.CrowdSeenAt = now;
             if (vx * vx + vz * vz > 1e-4f)
                 z.Yaw = z.RenderYaw = MathF.Atan2(vx, -vz);
+            if (Crowd.Tuning.SoftWake)
+            {
+                z.Gait = walked / (4f * ZombieAnim.StrideHalf(z.Speed)) * MathF.Tau % (MathF.Tau * 150); // (its point in the walk, as the crowd drew it)
+                if (hleft > 0)
+                    (z.CrowdOff, z.CrowdOffLeft, z.CrowdOffDur, z.CrowdOffYaw) = (hoff, hleft, hleft, hyaw);
+            }
             _zAlive++;
             Crowd.Promoted++;
         }
+    }
+
+    // ---- The seamless tier change (docs/zombies/MASS-HORDE.md, "Wake waves") ---------------------------------------
+
+    /// <summary>
+    /// A frame of an individual on a crowd map (visual only). A client: one that has just appeared out of the crowd takes
+    /// over the drawn crowd zombie nearest it (<see cref="CrowdAgents.TakeOver"/>: its place, yaw and walk), which stops
+    /// drawing. Host and client: while it has an offset to where it was drawn in the crowd, it is drawn there, eased out
+    /// over a moment and turned from that one's yaw to its own, so nothing jumps as it changes tier.
+    /// </summary>
+    private void CrowdHandFrame(Zombie z, float dt)
+    {
+        if (!IsServer && !z.CrowdTook && z.Alive && ZRules.Crowd.SoftWake)
+        {
+            z.CrowdTook = true;
+            if (DrawnCrowd is { } a && a.TakeOver(z.RenderPos.X, z.RenderPos.Z, 3f, (int)z.Speed, counted: true, out var pose) >= 0)
+            {
+                var off = new Vector3(pose.X - z.RenderPos.X, 0, pose.Z - z.RenderPos.Z);
+                var dur = Math.Clamp(off.Length() / CrowdView.HandSpeed, CrowdView.HandMin, CrowdView.HandMax);
+                (z.CrowdOff, z.CrowdOffLeft, z.CrowdOffDur, z.CrowdOffYaw) = (off, dur, dur, pose.Yaw);
+                z.Gait = pose.Walk / (4f * ZombieAnim.StrideHalf(z.Speed)) * MathF.Tau % (MathF.Tau * 150);
+                z.AnimPrevSet = false; // (its drawn speed starts afresh, from the crowd's walk)
+            }
+        }
+        if (z.CrowdOffLeft <= 0)
+            return;
+        var t = MathF.Min(1f, z.CrowdOffLeft / MathF.Max(z.CrowdOffDur, 1e-3f));
+        var w = t * t * (3f - 2f * t);
+        var ter = World.Map.Terrain;
+        var g0 = ter?.Sample(z.RenderPos.X, z.RenderPos.Z) ?? 0f;
+        z.RenderPos += z.CrowdOff * w;
+        if (ter != null)
+            z.RenderPos.Y += ter.Sample(z.RenderPos.X, z.RenderPos.Z) - g0; // (on the ground where it is drawn)
+        z.RenderYaw = World.LerpAngle(z.RenderYaw, z.CrowdOffYaw, w);
+        z.CrowdOffLeft = MathF.Max(0f, z.CrowdOffLeft - dt);
     }
 
     // ---- Waking and sleeping by sight (docs/zombies/MASS-HORDE.md, "Waking and sleeping") ------------------------

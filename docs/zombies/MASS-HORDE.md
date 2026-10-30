@@ -27,7 +27,8 @@ zombies in three tiers. This page is the design and the numbers. It runs only on
   along the flow field (`count * speed * dt / cell`, accumulated as a flux), held back where the next cell is full
   (`massCapacity`, 40). Particles further than `massRange + massHysteresis` (60 m) from everyone merge into their
   cell (unhurt ones only, at most `massPerTick` a tick); cells within `massRange` (50 m) let theirs out again as
-  particles at random open spots. Zombie types (another branch) will need a count per type per cell: the four places
+  particles at open spots (with `softWake` the edge facing the players first, each cell within its own radius, a few a
+  tick: "Wake waves" below). Zombie types (another branch) will need a count per type per cell: the four places
   a count moves are listed in the class comment.
 
 ### Promotion and demotion
@@ -183,6 +184,74 @@ The mass travels at about 90% of its pace (its flow is in steps of a whole zombi
 40,000 particles round the player by 12 s (the fixed pace hadn't by 20 s); the tick then costs what a full particle tier
 costs at any pace. `--fixed-pace` gives the old pace for comparison.
 
+### Wake waves
+
+Developer request (2026-10-29, board item `dev-horde-wake-waves-hw01`, a video): "rows of zombies rising out of the ground
+in waves at the edge of the awake region". `Source/Game/Horde/HordeCrowd.Mass.cs` (`ReleaseSoft`), `CrowdAgents.TakeOver`
+and `PullFromBehind`, `CrowdView.HandOver`, `CrowdInstances.SoftParticles`, `Game.CrowdHandFrame` (ZombiesCrowd.cs).
+
+**What went wrong** (`--stress-shots waves --waves-old`, the self-test with `HORDE_WAKE_COMPARE=1`):
+
+- Every release out of the mass was drawn as a particle rising 1.9 m out of the ground while the nearest agent sank: at the
+  50 m line, row after row as the line swept over the blob.
+- The drawn agents of a moving blob stand still in its full (capped) cells (a sampled stream walks on the spot), so the
+  cells its count flowed into at the front were short of agents and raised new ones out of the ground, while those at the
+  back sank: the front of the drawn mass, which is the wake edge, was always rising.
+- Releases went cell by cell in index order, each cell emptied as fast as it had room, any cell inside the 50 m circle.
+
+**What it does now** (`softWake`, on by default; off: all of the old behaviour, for comparison):
+
+- **The wake edge.** Each mass cell wakes within its own radius, `massRange` +- `massBand` / 2 (8 m: 46-54 m, fixed per cell
+  by a hash, so the edge is ragged, not a circle sweeping over the blob), and merges back past that plus `massHysteresis`
+  (per-cell hysteresis; `massBand` is at most `massHysteresis`, so every merge radius is past every wake radius).
+- **Edge first.** The candidates are the cells inside their wake radius, keyed by the distance to the nearest player, plus
+  `massInterior` (24 m) if the cell one step towards that player still holds mass (the inside of the blob, hidden behind its
+  edge), plus up to 2 m of jitter a tick. The `massPerTick` lowest keys let out at most `massPerCell` (2) each, so a cell
+  drains over several ticks and the inside follows as the mass flows into the cells the edge left. A released zombie comes
+  out of the cell's back half (away from the player). Only the window of cells round the players is looked at.
+- **Merging back** takes the furthest particles first (past their cell's merge radius), not the first found.
+- **Seamless hand-over (host).** A particle let out of the mass takes over the nearest agent within 12 m (one in its own
+  gait first): it is drawn from that agent's place, facing its way, at its point in the walk and with its look, and the
+  agent stops drawing that frame (no fade). The offset to where the particle really is eases out at 1.2 m/s (0.2-2 s,
+  smooth at both ends). A particle now carries its walk (metres walked, advanced as it is drawn), so its stride never
+  restarts. Merging back, the agent appears where the particle was drawn, with its look, yaw, walk and gait, drawn the same
+  frame. Promotion and demotion carry the walk to the individual's gait and back.
+- **Seamless hand-over (client).** An individual that appears takes over the nearest drawn agent within 3 m in the game's
+  frame (before anything is drawn): it is drawn from the agent's place and yaw, eased out to its own, and its walk cycle
+  starts at the agent's. One that goes back leaves an agent facing its way at its point in the walk.
+- **Pulled from behind.** Within 90 m of the camera (`CrowdAgents.PullRange`), a cell short of agents pulls one from the
+  cell its walk comes from (the fullest of those behind it; it walks over at the crowd's pace), which pulls in turn, so the
+  drawn front keeps up with the counts and what has to be made up rises at the blob's back, out of sight behind it. Further
+  off a short cell raises one as before (a long chain drains lanes through a far blob).
+- **Cells drawn at their cap.** The cap only samples such a cell, so a hand-over there changes the sample at the cell's back
+  at once (one put in or taken out furthest from the camera) instead of an agent rising or sinking in view.
+- Nothing changes on the wire or in the game: the hand-overs are visual (the drawing writes the particles' visual arrays
+  `DrawLook`, `Walk`, `HandX`/`HandZ`/`HandYaw`/`HandLeft`/`HandDur`, never read by the game). Counts are conserved as
+  before; the release costs a window of about 30 x 30 cells a player a tick and an insertion into 40 slots, no allocation.
+
+**Numbers** (the self-test's scene: 6,000 in the mass 60-110 m ahead on Horde Stress's valley floor, round 10, 9 s coming
+on then 4 s walking away; the cloud box):
+
+| | Before (`softWake` off) | After |
+| --- | --- | --- |
+| Released | 2,206 | 2,387 (2,353 took over an agent, 34 had none drawn near) |
+| Agent-frames rising or sinking within 12 m of the blob's front | 24,138 | 111 |
+| Instance-frames below the ground other than agents rising or sinking | 60,698 (the particles rising) | 0 |
+| Largest step of a drawn zombie in a frame as it changes tier | (it rose out of the ground) | 0.10 m (a sprinter's step; agents walking: 0.10 m) |
+| Releases from the edge facing the player / deep inside the blob | 100% / 0% | 81% / 0% (the rest from the blob's sides) |
+
+**Pictures**: `--stress-shots waves [size] [--waves-old] [--crowd-tiers]` (Program.WaveShots.cs): 20,000 in the mass ahead of
+the player beside the rally post, round 10's pace, the host drawing every tick; from 2 s, every quarter second for 3 s, a
+picture from the player's eye zoomed on the blob's front (`smoke_waves_<soft|old>_<nn>.bmp`), with the releases, hand-overs
+and agents raised and sunk in the log ("[waveshots]"). Before: half-buried zombies along the front in every picture.
+
+**Self-test** "Horde wake waves" (`Source/App/SelfTestHordeWaves.cs`): the scene above: releases from the edge facing the
+player (70% at least, none more than 8 m inside the blob's nearest mass), at most 2 from a cell a tick, every drawn zombie
+tracked by its look across tier changes (at least 100, 20 of them merging back) moving at most 0.2 m in a frame, at least
+half the released zombies taking over an agent, no instance below the ground but agents genuinely rising or sinking, few
+agents rising or sinking at the front, the counts adding up, no allocation; then the client's take-over (hidden while its
+cell still counts it; swapped at the back in a capped cell, nothing rising) and going back with its yaw and walk.
+
 ## Combat
 
 Board item `dev-mass-points-mp01`. `Source/Game/ZombiesCrowd.cs`, `Source/Game/Horde/HordeCrowd.MassHits.cs`,
@@ -276,11 +345,12 @@ walk phase and look from frame to frame (`CrowdAgents`, one pool for the host's 
 - **The view.** A cell is drawn if it is in the view frustum, nearer than the fog's end and not behind the terrain's
   horizon (below). A cell coming into view is filled at once (nobody saw it empty) and one leaving it drops its agents
   at once; a camera cut (more than 12 m in a frame: a respawn, the spectator camera) starts the agents afresh.
-- **Tier changes.** On a client, an individual that appears out of the crowd claims the nearest agent (it hides and
-  stands in for it until the cell's count drops); one that goes back into the crowd leaves an agent where it stood. On
-  the host, a particle merging into the mass leaves an agent where it was (with its look), and a particle let out of
-  the mass rises out of the ground while the nearest agent sinks (`HordeCrowd.Notes`, a ring of the latest merges and
-  releases, and `HordeCrowd.Born`).
+- **Tier changes** (seamless with `softWake`: "Wake waves" above). On a client, an individual that appears out of the
+  crowd takes over the nearest agent (its place, yaw and walk; the agent hides and stands in for it until the cell's
+  count drops); one that goes back into the crowd leaves an agent where it stood, facing its way, at its point in the
+  walk. On the host, a particle merging into the mass leaves an agent where it was drawn (with its look, yaw and walk),
+  and a particle let out of the mass takes over the nearest agent (`HordeCrowd.Notes`, a ring of the latest merges and
+  releases). Rising out of the ground and sinking into it are only for genuine count changes (kills, arrivals).
 - **Looks.** An agent's brightness, stride and yaw spread come from its own number; the host's particles now keep a
   look of their own too (`HordeCrowd.Look`: it used to come from the particle's index, which changes when another one
   is removed, so a zombie's look jumped when another died).

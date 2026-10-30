@@ -63,7 +63,10 @@ public static unsafe partial class Program
             return;
         var gone = _session == null || !_game.SandboxPartsMenu || _game.Local is not { Alive: true } me || _game.Phase != MatchPhase.Playing || _game.SandboxHands.Hand(me.Id).Seated;
         if (!gone)
+        {
+            Ui.SandboxCounts ??= Game.InventoryCounts.Instance; // badges from the player's inventory (GameSandboxSalvage.cs)
             Ui.DrawSandboxParts(_game, _settings);
+        }
         if (gone || !Ui.SandboxPartsOpen)
         {
             Ui.CloseSandboxParts();
@@ -137,10 +140,14 @@ public static unsafe partial class Program
             // (rebuilt only when what it shows changes: the look runs every frame)
             var near = hit.Distance <= ConstructBuild.UseReach;
             var fits = h.Tool != ConstructTool.None && ConstructBuild.ToolFits(h.Tool, d);
+            // Salvage (milestone 3): anything but your own construct goes into the inventory; someone else's working one can't be taken apart.
+            var salvage = hit.Body.Owner != me.Id && ConstructEdits.Salvageable(hit.Body, me.Id);
+            var theirs = ConstructEdits.SalvageRefusal(hit.Body, me.Id) != null;
             var key = ((long)hit.Body.Id << 40) | ((long)hit.Part << 32) | ((long)(part.Broken ? 1 : 0) << 31) | ((long)(near ? 1 : 0) << 30) | ((long)(fits ? 1 : 0) << 29)
                       | ((long)(hit.Body.Driver == 255 ? 1 : 0) << 28) | ((long)(hit.Body.Loose ? 1 : 0) << 27) | (long)Math.Clamp((int)part.Health, 0, 1 << 26)
                       ^ ((long)(byte)ConstructLogic.Quantise(part.Out) << 17) ^ ((long)part.Setting << 12) ^ ((long)part.SitterPlus1 << 4) ^ (h.Tool == ConstructTool.Linker ? 1L << 62 : 0)
-                      ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0);
+                      ^ ((long)g.Constructs.CouplingCount << 50) ^ ((long)(h.Tool == ConstructTool.Wrench ? 1 : 0) << 61) ^ ((long)(int)(ConstructPower.Share(hit.Body) * 100) << 53) ^ (hit.Body.PowerOn ? 1L << 60 : 0)
+                      ^ (salvage ? 1L << 56 : 0) ^ (theirs ? 1L << 57 : 0);
             if (key != _sbLookKey)
             {
                 _sbLookKey = key;
@@ -160,7 +167,7 @@ public static unsafe partial class Program
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
                     PartRole.Logic => $"{d.Name}{setting}{signal}{unpowered}",
                     _ when hit.Body.Loose && near => $"{d.Name}: F to pick up",
-                    _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(fits ? " - hold aim to take it off" : "")}",
+                    _ => $"{d.Name} {(part.Broken ? "(wrecked)" : $"{part.Health:0}/{d.Health:0}")}{(!fits ? "" : theirs ? " - someone else's: disable it to salvage" : salvage ? (part.Broken ? $" - hold aim to salvage it for {d.Scrap} scrap" : " - hold aim to salvage it") : " - hold aim to take it off")}",
                 };
             }
             g.SandboxLookText = _sbLookText;

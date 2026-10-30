@@ -9,11 +9,12 @@ public enum CBodyKind : byte
     Gone, // a construct removed
     Health, // part health changes: (id, part, health) each
     Clear, // every construct removed (a new match)
-    Links, // protocol 81: every coupling and wire between constructs (the whole list, when it changes)
+    Inventory, // server -> one client: that player's own inventory (protocol 81; SandboxInventory)
+    Links, // protocol 82: every coupling and wire between constructs (the whole list, when it changes)
 }
 
 /// <summary>
-/// The constructs on the wire (protocol 81: the charge, power and gear in the structure and the poses, and the links
+/// The constructs on the wire (protocol 82: the charge, power and gear in the structure and the poses, and the links
 /// between constructs; protocol 78: milestone 2 added logic settings and signals, joint types, wires, and joint
 /// speeds and signals in the poses). Structure goes reliably and only when it changes (an edit, a break, a
 /// split; and the whole set to a joiner); poses go unreliably at 20 Hz for the bodies that move, with a few sleeping ones
@@ -24,7 +25,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 81: charge, power flags, gear, fuel)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5; // (protocol 82: charge, power flags, gear, fuel)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -53,9 +54,9 @@ public static class ConstructNet
     public static void WriteFull(PacketWriter w, Construct c)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Full).U16(c.Id);
-        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0)));
+        w.U8((byte)((c.Wreck ? 1 : 0) | (c.Anchored ? 2 : 0) | (c.Asleep ? 4 : 0) | (c.Damaged ? 8 : 0))).U8(c.Owner);
         w.U8((byte)Math.Max(0, c.Root)).U8(c.Driver).U8((byte)(c.DriverSeat < 0 ? 255 : c.DriverSeat));
-        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 81: the charge, power and gear)
+        w.F32(c.Fuel).F32(c.Charge).U8(PowerFlags(c)).U8((byte)c.Gear); // (protocol 82: the charge, power and gear)
         w.Vec(c.Pos).F32(c.Rot.X).F32(c.Rot.Y).F32(c.Rot.Z).F32(c.Rot.W).Vec(c.Vel).Vec(c.AngVel);
         w.U8((byte)c.PartCount);
         for (var i = 0; i < c.PartCount; i++)
@@ -97,7 +98,7 @@ public static class ConstructNet
         c.GearRatio = c.Transmission >= 0 && c.Transmission < c.PartCount && c.DefOf(c.Transmission) is { HasGears: true } d && gear < d.Settings.Length ? d.Settings[gear] : 1f;
     }
 
-    /// <summary>Protocol 81: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
+    /// <summary>Protocol 82: every coupling and wire between constructs, as the server has them now (resolved: construct ids and part indices).</summary>
     public static void WriteLinks(PacketWriter w, ConstructWorld world)
     {
         w.Begin(Msg.CBody).U8((byte)CBodyKind.Links).U8((byte)world.CouplingCount);
@@ -131,6 +132,69 @@ public static class ConstructNet
         world.LinksDirty = false;
     }
 
+    /// <summary>
+    /// A player's own inventory, whole (it is small): flags (1: infinite parts), scrap, then each part kind held (id,
+    /// count) and each material held (id, count; none yet). About 8 bytes plus 3 a kind.
+    /// </summary>
+    public static void WriteInventory(PacketWriter w, SandboxInventory inv)
+    {
+        w.Begin(Msg.CBody).U8((byte)CBodyKind.Inventory).U8((byte)(inv.Infinite ? 1 : 0)).U32((uint)inv.Scrap);
+        var at = w.Length;
+        w.U8(0);
+        var n = 0;
+        for (var i = 0; i < inv.Parts.Length && n < 255; i++)
+            if (inv.Parts[i] > 0)
+            {
+                w.U8((byte)i).U16(inv.Parts[i]);
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+        at = w.Length;
+        w.U8(0);
+        n = 0;
+        for (var i = 0; i < inv.Materials.Length; i++)
+            if (inv.Materials[i] > 0)
+            {
+                w.U8((byte)i).U16(inv.Materials[i]);
+                n++;
+            }
+        w.PatchU8(at, (byte)n);
+    }
+
+    private static void ReadInventory(ref PacketReader r, SandboxInventory? inv)
+    {
+        var flags = r.U8();
+        var scrap = r.U32();
+        int kinds = r.U8();
+        if (scrap > SandboxInventory.MaxScrap)
+            throw new MalformedPacketException($"an inventory with {scrap} scrap");
+        inv?.Clear();
+        for (var k = 0; k < kinds; k++)
+        {
+            var id = r.U8();
+            var count = r.U16();
+            if (ConstructParts.Get(id) == null || count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of part {id}");
+            if (inv != null)
+                inv.Parts[id] = count;
+        }
+        int mats = r.U8();
+        for (var k = 0; k < mats; k++)
+        {
+            var id = r.U8();
+            var count = r.U16();
+            if (id >= SandboxInventory.MaxMaterials || count > SandboxInventory.MaxCount)
+                throw new MalformedPacketException($"an inventory of {count} of material {id}");
+            if (inv != null)
+                inv.Materials[id] = count;
+        }
+        if (inv == null)
+            return;
+        inv.Scrap = (int)scrap;
+        inv.Infinite = (flags & 1) != 0;
+        inv.Version++;
+    }
+
     public static void WriteGone(PacketWriter w, ushort id) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Gone).U16(id);
 
     public static void WriteClear(PacketWriter w) => w.Begin(Msg.CBody).U8((byte)CBodyKind.Clear);
@@ -156,7 +220,7 @@ public static class ConstructNet
     }
 
     /// <summary>Reads a <see cref="Msg.CBody"/> (after the id byte) into a client's world. Bad values are refused, never trusted.</summary>
-    public static void Read(ref PacketReader r, ConstructWorld world, double now)
+    public static void Read(ref PacketReader r, ConstructWorld world, double now, SandboxInventory? mine = null)
     {
         var kind = (CBodyKind)r.U8();
         switch (kind)
@@ -189,6 +253,9 @@ public static class ConstructNet
             case CBodyKind.Links:
                 ReadLinks(ref r, world);
                 break;
+            case CBodyKind.Inventory:
+                ReadInventory(ref r, mine);
+                break;
             default:
                 throw new MalformedPacketException($"unknown construct message {kind}");
         }
@@ -198,6 +265,7 @@ public static class ConstructNet
     {
         var id = r.U16();
         var flags = r.U8();
+        var owner = r.U8();
         var root = r.U8();
         var driver = r.U8();
         var seat = r.U8();
@@ -297,6 +365,8 @@ public static class ConstructNet
             if (c.Parts[i].Seg > c.JointCount)
                 throw new MalformedPacketException("a construct part on a joint that isn't there");
         c.Wreck = (flags & 1) != 0;
+        c.Damaged = (flags & 8) != 0;
+        c.Owner = owner;
         c.Driver = driver;
         c.DriverSeat = seat == 255 || seat >= parts ? -1 : seat;
         c.Rebuild();
@@ -384,7 +454,7 @@ public static class ConstructNet
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
-            .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 81)
+            .U8((byte)MathF.Round(ConstructPower.Share(c) * 255)).U8(PowerFlags(c)).U8((byte)c.Gear).U16((ushort)Math.Clamp(MathF.Round(c.Fuel * 10), 0, 65535)) // (protocol 82)
             .U8((byte)c.JointCount);
         for (var j = 0; j < c.JointCount; j++)
             w.U16(S16((short)Math.Clamp(MathF.Round(c.Joints[j].Angle * 1000), short.MinValue, short.MaxValue)))

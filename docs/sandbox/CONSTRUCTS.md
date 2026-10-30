@@ -8,7 +8,9 @@ large world, streaming, factions, enemies, points of interest, resources, scanni
 yet. **Milestone 2 adds joints, logic and the drivetrain as parts** (decisions 3 and 4): motorised hinges, turntables,
 pistons and steering pivots; logic parts wired with a linking tool; transmissions and differentials you can shoot;
 passengers, riding on moving decks and run-over damage; and the yard's lift, turret, motorised gate and wired buggy to
-test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain).
+test them on. Everything new is listed under [Milestone 2](#milestone-2-joints-logic-and-the-drivetrain). **Milestone 3**
+(in parts) adds [salvage and the inventory](#salvage-and-the-inventory-milestone-3): taking what survives off wrecks, scrap
+from what was destroyed, building from counted parts, and wrecks cleared away when left alone.
 
 ## Playing it
 
@@ -25,7 +27,7 @@ north-west corner) and some loose parts.
 | R | Turn the part on its socket (the next way round that fits). |
 | Aim (hold) | With a tool out: take the part under the crosshair off (into your hand, or dropped if your hands are full). |
 | T | Drop the part in your hand. |
-| I | The debug **parts menu** (below): any part into your hands, any blueprint in front of you. I or Esc closes it. |
+| I | The **inventory** (below): any part into your hands, any blueprint in front of you, a tool out. I or Esc closes it. |
 | Middle mouse (hold) | The **tool wheel** (below): flick to a tool, let go to take it out; let go in the middle to cancel. |
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
@@ -132,24 +134,51 @@ scanner two-handed; a carried part goes in the off hand, scaled down (a frame bl
 putting a tool away brings the gun up with its equip time before it can fire; the welder's light shows only on lit maps
 (the dynamic lights live in the light grid); the tools still to come have models but stay greyed on the wheel.
 
-### The debug parts menu
+### The inventory (the parts menu)
 
-A debugging aid for the test yard (the developer asked for one, 2026-10-29), not how the final game will hand parts out:
-**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens **Parts
-(debug)** (`Source/UI/UiSandboxParts.cs`), the mouse free for it. It lists every loaded part grouped by role (frames,
-panels, seats, wheels, ..., logic), with a search box (name, role or description), and for each its colour swatch (its
-first and last boxes' colours), the tool it needs, mass, health, armour, fitting time and description. Click a part, or
-move the highlight with Up/Down and press Enter: the client asks the server for it by id (the rack's `CActKind.Rack`
-request with a part id, so the server checks it: an unknown id is refused) and takes out the tool it needs, so the
-ghost sockets, fitting and dropping work exactly as with a part from the rack. A **recent** row keeps the last six picks.
-The **blueprint buttons** (one per blueprint file) ask the server to build that blueprint standing on the ground in front
-of you, facing the way you look, far enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). The
-window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it. It closes itself when you
-die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
+**I** (the inventory key, `GameAction.Inventory`, which Zombies uses for its parts inventory; rebindable) opens the
+**Inventory** window (`Source/UI/UiSandboxParts.cs`), the mouse free for it (it replaced milestone 1's "Parts (debug)"
+list, 2026-10-29; the developer asked for "a nice inventory UI with 3D tiles and categories"):
+
+- **Tabs**: Parts, Blueprints and Tools.
+- **Left**: a search box (name, group, section, role or description) and a **category tree**: "All", then the groups
+  (Structure, Wheels and drivetrain, Seats, Joints, Logic, then Power, Weapons, Storage or Other when parts of those
+  kinds exist) with their sections (frames, panels, doors...; logic by kind: controls, sensors, gates, timing, outputs).
+  The tree is made from the loaded data (`Source/UI/SandboxCatalogue.cs`), never from a list of part names: each part
+  goes by its role, and a **role this build doesn't know** (a new one from another branch) goes by a word in its name
+  (power, battery, gun, turret, storage...) or else into **Other** under its own name. Blueprints are grouped as vehicles
+  (a seat and wheels), machines (joints) or structures; tools as in the game or still to come. Below the tree: "Keep open
+  after picking" and the tile size slider.
+- **Right**: a scrolling grid of square **3D tiles** under big headers (a group's tiles flow together; a section picked
+  in the tree gets its own header), each the thing drawn from its boxes at a 3/4 view with the default light. A tile's
+  dot is the tool it needs (orange welder, blue wrench, green linking tool), its badge how many you have, and hovering
+  shows its name, tool, mass, health, armour, fitting time, how many you have and its description. Above the grid: what
+  is in your hands, how many tiles are shown, and the **recent** row (small tiles of your last eight parts).
+- **Picking**: click a tile, or move the highlight with the arrow keys and press Enter. A part: the client asks the
+  server for it by id (the rack's `CActKind.Rack` request with a part id, so the server checks it: an unknown id is
+  refused) and takes out the tool it needs, so the ghost sockets, fitting and dropping work exactly as with a part from
+  the rack. A blueprint: the server builds it standing on the ground in front of you, facing the way you look, far
+  enough out not to land on you (`CActKind.Blueprint`; refused outside Sandbox). A tool (one in the game): it comes out
+  (again: put away). The window closes after a pick unless "Keep open after picking" is ticked; I again or Esc closes it.
+  It closes itself when you die, sit down or the match ends, and it isn't offered in a seat. The rack works as before.
+- **Counts**: the badges read an `ISandboxPartCounts` source (`Ui.SandboxCounts`; the salvage work's
+  `Game.SandboxInventory` is meant to be wired in there). With no source, or a negative count, a badge shows **inf**
+  (infinite parts, as now); a count of 0 shows red (the tile can still be clicked: the server decides).
+
+**The tile atlas** (`Source/Render/SandboxTiles.cs`): every part, blueprint (built in a scratch construct world through
+the server's own rules: joints at rest, wheels on their springs) and tool model is drawn once into 128 px tiles of
+2048 px atlas pages (256 tiles a page; slots are parts by id, then blueprints, then tools). Each tile is drawn at twice
+its size into a small offscreen framebuffer, orthographic and framed tight round its boxes, on a clear backdrop, and
+blitted down into its page (smooth edges), then the page's mipmaps are made: plain framebuffer objects and blits, the
+same on the GL 4.1 and 4.6 paths. The window asks for the atlas when it opens; the main loop's `SandboxTiles.Pump`, before
+the scene, draws up to 12 tiles a frame within a 3 ms budget (the first frame's GL set-up aside), so opening the window
+never stalls a frame for long (on Mesa's software GL the 52 tiles took about 20 frames). The atlas is kept for the session
+and made again only when the loaded parts, blueprints or tools change; until a tile is ready (or if the framebuffer can't
+be made) its card shows a plain colour swatch instead.
 
 It is only in Sandbox, and a map can turn it off with `"partsMenu": false` in its `"sandbox"` section (a future
 survival map will): the key then says "the parts menu is off on this map" and the server refuses both requests. The
-window allocates nothing per frame while open (every row's text is made once).
+window allocates nothing per frame while open (every tile's text is made once; the catalogue's key is taken once).
 
 Editing always needs the right tool in hand (decision 2): **welder** for frames, panels, corners, decks and foundations,
 **wrench** for everything bolted (seats, wheels, suspensions, engines, tanks, fuel lines, transmissions, differentials,
@@ -265,6 +294,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `hinge` | `axis` (a direction), `pivot`, `min`/`max` (degrees), `leaf` (the leaf socket: what attaches there swings). |
 | `joint` | Milestone 2, a moving joint: `type` (`motor`, `turntable`, `piston`, `steering`), `axis`, `pivot`, `min`/`max` (degrees; a piston's are metres, `min` 0 and `max` its travel up to 4 m; a turntable without them turns forever), `leaf` (a struct socket: anything fitted there moves, a door's `leaf` socket too), `speed` (degrees or metres a second), `strength` (N m, or N for a piston). |
 | `logic` | Milestone 2, a logic part: `kind` (below), and for the kinds with a setting `settings` (the values it cycles through), `labels` (what the HUD shows; an input reader's are its keys), `setting` (the starting index), `settingName`. |
+| `scrap` | Milestone 3: the scrap salvaging it gives once wrecked (0 to 10,000). Without it: from its mass and material ([Salvage](#salvage-and-the-inventory-milestone-3)). |
 
 Milestone 1 shipped 13 parts: Frame Block, Frame Beam, Panel, Corner, Seat, Wheel, Suspension, Engine, Fuel Tank, Fuel Line,
 Hinge, Door and Foundation. Milestone 2 adds 25: Deck Plate; Motor Hinge, Turntable, Piston, Steering Pivot; Transmission,
@@ -301,17 +331,24 @@ parts), **Motor Gate** (8 parts, 2 wires), **Lift** (7 parts, 3 wires) and **Tur
 }
 ```
 
-`rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the debug parts menu off (it is
-on by default). Unknown parts or blueprints refuse the map with the reason.
+`rack` is `[x, z, yaw]`; `rackParts` defaults to every part; `"partsMenu": false` turns the inventory off (it is
+on by default). Milestone 3: `"infiniteParts": false` makes the rack and the parts menu hand out only what the player's
+inventory holds (on by default, so Construct Yard stays endless); `"debrisSeconds"` (default 180, 0 to 3600, 0: never)
+and `"debrisNear"` (metres, default 12) set when wrecks are cleared away. Unknown parts or blueprints, and bad values,
+refuse the map with the reason.
 Only the server reads the section (clients get every construct from the server), so it is not part of the fingerprint.
 The Sandbox mode is offered only on maps with this section.
 
-## Network (protocol 79)
+## Network (protocol 81)
 
 - `Msg.CBody` (reliable): a construct's whole structure (parts on their 1 cm grid with their logic setting and signal,
   links, joints with their type, lock and wired flags, wires, pose: about 20 bytes plus 14 per part and 2 per wire),
   sent when it changes (an edit, a break, a split, a wire, a setting) and to each joiner; also part health batches, a
   construct gone, and "clear all" at a new match.
+- Protocol 81 (salvage): `CBody` also carries the construct's **owner** (a player id, 255: nobody's) and a **damaged**
+  flag; `CBodyKind.Inventory` sends one player their own inventory, whole, when it changes and when they join (a flags
+  byte (infinite parts), the scrap, then each part kind held as id and count, then each material held; about 8 bytes plus
+  3 a kind). Nobody else's inventory is ever sent.
 - `Msg.CPose` (unreliable sequenced, 20 Hz): the bodies that move (32 bytes plus 4 per joint, the angle and speed, plus
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
@@ -319,7 +356,7 @@ The Sandbox mode is offered only on maps with this section.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
-  debug parts menu, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
+  inventory, anywhere) and `Blueprint` (a blueprint index) builds one in front of the player.
 - The Sandbox mode-state tail (~10 Hz, version 2): every player's tool (the linking tool too), held part, seat and edit in
   progress.
 
@@ -356,6 +393,54 @@ anything, the segments beyond a joint were posed from the joint value and went t
   never whether a contact holds.
 - Not yet: a segment against its **own** construct (joint limits keep the built ones apart), players pushing a moving
   segment back (they are pushed out of it, as before), the body's mass properties following its joints.
+
+## Salvage and the inventory (milestone 3)
+
+Decision 7, the loot loop: what you salvage is what survives, so disabling an enemy by shooting its cheap exposed parts
+leaves more to take. Board item dev-sandbox-m3, part 2 of 4 (the developer approved it 2026-10-29).
+
+- **The inventory.** Every player has one on the server (`SandboxInventory`, Source/Constructs/ConstructInventory.cs):
+  a count of each part kind (by part id, up to 9,999 each), their **scrap** (up to 999,999), and room for **materials**
+  (resources come later; always empty now, but the wire carries them). Each player's client hears its own whole
+  inventory when it changes (protocol 81), so the HUD and the inventory window show it; nobody else's is sent. It resets
+  with the match like the constructs (nothing is saved yet). It survives death; a leaving player's empties (their id may
+  be someone else's next). The read API: `Game.SandboxInventory(playerId)` (counts in `Parts[partId]` or `Count(id)`,
+  `Scrap`, `Materials`, `TotalParts`, `Kinds`, `Infinite`, and `Version`, which goes up on every change so a window can
+  rebuild its text only then). On a client only the local player's is known.
+- **Owners.** A construct a player starts (sets its first part down, or spawns from the parts menu) is **theirs**, and
+  what is built onto it stays theirs; the map's constructs are nobody's. A piece that falls away keeps its owner. A
+  leaving player's constructs become nobody's.
+- **Salvage.** With the tool the part needs (wrench or welder) out, hold aim on a part: the same timed removal as taking
+  a part off (60% of its fitting time), but it goes **into the inventory**, not the hand. Anyone may salvage a **wreck**
+  (a piece cut off, or a broken-off part), a **loose part**, a construct **nobody owns**, or someone else's construct
+  once it is **disabled** (any part of it wrecked: broken off or stopped working; `Construct.Damaged`). Someone else's
+  working construct is refused: "that construct is someone else's: disable it first (shoot a part off)". Nobody may take
+  parts off while someone drives it. The look line says "hold aim to salvage it" (or "for N scrap", or "someone else's:
+  disable it to salvage").
+- **Scrap.** A part that was destroyed (a wrecked part: broken off as debris, or stopped working in place) gives
+  **scrap** instead of itself: its file's `scrap`, else from its mass and material: 0.2 a kg of steel (a 120 kg engine:
+  24, a 3 kg logic part: 1), 0.1 for rubber or wood, 0.05 for concrete, 0.15 for anything else, at least 1.
+- **Your own constructs.** With infinite parts on (Construct Yard), taking a part off your own construct puts it in your
+  hand as before. With them off, it goes back into the inventory.
+- **Building from the inventory** (the map's `"infiniteParts": false`). The rack hands out the next of its kinds that
+  your inventory holds, and the parts menu only a part you hold ("no Piston in your inventory (salvage one)"); either
+  takes one out of the inventory into your hands (what you held goes back first). Fitting or setting it down uses it,
+  and the next of the same kind comes out into your hand at once, so a row of them needs no trips back. Dropping (T)
+  sets the part down as a loose part (picked up again with F); dying puts a held part back into the inventory. With
+  infinite parts on the rack and the menu stay endless and nothing is counted.
+- **The HUD** while holding a part shows its count ("Wheel: ... 3 more in your inventory", "the last one in your
+  inventory", or "Inventory: 3 (parts are endless here)"), and a line with the totals ("Inventory: 7 parts (4 kinds), 25
+  scrap") whenever the inventory holds anything.
+- **Debris expiry.** A **wreck** (a piece cut off, or a broken-off part) is cleared away once nobody has been within
+  `debrisNear` metres of it (12 by default; or its own size) and nobody has been taking a part off it for `debrisSeconds`
+  (180 by default; 0: never), checked every half second. Constructs players build and loose parts they set down never
+  expire. The cap on bodies (64 in all) still stops new debris appearing when the world is full.
+
+Choices made (the developer may change them): salvage always goes into the inventory, even with infinite parts on (so
+the loot loop and the counts work on the yard); a construct counts as **disabled** as soon as any of its parts is
+wrecked (there is no repair yet, so it stays salvageable); after a fit the next of the same kind comes into the hand
+automatically; the debris defaults (3 minutes, 12 m); inventories survive death but not leaving or a new match; the
+scrap rates by material.
 
 ## Performance and caps
 
@@ -402,13 +487,39 @@ game the lift raises the player standing on it, a passenger rides along in the s
 buggy's way is hurt. "Constructs"' loopback now also checks the client and a late joiner mirror the joints, wires and
 signals.
 
+The **Construct salvage** section (`Source/App/SelfTestConstructSalvage.cs`, milestone 3): the scrap values and the
+map's `infiniteParts`, `debrisSeconds` and `debrisNear` (bad values refused); in an offline Sandbox game on the yard a
+wheel that fell off the buggy as a wreck is salvaged (the welder refused, the wrench timed) into the inventory with the
+hand left empty, the wrecked suspension gives its scrap, someone else's working gate is refused until a part of it is
+wrecked and then salvaged; with infinite parts off the parts menu refuses a part the inventory lacks, hands one out of
+it, a fit uses it and the next comes into the hand, the player's own gate's door goes back into the inventory, a held
+counted part goes back on respawn, and the HUD shows the counts; with them on the player's own parts come off into the
+hand; a wreck left alone goes after the map's time, one being salvaged or with a player near stays; the Sandbox tick,
+the debris check and the inventory allocate nothing; and a real host with two clients: the salvaging client sees its
+count (the other doesn't), a client's gate is owned by that client on every copy, and an expired wreck goes on the
+clients too. `--sandbox-shots` adds `smoke_sandbox_salvage_*.bmp` (half-way through salvaging a wheel, done, a counted
+part in hand) and `smoke_sandbox_debris_cleared.bmp`.
+
 The **Sandbox parts menu** section (`Source/App/SelfTestSandboxPartsMenu.cs`): the map's `partsMenu` flag reads (on by
 default, a bad value refused); in an offline Sandbox game the menu's request hands the chosen part by id to the player
 anywhere, an unknown id is refused (the hands kept), the rack still refuses from afar and hands out its next kind at the
 rack, a Turret spawns in front of the player and a bad blueprint index is refused, and the map flag turns both off; the
 window draws headless (every part listed, a search narrows it, a pick puts the part in hand with its tool out and closes
 the window) with no ImGui error and no allocation per frame while open; a real client's part by id and blueprint go over
-the wire; and outside Sandbox a blueprint spawn is refused.
+the wire; and outside Sandbox a blueprint spawn is refused. The inventory's tabs and tree headless: every tree node (each
+group, each section) lists exactly its own parts, a search narrows within a node ("lamp" in Logic finds the Lamp, in
+Structure nothing), the Blueprints tab lists every blueprint and taking the highlighted one ("buggy") builds it, the Tools
+tab lists every tool model and taking the first one puts it in hand; steady open frames allocate nothing with "inf" badges
+and with counts from a source.
+
+The **Sandbox inventory** section (`Source/App/SelfTestSandboxInventory.cs`), headless: the catalogue holds every part,
+blueprint and tool exactly once, today's parts all have a named group (none in Other) and the five main groups exist, an
+unknown role goes to Other; every tile slot gets boxes (a blueprint built as the server builds it) and a camera that keeps
+every box corner inside its square while filling at least 75% of it; and every slot has its own place in its atlas page.
+
+`--inventory-shots` draws the atlas as the game does (the log says how many frames it took and the slowest one) and
+writes pictures of the inventory over the yard: the Parts tab, one group, one section, a search, the largest tiles, and
+the Blueprints and Tools tabs (`smoke_inventory_*.bmp`); it runs under xvfb like `--light-shots`.
 
 The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): the direction-to-segment maths (every
 segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
@@ -431,7 +542,7 @@ and a real host and client each draw the other's tool in their hands.
 
 `--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
 the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
-wires (the linking tool's view), a broken buggy, the debug parts menu (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
+wires (the linking tool's view), a broken buggy, the inventory (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
 
 ## Decisions made for milestone 1 (open questions it touches; the developer may change them)
 
@@ -579,7 +690,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 
 ## Next: milestone 3 and later
 
-- **Salvage**: taking surviving parts off wrecks into an inventory; scrap from destroyed parts; debris expiry.
+- **Salvage** (done, above). Still to come with it: the 3D inventory window, materials, repair, saving inventories.
 - **Construct weapons** (decision 10), mounted fixed or on turntables (the Turret is waiting for one), fired by input
   readers, sharing the weapon builder's ammo flags.
 - **Resources** and production parts, **enemies** that drive and defend constructs, **factions**.
@@ -594,4 +705,5 @@ input end). Wiring is instant (fitting a part is what takes time).
 - Done: the linking tool and logic parts (seat -> input reader -> piston), motorised hinges, turntables, pistons, steering
   as a joint, transmissions and differentials as parts you can shoot, passengers, standing on a moving deck, run-over
   damage, lights (the Lamp).
-- Still to come (above): salvage, construct weapons, saving, the large world, debris expiry, more parts, a bigger map.
+- Still to come (above): construct weapons, saving, the large world, more parts, a bigger map (salvage and debris
+  expiry came in milestone 3).

@@ -176,9 +176,11 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     kind; n: part id n - 1, from the menu) and CActKind.Blueprint (a blueprint index) builds one in front of the player.
     // 80: seated Sandbox players (docs/sandbox/CONSTRUCTS.md "Seats"): a seated player's snapshot entry carries the seat
     //     (construct id and seat part, in the mantle extension with mantle ticks 0) and a yaw relative to the seat's facing.
-    // 81: Sandbox milestone 3 links and power (docs/sandbox/CONSTRUCTS.md "Milestone 3"): CBodyKind.Links (couplings and wires
+    // 81: Sandbox salvage (docs/sandbox/CONSTRUCTS.md "Salvage and the inventory"): a construct's Msg.CBody carries its
+    //     owner and a "damaged" flag; CBodyKind.Inventory sends a player their own inventory (part counts, scrap, materials).
+    // 82: Sandbox milestone 3 links and power (docs/sandbox/CONSTRUCTS.md "Milestone 3"): CBodyKind.Links (couplings and wires
     //     between constructs), the charge, power flags and gear in CBody and CPose (and the fuel in CPose), CAct.Wire's to-construct.
-    public const byte ProtocolVersion = 81;
+    public const byte ProtocolVersion = 82;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
