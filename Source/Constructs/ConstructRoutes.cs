@@ -1245,7 +1245,7 @@ public static partial class ConstructRoutes
                 if (r.Timer >= IgniteSeconds)
                 {
                     r.Timer = 0;
-                    if (r.To < c.PartCount && world.Ignite(c, r.To))
+                    if (r.To < c.PartCount && (world.Ignite(c, r.To) || world.Ignite(c, r.Source)))
                         world.Events.Add($"construct {c.Id}: fuel weeping from a {Name(r.Type, r.Style)} caught fire");
                 }
                 break;
