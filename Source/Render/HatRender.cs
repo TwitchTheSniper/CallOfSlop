@@ -15,17 +15,9 @@ public static class HatRender
     /// <summary>The head width the hat models are made for (the standing head box).</summary>
     public const float ModelHeadWidth = 0.45f;
 
-    /// <summary>
-    /// Test-only override (smoke test / self-test): the hat to draw on every player whatever they wear, or null.
-    /// Never set in real play.
-    /// </summary>
-    public static Func<Player, HatId>? TestOverride;
-
     /// <summary>The hat to draw on <paramref name="p"/>: bots never wear one; people only a hat their prestige allows.</summary>
     public static HatDef? HatFor(Player p)
     {
-        if (TestOverride is { } o)
-            return Cosmetics.Get(o(p));
         if (p.Bot != null || p.Hat == HatId.None || !Cosmetics.IsUnlocked(p.Hat, p.Prestige))
             return null;
         return Cosmetics.Get(p.Hat);

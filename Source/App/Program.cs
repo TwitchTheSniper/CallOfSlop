@@ -37,6 +37,11 @@ public static unsafe partial class Program
 
     private static GlfwWindow _window = null!;
     private static readonly Renderer Gfx = new();
+    private static readonly FoliageRenderer FoliageGfx = new();
+    private static readonly PropRenderer PropGfx = new();
+    private static readonly MeshRenderer MeshGfx = new();
+    private static readonly BuildingRenderer BuildingGfx = new();
+    private static readonly DecalRenderer DecalGfx = new();
     private static readonly TerrainRenderer TerrainGfx = new();
     private static readonly Ui Ui = new();
     private static readonly Audio AudioSystem = new();
@@ -135,20 +140,9 @@ public static unsafe partial class Program
         var allocFrames = args.Any(a => a.Equals("--alloc-frames", StringComparison.OrdinalIgnoreCase)); // (Program.AllocFrames.cs)
         perfShot |= allocFrames; // (the same sandbox, no frame cap, settings never saved)
         _glBench = args.Any(a => a.Equals("--gl-bench", StringComparison.OrdinalIgnoreCase)); // render timings (Program.GlBench.cs)
-        _crowdShots = args.Any(a => a.Equals("--crowd-shots", StringComparison.OrdinalIgnoreCase)); // (Program.CrowdShots.cs)
-        _sandboxShots = args.Any(a => a.Equals("--sandbox-shots", StringComparison.OrdinalIgnoreCase)); // (Program.SandboxShots.cs)
-        _jointShots = args.Any(a => a.Equals("--joint-shots", StringComparison.OrdinalIgnoreCase)); // (Program.JointShots.cs)
-        _placementShots = args.Any(a => a.Equals("--placement-shots", StringComparison.OrdinalIgnoreCase)); // (Program.PlacementShots.cs)
-        _powerShots = args.Any(a => a.Equals("--power-shots", StringComparison.OrdinalIgnoreCase)); // (Program.PowerShots.cs)
-        _driveShots = args.Any(a => a.Equals("--drive-shots", StringComparison.OrdinalIgnoreCase)); // (Program.DriveShots.cs)
-        _storageShots = args.Any(a => a.Equals("--storage-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StorageShots.cs)
-        _weaponShots = args.Any(a => a.Equals("--weapon-shots", StringComparison.OrdinalIgnoreCase)); // (Program.WeaponShots.cs)
-        _toolShots = args.Any(a => a.Equals("--tool-shots", StringComparison.OrdinalIgnoreCase)); // (Program.ToolShots.cs)
-        _inventoryShots = args.Any(a => a.Equals("--inventory-shots", StringComparison.OrdinalIgnoreCase)); // (Program.InventoryShots.cs)
-        _structureShots = args.Any(a => a.Equals("--structure-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StructureShots.cs)
         _stressShots = args.Any(a => a.Equals("--stress-shots", StringComparison.OrdinalIgnoreCase)); // (Program.StressShots.cs)
         _ragdollShots = args.Any(a => a.Equals("--ragdoll-shots", StringComparison.OrdinalIgnoreCase)); // (Program.RagdollShots.cs)
-        _shotTool |= _crowdShots | _stressShots | _ragdollShots | _sandboxShots | _toolShots | _jointShots | _weaponShots | _inventoryShots | _powerShots | _placementShots | _structureShots | _storageShots | _driveShots;
+        _shotTool |= _stressShots | _ragdollShots;
         CrowdTiers = args.Any(a => a.Equals("--crowd-tiers", StringComparison.OrdinalIgnoreCase)); // the mass horde's tier colours (Program.Zombies.cs)
         if (_shotTool || perfShot || _glBench || args.Any(a => a.Equals("--smoketest", StringComparison.OrdinalIgnoreCase)))
             SavePaths.UseSmokeSandbox(args);
@@ -228,28 +222,6 @@ public static unsafe partial class Program
                 RunStressShots(args); // --stress-shots: Horde Stress's hordes staging, descending, merged and advancing, then quit (Program.StressShots.cs)
             else if (_ragdollShots)
                 RunRagdollShots(args); // --ragdoll-shots: picture strips of ragdoll deaths, then quit (Program.RagdollShots.cs)
-            else if (_crowdShots)
-                RunCrowdShots(args); // --crowd-shots: the mass horde spike's tier colours on Mass Horde Test, then quit (Program.CrowdShots.cs)
-            else if (_sandboxShots)
-                RunSandboxShots(args); // --sandbox-shots: the Sandbox constructs on Construct Yard, then quit (Program.SandboxShots.cs)
-            else if (_storageShots)
-                RunStorageShots(); // --storage-shots: Sandbox physical storage on Construct Yard, then quit (Program.StorageShots.cs)
-            else if (_driveShots)
-                RunDriveShots(); // --drive-shots: the drivetrain families and example vehicles on Construct Yard, then quit (Program.DriveShots.cs)
-            else if (_powerShots)
-                RunPowerShots(); // --power-shots: couplings, wires between constructs and power on Construct Yard, then quit (Program.PowerShots.cs)
-            else if (_placementShots)
-                RunPlacementShots(); // --placement-shots: free placement of new constructs on Construct Yard, then quit (Program.PlacementShots.cs)
-            else if (_jointShots)
-                RunJointShots(); // --joint-shots: parts beyond construct joints colliding on Construct Yard, then quit (Program.JointShots.cs)
-            else if (_weaponShots)
-                RunWeaponShots(); // --weapon-shots: the Sandbox construct weapons firing on Construct Yard, then quit (Program.WeaponShots.cs)
-            else if (_inventoryShots)
-                RunInventoryShots(); // --inventory-shots: the Sandbox inventory's tabs, categories and tile atlas, then quit (Program.InventoryShots.cs)
-            else if (_structureShots)
-                RunStructureShots(); // --structure-shots: gallery walls of the Sandbox's structural parts and a frame welded from them, then quit (Program.StructureShots.cs)
-            else if (_toolShots)
-                RunToolShots(); // --tool-shots: every Sandbox tool in the hands, first and third person, then quit (Program.ToolShots.cs)
             else if (_shotTool)
                 RunLightShots(args); // --light-shots: baked lighting on/off pictures of one map, then quit (Program.LightShots.cs)
             else
@@ -276,711 +248,6 @@ public static unsafe partial class Program
             }
         }
         return 0;
-    }
-
-    // =====================================================================
-    // Smoke test (--smoketest): drives the real window through the lobby, the loadout and
-    // gunsmith screens, the death/respawn flow and a few seconds of play on several maps,
-    // logging frame times and GL errors to callofslop.log, then quits. Used to check
-    // rendering and UI changes without anyone at the keyboard.
-    // =====================================================================
-
-    private static bool _smoke;
-    private static int _smokeMap = -1;
-    private static double _smokeStepStart;
-    private static double _smokeHoldStart;
-    private static int _smokeStage;
-    private static int _smokeFrames;
-    private static double _smokeWorstDt;
-    private static readonly string[] SmokeMaps = ["Proto Box", "Courtyard", "Harbor", "Downtown", "Highlands", "Military Base", "Terrain Test", "Adobe Mesa"]; // Adobe Mesa: a former High Ground map, now in Legacy (terrain, foliage, movers)
-
-    private static void SmokeTick(double now)
-    {
-        _smokeFrames++;
-        _smokeWorstDt = Math.Max(_smokeWorstDt, FrameDt);
-        var t = now - _smokeStepStart;
-        if (FoliageSmokeActive)
-        {
-            FoliageSmokeTick(now);
-            return;
-        }
-        if (MoversSmokeActive)
-        {
-            MoversSmokeTick(now); // Program.Movers.cs
-            return;
-        }
-        if (PropsSmokeActive)
-        {
-            PropsSmokeTick(now); // Program.Props.cs
-            return;
-        }
-        if (MeshSmokeActive)
-        {
-            MeshSmokeTick(now); // Program.Meshes.cs
-            return;
-        }
-        if (LegsSmokeActive)
-        {
-            LegsSmokeTick(now); // Program.Legs.cs
-            return;
-        }
-        if (SkySmokeActive)
-        {
-            SkySmokeTick(now); // Program.Sky.cs
-            return;
-        }
-        if (CaveSmokeActive)
-        {
-            CaveSmokeTick(now); // Program.Caves.cs
-            return;
-        }
-        if (WorkbenchSmokeActive)
-        {
-            WorkbenchSmokeTick(now); // Program.Workbench.cs
-            return;
-        }
-        if (ZombiesSmokeActive)
-        {
-            ZombiesSmokeTick(now); // Program.Zombies.cs
-            if (!ZombiesSmokeActive)
-            {
-                StartCoopSmoke(now); // a co-op defend wave on Silo (Program.Pve.cs), then the usual chain carries on
-                if (!CoopSmokeActive)
-                    StartMoversSmoke(now);
-            }
-            return;
-        }
-        if (CoopSmokeActive)
-        {
-            CoopSmokeTick(now); // Program.Pve.cs
-            if (!CoopSmokeActive)
-                StartMoversSmoke(now); // the usual chain carries on
-            return;
-        }
-        if (_smokeMap < 0)
-        {
-            // Lobby: two gun galleries (stock, then fully kitted), screenshotted, then on to the maps.
-            if (_smokeStepStart == 0)
-            {
-                _smokeStepStart = now;
-                Console.WriteLine("[smoke] lobby");
-                LoadoutStore.SmokeKit = id => SmokeFullKit(Weapons.Get(id), _smokeMap + 1);
-                LoadoutStore.ReadOnly = true; // the smoke test must never write your loadout.txt
-                AppearanceStore.ReadOnly = true; // nor your appearance.txt
-                _smokeGallery = 1;
-                return;
-            }
-            // (each screenshot is taken at the end of the frame it was requested in, so switch galleries a tick later)
-            if (_smokeGallery == 1 && t > 0.6 && t < 0.9 && _shotName == null && !_shotTaken)
-            {
-                SmokeShot("gallery_stock");
-                _shotTaken = true;
-            }
-            else if (_smokeGallery == 1 && t > 0.9)
-            {
-                _smokeGallery = 2;
-                _shotTaken = false;
-            }
-            else if (_smokeGallery == 2 && t > 1.4 && !_shotTaken)
-            {
-                SmokeShot("gallery_kitted");
-                _shotTaken = true;
-            }
-            else if (_smokeGallery == 2 && t > 1.8)
-            {
-                _smokeGallery = 3; // main menu > Loadouts
-                Ui.OpenLobbyLoadouts();
-                _shotTaken = false;
-            }
-            else if (_smokeGallery == 3 && t > 2.4 && !_shotTaken)
-            {
-                SmokeShot("lobby_loadouts");
-                _shotTaken = true;
-            }
-            else if (_smokeGallery == 3 && t > 2.5 && Ui.LobbyLoadouts)
-            {
-                Ui.LobbyLoadouts = false;
-                Ui.OpenAppearance(); // main menu > Appearance (UiAppearance.cs)
-            }
-            else if (_smokeGallery == 3 && t > 2.7 && !_smokeAppearanceShot)
-            {
-                SmokeShot("appearance"); // the pickers and the turning 3D model with its hat
-                _smokeAppearanceShot = true;
-                Console.WriteLine($"[smoke] appearance: preview {(Ui.LookPreview != null ? "on" : "OFF")}, look {AppearanceStore.Look}, hat {Cosmetics.KeyOf(AppearanceStore.Hat)}");
-            }
-            else if (_smokeGallery == 3 && t > 2.8)
-            {
-                _smokeGallery = 4; // the map select screen (Program.MapSelect.cs)
-                Ui.LobbyLoadouts = false;
-                Ui.AppearanceOpen = false;
-                _shotTaken = false;
-            }
-            else if (_smokeGallery == 4 && SmokeMapSelectTick(now, t - 2.8))
-            {
-                _smokeGallery = 0;
-                StartWorkbenchSmoke(now); // the weapon workbench and its range (Program.Workbench.cs), then movers, foliage, the maps
-            }
-            return;
-        }
-
-        if (_smokeMap == 0 && _smokeWeaponSelect < 7)
-        {
-            SmokeWeaponSelect(now, t);
-            return;
-        }
-
-        var game = _session;
-        // Map 0, after the play screenshot: scoped ADS shots (on their own clock, 6.3-9.8 s), then the arms
-        // (reload, sprint, melee; own clock), then kill streaks (needs you alive), then the death cam (gets you killed).
-        // Map 0: the bots mustn't kill you before the ADS, arms and streak shots (the death cam step kills you on purpose).
-        if (_smokeMap == 0 && _smokeStage is 7 or 8 && _smokeDeathCam == 0 && game is { IsServer: true, Local: { Alive: true } me })
-            me.ImmuneUntil = now + 0.5;
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeAdsStep <= SmokeAdsOptics.Length * 2)
-        {
-            SmokeAds(t);
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeArms < 7)
-        {
-            SmokeArms(game, now, t);
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeStreakStep < 4)
-        {
-            SmokeStreaks(now);
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeNameTagStep < 3)
-        {
-            SmokeNameTags(now); // Program.NameTags.cs
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeScoreStep < 3)
-        {
-            SmokeScoreboard(now); // Program.Scoreboard.cs: the scoreboard with its Level column
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeMixerStep < 3)
-        {
-            SmokeAudioMixer(now); // Program.AudioMixer.cs: the Audio mixer window over a match, with a test shot on its meters
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeTweakStep < 2)
-        {
-            SmokeWeaponTweaks(now); // Program.WeaponTweaks.cs: the weapon tweak window over the match (nothing changed or saved)
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokePerfStep < 4)
-        {
-            SmokePerf(now); // Program.Perf.cs: the perf window, then the corner overlay, over the match
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeHatStep < 4)
-        {
-            SmokeHats(now); // Program.Prestige.cs: the five prestige hats on a line-up of bots, then the same bots bare-headed (body model)
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyStep < SmokeFrenzyKills + 2)
-        {
-            SmokeFrenzy(now); // Program.Frenzy.cs
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeFrenzyFxStep < SmokeFrenzyFxClasses.Length)
-        {
-            SmokeFrenzyFx(now); // Program.FrenzyFx.cs: four classes' frenzy visuals at level 6
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeTacStep < SmokeTacSteps)
-        {
-            SmokeTactical(now); // Program.Tactical.cs: placed devices and a flashbang, screenshotted
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeRagdollStep < 9)
-        {
-            SmokeRagdolls(now); // Program.Ragdolls.cs: five bots killed five ways (ragdolls), a blast on the pile, a bot pushed
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeBloodStep < 9)
-        {
-            SmokeBlood(now); // Program.Blood.cs: the blood overlay at 30% health, a bot's body blood at 20%
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 8 && _smokeDeathCam < 3)
-        {
-            SmokeDeathCam(now, t);
-            return;
-        }
-        // After asking to spawn: wait out the ready-up warmup and the countdown (which reopens the loadout screen), and
-        // the respawn itself, so the play / ADS / arms shots show the live match and not the menu. At most 15 s.
-        if (game != null && _smokeStage == 7 && now - _smokeHoldStart < 15
-            && (game.Phase is MatchPhase.Warmup or MatchPhase.Countdown || Ui.MenuOpen || game.Local is not { Alive: true }))
-        {
-            if (game.Phase == MatchPhase.Playing && Ui.MenuOpen && game.Local is { Alive: true })
-            {
-                Ui.AutoDeploy(game, now);
-                SetMouseCaptured(true);
-            }
-            else if (game.Phase == MatchPhase.Playing && game.Local is not { Alive: true } && !game.RespawnRequested)
-                game.RequestRespawn();
-            _smokeStepStart = now - 3.4; // the stage clock waits too
-            return;
-        }
-        if (_smokeMap == 0 && _smokeStage == 3 && SmokeOddGunsmithTick(now))
-        {
-            _smokeStepStart = now - 1.7; // the stage clock waits (Program.Attachments.cs)
-            return;
-        }
-        switch (_smokeStage)
-        {
-            case 0 when t > 0.8:
-                if (_smokeMap == 0 && _teamSmoke == 0)
-                    SmokeShot("loadout_overview");
-                if (_smokeMap == 0 && SmokeTeamsTick(game, now))
-                    break; // the TEAMS window shot (Program.Teams.cs)
-                if (_smokeMap == 0 && SmokeLobbyRoomTick(game, now))
-                    break; // the lobby room shot (Program.LobbyRoom.cs)
-                _smokeStage++;
-                break;
-            case 1 when t > 1.0:
-                Ui.SmokeTab(4); // primary attachments showcase
-                _smokeStage++;
-                break;
-            case 2 when t > 1.7:
-                if (_smokeMap < 3)
-                    SmokeShot($"gunsmith_primary_{_smokeMap}");
-                _smokeStage++;
-                break;
-            case 3 when t > 2.0:
-                Ui.SmokeTab(5); // secondary attachments showcase
-                _smokeStage++;
-                break;
-            case 4 when t > 2.6:
-                if (_smokeMap == 0)
-                    SmokeShot("gunsmith_secondary_0");
-                Ui.SmokeTab(6); // perks
-                _smokeStage++;
-                break;
-            case 5 when t > 3.1:
-                if (_smokeMap == 0)
-                {
-                    SmokeShot("perks_0");
-                }
-                _smokeStage++;
-                break;
-            case 6 when t > 3.4:
-                Ui.SmokeTab(0);
-                if (game != null)
-                {
-                    Ui.SmokeRespawn(game, now);
-                    _smokeHoldStart = now;
-                    Console.WriteLine($"[smoke] respawn requested (phase {game.Phase}, alive {game.Local?.Alive}, perks {game.ChosenPerks})");
-                }
-                _smokeStage++;
-                break;
-            case 7 when t > 6.2:
-                game?.TryMelee(now);
-                if ((_smokeMap < 4 || SmokeMaps[_smokeMap] is "Terrain Test" or "Adobe Mesa") && game?.Local is { Alive: true })
-                    SmokeShot(SmokeMaps[_smokeMap] switch { "Terrain Test" => "play_terrain", "Adobe Mesa" => "play_highground", _ => $"play_{_smokeMap}" });
-                _smokeStage++;
-                break;
-            case 8 when t > 8.5:
-                if (World.Map.HasTerrain)
-                    Console.WriteLine($"[smoke] terrain: {TerrainGfx.LastFrame.Chunks} chunks, {TerrainGfx.LastFrame.DrawCalls} draw call(s), {TerrainGfx.LastFrame.Triangles} triangles");
-                Console.WriteLine($"[smoke] scene graph: {ScenePresentation.Stats}");
-                Console.WriteLine($"[smoke] {World.Map.Name}: alive {game?.Local?.Alive}, weapon {game?.Active.Def.Name} [{Attachments.Describe(game?.Active.Def.Kit ?? 0)}], phase {game?.Phase}, players {game?.Players.Count}, "
-                    + $"{_smokeFrames / Math.Max(t, 0.001):0} fps avg, worst frame {_smokeWorstDt * 1000:0} ms, GL error 0x{GlDebug.Error():X}");
-                game?.DebugEndMatch(now); // show the results screen and map vote
-                _smokeStage++;
-                break;
-            case 9 when t > 10.5:
-                game?.CastVote(1);
-                _smokeStage++;
-                break;
-            case 10 when t > 11.2:
-                if (_smokeMap == 0)
-                    SmokeShot("vote_0");
-                if (game != null)
-                    Console.WriteLine($"[smoke] vote screen: options {string.Join(", ", game.VoteNames)}, "
-                        + $"my vote {game.MyVote}, tally {string.Join("/", game.VoteTally)}, mouse free {!_mouseCaptured}, GL error 0x{GlDebug.Error():X}");
-                SmokeNextMap(now);
-                break;
-        }
-    }
-
-    private static int _smokeDeathCam;
-
-    /// <summary>
-    /// Smoke step on the first map, after the play screenshot: the nearest bot kills you, and 2.2 s later
-    /// (the death cam has turned to face it, the kill card is up) a screenshot. Then the usual steps go on.
-    /// </summary>
-    private static double _smokeDeathAt;
-
-    private static void SmokeDeathCam(double now, double t)
-    {
-        var game = _session;
-        switch (_smokeDeathCam)
-        {
-            case 0 when t > 6.5:
-                var bot = game?.DebugKillLocalByBot(now);
-                Console.WriteLine(bot != null ? $"[smoke] death cam: killed by {game!.NameOf(bot.Id)} ({bot.WeaponDef.Name})" : "[smoke] death cam: no bot could kill you (skipped)");
-                _smokeDeathCam = bot != null ? 1 : 3;
-                _smokeDeathAt = now;
-                break;
-            case 1 when now - _smokeDeathAt > 2.2: // the camera has turned to the killer and the kill card is up
-                SmokeShot("deathcam");
-                var info = _deathCam.Info;
-                Console.WriteLine($"[smoke] death cam: active {_deathCam.Active}, kill info {(info != null ? $"{info.Kind} by {info.KillerName} with {info.WeaponName} [{Attachments.Describe(info.Kit)}], {info.Distance:0} m, killer HP {info.KillerHp}" : "MISSING")}, "
-                    + $"looking at killer {_deathCam.HasTarget}, fov x{_deathCam.FovMul:0.00}, loadout open {Ui.MenuOpen}, thumbs {Ui.Thumbs.Count}, GL error 0x{GlDebug.Error():X}");
-                _smokeDeathCam++;
-                break;
-            case 2 when now - _smokeDeathAt > 2.4:
-                _smokeDeathCam++;
-                _smokeStepStart += 2.5; // the usual steps carry on where they were
-                break;
-        }
-    }
-
-    private static int _smokeArms;
-    private static double _smokeArmsAt;
-    private static Buttons _smokeButtons;
-    private static double _smokeArmsStart;
-
-    /// <summary>
-    /// Smoke step on the first map: the first-person arms during a reload, a sprint and a melee swing, screenshotted
-    /// (smoke_arms_reload / smoke_arms_sprint / smoke_arms_melee), with one log line on the rig.
-    /// </summary>
-    private static void SmokeArms(Game? game, double now, double t)
-    {
-        if (game?.Local is not { Alive: true })
-        {
-            _smokeArms = 7;
-            return;
-        }
-        var reload = game.Active.Def.Reload;
-        switch (_smokeArms)
-        {
-            case 0:
-                _smokeArmsStart = now;
-                game.Active.Ammo = Math.Max(0, game.Active.Ammo - 1);
-                game.StartReload(now);
-                _smokeArmsAt = now;
-                _smokeArms++;
-                break;
-            case 1 when now - _smokeArmsAt > reload * 0.45:
-                SmokeShot("arms_reload");
-                Console.WriteLine($"[smoke] arms: {game.Active.Def.Name} reload style {_vmAnim.Anchors.Style}, hands reached {_vmAnim.Right.Reached}/{_vmAnim.Left.Reached}, carrying {_vmAnim.Carrying}");
-                _smokeArms++;
-                break;
-            case 2 when now - _smokeArmsAt > reload + 0.3:
-                _smokeButtons = Buttons.Forward | Buttons.Sprint;
-                _smokeArmsAt = now;
-                _smokeArms++;
-                break;
-            case 3 when now - _smokeArmsAt > 0.9:
-                SmokeShot("arms_sprint");
-                Console.WriteLine($"[smoke] arms: sprinting at {new Vector2(game.Local.Sim.Velocity.X, game.Local.Sim.Velocity.Z).Length():0.0} m/s; "
-                    + $"[head bob] dip {_headBob.Amplitude * 100:0.0} cm, sway {_headBob.Offset.X * 100:0.0} cm, roll {_headBob.Roll * 180 / MathF.PI:0.00} deg, "
-                    + $"{_headBob.Cadence:0.0} strides/s, weight {_headBob.Weight:0.00}, setting {_settings.HeadBob}%");
-                _smokeArms++;
-                break;
-            case 4 when now - _smokeArmsAt > 1.0:
-                _smokeButtons = Buttons.None;
-                game.TryMelee(now);
-                _smokeArmsAt = now;
-                _smokeArms++;
-                break;
-            case 5 when now - _smokeArmsAt > 0.12:
-                SmokeShot("arms_melee");
-                _smokeArms++;
-                break;
-            case 6 when now - _smokeArmsAt > 0.5:
-                _smokeArms++;
-                _smokeStepStart += now - _smokeArmsStart; // give the usual steps their clock back
-                break;
-        }
-    }
-
-    private static int _smokeWeaponSelect;
-    private static string? _smokeLockedGun;
-    private static int _smokeStreakStep, _smokeStreakFrames;
-    private static double _smokeStreakStart;
-
-    /// <summary>
-    /// Smoke step on the first map, after the first play screenshot: calls in a Sentry Turret, a Mortar Barrage and a
-    /// Recon Sweep and screenshots the turret and the shells landing. Keeps its own clock, then hands the usual one back.
-    /// </summary>
-    private static void SmokeStreaks(double now)
-    {
-        var t = now - _smokeStreakStart;
-        switch (_smokeStreakStep)
-        {
-            case 0:
-                _smokeStreakStart = now;
-                _smokeStreakFrames = _smokeFrames;
-                Console.WriteLine($"[smoke] kill streaks: {_game.SmokeCallStreaks(now)}");
-                Console.WriteLine($"[smoke] kill notice: {_game.SmokeKillNearestBot(now)}"); // KillNotices.cs
-                _smokeStreakStep++;
-                break;
-            case 1 when t > 0.9:
-                SmokeShot("streak_turret");
-                SmokeShot("killnotice"); // "KILLED <bot>" under the crosshair, and the turret's health bar + HUD readout
-                _smokeStreakStep++;
-                break;
-            case 2 when t > KillStreaks.MortarDelay + 0.45:
-                SmokeShot("streak_mortar");
-                _smokeStreakStep++;
-                break;
-            case 3 when t > KillStreaks.MortarDelay + 0.7:
-                Console.WriteLine($"[smoke] kill streaks: {(_smokeFrames - _smokeStreakFrames) / Math.Max(t, 0.001):0} fps avg, entities {_game.StreakEntities.Count}, "
-                    + $"strikes left {_game.Strikes.Count}, GL error 0x{GlDebug.Error():X}");
-                _smokeStepStart += t; // give the usual steps their clock back
-                _smokeFrames = _smokeStreakFrames;
-                _smokeStreakStep++;
-                break;
-        }
-    }
-
-    /// <summary>
-    /// Smoke step on the first map: the weapon-select screen ("Choose primary"), screenshotted as is and
-    /// with a locked gun selected (previewed, EQUIP greyed out), then the progression page. Then the usual steps start (their clock restarts).
-    /// </summary>
-    private static void SmokeWeaponSelect(double now, double t)
-    {
-        switch (_smokeWeaponSelect)
-        {
-            case 0 when t > 0.8:
-                Ui.SmokeChoose(false);
-                _smokeWeaponSelect++;
-                break;
-            case 1 when t > 1.6:
-                SmokeShot("weapon_select");
-                Console.WriteLine($"[smoke] weapon select: {Ui.Thumbs.Count} thumbnail(s) drawn, hero preview {(Ui.Preview != null ? "on" : "OFF")}, GL error 0x{GlDebug.Error():X}");
-                _smokeWeaponSelect++;
-                break;
-            case 2 when t > 1.8: // a frame after the shot
-                _smokeLockedGun = Ui.SmokeChoose(true);
-                _smokeWeaponSelect++;
-                break;
-            case 3 when t > 2.5:
-                SmokeShot("weapon_select_locked");
-                Console.WriteLine($"[smoke] weapon select, locked gun shown: {_smokeLockedGun ?? "none (everything is unlocked at this level)"}, {Ui.Thumbs.Count} thumbnail(s)");
-                _smokeWeaponSelect++;
-                break;
-            case 4 when t > 2.7:
-                Ui.SmokeTab(7); // the progression page (opened from the footer's level bar)
-                _smokeWeaponSelect++;
-                break;
-            case 5 when t > 3.3:
-                SmokeShot("loadout_progression");
-                _smokeWeaponSelect++;
-                break;
-            case 6 when t > 3.5:
-                Ui.SmokeTab(0); // back to the overview, then the usual steps
-                _smokeWeaponSelect++;
-                _smokeStepStart = now;
-                _smokeFrames = 0;
-                _smokeWorstDt = 0;
-                break;
-        }
-    }
-
-    private static int _smokeAdsStep;
-    private static bool _smokeAimHeld;
-    private static WeaponDef? _smokeAdsKeep;
-    private static readonly (OpticKind Kind, string Shot)[] SmokeAdsOptics =
-        [(OpticKind.RedDot, "ads_reddot"), (OpticKind.Hybrid3, "ads_3x"), (OpticKind.Scope4, "ads_4x"), (OpticKind.Scope8, "ads_8x"), (OpticKind.Scope12, "ads_12x")];
-
-    /// <summary>
-    /// Smoke step on the first map: a sniper rifle with a red dot, then the 3x hybrid, the 4x, 8x and 12x scopes,
-    /// each held at full ADS and screenshotted (smoke_ads_reddot/ads_3x/ads_4x/ads_8x/ads_12x.bmp) with the lens's
-    /// screen coverage logged. Runs inside the usual play window, then puts the real weapon back.
-    /// </summary>
-    private static void SmokeAds(double t)
-    {
-        var game = _session;
-        if (game == null || _smokeAdsStep > SmokeAdsOptics.Length * 2)
-            return;
-        var i = _smokeAdsStep / 2;
-        var at = 6.3 + i * 0.7;
-        if (_smokeAdsStep % 2 == 0)
-        {
-            if (t < at)
-                return;
-            _smokeAdsStep++;
-            if (i == SmokeAdsOptics.Length)
-            {
-                _smokeAimHeld = false;
-                if (_smokeAdsKeep != null)
-                    game.Active.Def = _smokeAdsKeep;
-                return;
-            }
-            var gun = Weapons.Find("Needle Bolt-Action") ?? Weapons.All.First(w => w.Class == WeaponClass.Sniper);
-            var def = Attachments.For(gun).Where(a => a.Slot == AttachSlot.Optic)
-                .Select(a => Attachments.Apply(gun, Attachments.With(0, AttachSlot.Optic, a.Index)))
-                .FirstOrDefault(d => d.Optic == SmokeAdsOptics[i].Kind);
-            if (def == null)
-            {
-                Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: no {SmokeAdsOptics[i].Kind} optic fits {gun.Name}");
-                _smokeAdsStep++;
-                return;
-            }
-            _smokeAdsKeep ??= game.Active.Def;
-            game.Active.Def = def;
-            game.AimT = 0;
-            _smokeAimHeld = true;
-        }
-        else if (t >= at + 0.55)
-        {
-            _smokeAdsStep++;
-            var d = game.Active.Def;
-            SmokeShot(SmokeAdsOptics[i].Shot);
-            Console.WriteLine($"[smoke] {SmokeAdsOptics[i].Shot}: {d.Name} [{Attachments.Describe(d.Kit)}] optic {d.Optic} {d.AdsZoom:0.#}x, aim {game.AimT:0.00}, "
-                + $"lens covers {SightLens.LastCoverage * 100:0.0}% of the screen (radius {SightLens.LastView.HalfH:0.00} of half the height, {Sights.EyeDistance(d) * 100:0.0} cm from the eye; "
-                + $"design {Sights.Coverage(Sights.ProjectAimed(d, 16f / 9f), 16f / 9f) * 100:0.0}% at 16:9), see-through {SightLens.SeeThrough}, reticle {Sights.Spec(d).Reticle}, "
-                + $"alive {game.Local?.Alive}, GL error 0x{GlDebug.Error():X}");
-        }
-    }
-
-    private static int _smokeGallery;
-    private static bool _shotTaken;
-    private static string? _shotName;
-
-    // Guns to show off per smoke map (one per class), with a different attachment mix each time.
-    private static readonly (string Primary, string Secondary)[] SmokeGuns =
-    [
-        ("Vanguard AR", "P9 Sidearm"), ("Needle Bolt-Action", "Rattler Revolver"), ("Breacher Pump", "Viper .45"),
-        ("Anvil LMG", "Mk.23 Tactical"), ("Hornet SMG", "Stinger Burst Pistol"), ("Marksman M14", "P9 Sidearm"),
-    ];
-
-    /// <summary>A full kit for screenshots: one attachment in every slot the gun has, varied by <paramref name="variant"/>.</summary>
-    private static uint SmokeFullKit(WeaponDef w, int variant)
-    {
-        uint kit = 0;
-        for (var s = 0; s < Attachments.SlotCount; s++)
-        {
-            var opts = Attachments.For(w).Where(a => (int)a.Slot == s).ToArray();
-            if (opts.Length > 0)
-                kit = Attachments.With(kit, (AttachSlot)s, opts[(variant + s) % opts.Length].Index);
-        }
-        return kit;
-    }
-
-    private static void SmokeShot(string name) => _shotName = name;
-
-    /// <summary>The next screenshot is saved at full size (not halved).</summary>
-    private static bool _shotFull;
-
-    /// <summary>A throwaway copy of the player's progress that can't be saved.</summary>
-    private static Progress SmokeProgress()
-    {
-        var copy = Progress.Load();
-        copy.ReadOnly = true;
-        return copy;
-    }
-
-    /// <summary>Reads the finished frame back and saves it (half size, 2 x 2 averaged) as smoke_NAME.bmp next to the game.</summary>
-    private static void SaveScreenshot(string name)
-    {
-        var fb = _window.FramebufferSize;
-        int w = fb.X, h = fb.Y;
-        var pixels = new byte[w * h * 4];
-        OpenGl.Native.glPixelStorei(OpenGl.GL_PACK_ALIGNMENT, 1);
-        fixed (byte* p = pixels)
-            OpenGl.Native.glReadPixels(0, 0, w, h, OpenGl.GL_RGBA, OpenGl.GL_UNSIGNED_BYTE, p);
-        var full = _shotFull; // (--perf-shot: full size, so the small text reads)
-        _shotFull = false;
-        var div = full ? 1 : 2;
-        int ow = w / div, oh = h / div;
-        var rowBytes = (ow * 3 + 3) & ~3;
-        using var f = new BinaryWriter(File.Create(AppFolders.LogPath($"smoke_{name}.bmp")));
-        f.Write((byte)'B');
-        f.Write((byte)'M');
-        f.Write(54 + rowBytes * oh);
-        f.Write(0);
-        f.Write(54);
-        f.Write(40);
-        f.Write(ow);
-        f.Write(oh); // positive height = bottom-up rows, same order glReadPixels gives
-        f.Write((short)1);
-        f.Write((short)24);
-        f.Write(0);
-        f.Write(rowBytes * oh);
-        f.Write(2835);
-        f.Write(2835);
-        f.Write(0);
-        f.Write(0);
-        var row = new byte[rowBytes];
-        for (var y = 0; y < oh; y++)
-        {
-            for (var x = 0; x < ow; x++)
-            {
-                // The average of each 2 x 2 block (not one pixel of it), so dithered see-through things (prop glass, faded
-                // litter) show as they look at full size instead of aliasing to solid or empty.
-                var i = ((y * div) * w + x * div) * 4;
-                if (full)
-                {
-                    (row[x * 3], row[x * 3 + 1], row[x * 3 + 2]) = (pixels[i + 2], pixels[i + 1], pixels[i]);
-                    continue;
-                }
-                var j = i + w * 4;
-                row[x * 3] = (byte)((pixels[i + 2] + pixels[i + 6] + pixels[j + 2] + pixels[j + 6] + 2) >> 2);
-                row[x * 3 + 1] = (byte)((pixels[i + 1] + pixels[i + 5] + pixels[j + 1] + pixels[j + 5] + 2) >> 2);
-                row[x * 3 + 2] = (byte)((pixels[i] + pixels[i + 4] + pixels[j] + pixels[j + 4] + 2) >> 2);
-            }
-            f.Write(row);
-        }
-        Console.WriteLine($"[smoke] screenshot smoke_{name}.bmp ({ow}x{oh})");
-    }
-
-    /// <summary>Every weapon in a grid, side-on (smoke test): 1 = stock, 2 = with a full kit.</summary>
-    private static void DrawGunGallery(int mode)
-    {
-        SkyRenderer.UseDefaultLight(); // guns are lit the same whatever the map's sky
-        var fb = _window.FramebufferSize;
-        Gfx.BeginFrame(fb.X, fb.Y, new Vector3(0.06f, 0.07f, 0.09f));
-        const int cols = 10;
-        var all = Weapons.All;
-        var rows = (all.Length + cols - 1) / cols;
-        float cw = fb.X / (float)cols, ch = fb.Y / (float)rows;
-        for (var i = 0; i < all.Length; i++)
-        {
-            var w = mode == 2 ? Attachments.Apply(all[i], SmokeFullKit(all[i], i)) : all[i];
-            int cx = i % cols, cy = i / cols;
-            Gfx.SetViewport((int)(cx * cw), (int)(fb.Y - (cy + 1) * ch), (int)cw, (int)ch);
-            Gfx.ClearDepthBuffer();
-            var span = w.Length * 1.25f + 0.5f;
-            var aspect = cw / ch;
-            var dist = MathF.Max(span * 0.38f / aspect, span * 0.26f) / MathF.Tan(0.25f);
-            Gfx.SetCamera(Matrix4x4.CreateLookAt(new Vector3(-dist, 0.05f, 0), Vector3.Zero, Vector3.UnitY), Matrix4x4.CreatePerspectiveFieldOfView(0.5f, aspect, 0.05f, 50f));
-            var pose = Matrix4x4.CreateTranslation(0, 0, w.Length * 0.55f - 0.05f) * Matrix4x4.CreateRotationY(0.25f);
-            DrawGun(w, pose, false);
-        }
-        Gfx.SetViewport(0, 0, fb.X, fb.Y);
-    }
-
-    private static void SmokeNextMap(double now)
-    {
-        _smokeMap++;
-        if (_smokeMap >= SmokeMaps.Length)
-        {
-            Console.WriteLine("[smoke] done");
-            _quit = true;
-            return;
-        }
-        _settings.MapName = SmokeMaps[_smokeMap];
-        _settings.MapRandom = false;
-        _settings.Bots = 7;
-        StartSession(LobbyAction.SinglePlayer);
-        if (_session != null)
-        {
-            var (pn, sn) = SmokeGuns[_smokeMap % SmokeGuns.Length];
-            Ui.SmokeSelect((Weapons.Find(pn) ?? Weapons.DefaultPrimary).Id, (Weapons.Find(sn) ?? Weapons.DefaultSecondary).Id);
-        }
-        Console.WriteLine($"[smoke] started {_settings.MapName}: session {(_session != null ? "ok" : "FAILED")}, menu open {Ui.MenuOpen}");
-        _smokeStepStart = now;
-        _smokeStage = 0;
-        _smokeFrames = 0;
-        _smokeWorstDt = 0;
     }
 
     /// <summary>The game runs without a console window, so console output goes to callofslop.log (serverlist.log for --master, which can run beside the game).</summary>
@@ -1313,22 +580,6 @@ public static unsafe partial class Program
                 RenderLobbyRoom(now); // the lobby's map behind the menu: its assets are drawn (loaded) before the match
             else if (_session != null)
                 Render(now);
-            else if (_smokeGallery is 1 or 2)
-                DrawGunGallery(_smokeGallery);
-            else if (FoliageSmokeActive)
-                DrawFoliageSmoke();
-            else if (MoversSmokeActive)
-                DrawMoversSmoke();
-            else if (PropsSmokeActive)
-                DrawPropsSmoke();
-            else if (MeshSmokeActive)
-                DrawMeshSmoke();
-            else if (LegsSmokeActive)
-                DrawLegsSmoke();
-            else if (SkySmokeActive)
-                DrawSkySmoke();
-            else if (CaveSmokeActive)
-                DrawCaveSmoke();
             else
                 RenderLobbyBackground(now);
             if (Ui.Preview is { } showcase)
@@ -1415,7 +666,7 @@ public static unsafe partial class Program
                         break;
                 }
             }
-            else if (_smokeGallery is not (1 or 2) && !FoliageSmokeActive && !MoversSmokeActive && !PropsSmokeActive && !MeshSmokeActive && !LegsSmokeActive && !SkySmokeActive && !CaveSmokeActive) // no lobby menu over the smoke-test gun gallery or foliage views
+            else
             {
                 if (Ui.LobbyLoadouts)
                 {
@@ -1477,11 +728,11 @@ public static unsafe partial class Program
 
     /// <summary>
     /// Shows the BRUTAL logo splash (see <see cref="Splash"/>) in its own little loop before the lobby or any session.
-    /// The smoke test watches it in full (no skipping) and screenshots it once (smoke_splash.bmp).
+    /// The smoke test watches it in full (no skipping) and logs that it was shown.
     /// </summary>
     private static void RunSplash()
     {
-        var shot = false;
+        var shown = false;
         while (!_window.ShouldClose && !_quit)
         {
             Glfw.PollEvents();
@@ -1495,10 +746,9 @@ public static unsafe partial class Program
             Ui.BeginFrame();
             Splash.Draw(now, allowSkip: !_smoke);
             Ui.EndFrame();
-            if (_smoke && !shot && Splash.Elapsed(now) > 1.2)
+            if (_smoke && !shown && Splash.Elapsed(now) > 1.2)
             {
-                SaveScreenshot("splash");
-                shot = true;
+                shown = true;
                 Console.WriteLine($"[smoke] splash: BRUTAL logo shown, GL error 0x{GlDebug.Error():X}");
             }
             _window.SwapBuffers();
@@ -1541,6 +791,15 @@ public static unsafe partial class Program
         Gfx.SetDepthTest(true);
     }
 
+    /// <summary>Draws the movers of the current map at this frame's pose (called from DrawArena).</summary>
+    private static void DrawMovers(Map map)
+    {
+        if (map.Movers.Count == 0)
+            return;
+        var tick = _session?.MoverRenderTick ?? Glfw.Time * World.TickRate; // lobby background: free-running
+        MoverRender.Draw(Gfx, map, tick);
+    }
+
     private static void DrawArena()
     {
         var map = World.Map;
@@ -1548,8 +807,8 @@ public static unsafe partial class Program
         SkyRenderer.Use(map); // this map's sun, ambient and sky-coloured fog in every scene shader (no-op if unchanged)
         (LightGrid.Enabled, LightGrid.DynamicEnabled) = (_settings.Lighting != LightingQuality.Off, _settings.Lighting == LightingQuality.Full);
         LightGrid.BeginWorld(map, Glfw.Time); // a lit map's baked light grid for this frame's world (Source/Render/LightGrid.cs; unlit maps: off)
-        // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs,
-        // Program.Buildings.cs). Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
+        // Buildings (walls, floors, roofs, doors, glass) and the map's own boxes, instanced and culled by cell (BuildingRenderer.cs).
+        // Props are drawn as models by the prop renderer, a shaped map's floor as a mesh.
         // (each pass timed for the perf window, CPU and GPU, while it's up: Source/Perf; BenchPass marks --gl-bench's split)
         using (Perf.Pass(PerfArea.Buildings, PerfGpuPass.Buildings))
         {
@@ -1558,22 +817,22 @@ public static unsafe partial class Program
                     if (map.IsDrawnBox(i)) // (no instancing: the boxes one by one, as before)
                         Gfx.DrawBox(map.Solid[i], map.Colors[i], mode: 1, material: map.Materials[i]);
             BenchPass(1);
-            DrawMovers(map); // moving platforms at this frame's pose (Program.Movers.cs)
+            DrawMovers(map); // moving platforms at this frame's pose
         }
         using (Perf.Pass(PerfArea.Terrain, PerfGpuPass.Terrain))
             TerrainGfx.Draw(Gfx, map); // terrain maps only (built once per map)
         BenchPass(2);
         using (Perf.Pass(PerfArea.Props, PerfGpuPass.Props))
-            PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced (Program.Props.cs)
+            PropGfx.Draw(map, Gfx, Glfw.Time); // props and debris, instanced
         BenchPass(3);
         using (Perf.Pass(PerfArea.Meshes, PerfGpuPass.Meshes))
-            MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced (Program.Meshes.cs)
+            MeshGfx.Draw(map, Gfx, Glfw.Time); // Mesh and Model ops: primitives and glTF models, instanced
         BenchPass(4);
         using (Perf.Pass(PerfArea.Foliage, PerfGpuPass.Foliage))
-            FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes; see Program.Foliage.cs
+            FoliageGfx.Draw(map, Gfx, _settings.FoliageQuality, Glfw.Time); // after the opaque boxes
         BenchPass(5);
         using (Perf.Pass(PerfArea.Decals, PerfGpuPass.Decals))
-            DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world (Program.Decals.cs)
+            DecalGfx.Draw(map, Gfx, _settings.ImpactDecals, Glfw.Time); // map decals and bullet impacts over the opaque world
         BenchPass(6);
         // The sky's own GPU timer is read back here, between passes: a query poll makes the driver submit what it has, and
         // in a CPU-bound frame the GPU then waits for the CPU, which must not land inside a timed pass (Source/Perf/PerfGpu.cs).
@@ -2049,8 +1308,8 @@ public static unsafe partial class Program
             else if (_crouchToggle)
                 buttons |= Buttons.Crouch;
         }
-        _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's arms step only)
-        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) || _smokeAimHeld; // (Sandbox: aim takes parts off with a tool out)
+        _game.HeldButtons = buttons | _smokeButtons; // (_smokeButtons: the smoke test's movement)
+        _game.AimHeld = (_mouseCaptured && Down(GameAction.Aim) && !SandboxHoldsTrigger) ; // (Sandbox: aim takes parts off with a tool out)
 
         // Trigger: semi-auto weapons need the press edge, autos use the held state.
         var down = _mouseCaptured && Down(GameAction.Fire) && !SandboxHoldsTrigger; // (Sandbox: fire fits parts with a tool out; drivers don't shoot)
@@ -2061,7 +1320,7 @@ public static unsafe partial class Program
             down = false;
         }
         var pressed = down && Pressed(GameAction.Fire);
-        _game.UpdateTrigger(now, down || _smokeFireHeld, pressed); // (_smokeFireHeld: the workbench smoke step's minigun)
+        _game.UpdateTrigger(now, down || _smokeFireHeld, pressed); // (_smokeFireHeld: the smoke test's trigger)
     }
 
     // =====================================================================

@@ -105,7 +105,7 @@ public static class ToolRender
     /// <summary>The model drawn for a tool (its file's, or the grey block).</summary>
     public static ToolModel ModelFor(ConstructTool tool) => ShowModel ?? ConstructTools.For(tool) ?? Fallback;
 
-    /// <summary>--tool-shots and the self-test: draw this model for whatever tool is out (the tools still to come have no tool to take out yet).</summary>
+    /// <summary>The self-test: draw this model for whatever tool is out (the tools still to come have no tool to take out yet).</summary>
     public static ToolModel? ShowModel;
 
     // ---- Equipping --------------------------------------------------------------------------------------------------

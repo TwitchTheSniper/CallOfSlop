@@ -166,38 +166,6 @@ public sealed partial class Ui
         LoadWorkbenchSlot(BuildStore.Selected);
     }
 
-    /// <summary>Smoke test: shows <paramref name="b"/> on the workbench's assembly screen (not saved).</summary>
-    public void SmokeWorkbenchBuild(WeaponBuild b)
-    {
-        _wbKind = b.Kind;
-        StartEditing(b.Clone(), b.Name);
-    }
-
-    /// <summary>Smoke test: opens step 1 of a new weapon (the grip picker).</summary>
-    public void SmokeWorkbenchPicker(bool melee)
-    {
-        _wbMelee = melee;
-        StartEditing(null, "New Weapon");
-    }
-
-    /// <summary>
-    /// Smoke test: a practice stock, a one-receiver build on a three-receiver grip, and its receiver assembly copied
-    /// without the parts for it (the missing ones show red). Returns the missing-parts line.
-    /// </summary>
-    public string SmokeWorkbenchCopy(WeaponBuild b, BenchStock stock)
-    {
-        _wbMelee = false;
-        _wbPractice = true;
-        _wbPracticeStock = stock;
-        StartEditing(b.Clone(), b.Name);
-        if (Bm.Build.Receivers.FirstOrDefault() is { } r)
-        {
-            var why = Bm.CopyReceiver(r, out _);
-            WbSay(why ?? $"Copied the {r.Part.Name} assembly. {Bm.Missing.Text()}", why != null);
-        }
-        return Bm.Missing.Text();
-    }
-
     /// <summary>Switches the editor to the melee or grenade slot (or back to the selected gun slot).</summary>
     private void LoadWorkbenchKind(BuildKind kind)
     {

@@ -88,8 +88,8 @@ public static class LoadoutStore
             s = Weapons.DefaultSecondary;
         e.Primary = p.Id;
         e.Secondary = s.Id;
-        e.PrimaryKit = SmokeKit?.Invoke(p.Id) ?? Attachments.Sanitize(p, p.Id == l.Primary ? l.PrimaryKit : KitMemory(p.Id), progress);
-        e.SecondaryKit = SmokeKit?.Invoke(s.Id) ?? Attachments.Sanitize(s, s.Id == l.Secondary ? l.SecondaryKit : KitMemory(s.Id), progress);
+        e.PrimaryKit = Attachments.Sanitize(p, p.Id == l.Primary ? l.PrimaryKit : KitMemory(p.Id), progress);
+        e.SecondaryKit = Attachments.Sanitize(s, s.Id == l.Secondary ? l.SecondaryKit : KitMemory(s.Id), progress);
         if (!progress.IsUnlocked(e.Grenade) || Throwables.Get(e.Grenade).IsEquipment)
             e.Grenade = ThrowableKind.None;
         if (!progress.IsUnlocked(e.Equipment) || (e.Equipment != ThrowableKind.None && !Throwables.Get(e.Equipment).IsEquipment))

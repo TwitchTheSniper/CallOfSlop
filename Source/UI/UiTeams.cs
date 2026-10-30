@@ -229,6 +229,4 @@ public sealed partial class Ui
         ImGui.TextColored(Dim, "* picked their team (never moved by autobalance)"u8);
     }
 
-    /// <summary>Smoke test: open or close the TEAMS window.</summary>
-    public void SmokeShowTeams(bool open) => _teamsWindow = open;
 }

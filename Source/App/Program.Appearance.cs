@@ -12,9 +12,6 @@ public static unsafe partial class Program
     /// <summary>A player that only exists to be drawn on the APPEARANCE screen (never in a session).</summary>
     private static readonly Player _lookPlayer = new() { Id = 1, Team = Game.NoTeam };
 
-    /// <summary>Smoke test: the APPEARANCE screenshot has been taken.</summary>
-    private static bool _smokeAppearanceShot;
-
     private static void DrawAppearancePreview(AppearancePreview pv, double now)
     {
         var fb = _window.FramebufferSize;

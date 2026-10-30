@@ -15,7 +15,7 @@ workbench), `ZombiesDrops.cs` (dropped builds), `ZombiesPowerUps.cs` (power-ups)
 `ZombieAnimNet.cs` (animation clocks and sync), `Source/Render/ZombieAnim.cs` (the zombie poses, see "Animation"), `ZombieBots.cs` (co-op
 bots, downed controls), `Source/Maps/MapZombies.cs` (the map section), `Source/Zombies/ZombiesRules.cs` (the rules
 file), `Source/UI/UiZombies.cs` (HUD), `Source/UI/UiWorkbenchRun.cs` (the workbench in a run),
-`Source/App/Program.Zombies.cs` (drawing, input, smoke step), self-tests `Source/App/SelfTestZombies.cs`,
+`Source/App/Program.Zombies.cs` (drawing, input), self-tests `Source/App/SelfTestZombies.cs`,
 `SelfTestZombiesMap.cs` (milestone 3) and `SelfTestZombieAnim.cs` (animation).
 Data: `Parts/Tables/ZombiesRules.json`, `Parts/Tables/DropTables.json` (box tiers, part drops, prices),
 `Parts/Builds/*.json` (`start` / `wall` / `box` builds), `Maps/Zombies/01-BlackmoorAsylum.json` (written by

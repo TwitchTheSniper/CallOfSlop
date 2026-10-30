@@ -447,17 +447,4 @@ public sealed partial class Game
             killId >= Throwables.KillIdBase ? DamageKind.Explosive : DamageKind.Bullet);
     }
 
-    /// <summary>Smoke test: the nearest living bot shoots the local player with its primary. Returns the bot, or null.</summary>
-    public Player? DebugKillLocalByBot(double now)
-    {
-        if (Local is not { Alive: true } me)
-            return null;
-        Player? best = null;
-        foreach (var p in Players.Values)
-            if (p.Bot != null && p.Alive && (best == null || Vector3.DistanceSquared(p.Position, me.Position) < Vector3.DistanceSquared(best.Position, me.Position)))
-                best = p;
-        if (best == null)
-            return null;
-        return DebugKill(best, me, best.Primary, head: true, now) ? best : null;
-    }
 }

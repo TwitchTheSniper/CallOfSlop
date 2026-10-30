@@ -1,5 +1,4 @@
 using System.Numerics;
-using Brutal.GlfwApi;
 using Brutal.OpenGlApi;
 
 namespace CallOfSlop;
@@ -8,7 +7,7 @@ namespace CallOfSlop;
 /// The pre-match lobby room in the window (rules in Source/Game/PreMatchLobby.cs, screen in Source/UI/UiLobbyRoom.cs):
 /// while the session is in <see cref="MatchPhase.Lobby"/> the mouse stays free, the session's map is drawn behind the
 /// menu from a slow orbit (so its meshes, props, foliage and sky are built before the match: the preload), and the
-/// lobby screen replaces the HUD. Plus the smoke-test step that screenshots it (smoke_lobby_room.bmp).
+/// lobby screen replaces the HUD.
 /// </summary>
 public static unsafe partial class Program
 {
@@ -144,46 +143,6 @@ public static unsafe partial class Program
                 Ui.OpenLobbyLoadouts();
                 _roomLoadoutsOpen = true;
                 break;
-        }
-    }
-
-    // ---- Smoke step (map 0, after the TEAMS shot): open the lobby room over the single-player session, say something
-    // in the chat, screenshot it (smoke_lobby_room.bmp) with fps, then back to the warmup so the rest of the run is unchanged.
-
-    private static int _lobbySmoke;
-    private static double _lobbySmokeAt;
-    private static int _lobbySmokeFrames;
-
-    /// <summary>One tick of the step. Returns true while it's busy.</summary>
-    private static bool SmokeLobbyRoomTick(Game? game, double now)
-    {
-        if (game is not { IsServer: true })
-            return false;
-        switch (_lobbySmoke)
-        {
-            case 0:
-                game.DebugLobby(true, now);
-                game.SendChat("Smoke test: hello lobby", now);
-                _lobbySmokeAt = now;
-                _lobbySmokeFrames = _smokeFrames;
-                _lobbySmoke = 1;
-                return true;
-            case 1 when now - _lobbySmokeAt > 1.0:
-                SmokeShot("lobby_room");
-                var fps = (_smokeFrames - _lobbySmokeFrames) / Math.Max(now - _lobbySmokeAt, 0.001);
-                Console.WriteLine($"[smoke] lobby room: {game.Players.Count} players on {World.Map.Name} ({game.Phase}), {fps:0} fps, "
-                    + $"text rebuilt {Ui.LobbyRoom.Rebuilds} times, chat {game.Chat.Count} line(s), GL error 0x{GlDebug.Error():X}");
-                _lobbySmokeAt = now;
-                _lobbySmoke = 2;
-                return true;
-            case 2 when now - _lobbySmokeAt > 0.2:
-                game.DebugLobby(false, now); // back to the warmup
-                _lobbySmoke = 3;
-                return false;
-            case 1 or 2:
-                return true;
-            default:
-                return false;
         }
     }
 }

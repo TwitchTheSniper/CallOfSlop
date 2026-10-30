@@ -236,6 +236,7 @@ public sealed partial class Game
                     SyncLocalSlots(p, refill: false); // loadout applied mid-life (out of combat)
                 }
                 SteerMoverClock(tick, h.AckSeq);
+                SepNoteLag(tick, h.AckSeq); // how late the server runs our input (PlayerSeparation.cs)
                 Reconcile(p, h.AckSeq, MoveOf(e, p.Perks), e.Alive, respawned);
             }
             else

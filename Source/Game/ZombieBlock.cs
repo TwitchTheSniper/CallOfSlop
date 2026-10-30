@@ -109,6 +109,7 @@ public sealed partial class Game
     /// </summary>
     private void ZBlockPlayer(Player p, ref MoveState s)
     {
+        SepPlayer(p, ref s); // eased apart from other players' and bots' bodies (PlayerSeparation.cs)
         ZBlockOutOfBodies(p, ref s);
         CrowdSurfacePlayer(p, ref s); // a crowd map: the crowd as ground (ZombiesCrowdSurface.cs)
         SandboxPlayer(p, ref s); // Sandbox: drivers in their seats, everyone else out of (or on) the constructs (GameSandbox.cs)

@@ -264,8 +264,7 @@ A tool file:
 | `use` | While it works: `motion` (`ratchet`: turns `amount` radians about `axis`; `jitter`: shakes `amount` metres; `push`: jabs forward `amount` metres; `sweep`: turns side to side; `none`) at `rate` Hz; `spin` / `idleSpin` (radians a second for the spin boxes); `sparks`, `light`, `beam` (colours) and `beamLength` (metres). |
 
 A bad file is refused with the reason (`--check-construct-parts` lists the tools too) and that tool is drawn as a plain
-grey block. `--tool-shots` writes pictures of every tool in first and third person, idle and in use, a carried part
-(with the wrench and in bare hands) and a swap half-way (`smoke_tool_*.bmp`); it runs under xvfb like `--light-shots`.
+grey block.
 
 Choices made (the developer may change them): the wrench is one-handed and upright (the off hand rests), the welder and
 scanner two-handed; a carried part goes in the off hand, scaled down (a frame block would hide the view at full size);
@@ -1006,10 +1005,6 @@ survival the gate's door salvaged comes into the hands; no allocation in 120 tic
 slots, fit checks, takes and sets and the store's message; and a real host with two clients: a client's part goes in,
 both clients see the contents, both grab the same part and exactly one gets it, and a late joiner sees the contents.
 
-`--storage-shots` (Program.StorageShots.cs) writes `smoke_storage_*.bmp` under xvfb: the row of storage empty and
-stocked, the chest shut and open, the slot outlines for a carried lamp with the tooltip, the stocked shelf, the wheel
-rack, the bin half full and full, and a destroyed chest's contents spilled.
-
 ### The backpack
 
 The developer's answer on carrying (2026-10-30): the hands plus a visible backpack of about eight slots of different
@@ -1044,7 +1039,6 @@ is refused with full hands, takes both parts out in turn, then says the pack is 
 player with its parts, the HUD line and the eight-slot strip show (headless, no ImGui error, nothing allocated per
 frame); the pack's message and drawing allocate nothing; a death drops both parts near the body and empties it; and a
 real host with two clients: a client's stow reaches the server, its own copy, the other client and a late joiner.
-`--storage-shots` adds `smoke_storage_backpack_*.bmp` (from behind, from the side, the first-person strip).
 
 ### Choices made (the developer may change them)
 
@@ -1157,9 +1151,7 @@ fire key through an input reader); a **Sentry** (a Mounted MG on a turntable wit
 south-east, away from the spawns); a **Gun Bench** (a weapon builder gun from parts: a rifle receiver, barrel, muzzle
 brake, box magazine fed by an ammo box, AP rounds and a scope, fired by a switch on its base) pointing at an **Ammo Dump**
 (two crates: shoot one, and it sets off the other). Each is a blueprint in the parts menu too. The rack hands out every
-weapon part. `--weapon-shots` writes pictures (`smoke_weapons_*.bmp`): the yard's guns, the gunner turret firing at the
-target wall (two views), the hood gun, the sentry turned onto a player, the gun bench, the five heavy guns firing, a
-cook-off, the flamethrower's fire and a burning wood panel. It runs under xvfb like `--light-shots`.
+weapon part.
 
 ### Decisions made for construct weapons (the developer may change them)
 
@@ -1406,9 +1398,7 @@ no battery; a turntable under a block hanging on the chain turns the block back 
 harder and tops out at 11.4 m/s while gear 3 goes faster, and a gear selector picks gears 1, 2, 3; the yard's trailer,
 wall button wire and lamp post; a client's copy of the links, the charge and the gear, a truncated links packet
 refused; no allocation in 120 ticks of all of it. "Constructs"' loopback also checks a client and a late joiner mirror
-the couplings, the wires between constructs and the power. `--power-shots` (Program.PowerShots.cs) writes
-`smoke_power_*.bmp`: the trailer, its hitch, towed round a turn, the wall button's wire and the gate it opened, the lamp
-post, the gauges, the driving HUD and the wrecking ball.
+the couplings, the wires between constructs and the power.
 
 ### Choices made (the developer may change them)
 
@@ -1479,9 +1469,6 @@ and hit areas stay boxes, so a shaped part stands on **hidden** solid boxes (`"h
 step along its shape (a wedge's slope in 4 to 12 steps). The shape turns with its part (`CPartBox.Model`); the tiles,
 ghosts and the part in your hands draw it too.
 
-**Pictures**: `--structure-shots` writes `smoke_structure_*.bmp`: a gallery wall per group (every part of the group on
-the ground in the inventory's order, from above and close up) and a small frame welded from the parts through the
-building rules. `--inventory-shots` adds the four groups' pages.
 
 **Choices made (the developer may change them)**: the old big pieces are kept unchanged (not rescaled) so the
 blueprints still build; the armour numbers (40 and 68) are set so armour plate stops every automatic small arm and
@@ -1651,9 +1638,6 @@ and `EditKind.PlaceNew`).
 - **Cost**: the client runs the pose, the fit check and the join search every frame while a part is held: fixed loops over
   the bodies near it, no allocation (the self-test measures it).
 
-Pictures: `--placement-shots` (Program.PlacementShots.cs, under xvfb like the other shots) writes
-`smoke_placement_*.bmp`: the core's ghost on open ground with the HUD, a beam's ghost turned on its side, a red ghost over
-a construct with the reason, the core built on, the join offer, and the joined construct pushed as one.
 
 **Self-test**: the **Construct placement** section (`Source/App/SelfTestConstructPlace.cs`): the Rot24 helpers (compose,
 quaternions, nearest) and the rotate key's order; the pose on level ground, on the grid and on a wall; a beam turned on its
@@ -1767,9 +1751,7 @@ through every transfer part kind with the right ratio, and is refused with its r
 or CV joint, a stub axle, a shaft fitted by its side and a wrecked shaft; a clutch on a switch, the truck in 2WD and 4WD,
 its U joints losing the front drive at full lock (CV joints keeping it), a turntable on a PTO turning only with the engine;
 the five examples drive and turn (the crawler on the spot) and the racer is the fastest; a client gets the rpm and the
-note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in the container). `--drive-shots`
-(Program.DriveShots.cs) writes `smoke_drive_*.bmp`: the row of examples, each with a player beside it, the truck's front
-axle and transfer case, the crawler's track, part galleries and the driving HUD.
+note; eight vehicles driving at once allocate nothing (about 0.2 ms a tick in the container).
 
 ### Choices made (the developer may change them)
 
@@ -2275,8 +2257,7 @@ than 0.3 m and never goes into the floor; the Motor Gate's door opening into a p
 awake, and goes on to its limit when the post is taken away; the Turret's arm turned into another (anchored) construct
 stops at it; the Gate's door swung at 10 and 25 rad/s at a 5 cm wall never gets through it; the yard's six jointed
 constructs all sleep after 3 s alone; no allocation (a stalled joint, and a dozen jointed constructs moving at once) and
-the dozen inside 2 ms a tick. Most of it on a flat test floor with box walls (`JointTestWorld`). Pictures:
-`--joint-shots` (Program.JointShots.cs) writes smoke_joints_*.bmp of the flap, the arm and the turret under xvfb.
+the dozen inside 2 ms a tick. Most of it on a flat test floor with box walls (`JointTestWorld`).
 
 The **Constructs** section (`Source/App/SelfTestConstructs.cs`): part files load and 12 kinds of bad file are refused
 for the right reason; the buggy settles level on four wheels, drives 30+ m in 3 s, turns right, brakes, and climbs the
@@ -2312,8 +2293,7 @@ counted part goes back on respawn, and the HUD shows the counts; with them on th
 hand; a wreck left alone goes after the map's time, one being salvaged or with a player near stays; the Sandbox tick,
 the debris check and the inventory allocate nothing; and a real host with two clients: the salvaging client sees its
 count (the other doesn't), a client's gate is owned by that client on every copy, and an expired wreck goes on the
-clients too. `--sandbox-shots` adds `smoke_sandbox_salvage_*.bmp` (half-way through salvaging a wheel, done, a counted
-part in hand) and `smoke_sandbox_debris_cleared.bmp`.
+clients too.
 
 The **Sandbox parts menu** section (`Source/App/SelfTestSandboxPartsMenu.cs`): the map's `partsMenu` flag reads (on by
 default, a bad value refused); in an offline Sandbox game the menu's request hands the chosen part by id to the player
@@ -2332,9 +2312,6 @@ blueprint and tool exactly once, today's parts all have a named group (none in O
 unknown role goes to Other; every tile slot gets boxes (a blueprint built as the server builds it) and a camera that keeps
 every box corner inside its square while filling at least 75% of it; and every slot has its own place in its atlas page.
 
-`--inventory-shots` draws the atlas as the game does (the log says how many frames it took and the slowest one) and
-writes pictures of the inventory over the yard: the Parts tab, one group, one section, a search, the largest tiles, and
-the Blueprints and Tools tabs (`smoke_inventory_*.bmp`); it runs under xvfb like `--light-shots`.
 
 The **Sandbox tool wheel** section (`Source/App/SelfTestSandboxToolWheel.cs`): the direction-to-segment maths (every
 segment's middle and both edges for 8, 4, 3, 6 and 1 segments, the wrap-around at the top, the dead zone, a pointer that
@@ -2380,9 +2357,6 @@ sparks), a carried wheel and the local player's wrench are drawn in third person
 matching the immediate code draw for draw, and a gun again outside Sandbox; 240 frames of tools in use allocate nothing;
 and a real host and client each draw the other's tool in their hands.
 
-`--sandbox-shots` writes pictures of the yard, a buggy, the ghost sockets, a driven buggy, its front wheels steering,
-the gate open, the motorised gate open, the lift up, the turret turned, the wired buggy with its lamps on and its
-wires (the linking tool's view), a broken buggy, the inventory (open, searched, and a buggy spawned from it), and the tool wheel held open (on the linking tool, then on the greyed hoist) (`smoke_sandbox_*.bmp`); it runs under xvfb like `--light-shots`.
 
 ## Decisions made for milestone 1 (open questions it touches; the developer may change them)
 
@@ -2513,8 +2487,6 @@ input end). Wiring is instant (fitting a part is what takes time).
   the Gunner Turret stay within 4 mm of their seats' local offsets (feet and eyes, every frame between ticks) while the
   buggy drives at up to 12 m/s and turns 140 degrees and the turret turns; no walk cycle or footsteps; the look limits; a
   seated ragdoll; no allocation; over a loopback two clients agree on the seat, the offset and the seat-relative look.
-  `--sandbox-shots` writes `smoke_sandbox_seated_*.bmp` (riders, the driver close up, the passenger, the driver's view,
-  the gunner).
 
 ### Decisions made for milestone 2 (the developer may change them)
 
