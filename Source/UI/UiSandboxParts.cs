@@ -575,11 +575,11 @@ public sealed partial class Ui
                 if (sectionBlock)
                 {
                     ImGui.PushFont(default, 15);
-                    ImGui.TextColored(new float4(0.95f, 0.6f, 0.2f, 1f), grp.Name);
+                    ImGuiSafe.TextColored(new float4(0.95f, 0.6f, 0.2f, 1f), grp.Name);
                     ImGui.PopFont();
                 }
                 ImGui.PushFont(default, 34);
-                ImGui.TextColored(new float4(0.93f, 0.94f, 0.96f, 1f), sectionBlock ? sec.Name : grp.Name);
+                ImGuiSafe.TextColored(new float4(0.93f, 0.94f, 0.96f, 1f), sectionBlock ? sec.Name : grp.Name);
                 ImGui.PopFont();
                 // The block's tiles, row by row (rows out of view: only their space).
                 var end = v;
@@ -708,7 +708,7 @@ public sealed partial class Ui
         ImGui.Text(it.Name);
         ImGui.PopFont();
         if (it.Line1.Length > 0)
-            ImGui.TextColored(it.Tool == ConstructTool.Welder ? Orange : Dim, it.Line1);
+            ImGuiSafe.TextColored(it.Tool == ConstructTool.Welder ? Orange : Dim, it.Line1);
         if (it.Line2.Length > 0)
             ImGui.Text(it.Line2);
         if (it.Part != null)
