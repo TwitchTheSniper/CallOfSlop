@@ -1,0 +1,69 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Water Hose Inlet",
+  "description": "A coupler socket for a water hose: plug the nozzle from a matching reel into it (F). F again takes it out.",
+  "role": "hose",
+  "tool": "wrench",
+  "attachSeconds": 1.0,
+  "mass": 3,
+  "health": 80,
+  "armour": 2,
+  "material": "steel",
+  "color": "#55595f",
+  "boxes": [
+    {
+      "min": [
+        -0.12,
+        -0.12,
+        -0.05
+      ],
+      "max": [
+        0.12,
+        0.12,
+        0.03
+      ]
+    },
+    {
+      "min": [
+        -0.06,
+        -0.06,
+        0.03
+      ],
+      "max": [
+        0.06,
+        0.06,
+        0.1
+      ],
+      "color": "#2f6db5"
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.05
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.12,
+        0
+      ],
+      "dir": "-y"
+    }
+  ],
+  "hose": {
+    "end": "inlet",
+    "carries": "water",
+    "at": [
+      0,
+      0,
+      0.12
+    ]
+  }
+}

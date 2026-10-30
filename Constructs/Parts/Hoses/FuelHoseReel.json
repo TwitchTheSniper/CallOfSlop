@@ -1,0 +1,127 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Fuel Hose Reel",
+  "description": "A reel holding a fuel hose (12 m). F with empty hands takes the nozzle: walk it to a matching inlet and F to plug it in. Refuels: fuel flows from this construct's tanks (1.5 litres a second).",
+  "role": "hose",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 18,
+  "health": 120,
+  "armour": 2,
+  "material": "steel",
+  "color": "#3c4046",
+  "boxes": [
+    {
+      "min": [
+        -0.3,
+        -0.25,
+        -0.2
+      ],
+      "max": [
+        0.3,
+        -0.17,
+        0.2
+      ]
+    },
+    {
+      "min": [
+        -0.3,
+        -0.17,
+        -0.04
+      ],
+      "max": [
+        -0.24,
+        0.2,
+        0.04
+      ]
+    },
+    {
+      "min": [
+        0.24,
+        -0.17,
+        -0.04
+      ],
+      "max": [
+        0.3,
+        0.2,
+        0.04
+      ]
+    },
+    {
+      "min": [
+        -0.24,
+        -0.12,
+        -0.16
+      ],
+      "max": [
+        0.24,
+        0.2,
+        0.16
+      ],
+      "color": "#b8352c"
+    },
+    {
+      "size": [
+        0.1,
+        0.1,
+        0.1
+      ],
+      "at": [
+        0,
+        0.04,
+        0.2
+      ],
+      "color": "#202226",
+      "detail": true
+    }
+  ],
+  "sockets": [
+    {
+      "name": "-y",
+      "at": [
+        0,
+        -0.25,
+        0
+      ],
+      "dir": "-y"
+    },
+    {
+      "name": "-z",
+      "at": [
+        0,
+        0,
+        -0.2
+      ],
+      "dir": "-z"
+    },
+    {
+      "name": "+x",
+      "at": [
+        0.3,
+        0,
+        0
+      ],
+      "dir": "+x"
+    },
+    {
+      "name": "-x",
+      "at": [
+        -0.3,
+        0,
+        0
+      ],
+      "dir": "-x"
+    }
+  ],
+  "hose": {
+    "end": "outlet",
+    "carries": "fuel",
+    "length": 12,
+    "at": [
+      0,
+      0.04,
+      0.25
+    ],
+    "flow": 1.5
+  }
+}

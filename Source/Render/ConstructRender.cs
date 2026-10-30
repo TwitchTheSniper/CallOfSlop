@@ -119,6 +119,7 @@ public static partial class ConstructRender
         n += DrawCouplings(gfx, world, alpha, blendTicks);
         RouteRender.Draw(gfx, world, alpha, blendTicks); // (routed links: cables, pipes, shafts, chutes; instanced)
         n += RouteRender.LastSegments;
+        n += WorldLinkRender.Draw(gfx, world); // (world links across the ground, hoses off their reels: board item wl01)
         // Muzzle flashes (unlit, bright, a few frames).
         for (var k = 0; k < Flashes.Length; k++)
         {
@@ -521,6 +522,7 @@ public static partial class ConstructRender
         if (!ShowWires)
             return;
         RouteRender.DrawOverlay(gfx, world, 1f, false); // (routed links: the one being routed, the aimed one, highlight all)
+        WorldLinkRender.DrawOverlay(gfx, world); // (a world link being routed, the aimed one)
         gfx.SetDepthTest(false); // (seen through the parts: the wires run inside the construct)
         foreach (var c in world.Bodies)
         {

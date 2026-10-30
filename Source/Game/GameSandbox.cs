@@ -39,6 +39,8 @@ public enum CActKind : byte
     Spawn, // u8 SbSpawnKind, u8 difficulty, u8 SbLoadKind, u8 its value, u8 zombie mix, u32 count, vec aimed spot: a creative spawn (protocol 92; GameSandboxSpawns.cs)
     ClearSpawns, // every spawned bot and zombie goes (protocol 92)
     Snap, // u8 op (0 undo, 1 quick building off, 2 quick building on, 3 pick: then u16 body, u8 part; 4 take a kind: u16 part id): snappy building (protocol 94; GameSandboxSnap.cs)
+    WorldRoute, // u8 type | style << 4, u16 from body, u8 from part, u8 from port, u16 to body, u8 to part, u8 to port, u8 nodes, then each: u16 body (0: the world), u8 part, vec (world, or the part's segment rest frame): a world link (protocol 95; board item wl01)
+    WorldRouteEdit, // u8 op (delete), u8 link, u16 from body, u8 from part, u16 to body, u8 to part (protocol 95)
     Notice = 200, // server -> one client: why its action was refused (text)
 }
 
@@ -208,6 +210,7 @@ public sealed partial class Game
         _sbEye ??= id => Players.TryGetValue(id, out var pl) && pl.Alive ? pl.Eye : null;
         SandboxHands.Tick(Constructs, now, _sbEye);
         Constructs.Targets = this; // (the guns hit players, bots and zombies: GameConstructWeapons.cs)
+        Constructs.Hands ??= SandboxHandOf; // (a held hose follows its holder's hands)
         using (Perf.Measure(PerfArea.Players))
             Constructs.Step(World.Query, World.TickDt);
         SandboxSpawnTick(now); // the Spawn category: queued spawns, the spawner parts, spawned zombies (GameSandboxSpawns.cs)
@@ -255,6 +258,7 @@ public sealed partial class Game
             ConstructNet.WriteLinks(w, Constructs);
             Net.Broadcast(w.Span, PacketReliability.ReliableOrdered);
         }
+        SandboxWorldLinksFlush(); // (after the structures, like the links between constructs)
         for (var from = 0; from < Constructs.HealthDirty.Count;)
         {
             from = ConstructNet.WriteHealth(w, Constructs, Constructs.HealthDirty, from);
@@ -316,6 +320,8 @@ public sealed partial class Game
             }
         ConstructNet.WriteLinks(w, Constructs);
         Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
+        ConstructNet.WriteWorldLinks(w, Constructs); // (world links and hoses: board item wl01)
+        Net.SendTo(to, w.Span, PacketReliability.ReliableOrdered);
         SendSandboxInventory(to);
     }
 
@@ -370,6 +376,9 @@ public sealed partial class Game
                 return SandboxSpawnAct(p, kind, ref r); // the Spawn tab (GameSandboxSpawns.cs)
             case CActKind.Snap:
                 return SandboxSnapAct(p, ref r, eye);
+            case CActKind.WorldRoute:
+            case CActKind.WorldRouteEdit:
+                return SandboxWorldLinkAct(p, kind, ref r); // world links (GameSandboxWorldLinks.cs)
             case CActKind.Tool:
                 return hands.SetTool(p.Id, ConstructToolWire.From(r.U8()));
             case CActKind.Grab:
@@ -416,6 +425,8 @@ public sealed partial class Game
             {
                 var body = r.U16();
                 var part = r.U8();
+                if (SandboxHoseUse(p, body, part, out var hoseWhy))
+                    return hoseWhy; // (a hose part: take, plug, unplug or hang back its hose; GameSandboxWorldLinks.cs)
                 return hands.Use(Constructs, p.Id, eye, body, part);
             }
             case CActKind.Stand:
@@ -429,6 +440,8 @@ public sealed partial class Game
             case CActKind.Blueprint:
                 return SandboxSpawnBlueprint(p, r.U8());
             case CActKind.Drop:
+                if (Constructs.HoseLetGo(p.Id))
+                    return null; // (the hose's receiver first: it reels back)
                 return hands.Drop(Constructs, p.Id, p.Position, p.Yaw);
             case CActKind.PickUp:
                 return hands.PickUp(Constructs, p.Id, eye, r.U16());

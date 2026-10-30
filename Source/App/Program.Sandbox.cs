@@ -142,8 +142,8 @@ public static unsafe partial class Program
         }
         if (SandboxSpawnInput(g, me))
             return true; // placing a spawn: Fire spawns, Aim stops (Program.SandboxSpawn.cs)
-        if (Pressed(GameAction.DropItem) && h.Held != ConstructParts.None)
-            g.SandboxSend(CActKind.Drop);
+        if (Pressed(GameAction.DropItem) && (h.Held != ConstructParts.None || g.Constructs.HoseHeldBy(me.Id) >= 0))
+            g.SandboxSend(CActKind.Drop); // (a held hose's receiver first: it reels back)
         // The backpack (H: stow what you hold; J: draw the next part out).
         var packBinds = (long)_settings.Bind(GameAction.Stow) << 32 ^ (uint)_settings.Bind(GameAction.DrawPack);
         if (_sbPackKeys == null || packBinds != _sbPackBinds)
@@ -225,6 +225,9 @@ public static unsafe partial class Program
             }
             g.SandboxLookText = _sbLookText;
         }
+        // Hoses (board item wl01): the look line on a reel or an inlet, and the HUD line while holding one (Program.SandboxWorldLinks.cs).
+        WorldLinkRender.HandOf ??= HoseHandOf;
+        HoseLook(g, me, aimed, hit, aimed && hit.Distance <= ConstructBuild.UseReach);
         // Physical storage (decision 18): a storage part, or a part stored in one, under the crosshair.
         var storage = aimed ? g.Constructs.StoreOf(hit.Body, hit.Part) : null;
         var storeNear = aimed && hit.Distance <= ConstructBuild.UseReach;

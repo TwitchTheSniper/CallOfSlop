@@ -187,6 +187,9 @@ public sealed partial class ConstructWorld
 
     public Construct? Get(ushort id) => _byId.GetValueOrDefault(id);
 
+    /// <summary>Server: where a player's hands are (the game sets it; null for a bare world): a held hose's receiver follows them.</summary>
+    public Func<byte, Vector3?>? Hands;
+
     public void Clear()
     {
         foreach (var c in Bodies)
@@ -196,6 +199,7 @@ public sealed partial class ConstructWorld
         StructureDirty.Clear();
         HealthDirty.Clear();
         ClearLinks();
+        ClearWorldLinks();
         AmmoDirty.Clear();
         Shattered.Clear();
         FireCount = 0;
@@ -1047,6 +1051,7 @@ public sealed partial class ConstructWorld
     public void Step(IWorldQuery query, float dt)
     {
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
+        StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
         foreach (var c in Bodies)
         {
             ConstructPower.Step(this, c, dt);
@@ -1054,6 +1059,7 @@ public sealed partial class ConstructWorld
             ConstructDrive.ShiftKeys(c); // (the driver's R and sprint, before the logic step clears the seats' keys)
         }
         ConstructWeapons.Step(this, query, dt); // (before the logic: a gun's wires carry last tick's values, its gunner's keys this tick's)
+        FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
         ConstructPhysics.Step(this, query, dt);

@@ -31,6 +31,23 @@ public enum PartRole : byte
     Hitch, // milestone 3: couples to another construct's hitch (a tow ball to an eye, a chain hook to a ring; ConstructLinks.cs)
     Storage, // physical storage (decision 18): slots that parts are set into, or a bin of bulk material with a fill level (ConstructStorage.cs)
     Transfer, // drivetrain parts: drive shafts, U and CV joints, gearboxes, chains and belts, clutches, transfer cases, PTOs, hubs (ConstructDrive.cs)
+    Hose, // world links (board item wl01): a hose outlet (a reel holding a hose with a nozzle or plug at its end) or a hose inlet (a coupler socket) (ConstructHoses.cs)
+}
+
+/// <summary>A hose part's end (board item wl01): an outlet holds the hose on a reel, an inlet is the socket its receiver plugs into.</summary>
+public enum HoseEnd : byte
+{
+    Outlet,
+    Inlet,
+}
+
+/// <summary>What a hose carries (its variant). Wire bytes: add at the end.</summary>
+public enum HoseCarry : byte
+{
+    Fuel, // a fuel hose: fuel from the outlet construct's tanks into the inlet construct's
+    Water, // a water hose: water from tanks that hold water into tanks that hold water
+    Power, // a power lead: charge from the outlet construct's batteries into the inlet construct's
+    Data, // a data lead: the signal wired into the outlet comes out of the inlet
 }
 
 /// <summary>
@@ -252,6 +269,11 @@ public sealed class ConstructPartDef
     public HitchKind Hitch; // hitch
     public Vector3 HitchAt; // hitch: the coupling point (part frame)
     public float HitchChain; // hitch: a chain this long (m; 0: a rigid ball joint)
+    public HoseEnd HoseEnd; // hose: an outlet (reel) or an inlet (coupler)
+    public HoseCarry HoseCarry; // hose: what it carries (outlet and inlet must match)
+    public float HoseLength; // hose outlet: how far the hose pays out (m)
+    public float HoseFlow; // hose outlet: litres a second (fluids) or kW (power) at most
+    public Vector3 HoseAt; // hose: where the hose leaves the reel, or where the receiver plugs in (part frame)
     public bool HasDial; // a gauge's dial: a needle on a face, turned by its signal
     public Vector3 DialAt; // the needle's hub (part frame)
     public byte DialDir; // the face it is on (out of the part)
@@ -322,7 +344,8 @@ public sealed class ConstructPartDef
     public bool HasJoint => Role is PartRole.Hinge or PartRole.Joint;
 
     /// <summary>Has a signal output (wires start here): seats (someone sits there) and every logic part but lamps, horns and brakes.</summary>
-    public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake));
+    public bool HasOutput => Role == PartRole.Seat || (Role == PartRole.Logic && Logic is not (CLogic.Lamp or CLogic.Horn or CLogic.Brake))
+                             || Role == PartRole.Hose && HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Inlet; // (a data lead's inlet puts out what the lead carries)
 
     /// <summary>
     /// Named data ports (the spawners; GameSandboxSpawns.cs): the inputs a data link can end at and the outputs it can start
@@ -342,6 +365,7 @@ public sealed class ConstructPartDef
         PartRole.Transfer => Drive is DriveKind.Clutch or DriveKind.TransferCase ? 1 : 0, // a clutch's engage, a transfer case's 4WD
         PartRole.Differential => Diff == DiffKind.Lockable ? 1 : 0, // locks it
         PartRole.Suspension => ActiveSuspension ? 1 : 0, // its ride height
+        PartRole.Hose => HoseCarry == HoseCarry.Data && HoseEnd == HoseEnd.Outlet ? 1 : 0, // a data lead's outlet: the signal it sends down the lead
         PartRole.Logic => Logic switch
         {
             CLogic.Button or CLogic.Lever or CLogic.Switch or CLogic.Plate or CLogic.Speed or CLogic.Proximity or CLogic.FuelGauge or CLogic.ChargeGauge => 0,
@@ -531,7 +555,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly",
+        "physicsOnly", "hose",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -700,7 +724,7 @@ public static partial class ConstructParts
         d.Sockets = socks.ToArray();
 
         // Role data
-        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive"];
+        string[] roleKeys = ["engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic", "transmission", "battery", "alternator", "hitch", "gun", "gunPart", "ammoBox", "storage", "differential", "drive", "hose"];
         var mine = d.Role switch
         {
             PartRole.Engine => "engine",
@@ -721,6 +745,7 @@ public static partial class ConstructParts
             PartRole.Storage => "storage",
             PartRole.Differential => "differential",
             PartRole.Transfer => "drive",
+            PartRole.Hose => "hose",
             _ => "",
         };
         foreach (var key in roleKeys)
@@ -803,6 +828,25 @@ public static partial class ConstructParts
                     throw new ConstructPartException($"{file}: only a hook has a \"chain\"");
                 if (d.Hitch == HitchKind.Hook && d.HitchChain < 0.3f)
                     throw new ConstructPartException($"{file}: a hook needs a \"chain\" of 0.3 to 8 m");
+                break;
+            }
+            case PartRole.Hose:
+            {
+                Known(block!.Value, ["end", "carries", "length", "flow", "at"], bw);
+                d.HoseEnd = EnumOf<HoseEnd>(Str(Need(block.Value, "end", bw), file, "hose.end"), file, "hose.end");
+                d.HoseCarry = EnumOf<HoseCarry>(Str(Need(block.Value, "carries", bw), file, "hose.carries"), file, "hose.carries");
+                d.HoseAt = Vec(Need(block.Value, "at", bw), file, "hose.at");
+                if (MathF.Max(MathF.Abs(d.HoseAt.X), MathF.Max(MathF.Abs(d.HoseAt.Y), MathF.Abs(d.HoseAt.Z))) > 1.5f)
+                    throw new ConstructPartException($"{file}: \"hose.at\" is more than 1.5 m from the part's origin");
+                if (d.HoseEnd == HoseEnd.Outlet)
+                {
+                    d.HoseLength = Num(Need(block.Value, "length", bw), file, "hose.length");
+                    Range(d.HoseLength, 2, 30, file, "hose.length");
+                    d.HoseFlow = Opt(block.Value, "flow") is { } hf ? Num(hf, file, "hose.flow") : 1f;
+                    Range(d.HoseFlow, 0, 100, file, "hose.flow");
+                }
+                else if (Opt(block.Value, "length") != null || Opt(block.Value, "flow") != null)
+                    throw new ConstructPartException($"{file}: only a hose outlet has a \"length\" and a \"flow\"");
                 break;
             }
             case PartRole.Gun:
