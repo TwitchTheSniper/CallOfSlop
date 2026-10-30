@@ -725,7 +725,10 @@ public static unsafe partial class Program
             _swallowClick = true;
             return;
         }
-        Ui.DrawWorkbench(AudioSystem, now);
+        if (Ui.BenchRun is { Sandbox: true } sbBench && (_game.Mode != GameMode.Sandbox || System.Numerics.Vector3.Distance(_game.Local.Eye, sbBench.At) > ConstructEdits.BenchReach + 2f))
+            Ui.WorkbenchOpen = false; // (walked away from the Gun Workbench)
+        else
+            Ui.DrawWorkbench(AudioSystem, now);
         if (!Ui.WorkbenchOpen)
         {
             Ui.CloseBench();

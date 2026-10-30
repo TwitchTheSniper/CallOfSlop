@@ -151,6 +151,18 @@ public static class ConstructWeaponParts
         return sb.ToString().Trim();
     }
 
+    /// <summary>The builder part a construct part stands for ("" for any other part): its gun part, or the receiver of a receiver gun.</summary>
+    public static string NameOf(ConstructPartDef d) => d.GunPartName.Length > 0 ? d.GunPartName : d.IsReceiverGun ? d.GunReceiver : "";
+
+    /// <summary>The construct part (the item) that stands for builder part <paramref name="name"/>: the lowest id that does, or null.</summary>
+    public static ConstructPartDef? DefFor(string name)
+    {
+        foreach (var d in ConstructParts.All)
+            if (NameOf(d) is { Length: > 0 } n && n.Equals(name, StringComparison.OrdinalIgnoreCase))
+                return d;
+        return null;
+    }
+
     /// <summary>The inventory section a builder category goes in (the builder's own display names).</summary>
     public static string SectionOf(PartCategory c) => c switch
     {

@@ -91,6 +91,7 @@ public sealed partial class Game
         if (!IsServer)
             return;
         SandboxInv.Clear(p.Id);
+        ZPlayers.Remove(p.Id); // (a built weapon and the bench stock go with them)
         SandboxHands.GrabLeave(Constructs, p.Id); // (the physics gun lets go; what they froze is nobody's)
         if (p.Alive)
             SandboxHands.DropPack(Constructs, p.Id, p.Position, p.Yaw); // (what a leaving player carried stays in the world)

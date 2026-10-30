@@ -260,7 +260,13 @@ public static unsafe partial class Program
         }
         else if (Pressed(GameAction.Interact) && !(h.Tool == ConstructTool.PhysicsGun && h.GrabBody != 0)) // (holding with the physics gun, F turns the held thing)
         {
-            if (join)
+            if (aimed && hit.Distance <= ConstructBuild.UseReach + 1.4f && hit.Body.DefOf(hit.Part).IsGunBench && hit.SlotPlus1 == 0)
+            {
+                // The Gun Workbench: F opens the weapon builder (GameSandboxBench.cs, UiWorkbenchRun.cs); a lit slot is still F to take.
+                Ui.OpenSandboxBench(g, ConstructEdits.BenchCentre(hit.Body, hit.Part));
+                SetMouseCaptured(false);
+            }
+            else if (join)
                 g.SandboxSend(CActKind.Join, body: hit.Body.Id, part: (byte)hit.Part);
             else if (aimed && hit.Distance <= ConstructBuild.UseReach && hit.Body.Loose && h.Held == ConstructParts.None)
                 g.SandboxSend(CActKind.PickUp, body: hit.Body.Id);

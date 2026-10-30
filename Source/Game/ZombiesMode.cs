@@ -1422,7 +1422,7 @@ public sealed partial class Game
     {
         var old = Slots[slot];
         var mags = start ? ZRules.StartReserveMags : ZRules.ReserveMags;
-        Slots[slot] = new WeaponState(def) { Reserve = full ? def.Mag * mags : Math.Max(0, old.Reserve) };
+        Slots[slot] = new WeaponState(def) { Reserve = SandboxOn ? -1 : full ? def.Mag * mags : Math.Max(0, old.Reserve) }; // (the Sandbox has endless ammo)
         if (!select)
             return;
         var now = Brutal.GlfwApi.Glfw.Time;

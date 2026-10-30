@@ -10,6 +10,7 @@ public enum GiveResult : byte
     Dropped, // hands and backpack full: a loose pickup where it came from
     Inventory, // the world had no room for another construct: counted in the inventory instead
     Lost, // nowhere at all (logged; never expected)
+    Bench, // a Gun Workbench's own slot (ConstructGunBench.cs)
 }
 
 /// <summary>

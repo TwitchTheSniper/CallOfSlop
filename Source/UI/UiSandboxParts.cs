@@ -48,6 +48,7 @@ public sealed partial class Ui
         Blueprints,
         Tools,
         Spawn, // bots and zombies (UiSandboxSpawn.cs; creative worlds)
+        Builds, // the weapon builder's standard builds, spawned complete into the hands (UiSandboxBuilds.cs; creative worlds)
     }
 
     /// <summary>What a tile shows: a part, a blueprint or a tool, its texts made once.</summary>
@@ -265,7 +266,7 @@ public sealed partial class Ui
     /// <summary>The visible tiles (only when the search, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
-        if (_sbFilterBuilt == _sbFilterVersion || _sbTab == SbTab.Spawn)
+        if (_sbFilterBuilt == _sbFilterVersion || _sbTab is SbTab.Spawn or SbTab.Builds)
             return;
         _sbFilterBuilt = _sbFilterVersion;
         _sbVisibleCount = 0;
@@ -332,7 +333,7 @@ public sealed partial class Ui
     /// <summary>Takes the highlighted tile of the current tab, as Enter does (self-test). False when nothing is highlighted.</summary>
     public bool SandboxInventoryTake(Game game)
     {
-        if (_sbTab == SbTab.Spawn)
+        if (_sbTab is SbTab.Spawn or SbTab.Builds)
             return false;
         SbFilter();
         var items = _sbItems[(int)_sbTab];
@@ -390,12 +391,21 @@ public sealed partial class Ui
                 SbTabItem("Blueprints"u8, SbTab.Blueprints);
                 SbTabItem("Tools"u8, SbTab.Tools);
                 SbTabItem("Spawn"u8, SbTab.Spawn);
+                SbTabItem("Builds"u8, SbTab.Builds);
                 ImGui.EndTabBar();
             }
             _sbTabRequest = -1;
             if (_sbTab == SbTab.Spawn)
             {
                 SbDrawSpawn(game, me); // bots and zombies (UiSandboxSpawn.cs)
+                ImGui.End();
+                if (!open)
+                    CloseSandboxParts();
+                return;
+            }
+            if (_sbTab == SbTab.Builds)
+            {
+                SbDrawBuilds(game, me); // the standard weapon builds (UiSandboxBuilds.cs)
                 ImGui.End();
                 if (!open)
                     CloseSandboxParts();
