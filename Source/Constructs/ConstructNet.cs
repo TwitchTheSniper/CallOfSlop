@@ -211,7 +211,7 @@ public static class ConstructNet
             ref var e = ref world.Fires[k];
             w.U8((byte)e.Kind);
             if (e.Kind == CFireKind.Shot)
-                w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit);
+                w.U16(e.Body).U8(e.Part).Vec(e.At).U8((byte)e.Hit).U8(e.Muzzle); // (since 103: which muzzle)
             else if (e.Kind == CFireKind.Shatter)
                 w.Vec(e.At).U8(HalfByte(e.Half.X)).U8(HalfByte(e.Half.Y)).U8(HalfByte(e.Half.Z)); // (protocol 87)
             else if (e.Kind == CFireKind.LinkSnap)
@@ -234,7 +234,7 @@ public static class ConstructNet
             var kind = (CFireKind)r.U8();
             CFireEvent e;
             if (kind == CFireKind.Shot)
-                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8() };
+                e = new CFireEvent { Kind = kind, Body = r.U16(), Part = r.U8(), At = r.Vec(), Hit = (CFireHit)r.U8(), Muzzle = r.U8() };
             else if (kind is CFireKind.Blast or CFireKind.CookOff)
                 e = new CFireEvent { Kind = kind, At = r.Vec(), Radius = r.U8() / 10f };
             else if (kind == CFireKind.Shatter)

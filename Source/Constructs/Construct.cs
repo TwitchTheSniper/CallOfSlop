@@ -275,6 +275,9 @@ public sealed partial class Construct
     public readonly CGun[] Guns = new CGun[MaxGuns];
     public int GunCount;
     public readonly byte[] GunBoxes = new byte[MaxGuns * BoxesPerGun];
+    public const int MaxMuzzles = 16; // muzzles a gun with a splitter fires from (one a barrel)
+    public readonly Vector3[] GunMuzzles = new Vector3[MaxGuns * MaxMuzzles]; // gun k's barrel tips (rest frame; CGun.MuzzleCount of them, a splitter's barrels in turn)
+    public readonly byte[] GunMuzzlePellets = new byte[MaxGuns * MaxMuzzles]; // rounds each of those muzzles puts out a shot
     public int Burning; // parts on fire (the server's burn step skips a body with none)
 
     // Caches

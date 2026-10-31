@@ -21,6 +21,7 @@ public struct CGun
     public byte Sensor; // a proximity sensor wired into it: a sentry, pointing at the nearest player in the sensor's range (255: none)
     public byte AimJoints; // turntables and motor hinges up its chain that a gunner or a sensor can point
     public ushort PerShot; // rounds a shot takes from its load (a merged receiver's: N squared; 0 or 1: one)
+    public byte MuzzleCount; // a splitter gun's barrel tips (Construct.GunMuzzles; 0: every round leaves Muzzle)
     public byte MergeN; // a merged receiver's N (0: a single receiver or a heavy gun; ConstructMerge.cs)
 }
 
@@ -52,6 +53,7 @@ public struct CFireEvent
     public CFireKind Kind;
     public ushort Body;
     public byte Part;
+    public byte Muzzle; // a shot: which of the gun's muzzles it left (protocol 103)
     public Vector3 At; // a shot's end, a blast's centre
     public CFireHit Hit;
     public float Radius; // a blast's
@@ -227,6 +229,7 @@ public static class ConstructWeapons
         Fit(root, "ammo", ammo >= 0 ? Parts.Find(c.Parts[ammo].D.GunPartName)! : Parts.Find("FMJ") ?? throw new InvalidOperationException("no FMJ ammo part"));
         Span<int> muzzleParts = stackalloc int[16];
         var muzzles = 0;
+        var tips = new Dictionary<BuildNode, int>(); // a barrel node -> the part its rounds leave from (its muzzle device, else the barrel)
         if (barrel >= 0)
         {
             var bp = Parts.Find(c.Parts[barrel].D.GunPartName)!;
@@ -242,15 +245,21 @@ public static class ConstructWeapons
                     var o = GunNeighbour(c, barrel, k);
                     if (o < 0 || o == i || taken[o] || mine[o] || !c.Parts[o].Working || c.Parts[o].D.Role != PartRole.GunPart || Parts.Find(c.Parts[o].D.GunPartName) is not { Category: PartCategory.Barrel } sb)
                         continue;
-                    while (socket < bp.Sockets.Length && bp.Sockets[socket].Type != "barrel")
-                        socket++;
-                    if (socket >= bp.Sockets.Length)
+                    // A generated splitter has an output socket per builder output ("front-N": the Nth); a hand-made one fills them in turn.
+                    var at = SplitterOutput(c, barrel, o, bp);
+                    if (at < 0)
+                    {
+                        while (socket < bp.Sockets.Length && bp.Sockets[socket].Type != "barrel")
+                            socket++;
+                        at = socket++;
+                    }
+                    if (at >= bp.Sockets.Length || node.Child(bp.Sockets[at].Name) != null)
                     {
                         if (problem.Length == 0)
                             problem = $"more barrels than the {bp.Name} has outputs";
                         break;
                     }
-                    var sock = bp.Sockets[socket++];
+                    var sock = bp.Sockets[at];
                     if (BuildRules.SocketWhy(node, sock, sb) is { } bad)
                     {
                         if (problem.Length == 0)
@@ -259,7 +268,9 @@ public static class ConstructWeapons
                     }
                     var bn = new BuildNode(sb);
                     node.Attach(sock.Name, bn);
+                    var before = muzzles;
                     MuzzleOn(c, o, bn, ref problem, taken, mine, muzzleParts, ref muzzles);
+                    tips[bn] = muzzles > before ? muzzleParts[muzzles - 1] : o; // (the barrel's own muzzle device, else the barrel)
                     mine[o] = true;
                     if (muzzles < muzzleParts.Length)
                         muzzleParts[muzzles++] = o;
@@ -351,6 +362,21 @@ public static class ConstructWeapons
         g.Speed = 0;
         if (merged)
             ConstructMerge.ScaleGun(ref g, w, c.Merges[c.MergeOf[i] - 1].N); // (N squared receivers' worth: ReceiverMerge.json)
+        // A splitter's barrels each fire from their own tip (scaled with the parts: Front uses their drawn bounds).
+        if (tips.Count > 1)
+        {
+            var gk = c.GunCount;
+            var count = 0;
+            foreach (var b in res.Barrels)
+            {
+                if (count >= Construct.MaxMuzzles || !tips.TryGetValue(b.Leaf.Barrel, out var tipPart))
+                    continue;
+                c.GunMuzzles[gk * Construct.MaxMuzzles + count] = Front(c, tipPart, g.Forward);
+                c.GunMuzzlePellets[gk * Construct.MaxMuzzles + count] = (byte)Math.Clamp(b.Pellets, 1, 30);
+                count++;
+            }
+            g.MuzzleCount = (byte)(count > 1 ? count : 0);
+        }
         g.Def = w;
     }
 
@@ -386,6 +412,25 @@ public static class ConstructWeapons
             return null;
         }
         return first ?? $"the {node.Part.Name} has no free socket for the {part.Name}";
+    }
+
+    /// <summary>Which socket of builder splitter <paramref name="bp"/> barrel part <paramref name="barrel"/> sits on, by the splitter's "front-N" socket it is linked to; -1 when it is not on one (a hand-made splitter).</summary>
+    private static int SplitterOutput(Construct c, int splitter, int barrel, PartDef bp)
+    {
+        for (var k = 0; k < c.LinkCount; k++)
+        {
+            ref var l = ref c.Links[k];
+            var sock = l.A == splitter && l.B == barrel ? l.SA : l.B == splitter && l.A == barrel ? l.SB : -1;
+            if (sock < 0 || sock >= c.DefOf(splitter).Sockets.Length)
+                continue;
+            var name = c.DefOf(splitter).Sockets[sock].Name;
+            if (!c.DefOf(splitter).Generated || !name.StartsWith("front-", StringComparison.Ordinal) || !int.TryParse(name.AsSpan(6), out var nth))
+                return -1;
+            for (var i = 0; i < bp.Sockets.Length; i++)
+                if (bp.Sockets[i].Type == "barrel" && --nth == 0)
+                    return i;
+        }
+        return -1;
     }
 
     private static void MuzzleOn(Construct c, int barrel, BuildNode node, ref string problem, Span<bool> taken, Span<bool> mine, Span<int> muzzleParts, ref int muzzles)
@@ -573,12 +618,32 @@ public static class ConstructWeapons
         return n;
     }
 
+    /// <summary>Where gun <paramref name="k"/>'s muzzle <paramref name="j"/> is (rest frame): a splitter gun's barrel tip, else its one muzzle.</summary>
+    public static Vector3 MuzzleRest(Construct c, int k, int j) =>
+        c.Guns[k].MuzzleCount > 0 && (uint)j < c.Guns[k].MuzzleCount ? c.GunMuzzles[k * Construct.MaxMuzzles + j] : c.Guns[k].Muzzle;
+
+    /// <summary>The muzzle a gun's round number <paramref name="s"/> of a shot leaves from (each barrel's pellets in turn).</summary>
+    public static int MuzzleOfShot(Construct c, int k, int s)
+    {
+        var n = c.Guns[k].MuzzleCount;
+        for (var j = 0; j < n; j++)
+        {
+            s -= c.GunMuzzlePellets[k * Construct.MaxMuzzles + j];
+            if (s < 0)
+                return j;
+        }
+        return Math.Max(0, n - 1);
+    }
+
     /// <summary>Where gun <paramref name="k"/>'s muzzle is and which way it points, in the world now.</summary>
-    public static void MuzzleWorld(Construct c, int k, out Vector3 muzzle, out Vector3 fwd)
+    public static void MuzzleWorld(Construct c, int k, out Vector3 muzzle, out Vector3 fwd) => MuzzleWorld(c, k, 0, out muzzle, out fwd);
+
+    /// <summary>Where gun <paramref name="k"/>'s muzzle <paramref name="j"/> is and which way it points, in the world now.</summary>
+    public static void MuzzleWorld(Construct c, int k, int j, out Vector3 muzzle, out Vector3 fwd)
     {
         ref var g = ref c.Guns[k];
         c.WorldFrame(g.Seg, out var q, out var t);
-        muzzle = t + Vector3.Transform(g.Muzzle, q);
+        muzzle = t + Vector3.Transform(MuzzleRest(c, k, j), q);
         fwd = Vector3.Normalize(Vector3.Transform(g.Forward, q));
     }
 
@@ -800,16 +865,18 @@ public static class ConstructWeapons
     private static void Fire(ConstructWorld world, Construct c, int k, IWorldQuery query)
     {
         var g = c.Guns[k]; // (a copy: a hit can rebuild this construct)
-        MuzzleWorld(c, k, out var muzzle, out var fwd);
         var seq = ++_seq;
         var damage = (float)g.Def!.Damage;
         for (var s = 0; s < g.Shots; s++)
         {
-            var dir = Scatter(fwd, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u) ^ (uint)(s * 2654435761u));
+            var mz = MuzzleOfShot(c, k, s);
+            MuzzleWorld(c, k, mz, out var muzzle, out var sfwd);
+            var dir = Scatter(sfwd, g.Spread, (uint)(c.Id * 73856093) ^ (uint)(g.Part * 19349663) ^ (seq * 83492791u) ^ (uint)(s * 2654435761u));
             var hit = Round(world, c, g, query, muzzle, dir, damage, out var end);
-            world.AddFire(new CFireEvent { Kind = CFireKind.Shot, Body = c.Id, Part = g.Part, At = end, Hit = hit });
+            world.AddFire(new CFireEvent { Kind = CFireKind.Shot, Body = c.Id, Part = g.Part, Muzzle = (byte)mz, At = end, Hit = hit });
         }
         world.ShotsFired++;
+        MuzzleWorld(c, k, 0, out _, out var fwd);
         if (g.Kick > 0 && !c.Anchored && world.Bodies.Contains(c))
         {
             c.Vel -= fwd * (g.Kick / MathF.Max(c.Mass, 20f));

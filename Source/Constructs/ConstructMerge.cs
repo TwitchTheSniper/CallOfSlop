@@ -624,6 +624,17 @@ public static class ConstructMerge
         Span<bool> hang = stackalloc bool[Construct.MaxParts];
         for (var b = 0; b < c.PartCount; b++)
             hang[b] = !tree[b] && b != exclude && HangsOn(c, b, tree, exclude, out _, out _);
+        // The merge's other centre parts (and what is bolted through them) move too, by the same scaling about the merge's origin, so
+        // they stay clear of this tree whenever they were clear of it (ms02: a splitter 3x wide and a magazine 3x big, both onto a 2x2).
+        Span<bool> mates = stackalloc bool[Construct.MaxParts];
+        var ownLen = c.DefOf(from.Lead).Sockets.Length;
+        for (var l = 0; l < c.LinkCount; l++)
+        {
+            ref var lk = ref c.Links[l];
+            var o = lk.A == from.Lead && lk.SA >= ownLen ? lk.B : lk.B == from.Lead && lk.SB >= ownLen ? lk.A : -1;
+            if (o >= 0 && o < c.PartCount && !tree[o] && !pop[o] && o != exclude && c.Parts[o].D.Role == PartRole.GunPart)
+                Tree(c, o, mates, pop, exclude);
+        }
         // Something in the way: any other part (not popping, not the one coming off), or the front of another merge.
         for (var i = 0; i < c.PartCount; i++)
         {
@@ -638,7 +649,7 @@ public static class ConstructMerge
                 var bh = Rot24.ApplyHalf(c.Parts[i].Rot, d.Boxes[b].Half * s) - new Vector3(0.01f);
                 for (var j = 0; j < c.PartCount; j++)
                 {
-                    if (tree[j] || pop[j] || hang[j] || j == exclude || c.Parts[j].Seg != to.Seg)
+                    if (tree[j] || pop[j] || hang[j] || mates[j] || j == exclude || c.Parts[j].Seg != to.Seg)
                         continue;
                     var od = c.DefOf(j);
                     for (var k = 0; k < od.SolidBoxes; k++)

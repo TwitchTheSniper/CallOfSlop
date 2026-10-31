@@ -236,7 +236,23 @@ public static class ConstructWeaponParts
         sb.Append("{\"name\": \"top\", \"at\": ").Append(V(new Vector3(0, half.Y, 0))).Append(", \"dir\": \"+y\"}, ");
         sb.Append("{\"name\": \"bottom\", \"at\": ").Append(V(new Vector3(0, -half.Y, 0))).Append(", \"dir\": \"-y\"}, ");
         sb.Append("{\"name\": \"back\", \"at\": ").Append(V(new Vector3(0, 0, half.Z))).Append(", \"dir\": \"+z\"}, ");
-        sb.Append("{\"name\": \"front\", \"at\": ").Append(V(new Vector3(0, 0, -half.Z))).Append(", \"dir\": \"-z\"}]");
+        var outs = p.Category == PartCategory.Splitter ? p.Sockets.Where(x => x.Type == "barrel").ToArray() : [];
+        if (outs.Length == 0)
+            sb.Append("{\"name\": \"front\", \"at\": ").Append(V(new Vector3(0, 0, -half.Z))).Append(", \"dir\": \"-z\"}]");
+        else
+        {
+            // A splitter has one socket on its front per output (its file's layout, flush on the front face), so every barrel
+            // has its own place (and a merged receiver's scaling moves each with the part, board item ms02). One output: "front".
+            for (var k = 0; k < outs.Length; k++)
+            {
+                var o = outs[k].Pos * s - centre;
+                var at = new Vector3(Math.Clamp(o.X, -half.X, half.X), Math.Clamp(o.Y, -half.Y, half.Y), -half.Z);
+                if (k > 0)
+                    sb.Append(", ");
+                sb.Append("{\"name\": \"").Append(outs.Length == 1 ? "front" : "front-" + (k + 1)).Append("\", \"at\": ").Append(V(at)).Append(", \"dir\": \"-z\"}");
+            }
+            sb.Append(']');
+        }
         if (receiver)
         {
             var act = p.Receiver!.StockAction is { } sa && Parts.Find(sa) is { Action: not null } ? sa : DefaultAction(p);

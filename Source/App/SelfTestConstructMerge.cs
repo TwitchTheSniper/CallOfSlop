@@ -29,6 +29,8 @@ public static partial class SelfTest
         CMergeBuild();
         CMergeDamage();
         CMergeCollider();
+        CMergedSplitter();
+        MsHeldPath(yard);
         ReceiverMergeRules.Use(null);
     }
 
