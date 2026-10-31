@@ -142,7 +142,7 @@ public static partial class SelfTest
         {
             hands2.GrabTick(w2, 0, e2, Vector3.UnitX, yy);
             w2.Step(World.Query, dt);
-            if (t % 10 == 0) Line($"DBG t{t} p.x {p.WorldCom.X - s2.X:0.00} vel {p.Vel.X:0.0} wall {wall.WorldCom.X - s2.X:0.00} contacts {ConstructPhysics.LastContacts} r {p.Radius:0.00}");
+            if (t < 20) Line($"DBG t{t} p.x {p.WorldCom.X - s2.X:0.00} vel {p.Vel.X:0.0} wall {wall.WorldCom.X - s2.X:0.00} contacts {ConstructPhysics.LastContacts} r {p.Radius:0.00} gt {p.GrabTarget.X - s2.X:0.00} speed {p.GrabSpeed} half {p.LocalMax.X:0.00}");
         }
         _ = far;
         {
