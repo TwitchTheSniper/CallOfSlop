@@ -555,7 +555,7 @@ public static partial class SelfTest
         }
         var finite = rigs.All(r => r.Texels.All(float.IsFinite));
         MassLine($"rigs: {string.Join(", ", rigs.Select((r, i) => $"{r.Name} {r.Boxes} boxes x {r.Frames} frames ({r.Texels.Length * 4 / 1024.0:0.0} KB, moves {moves[i]:0.00})"))}, walk cycle {rigs[0].CycleMetres:0.00} m, finite {finite}");
-        if (!finite || rigs[0].Boxes <= rigs[1].Boxes || rigs[1].Boxes <= rigs[2].Boxes || rigs[0].Frames < 8 || moves[0] < 0.05f || moves[1] < 0.05f)
+        if (!finite || rigs[0].Boxes <= rigs[1].Boxes || rigs[1].Boxes <= rigs[2].Boxes || rigs[0].Frames < 8 || rigs[2].Frames < 4 || moves[0] < 0.05f || moves[1] < 0.05f || moves[2] < 0.05f)
             Fail("the crowd rigs should bake a walk cycle: near fuller than mid fuller than far, the limbs moving, finite numbers");
     }
 

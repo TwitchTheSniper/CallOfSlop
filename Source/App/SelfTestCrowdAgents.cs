@@ -31,6 +31,7 @@ public static partial class SelfTest
         CrowdHorizonCheck();
         CrowdParticleLooks();
         CrowdPrepBudget();
+        CrowdAliveCheck();
     }
 
     /// <summary>A flat picture of 24 x 16 cells of 4 m from (-48, -32), a stream flowing east (heading byte for yaw +90 degrees).</summary>
@@ -434,6 +435,114 @@ public static partial class SelfTest
         {
             CrowdJobs.Serial = false;
             ZombieAnim.ClearFrustum();
+        }
+    }
+
+    /// <summary>
+    /// Always alive (board item dev-horde-lod-motion-lm01): a packed crowd with its front blocked (a jam, nothing flowing)
+    /// still plays its cycle in every level of detail (no agent shows one frame for over a second; the far rig's frames
+    /// advance), jostles about its spot by a few cm, stays inside its cells, allocates nothing, and is the same serial
+    /// and in parallel.
+    /// </summary>
+    private static void CrowdAliveCheck()
+    {
+        var one = CrowdAlive(serial: true, out var d1, out var line);
+        CrowdAlive(serial: false, out var d2, out _);
+        Line(line);
+        if (d1 != d2)
+            Fail($"crowd alive: serial ({d1:x16}) and parallel ({d2:x16}) runs differ");
+        _ = one;
+    }
+
+    private static bool CrowdAlive(bool serial, out ulong digest, out string line)
+    {
+        CrowdJobs.Serial = serial;
+        try
+        {
+            var pic = new CrowdPicture();
+            pic.Reset(1, 24, 16, 4f, -48f, -32f, 0f);
+            var east = HordeCrowd.HeadingByte(MathF.PI / 2);
+            for (var r = 5; r < 11; r++)
+                for (var c = 2; c < 12; c++)
+                    pic.Set(r * 24 + c, 40, c < 10 ? east : (byte)0); // (a packed block; its front two columns stand, the rest press on them)
+            var a = new CrowdAgents { DrawCap = 40, FarCap = 40, FarFrom = 60, FarTo = 180, Speed = 1.5f, JamCount = 40 };
+            var inst = new CrowdInstances();
+            var cam = new Vector3(-60, 6, 0);
+            const float dt = 1 / 60f;
+            var seen = new Dictionary<uint, (int Frame, int Run, int Worst, int Changes, byte Lod, float MinX, float MaxX, float MinZ, float MaxZ)>();
+            long alloc = 0;
+            for (var f = 0; f < 420; f++)
+            {
+                var a0 = GC.GetAllocatedBytesForCurrentThread();
+                a.FromPicture(pic, null);
+                inst.Begin(cam);
+                a.Update(cam, dt, 0, inst);
+                inst.End();
+                if (f >= 60)
+                    alloc += GC.GetAllocatedBytesForCurrentThread() - a0;
+                if (f < 120)
+                    continue; // (settled: filled and eased into spots)
+                for (var i = 0; i < a.Count; i++)
+                {
+                    if (a.State[i] != CrowdAgents.Mode.Live)
+                        continue;
+                    var lod = a.Lod[i];
+                    var frames = lod >= 2 ? CrowdRig.FarFrames : 16;
+                    var p = a.Walk[i] / CrowdInstances.GaitCycle[0];
+                    p -= MathF.Floor(p);
+                    var fr = (int)(MathF.Min(p, 0.995f) * frames);
+                    if (!seen.TryGetValue(a.Id[i], out var t) || t.Lod != lod)
+                    {
+                        seen[a.Id[i]] = (fr, 0, t.Worst, t.Changes, lod, a.X[i], a.X[i], a.Z[i], a.Z[i]);
+                        continue;
+                    }
+                    var run = fr == t.Frame ? t.Run + 1 : 0;
+                    seen[a.Id[i]] = (fr, run, Math.Max(t.Worst, run), t.Changes + (fr != t.Frame ? 1 : 0), lod,
+                        MathF.Min(t.MinX, a.X[i]), MathF.Max(t.MaxX, a.X[i]), MathF.Min(t.MinZ, a.Z[i]), MathF.Max(t.MaxZ, a.Z[i]));
+                }
+            }
+            var perLod = new int[3];
+            var stuck = new int[3];
+            var advanced = new int[3];
+            double spread = 0;
+            float widest = 0;
+            foreach (var t in seen.Values)
+            {
+                perLod[t.Lod]++;
+                if (t.Worst > 60)
+                    stuck[t.Lod]++;
+                if (t.Changes >= 2)
+                    advanced[t.Lod]++;
+                var w = MathF.Max(t.MaxX - t.MinX, t.MaxZ - t.MinZ);
+                spread += w;
+                widest = MathF.Max(widest, w);
+            }
+            var total = seen.Count;
+            var mean = total > 0 ? spread / total : 0;
+            ulong h = 1469598103934665603;
+            for (var i = 0; i < a.Count; i++)
+                h = (h ^ BitConverter.SingleToUInt32Bits(a.X[i]) ^ (ulong)BitConverter.SingleToUInt32Bits(a.Walk[i]) << 32 ^ a.Id[i]) * 1099511628211;
+            digest = h;
+            line = $"crowd alive: {total} jammed agents (lods {perLod[0]}/{perLod[1]}/{perLod[2]}), frozen over 1 s {stuck[0]}/{stuck[1]}/{stuck[2]}, "
+                   + $"cycling {advanced[0]}/{advanced[1]}/{advanced[2]}, jostle {mean * 100:0} cm mean, {widest * 100:0} cm widest; {alloc} bytes allocated";
+            if (!serial)
+                return true;
+            if (total < 200 || perLod[2] < 20 || perLod[1] < 20)
+                Fail($"crowd alive: the scene should hold jammed agents in the mid and far rigs ({line})");
+            for (var l = 0; l < 3; l++)
+            {
+                if (perLod[l] > 0 && (stuck[l] > perLod[l] * 0.05 || advanced[l] < perLod[l] * 0.95))
+                    Fail($"crowd alive: a jammed agent in lod {l} froze for over a second ({line})");
+            }
+            if (mean < 0.03 || widest > 1.2f)
+                Fail($"crowd alive: a jam should jostle by a few cm and stay packed ({line})");
+            if (alloc > 0)
+                Fail($"crowd alive: {alloc} bytes allocated ({line})");
+            return true;
+        }
+        finally
+        {
+            CrowdJobs.Serial = false;
         }
     }
 }
