@@ -230,7 +230,7 @@ public sealed partial class Game
                 var ownMove = MoveOf(e, p.Perks);
                 if (_snapIn.Own is { Ride: true } ro)
                 {
-                    // The exact ride state (protocol 101): the replay starts in the construct's frame (ConstructRide.cs).
+                    // The exact ride state (protocol 102): the replay starts in the construct's frame (ConstructRide.cs).
                     ownMove.RideBody = ro.RideBody;
                     ownMove.RideSeg = ro.RideSeg;
                     ownMove.RideAir = ro.RideAir;

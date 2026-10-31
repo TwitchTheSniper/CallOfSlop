@@ -443,7 +443,8 @@ differential"... Transmissions and differentials stop working at zero health (`d
 - **Joints** (reduced coordinates: each is one number on its body; the moving ones follow the [strength model](#actuator-sizes-and-strength)): a passive hinge is damped, falls under gravity,
   is held inside its limits, latched open or shut by Interact, swung by a player walking into its leaf, and held still
   while its lock is on; the moving joints are driven by a motor (milestone 2, below).
-- A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it.
+- A body that stays still for 40 ticks sleeps and costs nothing until a hit, an edit, a driver or a nearby body wakes it
+  (in a big world it is not even in the step's list: [Scale](#scale-thousands-of-constructs)).
   An anchored construct with joints sleeps too once its joints are still (a motor that is still pushing, stalled
   against something, keeps it awake); a motor asked to move, more riders than it can hold, Interact or a push wake it.
 - Players are never moved by physics here: they are pushed out of construct parts (or stand on top of them, carried
@@ -807,6 +808,13 @@ glass are the bulky ones; creative means infinite parts on (as for the physics g
   a byte per signal part when it has logic), any whose signals changed (a lamp switched on in an anchored base), plus
   four sleeping ones in turn so a lost packet never leaves one wrong for long. Clients blend between poses and fit their
   wheels to the ground themselves.
+- Protocol 101 (body sync, board item pd01): when more bodies move than one pose packet holds, they take turns (the
+  next packet starts at the first body left out, `ConstructWorld.PoseCursor`), with room kept for the sleeping ones'
+  turn; a body that goes still sends its final pose three more times. A `CBody` Full carries the server tick of its pose,
+  so a Full sent again after a loss doesn't put a newer pose back. Every 2 s the server sends the body digest
+  (`CBodyKind.Digest`, reliable and in order with the structure: each body's id, `ConstructNet.StructureHash`, sleep
+  state and a sleeping one's pose); a client removes the bodies it doesn't list and asks for the ones it holds wrong
+  (`CAct.Resync`), which come back whole. "Sandbox body sync" tests it with a real host and client, lag and loss.
 - `Msg.CAct` (reliable): a client's request (tool, attach, place, remove, cancel, use, stand, rack, drop, pick up; wire,
   unwire, a setting, a seated player's fire/aim/reload keys; protocol 80: `SeatLook`, a seated player's seat-relative
   look, sent unreliably); the server re-checks everything and answers a refusal with its reason. Protocol 79: `Rack` carries a pick byte (0: the rack's next kind, at the rack; n: part id n - 1, from the
@@ -1638,7 +1646,8 @@ and `EditKind.PlaceNew`).
   while anyone sits in either, or past the caps (96 parts, 16 joints, 64 wires a construct).
 - **Ownership and limits**: what a player sets down (or claims, or joins) is theirs (`Construct.Owner`; factions later).
   A player may own **12** constructs (wrecks and loose parts don't count); past that a new one is refused ("take one apart
-  or join two"). The world's caps (64 bodies, 1,200 parts) still hold.
+  or join two"; the host may change the number). The world has no fixed caps since board item cl01, only the host's
+  safety cap ([Scale](#scale-thousands-of-constructs)).
 - **Network** (protocol 84): `CAct.PlaceNew` carries the surface point, its normal, the yaw, the turn and two flags (grid,
   anchor); the server finds the surface again under the point itself. `CAct.Join` names the part. CBody's flags carry
   "pinned". Everything else (the new construct, the merged one, the one that went) travels as before.
@@ -2507,7 +2516,7 @@ input end). Wiring is instant (fitting a part is what takes time).
 - The first working seat of the body drives; any other seat carries a **passenger**, pinned to it like the driver. A seat
   holds one player (`SitterPlus1` on the part, so it survives parts being renumbered); a seat that breaks or falls away
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
-- A player standing on a part **rides in its segment's frame** (`ConstructRide.cs`, board item rf01; protocol 101): the
+- A player standing on a part **rides in its segment's frame** (`ConstructRide.cs`, board item rf01; protocol 102): the
   feet are kept in that frame (`MoveState.RideLocal`) and put back in the world by its pose each tick, exactly (no drift
   on turns, no slide on a pitching deck), and their velocity is their own, relative to the surface, so walking towards
   a truck's front goes towards its front however it turns. The local view turns with the frame
@@ -2744,4 +2753,63 @@ with a separate client welds both ways and both agree.
 separate list of "variants" (a socket has one facing; the spin covers the rest). Face points and off-grid angles are
 always freeform segments (a face point has no socket to link). A piece held to the ground (pinned or on a working
 foundation) can't be the piece moved: pick it as the target. There is no weight limit beyond the merge limits.
+
+## Scale: thousands of constructs
+
+Board item dev-sandbox-construct-limits-cl01. The world's fixed caps (64 bodies, 1,200 parts, 128 joints, 512 wires,
+chosen to keep the tick in budget when every loop walked every body) are gone. A world holds thousands of constructs,
+wrecks and loose parts; what is at rest costs next to nothing, and the per-construct caps (96 parts, 16 joints, the
+routes) stay.
+
+- **Sleep.** A resting body sleeps (40 still ticks, as before). In a big world (from `ConstructWorld.LinearBelow`, 48
+  bodies) the physics steps only a list made each tick (`ConstructPhysics.SimList`): the awake bodies, the held and
+  changed ones, and whatever they may touch or are coupled to. A sleeping body is not integrated, not in the contact
+  solve and not sent; a sleeping one with motors is only asked whether a motor wants to move (`WakeCheck`). Contact with
+  a moving body, a tool, an edit, a blast, a logic or power change wakes it, as before.
+- **Broadphase** (`Source/Constructs/ConstructBroadphase.cs`). A hashed uniform grid (8 m cells, 4,096 buckets) over the
+  bodies' spheres in x and z, rebuilt lazily (the first query after a step, two passes, no allocation; bodies made or
+  grown since go in a short list every query walks). Ray tests, player blocking, blasts, the physics' body pairs, cargo
+  volume scans and bot obstacles ask it (`Near`, `NearRay`) for the bodies near them; small worlds walk the list exactly
+  as before. A seeded check compares 200 rays through the grid with a walk over every body.
+- **Network** (no wire change: protocol 100). In a big world each client gets its own pose packets
+  (`ConstructNet.WritePosesFor`, Game `SandboxPoses`): the bodies that move or changed (and for 8 pose ticks after),
+  every pose tick within 80 m of the client's player, every 2nd to 200 m, 4th to 400 m, 8th beyond, staggered by id; a
+  few sleeping ones refreshed in turn; up to 6 packets a client a pose tick, the start turning with the tick so nobody is
+  starved. A joiner gets the constructs **streamed**, 16 KB a tick (about 1 MB/s; `GameSandboxStream.cs`), and the stores,
+  links and its inventory after the last one; small worlds keep the broadcast and the single burst.
+- **Rendering** (`Source/Render/ConstructRenderCull.cs`). A construct out of view or past 700 m isn't drawn; one past
+  140 m with 5 parts or more is drawn as one box over its bounds in its first part's colour. Near ones draw part by part.
+  A client's blend skips sleeping bodies already where their last pose put them.
+- **The host's safety cap.** Not a design cap: "Max constructs" (the lobby room's Match tab in Sandbox; default 10,000
+  bodies, and 25 parts a body on average: 250,000 parts) only guards against runaway spam, and "Constructs per player"
+  (default 12, "No limit" for a private game; lower it on a public server). Refusals say which limit and what it is.
+  Joints and routed links in all scale with the body cap (4 and 8 a body). `Settings.SandboxMaxBodies` and
+  `SandboxMaxPerPlayer` (`settings.txt`).
+- **Save and load.** There is no world save file yet (blueprints hold one construct, 96 parts at most); the world's state
+  travels whole only to a joiner, and "Construct scale" checks that every copy of 2,000 matches the host's.
+
+Measured by the "Construct scale" self-test (seeded, a few ticks each; GitHub Actions runners, 2026-10-31; the Windows
+column is the busiest tick's CPU time, which the test holds under the 8 ms budget). The numbers also come out as a notice
+on a branch's CI run.
+
+| World | Awake | Simulated a tick | Tick (wall, Linux CI) | Tick (CPU, Windows CI) | Allocated |
+| --- | --- | --- | --- | --- | --- |
+| 2,000 bodies, ~4,300 parts | ~195 | ~195 | 1.5 to 1.8 ms average (worst 1.9 to 2.5) | 2.0 to 2.2 ms worst (1.4 to 1.8 ms average, wall) | 0 |
+| 5,000 constructs, 100,000 parts, + 300 blocks | ~300 | ~300 | 1.7 to 1.8 ms average (worst 1.9 to 2.1) | 1.7 to 2.2 ms worst (1.5 to 1.9 ms average, wall) | 0 |
+| 2,000 bodies at rest | 0 | 0 | 0.14 ms | | 0 |
+
+A joiner had all 2,000 bodies after 0.3 s over the loopback; queries looked at about 25 bodies (a ray down), 85 (a
+40 m ray along a row) and 70 (a player's blocking) of 2,000.
+
+### Choices made (the developer may change them)
+
+- The grid's cell (8 m), the bands (80 / 200 / 400 m), the stream rate (16 KB a tick) and the LOD and cull distances
+  (140 m, 700 m) are constants, not host settings.
+- Worlds under 48 bodies keep every old code path exactly (the walk over the list, the pose broadcast, the join burst),
+  so the existing tests and small games behave as they did.
+- No protocol bump: the poses and the structure keep their format; a client takes several pose packets a tick.
+- Far constructs are one box in the colour of their first part; instanced per-construct batches are left to the render
+  preparation work (dev-perf-threading-mt01).
+- Every construct still holds its fixed per-construct arrays (96 parts and the rest): about 233 MB for 5,300 bodies (some
+  44 KB each, whatever its size). Sizing them to the construct is the next step if memory, not the tick, becomes the limit.
 

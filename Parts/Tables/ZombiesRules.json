@@ -159,11 +159,11 @@
     }
   },
   "casino": {
-    "note": "PROPOSED casino tables (docs/zombies/ZOMBIES-MODE.md, Casino tables): bet points (only points: no money, no progression) at a map's tables. Each game's min / max bet (roulette: a player's total on one spin; a map's table may set its own); every bet is a whole number of betStep. Blackjack waits dealSeconds after the first bet for other seats, then each hand has turnSeconds to act (then it stands). Roulette takes chips for rouletteBetSeconds after the first one, then the wheel spins spinSeconds. High-low and dice wait actSeconds for you to act (then high-low cashes out, dice rolls). A result shows showSeconds. You play within useRange of a table; an unfinished hand is forfeit past leaveRange (or when you go down). High-low pays (1 - highLowEdge) / the guess's chance per correct guess, at most highLowMaxSteps guesses. A win of announceAt points or more over the bet is shown to everyone.",
-    "blackjack": {"min": 50, "max": 1000},
-    "roulette": {"min": 10, "max": 1000},
-    "highLow": {"min": 50, "max": 500},
-    "dice": {"min": 50, "max": 1000},
+    "note": "PROPOSED casino tables (docs/zombies/ZOMBIES-MODE.md, Casino tables): bet points (only points: no money, no progression) at a map's tables. Each game's min bet (there is no maximum: a player may bet any amount up to the points they have; roulette: a player's total on one spin; a map's table may set its own min); every bet is a whole number of betStep. Blackjack waits dealSeconds after the first bet for other seats, then each hand has turnSeconds to act (then it stands). Roulette takes chips for rouletteBetSeconds after the first one, then the wheel spins spinSeconds. High-low and dice wait actSeconds for you to act (then high-low cashes out, dice rolls). A result shows showSeconds. You play within useRange of a table; an unfinished hand is forfeit past leaveRange (or when you go down). High-low pays (1 - highLowEdge) / the guess's chance per correct guess, at most highLowMaxSteps guesses. A win of announceAt points or more over the bet is shown to everyone.",
+    "blackjack": {"min": 50},
+    "roulette": {"min": 10},
+    "highLow": {"min": 50},
+    "dice": {"min": 50},
     "betStep": 10,
     "dealSeconds": 5,
     "turnSeconds": 20,

@@ -298,6 +298,9 @@ public sealed partial class Game
         }
     }
 
+    /// <summary>Both sides, every match start and mode switch (<see cref="GameModeModule.OnPlayerReset"/>): one player's run is forgotten.</summary>
+    internal void ZombiesResetPlayer(Player p) => ZPlayers.Remove(p.Id);
+
     /// <summary>Build slots per player: 0-3 guns, <see cref="MeleeSlot"/> the melee weapon, <see cref="GrenadeSlot"/> the grenade (modular grenades, protocol 67).</summary>
     public const int MeleeSlot = 4, GrenadeSlot = 5, BuildSlots = 6;
 
@@ -871,7 +874,7 @@ public sealed partial class Game
         if (amount == 0)
             return;
         var zp = ZP(p);
-        zp.Points = Math.Max(0, zp.Points + amount);
+        zp.Points = Casino.Capped((long)zp.Points + amount); // (never below 0, never wrapping past the cap)
     }
 
     /// <summary>Server: a zombie's swipe landed on <paramref name="p"/>. False: it did nothing (immune, down, or an armour plate took it), so a type's special doesn't follow.</summary>

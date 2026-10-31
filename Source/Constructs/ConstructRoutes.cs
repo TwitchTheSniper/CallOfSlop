@@ -498,7 +498,7 @@ public static partial class ConstructRoutes
             return $"a link has at most {Construct.MaxNodesPerRoute} nodes";
         if (c.RouteNodeCount + nodes.Length + 1 > Construct.MaxRouteNodes)
             return "this construct has all the link nodes it can take";
-        if (world != null && world.TotalRoutes >= ConstructWorld.MaxTotalWires)
+        if (world != null && world.TotalRoutes >= world.WireCap)
             return "the world has all the links it can take";
         int source;
         if (parent != 255)

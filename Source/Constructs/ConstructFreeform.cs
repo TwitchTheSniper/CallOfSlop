@@ -106,7 +106,7 @@ public static class Freeform
             return $"at most {MaxPerConstruct} freeform welds a construct";
         if (keep.JointCount + mover.JointCount + 1 > Construct.MaxJoints)
             return $"together they'd have more than {Construct.MaxJoints} joints and freeform welds";
-        if (world.TotalJoints + 1 > ConstructWorld.MaxTotalJoints)
+        if (world.TotalJoints + 1 > world.JointCap)
             return "the world has too many joints";
         if (mover.WheelCount > 0)
             return "that piece has wheels: weld it on with socket welds (wheels roll in the body's own frame)";
@@ -278,7 +278,7 @@ public sealed partial class ConstructWorld
     /// </summary>
     public int AddFreeform(Construct c, int anchor, ConstructPartDef def, Vector3 pos, Quaternion rot)
     {
-        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= MaxTotalJoints)
+        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= JointCap)
             return -1;
         var n = 0;
         for (var j = 0; j < c.JointCount; j++)

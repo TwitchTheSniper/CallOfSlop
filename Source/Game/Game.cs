@@ -563,7 +563,7 @@ public sealed partial class Game : IDisposable
         Audio.Shot(def, null);
 
         var origin = MannedEye ?? me.RenderEye; // manning a push cart: the view sits behind its gun (GameZombies.cs)
-        var dir = LookDir(LookYaw, LookPitch);
+        var dir = AimDir(); // (the look; Sandbox third person: towards what the crosshair is on, GameThirdPerson.cs)
         var spread = CurrentSpread();
         var seed = _shotSeed++;
 

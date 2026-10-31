@@ -643,7 +643,7 @@ public sealed partial class ConstructWorld
 
     private Construct? Spawn(ConstructPartDef d, Vector3 at, Vector3 vel)
     {
-        if (Bodies.Count >= MaxBodies || TotalParts >= MaxTotalParts)
+        if (!HasRoom())
             return null;
         if (Create(at + new Vector3(0, 0.05f, 0), Quaternion.Identity) is not { } c)
             return null;

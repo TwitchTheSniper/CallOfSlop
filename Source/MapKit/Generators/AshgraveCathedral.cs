@@ -804,7 +804,9 @@ public sealed partial class AshgraveCathedral : IMapGenerator
     void Cloister()
     {
         WallZ(4, 30, -34, 0.4, G, 5, StoneD);
-        WallZ(4, 30, 3.6, 0.4, G, 5, StoneD, DoorZ("the Chapter Door", false, 1250, "Cloister", "Chapter House", 13, 3.6, 0.4, 2.0, 2.8));
+        // The Chapter House's west wall runs up to its ceiling (8 m) for z 4..22; the cloister's own 5 m wall carries on beyond.
+        WallZ(4, 22, 3.6, 0.4, G, 8, StoneD, DoorZ("the Chapter Door", false, 1250, "Cloister", "Chapter House", 13, 3.6, 0.4, 2.0, 2.8));
+        WallZ(22, 30, 3.6, 0.4, G, 5, StoneD);
         WallX(-34, 16, 29.6, 0.4, G, 6, StoneD, DoorX("the Barn Door", false, 1000, "Cloister", "Tithe Barn", -15, 29.6, 0.4, 2.4, 3.0));
         // The covered walks round the garth: arcade piers and a lean-to roof (y 4.2).
         for (var x = -30.1; x <= 0.2; x += 3.37)
@@ -850,8 +852,20 @@ public sealed partial class AshgraveCathedral : IMapGenerator
         WallZ(30, 44, -34, 0.4, G, 6, BarnW, DoorZ("the Barn West Door", false, 750, "Tithe Barn", "Close", 37, -34, 0.4, 2.4, 3.0));
         WallZ(30, 44, 15.6, 0.4, G, 6, BarnW);
         k.Slab(-34, 29.6, 16, 44, 6.4, 0.4, Timber);
-        k.MeshAt("box", -9, 8.2, 33.4, Slate, roll: 0, pitch: 28, width: 50.4, height: 0.3, depth: 8.6);
-        k.MeshAt("box", -9, 8.2, 40.2, Slate, roll: 0, pitch: -28, width: 50.4, height: 0.3, depth: 8.6);
+        // The roof: an A over the barn. MeshAt's positive pitch drops the +z end of a box, so the south slab (rising toward the
+        // ridge at z 36.8) takes -28 and the north slab +28. Centre z 33.07 / 40.53 puts both top edges on the ridge (z 36.8,
+        // y 10.35); the eaves overhang the walls by about 0.4 m.
+        k.MeshAt("box", -9, 8.2, 33.07, Slate, roll: 0, pitch: -28, width: 50.4, height: 0.3, depth: 8.6);
+        k.MeshAt("box", -9, 8.2, 40.53, Slate, roll: 0, pitch: 28, width: 50.4, height: 0.3, depth: 8.6);
+        // The gable ends: stepped strips of barn wall from the wall top (y 6) up under the roof's underside.
+        for (var y = 6.0; y < 10.0; y += 0.3)
+        {
+            var half = 7.457 - (y + 0.15 - 6.05) / 0.5317;
+            if (half < 0.05)
+                break;
+            WallZ(Math.Max(30, 36.8 - half), Math.Min(44, 36.8 + half), -34, 0.4, y, y + 0.3, BarnW);
+            WallZ(Math.Max(30, 36.8 - half), Math.Min(44, 36.8 + half), 15.6, 0.4, y, y + 0.3, BarnW);
+        }
         Area("Tithe Barn", Box(-33.6, 30.0, 15.6, 43.6, -0.5, 6));
         foreach (var x in new[] { -30.0, -26.5, -23.0, -19.5 })
             SProp("Horse Stall", x, 41.6, G, 90, 1.5, 0.08);

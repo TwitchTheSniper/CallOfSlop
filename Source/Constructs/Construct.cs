@@ -267,7 +267,9 @@ public sealed partial class Construct
     public float GearRatio = 1f; // top speed times this, force divided by it
     public bool Towed; // coupled to a construct that is driving (its parking brake lets go)
     public int XWireIn; // wires from other constructs into it (its logic runs for them)
-    internal int SimIndex; // its index in the world's list this tick (the physics)
+    internal int SimIndex; // its index in the physics' list this tick (ConstructPhysics: the awake bodies and what they touch)
+    internal uint PoseHot; // big worlds: the pose tick until which it counts as moving for the network (ConstructNet.PoseMovers)
+    internal int QueryMark, GridMark, SimMark; // the broadphase's query and grid stamps, and the physics' (ConstructBroadphase.cs)
 
     // Weapons (milestone 3; ConstructWeapons.cs): every gun's numbers and feed, rebuilt with the caches
     public readonly CGun[] Guns = new CGun[MaxGuns];
@@ -292,7 +294,9 @@ public sealed partial class Construct
     public Vector3 NetPos, NetFromPos;
     public Quaternion NetRot = Quaternion.Identity, NetFromRot = Quaternion.Identity;
     public double NetAt;
-    public uint NetTick;
+    public uint NetTick; // the server tick of the pose it is going to (a CPose's, or a CBody Full's since protocol 101)
+    public uint DigestRound; // client: the last body digest that listed it (protocol 101; ConstructNet.ReadDigest)
+    public byte PoseRepeats; // server: poses still to send after it went still (its final pose goes more than once: a lost packet is not the last word)
 
     public ref CPart P(int i) => ref Parts[i];
 
@@ -573,6 +577,12 @@ public sealed partial class Construct
             RestBounds(i, out var mn, out var mx);
             LocalMin = Vector3.Min(LocalMin, mn);
             LocalMax = Vector3.Max(LocalMax, mx);
+            if (MergeOf[i] != 0)
+            {
+                ShapeBounds(i, out var smn, out var smx); // (a merged receiver's drawn box reaches further than its members)
+                LocalMin = Vector3.Min(LocalMin, smn);
+                LocalMax = Vector3.Max(LocalMax, smx);
+            }
             var pm = PartMass(i);
             com += (mn + mx) * 0.5f * pm;
             Mass += pm;
@@ -928,7 +938,7 @@ public sealed partial class Construct
             var turned = seg != 0 && FreeformCount > 0 && Rigid(seg); // (a freeform segment's corners are the body's own hull: board item fw01)
             if (seg != 0 && !turned || IsRaycastWheel(i))
                 continue;
-            PartBounds(i, out var mn, out var mx);
+            ShapeBounds(i, out var mn, out var mx); // (a merged receiver's members: the one merged box's corners)
             var rq = Quaternion.Identity;
             var rt = Vector3.Zero;
             if (turned)

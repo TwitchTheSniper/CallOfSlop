@@ -139,6 +139,15 @@ public abstract class GameModeModule
     {
     }
 
+    /// <summary>
+    /// A new match or a mode change, for every player (server and each client, every module, active or not, after
+    /// <see cref="Player.ResetForMatch"/>): clear this mode's per-player state that lives outside the Player (Sandbox
+    /// hands, backpack and salvage; a Zombies run). The one place a mode clears a person, instead of ad-hoc clears.
+    /// </summary>
+    public virtual void OnPlayerReset(Game game, Player p)
+    {
+    }
+
     /// <summary>The map changed under a running game (hot swap): objectives come from the new map. Runs for every module.</summary>
     public virtual void OnMapChanged(Game game)
     {

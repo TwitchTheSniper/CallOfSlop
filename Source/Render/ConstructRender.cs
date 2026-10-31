@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Draws the Sandbox constructs: every part box at its body's pose (joints turned, wheels down on their springs, turning
 /// and steering), damaged parts darker and wrecked ones near black; the ghost sockets of the held part (blended). The
-/// tools in the hands are ToolRender.cs. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
+/// tools in the hands are ToolRender.cs. Near constructs are drawn part by part (far ones culled or drawn as one box: ConstructRenderCull.cs), so
 /// each box is one draw like the movers'; lit without the world-space texture, which would swim over a moving surface.
 /// Glass panes (<see cref="CPartBox.Glass"/>) are left out of the opaque pass and kept for <see cref="DrawGlass"/>, which
 /// draws them in the blended pass after everything opaque: back to front, without depth writes, lit and fogged by the
@@ -31,6 +31,7 @@ public static partial class ConstructRender
     public static bool PlaceValid; // ...green when it fits, red when not
     public static Construct? AimBody; // the part under the crosshair (outlined)
     public static int AimPart = -1;
+    public static bool AimRefused; // the held tool would be refused on it (hr01): the outline is red (the reason is on the look line)
     // The welder's freeform preview (board item fw01; Program.SandboxFreeform.cs): the two parts outlined, the bead at their
     // closest points, green when the weld is allowed and red when not; only the first part (the two-click fallback) in amber.
     public static Construct? WeldBodyA, WeldBodyB;
@@ -88,6 +89,7 @@ public static partial class ConstructRender
         PlaceAt = null;
         AimBody = null;
         AimPart = -1;
+        AimRefused = false;
         WeldBodyA = WeldBodyB = null;
         WeldPartA = WeldPartB = -1;
         SocketWeldRender.Clear();
@@ -102,11 +104,27 @@ public static partial class ConstructRender
     {
         var n = 0;
         GlassCount = 0;
+        var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
+        CullPlanes(gfx.ViewProj);
+        var cam = gfx.CameraPosition;
+        int culled = 0, lod = 0;
         foreach (var c in world.Bodies)
         {
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
+            if (level == 0)
+            {
+                culled++;
+                continue;
+            }
             var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
+            if (level == 2)
+            {
+                n += DrawLod(gfx, c, body);
+                lod++;
+                continue;
+            }
             for (var i = 0; i < c.PartCount; i++)
             {
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
@@ -123,6 +141,8 @@ public static partial class ConstructRender
                 n += 12;
             }
         }
+        LastCulled = culled;
+        LastLod = lod;
         LastStored = LastStoredCount;
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);
@@ -724,9 +744,9 @@ public static partial class ConstructRender
         if (AimBody is { } ab && AimPart >= 0 && AimPart < ab.PartCount)
         {
             ab.WorldFrame(ab.Parts[AimPart].Seg, out var q, out var t);
-            ab.PartBounds(AimPart, out var mn, out var mx);
+            ab.ShapeBounds(AimPart, out var mn, out var mx); // (a merged receiver: round the whole merged box)
             var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.04f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
-            gfx.Draw(m, new Vector3(1f, 0.85f, 0.3f), 0.18f, mode: 2);
+            gfx.Draw(m, AimRefused ? new Vector3(1f, 0.3f, 0.25f) : new Vector3(1f, 0.85f, 0.3f), AimRefused ? 0.24f : 0.18f, mode: 2);
         }
     }
 
@@ -734,7 +754,7 @@ public static partial class ConstructRender
     private static void Outline(Renderer gfx, Construct c, int part, Vector3 colour, float opacity)
     {
         c.WorldFrame(c.Parts[part].Seg, out var q, out var t);
-        c.PartBounds(part, out var mn, out var mx);
+        c.ShapeBounds(part, out var mn, out var mx);
         var m = Matrix4x4.CreateScale(mx - mn + new Vector3(0.05f)) * Matrix4x4.CreateTranslation((mn + mx) * 0.5f) * Matrix4x4.CreateFromQuaternion(q) * Matrix4x4.CreateTranslation(t);
         gfx.Draw(m, colour, opacity, mode: 2);
     }

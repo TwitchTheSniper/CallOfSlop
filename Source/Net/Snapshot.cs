@@ -18,7 +18,7 @@ public struct SnapPlayer
     public uint Blood; // blood marks: hit parts, generation, last hit direction (BloodMarks; protocol 33)
     public ushort SeatBody; // Sandbox: sitting in this construct (0: not); Yaw is then the look relative to the seat (protocol 80)
     public byte SeatPart;
-    public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 101; ConstructRide.cs)
+    public ushort RideBody; // Sandbox: riding this construct, feet at RideLocal in its segment RideSeg's frame (protocol 102; ConstructRide.cs)
     public byte RideSeg;
     public Vector3 RideLocal;
 }
@@ -54,7 +54,7 @@ public struct SnapOwn
     public Vector3 Position, Velocity, MantleTo;
     public bool Mantling;
     public SnapSlow Slow;
-    public bool Ride; // the ride state follows (protocol 101): riding a construct, or just off one (its momentum)
+    public bool Ride; // the ride state follows (protocol 102): riding a construct, or just off one (its momentum)
     public ushort RideBody;
     public byte RideSeg, RideAir, RideClimb, RideFree, RideGrip; // RideGrip: a grip face's up axis (0: none; else 1 + axis * 2 + (negative ? 1 : 0))
     public Vector3 RideLocal, RideClimbTo;
@@ -80,7 +80,7 @@ public struct SnapHeader
 ///   shield charges, regenerating), weapon, boost, blood marks (32-bit <see cref="BloodMarks"/> word; protocol 33);
 ///   the mantling flag says an extension follows: mantle ticks, then the mantle target (9 bytes), or ticks 0 and a seat
 ///   (+4 bytes: construct id, seat part; protocol 80: a seated player, whose yaw is then relative to the seat's facing), or
-///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 101, ConstructRide.cs);
+///   254 and a ride (+13 bytes: construct id, segment, the feet in its frame at 1/256 m; protocol 102, ConstructRide.cs);
 ///   slow entries (20 bytes): id, kills, deaths, primary, secondary, kits, perks, frenzy level, frenzy class (+ buffs bit; protocol 26).
 /// Slow entries go out for a player while their slow fields changed in the last half second (so a lost packet is
 /// covered), and every 8th snapshot for everyone (late joiners catch up in ~0.25 s). If a snapshot still doesn't fit
@@ -93,7 +93,7 @@ public static class Snapshot
     public const int FastBytes = 28; // 24 + the blood marks (protocol 33)
     public const int MantleBytes = 10;
     public const int SeatBytes = 4; // (protocol 80)
-    public const int RideBytes = 13; // (protocol 101: kind 254, construct, segment, the feet in its frame)
+    public const int RideBytes = 13; // (protocol 102: kind 254, construct, segment, the feet in its frame)
     public const byte RideKind = 254;
     public const int SlowBytes = 20; // 16 + frenzy level and class (protocol 26) + 2 (kits are 4 bytes each since protocol 46)
     public const int OwnBytes = 1 + 24 + SlowBytes; // +12 while mantling

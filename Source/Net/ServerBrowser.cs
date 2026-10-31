@@ -225,10 +225,14 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     piece's socket, the target socket or face point, the angle) and EditKind.SocketWeld in the Sandbox hands tail.
     // 100: Sandbox paint tool (board item pp01, ConstructPaint.cs): the paint tool's tool byte (9), CBodyKind.Paint at the end of
     //     CBodyKind (paint changes), CActKind.Paint at the end of CActKind, and CBody Full ends with the painted parts and links.
-    // 101: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
+    // 101: Sandbox body sync (board item pd01, ConstructNet.cs): a CBody Full carries the server tick of its pose (u32 after
+    //      the id; a client keeps a newer pose), CBodyKind.Digest at the end of CBodyKind (every 2 s: each body's id,
+    //      structure hash, sleep state and a sleeping one's pose, in chunks) and CActKind.Resync at the end of CActKind
+    //      (u8 n, n x u16 body: those bodies whole again); CPose packets take turns among the moving bodies.
+    // 102: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
     //     the construct, its segment and the feet in its frame), the own block carries the exact ride state, CPose adds
     //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
-    public const byte ProtocolVersion = 101;
+    public const byte ProtocolVersion = 102;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()
