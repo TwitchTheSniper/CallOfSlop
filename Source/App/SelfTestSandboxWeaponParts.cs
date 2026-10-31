@@ -28,6 +28,9 @@ public static partial class SelfTest
         WpCoverage();
         WpGun();
         WpMerge();
+
+        if (yard.Sandbox is { } sbm)
+            WpAttachFlow(yard, sbm);
         WpOverWire(yard);
     }
 
@@ -140,6 +143,183 @@ public static partial class SelfTest
             Fail("sandbox weapon parts: the construct gun's numbers aren't the Zombies builder's for the same parts");
         if (grip < 0)
             Fail("sandbox weapon parts: a builder grip can't be wrenched onto a construct receiver");
+    }
+
+    /// <summary>
+    /// The player's flow (board item dev-sandbox-weapon-attach-wa01): a receiver taken from the parts menu and set down
+    /// (loose, frozen, or bolted on a frame), then a barrel in hand with the wrench out, the ghost the way the client works
+    /// it out (<see cref="SnapBuild.Ghosts"/> near the aimed socket, the magnet's <see cref="SnapBuild.Fit"/>), the attach
+    /// sent as the click sends it. A hand-made and a generated barrel, then a muzzle on that barrel.
+    /// </summary>
+    private static void WpAttachFlow(Map yard, SandboxMap sb)
+    {
+        yard.RestoreProps();
+        World.SetMap(yard);
+        sb.DebrisSeconds = 0;
+        var now = 0.0;
+        using var g = ModeGame(0, GameMode.Sandbox, yard.Id);
+        Run(g, ref now, Game.CountdownSeconds + 0.3);
+        g.RequestRespawn();
+        Run(g, ref now, 1.0);
+        if (g.Local is not { Alive: true } me)
+        {
+            Fail("sandbox weapon attach: no local player in the Sandbox game");
+            return;
+        }
+        if (OpenSpot(g.Constructs) is not { } spot)
+        {
+            Fail("sandbox weapon attach: no open level ground on the yard");
+            return;
+        }
+        var w = g.Constructs;
+        var problems = new List<string>();
+        if (WpRifleReceiver() is not var (recDef, _))
+        {
+            Fail("sandbox weapon attach: no generated receiver takes a barrel");
+            return;
+        }
+        var rp = Parts.Find(recDef.GunReceiver)!;
+        var rroot = new BuildNode(rp);
+        rroot.Attach(Array.Find(rp.Sockets, s => s.Type == "action")!.Name, Parts.Find(recDef.GunAction)!);
+        var barrelSock = Array.Find(rp.Sockets, s => s.Type == "barrel")!;
+        // Barrels the builder lets onto this receiver: the hand-made one and a generated one.
+        var barrels = ConstructParts.All.Where(d => d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Barrel } bp && BuildRules.SocketWhy(rroot, barrelSock, bp) == null).ToList();
+        var hand = barrels.FirstOrDefault(d => !d.Generated);
+        var gen = barrels.Where(d => d.Generated).OrderByDescending(d => d.BoundsMax.Z - d.BoundsMin.Z).FirstOrDefault();
+        if (hand == null || gen == null)
+        {
+            Fail($"sandbox weapon attach: no hand-made ({hand?.Name}) and generated ({gen?.Name}) barrel fits {recDef.Name}");
+            return;
+        }
+        var block = ConstructParts.Need("Frame Block");
+        var cache = new SnapCache();
+        var ghosts = new ConstructGhost[ConstructBuild.MaxGhosts];
+        void Tool(ConstructTool t) => g.SandboxSend(CActKind.Tool, part: (byte)t);
+
+        // What the client does with a held part aimed at part socket (rest frame point <near>): ghosts, the one on that socket, the click.
+        string Click(Construct c, ConstructPartDef held, int part, string socketName, out int made)
+        {
+            made = -1;
+            ConstructRender.GhostDef = held;
+            var si = Array.FindIndex(c.DefOf(part).Sockets, s => s.Name == socketName);
+            c.SocketAt(part, si, out var at, out _);
+            var n = SnapBuild.Ghosts(c, held, cache, ghosts, at, SnapBuild.SinglePurpose(held) ? 4f : 2.5f);
+            var k = -1;
+            for (var i = 0; i < n; i++)
+                if (ghosts[i].Part == part && ghosts[i].Socket == si)
+                    k = i;
+            if (k < 0 && !SnapBuild.Fit(c, held, part, si, -1, out _))
+                return $"no ghost on {c.DefOf(part).Name}'s {socketName} ({n} ghosts)";
+            if (k < 0)
+                return $"{n} ghosts, none on {socketName}, though the magnet fits";
+            var before = c.PartCount;
+            var gh = ghosts[k];
+            // Smart rotation's guess, then snap building's own-socket filter (Program.SandboxSmartGuess, SandboxSnapRank).
+            var rank = new int[Rot24.Count];
+            var rots = new byte[Rot24.Count];
+            var rn = SmartRotation.Rank(c, held, gh.Part, gh.Socket, null, rank, rots);
+            var variant = rn > 0 ? rank[0] : gh.Variant;
+            if (rn > 0)
+            {
+                var fn = SnapBuild.FilterRank(held, rank, rots, rn, -1);
+                if (fn > 0)
+                    variant = rank[0];
+                else
+                    problems.Add($"filter left no variant (rank {rn})");
+            }
+            var ownName = held.Sockets[variant / 4].Name;
+            if (SnapBuild.OwnOrder(held).IndexOf((byte)(variant / 4)) < 0)
+                return $"the guess is by the {ownName} socket, which snap building doesn't allow";
+            if (ConstructBuild.Place(c, gh.Part, gh.Socket, held, variant / 4, variant % 4, out _) is { } why)
+                return $"ghost shows but is invalid: {why}";
+            gh.Variant = variant;
+            g.SandboxSay("");
+            g.SandboxSend(CActKind.Attach, body: c.Id, part: (byte)gh.Part, socket: (byte)gh.Socket, variant: (byte)gh.Variant);
+            var notice = g.SandboxNotice;
+            Run(g, ref now, held.AttachSeconds + 0.3);
+            made = c.PartCount - before;
+            return made == 1 ? "" : $"click did nothing (\"{notice}\")";
+        }
+
+        foreach (var mode in new[] { "loose", "frozen", "mounted" })
+        {
+            var at = spot + new Vector3(mode == "loose" ? 0 : mode == "frozen" ? 3 : -3, 0, 0);
+            me.Teleport(at + new Vector3(0, 0.05f, 2.0f));
+            me.Yaw = 0;
+            Run(g, ref now, 0.3);
+            Tool(ConstructTool.Wrench);
+            PlaceHold(g, me.Id, recDef);
+            var n0 = w.Bodies.Count;
+            g.SandboxSend(CActKind.PlaceNew, at: at, yaw: 0, normal: Vector3.UnitY, variant: 0, flags: ConstructPlace.FlagGrid);
+            Run(g, ref now, recDef.AttachSeconds + 0.4);
+            if (w.Bodies.Count <= n0)
+            {
+                problems.Add($"{mode}: the receiver wasn't set down (\"{g.SandboxNotice}\")");
+                continue;
+            }
+            var c = w.Bodies[^1];
+            if (mode == "frozen")
+            {
+                c.Frozen = true;
+                c.Wake();
+            }
+            else if (mode == "mounted")
+            {
+                Tool(ConstructTool.Welder);
+                PlaceHold(g, me.Id, block);
+                var bottom = Array.FindIndex(recDef.Sockets, s => s.Name == "bottom");
+                if (!SnapBuild.Fit(c, block, 0, bottom, -1, out var bg))
+                    problems.Add("mounted: a frame block won't mount under the receiver");
+                else
+                {
+                    g.SandboxSend(CActKind.Attach, body: c.Id, part: 0, socket: (byte)bottom, variant: (byte)bg.Variant);
+                    Run(g, ref now, block.AttachSeconds + 0.4);
+                }
+                Tool(ConstructTool.Wrench);
+            }
+            Run(g, ref now, 0.5);
+            StandBy(me, c.WorldCom, 3.0f);
+            Run(g, ref now, 0.3);
+            foreach (var barrel in new[] { hand, gen })
+            {
+                PlaceHold(g, me.Id, barrel);
+                var fail = Click(c, barrel, 0, "front", out var made);
+                Line($"attach flow: {mode} {recDef.Name} + {(barrel.Generated ? "generated" : "hand-made")} {barrel.Name}: {(fail.Length == 0 ? "attached" : fail)}; parts {c.PartCount}, gun problem \"{(c.GunCount > 0 ? c.Guns[0].Problem : "no gun")}\"");
+                if (fail.Length > 0)
+                    problems.Add($"{mode} + {barrel.Name}: {fail}");
+                else
+                {
+                    // Take it off again for the next one (the parts count is the check, not the gun).
+                    var idx = c.PartCount - 1;
+                    g.Constructs.RemovePart(c, idx);
+                }
+            }
+        }
+        if (problems.Count > 0)
+            Fail("sandbox weapon attach: " + string.Join("; ", problems));
+    }
+
+    private static void WpProbe()
+    {
+        var bad = 0; var tot = 0;
+        foreach (var rd in ConstructParts.All.Where(x => x.IsReceiverGun))
+        {
+            var w = new ConstructWorld();
+            var rc = ConstructBuild.PlaceNew(w, rd, new Vector3(20, 0, 20), 0f)!;
+            var rp = Parts.Find(rd.GunReceiver)!;
+            var root = new BuildNode(rp);
+            if (Array.Find(rp.Sockets, s => s.Type == "action") is { } asock && Parts.Find(rd.GunAction) is { } ap) root.Attach(asock.Name, ap);
+            var bs = Array.Find(rp.Sockets, s => s.Type == "barrel");
+            if (bs == null) continue;
+            foreach (var bd in ConstructParts.All.Where(d => d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Barrel } bp && BuildRules.SocketWhy(root, bs, bp) == null))
+            {
+                tot++;
+                var fi = Array.FindIndex(rd.Sockets, s => s.Name == "front");
+                var ok = SnapBuild.Fit(rc, bd, 0, fi, -1, out _);
+                if (!ok) { bad++; Line($"probe: {rd.Name} gen={rd.Generated} {bd.Name} gen={bd.Generated} NOFIT place={ConstructBuild.Place(rc, 0, fi, bd, Array.FindIndex(bd.Sockets, s => s.Name == "back"), 0, out _)} own={string.Join(",", Enumerable.Range(0, bd.Sockets.Length).Select(i => bd.Sockets[i].Name + ":" + SnapBuild.OwnType(bd, i)))}"); }
+            }
+        }
+        Line($"probe: {bad}/{tot} nofit");
     }
 
     private static void WpMerge()
