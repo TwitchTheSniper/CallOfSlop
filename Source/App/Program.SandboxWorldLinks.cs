@@ -222,11 +222,11 @@ public static partial class Program
         }
         var here = onHose ? w.HoseAt(hit.Body, hit.Part) : -1;
         var key = (onHose ? (long)hit.Body.Id << 40 | (long)hit.Part << 32 : 0) ^ (long)(held + 1) << 24 ^ (long)(here + 1) << 16 ^ (long)(int)(outM * 10) ^ (near ? 1L << 62 : 0)
-                  ^ (here >= 0 && w.Hoses[here].Plugged ? 1L << 61 : 0) ^ (long)_settings.Bind(GameAction.DropItem) << 48;
+                  ^ (here >= 0 && w.Hoses[here].Plugged ? 1L << 61 : 0) ^ (long)_settings.Bind(GameAction.SandboxDrop) << 48;
         if (key != _hoseLookKey)
         {
             _hoseLookKey = key;
-            var drop = Keybinds.NameOf(_settings, GameAction.DropItem);
+            var drop = Keybinds.NameOf(_settings, GameAction.SandboxDrop);
             if (onHose)
             {
                 var d = hit.Body.DefOf(hit.Part);
