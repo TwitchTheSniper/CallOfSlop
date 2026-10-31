@@ -218,6 +218,8 @@ public sealed partial class Construct
     public Vector3 PrevPos;
     public Quaternion PrevRot = Quaternion.Identity;
     public Vector3 Vel, AngVel; // the centre of mass's velocity; angular velocity (world)
+    public Vector3 Accel; // server: the centre of mass's acceleration over the last physics step, smoothed a little (a crash throws riders off; ConstructRide.cs)
+    internal Vector3 VelBefore; // (its velocity before this step's physics)
 
     // Mass properties (rebuilt with the caches)
     public float Mass, InvMass;

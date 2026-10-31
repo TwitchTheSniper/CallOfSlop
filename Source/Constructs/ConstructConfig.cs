@@ -64,6 +64,7 @@ public enum CfgKey : byte
     AtX, // cargo volume: the box's centre (metres from the part's origin, the part's frame)
     AtY,
     AtZ,
+    Grip, // panels and floors: riders are held on it up to nearly vertical (ConstructRide.cs; board item rf01, phase 2)
     COUNT,
 }
 
@@ -439,7 +440,7 @@ public static class ConstructConfig
 
     private static string DefaultType(CfgKey k) => k switch
     {
-        CfgKey.StartOn or CfgKey.Latched => "toggle",
+        CfgKey.StartOn or CfgKey.Latched or CfgKey.Grip => "toggle",
         CfgKey.Colour => "colour",
         CfgKey.Setting or CfgKey.Mode or CfgKey.Operator or CfgKey.Units => "choice",
         _ => "number",
@@ -484,6 +485,7 @@ public static class ConstructConfig
                 CfgKey.StartOn => d.Logic is CLogic.Timer or CLogic.Switch or CLogic.Toggle or CLogic.Cargo || d.IsSpawner,
                 CfgKey.SizeX or CfgKey.SizeY or CfgKey.SizeZ or CfgKey.AtX or CfgKey.AtY or CfgKey.AtZ => d.Logic == CLogic.Cargo,
                 CfgKey.Seconds or CfgKey.Mode => d.Logic == CLogic.Delay,
+                CfgKey.Grip => d.Role == PartRole.Panel || d.Walk != WalkKind.None,
                 CfgKey.Operator or CfgKey.Hysteresis => d.Logic == CLogic.Compare,
                 CfgKey.Threshold => d.Logic is CLogic.Compare or CLogic.Speed,
                 CfgKey.Factor or CfgKey.Offset or CfgKey.Low or CfgKey.High => d.Logic == CLogic.Scale,

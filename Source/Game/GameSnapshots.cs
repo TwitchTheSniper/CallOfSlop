@@ -47,6 +47,7 @@ public sealed partial class Game
         Health = (byte)Math.Clamp(p.Health, 0, 255), Alive = p.Alive, Grounded = p.Sim.Grounded, Stance = p.Sim.Stance,
         Weapon = p.Weapon, Boost = p.Sim.BoostTicks, MantleTicks = p.Sim.MantleTicks, MantleTo = p.Sim.MantleTo,
         Shield = p.ShieldCharges, Regen = p.Regenerating, Blood = p.Blood,
+        RideBody = p.Alive ? p.Sim.RideBody : (ushort)0, RideSeg = p.Sim.RideSeg, RideLocal = p.Sim.RideLocal,
     };
 
     private static SnapSlow SlowOf(Player p) => new()
@@ -111,6 +112,9 @@ public sealed partial class Game
         var own = new SnapOwn
         {
             Position = p.Position, Velocity = p.Sim.Velocity, MantleTo = p.Sim.MantleTo, Mantling = p.Sim.MantleTicks > 0, Slow = SlowOf(p),
+            Ride = p.Sim.RideBody != 0 || p.Sim.RideFree > 0, RideBody = p.Sim.RideBody, RideSeg = p.Sim.RideSeg, RideAir = p.Sim.RideAir,
+            RideClimb = p.Sim.RideClimb, RideFree = p.Sim.RideFree, RideGrip = ConstructRide.GripByte(p.Sim.RideGripUp),
+            RideLocal = p.Sim.RideLocal, RideClimbTo = p.Sim.RideClimbTo,
         };
         // This recipient's selection: near and alive every time, the rest on alternate snapshots.
         _snapMine.Clear();
@@ -223,6 +227,21 @@ public sealed partial class Game
                     if (o.Mantling)
                         e.MantleTo = o.MantleTo;
                 }
+                var ownMove = MoveOf(e, p.Perks);
+                if (_snapIn.Own is { Ride: true } ro)
+                {
+                    // The exact ride state (protocol 101): the replay starts in the construct's frame (ConstructRide.cs).
+                    ownMove.RideBody = ro.RideBody;
+                    ownMove.RideSeg = ro.RideSeg;
+                    ownMove.RideAir = ro.RideAir;
+                    ownMove.RideClimb = ro.RideClimb;
+                    ownMove.RideFree = ro.RideFree;
+                    ownMove.RideGripUp = ConstructRide.GripVec(ro.RideGrip);
+                    ownMove.RideLocal = ro.RideLocal;
+                    ownMove.RideClimbTo = ro.RideClimbTo;
+                }
+                else
+                    ownMove.RideBody = 0;
                 var respawned = !_localInitialized || (e.Alive && !wasAlive);
                 _localInitialized = true;
                 if (respawned)
@@ -237,7 +256,7 @@ public sealed partial class Game
                 }
                 SteerMoverClock(tick, h.AckSeq);
                 SepNoteLag(tick, h.AckSeq); // how late the server runs our input (PlayerSeparation.cs)
-                Reconcile(p, h.AckSeq, MoveOf(e, p.Perks), e.Alive, respawned);
+                Reconcile(p, h.AckSeq, ownMove, e.Alive, respawned);
             }
             else
             {
@@ -250,7 +269,7 @@ public sealed partial class Game
                 p.Snaps.Add(new Snap
                 {
                     Tick = tick, Position = e.Position, Velocity = e.Velocity, Yaw = e.Yaw, Pitch = e.Pitch, Stance = e.Stance, Grounded = e.Grounded, Mantling = e.MantleTicks > 0,
-                    SeatBody = e.SeatBody, SeatPart = e.SeatPart,
+                    SeatBody = e.SeatBody, SeatPart = e.SeatPart, RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal,
                 });
                 if (p.Snaps.Count > Player.MaxSnaps)
                     p.Snaps.RemoveAt(0);
@@ -262,6 +281,7 @@ public sealed partial class Game
     {
         Position = e.Position, Velocity = e.Velocity, Grounded = e.Grounded, Stance = e.Stance, MantleTicks = e.MantleTicks, MantleTo = e.MantleTo,
         MovePerk = perks.Movement, BoostTicks = e.Boost,
+        RideBody = e.RideBody, RideSeg = e.RideSeg, RideLocal = e.RideLocal, RideWorld = e.Position,
     };
 
     private Player GetOrAddRemote(byte id, in SnapPlayer e)

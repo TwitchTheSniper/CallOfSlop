@@ -225,7 +225,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     piece's socket, the target socket or face point, the angle) and EditKind.SocketWeld in the Sandbox hands tail.
     // 100: Sandbox paint tool (board item pp01, ConstructPaint.cs): the paint tool's tool byte (9), CBodyKind.Paint at the end of
     //     CBodyKind (paint changes), CActKind.Paint at the end of CActKind, and CBody Full ends with the painted parts and links.
-    public const byte ProtocolVersion = 100;
+    // 101: Sandbox ride frame (board items rf01 and ba01, ConstructRide.cs): a player entry's extension may be a ride (kind 254:
+    //     the construct, its segment and the feet in its frame), the own block carries the exact ride state, CPose adds
+    //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
+    public const byte ProtocolVersion = 101;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

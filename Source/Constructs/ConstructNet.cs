@@ -30,7 +30,7 @@ public static class ConstructNet
 {
     public const int PoseEvery = 3; // ticks between pose packets (20 Hz)
     public const int SleepingPerPacket = 4;
-    private const int PoseBytes = 2 + 12 + 8 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note)
+    private const int PoseBytes = 2 + 12 + 8 + 6 + 6 + 1 + 1 + 1 + 1 + 5 + 3; // (protocol 83: charge, power flags, gear, fuel; 86: rpm, drive note; 101: the turn rate)
 
     private static short Cm(float v) => (short)Math.Clamp(MathF.Round(v * 100), short.MinValue, short.MaxValue);
 
@@ -738,6 +738,9 @@ public static class ConstructNet
 
     private static int PoseSize(Construct c) => PoseBytes + c.JointCount * 5 + 1 + (c.HasLogic ? SignalParts(c) : 0);
 
+    /// <summary>A turn rate in thousandths of a radian a second (+-32 rad/s).</summary>
+    private static short Mrad(float v) => (short)Math.Clamp(MathF.Round(v * 1000), short.MinValue, short.MaxValue);
+
     private static void WritePose(PacketWriter w, Construct c)
     {
         var q = c.Rot;
@@ -746,6 +749,7 @@ public static class ConstructNet
         w.U16(c.Id).Vec(c.Pos)
             .U16(S16((short)MathF.Round(q.X * 32767))).U16(S16((short)MathF.Round(q.Y * 32767))).U16(S16((short)MathF.Round(q.Z * 32767))).U16(S16((short)MathF.Round(q.W * 32767)))
             .U16(S16(Cm(c.Vel.X / 4))).U16(S16(Cm(c.Vel.Y / 4))).U16(S16(Cm(c.Vel.Z / 4)))
+            .U16(S16(Mrad(c.AngVel.X))).U16(S16(Mrad(c.AngVel.Y))).U16(S16(Mrad(c.AngVel.Z))) // (protocol 101: riders leave with the deck's turning speed too; ConstructRide.cs)
             .U8(unchecked((byte)(sbyte)Math.Clamp(MathF.Round(c.Steer * 100), -127, 127)))
             .U8(c.Driver)
             .U8((byte)(c.Asleep ? 1 : 0))
@@ -786,6 +790,7 @@ public static class ConstructNet
             var pos = r.Vec();
             var q = new Quaternion(R16(r.U16()) / 32767f, R16(r.U16()) / 32767f, R16(r.U16()) / 32767f, R16(r.U16()) / 32767f);
             var vel = new Vector3(FromCm(R16(r.U16())), FromCm(R16(r.U16())), FromCm(R16(r.U16()))) * 4;
+            var ang = new Vector3(R16(r.U16()), R16(r.U16()), R16(r.U16())) / 1000f;
             var steer = (sbyte)r.U8() / 100f;
             var driver = r.U8();
             var asleep = r.U8() != 0;
@@ -835,6 +840,7 @@ public static class ConstructNet
                 continue;
             SetTarget(c, pos, Quaternion.Normalize(q), now);
             c.Vel = vel;
+            c.AngVel = ang;
             c.Steer = steer;
             c.Driver = driver;
             c.Asleep = asleep;
