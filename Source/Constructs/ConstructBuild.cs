@@ -95,14 +95,48 @@ public static class ConstructBuild
         var pos = ConstructWorld.Quantise(at - Rot24.Apply(rot, ds.At * scale));
         var seg = c.Parts[part].Seg;
         var newJoint = onLeaf;
-        if (newJoint && c.JointCount >= Construct.MaxJoints)
-            return $"at most {Construct.MaxJoints} joints a construct";
-        if (newJoint && c.JointOf(part) >= 0)
-            return "something already hangs on that joint";
+        if (newJoint && LeafRefusal(c, part) is { } full)
+            return full;
         g = new ConstructGhost { Part = part, Socket = socket, DefSocket = defSocket, Variant = spin, Pos = pos, Rot = rot, Seg = seg, NewJoint = newJoint, Scale = scale };
         if (Blocked(c, def, pos, rot, scale, seg))
             return "something is in the way";
         return null;
+    }
+
+    // ---- A joint's leaf (shared by the wrench's Place / Attach and the welder's socket and freeform welds: board item wh01) ----
+
+    /// <summary>Does what goes on socket <paramref name="socket"/> of part <paramref name="part"/> hang on that part's joint (it is the joint's leaf socket)?</summary>
+    public static bool OnLeaf(Construct c, int part, int socket) =>
+        (uint)part < (uint)c.PartCount && c.DefOf(part) is { HasJoint: true } d && socket == d.LeafIndex;
+
+    /// <summary>
+    /// Why nothing more can hang on joint part <paramref name="part"/>'s leaf, or null: a joint that already carries
+    /// something takes nothing more on its leaf socket, and a new one needs room for a joint (<paramref name="extraJoints"/>:
+    /// joints the piece brings along). A joint left with nothing on it (what hung on it came off) is used again.
+    /// </summary>
+    public static string? LeafRefusal(Construct c, int part, int extraJoints = 0)
+    {
+        var j = c.JointOf(part);
+        if (j >= 0)
+            return c.SegCarries(j + 1) ? "something already hangs on that joint" : null;
+        return c.JointCount + extraJoints >= Construct.MaxJoints ? $"at most {Construct.MaxJoints} joints a construct" : null;
+    }
+
+    /// <summary>
+    /// The segment a piece hung on joint part <paramref name="part"/>'s leaf goes on (call <see cref="LeafRefusal"/> first):
+    /// the joint's own, made now (at rest), or the empty one it had, put back at rest. 0 when there is no room.
+    /// </summary>
+    public static byte HangOnLeaf(ConstructWorld world, Construct c, int part)
+    {
+        var j = c.JointOf(part);
+        if (j < 0)
+            return world.AddJoint(c, part);
+        ref var jt = ref c.Joints[j];
+        jt.Angle = jt.PrevAngle = jt.Vel = 0;
+        jt.Ref = 0;
+        jt.RefSet = false;
+        c.Dirty = true;
+        return (byte)(j + 1);
     }
 
     private static float Upright(byte r) => Rot24.Apply(r, Vector3.UnitY).Y * 2 + Rot24.Apply(r, -Vector3.UnitZ).Z * -1 + Rot24.Apply(r, Vector3.UnitX).X * 0.1f;
@@ -188,7 +222,7 @@ public static class ConstructBuild
             c.Rebuild(); // (the merges as they stand, before this receiver: ConstructMerge.Settle)
         if (g.NewJoint)
         {
-            seg = world.AddJoint(c, g.Part);
+            seg = HangOnLeaf(world, c, g.Part);
             if (seg == 0)
                 return -1;
         }

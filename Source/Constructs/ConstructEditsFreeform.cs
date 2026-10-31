@@ -81,11 +81,14 @@ public sealed partial class ConstructEdits
             if (Hands[i].Edit is EditKind.Attach or EditKind.Remove or EditKind.Weld && (Hands[i].Body == mover.Id || Hands[i].Body2 == mover.Id) && i != player)
                 Hands[i].Edit = EditKind.None; // (edits on the piece that goes stop)
         var from = mover.Id;
-        var joint = world.FreeformWeld(keep, anchor, mover, welded);
+        var leafSeg = -1;
+        if (Freeform.OnLeafSide(keep, anchor, mover, welded) && (leafSeg = Freeform.LeafSeg(world, keep, anchor)) == 0)
+            return "failed: the world has too many joints"; // (onto a joint's moving side: it hangs on the joint, board item wh01)
+        var joint = world.FreeformWeld(keep, anchor, mover, welded, leafSeg);
         if (joint < 0)
             return "failed: they can't be welded";
         keep.Owner = player; // (both were the player's, or free for anyone to take)
-        return $"ok: construct {from} freeform-welded onto construct {keep.Id} (weld {joint})";
+        return $"ok: construct {from} freeform-welded onto construct {keep.Id} (weld {joint}{(leafSeg > 0 ? $", hanging on the {keep.DefOf(anchor).Name}" : "")})";
     }
 
     /// <summary>The welder on a freeform seam: weld <paramref name="joint"/> of the construct (on part <paramref name="part"/>) is cut, and what it held falls away where it is. Null, or why not.</summary>
