@@ -43,6 +43,8 @@ public sealed class RadialMenu
     {
         public string Label = "", Hint = "", Note = "";
         public bool Enabled = true;
+        /// <summary>An icon colour of its own while enabled and not hovered (the port picker's link type colours); null: the menu's.</summary>
+        public ImColor8? Tint;
         public int Icon;
 
         /// <summary>A toggle that is on (a green dot), for options like "highlight all".</summary>
@@ -148,6 +150,15 @@ public sealed class RadialMenu
     {
         IsOpen = true;
         Reset();
+    }
+
+    /// <summary>Puts the pointer on segment <paramref name="i"/> (just past the dead zone), so it is highlighted at once: a click confirms it with no aim.</summary>
+    public void Preselect(int i)
+    {
+        if (!IsOpen || i < 0 || i >= Items.Length)
+            return;
+        var a = SegmentAngle(i, Items.Length);
+        Move(new Vector2(MathF.Sin(a), -MathF.Cos(a)) * (DeadZone + 14f) - Pointer, 0f);
     }
 
     /// <summary>Closes without choosing.</summary>
@@ -477,7 +488,7 @@ public sealed class RadialMenu
             var fill = hover && item.Enabled ? owner ? FillOwner : FillHover : item.Enabled ? Fill : FillOff;
             Sector(dl, centre, r0, r1, mid - step * 0.5f + gap, mid + step * 0.5f - gap, fill, hover, item.Enabled, i == Current, item.Marked, scale, 12);
             var ic = At(centre, mid, (r0 + r1) * 0.5f);
-            var colour = !item.Enabled ? IconOff : hover ? IconHover : IconOn;
+            var colour = !item.Enabled ? IconOff : hover ? IconHover : item.Tint ?? IconOn;
             icons?.Invoke(dl, item.Icon, ic, 30f * scale, colour, fill);
         }
 

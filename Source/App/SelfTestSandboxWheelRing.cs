@@ -69,9 +69,8 @@ public static partial class SelfTest
         if (!full13 || !part3)
             Fail("outer ring: the choice of arc rows is wrong");
 
-        // ---- The linking tool's options cover every type and mode ------------------------------------------
+        // ---- The linking tool's options: modes only, no link type (board item dev-link-auto-type-at01) -----------
         var probe = new SandboxLinkWheel();
-        var types = new HashSet<RouteType>();
         var modes = new HashSet<LinkMode>();
         var highlightToggles = false;
         for (var i = 0; i < probe.Options.Length; i++)
@@ -81,24 +80,17 @@ public static partial class SelfTest
             probe.Choose(i);
             if (probe.Highlight != h)
                 highlightToggles = true;
-            else if (probe.Mode == LinkMode.Link)
-            {
-                types.Add(probe.Type);
-            }
-            else
-                modes.Add(probe.Mode);
+            modes.Add(probe.Mode);
             if (probe.Highlight == h && probe.CurrentOption != i)
                 bad.Add($"option {i} ({probe.Options[i].Label}) chosen shows {probe.CurrentOption} as current");
         }
-        // One pipe for every fluid (decision 28): Pipe is a plain ring option, with no arc and no style on the wheel.
-        var pipeItem = probe.Options[(int)SandboxLinkWheel.Option.Pipe];
-        if (pipeItem.Options != null || pipeItem.Label != "Pipe" || probe.Options.Length != 9)
-            bad.Add($"the linking tool has {probe.Options.Length} options and Pipe is '{pipeItem.Label}' with {pipeItem.Options?.Length ?? 0} sub-options (9, a plain 'Pipe' and none expected)");
-        var everyType = Enumerable.Range(0, (int)RouteType.COUNT).All(t => types.Contains((RouteType)t));
-        var everyMode = Enum.GetValues<LinkMode>().All(m => m == LinkMode.Link || modes.Contains(m));
-        Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); every link type {everyType}, every edit mode {everyMode}, highlight toggles {highlightToggles}");
-        if (!everyType || !everyMode || !highlightToggles)
-            Fail("outer ring: the linking tool's options miss a link type or an edit mode");
+        var typeLabels = probe.Options.Where(o => o.Label is "Pipe" or "Data cable" or "Power cable" or "Drive shaft" or "Chute").Select(o => o.Label).ToArray();
+        if (typeLabels.Length > 0 || probe.Options.Length != 5 || probe.Options.Any(o => o.Options != null))
+            bad.Add($"the linking tool has {probe.Options.Length} options (5 expected: route, delete, move, re-route, highlight), type options [{string.Join(", ", typeLabels)}], arcs {probe.Options.Count(o => o.Options != null)}");
+        var everyMode = Enum.GetValues<LinkMode>().All(m => modes.Contains(m));
+        Line($"linking tool options: {probe.Options.Length} ({string.Join(", ", probe.Options.Select(o => o.Label))}); no link type {typeLabels.Length == 0}, every mode {everyMode}, highlight toggles {highlightToggles}");
+        if (!everyMode || !highlightToggles)
+            Fail("outer ring: the linking tool's options miss a mode");
         if (bad.Count > 0)
             Fail($"outer ring: {string.Join("; ", bad.Take(4))}");
 
@@ -180,22 +172,22 @@ public static partial class SelfTest
             var opt = w.HoveredOption;
             var tool = LetGo();
             expect.Choose(i);
-            if (hov != Linker || opt != i || w.HoveredSub != -1 || tool != ConstructTool.Linker || links.Type != expect.Type || links.Mode != expect.Mode || links.Highlight != expect.Highlight)
-                wrong.Add($"option {i} ({links.Options[i].Label}): hovered {hov}/{opt}, tool {tool}, got {links.Type}/{links.Mode}/{links.Highlight}, expected {expect.Type}/{expect.Mode}/{expect.Highlight}");
+            if (hov != Linker || opt != i || w.HoveredSub != -1 || tool != ConstructTool.Linker || links.Mode != expect.Mode || links.Highlight != expect.Highlight)
+                wrong.Add($"option {i} ({links.Options[i].Label}): hovered {hov}/{opt}, tool {tool}, got {links.Mode}/{links.Highlight}, expected {expect.Mode}/{expect.Highlight}");
         }
         Line($"outer ring picks: {links.Options.Length - wrong.Count} of {links.Options.Length} options took the linking tool out with that option{(wrong.Count > 0 ? ": " + string.Join("; ", wrong.Take(3)) : "")}");
         if (wrong.Count > 0)
             Fail($"outer ring: choosing an outer segment didn't equip it: {wrong[0]}");
 
         // Letting go on the linking tool itself keeps its last option (and it is marked when the ring shows).
-        links.Choose((int)SandboxLinkWheel.Option.Shaft);
+        links.Choose((int)SandboxLinkWheel.Option.Delete);
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.Welder);
         Run(g, ref now, 0.05);
         Hold();
         Flick(new Vector2(-45, 0));
         var marked = w.Items[Linker].OptionCurrent;
         var innerTool = LetGo();
-        var kept = links.Type == RouteType.Shaft && links.Mode == LinkMode.Link;
+        var kept = links.Mode == LinkMode.Delete;
         links.Choose((int)SandboxLinkWheel.Option.Reroute);
         Hold();
         Flick(new Vector2(-45, 0));
@@ -208,8 +200,8 @@ public static partial class SelfTest
         Flick(new Vector2(-45, 0));
         wheel.Step(g, true, -w.Pointer, false);
         var cancelTool = LetGo();
-        Line($"outer ring, let go on the tool: the linking tool out {innerTool}, the shaft kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
-        if (innerTool != ConstructTool.Linker || !kept || marked != (int)SandboxLinkWheel.Option.Shaft || !keptMode)
+        Line($"outer ring, let go on the tool: the linking tool out {innerTool}, delete mode kept {kept} (marked {marked}); a re-route kept {keptMode}; let go in the middle kept the {cancelTool} (mode {links.Mode})");
+        if (innerTool != ConstructTool.Linker || !kept || marked != (int)SandboxLinkWheel.Option.Delete || !keptMode)
             Fail("outer ring: letting go on the inner segment didn't take the tool out with its last option");
         if (cancelTool != ConstructTool.Wrench || links.Mode != LinkMode.Reroute)
             Fail("outer ring: letting go in the middle after the ring showed changed something");

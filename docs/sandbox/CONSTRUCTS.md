@@ -37,7 +37,7 @@ north-west corner) and some loose parts.
 | W S A D, Space | Driving: throttle, reverse (brakes first), steering, brake. |
 | Fire / Aim / R (seated) | Held keys the construct's **input readers** can read (drivers and passengers don't shoot). |
 | Physics gun (tool wheel, north-east) | Hold Fire to grab and carry a construct, wreck or loose part; wheel: distance; F + mouse: turn it (Shift snaps); Aim: freeze it; R twice: unfreeze yours ([The physics gun](#the-physics-gun)). |
-| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (data, power, pipe auto and its four styles, shaft, chute, delete / move node / re-route, highlight all; [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
+| Linking tool | Routed links ([Routed links](#routed-links-decision-20)): point the tool wheel at it for its **outer ring** (route links, delete / move node / re-route, highlight all; no link type: the port gives it, [Link type from the port](#link-type-from-the-port-at01); [The outer ring](#the-outer-ring-a-tools-options)). Fire on an output, Fire for each node, Fire on an input to finish (a red node: hold Fire and scroll to adjust it; hold Left Shift for free routing, no port snap); Aim or Backspace takes the last node off, Esc cancels. Aim on a part with nothing routed: cut its data links. R on a logic part: its next setting (a preset). |
 | Configure tool | (The tool wheel, SE.) Fire on a part: its settings panel. Shift+Fire: select more parts of the same kind (changed together). Aim: clear the selection. [The configure tool](#the-configure-tool). |
 
 ### Turning the ghost
@@ -1911,12 +1911,12 @@ may still say `"style": "fuel"` (or water, oil, steam) on a pipe link: it is rea
 one pipe. Blueprints no longer write it. On the wire the type byte of a link is the type alone (protocol 98); the high
 nibble that held the style is masked off when read.
 
-**Routing** (the linking tool): Fire on an output (a picker when it has several ports of the link's type, by name: "Fuel in", "Input shaft"; with one port it connects straight away; [Named link ports](#named-link-ports-np01)); each
+**Routing** (the linking tool): Fire on a device (a picker of ALL its ports, every type, by name: "Fuel in", "Drive out"; the port picked gives the link's type; a one-port device gets a one-option picker too; [Link type from the port](#link-type-from-the-port-at01)); each
 Fire places a node on the surface under the crosshair: off the surface by the link's radius, on the construct's 5 cm grid
 along the surface, onto the straight line on from the last segment when close to it, lined up with a neighbouring link's
 nodes, then turned to the type's angle rule. The preview shows the link so far and the next segment, red with the reason
 when a rule is broken (too close, a node sinking into a part, a segment through a solid part, the bend, the reach: at
-most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a picker for its port); Aim or Backspace takes
+most 8 m a segment, 24 m a link, 32 nodes). Fire on an input finishes it (a picker for its port, always, with the port nearest the crosshair highlighted so one more click confirms); Aim or Backspace takes
 the last node off; Esc cancels. A straight data cable may still go into **another** construct's input (milestone 3's wire
 between constructs). The server checks the whole link again (`ConstructRoutes.Check`) from where the player stands.
 
@@ -2009,6 +2009,35 @@ tank's pipe into an engine's Coolant in does not feed it). The first port of a t
   needs (`ConstructParts.PortProblems`); the loader refuses a port whose point is not on the part's surface. Self-test:
   **Named link ports** (`SelfTestNamedPorts.cs`).
 
+### Link type from the port (at01)
+
+Board item dev-link-auto-type-at01 (the developer, 2026-10-31; decision 20 amended). The linking tool has **no type choice**:
+its outer ring holds only the modes (`SandboxLinkWheel`: Route links, Delete links, Move node, Re-route, Highlight all). The
+type comes from the port.
+
+- **Start.** Fire on a device opens the **port picker** with ALL of its ports at once (`ConstructRoutes.AllPorts`: every type,
+  inputs and outputs, named ports then data in / out, then a storage part's chute), each by name with its type icon and colour
+  (`SandboxLinkWheel.TypeColour`) and a hint line (type, in / out, the fluid, "(no effect yet)"). Ports a link can't start at
+  (inputs, shaft sockets in use) are greyed with the reason. The usable port nearest the crosshair is **pre-highlighted**
+  (`RadialMenu.Preselect`), so a click confirms it with no further aim; a one-port device (a seat's Data out) gets a
+  one-option picker. Picking a port starts a link of **that port's type** with that type's rules, look and preview. While
+  aiming at a device, every port is a labelled marker on the part in its type's colour (`Program.LinkPortMarkers`).
+- **End.** While routing, a click on a device whose ports include one that takes the link opens its picker: the ports of the
+  link's type that are compatible are enabled and the nearest is highlighted; every other port is greyed with its reason
+  (`ConstructRoutes.EndWhy`: "a drive shaft can't connect to Fuel in", "Drive out is an output: a pipe ends at an input",
+  "this pipe carries fuel, Coolant in takes coolant"). A device with no port of the link's type stays a surface for a node,
+  and its markers are grey with the reason. The picker is always shown, even for a single matching port (np01's amendment).
+  The picked port is checked with the server's rule (`ConstructRoutes.Check`) and a refusal is said, with the link kept.
+- **Branching** off a link takes the link's type. Free routing (Shift), hold-and-scroll, world links and hoses are as before.
+- **HUD.** The line names the link being made: "Drive shaft from Engine: Drive out, 2 nodes: ...".
+- **Wire.** Nothing changes (a link already records its type); protocol stays 104.
+- **Self-test.** **Link auto type** (`SelfTestLinkAutoType.cs`), through `Program.LinkTestFrame` (the linking tool's real per-frame
+  input) with a host and a separate client: the ring has no type; an engine lists Fuel in, Drive out and Exhaust out together
+  (a fuel inlet greyed at the start); a transmission's Output shaft starts a drive shaft that ends on the differential's
+  Input shaft (output shafts greyed) by one confirming click; a tank's Fuel out starts a pipe ending on Fuel in (Drive out greyed
+  "a pipe can't connect to Drive out"); a fuel inlet's reason for a shaft; branching off a pipe makes a pipe; a seat's one-option
+  picker; a lamp's end picker (Power in greyed for a data cable); delete and re-route; the client mirrors the links.
+
 ### Self-test
 
 The **Construct routed links** section (`Source/App/SelfTestConstructRoutes.cs`): each type's bend rule and the snap
@@ -2041,8 +2070,7 @@ other; the key is Left Shift beside Sprint without a clash.
 1. Tunable constants in `ConstructRoutes`: pipe 15 degree steps, chute 45 degree steps (developer), shaft at most 45
    degrees a bend (developer), shaft junctions need a T gearbox (developer); 5 cm node grid; 8 m a segment, 24 m a link,
    32 nodes; segment health 20/40/80/250/80; a cut fuel pipe leaks 0.5 l/s; a chute moves a load (10 bulk) or one part a second.
-2. Picking a link type: the tool wheel's outer ring round the linking tool (board item dev-wheel-outer-ring-wo01; it
-   replaced the link wheel and its rings opened by resting).
+2. Picking a link type: none any more (board item dev-link-auto-type-at01): the port clicked gives it. The outer ring keeps the modes.
 3. Power cables add to the frame circuit (the frame still carries power, so every earlier construct works); a cable
    carries the circuit both ways.
 4. A shaft link is a drive-line edge with no ratio (each U joint keeps 99%); chain and belt drives stay devices.
@@ -2444,7 +2472,7 @@ nothing; and a real client's pick reaches the server.
 
 The **Sandbox tool wheel outer ring** section (`Source/App/SelfTestSandboxWheelRing.cs`): the outer ring's arcs (every
 option's middle and edges for 13, 2, 3, 9, 1 and 10 options, centred on the tool, the far side of a partial arc picks
-nothing, the arc or full circle choice); the linking tool's options cover every link type, every edit mode and the highlight toggle (Pipe is a plain option, with no arc); in an offline Sandbox game pointing at
+nothing, the arc or full circle choice); the linking tool's options are the modes only (route, delete, move node, re-route) and the highlight toggle, with no link type and no arc; in an offline Sandbox game pointing at
 the linking tool shows its ring with all nine, animating in; flicking out onto each option and letting go takes the linking tool out with it; letting go on the
 tool keeps the last option (marked on the ring), and in the middle cancels; a welder given two test modes picks from its
 arc, and outside the arc the pointer turns the inner ring; and every tool's and option's name, the title and an over-long

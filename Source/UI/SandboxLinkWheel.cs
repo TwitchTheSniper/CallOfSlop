@@ -15,24 +15,17 @@ public enum LinkMode : byte
 
 /// <summary>
 /// The linking tool's options (decision 20; docs/sandbox/CONSTRUCTS.md, "Routed links"): the outer ring the tool wheel shows
-/// round the linking tool (board item dev-wheel-outer-ring-wo01; it replaced the separate link wheel page and its rings
-/// opened by resting). Nine options in an arc, centred on the linking tool's direction: the data and power
-/// cables, the pipe, the drive shaft, the chute, then the edit modes (delete, move node, re-route) and "highlight all" (a
-/// toggle). There is one pipe for every fluid (decision 28), so the pipe is a plain option with no third tier (the wheel's
-/// third-tier mechanism stays for other tools). Picking a type routes links of
-/// it; the tool comes out with what was picked, or with the last pick when the wheel is let go on the linking tool itself.
-/// The state is this PC's only (nothing on the wire). Nothing allocates per frame.
+/// round the linking tool (board item dev-wheel-outer-ring-wo01). Board item dev-link-auto-type-at01: there is NO link type
+/// choice any more; the type comes from the port the player picks on a device (data, power, pipe, shaft or chute). The ring
+/// holds the modes only: "Route links" (the normal mode), delete links, move node, re-route, and "highlight all" (a toggle).
+/// The wheel's third-tier mechanism stays for other tools. The state is this PC's only (nothing on the wire). Nothing allocates per frame.
 /// </summary>
 public sealed class SandboxLinkWheel : IToolOptions
 {
     /// <summary>The outer ring's options, in order clockwise.</summary>
     public enum Option
     {
-        Data,
-        Power,
-        Pipe, // one pipe for any fluid
-        Shaft,
-        Chute,
+        Route,
         Delete,
         MoveNode,
         Reroute,
@@ -46,20 +39,15 @@ public sealed class SandboxLinkWheel : IToolOptions
     RadialIcon? IToolOptions.Icons => Icons;
 
     // What it picked (the linking tool's state on this PC).
-    public RouteType Type = RouteType.Data;
     public LinkMode Mode = LinkMode.Link;
     public bool Highlight; // every link drawn bright, through the parts
 
-    /// <summary>The options' icons (the port picker uses them too), made once.</summary>
+    /// <summary>The icons (the port picker uses the link types' too: 0 data, 1 power, 2 pipe, 3 shaft, 4 chute), made once.</summary>
     public static readonly RadialIcon Icons = DrawIcon;
 
     public SandboxLinkWheel()
     {
-        Set(Option.Data, "Data cable", "signals", 0);
-        Set(Option.Power, "Power cable", "electricity", 1);
-        Set(Option.Pipe, "Pipe", "fuel, water, any fluid", 2);
-        Set(Option.Shaft, "Drive shaft", "torque", 3);
-        Set(Option.Chute, "Chute", "items", 4);
+        Set(Option.Route, "Route links", "click a device, pick a port", 24);
         Set(Option.Delete, "Delete links", "click a link", 20);
         Set(Option.MoveNode, "Move node", "click a node, then its place", 21);
         Set(Option.Reroute, "Re-route", "click a link: start it again", 22);
@@ -71,7 +59,7 @@ public sealed class SandboxLinkWheel : IToolOptions
 
     public string ModeName => Mode switch { LinkMode.Delete => "delete links", LinkMode.Move => "move a node", LinkMode.Reroute => "re-route a link", _ => "route links" };
 
-    /// <summary>The option the linking tool has now (an edit mode, else the type); "highlight all" shows as a toggle.</summary>
+    /// <summary>The option the linking tool has now (the mode); "highlight all" shows as a toggle.</summary>
     public int CurrentOption
     {
         get
@@ -82,29 +70,17 @@ public sealed class SandboxLinkWheel : IToolOptions
                 LinkMode.Delete => Option.Delete,
                 LinkMode.Move => Option.MoveNode,
                 LinkMode.Reroute => Option.Reroute,
-                _ => Type switch
-                {
-                    RouteType.Power => Option.Power,
-                    RouteType.Pipe => Option.Pipe,
-                    RouteType.Shaft => Option.Shaft,
-                    RouteType.Chute => Option.Chute,
-                    _ => Option.Data,
-                },
+                _ => Option.Route,
             });
         }
     }
 
-    /// <summary>Applies an outer ring pick: a type routes links of it; an edit mode; "highlight all" toggles.</summary>
+    /// <summary>Applies an outer ring pick: a mode; "highlight all" toggles.</summary>
     public void Choose(int option)
     {
-        var o = (Option)option;
-        switch (o)
+        switch ((Option)option)
         {
-            case Option.Data: Pick(RouteType.Data); break;
-            case Option.Power: Pick(RouteType.Power); break;
-            case Option.Pipe: Pick(RouteType.Pipe); break;
-            case Option.Shaft: Pick(RouteType.Shaft); break;
-            case Option.Chute: Pick(RouteType.Chute); break;
+            case Option.Route: Mode = LinkMode.Link; break;
             case Option.Delete: Mode = LinkMode.Delete; break;
             case Option.MoveNode: Mode = LinkMode.Move; break;
             case Option.Reroute: Mode = LinkMode.Reroute; break;
@@ -112,11 +88,15 @@ public sealed class SandboxLinkWheel : IToolOptions
         }
     }
 
-    private void Pick(RouteType t)
+    /// <summary>The colour of a link type's ports in the picker and the markers (0..1 rgb).</summary>
+    public static System.Numerics.Vector3 TypeColour(RouteType t) => t switch
     {
-        Type = t;
-        Mode = LinkMode.Link;
-    }
+        RouteType.Data => new(0.45f, 0.8f, 1f),
+        RouteType.Power => new(1f, 0.85f, 0.3f),
+        RouteType.Pipe => new(0.4f, 1f, 0.6f),
+        RouteType.Shaft => new(1f, 0.6f, 0.3f),
+        _ => new(0.8f, 0.6f, 1f),
+    };
 
     // ---- Icons: each link type's profile, the edit modes ------------------------------------------
 
@@ -165,6 +145,11 @@ public sealed class SandboxLinkWheel : IToolOptions
                 Box(-0.8f, -0.25f, 0.4f, 0.25f, col);
                 Box(-0.7f, -0.15f, 0.3f, 0.15f, bg);
                 Box(0.45f, -0.4f, 0.85f, 0.4f, col);
+                break;
+            case 24: // route: a cable between two plugs
+                Line(-0.55f, 0.35f, 0.55f, -0.35f, 0.12f, col);
+                Box(-0.85f, 0.15f, -0.5f, 0.55f, accent);
+                Box(0.5f, -0.55f, 0.85f, -0.15f, accent);
                 break;
             case 5: // edit: a pencil
                 Line(-0.6f, 0.6f, 0.5f, -0.5f, 0.22f, col);

@@ -358,6 +358,106 @@ public static partial class ConstructRoutes
         return n;
     }
 
+    /// <summary>One link port of a part, of any type, for the all-ports picker (board item dev-link-auto-type-at01).</summary>
+    public struct LinkPort
+    {
+        public RouteType Type;
+        public byte Byte; // the port byte a link records
+        public string Name; // "Fuel in", "Drive out", "Data in"
+        public bool In, Out; // may a link end here / start here
+        public bool FreeIn, FreeOut; // ... and is it free to (a shaft socket in use is not)
+        public string Fluid; // pipes
+        public bool NoEffect;
+    }
+
+    /// <summary>The most ports a part lists in the picker.</summary>
+    public const int MaxLinkPorts = 16;
+
+    /// <summary>Does the part have a link port of any type (so the linking tool has something to act on)?</summary>
+    public static bool HasAnyPort(ConstructPartDef d) => d.NamedPorts.Length > 0 || d.HasOutput || d.MaxInputs > 0 || d.Role == PartRole.Storage;
+
+    /// <summary>
+    /// Every link port of <paramref name="part"/>, all types, inputs and outputs, by name (the linking tool has no type
+    /// choice: the port gives the link's type). Named ports first (shafts, pipes, power), then the data inputs and outputs,
+    /// then a storage part's chute. Returns how many were written into <paramref name="list"/>.
+    /// </summary>
+    public static int AllPorts(Construct c, int part, Span<LinkPort> list)
+    {
+        if (part < 0 || part >= c.PartCount)
+            return 0;
+        var d = c.DefOf(part);
+        var n = 0;
+        Span<byte> tmp = stackalloc byte[MaxLinkPorts];
+        foreach (var p in d.NamedPorts)
+        {
+            if (n >= list.Length || p.Type is RouteType.Chute or RouteType.Data)
+                continue;
+            var fo = false;
+            var fi = false;
+            if (p.Out)
+                fo = Has(tmp, Ports(c, part, p.Type, tmp, false), p.Byte);
+            if (p.In)
+                fi = Has(tmp, Ports(c, part, p.Type, tmp, true), p.Byte);
+            list[n++] = new LinkPort { Type = p.Type, Byte = p.Byte, Name = p.Name, In = p.In, Out = p.Out, FreeIn = fi, FreeOut = fo, Fluid = p.Fluid, NoEffect = p.NoEffect };
+        }
+        for (var dir = 0; dir < 2; dir++)
+        {
+            var input = dir == 1;
+            if (input ? d.MaxInputs <= 0 : !d.HasOutput)
+                continue;
+            var names = input ? d.DataIn : d.DataOut;
+            var count = Math.Max(1, names.Length);
+            for (var k = 0; k < count && n < list.Length; k++)
+            {
+                var nm = names.Length > 0 ? names[k] : input ? "Data in" : "Data out";
+                list[n++] = new LinkPort { Type = RouteType.Data, Byte = DataPortByte(names.Length <= 1 ? 0 : k), Name = nm, In = input, Out = !input, FreeIn = input, FreeOut = !input, Fluid = "" };
+            }
+        }
+        if (d.Role == PartRole.Storage && n < list.Length)
+            list[n++] = new LinkPort { Type = RouteType.Chute, Byte = 255, Name = "Chute", In = true, Out = true, FreeIn = true, FreeOut = true, Fluid = "" };
+        return n;
+    }
+
+    private static bool Has(Span<byte> a, int n, byte v)
+    {
+        for (var i = 0; i < n; i++)
+            if (a[i] == v)
+                return true;
+        return false;
+    }
+
+    /// <summary>Why a link can't start at port <paramref name="p"/> (greyed in the picker), or null.</summary>
+    public static string? StartWhy(in LinkPort p)
+        => !p.Out ? $"{p.Name} is an input: a link starts at an output" : !p.FreeOut ? $"{p.Name} is already used" : null;
+
+    /// <summary>
+    /// Why a link of type <paramref name="t"/> (carrying <paramref name="fluid"/>, a pipe) can't end at port
+    /// <paramref name="p"/> of <paramref name="part"/> (greyed, with this reason: "a drive shaft can't connect to Fuel in"), or null.
+    /// </summary>
+    public static string? EndWhy(Construct c, int part, RouteType t, string fluid, in LinkPort p)
+    {
+        if (p.Type != t)
+            return $"a {Name(t)} can't connect to {p.Name}";
+        if (!p.In)
+            return $"{p.Name} is an output: a {Name(t)} ends at an input";
+        if (!p.FreeIn)
+            return $"{p.Name} is already used";
+        if (t == RouteType.Pipe && fluid.Length > 0 && p.Fluid.Length > 0 && p.Fluid != fluid)
+        {
+            Span<byte> ok = stackalloc byte[MaxLinkPorts];
+            if (!Has(ok, EndPorts(c, part, t, fluid, ok), p.Byte))
+                return $"this pipe carries {fluid}, {p.Name} takes {p.Fluid}";
+        }
+        return null;
+    }
+
+    /// <summary>The picker's line under a port's name: its type, in or out, the fluid, "(no effect yet)".</summary>
+    public static string PortLine(in LinkPort p)
+    {
+        var dir = p.In && p.Out ? "in/out" : p.In ? "in" : "out";
+        return $"{Name(p.Type)}, {dir}{(p.Fluid.Length > 0 ? ", " + p.Fluid : "")}{(p.NoEffect ? " (no effect yet)" : "")}";
+    }
+
     /// <summary>What a pipe leaving <paramref name="part"/> by <paramref name="port"/> carries (fuel, exhaust...), or "".</summary>
     public static string CarriedFluid(Construct c, int part, byte port) => part >= 0 && part < c.PartCount && PortOf(c.DefOf(part), RouteType.Pipe, port) is { } p ? p.Fluid : "";
 
