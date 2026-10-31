@@ -1,0 +1,50 @@
+{
+  "format": "call-of-slop-construct-part/1",
+  "name": "Step Plate",
+  "description": "A small yellow step on a vehicle's side: stepped up onto from the ground, and E near it climbs you aboard.",
+  "group": "Panels",
+  "section": "Boarding",
+  "role": "panel",
+  "tool": "wrench",
+  "attachSeconds": 1.5,
+  "mass": 6,
+  "health": 200,
+  "armour": 4,
+  "material": "steel",
+  "color": "#c9a227",
+  "boarding": true,
+  "boxes": [
+    {
+      "min": [
+        -0.25,
+        -0.025,
+        -0.3
+      ],
+      "max": [
+        0.25,
+        0.025,
+        0
+      ]
+    }
+  ],
+  "sockets": [
+    {
+      "name": "back",
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "dir": "+z"
+    },
+    {
+      "name": "top",
+      "at": [
+        0,
+        0.025,
+        -0.15
+      ],
+      "dir": "+y"
+    }
+  ]
+}
