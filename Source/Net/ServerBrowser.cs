@@ -234,7 +234,10 @@ public readonly record struct ServerInfo(string Name, string MapName, byte Playe
     //     each body's turn rate, and CfgKey.Grip at the end of CfgKey (panels and floors).
     // 103: Sandbox splitter muzzles (board item ms02, ConstructWeapons.cs): a CFire shot event carries a u8 muzzle (which of the
     //     gun's barrel tips the round left, 0 for a gun with one).
-    public const byte ProtocolVersion = 103;
+    // 104: Sandbox named link ports (board item np01, ConstructPorts.cs): the port bytes of a link keep their layout, but a shaft
+    //     link's port is now one of the part's named shaft ports (an engine's "Drive out"...), and a pipe or power link may end at
+    //     a part's k-th named port of its type (0x80 | k; the first is still 255). A host and client must agree on the part files.
+    public const byte ProtocolVersion = 104;
     private static readonly byte[] Magic = "COS1"u8.ToArray();
 
     public byte[] Encode()

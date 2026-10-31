@@ -31,6 +31,34 @@
       ],
       "color": "#4a4a32",
       "detail": true
+    },
+    {
+      "size": [
+        0.104,
+        0.104,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        -0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.114,
+        0.114,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -87,6 +115,20 @@
         -0.25
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
+    },
+    {
+      "name": "Output shaft",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
     }
   ],
   "transmission": {

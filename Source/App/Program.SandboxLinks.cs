@@ -162,13 +162,13 @@ public static partial class Program
         }
         else
         {
-            start = ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort);
+            start = ConstructRoutes.PortPoint(c, _lkFrom, _lkFromPort, _lkType);
             host = _lkFrom;
         }
         at = _lkCount > 0 ? _lkNodes[_lkCount - 1].Pos : start;
         var before = _lkCount > 1 ? _lkNodes[_lkCount - 2].Pos : start;
         dir = _lkCount > 0 && Vector3.DistanceSquared(at, before) > 1e-8f ? Vector3.Normalize(at - before)
-            : _lkType == RouteType.Shaft && _lkParent == 255 ? ConstructRoutes.PortDir(c, _lkFrom, _lkFromPort) : Vector3.Zero;
+            : _lkType == RouteType.Shaft && _lkParent == 255 ? ConstructRoutes.PortDir(c, _lkFrom, _lkFromPort, _lkType) : Vector3.Zero;
         if (_lkCount > 0)
             host = _lkNodes[_lkCount - 1].Host;
     }
@@ -294,7 +294,7 @@ public static partial class Program
                 RouteRender.PreviewPts[n0 - 1] = pos; // (the last node, moved)
                 if (_lkAdjEnd >= 0 && _lkAdjEnd < c.PartCount)
                 {
-                    RouteRender.PreviewPts[n0] = ConstructRoutes.PortPoint(c, _lkAdjEnd, _lkAdjEndPort);
+                    RouteRender.PreviewPts[n0] = ConstructRoutes.PortPoint(c, _lkAdjEnd, _lkAdjEndPort, _lkType);
                     RouteRender.PreviewSeg[n0++] = (byte)c.Parts[_lkAdjEnd].Seg;
                 }
                 break;
@@ -346,16 +346,52 @@ public static partial class Program
         }
     }
 
+    /// <summary>
+    /// While aiming at a part with the linking tool: its ports that match the link type (and, mid-link, are inputs; at the
+    /// start, outputs) as small labelled markers where each sits, so the player sees where "Fuel in" is.
+    /// </summary>
+    private static void LinkPortMarkers(in ConstructHit hit)
+    {
+        var type = _lkBody != 0 ? _lkType : _linkWheel.Type;
+        if (type is not (RouteType.Shaft or RouteType.Pipe or RouteType.Power) || _lkFree || _lkPicker.IsOpen || hit.Body is not { } c || hit.Part < 0 || hit.Part >= c.PartCount)
+            return;
+        if (_lkBody != 0 && _lkBody != c.Id)
+            return;
+        var d = c.DefOf(hit.Part);
+        if (d.NamedPorts.Length == 0)
+            return;
+        var input = _lkBody != 0;
+        c.WorldFrame(c.Parts[hit.Part].Seg, out var q, out var t);
+        foreach (var p in d.NamedPorts)
+        {
+            if (p.Type != type || !(input ? p.In : p.Out))
+                continue;
+            var at = t + Vector3.Transform(ConstructRoutes.PortPoint(c, hit.Part, p.Byte, type), q);
+            var taken = type == RouteType.Shaft && (c.SocketUsed(hit.Part, p.Socket));
+            Hud.WorldLabel(at, p.Name, p.NoEffect || taken ? new Vector3(0.65f, 0.65f, 0.65f) : new Vector3(0.45f, 1f, 0.55f), 0.95f, 13f * Ui.Scale, 12f);
+        }
+    }
+
+    /// <summary>What the link being routed carries (a pipe: its output port's fluid, or its parent's), or "".</summary>
+    private static string LinkFluid(Construct c)
+    {
+        if (_lkType != RouteType.Pipe)
+            return "";
+        if (_lkParent != 255)
+            return _lkParent < c.RouteCount ? ConstructRoutes.CarriedFluid(c, c.Routes[_lkParent].Source, c.Routes[_lkParent].SourcePort) : "";
+        return ConstructRoutes.CarriedFluid(c, _lkFrom, _lkFromPort);
+    }
+
     /// <summary>The nearest free port of a part to a point (rest frame), and how many it has.</summary>
     private static int NearestPort(Construct c, int part, Vector3 near, out byte port, bool input)
     {
         Span<byte> ports = stackalloc byte[8];
-        var n = ConstructRoutes.Ports(c, part, _lkType, ports, input);
+        var n = input ? ConstructRoutes.EndPorts(c, part, _lkType, LinkFluid(c), ports) : ConstructRoutes.Ports(c, part, _lkType, ports, false);
         port = 255;
         var best = float.MaxValue;
         for (var i = 0; i < n; i++)
         {
-            var d = Vector3.DistanceSquared(ConstructRoutes.PortPoint(c, part, ports[i]), near);
+            var d = Vector3.DistanceSquared(ConstructRoutes.PortPoint(c, part, ports[i], _lkType), near);
             if (d < best)
             {
                 best = d;
@@ -368,7 +404,7 @@ public static partial class Program
     private static void OpenPicker(Construct c, int part, bool end)
     {
         Span<byte> ports = stackalloc byte[8];
-        _lkPickCount = ConstructRoutes.Ports(c, part, _lkType, ports, input: end);
+        _lkPickCount = end ? ConstructRoutes.EndPorts(c, part, _lkType, LinkFluid(c), ports) : ConstructRoutes.Ports(c, part, _lkType, ports, input: false);
         for (var i = 0; i < _lkPickCount; i++)
         {
             _lkPickPorts[i] = ports[i];
@@ -377,8 +413,9 @@ public static partial class Program
         for (var i = 0; i < _lkPicker.Items.Length; i++)
         {
             var it = _lkPicker.Items[i];
-            it.Label = i < _lkPickCount ? _lkType == RouteType.Data ? $"{(end ? "in" : "out")}: {_lkPickNames[i]}" : $"port {_lkPickNames[i]}" : "";
-            it.Hint = "";
+            // (named ports, by function: "Fuel in", "Input shaft"; never a direction. Hint: in or out, the fluid, "(no effect yet)")
+            it.Label = i < _lkPickCount ? _lkType == RouteType.Data ? $"{(end ? "in" : "out")}: {_lkPickNames[i]}" : _lkPickNames[i].Length > 0 ? _lkPickNames[i] : "the part" : "";
+            it.Hint = i < _lkPickCount && _lkType != RouteType.Data ? ConstructRoutes.PortNote(c.DefOf(part), _lkType, _lkPickPorts[i]) : "";
             it.Enabled = i < _lkPickCount;
             it.Icon = 3;
             it.Note = i < _lkPickCount ? "" : "-";
@@ -432,6 +469,7 @@ public static partial class Program
             var state = hp <= 0 ? " - CUT" : !r.FedEnd ? " - cut further back" : "";
             var damaged = hp < full || ConstructRoutes.SegmentHealth(c, k, r.Count) < full;
             _lkLook = $"{char.ToUpperInvariant(ConstructRoutes.Name(r.Type)[0])}{ConstructRoutes.Name(r.Type)[1..]}: {what}{share} {MathF.Max(0, hp):0}/{full:0}{state}"
+                      + (ConstructRoutes.EndNote(c, k) is { } note ? $" - {note}" : "")
                       + (repair && damaged ? " - LMB to repair" : "");
         }
         g.SandboxLookText = _lkLook;
@@ -470,6 +508,8 @@ public static partial class Program
         }
         var w = _linkWheel;
         var onRoute = aimed && hit.RoutePlus1 > 0 && hit.RoutePlus1 <= hit.Body.RouteCount;
+        if (aimed && !onRoute && w.Mode == LinkMode.Link)
+            LinkPortMarkers(hit);
         // A world link under the crosshair: its look line, and the delete mode (Program.SandboxWorldLinks.cs).
         if (_lkBody == 0 && _lkMoveRoute < 0 && !onRoute && LinkWorldAimed(g, eye, dir, aimed, hit, fire, w.Mode) >= 0 && w.Mode != LinkMode.Link)
         {
@@ -582,7 +622,7 @@ public static partial class Program
             var n0 = 0;
             RouteRender.PreviewBody = rc;
             RouteRender.PreviewType = _lkType;
-            RouteRender.PreviewPts[n0] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(rc, _lkFrom, _lkFromPort);
+            RouteRender.PreviewPts[n0] = _lkParent != 255 ? _lkJunction : ConstructRoutes.PortPoint(rc, _lkFrom, _lkFromPort, _lkType);
             RouteRender.PreviewSeg[n0++] = (byte)(_lkParent != 255 ? rc.Parts[Math.Min(ConstructRoutes.HostOf(rc, _lkParent, _lkParentSeg), rc.PartCount - 1)].Seg : rc.Parts[_lkFrom].Seg);
             for (var i = 0; i < _lkCount; i++)
             {
@@ -637,7 +677,7 @@ public static partial class Program
                 {
                     endPart = hit.Part;
                     ports = NearestPort(rc, endPart, p, out endPort, input: true);
-                    next = ConstructRoutes.PortPoint(rc, endPart, endPort);
+                    next = ConstructRoutes.PortPoint(rc, endPart, endPort, _lkType);
                 }
                 else
                     next = ConstructRoutes.Snap(rc, _lkType, at, tailDir, p, nrm);

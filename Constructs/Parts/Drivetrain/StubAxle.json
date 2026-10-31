@@ -27,6 +27,20 @@
       ],
       "color": "#4a4f55",
       "detail": true
+    },
+    {
+      "size": [
+        0.114,
+        0.114,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        -0.1655
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -83,6 +97,14 @@
         -0.15
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Drive in",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z"
     }
   ],
   "drive": {

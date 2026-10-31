@@ -167,21 +167,23 @@ public static partial class SelfTest
         var e1 = PartNamed(c, "Engine");
         var e2 = PartNamed(c, "Engine", 1);
         var r = ConstructRoutes.Radius(RouteType.Pipe);
-        var tc = ConstructRoutes.PortPoint(c, tank, 255);
-        var e1c = ConstructRoutes.PortPoint(c, e1, 255);
         c.PartBounds(tank, out _, out var tmx);
         c.PartBounds(e2, out _, out var e2mx);
+        var p0 = ConstructRoutes.PortPoint(c, tank, 255, RouteType.Pipe); // (the tank's "Fuel out" and the engine's "Fuel in": a point on a face each, and the link leaves and enters it straight)
+        var p1 = ConstructRoutes.PortPoint(c, e1, 255, RouteType.Pipe);
         var e2c = ConstructRoutes.PortPoint(c, e2, 255);
-        // Out of the tank's +z face, along the +z faces of the tank and the second engine (a node on that engine), then on to the first engine.
+        // Out of the tank's +x port, along the +z faces of the tank and the second engine (a node on that engine), then round to the first engine's -x port.
         var zFace = MathF.Max(tmx.Z, e2mx.Z) + r;
-        Span<CRouteNode> nodes = stackalloc CRouteNode[4];
-        nodes[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(tc.X, tc.Y, zFace)), Host = (byte)tank };
-        nodes[1] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e2c.X, tc.Y, zFace)), Host = (byte)e2 };
-        nodes[2] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e2c.X, tc.Y, 0.25f)), Host = 0 };
-        nodes[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e1c.X, tc.Y, 0.25f)), Host = 0 };
+        Span<CRouteNode> nodes = stackalloc CRouteNode[6];
+        nodes[0] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p0.X + 0.3f, p0.Y, p0.Z)), Host = (byte)tank };
+        nodes[1] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p0.X + 0.3f, p0.Y, zFace)), Host = (byte)tank };
+        nodes[2] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e2c.X, p0.Y, zFace)), Host = (byte)e2 };
+        nodes[3] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(e2c.X, p0.Y, 0.25f)), Host = 0 };
+        nodes[4] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p1.X - 0.3f, p0.Y, 0.25f)), Host = 0 };
+        nodes[5] = new CRouteNode { Pos = ConstructWorld.Quantise(new Vector3(p1.X - 0.3f, p1.Y, p1.Z)), Host = 0 };
         var endsFree = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, true);
         var endsSnap = ConstructRoutes.ClickEnds(c, RouteType.Pipe, tank, 255, e2, false);
-        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..1], nodes[1].Pos, e2);
+        var nodeOnEngine = ConstructRoutes.OpenPath(c, RouteType.Pipe, tank, 255, 255, 0, default, nodes[..2], nodes[2].Pos, e2);
         var finishOnEngine = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, default, e2, 255); // (the click from the tank straight at it)
         var past = ConstructRoutes.Check(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255);
         var added = past == null ? ConstructRoutes.Add(w, c, RouteType.Pipe, tank, 255, 255, 0, default, nodes, e1, 255) : -1;

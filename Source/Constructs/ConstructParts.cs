@@ -300,6 +300,7 @@ public sealed class ConstructPartDef
     public float DriveRatio = 1f, DriveEfficiency = 1f; // transfer part: reduction (engine side turns per output turn), what it keeps
     public float MaxAngle; // a U or CV joint: the most it bends (radians)
     public float MaxTorque; // a belt, U joint...: the most torque it carries before it slips (N m at the part; 0: no limit)
+    public NamedPort[] NamedPorts = []; // the link ports the part file names (ConstructPorts.cs): shafts, pipes, power
     public int[] Ports = []; // transfer part: the sockets the drive goes in and out of (empty: every socket)
     public int FrontPort = -1; // a transfer case: its switched (front) output socket
     public float OffroadGrip = 1f, SideGrip = 1f, RollResist = 0.01f; // wheel: grip on terrain (times grip), sideways (times grip), rolling resistance
@@ -473,6 +474,17 @@ public static partial class ConstructParts
                 Console.WriteLine($"PROBLEM z-fight: {z} ({d.File}; inset or raise one by 2-5 mm)");
                 zfights++;
             }
+        var portProblems = 0;
+        foreach (var d in All)
+        {
+            foreach (var np in d.NamedPorts)
+                Console.WriteLine($"OK  port {d.Name}: {np.Name} ({ConstructRoutes.TypeKey(np.Type)} {(np.In && np.Out ? "in/out" : np.In ? "in" : "out")}{(np.Fluid.Length > 0 ? ", " + np.Fluid : "")}{(np.NoEffect ? ", no effect yet" : "")}{(np.Implicit ? ", implicit" : "")})");
+            foreach (var why in PortProblems(d))
+            {
+                Console.WriteLine($"PROBLEM ports: {d.Name}: {why} ({d.File})");
+                portProblems++;
+            }
+        }
         foreach (var r in Refused)
             Console.WriteLine($"REFUSED {r}");
         foreach (var r in ConstructBuild.RefusedBlueprints)
@@ -481,7 +493,56 @@ public static partial class ConstructParts
             Console.WriteLine($"OK  tool {m.Key,-9} {m.Name,-14} {m.Boxes.Length} boxes{(m.Support != null ? ", two hands" : "")}{(m.Tool == null ? " (still to come)" : "")} ({m.File})");
         foreach (var r in ConstructTools.Refused)
             Console.WriteLine($"REFUSED {r}");
-        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count + zfights;
+        return Refused.Count + ConstructBuild.RefusedBlueprints.Count + ConstructTools.Refused.Count + zfights + portProblems;
+    }
+
+    /// <summary>
+    /// What a part with a linking role is missing in its named ports (<c>--check-construct-parts</c>, the self-test): an
+    /// engine needs a shaft output (and a fuel inlet when it burns fuel), a transmission a shaft input and output, a
+    /// differential a shaft input, a transfer part a shaft port (the old drive-shaft parts excepted), a tank a pipe output,
+    /// a battery or alternator a power output. Structural parts offer no shaft port at all.
+    /// </summary>
+    public static List<string> PortProblems(ConstructPartDef d)
+    {
+        var why = new List<string>();
+        void Need(RouteType t, bool input, string what)
+        {
+            if (!ConstructRoutes.HasPort(d, t, input))
+                why.Add($"a {d.Role} needs {what}");
+        }
+        switch (d.Role)
+        {
+            case PartRole.Engine:
+                Need(RouteType.Shaft, false, "a shaft output port (\"Drive out\")");
+                if (d.FuelKind == EngineFuel.Fuel)
+                    Need(RouteType.Pipe, true, "a pipe input port (\"Fuel in\")");
+                break;
+            case PartRole.Transmission:
+                Need(RouteType.Shaft, true, "a shaft input port");
+                Need(RouteType.Shaft, false, "a shaft output port");
+                break;
+            case PartRole.Differential:
+                Need(RouteType.Shaft, true, "a shaft input port");
+                break;
+            case PartRole.Transfer when !d.Legacy:
+                Need(RouteType.Shaft, true, "a shaft input port");
+                if (d.Drive is not (DriveKind.Hub or DriveKind.Stub))
+                    Need(RouteType.Shaft, false, "a shaft output port");
+                break;
+            case PartRole.FuelTank:
+                Need(RouteType.Pipe, false, "a pipe output port (\"Fuel out\")");
+                break;
+            case PartRole.Battery or PartRole.Alternator:
+                Need(RouteType.Power, false, "a power output port (\"Power out\")");
+                break;
+        }
+        if (d.Role is PartRole.Frame or PartRole.Panel && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+            why.Add("structural parts never offer shaft ports");
+        if (d.Electric && !ConstructRoutes.HasPort(d, RouteType.Power, true))
+            why.Add("a part that draws power needs a power input port");
+        if (d.Role != PartRole.Engine && d.Role != PartRole.Differential && d.Role != PartRole.Transmission && d.Role != PartRole.Transfer && d.NamedPorts.Any(p => p.Type == RouteType.Shaft))
+            why.Add("only drive parts have shaft ports");
+        return why;
     }
 
     public static ConstructPartDef? Get(ushort id) => id < All.Count ? All[id] : null;
@@ -573,7 +634,7 @@ public static partial class ConstructParts
         "format", "name", "description", "role", "tool", "attachSeconds", "mass", "health", "armour", "material", "friction",
         "onBreak", "color", "boxes", "sockets", "engine", "wheel", "suspension", "fuelTank", "seat", "hinge", "joint", "logic",
         "transmission", "battery", "alternator", "hitch", "power", "dial", "gun", "gunPart", "ammoBox", "scrap", "core", "group", "section", "storage", "differential", "drive", "config", "legacy", "walk", "boarding", "damaged", "stage", "faces", "faceAxis",
-        "physicsOnly", "hose",
+        "physicsOnly", "hose", "ports",
     ];
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
@@ -915,6 +976,7 @@ public static partial class ConstructParts
         // Milestone 3: a power draw (watts while it works) and a gauge's dial.
         d.PowerDraw = Opt(root, "power") is { } pw ? Num(pw, file, "power") : d.Role == PartRole.Logic ? 2f : d.Role == PartRole.Joint && d.JointType != JointType.Steering ? 10f : d.ActiveSuspension ? 150f : 0f;
         Range(d.PowerDraw, 0, 1_000_000, file, "power");
+        ParseNamedPorts(d, root, file); // (link ports by function: ConstructPorts.cs)
         if (Opt(root, "dial") is { } dial)
         {
             if (dial.ValueKind != JsonValueKind.Object)

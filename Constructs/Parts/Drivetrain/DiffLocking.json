@@ -35,6 +35,48 @@
       ],
       "color": "#2f3a28",
       "detail": true
+    },
+    {
+      "size": [
+        0.104,
+        0.104,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        -0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.114,
+        0.114
+      ],
+      "at": [
+        -0.5655,
+        0.0,
+        0.0
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.122,
+        0.122
+      ],
+      "at": [
+        0.5655,
+        0.0,
+        0.0
+      ],
+      "color": "#6b7077",
+      "detail": true
     }
   ],
   "sockets": [
@@ -127,6 +169,44 @@
         0
       ],
       "dir": "-x"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Input shaft",
+      "type": "shaft",
+      "dir": "in",
+      "socket": "-z0",
+      "at": [
+        0.0,
+        0.0,
+        -0.25
+      ],
+      "face": "-z"
+    },
+    {
+      "name": "Output left",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "-x",
+      "at": [
+        -0.55,
+        0.0,
+        0.0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Output right",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+x",
+      "at": [
+        0.55,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
     }
   ],
   "differential": {

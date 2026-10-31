@@ -45,6 +45,20 @@
       ],
       "color": "#c9a227",
       "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.104,
+        0.104
+      ],
+      "at": [
+        0.1405,
+        0.0,
+        0.0
+      ],
+      "color": "#26282c",
+      "detail": true
     }
   ],
   "sockets": [
@@ -101,6 +115,19 @@
         -0.125
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Power out",
+      "type": "power",
+      "dir": "out",
+      "at": [
+        0.125,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
     }
   ],
   "alternator": {

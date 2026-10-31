@@ -167,9 +167,7 @@ public static partial class ConstructRoutes
     public static bool IsOutput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.HasOutput,
-        RouteType.Power => d.Role is PartRole.Battery or PartRole.Alternator,
-        RouteType.Pipe => d.Role == PartRole.FuelTank,
-        RouteType.Shaft => d.Role is PartRole.Engine or PartRole.Transmission or PartRole.Transfer or PartRole.Differential,
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: false),
         _ => d.Role == PartRole.Storage,
     };
 
@@ -177,11 +175,63 @@ public static partial class ConstructRoutes
     public static bool IsInput(ConstructPartDef d, RouteType t) => t switch
     {
         RouteType.Data => d.MaxInputs > 0,
-        RouteType.Power => d.Electric,
-        RouteType.Pipe => d.Role == PartRole.Engine && d.FuelKind == EngineFuel.Fuel,
-        RouteType.Shaft => d.Role is PartRole.Transmission or PartRole.Transfer or PartRole.Differential,
+        RouteType.Power or RouteType.Pipe or RouteType.Shaft => HasPort(d, t, input: true),
         _ => d.Role == PartRole.Storage,
     };
+
+    /// <summary>Does the part file name a port of type <paramref name="t"/> a link can start at (<paramref name="input"/> false) or end at?</summary>
+    public static bool HasPort(ConstructPartDef d, RouteType t, bool input)
+    {
+        foreach (var p in d.NamedPorts)
+            if (p.Type == t && (input ? p.In : p.Out))
+                return true;
+        return false;
+    }
+
+    /// <summary>The named port of type <paramref name="t"/> whose link byte is <paramref name="port"/>, or null.</summary>
+    public static NamedPort? PortOf(ConstructPartDef d, RouteType t, byte port)
+    {
+        foreach (var p in d.NamedPorts)
+            if (p.Type == t && p.Byte == port)
+                return p;
+        return null;
+    }
+
+    /// <summary>The named port of type <paramref name="t"/> called <paramref name="name"/> (any case), or null.</summary>
+    public static NamedPort? PortNamed(ConstructPartDef d, RouteType t, string name)
+    {
+        foreach (var p in d.NamedPorts)
+            if (p.Type == t && string.Equals(p.Name, name, StringComparison.OrdinalIgnoreCase))
+                return p;
+        return null;
+    }
+
+    /// <summary>
+    /// The named port of type <paramref name="t"/> nearest to an old directional shaft port (a socket of the part), that can
+    /// start (or end) a link: a socket that is itself a port, else the port facing the same way, else the nearest one.
+    /// Null when the part has no such port.
+    /// </summary>
+    public static NamedPort? NearestPort(ConstructPartDef d, RouteType t, int socket, bool input)
+    {
+        NamedPort? best = null;
+        var bestD = float.MaxValue;
+        foreach (var p in d.NamedPorts)
+        {
+            if (p.Type != t || !(input ? p.In : p.Out))
+                continue;
+            if (p.Socket == socket)
+                return p;
+            var dist = socket >= 0 && socket < d.Sockets.Length ? Vector3.DistanceSquared(p.At, d.Sockets[socket].At) : 0f;
+            if (socket >= 0 && socket < d.Sockets.Length && p.Face == d.Sockets[socket].Dir)
+                dist -= 100f;
+            if (dist < bestD)
+            {
+                bestD = dist;
+                best = p;
+            }
+        }
+        return best;
+    }
 
     /// <summary>
     /// Does a click on part <paramref name="part"/> end a link of type <paramref name="type"/> being routed from part
@@ -215,6 +265,16 @@ public static partial class ConstructRoutes
         _ => "end it at a storage part",
     };
 
+    /// <summary>Why a part can't start (or end) a link of type <paramref name="t"/>: it declares no such port (shown red).</summary>
+    public static string NoPortWhy(ConstructPartDef d, RouteType t, bool input)
+    {
+        var key = TypeKey(t);
+        var has = HasPort(d, t, input: !input);
+        return has
+            ? $"the {d.Name} has no {key} {(input ? "input" : "output")} port ({(input ? InputHint(t) : OutputHint(t))})"
+            : $"the {d.Name} has no {key} port ({(input ? InputHint(t) : OutputHint(t))})";
+    }
+
     /// <summary>A named data port's byte in a link (<see cref="CRoute.FromPort"/>, <see cref="CRoute.ToPort"/>): port 0 is 255 (the part itself), port k is this | k.</summary>
     public const byte DataPortBase = 0x80;
 
@@ -233,9 +293,10 @@ public static partial class ConstructRoutes
     {
         if (part < 0 || part >= c.PartCount || ports.Length == 0)
             return 0;
-        if (t != RouteType.Shaft)
+        var d = c.DefOf(part);
+        if (t == RouteType.Data)
         {
-            var names = t == RouteType.Data ? input ? c.DefOf(part).DataIn : c.DefOf(part).DataOut : [];
+            var names = input ? d.DataIn : d.DataOut;
             if (names.Length <= 1)
             {
                 ports[0] = 255;
@@ -246,46 +307,104 @@ public static partial class ConstructRoutes
                 ports[k] = DataPortByte(k);
             return k;
         }
-        var d = c.DefOf(part);
-        var n = 0;
-        for (var s = 0; s < d.Sockets.Length && n < ports.Length; s++)
+        if (t == RouteType.Chute)
         {
-            if (d.Ports.Length > 0 && Array.IndexOf(d.Ports, s) < 0)
+            ports[0] = 255;
+            return 1;
+        }
+        var n = 0;
+        foreach (var p in d.NamedPorts)
+        {
+            if (p.Type != t || !(input ? p.In : p.Out) || n >= ports.Length)
                 continue;
-            if (d.Sockets[s].Kind is SocketKind.Axle or SocketKind.Leaf || c.SocketUsed(part, s) || ShaftOnPort(c, part, s))
+            if (t == RouteType.Shaft && (c.SocketUsed(part, p.Socket) || ShaftOnPort(c, part, p.Socket)))
                 continue;
-            ports[n++] = (byte)s;
+            ports[n++] = p.Byte;
         }
         return n;
     }
 
-    /// <summary>A port's name for the picker and blueprints: a socket's, a named data port's ("spawn now"), or "" for the part itself.</summary>
+    /// <summary>A port's name for the picker and blueprints: a named port's ("Fuel in"), a named data port's ("spawn now"), or "" for the part itself.</summary>
     public static string PortName(ConstructPartDef d, RouteType t, byte port, bool input)
     {
-        if (port == 255)
-            return t == RouteType.Data && (input ? d.DataIn : d.DataOut) is { Length: > 1 } named ? named[0] : "";
         if (t == RouteType.Data)
         {
             var names = input ? d.DataIn : d.DataOut;
+            if (port == 255)
+                return names is { Length: > 1 } named ? named[0] : "";
             var k = DataPort(port);
             return k >= 0 && k < names.Length ? names[k] : "";
         }
-        return port < d.Sockets.Length ? d.Sockets[port].Name : "";
+        return PortOf(d, t, port)?.Name ?? "";
+    }
+
+    /// <summary>
+    /// The ports of <paramref name="part"/> a link of type <paramref name="t"/> can end at, for the picker: when the pipe
+    /// carries a known <paramref name="fluid"/> and some port wants exactly that (or anything), only those, so a fuel
+    /// pipe to an engine has just "Fuel in"; when none does, all of them (the link then warns about the mismatch).
+    /// </summary>
+    public static int EndPorts(Construct c, int part, RouteType t, string fluid, Span<byte> ports)
+    {
+        var n = Ports(c, part, t, ports, input: true);
+        if (t != RouteType.Pipe || fluid.Length == 0 || n <= 1)
+            return n;
+        var d = c.DefOf(part);
+        var k = 0;
+        for (var i = 0; i < n; i++)
+            if (PortOf(d, t, ports[i]) is { } p && (p.Fluid.Length == 0 || p.Fluid == fluid))
+                ports[k++] = ports[i];
+        if (k > 0)
+            return k;
+        return n;
+    }
+
+    /// <summary>What a pipe leaving <paramref name="part"/> by <paramref name="port"/> carries (fuel, exhaust...), or "".</summary>
+    public static string CarriedFluid(Construct c, int part, byte port) => part >= 0 && part < c.PartCount && PortOf(c.DefOf(part), RouteType.Pipe, port) is { } p ? p.Fluid : "";
+
+    /// <summary>What a port of a pipe, power cable or shaft says in the picker: "in", "out" or both, the fluid, and "(no effect yet)".</summary>
+    public static string PortNote(ConstructPartDef d, RouteType t, byte port)
+    {
+        if (PortOf(d, t, port) is not { } p)
+            return "";
+        var dir = p.In && p.Out ? "in/out" : p.In ? "in" : "out";
+        return $"{dir}{(p.Fluid.Length > 0 ? ", " + p.Fluid : "")}{(p.NoEffect ? " (no effect yet)" : "")}";
     }
 
     /// <summary>The port byte a name stands for on a part (a socket, or a named data port for a data link), or 255 when there's no such port.</summary>
     public static byte PortByName(ConstructPartDef d, RouteType t, string name, bool input)
+        => TryPortByName(d, t, name, input, out var b) ? b : (byte)255;
+
+    /// <summary>
+    /// The port byte for a blueprint's port name: a named data port or a named port of the part; an old directional
+    /// shaft port (a socket's name, from before named ports) maps to the nearest named port that fits (migration), and
+    /// a name that is none of those is false.
+    /// </summary>
+    public static bool TryPortByName(ConstructPartDef d, RouteType t, string name, bool input, out byte port)
     {
+        port = 255;
         if (t == RouteType.Data)
         {
             var names = input ? d.DataIn : d.DataOut;
             var k = Array.IndexOf(names, name);
-            return k > 0 ? DataPortByte(k) : (byte)255; // (port 0 is the part itself)
+            if (k > 0)
+                port = DataPortByte(k);
+            return k > 0;
         }
-        for (var s = 0; s < d.Sockets.Length; s++)
-            if (d.Sockets[s].Name == name)
-                return (byte)s;
-        return 255;
+        if (PortNamed(d, t, name) is { } p)
+        {
+            port = p.Byte;
+            return true;
+        }
+        if (t == RouteType.Shaft)
+        {
+            var s = Array.FindIndex(d.Sockets, x => x.Name == name);
+            if (s >= 0 && NearestPort(d, t, s, input) is { } near)
+            {
+                port = near.Byte;
+                return true;
+            }
+        }
+        return false;
     }
 
     /// <summary>Does a part have a data port named <paramref name="name"/> (an input, or an output)?</summary>
@@ -302,23 +421,39 @@ public static partial class ConstructRoutes
         return false;
     }
 
-    /// <summary>Where a link meets a part: a socket (shafts), else the part's centre. Rest frame of the part's segment.</summary>
-    public static Vector3 PortPoint(Construct c, int part, byte port)
+    /// <summary>
+    /// Where a link meets a part: its named port's declared point (the middle of a face, with a flange there), else a
+    /// socket, else the part's centre. Rest frame of the part's segment. <paramref name="t"/>: the link's type (a pipe or
+    /// power port is told apart from the shaft sockets by it; null: a socket or the centre).
+    /// </summary>
+    public static Vector3 PortPoint(Construct c, int part, byte port, RouteType? t = null)
     {
-        if (port != 255 && port < c.DefOf(part).Sockets.Length)
+        var d = c.DefOf(part);
+        if (port != 255 && port < d.Sockets.Length && (t == null || t == RouteType.Shaft))
         {
+            if (PortOf(d, RouteType.Shaft, port) is { } sp && port < d.Sockets.Length)
+                return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, sp.At * c.ScaleOf(part));
             c.SocketAt(part, port, out var at, out _);
             return at;
         }
+        if (t is RouteType.Pipe or RouteType.Power && PortOf(d, t.Value, port) is { } np)
+            return c.Parts[part].Pos + Rot24.Apply(c.Parts[part].Rot, np.At * c.ScaleOf(part));
         c.PartBounds(part, out var mn, out var mx);
         return (mn + mx) * 0.5f;
     }
 
     /// <summary>The direction a port faces (outward), or zero for a part's centre.</summary>
-    public static Vector3 PortDir(Construct c, int part, byte port)
+    public static Vector3 PortDir(Construct c, int part, byte port, RouteType? t = null)
     {
-        if (port == 255 || port >= c.DefOf(part).Sockets.Length)
+        var d = c.DefOf(part);
+        if (port == 255 || port >= d.Sockets.Length)
+        {
+            if (t is RouteType.Pipe or RouteType.Power && PortOf(d, t.Value, port) is { } np)
+                return ConstructParts.DirVector(Rot24.ApplyDir(c.Parts[part].Rot, np.Face));
             return Vector3.Zero;
+        }
+        if (PortOf(d, RouteType.Shaft, port) is { } sp)
+            return ConstructParts.DirVector(Rot24.ApplyDir(c.Parts[part].Rot, sp.Face));
         c.SocketAt(part, port, out _, out var dir);
         return ConstructParts.DirVector(dir);
     }
@@ -339,7 +474,7 @@ public static partial class ConstructRoutes
                 return pn.Pos;
             }
             seg = rt.From < c.PartCount ? c.Parts[rt.From].Seg : 0;
-            return rt.From < c.PartCount ? PortPoint(c, rt.From, rt.FromPort) : Vector3.Zero;
+            return rt.From < c.PartCount ? PortPoint(c, rt.From, rt.FromPort, rt.Type) : Vector3.Zero;
         }
         if (i < rt.Count)
         {
@@ -348,7 +483,7 @@ public static partial class ConstructRoutes
             return n.Pos;
         }
         seg = rt.To < c.PartCount ? c.Parts[rt.To].Seg : 0;
-        return rt.To < c.PartCount ? PortPoint(c, rt.To, rt.ToPort) : Vector3.Zero;
+        return rt.To < c.PartCount ? PortPoint(c, rt.To, rt.ToPort, rt.Type) : Vector3.Zero;
     }
 
     /// <summary>Point <paramref name="i"/> of link <paramref name="r"/> in the world (its segment as it is now).</summary>
@@ -470,10 +605,39 @@ public static partial class ConstructRoutes
         for (var k = 0; k < c.RouteCount; k++)
         {
             ref var r = ref c.Routes[k];
-            if (r.Type == RouteType.Pipe && r.To == engine && r.FedEnd && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Parts[r.Source].Working)
-                return true;
+            if (r.Type == RouteType.Pipe && r.To == engine && r.FedEnd && r.Source < c.PartCount && c.Parts[r.Source].D.Role == PartRole.FuelTank && c.Parts[r.Source].Working
+                && PortOf(c.DefOf(engine), RouteType.Pipe, r.ToPort) is { NoEffect: false, Fluid: "" or "fuel" })
+                return true; // (only into the engine's fuel inlet: its coolant and exhaust ports do nothing yet)
         }
         return false;
+    }
+
+    /// <summary>
+    /// A pipe carries what its output port produces: when the input port it ends at wants another fluid ("exhaust into a
+    /// fuel inlet") this says so, else null. A warning on the link, not a refusal.
+    /// </summary>
+    public static string? FluidWarning(Construct c, int route)
+    {
+        if (route < 0 || route >= c.RouteCount)
+            return null;
+        ref var r = ref c.Routes[route];
+        if (r.Type != RouteType.Pipe || r.Source >= c.PartCount || r.To >= c.PartCount)
+            return null;
+        var fluid = c.DefOf(r.Source) is var sd && PortOf(sd, RouteType.Pipe, r.SourcePort) is { } op && op.Fluid.Length > 0 ? op.Fluid : "";
+        var want = PortOf(c.DefOf(r.To), RouteType.Pipe, r.ToPort) is { } ip ? ip.Fluid : "";
+        return fluid.Length > 0 && want.Length > 0 && fluid != want ? $"{fluid} into a {want} inlet" : null;
+    }
+
+    /// <summary>The note on a link's look line about its ends: a fluid mismatch, or a port that does nothing yet.</summary>
+    public static string? EndNote(Construct c, int route)
+    {
+        if (route < 0 || route >= c.RouteCount)
+            return null;
+        ref var r = ref c.Routes[route];
+        var warn = FluidWarning(c, route);
+        var idle = r.Type is RouteType.Pipe or RouteType.Power && (r.To < c.PartCount && PortOf(c.DefOf(r.To), r.Type, r.ToPort) is { NoEffect: true }
+                   || r.Source < c.PartCount && PortOf(c.DefOf(r.Source), r.Type, r.SourcePort) is { NoEffect: true });
+        return warn != null ? idle ? $"WARNING: {warn} (no effect yet)" : $"WARNING: {warn}" : idle ? "(no effect yet)" : null;
     }
 
     // ---- The routing rules ---------------------------------------------------------------------------------------
@@ -535,9 +699,9 @@ public static partial class ConstructRoutes
         if (c.Parts[source].Broken || c.Parts[to].Broken)
             return "that part is wrecked";
         if (parent == 255 && !IsOutput(fd, type))
-            return $"a {fd.Name} has no {Name(type)} output ({OutputHint(type)})";
+            return NoPortWhy(fd, type, input: false);
         if (!IsInput(td, type))
-            return $"a {td.Name} takes no {Name(type)} ({InputHint(type)})";
+            return NoPortWhy(td, type, input: true);
         if (parent == 255 && from == to && !(type == RouteType.Data && td.Role == PartRole.Logic))
             return "a part can't be linked to itself";
         if (type == RouteType.Data)
@@ -556,10 +720,18 @@ public static partial class ConstructRoutes
             if (fromPort == 255 || toPort == 255 || fromPort >= fd.Sockets.Length || toPort >= td.Sockets.Length)
                 return "a drive shaft goes into a drive port";
             Span<byte> ports = stackalloc byte[16];
-            if (!Contains(ports[..Ports(c, from, type, ports)], fromPort))
-                return $"that port of the {fd.Name} is taken or carries no drive";
-            if (!Contains(ports[..Ports(c, to, type, ports)], toPort))
-                return $"that port of the {td.Name} is taken or carries no drive";
+            if (!Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
+                return $"that port of the {fd.Name} is taken or is not a shaft output";
+            if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
+                return $"that port of the {td.Name} is taken or is not a shaft input";
+        }
+        else if (type is RouteType.Pipe or RouteType.Power)
+        {
+            Span<byte> ports = stackalloc byte[16];
+            if (parent == 255 && !Contains(ports[..Ports(c, from, type, ports, input: false)], fromPort))
+                return $"the {fd.Name} has no such {TypeKey(type)} output port";
+            if (!Contains(ports[..Ports(c, to, type, ports, input: true)], toPort))
+                return $"the {td.Name} has no such {TypeKey(type)} input port";
         }
         else if (type == RouteType.Data && (fromPort != 255 || toPort != 255))
         {
@@ -570,7 +742,7 @@ public static partial class ConstructRoutes
                 return "that part has no such data port";
         }
         else if (fromPort != 255 || toPort != 255)
-            return "only a drive shaft goes into a socket";
+            return "only a drive shaft, a pipe or a power cable goes into a named port";
         // The geometry: every point in the rest frame (each segment at joint angle 0), checked by the one path rule the
         // client's preview uses too (PathRule).
         Span<Vector3> pts = stackalloc Vector3[Construct.MaxNodesPerRoute + 2];
@@ -583,7 +755,7 @@ public static partial class ConstructRoutes
         }
         else
         {
-            pts[n] = PortPoint(c, from, fromPort);
+            pts[n] = PortPoint(c, from, fromPort, type);
             hosts[n++] = from;
         }
         for (var i = 0; i < nodes.Length; i++)
@@ -595,7 +767,7 @@ public static partial class ConstructRoutes
             pts[n] = nodes[i].Pos;
             hosts[n++] = nodes[i].Host;
         }
-        pts[n] = PortPoint(c, to, toPort);
+        pts[n] = PortPoint(c, to, toPort, type);
         hosts[n++] = to;
         return PathRule(c, type, pts[..n], hosts[..n], parent != 255, parent != 255 ? (byte)255 : fromPort, true, toPort, straight);
     }
@@ -950,7 +1122,7 @@ public static partial class ConstructRoutes
         {
             if (from < 0 || from >= c.PartCount)
                 return "no such part";
-            pts[n] = PortPoint(c, from, fromPort);
+            pts[n] = PortPoint(c, from, fromPort, type);
             hosts[n++] = from;
         }
         for (var i = 0; i < nodes.Length; i++)
@@ -1359,7 +1531,7 @@ public static partial class ConstructRoutes
             pts[n] = nodes[i].Pos;
             hosts[n++] = nodes[i].Host;
         }
-        pts[n] = PortPoint(c, r.To, r.ToPort);
+        pts[n] = PortPoint(c, r.To, r.ToPort, r.Type);
         hosts[n++] = r.To;
         return PathRule(c, r.Type, pts[..n], hosts[..n], true, 255, true, r.ToPort);
     }

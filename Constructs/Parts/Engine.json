@@ -73,6 +73,76 @@
       ],
       "color": "#8a9096",
       "detail": true
+    },
+    {
+      "size": [
+        0.114,
+        0.114,
+        0.055
+      ],
+      "at": [
+        0.0,
+        0.0,
+        0.2655
+      ],
+      "color": "#6b7077",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.122,
+        0.122
+      ],
+      "at": [
+        -0.2655,
+        0.0,
+        0.0
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "size": [
+        0.055,
+        0.132,
+        0.132
+      ],
+      "at": [
+        0.2655,
+        0.0,
+        0.0
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "size": [
+        0.104,
+        0.055,
+        0.104
+      ],
+      "at": [
+        0.0,
+        0.2655,
+        -0.125
+      ],
+      "color": "#8a9099",
+      "detail": true
+    },
+    {
+      "size": [
+        0.122,
+        0.064,
+        0.122
+      ],
+      "at": [
+        0.0,
+        0.265,
+        0.125
+      ],
+      "color": "#8a9099",
+      "detail": true
     }
   ],
   "sockets": [
@@ -129,6 +199,65 @@
         -0.25
       ],
       "dir": "-z"
+    }
+  ],
+  "ports": [
+    {
+      "name": "Drive out",
+      "type": "shaft",
+      "dir": "out",
+      "socket": "+z"
+    },
+    {
+      "name": "Fuel in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "fuel",
+      "at": [
+        -0.25,
+        0.0,
+        0.0
+      ],
+      "face": "-x"
+    },
+    {
+      "name": "Exhaust out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "exhaust",
+      "noEffect": true,
+      "at": [
+        0.25,
+        0.0,
+        0.0
+      ],
+      "face": "+x"
+    },
+    {
+      "name": "Coolant in",
+      "type": "pipe",
+      "dir": "in",
+      "fluid": "coolant",
+      "noEffect": true,
+      "at": [
+        0.0,
+        0.25,
+        -0.125
+      ],
+      "face": "+y"
+    },
+    {
+      "name": "Coolant out",
+      "type": "pipe",
+      "dir": "out",
+      "fluid": "coolant",
+      "noEffect": true,
+      "at": [
+        0.0,
+        0.25,
+        0.125
+      ],
+      "face": "+y"
     }
   ],
   "engine": {

@@ -116,7 +116,7 @@ public static partial class SelfTest
             Fail($"routed links: the snap doesn't keep the angle rule (pipe {bend:0.0}, chute {chuteBend:0.0})");
         if (sunk.Count > 0)
             Fail($"routed links: snapped nodes intersect their surface: {string.Join(", ", sunk)}");
-        if (!sinks.Contains("sink") || !through.Contains("pass through") || !noOut.Contains("pipe output") || !noIn.Contains("takes no power"))
+        if (!sinks.Contains("sink") || !through.Contains("pass through") || !noOut.Contains("has no pipe port") || !noIn.Contains("has no power port"))
             Fail("routed links: a sunk node, a segment through a part or a wrong end wasn't refused for the right reason");
     }
 
@@ -283,7 +283,7 @@ public static partial class SelfTest
         const string bench = """
             { "format": "call-of-slop-construct-blueprint/1", "name": "Bench D",
               "steps": [ { "part": "Foundation" }, { "part": "Transmission", "on": 0, "socket": "top00", "by": "-y" }, { "part": "Differential", "on": 0, "socket": "top12", "by": "bottom0" } ],
-              "links": [ { "type": "shaft", "from": 1, "fromPort": "+z", "to": 2, "toPort": "-z0" } ] }
+              "links": [ { "type": "shaft", "from": 1, "fromPort": "Output shaft", "to": 2, "toPort": "Input shaft" } ] }
             """;
         string corner = "", straight = "";
         if (RoutesBuild(w2, bench, 0, 0, "Bench D") is { } d)
