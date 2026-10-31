@@ -444,6 +444,48 @@ public sealed partial class Ui
             s.ScoreLimit = limitMode;
             s.MatchMinutes = minutes;
         }
+        if (game.Mode == GameMode.Sandbox && host)
+            DrawSandboxLimits(game, s);
+    }
+
+    // The host's Sandbox safety caps (board item cl01): choices and their labels, made once.
+    private static readonly int[] SbBodyChoices = [1000, 2500, 5000, 10000, 25000, 50000];
+    private static readonly string[] SbBodyLabels = SbBodyChoices.Select(n => $"{n:N0} constructs").ToArray();
+    private static readonly int[] SbPlayerChoices = [3, 6, 12, 25, 50, 100, 0];
+    private static readonly string[] SbPlayerLabels = SbPlayerChoices.Select(n => n == 0 ? "No limit" : $"{n} each").ToArray();
+
+    /// <summary>Match tab, Sandbox, the host: "Max constructs" (a safety cap against runaway spam, not a design cap) and the per-player cap.</summary>
+    private void DrawSandboxLimits(Game game, Settings s)
+    {
+        var bi = Math.Max(0, Array.IndexOf(SbBodyChoices, s.SandboxMaxBodies));
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Max constructs##room"u8, SbBodyLabels[bi]))
+        {
+            for (var k = 0; k < SbBodyChoices.Length; k++)
+                if (ImGui.Selectable(SbBodyLabels[k], k == bi))
+                {
+                    s.SandboxMaxBodies = SbBodyChoices[k];
+                    s.Save();
+                }
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Sandbox: the most constructs, wrecks and loose parts the world holds (and 25 parts each on average). Only a guard against runaway spam: sleeping constructs cost next to nothing."u8);
+        var pi = Math.Max(0, Array.IndexOf(SbPlayerChoices, s.SandboxMaxPerPlayer));
+        ImGui.SetNextItemWidth(240 * _scale);
+        if (ImGui.BeginCombo("Constructs per player##room"u8, SbPlayerLabels[pi]))
+        {
+            for (var k = 0; k < SbPlayerChoices.Length; k++)
+                if (ImGui.Selectable(SbPlayerLabels[k], k == pi))
+                {
+                    s.SandboxMaxPerPlayer = SbPlayerChoices[k];
+                    s.Save();
+                }
+            ImGui.EndCombo();
+        }
+        if (ImGui.IsItemHovered())
+            ImGui.SetTooltip("Sandbox: how many constructs each player may own (wrecks and loose parts don't count). Lower it on a public server."u8);
+        game.SetSandboxLimits(s.SandboxMaxBodies, s.SandboxMaxPerPlayer);
     }
 
     private static readonly BotDifficulty[] SkillChoices = [BotDifficulty.Easy, BotDifficulty.Normal, BotDifficulty.Hard, BotDifficulty.Insane];

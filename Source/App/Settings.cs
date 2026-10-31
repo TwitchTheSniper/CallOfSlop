@@ -30,6 +30,8 @@ public sealed class Settings
     public bool InvertY;
     public bool HoldToPaint = true; // Sandbox snap build: a held press paints on further sockets after a short hold (off: one part per click)
     public bool SnapBuild = true; // Sandbox: snappy building (connection points, the magnet, quick build in creative, hold-to-paint, undo; Constructs/SnapBuild.cs)
+    public int SandboxMaxBodies = ConstructWorld.DefaultBodyCap; // hosting Sandbox: the safety cap on constructs, wrecks and loose parts (board item cl01; the lobby room's Match tab)
+    public int SandboxMaxPerPlayer = ConstructPlace.MaxPerPlayer; // ...and how many constructs each player may own (0: no limit)
     public bool SmartRotation = true; // Sandbox: the ghost's first turn is smart rotation's guess (Constructs/SmartRotation.cs); off: the fixed order
     public List<string> SmartRotationLearned = new(); // ...and the player's corrections ("Part|kind|side|turn"; SmartRotationMemory.Save)
 
@@ -407,6 +409,8 @@ public sealed class Settings
                     case "invert_y": s.InvertY = v == "1"; break;
                     case "smart_rotation": s.SmartRotation = v != "0"; break;
                     case "snap_build": s.SnapBuild = v != "0"; break;
+                    case "sandbox_max_bodies" when int.TryParse(v, out var smb): s.SandboxMaxBodies = Math.Clamp(smb, 100, ConstructWorld.MostBodies); break;
+                    case "sandbox_max_per_player" when int.TryParse(v, out var smp): s.SandboxMaxPerPlayer = Math.Clamp(smp, 0, 10000); break;
                     case "hold_to_paint": s.HoldToPaint = v != "0"; break;
                     case "smart_rotation_learned":
                         foreach (var part in v.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -535,6 +539,8 @@ public sealed class Settings
                     $"invert_y={(InvertY ? 1 : 0)}",
                     $"smart_rotation={(SmartRotation ? 1 : 0)}",
                     $"snap_build={(SnapBuild ? 1 : 0)}",
+                    $"sandbox_max_bodies={SandboxMaxBodies}",
+                    $"sandbox_max_per_player={SandboxMaxPerPlayer}",
                     $"hold_to_paint={(HoldToPaint ? 1 : 0)}",
                     $"smart_rotation_learned={string.Join(",", SmartRotationLearned)}",
                     $"volume={Volume.ToString(inv)}",

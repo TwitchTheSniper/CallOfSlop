@@ -272,7 +272,7 @@ public static class ConstructBuild
             return $"a wire reaches at most {WireReach:0} m";
         if (c.RouteCount >= Construct.MaxRoutes)
             return $"at most {Construct.MaxRoutes} wires a construct";
-        if (world.TotalRoutes >= ConstructWorld.MaxTotalWires)
+        if (world.TotalRoutes >= world.WireCap)
             return "the world has all the wires it can take";
         return null;
     }

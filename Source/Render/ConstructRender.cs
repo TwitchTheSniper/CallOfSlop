@@ -5,7 +5,7 @@ namespace CallOfSlop;
 /// <summary>
 /// Draws the Sandbox constructs: every part box at its body's pose (joints turned, wheels down on their springs, turning
 /// and steering), damaged parts darker and wrecked ones near black; the ghost sockets of the held part (blended). The
-/// tools in the hands are ToolRender.cs. Constructs are few (at most <see cref="ConstructWorld.MaxBodies"/> bodies, a few hundred boxes), so
+/// tools in the hands are ToolRender.cs. Near constructs are drawn part by part (far ones culled or drawn as one box: ConstructRenderCull.cs), so
 /// each box is one draw like the movers'; lit without the world-space texture, which would swim over a moving surface.
 /// Glass panes (<see cref="CPartBox.Glass"/>) are left out of the opaque pass and kept for <see cref="DrawGlass"/>, which
 /// draws them in the blended pass after everything opaque: back to front, without depth writes, lit and fogged by the
@@ -102,11 +102,27 @@ public static partial class ConstructRender
     {
         var n = 0;
         GlassCount = 0;
+        var cull = !gfx.ViewProj.IsIdentity; // (no camera yet, a headless renderer: everything, part by part)
+        CullPlanes(gfx.ViewProj);
+        var cam = gfx.CameraPosition;
+        int culled = 0, lod = 0;
         foreach (var c in world.Bodies)
         {
             var pos = blendTicks ? Vector3.Lerp(c.PrevPos, c.Pos, alpha) : c.Pos;
             var rot = blendTicks ? Quaternion.Slerp(c.PrevRot, c.Rot, alpha) : c.Rot;
+            var level = cull ? CullLevel(cam, c, pos, rot) : 1; // (out of view or far: nothing, or one box: ConstructRenderCull.cs)
+            if (level == 0)
+            {
+                culled++;
+                continue;
+            }
             var body = Matrix4x4.CreateFromQuaternion(rot) * Matrix4x4.CreateTranslation(pos);
+            if (level == 2)
+            {
+                n += DrawLod(gfx, c, body);
+                lod++;
+                continue;
+            }
             for (var i = 0; i < c.PartCount; i++)
             {
                 n += DrawPart(gfx, c, i, body, blendTicks ? alpha : 1f, 1f);
@@ -123,6 +139,8 @@ public static partial class ConstructRender
                 n += 12;
             }
         }
+        LastCulled = culled;
+        LastLod = lod;
         LastStored = LastStoredCount;
         LastStoredCount = 0;
         n += DrawCouplings(gfx, world, alpha, blendTicks);

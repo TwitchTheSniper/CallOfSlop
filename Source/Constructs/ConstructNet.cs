@@ -724,6 +724,104 @@ public static class ConstructNet
         return n > 0;
     }
 
+    // ---- Big worlds: interest and streaming (board item cl01) --------------------------------------------------------
+
+    /// <summary>Pose packets one client gets at most each pose tick in a big world (each up to the MTU).</summary>
+    public const int MaxPosePackets = 6;
+
+    /// <summary>Pose ticks a body that changed stays "moving" for, so a far client (sent to less often) still hears its last pose.</summary>
+    public const int HotPoseTicks = 8;
+
+    /// <summary>Joiner streaming: bytes of structure a joiner gets a tick at most (about 1 MB/s at 60 Hz).</summary>
+    public const int StreamBytesPerTick = 16 * 1024;
+
+    // Distance bands: a body this far from a client (or further) is sent every 1, 2, 4 or 8 pose packets.
+    public const float NearBand = 80f, MidBand = 200f, FarBand = 400f;
+
+    /// <summary>How many pose ticks apart a body <paramref name="dist"/> metres from a client is sent.</summary>
+    public static int PosePeriod(float dist) => dist < NearBand ? 1 : dist < MidBand ? 2 : dist < FarBand ? 4 : 8;
+
+    private static readonly List<Construct> _moving = new(256), _due = new(256);
+
+    /// <summary>
+    /// Server, a big world, once a pose tick before the clients' packets: the bodies that move or changed (and those that
+    /// did within the last <see cref="HotPoseTicks"/> pose ticks). Their signals count as sent.
+    /// </summary>
+    public static void PoseMovers(ConstructWorld world, uint poseTick)
+    {
+        _moving.Clear();
+        foreach (var c in world.Bodies)
+        {
+            var still = (c.Asleep || c.Anchored && c.JointCount == 0) && c.SigHash == c.SigSent;
+            if (!still)
+                c.PoseHot = poseTick + HotPoseTicks;
+            if (!still || poseTick < c.PoseHot)
+                _moving.Add(c);
+        }
+    }
+
+    /// <summary>The movers <see cref="PoseMovers"/> found (the self-test).</summary>
+    public static int MoverCount => _moving.Count;
+
+    /// <summary>
+    /// Server, a big world: one client's pose packets this pose tick, into <paramref name="send"/> one at a time. The
+    /// movers near the client (<paramref name="at"/>) go every time, further ones less often (<see cref="PosePeriod"/>),
+    /// staggered by id; a few sleeping bodies are refreshed in turn (<paramref name="sleepCursor"/>, shared by every client).
+    /// At most <see cref="MaxPosePackets"/> packets: past that, the start turns round with the tick so nobody is starved.
+    /// Returns the poses sent.
+    /// </summary>
+    public static int WritePosesFor(PacketWriter w, ConstructWorld world, uint tick, uint poseTick, Vector3 at, int sleepCursor, Action<PacketWriter> send)
+    {
+        _due.Clear();
+        foreach (var c in _moving)
+        {
+            var period = PosePeriod(Vector3.Distance(c.WorldCom, at) - c.Radius);
+            if (period == 1 || (poseTick + c.Id) % (uint)period == 0)
+                _due.Add(c);
+        }
+        var bodies = world.Bodies;
+        for (var k = 0; k < SleepingPerPacket && bodies.Count > 0; k++)
+        {
+            var c = bodies[(sleepCursor + k) % bodies.Count];
+            if ((c.Asleep || c.Anchored && c.JointCount == 0) && poseTick >= c.PoseHot)
+                _due.Add(c);
+        }
+        var sent = 0;
+        var start = _due.Count > 0 ? (int)(poseTick * 97 % (uint)_due.Count) : 0;
+        var budget = PacketWriter.Mtu - 8;
+        var k2 = 0;
+        for (var packet = 0; packet < MaxPosePackets && k2 < _due.Count; packet++)
+        {
+            w.Begin(Msg.CPose).U32(tick);
+            var countAt = w.Length;
+            w.U8(0);
+            var n = 0;
+            for (; k2 < _due.Count && n < 255; k2++)
+            {
+                var c = _due[(start + k2) % _due.Count];
+                if (w.Length + PoseSize(c) > budget)
+                    break;
+                var keep = c.SigSent;
+                WritePose(w, c);
+                c.SigSent = keep; // (the signals count as sent once every client had its chance: PoseMovers)
+                n++;
+            }
+            if (n == 0)
+                break;
+            w.PatchU8(countAt, (byte)n);
+            send(w);
+            sent += n;
+        }
+        return sent;
+    }
+
+    /// <summary>Server, a big world, after every client's packets: the movers' signals count as sent.</summary>
+    public static void PoseSent()
+    {
+        foreach (var c in _moving)
+            c.SigSent = c.SigHash;
+    }
+
     private static int SignalParts(Construct c)
     {
         var n = 0;
@@ -848,12 +946,14 @@ public static class ConstructNet
         const double span = PoseEvery / (double)World.TickRate;
         foreach (var c in world.Bodies)
         {
+            if (c.Asleep && c.WheelCount == 0 && c.Pos == c.NetPos && c.Rot == c.NetRot && c.PrevPos == c.Pos && c.PrevRot == c.Rot)
+                continue; // (a sleeping body drawn where its last pose put it: nothing to blend; thousands cost a test each)
             var t = (float)Math.Clamp((now - c.NetAt) / span, 0, 1.5);
             c.PrevPos = c.Pos;
             c.PrevRot = c.Rot;
             // A little past the last pose (at its velocity) so a moving body doesn't stop and start between packets.
             c.Pos = t <= 1 ? Vector3.Lerp(c.NetFromPos, c.NetPos, t) : c.NetPos + c.Vel * (float)((t - 1) * span);
-            c.Rot = Quaternion.Slerp(c.NetFromRot, c.NetRot, MathF.Min(t, 1));
+            c.Rot = t >= 1 ? c.NetRot : Quaternion.Slerp(c.NetFromRot, c.NetRot, t);
             var fwd = Vector3.Transform(c.SeatForward(), c.Rot);
             for (var k = 0; k < c.WheelCount; k++)
             {
@@ -862,5 +962,6 @@ public static class ConstructNet
             }
         }
         ConstructCargo.FollowAll(world); // (what frozen cargo volumes carry, where their carriers are drawn now)
+        world.GridMoved(); // (the client's broadphase: its ray tests and player blocking see the bodies where they are drawn)
     }
 }

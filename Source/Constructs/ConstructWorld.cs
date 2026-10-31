@@ -17,25 +17,64 @@ public struct ConstructHit
 
 /// <summary>
 /// Every construct in a match (server: simulated; client: a mirror of what the server sends). Owns the bodies, splitting
-/// cut-off pieces into wrecks, per-part damage, ray tests, keeping players out of constructs, and the caps that keep
-/// the tick inside its budget: at most <see cref="MaxBodies"/> bodies and <see cref="MaxTotalParts"/> parts in all.
+/// cut-off pieces into wrecks, per-part damage, ray tests, keeping players out of constructs. There is no design cap on
+/// how many bodies a world holds (board item cl01): sleeping bodies cost nothing a tick, and the queries go through a
+/// broadphase grid (ConstructBroadphase.cs). Only a safety cap stays, the host's <see cref="BodyCap"/> and
+/// <see cref="PartCap"/>, against runaway spam.
 /// Changes the network must carry are queued (<see cref="StructureDirty"/>, <see cref="Removed"/>, <see cref="HealthDirty"/>).
 /// </summary>
 public sealed partial class ConstructWorld
 {
-    public const int MaxBodies = 64;
-    public const int MaxTotalParts = 1200;
-    public const int MaxTotalJoints = 128; // joints in all (each construct: Construct.MaxJoints)
-    public const int MaxTotalWires = 512; // wires in all (each construct: Construct.MaxWires)
+    // Safety caps (the host's "Max constructs"), not design caps: defaults, and the most a host may set (ids are ushort).
+    public const int DefaultBodyCap = 10000;
+    public const int DefaultPartCap = 250000;
+    public const int MostBodies = 60000;
+    public const int MostParts = 2000000;
     public const float FallOutY = -30f;
 
-    public readonly List<Construct> Bodies = new(MaxBodies);
-    private readonly Dictionary<ushort, Construct> _byId = new(MaxBodies);
+    /// <summary>The most bodies (constructs, wrecks and loose parts) the world holds: the host's safety cap.</summary>
+    public int BodyCap = DefaultBodyCap;
+
+    /// <summary>The most parts in all: the host's safety cap.</summary>
+    public int PartCap = DefaultPartCap;
+
+    /// <summary>Constructs a player may own (wrecks and loose parts don't count; 0: no limit): the host's per-player cap.</summary>
+    public int PerPlayerCap = ConstructPlace.MaxPerPlayer;
+
+    /// <summary>The host's caps: <paramref name="bodies"/> bodies (parts: 25 a body on average), <paramref name="perPlayer"/> constructs a player.</summary>
+    public void SetCaps(int bodies, int perPlayer)
+    {
+        BodyCap = Math.Clamp(bodies, 1, MostBodies);
+        PartCap = Math.Clamp(BodyCap * 25, 1000, MostParts);
+        PerPlayerCap = Math.Max(0, perPlayer);
+    }
+
+    /// <summary>Joints in all (each construct: Construct.MaxJoints): scales with the body cap, only awake ones are simulated.</summary>
+    public int JointCap => Math.Max(128, BodyCap * 4);
+
+    /// <summary>Routed links and world links in all (each construct: Construct.MaxRoutes): scales with the body cap.</summary>
+    public int WireCap => Math.Max(512, BodyCap * 8);
+
+    /// <summary>Why the host's caps refuse one more body (or <paramref name="parts"/> more parts), or null.</summary>
+    public string? CapRefusal(int parts = 1)
+    {
+        if (Bodies.Count >= BodyCap)
+            return $"the world is full: the host's limit is {BodyCap} constructs and loose parts";
+        if (PartTally + parts > PartCap)
+            return $"the world is full: the host's limit is {PartCap} parts";
+        return null;
+    }
+
+    /// <summary>Is there room for one more body (and <paramref name="parts"/> parts) under the host's caps?</summary>
+    public bool HasRoom(int parts = 1) => Bodies.Count < BodyCap && PartTally + parts <= PartCap;
+
+    public readonly List<Construct> Bodies = new(256);
+    private readonly Dictionary<ushort, Construct> _byId = new(256);
     private ushort _nextId = 1;
 
     // Network queues (server): bodies whose parts changed, bodies gone, part health changes.
-    public readonly HashSet<ushort> StructureDirty = new(MaxBodies);
-    public readonly List<ushort> Removed = new(MaxBodies);
+    public readonly HashSet<ushort> StructureDirty = new(256);
+    public readonly List<ushort> Removed = new(256);
     public readonly List<(ushort Body, byte Part)> HealthDirty = new(256);
 
     /// <summary>Where the living players are this tick (the server fills it; proximity sensors read it).</summary>
@@ -185,6 +224,21 @@ public sealed partial class ConstructWorld
         }
     }
 
+    // The parts in all for the safety cap: counted once a step (and on a body going), counted up as parts are added
+    // (parts taken off lower it only at the next count: the cap errs on the safe side), so adding a part stays O(1).
+    private int _partTally = -1;
+
+    /// <summary>The parts in all as the safety cap counts them (exact after each step; see <see cref="TotalParts"/>).</summary>
+    public int PartTally
+    {
+        get
+        {
+            if (_partTally < 0)
+                _partTally = TotalParts;
+            return _partTally;
+        }
+    }
+
     public Construct? Get(ushort id) => _byId.GetValueOrDefault(id);
 
     /// <summary>Server: where a player's hands are (the game sets it; null for a bare world): a held hose's receiver follows them.</summary>
@@ -195,6 +249,8 @@ public sealed partial class ConstructWorld
         foreach (var c in Bodies)
             Removed.Add(c.Id);
         Bodies.Clear();
+        _partTally = -1;
+        GridStale();
         _byId.Clear();
         StructureDirty.Clear();
         HealthDirty.Clear();
@@ -208,15 +264,15 @@ public sealed partial class ConstructWorld
         ClearStores();
     }
 
-    /// <summary>A new empty body at a pose (null when the caps are reached). Add parts, then it rebuilds on the next tick.</summary>
+    /// <summary>A new empty body at a pose (null when the host's cap is reached or no id is free). Add parts, then it rebuilds on the next tick.</summary>
     public Construct? Create(Vector3 pos, Quaternion rot, ushort id = 0)
     {
-        if (Bodies.Count >= MaxBodies)
+        if (Bodies.Count >= BodyCap || Bodies.Count >= ushort.MaxValue - 1)
             return null;
         if (id == 0)
         {
             while (_byId.ContainsKey(_nextId) || _nextId == 0)
-                _nextId++;
+                _nextId++; // (wraps round past 65535 to the ids freed since)
             id = _nextId++;
         }
         else if (_byId.ContainsKey(id))
@@ -225,6 +281,8 @@ public sealed partial class ConstructWorld
         Bodies.Add(c);
         _byId[id] = c;
         StructureDirty.Add(id);
+        GridAdded(c);
+        _blasting?.Add(c); // (a piece split off by a blast going off: it is in the blast too)
         return c;
     }
 
@@ -233,7 +291,10 @@ public sealed partial class ConstructWorld
         for (var i = 0; i < c.PartCount; i++)
             if (c.Parts[i].Store != 0)
                 FreeStore(ref c.Parts[i]); // (what a construct that goes holds goes with it; one being taken apart spills first)
+        if (_byId.TryGetValue(c.Id, out var had) && ReferenceEquals(had, c) && _partTally >= 0)
+            _partTally = Math.Max(0, _partTally - c.PartCount);
         Bodies.Remove(c);
+        GridStale();
         _byId.Remove(c.Id);
         StructureDirty.Remove(c.Id);
         Removed.Add(c.Id);
@@ -242,8 +303,10 @@ public sealed partial class ConstructWorld
     /// <summary>Adds a part (no checks: the builder checks placements). Returns its index, or -1 when the caps are full.</summary>
     public int AddPart(Construct c, ConstructPartDef def, Vector3 pos, byte rot, byte seg = 0)
     {
-        if (c.PartCount >= Construct.MaxParts || TotalParts >= MaxTotalParts)
+        if (c.PartCount >= Construct.MaxParts || PartTally >= PartCap)
             return -1;
+        _partTally++;
+        GridGrew(c);
         var i = c.PartCount++;
         c.Parts[i] = new CPart { Def = def.Id, Pos = Quantise(pos), Rot = rot, Seg = seg, Health = def.Health, Setting = def.DefaultSetting, Tag = NextTag(), Rounds = (ushort)Math.Min(def.BoxRounds, ushort.MaxValue) };
         ConstructConfig.Init(ref c.Parts[i], def);
@@ -273,7 +336,7 @@ public sealed partial class ConstructWorld
     /// <summary>A joint on a joint part (a hinge, or a moving joint): the parts of a new segment turn (or slide) on it (returns the new segment, or 0 when full).</summary>
     public byte AddJoint(Construct c, int hinge)
     {
-        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= MaxTotalJoints)
+        if (c.JointCount >= Construct.MaxJoints || TotalJoints >= JointCap)
             return 0;
         ref var h = ref c.Parts[hinge];
         var d = h.D;
@@ -300,7 +363,7 @@ public sealed partial class ConstructWorld
     /// </summary>
     public bool AddWire(Construct c, int from, int to)
     {
-        if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= MaxTotalWires)
+        if (c.RouteCount >= Construct.MaxRoutes || TotalRoutes >= WireCap)
             return false;
         if (ConstructRoutes.Add(this, c, RouteType.Data, from, 255, 255, 0, default, default, to, 255) < 0)
             return false;
@@ -646,7 +709,7 @@ public sealed partial class ConstructWorld
         outward = outward.LengthSquared() > 1e-4f ? Vector3.Normalize(outward) * 2.5f : Vector3.Zero;
         var spin = c.AngVel;
         RemovePart(c, part);
-        if (Bodies.Count < MaxBodies && TotalParts < MaxTotalParts && Create(t, q) is { } piece)
+        if (HasRoom() && Create(t, q) is { } piece)
         {
             piece.Parts[0] = debris;
             piece.PartCount = 1;
@@ -664,10 +727,13 @@ public sealed partial class ConstructWorld
     public int Blast(Vector3 centre, float radius, float maxDamage)
     {
         var hits = 0;
-        // Bodies can split while we go: walk by index over a snapshot of the count, re-finding parts by distance each time.
-        for (var bi = 0; bi < Bodies.Count; bi++)
+        // Bodies can split while we go: walk by index, re-finding parts by distance each time. The pieces that split off
+        // join the walk (Create adds them while a blast is going off), as they did when the walk was over every body.
+        var near = Near(centre, radius + 1f, _blastNear);
+        _blasting = near;
+        for (var bi = 0; bi < near.Count; bi++)
         {
-            var c = Bodies[bi];
+            var c = near[bi];
             if (Vector3.Distance(c.WorldCom, centre) > radius + c.Radius)
                 continue;
             for (var guard = 0; guard < Construct.MaxParts; guard++)
@@ -693,22 +759,24 @@ public sealed partial class ConstructWorld
                 BlastStored(c, best, maxDamage * k * k); // (what is stored in it first: it may spill)
                 DamagePart(c, best, maxDamage * k * k, out _);
                 hits++;
-                if (!Bodies.Contains(c))
+                if (!IsLive(c))
                     break;
             }
         }
         _blasted.Clear();
+        _blasting = null;
         // Routed links in range: each segment on its own (a blast through a fuel line lights it).
-        for (var bi = 0; bi < Bodies.Count; bi++)
+        for (var bi = 0; bi < near.Count; bi++)
         {
-            var c = Bodies[bi];
-            if (c.RouteCount > 0 && Vector3.Distance(c.WorldCom, centre) <= radius + c.Radius)
+            var c = near[bi];
+            if (IsLive(c) && c.RouteCount > 0 && Vector3.Distance(c.WorldCom, centre) <= radius + c.Radius)
                 ConstructRoutes.Blast(this, c, centre, radius, maxDamage);
         }
         // The push: every body nearby gets an impulse away from the blast.
-        foreach (var c in Bodies)
+        for (var bi = 0; bi < near.Count; bi++)
         {
-            if (c.Anchored)
+            var c = near[bi];
+            if (c.Anchored || !IsLive(c))
                 continue;
             var d = c.WorldCom - centre;
             var dist = d.Length();
@@ -722,6 +790,13 @@ public sealed partial class ConstructWorld
     }
 
     private readonly HashSet<ulong> _blasted = new(256);
+
+    // The broadphase's answers, one list per kind of query (they never nest), and the blast going off now (its walk).
+    private readonly List<Construct> _rayNear = new(256), _blockNear = new(256), _blastNear = new(256);
+    private List<Construct>? _blasting;
+
+    /// <summary>Is the body still in the world (not removed since it was found)?</summary>
+    public bool IsLive(Construct c) => _byId.TryGetValue(c.Id, out var live) && ReferenceEquals(live, c);
 
     // A part's identity during one blast (index plus its exact position: stable while other parts are removed).
     private static int Ident(Construct c, int i) => HashCode.Combine(c.Parts[i].Def, c.Parts[i].Pos, c.Parts[i].Rot);
@@ -743,8 +818,10 @@ public sealed partial class ConstructWorld
         hit = default;
         var best = maxDist;
         var found = false;
-        foreach (var c in Bodies)
+        var near = NearRay(origin, dir, maxDist, _rayNear); // (the broadphase: the bodies along the ray)
+        for (var ni = 0; ni < near.Count; ni++)
         {
+            var c = near[ni];
             if (c == ignore)
                 continue;
             // Sphere round the body first.
@@ -834,9 +911,10 @@ public sealed partial class ConstructWorld
         LastHitBody = null;
         LastHitNormal = Vector3.Zero;
         var feet0 = s.Position.Y; // (a step up is measured from where the feet were: one step's rise a tick at most)
-        for (var bi = 0; bi < Bodies.Count; bi++)
+        var near = Near(s.Position, World.PlayerRadius + height + 1f, _blockNear); // (the broadphase: the bodies round the player)
+        for (var bi = 0; bi < near.Count; bi++)
         {
-            var c = Bodies[bi];
+            var c = near[bi];
             var reach = c.Radius + World.PlayerRadius + height;
             if (Vector3.DistanceSquared(s.Position, c.WorldCom) > reach * reach)
                 continue;
@@ -1113,6 +1191,7 @@ public sealed partial class ConstructWorld
 
     public void Step(IWorldQuery query, float dt)
     {
+        _partTally = -1; // (counted again when next asked)
         StepLinks(); // couplings and wires between constructs (ConstructLinks.cs): resolved, broken when apart, their values
         StepWorldLinks(query, dt, Hands); // world links and hoses (WorldLinks.cs, ConstructHoses.cs): resolved, snapped when a free construct moves, their flow
         foreach (var c in Bodies)
@@ -1134,5 +1213,6 @@ public sealed partial class ConstructWorld
                 Events.Add($"construct {Bodies[i].Id} fell out of the world");
                 Remove(Bodies[i]);
             }
+        GridMoved(); // (the awake bodies moved: the broadphase is rebuilt at its next query)
     }
 }
