@@ -173,6 +173,7 @@ public static partial class SelfTest
             Run(g, ref now, 0.05);
             Hold();
             Flick(new Vector2(-45, 0));
+            wheel.Step(g, true, At(RadialMenu.SegmentAngle(Linker, N), w.RowDistance(0)) - w.Pointer, false); // (out through the tool's own wedge, then along the arc)
             var target = At(RadialMenu.OptionAngle(i, Linker, N, links.Options.Length), w.RowDistance(RadialMenu.RowOf(i, links.Options.Length)));
             wheel.Step(g, true, target - w.Pointer, false);
             var hov = w.Hovered;
@@ -342,6 +343,7 @@ public static partial class SelfTest
         Out(centre, 40f);
         var closedIn = w.SubRing == -1 && w.HoveredOption == -1;
         Out(RadialMenu.SegmentAngle(Owner, N), 45f);
+        Out(RadialMenu.SegmentAngle(Owner, N), w.Reach + w.OuterGap + 25); // (out through the wedge)
         Out(nextAngle, w.Reach + w.OuterGap + 25);
         LetGo();
         if (!closed || !reopened || !closedIn || tiered.LastChoose != 2)

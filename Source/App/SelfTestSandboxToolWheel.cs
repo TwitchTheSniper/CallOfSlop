@@ -284,6 +284,7 @@ public static partial class SelfTest
         m.Close();
         m.Open();
         To(centre, 50f);
+        To(centre, m.RowDistance(0)); // (out through the wedge)
         To(optA, m.RowDistance(lastRow));
         var onRecent = m.HoveredOption == Recent && m.SubRing == Recent;
         To(optA + 0.9f, edge + 4f); // (beside the option: not through it)
