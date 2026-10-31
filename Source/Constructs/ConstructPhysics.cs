@@ -195,8 +195,10 @@ public static class ConstructPhysics
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
+            if (c.Asleep && c.MovingJoints > 0)
+                WakeCheck(c); // (asks a motor to move? then it wakes and steps; else it costs this test alone)
             var moving = !c.Asleep && c.CarriedBy == 0 && (!c.Anchored || c.MovingJoints > 0);
-            if (moving || c.Asleep && c.MovingJoints > 0 || c.GrabbedBy != 255 || c.Dirty)
+            if (moving || c.GrabbedBy != 255 || c.Dirty)
             {
                 c.SimMark = stamp;
                 _sim.Add(c);

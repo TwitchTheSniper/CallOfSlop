@@ -106,19 +106,29 @@ public static partial class SelfTest
         double worstWall = 0, sumWall = 0;
         var maxSim = 0;
         const int ticks = 30;
-        var before = GC.GetAllocatedBytesForCurrentThread();
+        var events = w.Events.Count;
+        var allocTicks = new System.Text.StringBuilder();
+        var sw = new Stopwatch();
+        long tickBytes = 0;
         for (var t = 0; t < ticks; t++)
         {
-            var sw = Stopwatch.StartNew();
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
+            sw.Restart();
             cpu.Start();
             w.Step(q, World.TickDt);
             var ms = sw.Elapsed.TotalMilliseconds;
             cpu.Stop(ms, true);
+            var tb = GC.GetAllocatedBytesForCurrentThread() - b0;
+            tickBytes += tb;
+            if (tb > 0)
+                allocTicks.Append($" tick {t}: {tb} B (sim {ConstructPhysics.LastSimulated}, extra {w.Events.Count - events} events);");
             worstWall = Math.Max(worstWall, ms);
             sumWall += ms;
             maxSim = Math.Max(maxSim, ConstructPhysics.LastSimulated);
         }
-        var bytes = GC.GetAllocatedBytesForCurrentThread() - before;
+        var bytes = tickBytes; // (each tick's own: the note below allocates only on a tick that did)
+        if (allocTicks.Length > 0)
+            Line($"scale tick: allocations:{allocTicks}");
         Line($"scale tick: {w.Bodies.Count} bodies, {w.TotalParts} parts, {awake} awake; up to {maxSim} simulated a tick; "
             + $"wall {sumWall / ticks:0.000} ms a tick (worst {worstWall:0.000}), CPU worst {cpu.WorstText} ({cpu.WorstDetail}); {bytes} bytes allocated in {ticks} ticks");
         if (w.Bodies.Count < 2000)
