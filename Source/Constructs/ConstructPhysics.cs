@@ -138,7 +138,12 @@ public static class ConstructPhysics
             {
                 c.Vel += g * dt;
                 if (c.GrabbedBy != 255)
-                    ConstructGrab.Drive(c, dt, HeldNearOther(c, i, n)); // (the physics gun's follow, after gravity: the contacts below still stop it)
+                {
+                    var near = HeldNearOther(c, i, n);
+                    ConstructGrab.Drive(c, dt, near); // (the physics gun's follow, after gravity: the contacts below still stop it)
+                    if (near)
+                        HeldSweep(c, i, n, dt);
+                }
                 if (c.WheelCount > 0)
                     Wheels(c, query, _invI[i], dt);
                 WorldContacts(c, (short)i, query, dt);
@@ -178,6 +183,68 @@ public static class ConstructPhysics
             var reach = c.Radius + b.Radius + 1f;
             if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) <= reach * reach)
                 return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// The held body's step against other constructs: the overlap contacts find a corner inside a box only after the fact (and
+    /// miss a cube pushed square onto a face), so the step is tried first: each axis of it is kept only if no hull point of
+    /// the body ends up inside another construct's boxes, which stops it at a wall and lets it slide along one.
+    /// </summary>
+    private static void HeldSweep(Construct c, int self, int n, float dt)
+    {
+        var move = c.Vel * dt;
+        if (!HeldOverlaps(c, self, n, move))
+            return;
+        var kept = Vector3.Zero;
+        var x = new Vector3(move.X, 0, 0);
+        if (!HeldOverlaps(c, self, n, kept + x))
+            kept += x;
+        var y = new Vector3(0, move.Y, 0);
+        if (!HeldOverlaps(c, self, n, kept + y))
+            kept += y;
+        var z = new Vector3(0, 0, move.Z);
+        if (!HeldOverlaps(c, self, n, kept + z))
+            kept += z;
+        c.Vel = kept / dt;
+    }
+
+    private static bool HeldOverlaps(Construct c, int self, int n, Vector3 move)
+    {
+        for (var j = 0; j < n; j++)
+        {
+            if (j == self)
+                continue;
+            var b = _bodies[j];
+            if (b.CarriedBy == c.Id || c.CarriedBy == b.Id)
+                continue;
+            var reach = c.Radius + b.Radius + 1f;
+            if (Vector3.DistanceSquared(c.WorldCom, b.WorldCom) > reach * reach)
+                continue;
+            for (var k = 0; k < c.PointCount; k++)
+                if (StrictlyInside(b, c.ToWorld(c.Points[k]) + move))
+                    return true;
+        }
+        return false;
+    }
+
+    /// <summary>Is the point more than a centimetre inside one of the body's solid boxes?</summary>
+    private static bool StrictlyInside(Construct b, Vector3 p)
+    {
+        for (var pi = 0; pi < b.PartCount; pi++)
+        {
+            ref var part = ref b.Parts[pi];
+            b.WorldFrame(part.Seg, out var q, out var t);
+            var local = Vector3.Transform(p - t, Quaternion.Conjugate(q));
+            var boxes = part.D.SolidBoxes;
+            for (var bi = 0; bi < boxes; bi++)
+            {
+                b.BoxOf(pi, bi, out var centre, out var half);
+                var d = Vector3.Abs(local - centre);
+                if (d.X < half.X - 0.01f && d.Y < half.Y - 0.01f && d.Z < half.Z - 0.01f)
+                    return true;
+            }
         }
         return false;
     }

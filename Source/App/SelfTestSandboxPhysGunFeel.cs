@@ -142,25 +142,9 @@ public static partial class SelfTest
         {
             hands2.GrabTick(w2, 0, e2, Vector3.UnitX, yy);
             w2.Step(World.Query, dt);
-            if (t < 20) Line($"DBG t{t} p.x {p.WorldCom.X - s2.X:0.00} vel {p.Vel.X:0.0} wall {wall.WorldCom.X - s2.X:0.00} contacts {ConstructPhysics.LastContacts} r {p.Radius:0.00} gt {p.GrabTarget.X - s2.X:0.00} speed {p.GrabSpeed} half {p.LocalMax.X:0.00}");
         }
         _ = far;
-        {
-            // DEBUG: a free block shoved at an anchored one.
-            var w3 = new ConstructWorld();
-            var q = ConstructBuild.PlaceNew(w3, block, s2, 0)!;
-            var wl = ConstructBuild.PlaceNew(w3, block, s2 + new Vector3(3f, 0, 0), 0)!;
-            for (var t = 0; t < 30; t++)
-                w3.Step(World.Query, dt);
-            wl.Anchored = true;
-            q.Vel = new Vector3(8f, 0, 0);
-            for (var t = 0; t < 60; t++)
-            {
-                if (t < 10) q.Vel = new Vector3(8f, q.Vel.Y, 0);
-                w3.Step(World.Query, dt);
-            }
-            Line($"DBG free: q.x {q.WorldCom.X - s2.X:0.00} wl.x {wl.WorldCom.X - s2.X:0.00} anchored {wl.Anchored} pts {q.PointCount}/{wl.PointCount} boxes {wl.Parts[0].D.SolidBoxes}");
-        }
+      }
         var through = p.WorldCom.X > wall.WorldCom.X - 0.2f;
         Line($"physics gun feel: aimed 3 m into the ground it sank {sank * 100:0.0} cm; let go it stopped {stopped} and drifted {drift * 100:0.0} cm in 0.5 s; released at {moving:0.0} m/s it kept {flung:0.00}; pushed at a wall it ended {wall.WorldCom.X - p.WorldCom.X:0.00} m short of the wall's centre (through: {through})");
         if (sank > 0.1f || !stopped || drift > 0.01f || moving < 1f || flung > 0.001f || through)
@@ -282,10 +266,10 @@ public static partial class SelfTest
         other.Rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 20f * MathF.PI / 180f);
         var mine = ConstructBuild.PlaceNew(w, block, spot + new Vector3(3f, 0, 0), 0)!;
         var far = ConstructBuild.PlaceNew(w, block, spot + new Vector3(40f, 0, 0), 0)!;
+        other.Anchored = true; // (a placed building, not a loose part)
         other.Rebuild();
         mine.Rebuild();
         far.Rebuild();
-        Line($"DBG snap: other loose {other.Loose} anchored {other.Anchored} r {other.Radius:0.00} mine r {mine.Radius:0.00} dist {Vector3.Distance(other.WorldCom, mine.WorldCom):0.00} count {w.Bodies.Count}");
         var near = ConstructGrab.SnapReference(w, mine);
         var farRef = ConstructGrab.SnapReference(w, far);
         var inFrame = ConstructGrab.SnapIn(other.Rot, worldBefore);
