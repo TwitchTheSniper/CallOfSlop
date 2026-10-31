@@ -187,10 +187,10 @@ public static partial class SelfTest
         }
         // Aimed from 2.5 m while it rolls at 5 m/s; the server hears it 0.25 s later, the buggy 1.25 m on.
         var rolling = TryAt(5f, 2.5f, 1.25f);
-        // Further (3.3 m at the server): reached rolling, refused parked (the extra reach is for a moving construct only).
-        var further = TryAt(5f, 2.6f, 2.0f);
-        var parked = TryAt(0f, 2.6f, 2.0f);
-        Line($"boarding: E on a seat aimed 2.5 m away while the buggy rolls at 5 m/s: \"{rolling ?? "seated"}\"; 3.3 m away rolling: \"{further ?? "seated"}\", parked: \"{parked ?? "seated"}\"");
+        // Past the use reach at the server (4.3 m): reached rolling (it moved on since the aim), refused parked.
+        var further = TryAt(5f, 3.0f, 3.0f);
+        var parked = TryAt(0f, 3.0f, 3.0f);
+        Line($"boarding: E on a seat aimed 2.5 m away while the buggy rolls at 5 m/s: \"{rolling ?? "seated"}\"; 4.3 m away rolling: \"{further ?? "seated"}\", parked: \"{parked ?? "seated"}\"");
         if (rolling != null || further != null)
             Fail($"boarding: E on a seat a step away didn't board it while the vehicle rolled at 5 m/s (\"{rolling}\", \"{further}\")");
         if (parked == null)

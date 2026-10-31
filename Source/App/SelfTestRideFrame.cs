@@ -321,7 +321,7 @@ public static partial class SelfTest
             host.ImmuneUntil = 1e9;
         var lag = hostPeer.SimulateBadNetwork(75, 0, 0) & peer.SimulateBadNetwork(75, 0, 0);
         var w = server.Constructs;
-        if (RideDeck(w, -6, 14, 5f) is not { } c)
+        if (RideDeck(w, -6, 14, 25f) is not { } c) // (high above the yard: nothing on it to crash into)
             return;
         w.StructureDirty.Add(c.Id);
         Pump(server, [a], 0.5, ref now, clock);
