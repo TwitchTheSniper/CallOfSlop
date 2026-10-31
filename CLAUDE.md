@@ -213,3 +213,10 @@ One line each: date, what went wrong, why, the rule (and the check, if any). See
   free socket sat under the crosshair), and the test only swept pre-existing sockets, never a stationary press. Rule:
   hold-to-repeat inputs get a stationary-press test and never act on what the same stroke created; the logic lives in
   `SnapStroke` and "Sandbox snap build" drives it (click, hold still 2 s, sweep 6, rate limit).
+- 2026-10-30: board dev-sandbox-weapon-attach-wa01 (barrel won't attach to a builder receiver, after wp01 and sb01 were
+  marked done): not reproduced headless. Why the old tests missed the class: "Sandbox weapon parts" fitted parts with
+  `ConstructBuild` calls on a hand-built construct, and "Sandbox snap build" used the hand-made Rifle Receiver and Gun
+  Barrel only. Rule: a part-onto-part feature is tested with the player's whole chain (part taken from the menu, set down
+  with PlaceNew, loose / frozen / mounted, the client's ghosts, smart-rotation rank and filter, screen magnet and crosshair
+  ray, the Attach message, the server's result) for hand-made AND generated parts; "Sandbox weapon parts" (WpAttachFlow)
+  now does this for barrels, muzzles and splitters.

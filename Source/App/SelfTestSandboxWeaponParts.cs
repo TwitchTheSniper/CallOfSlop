@@ -343,29 +343,6 @@ public static partial class SelfTest
             Fail("sandbox weapon attach: " + string.Join("; ", problems));
     }
 
-    private static void WpProbe()
-    {
-        var bad = 0; var tot = 0;
-        foreach (var rd in ConstructParts.All.Where(x => x.IsReceiverGun))
-        {
-            var w = new ConstructWorld();
-            var rc = ConstructBuild.PlaceNew(w, rd, new Vector3(20, 0, 20), 0f)!;
-            var rp = Parts.Find(rd.GunReceiver)!;
-            var root = new BuildNode(rp);
-            if (Array.Find(rp.Sockets, s => s.Type == "action") is { } asock && Parts.Find(rd.GunAction) is { } ap) root.Attach(asock.Name, ap);
-            var bs = Array.Find(rp.Sockets, s => s.Type == "barrel");
-            if (bs == null) continue;
-            foreach (var bd in ConstructParts.All.Where(d => d.Role == PartRole.GunPart && Parts.Find(d.GunPartName) is { Category: PartCategory.Barrel } bp && BuildRules.SocketWhy(root, bs, bp) == null))
-            {
-                tot++;
-                var fi = Array.FindIndex(rd.Sockets, s => s.Name == "front");
-                var ok = SnapBuild.Fit(rc, bd, 0, fi, -1, out _);
-                if (!ok) { bad++; Line($"probe: {rd.Name} gen={rd.Generated} {bd.Name} gen={bd.Generated} NOFIT place={ConstructBuild.Place(rc, 0, fi, bd, Array.FindIndex(bd.Sockets, s => s.Name == "back"), 0, out _)} own={string.Join(",", Enumerable.Range(0, bd.Sockets.Length).Select(i => bd.Sockets[i].Name + ":" + SnapBuild.OwnType(bd, i)))}"); }
-            }
-        }
-        Line($"probe: {bad}/{tot} nofit");
-    }
-
     private static void WpMerge()
     {
         if (WpRifleReceiver() is not var (d, _))
