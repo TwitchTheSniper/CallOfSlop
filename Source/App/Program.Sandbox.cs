@@ -122,6 +122,7 @@ public static unsafe partial class Program
                 LinkReset(); // (the linking tool put away: the link being routed goes)
         }
         ConstructRender.ShowWires = h.Tool == ConstructTool.Linker;
+        ConstructRender.AimMotion = h.Tool == ConstructTool.Configure; // (a joint under the crosshair swings through its range as a ghost: JointSides, board item js01)
         ConstructRender.VolumesShown = h.Tool != ConstructTool.None; // (cargo volumes: outlined in build mode)
         if (h.Tool != ConstructTool.Configure && (_cvBody != 0 || _cvArmed))
             CargoReset();
@@ -199,6 +200,7 @@ public static unsafe partial class Program
                       ^ ((long)part.Rounds << 33) ^ (part.Burn > 0 ? 1L << 55 : 0) ^ (part.Reload > 0 ? 1L << 54 : 0)
                       ^ (d.Role is PartRole.Engine or PartRole.Transmission ? (long)(hit.Body.Rpm / 50) << 8 ^ (long)hit.Body.Gear << 3 : 0) // (an engine's rpm, a gearbox's gear)
                       ^ (ConstructCargo.IsVolume(d) ? (long)CarriedBy(g.Constructs, hit.Body) << 44 : 0) ^ (hit.Body.CarriedBy != 0 ? 1L << 63 : 0) // (a cargo volume's load; carried)
+                      ^ (d.HasJoint ? (long)hit.Body.PartCount << 41 ^ (long)hit.Body.JointCount << 21 : 0) // (a joint's two part counts)
                       ^ (aim.Verdict == AimVerdict.Refused ? (long)(aim.Why?.GetHashCode() ?? 1) << 3 : 0);
             if (key != _sbLookKey)
             {
@@ -223,6 +225,7 @@ public static unsafe partial class Program
                     PartRole.Seat when near => part.SitterPlus1 != 0 || hit.Body.Driver != 255 && hit.Part == hit.Body.DriveSeat ? "Seat: taken" : hit.Part == hit.Body.DriveSeat ? "Seat: F to drive" : "Seat: F to ride",
                     PartRole.Logic when d.Logic == CLogic.Cargo => $"{d.Name}: {(ConstructCargo.IsFrozen(part) ? $"FROZEN, carrying {CarriedBy(g.Constructs, hit.Body)}" : "free")}{(near ? ConstructCargo.IsFrozen(part) ? " - F to let go" : " - F to freeze what is inside" : "")}{(h.Tool == ConstructTool.Configure ? " (configure tool: drag a face handle to resize)" : "")}",
                     PartRole.Logic when near && d.Logic is CLogic.Button or CLogic.Switch or CLogic.Lever or CLogic.Selector => $"{d.Name}{signal}{unpowered}: F to {(d.Logic == CLogic.Button ? "press" : d.Logic == CLogic.Selector ? "step it on" : "flip")}",
+                    PartRole.Hinge or PartRole.Joint when JointSides.IsJoint(hit.Body, hit.Part, out var jointAt) => JointSides.Look(hit.Body, hit.Part, jointAt) + (near ? " - F to open or shut" : ""),
                     PartRole.Door or PartRole.Hinge or PartRole.Joint when near => $"{d.Name}: F to open or shut",
                     PartRole.Logic => $"{d.Name}{setting}{signal}{unpowered}",
                     PartRole.Gun when hit.Body.GunOf(hit.Part) is var gk and >= 0 => GunLook(hit.Body, gk, part),
@@ -521,6 +524,7 @@ public static unsafe partial class Program
             if (ConstructRender.GhostValid)
                 gh = shown with { Variant = v };
             SandboxSnapShown(g, c, held, in gh, now);
+            SandboxJointGhostText(g, c.DefOf(gh.Part), gh.Socket, held, v / 4);
             var quick = _settings.SnapBuild && g.SandboxInfiniteParts;
             var pressed = Pressed(GameAction.Fire) && !_swallowClick;
             if (SandboxSnapPaint(g, in h, c, in gh, pressed) || pressed)
@@ -546,6 +550,22 @@ public static unsafe partial class Program
                     ? $"The {held.Name} has no free socket to go on anywhere on this {(target.Role == PartRole.Gun ? "gun" : "construct")} (taken, or the wrong kind)"
                     : $"The {held.Name} doesn't fit the {target.Name} here";
         }
+    }
+
+    private static long _sbJointGhostKey = -1;
+    private static string? _sbJointGhostText;
+
+    /// <summary>The HUD line when the held part or the socket it goes on is a joint's: which side mounts where (board item js01). Made again only when the pairing changes.</summary>
+    private static void SandboxJointGhostText(Game g, ConstructPartDef target, int targetSocket, ConstructPartDef held, int ownSocket)
+    {
+        var key = ((long)target.Id << 40) | ((long)held.Id << 24) | ((long)(targetSocket & 0xff) << 8) | (long)(ownSocket & 0xff);
+        if (key != _sbJointGhostKey)
+        {
+            _sbJointGhostKey = key;
+            _sbJointGhostText = JointSides.Ghost(target, targetSocket, held, ownSocket);
+        }
+        if (_sbJointGhostText != null)
+            g.SandboxLookText = _sbJointGhostText;
     }
 
     /// <summary>

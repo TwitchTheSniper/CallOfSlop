@@ -640,7 +640,7 @@ still load): `CallOfSlop --check-construct-parts` prints every part and blueprin
 | `mass`, `health`, `armour` | kg, hit points, flat damage taken off each hit. |
 | `material`, `friction` | `steel`, `rubber`, `concrete`...; friction defaults from the material (rubber 1.0, else 0.6). |
 | `onBreak` | `detach` (breaks off) or `disable` (stays, stops working; the default for engines, tanks, seats, transmissions and differentials). |
-| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). |
+| `boxes` | Up to 16: `min`/`max`, or `size` (and `at`), each with an optional `color`. `"detail": true` boxes are drawn only (no bounds, mass, collision or hit area) and may stick out. At least one box is solid. `"hidden": true`: a solid box that is never drawn. A detail box may have a `"shape"` and its settings ([Structural parts](#structural-parts-the-scale-chart)). `"paintable": false` (or `true`) says whether the paint tool's colour replaces the box's own ([The paint tool](#the-paint-tool-board-item-pp01)); the default is yes, except glass and a wheel's tyre (its solid boxes). `"side": "base"` or `"leaf"` tags a joint part's box with the side it belongs to ([Joint sides](#joint-sides-board-item-js01)); every joint part must tag both. |
 | `sockets` | Up to 40 attachment points: `at` (on a face of the solid boxes' bounds, or on a face of one solid box facing out of it: a door's jamb inside an opening, a window's sill), `dir` (`+x -x +y -y +z -z`, out of that face), `kind` (`struct` default, `axle`: a wheel onto a suspension, `leaf`: a door onto a hinge). Two sockets mate when their kinds match and they face each other. |
 | `engine` | `torque` (N m at the peak), `maxRpm`, `idleRpm`, `peakRpm`, `curve` (`petrol`, `diesel`, `electric`, `turbine`, `flat`), `fuel` (`fuel`, `electric`, `none`), `burnRate` (litres a second at full throttle), `starter` (needs a battery), `spool` (seconds), `noise` (0 to 1). [Drivetrain parts](#drivetrain-parts-the-families). |
 | `wheel` | `radius`, `grip`, `offroad` (times grip on dirt), `side` (times grip sideways), `roll` (rolling resistance), `drive` (false: a caster), `flat` (goes flat when wrecked), `track` (`length`, `rays`). Needs an `axle` socket. |
@@ -2729,6 +2729,25 @@ input end). Wiring is instant (fitting a part is what takes time).
 9. **The welder and linking tool** sit on 4 and 5, the kill-streak keys (Sandbox has no streaks; the Weapon slot 4
    binding still works too), so no new key binding was added.
 10. **Run-over kills** show as melee kills and credit the driver.
+
+## Joint sides (board item js01)
+
+A joint part (hinge, motor hinge, turntable, piston, steering pivot, lid hinge, every actuator size) has two sides. The **base** is
+what attaches to the construct and stays with it (every socket but the leaf); the **moving side** is the leaf socket and everything
+that hangs on it (it carries the joint's segment). The part files say which is which:
+
+- **Model.** Boxes carry `"side": "base"` or `"leaf"`; the loader refuses a joint part that tags neither (`--check-construct-parts` prints
+  the reason). Base: a dark body, a mounting flange and four bolts. Moving side: a safety-orange collar over the leaf half with a stepped
+  arrow on it (one head and a tail tick for a turning joint, a head at each end for a piston). The orange boxes are details and not
+  paintable, so paint never hides the sides. `tools/constructs/make_joint_sides.py` writes them (idempotent; `--check`): fix the script,
+  not the files.
+- **Markers and ghost.** With a part held, a joint's moving-side socket is an orange disc with a bar, its base sockets a steel-blue plate
+  with four bolts (`SnapRender`); the held joint's ghost draws its moving-side boxes orange (dark red when it does not fit), and the HUD
+  says which side mounts where ("the Frame Block will ride on the Hinge's moving side").
+- **Look-at.** Aiming at an assembled joint says "Hinge - Base: fixed to construct 7 (12 parts) | Moving side: 3 parts" and, for 2.5 s after
+  the crosshair lands, outlines the two groups in two colours (steel blue: the base side, orange: the parts on its segment and every
+  segment hanging from it; at most 48 parts a side). With the configure tool out the moving side also swings (or slides) through the
+  joint's range as a pale ghost. `JointSides` (Source/Constructs/JointSides.cs) holds the side logic; nothing in it allocates.
 
 ## Freeform welds (board item fw01, decision 25)
 

@@ -172,9 +172,14 @@ public enum SocketKind : byte
 /// under its smooth shape). <see cref="Glass"/>: a see-through pane (how much of it is drawn, 0.1 to 0.9; 0 = opaque), drawn
 /// in the blended pass after everything opaque (ConstructRender.DrawGlass) and passed through by bullets, which break it.
 /// </summary>
-public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f)
+public readonly record struct CPartBox(Vector3 Center, Vector3 Half, Vector3 Color, bool Detail = false, ushort Shape = 0, bool Hidden = false, float Glass = 0, bool Paintable = true, float Tone = 1f, byte Side = 0)
 {
     public bool IsGlass => Glass > 0;
+
+    /// <summary>A joint part's box on the fixed side (<see cref="JointSides.Base"/>) or the moving side (<see cref="JointSides.Leaf"/>); 0 elsewhere ("side" in the file).</summary>
+    public bool IsBase => Side == JointSides.Base;
+    public bool IsLeaf => Side == JointSides.Leaf;
+
 
     /// <summary>The box's model matrix in its part's frame turned by <paramref name="rot"/> and moved to <paramref name="centre"/> (a shape keeps its own way round).</summary>
     public Matrix4x4 Model(byte rot, Vector3 centre) => Shape == 0
@@ -640,7 +645,7 @@ public static partial class ConstructParts
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, a contoured shape with its settings (index 8 up to the last), and the glass flag (last).</summary>
     /// <summary>The keys a part box takes: its place, colour, detail and hidden flags, and a contoured shape with its settings.</summary>
     private static readonly string[] BoxKeys =
-        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable"];
+        ["min", "max", "at", "size", "color", "detail", "hidden", "shape", "segments", "inner", "ends", "taper", "shift", "radius", "edges", "angle", "dir", "glass", "paintable", "side"];
 
     /// <summary>The keys an input reader can read: the low byte is <see cref="Buttons"/>, then fire, aim and reload (sent by a seated client).</summary>
     public static readonly (string Name, ushort Bit)[] ReaderKeys =
@@ -770,7 +775,13 @@ public static partial class ConstructParts
                     JsonValueKind.False => false,
                     _ => throw new ConstructPartException($"{file}: {where}.paintable is true or false"),
                 };
-            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour)));
+            var side = Opt(b, "side") is { } sd ? Str(sd, file, where + ".side") switch
+            {
+                "base" => JointSides.Base,
+                "leaf" => JointSides.Leaf,
+                _ => throw new ConstructPartException($"{file}: {where}.side is \"base\" (the fixed side of a joint) or \"leaf\" (the moving side)"),
+            } : (byte)0;
+            list.Add(new CPartBox((min + max) / 2, (max - min) / 2, c, detail, shape, hidden, glass, paintable, ConstructPaint.ToneOf(c, colour), side));
         }
         if (list.All(x => x.Detail))
             throw new ConstructPartException($"{file}: every box is a detail: at least one must be solid");
@@ -882,9 +893,11 @@ public static partial class ConstructParts
                     throw new ConstructPartException($"{file}: hinge \"leaf\" must name one of its \"leaf\" sockets");
                 d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket);
                 d.JointType = JointType.Passive;
+                RequireSides(d, file);
                 break;
             case PartRole.Joint:
                 ParseJoint(d, block!.Value, file, bw);
+                RequireSides(d, file);
                 break;
             case PartRole.Logic:
                 ParseLogic(d, block!.Value, file, bw);
@@ -1013,7 +1026,7 @@ public static partial class ConstructParts
         var shape = Opt(b, "shape") is { } sh ? Str(sh, file, where + ".shape").ToLowerInvariant() : "box";
         if (shape == "box")
         {
-            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 10))
+            foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 11))
                 if (Opt(b, k) != null)
                     throw new ConstructPartException($"{file}: {where}: \"{k}\" is a shape's setting (give the box a \"shape\")");
             return 0;
@@ -1023,7 +1036,7 @@ public static partial class ConstructParts
         if (!detail)
             throw new ConstructPartException($"{file}: {where} has a shape, so it must be a detail (\"detail\": true): collision stays boxes (give the part hidden solid boxes)");
         var settings = PartShapes.SettingsOf(shape);
-        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 10))
+        foreach (var k in BoxKeys.AsSpan(8, BoxKeys.Length - 11))
             if (Opt(b, k) != null && Array.IndexOf(settings, k) < 0)
                 throw new ConstructPartException($"{file}: {where}: a {shape} takes {(settings.Length > 0 ? string.Join(", ", settings) : "no settings")}, not \"{k}\"");
         var pb = new PartBox { Shape = shape, Size = size };
@@ -1135,6 +1148,13 @@ public static partial class ConstructParts
         d.LeafIndex = Array.FindIndex(d.Sockets, s => s.Name == d.LeafSocket && s.Kind == SocketKind.Struct);
         if (d.LeafIndex < 0)
             throw new ConstructPartException($"{file}: joint \"leaf\" must name one of its struct sockets (what goes on it moves)");
+    }
+
+    /// <summary>A joint part tags boxes of both its sides (board item dev-joint-side-indicators-js01): "side": "base" and "side": "leaf".</summary>
+    private static void RequireSides(ConstructPartDef d, string file)
+    {
+        if (!d.Boxes.Any(b => b.IsBase) || !d.Boxes.Any(b => b.IsLeaf))
+            throw new ConstructPartException($"{file}: a joint part needs boxes tagged \"side\": \"base\" (the fixed side) and \"side\": \"leaf\" (the moving side)");
     }
 
     private static readonly string[] GunFxNames = ["bullet", "cannon", "rocket", "flame"];

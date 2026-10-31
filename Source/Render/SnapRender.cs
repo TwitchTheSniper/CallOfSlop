@@ -69,8 +69,9 @@ public static class SnapRender
                 continue;
             var dirW = Vector3.Transform(Vector3.Transform(ConstructParts.DirVector(Cache.Dir[k]), q), c.Rot);
             var chosen = Cache.Part[k] == selPart && Cache.Socket[k] == selSocket;
-            var col = SnapBuild.Colour(Cache.Type[k]);
-            Marker(gfx, Cache.Type[k], world + dirW * 0.03f, dirW, col, (chosen ? 0.95f : 0.6f) * fade, chosen ? 0.13f : 0.085f);
+            var side = JointSides.SocketSide(c.Parts[Cache.Part[k]].D, Cache.Socket[k]);
+            var col = side == 0 ? SnapBuild.Colour(Cache.Type[k]) : SideColour(side);
+            Marker(gfx, Cache.Type[k], world + dirW * 0.03f, dirW, col, (chosen ? 0.95f : 0.6f) * fade, chosen ? 0.13f : 0.085f, side);
             if (chosen && flash is >= 0 and < 0.2f)
             {
                 var f = flash / 0.2f;
@@ -99,8 +100,9 @@ public static class SnapRender
                 var lined = false;
                 for (var l = 0; l < LineCount; l++)
                     lined |= Lines[l].OwnSocket == o;
-                var col = SnapBuild.Colour(Own[o].Type);
-                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, col, mates ? 1f : 0.8f, mates ? 0.12f : 0.08f);
+                var side = JointSides.SocketSide(def, o);
+                var col = side == 0 ? SnapBuild.Colour(Own[o].Type) : SideColour(side);
+                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, col, mates ? 1f : 0.8f, mates ? 0.12f : 0.08f, side);
                 if (mates)
                     gfx.Draw(Matrix4x4.CreateScale(0.05f) * Matrix4x4.CreateTranslation(world + dirW * 0.03f), new Vector3(1f, 1f, 1f), 1f, mode: 2);
                 if (lined)
@@ -123,13 +125,16 @@ public static class SnapRender
                     continue;
                 var world = Vector3.Transform(def.Sockets[o].At, frame);
                 var dirW = Vector3.TransformNormal(ConstructParts.DirVector(def.Sockets[o].Dir), frame);
-                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, SnapBuild.Colour(Own[o].Type), 0.8f, 0.08f);
+                var side = JointSides.SocketSide(def, o);
+                Marker(gfx, Own[o].Type, world + dirW * 0.03f, dirW, side == 0 ? SnapBuild.Colour(Own[o].Type) : SideColour(side), 0.8f, 0.08f, side);
             }
         }
     }
 
+    private static Vector3 SideColour(byte side) => side == JointSides.Leaf ? JointSides.LeafColour : JointSides.BaseColour;
+
     /// <summary>One marker: its shape says the type (cube: a mount, bar with a tip: a shaft, diamond: a gun part, cross: fuel, power or data, flat disc: a wheel hub or hinge leaf).</summary>
-    private static void Marker(Renderer gfx, ConnType type, Vector3 at, Vector3 dir, Vector3 colour, float alpha, float size)
+    private static void Marker(Renderer gfx, ConnType type, Vector3 at, Vector3 dir, Vector3 colour, float alpha, float size, byte side = 0)
     {
         var len = dir.Length();
         var z = len < 1e-4f ? Vector3.UnitY : dir / len;
@@ -138,6 +143,21 @@ public static class SnapRender
         var basis = new Matrix4x4(x.X, x.Y, x.Z, 0, y.X, y.Y, y.Z, 0, z.X, z.Y, z.Z, 0, 0, 0, 0, 1);
         void Box(Vector3 scale, Vector3 offset, float a = 1f) =>
             gfx.Draw(Matrix4x4.CreateScale(scale) * Matrix4x4.CreateTranslation(offset) * basis * Matrix4x4.CreateTranslation(at), colour, alpha * a, mode: 2);
+        if (side == JointSides.Leaf)
+        {
+            // A joint's moving side (orange): a flat disc with a bar across it, so it never reads as a plain mount.
+            Box(new Vector3(size * 2.2f, size * 2.2f, size * 0.35f), Vector3.Zero);
+            Box(new Vector3(size * 3.4f, size * 0.5f, size * 0.7f), new Vector3(0, 0, size * 0.3f));
+            return;
+        }
+        if (side == JointSides.Base)
+        {
+            // A joint's base (cool steel): a squat plate with a bolt at each corner, the fixed look of a mount.
+            Box(new Vector3(size * 2f, size * 2f, size * 0.5f), Vector3.Zero);
+            for (var k = 0; k < 4; k++)
+                Box(new Vector3(size * 0.5f), new Vector3((k & 1) == 0 ? -size * 0.85f : size * 0.85f, (k & 2) == 0 ? -size * 0.85f : size * 0.85f, size * 0.3f));
+            return;
+        }
         switch (type)
         {
             case ConnType.ShaftIn or ConnType.ShaftOut:

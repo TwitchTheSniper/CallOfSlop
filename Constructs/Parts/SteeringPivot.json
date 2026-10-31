@@ -11,41 +11,19 @@
   "material": "steel",
   "color": "#8a6d3b",
   "boxes": [
-    {
-      "size": [
-        0.18,
-        0.3,
-        0.2
-      ]
-    },
-    {
-      "size": [
-        0.06,
-        0.4236,
-        0.06
-      ],
-      "color": "#d0b050",
-      "detail": true,
-      "at": [
-        0.0,
-        0.0018,
-        0.0
-      ]
-    },
-    {
-      "size": [
-        0.1727,
-        0.08,
-        0.24
-      ],
-      "at": [
-        0.0,
-        0.17,
-        0.0
-      ],
-      "color": "#6a5a2a",
-      "detail": true
-    }
+    {"size": [0.18, 0.3, 0.2], "color": "#3b4046", "side": "base"},
+    {"size": [0.06, 0.4236, 0.06], "color": "#d0b050", "detail": true, "at": [0.0, 0.0018, 0.0]},
+    {"size": [0.1727, 0.08, 0.24], "at": [0.0, 0.17, 0.0], "color": "#6a5a2a", "detail": true},
+    {"size": [0.073, 0.316, 0.216], "at": [0.0455, 0.0, 0.0], "color": "#f08a12", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.04, 0.31, 0.21], "at": [-0.062, 0.0, 0.0], "color": "#202327", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.062, -0.155, -0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.062, -0.155, 0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.062, 0.155, -0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.062, 0.155, 0.105], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.0364, 0.011, 0.011], "at": [0.04, 0.0, 0.109], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.011, 0.055, 0.0135], "at": [0.0582, 0.0, 0.1103], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.013, 0.033, 0.016], "at": [0.0682, 0.0, 0.1115], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.011, 0.033, 0.0135], "at": [0.0218, 0.0, 0.1103], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false}
   ],
   "sockets": [
     {

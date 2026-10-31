@@ -77,7 +77,7 @@ public static partial class SelfTest
 
     private static void ConstructM2Refusals()
     {
-        const string joint = """{ "name": "J", "role": "joint", "tool": "wrench", "mass": 10, "health": 50, "boxes": [ { "size": [0.4, 0.3, 0.4] } ], "sockets": [ { "name": "base", "at": [0, -0.15, 0], "dir": "-y" }, { "name": "top", "at": [0, 0.15, 0], "dir": "+y" } ], "joint": { "type": "piston", "axis": "+y", "min": 0, "max": 2, "leaf": "top", "speed": 1, "strength": 1000 } }""";
+        const string joint = """{ "name": "J", "role": "joint", "tool": "wrench", "mass": 10, "health": 50, "boxes": [ { "size": [0.4, 0.3, 0.4], "side": "base" }, { "size": [0.42, 0.1, 0.42], "at": [0, 0.1, 0], "detail": true, "side": "leaf" } ], "sockets": [ { "name": "base", "at": [0, -0.15, 0], "dir": "-y" }, { "name": "top", "at": [0, 0.15, 0], "dir": "+y" } ], "joint": { "type": "piston", "axis": "+y", "min": 0, "max": 2, "leaf": "top", "speed": 1, "strength": 1000 } }""";
         const string logic = """{ "name": "L", "role": "logic", "tool": "wrench", "mass": 1, "health": 10, "boxes": [ { "size": [0.2, 0.2, 0.2] } ], "sockets": [ { "at": [0, -0.1, 0], "dir": "-y" } ], "logic": { "kind": "timer", "settings": [1, 2] } }""";
         (string Json, string Want)[] bad =
         [

@@ -14,27 +14,17 @@
   "color": "#4f6a7a",
   "power": 53.3333,
   "boxes": [
-    {
-      "size": [
-        0.5,
-        0.75,
-        0.5
-      ]
-    },
-    {
-      "size": [
-        0.52,
-        0.12,
-        0.52
-      ],
-      "at": [
-        0.0,
-        0.1875,
-        0.0
-      ],
-      "color": "#c7a23a",
-      "detail": true
-    }
+    {"size": [0.5, 0.75, 0.5], "color": "#3b4046", "side": "base"},
+    {"size": [0.217, 0.766, 0.516], "at": [0.1335, 0.0, 0.0], "color": "#f08a12", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.04, 0.76, 0.51], "at": [-0.222, 0.0, 0.0], "color": "#202327", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.222, -0.38, -0.255], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.222, -0.38, 0.255], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.222, 0.38, -0.255], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.02, 0.02, 0.02], "at": [-0.222, 0.38, 0.255], "color": "#8d939a", "detail": true, "side": "base", "paintable": false},
+    {"size": [0.1254, 0.0241, 0.011], "at": [0.1214, 0.0, 0.259], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.0241, 0.1206, 0.0135], "at": [0.1841, 0.0, 0.2602], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.0261, 0.0723, 0.016], "at": [0.2072, 0.0, 0.2615], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false},
+    {"size": [0.0241, 0.0723, 0.0135], "at": [0.0588, 0.0, 0.2602], "color": "#1c1c1c", "detail": true, "side": "leaf", "paintable": false}
   ],
   "sockets": [
     {
