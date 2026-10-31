@@ -265,10 +265,10 @@ public static partial class SelfTest
         other.Rot = Quaternion.CreateFromAxisAngle(Vector3.UnitY, 20f * MathF.PI / 180f);
         var mine = ConstructBuild.PlaceNew(w, block, spot + new Vector3(3f, 0, 0), 0)!;
         var far = ConstructBuild.PlaceNew(w, block, spot + new Vector3(40f, 0, 0), 0)!;
-        other.Anchored = true; // (a placed building, not a loose part)
         other.Rebuild();
         mine.Rebuild();
         far.Rebuild();
+        other.Anchored = true; // (a placed building, not a loose part; after the rebuild, which sets it from the foundations)
         var near = ConstructGrab.SnapReference(w, mine);
         var farRef = ConstructGrab.SnapReference(w, far);
         var inFrame = ConstructGrab.SnapIn(other.Rot, worldBefore);
