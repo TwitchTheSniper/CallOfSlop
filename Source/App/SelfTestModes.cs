@@ -27,6 +27,31 @@ public static partial class SelfTest
         }
     }
 
+    /// <summary>
+    /// Offline game: runs the countdown, then spawns the local player, who cannot be hurt (a bot in the game would otherwise
+    /// shoot them within the first second: the old flake) and waits, up to <paramref name="maxSeconds"/> of game time, for the
+    /// local player and (with <paramref name="needBot"/>) a live bot. Returns the reason on failure, else null.
+    /// </summary>
+    private static string? SpawnLocalSafely(Game g, ref double now, bool needBot = false, double maxSeconds = 3.0)
+    {
+        Run(g, ref now, Game.CountdownSeconds + 0.3);
+        if (g.Local == null)
+            return "the game has no local player";
+        g.Local.ImmuneUntil = now + 1e6;
+        g.RequestRespawn();
+        const double dt = 1.0 / World.TickRate;
+        for (var waited = 0.0; waited < maxSeconds; waited += dt)
+        {
+            if (g.Local is { Alive: true } && g.Phase == MatchPhase.Playing && (!needBot || g.Players.Values.Any(p => p.Bot != null && p.Alive)))
+            {
+                Run(g, ref now, 0.2);
+                return null;
+            }
+            Run(g, ref now, dt);
+        }
+        return $"not ready after {maxSeconds} s: phase {g.Phase}, local alive {g.Local?.Alive}, live bots {g.Players.Values.Count(p => p.Bot != null && p.Alive)}";
+    }
+
     // ---- Map objectives -----------------------------------------------------------------------
 
     private static void CheckMapObjectives()

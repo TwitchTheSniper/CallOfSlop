@@ -202,15 +202,13 @@ public static partial class SelfTest
         ToolRender.Reset();
         var now = 0.0;
         using var g = ModeGame(1, GameMode.Sandbox, yard.Id);
-        Run(g, ref now, Game.CountdownSeconds + 0.3);
-        g.RequestRespawn();
-        Run(g, ref now, 1.0);
-        var bot = g.Players.Values.FirstOrDefault(p => p.Bot != null && p.Alive);
-        if (g.Local is not { Alive: true } me || bot == null)
+        if (SpawnLocalSafely(g, ref now, needBot: true) is { } why)
         {
-            Fail("tool models: no live local player and bot in the Sandbox game");
+            Fail($"tool models: no live local player and bot in the Sandbox game ({why})");
             return;
         }
+        var bot = g.Players.Values.First(p => p.Bot != null && p.Alive);
+        var me = g.Local!;
         var welder = ToolRender.ModelFor(ConstructTool.Welder);
         var body = welder.Boxes[1].Color; // (the welder's orange body)
         var wheel = ConstructParts.Need("Wheel");
