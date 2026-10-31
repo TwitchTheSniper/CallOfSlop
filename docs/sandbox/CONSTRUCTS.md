@@ -2507,11 +2507,36 @@ input end). Wiring is instant (fitting a part is what takes time).
 - The first working seat of the body drives; any other seat carries a **passenger**, pinned to it like the driver. A seat
   holds one player (`SitterPlus1` on the part, so it survives parts being renumbered); a seat that breaks or falls away
   stands its sitter up. Seated players' fire, aim and reload keys go to the server (`CAct.SeatKeys`) for input readers.
-- A player standing on a part is **carried** by the body's motion and, sideways, by every joint under their feet (a
-  turntable, a swinging deck); a rising lift lifts them by the step-up rule. They count towards that joint's load.
+- A player standing on a part **rides in its segment's frame** (`ConstructRide.cs`, board item rf01; protocol 101): the
+  feet are kept in that frame (`MoveState.RideLocal`) and put back in the world by its pose each tick, exactly (no drift
+  on turns, no slide on a pitching deck), and their velocity is their own, relative to the surface, so walking towards
+  a truck's front goes towards its front however it turns. The local view turns with the frame
+  (`ConstructRide.TurnView`). A jump stays in the frame inside the construct's bounds (or 0.3 s after leaving its
+  surface) and lands where it took off. Leaving (walking off, jumping clear, landing on the map or an anchored floor, a
+  mantle, a blast) adds the surface's velocity, linear and turning, so stepping off keeps its momentum, with weak air
+  steering for 0.75 s (`MoveState.RideFree`). A crash (the deck's acceleration over 2.5 g across, or dropping away at
+  over 1.6 g; server only) throws them off at the deck's speed before it. Everything runs in `BlockPlayer`, the step the
+  server, the client's prediction and its replays share; the snapshots carry the frame-local feet (the own block
+  exactly), a client replays in the frame and draws its riders in the construct as it is drawn, so lag shows as the
+  vehicle a little behind, never as the rider sliding. CPose carries each body's turn rate. They count towards a
+  joint's load. Anchored builds' own floors are not ridden (they never move).
+- **Grip** (rf01 phase 2): a part with the `grip` setting on (a configure toggle on the Deck Plate and the Panel; the
+  **Grip Deck** has it on, with a tread) holds riders on its face up to nearly vertical (about 84 degrees) and through
+  up to 5 g; on it gravity doesn't pull them down the face and the walk goes along it (forward into a steep face climbs
+  it). Stepping off its edge lets them go. Simplified for now: the body and the camera stay upright (world down).
+- **Boarding assists** (board item ba01, all in the shared step): coming down within 0.3 m of a moving construct's top
+  lands on it at its speed (no slide off its back); walking into a construct's part steps up onto it from 0.6 m;
+  jumping into a ledge up to 1.4 m high vaults onto it (a short climb in its frame, `MoveState.RideClimb`); Use on a
+  vehicle's side (or on a **Grab Handle**, **Boarding Ladder** or **Step Plate**: `"boarding": true` parts, taken
+  first) latches on and pulls the player up onto the nearest top within 1.5 m across and 2.6 m up (`ConstructRide.GrabOn`,
+  server); a moving construct's seat is reached up to 1.6 m further (0.2 s of its speed, to 8 m/s). Friendly bots whose
+  leader sits in or rides a construct take its free passenger seat (or walk to it). The "Ride frame" and "Boarding
+  assist" self-tests cover each case.
 - **Run-over damage** (`ConstructWorld.BlockPlayer`, `Game.SandboxRunOver`): only the **construct's own motion** counts:
   the velocity of its part at the contact (the body's motion, linear and turning, plus every joint's up its chain: a
-  swinging arm, a turntable) along the contact normal towards the player. The player's own velocity plays no part, so
+  swinging arm, a turntable) along the contact normal towards the player, less the player's own speed away from it
+  (ba01: jogging alongside a vehicle is safe), in the frame the player rides (a truck bed's walls don't hit its
+  riders). Running into it never adds, so
   sprinting into a parked car only stops you, and landing on a parked car is a landing (normal fall damage only). At up
   to `Game.RunOverSpeed` (4 m/s, tunable) the part only pushes the player along at its speed; faster, it does
   `(speed - 4) x 9 x sqrt(mass / 500)` damage (the mass factor 0.4 to 2.5), at most once in 0.6 s, and knocks them out
