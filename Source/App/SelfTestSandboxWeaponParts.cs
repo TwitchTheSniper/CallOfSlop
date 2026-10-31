@@ -212,7 +212,7 @@ public static partial class SelfTest
             var sworld = c.ToWorld(mt + Vector3.Transform(at, mq));
             var eyeAt = me.RenderEye;
             var vp = Matrix4x4.CreateLookAt(eyeAt, sworld + new Vector3(0.05f, 0.03f, 0), Vector3.UnitY) * Matrix4x4.CreatePerspectiveFieldOfView(1.2f, 16f / 9f, 0.1f, 100f);
-            var toward = Vector3.Normalize(sworld + new Vector3(0.05f, 0.03f, 0) - eyeAt);
+            var toward = Vector3.Normalize(c.ToWorld(mt + Vector3.Transform(c.Parts[part].Pos, mq)) - eyeAt); // (the part's middle: a barrel is thin)
             var wallD = World.RaycastWorld(eyeAt, toward, ConstructBuild.Reach + 1);
             var rayHit = g.Constructs.Raycast(eyeAt, toward, MathF.Min(wallD, ConstructBuild.Reach + 1), out var ch);
             if (!rayHit || ch.Body != c)
