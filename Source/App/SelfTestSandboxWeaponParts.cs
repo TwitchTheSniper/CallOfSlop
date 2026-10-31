@@ -204,6 +204,14 @@ public static partial class SelfTest
             var si = Array.FindIndex(c.DefOf(part).Sockets, s => s.Name == socketName);
             c.SocketAt(part, si, out var at, out _);
             var n = SnapBuild.Ghosts(c, held, cache, ghosts, at, SnapBuild.SinglePurpose(held) ? 4f : 2.5f);
+            // The screen magnet, the crosshair a hand's breadth off the socket from where the player stands.
+            c.SegPose(c.Parts[part].Seg, out var mq, out var mt);
+            var sworld = c.ToWorld(mt + Vector3.Transform(at, mq));
+            var eyeAt = me.RenderEye;
+            var vp = Matrix4x4.CreateLookAt(eyeAt, sworld + new Vector3(0.05f, 0.03f, 0), Vector3.UnitY) * Matrix4x4.CreatePerspectiveFieldOfView(1.2f, 16f / 9f, 0.1f, 100f);
+            var mk = SnapBuild.Magnet(c, cache, vp, new Vector2(1920, 1080), SnapBuild.SnapPixels);
+            if (mk < 0 || cache.Part[mk] != part || cache.Socket[mk] != si)
+                return $"the screen magnet doesn't pick the {socketName} socket (picked {mk} of {cache.Count} cached)";
             var k = -1;
             for (var i = 0; i < n; i++)
                 if (ghosts[i].Part == part && ghosts[i].Socket == si)
