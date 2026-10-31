@@ -25,8 +25,7 @@ public static unsafe partial class Program
             g.SpawnPlacing = false;
             return false;
         }
-        var eye = me.RenderEye;
-        var dir = g.LookDir(g.LookYaw, g.LookPitch);
+        SandboxAimRay(g, me, out var eye, out var dir);
         const float reach = Game.SpawnReach;
         var wall = World.RaycastWorld(eye, dir, reach);
         string? why;

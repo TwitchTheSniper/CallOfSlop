@@ -479,7 +479,7 @@ public sealed partial class Game
         _nextThrow = now + 0.8;
         Audio.Effect(Sfx.Throw, 0.6f);
 
-        var dir = LookDir(LookYaw, LookPitch);
+        var dir = AimDir();
         var origin = Throwables.LaunchPoint(me.RenderEye, dir);
         if (IsServer)
         {
