@@ -134,8 +134,18 @@ public static partial class SelfTest
         b.Net.SimulateBadNetwork(60, 12, 5);
         for (var wait = 0; wait < 12 && b.LocalId == byte.MaxValue; wait++)
             Pump(server, [a, b], 0.25, ref now, clock);
-        Pump(server, [a, b], 1.5, ref now, clock);
-        Want(BodiesMatch(server, b, moving: false, out var why6), $"the late joiner: {why6}");
+        // (Under 5% loss one lost reliable packet holds the joiner's ordered stream until it is sent again, so give it
+        // up to 4 s; on a quiet link it matches within a few hundred ms.)
+        var tJoin = clock.Elapsed.TotalSeconds;
+        var joined = false;
+        for (var wait = 0; wait < 16 && !joined; wait++)
+        {
+            Pump(server, [a, b], 0.25, ref now, clock);
+            joined = BodiesMatch(server, b, moving: false, out _);
+        }
+        BodiesMatch(server, b, moving: false, out var why6);
+        Line($"body sync: the late joiner matches the host {(joined ? $"after {clock.Elapsed.TotalSeconds - tJoin:0.0} s" : "NOT")}");
+        Want(joined, $"the late joiner: {why6}");
 
         // 5. The safety net: the first client's copy put wrong on purpose (a sleep pose lost, a body missing, a body the
         // host no longer has, a structure changed) is put right by the digest within one digest period.
