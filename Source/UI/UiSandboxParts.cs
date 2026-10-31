@@ -55,7 +55,7 @@ public sealed partial class Ui
     private sealed class SbItem
     {
         public int Slot, Index;
-        public string Id = "", Name = "", Line1 = "", Line2 = "", Description = "", Search = "";
+        public string Id = "", Name = "", Line1 = "", Line2 = "", Description = "", Search = "", Keys = "";
         public ConstructPartDef? Part;
         public ConstructTool Tool;
         public bool Usable = true;
@@ -71,6 +71,9 @@ public sealed partial class Ui
     private int _sbVisibleCount, _sbSel = -1, _sbFilterVersion, _sbFilterBuilt = -1;
     private ImInputString? _sbSearchInput;
     private string _sbSearch = "";
+    private string[] _sbWords = []; // the search split into words (made when the text changes), all of which must match
+    private int[] _sbRank = []; // per item of the tab, the search rank (scratch for SbFilter)
+    private int _sbTreeSelectedDrawn; // tree rows drawn highlighted last frame (self-test: none while searching)
     private readonly ushort[] _sbRecent = [ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None, ConstructParts.None];
     private bool _sbFocusSearch, _sbScrollToSel;
     private int _sbColumns = 1;
@@ -97,7 +100,22 @@ public sealed partial class Ui
 
     public int SandboxTilesPlain { get; private set; }
 
-    public void OpenSandboxParts(bool focusSearch = false) // (not by default: while the box has the keyboard, the game's keys, I included, are off)
+    /// <summary>The item indices (part ids on the Parts tab) the tab lists now, in order (self-test).</summary>
+    public ReadOnlySpan<int> SandboxInventoryListedItems => _sbVisItem.AsSpan(0, _sbVisibleCount);
+
+    /// <summary>A search is on: it covers every category of the tab and the tree shows no selection.</summary>
+    public bool SandboxInventorySearching => _sbSearch.Length > 0;
+
+    /// <summary>Tree rows drawn selected last frame (self-test).</summary>
+    public int SandboxInventoryTreeSelected => _sbTreeSelectedDrawn;
+
+    /// <summary>The search box wants the keyboard (focus is asked for and taken when nothing else is active).</summary>
+    public bool SandboxInventorySearchFocusWanted => _sbFocusSearch;
+
+    /// <summary>The category the tree remembers (group, section; -1 all), kept while a search covers everything.</summary>
+    public (int Group, int Section) SandboxInventoryNode => (_sbGroupSel, _sbSectionSel);
+
+    public void OpenSandboxParts(bool focusSearch = true) // (typing goes straight to the search box; the inventory key and Esc are handled in Program.OnKey)
     {
         SandboxPartsOpen = true;
         _sbFocusSearch = focusSearch;
@@ -110,9 +128,53 @@ public sealed partial class Ui
     public void SetSandboxPartsSearch(string text)
     {
         _sbSearchInput ??= new ImInputString(33);
+        _sbBuildSearchInput ??= new ImInputString(33);
         ImGuiSafe.SetInput(_sbSearchInput, text);
+        ImGuiSafe.SetInput(_sbBuildSearchInput, text);
+        // (a box with the keyboard keeps its own copy of the text and writes it back over ours: a new id makes it start again from ours, and take the keyboard)
+        _sbBoxGen++;
+        _sbSearchLabel = $"##sbsearch{_sbBoxGen}";
+        _sbBuildLabel = $"##sbbsearch{_sbBoxGen}";
+        _sbFocusSearch = true;
+        SbSearchChanged(text);
+    }
+
+    private int _sbBoxGen;
+    private string _sbSearchLabel = "##sbsearch0", _sbBuildLabel = "##sbbsearch0";
+
+    /// <summary>The player typed in one of the two boxes (Parts tab, Builds tab): the other follows, the typed one is left alone (its cursor and spaces).</summary>
+    private void SbTyped(ImInputString typed)
+    {
+        var text = ImGuiSafe.Text(typed);
+        var other = ReferenceEquals(typed, _sbSearchInput) ? _sbBuildSearchInput : _sbSearchInput;
+        if (other != null)
+            ImGuiSafe.SetInput(other, text);
+        SbSearchChanged(text);
+    }
+
+    private void SbSearchChanged(string text)
+    {
         _sbSearch = text.Trim();
+        _sbWords = _sbSearch.Length == 0 ? [] : _sbSearch.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        _sbBuildSearch = _sbSearch;
+        _sbBuildWords = _sbWords;
         _sbFilterVersion++;
+    }
+
+    /// <summary>Esc in the box (or the x button): the search text goes and the tab shows the remembered category again. False when there was no text.</summary>
+    public bool ClearSandboxPartsSearch()
+    {
+        if (_sbSearch.Length == 0 && _sbBuildSearch.Length == 0)
+            return false;
+        SetSandboxPartsSearch("");
+        return true;
+    }
+
+    /// <summary>A click on a category (a tree row): clears the search and shows only that category.</summary>
+    public void ClickSandboxInventoryNode(int group, int section)
+    {
+        SetSandboxPartsSearch("");
+        SetSandboxInventoryNode(group, section);
     }
 
     /// <summary>Show a tab (the self-test and the smoke pictures; a click on the tab does it too).</summary>
@@ -174,6 +236,7 @@ public sealed partial class Ui
                 Line2 = $"{d.Mass:0.#} kg   {d.Health:0} hp   armour {d.Armour:0.#}   fit {d.AttachSeconds:0.#} s   {(d.PhysicsOnly ? $"PHYSICS ONLY ({d.PhysicsWhy}): spawns in front of you" : "item: into your hands")}",
                 Description = $"{cat.PartGroup[d.Id]} > {cat.PartSection[d.Id]}. {d.Description}",
                 Search = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role} {d.Description}",
+                Keys = $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role}",
                 Color = Col8(c),
                 Color2 = Col8(c2),
                 ToolColor = ToolCol(d.Tool),
@@ -194,6 +257,7 @@ public sealed partial class Ui
                 Line2 = "Built whole, standing in front of you",
                 Description = bp.Description.Length > 0 ? bp.Description : "A ready-made construct.",
                 Search = $"{bp.Name} {cat.BlueprintSection[i]} {bp.Description}",
+                Keys = $"{bp.Name} {cat.BlueprintSection[i]}",
                 Color = new ImColor8(120, 126, 136, 255),
                 Color2 = new ImColor8(80, 86, 96, 255),
                 ToolColor = new ImColor8(0, 0, 0, 0),
@@ -227,6 +291,7 @@ public sealed partial class Ui
                 Line2 = "",
                 Description = m.Description,
                 Search = $"{m.Name} {m.Key} {m.Description}",
+                Keys = $"{m.Name} {m.Key}",
                 Color = Col8(c),
                 Color2 = Col8(c),
                 ToolColor = ToolCol(m.Tool ?? ConstructTool.None),
@@ -236,6 +301,7 @@ public sealed partial class Ui
         var most = Math.Max(partItems.Length, Math.Max(bpItems.Length, toolItems.Length));
         _sbVisItem = new int[most];
         _sbVisSection = new int[most];
+        _sbRank = new int[most];
         _sbCat = cat;
         _sbAllParts = $"All parts ({cat.Parts.Items})##sball0";
         _sbAllBlueprints = $"All blueprints ({cat.Blueprints.Items})##sball1";
@@ -264,6 +330,28 @@ public sealed partial class Ui
         _ => _sbCat!.Tools,
     };
 
+    /// <summary>How well an item matches every word (case-insensitive): 0 its name starts with the first word, 1 its name has them all, 2 name and keywords (group, section, role) have them, 3 with the description too; -1 no match.</summary>
+    private static int SbRank(SbItem it, string[] words) => SbRank(it.Name, it.Keys, it.Search, words);
+
+    private static int SbRank(string name, string keys, string full, string[] words)
+    {
+        if (words.Length == 0)
+            return 0;
+        if (HasAll(name, words))
+            return name.StartsWith(words[0], StringComparison.OrdinalIgnoreCase) ? 0 : 1;
+        if (HasAll(keys, words))
+            return 2;
+        return HasAll(full, words) ? 3 : -1;
+
+        static bool HasAll(string text, string[] words)
+        {
+            foreach (var w in words)
+                if (!text.Contains(w, StringComparison.OrdinalIgnoreCase))
+                    return false;
+            return true;
+        }
+    }
+
     /// <summary>The visible tiles (only when the search, tab or tree node changed): the highlight stays on its item, or moves to the first match.</summary>
     private void SbFilter()
     {
@@ -273,7 +361,24 @@ public sealed partial class Ui
         _sbVisibleCount = 0;
         var tree = SbTree;
         var items = _sbItems[(int)_sbTab];
-        var q = _sbSearch.AsSpan();
+        if (_sbWords.Length > 0)
+        {
+            // A search covers every category of the tab (the tree's selection is only remembered): per group in the usual
+            // order, the best matches first (name starts with it, name has it, a keyword has it, the description has it).
+            for (var i = 0; i < items.Length; i++)
+                _sbRank[i] = SbRank(items[i], _sbWords);
+            foreach (var grp in tree.Groups)
+                for (var rank = 0; rank <= 3; rank++)
+                    foreach (var s in grp.Sections)
+                        foreach (var i in tree.Sections[s].Items)
+                            if (_sbRank[i] == rank)
+                            {
+                                _sbVisItem[_sbVisibleCount] = i;
+                                _sbVisSection[_sbVisibleCount++] = s;
+                            }
+            _sbSel = _sbVisibleCount > 0 ? _sbVisItem[0] : -1;
+            return;
+        }
         var keep = false;
         for (var s = 0; s < tree.Sections.Length; s++)
         {
@@ -282,8 +387,6 @@ public sealed partial class Ui
                 continue;
             foreach (var i in sec.Items)
             {
-                if (q.Length > 0 && !items[i].Search.AsSpan().Contains(q, StringComparison.OrdinalIgnoreCase))
-                    continue;
                 _sbVisItem[_sbVisibleCount] = i;
                 _sbVisSection[_sbVisibleCount++] = s;
                 keep |= i == _sbSel;
@@ -417,23 +520,22 @@ public sealed partial class Ui
             // Left: the search box, the tree, the options.
             if (ImGui.BeginChild("##sbleft"u8, new float2(paneW, 0), ImGuiChildFlags.Borders))
             {
-                if (_sbFocusSearch)
-                {
-                    ImGui.SetKeyboardFocusHere();
-                    _sbFocusSearch = false;
-                }
-                ImGui.SetNextItemWidth(-1);
+                SbFocusSearchBox();
+                ImGui.SetNextItemWidth(-(ImGui.GetFrameHeight() + ImGui.GetStyle().ItemSpacing.X));
                 try
                 {
-                    if (ImGui.InputTextWithHint("##sbsearch"u8, "Search..."u8, _sbSearchInput))
-                    {
-                        _sbSearch = ImGuiSafe.Text(_sbSearchInput).Trim();
-                        _sbFilterVersion++;
-                    }
+                    if (ImGui.InputTextWithHint(_sbSearchLabel, "Search all parts..."u8, _sbSearchInput))
+                        SbTyped(_sbSearchInput);
                 }
                 catch (Exception ex)
                 {
                     ImGuiSafe.FieldFailed("sandbox inventory search", ex);
+                }
+                ImGui.SameLine();
+                if (ImGui.Button("x##sbclear"u8, new float2(ImGui.GetFrameHeight(), ImGui.GetFrameHeight())))
+                {
+                    ClearSandboxPartsSearch();
+                    _sbFocusSearch = true;
                 }
                 ImGui.Spacing();
                 var treeH = ImGui.GetContentRegionAvail().Y - ImGui.GetFrameHeightWithSpacing() * 6.2f;
@@ -518,6 +620,17 @@ public sealed partial class Ui
 
     private static readonly string[] SbRecentIds = ["##sbrecent0", "##sbrecent1", "##sbrecent2", "##sbrecent3", "##sbrecent4", "##sbrecent5", "##sbrecent6", "##sbrecent7"];
 
+    /// <summary>Asks for the keyboard on the search box: when the window opens, and after that whenever nothing else is being used (so typing always goes to the search).</summary>
+    private void SbFocusSearchBox()
+    {
+        if (!_sbFocusSearch && !ImGui.IsAnyItemActive() && ImGui.IsWindowFocused(ImGuiFocusedFlags.RootAndChildWindows))
+            _sbFocusSearch = true;
+        if (!_sbFocusSearch)
+            return;
+        ImGui.SetKeyboardFocusHere();
+        _sbFocusSearch = false;
+    }
+
     private void SbTabItem(ImString label, SbTab tab)
     {
         var flags = _sbTabRequest == (int)tab ? ImGuiTabItemFlags.SetSelected : ImGuiTabItemFlags.None;
@@ -533,35 +646,43 @@ public sealed partial class Ui
     {
         var tree = SbTree;
         const ImGuiTreeNodeFlags leaf = ImGuiTreeNodeFlags.Leaf | ImGuiTreeNodeFlags.NoTreePushOnOpen | ImGuiTreeNodeFlags.SpanAvailWidth;
-        ImGui.TreeNodeEx(SbAllLabel(tree), leaf | (_sbGroupSel < 0 && _sbSectionSel < 0 ? ImGuiTreeNodeFlags.Selected : 0));
+        var searching = _sbSearch.Length > 0; // (a search covers every category: none is highlighted, the choice is kept for when it ends)
+        var shown = 0;
+        var allSel = !searching && _sbGroupSel < 0 && _sbSectionSel < 0;
+        shown += allSel ? 1 : 0;
+        ImGui.TreeNodeEx(SbAllLabel(tree), leaf | (allSel ? ImGuiTreeNodeFlags.Selected : 0));
         if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
-            SetSandboxInventoryNode(-1, -1);
+            ClickSandboxInventoryNode(-1, -1);
         for (var g = 0; g < tree.Groups.Length; g++)
         {
             var grp = tree.Groups[g];
             var single = grp.Sections.Length == 1;
-            var sel = _sbGroupSel == g && _sbSectionSel < 0;
+            var sel = !searching && _sbGroupSel == g && _sbSectionSel < 0;
+            shown += sel ? 1 : 0;
             if (single)
             {
                 ImGui.TreeNodeEx(grp.Label, leaf | (sel ? ImGuiTreeNodeFlags.Selected : 0));
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
-                    SetSandboxInventoryNode(g, -1);
+                    ClickSandboxInventoryNode(g, -1);
                 continue;
             }
             var open = ImGui.TreeNodeEx(grp.Label, ImGuiTreeNodeFlags.OpenOnArrow | ImGuiTreeNodeFlags.OpenOnDoubleClick | ImGuiTreeNodeFlags.SpanAvailWidth
                                                   | ImGuiTreeNodeFlags.DefaultOpen | ImGuiTreeNodeFlags.DrawLinesToNodes | (sel ? ImGuiTreeNodeFlags.Selected : 0));
             if (ImGui.IsItemClicked(ImGuiMouseButton.Left) && !ImGui.IsItemToggledOpen())
-                SetSandboxInventoryNode(g, -1);
+                ClickSandboxInventoryNode(g, -1);
             if (!open)
                 continue;
             foreach (var s in grp.Sections)
             {
-                ImGui.TreeNodeEx(tree.Sections[s].Label, leaf | (_sbSectionSel == s ? ImGuiTreeNodeFlags.Selected : 0));
+                var secSel = !searching && _sbSectionSel == s;
+                shown += secSel ? 1 : 0;
+                ImGui.TreeNodeEx(tree.Sections[s].Label, leaf | (secSel ? ImGuiTreeNodeFlags.Selected : 0));
                 if (ImGui.IsItemClicked(ImGuiMouseButton.Left))
-                    SetSandboxInventoryNode(g, s);
+                    ClickSandboxInventoryNode(g, s);
             }
             ImGui.TreePop();
         }
+        _sbTreeSelectedDrawn = shown;
     }
 
     private string _sbAllParts = "", _sbAllBlueprints = "", _sbAllTools = "";
@@ -613,7 +734,7 @@ public sealed partial class Ui
             var clipBottom = clipTop + ImGui.GetWindowSize().Y;
             var tree = SbTree;
             var v = 0;
-            var byGroup = _sbSectionSel < 0; // all or a group: a block per group, its tiles flowing; a section: its own block
+            var byGroup = _sbSectionSel < 0 || _sbSearch.Length > 0; // all or a group: a block per group, its tiles flowing; a section: its own block
             while (v < _sbVisibleCount)
             {
                 var s = _sbVisSection[v];
@@ -629,7 +750,7 @@ public sealed partial class Ui
                     ImGuiSafe.TextColored(new float4(0.95f, 0.6f, 0.2f, 1f), grp.Name);
                     ImGui.PopFont();
                 }
-                ImGui.PushFont(default, 34);
+                ImGui.PushFont(default, _sbSearch.Length > 0 ? 22 : 34); // (small category headers while searching)
                 ImGuiSafe.TextColored(new float4(0.93f, 0.94f, 0.96f, 1f), sectionBlock ? sec.Name : grp.Name);
                 ImGui.PopFont();
                 // The block's tiles, row by row (rows out of view: only their space).

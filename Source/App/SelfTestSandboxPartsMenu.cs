@@ -205,15 +205,18 @@ public static partial class SelfTest
             var tiles = ui.SandboxTilesWithPicture + ui.SandboxTilesPlain;
             ui.SandboxCounts = new FakePartCounts();
             var leastCounts = Steady();
+            ui.SetSandboxPartsSearch("pipe");
+            var leastSearch = Steady(); // (a search on: the cached results, nothing new per frame)
+            ui.SetSandboxPartsSearch("");
             ui.SandboxCounts = null;
             var stillOpen = ui.SandboxPartsOpen;
             ui.CloseSandboxParts();
             Frames(2); // (closed: nothing drawn, ImGui still balanced)
-            Line($"parts menu window: {frames} headless frames, ImGui error: {error ?? "none"}; open steady frames allocate {leastInf} B per 60 with \"inf\" badges, {leastCounts} B with counts "
+            Line($"parts menu window: {frames} headless frames, ImGui error: {error ?? "none"}; open steady frames allocate {leastInf} B per 60 with \"inf\" badges, {leastCounts} B with counts, {leastSearch} B while a search is shown "
                  + $"(least of three); {tiles} tiles drawn a frame (headless: plain swatches); stayed open {stillOpen}");
             if (error != null)
                 Fail($"parts menu: the window threw in ImGui: {error}");
-            if (leastInf > 0 || leastCounts > 0)
+            if (leastInf > 0 || leastCounts > 0 || leastSearch > 0)
                 Fail($"parts menu: the open window allocates {leastInf} / {leastCounts} B per 60 frames (should be nothing)");
             if (tiles < 1)
                 Fail("parts menu: the inventory grid drew no tiles");
@@ -267,7 +270,7 @@ public static partial class SelfTest
                     wrong.Add($"{grp.Name} > {cat.Parts.Sections[s].Name}: {ui.SandboxPartsListed} listed of {cat.Parts.Sections[s].Items.Length}");
             }
         }
-        // A search within a node: "lamp" in Logic, and the same search in Structure finds nothing.
+        // A search covers every category (board item is01): "lamp" lists the same with Logic or Structure selected.
         var logic = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Logic");
         var structure = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure");
         ui.SetSandboxInventoryNode(logic, -1);
@@ -282,9 +285,11 @@ public static partial class SelfTest
         ui.SetSandboxInventoryNode(-1, -1);
         frames(1);
         Line($"inventory tree: {cat.Parts.Groups.Length} groups, {cat.Parts.Sections.Length} sections; nodes listing the wrong items: {(wrong.Count == 0 ? "none" : string.Join("; ", wrong))}; "
-             + $"\"lamp\" in Logic {lampInLogic} (highlight {lampPick}), in Structure {lampInStructure}");
-        if (wrong.Count > 0 || logic < 0 || structure < 0 || lampInLogic < 1 || lampPick != "Lamp" || lampInStructure != 0)
+             + $"\"lamp\" with Logic selected {lampInLogic} (highlight {lampPick}), with Structure selected {lampInStructure}");
+        if (wrong.Count > 0 || logic < 0 || structure < 0 || lampInLogic < 1 || lampPick != "Lamp" || lampInStructure != lampInLogic)
             Fail("inventory: the category tree or the search within it doesn't list the right parts");
+
+        SandboxInventorySearch(g, ui, frames);
 
         // Blueprints: every one listed; taking the highlighted one builds it in front of the player.
         ui.SetSandboxInventoryTab(Ui.SbTab.Blueprints);
@@ -316,6 +321,117 @@ public static partial class SelfTest
         g.SandboxSend(CActKind.Tool, part: (byte)ConstructTool.None);
         ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
         frames(2);
+    }
+
+    private static string SearchText(ConstructPartDef d, SandboxCatalogue cat) => $"{d.Name} {cat.PartGroup[d.Id]} {cat.PartSection[d.Id]} {d.Role} {d.Description}";
+
+    /// <summary>
+    /// Board item is01: the search is global. With Joints selected, "barrel" lists weapon builder barrels from every
+    /// category and the tree shows no selection; results are grouped in the usual order, best matches first; every word
+    /// must match; a click on Structure clears the text and lists only Structure; opening focuses the search box; clearing
+    /// (Esc / the x button) goes back to the category that was selected; the Builds tab searches every standard build.
+    /// </summary>
+    private static void SandboxInventorySearch(Game g, Ui ui, Action<int> frames)
+    {
+        var cat = ui.SandboxInventoryCatalogue!;
+        var parts = ConstructParts.All;
+        var problems = new List<string>();
+        void Want(bool ok, string what)
+        {
+            if (!ok)
+                problems.Add(what);
+        }
+        var joints = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Joints");
+        var structure = Array.FindIndex(cat.Parts.Groups, x => x.Name == "Structure");
+        ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
+        ui.SetSandboxPartsSearch("");
+        ui.SetSandboxInventoryNode(joints, -1);
+        frames(2);
+        Want(ui.SandboxInventoryTreeSelected == 1 && ui.SandboxPartsListed == cat.Parts.Groups[joints].Items, "Joints selected without a search doesn't list Joints with one row highlighted");
+
+        ui.SetSandboxPartsSearch("barrel");
+        frames(2);
+        var ids = ui.SandboxInventoryListedItems.ToArray();
+        var groupsSeen = ids.Select(i => cat.PartGroup[i]).Distinct().ToList();
+        Want(ids.Length > 0 && ids.Any(i => cat.PartGroup[i] != "Joints"),
+            $"\"barrel\" with Joints selected lists {ids.Length} parts in {string.Join("/", groupsSeen)}: not the builder barrels of other categories");
+        Want(ids.Any(i => parts[i].Name.Contains("barrel", StringComparison.OrdinalIgnoreCase)), "\"barrel\" lists no part named barrel");
+        Want(ids.All(i => parts[i].Name.Contains("barrel", StringComparison.OrdinalIgnoreCase) || cat.PartSection[i].Contains("barrel", StringComparison.OrdinalIgnoreCase)
+                          || parts[i].Role.ToString().Contains("barrel", StringComparison.OrdinalIgnoreCase) || parts[i].Description.Contains("barrel", StringComparison.OrdinalIgnoreCase)), "a listed part has no barrel in its name, section, role or description");
+        Want(ui.SandboxInventorySearching && ui.SandboxInventoryTreeSelected == 0, "while searching a category is still highlighted");
+        Want(ui.SandboxInventoryNode == (joints, -1), "the search forgot the selected category");
+        // Grouped in the usual order, best matches first within a group.
+        var order = ids.Select(i => Array.IndexOf(cat.Parts.Groups.Select(x => x.Name).ToArray(), cat.PartGroup[i])).ToArray();
+        Want(order.Zip(order.Skip(1), (x, y) => x <= y).All(b => b), "search results aren't grouped in the tree's order");
+        var starts = ids.Select(i => parts[i].Name.StartsWith("barrel", StringComparison.OrdinalIgnoreCase)).ToArray();
+        var misordered = 0;
+        for (var k = 1; k < ids.Length; k++)
+            if (cat.PartGroup[ids[k]] == cat.PartGroup[ids[k - 1]] && starts[k] && !starts[k - 1] && !parts[ids[k - 1]].Name.Contains("barrel", StringComparison.OrdinalIgnoreCase))
+                misordered++;
+        Want(misordered == 0, "a name that starts with the word is listed after a weaker match");
+        var barrels = ids.Length;
+
+        // Case-insensitive, several words all must match.
+        ui.SetSandboxPartsSearch("BARREL");
+        frames(1);
+        Want(ui.SandboxPartsListed == barrels, "the search is case-sensitive");
+        ui.SetSandboxPartsSearch("gun barrel");
+        frames(1);
+        var two = ui.SandboxInventoryListedItems.ToArray();
+        Want(two.Length <= barrels && two.All(i => SearchText(parts[i], cat).Contains("gun", StringComparison.OrdinalIgnoreCase) && SearchText(parts[i], cat).Contains("barrel", StringComparison.OrdinalIgnoreCase)),
+            "a two-word search lists a part missing one of the words");
+        ui.SetSandboxPartsSearch("mag");
+        frames(1);
+        Want(ui.SandboxPartsListed > 0 && ui.SandboxInventoryListedItems.ToArray().Any(i => parts[i].Name.Contains("mag", StringComparison.OrdinalIgnoreCase)), "\"mag\" finds no magazines");
+        ui.SetSandboxPartsSearch("pipe");
+        frames(1);
+        Want(ui.SandboxPartsListed > 0, "\"pipe\" finds nothing");
+
+        // Esc / x: the text goes, the remembered category is back.
+        ui.SetSandboxPartsSearch("barrel");
+        frames(1);
+        var cleared = ui.ClearSandboxPartsSearch();
+        frames(2);
+        Want(cleared && !ui.SandboxInventorySearching && ui.SandboxInventoryNode == (joints, -1) && ui.SandboxPartsListed == cat.Parts.Groups[joints].Items && ui.SandboxInventoryTreeSelected == 1,
+            "clearing the search doesn't bring back the previous category");
+        Want(!ui.ClearSandboxPartsSearch(), "clearing an empty search claims it did something (Esc must then close the window)");
+
+        // A click on Structure clears the text and lists only Structure.
+        ui.SetSandboxPartsSearch("barrel");
+        frames(1);
+        ui.ClickSandboxInventoryNode(structure, -1);
+        frames(2);
+        Want(!ui.SandboxInventorySearching && ui.SandboxPartsListed == cat.Parts.Groups[structure].Items && ui.SandboxInventoryListedItems.ToArray().All(i => cat.PartGroup[i] == "Structure"),
+            "clicking Structure doesn't clear the search and list only Structure");
+
+        // Opening puts the keyboard in the search box.
+        ui.CloseSandboxParts();
+        ui.OpenSandboxParts();
+        var wanted = ui.SandboxInventorySearchFocusWanted;
+        frames(3);
+        Want(wanted && ui.WantsTextInput, $"opening the inventory doesn't focus the search box (asked {wanted}, text input {ui.WantsTextInput})");
+
+        // Builds tab: every standard build.
+        ui.SetSandboxPartsSearch("");
+        ui.SetSandboxInventoryTab(Ui.SbTab.Builds);
+        frames(2);
+        var allBuilds = ui.SandboxBuildsListed();
+        if (allBuilds > 1)
+        {
+            ui.SetSandboxPartsSearch(StandardBuilds.All[^1].Name.ToUpperInvariant());
+            frames(1);
+            var one = ui.SandboxBuildsListed();
+            ui.SetSandboxPartsSearch("zzzz nothing");
+            frames(1);
+            Want(one >= 1 && one < allBuilds && ui.SandboxBuildsListed() == 0, $"the Builds search lists {one} of {allBuilds}");
+        }
+        ui.SetSandboxPartsSearch("");
+        ui.SetSandboxInventoryTab(Ui.SbTab.Parts);
+        ui.SetSandboxInventoryNode(-1, -1);
+        frames(2);
+        Line($"inventory search: \"barrel\" with Joints selected lists {barrels} parts in {string.Join(", ", groupsSeen)}; clearing restores Joints, clicking Structure clears the text; builds listed {allBuilds}; problems: {(problems.Count == 0 ? "none" : problems.Count.ToString())}");
+        if (problems.Count > 0)
+            Fail("inventory search: " + string.Join("; ", problems));
     }
 
     /// <summary>A real client: the part by id and a blueprint go over the wire, an unknown id comes back refused.</summary>

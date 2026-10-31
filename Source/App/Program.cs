@@ -923,6 +923,14 @@ public static unsafe partial class Program
             SetMouseCaptured(true);
             return;
         }
+        if (key == GlfwKey.Escape && Ui.SandboxPartsOpen && Ui.ClearSandboxPartsSearch())
+            return; // Esc with text in the inventory's search box clears it (back to the category), the next Esc closes
+        if (key == GlfwKey.Tab && Ui.SandboxPartsOpen && Ui.WantsTextInput && _settings.Bind(GameAction.SandboxInventory) == Keybinds.Key(GlfwKey.Tab))
+        {
+            Ui.CloseSandboxParts(); // (the search box has the keyboard, so the game's keys are off: the inventory key still closes it)
+            SetMouseCaptured(true);
+            return;
+        }
         if (key == GlfwKey.Escape && Ui.SandboxPartsOpen)
         {
             Ui.CloseSandboxParts(); // Esc closes the Sandbox parts menu (back to building), not the match (Program.Sandbox.cs)
