@@ -24,7 +24,68 @@ public static partial class SelfTest
         ScaleTick(w, q);
         ScaleWake(w, q);
         ScaleQueries(w);
+        ScaleBig(q);
         ScaleNet();
+    }
+
+    /// <summary>
+    /// The note's target, measured: 5,000 constructs of 20 parts (100,000 parts) at rest and 300 blocks falling beside
+    /// them. A few ticks only: the tick's cost (CPU on Windows, inside the 8 ms budget), what it simulates, no allocation,
+    /// and the memory the world holds (docs/sandbox/CONSTRUCTS.md "Scale").
+    /// </summary>
+    private static void ScaleBig(IWorldQuery q)
+    {
+        var mem0 = GC.GetTotalMemory(true);
+        var w = new ConstructWorld();
+        var block = ConstructParts.Need("Frame Block");
+        var size = block.BoundsMax - block.BoundsMin;
+        var place = Stopwatch.StartNew();
+        for (var k = 0; k < 5000; k++)
+        {
+            var c = w.Create(new Vector3(k % 71 * 4f, -block.BoundsMin.Y + 0.01f, k / 71 * 4f), Quaternion.Identity);
+            if (c == null)
+                break;
+            for (var i = 0; i < 20; i++)
+                w.AddPart(c, block, new Vector3(i % 5 * size.X, 0, i / 5 * size.Z), 0);
+            c.Rebuild();
+            c.Asleep = true;
+        }
+        var rng = new Random(99);
+        for (var i = 0; i < 300; i++)
+            if (ConstructBuild.PlaceNew(w, block, new Vector3(-30 - i % 17 * 2.5f, 1.5f + (float)rng.NextDouble() * 2, i / 17 * 2.5f), (float)rng.NextDouble() * 6) is { } c)
+                c.Rebuild();
+        var placeMs = place.Elapsed.TotalMilliseconds;
+        var mem = GC.GetTotalMemory(true) - mem0;
+        for (var t = 0; t < 8; t++)
+            w.Step(q, World.TickDt); // (warm-up)
+        var cpu = new TickCpu();
+        var sw = new Stopwatch();
+        double sum = 0, worst = 0;
+        long bytes = 0;
+        var sim = 0;
+        const int ticks = 20;
+        for (var t = 0; t < ticks; t++)
+        {
+            var b0 = GC.GetAllocatedBytesForCurrentThread();
+            sw.Restart();
+            cpu.Start();
+            w.Step(q, World.TickDt);
+            var ms = sw.Elapsed.TotalMilliseconds;
+            cpu.Stop(ms, true);
+            bytes += GC.GetAllocatedBytesForCurrentThread() - b0;
+            sum += ms;
+            worst = Math.Max(worst, ms);
+            sim = Math.Max(sim, ConstructPhysics.LastSimulated);
+        }
+        var awake = w.Bodies.Count(b => !b.Asleep);
+        Line($"scale big: {w.Bodies.Count} bodies, {w.TotalParts} parts ({mem / 1048576.0:0} MB held, placed in {placeMs:0} ms), {awake} awake, up to {sim} simulated; "
+            + $"wall {sum / ticks:0.000} ms a tick (worst {worst:0.000}), CPU worst {cpu.WorstText} ({cpu.WorstDetail}); {bytes} bytes allocated in {ticks} ticks");
+        if (w.TotalParts < 100000)
+            Fail($"construct scale: only {w.TotalParts} of 100,000 parts were placed");
+        if (bytes > 0)
+            Fail($"construct scale: {bytes} bytes allocated in {ticks} ticks of 5,000 constructs (should be none)");
+        if (TickCpu.Available && cpu.WorstMs > MaxTickWorkMs)
+            Fail($"construct scale: the busiest tick took {cpu.WorstMs:0.00} ms of CPU with 5,000 constructs and 300 awake (budget {MaxTickWorkMs} ms; {cpu.WorstDetail})");
     }
 
     /// <summary>The old limits (64 bodies, 1,200 parts) are gone; the host's safety cap refuses past it, with a reason.</summary>
