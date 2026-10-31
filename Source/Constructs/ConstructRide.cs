@@ -72,23 +72,23 @@ public static class ConstructRide
 
     // ---- Accelerations (server) -----------------------------------------------------------------------------------
 
+    /// <summary>
+    /// Each body's acceleration: its velocity's change from one step's start to the next (the physics' last step, and
+    /// anything else that set it since), smoothed a little (a one-tick contact spike counts half).
+    /// </summary>
     public static void BeforePhysics(ConstructWorld w)
-    {
-        var bodies = w.Bodies;
-        for (var i = 0; i < bodies.Count; i++)
-            bodies[i].VelBefore = bodies[i].Vel;
-    }
-
-    public static void AfterPhysics(ConstructWorld w, float dt)
     {
         var bodies = w.Bodies;
         for (var i = 0; i < bodies.Count; i++)
         {
             var c = bodies[i];
-            var a = c.Anchored || c.Asleep ? Vector3.Zero : (c.Vel - c.VelBefore) / dt;
-            c.Accel = Vector3.Lerp(c.Accel, a, 0.5f); // (a one-tick contact spike counts half)
+            var a = c.Anchored || c.Asleep ? Vector3.Zero : (c.Vel - c.VelBefore) / World.TickDt;
+            c.Accel = Vector3.Lerp(c.Accel, a, 0.5f);
+            c.VelThen = c.VelBefore;
+            c.VelBefore = c.Vel;
         }
     }
+
 
     // ---- The frame ------------------------------------------------------------------------------------------------
 
@@ -207,7 +207,7 @@ public static class ConstructRide
             if (a.X * a.X + a.Z * a.Z > limit * limit || -a.Y > (s.RideGripUp != Vector3.Zero ? GripThrowAccel : DropAccel))
             {
                 s.Position = to;
-                s.Velocity += surfaceVel - (c.Vel - c.VelBefore); // (the deck's speed before this step's jolt)
+                s.Velocity += surfaceVel - (c.Vel - c.VelThen); // (the deck's speed before the jolt)
                 Throws++;
                 s.Velocity.Y = MathF.Max(s.Velocity.Y, ThrowPop);
                 s.Grounded = false;

@@ -1194,9 +1194,8 @@ public sealed partial class ConstructWorld
         FlushSnaps(); // (world links that tore off this tick: WorldLinks.cs)
         foreach (var c in Bodies)
             ConstructLogic.Step(this, c, dt);
-        ConstructRide.BeforePhysics(this);
+        ConstructRide.BeforePhysics(this); // (each body's acceleration: riders thrown off by a crash)
         ConstructPhysics.Step(this, query, dt);
-        ConstructRide.AfterPhysics(this, dt); // (each body's acceleration: riders thrown off by a crash)
         OverloadDamage();
         ConstructCargo.Step(this); // (what frozen cargo volumes carry follows them; what entered is caught, what left is let go)
         for (var i = Bodies.Count - 1; i >= 0; i--)

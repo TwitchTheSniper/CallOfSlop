@@ -50,10 +50,9 @@ public static partial class SelfTest
         return c;
     }
 
-    /// <summary>A deck moved as the physics would move it: its pose, its velocity and turn, its acceleration noted (ConstructRide.AfterPhysics).</summary>
+    /// <summary>A deck moved as the physics would move it: its pose, its velocity and turn, its acceleration noted (ConstructRide.BeforePhysics).</summary>
     private static void RidePose(ConstructWorld w, Construct c, Vector3 pos, Quaternion rot, Vector3 vel, Vector3 ang)
     {
-        ConstructRide.BeforePhysics(w);
         c.PrevPos = c.Pos;
         c.PrevRot = c.Rot;
         c.Pos = pos;
@@ -62,7 +61,7 @@ public static partial class SelfTest
         c.AngVel = ang;
         c.Asleep = false;
         c.Anchored = false;
-        ConstructRide.AfterPhysics(w, World.TickDt);
+        ConstructRide.BeforePhysics(w);
     }
 
     /// <summary>One tick of a player's movement on the constructs, as the server runs it.</summary>
