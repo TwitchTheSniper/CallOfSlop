@@ -663,7 +663,7 @@ public sealed class Player
     {
         SbSpawned = false;
         SbOwner = 255;
-        SbBody = SbTag = 0;
+        SbBody = SbTag = SbBoarding = 0;
         SbPart = 0;
         SbHome = default;
         SbDeadAt = SbBlockedSince = -1;
