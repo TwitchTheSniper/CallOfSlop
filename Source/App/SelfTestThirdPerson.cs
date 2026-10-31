@@ -176,8 +176,8 @@ public static partial class SelfTest
         const string json = """
             { "format": "call-of-slop-construct-blueprint/1", "name": "Orbit Test", "steps": [
               { "part": "Foundation" },
-              { "part": "Seat", "on": 0, "socket": "top00", "by": "-y", "config": { "orbitX": 1.5, "orbitY": 2, "orbitZ": 4, "orbitDist": 14, "zoomMin": 2, "zoomMax": 30, "followYaw": true } },
-              { "part": "Seat", "on": 0, "socket": "top02", "by": "-y" }
+              { "part": "Seat", "on": 0, "socket": "top00", "by": "bottom", "config": { "orbitX": 1.5, "orbitY": 2, "orbitZ": 4, "orbitDist": 14, "zoomMin": 2, "zoomMax": 30, "followYaw": true } },
+              { "part": "Seat", "on": 0, "socket": "top02", "by": "bottom" }
             ] }
             """;
         var q = World.Query;
