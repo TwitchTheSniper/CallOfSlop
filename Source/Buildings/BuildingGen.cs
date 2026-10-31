@@ -904,9 +904,8 @@ internal sealed partial class BuildingGenerator
             {
                 if (NearWall(upper, ax, c, a0, b0))
                     continue;
-                // 3 mm in from both faces of the 5 cm strip, so no face shares a plane with a wall lining ending there
-                var c0 = (o < 0 ? c - 0.05f : c) + 0.003f;
-                AddAlong(ax, a0, b0, c0, c0 + 0.044f, yr, yr + 1f, _def.TrimSurface);
+                var c0 = o < 0 ? c - 0.05f : c;
+                AddAlong(ax, a0, b0, c0, c0 + 0.05f, yr, yr + 1f, _def.TrimSurface);
             }
         }
     }
