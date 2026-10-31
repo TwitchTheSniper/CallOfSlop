@@ -144,7 +144,6 @@ public static partial class SelfTest
             w2.Step(World.Query, dt);
         }
         _ = far;
-      }
         var through = p.WorldCom.X > wall.WorldCom.X - 0.2f;
         Line($"physics gun feel: aimed 3 m into the ground it sank {sank * 100:0.0} cm; let go it stopped {stopped} and drifted {drift * 100:0.0} cm in 0.5 s; released at {moving:0.0} m/s it kept {flung:0.00}; pushed at a wall it ended {wall.WorldCom.X - p.WorldCom.X:0.00} m short of the wall's centre (through: {through})");
         if (sank > 0.1f || !stopped || drift > 0.01f || moving < 1f || flung > 0.001f || through)
