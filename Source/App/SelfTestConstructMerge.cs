@@ -151,13 +151,13 @@ public static partial class SelfTest
             var sdir = Vector3.Transform(-Vector3.UnitX, q);
             if (!w.Raycast(side, sdir, 2f, out var sideHit, null) || MathF.Abs(sideHit.Distance - 0.4f) > 0.01f)
                 Fail($"construct merge collider: a ray through the {tag} merge's grown depth missed its side (members' boxes only)");
-            // A player inside the grown volume is pushed out at the merged surface.
+            // A player inside the grown volume is pushed out at the merged surface (or, the box being under a step tall, steps up onto its top).
             var ms = new MoveState { Position = ToWorld(new Vector3(mc.X + mh.X - 0.04f, mc.Y - mh.Y + 0.05f, beyondZ)), Grounded = false };
             w.BlockPlayer(ref ms, World.PlayerHeight, server: true);
             var rest = Vector3.Transform(ms.Position - t, Quaternion.Conjugate(q));
             var dx = MathF.Max(MathF.Abs(rest.X - mc.X) - mh.X, 0);
             var dz = MathF.Max(MathF.Abs(rest.Z - mc.Z) - mh.Z, 0);
-            if (MathF.Sqrt(dx * dx + dz * dz) < World.PlayerRadius - 0.03f)
+            if (MathF.Sqrt(dx * dx + dz * dz) < World.PlayerRadius - 0.03f && MathF.Abs(rest.Y - (mc.Y + mh.Y)) > 0.02f)
                 Fail($"construct merge collider: a player walked into the {tag} merge's grown volume wasn't pushed out at its surface (at {rest}, box {mc} half {mh})");
             // A ghost in the grown volume is blocked.
             if (!ConstructMerge.InMerged(c, new Vector3(mc.X, mc.Y, beyondZ), new Vector3(0.02f), 0))
